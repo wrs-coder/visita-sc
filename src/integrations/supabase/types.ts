@@ -91,8 +91,8 @@ export type Database = {
       field_assignments: {
         Row: {
           acompanhante: string | null
+          contact_phone: string | null
           created_at: string
-          dirigente: string | null
           event_date: string
           id: string
           is_active: boolean
@@ -100,14 +100,13 @@ export type Database = {
           meeting_time: string | null
           notes: string | null
           period: string
-          piloto: string | null
           updated_at: string
           visit_id: string
         }
         Insert: {
           acompanhante?: string | null
+          contact_phone?: string | null
           created_at?: string
-          dirigente?: string | null
           event_date: string
           id?: string
           is_active?: boolean
@@ -115,14 +114,13 @@ export type Database = {
           meeting_time?: string | null
           notes?: string | null
           period: string
-          piloto?: string | null
           updated_at?: string
           visit_id: string
         }
         Update: {
           acompanhante?: string | null
+          contact_phone?: string | null
           created_at?: string
-          dirigente?: string | null
           event_date?: string
           id?: string
           is_active?: boolean
@@ -130,7 +128,6 @@ export type Database = {
           meeting_time?: string | null
           notes?: string | null
           period?: string
-          piloto?: string | null
           updated_at?: string
           visit_id?: string
         }
@@ -316,6 +313,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      transport_schedule: {
+        Row: {
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          driver_name: string
+          event_date: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          driver_name: string
+          event_date?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          driver_name?: string
+          event_date?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
