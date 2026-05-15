@@ -117,13 +117,31 @@ function Page() {
                 <div className="space-y-3 pt-1 pb-3">
                   <FieldArea label="Informação (ex: Total de Publicadores)" v={it.info_text ?? ""} onSave={(v) => update(it.id, { info_text: v })} readOnly={!canEdit} />
                   <FieldArea label="Link ou observações" v={it.link_or_notes ?? ""} onSave={(v) => update(it.id, { link_or_notes: v })} readOnly={!canEdit} />
-                  {canManage && <Button size="sm" variant="ghost" onClick={() => remove(it.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5 mr-1" />Remover</Button>}
+                  {canManage && (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setEditItem(it)}><Pencil className="h-3.5 w-3.5 mr-1" />Editar</Button>
+                      <Button size="sm" variant="ghost" onClick={() => remove(it.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5 mr-1" />Remover</Button>
+                    </div>
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
       )}
+
+      <Dialog open={!!editItem} onOpenChange={(o) => !o && setEditItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Editar item</DialogTitle></DialogHeader>
+          {editItem && (
+            <div className="space-y-3">
+              <div><Label>Título</Label><Input className="mt-1" value={editItem.title} onChange={(e) => setEditItem({ ...editItem, title: e.target.value })} /></div>
+              <div><Label>Descrição</Label><Textarea rows={3} className="mt-1" value={editItem.description ?? ""} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} /></div>
+              <Button className="w-full" onClick={saveEdit}>Salvar</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
