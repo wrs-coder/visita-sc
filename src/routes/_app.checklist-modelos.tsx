@@ -53,8 +53,11 @@ function Page() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newNameErr, setNewNameErr] = useState<string | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameVal, setRenameVal] = useState("");
+  const [renameErr, setRenameErr] = useState<string | null>(null);
+  const [itemErrs, setItemErrs] = useState<Record<number, { title?: string; description?: string }>>({});
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
