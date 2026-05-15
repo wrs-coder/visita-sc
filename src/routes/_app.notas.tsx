@@ -104,16 +104,24 @@ function Page() {
 function FreeNoteCard({ note, savingId, update, remove }: { note: Note; savingId: string | null; update: (id: string, p: Partial<Note>) => void; remove: (id: string) => void }) {
   const [title, setTitle] = useState(note.title ?? "");
   const [content, setContent] = useState(note.content);
-  useEffect(() => { setTitle(note.title ?? ""); setContent(note.content); }, [note.id]);
+  useEffect(() => { setTitle(note.title ?? ""); setContent(note.content); }, [note.id, note.title, note.content]);
+  const dirty = title !== (note.title ?? "") || content !== note.content;
+  const everSaved = !!note.title || !!note.content;
+  const handleSave = () => { if (dirty) update(note.id, { title, content }); };
   return (
     <Card className="shadow-card">
       <CardContent className="p-4 space-y-2">
         <div className="flex items-center gap-2">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => { if (title !== (note.title ?? "")) update(note.id, { title }); }} className="font-semibold border-0 px-0 focus-visible:ring-0 shadow-none" placeholder="Título" />
-          {savingId === note.id ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : <Check className="h-3.5 w-3.5 text-success" />}
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} className="font-semibold border-0 px-0 focus-visible:ring-0 shadow-none" placeholder="Título" />
           <Button size="icon" variant="ghost" onClick={() => remove(note.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
         </div>
-        <Textarea rows={4} value={content} onChange={(e) => setContent(e.target.value)} onBlur={() => { if (content !== note.content) update(note.id, { content }); }} placeholder="Anotações..." />
+        <Textarea rows={4} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Anotações..." />
+        <div className="flex justify-end">
+          <Button size="sm" disabled={!dirty || savingId === note.id} onClick={handleSave}>
+            {savingId === note.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+            {everSaved ? "Salvar alterações" : "Salvar"}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -129,7 +137,10 @@ function PastoralNoteCard({ note, savingId, update, remove }: { note: Note; savi
     setCompanion(note.companion ?? "");
     setInvolved(note.involved_names ?? "");
     setAdditional(note.additional_info ?? "");
-  }, [note.id]);
+  }, [note.id, note.note_date, note.companion, note.involved_names, note.additional_info]);
+  const dirty = date !== (note.note_date ?? "") || companion !== (note.companion ?? "") || involved !== (note.involved_names ?? "") || additional !== (note.additional_info ?? "");
+  const everSaved = !!(note.companion || note.involved_names || note.additional_info);
+  const handleSave = () => { if (dirty) update(note.id, { note_date: date || null, companion, involved_names: involved, additional_info: additional }); };
   return (
     <Card className="shadow-card">
       <CardContent className="p-4 space-y-3">
@@ -137,16 +148,19 @@ function PastoralNoteCard({ note, savingId, update, remove }: { note: Note; savi
           <div className="text-xs text-muted-foreground">
             {note.note_date ? format(parseISO(note.note_date), "EEE, d MMM yyyy", { locale: ptBR }) : "Sem data"}
           </div>
-          <div className="flex items-center gap-1">
-            {savingId === note.id ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : <Check className="h-3.5 w-3.5 text-success" />}
-            <Button size="icon" variant="ghost" onClick={() => remove(note.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-          </div>
+          <Button size="icon" variant="ghost" onClick={() => remove(note.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
         </div>
         <div className="grid grid-cols-1 gap-2">
-          <div><Label className="text-xs">Data da visita</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} onBlur={() => update(note.id, { note_date: date || null })} /></div>
-          <div><Label className="text-xs">Acompanhante</Label><Input value={companion} onChange={(e) => setCompanion(e.target.value)} onBlur={() => update(note.id, { companion })} placeholder="Nome do acompanhante" /></div>
-          <div><Label className="text-xs">Nome dos envolvidos</Label><Input value={involved} onChange={(e) => setInvolved(e.target.value)} onBlur={() => update(note.id, { involved_names: involved })} placeholder="Pessoas visitadas" /></div>
-          <div><Label className="text-xs">Informações adicionais</Label><Textarea rows={4} value={additional} onChange={(e) => setAdditional(e.target.value)} onBlur={() => update(note.id, { additional_info: additional })} placeholder="Pontos discutidos, encorajamento, próximos passos..." /></div>
+          <div><Label className="text-xs">Data da visita</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          <div><Label className="text-xs">Acompanhante</Label><Input value={companion} onChange={(e) => setCompanion(e.target.value)} placeholder="Nome do acompanhante" /></div>
+          <div><Label className="text-xs">Nome dos envolvidos</Label><Input value={involved} onChange={(e) => setInvolved(e.target.value)} placeholder="Pessoas visitadas" /></div>
+          <div><Label className="text-xs">Informações adicionais</Label><Textarea rows={4} value={additional} onChange={(e) => setAdditional(e.target.value)} placeholder="Pontos discutidos, encorajamento, próximos passos..." /></div>
+        </div>
+        <div className="flex justify-end">
+          <Button size="sm" disabled={!dirty || savingId === note.id} onClick={handleSave}>
+            {savingId === note.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+            {everSaved ? "Salvar alterações" : "Salvar"}
+          </Button>
         </div>
       </CardContent>
     </Card>

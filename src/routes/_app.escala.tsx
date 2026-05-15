@@ -109,45 +109,7 @@ function Page() {
                 <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem turnos definidos.</CardContent></Card>
               ) : (
                 dayRows.map((r) => (
-                  <Card key={r.id} className={`shadow-card mb-2 transition ${!r.is_active ? "opacity-50" : ""}`}>
-                    <CardContent className="p-4 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className={`text-xs font-semibold px-2 py-1 rounded ${r.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>
-                          {r.period}
-                          {!r.is_active && " · desativado"}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {isSuper && <Switch checked={r.is_active} onCheckedChange={(v) => update(r.id, { is_active: v })} aria-label="Ativar/desativar" />}
-                          {savingId === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : <Check className="h-3.5 w-3.5 text-success" />}
-                          {isSuper && (
-                            <Button size="icon" variant="ghost" onClick={() => remove(r.id)}>
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Field label="Local de encontro" v={r.meeting_point ?? ""} onSave={(v) => update(r.id, { meeting_point: v })} />
-                        <Field label="Horário" type="time" v={r.meeting_time ?? ""} onSave={(v) => update(r.id, { meeting_time: v || null })} readOnly={!isSuper} />
-                        <Field label="Acompanhante para estudos" v={r.acompanhante ?? ""} onSave={(v) => update(r.id, { acompanhante: v })} className="col-span-2" />
-                        <div className="col-span-2">
-                          <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Acompanhante para</label>
-                          {isSuper ? (
-                            <Select value={r.acompanhante_for ?? ""} onValueChange={(v) => update(r.id, { acompanhante_for: v || null })}>
-                              <SelectTrigger className="h-9 mt-0.5"><SelectValue placeholder="Selecione…" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="superintendente">Superintendente</SelectItem>
-                                <SelectItem value="esposa">Esposa do superintendente</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <Input readOnly value={r.acompanhante_for === "esposa" ? "Esposa do superintendente" : r.acompanhante_for === "superintendente" ? "Superintendente" : "—"} className="h-9 mt-0.5" />
-                          )}
-                        </div>
-                        <Field label="Telefone de contato" type="tel" v={r.contact_phone ?? ""} onSave={(v) => update(r.id, { contact_phone: v })} className="col-span-2" />
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <RowCard key={r.id} row={r} isSuper={isSuper} saving={savingId === r.id} update={update} remove={remove} />
                 ))
               )}
             </section>
@@ -158,13 +120,97 @@ function Page() {
   );
 }
 
-function Field({ label, v, onSave, type = "text", className = "", readOnly = false }: { label: string; v: string; onSave: (val: string) => void; type?: string; className?: string; readOnly?: boolean }) {
-  const [val, setVal] = useState(v);
-  useEffect(() => setVal(v), [v]);
+function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSuper: boolean; saving: boolean; update: (id: string, p: Partial<Row>) => Promise<void>; remove: (id: string) => void }) {
+  const [meeting_point, setMeetingPoint] = useState(r.meeting_point ?? "");
+  const [meeting_time, setMeetingTime] = useState(r.meeting_time ?? "");
+  const [acompanhante, setAcompanhante] = useState(r.acompanhante ?? "");
+  const [acompanhante_for, setAcompanhanteFor] = useState(r.acompanhante_for ?? "");
+  const [contact_phone, setContactPhone] = useState(r.contact_phone ?? "");
+
+  useEffect(() => {
+    setMeetingPoint(r.meeting_point ?? "");
+    setMeetingTime(r.meeting_time ?? "");
+    setAcompanhante(r.acompanhante ?? "");
+    setAcompanhanteFor(r.acompanhante_for ?? "");
+    setContactPhone(r.contact_phone ?? "");
+  }, [r.id, r.meeting_point, r.meeting_time, r.acompanhante, r.acompanhante_for, r.contact_phone]);
+
+  const dirty =
+    meeting_point !== (r.meeting_point ?? "") ||
+    meeting_time !== (r.meeting_time ?? "") ||
+    acompanhante !== (r.acompanhante ?? "") ||
+    acompanhante_for !== (r.acompanhante_for ?? "") ||
+    contact_phone !== (r.contact_phone ?? "");
+
+  const everSaved = !!(r.meeting_point || r.acompanhante || r.contact_phone);
+
+  const handleSave = () => {
+    if (!dirty) return;
+    update(r.id, {
+      meeting_point: meeting_point || null,
+      meeting_time: meeting_time || null,
+      acompanhante: acompanhante || null,
+      acompanhante_for: acompanhante_for || null,
+      contact_phone: contact_phone || null,
+    });
+  };
+
   return (
-    <div className={className}>
-      <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{label}</label>
-      <Input type={type} value={val} readOnly={readOnly} onChange={(e) => setVal(e.target.value)} onBlur={() => { if (!readOnly && val !== v) onSave(val); }} className="h-9 mt-0.5" />
-    </div>
+    <Card className={`shadow-card mb-2 transition ${!r.is_active ? "opacity-50" : ""}`}>
+      <CardContent className="p-4 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className={`text-xs font-semibold px-2 py-1 rounded ${r.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>
+            {r.period}
+            {!r.is_active && " · desativado"}
+          </div>
+          <div className="flex items-center gap-2">
+            {isSuper && <Switch checked={r.is_active} onCheckedChange={(v) => update(r.id, { is_active: v })} aria-label="Ativar/desativar" />}
+            {isSuper && (
+              <Button size="icon" variant="ghost" onClick={() => remove(r.id)}>
+                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Local de encontro</label>
+            <Input value={meeting_point} onChange={(e) => setMeetingPoint(e.target.value)} className="h-9 mt-0.5" />
+          </div>
+          <div>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Horário</label>
+            <Input type="time" value={meeting_time} readOnly={!isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />
+          </div>
+          <div className="col-span-2">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Acompanhante para estudos</label>
+            <Input value={acompanhante} onChange={(e) => setAcompanhante(e.target.value)} className="h-9 mt-0.5" />
+          </div>
+          <div className="col-span-2">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Acompanhante para</label>
+            {isSuper ? (
+              <Select value={acompanhante_for} onValueChange={(v) => setAcompanhanteFor(v)}>
+                <SelectTrigger className="h-9 mt-0.5"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="superintendente">Superintendente</SelectItem>
+                  <SelectItem value="esposa">Esposa do superintendente</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input readOnly value={acompanhante_for === "esposa" ? "Esposa do superintendente" : acompanhante_for === "superintendente" ? "Superintendente" : "—"} className="h-9 mt-0.5" />
+            )}
+          </div>
+          <div className="col-span-2">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Telefone de contato</label>
+            <Input type="tel" value={contact_phone} onChange={(e) => setContactPhone(e.target.value)} className="h-9 mt-0.5" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-1">
+          <Button size="sm" disabled={!dirty || saving} onClick={handleSave}>
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+            {everSaved ? "Salvar alterações" : "Salvar"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

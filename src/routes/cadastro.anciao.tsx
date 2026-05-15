@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Users, ArrowLeft } from "lucide-react";
+import { Users, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { ELDER_POSITION_LABELS, type ElderPosition } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/cadastro/anciao")({ component: Page });
@@ -92,7 +92,7 @@ function Page() {
               </div>
 
               <Field id="email" label="E-mail (para recuperar senha)" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
-              <Field id="password" label="Defina uma senha (mín. 6)" type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
+              <PasswordField value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
               <Field id="code" label="Código da congregação" value={form.inviteCode} onChange={(v) => setForm({ ...form, inviteCode: v.toUpperCase() })} />
               <div className="space-y-1.5">
                 <Label htmlFor="pos">Designação no corpo de anciãos</Label>
@@ -122,6 +122,21 @@ function Field({ id, label, value, onChange, type = "text" }: { id: string; labe
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Input id={id} type={type} required value={value} onChange={(e) => onChange(e.target.value)} />
+    </div>
+  );
+}
+
+function PasswordField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="password">Defina uma senha (mín. 6)</Label>
+      <div className="relative">
+        <Input id="password" type={show ? "text" : "password"} required value={value} onChange={(e) => onChange(e.target.value)} className="pr-10" />
+        <button type="button" onClick={() => setShow((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground" aria-label={show ? "Ocultar senha" : "Mostrar senha"}>
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
     </div>
   );
 }

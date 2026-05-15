@@ -114,7 +114,7 @@ function Page() {
                   </div>
                   <div><Label>Evento / descrição</Label><Input className="mt-1" placeholder="Ex: Pregação manhã, reunião, busca no aeroporto…" value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></div>
                   <div><Label>Observações</Label><Textarea rows={2} className="mt-1" value={editing.notes ?? ""} onChange={(e) => setEditing({ ...editing, notes: e.target.value })} /></div>
-                  <Button className="w-full" onClick={save}>Salvar</Button>
+                  <Button className="w-full" onClick={save}>{editing.id ? "Salvar alterações" : "Salvar"}</Button>
                 </div>
               )}
             </DialogContent>

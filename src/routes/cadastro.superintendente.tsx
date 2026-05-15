@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ShieldCheck, ArrowLeft } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/cadastro/superintendente")({
   component: Page,
@@ -18,6 +18,7 @@ function Page() {
   const nav = useNavigate();
   const fn = useServerFn(registerSuperintendent);
   const [busy, setBusy] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
   const [form, setForm] = useState({ fullName: "", email: "", password: "", code: "" });
 
   const submit = async (e: React.FormEvent) => {
@@ -54,11 +55,27 @@ function Page() {
               </div>
             </div>
             <form onSubmit={submit} className="space-y-3">
-              <Field id="fullName" label="Nome completo" value={form.fullName} onChange={(v) => setForm({ ...form, fullName: v })} />
-              <Field id="email" label="E-mail" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
-              <Field id="password" label="Senha (mín. 6)" type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
-              
-              <Field id="code" label="Código de identificação" value={form.code} onChange={(v) => setForm({ ...form, code: v })} />
+              <div className="space-y-1.5">
+                <Label htmlFor="fullName">Nome completo</Label>
+                <Input id="fullName" required value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="email">E-mail</Label>
+                <Input id="email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password">Senha (mín. 6)</Label>
+                <div className="relative">
+                  <Input id="password" type={showPwd ? "text" : "password"} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="pr-10" />
+                  <button type="button" onClick={() => setShowPwd((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground" aria-label={showPwd ? "Ocultar senha" : "Mostrar senha"}>
+                    {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="code">Código de identificação</Label>
+                <Input id="code" required value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+              </div>
               <Button type="submit" className="w-full h-11 mt-2" disabled={busy}>
                 {busy ? "Criando..." : "Criar conta de Superintendente"}
               </Button>
@@ -66,15 +83,6 @@ function Page() {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function Field({ id, label, value, onChange, type = "text" }: { id: string; label: string; value: string; onChange: (v: string) => void; type?: string }) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type={type} required value={value} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
 }
