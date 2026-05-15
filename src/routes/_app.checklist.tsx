@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Check, Trash2, Loader2 } from "lucide-react";
+import { Plus, Check, Trash2, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/checklist")({ component: Page });
