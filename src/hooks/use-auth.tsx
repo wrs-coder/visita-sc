@@ -1,0 +1,93 @@
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import type { Session, User } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+
+export type AppRole = "superintendent" | "elder";
+
+export interface Profile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  congregation_id: string | null;
+}
+
+export interface Congregation {
+  id: string;
+  name: string;
+  invite_code: string;
+  superintendent_id: string;
+}
+
+interface AuthContextValue {
+  loading: boolean;
+  user: User | null;
+  session: Session | null;
+  profile: Profile | null;
+  role: AppRole | null;
+  congregation: Congregation | null;
+  needsOnboarding: boolean;
+  refresh: () => Promise<void>;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [role, setRole] = useState<AppRole | null>(null);
+  const [congregation, setCongregation] = useState<Congregation | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadUserData = async (uid: string | undefined) => {
+    if (!uid) {
+      setProfile(null); setRole(null); setCongregation(null);
+      return;
+    }
+    const [{ data: p }, { data: r }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
+      supabase.from("user_roles").select("role, congregation_id").eq("user_id", uid).maybeSingle(),
+    ]);
+    setProfile(p as Profile | null);
+    setRole((r?.role as AppRole) ?? null);
+    if (p?.congregation_id) {
+      const { data: c } = await supabase.from("congregations").select("*").eq("id", p.congregation_id).maybeSingle();
+      setCongregation(c as Congregation | null);
+    } else {
+      setCongregation(null);
+    }
+  };
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s);
+      setUser(s?.user ?? null);
+      // defer to avoid recursive deadlocks
+      setTimeout(() => loadUserData(s?.user?.id), 0);
+    });
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      setUser(s?.user ?? null);
+      loadUserData(s?.user?.id).finally(() => setLoading(false));
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const refresh = async () => { await loadUserData(user?.id); };
+  const signOut = async () => { await supabase.auth.signOut(); };
+
+  const needsOnboarding = !!user && (!role || !profile?.congregation_id);
+
+  return (
+    <AuthContext.Provider value={{ loading, user, session, profile, role, congregation, needsOnboarding, refresh, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+}
