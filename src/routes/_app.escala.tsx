@@ -14,7 +14,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_app/escala")({ component: Page });
 
-interface Row { id: string; visit_id: string; event_date: string; period: string; meeting_point: string | null; meeting_time: string | null; dirigente: string | null; piloto: string | null; acompanhante: string | null; }
+interface Row { id: string; visit_id: string; event_date: string; period: string; meeting_point: string | null; meeting_time: string | null; dirigente: string | null; piloto: string | null; acompanhante: string | null; is_active: boolean; }
 
 function Page() {
   const { visit } = useActiveVisit();
