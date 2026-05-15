@@ -22,6 +22,7 @@ interface Row {
   visit_id: string;
   event_date: string;
   period: string;
+  meeting_time: string | null;
   territory_number: string | null;
   territory_location: string | null;
   closing_prayer: string | null;
