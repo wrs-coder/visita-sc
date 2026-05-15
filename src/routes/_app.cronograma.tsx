@@ -28,7 +28,7 @@ const TYPES = {
   other: "Outro",
 };
 
-interface Event { id: string; visit_id: string; event_date: string; start_time: string | null; end_time: string | null; type: keyof typeof TYPES; title: string; location: string | null; notes: string | null; }
+interface Event { id: string; visit_id: string; event_date: string; start_time: string | null; end_time: string | null; type: keyof typeof TYPES; title: string; location: string | null; notes: string | null; is_active: boolean; }
 
 function Page() {
   const { visit } = useActiveVisit();
