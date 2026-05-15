@@ -185,8 +185,9 @@ function Page() {
                     </SelectContent>
                   </Select>
                   {tpls.length === 0 && <p className="text-xs text-muted-foreground mt-1">Crie um modelo em "Modelos" para aplicá-lo aqui.</p>}
+                  {editId && <p className="text-xs text-muted-foreground mt-1">Selecionar um modelo aplicará novos itens à visita existente.</p>}
                 </div>
-                <Button className="w-full" onClick={create}>Criar</Button>
+                <Button className="w-full" onClick={submit}>{editId ? "Salvar" : "Criar"}</Button>
               </div>
             </DialogContent>
           </Dialog>
