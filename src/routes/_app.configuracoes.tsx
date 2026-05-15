@@ -125,14 +125,24 @@ function Page() {
         </CardContent></Card>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold flex items-center gap-2"><Calendar className="h-4 w-4" /> Visitas</h2>
         {isSuper && (
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Nova visita</Button></DialogTrigger>
+            <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Nova visita</Button>
             <DialogContent className="max-w-md">
               <DialogHeader><DialogTitle>Nova visita</DialogTitle></DialogHeader>
               <div className="space-y-3">
+                <div>
+                  <Label>Congregação</Label>
+                  <Select value={form.congregation_id} onValueChange={(v) => setForm({ ...form, congregation_id: v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                    <SelectContent>
+                      {congs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {congs.length === 0 && <p className="text-xs text-muted-foreground mt-1">Cadastre uma congregação antes de criar a visita.</p>}
+                </div>
                 <div><Label>Título</Label><Input className="mt-1" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ex: Visita Out/2025" /></div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Início (terça)</Label><Input type="date" className="mt-1" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} /></div>
@@ -147,18 +157,22 @@ function Page() {
 
       <div className="space-y-2">
         {visits.length === 0 && <Card><CardContent className="p-4 text-sm text-muted-foreground">Nenhuma visita cadastrada.</CardContent></Card>}
-        {visits.map((v) => (
-          <Card key={v.id} className="shadow-card"><CardContent className="p-4 flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="font-semibold truncate flex items-center gap-2">{v.title} {v.is_active && <span className="text-[10px] uppercase font-bold bg-success text-success-foreground px-1.5 py-0.5 rounded">Ativa</span>}</div>
-              <div className="text-xs text-muted-foreground">{format(parseISO(v.start_date), "d MMM", { locale: ptBR })} – {format(parseISO(v.end_date), "d MMM yyyy", { locale: ptBR })}</div>
-            </div>
-            {isSuper && <div className="flex gap-1">
-              {!v.is_active && <Button size="sm" variant="outline" onClick={() => setActive(v.id)}><Check className="h-3.5 w-3.5 mr-1" />Ativar</Button>}
-              <Button size="icon" variant="ghost" onClick={() => remove(v.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-            </div>}
-          </CardContent></Card>
-        ))}
+        {visits.map((v) => {
+          const cong = congs.find((c) => c.id === v.congregation_id);
+          return (
+            <Card key={v.id} className="shadow-card"><CardContent className="p-4 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-semibold truncate flex items-center gap-2">{v.title} {v.is_active && <span className="text-[10px] uppercase font-bold bg-success text-success-foreground px-1.5 py-0.5 rounded">Ativa</span>}</div>
+                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><Building2 className="h-3 w-3" />{cong?.name ?? "—"}</div>
+                <div className="text-xs text-muted-foreground">{format(parseISO(v.start_date), "d MMM", { locale: ptBR })} – {format(parseISO(v.end_date), "d MMM yyyy", { locale: ptBR })}</div>
+              </div>
+              {isSuper && <div className="flex gap-1">
+                {!v.is_active && <Button size="sm" variant="outline" onClick={() => setActive(v.id)}><Check className="h-3.5 w-3.5 mr-1" />Ativar</Button>}
+                <Button size="icon" variant="ghost" onClick={() => remove(v.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+              </div>}
+            </CardContent></Card>
+          );
+        })}
       </div>
     </div>
   );
