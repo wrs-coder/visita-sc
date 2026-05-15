@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, Link, redirect, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, Settings, LogOut, Compass, Menu, Building2 } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, Settings, LogOut, Compass, Menu, Building2, Car } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,8 +28,9 @@ function AppLayout() {
   const items = [
     { to: "/dashboard", label: "Início", icon: LayoutDashboard },
     { to: "/cronograma", label: "Cronograma", icon: CalendarDays },
-    { to: "/escala", label: "Escala de Campo", icon: Users },
+    { to: "/escala", label: "Estudos e Revisitas", icon: Users },
     { to: "/refeicoes", label: "Refeições", icon: UtensilsCrossed },
+    { to: "/transporte", label: "Transporte", icon: Car },
     { to: "/checklist", label: "Checklist", icon: ListChecks },
     ...(role === "superintendent" ? [{ to: "/notas", label: "Notas Privadas", icon: Lock }] : []),
     ...(role === "superintendent" ? [{ to: "/congregacoes", label: "Congregações", icon: Building2 }] : []),
