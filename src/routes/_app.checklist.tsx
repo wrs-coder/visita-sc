@@ -149,10 +149,16 @@ function Page() {
 function FieldArea({ label, v, onSave, readOnly = false }: { label: string; v: string; onSave: (val: string) => void; readOnly?: boolean }) {
   const [val, setVal] = useState(v);
   useEffect(() => setVal(v), [v]);
+  const dirty = val !== v;
   return (
     <div>
       <Label className="text-xs">{label}</Label>
-      <Textarea rows={2} value={val} readOnly={readOnly} onChange={(e) => setVal(e.target.value)} onBlur={() => { if (!readOnly && val !== v) onSave(val); }} className="mt-1" />
+      <Textarea rows={2} value={val} readOnly={readOnly} onChange={(e) => setVal(e.target.value)} className="mt-1" />
+      {!readOnly && dirty && (
+        <div className="flex justify-end mt-1">
+          <Button size="sm" onClick={() => onSave(val)}>{v ? "Salvar alterações" : "Salvar"}</Button>
+        </div>
+      )}
     </div>
   );
 }
