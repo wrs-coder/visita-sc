@@ -82,6 +82,11 @@ function Page() {
     if (error) toast.error(error.message); else toast.success("Removido");
   };
 
+  const toggle = async (id: string, is_active: boolean) => {
+    const { error } = await supabase.from("schedule_events").update({ is_active }).eq("id", id);
+    if (error) toast.error(error.message);
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-3">
