@@ -312,6 +312,7 @@ export type Database = {
         Row: {
           congregation_id: string | null
           created_at: string
+          elder_position: Database["public"]["Enums"]["elder_position"] | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
@@ -319,6 +320,7 @@ export type Database = {
         Insert: {
           congregation_id?: string | null
           created_at?: string
+          elder_position?: Database["public"]["Enums"]["elder_position"] | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
@@ -326,6 +328,7 @@ export type Database = {
         Update: {
           congregation_id?: string | null
           created_at?: string
+          elder_position?: Database["public"]["Enums"]["elder_position"] | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
@@ -383,6 +386,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_edit_visit: {
+        Args: { _user_id: string; _visit_id: string }
+        Returns: boolean
+      }
       get_user_congregation: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -399,6 +406,7 @@ export type Database = {
     Enums: {
       app_role: "superintendent" | "elder"
       checklist_status: "pending" | "done"
+      elder_position: "coordenador" | "secretario" | "sup_servico" | "corpo"
       event_type:
         | "field_morning"
         | "field_afternoon"
@@ -537,6 +545,7 @@ export const Constants = {
     Enums: {
       app_role: ["superintendent", "elder"],
       checklist_status: ["pending", "done"],
+      elder_position: ["coordenador", "secretario", "sup_servico", "corpo"],
       event_type: [
         "field_morning",
         "field_afternoon",

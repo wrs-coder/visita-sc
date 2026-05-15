@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Users, ArrowLeft } from "lucide-react";
+import { ELDER_POSITION_LABELS, type ElderPosition } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/cadastro/anciao")({
   component: Page,
@@ -18,13 +20,16 @@ function Page() {
   const nav = useNavigate();
   const fn = useServerFn(registerElder);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", inviteCode: "" });
+  const [form, setForm] = useState<{ fullName: string; email: string; password: string; inviteCode: string; position: ElderPosition | "" }>({
+    fullName: "", email: "", password: "", inviteCode: "", position: "",
+  });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.position) { toast.error("Selecione sua designação."); return; }
     setBusy(true);
     try {
-      const res = await fn({ data: { ...form, inviteCode: form.inviteCode.toUpperCase() } });
+      const res = await fn({ data: { ...form, position: form.position, inviteCode: form.inviteCode.toUpperCase() } });
       if (!res.ok) { toast.error("Erro no cadastro", { description: res.error }); setBusy(false); return; }
       const { error } = await supabase.auth.signInWithPassword({ email: form.email.trim(), password: form.password });
       if (error) { toast.error(error.message); setBusy(false); return; }
@@ -58,6 +63,18 @@ function Page() {
               <Field id="email" label="E-mail" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
               <Field id="password" label="Senha (mín. 6)" type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
               <Field id="code" label="Código da congregação" value={form.inviteCode} onChange={(v) => setForm({ ...form, inviteCode: v.toUpperCase() })} />
+              <div className="space-y-1.5">
+                <Label htmlFor="pos">Designação no corpo de anciãos</Label>
+                <Select value={form.position} onValueChange={(v) => setForm({ ...form, position: v as ElderPosition })}>
+                  <SelectTrigger id="pos"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(ELDER_POSITION_LABELS) as ElderPosition[]).map((k) => (
+                      <SelectItem key={k} value={k}>{ELDER_POSITION_LABELS[k]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">Coordenador, Secretário e Sup. de Serviço podem editar; Corpo de Anciãos apenas visualiza.</p>
+              </div>
               <Button type="submit" className="w-full h-11 mt-2" disabled={busy}>
                 {busy ? "Criando..." : "Entrar na Congregação"}
               </Button>

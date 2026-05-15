@@ -3,6 +3,14 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AppRole = "superintendent" | "elder";
+export type ElderPosition = "coordenador" | "secretario" | "sup_servico" | "corpo";
+
+export const ELDER_POSITION_LABELS: Record<ElderPosition, string> = {
+  coordenador: "Coordenador do corpo de anciãos",
+  secretario: "Secretário",
+  sup_servico: "Superintendente de Serviço",
+  corpo: "Corpo de anciãos",
+};
 
 export interface Profile {
   id: string;
@@ -24,6 +32,8 @@ interface AuthContextValue {
   session: Session | null;
   profile: Profile | null;
   role: AppRole | null;
+  elderPosition: ElderPosition | null;
+  canEdit: boolean;
   congregation: Congregation | null;
   needsOnboarding: boolean;
   refresh: () => Promise<void>;
@@ -37,20 +47,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [elderPosition, setElderPosition] = useState<ElderPosition | null>(null);
   const [congregation, setCongregation] = useState<Congregation | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadUserData = async (uid: string | undefined) => {
     if (!uid) {
-      setProfile(null); setRole(null); setCongregation(null);
+      setProfile(null); setRole(null); setElderPosition(null); setCongregation(null);
       return;
     }
     const [{ data: p }, { data: r }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
-      supabase.from("user_roles").select("role, congregation_id").eq("user_id", uid).maybeSingle(),
+      supabase.from("user_roles").select("role, congregation_id, elder_position").eq("user_id", uid).maybeSingle(),
     ]);
     setProfile(p as Profile | null);
     setRole((r?.role as AppRole) ?? null);
+    setElderPosition(((r as { elder_position?: ElderPosition } | null)?.elder_position) ?? null);
     if (p?.congregation_id) {
       const { data: c } = await supabase.from("congregations").select("*").eq("id", p.congregation_id).maybeSingle();
       setCongregation(c as Congregation | null);
@@ -78,11 +90,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => { await supabase.auth.signOut(); };
 
   // Super may have role but no active congregation yet — that's NOT onboarding,
-  // they go to /congregacoes to set one up. Elders must have a congregation.
-  const needsOnboarding = !!user && (!role || (role === "elder" && !profile?.congregation_id));
+  // they go to /congregacoes to set one up. Elders must have a congregation AND a position.
+  const needsOnboarding = !!user && (!role || (role === "elder" && (!profile?.congregation_id || !elderPosition)));
+
+  const canEdit = role === "superintendent" ||
+    (role === "elder" && elderPosition !== null && elderPosition !== "corpo");
 
   return (
-    <AuthContext.Provider value={{ loading, user, session, profile, role, congregation, needsOnboarding, refresh, signOut }}>
+    <AuthContext.Provider value={{ loading, user, session, profile, role, elderPosition, canEdit, congregation, needsOnboarding, refresh, signOut }}>
       {children}
     </AuthContext.Provider>
   );

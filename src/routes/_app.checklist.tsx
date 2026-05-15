@@ -20,7 +20,7 @@ interface Item { id: string; visit_id: string; title: string; description: strin
 
 function Page() {
   const { visit } = useActiveVisit();
-  const { role } = useAuth();
+  const { role, canEdit } = useAuth();
   const canManage = role === "superintendent";
   const [items, setItems] = useState<Item[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -89,8 +89,10 @@ function Page() {
           {items.map((it) => (
             <AccordionItem key={it.id} value={it.id} className="bg-card border rounded-lg shadow-card px-4 data-[state=open]:shadow-elevated">
               <div className="flex items-center gap-3">
-                <button onClick={(e) => { e.stopPropagation(); update(it.id, { status: it.status === "done" ? "pending" : "done" }); }}
-                  className={`shrink-0 h-6 w-6 rounded-md border-2 flex items-center justify-center transition ${it.status === "done" ? "bg-success border-success" : "border-muted-foreground/30 hover:border-primary"}`}>
+                <button
+                  disabled={!canEdit}
+                  onClick={(e) => { e.stopPropagation(); if (canEdit) update(it.id, { status: it.status === "done" ? "pending" : "done" }); }}
+                  className={`shrink-0 h-6 w-6 rounded-md border-2 flex items-center justify-center transition ${it.status === "done" ? "bg-success border-success" : "border-muted-foreground/30 hover:border-primary"} ${!canEdit ? "opacity-60 cursor-not-allowed" : ""}`}>
                   {it.status === "done" && <Check className="h-3.5 w-3.5 text-success-foreground" />}
                 </button>
                 <AccordionTrigger className="flex-1 hover:no-underline py-3">
@@ -105,8 +107,8 @@ function Page() {
               </div>
               <AccordionContent>
                 <div className="space-y-3 pt-1 pb-3">
-                  <FieldArea label="Informação (ex: Total de Publicadores)" v={it.info_text ?? ""} onSave={(v) => update(it.id, { info_text: v })} />
-                  <FieldArea label="Link ou observações" v={it.link_or_notes ?? ""} onSave={(v) => update(it.id, { link_or_notes: v })} />
+                  <FieldArea label="Informação (ex: Total de Publicadores)" v={it.info_text ?? ""} onSave={(v) => update(it.id, { info_text: v })} readOnly={!canEdit} />
+                  <FieldArea label="Link ou observações" v={it.link_or_notes ?? ""} onSave={(v) => update(it.id, { link_or_notes: v })} readOnly={!canEdit} />
                   {canManage && <Button size="sm" variant="ghost" onClick={() => remove(it.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5 mr-1" />Remover</Button>}
                 </div>
               </AccordionContent>
@@ -118,13 +120,13 @@ function Page() {
   );
 }
 
-function FieldArea({ label, v, onSave }: { label: string; v: string; onSave: (val: string) => void }) {
+function FieldArea({ label, v, onSave, readOnly = false }: { label: string; v: string; onSave: (val: string) => void; readOnly?: boolean }) {
   const [val, setVal] = useState(v);
   useEffect(() => setVal(v), [v]);
   return (
     <div>
       <Label className="text-xs">{label}</Label>
-      <Textarea rows={2} value={val} onChange={(e) => setVal(e.target.value)} onBlur={() => { if (val !== v) onSave(val); }} className="mt-1" />
+      <Textarea rows={2} value={val} readOnly={readOnly} onChange={(e) => setVal(e.target.value)} onBlur={() => { if (!readOnly && val !== v) onSave(val); }} className="mt-1" />
     </div>
   );
 }
