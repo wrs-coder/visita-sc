@@ -1,33 +1,41 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, MapPin, Pencil, Phone, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Loader2, Check, AlertCircle } from "lucide-react";
 import { format, parseISO, eachDayOfInterval, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/refeicoes")({ component: Page });
 
-const MEAL = { breakfast: "Café", lunch: "Almoço", dinner: "Jantar" };
-type MealKey = keyof typeof MEAL;
-interface Meal { id: string; visit_id: string; meal_date: string; type: MealKey; host_name: string; location: string | null; contact_phone: string | null; meal_time: string | null; notes: string | null; is_active: boolean; }
+const MEAL_LABEL = { breakfast: "Café", lunch: "Almoço", dinner: "Jantar" } as const;
+type MealKey = keyof typeof MEAL_LABEL;
+
+interface Meal {
+  id: string;
+  visit_id: string;
+  meal_date: string;
+  type: MealKey;
+  host_name: string | null;
+  location: string | null;
+  contact_phone: string | null;
+  meal_time: string | null;
+  notes: string | null;
+  is_active: boolean;
+}
 
 function Page() {
   const { visit } = useActiveVisit();
-  const { role, canEdit } = useAuth();
+  const { role } = useAuth();
   const isSuper = role === "superintendent";
   const [meals, setMeals] = useState<Meal[]>([]);
-  const [editing, setEditing] = useState<Partial<Meal> | null>(null);
-  const [open, setOpen] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!visit) return;
@@ -40,104 +48,150 @@ function Page() {
     return () => { supabase.removeChannel(ch); };
   }, [visit]);
 
-  const isWeekend = useMemo(() => {
-    if (!editing?.meal_date) return false;
-    const d = getDay(parseISO(editing.meal_date));
-    return d === 0 || d === 6;
-  }, [editing?.meal_date]);
+  const update = useCallback(async (id: string, patch: Partial<Meal>) => {
+    setSavingId(id);
+    setMeals((s) => s.map((x) => x.id === id ? { ...x, ...patch } : x));
+    const { error } = await supabase.from("meals").update(patch).eq("id", id);
+    setSavingId(null);
+    if (error) toast.error(error.message);
+  }, []);
+
+  const add = async (date: string, type: MealKey) => {
+    if (!visit) return;
+    const { error } = await supabase.from("meals").insert({ visit_id: visit.id, meal_date: date, type });
+    if (error) toast.error(error.message);
+  };
+
+  const remove = async (id: string) => {
+    const { error } = await supabase.from("meals").delete().eq("id", id);
+    if (error) toast.error(error.message);
+  };
 
   if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa.</CardContent></Card>;
   const days = eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) });
 
-  const save = async () => {
-    if (!editing?.host_name?.trim() || !editing.meal_date || !editing.type) { toast.error("Anfitrião, data e tipo são obrigatórios"); return; }
-    if (!editing.location?.trim()) { toast.error("Endereço do anfitrião é obrigatório"); return; }
-    if (!editing.contact_phone?.trim()) { toast.error("Telefone do anfitrião é obrigatório"); return; }
-    const payload = { visit_id: visit.id, meal_date: editing.meal_date, type: editing.type, host_name: editing.host_name.trim(), location: editing.location.trim(), contact_phone: editing.contact_phone.trim(), meal_time: editing.meal_time || null, notes: editing.notes || null };
-    const r = editing.id ? await supabase.from("meals").update(payload).eq("id", editing.id) : await supabase.from("meals").insert(payload);
-    if (r.error) toast.error(r.error.message); else { toast.success(editing.id ? "Alterações salvas" : "Salvo"); setOpen(false); setEditing(null); }
-  };
-
-  const remove = async (id: string) => { const { error } = await supabase.from("meals").delete().eq("id", id); if (error) toast.error(error.message); };
-  const toggle = async (id: string, is_active: boolean) => { const { error } = await supabase.from("meals").update({ is_active }).eq("id", id); if (error) toast.error(error.message); };
-
   return (
     <div className="space-y-5">
-      <div className="flex justify-between items-start">
-        <div><h1 className="text-2xl md:text-3xl font-bold">Logística e Refeições</h1><p className="text-sm text-muted-foreground mt-1">Anfitriões e locais por dia.</p></div>
-        {canEdit && (
-          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
-            <DialogTrigger asChild><Button onClick={() => setEditing({ meal_date: format(new Date(), "yyyy-MM-dd"), type: "lunch" })}><Plus className="h-4 w-4 mr-1" />Nova</Button></DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle>{editing?.id ? "Editar" : "Nova"} refeição</DialogTitle></DialogHeader>
-              {editing && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Data</Label>
-                      <Select value={editing.meal_date} onValueChange={(v) => setEditing({ ...editing, meal_date: v })}>
-                        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>{days.map((d) => { const k = format(d, "yyyy-MM-dd"); return <SelectItem key={k} value={k}>{format(d, "EEE, d MMM", { locale: ptBR })}</SelectItem>; })}</SelectContent>
-                      </Select>
-                    </div>
-                    <div><Label>Tipo</Label>
-                      <Select value={editing.type} onValueChange={(v) => setEditing({ ...editing, type: v as MealKey })}>
-                        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>{Object.entries(MEAL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {isWeekend && (
-                    <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
-                      <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                      <span>Lembrete: Se a reunião é entre 7:00 e às 16:30 não marquem almoço.</span>
-                    </div>
-                  )}
-
-                  <div><Label>Anfitrião <span className="text-destructive">*</span></Label><Input className="mt-1" required value={editing.host_name ?? ""} onChange={(e) => setEditing({ ...editing, host_name: e.target.value })} /></div>
-                  <div><Label>Endereço <span className="text-destructive">*</span></Label><Input className="mt-1" required value={editing.location ?? ""} onChange={(e) => setEditing({ ...editing, location: e.target.value })} placeholder="Rua, número, bairro" /></div>
-                  <div><Label>Telefone do anfitrião <span className="text-destructive">*</span></Label><Input type="tel" className="mt-1" required value={editing.contact_phone ?? ""} onChange={(e) => setEditing({ ...editing, contact_phone: e.target.value })} /></div>
-                  <div><Label>Horário</Label><Input type="time" className="mt-1" value={editing.meal_time ?? ""} onChange={(e) => setEditing({ ...editing, meal_time: e.target.value })} /></div>
-                  <Button className="w-full" onClick={save}>{editing.id ? "Salvar alterações" : "Salvar"}</Button>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
-        )}
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold">Logística e Refeições</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {isSuper
+            ? "Defina as refeições disponíveis por dia. Anciãos preenchem anfitrião, endereço e telefone. Itens desativados ficam ocultos para a congregação."
+            : "Edite anfitrião, endereço e telefone de contato das refeições disponíveis."}
+        </p>
       </div>
 
       <div className="space-y-5">
         {days.map((d) => {
           const key = format(d, "yyyy-MM-dd");
-          const dm = meals.filter((m) => m.meal_date === key);
+          const dayMeals = meals.filter((m) => m.meal_date === key);
+          const isWeekend = getDay(d) === 0 || getDay(d) === 6;
           return (
             <section key={key}>
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">{format(d, "EEEE, d MMM", { locale: ptBR })}</h2>
-              {dm.length === 0 ? <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem refeições.</CardContent></Card> :
-                <div className="grid gap-2">
-                  {dm.map((m) => (
-                    <Card key={m.id} className={`shadow-card transition ${!m.is_active ? "opacity-50" : ""}`}><CardContent className="p-4 flex items-start gap-3">
-                      <div className={`text-xs font-semibold px-2 py-1 rounded min-w-[64px] text-center ${m.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>{MEAL[m.type]}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className={`font-semibold ${!m.is_active ? "line-through" : ""}`}>{m.host_name}</div>
-                        {m.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{m.location}</div>}
-                        {m.contact_phone && <div className="text-xs text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" />{m.contact_phone}</div>}
-                        {m.meal_time && <div className="text-xs text-muted-foreground">{m.meal_time.slice(0, 5)}</div>}
-                      </div>
-                      {canEdit && <div className="flex flex-col items-end gap-1">
-                        {isSuper && <Switch checked={m.is_active} onCheckedChange={(v) => toggle(m.id, v)} aria-label="Ativar/desativar" />}
-                        <div className="flex">
-                          <Button size="icon" variant="ghost" onClick={() => { setEditing(m); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
-                          {isSuper && <Button size="icon" variant="ghost" onClick={() => remove(m.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>}
-                        </div>
-                      </div>}
-                    </CardContent></Card>
-                  ))}
-                </div>}
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: ptBR })}</h2>
+                {isSuper && (
+                  <div className="flex gap-1 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => add(key, "breakfast")}><Plus className="h-3 w-3 mr-1" />Café</Button>
+                    <Button size="sm" variant="outline" onClick={() => add(key, "lunch")}><Plus className="h-3 w-3 mr-1" />Almoço</Button>
+                    <Button size="sm" variant="outline" onClick={() => add(key, "dinner")}><Plus className="h-3 w-3 mr-1" />Jantar</Button>
+                  </div>
+                )}
+              </div>
+              {isWeekend && dayMeals.some((m) => m.type === "lunch") && (
+                <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive mb-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>Lembrete: Se a reunião é entre 7:00 e às 16:30 não marquem almoço.</span>
+                </div>
+              )}
+              {dayMeals.length === 0 ? (
+                <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem refeições disponíveis.</CardContent></Card>
+              ) : (
+                dayMeals.map((m) => (
+                  <MealCard key={m.id} meal={m} isSuper={isSuper} saving={savingId === m.id} update={update} remove={remove} />
+                ))
+              )}
             </section>
           );
         })}
       </div>
     </div>
+  );
+}
+
+function MealCard({ meal: m, isSuper, saving, update, remove }: { meal: Meal; isSuper: boolean; saving: boolean; update: (id: string, p: Partial<Meal>) => Promise<void>; remove: (id: string) => void }) {
+  const [host_name, setHostName] = useState(m.host_name ?? "");
+  const [location, setLocation] = useState(m.location ?? "");
+  const [contact_phone, setContactPhone] = useState(m.contact_phone ?? "");
+  const [meal_time, setMealTime] = useState(m.meal_time ?? "");
+
+  useEffect(() => {
+    setHostName(m.host_name ?? "");
+    setLocation(m.location ?? "");
+    setContactPhone(m.contact_phone ?? "");
+    setMealTime(m.meal_time ?? "");
+  }, [m.id, m.host_name, m.location, m.contact_phone, m.meal_time]);
+
+  const dirty =
+    host_name !== (m.host_name ?? "") ||
+    location !== (m.location ?? "") ||
+    contact_phone !== (m.contact_phone ?? "") ||
+    meal_time !== (m.meal_time ?? "");
+
+  const everSaved = !!(m.host_name || m.location || m.contact_phone);
+
+  const handleSave = () => {
+    if (!dirty) return;
+    update(m.id, {
+      host_name: host_name.trim() || null,
+      location: location.trim() || null,
+      contact_phone: contact_phone.trim() || null,
+      meal_time: meal_time || null,
+    });
+  };
+
+  return (
+    <Card className={`shadow-card mb-2 transition ${!m.is_active ? "opacity-50" : ""}`}>
+      <CardContent className="p-4 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className={`text-xs font-semibold px-2 py-1 rounded ${m.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>
+            {MEAL_LABEL[m.type]}
+            {!m.is_active && " · desativado"}
+          </div>
+          <div className="flex items-center gap-2">
+            {isSuper && <Switch checked={m.is_active} onCheckedChange={(v) => update(m.id, { is_active: v })} aria-label="Ativar/desativar" />}
+            {isSuper && (
+              <Button size="icon" variant="ghost" onClick={() => remove(m.id)}>
+                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="col-span-2">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Nome do anfitrião</label>
+            <Input value={host_name} onChange={(e) => setHostName(e.target.value)} className="h-9 mt-0.5" />
+          </div>
+          <div className="col-span-2">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Endereço</label>
+            <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Rua, número, bairro" className="h-9 mt-0.5" />
+          </div>
+          <div>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Telefone</label>
+            <Input type="tel" value={contact_phone} onChange={(e) => setContactPhone(e.target.value)} className="h-9 mt-0.5" />
+          </div>
+          <div>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Horário</label>
+            <Input type="time" value={meal_time} onChange={(e) => setMealTime(e.target.value)} className="h-9 mt-0.5" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-1">
+          <Button size="sm" disabled={!dirty || saving} onClick={handleSave}>
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+            {everSaved ? "Salvar alterações" : "Salvar"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
