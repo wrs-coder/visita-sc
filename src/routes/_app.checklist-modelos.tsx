@@ -1,0 +1,335 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState, useCallback } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  listChecklistTemplates,
+  createChecklistTemplate,
+  renameChecklistTemplate,
+  linkChecklistTemplate,
+  duplicateChecklistTemplate,
+  deleteChecklistTemplate,
+  replaceChecklistTemplateItems,
+} from "@/lib/checklist-templates.functions";
+import { listMyCongregations } from "@/lib/congregations.functions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Plus, Trash2, Copy, Pencil, Save, ArrowUp, ArrowDown, ListChecks } from "lucide-react";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/_app/checklist-modelos")({ component: Page });
+
+interface TemplateRow { id: string; name: string; congregation_id: string | null; }
+interface ItemRow { id: string; template_id: string; title: string; description: string | null; sort_order: number; }
+interface CongRow { id: string; name: string; }
+interface ItemDraft { title: string; description: string; }
+
+const MAX = 24;
+
+function Page() {
+  const { role } = useAuth();
+  const fnList = useServerFn(listChecklistTemplates);
+  const fnCreate = useServerFn(createChecklistTemplate);
+  const fnRename = useServerFn(renameChecklistTemplate);
+  const fnLink = useServerFn(linkChecklistTemplate);
+  const fnDup = useServerFn(duplicateChecklistTemplate);
+  const fnDel = useServerFn(deleteChecklistTemplate);
+  const fnReplace = useServerFn(replaceChecklistTemplateItems);
+  const fnCongs = useServerFn(listMyCongregations);
+
+  const [tpls, setTpls] = useState<TemplateRow[]>([]);
+  const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
+  const [congs, setCongs] = useState<CongRow[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameVal, setRenameVal] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    const [r, c] = await Promise.all([fnList(), fnCongs()]);
+    if (r.ok) {
+      setTpls(r.templates as TemplateRow[]);
+      const map: Record<string, ItemDraft[]> = {};
+      for (const t of r.templates) map[t.id] = [];
+      for (const it of r.items as ItemRow[]) {
+        map[it.template_id] = map[it.template_id] || [];
+        map[it.template_id].push({ title: it.title, description: it.description ?? "" });
+      }
+      setItemsByTpl(map);
+      if (!activeId && r.templates.length > 0) setActiveId(r.templates[0].id);
+    }
+    if (c.ok) setCongs(c.data as CongRow[]);
+  }, [fnList, fnCongs, activeId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (role !== "superintendent") {
+    return <Card><CardContent className="p-6 text-sm">Acesso restrito ao superintendente.</CardContent></Card>;
+  }
+
+  const active = tpls.find((t) => t.id === activeId) ?? null;
+  const items = activeId ? itemsByTpl[activeId] ?? [] : [];
+
+  const setItems = (next: ItemDraft[]) => {
+    if (!activeId) return;
+    setItemsByTpl((m) => ({ ...m, [activeId]: next }));
+  };
+
+  const handleCreate = async () => {
+    if (!newName.trim()) return;
+    setBusy(true);
+    const r = await fnCreate({ data: { name: newName.trim() } });
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success("Modelo criado");
+    setCreateOpen(false);
+    setNewName("");
+    setActiveId(r.id);
+    await load();
+  };
+
+  const handleRename = async () => {
+    if (!active || !renameVal.trim()) return;
+    setBusy(true);
+    const r = await fnRename({ data: { id: active.id, name: renameVal.trim() } });
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success("Renomeado");
+    setRenameOpen(false);
+    await load();
+  };
+
+  const handleLink = async (val: string) => {
+    if (!active) return;
+    const congregationId = val === "__none__" ? null : val;
+    const r = await fnLink({ data: { id: active.id, congregationId } });
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success("Vínculo atualizado");
+    await load();
+  };
+
+  const handleDuplicate = async () => {
+    if (!active) return;
+    const name = `${active.name} (cópia)`;
+    setBusy(true);
+    const r = await fnDup({ data: { id: active.id, name } });
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success("Modelo duplicado");
+    setActiveId(r.id);
+    await load();
+  };
+
+  const handleDelete = async () => {
+    if (!active) return;
+    if (!confirm(`Excluir o modelo "${active.name}"?`)) return;
+    setBusy(true);
+    const r = await fnDel({ data: { id: active.id } });
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success("Excluído");
+    setActiveId(null);
+    await load();
+  };
+
+  const handleSaveItems = async () => {
+    if (!activeId) return;
+    const cleaned = items
+      .map((it) => ({ title: it.title.trim(), description: it.description.trim() }))
+      .filter((it) => it.title.length > 0);
+    if (cleaned.length === 0) {
+      if (!confirm("Salvar modelo sem itens?")) return;
+    }
+    setBusy(true);
+    const r = await fnReplace({
+      data: {
+        templateId: activeId,
+        items: cleaned.map((it, i) => ({
+          title: it.title,
+          description: it.description || null,
+          sort_order: (i + 1) * 10,
+        })),
+      },
+    });
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success("Itens salvos");
+  };
+
+  const move = (idx: number, dir: -1 | 1) => {
+    const next = [...items];
+    const t = idx + dir;
+    if (t < 0 || t >= next.length) return;
+    [next[idx], next[t]] = [next[t], next[idx]];
+    setItems(next);
+  };
+
+  const updateItem = (idx: number, patch: Partial<ItemDraft>) => {
+    setItems(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  };
+
+  const addItem = () => setItems([...items, { title: "", description: "" }]);
+  const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
+
+  const usedCongIds = new Set(tpls.filter((t) => t.congregation_id && t.id !== active?.id).map((t) => t.congregation_id!));
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <ListChecks className="h-6 w-6" />Modelos de Checklist
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Crie checklists e vincule cada uma a uma congregação. {tpls.length}/{MAX} modelos.
+          </p>
+        </div>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <DialogTrigger asChild>
+            <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />Novo modelo</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader><DialogTitle>Novo modelo de checklist</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label>Nome</Label>
+                <Input className="mt-1" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ex: Padrão 2026" />
+              </div>
+              <Button className="w-full" onClick={handleCreate} disabled={busy}>Criar</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="grid md:grid-cols-[260px_1fr] gap-4">
+        <Card><CardContent className="p-3 space-y-1">
+          {tpls.length === 0 ? (
+            <div className="text-sm text-muted-foreground p-3 text-center">Nenhum modelo ainda.</div>
+          ) : tpls.map((t) => {
+            const cong = congs.find((c) => c.id === t.congregation_id);
+            return (
+              <button key={t.id}
+                onClick={() => setActiveId(t.id)}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === t.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
+                <div className="truncate">{t.name}</div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {cong ? `→ ${cong.name}` : "sem congregação"}
+                </div>
+              </button>
+            );
+          })}
+        </CardContent></Card>
+
+        <div className="space-y-4">
+          {!active ? (
+            <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
+              Selecione um modelo ou crie um novo.
+            </CardContent></Card>
+          ) : (
+            <>
+              <Card><CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="font-semibold truncate">{active.name}</div>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5 mr-1" />Renomear
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
+                      <Copy className="h-3.5 w-3.5 mr-1" />Duplicar
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />Excluir
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Vincular à congregação</Label>
+                  <Select value={active.congregation_id ?? "__none__"} onValueChange={handleLink}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Sem vínculo</SelectItem>
+                      {congs.map((c) => (
+                        <SelectItem key={c.id} value={c.id} disabled={usedCongIds.has(c.id)}>
+                          {c.name}{usedCongIds.has(c.id) ? " (já vinculada)" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ao criar uma visita para a congregação vinculada, esta checklist será aplicada.
+                  </p>
+                </div>
+              </CardContent></Card>
+
+              <Card><CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold">Itens da checklist</div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" />Item</Button>
+                    <Button size="sm" onClick={handleSaveItems} disabled={busy}><Save className="h-3.5 w-3.5 mr-1" />Salvar</Button>
+                  </div>
+                </div>
+                {items.length === 0 ? (
+                  <div className="text-sm text-muted-foreground text-center py-6">
+                    Nenhum item. Adicione perguntas ou tópicos para esta checklist.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {items.map((it, idx) => (
+                      <div key={idx} className="border rounded-md p-3 space-y-2">
+                        <div className="flex gap-2 items-start">
+                          <div className="text-xs font-medium text-muted-foreground pt-2 w-6">{idx + 1}.</div>
+                          <div className="flex-1 space-y-2">
+                            <Input
+                              placeholder="Título do item"
+                              value={it.title}
+                              onChange={(e) => updateItem(idx, { title: e.target.value })}
+                            />
+                            <Textarea
+                              rows={2}
+                              placeholder="Descrição (opcional)"
+                              value={it.description}
+                              onChange={(e) => updateItem(idx, { description: e.target.value })}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => move(idx, -1)} disabled={idx === 0}>
+                              <ArrowUp className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => move(idx, 1)} disabled={idx === items.length - 1}>
+                              <ArrowDown className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeItem(idx)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent></Card>
+            </>
+          )}
+        </div>
+      </div>
+
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Renomear modelo</DialogTitle></DialogHeader>
+          <Input value={renameVal} onChange={(e) => setRenameVal(e.target.value)} />
+          <DialogFooter>
+            <Button onClick={handleRename} disabled={busy}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
