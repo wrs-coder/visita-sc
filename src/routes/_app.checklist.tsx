@@ -112,8 +112,8 @@ function Page() {
                 </button>
                 <AccordionTrigger className="flex-1 hover:no-underline py-3">
                   <div className="text-left flex-1 min-w-0">
-                    <div className={`font-medium truncate ${it.status === "done" ? "line-through text-muted-foreground" : ""}`}>{it.title}</div>
-                    {it.description && <div className="text-xs text-muted-foreground truncate font-normal">{it.description}</div>}
+                    <div className={`font-medium break-words ${it.status === "done" ? "line-through text-muted-foreground" : ""}`}>{it.title}</div>
+                    {it.description && <div className="text-xs text-muted-foreground break-words font-normal">{it.description}</div>}
                   </div>
                   <div className="flex items-center gap-2 mr-2">
                     {savingId === it.id && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
