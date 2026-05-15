@@ -19,8 +19,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Pencil, Save, ArrowUp, ArrowDown, ListChecks } from "lucide-react";
+import { Plus, Trash2, Copy, Pencil, Save, ArrowUp, ArrowDown, ListChecks, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const nameSchema = z.string().trim().min(2, "Nome deve ter pelo menos 2 caracteres").max(120, "Nome muito longo (máx. 120)");
+const itemTitleSchema = z.string().trim().min(1, "Título obrigatório").max(300, "Título muito longo (máx. 300)");
+const itemDescSchema = z.string().trim().max(2000, "Descrição muito longa (máx. 2000)");
 
 export const Route = createFileRoute("/_app/checklist-modelos")({ component: Page });
 
