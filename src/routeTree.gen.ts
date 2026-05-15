@@ -19,9 +19,11 @@ import { Route as VisitantePainelRouteImport } from './routes/visitante.painel'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
 import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 import { Route as AppTransporteRouteImport } from './routes/_app.transporte'
+import { Route as AppReunioesDeCampoRouteImport } from './routes/_app.reunioes-de-campo'
 import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
 import { Route as AppNotasRouteImport } from './routes/_app.notas'
 import { Route as AppModelosRouteImport } from './routes/_app.modelos'
+import { Route as AppModeloReunioesDeCampoRouteImport } from './routes/_app.modelo-reunioes-de-campo'
 import { Route as AppEscalaRouteImport } from './routes/_app.escala'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCronogramaRouteImport } from './routes/_app.cronograma'
@@ -79,6 +81,11 @@ const AppTransporteRoute = AppTransporteRouteImport.update({
   path: '/transporte',
   getParentRoute: () => AppRoute,
 } as any)
+const AppReunioesDeCampoRoute = AppReunioesDeCampoRouteImport.update({
+  id: '/reunioes-de-campo',
+  path: '/reunioes-de-campo',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppRefeicoesRoute = AppRefeicoesRouteImport.update({
   id: '/refeicoes',
   path: '/refeicoes',
@@ -94,6 +101,12 @@ const AppModelosRoute = AppModelosRouteImport.update({
   path: '/modelos',
   getParentRoute: () => AppRoute,
 } as any)
+const AppModeloReunioesDeCampoRoute =
+  AppModeloReunioesDeCampoRouteImport.update({
+    id: '/modelo-reunioes-de-campo',
+    path: '/modelo-reunioes-de-campo',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppEscalaRoute = AppEscalaRouteImport.update({
   id: '/escala',
   path: '/escala',
@@ -143,9 +156,11 @@ export interface FileRoutesByFullPath {
   '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
+  '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
   '/refeicoes': typeof AppRefeicoesRoute
+  '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
   '/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
@@ -164,9 +179,11 @@ export interface FileRoutesByTo {
   '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
+  '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
   '/refeicoes': typeof AppRefeicoesRoute
+  '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
   '/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
@@ -187,9 +204,11 @@ export interface FileRoutesById {
   '/_app/cronograma': typeof AppCronogramaRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/escala': typeof AppEscalaRoute
+  '/_app/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/_app/modelos': typeof AppModelosRoute
   '/_app/notas': typeof AppNotasRoute
   '/_app/refeicoes': typeof AppRefeicoesRoute
+  '/_app/reunioes-de-campo': typeof AppReunioesDeCampoRoute
   '/_app/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
@@ -210,9 +229,11 @@ export interface FileRouteTypes {
     | '/cronograma'
     | '/dashboard'
     | '/escala'
+    | '/modelo-reunioes-de-campo'
     | '/modelos'
     | '/notas'
     | '/refeicoes'
+    | '/reunioes-de-campo'
     | '/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
@@ -231,9 +252,11 @@ export interface FileRouteTypes {
     | '/cronograma'
     | '/dashboard'
     | '/escala'
+    | '/modelo-reunioes-de-campo'
     | '/modelos'
     | '/notas'
     | '/refeicoes'
+    | '/reunioes-de-campo'
     | '/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
@@ -253,9 +276,11 @@ export interface FileRouteTypes {
     | '/_app/cronograma'
     | '/_app/dashboard'
     | '/_app/escala'
+    | '/_app/modelo-reunioes-de-campo'
     | '/_app/modelos'
     | '/_app/notas'
     | '/_app/refeicoes'
+    | '/_app/reunioes-de-campo'
     | '/_app/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
@@ -345,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTransporteRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/reunioes-de-campo': {
+      id: '/_app/reunioes-de-campo'
+      path: '/reunioes-de-campo'
+      fullPath: '/reunioes-de-campo'
+      preLoaderRoute: typeof AppReunioesDeCampoRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/refeicoes': {
       id: '/_app/refeicoes'
       path: '/refeicoes'
@@ -364,6 +396,13 @@ declare module '@tanstack/react-router' {
       path: '/modelos'
       fullPath: '/modelos'
       preLoaderRoute: typeof AppModelosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/modelo-reunioes-de-campo': {
+      id: '/_app/modelo-reunioes-de-campo'
+      path: '/modelo-reunioes-de-campo'
+      fullPath: '/modelo-reunioes-de-campo'
+      preLoaderRoute: typeof AppModeloReunioesDeCampoRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/escala': {
@@ -426,9 +465,11 @@ interface AppRouteChildren {
   AppCronogramaRoute: typeof AppCronogramaRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppEscalaRoute: typeof AppEscalaRoute
+  AppModeloReunioesDeCampoRoute: typeof AppModeloReunioesDeCampoRoute
   AppModelosRoute: typeof AppModelosRoute
   AppNotasRoute: typeof AppNotasRoute
   AppRefeicoesRoute: typeof AppRefeicoesRoute
+  AppReunioesDeCampoRoute: typeof AppReunioesDeCampoRoute
   AppTransporteRoute: typeof AppTransporteRoute
 }
 
@@ -440,9 +481,11 @@ const AppRouteChildren: AppRouteChildren = {
   AppCronogramaRoute: AppCronogramaRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppEscalaRoute: AppEscalaRoute,
+  AppModeloReunioesDeCampoRoute: AppModeloReunioesDeCampoRoute,
   AppModelosRoute: AppModelosRoute,
   AppNotasRoute: AppNotasRoute,
   AppRefeicoesRoute: AppRefeicoesRoute,
+  AppReunioesDeCampoRoute: AppReunioesDeCampoRoute,
   AppTransporteRoute: AppTransporteRoute,
 }
 
@@ -473,3 +516,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
