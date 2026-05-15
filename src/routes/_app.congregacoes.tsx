@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { listMyCongregations, createCongregation, updateCongregation } from "@/lib/congregations.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +24,9 @@ export const Route = createFileRoute("/_app/congregacoes")({ component: Page });
 function Page() {
   const { user, role, profile, refresh } = useAuth();
   const nav = useNavigate();
+  const fnList = useServerFn(listMyCongregations);
+  const fnCreate = useServerFn(createCongregation);
+  const fnUpdate = useServerFn(updateCongregation);
   const [list, setList] = useState<Congregation[]>([]);
   const [loading, setLoading] = useState(true);
   const [openNew, setOpenNew] = useState(false);
@@ -34,14 +39,11 @@ function Page() {
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("congregations")
-      .select("*")
-      .eq("superintendent_id", user.id)
-      .order("name");
-    setList((data ?? []) as Congregation[]);
+    const res = await fnList();
+    if (res.ok) setList(res.data as Congregation[]);
+    else toast.error(res.error);
     setLoading(false);
-  }, [user]);
+  }, [user, fnList]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -56,19 +58,14 @@ function Page() {
     if (name.length < 2) { toast.error("Informe o nome da congregação"); return; }
     if (!/^[A-Z0-9]{4,12}$/.test(code)) { toast.error("Código deve ter 4-12 caracteres (letras/números)"); return; }
     setBusy(true);
-    const { data: dup } = await supabase.from("congregations").select("id").eq("invite_code", code).maybeSingle();
-    if (dup) { toast.error("Este código já está em uso"); setBusy(false); return; }
-    const { data, error } = await supabase.from("congregations")
-      .insert({ name, invite_code: code, superintendent_id: user.id })
-      .select().single();
+    const res = await fnCreate({ data: { name, inviteCode: code } });
     setBusy(false);
-    if (error || !data) { toast.error(error?.message ?? "Falha ao criar"); return; }
+    if (!res.ok) { toast.error(res.error); return; }
     toast.success("Congregação criada");
     setForm({ name: "", invite_code: "" });
     setOpenNew(false);
-    // If first congregation, set it as active
-    if (!profile?.congregation_id) {
-      await supabase.from("profiles").update({ congregation_id: data.id }).eq("id", user.id);
+    if (!profile?.congregation_id && res.data) {
+      await supabase.from("profiles").update({ congregation_id: res.data.id }).eq("id", user.id);
       await refresh();
     }
     load();
@@ -81,11 +78,9 @@ function Page() {
     if (name.length < 2) { toast.error("Nome inválido"); return; }
     if (!/^[A-Z0-9]{4,12}$/.test(code)) { toast.error("Código inválido"); return; }
     setBusy(true);
-    const { data: dup } = await supabase.from("congregations").select("id").eq("invite_code", code).neq("id", editing.id).maybeSingle();
-    if (dup) { toast.error("Código já em uso"); setBusy(false); return; }
-    const { error } = await supabase.from("congregations").update({ name, invite_code: code }).eq("id", editing.id);
+    const res = await fnUpdate({ data: { id: editing.id, name, inviteCode: code } });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (!res.ok) { toast.error(res.error); return; }
     toast.success("Atualizado");
     setEditing(null);
     load();
