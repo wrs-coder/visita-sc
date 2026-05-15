@@ -32,6 +32,7 @@ function Page() {
   const [congs, setCongs] = useState<Cong[]>([]);
   const [tpls, setTpls] = useState<{ id: string; slot: number; name: string }[]>([]);
   const [open, setOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", start_date: "", end_date: "", congregation_id: "", template_id: "" });
   const isSuper = role === "superintendent";
 
