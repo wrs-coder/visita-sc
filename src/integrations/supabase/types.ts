@@ -390,6 +390,16 @@ export type Database = {
         Args: { _user_id: string; _visit_id: string }
         Returns: boolean
       }
+      get_my_congregations: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          invite_code: string
+          name: string
+          superintendent_id: string
+        }[]
+      }
       get_user_congregation: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
