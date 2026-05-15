@@ -224,21 +224,3 @@ export const linkAccount = createServerFn({ method: "POST" })
       return { ok: true as const };
     }
   });
-
-export const seedDefaultChecklist = createServerFn({ method: "POST" })
-  .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
-  .handler(async ({ data }) => {
-    const defaults = [
-      { title: "Cartões S-21", description: "Cartões de publicador atualizados" },
-      { title: "Relatório de Contas", description: "Relatório financeiro mensal" },
-      { title: "Lista de Candidatos ao Batismo", description: "Nomes e congregações" },
-      { title: "Necessidades Locais", description: "Pontos a abordar com o superintendente" },
-    ];
-    const { data: existing } = await supabaseAdmin.from("checklist_items").select("title").eq("visit_id", data.visitId);
-    const existingTitles = new Set((existing ?? []).map((r) => r.title));
-    const toInsert = defaults
-      .filter((d) => !existingTitles.has(d.title))
-      .map((d, i) => ({ visit_id: data.visitId, title: d.title, description: d.description, sort_order: i }));
-    if (toInsert.length) await supabaseAdmin.from("checklist_items").insert(toInsert);
-    return { ok: true as const };
-  });

@@ -60,7 +60,7 @@ function Page() {
             <Compass className="h-5 w-5 shrink-0" />
             <div className="min-w-0">
               <div className="font-semibold text-sm truncate">{snap.congregation.name}</div>
-              <div className="text-[11px] opacity-80">Visitante • somente leitura</div>
+              <div className="text-[11px] opacity-80">Esposa do superintendente • somente leitura</div>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={exit} className="text-primary-foreground hover:bg-white/10">
