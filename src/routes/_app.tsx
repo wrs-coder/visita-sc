@@ -38,6 +38,7 @@ function AppLayout() {
     { to: "/refeicoes", label: "Refeições", icon: UtensilsCrossed },
     { to: "/transporte", label: "Transporte", icon: Car },
     { to: "/checklist", label: "Checklist", icon: ListChecks },
+    ...(role === "superintendent" ? [{ to: "/checklist-modelos", label: "Modelos de Checklist", icon: ListChecks }] : []),
     ...(role === "superintendent" ? [{ to: "/notas", label: "Notas Privadas", icon: Lock }] : []),
     ...(role === "superintendent" ? [{ to: "/modelos", label: "Modelos", icon: FileStack }] : []),
     ...(role === "superintendent" ? [{ to: "/congregacoes", label: "Congregações", icon: Building2 }] : []),
