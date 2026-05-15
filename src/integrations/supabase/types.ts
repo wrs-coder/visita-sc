@@ -64,6 +64,68 @@ export type Database = {
           },
         ]
       }
+      checklist_template_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          sort_order: number
+          template_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          sort_order?: number
+          template_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          sort_order?: number
+          template_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_templates: {
+        Row: {
+          congregation_id: string | null
+          created_at: string
+          id: string
+          name: string
+          superintendent_id: string
+          updated_at: string
+        }
+        Insert: {
+          congregation_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          superintendent_id: string
+          updated_at?: string
+        }
+        Update: {
+          congregation_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          superintendent_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       congregations: {
         Row: {
           created_at: string
