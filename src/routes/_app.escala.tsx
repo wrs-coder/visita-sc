@@ -14,29 +14,49 @@ import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_app/escala")({ component: Page });
 
-interface Row { id: string; visit_id: string; event_date: string; period: string; meeting_point: string | null; meeting_time: string | null; dirigente: string | null; piloto: string | null; acompanhante: string | null; is_active: boolean; }
+interface Row {
+  id: string;
+  visit_id: string;
+  event_date: string;
+  period: string;
+  meeting_point: string | null;
+  meeting_time: string | null;
+  acompanhante: string | null;
+  contact_phone: string | null;
+  is_active: boolean;
+}
 
 function Page() {
   const { visit } = useActiveVisit();
-  const { role, canEdit } = useAuth();
+  const { role } = useAuth();
+  const isSuper = role === "superintendent";
   const [rows, setRows] = useState<Row[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!visit) return;
     const load = async () => {
-      const { data } = await supabase.from("field_assignments").select("*").eq("visit_id", visit.id).order("event_date").order("period");
+      const { data } = await supabase
+        .from("field_assignments")
+        .select("id,visit_id,event_date,period,meeting_point,meeting_time,acompanhante,contact_phone,is_active")
+        .eq("visit_id", visit.id)
+        .order("event_date")
+        .order("period");
       setRows((data ?? []) as Row[]);
     };
     load();
-    const ch = supabase.channel(`fa-${visit.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "field_assignments", filter: `visit_id=eq.${visit.id}` }, load).subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const ch = supabase
+      .channel(`fa-${visit.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "field_assignments", filter: `visit_id=eq.${visit.id}` }, load)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [visit]);
 
   const update = useCallback(async (id: string, patch: Partial<Row>) => {
     setSavingId(id);
-    setRows((r) => r.map((x) => x.id === id ? { ...x, ...patch } : x));
+    setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     const { error } = await supabase.from("field_assignments").update(patch).eq("id", id);
     setSavingId(null);
     if (error) toast.error(error.message);
@@ -60,8 +80,12 @@ function Page() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold">Escala de Serviço de Campo</h1>
-        <p className="text-sm text-muted-foreground mt-1">{canEdit ? "Edite dirigente, piloto e acompanhante." : "Somente leitura — sua designação não permite editar."}</p>
+        <h1 className="text-2xl md:text-3xl font-bold">Estudos e Revisitas</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {isSuper
+            ? "Defina os turnos e edite acompanhante, local e telefone. Itens desativados ficam ocultos para a congregação."
+            : "Edite acompanhante, local de encontro e telefone de contato."}
+        </p>
       </div>
 
       <div className="space-y-5">
@@ -72,7 +96,7 @@ function Page() {
             <section key={key}>
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: ptBR })}</h2>
-                {canEdit && (
+                {isSuper && (
                   <div className="flex gap-1">
                     <Button size="sm" variant="outline" onClick={() => add(key, "Manhã")}><Plus className="h-3 w-3 mr-1" />Manhã</Button>
                     <Button size="sm" variant="outline" onClick={() => add(key, "Tarde")}><Plus className="h-3 w-3 mr-1" />Tarde</Button>
@@ -80,29 +104,36 @@ function Page() {
                 )}
               </div>
               {dayRows.length === 0 ? (
-                <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem escalas.</CardContent></Card>
-              ) : dayRows.map((r) => (
-                <Card key={r.id} className={`shadow-card mb-2 transition ${!r.is_active ? "opacity-50" : ""}`}>
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className={`text-xs font-semibold px-2 py-1 rounded ${r.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>{r.period}{!r.is_active && " · desativado"}</div>
-                      <div className="flex items-center gap-2">
-                        {canEdit && <Switch checked={r.is_active} onCheckedChange={(v) => update(r.id, { is_active: v })} aria-label="Ativar/desativar" />}
-                        {canEdit && savingId === r.id && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
-                        {canEdit && savingId !== r.id && <Check className="h-3.5 w-3.5 text-success" />}
-                        {role === "superintendent" && <Button size="icon" variant="ghost" onClick={() => remove(r.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>}
+                <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem turnos definidos.</CardContent></Card>
+              ) : (
+                dayRows.map((r) => (
+                  <Card key={r.id} className={`shadow-card mb-2 transition ${!r.is_active ? "opacity-50" : ""}`}>
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className={`text-xs font-semibold px-2 py-1 rounded ${r.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>
+                          {r.period}
+                          {!r.is_active && " · desativado"}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isSuper && <Switch checked={r.is_active} onCheckedChange={(v) => update(r.id, { is_active: v })} aria-label="Ativar/desativar" />}
+                          {savingId === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : <Check className="h-3.5 w-3.5 text-success" />}
+                          {isSuper && (
+                            <Button size="icon" variant="ghost" onClick={() => remove(r.id)}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Field label="Local" v={r.meeting_point ?? ""} onSave={(v) => update(r.id, { meeting_point: v })} readOnly={!canEdit} />
-                      <Field label="Horário" type="time" v={r.meeting_time ?? ""} onSave={(v) => update(r.id, { meeting_time: v || null })} readOnly={!canEdit} />
-                      <Field label="Dirigente" v={r.dirigente ?? ""} onSave={(v) => update(r.id, { dirigente: v })} readOnly={!canEdit} />
-                      <Field label="Piloto" v={r.piloto ?? ""} onSave={(v) => update(r.id, { piloto: v })} readOnly={!canEdit} />
-                      <Field label="Acompanhante" v={r.acompanhante ?? ""} onSave={(v) => update(r.id, { acompanhante: v })} className="col-span-2" readOnly={!canEdit} />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="grid grid-cols-2 gap-2">
+                        <Field label="Local de encontro" v={r.meeting_point ?? ""} onSave={(v) => update(r.id, { meeting_point: v })} />
+                        <Field label="Horário" type="time" v={r.meeting_time ?? ""} onSave={(v) => update(r.id, { meeting_time: v || null })} readOnly={!isSuper} />
+                        <Field label="Acompanhante para estudos" v={r.acompanhante ?? ""} onSave={(v) => update(r.id, { acompanhante: v })} className="col-span-2" />
+                        <Field label="Telefone de contato" type="tel" v={r.contact_phone ?? ""} onSave={(v) => update(r.id, { contact_phone: v })} className="col-span-2" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </section>
           );
         })}

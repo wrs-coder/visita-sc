@@ -16,6 +16,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
 import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
+import { Route as AppTransporteRouteImport } from './routes/_app.transporte'
 import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
 import { Route as AppNotasRouteImport } from './routes/_app.notas'
 import { Route as AppEscalaRouteImport } from './routes/_app.escala'
@@ -58,6 +59,11 @@ const CadastroAnciaoRoute = CadastroAnciaoRouteImport.update({
   id: '/cadastro/anciao',
   path: '/cadastro/anciao',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppTransporteRoute = AppTransporteRouteImport.update({
+  id: '/transporte',
+  path: '/transporte',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppRefeicoesRoute = AppRefeicoesRouteImport.update({
   id: '/refeicoes',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/escala': typeof AppEscalaRoute
   '/notas': typeof AppNotasRoute
   '/refeicoes': typeof AppRefeicoesRoute
+  '/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
 }
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/escala': typeof AppEscalaRoute
   '/notas': typeof AppNotasRoute
   '/refeicoes': typeof AppRefeicoesRoute
+  '/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
 }
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/_app/escala': typeof AppEscalaRoute
   '/_app/notas': typeof AppNotasRoute
   '/_app/refeicoes': typeof AppRefeicoesRoute
+  '/_app/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
 }
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/escala'
     | '/notas'
     | '/refeicoes'
+    | '/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
   fileRoutesByTo: FileRoutesByTo
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/escala'
     | '/notas'
     | '/refeicoes'
+    | '/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
   id:
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/_app/escala'
     | '/_app/notas'
     | '/_app/refeicoes'
+    | '/_app/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
   fileRoutesById: FileRoutesById
@@ -262,6 +274,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/cadastro/anciao'
       preLoaderRoute: typeof CadastroAnciaoRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/transporte': {
+      id: '/_app/transporte'
+      path: '/transporte'
+      fullPath: '/transporte'
+      preLoaderRoute: typeof AppTransporteRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/refeicoes': {
       id: '/_app/refeicoes'
@@ -331,6 +350,7 @@ interface AppRouteChildren {
   AppEscalaRoute: typeof AppEscalaRoute
   AppNotasRoute: typeof AppNotasRoute
   AppRefeicoesRoute: typeof AppRefeicoesRoute
+  AppTransporteRoute: typeof AppTransporteRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -342,6 +362,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEscalaRoute: AppEscalaRoute,
   AppNotasRoute: AppNotasRoute,
   AppRefeicoesRoute: AppRefeicoesRoute,
+  AppTransporteRoute: AppTransporteRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
