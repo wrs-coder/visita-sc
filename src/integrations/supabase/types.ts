@@ -95,6 +95,7 @@ export type Database = {
           dirigente: string | null
           event_date: string
           id: string
+          is_active: boolean
           meeting_point: string | null
           meeting_time: string | null
           notes: string | null
@@ -109,6 +110,7 @@ export type Database = {
           dirigente?: string | null
           event_date: string
           id?: string
+          is_active?: boolean
           meeting_point?: string | null
           meeting_time?: string | null
           notes?: string | null
@@ -123,6 +125,7 @@ export type Database = {
           dirigente?: string | null
           event_date?: string
           id?: string
+          is_active?: boolean
           meeting_point?: string | null
           meeting_time?: string | null
           notes?: string | null
@@ -146,6 +149,7 @@ export type Database = {
           created_at: string
           host_name: string
           id: string
+          is_active: boolean
           location: string | null
           meal_date: string
           meal_time: string | null
@@ -158,6 +162,7 @@ export type Database = {
           created_at?: string
           host_name: string
           id?: string
+          is_active?: boolean
           location?: string | null
           meal_date: string
           meal_time?: string | null
@@ -170,6 +175,7 @@ export type Database = {
           created_at?: string
           host_name?: string
           id?: string
+          is_active?: boolean
           location?: string | null
           meal_date?: string
           meal_time?: string | null
@@ -264,6 +270,7 @@ export type Database = {
           end_time: string | null
           event_date: string
           id: string
+          is_active: boolean
           location: string | null
           notes: string | null
           start_time: string | null
@@ -277,6 +284,7 @@ export type Database = {
           end_time?: string | null
           event_date: string
           id?: string
+          is_active?: boolean
           location?: string | null
           notes?: string | null
           start_time?: string | null
@@ -290,6 +298,7 @@ export type Database = {
           end_time?: string | null
           event_date?: string
           id?: string
+          is_active?: boolean
           location?: string | null
           notes?: string | null
           start_time?: string | null
