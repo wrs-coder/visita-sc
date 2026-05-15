@@ -595,36 +595,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      apply_template_to_visit: {
-        Args: { _template_id: string; _visit_id: string }
-        Returns: undefined
-      }
-      can_edit_visit: {
-        Args: { _user_id: string; _visit_id: string }
-        Returns: boolean
-      }
-      get_my_congregations: {
-        Args: never
-        Returns: {
-          created_at: string
-          id: string
-          invite_code: string
-          name: string
-          superintendent_id: string
-        }[]
-      }
-      get_user_congregation: { Args: { _user_id: string }; Returns: string }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-      is_superintendent_of: {
-        Args: { _congregation_id: string; _user_id: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       app_role: "superintendent" | "elder"

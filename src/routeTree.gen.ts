@@ -9,11 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VisitanteRouteImport } from './routes/visitante'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as VisitantePainelRouteImport } from './routes/visitante.painel'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
 import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 import { Route as AppTransporteRouteImport } from './routes/_app.transporte'
@@ -28,6 +30,11 @@ import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoe
 import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist-modelos'
 import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
 
+const VisitanteRoute = VisitanteRouteImport.update({
+  id: '/visitante',
+  path: '/visitante',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
@@ -51,6 +58,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const VisitantePainelRoute = VisitantePainelRouteImport.update({
+  id: '/painel',
+  path: '/painel',
+  getParentRoute: () => VisitanteRoute,
 } as any)
 const CadastroSuperintendenteRoute = CadastroSuperintendenteRouteImport.update({
   id: '/cadastro/superintendente',
@@ -123,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/onboarding': typeof OnboardingRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/visitante': typeof VisitanteRouteWithChildren
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
   '/configuracoes': typeof AppConfiguracoesRoute
@@ -136,12 +149,14 @@ export interface FileRoutesByFullPath {
   '/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
+  '/visitante/painel': typeof VisitantePainelRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/onboarding': typeof OnboardingRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/visitante': typeof VisitanteRouteWithChildren
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
   '/configuracoes': typeof AppConfiguracoesRoute
@@ -155,6 +170,7 @@ export interface FileRoutesByTo {
   '/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
+  '/visitante/painel': typeof VisitantePainelRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -163,6 +179,7 @@ export interface FileRoutesById {
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/onboarding': typeof OnboardingRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/visitante': typeof VisitanteRouteWithChildren
   '/_app/checklist': typeof AppChecklistRoute
   '/_app/checklist-modelos': typeof AppChecklistModelosRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
@@ -176,6 +193,7 @@ export interface FileRoutesById {
   '/_app/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
+  '/visitante/painel': typeof VisitantePainelRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -184,6 +202,7 @@ export interface FileRouteTypes {
     | '/esqueci-senha'
     | '/onboarding'
     | '/redefinir-senha'
+    | '/visitante'
     | '/checklist'
     | '/checklist-modelos'
     | '/configuracoes'
@@ -197,12 +216,14 @@ export interface FileRouteTypes {
     | '/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
+    | '/visitante/painel'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/esqueci-senha'
     | '/onboarding'
     | '/redefinir-senha'
+    | '/visitante'
     | '/checklist'
     | '/checklist-modelos'
     | '/configuracoes'
@@ -216,6 +237,7 @@ export interface FileRouteTypes {
     | '/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
+    | '/visitante/painel'
   id:
     | '__root__'
     | '/'
@@ -223,6 +245,7 @@ export interface FileRouteTypes {
     | '/esqueci-senha'
     | '/onboarding'
     | '/redefinir-senha'
+    | '/visitante'
     | '/_app/checklist'
     | '/_app/checklist-modelos'
     | '/_app/configuracoes'
@@ -236,6 +259,7 @@ export interface FileRouteTypes {
     | '/_app/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
+    | '/visitante/painel'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -244,12 +268,20 @@ export interface RootRouteChildren {
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   OnboardingRoute: typeof OnboardingRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  VisitanteRoute: typeof VisitanteRouteWithChildren
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
   CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/visitante': {
+      id: '/visitante'
+      path: '/visitante'
+      fullPath: '/visitante'
+      preLoaderRoute: typeof VisitanteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/redefinir-senha': {
       id: '/redefinir-senha'
       path: '/redefinir-senha'
@@ -284,6 +316,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/visitante/painel': {
+      id: '/visitante/painel'
+      path: '/painel'
+      fullPath: '/visitante/painel'
+      preLoaderRoute: typeof VisitantePainelRouteImport
+      parentRoute: typeof VisitanteRoute
     }
     '/cadastro/superintendente': {
       id: '/cadastro/superintendente'
@@ -409,12 +448,25 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface VisitanteRouteChildren {
+  VisitantePainelRoute: typeof VisitantePainelRoute
+}
+
+const VisitanteRouteChildren: VisitanteRouteChildren = {
+  VisitantePainelRoute: VisitantePainelRoute,
+}
+
+const VisitanteRouteWithChildren = VisitanteRoute._addFileChildren(
+  VisitanteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   OnboardingRoute: OnboardingRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  VisitanteRoute: VisitanteRouteWithChildren,
   CadastroAnciaoRoute: CadastroAnciaoRoute,
   CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,
 }
