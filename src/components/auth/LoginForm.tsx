@@ -66,6 +66,10 @@ export function LoginForm() {
               <GoogleIcon /> Continuar com Google
             </Button>
 
+            <div className="mt-4 text-center">
+              <a href="/esqueci-senha" className="text-sm text-primary hover:underline">Esqueci minha senha</a>
+            </div>
+
             <div className="mt-6 text-center text-sm text-muted-foreground space-y-1">
               <div>
                 Sou superintendente —{" "}
