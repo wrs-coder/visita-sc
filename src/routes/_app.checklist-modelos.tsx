@@ -91,9 +91,12 @@ function Page() {
   };
 
   const handleCreate = async () => {
-    if (!newName.trim()) return;
+    const parsed = nameSchema.safeParse(newName);
+    if (!parsed.success) { setNewNameErr(parsed.error.issues[0].message); return; }
+    setNewNameErr(null);
+    if (tpls.length >= MAX) { toast.error(`Limite de ${MAX} modelos atingido.`); return; }
     setBusy(true);
-    const r = await fnCreate({ data: { name: newName.trim() } });
+    const r = await fnCreate({ data: { name: parsed.data } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
     toast.success("Modelo criado");
@@ -104,9 +107,12 @@ function Page() {
   };
 
   const handleRename = async () => {
-    if (!active || !renameVal.trim()) return;
+    if (!active) return;
+    const parsed = nameSchema.safeParse(renameVal);
+    if (!parsed.success) { setRenameErr(parsed.error.issues[0].message); return; }
+    setRenameErr(null);
     setBusy(true);
-    const r = await fnRename({ data: { id: active.id, name: renameVal.trim() } });
+    const r = await fnRename({ data: { id: active.id, name: parsed.data } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
     toast.success("Renomeado");
