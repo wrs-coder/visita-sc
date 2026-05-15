@@ -45,6 +45,7 @@ export const registerElderByPhone = createServerFn({ method: "POST" })
     z.object({
       fullName: z.string().trim().min(2).max(120),
       phone: z.string().trim().min(8).max(20),
+      email: z.string().trim().email().max(200),
       password: z.string().min(6).max(100),
       inviteCode: z.string().trim().min(4).max(20),
       position: z.enum(ELDER_POSITIONS),
@@ -53,7 +54,7 @@ export const registerElderByPhone = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const digits = data.phone.replace(/\D/g, "");
     if (digits.length < 8) return { ok: false as const, error: "Telefone inválido." };
-    const email = elderEmailFromPhone(digits);
+    const email = data.email.toLowerCase();
 
     const code = data.inviteCode.toUpperCase();
     const { data: cong, error: cErr } = await supabaseAdmin

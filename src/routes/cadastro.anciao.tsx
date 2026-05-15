@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { registerElderByPhone } from "@/lib/auth.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { COUNTRIES, DEFAULT_COUNTRY, buildFullPhone, findCountry } from "@/lib/countries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,8 +19,9 @@ function Page() {
   const nav = useNavigate();
   const fn = useServerFn(registerElderByPhone);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState<{ fullName: string; phone: string; password: string; inviteCode: string; position: ElderPosition | "" }>({
-    fullName: "", phone: "", password: "", inviteCode: "", position: "",
+  const [country, setCountry] = useState(DEFAULT_COUNTRY);
+  const [form, setForm] = useState<{ fullName: string; phone: string; email: string; password: string; inviteCode: string; position: ElderPosition | "" }>({
+    fullName: "", phone: "", email: "", password: "", inviteCode: "", position: "",
   });
 
   const submit = async (e: React.FormEvent) => {
@@ -27,7 +29,15 @@ function Page() {
     if (!form.position) { toast.error("Selecione sua designação."); return; }
     setBusy(true);
     try {
-      const res = await fn({ data: { ...form, position: form.position, inviteCode: form.inviteCode.toUpperCase() } });
+      const fullPhone = buildFullPhone(country, form.phone);
+      const res = await fn({ data: {
+        fullName: form.fullName,
+        phone: fullPhone,
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        inviteCode: form.inviteCode.toUpperCase(),
+        position: form.position,
+      } });
       if (!res.ok) { toast.error("Erro no cadastro", { description: res.error }); setBusy(false); return; }
       const { error } = await supabase.auth.signInWithPassword({ email: res.email, password: form.password });
       if (error) { toast.error(error.message); setBusy(false); return; }
@@ -38,6 +48,8 @@ function Page() {
       setBusy(false);
     }
   };
+
+  const dial = findCountry(country).dial;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary to-primary-soft/30 flex items-center justify-center p-4">
@@ -53,12 +65,33 @@ function Page() {
               </div>
               <div>
                 <h2 className="font-semibold text-lg">Cadastro de Ancião</h2>
-                <p className="text-xs text-muted-foreground">Telefone, designação e código da congregação</p>
+                <p className="text-xs text-muted-foreground">Telefone, e-mail, designação e código</p>
               </div>
             </div>
             <form onSubmit={submit} className="space-y-3">
               <Field id="fullName" label="Nome completo" value={form.fullName} onChange={(v) => setForm({ ...form, fullName: v })} />
-              <Field id="phone" label="Telefone (com DDD)" type="tel" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+
+              <div className="space-y-1.5">
+                <Label>País</Label>
+                <Select value={country} onValueChange={setCountry}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((c) => (
+                      <SelectItem key={c.code} value={c.code}>{c.flag} {c.name} (+{c.dial})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="phone">Telefone</Label>
+                <div className="flex gap-2">
+                  <div className="flex items-center px-3 rounded-md border bg-muted text-sm text-muted-foreground">+{dial}</div>
+                  <Input id="phone" type="tel" inputMode="tel" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="número com DDD" />
+                </div>
+              </div>
+
+              <Field id="email" label="E-mail (para recuperar senha)" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
               <Field id="password" label="Defina uma senha (mín. 6)" type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
               <Field id="code" label="Código da congregação" value={form.inviteCode} onChange={(v) => setForm({ ...form, inviteCode: v.toUpperCase() })} />
               <div className="space-y-1.5">
