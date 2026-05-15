@@ -364,10 +364,19 @@ function Page() {
         </div>
       </div>
 
-      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+      <Dialog open={renameOpen} onOpenChange={(o) => { setRenameOpen(o); if (!o) setRenameErr(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Renomear modelo</DialogTitle></DialogHeader>
-          <Input value={renameVal} onChange={(e) => setRenameVal(e.target.value)} />
+          <div>
+            <Input
+              value={renameVal}
+              onChange={(e) => { setRenameVal(e.target.value); if (renameErr) setRenameErr(null); }}
+              maxLength={120}
+              className={renameErr ? "border-destructive" : ""}
+            />
+            {renameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{renameErr}</p>}
+            <p className="text-xs text-muted-foreground mt-1">{renameVal.trim().length}/120 caracteres</p>
+          </div>
           <DialogFooter>
             <Button onClick={handleRename} disabled={busy}>Salvar</Button>
           </DialogFooter>
