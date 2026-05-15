@@ -14,16 +14,400 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      checklist_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          info_text: string | null
+          link_or_notes: string | null
+          sort_order: number
+          status: Database["public"]["Enums"]["checklist_status"]
+          title: string
+          updated_at: string
+          updated_by: string | null
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          info_text?: string | null
+          link_or_notes?: string | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["checklist_status"]
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          info_text?: string | null
+          link_or_notes?: string | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["checklist_status"]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_items_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      congregations: {
+        Row: {
+          created_at: string
+          id: string
+          invite_code: string
+          name: string
+          superintendent_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_code: string
+          name: string
+          superintendent_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_code?: string
+          name?: string
+          superintendent_id?: string
+        }
+        Relationships: []
+      }
+      field_assignments: {
+        Row: {
+          acompanhante: string | null
+          created_at: string
+          dirigente: string | null
+          event_date: string
+          id: string
+          meeting_point: string | null
+          meeting_time: string | null
+          notes: string | null
+          period: string
+          piloto: string | null
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          acompanhante?: string | null
+          created_at?: string
+          dirigente?: string | null
+          event_date: string
+          id?: string
+          meeting_point?: string | null
+          meeting_time?: string | null
+          notes?: string | null
+          period: string
+          piloto?: string | null
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          acompanhante?: string | null
+          created_at?: string
+          dirigente?: string | null
+          event_date?: string
+          id?: string
+          meeting_point?: string | null
+          meeting_time?: string | null
+          notes?: string | null
+          period?: string
+          piloto?: string | null
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_assignments_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meals: {
+        Row: {
+          created_at: string
+          host_name: string
+          id: string
+          location: string | null
+          meal_date: string
+          meal_time: string | null
+          notes: string | null
+          type: Database["public"]["Enums"]["meal_type"]
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          host_name: string
+          id?: string
+          location?: string | null
+          meal_date: string
+          meal_time?: string | null
+          notes?: string | null
+          type: Database["public"]["Enums"]["meal_type"]
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          host_name?: string
+          id?: string
+          location?: string | null
+          meal_date?: string
+          meal_time?: string | null
+          notes?: string | null
+          type?: Database["public"]["Enums"]["meal_type"]
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meals_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      private_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          superintendent_id: string
+          title: string | null
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          superintendent_id: string
+          title?: string | null
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          superintendent_id?: string
+          title?: string | null
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "private_notes_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          congregation_id: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          congregation_id?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          congregation_id?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_congregation_fk"
+            columns: ["congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_events: {
+        Row: {
+          created_at: string
+          end_time: string | null
+          event_date: string
+          id: string
+          location: string | null
+          notes: string | null
+          start_time: string | null
+          title: string
+          type: Database["public"]["Enums"]["event_type"]
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time?: string | null
+          event_date: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          start_time?: string | null
+          title: string
+          type?: Database["public"]["Enums"]["event_type"]
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string | null
+          event_date?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          start_time?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["event_type"]
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_events_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          congregation_id: string | null
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          congregation_id?: string | null
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          congregation_id?: string | null
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_congregation_id_fkey"
+            columns: ["congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visits: {
+        Row: {
+          congregation_id: string
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean
+          start_date: string
+          title: string
+        }
+        Insert: {
+          congregation_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean
+          start_date: string
+          title: string
+        }
+        Update: {
+          congregation_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          start_date?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visits_congregation_id_fkey"
+            columns: ["congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_congregation: { Args: { _user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_superintendent_of: {
+        Args: { _congregation_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "superintendent" | "elder"
+      checklist_status: "pending" | "done"
+      event_type:
+        | "field_morning"
+        | "field_afternoon"
+        | "elders_meeting"
+        | "pioneers_meeting"
+        | "midweek_meeting"
+        | "weekend_meeting"
+        | "other"
+      meal_type: "lunch" | "dinner" | "breakfast"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +534,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["superintendent", "elder"],
+      checklist_status: ["pending", "done"],
+      event_type: [
+        "field_morning",
+        "field_afternoon",
+        "elders_meeting",
+        "pioneers_meeting",
+        "midweek_meeting",
+        "weekend_meeting",
+        "other",
+      ],
+      meal_type: ["lunch", "dinner", "breakfast"],
+    },
   },
 } as const
