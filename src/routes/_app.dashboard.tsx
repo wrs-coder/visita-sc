@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_app/dashboard")({
 
 interface ScheduleEvent { id: string; event_date: string; start_time: string | null; title: string; location: string | null; type: string; }
 interface ChecklistItem { id: string; status: string; }
-interface Meal { id: string; meal_date: string; type: string; host_name: string; location: string | null; }
+interface Meal { id: string; meal_date: string; type: string; host_name: string | null; location: string | null; }
 
 function Dashboard() {
   const { profile, role } = useAuth();

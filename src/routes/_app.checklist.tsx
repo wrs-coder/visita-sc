@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Check, Trash2, Loader2, Pencil } from "lucide-react";
+import { Plus, Check, Trash2, Loader2, Pencil, Download } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/checklist")({ component: Page });
@@ -70,19 +70,26 @@ function Page() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-2 flex-wrap">
         <div><h1 className="text-2xl md:text-3xl font-bold">Checklist da Congregação</h1><p className="text-sm text-muted-foreground mt-1">Dados necessários para a visita</p></div>
-        {canManage && <Dialog open={newOpen} onOpenChange={setNewOpen}>
-          <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Novo item</Button></DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Novo item da checklist</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div><Label>Título</Label><Input className="mt-1" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} /></div>
-              <div><Label>Descrição (opcional)</Label><Textarea rows={2} className="mt-1" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} /></div>
-              <Button className="w-full" onClick={addItem}>Adicionar</Button>
-            </div>
-          </DialogContent>
-        </Dialog>}
+        <div className="flex gap-2 flex-wrap">
+          {canManage && (
+            <Button variant="outline" onClick={() => exportCsv(items, visit.title)}>
+              <Download className="h-4 w-4 mr-1" />Exportar planilha
+            </Button>
+          )}
+          {canManage && <Dialog open={newOpen} onOpenChange={setNewOpen}>
+            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Novo item</Button></DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Novo item da checklist</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label>Título</Label><Input className="mt-1" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} /></div>
+                <div><Label>Descrição (opcional)</Label><Textarea rows={2} className="mt-1" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} /></div>
+                <Button className="w-full" onClick={addItem}>Adicionar</Button>
+              </div>
+            </DialogContent>
+          </Dialog>}
+        </div>
       </div>
 
       <Card><CardContent className="p-5">
@@ -161,4 +168,30 @@ function FieldArea({ label, v, onSave, readOnly = false }: { label: string; v: s
       )}
     </div>
   );
+}
+
+function csvEscape(v: string) {
+  if (/[",\n;]/.test(v)) return `"${v.replace(/"/g, '""')}"`;
+  return v;
+}
+
+function exportCsv(items: Item[], visitTitle: string) {
+  const header = ["Item", "Descrição", "Status", "Informação", "Link / Observações"];
+  const rows = items.map((it) => [
+    it.title,
+    it.description ?? "",
+    it.status === "done" ? "Concluído" : "Pendente",
+    it.info_text ?? "",
+    it.link_or_notes ?? "",
+  ]);
+  const csv = "\uFEFF" + [header, ...rows].map((r) => r.map((c) => csvEscape(String(c))).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `checklist-${visitTitle.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

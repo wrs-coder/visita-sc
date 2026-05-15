@@ -1,0 +1,1 @@
+ALTER TABLE public.meals ALTER COLUMN host_name DROP NOT NULL;
