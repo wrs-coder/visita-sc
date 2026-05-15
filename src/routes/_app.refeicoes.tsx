@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_app/refeicoes")({ component: Page });
 
 const MEAL = { breakfast: "Café", lunch: "Almoço", dinner: "Jantar" };
 type MealKey = keyof typeof MEAL;
-interface Meal { id: string; visit_id: string; meal_date: string; type: MealKey; host_name: string; location: string | null; meal_time: string | null; notes: string | null; }
+interface Meal { id: string; visit_id: string; meal_date: string; type: MealKey; host_name: string; location: string | null; meal_time: string | null; notes: string | null; is_active: boolean; }
 
 function Page() {
   const { visit } = useActiveVisit();
