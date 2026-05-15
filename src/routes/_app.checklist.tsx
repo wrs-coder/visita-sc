@@ -27,6 +27,7 @@ function Page() {
   const [newOpen, setNewOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [editItem, setEditItem] = useState<Item | null>(null);
 
   useEffect(() => {
     if (!visit) return;
