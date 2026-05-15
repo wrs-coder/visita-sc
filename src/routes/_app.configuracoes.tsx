@@ -93,6 +93,8 @@ function Page() {
       const r = await fnApply({ data: { visitId: data.id, templateId: form.template_id } });
       if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
     }
+    const rf = await fnApplyField({ data: { visitId: data.id } });
+    if (!rf.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + rf.error);
     if (user && profile?.congregation_id !== form.congregation_id) {
       await supabase.from("profiles").update({ congregation_id: form.congregation_id }).eq("id", user.id);
       await refresh();
