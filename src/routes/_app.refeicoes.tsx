@@ -99,16 +99,19 @@ function Page() {
               {dm.length === 0 ? <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem refeições.</CardContent></Card> :
                 <div className="grid gap-2">
                   {dm.map((m) => (
-                    <Card key={m.id} className="shadow-card"><CardContent className="p-4 flex items-start gap-3">
-                      <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[64px] text-center">{MEAL[m.type]}</div>
+                    <Card key={m.id} className={`shadow-card transition ${!m.is_active ? "opacity-50" : ""}`}><CardContent className="p-4 flex items-start gap-3">
+                      <div className={`text-xs font-semibold px-2 py-1 rounded min-w-[64px] text-center ${m.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>{MEAL[m.type]}</div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold">{m.host_name}</div>
+                        <div className={`font-semibold ${!m.is_active ? "line-through" : ""}`}>{m.host_name}</div>
                         {m.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{m.location}</div>}
                         {m.meal_time && <div className="text-xs text-muted-foreground">{m.meal_time.slice(0, 5)}</div>}
                       </div>
-                      {canEdit && <div className="flex flex-col gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => { setEditing(m); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => remove(m.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                      {canEdit && <div className="flex flex-col items-end gap-1">
+                        <Switch checked={m.is_active} onCheckedChange={(v) => toggle(m.id, v)} aria-label="Ativar/desativar" />
+                        <div className="flex">
+                          <Button size="icon" variant="ghost" onClick={() => { setEditing(m); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => remove(m.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                        </div>
                       </div>}
                     </CardContent></Card>
                   ))}
