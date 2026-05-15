@@ -58,6 +58,13 @@ function Page() {
 
   const remove = async (id: string) => { const { error } = await supabase.from("checklist_items").delete().eq("id", id); if (error) toast.error(error.message); };
 
+  const saveEdit = async () => {
+    if (!editItem) return;
+    if (!editItem.title.trim()) { toast.error("Título obrigatório"); return; }
+    const { error } = await supabase.from("checklist_items").update({ title: editItem.title.trim(), description: editItem.description?.trim() || null }).eq("id", editItem.id);
+    if (error) toast.error(error.message); else { toast.success("Atualizado"); setEditItem(null); }
+  };
+
   const done = items.filter((i) => i.status === "done").length;
   const progress = items.length ? Math.round((done / items.length) * 100) : 0;
 
