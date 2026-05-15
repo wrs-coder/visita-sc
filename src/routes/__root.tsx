@@ -53,9 +53,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Visita do Superintendente — Gestão e Colaboração" },
+      { title: "Visita do SC" },
       { name: "description", content: "Aplicativo para organizar a Semana da Visita do Superintendente de Circuito: cronograma, escala de campo, refeições e checklist da congregação." },
       { name: "theme-color", content: "#1e3a8a" },
+      { property: "og:title", content: "Visita do SC" },
+      { name: "twitter:title", content: "Visita do SC" },
+      { property: "og:description", content: "Aplicativo para organizar a Semana da Visita do Superintendente de Circuito: cronograma, escala de campo, refeições e checklist da congregação." },
+      { name: "twitter:description", content: "Aplicativo para organizar a Semana da Visita do Superintendente de Circuito: cronograma, escala de campo, refeições e checklist da congregação." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/2Pcc719CF8OHWGlzZtireHW8YSA2/social-images/social-1778853791525-1778853665784.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/2Pcc719CF8OHWGlzZtireHW8YSA2/social-images/social-1778853791525-1778853665784.webp" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
