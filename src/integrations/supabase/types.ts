@@ -209,6 +209,53 @@ export type Database = {
           },
         ]
       }
+      field_meeting_template_items: {
+        Row: {
+          closing_prayer: string | null
+          created_at: string
+          day_offset: number
+          id: string
+          meeting_time: string | null
+          period: string
+          sort_order: number
+          template_id: string
+          territory_location: string | null
+          territory_number: string | null
+        }
+        Insert: {
+          closing_prayer?: string | null
+          created_at?: string
+          day_offset?: number
+          id?: string
+          meeting_time?: string | null
+          period?: string
+          sort_order?: number
+          template_id: string
+          territory_location?: string | null
+          territory_number?: string | null
+        }
+        Update: {
+          closing_prayer?: string | null
+          created_at?: string
+          day_offset?: number
+          id?: string
+          meeting_time?: string | null
+          period?: string
+          sort_order?: number
+          template_id?: string
+          territory_location?: string | null
+          territory_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_meeting_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "field_meeting_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       field_meeting_templates: {
         Row: {
           congregation_id: string | null
@@ -246,6 +293,7 @@ export type Database = {
           event_date: string
           id: string
           is_active: boolean
+          meeting_time: string | null
           period: string
           territory_location: string | null
           territory_number: string | null
@@ -258,6 +306,7 @@ export type Database = {
           event_date: string
           id?: string
           is_active?: boolean
+          meeting_time?: string | null
           period: string
           territory_location?: string | null
           territory_number?: string | null
@@ -270,6 +319,7 @@ export type Database = {
           event_date?: string
           id?: string
           is_active?: boolean
+          meeting_time?: string | null
           period?: string
           territory_location?: string | null
           territory_number?: string | null

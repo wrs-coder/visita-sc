@@ -22,6 +22,7 @@ interface Row {
   visit_id: string;
   event_date: string;
   period: string;
+  meeting_time: string | null;
   territory_number: string | null;
   territory_location: string | null;
   closing_prayer: string | null;
@@ -59,7 +60,7 @@ function Page() {
     const load = async () => {
       const { data } = await supabase
         .from("field_meetings")
-        .select("id,visit_id,event_date,period,territory_number,territory_location,closing_prayer,is_active")
+        .select("id,visit_id,event_date,period,meeting_time,territory_number,territory_location,closing_prayer,is_active")
         .eq("visit_id", visit.id)
         .order("event_date")
         .order("period");
@@ -142,26 +143,30 @@ function Page() {
 }
 
 function RowCard({ row: r, isSuper, showAllFields, saving, update, remove }: { row: Row; isSuper: boolean; showAllFields: boolean; saving: boolean; update: (id: string, p: Partial<Row>) => Promise<void>; remove: (id: string) => void }) {
+  const [meeting_time, setMeetingTime] = useState(r.meeting_time ?? "");
   const [territory_number, setTerritoryNumber] = useState(r.territory_number ?? "");
   const [territory_location, setTerritoryLocation] = useState(r.territory_location ?? "");
   const [closing_prayer, setClosingPrayer] = useState(r.closing_prayer ?? "");
 
   useEffect(() => {
+    setMeetingTime(r.meeting_time ?? "");
     setTerritoryNumber(r.territory_number ?? "");
     setTerritoryLocation(r.territory_location ?? "");
     setClosingPrayer(r.closing_prayer ?? "");
-  }, [r.id, r.territory_number, r.territory_location, r.closing_prayer]);
+  }, [r.id, r.meeting_time, r.territory_number, r.territory_location, r.closing_prayer]);
 
   const dirty =
+    meeting_time !== (r.meeting_time ?? "") ||
     territory_number !== (r.territory_number ?? "") ||
     territory_location !== (r.territory_location ?? "") ||
     closing_prayer !== (r.closing_prayer ?? "");
 
-  const everSaved = !!(r.territory_number || r.territory_location || r.closing_prayer);
+  const everSaved = !!(r.meeting_time || r.territory_number || r.territory_location || r.closing_prayer);
 
   const handleSave = () => {
     if (!dirty) return;
     update(r.id, {
+      meeting_time: meeting_time || null,
       territory_number: territory_number || null,
       territory_location: territory_location || null,
       closing_prayer: closing_prayer || null,
@@ -189,10 +194,14 @@ function RowCard({ row: r, isSuper, showAllFields, saving, update, remove }: { r
           {showAllFields && (
             <>
               <div>
+                <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Horário</label>
+                <Input type="time" value={meeting_time} readOnly={!isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />
+              </div>
+              <div>
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">N° do território S-13</label>
                 <Input value={territory_number} onChange={(e) => setTerritoryNumber(e.target.value)} className="h-9 mt-0.5" />
               </div>
-              <div>
+              <div className="col-span-2">
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Localização do território</label>
                 <Input value={territory_location} onChange={(e) => setTerritoryLocation(e.target.value)} className="h-9 mt-0.5" />
               </div>
