@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { registerElder } from "@/lib/auth.functions";
+import { registerElderByPhone } from "@/lib/auth.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,16 +12,14 @@ import { toast } from "sonner";
 import { Users, ArrowLeft } from "lucide-react";
 import { ELDER_POSITION_LABELS, type ElderPosition } from "@/hooks/use-auth";
 
-export const Route = createFileRoute("/cadastro/anciao")({
-  component: Page,
-});
+export const Route = createFileRoute("/cadastro/anciao")({ component: Page });
 
 function Page() {
   const nav = useNavigate();
-  const fn = useServerFn(registerElder);
+  const fn = useServerFn(registerElderByPhone);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState<{ fullName: string; email: string; password: string; inviteCode: string; position: ElderPosition | "" }>({
-    fullName: "", email: "", password: "", inviteCode: "", position: "",
+  const [form, setForm] = useState<{ fullName: string; phone: string; password: string; inviteCode: string; position: ElderPosition | "" }>({
+    fullName: "", phone: "", password: "", inviteCode: "", position: "",
   });
 
   const submit = async (e: React.FormEvent) => {
@@ -31,7 +29,7 @@ function Page() {
     try {
       const res = await fn({ data: { ...form, position: form.position, inviteCode: form.inviteCode.toUpperCase() } });
       if (!res.ok) { toast.error("Erro no cadastro", { description: res.error }); setBusy(false); return; }
-      const { error } = await supabase.auth.signInWithPassword({ email: form.email.trim(), password: form.password });
+      const { error } = await supabase.auth.signInWithPassword({ email: res.email, password: form.password });
       if (error) { toast.error(error.message); setBusy(false); return; }
       toast.success("Cadastro concluído!");
       nav({ to: "/dashboard" });
@@ -55,13 +53,13 @@ function Page() {
               </div>
               <div>
                 <h2 className="font-semibold text-lg">Cadastro de Ancião</h2>
-                <p className="text-xs text-muted-foreground">Informe o código da sua congregação</p>
+                <p className="text-xs text-muted-foreground">Telefone, designação e código da congregação</p>
               </div>
             </div>
             <form onSubmit={submit} className="space-y-3">
               <Field id="fullName" label="Nome completo" value={form.fullName} onChange={(v) => setForm({ ...form, fullName: v })} />
-              <Field id="email" label="E-mail" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
-              <Field id="password" label="Senha (mín. 6)" type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
+              <Field id="phone" label="Telefone (com DDD)" type="tel" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+              <Field id="password" label="Defina uma senha (mín. 6)" type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
               <Field id="code" label="Código da congregação" value={form.inviteCode} onChange={(v) => setForm({ ...form, inviteCode: v.toUpperCase() })} />
               <div className="space-y-1.5">
                 <Label htmlFor="pos">Designação no corpo de anciãos</Label>
