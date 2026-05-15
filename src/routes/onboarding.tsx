@@ -18,7 +18,6 @@ function Page() {
   const nav = useNavigate();
   const [mode, setMode] = useState<"superintendent" | "elder" | null>(null);
   const [code, setCode] = useState("");
-  const [name, setName] = useState("");
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -29,12 +28,12 @@ function Page() {
     e.preventDefault();
     if (!mode) return;
     setBusy(true);
-    const res = await fn({ data: { mode, code, congregationName: mode === "superintendent" ? name : undefined, fullName: fullName || undefined } });
+    const res = await fn({ data: { mode, code, fullName: fullName || undefined } });
     setBusy(false);
     if (!res.ok) { toast.error(res.error); return; }
-    toast.success(mode === "superintendent" ? `Conta criada! Código: ${res.inviteCode}` : "Bem-vindo à congregação!");
+    toast.success(mode === "superintendent" ? "Conta criada! Agora cadastre as congregações do circuito." : "Bem-vindo à congregação!");
     await refresh();
-    nav({ to: "/dashboard" });
+    nav({ to: mode === "superintendent" ? "/congregacoes" : "/dashboard" });
   };
 
   return (
@@ -48,7 +47,7 @@ function Page() {
             <div className="grid gap-3">
               <button onClick={() => setMode("superintendent")} className="flex items-start gap-3 p-4 border rounded-xl text-left hover:border-primary hover:bg-primary/5 transition">
                 <ShieldCheck className="h-5 w-5 text-primary mt-0.5" />
-                <div><div className="font-medium">Sou Superintendente</div><div className="text-xs text-muted-foreground">Criar nova congregação (precisa do código)</div></div>
+                <div><div className="font-medium">Sou Superintendente</div><div className="text-xs text-muted-foreground">Cadastrar congregações do circuito (precisa do código)</div></div>
               </button>
               <button onClick={() => setMode("elder")} className="flex items-start gap-3 p-4 border rounded-xl text-left hover:border-primary hover:bg-primary/5 transition">
                 <Users className="h-5 w-5 text-primary mt-0.5" />
@@ -64,12 +63,6 @@ function Page() {
                 <Label htmlFor="fn">Nome completo</Label>
                 <Input id="fn" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
               </div>
-              {mode === "superintendent" && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="cn">Nome da congregação</Label>
-                  <Input id="cn" required value={name} onChange={(e) => setName(e.target.value)} />
-                </div>
-              )}
               <div className="space-y-1.5">
                 <Label htmlFor="code">{mode === "superintendent" ? "Código de identificação" : "Código da congregação"}</Label>
                 <Input id="code" required value={code} onChange={(e) => setCode(e.target.value)} />
