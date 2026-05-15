@@ -3,10 +3,18 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+type PayloadValue = string | number | boolean | null;
+type Payload = Record<string, PayloadValue>;
+
+const payloadSchema: z.ZodType<Payload> = z.record(
+  z.string(),
+  z.union([z.string(), z.number(), z.boolean(), z.null()]),
+);
+
 const itemSchema = z.object({
   kind: z.enum(["study", "meal", "transport"]),
   day_offset: z.number().int().min(0).max(30),
-  payload: z.record(z.string(), z.unknown()),
+  payload: payloadSchema,
   sort_order: z.number().int().min(0).max(1000).default(0),
 });
 
@@ -18,7 +26,7 @@ export const listTemplates = createServerFn({ method: "POST" })
       .from("program_templates").select("id,slot,name,created_at,updated_at")
       .eq("superintendent_id", userId).order("slot");
     const ids = (tpls ?? []).map((t) => t.id);
-    let items: Array<{ id: string; template_id: string; kind: string; day_offset: number; payload: Record<string, unknown>; sort_order: number }> = [];
+    let items: Array<{ id: string; template_id: string; kind: string; day_offset: number; payload: Payload; sort_order: number }> = [];
     if (ids.length) {
       const { data } = await supabaseAdmin
         .from("program_template_items").select("*").in("template_id", ids).order("sort_order");
@@ -69,7 +77,7 @@ export const replaceTemplateItems = createServerFn({ method: "POST" })
         template_id: data.templateId,
         kind: it.kind,
         day_offset: it.day_offset,
-        payload: it.payload,
+        payload: it.payload as Record<string, string | number | boolean | null>,
         sort_order: it.sort_order ?? i,
       }));
       const { error } = await supabaseAdmin.from("program_template_items").insert(rows);
