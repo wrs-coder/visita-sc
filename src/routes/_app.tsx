@@ -1,7 +1,7 @@
-import { createFileRoute, Outlet, Link, redirect, useLocation, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, Settings, LogOut, Compass, Menu, Building2, Car, FileStack } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -15,14 +15,20 @@ function AppLayout() {
   const nav = useNavigate();
   const location = useLocation();
 
-  if (loading) {
+  const redirectTo: string | null = !loading && !user
+    ? "/"
+    : !loading && needsOnboarding && location.pathname !== "/onboarding"
+    ? "/onboarding"
+    : !loading && role === "superintendent" && !congregation && location.pathname !== "/congregacoes"
+    ? "/congregacoes"
+    : null;
+
+  useEffect(() => {
+    if (redirectTo) nav({ to: redirectTo });
+  }, [redirectTo, nav]);
+
+  if (loading || redirectTo) {
     return <div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
-  }
-  if (!user) { throw redirect({ to: "/" }); }
-  if (needsOnboarding && location.pathname !== "/onboarding") { throw redirect({ to: "/onboarding" }); }
-  // Super logged in but hasn't picked/created a congregation yet → send to manager
-  if (role === "superintendent" && !congregation && location.pathname !== "/congregacoes") {
-    throw redirect({ to: "/congregacoes" });
   }
 
   const items = [
