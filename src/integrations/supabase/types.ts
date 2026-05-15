@@ -69,6 +69,7 @@ export type Database = {
           created_at: string
           id: string
           invite_code: string
+          is_active: boolean
           name: string
           superintendent_id: string
         }
@@ -76,6 +77,7 @@ export type Database = {
           created_at?: string
           id?: string
           invite_code: string
+          is_active?: boolean
           name: string
           superintendent_id: string
         }
@@ -83,6 +85,7 @@ export type Database = {
           created_at?: string
           id?: string
           invite_code?: string
+          is_active?: boolean
           name?: string
           superintendent_id?: string
         }
@@ -193,27 +196,42 @@ export type Database = {
       }
       private_notes: {
         Row: {
+          additional_info: string | null
+          companion: string | null
           content: string
           created_at: string
           id: string
+          involved_names: string | null
+          note_date: string | null
+          note_type: string
           superintendent_id: string
           title: string | null
           updated_at: string
           visit_id: string
         }
         Insert: {
+          additional_info?: string | null
+          companion?: string | null
           content?: string
           created_at?: string
           id?: string
+          involved_names?: string | null
+          note_date?: string | null
+          note_type?: string
           superintendent_id: string
           title?: string | null
           updated_at?: string
           visit_id: string
         }
         Update: {
+          additional_info?: string | null
+          companion?: string | null
           content?: string
           created_at?: string
           id?: string
+          involved_names?: string | null
+          note_date?: string | null
+          note_type?: string
           superintendent_id?: string
           title?: string | null
           updated_at?: string
@@ -236,6 +254,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          phone: string | null
         }
         Insert: {
           congregation_id?: string | null
@@ -243,6 +262,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          phone?: string | null
         }
         Update: {
           congregation_id?: string | null
@@ -250,6 +270,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          phone?: string | null
         }
         Relationships: [
           {
@@ -260,6 +281,71 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      program_template_items: {
+        Row: {
+          created_at: string
+          day_offset: number
+          id: string
+          kind: string
+          payload: Json
+          sort_order: number
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_offset?: number
+          id?: string
+          kind: string
+          payload?: Json
+          sort_order?: number
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          day_offset?: number
+          id?: string
+          kind?: string
+          payload?: Json
+          sort_order?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "program_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_templates: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slot: number
+          superintendent_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slot: number
+          superintendent_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slot?: number
+          superintendent_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       schedule_events: {
         Row: {
@@ -396,6 +482,7 @@ export type Database = {
           id: string
           is_active: boolean
           start_date: string
+          template_id: string | null
           title: string
         }
         Insert: {
@@ -405,6 +492,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           start_date: string
+          template_id?: string | null
           title: string
         }
         Update: {
@@ -414,6 +502,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           start_date?: string
+          template_id?: string | null
           title?: string
         }
         Relationships: [
@@ -424,6 +513,13 @@ export type Database = {
             referencedRelation: "congregations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "visits_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "program_templates"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -431,6 +527,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_template_to_visit: {
+        Args: { _template_id: string; _visit_id: string }
+        Returns: undefined
+      }
       can_edit_visit: {
         Args: { _user_id: string; _visit_id: string }
         Returns: boolean
