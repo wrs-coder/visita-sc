@@ -14,7 +14,7 @@ export const listMyCongregations = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data, error } = await supabaseAdmin
       .from("congregations")
-      .select("id,name,invite_code,superintendent_id,created_at")
+      .select("id,name,invite_code,superintendent_id,is_active,created_at")
       .eq("superintendent_id", userId)
       .order("name");
     if (error) return { ok: false as const, error: error.message };

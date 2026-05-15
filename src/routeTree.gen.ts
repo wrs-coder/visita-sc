@@ -19,6 +19,7 @@ import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 import { Route as AppTransporteRouteImport } from './routes/_app.transporte'
 import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
 import { Route as AppNotasRouteImport } from './routes/_app.notas'
+import { Route as AppModelosRouteImport } from './routes/_app.modelos'
 import { Route as AppEscalaRouteImport } from './routes/_app.escala'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCronogramaRouteImport } from './routes/_app.cronograma'
@@ -75,6 +76,11 @@ const AppNotasRoute = AppNotasRouteImport.update({
   path: '/notas',
   getParentRoute: () => AppRoute,
 } as any)
+const AppModelosRoute = AppModelosRouteImport.update({
+  id: '/modelos',
+  path: '/modelos',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppEscalaRoute = AppEscalaRouteImport.update({
   id: '/escala',
   path: '/escala',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
+  '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
   '/refeicoes': typeof AppRefeicoesRoute
   '/transporte': typeof AppTransporteRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
+  '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
   '/refeicoes': typeof AppRefeicoesRoute
   '/transporte': typeof AppTransporteRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/_app/cronograma': typeof AppCronogramaRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/escala': typeof AppEscalaRoute
+  '/_app/modelos': typeof AppModelosRoute
   '/_app/notas': typeof AppNotasRoute
   '/_app/refeicoes': typeof AppRefeicoesRoute
   '/_app/transporte': typeof AppTransporteRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/cronograma'
     | '/dashboard'
     | '/escala'
+    | '/modelos'
     | '/notas'
     | '/refeicoes'
     | '/transporte'
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/cronograma'
     | '/dashboard'
     | '/escala'
+    | '/modelos'
     | '/notas'
     | '/refeicoes'
     | '/transporte'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/_app/cronograma'
     | '/_app/dashboard'
     | '/_app/escala'
+    | '/_app/modelos'
     | '/_app/notas'
     | '/_app/refeicoes'
     | '/_app/transporte'
@@ -296,6 +308,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNotasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/modelos': {
+      id: '/_app/modelos'
+      path: '/modelos'
+      fullPath: '/modelos'
+      preLoaderRoute: typeof AppModelosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/escala': {
       id: '/_app/escala'
       path: '/escala'
@@ -348,6 +367,7 @@ interface AppRouteChildren {
   AppCronogramaRoute: typeof AppCronogramaRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppEscalaRoute: typeof AppEscalaRoute
+  AppModelosRoute: typeof AppModelosRoute
   AppNotasRoute: typeof AppNotasRoute
   AppRefeicoesRoute: typeof AppRefeicoesRoute
   AppTransporteRoute: typeof AppTransporteRoute
@@ -360,6 +380,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCronogramaRoute: AppCronogramaRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppEscalaRoute: AppEscalaRoute,
+  AppModelosRoute: AppModelosRoute,
   AppNotasRoute: AppNotasRoute,
   AppRefeicoesRoute: AppRefeicoesRoute,
   AppTransporteRoute: AppTransporteRoute,
@@ -379,13 +400,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

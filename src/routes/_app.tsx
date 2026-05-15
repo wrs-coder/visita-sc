@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, Link, redirect, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, Settings, LogOut, Compass, Menu, Building2, Car } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, Settings, LogOut, Compass, Menu, Building2, Car, FileStack } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ function AppLayout() {
     { to: "/transporte", label: "Transporte", icon: Car },
     { to: "/checklist", label: "Checklist", icon: ListChecks },
     ...(role === "superintendent" ? [{ to: "/notas", label: "Notas Privadas", icon: Lock }] : []),
+    ...(role === "superintendent" ? [{ to: "/modelos", label: "Modelos", icon: FileStack }] : []),
     ...(role === "superintendent" ? [{ to: "/congregacoes", label: "Congregações", icon: Building2 }] : []),
     { to: "/configuracoes", label: "Configurações", icon: Settings },
   ];
