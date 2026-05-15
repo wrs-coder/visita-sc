@@ -209,6 +209,75 @@ export type Database = {
           },
         ]
       }
+      field_meeting_templates: {
+        Row: {
+          congregation_id: string | null
+          created_at: string
+          id: string
+          modality: Database["public"]["Enums"]["field_modality"]
+          name: string
+          superintendent_id: string
+          updated_at: string
+        }
+        Insert: {
+          congregation_id?: string | null
+          created_at?: string
+          id?: string
+          modality?: Database["public"]["Enums"]["field_modality"]
+          name: string
+          superintendent_id: string
+          updated_at?: string
+        }
+        Update: {
+          congregation_id?: string | null
+          created_at?: string
+          id?: string
+          modality?: Database["public"]["Enums"]["field_modality"]
+          name?: string
+          superintendent_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      field_meetings: {
+        Row: {
+          closing_prayer: string | null
+          created_at: string
+          event_date: string
+          id: string
+          is_active: boolean
+          period: string
+          territory_location: string | null
+          territory_number: string | null
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          closing_prayer?: string | null
+          created_at?: string
+          event_date: string
+          id?: string
+          is_active?: boolean
+          period: string
+          territory_location?: string | null
+          territory_number?: string | null
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          closing_prayer?: string | null
+          created_at?: string
+          event_date?: string
+          id?: string
+          is_active?: boolean
+          period?: string
+          territory_location?: string | null
+          territory_number?: string | null
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: []
+      }
       meals: {
         Row: {
           contact_phone: string | null
@@ -609,6 +678,13 @@ export type Database = {
         | "midweek_meeting"
         | "weekend_meeting"
         | "other"
+      field_modality:
+        | "casa_em_casa"
+        | "estudos_revisitas"
+        | "telefone"
+        | "cartas"
+        | "telefone_cartas"
+        | "grupo_de_campo"
       meal_type: "lunch" | "dinner" | "breakfast"
     }
     CompositeTypes: {
@@ -748,6 +824,14 @@ export const Constants = {
         "midweek_meeting",
         "weekend_meeting",
         "other",
+      ],
+      field_modality: [
+        "casa_em_casa",
+        "estudos_revisitas",
+        "telefone",
+        "cartas",
+        "telefone_cartas",
+        "grupo_de_campo",
       ],
       meal_type: ["lunch", "dinner", "breakfast"],
     },
