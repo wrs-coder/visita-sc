@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, KeyRound, Calendar, Check, Building2 } from "lucide-react";
+import { Plus, Trash2, KeyRound, Calendar, Check, Building2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,6 +32,7 @@ function Page() {
   const [congs, setCongs] = useState<Cong[]>([]);
   const [tpls, setTpls] = useState<{ id: string; slot: number; name: string }[]>([]);
   const [open, setOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", start_date: "", end_date: "", congregation_id: "", template_id: "" });
   const isSuper = role === "superintendent";
 
@@ -60,13 +61,31 @@ function Page() {
   }, [congregation, isSuper, congs]);
 
   const openNew = () => {
+    setEditId(null);
     setForm({ title: "", start_date: "", end_date: "", congregation_id: congregation?.id ?? congs[0]?.id ?? "", template_id: "" });
     setOpen(true);
   };
 
-  const create = async () => {
+  const openEdit = (v: Visit) => {
+    setEditId(v.id);
+    setForm({ title: v.title, start_date: v.start_date, end_date: v.end_date, congregation_id: v.congregation_id, template_id: "" });
+    setOpen(true);
+  };
+
+  const submit = async () => {
     if (!form.congregation_id) { toast.error("Selecione a congregação"); return; }
     if (!form.title || !form.start_date || !form.end_date) { toast.error("Preencha todos os campos"); return; }
+    if (editId) {
+      const { error } = await supabase.from("visits").update({ title: form.title, start_date: form.start_date, end_date: form.end_date, congregation_id: form.congregation_id }).eq("id", editId);
+      if (error) { toast.error(error.message); return; }
+      if (form.template_id) {
+        const r = await fnApply({ data: { visitId: editId, templateId: form.template_id } });
+        if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
+      }
+      toast.success("Visita atualizada");
+      setOpen(false);
+      return;
+    }
     await supabase.from("visits").update({ is_active: false }).eq("congregation_id", form.congregation_id);
     const { data, error } = await supabase.from("visits").insert({ congregation_id: form.congregation_id, title: form.title, start_date: form.start_date, end_date: form.end_date, is_active: true }).select().single();
     if (error || !data) { toast.error(error?.message ?? "Falha"); return; }
@@ -139,7 +158,7 @@ function Page() {
           <Dialog open={open} onOpenChange={setOpen}>
             <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Nova visita</Button>
             <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle>Nova visita</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editId ? "Editar visita" : "Nova visita"}</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div>
                   <Label>Congregação</Label>
@@ -166,8 +185,9 @@ function Page() {
                     </SelectContent>
                   </Select>
                   {tpls.length === 0 && <p className="text-xs text-muted-foreground mt-1">Crie um modelo em "Modelos" para aplicá-lo aqui.</p>}
+                  {editId && <p className="text-xs text-muted-foreground mt-1">Selecionar um modelo aplicará novos itens à visita existente.</p>}
                 </div>
-                <Button className="w-full" onClick={create}>Criar</Button>
+                <Button className="w-full" onClick={submit}>{editId ? "Salvar" : "Criar"}</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -187,6 +207,7 @@ function Page() {
               </div>
               {isSuper && <div className="flex gap-1">
                 {!v.is_active && <Button size="sm" variant="outline" onClick={() => setActive(v.id)}><Check className="h-3.5 w-3.5 mr-1" />Ativar</Button>}
+                <Button size="icon" variant="ghost" onClick={() => openEdit(v)}><Pencil className="h-3.5 w-3.5" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => remove(v.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
               </div>}
             </CardContent></Card>
