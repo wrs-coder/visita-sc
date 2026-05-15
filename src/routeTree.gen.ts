@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
@@ -23,9 +25,19 @@ import { Route as AppCongregacoesRouteImport } from './routes/_app.congregacoes'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
 import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
 
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EsqueciSenhaRoute = EsqueciSenhaRouteImport.update({
+  id: '/esqueci-senha',
+  path: '/esqueci-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -90,7 +102,9 @@ const AppChecklistRoute = AppChecklistRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/onboarding': typeof OnboardingRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/checklist': typeof AppChecklistRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/congregacoes': typeof AppCongregacoesRoute
@@ -104,7 +118,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/onboarding': typeof OnboardingRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/checklist': typeof AppChecklistRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/congregacoes': typeof AppCongregacoesRoute
@@ -120,7 +136,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/onboarding': typeof OnboardingRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_app/checklist': typeof AppChecklistRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/congregacoes': typeof AppCongregacoesRoute
@@ -136,7 +154,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/esqueci-senha'
     | '/onboarding'
+    | '/redefinir-senha'
     | '/checklist'
     | '/configuracoes'
     | '/congregacoes'
@@ -150,7 +170,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/esqueci-senha'
     | '/onboarding'
+    | '/redefinir-senha'
     | '/checklist'
     | '/configuracoes'
     | '/congregacoes'
@@ -165,7 +187,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_app'
+    | '/esqueci-senha'
     | '/onboarding'
+    | '/redefinir-senha'
     | '/_app/checklist'
     | '/_app/configuracoes'
     | '/_app/congregacoes'
@@ -181,18 +205,34 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   OnboardingRoute: typeof OnboardingRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
   CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esqueci-senha': {
+      id: '/esqueci-senha'
+      path: '/esqueci-senha'
+      fullPath: '/esqueci-senha'
+      preLoaderRoute: typeof EsqueciSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -309,7 +349,9 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  EsqueciSenhaRoute: EsqueciSenhaRoute,
   OnboardingRoute: OnboardingRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
   CadastroAnciaoRoute: CadastroAnciaoRoute,
   CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,
 }
