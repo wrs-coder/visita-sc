@@ -327,14 +327,20 @@ function Page() {
                             <Input
                               placeholder="Título do item"
                               value={it.title}
-                              onChange={(e) => updateItem(idx, { title: e.target.value })}
+                              onChange={(e) => { updateItem(idx, { title: e.target.value }); if (itemErrs[idx]?.title) setItemErrs((s) => ({ ...s, [idx]: { ...s[idx], title: undefined } })); }}
+                              maxLength={300}
+                              className={itemErrs[idx]?.title ? "border-destructive" : ""}
                             />
+                            {itemErrs[idx]?.title && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{itemErrs[idx]?.title}</p>}
                             <Textarea
                               rows={2}
                               placeholder="Descrição (opcional)"
                               value={it.description}
-                              onChange={(e) => updateItem(idx, { description: e.target.value })}
+                              onChange={(e) => { updateItem(idx, { description: e.target.value }); if (itemErrs[idx]?.description) setItemErrs((s) => ({ ...s, [idx]: { ...s[idx], description: undefined } })); }}
+                              maxLength={2000}
+                              className={itemErrs[idx]?.description ? "border-destructive" : ""}
                             />
+                            {itemErrs[idx]?.description && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{itemErrs[idx]?.description}</p>}
                           </div>
                           <div className="flex flex-col gap-1">
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => move(idx, -1)} disabled={idx === 0}>
