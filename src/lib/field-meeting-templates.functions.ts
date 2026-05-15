@@ -103,7 +103,7 @@ export const updateFieldMeetingTemplate = createServerFn({ method: "POST" })
     const { data: own } = await supabaseAdmin.from("field_meeting_templates")
       .select("id").eq("id", data.id).eq("superintendent_id", userId).maybeSingle();
     if (!own) return { ok: false as const, error: "Não autorizado." };
-    const patch: Record<string, unknown> = {};
+    const patch: { name?: string; modality?: (typeof FIELD_MODALITIES)[number] } = {};
     if (data.name) patch.name = data.name;
     if (data.modality) patch.modality = data.modality;
     if (Object.keys(patch).length === 0) return { ok: true as const };
