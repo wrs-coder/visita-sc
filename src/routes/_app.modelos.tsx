@@ -93,7 +93,7 @@ function Page() {
     const id = await ensureTemplate(slot);
     if (!id) return;
     const defaults: Payload =
-      kind === "study" ? { period: "Manhã", meeting_point: "", meeting_time: "", acompanhante: "", contact_phone: "" }
+      kind === "study" ? { period: "Manhã", meeting_point: "", meeting_time: "", acompanhante: "", acompanhante_for: "", contact_phone: "" }
       : kind === "meal" ? { type: "lunch", host_name: "", location: "", meal_time: "", notes: "" }
       : { driver_name: "", contact_phone: "", description: "", notes: "" };
     setItemsByTpl((m) => ({ ...m, [id]: [...(m[id] ?? []), { kind, day_offset: 0, payload: defaults, sort_order: (m[id]?.length ?? 0) }] }));
@@ -185,6 +185,13 @@ function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Paylo
       <Input className="h-9" type="time" value={String(payload.meeting_time ?? "")} onChange={(e) => set("meeting_time", e.target.value)} />
       <Input className="h-9 col-span-2" placeholder="Local de encontro" value={String(payload.meeting_point ?? "")} onChange={(e) => set("meeting_point", e.target.value)} />
       <Input className="h-9 col-span-2" placeholder="Acompanhante para estudos" value={String(payload.acompanhante ?? "")} onChange={(e) => set("acompanhante", e.target.value)} />
+      <Select value={String(payload.acompanhante_for ?? "")} onValueChange={(v) => set("acompanhante_for", v)}>
+        <SelectTrigger className="h-9 col-span-2"><SelectValue placeholder="Acompanhante para…" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="superintendente">Superintendente</SelectItem>
+          <SelectItem value="esposa">Esposa do superintendente</SelectItem>
+        </SelectContent>
+      </Select>
       <Input className="h-9 col-span-2" placeholder="Telefone de contato" value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
     </div>
   );
