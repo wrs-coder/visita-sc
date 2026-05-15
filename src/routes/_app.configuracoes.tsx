@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { listMyCongregations } from "@/lib/congregations.functions";
 import { listTemplates, applyTemplateToVisit } from "@/lib/templates.functions";
+import { applyFieldMeetingTemplateForVisit } from "@/lib/field-meeting-templates.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,7 @@ function Page() {
   const fnList = useServerFn(listMyCongregations);
   const fnTpls = useServerFn(listTemplates);
   const fnApply = useServerFn(applyTemplateToVisit);
+  const fnApplyField = useServerFn(applyFieldMeetingTemplateForVisit);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [congs, setCongs] = useState<Cong[]>([]);
   const [tpls, setTpls] = useState<{ id: string; slot: number; name: string }[]>([]);
