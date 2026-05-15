@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, Link, redirect, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, Settings, LogOut, Compass, Menu } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, Settings, LogOut, Compass, Menu, Building2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,10 @@ function AppLayout() {
   }
   if (!user) { throw redirect({ to: "/" }); }
   if (needsOnboarding && location.pathname !== "/onboarding") { throw redirect({ to: "/onboarding" }); }
+  // Super logged in but hasn't picked/created a congregation yet → send to manager
+  if (role === "superintendent" && !congregation && location.pathname !== "/congregacoes") {
+    throw redirect({ to: "/congregacoes" });
+  }
 
   const items = [
     { to: "/dashboard", label: "Início", icon: LayoutDashboard },
@@ -28,6 +32,7 @@ function AppLayout() {
     { to: "/refeicoes", label: "Refeições", icon: UtensilsCrossed },
     { to: "/checklist", label: "Checklist", icon: ListChecks },
     ...(role === "superintendent" ? [{ to: "/notas", label: "Notas Privadas", icon: Lock }] : []),
+    ...(role === "superintendent" ? [{ to: "/congregacoes", label: "Congregações", icon: Building2 }] : []),
     { to: "/configuracoes", label: "Configurações", icon: Settings },
   ];
 

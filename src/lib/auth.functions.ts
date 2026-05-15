@@ -14,7 +14,6 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
       fullName: z.string().trim().min(2).max(120),
       email: z.string().trim().email().max(200),
       password: z.string().min(6).max(100),
-      congregationName: z.string().trim().min(2).max(120),
       code: z.string().trim().min(1),
     }).parse(input),
   )
@@ -34,32 +33,16 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
     }
     const userId = created.user.id;
 
-    // Generate unique invite code
-    let inviteCode = genInviteCode();
-    for (let i = 0; i < 5; i++) {
-      const { data: exists } = await supabaseAdmin.from("congregations").select("id").eq("invite_code", inviteCode).maybeSingle();
-      if (!exists) break;
-      inviteCode = genInviteCode();
-    }
-
-    const { data: cong, error: cErr } = await supabaseAdmin
-      .from("congregations")
-      .insert({ name: data.congregationName, invite_code: inviteCode, superintendent_id: userId })
-      .select("id, invite_code")
-      .single();
-    if (cErr || !cong) return { ok: false as const, error: cErr?.message ?? "Falha ao criar congregação." };
-
     await supabaseAdmin.from("profiles").update({
       full_name: data.fullName,
       email: data.email,
-      congregation_id: cong.id,
     }).eq("id", userId);
 
     await supabaseAdmin.from("user_roles").insert({
-      user_id: userId, role: "superintendent", congregation_id: cong.id,
+      user_id: userId, role: "superintendent", congregation_id: null,
     });
 
-    return { ok: true as const, inviteCode: cong.invite_code };
+    return { ok: true as const };
   });
 
 export const registerElder = createServerFn({ method: "POST" })
@@ -105,7 +88,6 @@ export const linkAccount = createServerFn({ method: "POST" })
     z.object({
       mode: z.enum(["superintendent", "elder"]),
       code: z.string().trim().min(1),
-      congregationName: z.string().trim().min(2).max(120).optional(),
       fullName: z.string().trim().min(1).max(120).optional(),
     }).parse(input),
   )
@@ -122,26 +104,14 @@ export const linkAccount = createServerFn({ method: "POST" })
 
     if (data.mode === "superintendent") {
       if (data.code !== SUPER_CODE) return { ok: false as const, error: "Código de superintendente inválido." };
-      if (!data.congregationName) return { ok: false as const, error: "Informe o nome da congregação." };
-
-      let inviteCode = genInviteCode();
-      for (let i = 0; i < 5; i++) {
-        const { data: exists } = await supabaseAdmin.from("congregations").select("id").eq("invite_code", inviteCode).maybeSingle();
-        if (!exists) break;
-        inviteCode = genInviteCode();
-      }
-      const { data: cong, error } = await supabaseAdmin.from("congregations")
-        .insert({ name: data.congregationName, invite_code: inviteCode, superintendent_id: userId })
-        .select("id, invite_code").single();
-      if (error || !cong) return { ok: false as const, error: error?.message ?? "Falha." };
 
       await supabaseAdmin.from("profiles").update({
-        full_name: data.fullName ?? undefined, email, congregation_id: cong.id,
+        full_name: data.fullName ?? undefined, email,
       }).eq("id", userId);
       await supabaseAdmin.from("user_roles").insert({
-        user_id: userId, role: "superintendent", congregation_id: cong.id,
+        user_id: userId, role: "superintendent", congregation_id: null,
       });
-      return { ok: true as const, inviteCode: cong.invite_code };
+      return { ok: true as const };
     } else {
       const { data: cong } = await supabaseAdmin.from("congregations")
         .select("id").eq("invite_code", data.code.toUpperCase()).maybeSingle();

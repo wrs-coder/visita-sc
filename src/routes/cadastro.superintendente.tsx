@@ -18,7 +18,7 @@ function Page() {
   const nav = useNavigate();
   const fn = useServerFn(registerSuperintendent);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", congregationName: "", code: "" });
+  const [form, setForm] = useState({ fullName: "", email: "", password: "", code: "" });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +28,8 @@ function Page() {
       if (!res.ok) { toast.error("Erro no cadastro", { description: res.error }); setBusy(false); return; }
       const { error } = await supabase.auth.signInWithPassword({ email: form.email.trim(), password: form.password });
       if (error) { toast.error(error.message); setBusy(false); return; }
-      toast.success("Conta criada!", { description: `Código da congregação: ${res.inviteCode}` });
-      nav({ to: "/dashboard" });
+      toast.success("Conta criada!", { description: "Agora cadastre as congregações do seu circuito." });
+      nav({ to: "/congregacoes" });
     } catch (err: unknown) {
       toast.error("Erro inesperado", { description: err instanceof Error ? err.message : String(err) });
       setBusy(false);
@@ -57,7 +57,7 @@ function Page() {
               <Field id="fullName" label="Nome completo" value={form.fullName} onChange={(v) => setForm({ ...form, fullName: v })} />
               <Field id="email" label="E-mail" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
               <Field id="password" label="Senha (mín. 6)" type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
-              <Field id="cong" label="Nome da congregação" value={form.congregationName} onChange={(v) => setForm({ ...form, congregationName: v })} />
+              
               <Field id="code" label="Código de identificação" value={form.code} onChange={(v) => setForm({ ...form, code: v })} />
               <Button type="submit" className="w-full h-11 mt-2" disabled={busy}>
                 {busy ? "Criando..." : "Criar conta de Superintendente"}

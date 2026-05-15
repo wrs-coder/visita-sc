@@ -77,7 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = async () => { await loadUserData(user?.id); };
   const signOut = async () => { await supabase.auth.signOut(); };
 
-  const needsOnboarding = !!user && (!role || !profile?.congregation_id);
+  // Super may have role but no active congregation yet — that's NOT onboarding,
+  // they go to /congregacoes to set one up. Elders must have a congregation.
+  const needsOnboarding = !!user && (!role || (role === "elder" && !profile?.congregation_id));
 
   return (
     <AuthContext.Provider value={{ loading, user, session, profile, role, congregation, needsOnboarding, refresh, signOut }}>
