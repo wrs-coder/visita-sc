@@ -229,7 +229,15 @@ function Page() {
             <div className="space-y-3">
               <div>
                 <Label>Nome</Label>
-                <Input className="mt-1" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ex: Padrão 2026" />
+                <Input
+                  className={`mt-1 ${newNameErr ? "border-destructive" : ""}`}
+                  value={newName}
+                  onChange={(e) => { setNewName(e.target.value); if (newNameErr) setNewNameErr(null); }}
+                  placeholder="Ex: Padrão 2026"
+                  maxLength={120}
+                />
+                {newNameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{newNameErr}</p>}
+                <p className="text-xs text-muted-foreground mt-1">{newName.trim().length}/120 caracteres</p>
               </div>
               <Button className="w-full" onClick={handleCreate} disabled={busy}>Criar</Button>
             </div>
