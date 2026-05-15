@@ -25,6 +25,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCronogramaRouteImport } from './routes/_app.cronograma'
 import { Route as AppCongregacoesRouteImport } from './routes/_app.congregacoes'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
+import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist-modelos'
 import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
 
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
@@ -106,6 +107,11 @@ const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppChecklistModelosRoute = AppChecklistModelosRouteImport.update({
+  id: '/checklist-modelos',
+  path: '/checklist-modelos',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppChecklistRoute = AppChecklistRouteImport.update({
   id: '/checklist',
   path: '/checklist',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/checklist': typeof AppChecklistRoute
+  '/checklist-modelos': typeof AppChecklistModelosRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/congregacoes': typeof AppCongregacoesRoute
   '/cronograma': typeof AppCronogramaRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/checklist': typeof AppChecklistRoute
+  '/checklist-modelos': typeof AppChecklistModelosRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/congregacoes': typeof AppCongregacoesRoute
   '/cronograma': typeof AppCronogramaRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_app/checklist': typeof AppChecklistRoute
+  '/_app/checklist-modelos': typeof AppChecklistModelosRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/congregacoes': typeof AppCongregacoesRoute
   '/_app/cronograma': typeof AppCronogramaRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/redefinir-senha'
     | '/checklist'
+    | '/checklist-modelos'
     | '/configuracoes'
     | '/congregacoes'
     | '/cronograma'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/redefinir-senha'
     | '/checklist'
+    | '/checklist-modelos'
     | '/configuracoes'
     | '/congregacoes'
     | '/cronograma'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/redefinir-senha'
     | '/_app/checklist'
+    | '/_app/checklist-modelos'
     | '/_app/configuracoes'
     | '/_app/congregacoes'
     | '/_app/cronograma'
@@ -350,6 +362,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/checklist-modelos': {
+      id: '/_app/checklist-modelos'
+      path: '/checklist-modelos'
+      fullPath: '/checklist-modelos'
+      preLoaderRoute: typeof AppChecklistModelosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/checklist': {
       id: '/_app/checklist'
       path: '/checklist'
@@ -362,6 +381,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppChecklistRoute: typeof AppChecklistRoute
+  AppChecklistModelosRoute: typeof AppChecklistModelosRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppCongregacoesRoute: typeof AppCongregacoesRoute
   AppCronogramaRoute: typeof AppCronogramaRoute
@@ -375,6 +395,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppChecklistRoute: AppChecklistRoute,
+  AppChecklistModelosRoute: AppChecklistModelosRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppCongregacoesRoute: AppCongregacoesRoute,
   AppCronogramaRoute: AppCronogramaRoute,

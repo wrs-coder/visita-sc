@@ -1,95 +1,47 @@
+## Modelos de Checklist por congregação
 
-## Resumo
+Hoje a checklist é semeada por trigger fixo (`seed_default_checklist`) sempre igual. Vou trocar isso por **modelos de checklist** que o superintendente cria, edita, duplica e vincula a uma congregação — análogo aos modelos de programação.
 
-Quatro mudanças significativas. Vou listar o que muda em cada uma, em linguagem simples, e o que isso implica.
+### Banco de dados (migration)
 
----
+- Nova tabela `checklist_templates`
+  - `id`, `superintendent_id`, `name`, `congregation_id` (nullable), timestamps
+  - Índice único parcial: `(superintendent_id, congregation_id)` quando `congregation_id IS NOT NULL` → garante 1 modelo por congregação
+  - Trigger `enforce_checklist_template_limit`: máx. 24 ativos por superintendente
+- Nova tabela `checklist_template_items`
+  - `id`, `template_id`, `title`, `description`, `sort_order`
+- RLS: superintendente dono gerencia tudo; anciãos da congregação podem **ler** o modelo vinculado (opcional, mantém só o super lendo).
+- Substituir trigger `seed_default_checklist`:
+  - Ao criar `visits`, se a congregação tem `checklist_templates.congregation_id = v.congregation_id`, copiar os itens daquele modelo para `checklist_items`.
+  - Senão, manter os 13 itens padrão atuais como fallback.
+- Em **nova visita** para a mesma congregação, a checklist continua zerada (já é por visita).
 
-### 1. Login do ancião sem e-mail
+### Server functions (`src/lib/checklist-templates.functions.ts`)
 
-Na **tela inicial de login**, o acesso do ancião passa a ficar em destaque (card grande, primeiro plano), e o do superintendente fica como link secundário.
+- `listChecklistTemplates` — todos os modelos do super + contagem
+- `createChecklistTemplate({ name, congregationId? })` — valida limite 24 e unicidade por congregação
+- `renameChecklistTemplate({ id, name })`
+- `linkChecklistTemplate({ id, congregationId | null })` — valida que a congregação ainda não tem modelo
+- `duplicateChecklistTemplate({ id, name })` — copia itens, deixa `congregation_id = null`
+- `deleteChecklistTemplate({ id })`
+- `replaceChecklistTemplateItems({ templateId, items: [{title, description?, sort_order}] })`
 
-O ancião acessa apenas com:
-- Número de telefone
-- Designação no corpo de anciãos
-- Código da congregação
-- Senha (definida no 1º acesso)
+### UI
 
-**Como funciona por baixo dos panos:** o sistema cria internamente um e-mail técnico baseado no telefone (ex.: `5511999998888@elder.local`) só para o backend de autenticação. O ancião nunca vê isso — ele só usa telefone + senha. No 1º acesso (cadastro), valida o código da congregação e cria a senha. Nas próximas vezes, basta telefone + senha.
+- Nova rota `/checklist-modelos` (superintendente):
+  - Lista de modelos com nome, congregação vinculada, nº de itens
+  - Botões: criar, renomear, duplicar, vincular a congregação (select), excluir
+  - Editor de itens (título + descrição opcional), arrastar/ordenar simples por botões ↑/↓
+  - Indicador "X / 24 modelos"
+- Adicionar link no menu lateral para superintendentes em `_app.tsx`
+- Na página `/modelos` ou `/congregacoes`, manter o vínculo de modelo de programação como está; o vínculo da checklist é gerido na nova rota.
+- Página `/checklist` (anciãos) permanece igual — ela apenas exibe os itens já semeados na visita ativa, agora vindos do modelo.
 
-Trade-off: telefones não podem ser alterados depois (viram identificador). Recuperação de senha não funcionará por SMS — só o superintendente da congregação poderá redefinir a senha de um ancião (botão na tela de configurações).
+### Validações chave
 
----
+- Não permite vincular a mesma congregação a 2 modelos.
+- Não permite criar acima de 24.
+- Ao duplicar, o duplicado nasce **sem** congregação vinculada (o super decide depois).
+- Ao deletar um modelo vinculado, a próxima visita criada cai no fallback padrão.
 
-### 2. Até 9 congregações ativas
-
-- Adiciono o campo "ativa/inativa" em cada congregação.
-- O superintendente pode ter quantas congregações quiser cadastradas, mas **no máximo 9 ativas** ao mesmo tempo.
-- Se tentar criar uma 10ª ativa, ela é criada **inativa** automaticamente (com aviso).
-- Anciãos só conseguem entrar em congregações **ativas**.
-- Na tela de Congregações: switch para ativar/desativar cada uma.
-
----
-
-### 3. Modelos (templates) de programação
-
-O superintendente cria até **3 modelos reutilizáveis** ("Modelo A", "Modelo B", "Modelo C"). Cada modelo contém uma programação completa de:
-- Estudos e Revisitas (turnos, horários, locais)
-- Refeições (horários, anfitriões padrão)
-- Transporte (estrutura padrão)
-
-**Ao criar uma visita**, o super escolhe a congregação **e** qual modelo aplicar. O sistema copia os itens do modelo para a visita, ajustando as datas em relação ao início da visita. A partir daí, a visita é editável independentemente do modelo (editar a visita não muda o modelo, e vice-versa).
-
-Cada congregação só vê a programação da sua própria visita ativa — isso já é garantido pelas regras de segurança atuais.
-
-**Nova tela:** `/modelos` (só para superintendente) para criar/editar os 3 modelos.
-
----
-
-### 4. Notas privadas — Visita de Pastoreio
-
-Nas notas privadas (acessível só ao superintendente), adiciono um **tipo de nota** com campos estruturados:
-
-- **Nota livre** (já existe hoje) — título + texto.
-- **Visita de pastoreio** (novo) — campos:
-  - Acompanhante
-  - Nome dos envolvidos
-  - Informações adicionais
-  - Data da visita
-
-Na listagem, ambos os tipos aparecem juntos com um selo indicando o tipo.
-
----
-
-## Detalhes técnicos
-
-**Banco de dados (1 migração):**
-- `congregations`: adicionar `is_active boolean default true`; trigger que impede mais de 9 ativas por superintendente (força nova como inativa).
-- `program_templates` (id, superintendent_id, slot 1-3, name).
-- `program_template_items` (template_id, kind: study|meal|transport, day_offset, payload jsonb com horários/locais/etc).
-- `visits`: adicionar `template_id` (nullable, referência ao template usado).
-- `private_notes`: adicionar `note_type` (free|pastoral), `companion`, `involved_names`, `additional_info`, `note_date`.
-- RLS para todas as novas tabelas.
-- Função `copy_template_to_visit(template_id, visit_id)` — copia itens com datas calculadas.
-
-**Auth do ancião:**
-- `lib/auth.functions.ts`: `registerElderByPhone({phone, position, inviteCode, password, fullName})` cria auth user com email sintético derivado do telefone.
-- `loginElderByPhone({phone, password})` (server fn) retorna o e-mail sintético; cliente chama `signInWithPassword`.
-- Validações: telefone só dígitos, mínimo 10 caracteres.
-
-**Páginas alteradas/criadas:**
-- `/` (LoginForm): redesenhar com 2 cards — "Sou ancião" (destaque, formulário inline) e "Sou superintendente" (link).
-- `/cadastro/anciao`: trocar e-mail por telefone.
-- `/_app/congregacoes`: switch ativa/inativa + contador "X/9 ativas".
-- `/_app/configuracoes`: no diálogo "Nova visita", adicionar Select de modelo.
-- `/_app/modelos` (novo): CRUD dos 3 templates.
-- `/_app/notas`: tabs "Livre" / "Pastoreio" com campos específicos.
-- `/_app/tsx`: link de "Modelos" no menu (só super).
-
-**Esqueci a senha:** continua existindo só para superintendente (quem tem e-mail). Para ancião, o super redefine via tela de configurações.
-
----
-
-## Confirmação
-
-Confirma que está tudo certo? Se sim, executo tudo de uma vez. O processo envolve 1 migração de banco e ~10 arquivos novos/editados.
+Confirma que posso seguir?
