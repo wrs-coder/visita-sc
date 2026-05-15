@@ -149,6 +149,7 @@ export type Database = {
       }
       meals: {
         Row: {
+          contact_phone: string | null
           created_at: string
           host_name: string
           id: string
@@ -162,6 +163,7 @@ export type Database = {
           visit_id: string
         }
         Insert: {
+          contact_phone?: string | null
           created_at?: string
           host_name: string
           id?: string
@@ -175,6 +177,7 @@ export type Database = {
           visit_id: string
         }
         Update: {
+          contact_phone?: string | null
           created_at?: string
           host_name?: string
           id?: string
