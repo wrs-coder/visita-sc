@@ -3,16 +3,19 @@ import { useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveElderEmail } from "@/lib/auth.functions";
+import { COUNTRIES, DEFAULT_COUNTRY, buildFullPhone, findCountry } from "@/lib/countries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Compass, LogIn, Users, ShieldCheck } from "lucide-react";
 
 export function LoginForm() {
   const nav = useNavigate();
   const resolveFn = useServerFn(resolveElderEmail);
+  const [country, setCountry] = useState(DEFAULT_COUNTRY);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -24,7 +27,8 @@ export function LoginForm() {
     e.preventDefault();
     setBusy(true);
     try {
-      const r = await resolveFn({ data: { phone } });
+      const fullPhone = buildFullPhone(country, phone);
+      const r = await resolveFn({ data: { phone: fullPhone } });
       if (!r.ok) { toast.error(r.error); return; }
       const { error } = await supabase.auth.signInWithPassword({ email: r.email, password });
       if (error) { toast.error("Senha incorreta"); return; }
@@ -42,6 +46,8 @@ export function LoginForm() {
     toast.success("Bem-vindo!");
     nav({ to: "/dashboard" });
   };
+
+  const dial = findCountry(country).dial;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-primary-soft/40 flex items-center justify-center p-4">
@@ -69,8 +75,26 @@ export function LoginForm() {
                 </div>
                 <form onSubmit={submitElder} className="space-y-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="phone">Telefone (com DDD)</Label>
-                    <Input id="phone" type="tel" inputMode="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-0000" />
+                    <Label>País</Label>
+                    <Select value={country} onValueChange={setCountry}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {COUNTRIES.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>
+                            {c.flag} {c.name} (+{c.dial})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="phone">Telefone</Label>
+                    <div className="flex gap-2">
+                      <div className="flex items-center px-3 rounded-md border bg-muted text-sm text-muted-foreground">
+                        +{dial}
+                      </div>
+                      <Input id="phone" type="tel" inputMode="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="número com DDD" />
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="pwd">Senha</Label>
@@ -84,9 +108,9 @@ export function LoginForm() {
                   Sou ancião novo —{" "}
                   <Link to="/cadastro/anciao" className="text-primary font-medium hover:underline">criar acesso</Link>
                 </div>
-                <p className="mt-2 text-[11px] text-muted-foreground text-center">
-                  Esqueceu a senha? Peça ao superintendente para redefinir.
-                </p>
+                <div className="mt-2 text-center text-[12px]">
+                  <Link to="/esqueci-senha" className="text-muted-foreground hover:text-primary">Esqueci minha senha</Link>
+                </div>
               </CardContent>
             </Card>
 
