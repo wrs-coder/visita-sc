@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { seedDefaultChecklist } from "@/lib/auth.functions";
 import { listMyCongregations } from "@/lib/congregations.functions";
 import { listTemplates, applyTemplateToVisit } from "@/lib/templates.functions";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,6 @@ interface Cong { id: string; name: string; invite_code: string; superintendent_i
 
 function Page() {
   const { congregation, role, profile, refresh, user } = useAuth();
-  const seedFn = useServerFn(seedDefaultChecklist);
   const fnList = useServerFn(listMyCongregations);
   const fnTpls = useServerFn(listTemplates);
   const fnApply = useServerFn(applyTemplateToVisit);
@@ -89,7 +87,6 @@ function Page() {
     await supabase.from("visits").update({ is_active: false }).eq("congregation_id", form.congregation_id);
     const { data, error } = await supabase.from("visits").insert({ congregation_id: form.congregation_id, title: form.title, start_date: form.start_date, end_date: form.end_date, is_active: true }).select().single();
     if (error || !data) { toast.error(error?.message ?? "Falha"); return; }
-    await seedFn({ data: { visitId: data.id } });
     if (form.template_id) {
       const r = await fnApply({ data: { visitId: data.id, templateId: form.template_id } });
       if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
