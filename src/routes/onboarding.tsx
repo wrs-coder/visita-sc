@@ -1,0 +1,87 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useServerFn } from "@tanstack/react-start";
+import { linkAccount } from "@/lib/auth.functions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
+import { ShieldCheck, Users } from "lucide-react";
+
+export const Route = createFileRoute("/onboarding")({ component: Page });
+
+function Page() {
+  const { user, loading, refresh, signOut } = useAuth();
+  const fn = useServerFn(linkAccount);
+  const nav = useNavigate();
+  const [mode, setMode] = useState<"superintendent" | "elder" | null>(null);
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
+  if (!user) { nav({ to: "/" }); return null; }
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mode) return;
+    setBusy(true);
+    const res = await fn({ data: { mode, code, congregationName: mode === "superintendent" ? name : undefined, fullName: fullName || undefined } });
+    setBusy(false);
+    if (!res.ok) { toast.error(res.error); return; }
+    toast.success(mode === "superintendent" ? `Conta criada! Código: ${res.inviteCode}` : "Bem-vindo à congregação!");
+    await refresh();
+    nav({ to: "/dashboard" });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary to-primary-soft/40 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-elevated border-0">
+        <CardContent className="p-6">
+          <h2 className="text-xl font-bold mb-2">Vamos configurar sua conta</h2>
+          <p className="text-sm text-muted-foreground mb-5">Escolha como deseja participar:</p>
+
+          {!mode && (
+            <div className="grid gap-3">
+              <button onClick={() => setMode("superintendent")} className="flex items-start gap-3 p-4 border rounded-xl text-left hover:border-primary hover:bg-primary/5 transition">
+                <ShieldCheck className="h-5 w-5 text-primary mt-0.5" />
+                <div><div className="font-medium">Sou Superintendente</div><div className="text-xs text-muted-foreground">Criar nova congregação (precisa do código)</div></div>
+              </button>
+              <button onClick={() => setMode("elder")} className="flex items-start gap-3 p-4 border rounded-xl text-left hover:border-primary hover:bg-primary/5 transition">
+                <Users className="h-5 w-5 text-primary mt-0.5" />
+                <div><div className="font-medium">Sou Ancião</div><div className="text-xs text-muted-foreground">Entrar com código da congregação</div></div>
+              </button>
+              <button onClick={() => signOut().then(() => nav({ to: "/" }))} className="text-xs text-muted-foreground mt-2 hover:underline">Sair</button>
+            </div>
+          )}
+
+          {mode && (
+            <form onSubmit={submit} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="fn">Nome completo</Label>
+                <Input id="fn" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+              </div>
+              {mode === "superintendent" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="cn">Nome da congregação</Label>
+                  <Input id="cn" required value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label htmlFor="code">{mode === "superintendent" ? "Código de identificação" : "Código da congregação"}</Label>
+                <Input id="code" required value={code} onChange={(e) => setCode(e.target.value)} />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setMode(null)} className="flex-1">Voltar</Button>
+                <Button type="submit" disabled={busy} className="flex-1">{busy ? "Aguarde..." : "Continuar"}</Button>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
