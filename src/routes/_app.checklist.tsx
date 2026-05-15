@@ -169,3 +169,29 @@ function FieldArea({ label, v, onSave, readOnly = false }: { label: string; v: s
     </div>
   );
 }
+
+function csvEscape(v: string) {
+  if (/[",\n;]/.test(v)) return `"${v.replace(/"/g, '""')}"`;
+  return v;
+}
+
+function exportCsv(items: Item[], visitTitle: string) {
+  const header = ["Item", "Descrição", "Status", "Informação", "Link / Observações"];
+  const rows = items.map((it) => [
+    it.title,
+    it.description ?? "",
+    it.status === "done" ? "Concluído" : "Pendente",
+    it.info_text ?? "",
+    it.link_or_notes ?? "",
+  ]);
+  const csv = "\uFEFF" + [header, ...rows].map((r) => r.map((c) => csvEscape(String(c))).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `checklist-${visitTitle.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
