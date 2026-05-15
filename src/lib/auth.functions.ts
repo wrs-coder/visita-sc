@@ -45,6 +45,8 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+const ELDER_POSITIONS = ["coordenador", "secretario", "sup_servico", "corpo"] as const;
+
 export const registerElder = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({
@@ -52,6 +54,7 @@ export const registerElder = createServerFn({ method: "POST" })
       email: z.string().trim().email().max(200),
       password: z.string().min(6).max(100),
       inviteCode: z.string().trim().min(4).max(20),
+      position: z.enum(ELDER_POSITIONS),
     }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -76,7 +79,7 @@ export const registerElder = createServerFn({ method: "POST" })
     }).eq("id", userId);
 
     await supabaseAdmin.from("user_roles").insert({
-      user_id: userId, role: "elder", congregation_id: cong.id,
+      user_id: userId, role: "elder", congregation_id: cong.id, elder_position: data.position,
     });
 
     return { ok: true as const };
@@ -89,6 +92,7 @@ export const linkAccount = createServerFn({ method: "POST" })
       mode: z.enum(["superintendent", "elder"]),
       code: z.string().trim().min(1),
       fullName: z.string().trim().min(1).max(120).optional(),
+      position: z.enum(ELDER_POSITIONS).optional(),
     }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -113,6 +117,7 @@ export const linkAccount = createServerFn({ method: "POST" })
       });
       return { ok: true as const };
     } else {
+      if (!data.position) return { ok: false as const, error: "Selecione sua designação." };
       const { data: cong } = await supabaseAdmin.from("congregations")
         .select("id").eq("invite_code", data.code.toUpperCase()).maybeSingle();
       if (!cong) return { ok: false as const, error: "Código de congregação inválido." };
@@ -120,7 +125,7 @@ export const linkAccount = createServerFn({ method: "POST" })
         full_name: data.fullName ?? undefined, email, congregation_id: cong.id,
       }).eq("id", userId);
       await supabaseAdmin.from("user_roles").insert({
-        user_id: userId, role: "elder", congregation_id: cong.id,
+        user_id: userId, role: "elder", congregation_id: cong.id, elder_position: data.position,
       });
       return { ok: true as const };
     }
