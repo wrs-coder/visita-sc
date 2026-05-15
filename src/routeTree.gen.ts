@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
+import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CadastroSuperintendenteRoute = CadastroSuperintendenteRouteImport.update({
+  id: '/cadastro/superintendente',
+  path: '/cadastro/superintendente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CadastroAnciaoRoute = CadastroAnciaoRouteImport.update({
+  id: '/cadastro/anciao',
+  path: '/cadastro/anciao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/cadastro/anciao': typeof CadastroAnciaoRoute
+  '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cadastro/anciao': typeof CadastroAnciaoRoute
+  '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/cadastro/anciao': typeof CadastroAnciaoRoute
+  '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/cadastro/anciao' | '/cadastro/superintendente'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/cadastro/anciao' | '/cadastro/superintendente'
+  id: '__root__' | '/' | '/cadastro/anciao' | '/cadastro/superintendente'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CadastroAnciaoRoute: typeof CadastroAnciaoRoute
+  CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,12 +68,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cadastro/superintendente': {
+      id: '/cadastro/superintendente'
+      path: '/cadastro/superintendente'
+      fullPath: '/cadastro/superintendente'
+      preLoaderRoute: typeof CadastroSuperintendenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cadastro/anciao': {
+      id: '/cadastro/anciao'
+      path: '/cadastro/anciao'
+      fullPath: '/cadastro/anciao'
+      preLoaderRoute: typeof CadastroAnciaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CadastroAnciaoRoute: CadastroAnciaoRoute,
+  CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
