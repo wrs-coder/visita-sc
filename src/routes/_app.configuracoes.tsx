@@ -76,9 +76,14 @@ function Page() {
   };
 
   const setActive = async (id: string) => {
-    if (!congregation) return;
-    await supabase.from("visits").update({ is_active: false }).eq("congregation_id", congregation.id);
+    const v = visits.find((x) => x.id === id);
+    if (!v) return;
+    await supabase.from("visits").update({ is_active: false }).eq("congregation_id", v.congregation_id);
     await supabase.from("visits").update({ is_active: true }).eq("id", id);
+    if (user && profile?.congregation_id !== v.congregation_id) {
+      await supabase.from("profiles").update({ congregation_id: v.congregation_id }).eq("id", user.id);
+      await refresh();
+    }
     toast.success("Visita ativa atualizada");
   };
 
