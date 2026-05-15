@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Clock, MapPin, Trash2, Pencil, Save } from "lucide-react";
 import { format, parseISO, eachDayOfInterval } from "date-fns";
@@ -27,7 +28,7 @@ const TYPES = {
   other: "Outro",
 };
 
-interface Event { id: string; visit_id: string; event_date: string; start_time: string | null; end_time: string | null; type: keyof typeof TYPES; title: string; location: string | null; notes: string | null; }
+interface Event { id: string; visit_id: string; event_date: string; start_time: string | null; end_time: string | null; type: keyof typeof TYPES; title: string; location: string | null; notes: string | null; is_active: boolean; }
 
 function Page() {
   const { visit } = useActiveVisit();
@@ -81,6 +82,11 @@ function Page() {
     if (error) toast.error(error.message); else toast.success("Removido");
   };
 
+  const toggle = async (id: string, is_active: boolean) => {
+    const { error } = await supabase.from("schedule_events").update({ is_active }).eq("id", id);
+    if (error) toast.error(error.message);
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-3">
@@ -110,21 +116,24 @@ function Page() {
               ) : (
                 <div className="grid gap-2">
                   {dayEvents.map((e) => (
-                    <Card key={e.id} className="shadow-card">
+                    <Card key={e.id} className={`shadow-card transition ${!e.is_active ? "opacity-50" : ""}`}>
                       <CardContent className="p-4 flex items-start gap-3">
                         <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[64px] text-center">
                           <Clock className="inline h-3 w-3 mr-0.5" />{e.start_time?.slice(0, 5) ?? "—"}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-[11px] font-medium uppercase tracking-wide text-primary/70">{TYPES[e.type]}</div>
-                          <div className="font-semibold">{e.title}</div>
+                          <div className={`font-semibold ${!e.is_active ? "line-through" : ""}`}>{e.title}</div>
                           {e.location && <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><MapPin className="h-3 w-3" />{e.location}</div>}
                           {e.notes && <div className="text-xs mt-1 text-muted-foreground">{e.notes}</div>}
                         </div>
                         {canEdit && (
-                          <div className="flex flex-col gap-1">
-                            <Button size="icon" variant="ghost" onClick={() => { setEditing(e); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
-                            <Button size="icon" variant="ghost" onClick={() => remove(e.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                          <div className="flex flex-col items-end gap-1">
+                            <Switch checked={e.is_active} onCheckedChange={(v) => toggle(e.id, v)} aria-label="Ativar/desativar" />
+                            <div className="flex">
+                              <Button size="icon" variant="ghost" onClick={() => { setEditing(e); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                              <Button size="icon" variant="ghost" onClick={() => remove(e.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                            </div>
                           </div>
                         )}
                       </CardContent>

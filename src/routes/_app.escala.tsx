@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Loader2, Check } from "lucide-react";
 import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -13,7 +14,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_app/escala")({ component: Page });
 
-interface Row { id: string; visit_id: string; event_date: string; period: string; meeting_point: string | null; meeting_time: string | null; dirigente: string | null; piloto: string | null; acompanhante: string | null; }
+interface Row { id: string; visit_id: string; event_date: string; period: string; meeting_point: string | null; meeting_time: string | null; dirigente: string | null; piloto: string | null; acompanhante: string | null; is_active: boolean; }
 
 function Page() {
   const { visit } = useActiveVisit();
@@ -81,11 +82,12 @@ function Page() {
               {dayRows.length === 0 ? (
                 <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem escalas.</CardContent></Card>
               ) : dayRows.map((r) => (
-                <Card key={r.id} className="shadow-card mb-2">
+                <Card key={r.id} className={`shadow-card mb-2 transition ${!r.is_active ? "opacity-50" : ""}`}>
                   <CardContent className="p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10">{r.period}</div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className={`text-xs font-semibold px-2 py-1 rounded ${r.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>{r.period}{!r.is_active && " · desativado"}</div>
                       <div className="flex items-center gap-2">
+                        {canEdit && <Switch checked={r.is_active} onCheckedChange={(v) => update(r.id, { is_active: v })} aria-label="Ativar/desativar" />}
                         {canEdit && savingId === r.id && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
                         {canEdit && savingId !== r.id && <Check className="h-3.5 w-3.5 text-success" />}
                         {role === "superintendent" && <Button size="icon" variant="ghost" onClick={() => remove(r.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>}

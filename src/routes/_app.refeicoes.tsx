@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash2, MapPin, Pencil } from "lucide-react";
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/_app/refeicoes")({ component: Page });
 
 const MEAL = { breakfast: "Café", lunch: "Almoço", dinner: "Jantar" };
 type MealKey = keyof typeof MEAL;
-interface Meal { id: string; visit_id: string; meal_date: string; type: MealKey; host_name: string; location: string | null; meal_time: string | null; notes: string | null; }
+interface Meal { id: string; visit_id: string; meal_date: string; type: MealKey; host_name: string; location: string | null; meal_time: string | null; notes: string | null; is_active: boolean; }
 
 function Page() {
   const { visit } = useActiveVisit();
@@ -50,6 +51,7 @@ function Page() {
   };
 
   const remove = async (id: string) => { const { error } = await supabase.from("meals").delete().eq("id", id); if (error) toast.error(error.message); };
+  const toggle = async (id: string, is_active: boolean) => { const { error } = await supabase.from("meals").update({ is_active }).eq("id", id); if (error) toast.error(error.message); };
 
   return (
     <div className="space-y-5">
@@ -97,16 +99,19 @@ function Page() {
               {dm.length === 0 ? <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem refeições.</CardContent></Card> :
                 <div className="grid gap-2">
                   {dm.map((m) => (
-                    <Card key={m.id} className="shadow-card"><CardContent className="p-4 flex items-start gap-3">
-                      <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[64px] text-center">{MEAL[m.type]}</div>
+                    <Card key={m.id} className={`shadow-card transition ${!m.is_active ? "opacity-50" : ""}`}><CardContent className="p-4 flex items-start gap-3">
+                      <div className={`text-xs font-semibold px-2 py-1 rounded min-w-[64px] text-center ${m.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>{MEAL[m.type]}</div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold">{m.host_name}</div>
+                        <div className={`font-semibold ${!m.is_active ? "line-through" : ""}`}>{m.host_name}</div>
                         {m.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{m.location}</div>}
                         {m.meal_time && <div className="text-xs text-muted-foreground">{m.meal_time.slice(0, 5)}</div>}
                       </div>
-                      {canEdit && <div className="flex flex-col gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => { setEditing(m); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => remove(m.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                      {canEdit && <div className="flex flex-col items-end gap-1">
+                        <Switch checked={m.is_active} onCheckedChange={(v) => toggle(m.id, v)} aria-label="Ativar/desativar" />
+                        <div className="flex">
+                          <Button size="icon" variant="ghost" onClick={() => { setEditing(m); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => remove(m.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                        </div>
                       </div>}
                     </CardContent></Card>
                   ))}

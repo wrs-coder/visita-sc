@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Check, Trash2, Loader2 } from "lucide-react";
+import { Plus, Check, Trash2, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/checklist")({ component: Page });
@@ -27,6 +27,7 @@ function Page() {
   const [newOpen, setNewOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [editItem, setEditItem] = useState<Item | null>(null);
 
   useEffect(() => {
     if (!visit) return;
@@ -56,6 +57,13 @@ function Page() {
   };
 
   const remove = async (id: string) => { const { error } = await supabase.from("checklist_items").delete().eq("id", id); if (error) toast.error(error.message); };
+
+  const saveEdit = async () => {
+    if (!editItem) return;
+    if (!editItem.title.trim()) { toast.error("Título obrigatório"); return; }
+    const { error } = await supabase.from("checklist_items").update({ title: editItem.title.trim(), description: editItem.description?.trim() || null }).eq("id", editItem.id);
+    if (error) toast.error(error.message); else { toast.success("Atualizado"); setEditItem(null); }
+  };
 
   const done = items.filter((i) => i.status === "done").length;
   const progress = items.length ? Math.round((done / items.length) * 100) : 0;
@@ -109,13 +117,31 @@ function Page() {
                 <div className="space-y-3 pt-1 pb-3">
                   <FieldArea label="Informação (ex: Total de Publicadores)" v={it.info_text ?? ""} onSave={(v) => update(it.id, { info_text: v })} readOnly={!canEdit} />
                   <FieldArea label="Link ou observações" v={it.link_or_notes ?? ""} onSave={(v) => update(it.id, { link_or_notes: v })} readOnly={!canEdit} />
-                  {canManage && <Button size="sm" variant="ghost" onClick={() => remove(it.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5 mr-1" />Remover</Button>}
+                  {canManage && (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setEditItem(it)}><Pencil className="h-3.5 w-3.5 mr-1" />Editar</Button>
+                      <Button size="sm" variant="ghost" onClick={() => remove(it.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5 mr-1" />Remover</Button>
+                    </div>
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
       )}
+
+      <Dialog open={!!editItem} onOpenChange={(o) => !o && setEditItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Editar item</DialogTitle></DialogHeader>
+          {editItem && (
+            <div className="space-y-3">
+              <div><Label>Título</Label><Input className="mt-1" value={editItem.title} onChange={(e) => setEditItem({ ...editItem, title: e.target.value })} /></div>
+              <div><Label>Descrição</Label><Textarea rows={3} className="mt-1" value={editItem.description ?? ""} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} /></div>
+              <Button className="w-full" onClick={saveEdit}>Salvar</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
