@@ -51,6 +51,7 @@ function Page() {
   };
 
   const remove = async (id: string) => { const { error } = await supabase.from("meals").delete().eq("id", id); if (error) toast.error(error.message); };
+  const toggle = async (id: string, is_active: boolean) => { const { error } = await supabase.from("meals").update({ is_active }).eq("id", id); if (error) toast.error(error.message); };
 
   return (
     <div className="space-y-5">
