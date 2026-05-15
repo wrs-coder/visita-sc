@@ -92,11 +92,62 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
     z.object({ visitId: z.string().uuid(), templateId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { error } = await supabase.rpc("apply_template_to_visit", {
-      _visit_id: data.visitId,
-      _template_id: data.templateId,
-    });
-    if (error) return { ok: false as const, error: error.message };
+    const { userId } = context;
+    const { data: visit } = await supabaseAdmin
+      .from("visits")
+      .select("id, start_date, congregation_id")
+      .eq("id", data.visitId)
+      .maybeSingle();
+    if (!visit) return { ok: false as const, error: "Visita não encontrada." };
+    const { data: cong } = await supabaseAdmin
+      .from("congregations").select("superintendent_id").eq("id", visit.congregation_id).maybeSingle();
+    if (!cong || cong.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
+    const { data: tpl } = await supabaseAdmin
+      .from("program_templates").select("id").eq("id", data.templateId).eq("superintendent_id", userId).maybeSingle();
+    if (!tpl) return { ok: false as const, error: "Modelo não encontrado." };
+
+    await supabaseAdmin.from("visits").update({ template_id: data.templateId }).eq("id", data.visitId);
+
+    const { data: items } = await supabaseAdmin
+      .from("program_template_items").select("*").eq("template_id", data.templateId).order("sort_order");
+
+    const start = new Date(visit.start_date + "T00:00:00");
+    const dateAt = (offset: number) => {
+      const d = new Date(start); d.setDate(d.getDate() + offset);
+      return d.toISOString().slice(0, 10);
+    };
+    const str = (v: unknown): string | null => (typeof v === "string" && v.length > 0 ? v : null);
+    const time = (v: unknown): string | null => (typeof v === "string" && v.length > 0 ? v : null);
+    const bool = (v: unknown, def: boolean): boolean => (typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : def);
+
+    for (const it of items ?? []) {
+      const p = (it.payload ?? {}) as Record<string, unknown>;
+      const targetDate = dateAt(it.day_offset);
+      if (it.kind === "study") {
+        await supabaseAdmin.from("field_assignments").insert({
+          visit_id: data.visitId, event_date: targetDate,
+          period: str(p.period) ?? "Manhã",
+          meeting_point: str(p.meeting_point), meeting_time: time(p.meeting_time),
+          acompanhante: str(p.acompanhante), acompanhante_for: str(p.acompanhante_for),
+          contact_phone: str(p.contact_phone), is_active: bool(p.is_active, true),
+        });
+      } else if (it.kind === "meal") {
+        await supabaseAdmin.from("meals").insert({
+          visit_id: data.visitId, meal_date: targetDate,
+          type: (str(p.type) ?? "lunch") as "lunch" | "dinner" | "breakfast",
+          host_name: str(p.host_name) ?? "—",
+          location: str(p.location), meal_time: time(p.meal_time),
+          notes: str(p.notes), is_active: bool(p.is_active, true),
+        });
+      } else if (it.kind === "transport") {
+        await supabaseAdmin.from("transport_schedule").insert({
+          visit_id: data.visitId, event_date: targetDate,
+          driver_name: str(p.driver_name) ?? "—",
+          contact_phone: str(p.contact_phone),
+          description: str(p.description), notes: str(p.notes),
+          is_active: bool(p.is_active, true),
+        });
+      }
+    }
     return { ok: true as const };
   });
