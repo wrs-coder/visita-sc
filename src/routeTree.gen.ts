@@ -9,12 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
 import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
+import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
+import { Route as AppNotasRouteImport } from './routes/_app.notas'
+import { Route as AppEscalaRouteImport } from './routes/_app.escala'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppCronogramaRouteImport } from './routes/_app.cronograma'
+import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
+import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -34,21 +46,65 @@ const CadastroAnciaoRoute = CadastroAnciaoRouteImport.update({
   path: '/cadastro/anciao',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppRefeicoesRoute = AppRefeicoesRouteImport.update({
+  id: '/refeicoes',
+  path: '/refeicoes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotasRoute = AppNotasRouteImport.update({
+  id: '/notas',
+  path: '/notas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEscalaRoute = AppEscalaRouteImport.update({
+  id: '/escala',
+  path: '/escala',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCronogramaRoute = AppCronogramaRouteImport.update({
+  id: '/cronograma',
+  path: '/cronograma',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppChecklistRoute = AppChecklistRouteImport.update({
+  id: '/checklist',
+  path: '/checklist',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
+  '/checklist': typeof AppChecklistRoute
+  '/configuracoes': typeof AppConfiguracoesRoute
+  '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
+  '/escala': typeof AppEscalaRoute
+  '/notas': typeof AppNotasRoute
+  '/refeicoes': typeof AppRefeicoesRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
+  '/checklist': typeof AppChecklistRoute
+  '/configuracoes': typeof AppConfiguracoesRoute
+  '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
+  '/escala': typeof AppEscalaRoute
+  '/notas': typeof AppNotasRoute
+  '/refeicoes': typeof AppRefeicoesRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
 }
@@ -56,7 +112,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
+  '/_app/checklist': typeof AppChecklistRoute
+  '/_app/configuracoes': typeof AppConfiguracoesRoute
+  '/_app/cronograma': typeof AppCronogramaRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/escala': typeof AppEscalaRoute
+  '/_app/notas': typeof AppNotasRoute
+  '/_app/refeicoes': typeof AppRefeicoesRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
 }
@@ -64,16 +127,41 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/onboarding'
+    | '/checklist'
+    | '/configuracoes'
+    | '/cronograma'
     | '/dashboard'
+    | '/escala'
+    | '/notas'
+    | '/refeicoes'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/cadastro/anciao' | '/cadastro/superintendente'
+  to:
+    | '/'
+    | '/onboarding'
+    | '/checklist'
+    | '/configuracoes'
+    | '/cronograma'
+    | '/dashboard'
+    | '/escala'
+    | '/notas'
+    | '/refeicoes'
+    | '/cadastro/anciao'
+    | '/cadastro/superintendente'
   id:
     | '__root__'
     | '/'
     | '/_app'
+    | '/onboarding'
+    | '/_app/checklist'
+    | '/_app/configuracoes'
+    | '/_app/cronograma'
     | '/_app/dashboard'
+    | '/_app/escala'
+    | '/_app/notas'
+    | '/_app/refeicoes'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
   fileRoutesById: FileRoutesById
@@ -81,12 +169,20 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  OnboardingRoute: typeof OnboardingRoute
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
   CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -115,6 +211,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CadastroAnciaoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/refeicoes': {
+      id: '/_app/refeicoes'
+      path: '/refeicoes'
+      fullPath: '/refeicoes'
+      preLoaderRoute: typeof AppRefeicoesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/notas': {
+      id: '/_app/notas'
+      path: '/notas'
+      fullPath: '/notas'
+      preLoaderRoute: typeof AppNotasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/escala': {
+      id: '/_app/escala'
+      path: '/escala'
+      fullPath: '/escala'
+      preLoaderRoute: typeof AppEscalaRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -122,15 +239,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/cronograma': {
+      id: '/_app/cronograma'
+      path: '/cronograma'
+      fullPath: '/cronograma'
+      preLoaderRoute: typeof AppCronogramaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/configuracoes': {
+      id: '/_app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AppConfiguracoesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/checklist': {
+      id: '/_app/checklist'
+      path: '/checklist'
+      fullPath: '/checklist'
+      preLoaderRoute: typeof AppChecklistRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppChecklistRoute: typeof AppChecklistRoute
+  AppConfiguracoesRoute: typeof AppConfiguracoesRoute
+  AppCronogramaRoute: typeof AppCronogramaRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppEscalaRoute: typeof AppEscalaRoute
+  AppNotasRoute: typeof AppNotasRoute
+  AppRefeicoesRoute: typeof AppRefeicoesRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppChecklistRoute: AppChecklistRoute,
+  AppConfiguracoesRoute: AppConfiguracoesRoute,
+  AppCronogramaRoute: AppCronogramaRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppEscalaRoute: AppEscalaRoute,
+  AppNotasRoute: AppNotasRoute,
+  AppRefeicoesRoute: AppRefeicoesRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -138,6 +288,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  OnboardingRoute: OnboardingRoute,
   CadastroAnciaoRoute: CadastroAnciaoRoute,
   CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,
 }
