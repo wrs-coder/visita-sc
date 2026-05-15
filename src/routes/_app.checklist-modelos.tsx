@@ -19,8 +19,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Pencil, Save, ArrowUp, ArrowDown, ListChecks } from "lucide-react";
+import { Plus, Trash2, Copy, Pencil, Save, ArrowUp, ArrowDown, ListChecks, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const nameSchema = z.string().trim().min(2, "Nome deve ter pelo menos 2 caracteres").max(120, "Nome muito longo (máx. 120)");
+const itemTitleSchema = z.string().trim().min(1, "Título obrigatório").max(300, "Título muito longo (máx. 300)");
+const itemDescSchema = z.string().trim().max(2000, "Descrição muito longa (máx. 2000)");
 
 export const Route = createFileRoute("/_app/checklist-modelos")({ component: Page });
 
@@ -48,8 +53,11 @@ function Page() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newNameErr, setNewNameErr] = useState<string | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameVal, setRenameVal] = useState("");
+  const [renameErr, setRenameErr] = useState<string | null>(null);
+  const [itemErrs, setItemErrs] = useState<Record<number, { title?: string; description?: string }>>({});
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -83,9 +91,12 @@ function Page() {
   };
 
   const handleCreate = async () => {
-    if (!newName.trim()) return;
+    const parsed = nameSchema.safeParse(newName);
+    if (!parsed.success) { setNewNameErr(parsed.error.issues[0].message); return; }
+    setNewNameErr(null);
+    if (tpls.length >= MAX) { toast.error(`Limite de ${MAX} modelos atingido.`); return; }
     setBusy(true);
-    const r = await fnCreate({ data: { name: newName.trim() } });
+    const r = await fnCreate({ data: { name: parsed.data } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
     toast.success("Modelo criado");
@@ -96,9 +107,12 @@ function Page() {
   };
 
   const handleRename = async () => {
-    if (!active || !renameVal.trim()) return;
+    if (!active) return;
+    const parsed = nameSchema.safeParse(renameVal);
+    if (!parsed.success) { setRenameErr(parsed.error.issues[0].message); return; }
+    setRenameErr(null);
     setBusy(true);
-    const r = await fnRename({ data: { id: active.id, name: renameVal.trim() } });
+    const r = await fnRename({ data: { id: active.id, name: parsed.data } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
     toast.success("Renomeado");
@@ -141,6 +155,21 @@ function Page() {
 
   const handleSaveItems = async () => {
     if (!activeId) return;
+    const errs: Record<number, { title?: string; description?: string }> = {};
+    items.forEach((it, idx) => {
+      const t = itemTitleSchema.safeParse(it.title);
+      const d = itemDescSchema.safeParse(it.description);
+      const e: { title?: string; description?: string } = {};
+      if (!t.success) e.title = t.error.issues[0].message;
+      if (!d.success) e.description = d.error.issues[0].message;
+      if (e.title || e.description) errs[idx] = e;
+    });
+    if (Object.keys(errs).length > 0) {
+      setItemErrs(errs);
+      toast.error("Corrija os campos destacados antes de salvar.");
+      return;
+    }
+    setItemErrs({});
     const cleaned = items
       .map((it) => ({ title: it.title.trim(), description: it.description.trim() }))
       .filter((it) => it.title.length > 0);
@@ -200,7 +229,15 @@ function Page() {
             <div className="space-y-3">
               <div>
                 <Label>Nome</Label>
-                <Input className="mt-1" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ex: Padrão 2026" />
+                <Input
+                  className={`mt-1 ${newNameErr ? "border-destructive" : ""}`}
+                  value={newName}
+                  onChange={(e) => { setNewName(e.target.value); if (newNameErr) setNewNameErr(null); }}
+                  placeholder="Ex: Padrão 2026"
+                  maxLength={120}
+                />
+                {newNameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{newNameErr}</p>}
+                <p className="text-xs text-muted-foreground mt-1">{newName.trim().length}/120 caracteres</p>
               </div>
               <Button className="w-full" onClick={handleCreate} disabled={busy}>Criar</Button>
             </div>
@@ -290,14 +327,20 @@ function Page() {
                             <Input
                               placeholder="Título do item"
                               value={it.title}
-                              onChange={(e) => updateItem(idx, { title: e.target.value })}
+                              onChange={(e) => { updateItem(idx, { title: e.target.value }); if (itemErrs[idx]?.title) setItemErrs((s) => ({ ...s, [idx]: { ...s[idx], title: undefined } })); }}
+                              maxLength={300}
+                              className={itemErrs[idx]?.title ? "border-destructive" : ""}
                             />
+                            {itemErrs[idx]?.title && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{itemErrs[idx]?.title}</p>}
                             <Textarea
                               rows={2}
                               placeholder="Descrição (opcional)"
                               value={it.description}
-                              onChange={(e) => updateItem(idx, { description: e.target.value })}
+                              onChange={(e) => { updateItem(idx, { description: e.target.value }); if (itemErrs[idx]?.description) setItemErrs((s) => ({ ...s, [idx]: { ...s[idx], description: undefined } })); }}
+                              maxLength={2000}
+                              className={itemErrs[idx]?.description ? "border-destructive" : ""}
                             />
+                            {itemErrs[idx]?.description && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{itemErrs[idx]?.description}</p>}
                           </div>
                           <div className="flex flex-col gap-1">
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => move(idx, -1)} disabled={idx === 0}>
@@ -321,10 +364,19 @@ function Page() {
         </div>
       </div>
 
-      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+      <Dialog open={renameOpen} onOpenChange={(o) => { setRenameOpen(o); if (!o) setRenameErr(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Renomear modelo</DialogTitle></DialogHeader>
-          <Input value={renameVal} onChange={(e) => setRenameVal(e.target.value)} />
+          <div>
+            <Input
+              value={renameVal}
+              onChange={(e) => { setRenameVal(e.target.value); if (renameErr) setRenameErr(null); }}
+              maxLength={120}
+              className={renameErr ? "border-destructive" : ""}
+            />
+            {renameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{renameErr}</p>}
+            <p className="text-xs text-muted-foreground mt-1">{renameVal.trim().length}/120 caracteres</p>
+          </div>
           <DialogFooter>
             <Button onClick={handleRename} disabled={busy}>Salvar</Button>
           </DialogFooter>
