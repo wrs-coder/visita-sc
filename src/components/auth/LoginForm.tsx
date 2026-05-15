@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Compass, LogIn, Users, ShieldCheck } from "lucide-react";
+import { Compass, LogIn, Users, ShieldCheck, Eye } from "lucide-react";
 
 export function LoginForm() {
   const nav = useNavigate();
@@ -117,6 +117,9 @@ export function LoginForm() {
             <button onClick={() => setShowSuper(true)} className="mt-4 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2">
               <ShieldCheck className="h-4 w-4" /> Sou superintendente
             </button>
+            <Link to="/visitante" className="mt-1 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2">
+              <Eye className="h-4 w-4" /> Acesso de visitante (somente leitura)
+            </Link>
           </>
         ) : (
           <>
