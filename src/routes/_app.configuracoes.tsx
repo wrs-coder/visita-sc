@@ -61,13 +61,31 @@ function Page() {
   }, [congregation, isSuper, congs]);
 
   const openNew = () => {
+    setEditId(null);
     setForm({ title: "", start_date: "", end_date: "", congregation_id: congregation?.id ?? congs[0]?.id ?? "", template_id: "" });
     setOpen(true);
   };
 
-  const create = async () => {
+  const openEdit = (v: Visit) => {
+    setEditId(v.id);
+    setForm({ title: v.title, start_date: v.start_date, end_date: v.end_date, congregation_id: v.congregation_id, template_id: "" });
+    setOpen(true);
+  };
+
+  const submit = async () => {
     if (!form.congregation_id) { toast.error("Selecione a congregação"); return; }
     if (!form.title || !form.start_date || !form.end_date) { toast.error("Preencha todos os campos"); return; }
+    if (editId) {
+      const { error } = await supabase.from("visits").update({ title: form.title, start_date: form.start_date, end_date: form.end_date, congregation_id: form.congregation_id }).eq("id", editId);
+      if (error) { toast.error(error.message); return; }
+      if (form.template_id) {
+        const r = await fnApply({ data: { visitId: editId, templateId: form.template_id } });
+        if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
+      }
+      toast.success("Visita atualizada");
+      setOpen(false);
+      return;
+    }
     await supabase.from("visits").update({ is_active: false }).eq("congregation_id", form.congregation_id);
     const { data, error } = await supabase.from("visits").insert({ congregation_id: form.congregation_id, title: form.title, start_date: form.start_date, end_date: form.end_date, is_active: true }).select().single();
     if (error || !data) { toast.error(error?.message ?? "Falha"); return; }
