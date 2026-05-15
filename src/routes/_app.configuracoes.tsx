@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { seedDefaultChecklist } from "@/lib/auth.functions";
 import { listMyCongregations } from "@/lib/congregations.functions";
+import { listTemplates, applyTemplateToVisit } from "@/lib/templates.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,17 +26,22 @@ function Page() {
   const { congregation, role, profile, refresh, user } = useAuth();
   const seedFn = useServerFn(seedDefaultChecklist);
   const fnList = useServerFn(listMyCongregations);
+  const fnTpls = useServerFn(listTemplates);
+  const fnApply = useServerFn(applyTemplateToVisit);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [congs, setCongs] = useState<Cong[]>([]);
+  const [tpls, setTpls] = useState<{ id: string; slot: number; name: string }[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", start_date: "", end_date: "", congregation_id: "" });
+  const [form, setForm] = useState({ title: "", start_date: "", end_date: "", congregation_id: "", template_id: "" });
   const isSuper = role === "superintendent";
 
   const loadCongs = useCallback(async () => {
     if (!isSuper) return;
     const res = await fnList();
     if (res.ok) setCongs(res.data as Cong[]);
-  }, [isSuper, fnList]);
+    const tr = await fnTpls();
+    if (tr.ok) setTpls(tr.templates);
+  }, [isSuper, fnList, fnTpls]);
 
   useEffect(() => { loadCongs(); }, [loadCongs]);
 
@@ -54,19 +60,21 @@ function Page() {
   }, [congregation, isSuper, congs]);
 
   const openNew = () => {
-    setForm({ title: "", start_date: "", end_date: "", congregation_id: congregation?.id ?? congs[0]?.id ?? "" });
+    setForm({ title: "", start_date: "", end_date: "", congregation_id: congregation?.id ?? congs[0]?.id ?? "", template_id: "" });
     setOpen(true);
   };
 
   const create = async () => {
     if (!form.congregation_id) { toast.error("Selecione a congregação"); return; }
     if (!form.title || !form.start_date || !form.end_date) { toast.error("Preencha todos os campos"); return; }
-    // Deactivate others within the same congregation, then insert new as active
     await supabase.from("visits").update({ is_active: false }).eq("congregation_id", form.congregation_id);
     const { data, error } = await supabase.from("visits").insert({ congregation_id: form.congregation_id, title: form.title, start_date: form.start_date, end_date: form.end_date, is_active: true }).select().single();
     if (error || !data) { toast.error(error?.message ?? "Falha"); return; }
     await seedFn({ data: { visitId: data.id } });
-    // Switch the super's active congregation to the one just used so the rest of the app reflects it
+    if (form.template_id) {
+      const r = await fnApply({ data: { visitId: data.id, templateId: form.template_id } });
+      if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
+    }
     if (user && profile?.congregation_id !== form.congregation_id) {
       await supabase.from("profiles").update({ congregation_id: form.congregation_id }).eq("id", user.id);
       await refresh();
@@ -147,6 +155,17 @@ function Page() {
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Início (terça)</Label><Input type="date" className="mt-1" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} /></div>
                   <div><Label>Fim (domingo)</Label><Input type="date" className="mt-1" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} /></div>
+                </div>
+                <div>
+                  <Label>Modelo de programação (opcional)</Label>
+                  <Select value={form.template_id || "none"} onValueChange={(v) => setForm({ ...form, template_id: v === "none" ? "" : v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Sem modelo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Não aplicar modelo —</SelectItem>
+                      {tpls.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {tpls.length === 0 && <p className="text-xs text-muted-foreground mt-1">Crie um modelo em "Modelos" para aplicá-lo aqui.</p>}
                 </div>
                 <Button className="w-full" onClick={create}>Criar</Button>
               </div>

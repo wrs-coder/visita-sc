@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Building2, Trash2, Pencil, Check, KeyRound, Copy } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ interface Congregation {
   name: string;
   invite_code: string;
   superintendent_id: string;
+  is_active?: boolean;
 }
 
 export const Route = createFileRoute("/_app/congregacoes")({ component: Page });
