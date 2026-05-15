@@ -9,6 +9,7 @@ import {
   linkFieldMeetingTemplate,
   duplicateFieldMeetingTemplate,
   deleteFieldMeetingTemplate,
+  replaceFieldMeetingTemplateItems,
   FIELD_MODALITIES,
   FIELD_MODALITY_LABELS,
 } from "@/lib/field-meeting-templates.functions";
@@ -19,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Pencil, Compass, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Copy, Pencil, Compass, AlertCircle, Save } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -30,8 +31,18 @@ export const Route = createFileRoute("/_app/modelo-reunioes-de-campo")({ compone
 type Modality = (typeof FIELD_MODALITIES)[number];
 interface TemplateRow { id: string; name: string; congregation_id: string | null; modality: Modality; }
 interface CongRow { id: string; name: string; }
+interface ItemDraft {
+  day_offset: number;
+  period: string;
+  meeting_time: string;
+  territory_number: string;
+  territory_location: string;
+  closing_prayer: string;
+}
 
 const MAX = 24;
+const DAY_OPTS = [0, 1, 2, 3, 4, 5, 6];
+const DAY_LABEL: Record<number, string> = { 0: "Ter (1º dia)", 1: "Qua", 2: "Qui", 3: "Sex", 4: "Sáb", 5: "Dom", 6: "Seg" };
 
 function Page() {
   const { role } = useAuth();
@@ -41,9 +52,11 @@ function Page() {
   const fnLink = useServerFn(linkFieldMeetingTemplate);
   const fnDup = useServerFn(duplicateFieldMeetingTemplate);
   const fnDel = useServerFn(deleteFieldMeetingTemplate);
+  const fnReplace = useServerFn(replaceFieldMeetingTemplateItems);
   const fnCongs = useServerFn(listMyCongregations);
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
+  const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
   const [congs, setCongs] = useState<CongRow[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -59,6 +72,20 @@ function Page() {
     const [r, c] = await Promise.all([fnList(), fnCongs()]);
     if (r.ok) {
       setTpls(r.templates as TemplateRow[]);
+      const map: Record<string, ItemDraft[]> = {};
+      for (const t of r.templates) map[t.id] = [];
+      for (const it of r.items) {
+        map[it.template_id] = map[it.template_id] || [];
+        map[it.template_id].push({
+          day_offset: it.day_offset,
+          period: it.period || "Manhã",
+          meeting_time: it.meeting_time ?? "",
+          territory_number: it.territory_number ?? "",
+          territory_location: it.territory_location ?? "",
+          closing_prayer: it.closing_prayer ?? "",
+        });
+      }
+      setItemsByTpl(map);
       if (!activeId && r.templates.length > 0) setActiveId(r.templates[0].id);
     }
     if (c.ok) setCongs(c.data as CongRow[]);
@@ -71,6 +98,12 @@ function Page() {
   }
 
   const active = tpls.find((t) => t.id === activeId) ?? null;
+  const items = activeId ? itemsByTpl[activeId] ?? [] : [];
+
+  const setItems = (next: ItemDraft[]) => {
+    if (!activeId) return;
+    setItemsByTpl((m) => ({ ...m, [activeId]: next }));
+  };
 
   const handleCreate = async () => {
     const parsed = nameSchema.safeParse(newName);
@@ -143,6 +176,33 @@ function Page() {
     await load();
   };
 
+  const addItem = () => setItems([...items, { day_offset: 0, period: "Manhã", meeting_time: "", territory_number: "", territory_location: "", closing_prayer: "" }]);
+  const updateItem = (idx: number, patch: Partial<ItemDraft>) =>
+    setItems(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
+
+  const handleSaveItems = async () => {
+    if (!activeId) return;
+    setBusy(true);
+    const r = await fnReplace({
+      data: {
+        templateId: activeId,
+        items: items.map((it, i) => ({
+          day_offset: it.day_offset,
+          period: it.period,
+          meeting_time: it.meeting_time || null,
+          territory_number: it.territory_number || null,
+          territory_location: it.territory_location || null,
+          closing_prayer: it.closing_prayer || null,
+          sort_order: i,
+        })),
+      },
+    });
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success("Itens salvos");
+  };
+
   const usedCongIds = new Set(tpls.filter((t) => t.congregation_id && t.id !== active?.id).map((t) => t.congregation_id!));
 
   return (
@@ -153,7 +213,7 @@ function Page() {
             <Compass className="h-6 w-6" />Modelo Reuniões de Campo
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Defina a modalidade de pregação e vincule cada modelo a uma congregação. {tpls.length}/{MAX} modelos.
+            Defina a modalidade, os turnos com dia/horário e vincule a uma congregação. {tpls.length}/{MAX} modelos.
           </p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -216,52 +276,104 @@ function Page() {
               Selecione um modelo ou crie um novo.
             </CardContent></Card>
           ) : (
-            <Card><CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="font-semibold truncate">{active.name}</div>
-                <div className="flex gap-2 flex-wrap">
-                  <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
-                    <Pencil className="h-3.5 w-3.5 mr-1" />Renomear
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
-                    <Copy className="h-3.5 w-3.5 mr-1" />Duplicar
-                  </Button>
-                  <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
-                    <Trash2 className="h-3.5 w-3.5 mr-1" />Excluir
-                  </Button>
+            <>
+              <Card><CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="font-semibold truncate">{active.name}</div>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5 mr-1" />Renomear
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
+                      <Copy className="h-3.5 w-3.5 mr-1" />Duplicar
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />Excluir
+                    </Button>
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <Label className="text-xs">Modalidade de pregação</Label>
-                <Select value={active.modality} onValueChange={handleChangeModality}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {FIELD_MODALITIES.map((m) => (
-                      <SelectItem key={m} value={m}>{FIELD_MODALITY_LABELS[m]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Quando a modalidade não for "Pregação de casa em casa", apenas o campo "Oração final" ficará disponível para a congregação.
-                </p>
-              </div>
+                <div>
+                  <Label className="text-xs">Modalidade de pregação</Label>
+                  <Select value={active.modality} onValueChange={handleChangeModality}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {FIELD_MODALITIES.map((m) => (
+                        <SelectItem key={m} value={m}>{FIELD_MODALITY_LABELS[m]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Quando a modalidade não for "Pregação de casa em casa", apenas o campo "Oração final" ficará disponível para a congregação.
+                  </p>
+                </div>
 
-              <div>
-                <Label className="text-xs">Vincular à congregação</Label>
-                <Select value={active.congregation_id ?? "__none__"} onValueChange={handleLink}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Sem vínculo</SelectItem>
-                    {congs.map((c) => (
-                      <SelectItem key={c.id} value={c.id} disabled={usedCongIds.has(c.id)}>
-                        {c.name}{usedCongIds.has(c.id) ? " (já vinculada)" : ""}
-                      </SelectItem>
+                <div>
+                  <Label className="text-xs">Vincular à congregação</Label>
+                  <Select value={active.congregation_id ?? "__none__"} onValueChange={handleLink}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Sem vínculo</SelectItem>
+                      {congs.map((c) => (
+                        <SelectItem key={c.id} value={c.id} disabled={usedCongIds.has(c.id)}>
+                          {c.name}{usedCongIds.has(c.id) ? " (já vinculada)" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ao criar uma visita para a congregação vinculada, estes turnos serão aplicados automaticamente.
+                  </p>
+                </div>
+              </CardContent></Card>
+
+              <Card><CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold">Turnos do modelo</div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" />Turno</Button>
+                    <Button size="sm" onClick={handleSaveItems} disabled={busy}><Save className="h-3.5 w-3.5 mr-1" />Salvar</Button>
+                  </div>
+                </div>
+                {items.length === 0 ? (
+                  <div className="text-sm text-muted-foreground text-center py-6">
+                    Nenhum turno. Adicione dias/horários para esta congregação.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {items.map((it, idx) => (
+                      <div key={idx} className="border rounded-md p-3 space-y-2 bg-muted/30">
+                        <div className="flex items-center gap-2">
+                          <Select value={String(it.day_offset)} onValueChange={(v) => updateItem(idx, { day_offset: Number(v) })}>
+                            <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                            <SelectContent>{DAY_OPTS.map((d) => <SelectItem key={d} value={String(d)}>{DAY_LABEL[d]}</SelectItem>)}</SelectContent>
+                          </Select>
+                          <Select value={it.period} onValueChange={(v) => updateItem(idx, { period: v })}>
+                            <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Manhã">Manhã</SelectItem>
+                              <SelectItem value="Tarde">Tarde</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input type="time" value={it.meeting_time} onChange={(e) => updateItem(idx, { meeting_time: e.target.value })} className="h-8 w-28" />
+                          <div className="flex-1" />
+                          <Button size="icon" variant="ghost" onClick={() => removeItem(idx)}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                        {active.modality === "casa_em_casa" && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input placeholder="N° território S-13" value={it.territory_number} onChange={(e) => updateItem(idx, { territory_number: e.target.value })} className="h-8" />
+                            <Input placeholder="Localização do território" value={it.territory_location} onChange={(e) => updateItem(idx, { territory_location: e.target.value })} className="h-8" />
+                          </div>
+                        )}
+                        <Input placeholder="Oração final" value={it.closing_prayer} onChange={(e) => updateItem(idx, { closing_prayer: e.target.value })} className="h-8" />
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent></Card>
+                  </div>
+                )}
+              </CardContent></Card>
+            </>
           )}
         </div>
       </div>
