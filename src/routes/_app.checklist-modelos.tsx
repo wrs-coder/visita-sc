@@ -155,6 +155,21 @@ function Page() {
 
   const handleSaveItems = async () => {
     if (!activeId) return;
+    const errs: Record<number, { title?: string; description?: string }> = {};
+    items.forEach((it, idx) => {
+      const t = itemTitleSchema.safeParse(it.title);
+      const d = itemDescSchema.safeParse(it.description);
+      const e: { title?: string; description?: string } = {};
+      if (!t.success) e.title = t.error.issues[0].message;
+      if (!d.success) e.description = d.error.issues[0].message;
+      if (e.title || e.description) errs[idx] = e;
+    });
+    if (Object.keys(errs).length > 0) {
+      setItemErrs(errs);
+      toast.error("Corrija os campos destacados antes de salvar.");
+      return;
+    }
+    setItemErrs({});
     const cleaned = items
       .map((it) => ({ title: it.title.trim(), description: it.description.trim() }))
       .filter((it) => it.title.length > 0);
