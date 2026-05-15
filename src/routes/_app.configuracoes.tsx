@@ -158,7 +158,7 @@ function Page() {
           <Dialog open={open} onOpenChange={setOpen}>
             <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Nova visita</Button>
             <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle>Nova visita</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editId ? "Editar visita" : "Nova visita"}</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div>
                   <Label>Congregação</Label>
