@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Loader2, Check } from "lucide-react";
 import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -22,6 +23,7 @@ interface Row {
   meeting_point: string | null;
   meeting_time: string | null;
   acompanhante: string | null;
+  acompanhante_for: string | null;
   contact_phone: string | null;
   is_active: boolean;
 }
@@ -38,7 +40,7 @@ function Page() {
     const load = async () => {
       const { data } = await supabase
         .from("field_assignments")
-        .select("id,visit_id,event_date,period,meeting_point,meeting_time,acompanhante,contact_phone,is_active")
+        .select("id,visit_id,event_date,period,meeting_point,meeting_time,acompanhante,acompanhante_for,contact_phone,is_active")
         .eq("visit_id", visit.id)
         .order("event_date")
         .order("period");
@@ -128,6 +130,20 @@ function Page() {
                         <Field label="Local de encontro" v={r.meeting_point ?? ""} onSave={(v) => update(r.id, { meeting_point: v })} />
                         <Field label="Horário" type="time" v={r.meeting_time ?? ""} onSave={(v) => update(r.id, { meeting_time: v || null })} readOnly={!isSuper} />
                         <Field label="Acompanhante para estudos" v={r.acompanhante ?? ""} onSave={(v) => update(r.id, { acompanhante: v })} className="col-span-2" />
+                        <div className="col-span-2">
+                          <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Acompanhante para</label>
+                          {isSuper ? (
+                            <Select value={r.acompanhante_for ?? ""} onValueChange={(v) => update(r.id, { acompanhante_for: v || null })}>
+                              <SelectTrigger className="h-9 mt-0.5"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="superintendente">Superintendente</SelectItem>
+                                <SelectItem value="esposa">Esposa do superintendente</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input readOnly value={r.acompanhante_for === "esposa" ? "Esposa do superintendente" : r.acompanhante_for === "superintendente" ? "Superintendente" : "—"} className="h-9 mt-0.5" />
+                          )}
+                        </div>
                         <Field label="Telefone de contato" type="tel" v={r.contact_phone ?? ""} onSave={(v) => update(r.id, { contact_phone: v })} className="col-span-2" />
                       </div>
                     </CardContent>

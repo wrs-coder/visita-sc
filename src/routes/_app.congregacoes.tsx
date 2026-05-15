@@ -114,12 +114,24 @@ function Page() {
     toast.success("Código copiado");
   };
 
+  const activeCount = list.filter((c) => c.is_active !== false).length;
+
+  const toggleActive = async (c: Congregation, next: boolean) => {
+    if (next && activeCount >= 9 && c.is_active === false) {
+      toast.error("Limite de 9 congregações ativas atingido. Desative outra antes.");
+      return;
+    }
+    const { error } = await supabase.from("congregations").update({ is_active: next }).eq("id", c.id);
+    if (error) { toast.error(error.message); return; }
+    load();
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><Building2 className="h-6 w-6" /> Congregações</h1>
-          <p className="text-sm text-muted-foreground mt-1">Gerencie as congregações do circuito e o código de cada uma.</p>
+          <p className="text-sm text-muted-foreground mt-1">{activeCount}/9 congregações ativas no circuito.</p>
         </div>
         <Dialog open={openNew} onOpenChange={setOpenNew}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" /> Nova</Button></DialogTrigger>
@@ -154,14 +166,16 @@ function Page() {
       <div className="space-y-2">
         {list.map((c) => {
           const active = profile?.congregation_id === c.id;
+          const isActive = c.is_active !== false;
           return (
-            <Card key={c.id} className="shadow-card">
+            <Card key={c.id} className={`shadow-card ${!isActive ? "opacity-60" : ""}`}>
               <CardContent className="p-4 flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0"><Building2 className="h-5 w-5" /></div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold truncate flex items-center gap-2">
                     {c.name}
-                    {active && <span className="text-[10px] uppercase font-bold bg-success text-success-foreground px-1.5 py-0.5 rounded">Ativa</span>}
+                    {active && <span className="text-[10px] uppercase font-bold bg-success text-success-foreground px-1.5 py-0.5 rounded">Atual</span>}
+                    {!isActive && <span className="text-[10px] uppercase font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Inativa</span>}
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                     <KeyRound className="h-3 w-3" />
@@ -169,8 +183,9 @@ function Page() {
                     <button onClick={() => copy(c.invite_code)} className="hover:text-primary"><Copy className="h-3 w-3" /></button>
                   </div>
                 </div>
-                <div className="flex gap-1 shrink-0">
-                  {!active && <Button size="sm" variant="outline" onClick={() => setActive(c.id)}><Check className="h-3.5 w-3.5 mr-1" />Ativar</Button>}
+                <div className="flex items-center gap-1 shrink-0">
+                  <Switch checked={isActive} onCheckedChange={(v) => toggleActive(c, v)} aria-label="Ativa" />
+                  {!active && isActive && <Button size="sm" variant="outline" onClick={() => setActive(c.id)}><Check className="h-3.5 w-3.5 mr-1" />Usar</Button>}
                   <Button size="icon" variant="ghost" onClick={() => setEditing({ ...c })}><Pencil className="h-3.5 w-3.5" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => remove(c.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                 </div>

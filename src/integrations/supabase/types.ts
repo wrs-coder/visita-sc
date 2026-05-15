@@ -94,6 +94,7 @@ export type Database = {
       field_assignments: {
         Row: {
           acompanhante: string | null
+          acompanhante_for: string | null
           contact_phone: string | null
           created_at: string
           event_date: string
@@ -108,6 +109,7 @@ export type Database = {
         }
         Insert: {
           acompanhante?: string | null
+          acompanhante_for?: string | null
           contact_phone?: string | null
           created_at?: string
           event_date: string
@@ -122,6 +124,7 @@ export type Database = {
         }
         Update: {
           acompanhante?: string | null
+          acompanhante_for?: string | null
           contact_phone?: string | null
           created_at?: string
           event_date?: string
