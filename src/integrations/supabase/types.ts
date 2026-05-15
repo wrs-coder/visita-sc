@@ -151,7 +151,7 @@ export type Database = {
         Row: {
           contact_phone: string | null
           created_at: string
-          host_name: string
+          host_name: string | null
           id: string
           is_active: boolean
           location: string | null
@@ -165,7 +165,7 @@ export type Database = {
         Insert: {
           contact_phone?: string | null
           created_at?: string
-          host_name: string
+          host_name?: string | null
           id?: string
           is_active?: boolean
           location?: string | null
@@ -179,7 +179,7 @@ export type Database = {
         Update: {
           contact_phone?: string | null
           created_at?: string
-          host_name?: string
+          host_name?: string | null
           id?: string
           is_active?: boolean
           location?: string | null
