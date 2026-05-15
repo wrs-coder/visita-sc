@@ -191,12 +191,12 @@ function RowCard({ row: r, isSuper, showAllFields, saving, update, remove }: { r
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div className={showAllFields ? "" : "col-span-2"}>
-            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Horário</label>
-            <Input type="time" value={meeting_time} readOnly={!isSuper && !showAllFields ? false : !isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />
-          </div>
           {showAllFields && (
             <>
+              <div>
+                <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Horário</label>
+                <Input type="time" value={meeting_time} readOnly={!isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />
+              </div>
               <div>
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">N° do território S-13</label>
                 <Input value={territory_number} onChange={(e) => setTerritoryNumber(e.target.value)} className="h-9 mt-0.5" />
