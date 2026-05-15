@@ -207,6 +207,7 @@ function Page() {
               </div>
               {isSuper && <div className="flex gap-1">
                 {!v.is_active && <Button size="sm" variant="outline" onClick={() => setActive(v.id)}><Check className="h-3.5 w-3.5 mr-1" />Ativar</Button>}
+                <Button size="icon" variant="ghost" onClick={() => openEdit(v)}><Pencil className="h-3.5 w-3.5" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => remove(v.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
               </div>}
             </CardContent></Card>
