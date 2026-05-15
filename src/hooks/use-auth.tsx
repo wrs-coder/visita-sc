@@ -64,8 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole((r?.role as AppRole) ?? null);
     setElderPosition(((r as { elder_position?: ElderPosition } | null)?.elder_position) ?? null);
     if (p?.congregation_id) {
-      const { data: c } = await supabase.from("congregations").select("*").eq("id", p.congregation_id).maybeSingle();
-      setCongregation(c as Congregation | null);
+      const { data: c } = await supabase.from("congregations")
+        .select("id,name,superintendent_id")
+        .eq("id", p.congregation_id).maybeSingle();
+      // invite_code is hidden from non-owner clients; default to "" so the type stays stable
+      setCongregation(c ? ({ ...(c as Omit<Congregation, "invite_code">), invite_code: "" }) : null);
     } else {
       setCongregation(null);
     }
