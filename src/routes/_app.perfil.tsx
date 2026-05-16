@@ -20,7 +20,13 @@ import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader
 export const Route = createFileRoute("/_app/perfil")({ component: Page });
 
 function Page() {
-  const { user, profile, refresh } = useAuth();
+  const { user, profile, refresh, role } = useAuth();
+  const autoBackup = useAutoBackup();
+  const fnExportBackup = useServerFn(exportFullBackup);
+  const fnRestoreBackup = useServerFn(restoreFullBackup);
+  const restoreInputRef = useRef<HTMLInputElement>(null);
+  const [pendingRestore, setPendingRestore] = useState<unknown | null>(null);
+  const [busyBackup, setBusyBackup] = useState<null | "export" | "restore">(null);
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [email, setEmail] = useState(user?.email ?? profile?.email ?? "");
   const [pwd, setPwd] = useState("");
@@ -28,6 +34,37 @@ function Page() {
   const [busyName, setBusyName] = useState(false);
   const [busyEmail, setBusyEmail] = useState(false);
   const [busyPwd, setBusyPwd] = useState(false);
+
+  const doExportBackup = async () => {
+    setBusyBackup("export");
+    const r = await fnExportBackup();
+    setBusyBackup(null);
+    if (!r.ok || !r.file) { toast.error(r.error ?? "Falha"); return; }
+    const fname = `visita-sc-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    const res = await shareJsonFile(fname, r.file);
+    toast.success(res === "shared" ? "Compartilhamento aberto" : "Backup baixado");
+  };
+
+  const pickRestoreFile = async (file: File) => {
+    try {
+      const json = await readJsonFile(file);
+      setPendingRestore(json);
+    } catch (e) {
+      toast.error("Arquivo inválido", { description: (e as Error).message });
+    } finally {
+      if (restoreInputRef.current) restoreInputRef.current.value = "";
+    }
+  };
+
+  const confirmRestore = async () => {
+    if (!pendingRestore) return;
+    setBusyBackup("restore");
+    const r = await fnRestoreBackup({ data: { file: pendingRestore as never } });
+    setBusyBackup(null);
+    setPendingRestore(null);
+    if (!r.ok) { toast.error("Falha ao restaurar", { description: r.error }); return; }
+    toast.success(`Backup restaurado (${r.restored} registros).`);
+  };
 
   const saveName = async (e: React.FormEvent) => {
     e.preventDefault();
