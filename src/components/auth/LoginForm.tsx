@@ -2,15 +2,14 @@ import { useState } from "react";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { resolveElderEmail } from "@/lib/auth.functions";
-import { COUNTRIES, DEFAULT_COUNTRY, buildFullPhone, findCountry } from "@/lib/countries";
+import { getGuestSnapshot } from "@/lib/guest.functions";
+import { saveGuestSession } from "@/lib/guest-session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { LogIn, Users, ShieldCheck, Eye } from "lucide-react";
+import { LogIn, Users, ShieldCheck, KeyRound } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export function LoginForm() {
