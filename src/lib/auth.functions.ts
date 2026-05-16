@@ -86,6 +86,16 @@ export const registerElderByPhone = createServerFn({ method: "POST" })
     if (!cong) return { ok: false as const, error: "Código de congregação inválido." };
     if (!cong.is_active) return { ok: false as const, error: "Esta congregação está inativa. Fale com o superintendente." };
 
+    // Position availability (one Coordenador / Secretário / Sup. Serviço per congregação)
+    const { data: takenRoles } = await supabaseAdmin
+      .from("user_roles").select("elder_position")
+      .eq("role", "elder").eq("congregation_id", cong.id)
+      .in("elder_position", [...ELDER_REGISTERABLE_POSITIONS]);
+    const takenSet = new Set((takenRoles ?? []).map((r) => r.elder_position).filter(Boolean) as string[]);
+    if (takenSet.has(data.position)) {
+      return { ok: false as const, error: "Esta função já está cadastrada para esta congregação." };
+    }
+
     // Phone uniqueness
     const { data: existingPhone } = await supabaseAdmin
       .from("profiles").select("id").eq("phone", digits).maybeSingle();
