@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { registerElderByPhone } from "@/lib/auth.functions";
+import { registerElderByPhone, getAvailableElderPositions } from "@/lib/auth.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, DEFAULT_COUNTRY, buildFullPhone, findCountry } from "@/lib/countries";
 import { Button } from "@/components/ui/button";
@@ -15,14 +15,20 @@ import { ELDER_POSITION_LABELS, type ElderPosition } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/cadastro/anciao")({ component: Page });
 
+const ALL_POSITIONS: ElderPosition[] = ["coordenador", "secretario", "sup_servico"];
+
 function Page() {
   const nav = useNavigate();
   const fn = useServerFn(registerElderByPhone);
+  const checkFn = useServerFn(getAvailableElderPositions);
   const [busy, setBusy] = useState(false);
   const [country, setCountry] = useState(DEFAULT_COUNTRY);
   const [form, setForm] = useState<{ fullName: string; phone: string; email: string; password: string; inviteCode: string; position: ElderPosition | "" }>({
     fullName: "", phone: "", email: "", password: "", inviteCode: "", position: "",
   });
+  const [available, setAvailable] = useState<ElderPosition[] | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +55,37 @@ function Page() {
     }
   };
 
+  // Dynamic availability lookup as user types congregation code (debounced)
+  useEffect(() => {
+    const code = form.inviteCode.trim();
+    if (code.length < 4) {
+      setAvailable(null);
+      setCodeError(null);
+      return;
+    }
+    setChecking(true);
+    const handle = setTimeout(async () => {
+      try {
+        const res = await checkFn({ data: { inviteCode: code } });
+        if (!res.ok) {
+          setAvailable([]);
+          setCodeError(res.error);
+          setForm((f) => ({ ...f, position: "" }));
+        } else {
+          setAvailable(res.available as ElderPosition[]);
+          setCodeError(null);
+          setForm((f) => (f.position && !(res.available as string[]).includes(f.position) ? { ...f, position: "" } : f));
+        }
+      } finally {
+        setChecking(false);
+      }
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [form.inviteCode, checkFn]);
+
   const dial = findCountry(country).dial;
+  const allFilled = available !== null && available.length === 0 && !codeError;
+  const disableSubmit = busy || !!codeError || allFilled || !form.position || available === null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary to-primary-soft/30 flex items-center justify-center p-4">
@@ -93,20 +129,33 @@ function Page() {
 
               <Field id="email" label="E-mail (para recuperar senha)" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
               <PasswordField value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
-              <Field id="code" label="Código da congregação" value={form.inviteCode} onChange={(v) => setForm({ ...form, inviteCode: v.toUpperCase() })} />
+              <div className="space-y-1.5">
+                <Field id="code" label="Código da congregação" value={form.inviteCode} onChange={(v) => setForm({ ...form, inviteCode: v.toUpperCase() })} />
+                {checking && <p className="text-[11px] text-muted-foreground">Verificando funções disponíveis...</p>}
+                {codeError && <p className="text-[11px] text-destructive">{codeError}</p>}
+                {allFilled && (
+                  <p className="text-[12px] text-destructive font-medium">
+                    O corpo de anciãos desta congregação já está totalmente cadastrado. Se precisar de alterar um utilizador, contacte o Superintendente de Circuito.
+                  </p>
+                )}
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="pos">Designação no corpo de anciãos</Label>
-                <Select value={form.position} onValueChange={(v) => setForm({ ...form, position: v as ElderPosition })}>
-                  <SelectTrigger id="pos"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <Select
+                  value={form.position}
+                  onValueChange={(v) => setForm({ ...form, position: v as ElderPosition })}
+                  disabled={available === null || allFilled || !!codeError}
+                >
+                  <SelectTrigger id="pos"><SelectValue placeholder={available === null ? "Digite o código primeiro..." : "Selecione..."} /></SelectTrigger>
                   <SelectContent>
-                    {(["coordenador", "secretario", "sup_servico"] as ElderPosition[]).map((k) => (
+                    {(available ?? ALL_POSITIONS).map((k) => (
                       <SelectItem key={k} value={k}>{ELDER_POSITION_LABELS[k]}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">Cadastro disponível apenas para Coordenador, Secretário e Sup. de Serviço. Os demais anciãos e a ES usam o acesso "Corpo de anciãos e ES" no login.</p>
+                <p className="text-[11px] text-muted-foreground">Cadastro disponível apenas para Coordenador, Secretário e Sup. de Serviço. Apenas um por congregação. Os demais anciãos e a ES usam o acesso "Corpo de anciãos e ES" no login.</p>
               </div>
-              <Button type="submit" className="w-full h-11 mt-2" disabled={busy}>
+              <Button type="submit" className="w-full h-11 mt-2" disabled={disableSubmit}>
                 {busy ? "Criando..." : "Entrar na Congregação"}
               </Button>
             </form>

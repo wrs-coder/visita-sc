@@ -45,6 +45,24 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
 const ELDER_POSITIONS = ["coordenador", "secretario", "sup_servico", "corpo"] as const;
 const ELDER_REGISTERABLE_POSITIONS = ["coordenador", "secretario", "sup_servico"] as const;
 
+// Returns which of the 3 registerable positions are still available for a congregation code.
+export const getAvailableElderPositions = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ inviteCode: z.string().trim().min(1).max(20) }).parse(input))
+  .handler(async ({ data }) => {
+    const code = data.inviteCode.toUpperCase();
+    const { data: cong } = await supabaseAdmin
+      .from("congregations").select("id,is_active").eq("invite_code", code).maybeSingle();
+    if (!cong) return { ok: false as const, error: "Código de congregação inválido." };
+    if (!cong.is_active) return { ok: false as const, error: "Esta congregação está inativa. Fale com o superintendente." };
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles").select("elder_position")
+      .eq("role", "elder").eq("congregation_id", cong.id)
+      .in("elder_position", [...ELDER_REGISTERABLE_POSITIONS]);
+    const taken = new Set((roles ?? []).map((r) => r.elder_position).filter(Boolean) as string[]);
+    const available = ELDER_REGISTERABLE_POSITIONS.filter((p) => !taken.has(p));
+    return { ok: true as const, available, taken: Array.from(taken) };
+  });
+
 export const registerElderByPhone = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({
@@ -68,6 +86,16 @@ export const registerElderByPhone = createServerFn({ method: "POST" })
     if (!cong) return { ok: false as const, error: "Código de congregação inválido." };
     if (!cong.is_active) return { ok: false as const, error: "Esta congregação está inativa. Fale com o superintendente." };
 
+    // Position availability (one Coordenador / Secretário / Sup. Serviço per congregação)
+    const { data: takenRoles } = await supabaseAdmin
+      .from("user_roles").select("elder_position")
+      .eq("role", "elder").eq("congregation_id", cong.id)
+      .in("elder_position", [...ELDER_REGISTERABLE_POSITIONS]);
+    const takenSet = new Set((takenRoles ?? []).map((r) => r.elder_position).filter(Boolean) as string[]);
+    if (takenSet.has(data.position)) {
+      return { ok: false as const, error: "Esta função já está cadastrada para esta congregação." };
+    }
+
     // Phone uniqueness
     const { data: existingPhone } = await supabaseAdmin
       .from("profiles").select("id").eq("phone", digits).maybeSingle();
@@ -88,9 +116,16 @@ export const registerElderByPhone = createServerFn({ method: "POST" })
       full_name: data.fullName, email, phone: digits, congregation_id: cong.id,
     }).eq("id", userId);
 
-    await supabaseAdmin.from("user_roles").insert({
+    const { error: rErr } = await supabaseAdmin.from("user_roles").insert({
       user_id: userId, role: "elder", congregation_id: cong.id, elder_position: data.position,
     });
+    if (rErr) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      const msg = /duplicate key|unique/i.test(rErr.message)
+        ? "Esta função já está cadastrada para esta congregação."
+        : rErr.message;
+      return { ok: false as const, error: msg };
+    }
 
     return { ok: true as const, email };
   });
