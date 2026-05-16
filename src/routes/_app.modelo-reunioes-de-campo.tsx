@@ -237,17 +237,6 @@ function Page() {
                 />
                 {newNameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{newNameErr}</p>}
               </div>
-              <div>
-                <Label>Modalidade de pregação</Label>
-                <Select value={newModality} onValueChange={(v) => setNewModality(v as Modality)}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {FIELD_MODALITIES.map((m) => (
-                      <SelectItem key={m} value={m}>{FIELD_MODALITY_LABELS[m]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
               <Button className="w-full" onClick={handleCreate} disabled={busy}>Criar</Button>
             </div>
           </DialogContent>
