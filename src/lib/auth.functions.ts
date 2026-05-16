@@ -158,6 +158,55 @@ export const listMyElders = createServerFn({ method: "POST" })
     };
   });
 
+// Super updates an elder's profile (name, phone, position) for elders in their congregations
+export const updateElderBySuper = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      elderUserId: z.string().uuid(),
+      fullName: z.string().trim().min(2).max(120),
+      phone: z.string().trim().min(8).max(20),
+      position: z.enum(ELDER_REGISTERABLE_POSITIONS),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: role } = await supabaseAdmin
+      .from("user_roles").select("id,congregation_id").eq("user_id", data.elderUserId).eq("role", "elder").maybeSingle();
+    if (!role?.congregation_id) return { ok: false as const, error: "Ancião não encontrado." };
+    const { data: cong } = await supabaseAdmin
+      .from("congregations").select("superintendent_id").eq("id", role.congregation_id).maybeSingle();
+    if (!cong || cong.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
+    const digits = data.phone.replace(/\D/g, "");
+    const { data: existingPhone } = await supabaseAdmin
+      .from("profiles").select("id").eq("phone", digits).neq("id", data.elderUserId).maybeSingle();
+    if (existingPhone) return { ok: false as const, error: "Já existe um cadastro com este telefone." };
+    const { error: pErr } = await supabaseAdmin.from("profiles")
+      .update({ full_name: data.fullName, phone: digits }).eq("id", data.elderUserId);
+    if (pErr) return { ok: false as const, error: pErr.message };
+    const { error: rErr } = await supabaseAdmin.from("user_roles")
+      .update({ elder_position: data.position }).eq("id", role.id);
+    if (rErr) return { ok: false as const, error: rErr.message };
+    return { ok: true as const };
+  });
+
+// Super deletes an elder account (only if elder belongs to one of their congregations)
+export const deleteElderBySuper = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ elderUserId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: role } = await supabaseAdmin
+      .from("user_roles").select("congregation_id").eq("user_id", data.elderUserId).eq("role", "elder").maybeSingle();
+    if (!role?.congregation_id) return { ok: false as const, error: "Ancião não encontrado." };
+    const { data: cong } = await supabaseAdmin
+      .from("congregations").select("superintendent_id").eq("id", role.congregation_id).maybeSingle();
+    if (!cong || cong.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.elderUserId);
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const };
+  });
+
 // Backwards-compat: kept (now unused by the elder signup UI) for any older flow
 export const registerElder = createServerFn({ method: "POST" })
   .inputValidator((input) =>
