@@ -138,13 +138,7 @@ function Page() {
     await load();
   };
 
-  const handleChangeModality = async (val: string) => {
-    if (!active) return;
-    const r = await fnUpdate({ data: { id: active.id, modality: val as Modality } });
-    if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Modalidade atualizada");
-    await load();
-  };
+
 
   const handleLink = async (val: string) => {
     if (!active) return;
