@@ -216,6 +216,7 @@ export type Database = {
           day_offset: number
           id: string
           meeting_time: string | null
+          modality: Database["public"]["Enums"]["field_modality"]
           period: string
           sort_order: number
           template_id: string
@@ -228,6 +229,7 @@ export type Database = {
           day_offset?: number
           id?: string
           meeting_time?: string | null
+          modality?: Database["public"]["Enums"]["field_modality"]
           period?: string
           sort_order?: number
           template_id: string
@@ -240,6 +242,7 @@ export type Database = {
           day_offset?: number
           id?: string
           meeting_time?: string | null
+          modality?: Database["public"]["Enums"]["field_modality"]
           period?: string
           sort_order?: number
           template_id?: string
@@ -294,6 +297,7 @@ export type Database = {
           id: string
           is_active: boolean
           meeting_time: string | null
+          modality: Database["public"]["Enums"]["field_modality"]
           period: string
           territory_location: string | null
           territory_number: string | null
@@ -307,6 +311,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           meeting_time?: string | null
+          modality?: Database["public"]["Enums"]["field_modality"]
           period: string
           territory_location?: string | null
           territory_number?: string | null
@@ -320,6 +325,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           meeting_time?: string | null
+          modality?: Database["public"]["Enums"]["field_modality"]
           period?: string
           territory_location?: string | null
           territory_number?: string | null

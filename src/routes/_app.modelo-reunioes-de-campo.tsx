@@ -34,6 +34,7 @@ interface CongRow { id: string; name: string; }
 interface ItemDraft {
   day_offset: number;
   period: string;
+  modality: Modality;
   meeting_time: string;
   territory_number: string;
   territory_location: string;
@@ -79,6 +80,7 @@ function Page() {
         map[it.template_id].push({
           day_offset: it.day_offset,
           period: it.period || "Manhã",
+          modality: ((it as { modality?: Modality }).modality) ?? "casa_em_casa",
           meeting_time: it.meeting_time ?? "",
           territory_number: it.territory_number ?? "",
           territory_location: it.territory_location ?? "",
@@ -136,13 +138,7 @@ function Page() {
     await load();
   };
 
-  const handleChangeModality = async (val: string) => {
-    if (!active) return;
-    const r = await fnUpdate({ data: { id: active.id, modality: val as Modality } });
-    if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Modalidade atualizada");
-    await load();
-  };
+
 
   const handleLink = async (val: string) => {
     if (!active) return;
@@ -176,7 +172,7 @@ function Page() {
     await load();
   };
 
-  const addItem = () => setItems([...items, { day_offset: 0, period: "Manhã", meeting_time: "", territory_number: "", territory_location: "", closing_prayer: "" }]);
+  const addItem = () => setItems([...items, { day_offset: 0, period: "Manhã", modality: "casa_em_casa", meeting_time: "", territory_number: "", territory_location: "", closing_prayer: "" }]);
   const updateItem = (idx: number, patch: Partial<ItemDraft>) =>
     setItems(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
@@ -190,6 +186,7 @@ function Page() {
         items: items.map((it, i) => ({
           day_offset: it.day_offset,
           period: it.period,
+          modality: it.modality,
           meeting_time: it.meeting_time || null,
           territory_number: it.territory_number || null,
           territory_location: it.territory_location || null,
@@ -213,7 +210,7 @@ function Page() {
             <Compass className="h-6 w-6" />Modelo Reuniões de Campo
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Defina a modalidade, os turnos com dia/horário e vincule a uma congregação. {tpls.length}/{MAX} modelos.
+            Programe vários turnos por semana, cada um com sua modalidade, e vincule o modelo a uma congregação. {tpls.length}/{MAX} modelos.
           </p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -234,17 +231,6 @@ function Page() {
                 />
                 {newNameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{newNameErr}</p>}
               </div>
-              <div>
-                <Label>Modalidade de pregação</Label>
-                <Select value={newModality} onValueChange={(v) => setNewModality(v as Modality)}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {FIELD_MODALITIES.map((m) => (
-                      <SelectItem key={m} value={m}>{FIELD_MODALITY_LABELS[m]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
               <Button className="w-full" onClick={handleCreate} disabled={busy}>Criar</Button>
             </div>
           </DialogContent>
@@ -263,7 +249,7 @@ function Page() {
                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === t.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
                 <div className="truncate">{t.name}</div>
                 <div className="text-xs text-muted-foreground truncate">
-                  {FIELD_MODALITY_LABELS[t.modality]} · {cong ? cong.name : "sem congregação"}
+                  {cong ? cong.name : "sem congregação"}
                 </div>
               </button>
             );
@@ -293,20 +279,9 @@ function Page() {
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-xs">Modalidade de pregação</Label>
-                  <Select value={active.modality} onValueChange={handleChangeModality}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {FIELD_MODALITIES.map((m) => (
-                        <SelectItem key={m} value={m}>{FIELD_MODALITY_LABELS[m]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Quando a modalidade não for "Pregação de casa em casa", apenas o campo "Oração final" ficará disponível para a congregação.
-                  </p>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Cada turno tem sua própria modalidade. Quando a modalidade não for "Pregação de casa em casa", apenas o campo "Oração final" ficará disponível para a congregação naquele turno.
+                </p>
 
                 <div>
                   <Label className="text-xs">Vincular à congregação</Label>
@@ -343,7 +318,7 @@ function Page() {
                   <div className="space-y-2">
                     {items.map((it, idx) => (
                       <div key={idx} className="border rounded-md p-3 space-y-2 bg-muted/30">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <Select value={String(it.day_offset)} onValueChange={(v) => updateItem(idx, { day_offset: Number(v) })}>
                             <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                             <SelectContent>{DAY_OPTS.map((d) => <SelectItem key={d} value={String(d)}>{DAY_LABEL[d]}</SelectItem>)}</SelectContent>
@@ -361,7 +336,18 @@ function Page() {
                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
                         </div>
-                        {active.modality === "casa_em_casa" && (
+                        <div>
+                          <Label className="text-xs">Modalidade</Label>
+                          <Select value={it.modality} onValueChange={(v) => updateItem(idx, { modality: v as Modality })}>
+                            <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {FIELD_MODALITIES.map((m) => (
+                                <SelectItem key={m} value={m}>{FIELD_MODALITY_LABELS[m]}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {it.modality === "casa_em_casa" && (
                           <div className="grid grid-cols-2 gap-2">
                             <Input placeholder="N° território S-13" value={it.territory_number} onChange={(e) => updateItem(idx, { territory_number: e.target.value })} className="h-8" />
                             <Input placeholder="Localização do território" value={it.territory_location} onChange={(e) => updateItem(idx, { territory_location: e.target.value })} className="h-8" />

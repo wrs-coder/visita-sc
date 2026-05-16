@@ -1,0 +1,2 @@
+ALTER TABLE public.field_meeting_template_items ADD COLUMN IF NOT EXISTS modality public.field_modality NOT NULL DEFAULT 'casa_em_casa';
+ALTER TABLE public.field_meetings ADD COLUMN IF NOT EXISTS modality public.field_modality NOT NULL DEFAULT 'casa_em_casa';

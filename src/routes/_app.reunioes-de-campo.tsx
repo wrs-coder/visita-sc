@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Loader2, Check } from "lucide-react";
 import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import { FIELD_MODALITY_LABELS, type FIELD_MODALITIES } from "@/lib/field-meeting-templates.functions";
+import { FIELD_MODALITIES, FIELD_MODALITY_LABELS } from "@/lib/field-meeting-templates.functions";
 
 export const Route = createFileRoute("/_app/reunioes-de-campo")({ component: Page });
 
@@ -22,6 +23,7 @@ interface Row {
   visit_id: string;
   event_date: string;
   period: string;
+  modality: Modality;
   meeting_time: string | null;
   territory_number: string | null;
   territory_location: string | null;
@@ -31,36 +33,17 @@ interface Row {
 
 function Page() {
   const { visit } = useActiveVisit();
-  const { role, congregation } = useAuth();
+  const { role } = useAuth();
   const isSuper = role === "superintendent";
   const [rows, setRows] = useState<Row[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [modality, setModality] = useState<Modality | null>(null);
-
-  useEffect(() => {
-    if (!congregation) return;
-    const loadModality = async () => {
-      const { data } = await supabase
-        .from("field_meeting_templates")
-        .select("modality")
-        .eq("congregation_id", congregation.id)
-        .maybeSingle();
-      setModality((data?.modality as Modality | undefined) ?? null);
-    };
-    loadModality();
-    const ch = supabase
-      .channel(`fmt-${congregation.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "field_meeting_templates", filter: `congregation_id=eq.${congregation.id}` }, loadModality)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [congregation]);
 
   useEffect(() => {
     if (!visit) return;
     const load = async () => {
       const { data } = await supabase
         .from("field_meetings")
-        .select("id,visit_id,event_date,period,meeting_time,territory_number,territory_location,closing_prayer,is_active")
+        .select("id,visit_id,event_date,period,modality,meeting_time,territory_number,territory_location,closing_prayer,is_active")
         .eq("visit_id", visit.id)
         .order("event_date")
         .order("period");
@@ -96,8 +79,6 @@ function Page() {
   if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa.</CardContent></Card>;
 
   const days = eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) });
-  // Modality controls which fields appear for the elders
-  const showAllFields = modality === null || modality === "casa_em_casa" || isSuper;
 
   return (
     <div className="space-y-5">
@@ -105,10 +86,8 @@ function Page() {
         <h1 className="text-2xl md:text-3xl font-bold">Reuniões de Campo</h1>
         <p className="text-sm text-muted-foreground mt-1">
           {isSuper
-            ? "Defina os turnos. O superintendente pode definir a modalidade na aba Modelo Reuniões de Campo."
-            : modality
-              ? `Modalidade definida: ${FIELD_MODALITY_LABELS[modality]}.`
-              : "Preencha os dados das reuniões de campo."}
+            ? "Defina os turnos e a modalidade de cada um. Os campos exibidos aos anciãos seguem a modalidade do turno."
+            : "Preencha os dados das reuniões de campo. Cada turno mostra apenas os campos da sua modalidade."}
         </p>
       </div>
 
@@ -131,7 +110,7 @@ function Page() {
                 <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem turnos definidos.</CardContent></Card>
               ) : (
                 dayRows.map((r) => (
-                  <RowCard key={r.id} row={r} isSuper={isSuper} showAllFields={showAllFields} saving={savingId === r.id} update={update} remove={remove} />
+                  <RowCard key={r.id} row={r} isSuper={isSuper} saving={savingId === r.id} update={update} remove={remove} />
                 ))
               )}
             </section>
@@ -142,7 +121,7 @@ function Page() {
   );
 }
 
-function RowCard({ row: r, isSuper, showAllFields, saving, update, remove }: { row: Row; isSuper: boolean; showAllFields: boolean; saving: boolean; update: (id: string, p: Partial<Row>) => Promise<void>; remove: (id: string) => void }) {
+function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSuper: boolean; saving: boolean; update: (id: string, p: Partial<Row>) => Promise<void>; remove: (id: string) => void }) {
   const [meeting_time, setMeetingTime] = useState(r.meeting_time ?? "");
   const [territory_number, setTerritoryNumber] = useState(r.territory_number ?? "");
   const [territory_location, setTerritoryLocation] = useState(r.territory_location ?? "");
@@ -162,6 +141,7 @@ function RowCard({ row: r, isSuper, showAllFields, saving, update, remove }: { r
     closing_prayer !== (r.closing_prayer ?? "");
 
   const everSaved = !!(r.meeting_time || r.territory_number || r.territory_location || r.closing_prayer);
+  const showTerritory = r.modality === "casa_em_casa";
 
   const handleSave = () => {
     if (!dirty) return;
@@ -177,9 +157,12 @@ function RowCard({ row: r, isSuper, showAllFields, saving, update, remove }: { r
     <Card className={`shadow-card mb-2 transition ${!r.is_active ? "opacity-50" : ""}`}>
       <CardContent className="p-4 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <div className={`text-xs font-semibold px-2 py-1 rounded ${r.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>
-            {r.period}
-            {!r.is_active && " · desativado"}
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <div className={`text-xs font-semibold px-2 py-1 rounded ${r.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>
+              {r.period}
+              {!r.is_active && " · desativado"}
+            </div>
+            <div className="text-xs text-muted-foreground truncate">{FIELD_MODALITY_LABELS[r.modality]}</div>
           </div>
           <div className="flex items-center gap-2">
             {isSuper && <Switch checked={r.is_active} onCheckedChange={(v) => update(r.id, { is_active: v })} aria-label="Ativar/desativar" />}
@@ -190,13 +173,26 @@ function RowCard({ row: r, isSuper, showAllFields, saving, update, remove }: { r
             )}
           </div>
         </div>
+        {isSuper && (
+          <div>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Modalidade</label>
+            <Select value={r.modality} onValueChange={(v) => update(r.id, { modality: v as Modality })}>
+              <SelectTrigger className="h-9 mt-0.5"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {FIELD_MODALITIES.map((m) => (
+                  <SelectItem key={m} value={m}>{FIELD_MODALITY_LABELS[m]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2">
-          {showAllFields && (
+          <div>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Horário</label>
+            <Input type="time" value={meeting_time} readOnly={!isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />
+          </div>
+          {showTerritory && (
             <>
-              <div>
-                <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Horário</label>
-                <Input type="time" value={meeting_time} readOnly={!isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />
-              </div>
               <div>
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">N° do território S-13</label>
                 <Input value={territory_number} onChange={(e) => setTerritoryNumber(e.target.value)} className="h-9 mt-0.5" />
