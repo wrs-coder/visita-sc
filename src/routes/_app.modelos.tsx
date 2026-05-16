@@ -116,12 +116,22 @@ function Page() {
     setItemsByTpl((m) => ({ ...m, [tplId]: (m[tplId] ?? []).filter((_, i) => i !== idx) }));
   };
 
+  const saveMealNote = async (slot: number, dayOffsetKey: string, value: string) => {
+    const current = notesBySlot[slot] ?? {};
+    const next = { ...current };
+    if (value.trim()) next[dayOffsetKey] = value;
+    else delete next[dayOffsetKey];
+    setNotesBySlot({ ...notesBySlot, [slot]: next });
+    const r = await fnUpsert({ data: { slot, name: namesBySlot[slot] || `Modelo ${slot}`, meal_day_notes: next } });
+    if (!r.ok) toast.error(r.error);
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><FileStack className="h-6 w-6" /> Modelos de Programação</h1>
-          <p className="text-sm text-muted-foreground mt-1">Crie até 3 modelos reutilizáveis. Use-os ao criar uma visita para uma congregação específica.</p>
+          <p className="text-sm text-muted-foreground mt-1">Crie até 10 modelos reutilizáveis. Use-os ao criar uma visita para uma congregação específica.</p>
         </div>
         <TemplateIOButtons
           filenameBase={namesBySlot[Number(activeSlot)] ?? `modelo-${activeSlot}`}
@@ -134,13 +144,21 @@ function Page() {
         />
       </div>
 
+      <div className="flex items-center gap-2">
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground">Modelo</Label>
+        <Select value={activeSlot} onValueChange={setActiveSlot}>
+          <SelectTrigger className="h-9 max-w-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || `Modelo ${s}`}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
       <Tabs value={activeSlot} onValueChange={setActiveSlot}>
-        <TabsList className="grid grid-cols-3 w-full">
-          {[1, 2, 3].map((s) => <TabsTrigger key={s} value={String(s)}>{namesBySlot[s] || `Modelo ${s}`}</TabsTrigger>)}
-        </TabsList>
-        {[1, 2, 3].map((slot) => {
+        {SLOTS.map((slot) => {
           const tpl = tpls.find((t) => t.slot === slot);
           const items = tpl ? (itemsByTpl[tpl.id] ?? []) : [];
+          const notes = notesBySlot[slot] ?? {};
           return (
             <TabsContent key={slot} value={String(slot)} className="space-y-4">
               <Card><CardContent className="p-4 space-y-3">
@@ -151,6 +169,26 @@ function Page() {
 
                 <KindBlock title="Estudos e Revisitas" kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study")} onUpdate={updateDraft} onRemove={removeItem} />
                 <KindBlock title="Refeições" kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal")} onUpdate={updateDraft} onRemove={removeItem} />
+
+                <div className="border rounded-lg p-3 space-y-2">
+                  <h3 className="text-sm font-semibold">Observações de refeições por dia</h3>
+                  <p className="text-xs text-muted-foreground">Texto opcional exibido em vermelho aos anciãos abaixo do título do dia, na aba Refeições.</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {DAY_OPTS.map((d) => (
+                      <div key={d} className="flex items-center gap-2">
+                        <div className="text-xs font-medium w-24 shrink-0 text-muted-foreground">{DAY_LABEL[d]}</div>
+                        <Input
+                          className="h-9 flex-1"
+                          placeholder="Ex.: Reunião entre 7h e 16h30, não marquem almoço"
+                          value={notes[String(d)] ?? ""}
+                          onChange={(e) => setNotesBySlot({ ...notesBySlot, [slot]: { ...(notesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
+                          onBlur={(e) => saveMealNote(slot, String(d), e.target.value)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <KindBlock title="Transporte" kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport")} onUpdate={updateDraft} onRemove={removeItem} />
 
                 <Button className="w-full" onClick={() => saveItems(slot)} disabled={busy}>
