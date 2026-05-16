@@ -80,6 +80,7 @@ function Page() {
         map[it.template_id].push({
           day_offset: it.day_offset,
           period: it.period || "Manhã",
+          modality: ((it as { modality?: Modality }).modality) ?? "casa_em_casa",
           meeting_time: it.meeting_time ?? "",
           territory_number: it.territory_number ?? "",
           territory_location: it.territory_location ?? "",
