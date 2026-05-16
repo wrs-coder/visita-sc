@@ -13,6 +13,8 @@ import {
   FIELD_MODALITIES,
   FIELD_MODALITY_LABELS,
 } from "@/lib/field-meeting-templates.functions";
+import { exportFieldMeetingTemplate, importFieldMeetingTemplate } from "@/lib/template-io.functions";
+import { TemplateIOButtons } from "@/components/TemplateIOButtons";
 import { listMyCongregations } from "@/lib/congregations.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +57,8 @@ function Page() {
   const fnDel = useServerFn(deleteFieldMeetingTemplate);
   const fnReplace = useServerFn(replaceFieldMeetingTemplateItems);
   const fnCongs = useServerFn(listMyCongregations);
+  const fnExport = useServerFn(exportFieldMeetingTemplate);
+  const fnImport = useServerFn(importFieldMeetingTemplate);
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
