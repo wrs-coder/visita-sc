@@ -33,8 +33,12 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
       return { ok: false as const, error: signErr?.message ?? "Falha ao criar conta." };
     }
     const userId = created.user.id;
-    await supabaseAdmin.from("profiles").update({ full_name: data.fullName, email: data.email }).eq("id", userId);
-    await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "superintendent", congregation_id: null });
+    await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: data.fullName, email: data.email }, { onConflict: "id" });
+    const { data: existingRole } = await supabaseAdmin
+      .from("user_roles").select("id").eq("user_id", userId).eq("role", "superintendent").maybeSingle();
+    if (!existingRole) {
+      await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "superintendent", congregation_id: null });
+    }
     return { ok: true as const };
   });
 
@@ -258,8 +262,12 @@ export const linkAccount = createServerFn({ method: "POST" })
 
     if (data.mode === "superintendent") {
       if (data.code !== SUPER_CODE) return { ok: false as const, error: "Código de superintendente inválido." };
-      await supabaseAdmin.from("profiles").update({ full_name: data.fullName ?? undefined, email }).eq("id", userId);
-      await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "superintendent", congregation_id: null });
+      await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: data.fullName ?? undefined, email }, { onConflict: "id" });
+      const { data: existing } = await supabaseAdmin
+        .from("user_roles").select("id").eq("user_id", userId).eq("role", "superintendent").maybeSingle();
+      if (!existing) {
+        await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "superintendent", congregation_id: null });
+      }
       return { ok: true as const };
     } else {
       if (!data.position) return { ok: false as const, error: "Selecione sua designação." };
@@ -267,10 +275,16 @@ export const linkAccount = createServerFn({ method: "POST" })
         .select("id,is_active").eq("invite_code", data.code.toUpperCase()).maybeSingle();
       if (!cong) return { ok: false as const, error: "Código de congregação inválido." };
       if (!cong.is_active) return { ok: false as const, error: "Esta congregação está inativa." };
-      await supabaseAdmin.from("profiles").update({ full_name: data.fullName ?? undefined, email, congregation_id: cong.id }).eq("id", userId);
-      await supabaseAdmin.from("user_roles").insert({
-        user_id: userId, role: "elder", congregation_id: cong.id, elder_position: data.position,
-      });
+      await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: data.fullName ?? undefined, email, congregation_id: cong.id }, { onConflict: "id" });
+      const { data: existing } = await supabaseAdmin
+        .from("user_roles").select("id").eq("user_id", userId).eq("role", "elder").maybeSingle();
+      if (existing) {
+        await supabaseAdmin.from("user_roles").update({ congregation_id: cong.id, elder_position: data.position }).eq("id", existing.id);
+      } else {
+        await supabaseAdmin.from("user_roles").insert({
+          user_id: userId, role: "elder", congregation_id: cong.id, elder_position: data.position,
+        });
+      }
       return { ok: true as const };
     }
   });

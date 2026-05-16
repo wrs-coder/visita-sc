@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, Settings, LogOut, Menu, Building2, Car, FileStack, MapPin } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, Settings, LogOut, Menu, Building2, Car, FileStack, MapPin, UserCircle } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -45,6 +45,7 @@ function AppLayout() {
     ...(role === "superintendent" ? [{ to: "/notas", label: "Notas Privadas", icon: Lock }] : []),
     ...(role === "superintendent" ? [{ to: "/modelos", label: "Modelos", icon: FileStack }] : []),
     ...(role === "superintendent" ? [{ to: "/congregacoes", label: "Congregações", icon: Building2 }] : []),
+    { to: "/perfil", label: "Meu perfil", icon: UserCircle },
     { to: "/configuracoes", label: "Configurações", icon: Settings },
   ];
 
