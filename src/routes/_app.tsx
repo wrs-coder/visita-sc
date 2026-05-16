@@ -45,8 +45,8 @@ function AppLayout() {
     ...(role === "superintendent" ? [{ to: "/modelo-reunioes-de-campo", label: "Modelo Reuniões de Campo", icon: MapPin }] : []),
     ...(role === "superintendent" ? [{ to: "/notas", label: "Notas Privadas", icon: Lock }] : []),
     ...(role === "superintendent" ? [{ to: "/congregacoes", label: "Congregações", icon: Building2 }] : []),
+    { to: "/configuracoes", label: "Itinerário", icon: Plane },
     { to: "/perfil", label: "Meu perfil", icon: UserCircle },
-    { to: "/configuracoes", label: "Configurações", icon: Settings },
   ];
 
   const Nav = ({ onClick }: { onClick?: () => void }) => (
