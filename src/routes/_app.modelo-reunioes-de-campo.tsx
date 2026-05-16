@@ -363,10 +363,13 @@ function Page() {
                           </Select>
                         </div>
                         {it.modality === "casa_em_casa" && (
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input placeholder="N° território S-13" value={it.territory_number} onChange={(e) => updateItem(idx, { territory_number: e.target.value })} className="h-8" />
-                            <Input placeholder="Localização do território" value={it.territory_location} onChange={(e) => updateItem(idx, { territory_location: e.target.value })} className="h-8" />
-                          </div>
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input placeholder="N° território S-13" value={it.territory_number} onChange={(e) => updateItem(idx, { territory_number: e.target.value })} className="h-8" />
+                              <Input placeholder="Localização do território" value={it.territory_location} onChange={(e) => updateItem(idx, { territory_location: e.target.value })} className="h-8" />
+                            </div>
+                            <Input placeholder="Dirigentes auxiliares" value={it.auxiliary_leaders} onChange={(e) => updateItem(idx, { auxiliary_leaders: e.target.value })} className="h-8" />
+                          </>
                         )}
                         <Input placeholder="Oração final" value={it.closing_prayer} onChange={(e) => updateItem(idx, { closing_prayer: e.target.value })} className="h-8" />
                       </div>
