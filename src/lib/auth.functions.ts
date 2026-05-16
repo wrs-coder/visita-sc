@@ -39,6 +39,7 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
   });
 
 const ELDER_POSITIONS = ["coordenador", "secretario", "sup_servico", "corpo"] as const;
+const ELDER_REGISTERABLE_POSITIONS = ["coordenador", "secretario", "sup_servico"] as const;
 
 export const registerElderByPhone = createServerFn({ method: "POST" })
   .inputValidator((input) =>
@@ -48,7 +49,7 @@ export const registerElderByPhone = createServerFn({ method: "POST" })
       email: z.string().trim().email().max(200),
       password: z.string().min(6).max(100),
       inviteCode: z.string().trim().min(4).max(20),
-      position: z.enum(ELDER_POSITIONS),
+      position: z.enum(ELDER_REGISTERABLE_POSITIONS),
     }).parse(input),
   )
   .handler(async ({ data }) => {

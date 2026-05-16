@@ -5,19 +5,21 @@ import { getGuestSnapshot } from "@/lib/guest.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Compass, LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone } from "lucide-react";
+import { Compass, LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/visitante/painel")({ component: Page });
 
 interface Snapshot {
+  wifeMode: boolean;
   congregation: { id: string; name: string };
   visit: { id: string; title: string; start_date: string; end_date: string } | null;
   schedule: Array<{ id: string; event_date: string; start_time: string | null; end_time: string | null; title: string; location: string | null; type: string; notes: string | null }>;
   meals: Array<{ id: string; meal_date: string; type: string; host_name: string | null; location: string | null; meal_time: string | null; contact_phone: string | null; notes: string | null }>;
   field: Array<{ id: string; event_date: string; period: string; meeting_point: string | null; meeting_time: string | null; acompanhante: string | null; acompanhante_for: string | null; contact_phone: string | null }>;
   transport: Array<{ id: string; event_date: string | null; driver_name: string; contact_phone: string | null; description: string | null; notes: string | null }>;
+  checklist: Array<{ id: string; title: string; description: string | null; status: string; link_or_notes: string | null; info_text: string | null }>;
 }
 
 function fmtDate(d: string) { return format(parseISO(d), "EEE, d 'de' MMM", { locale: ptBR }); }
@@ -60,7 +62,7 @@ function Page() {
             <Compass className="h-5 w-5 shrink-0" />
             <div className="min-w-0">
               <div className="font-semibold text-sm truncate">{snap.congregation.name}</div>
-              <div className="text-[11px] opacity-80">Esposa do superintendente • somente leitura</div>
+              <div className="text-[11px] opacity-80">{snap.wifeMode ? "Esposa do superintendente" : "Corpo de anciãos e ES"} • somente leitura</div>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={exit} className="text-primary-foreground hover:bg-white/10">
@@ -84,11 +86,14 @@ function Page() {
             </CardContent></Card>
 
             <Tabs defaultValue="cron">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-4" : "grid-cols-5"}`}>
                 <TabsTrigger value="cron"><CalendarDays className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Cronograma</span></TabsTrigger>
                 <TabsTrigger value="estudos"><Users className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Estudos</span></TabsTrigger>
                 <TabsTrigger value="ref"><UtensilsCrossed className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Refeições</span></TabsTrigger>
                 <TabsTrigger value="trans"><Car className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Transporte</span></TabsTrigger>
+                {!snap.wifeMode && (
+                  <TabsTrigger value="check"><ListChecks className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Checklist</span></TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="cron" className="space-y-2 mt-4">
@@ -153,6 +158,23 @@ function Page() {
                     </CardContent></Card>
                   ))}
               </TabsContent>
+
+              {!snap.wifeMode && (
+                <TabsContent value="check" className="space-y-2 mt-4">
+                  {snap.checklist.length === 0 ? <Empty text="Sem itens na checklist." /> :
+                    snap.checklist.map((c) => (
+                      <Card key={c.id}><CardContent className="p-3 space-y-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-medium text-sm break-words min-w-0 flex-1">{c.title}</div>
+                          <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-muted text-muted-foreground shrink-0">{c.status}</span>
+                        </div>
+                        {c.description && <div className="text-xs text-muted-foreground break-words">{c.description}</div>}
+                        {c.info_text && <div className="text-xs text-muted-foreground break-words">{c.info_text}</div>}
+                        {c.link_or_notes && <div className="text-xs break-words">{c.link_or_notes}</div>}
+                      </CardContent></Card>
+                    ))}
+                </TabsContent>
+              )}
             </Tabs>
           </>
         )}

@@ -118,7 +118,7 @@ export function LoginForm() {
               <ShieldCheck className="h-4 w-4" /> Sou superintendente
             </button>
             <Link to="/visitante" className="mt-1 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2">
-              <Eye className="h-4 w-4" /> Acesso esposa do superintendente
+              <Eye className="h-4 w-4" /> Acesso Corpo de anciãos e ES
             </Link>
           </>
         ) : (
