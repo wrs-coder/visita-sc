@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Loader2, Check, AlertCircle } from "lucide-react";
-import { format, parseISO, eachDayOfInterval, getDay } from "date-fns";
+import { Plus, Trash2, Loader2, Check } from "lucide-react";
+import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
