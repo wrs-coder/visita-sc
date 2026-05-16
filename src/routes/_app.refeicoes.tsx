@@ -133,6 +133,27 @@ function Page() {
   );
 }
 
+function DayNoteEditor({ value, isSuper, onChange, onSave }: { mealDate: string; value: string; isSuper: boolean; onChange: (v: string) => void; onSave: (v: string) => void }) {
+  if (!isSuper) {
+    if (!value) return null;
+    return (
+      <div className="mb-2 text-sm font-medium text-destructive whitespace-pre-wrap">{value}</div>
+    );
+  }
+  return (
+    <div className="mb-2">
+      <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Observações do dia (exibidas em vermelho aos anciãos)</label>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={(e) => onSave(e.target.value)}
+        placeholder="Ex.: Reunião entre 7h e 16h30, não marquem almoço"
+        className="h-9 mt-0.5"
+      />
+    </div>
+  );
+}
+
 function MealCard({ meal: m, isSuper, saving, update, remove }: { meal: Meal; isSuper: boolean; saving: boolean; update: (id: string, p: Partial<Meal>) => Promise<void>; remove: (id: string) => void }) {
   const [host_name, setHostName] = useState(m.host_name ?? "");
   const [location, setLocation] = useState(m.location ?? "");
