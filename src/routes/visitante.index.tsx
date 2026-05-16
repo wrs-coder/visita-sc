@@ -11,7 +11,7 @@ import { Eye, ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/visitante")({ component: Page });
+export const Route = createFileRoute("/visitante/")({ component: Page });
 
 function Page() {
   const nav = useNavigate();
