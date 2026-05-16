@@ -60,7 +60,7 @@ function Page() {
             <Compass className="h-5 w-5 shrink-0" />
             <div className="min-w-0">
               <div className="font-semibold text-sm truncate">{snap.congregation.name}</div>
-              <div className="text-[11px] opacity-80">Esposa do superintendente • somente leitura</div>
+              <div className="text-[11px] opacity-80">{snap.wifeMode ? "Esposa do superintendente" : "Corpo de anciãos e ES"} • somente leitura</div>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={exit} className="text-primary-foreground hover:bg-white/10">
@@ -84,11 +84,14 @@ function Page() {
             </CardContent></Card>
 
             <Tabs defaultValue="cron">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-4" : "grid-cols-5"}`}>
                 <TabsTrigger value="cron"><CalendarDays className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Cronograma</span></TabsTrigger>
                 <TabsTrigger value="estudos"><Users className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Estudos</span></TabsTrigger>
                 <TabsTrigger value="ref"><UtensilsCrossed className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Refeições</span></TabsTrigger>
                 <TabsTrigger value="trans"><Car className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Transporte</span></TabsTrigger>
+                {!snap.wifeMode && (
+                  <TabsTrigger value="check"><ListChecks className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Checklist</span></TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="cron" className="space-y-2 mt-4">
