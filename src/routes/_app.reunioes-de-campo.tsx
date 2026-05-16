@@ -126,22 +126,25 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
   const [meeting_time, setMeetingTime] = useState(r.meeting_time ?? "");
   const [territory_number, setTerritoryNumber] = useState(r.territory_number ?? "");
   const [territory_location, setTerritoryLocation] = useState(r.territory_location ?? "");
+  const [auxiliary_leaders, setAuxiliaryLeaders] = useState(r.auxiliary_leaders ?? "");
   const [closing_prayer, setClosingPrayer] = useState(r.closing_prayer ?? "");
 
   useEffect(() => {
     setMeetingTime(r.meeting_time ?? "");
     setTerritoryNumber(r.territory_number ?? "");
     setTerritoryLocation(r.territory_location ?? "");
+    setAuxiliaryLeaders(r.auxiliary_leaders ?? "");
     setClosingPrayer(r.closing_prayer ?? "");
-  }, [r.id, r.meeting_time, r.territory_number, r.territory_location, r.closing_prayer]);
+  }, [r.id, r.meeting_time, r.territory_number, r.territory_location, r.auxiliary_leaders, r.closing_prayer]);
 
   const dirty =
     meeting_time !== (r.meeting_time ?? "") ||
     territory_number !== (r.territory_number ?? "") ||
     territory_location !== (r.territory_location ?? "") ||
+    auxiliary_leaders !== (r.auxiliary_leaders ?? "") ||
     closing_prayer !== (r.closing_prayer ?? "");
 
-  const everSaved = !!(r.meeting_time || r.territory_number || r.territory_location || r.closing_prayer);
+  const everSaved = !!(r.meeting_time || r.territory_number || r.territory_location || r.auxiliary_leaders || r.closing_prayer);
   const showTerritory = r.modality === "casa_em_casa";
 
   const handleSave = () => {
@@ -150,6 +153,7 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
       meeting_time: meeting_time || null,
       territory_number: territory_number || null,
       territory_location: territory_location || null,
+      auxiliary_leaders: auxiliary_leaders || null,
       closing_prayer: closing_prayer || null,
     });
   };
