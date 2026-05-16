@@ -90,6 +90,7 @@ export const exportFullBackup = createServerFn({ method: "POST" })
           congregations: congregations ?? [],
           visits: visits ?? [],
           checklist_items, field_meetings, field_assignments, schedule_events, meals,
+          meal_day_notes,
           transport_schedule, private_notes,
           checklist_templates: checklist_templates ?? [],
           checklist_template_items: checklist_template_items ?? [],
