@@ -34,6 +34,7 @@ interface CongRow { id: string; name: string; }
 interface ItemDraft {
   day_offset: number;
   period: string;
+  modality: Modality;
   meeting_time: string;
   territory_number: string;
   territory_location: string;
