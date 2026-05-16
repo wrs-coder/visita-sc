@@ -1,47 +1,62 @@
-## Modelos de Checklist por congregação
+## Sistema de Backup, Restauração e Modelos Independentes
 
-Hoje a checklist é semeada por trigger fixo (`seed_default_checklist`) sempre igual. Vou trocar isso por **modelos de checklist** que o superintendente cria, edita, duplica e vincula a uma congregação — análogo aos modelos de programação.
+Funcionalidades **exclusivas para Superintendentes** em 3 frentes.
 
-### Banco de dados (migration)
+---
 
-- Nova tabela `checklist_templates`
-  - `id`, `superintendent_id`, `name`, `congregation_id` (nullable), timestamps
-  - Índice único parcial: `(superintendent_id, congregation_id)` quando `congregation_id IS NOT NULL` → garante 1 modelo por congregação
-  - Trigger `enforce_checklist_template_limit`: máx. 24 ativos por superintendente
-- Nova tabela `checklist_template_items`
-  - `id`, `template_id`, `title`, `description`, `sort_order`
-- RLS: superintendente dono gerencia tudo; anciãos da congregação podem **ler** o modelo vinculado (opcional, mantém só o super lendo).
-- Substituir trigger `seed_default_checklist`:
-  - Ao criar `visits`, se a congregação tem `checklist_templates.congregation_id = v.congregation_id`, copiar os itens daquele modelo para `checklist_items`.
-  - Senão, manter os 13 itens padrão atuais como fallback.
-- Em **nova visita** para a mesma congregação, a checklist continua zerada (já é por visita).
+### 1. Modelos por Aba (Exportar / Importar)
 
-### Server functions (`src/lib/checklist-templates.functions.ts`)
+Adicionar dois botões discretos no topo de cada uma destas páginas:
 
-- `listChecklistTemplates` — todos os modelos do super + contagem
-- `createChecklistTemplate({ name, congregationId? })` — valida limite 24 e unicidade por congregação
-- `renameChecklistTemplate({ id, name })`
-- `linkChecklistTemplate({ id, congregationId | null })` — valida que a congregação ainda não tem modelo
-- `duplicateChecklistTemplate({ id, name })` — copia itens, deixa `congregation_id = null`
-- `deleteChecklistTemplate({ id })`
-- `replaceChecklistTemplateItems({ templateId, items: [{title, description?, sort_order}] })`
+- **Checklist da Congregação** (`/_app/checklist-modelos`) → exporta/importa `checklist_templates` + `checklist_template_items`
+- **Reuniões de Campo** (`/_app/modelo-reunioes-de-campo`) → exporta/importa `field_meeting_templates` + `field_meeting_template_items`
+- **Programação/Cronograma** (`/_app/modelos`) → exporta/importa `program_templates` + `program_template_items`
 
-### UI
+**Exportar**: gera arquivo JSON com a estrutura/esqueleto (sem dados de congregações preenchidos), com cabeçalho `{ type: "checklist_template" | "field_meeting_template" | "program_template", version: 1, exportedAt, name, items: [...] }`.
 
-- Nova rota `/checklist-modelos` (superintendente):
-  - Lista de modelos com nome, congregação vinculada, nº de itens
-  - Botões: criar, renomear, duplicar, vincular a congregação (select), excluir
-  - Editor de itens (título + descrição opcional), arrastar/ordenar simples por botões ↑/↓
-  - Indicador "X / 24 modelos"
-- Adicionar link no menu lateral para superintendentes em `_app.tsx`
-- Na página `/modelos` ou `/congregacoes`, manter o vínculo de modelo de programação como está; o vínculo da checklist é gerido na nova rota.
-- Página `/checklist` (anciãos) permanece igual — ela apenas exibe os itens já semeados na visita ativa, agora vindos do modelo.
+**Importar**: lê o JSON, valida com Zod, e cria um novo template (com `superintendent_id = auth.uid()`, `congregation_id = null`) + todos os itens. Toast de sucesso e refresh da lista.
 
-### Validações chave
+---
 
-- Não permite vincular a mesma congregação a 2 modelos.
-- Não permite criar acima de 24.
-- Ao duplicar, o duplicado nasce **sem** congregação vinculada (o super decide depois).
-- Ao deletar um modelo vinculado, a próxima visita criada cai no fallback padrão.
+### 2. Web Share API nativa
 
-Confirma que posso seguir?
+Criar helper `src/lib/share.ts` com função `shareJsonFile(filename, json)`:
+
+1. Cria `File` a partir do JSON
+2. Se `navigator.canShare({ files: [file] })` → chama `navigator.share({ files, title, text })` (abre a folha nativa: email, WhatsApp, etc.)
+3. Fallback: download direto via `<a download>` se Web Share API indisponível
+
+Usado por todos os botões "Exportar Modelo" e pelo "Gerar Backup" geral.
+
+---
+
+### 3. Backup Global (na aba **Meu Perfil**)
+
+Nova seção na página `/_app/perfil`:
+
+- **Backup automático local**: hook `useAutoBackup` que escuta mudanças nas tabelas relevantes (via realtime ou polling leve) e salva snapshot no `localStorage` (`visita-sc:autobackup`) a cada alteração — com timestamp visível.
+- **Botão "Gerar Arquivo de Backup"**: server function `exportFullBackup` que lê *todas* as tabelas do superintendente (congregations, visits, checklist_items, field_meetings, field_assignments, schedule_events, meals, transport_schedule, *_templates, *_template_items, user_roles dos anciãos vinculados) → retorna JSON consolidado → dispara Web Share API.
+- **Botão "Restaurar Backup"**: upload de arquivo → valida estrutura com Zod → **AlertDialog de confirmação** com aviso claro ("isto irá sobrescrever os dados atuais") → server function `restoreFullBackup` que faz upsert em todas as tabelas dentro de uma transação.
+
+---
+
+### Detalhes técnicos
+
+- **Server functions** em `src/lib/backup.functions.ts` e `src/lib/template-io.functions.ts` (apenas `createServerFn`, sem helpers misturados — evitar leak transitivo do `client.server`).
+- Cada função usa `requireSupabaseAuth` e valida que o usuário tem role `superintendent` antes de qualquer escrita.
+- Restauração filtra por `superintendent_id = userId` para nunca tocar dados de outros usuários.
+- Versionamento de schema: campo `version: 1` em todo JSON; importação rejeita versões desconhecidas.
+- UI: botões com ícones `Upload`/`Download`/`Share2` do lucide-react, variant `outline` size `sm`, no topo de cada página.
+
+### Arquivos novos
+- `src/lib/share.ts` (helper Web Share API)
+- `src/lib/template-io.functions.ts` (exportar/importar 3 tipos de modelos)
+- `src/lib/backup.functions.ts` (backup/restore global)
+- `src/components/TemplateIOButtons.tsx` (par de botões reutilizável)
+- `src/hooks/use-auto-backup.ts` (snapshot local)
+
+### Arquivos modificados
+- `src/routes/_app.checklist-modelos.tsx` — adiciona botões
+- `src/routes/_app.modelo-reunioes-de-campo.tsx` — adiciona botões
+- `src/routes/_app.modelos.tsx` — adiciona botões
+- `src/routes/_app.perfil.tsx` — adiciona seção Backup Global

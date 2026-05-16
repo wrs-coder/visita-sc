@@ -3,6 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { listTemplates, upsertTemplate, replaceTemplateItems } from "@/lib/templates.functions";
+import { exportProgramTemplate, importProgramTemplate } from "@/lib/template-io.functions";
+import { TemplateIOButtons } from "@/components/TemplateIOButtons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +31,8 @@ function Page() {
   const fnList = useServerFn(listTemplates);
   const fnUpsert = useServerFn(upsertTemplate);
   const fnReplace = useServerFn(replaceTemplateItems);
+  const fnExport = useServerFn(exportProgramTemplate);
+  const fnImport = useServerFn(importProgramTemplate);
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
   const [namesBySlot, setNamesBySlot] = useState<Record<number, string>>({ 1: "Modelo 1", 2: "Modelo 2", 3: "Modelo 3" });
@@ -105,9 +109,20 @@ function Page() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><FileStack className="h-6 w-6" /> Modelos de Programação</h1>
-        <p className="text-sm text-muted-foreground mt-1">Crie até 3 modelos reutilizáveis. Use-os ao criar uma visita para uma congregação específica.</p>
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><FileStack className="h-6 w-6" /> Modelos de Programação</h1>
+          <p className="text-sm text-muted-foreground mt-1">Crie até 3 modelos reutilizáveis. Use-os ao criar uma visita para uma congregação específica.</p>
+        </div>
+        <TemplateIOButtons
+          filenameBase={namesBySlot[Number(activeSlot)] ?? `modelo-${activeSlot}`}
+          onExport={async () => {
+            const tpl = tpls.find((t) => t.slot === Number(activeSlot));
+            if (!tpl) return { ok: false, error: "Salve o modelo antes de exportar." };
+            return fnExport({ data: { id: tpl.id } });
+          }}
+          onImport={async (file) => { const r = await fnImport({ data: { file: file as never, slot: Number(activeSlot) } }); if (r.ok) await load(); return r; }}
+        />
       </div>
 
       <Tabs value={activeSlot} onValueChange={setActiveSlot}>

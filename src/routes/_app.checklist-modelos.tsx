@@ -11,6 +11,8 @@ import {
   deleteChecklistTemplate,
   replaceChecklistTemplateItems,
 } from "@/lib/checklist-templates.functions";
+import { exportChecklistTemplate, importChecklistTemplate } from "@/lib/template-io.functions";
+import { TemplateIOButtons } from "@/components/TemplateIOButtons";
 import { listMyCongregations } from "@/lib/congregations.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +48,8 @@ function Page() {
   const fnDel = useServerFn(deleteChecklistTemplate);
   const fnReplace = useServerFn(replaceChecklistTemplateItems);
   const fnCongs = useServerFn(listMyCongregations);
+  const fnExport = useServerFn(exportChecklistTemplate);
+  const fnImport = useServerFn(importChecklistTemplate);
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
@@ -220,6 +224,15 @@ function Page() {
             Crie checklists e vincule cada uma a uma congregação. {tpls.length}/{MAX} modelos.
           </p>
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {role === "superintendent" && (
+            <TemplateIOButtons
+              filenameBase={active?.name ?? "checklist-modelo"}
+              disabled={!active}
+              onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: "Selecione um modelo" }}
+              onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await load(); return r; }}
+            />
+          )}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />Novo modelo</Button>
@@ -243,6 +256,7 @@ function Page() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-[260px_1fr] gap-4">
