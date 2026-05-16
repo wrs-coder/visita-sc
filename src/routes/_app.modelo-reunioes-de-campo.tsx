@@ -217,6 +217,13 @@ function Page() {
             Programe vários turnos por semana, cada um com sua modalidade, e vincule o modelo a uma congregação. {tpls.length}/{MAX} modelos.
           </p>
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <TemplateIOButtons
+            filenameBase={active?.name ?? "reuniao-campo-modelo"}
+            disabled={!active}
+            onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: "Selecione um modelo" }}
+            onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await load(); return r; }}
+          />
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />Novo modelo</Button>
