@@ -182,7 +182,7 @@ function MealCard({ meal: m, isSuper, saving, update, remove }: { meal: Meal; is
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Horário</label>
-            <Input type="time" value={meal_time} onChange={(e) => setMealTime(e.target.value)} className="h-9 mt-0.5" />
+            <Input type="time" value={meal_time} onChange={(e) => setMealTime(e.target.value)} disabled={!isSuper} className="h-9 mt-0.5" />
           </div>
         </div>
         <div className="flex justify-end pt-1">
