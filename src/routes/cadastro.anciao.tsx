@@ -55,7 +55,37 @@ function Page() {
     }
   };
 
+  // Dynamic availability lookup as user types congregation code (debounced)
+  useEffect(() => {
+    const code = form.inviteCode.trim();
+    if (code.length < 4) {
+      setAvailable(null);
+      setCodeError(null);
+      return;
+    }
+    setChecking(true);
+    const handle = setTimeout(async () => {
+      try {
+        const res = await checkFn({ data: { inviteCode: code } });
+        if (!res.ok) {
+          setAvailable([]);
+          setCodeError(res.error);
+          setForm((f) => ({ ...f, position: "" }));
+        } else {
+          setAvailable(res.available as ElderPosition[]);
+          setCodeError(null);
+          setForm((f) => (f.position && !res.available.includes(f.position) ? { ...f, position: "" } : f));
+        }
+      } finally {
+        setChecking(false);
+      }
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [form.inviteCode, checkFn]);
+
   const dial = findCountry(country).dial;
+  const allFilled = available !== null && available.length === 0 && !codeError;
+  const disableSubmit = busy || !!codeError || allFilled || !form.position || available === null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary to-primary-soft/30 flex items-center justify-center p-4">
