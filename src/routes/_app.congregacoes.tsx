@@ -47,11 +47,19 @@ function Page() {
   const fnList = useServerFn(listMyCongregations);
   const fnCreate = useServerFn(createCongregation);
   const fnUpdate = useServerFn(updateCongregation);
+  const fnElders = useServerFn(listMyElders);
+  const fnUpdateElder = useServerFn(updateElderBySuper);
+  const fnDeleteElder = useServerFn(deleteElderBySuper);
+  const fnResetPwd = useServerFn(resetElderPasswordBySuper);
   const [list, setList] = useState<Congregation[]>([]);
+  const [elders, setElders] = useState<Elder[]>([]);
   const [loading, setLoading] = useState(true);
   const [openNew, setOpenNew] = useState(false);
   const [form, setForm] = useState({ name: "", invite_code: "" });
   const [editing, setEditing] = useState<Congregation | null>(null);
+  const [editingElder, setEditingElder] = useState<Elder | null>(null);
+  const [pwdElder, setPwdElder] = useState<Elder | null>(null);
+  const [newPwd, setNewPwd] = useState("");
   const [busy, setBusy] = useState(false);
 
   const isSuper = role === "superintendent";
@@ -62,8 +70,10 @@ function Page() {
     const res = await fnList();
     if (res.ok) setList(res.data as Congregation[]);
     else toast.error(res.error);
+    const er = await fnElders();
+    if (er.ok) setElders(er.data as Elder[]);
     setLoading(false);
-  }, [user, fnList]);
+  }, [user, fnList, fnElders]);
 
   useEffect(() => { load(); }, [load]);
 
