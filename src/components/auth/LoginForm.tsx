@@ -70,7 +70,6 @@ export function LoginForm() {
             <Logo className="h-10 w-10" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Visita do Superintendente</h1>
-          <p className="text-sm text-primary-foreground/80 mt-1">Gestão e colaboração para sua congregação</p>
         </div>
 
         {!showSuper ? (
