@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { BriefcaseBusiness, LogIn, Users, ShieldCheck, Eye } from "lucide-react";
+import { LogIn, Users, ShieldCheck, Eye } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 export function LoginForm() {
   const nav = useNavigate();
@@ -53,8 +54,8 @@ export function LoginForm() {
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-primary-soft/40 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center text-primary-foreground mb-6">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center mb-4">
-            <BriefcaseBusiness className="h-7 w-7" />
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center mb-4 overflow-hidden">
+            <Logo className="h-10 w-10" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Visita do Superintendente</h1>
           <p className="text-sm text-primary-foreground/80 mt-1">Gestão e colaboração para sua congregação</p>

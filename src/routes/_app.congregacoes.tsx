@@ -4,14 +4,32 @@ import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { listMyCongregations, createCongregation, updateCongregation } from "@/lib/congregations.functions";
+import { listMyElders, updateElderBySuper, deleteElderBySuper, resetElderPasswordBySuper } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Building2, Trash2, Pencil, Check, KeyRound, Copy } from "lucide-react";
+import { Plus, Building2, Trash2, Pencil, Check, KeyRound, Copy, Users, UserCog } from "lucide-react";
 import { toast } from "sonner";
+
+interface Elder {
+  user_id: string;
+  full_name: string;
+  phone: string;
+  congregation_id: string | null;
+  congregation_name: string;
+  elder_position: string | null;
+}
+
+const POSITION_LABELS: Record<string, string> = {
+  coordenador: "Coordenador",
+  secretario: "Secretário",
+  sup_servico: "Sup. de Serviço",
+  corpo: "Corpo de Anciãos",
+};
 
 interface Congregation {
   id: string;
@@ -29,11 +47,19 @@ function Page() {
   const fnList = useServerFn(listMyCongregations);
   const fnCreate = useServerFn(createCongregation);
   const fnUpdate = useServerFn(updateCongregation);
+  const fnElders = useServerFn(listMyElders);
+  const fnUpdateElder = useServerFn(updateElderBySuper);
+  const fnDeleteElder = useServerFn(deleteElderBySuper);
+  const fnResetPwd = useServerFn(resetElderPasswordBySuper);
   const [list, setList] = useState<Congregation[]>([]);
+  const [elders, setElders] = useState<Elder[]>([]);
   const [loading, setLoading] = useState(true);
   const [openNew, setOpenNew] = useState(false);
   const [form, setForm] = useState({ name: "", invite_code: "" });
   const [editing, setEditing] = useState<Congregation | null>(null);
+  const [editingElder, setEditingElder] = useState<Elder | null>(null);
+  const [pwdElder, setPwdElder] = useState<Elder | null>(null);
+  const [newPwd, setNewPwd] = useState("");
   const [busy, setBusy] = useState(false);
 
   const isSuper = role === "superintendent";
@@ -44,8 +70,10 @@ function Page() {
     const res = await fnList();
     if (res.ok) setList(res.data as Congregation[]);
     else toast.error(res.error);
+    const er = await fnElders();
+    if (er.ok) setElders(er.data as Elder[]);
     setLoading(false);
-  }, [user, fnList]);
+  }, [user, fnList, fnElders]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -194,6 +222,136 @@ function Page() {
           );
         })}
       </div>
+
+      {/* ----- Anciãos cadastrados ----- */}
+      <div className="pt-2">
+        <div className="flex items-center gap-2 mb-2">
+          <Users className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">Anciãos cadastrados</h2>
+          <span className="text-xs text-muted-foreground">({elders.length})</span>
+        </div>
+        {elders.length === 0 ? (
+          <Card><CardContent className="p-4 text-sm text-muted-foreground">Nenhum ancião cadastrado nas suas congregações ainda.</CardContent></Card>
+        ) : (
+          <div className="space-y-2">
+            {list.map((c) => {
+              const group = elders.filter((e) => e.congregation_id === c.id);
+              if (group.length === 0) return null;
+              return (
+                <Card key={`elders-${c.id}`} className="shadow-card">
+                  <CardContent className="p-4">
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{c.name}</div>
+                    <div className="space-y-2">
+                      {group.map((e) => (
+                        <div key={e.user_id} className="flex items-center gap-3 p-2 rounded-lg border bg-card">
+                          <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                            <UserCog className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{e.full_name}</div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {POSITION_LABELS[e.elder_position ?? ""] ?? e.elder_position ?? "—"}
+                              {e.phone && <> · {e.phone}</>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button size="icon" variant="ghost" title="Redefinir senha" onClick={() => { setPwdElder(e); setNewPwd(""); }}>
+                              <KeyRound className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" title="Editar" onClick={() => setEditingElder({ ...e })}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" title="Excluir" onClick={async () => {
+                              if (!confirm(`Excluir o ancião "${e.full_name}"? Esta ação é permanente.`)) return;
+                              const r = await fnDeleteElder({ data: { elderUserId: e.user_id } });
+                              if (!r.ok) { toast.error(r.error); return; }
+                              toast.success("Ancião excluído");
+                              load();
+                            }}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Edit elder dialog */}
+      <Dialog open={!!editingElder} onOpenChange={(o) => !o && setEditingElder(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Editar ancião</DialogTitle></DialogHeader>
+          {editingElder && (
+            <div className="space-y-3">
+              <div><Label>Nome completo</Label><Input className="mt-1" value={editingElder.full_name} onChange={(e) => setEditingElder({ ...editingElder, full_name: e.target.value })} /></div>
+              <div><Label>Telefone</Label><Input className="mt-1" value={editingElder.phone} onChange={(e) => setEditingElder({ ...editingElder, phone: e.target.value })} /></div>
+              <div>
+                <Label>Designação</Label>
+                <Select value={editingElder.elder_position ?? ""} onValueChange={(v) => setEditingElder({ ...editingElder, elder_position: v })}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="coordenador">Coordenador</SelectItem>
+                    <SelectItem value="secretario">Secretário</SelectItem>
+                    <SelectItem value="sup_servico">Sup. de Serviço</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingElder(null)}>Cancelar</Button>
+            <Button disabled={busy} onClick={async () => {
+              if (!editingElder) return;
+              const pos = editingElder.elder_position;
+              if (pos !== "coordenador" && pos !== "secretario" && pos !== "sup_servico") { toast.error("Selecione uma designação válida"); return; }
+              setBusy(true);
+              const r = await fnUpdateElder({ data: {
+                elderUserId: editingElder.user_id,
+                fullName: editingElder.full_name.trim(),
+                phone: editingElder.phone.trim(),
+                position: pos,
+              }});
+              setBusy(false);
+              if (!r.ok) { toast.error(r.error); return; }
+              toast.success("Ancião atualizado");
+              setEditingElder(null);
+              load();
+            }}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset password dialog */}
+      <Dialog open={!!pwdElder} onOpenChange={(o) => !o && setPwdElder(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Redefinir senha</DialogTitle></DialogHeader>
+          {pwdElder && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">Definindo nova senha para <strong>{pwdElder.full_name}</strong>.</p>
+              <div><Label>Nova senha</Label><Input type="text" className="mt-1" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} placeholder="Mínimo 6 caracteres" /></div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPwdElder(null)}>Cancelar</Button>
+            <Button disabled={busy} onClick={async () => {
+              if (!pwdElder) return;
+              if (newPwd.length < 6) { toast.error("Senha deve ter pelo menos 6 caracteres"); return; }
+              setBusy(true);
+              const r = await fnResetPwd({ data: { elderUserId: pwdElder.user_id, newPassword: newPwd } });
+              setBusy(false);
+              if (!r.ok) { toast.error(r.error); return; }
+              toast.success("Senha redefinida");
+              setPwdElder(null);
+              setNewPwd("");
+            }}>Redefinir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-md">
