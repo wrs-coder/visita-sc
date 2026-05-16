@@ -190,7 +190,7 @@ export const duplicateFieldMeetingTemplate = createServerFn({ method: "POST" })
           template_id: row.id,
           day_offset: it.day_offset,
           period: it.period,
-          modality: (it as { modality?: string }).modality ?? "casa_em_casa",
+          modality: ((it as { modality?: (typeof FIELD_MODALITIES)[number] }).modality) ?? "casa_em_casa",
           meeting_time: it.meeting_time,
           territory_number: it.territory_number,
           territory_location: it.territory_location,
