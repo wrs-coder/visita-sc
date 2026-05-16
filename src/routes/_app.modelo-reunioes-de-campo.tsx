@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Pencil, BriefcaseBusiness, AlertCircle, Save } from "lucide-react";
+import { Plus, Trash2, Copy, Pencil, MapPin, AlertCircle, Save } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -207,7 +207,7 @@ function Page() {
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <BriefcaseBusiness className="h-6 w-6" />Modelo Reuniões de Campo
+            <MapPin className="h-6 w-6" />Modelo Reuniões de Campo
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Programe vários turnos por semana, cada um com sua modalidade, e vincule o modelo a uma congregação. {tpls.length}/{MAX} modelos.

@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, Settings, LogOut, BriefcaseBusiness, Menu, Building2, Car, FileStack, MapPin } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, Settings, LogOut, Menu, Building2, Car, FileStack, MapPin } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,7 @@ function AppLayout() {
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-2">
-              <BriefcaseBusiness className="h-5 w-5" />
+              <Logo className="h-6 w-6" />
               <span className="font-semibold text-sm truncate">{congregation?.name ?? "Visita"}</span>
             </div>
           </div>
@@ -119,7 +120,7 @@ function SidebarHeader({ congregationName, userName, role }: { congregationName?
   return (
     <div className="p-5 border-b border-sidebar-border">
       <div className="flex items-center gap-2 mb-3">
-        <div className="h-9 w-9 rounded-lg bg-white/15 flex items-center justify-center"><BriefcaseBusiness className="h-5 w-5" /></div>
+        <div className="h-9 w-9 rounded-lg bg-white/15 flex items-center justify-center overflow-hidden"><Logo className="h-7 w-7" /></div>
         <div className="text-xs uppercase tracking-wider opacity-70">Visita do SC</div>
       </div>
       <div className="font-semibold leading-tight truncate">{congregationName ?? "Sem congregação"}</div>

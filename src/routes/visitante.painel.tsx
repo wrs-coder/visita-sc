@@ -5,7 +5,8 @@ import { getGuestSnapshot } from "@/lib/guest.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { BriefcaseBusiness, LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks } from "lucide-react";
+import { LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -59,7 +60,7 @@ function Page() {
       <header className="sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm">
         <div className="max-w-3xl mx-auto flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2 min-w-0">
-            <BriefcaseBusiness className="h-5 w-5 shrink-0" />
+            <Logo className="h-6 w-6 shrink-0" />
             <div className="min-w-0">
               <div className="font-semibold text-sm truncate">{snap.congregation.name}</div>
               <div className="text-[11px] opacity-80">{snap.wifeMode ? "Esposa do superintendente" : "Corpo de anciãos e ES"} • somente leitura</div>
