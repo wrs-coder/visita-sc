@@ -39,8 +39,9 @@ export const upsertTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z.object({
-      slot: z.number().int().min(1).max(3),
+      slot: z.number().int().min(1).max(10),
       name: z.string().trim().min(1).max(120),
+      meal_day_notes: z.record(z.string(), z.string().max(2000)).optional(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
