@@ -211,6 +211,7 @@ export type Database = {
       }
       field_meeting_template_items: {
         Row: {
+          auxiliary_leaders: string | null
           closing_prayer: string | null
           created_at: string
           day_offset: number
@@ -224,6 +225,7 @@ export type Database = {
           territory_number: string | null
         }
         Insert: {
+          auxiliary_leaders?: string | null
           closing_prayer?: string | null
           created_at?: string
           day_offset?: number
@@ -237,6 +239,7 @@ export type Database = {
           territory_number?: string | null
         }
         Update: {
+          auxiliary_leaders?: string | null
           closing_prayer?: string | null
           created_at?: string
           day_offset?: number
@@ -291,6 +294,7 @@ export type Database = {
       }
       field_meetings: {
         Row: {
+          auxiliary_leaders: string | null
           closing_prayer: string | null
           created_at: string
           event_date: string
@@ -305,6 +309,7 @@ export type Database = {
           visit_id: string
         }
         Insert: {
+          auxiliary_leaders?: string | null
           closing_prayer?: string | null
           created_at?: string
           event_date: string
@@ -319,6 +324,7 @@ export type Database = {
           visit_id: string
         }
         Update: {
+          auxiliary_leaders?: string | null
           closing_prayer?: string | null
           created_at?: string
           event_date?: string
