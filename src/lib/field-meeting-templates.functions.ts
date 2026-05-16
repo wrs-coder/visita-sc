@@ -274,6 +274,7 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
       visit_id: data.visitId,
       event_date: dateAt(it.day_offset),
       period: it.period || "Manhã",
+      modality: ((it as { modality?: (typeof FIELD_MODALITIES)[number] }).modality) ?? "casa_em_casa",
       meeting_time: it.meeting_time,
       territory_number: it.territory_number,
       territory_location: it.territory_location,
