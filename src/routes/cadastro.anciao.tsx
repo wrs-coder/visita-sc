@@ -99,12 +99,12 @@ function Page() {
                 <Select value={form.position} onValueChange={(v) => setForm({ ...form, position: v as ElderPosition })}>
                   <SelectTrigger id="pos"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
-                    {(Object.keys(ELDER_POSITION_LABELS) as ElderPosition[]).map((k) => (
+                    {(["coordenador", "secretario", "sup_servico"] as ElderPosition[]).map((k) => (
                       <SelectItem key={k} value={k}>{ELDER_POSITION_LABELS[k]}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">Coordenador, Secretário e Sup. de Serviço podem editar; Corpo de Anciãos apenas visualiza.</p>
+                <p className="text-[11px] text-muted-foreground">Cadastro disponível apenas para Coordenador, Secretário e Sup. de Serviço. Os demais anciãos e a ES usam o acesso "Corpo de anciãos e ES" no login.</p>
               </div>
               <Button type="submit" className="w-full h-11 mt-2" disabled={busy}>
                 {busy ? "Criando..." : "Entrar na Congregação"}
