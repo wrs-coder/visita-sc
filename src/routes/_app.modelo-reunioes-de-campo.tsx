@@ -296,20 +296,9 @@ function Page() {
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-xs">Modalidade de pregação</Label>
-                  <Select value={active.modality} onValueChange={handleChangeModality}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {FIELD_MODALITIES.map((m) => (
-                        <SelectItem key={m} value={m}>{FIELD_MODALITY_LABELS[m]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Quando a modalidade não for "Pregação de casa em casa", apenas o campo "Oração final" ficará disponível para a congregação.
-                  </p>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Cada turno tem sua própria modalidade. Quando a modalidade não for "Pregação de casa em casa", apenas o campo "Oração final" ficará disponível para a congregação naquele turno.
+                </p>
 
                 <div>
                   <Label className="text-xs">Vincular à congregação</Label>
