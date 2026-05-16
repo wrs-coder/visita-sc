@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Compass, KeyRound } from "lucide-react";
+import { BriefcaseBusiness, KeyRound } from "lucide-react";
 
 export const Route = createFileRoute("/redefinir-senha")({ component: ResetPasswordPage });
 
@@ -49,7 +49,7 @@ function ResetPasswordPage() {
       <div className="w-full max-w-md">
         <div className="text-center text-primary-foreground mb-8">
           <div className="mx-auto h-14 w-14 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center mb-4">
-            <Compass className="h-7 w-7" />
+            <BriefcaseBusiness className="h-7 w-7" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Definir nova senha</h1>
           <p className="text-sm text-primary-foreground/80 mt-1">Escolha uma senha forte para sua conta</p>
