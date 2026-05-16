@@ -29,6 +29,7 @@ const nameSchema = z.string().trim().min(1).max(120);
 const itemSchema = z.object({
   day_offset: z.number().int().min(0).max(30),
   period: z.string().trim().min(1).max(20),
+  modality: modalitySchema.default("casa_em_casa"),
   meeting_time: z.string().trim().max(8).nullable().optional(),
   territory_number: z.string().trim().max(60).nullable().optional(),
   territory_location: z.string().trim().max(200).nullable().optional(),
