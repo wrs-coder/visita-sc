@@ -33,6 +33,7 @@ const itemSchema = z.object({
   meeting_time: z.string().trim().max(8).nullable().optional(),
   territory_number: z.string().trim().max(60).nullable().optional(),
   territory_location: z.string().trim().max(200).nullable().optional(),
+  auxiliary_leaders: z.string().trim().max(200).nullable().optional(),
   closing_prayer: z.string().trim().max(200).nullable().optional(),
   sort_order: z.number().int().min(0).max(1000).default(0),
 });
@@ -51,7 +52,7 @@ export const listFieldMeetingTemplates = createServerFn({ method: "POST" })
     let items: Array<{
       id: string; template_id: string; day_offset: number; period: string;
       meeting_time: string | null; territory_number: string | null;
-      territory_location: string | null; closing_prayer: string | null; sort_order: number;
+      territory_location: string | null; auxiliary_leaders: string | null; closing_prayer: string | null; sort_order: number;
     }> = [];
     if (ids.length) {
       const { data } = await supabaseAdmin
@@ -194,6 +195,7 @@ export const duplicateFieldMeetingTemplate = createServerFn({ method: "POST" })
           meeting_time: it.meeting_time,
           territory_number: it.territory_number,
           territory_location: it.territory_location,
+          auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? null,
           closing_prayer: it.closing_prayer,
           sort_order: it.sort_order,
         })),
@@ -238,6 +240,7 @@ export const replaceFieldMeetingTemplateItems = createServerFn({ method: "POST" 
         meeting_time: it.meeting_time || null,
         territory_number: it.territory_number || null,
         territory_location: it.territory_location || null,
+        auxiliary_leaders: it.auxiliary_leaders || null,
         closing_prayer: it.closing_prayer || null,
         sort_order: it.sort_order ?? i,
       }));
@@ -278,6 +281,7 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
       meeting_time: it.meeting_time,
       territory_number: it.territory_number,
       territory_location: it.territory_location,
+      auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? null,
       closing_prayer: it.closing_prayer,
       is_active: true,
     }));

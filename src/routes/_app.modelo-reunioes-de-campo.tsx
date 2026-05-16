@@ -40,6 +40,7 @@ interface ItemDraft {
   meeting_time: string;
   territory_number: string;
   territory_location: string;
+  auxiliary_leaders: string;
   closing_prayer: string;
 }
 
@@ -88,6 +89,7 @@ function Page() {
           meeting_time: it.meeting_time ?? "",
           territory_number: it.territory_number ?? "",
           territory_location: it.territory_location ?? "",
+          auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? "",
           closing_prayer: it.closing_prayer ?? "",
         });
       }
@@ -176,7 +178,7 @@ function Page() {
     await load();
   };
 
-  const addItem = () => setItems([...items, { day_offset: 0, period: "Manhã", modality: "casa_em_casa", meeting_time: "", territory_number: "", territory_location: "", closing_prayer: "" }]);
+  const addItem = () => setItems([...items, { day_offset: 0, period: "Manhã", modality: "casa_em_casa", meeting_time: "", territory_number: "", territory_location: "", auxiliary_leaders: "", closing_prayer: "" }]);
   const updateItem = (idx: number, patch: Partial<ItemDraft>) =>
     setItems(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
@@ -194,6 +196,7 @@ function Page() {
           meeting_time: it.meeting_time || null,
           territory_number: it.territory_number || null,
           territory_location: it.territory_location || null,
+          auxiliary_leaders: it.auxiliary_leaders || null,
           closing_prayer: it.closing_prayer || null,
           sort_order: i,
         })),
@@ -360,10 +363,13 @@ function Page() {
                           </Select>
                         </div>
                         {it.modality === "casa_em_casa" && (
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input placeholder="N° território S-13" value={it.territory_number} onChange={(e) => updateItem(idx, { territory_number: e.target.value })} className="h-8" />
-                            <Input placeholder="Localização do território" value={it.territory_location} onChange={(e) => updateItem(idx, { territory_location: e.target.value })} className="h-8" />
-                          </div>
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input placeholder="N° território S-13" value={it.territory_number} onChange={(e) => updateItem(idx, { territory_number: e.target.value })} className="h-8" />
+                              <Input placeholder="Localização do território" value={it.territory_location} onChange={(e) => updateItem(idx, { territory_location: e.target.value })} className="h-8" />
+                            </div>
+                            <Input placeholder="Dirigentes auxiliares" value={it.auxiliary_leaders} onChange={(e) => updateItem(idx, { auxiliary_leaders: e.target.value })} className="h-8" />
+                          </>
                         )}
                         <Input placeholder="Oração final" value={it.closing_prayer} onChange={(e) => updateItem(idx, { closing_prayer: e.target.value })} className="h-8" />
                       </div>

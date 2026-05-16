@@ -37,6 +37,7 @@ const fieldFileSchema = z.object({
       meeting_time: z.string().trim().max(8).nullable().optional(),
       territory_number: z.string().trim().max(60).nullable().optional(),
       territory_location: z.string().trim().max(200).nullable().optional(),
+      auxiliary_leaders: z.string().trim().max(200).nullable().optional(),
       closing_prayer: z.string().trim().max(200).nullable().optional(),
       sort_order: z.number().int().min(0).max(1000).optional(),
     }),
@@ -98,7 +99,7 @@ export const exportFieldMeetingTemplate = createServerFn({ method: "POST" })
     if (!tpl || tpl.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
     const { data: items } = await supabaseAdmin
       .from("field_meeting_template_items")
-      .select("day_offset,period,modality,meeting_time,territory_number,territory_location,closing_prayer,sort_order")
+      .select("day_offset,period,modality,meeting_time,territory_number,territory_location,auxiliary_leaders,closing_prayer,sort_order")
       .eq("template_id", data.id).order("sort_order");
     return {
       ok: true as const,
@@ -200,6 +201,7 @@ export const importFieldMeetingTemplate = createServerFn({ method: "POST" })
         meeting_time: it.meeting_time || null,
         territory_number: it.territory_number || null,
         territory_location: it.territory_location || null,
+        auxiliary_leaders: it.auxiliary_leaders || null,
         closing_prayer: it.closing_prayer || null,
         sort_order: it.sort_order ?? i,
       }));
