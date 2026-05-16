@@ -34,10 +34,11 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
     }
     const userId = created.user.id;
     await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: data.fullName, email: data.email }, { onConflict: "id" });
-    await supabaseAdmin.from("user_roles").upsert(
-      { user_id: userId, role: "superintendent", congregation_id: null },
-      { onConflict: "user_id,role,congregation_id", ignoreDuplicates: true },
-    );
+    const { data: existingRole } = await supabaseAdmin
+      .from("user_roles").select("id").eq("user_id", userId).eq("role", "superintendent").maybeSingle();
+    if (!existingRole) {
+      await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "superintendent", congregation_id: null });
+    }
     return { ok: true as const };
   });
 
