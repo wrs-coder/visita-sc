@@ -45,6 +45,7 @@ function AppLayout() {
     ...(role === "superintendent" ? [{ to: "/notas", label: "Notas Privadas", icon: Lock }] : []),
     ...(role === "superintendent" ? [{ to: "/modelos", label: "Modelos", icon: FileStack }] : []),
     ...(role === "superintendent" ? [{ to: "/congregacoes", label: "Congregações", icon: Building2 }] : []),
+    { to: "/perfil", label: "Meu perfil", icon: UserCircle },
     { to: "/configuracoes", label: "Configurações", icon: Settings },
   ];
 
