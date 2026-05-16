@@ -340,6 +340,33 @@ export type Database = {
         }
         Relationships: []
       }
+      meal_day_notes: {
+        Row: {
+          created_at: string
+          id: string
+          meal_date: string
+          notes: string
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meal_date: string
+          notes?: string
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meal_date?: string
+          notes?: string
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: []
+      }
       meals: {
         Row: {
           contact_phone: string | null
@@ -523,6 +550,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          meal_day_notes: Json
           name: string
           slot: number
           superintendent_id: string
@@ -531,6 +559,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          meal_day_notes?: Json
           name: string
           slot: number
           superintendent_id: string
@@ -539,6 +568,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          meal_day_notes?: Json
           name?: string
           slot?: number
           superintendent_id?: string
