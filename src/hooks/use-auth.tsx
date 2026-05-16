@@ -56,13 +56,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null); setRole(null); setElderPosition(null); setCongregation(null);
       return;
     }
-    const [{ data: p }, { data: r }] = await Promise.all([
+    const [{ data: p }, { data: rs }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
-      supabase.from("user_roles").select("role, congregation_id, elder_position").eq("user_id", uid).maybeSingle(),
+      supabase.from("user_roles").select("role, congregation_id, elder_position").eq("user_id", uid).order("created_at", { ascending: true }).limit(5),
     ]);
     setProfile(p as Profile | null);
+    // Pick the most privileged role (superintendent over elder) to be resilient to duplicate rows.
+    const roles = (rs ?? []) as Array<{ role: AppRole; congregation_id: string | null; elder_position: ElderPosition | null }>;
+    const r = roles.find((x) => x.role === "superintendent") ?? roles[0] ?? null;
     setRole((r?.role as AppRole) ?? null);
-    setElderPosition(((r as { elder_position?: ElderPosition } | null)?.elder_position) ?? null);
+    setElderPosition((r?.elder_position as ElderPosition | null) ?? null);
     if (p?.congregation_id) {
       const { data: c } = await supabase.from("congregations")
         .select("id,name,superintendent_id")
