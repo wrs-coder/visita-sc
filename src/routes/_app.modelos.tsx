@@ -37,14 +37,15 @@ function Page() {
   const fnImport = useServerFn(importProgramTemplate);
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
-  const [namesBySlot, setNamesBySlot] = useState<Record<number, string>>({ 1: "Modelo 1", 2: "Modelo 2", 3: "Modelo 3" });
+  const [namesBySlot, setNamesBySlot] = useState<Record<number, string>>({ ...DEFAULT_NAMES });
+  const [notesBySlot, setNotesBySlot] = useState<Record<number, Record<string, string>>>({});
   const [activeSlot, setActiveSlot] = useState("1");
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     const r = await fnList();
     if (!r.ok) return;
-    setTpls(r.templates);
+    setTpls(r.templates as TemplateRow[]);
     const map: Record<string, ItemDraft[]> = {};
     for (const t of r.templates) map[t.id] = [];
     const items = r.items as TemplateItemRow[];
@@ -53,9 +54,15 @@ function Page() {
       map[it.template_id].push({ kind: it.kind as Kind, day_offset: it.day_offset, payload: it.payload, sort_order: it.sort_order });
     }
     setItemsByTpl(map);
-    const names = { 1: "Modelo 1", 2: "Modelo 2", 3: "Modelo 3" } as Record<number, string>;
-    for (const t of r.templates) names[t.slot] = t.name;
+    const names: Record<number, string> = { ...DEFAULT_NAMES };
+    const notesMap: Record<number, Record<string, string>> = {};
+    for (const t of r.templates) {
+      names[t.slot] = t.name;
+      const raw = (t as TemplateRow).meal_day_notes;
+      notesMap[t.slot] = (raw && typeof raw === "object" ? raw : {}) as Record<string, string>;
+    }
     setNamesBySlot(names);
+    setNotesBySlot(notesMap);
   }, [fnList]);
 
   useEffect(() => { load(); }, [load]);
