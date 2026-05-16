@@ -145,10 +145,6 @@ function Page() {
   const activeCount = list.filter((c) => c.is_active !== false).length;
 
   const toggleActive = async (c: Congregation, next: boolean) => {
-    if (next && activeCount >= 9 && c.is_active === false) {
-      toast.error("Limite de 9 congregações ativas atingido. Desative outra antes.");
-      return;
-    }
     const { error } = await supabase.from("congregations").update({ is_active: next }).eq("id", c.id);
     if (error) { toast.error(error.message); return; }
     load();
@@ -159,7 +155,7 @@ function Page() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><Building2 className="h-6 w-6" /> Congregações</h1>
-          <p className="text-sm text-muted-foreground mt-1">{activeCount}/9 congregações ativas no circuito.</p>
+          <p className="text-sm text-muted-foreground mt-1">{activeCount} congregaç{activeCount === 1 ? "ão ativa" : "ões ativas"} no circuito.</p>
         </div>
         <Dialog open={openNew} onOpenChange={setOpenNew}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" /> Nova</Button></DialogTrigger>

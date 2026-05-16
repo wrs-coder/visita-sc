@@ -40,6 +40,7 @@ export const exportFullBackup = createServerFn({ method: "POST" })
       field_assignments,
       schedule_events,
       meals,
+      meal_day_notes,
       transport_schedule,
       private_notes,
     ] = await Promise.all([
@@ -48,6 +49,7 @@ export const exportFullBackup = createServerFn({ method: "POST" })
       fetchByVisit("field_assignments"),
       fetchByVisit("schedule_events"),
       fetchByVisit("meals"),
+      fetchByVisit("meal_day_notes"),
       fetchByVisit("transport_schedule"),
       fetchByVisit("private_notes"),
     ]);
@@ -88,6 +90,7 @@ export const exportFullBackup = createServerFn({ method: "POST" })
           congregations: congregations ?? [],
           visits: visits ?? [],
           checklist_items, field_meetings, field_assignments, schedule_events, meals,
+          meal_day_notes,
           transport_schedule, private_notes,
           checklist_templates: checklist_templates ?? [],
           checklist_template_items: checklist_template_items ?? [],
@@ -116,6 +119,7 @@ const backupFileSchema = z.object({
     field_assignments: recordArray,
     schedule_events: recordArray,
     meals: recordArray,
+    meal_day_notes: recordArray.optional().default([]),
     transport_schedule: recordArray,
     private_notes: recordArray,
     checklist_templates: recordArray,
@@ -167,6 +171,7 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
       ["field_assignments", d.field_assignments],
       ["schedule_events", d.schedule_events],
       ["meals", d.meals],
+      ["meal_day_notes", d.meal_day_notes ?? []],
       ["transport_schedule", d.transport_schedule],
       ["private_notes", d.private_notes.map((r) => ({ ...r, superintendent_id: userId }))],
     ];

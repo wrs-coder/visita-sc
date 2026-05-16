@@ -23,7 +23,7 @@ export const listTemplates = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data: tpls } = await supabaseAdmin
-      .from("program_templates").select("id,slot,name,created_at,updated_at")
+      .from("program_templates").select("id,slot,name,meal_day_notes,created_at,updated_at")
       .eq("superintendent_id", userId).order("slot");
     const ids = (tpls ?? []).map((t) => t.id);
     let items: Array<{ id: string; template_id: string; kind: string; day_offset: number; payload: Payload; sort_order: number }> = [];
@@ -39,21 +39,24 @@ export const upsertTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z.object({
-      slot: z.number().int().min(1).max(3),
+      slot: z.number().int().min(1).max(10),
       name: z.string().trim().min(1).max(120),
+      meal_day_notes: z.record(z.string(), z.string().max(2000)).optional(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const updatePatch: { name: string; meal_day_notes?: Record<string, string> } = { name: data.name };
+    if (data.meal_day_notes) updatePatch.meal_day_notes = data.meal_day_notes;
     const { data: existing } = await supabaseAdmin.from("program_templates")
       .select("id").eq("superintendent_id", userId).eq("slot", data.slot).maybeSingle();
     if (existing) {
-      const { error } = await supabaseAdmin.from("program_templates").update({ name: data.name }).eq("id", existing.id);
+      const { error } = await supabaseAdmin.from("program_templates").update(updatePatch).eq("id", existing.id);
       if (error) return { ok: false as const, error: error.message };
       return { ok: true as const, id: existing.id };
     }
     const { data: row, error } = await supabaseAdmin.from("program_templates")
-      .insert({ superintendent_id: userId, slot: data.slot, name: data.name }).select("id").single();
+      .insert({ superintendent_id: userId, slot: data.slot, name: data.name, meal_day_notes: data.meal_day_notes ?? {} }).select("id").single();
     if (error || !row) return { ok: false as const, error: error?.message ?? "Falha" };
     return { ok: true as const, id: row.id };
   });
@@ -103,7 +106,7 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
       .from("congregations").select("superintendent_id").eq("id", visit.congregation_id).maybeSingle();
     if (!cong || cong.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
     const { data: tpl } = await supabaseAdmin
-      .from("program_templates").select("id").eq("id", data.templateId).eq("superintendent_id", userId).maybeSingle();
+      .from("program_templates").select("id,meal_day_notes").eq("id", data.templateId).eq("superintendent_id", userId).maybeSingle();
     if (!tpl) return { ok: false as const, error: "Modelo não encontrado." };
 
     await supabaseAdmin.from("visits").update({ template_id: data.templateId }).eq("id", data.visitId);
@@ -149,5 +152,19 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
         });
       }
     }
+
+    // Apply per-day meal notes
+    const mealNotes = (tpl.meal_day_notes ?? {}) as Record<string, string>;
+    const noteRows = Object.entries(mealNotes)
+      .filter(([, v]) => typeof v === "string" && v.trim().length > 0)
+      .map(([offsetStr, notes]) => ({
+        visit_id: data.visitId,
+        meal_date: dateAt(Number(offsetStr)),
+        notes,
+      }));
+    if (noteRows.length) {
+      await supabaseAdmin.from("meal_day_notes").upsert(noteRows, { onConflict: "visit_id,meal_date" });
+    }
+
     return { ok: true as const };
   });

@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Loader2, Check, AlertCircle } from "lucide-react";
-import { format, parseISO, eachDayOfInterval, getDay } from "date-fns";
+import { Plus, Trash2, Loader2, Check } from "lucide-react";
+import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
@@ -36,16 +36,35 @@ function Page() {
   const isSuper = role === "superintendent";
   const [meals, setMeals] = useState<Meal[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [dayNotes, setDayNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!visit) return;
     const load = async () => {
-      const { data } = await supabase.from("meals").select("*").eq("visit_id", visit.id).order("meal_date").order("type");
+      const [{ data }, { data: notes }] = await Promise.all([
+        supabase.from("meals").select("*").eq("visit_id", visit.id).order("meal_date").order("type"),
+        supabase.from("meal_day_notes").select("meal_date,notes").eq("visit_id", visit.id),
+      ]);
       setMeals((data ?? []) as Meal[]);
+      const map: Record<string, string> = {};
+      for (const n of (notes ?? []) as Array<{ meal_date: string; notes: string }>) map[n.meal_date] = n.notes;
+      setDayNotes(map);
     };
     load();
-    const ch = supabase.channel(`m-${visit.id}`).on("postgres_changes", { event: "*", schema: "public", table: "meals", filter: `visit_id=eq.${visit.id}` }, load).subscribe();
+    const ch = supabase.channel(`m-${visit.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "meals", filter: `visit_id=eq.${visit.id}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "meal_day_notes", filter: `visit_id=eq.${visit.id}` }, load)
+      .subscribe();
     return () => { supabase.removeChannel(ch); };
+  }, [visit]);
+
+  const saveDayNote = useCallback(async (date: string, notes: string) => {
+    if (!visit) return;
+    const { error } = await supabase.from("meal_day_notes").upsert(
+      { visit_id: visit.id, meal_date: date, notes },
+      { onConflict: "visit_id,meal_date" },
+    );
+    if (error) toast.error(error.message);
   }, [visit]);
 
   const update = useCallback(async (id: string, patch: Partial<Meal>) => {
@@ -85,7 +104,7 @@ function Page() {
         {days.map((d) => {
           const key = format(d, "yyyy-MM-dd");
           const dayMeals = meals.filter((m) => m.meal_date === key);
-          const isWeekend = getDay(d) === 0 || getDay(d) === 6;
+          const dayNote = dayNotes[key] ?? "";
           return (
             <section key={key}>
               <div className="flex items-center justify-between mb-2">
@@ -98,12 +117,7 @@ function Page() {
                   </div>
                 )}
               </div>
-              {isWeekend && dayMeals.some((m) => m.type === "lunch") && (
-                <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive mb-2">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>Lembrete: Se a reunião é entre 7:00 e às 16:30 não marquem almoço.</span>
-                </div>
-              )}
+              <DayNoteEditor mealDate={key} value={dayNote} isSuper={isSuper} onChange={(v) => setDayNotes((s) => ({ ...s, [key]: v }))} onSave={(v) => saveDayNote(key, v)} />
               {dayMeals.length === 0 ? (
                 <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem refeições disponíveis.</CardContent></Card>
               ) : (
@@ -115,6 +129,27 @@ function Page() {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function DayNoteEditor({ value, isSuper, onChange, onSave }: { mealDate: string; value: string; isSuper: boolean; onChange: (v: string) => void; onSave: (v: string) => void }) {
+  if (!isSuper) {
+    if (!value) return null;
+    return (
+      <div className="mb-2 text-sm font-medium text-destructive whitespace-pre-wrap">{value}</div>
+    );
+  }
+  return (
+    <div className="mb-2">
+      <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Observações do dia (exibidas em vermelho aos anciãos)</label>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={(e) => onSave(e.target.value)}
+        placeholder="Ex.: Reunião entre 7h e 16h30, não marquem almoço"
+        className="h-9 mt-0.5"
+      />
     </div>
   );
 }
