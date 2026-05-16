@@ -36,16 +36,35 @@ function Page() {
   const isSuper = role === "superintendent";
   const [meals, setMeals] = useState<Meal[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [dayNotes, setDayNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!visit) return;
     const load = async () => {
-      const { data } = await supabase.from("meals").select("*").eq("visit_id", visit.id).order("meal_date").order("type");
+      const [{ data }, { data: notes }] = await Promise.all([
+        supabase.from("meals").select("*").eq("visit_id", visit.id).order("meal_date").order("type"),
+        supabase.from("meal_day_notes").select("meal_date,notes").eq("visit_id", visit.id),
+      ]);
       setMeals((data ?? []) as Meal[]);
+      const map: Record<string, string> = {};
+      for (const n of (notes ?? []) as Array<{ meal_date: string; notes: string }>) map[n.meal_date] = n.notes;
+      setDayNotes(map);
     };
     load();
-    const ch = supabase.channel(`m-${visit.id}`).on("postgres_changes", { event: "*", schema: "public", table: "meals", filter: `visit_id=eq.${visit.id}` }, load).subscribe();
+    const ch = supabase.channel(`m-${visit.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "meals", filter: `visit_id=eq.${visit.id}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "meal_day_notes", filter: `visit_id=eq.${visit.id}` }, load)
+      .subscribe();
     return () => { supabase.removeChannel(ch); };
+  }, [visit]);
+
+  const saveDayNote = useCallback(async (date: string, notes: string) => {
+    if (!visit) return;
+    const { error } = await supabase.from("meal_day_notes").upsert(
+      { visit_id: visit.id, meal_date: date, notes },
+      { onConflict: "visit_id,meal_date" },
+    );
+    if (error) toast.error(error.message);
   }, [visit]);
 
   const update = useCallback(async (id: string, patch: Partial<Meal>) => {
