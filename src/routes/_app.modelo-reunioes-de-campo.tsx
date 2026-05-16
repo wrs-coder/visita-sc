@@ -196,6 +196,7 @@ function Page() {
           meeting_time: it.meeting_time || null,
           territory_number: it.territory_number || null,
           territory_location: it.territory_location || null,
+          auxiliary_leaders: it.auxiliary_leaders || null,
           closing_prayer: it.closing_prayer || null,
           sort_order: i,
         })),
