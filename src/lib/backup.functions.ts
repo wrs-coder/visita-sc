@@ -171,6 +171,7 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
       ["field_assignments", d.field_assignments],
       ["schedule_events", d.schedule_events],
       ["meals", d.meals],
+      ["meal_day_notes", d.meal_day_notes ?? []],
       ["transport_schedule", d.transport_schedule],
       ["private_notes", d.private_notes.map((r) => ({ ...r, superintendent_id: userId }))],
     ];
