@@ -106,7 +106,7 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
       .from("congregations").select("superintendent_id").eq("id", visit.congregation_id).maybeSingle();
     if (!cong || cong.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
     const { data: tpl } = await supabaseAdmin
-      .from("program_templates").select("id").eq("id", data.templateId).eq("superintendent_id", userId).maybeSingle();
+      .from("program_templates").select("id,meal_day_notes").eq("id", data.templateId).eq("superintendent_id", userId).maybeSingle();
     if (!tpl) return { ok: false as const, error: "Modelo não encontrado." };
 
     await supabaseAdmin.from("visits").update({ template_id: data.templateId }).eq("id", data.visitId);
