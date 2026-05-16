@@ -216,7 +216,7 @@ function Page() {
             <Compass className="h-6 w-6" />Modelo Reuniões de Campo
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Defina a modalidade, os turnos com dia/horário e vincule a uma congregação. {tpls.length}/{MAX} modelos.
+            Programe vários turnos por semana, cada um com sua modalidade, e vincule o modelo a uma congregação. {tpls.length}/{MAX} modelos.
           </p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
