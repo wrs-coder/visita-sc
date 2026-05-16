@@ -148,6 +148,58 @@ function Page() {
           </form>
         </CardContent>
       </Card>
+
+      {role === "superintendent" && (
+        <Card className="shadow-card border-primary/30">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-primary" /> Backup e restauração
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Backup automático local: {autoBackup
+                ? <>último em <strong>{new Date(autoBackup.updatedAt).toLocaleString("pt-BR")}</strong>.</>
+                : "ainda não gerado."}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={doExportBackup} disabled={busyBackup !== null}>
+                {busyBackup === "export" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
+                Gerar arquivo de backup
+              </Button>
+              <Button variant="outline" onClick={() => restoreInputRef.current?.click()} disabled={busyBackup !== null}>
+                <Upload className="h-4 w-4 mr-1" />Restaurar backup
+              </Button>
+              <input
+                ref={restoreInputRef} type="file" accept="application/json,.json" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) pickRestoreFile(f); }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              O backup geral inclui congregações, visitas, cronogramas, escalas, refeições, transporte, checklists e modelos.
+              A restauração sobrescreve registros existentes que tenham o mesmo identificador.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      <AlertDialog open={pendingRestore !== null} onOpenChange={(o) => { if (!o) setPendingRestore(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar restauração</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação irá <strong>sobrescrever</strong> os dados atuais com o conteúdo do arquivo selecionado.
+              Esta operação não pode ser desfeita. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRestore} disabled={busyBackup === "restore"}>
+              {busyBackup === "restore" ? "Restaurando…" : "Sim, restaurar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
