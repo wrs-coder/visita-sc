@@ -28,10 +28,10 @@ export const exportFullBackup = createServerFn({ method: "POST" })
     const visitIds = (visits ?? []).map((v) => v.id);
 
     const fetchByVisit = async (table: string) => {
-      if (!visitIds.length) return [] as Record<string, unknown>[];
+      if (!visitIds.length) return [] as Row[];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res = await (supabaseAdmin.from(table as any) as any).select("*").in("visit_id", visitIds);
-      return (res.data ?? []) as Record<string, unknown>[];
+      return (res.data ?? []) as Row[];
     };
 
     const [
@@ -146,14 +146,14 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
     const field_meeting_templates = d.field_meeting_templates.map((r) => ({ ...r, superintendent_id: userId }));
     const program_templates = d.program_templates.map((r) => ({ ...r, superintendent_id: userId }));
 
-    const upsert = async (table: string, rows: Record<string, unknown>[]) => {
+    const upsert = async (table: string, rows: Row[]) => {
       if (!rows.length) return null;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabaseAdmin.from(table as any) as any).upsert(rows, { onConflict: "id" });
       return (error as { message?: string } | null)?.message ?? null;
     };
 
-    const steps: Array<[string, Record<string, unknown>[]]> = [
+    const steps: Array<[string, Row[]]> = [
       ["congregations", congregations],
       ["visits", d.visits],
       ["checklist_templates", checklist_templates],
