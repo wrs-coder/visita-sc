@@ -21,6 +21,7 @@ import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 import { Route as AppTransporteRouteImport } from './routes/_app.transporte'
 import { Route as AppReunioesDeCampoRouteImport } from './routes/_app.reunioes-de-campo'
 import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
+import { Route as AppPerfilRouteImport } from './routes/_app.perfil'
 import { Route as AppNotasRouteImport } from './routes/_app.notas'
 import { Route as AppModelosRouteImport } from './routes/_app.modelos'
 import { Route as AppModeloReunioesDeCampoRouteImport } from './routes/_app.modelo-reunioes-de-campo'
@@ -91,6 +92,11 @@ const AppRefeicoesRoute = AppRefeicoesRouteImport.update({
   path: '/refeicoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPerfilRoute = AppPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppNotasRoute = AppNotasRouteImport.update({
   id: '/notas',
   path: '/notas',
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
+  '/perfil': typeof AppPerfilRoute
   '/refeicoes': typeof AppRefeicoesRoute
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
   '/transporte': typeof AppTransporteRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
+  '/perfil': typeof AppPerfilRoute
   '/refeicoes': typeof AppRefeicoesRoute
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
   '/transporte': typeof AppTransporteRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/_app/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/_app/modelos': typeof AppModelosRoute
   '/_app/notas': typeof AppNotasRoute
+  '/_app/perfil': typeof AppPerfilRoute
   '/_app/refeicoes': typeof AppRefeicoesRoute
   '/_app/reunioes-de-campo': typeof AppReunioesDeCampoRoute
   '/_app/transporte': typeof AppTransporteRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/modelo-reunioes-de-campo'
     | '/modelos'
     | '/notas'
+    | '/perfil'
     | '/refeicoes'
     | '/reunioes-de-campo'
     | '/transporte'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/modelo-reunioes-de-campo'
     | '/modelos'
     | '/notas'
+    | '/perfil'
     | '/refeicoes'
     | '/reunioes-de-campo'
     | '/transporte'
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
     | '/_app/modelo-reunioes-de-campo'
     | '/_app/modelos'
     | '/_app/notas'
+    | '/_app/perfil'
     | '/_app/refeicoes'
     | '/_app/reunioes-de-campo'
     | '/_app/transporte'
@@ -384,6 +396,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRefeicoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/perfil': {
+      id: '/_app/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AppPerfilRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/notas': {
       id: '/_app/notas'
       path: '/notas'
@@ -468,6 +487,7 @@ interface AppRouteChildren {
   AppModeloReunioesDeCampoRoute: typeof AppModeloReunioesDeCampoRoute
   AppModelosRoute: typeof AppModelosRoute
   AppNotasRoute: typeof AppNotasRoute
+  AppPerfilRoute: typeof AppPerfilRoute
   AppRefeicoesRoute: typeof AppRefeicoesRoute
   AppReunioesDeCampoRoute: typeof AppReunioesDeCampoRoute
   AppTransporteRoute: typeof AppTransporteRoute
@@ -484,6 +504,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppModeloReunioesDeCampoRoute: AppModeloReunioesDeCampoRoute,
   AppModelosRoute: AppModelosRoute,
   AppNotasRoute: AppNotasRoute,
+  AppPerfilRoute: AppPerfilRoute,
   AppRefeicoesRoute: AppRefeicoesRoute,
   AppReunioesDeCampoRoute: AppReunioesDeCampoRoute,
   AppTransporteRoute: AppTransporteRoute,
