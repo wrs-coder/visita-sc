@@ -101,7 +101,7 @@ export const exportFullBackup = createServerFn({ method: "POST" })
     };
   });
 
-const recordArray = z.array(z.record(z.string(), z.unknown()));
+const recordArray = z.array(z.record(z.string(), z.unknown())).transform((arr) => arr as unknown as Row[]);
 
 const backupFileSchema = z.object({
   type: z.literal("visita_sc_backup"),
