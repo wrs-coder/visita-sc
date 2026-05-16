@@ -52,7 +52,7 @@ export const listFieldMeetingTemplates = createServerFn({ method: "POST" })
     let items: Array<{
       id: string; template_id: string; day_offset: number; period: string;
       meeting_time: string | null; territory_number: string | null;
-      territory_location: string | null; closing_prayer: string | null; sort_order: number;
+      territory_location: string | null; auxiliary_leaders: string | null; closing_prayer: string | null; sort_order: number;
     }> = [];
     if (ids.length) {
       const { data } = await supabaseAdmin
