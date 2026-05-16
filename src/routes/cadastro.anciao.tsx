@@ -129,20 +129,33 @@ function Page() {
 
               <Field id="email" label="E-mail (para recuperar senha)" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
               <PasswordField value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
-              <Field id="code" label="Código da congregação" value={form.inviteCode} onChange={(v) => setForm({ ...form, inviteCode: v.toUpperCase() })} />
+              <div className="space-y-1.5">
+                <Field id="code" label="Código da congregação" value={form.inviteCode} onChange={(v) => setForm({ ...form, inviteCode: v.toUpperCase() })} />
+                {checking && <p className="text-[11px] text-muted-foreground">Verificando funções disponíveis...</p>}
+                {codeError && <p className="text-[11px] text-destructive">{codeError}</p>}
+                {allFilled && (
+                  <p className="text-[12px] text-destructive font-medium">
+                    O corpo de anciãos desta congregação já está totalmente cadastrado. Se precisar de alterar um utilizador, contacte o Superintendente de Circuito.
+                  </p>
+                )}
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="pos">Designação no corpo de anciãos</Label>
-                <Select value={form.position} onValueChange={(v) => setForm({ ...form, position: v as ElderPosition })}>
-                  <SelectTrigger id="pos"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <Select
+                  value={form.position}
+                  onValueChange={(v) => setForm({ ...form, position: v as ElderPosition })}
+                  disabled={available === null || allFilled || !!codeError}
+                >
+                  <SelectTrigger id="pos"><SelectValue placeholder={available === null ? "Digite o código primeiro..." : "Selecione..."} /></SelectTrigger>
                   <SelectContent>
-                    {(["coordenador", "secretario", "sup_servico"] as ElderPosition[]).map((k) => (
+                    {(available ?? ALL_POSITIONS).map((k) => (
                       <SelectItem key={k} value={k}>{ELDER_POSITION_LABELS[k]}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">Cadastro disponível apenas para Coordenador, Secretário e Sup. de Serviço. Os demais anciãos e a ES usam o acesso "Corpo de anciãos e ES" no login.</p>
+                <p className="text-[11px] text-muted-foreground">Cadastro disponível apenas para Coordenador, Secretário e Sup. de Serviço. Apenas um por congregação. Os demais anciãos e a ES usam o acesso "Corpo de anciãos e ES" no login.</p>
               </div>
-              <Button type="submit" className="w-full h-11 mt-2" disabled={busy}>
+              <Button type="submit" className="w-full h-11 mt-2" disabled={disableSubmit}>
                 {busy ? "Criando..." : "Entrar na Congregação"}
               </Button>
             </form>
