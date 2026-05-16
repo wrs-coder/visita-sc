@@ -206,6 +206,10 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Localização do território</label>
                 <Input value={territory_location} onChange={(e) => setTerritoryLocation(e.target.value)} className="h-9 mt-0.5" />
               </div>
+              <div className="col-span-2">
+                <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Dirigentes auxiliares</label>
+                <Input value={auxiliary_leaders} onChange={(e) => setAuxiliaryLeaders(e.target.value)} className="h-9 mt-0.5" />
+              </div>
             </>
           )}
           <div className="col-span-2">
