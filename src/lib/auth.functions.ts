@@ -57,7 +57,7 @@ export const getAvailableElderPositions = createServerFn({ method: "POST" })
     const { data: roles } = await supabaseAdmin
       .from("user_roles").select("elder_position")
       .eq("role", "elder").eq("congregation_id", cong.id)
-      .in("elder_position", ELDER_REGISTERABLE_POSITIONS as unknown as string[]);
+      .in("elder_position", [...ELDER_REGISTERABLE_POSITIONS]);
     const taken = new Set((roles ?? []).map((r) => r.elder_position).filter(Boolean) as string[]);
     const available = ELDER_REGISTERABLE_POSITIONS.filter((p) => !taken.has(p));
     return { ok: true as const, available, taken: Array.from(taken) };
