@@ -15,14 +15,20 @@ import { ELDER_POSITION_LABELS, type ElderPosition } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/cadastro/anciao")({ component: Page });
 
+const ALL_POSITIONS: ElderPosition[] = ["coordenador", "secretario", "sup_servico"];
+
 function Page() {
   const nav = useNavigate();
   const fn = useServerFn(registerElderByPhone);
+  const checkFn = useServerFn(getAvailableElderPositions);
   const [busy, setBusy] = useState(false);
   const [country, setCountry] = useState(DEFAULT_COUNTRY);
   const [form, setForm] = useState<{ fullName: string; phone: string; email: string; password: string; inviteCode: string; position: ElderPosition | "" }>({
     fullName: "", phone: "", email: "", password: "", inviteCode: "", position: "",
   });
+  const [available, setAvailable] = useState<ElderPosition[] | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
