@@ -74,7 +74,7 @@ function Page() {
         } else {
           setAvailable(res.available as ElderPosition[]);
           setCodeError(null);
-          setForm((f) => (f.position && !res.available.includes(f.position) ? { ...f, position: "" } : f));
+          setForm((f) => (f.position && !(res.available as string[]).includes(f.position) ? { ...f, position: "" } : f));
         }
       } finally {
         setChecking(false);
