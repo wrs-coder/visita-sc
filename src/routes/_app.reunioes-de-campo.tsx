@@ -32,36 +32,17 @@ interface Row {
 
 function Page() {
   const { visit } = useActiveVisit();
-  const { role, congregation } = useAuth();
+  const { role } = useAuth();
   const isSuper = role === "superintendent";
   const [rows, setRows] = useState<Row[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [modality, setModality] = useState<Modality | null>(null);
-
-  useEffect(() => {
-    if (!congregation) return;
-    const loadModality = async () => {
-      const { data } = await supabase
-        .from("field_meeting_templates")
-        .select("modality")
-        .eq("congregation_id", congregation.id)
-        .maybeSingle();
-      setModality((data?.modality as Modality | undefined) ?? null);
-    };
-    loadModality();
-    const ch = supabase
-      .channel(`fmt-${congregation.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "field_meeting_templates", filter: `congregation_id=eq.${congregation.id}` }, loadModality)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [congregation]);
 
   useEffect(() => {
     if (!visit) return;
     const load = async () => {
       const { data } = await supabase
         .from("field_meetings")
-        .select("id,visit_id,event_date,period,meeting_time,territory_number,territory_location,closing_prayer,is_active")
+        .select("id,visit_id,event_date,period,modality,meeting_time,territory_number,territory_location,closing_prayer,is_active")
         .eq("visit_id", visit.id)
         .order("event_date")
         .order("period");
@@ -97,8 +78,6 @@ function Page() {
   if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa.</CardContent></Card>;
 
   const days = eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) });
-  // Modality controls which fields appear for the elders
-  const showAllFields = modality === null || modality === "casa_em_casa" || isSuper;
 
   return (
     <div className="space-y-5">
@@ -106,10 +85,8 @@ function Page() {
         <h1 className="text-2xl md:text-3xl font-bold">Reuniões de Campo</h1>
         <p className="text-sm text-muted-foreground mt-1">
           {isSuper
-            ? "Defina os turnos. O superintendente pode definir a modalidade na aba Modelo Reuniões de Campo."
-            : modality
-              ? `Modalidade definida: ${FIELD_MODALITY_LABELS[modality]}.`
-              : "Preencha os dados das reuniões de campo."}
+            ? "Defina os turnos e a modalidade de cada um. Os campos exibidos aos anciãos seguem a modalidade do turno."
+            : "Preencha os dados das reuniões de campo. Cada turno mostra apenas os campos da sua modalidade."}
         </p>
       </div>
 
@@ -132,7 +109,7 @@ function Page() {
                 <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem turnos definidos.</CardContent></Card>
               ) : (
                 dayRows.map((r) => (
-                  <RowCard key={r.id} row={r} isSuper={isSuper} showAllFields={showAllFields} saving={savingId === r.id} update={update} remove={remove} />
+                  <RowCard key={r.id} row={r} isSuper={isSuper} saving={savingId === r.id} update={update} remove={remove} />
                 ))
               )}
             </section>
