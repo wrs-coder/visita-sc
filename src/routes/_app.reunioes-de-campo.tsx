@@ -11,7 +11,7 @@ import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import { FIELD_MODALITY_LABELS, type FIELD_MODALITIES } from "@/lib/field-meeting-templates.functions";
+import { FIELD_MODALITIES, FIELD_MODALITY_LABELS } from "@/lib/field-meeting-templates.functions";
 
 export const Route = createFileRoute("/_app/reunioes-de-campo")({ component: Page });
 
@@ -22,6 +22,7 @@ interface Row {
   visit_id: string;
   event_date: string;
   period: string;
+  modality: Modality;
   meeting_time: string | null;
   territory_number: string | null;
   territory_location: string | null;
