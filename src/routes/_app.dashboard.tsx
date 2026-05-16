@@ -8,6 +8,7 @@ import { CalendarDays, ListChecks, MapPin, Clock, ChevronRight, UtensilsCrossed 
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { format, isToday, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PwaInstallButton } from "@/components/PwaInstall";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
@@ -52,6 +53,7 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <PwaInstallButton />
       <header>
         <p className="text-sm text-muted-foreground">{format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}</p>
         <h1 className="text-2xl md:text-3xl font-bold mt-1">Olá, {profile?.full_name?.split(" ")[0] ?? "irmão"}!</h1>
