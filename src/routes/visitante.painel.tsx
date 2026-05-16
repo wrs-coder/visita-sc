@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getGuestSnapshot } from "@/lib/guest.functions";
+import { readGuestSession, clearGuestSession } from "@/lib/guest-session";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -38,18 +39,18 @@ function Page() {
     setLoading(true);
     const r = await fn({ data: { inviteCode: c } });
     setLoading(false);
-    if (!r.ok) { localStorage.removeItem("guest_invite_code"); nav({ to: "/visitante" }); return; }
+    if (!r.ok) { clearGuestSession(); nav({ to: "/" }); return; }
     setSnap(r as unknown as Snapshot);
   }, [fn, nav]);
 
   useEffect(() => {
-    const c = typeof window !== "undefined" ? localStorage.getItem("guest_invite_code") : null;
-    if (!c) { nav({ to: "/visitante" }); return; }
+    const c = readGuestSession();
+    if (!c) { nav({ to: "/" }); return; }
     setCode(c);
     load(c);
   }, [load, nav]);
 
-  const exit = () => { localStorage.removeItem("guest_invite_code"); nav({ to: "/" }); };
+  const exit = () => { clearGuestSession(); nav({ to: "/" }); };
 
   if (loading || !snap) {
     return <div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;

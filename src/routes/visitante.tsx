@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getGuestSnapshot } from "@/lib/guest.functions";
+import { saveGuestSession } from "@/lib/guest-session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +27,7 @@ function Page() {
     const r = await fn({ data: { inviteCode: c } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
-    localStorage.setItem("guest_invite_code", c);
+    saveGuestSession(c);
     nav({ to: "/visitante/painel" });
   };
 
