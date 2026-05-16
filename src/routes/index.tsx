@@ -1,6 +1,8 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { readGuestSession } from "@/lib/guest-session";
 
 export const Route = createFileRoute("/")({
   component: HomeRoute,
@@ -8,10 +10,19 @@ export const Route = createFileRoute("/")({
 
 function HomeRoute() {
   const { loading, user, needsOnboarding, role } = useAuth();
-  if (loading) return <FullLoader />;
-  if (!user) return <LoginForm />;
-  if (needsOnboarding) return <Navigate to="/onboarding" />;
-  return <Navigate to={role === "superintendent" ? "/dashboard" : "/cronograma"} />;
+  const [guestCode, setGuestCode] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    setGuestCode(readGuestSession());
+  }, []);
+
+  if (loading || guestCode === undefined) return <FullLoader />;
+  if (user) {
+    if (needsOnboarding) return <Navigate to="/onboarding" />;
+    return <Navigate to={role === "superintendent" ? "/dashboard" : "/cronograma"} />;
+  }
+  if (guestCode) return <Navigate to="/visitante/painel" />;
+  return <LoginForm />;
 }
 
 function FullLoader() {

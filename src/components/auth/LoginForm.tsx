@@ -2,50 +2,39 @@ import { useState } from "react";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { resolveElderEmail } from "@/lib/auth.functions";
-import { COUNTRIES, DEFAULT_COUNTRY, buildFullPhone, findCountry } from "@/lib/countries";
+import { getGuestSnapshot } from "@/lib/guest.functions";
+import { saveGuestSession } from "@/lib/guest-session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { LogIn, Users, ShieldCheck, Eye } from "lucide-react";
+import { LogIn, Users, ShieldCheck, KeyRound } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export function LoginForm() {
   const nav = useNavigate();
-  const resolveFn = useServerFn(resolveElderEmail);
-  const [country, setCountry] = useState(DEFAULT_COUNTRY);
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
+  const guestFn = useServerFn(getGuestSnapshot);
+  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [showSuper, setShowSuper] = useState(false);
   const [superEmail, setSuperEmail] = useState("");
   const [superPwd, setSuperPwd] = useState("");
 
-  const redirectByRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: true });
-    const roles = (data ?? []).map((r) => r.role);
-    const isSuper = roles.includes("superintendent");
-    nav({ to: isSuper ? "/dashboard" : "/cronograma" });
-  };
-
-  const submitElder = async (e: React.FormEvent) => {
+  const submitGuest = async (e: React.FormEvent) => {
     e.preventDefault();
+    const c = code.trim().toUpperCase();
+    if (!/^[A-Z0-9]{4,12}\*?$/.test(c)) {
+      toast.error("Código inválido", { description: "Use o código fornecido pelo superintendente (4 a 12 caracteres)." });
+      return;
+    }
     setBusy(true);
     try {
-      const fullPhone = buildFullPhone(country, phone);
-      const r = await resolveFn({ data: { phone: fullPhone } });
+      const r = await guestFn({ data: { inviteCode: c } });
       if (!r.ok) { toast.error(r.error); return; }
-      const { data: signIn, error } = await supabase.auth.signInWithPassword({ email: r.email, password });
-      if (error || !signIn.user) { toast.error("Senha incorreta"); return; }
-      toast.success("Bem-vindo!");
-      await redirectByRole(signIn.user.id);
+      saveGuestSession(c);
+      toast.success(r.wifeMode ? "Bem-vinda!" : "Bem-vindo!");
+      nav({ to: "/visitante/painel" });
     } finally { setBusy(false); }
   };
 
@@ -56,11 +45,9 @@ export function LoginForm() {
       const { data: signIn, error } = await supabase.auth.signInWithPassword({ email: superEmail.trim(), password: superPwd });
       if (error || !signIn.user) { toast.error("Não foi possível entrar", { description: error?.message }); return; }
       toast.success("Bem-vindo!");
-      await redirectByRole(signIn.user.id);
+      nav({ to: "/dashboard" });
     } finally { setBusy(false); }
   };
-
-  const dial = findCountry(country).dial;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-primary-soft/40 flex items-center justify-center p-4">
@@ -79,60 +66,39 @@ export function LoginForm() {
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                    <Users className="h-6 w-6" />
+                    <KeyRound className="h-6 w-6" />
                   </div>
                   <div>
-                    <h2 className="font-semibold text-lg leading-tight">Acesso do Ancião</h2>
-                    <p className="text-xs text-muted-foreground">Entre com seu telefone e senha</p>
+                    <h2 className="font-semibold text-lg leading-tight">Acesso por código</h2>
+                    <p className="text-xs text-muted-foreground">Corpo de anciãos e Esposa do Superintendente</p>
                   </div>
                 </div>
-                <form onSubmit={submitElder} className="space-y-3">
+                <form onSubmit={submitGuest} className="space-y-3">
                   <div className="space-y-1.5">
-                    <Label>País</Label>
-                    <Select value={country} onValueChange={setCountry}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {COUNTRIES.map((c) => (
-                          <SelectItem key={c.code} value={c.code}>
-                            {c.flag} {c.name} (+{c.dial})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <div className="flex gap-2">
-                      <div className="flex items-center px-3 rounded-md border bg-muted text-sm text-muted-foreground">
-                        +{dial}
-                      </div>
-                      <Input id="phone" type="tel" inputMode="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="número com DDD" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="pwd">Senha</Label>
-                    <Input id="pwd" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <Label htmlFor="code">Código da congregação</Label>
+                    <Input
+                      id="code"
+                      className="font-mono uppercase tracking-widest text-center text-base"
+                      maxLength={13}
+                      autoComplete="off"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.toUpperCase())}
+                      placeholder="EX: CENTRAL01"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Esposa do superintendente: adicione <span className="font-mono">*</span> ao final do código.
+                    </p>
                   </div>
                   <Button type="submit" className="w-full h-11 mt-1" disabled={busy}>
                     <LogIn className="mr-2 h-4 w-4" /> Entrar
                   </Button>
                 </form>
-                <div className="mt-4 text-center text-sm">
-                  Sou ancião novo —{" "}
-                  <Link to="/cadastro/anciao" className="text-primary font-medium hover:underline">criar acesso</Link>
-                </div>
-                <div className="mt-2 text-center text-[12px]">
-                  <Link to="/esqueci-senha" className="text-muted-foreground hover:text-primary">Esqueci minha senha</Link>
-                </div>
               </CardContent>
             </Card>
 
             <button onClick={() => setShowSuper(true)} className="mt-4 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2">
               <ShieldCheck className="h-4 w-4" /> Sou superintendente
             </button>
-            <Link to="/visitante" className="mt-1 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2">
-              <Eye className="h-4 w-4" /> Acesso Corpo de anciãos e ES
-            </Link>
           </>
         ) : (
           <>
