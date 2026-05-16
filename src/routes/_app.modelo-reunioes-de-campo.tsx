@@ -255,7 +255,7 @@ function Page() {
                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === t.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
                 <div className="truncate">{t.name}</div>
                 <div className="text-xs text-muted-foreground truncate">
-                  {FIELD_MODALITY_LABELS[t.modality]} · {cong ? cong.name : "sem congregação"}
+                  {cong ? cong.name : "sem congregação"}
                 </div>
               </button>
             );
