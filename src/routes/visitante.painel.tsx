@@ -90,9 +90,10 @@ function Page() {
             </CardContent></Card>
 
             <Tabs defaultValue="cron">
-              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-4" : "grid-cols-5"}`}>
+              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-5" : "grid-cols-6"}`}>
                 <TabsTrigger value="cron"><CalendarDays className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Cronograma</span></TabsTrigger>
                 <TabsTrigger value="estudos"><Users className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Estudos</span></TabsTrigger>
+                <TabsTrigger value="campo"><Compass className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Campo</span></TabsTrigger>
                 <TabsTrigger value="ref"><UtensilsCrossed className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Refeições</span></TabsTrigger>
                 <TabsTrigger value="trans"><Car className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Transporte</span></TabsTrigger>
                 {!snap.wifeMode && (
