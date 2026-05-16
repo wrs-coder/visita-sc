@@ -120,7 +120,7 @@ function Page() {
   );
 }
 
-function RowCard({ row: r, isSuper, showAllFields, saving, update, remove }: { row: Row; isSuper: boolean; showAllFields: boolean; saving: boolean; update: (id: string, p: Partial<Row>) => Promise<void>; remove: (id: string) => void }) {
+function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSuper: boolean; saving: boolean; update: (id: string, p: Partial<Row>) => Promise<void>; remove: (id: string) => void }) {
   const [meeting_time, setMeetingTime] = useState(r.meeting_time ?? "");
   const [territory_number, setTerritoryNumber] = useState(r.territory_number ?? "");
   const [territory_location, setTerritoryLocation] = useState(r.territory_location ?? "");
@@ -140,6 +140,7 @@ function RowCard({ row: r, isSuper, showAllFields, saving, update, remove }: { r
     closing_prayer !== (r.closing_prayer ?? "");
 
   const everSaved = !!(r.meeting_time || r.territory_number || r.territory_location || r.closing_prayer);
+  const showTerritory = r.modality === "casa_em_casa";
 
   const handleSave = () => {
     if (!dirty) return;
@@ -155,9 +156,12 @@ function RowCard({ row: r, isSuper, showAllFields, saving, update, remove }: { r
     <Card className={`shadow-card mb-2 transition ${!r.is_active ? "opacity-50" : ""}`}>
       <CardContent className="p-4 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <div className={`text-xs font-semibold px-2 py-1 rounded ${r.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>
-            {r.period}
-            {!r.is_active && " · desativado"}
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <div className={`text-xs font-semibold px-2 py-1 rounded ${r.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>
+              {r.period}
+              {!r.is_active && " · desativado"}
+            </div>
+            <div className="text-xs text-muted-foreground truncate">{FIELD_MODALITY_LABELS[r.modality]}</div>
           </div>
           <div className="flex items-center gap-2">
             {isSuper && <Switch checked={r.is_active} onCheckedChange={(v) => update(r.id, { is_active: v })} aria-label="Ativar/desativar" />}
@@ -168,13 +172,26 @@ function RowCard({ row: r, isSuper, showAllFields, saving, update, remove }: { r
             )}
           </div>
         </div>
+        {isSuper && (
+          <div>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Modalidade</label>
+            <Select value={r.modality} onValueChange={(v) => update(r.id, { modality: v as Modality })}>
+              <SelectTrigger className="h-9 mt-0.5"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {FIELD_MODALITIES.map((m) => (
+                  <SelectItem key={m} value={m}>{FIELD_MODALITY_LABELS[m]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2">
-          {showAllFields && (
+          <div>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Horário</label>
+            <Input type="time" value={meeting_time} readOnly={!isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />
+          </div>
+          {showTerritory && (
             <>
-              <div>
-                <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Horário</label>
-                <Input type="time" value={meeting_time} readOnly={!isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />
-              </div>
               <div>
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">N° do território S-13</label>
                 <Input value={territory_number} onChange={(e) => setTerritoryNumber(e.target.value)} className="h-9 mt-0.5" />
