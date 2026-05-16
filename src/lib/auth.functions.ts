@@ -116,9 +116,16 @@ export const registerElderByPhone = createServerFn({ method: "POST" })
       full_name: data.fullName, email, phone: digits, congregation_id: cong.id,
     }).eq("id", userId);
 
-    await supabaseAdmin.from("user_roles").insert({
+    const { error: rErr } = await supabaseAdmin.from("user_roles").insert({
       user_id: userId, role: "elder", congregation_id: cong.id, elder_position: data.position,
     });
+    if (rErr) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      const msg = /duplicate key|unique/i.test(rErr.message)
+        ? "Esta função já está cadastrada para esta congregação."
+        : rErr.message;
+      return { ok: false as const, error: msg };
+    }
 
     return { ok: true as const, email };
   });
