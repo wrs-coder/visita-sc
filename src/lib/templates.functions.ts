@@ -46,15 +46,17 @@ export const upsertTemplate = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const updatePatch: { name: string; meal_day_notes?: Record<string, string> } = { name: data.name };
+    if (data.meal_day_notes) updatePatch.meal_day_notes = data.meal_day_notes;
     const { data: existing } = await supabaseAdmin.from("program_templates")
       .select("id").eq("superintendent_id", userId).eq("slot", data.slot).maybeSingle();
     if (existing) {
-      const { error } = await supabaseAdmin.from("program_templates").update({ name: data.name }).eq("id", existing.id);
+      const { error } = await supabaseAdmin.from("program_templates").update(updatePatch).eq("id", existing.id);
       if (error) return { ok: false as const, error: error.message };
       return { ok: true as const, id: existing.id };
     }
     const { data: row, error } = await supabaseAdmin.from("program_templates")
-      .insert({ superintendent_id: userId, slot: data.slot, name: data.name }).select("id").single();
+      .insert({ superintendent_id: userId, slot: data.slot, name: data.name, meal_day_notes: data.meal_day_notes ?? {} }).select("id").single();
     if (error || !row) return { ok: false as const, error: error?.message ?? "Falha" };
     return { ok: true as const, id: row.id };
   });
