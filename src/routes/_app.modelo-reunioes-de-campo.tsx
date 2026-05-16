@@ -40,6 +40,7 @@ interface ItemDraft {
   meeting_time: string;
   territory_number: string;
   territory_location: string;
+  auxiliary_leaders: string;
   closing_prayer: string;
 }
 
