@@ -192,6 +192,7 @@ function Page() {
         items: items.map((it, i) => ({
           day_offset: it.day_offset,
           period: it.period,
+          modality: it.modality,
           meeting_time: it.meeting_time || null,
           territory_number: it.territory_number || null,
           territory_location: it.territory_location || null,
