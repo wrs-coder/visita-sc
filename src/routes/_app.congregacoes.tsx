@@ -4,14 +4,32 @@ import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { listMyCongregations, createCongregation, updateCongregation } from "@/lib/congregations.functions";
+import { listMyElders, updateElderBySuper, deleteElderBySuper, resetElderPasswordBySuper } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Building2, Trash2, Pencil, Check, KeyRound, Copy } from "lucide-react";
+import { Plus, Building2, Trash2, Pencil, Check, KeyRound, Copy, Users, UserCog } from "lucide-react";
 import { toast } from "sonner";
+
+interface Elder {
+  user_id: string;
+  full_name: string;
+  phone: string;
+  congregation_id: string | null;
+  congregation_name: string;
+  elder_position: string | null;
+}
+
+const POSITION_LABELS: Record<string, string> = {
+  coordenador: "Coordenador",
+  secretario: "Secretário",
+  sup_servico: "Sup. de Serviço",
+  corpo: "Corpo de Anciãos",
+};
 
 interface Congregation {
   id: string;
