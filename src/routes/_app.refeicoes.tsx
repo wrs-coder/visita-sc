@@ -85,7 +85,7 @@ function Page() {
         {days.map((d) => {
           const key = format(d, "yyyy-MM-dd");
           const dayMeals = meals.filter((m) => m.meal_date === key);
-          const isWeekend = getDay(d) === 0 || getDay(d) === 6;
+          const dayNote = dayNotes[key] ?? "";
           return (
             <section key={key}>
               <div className="flex items-center justify-between mb-2">
@@ -98,12 +98,7 @@ function Page() {
                   </div>
                 )}
               </div>
-              {isWeekend && dayMeals.some((m) => m.type === "lunch") && (
-                <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive mb-2">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>Lembrete: Se a reunião é entre 7:00 e às 16:30 não marquem almoço.</span>
-                </div>
-              )}
+              <DayNoteEditor mealDate={key} value={dayNote} isSuper={isSuper} onChange={(v) => setDayNotes((s) => ({ ...s, [key]: v }))} onSave={(v) => saveDayNote(key, v)} />
               {dayMeals.length === 0 ? (
                 <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem refeições disponíveis.</CardContent></Card>
               ) : (
