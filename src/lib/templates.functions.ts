@@ -152,5 +152,19 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
         });
       }
     }
+
+    // Apply per-day meal notes
+    const mealNotes = (tpl.meal_day_notes ?? {}) as Record<string, string>;
+    const noteRows = Object.entries(mealNotes)
+      .filter(([, v]) => typeof v === "string" && v.trim().length > 0)
+      .map(([offsetStr, notes]) => ({
+        visit_id: data.visitId,
+        meal_date: dateAt(Number(offsetStr)),
+        notes,
+      }));
+    if (noteRows.length) {
+      await supabaseAdmin.from("meal_day_notes").upsert(noteRows, { onConflict: "visit_id,meal_date" });
+    }
+
     return { ok: true as const };
   });
