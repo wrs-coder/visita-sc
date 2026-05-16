@@ -129,7 +129,7 @@ function Page() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl md:text-3xl font-bold">Configurações</h1>
+      <h1 className="text-2xl md:text-3xl font-bold">Itinerário</h1>
 
       <Card><CardContent className="p-5">
         <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Sua congregação</div>
