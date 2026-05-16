@@ -40,6 +40,7 @@ export const exportFullBackup = createServerFn({ method: "POST" })
       field_assignments,
       schedule_events,
       meals,
+      meal_day_notes,
       transport_schedule,
       private_notes,
     ] = await Promise.all([
@@ -48,6 +49,7 @@ export const exportFullBackup = createServerFn({ method: "POST" })
       fetchByVisit("field_assignments"),
       fetchByVisit("schedule_events"),
       fetchByVisit("meals"),
+      fetchByVisit("meal_day_notes"),
       fetchByVisit("transport_schedule"),
       fetchByVisit("private_notes"),
     ]);
