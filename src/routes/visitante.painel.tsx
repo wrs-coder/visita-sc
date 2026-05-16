@@ -133,20 +133,49 @@ function Page() {
                   ))}
               </TabsContent>
 
-              <TabsContent value="ref" className="space-y-2 mt-4">
-                {snap.meals.length === 0 ? <Empty text="Sem refeições agendadas." /> :
-                  snap.meals.map((m) => (
-                    <Card key={m.id}><CardContent className="p-3 space-y-1">
+              <TabsContent value="campo" className="space-y-2 mt-4">
+                {snap.fieldMeetings.length === 0 ? <Empty text="Sem reuniões de campo." /> :
+                  snap.fieldMeetings.map((f) => (
+                    <Card key={f.id}><CardContent className="p-3 space-y-1">
                       <div className="flex items-center justify-between">
-                        <div className="font-medium text-sm">{fmtDate(m.meal_date)} • {mealLabel(m.type)}</div>
-                        {m.meal_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(m.meal_time)}</span>}
+                        <div className="font-medium text-sm">{fmtDate(f.event_date)} • {f.period}</div>
+                        {f.meeting_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(f.meeting_time)}</span>}
                       </div>
-                      {m.host_name && <div className="text-xs"><span className="text-muted-foreground">Anfitrião: </span>{m.host_name}</div>}
-                      {m.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{m.location}</div>}
-                      {m.contact_phone && <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{m.contact_phone}</div>}
-                      {m.notes && <div className="text-xs text-muted-foreground">{m.notes}</div>}
+                      <div className="text-xs text-muted-foreground">Modalidade: {f.modality}</div>
+                      {f.territory_number && <div className="text-xs"><span className="text-muted-foreground">Território S-13: </span>{f.territory_number}</div>}
+                      {f.territory_location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.territory_location}</div>}
+                      {f.auxiliary_leaders && <div className="text-xs"><span className="text-muted-foreground">Dirigentes auxiliares: </span>{f.auxiliary_leaders}</div>}
+                      {f.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">Oração final: </span>{f.closing_prayer}</div>}
                     </CardContent></Card>
                   ))}
+              </TabsContent>
+
+              <TabsContent value="ref" className="space-y-2 mt-4">
+                {snap.meals.length === 0 && snap.mealDayNotes.length === 0 ? <Empty text="Sem refeições agendadas." /> : (() => {
+                  const noteMap = new Map(snap.mealDayNotes.map((n) => [n.meal_date, n.notes]));
+                  const dates = Array.from(new Set([...snap.meals.map((m) => m.meal_date), ...snap.mealDayNotes.map((n) => n.meal_date)])).sort();
+                  return dates.map((date) => {
+                    const note = noteMap.get(date);
+                    const dayMeals = snap.meals.filter((m) => m.meal_date === date);
+                    return (
+                      <div key={date} className="space-y-1">
+                        {note && <div className="text-sm font-medium text-destructive px-1 whitespace-pre-wrap">{note}</div>}
+                        {dayMeals.map((m) => (
+                          <Card key={m.id}><CardContent className="p-3 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <div className="font-medium text-sm">{fmtDate(m.meal_date)} • {mealLabel(m.type)}</div>
+                              {m.meal_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(m.meal_time)}</span>}
+                            </div>
+                            {m.host_name && <div className="text-xs"><span className="text-muted-foreground">Anfitrião: </span>{m.host_name}</div>}
+                            {m.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{m.location}</div>}
+                            {m.contact_phone && <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{m.contact_phone}</div>}
+                            {m.notes && <div className="text-xs text-muted-foreground">{m.notes}</div>}
+                          </CardContent></Card>
+                        ))}
+                      </div>
+                    );
+                  });
+                })()}
               </TabsContent>
 
               <TabsContent value="trans" className="space-y-2 mt-4">
