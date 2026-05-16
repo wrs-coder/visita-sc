@@ -25,6 +25,8 @@ interface TemplateItemRow { id: string; template_id: string; kind: string; day_o
 
 const DAY_OPTS = [0, 1, 2, 3, 4, 5, 6];
 const DAY_LABEL: Record<number, string> = { 0: "Ter (1º dia)", 1: "Qua", 2: "Qui", 3: "Sex", 4: "Sáb", 5: "Dom", 6: "Seg" };
+const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const DEFAULT_NAMES: Record<number, string> = Object.fromEntries(SLOTS.map((s) => [s, `Modelo ${s}`]));
 
 function Page() {
   const { role } = useAuth();
