@@ -48,6 +48,8 @@ function Page() {
   const fnDel = useServerFn(deleteChecklistTemplate);
   const fnReplace = useServerFn(replaceChecklistTemplateItems);
   const fnCongs = useServerFn(listMyCongregations);
+  const fnExport = useServerFn(exportChecklistTemplate);
+  const fnImport = useServerFn(importChecklistTemplate);
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
