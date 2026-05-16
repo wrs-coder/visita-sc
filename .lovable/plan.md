@@ -1,62 +1,86 @@
-## Sistema de Backup, Restauração e Modelos Independentes
+## Objetivo
 
-Funcionalidades **exclusivas para Superintendentes** em 3 frentes.
+Permitir que **Anciãos** e **Esposa do Superintendente (ES)** acedam ao app apenas com o **código da congregação**, sem registo, sem e-mail e sem senha. O Superintendente continua a usar login normal (e-mail/senha).
 
----
+## Regras de acesso por código
 
-### 1. Modelos por Aba (Exportar / Importar)
+- **Código exato** (ex.: `1234`) → modo **Ancião / Corpo de Anciãos** (apenas leitura da Programação/Cronograma daquela congregação). Botões de editar, eliminar, backup, modelos e configurações ficam ocultos.
+- **Código com `*` no final** (ex.: `1234*`) → modo **ES (Esposa do Superintendente)**. Acesso ao Dashboard mostrando **apenas Programação/Cronograma**. Checklist da Congregação fica oculto. Sem edição/configuração.
+- **Código inválido** → toast de erro.
 
-Adicionar dois botões discretos no topo de cada uma destas páginas:
+## Persistência
 
-- **Checklist da Congregação** (`/_app/checklist-modelos`) → exporta/importa `checklist_templates` + `checklist_template_items`
-- **Reuniões de Campo** (`/_app/modelo-reunioes-de-campo`) → exporta/importa `field_meeting_templates` + `field_meeting_template_items`
-- **Programação/Cronograma** (`/_app/modelos`) → exporta/importa `program_templates` + `program_template_items`
+- **Ancião**: guardar `{ congregationId, role: "elder_viewer" }` em `localStorage` permanentemente.
+- **ES**: guardar `{ congregationId, role: "es", weekStart: <segunda-feira atual ISO> }` em `localStorage`. Ao abrir o app, se `weekStart` for diferente da segunda-feira da semana atual → limpar e exigir novo código.
+- Superintendente continua usando a sessão Supabase nativa (já persiste).
 
-**Exportar**: gera arquivo JSON com a estrutura/esqueleto (sem dados de congregações preenchidos), com cabeçalho `{ type: "checklist_template" | "field_meeting_template" | "program_template", version: 1, exportedAt, name, items: [...] }`.
+## Arquitetura
 
-**Importar**: lê o JSON, valida com Zod, e cria um novo template (com `superintendent_id = auth.uid()`, `congregation_id = null`) + todos os itens. Toast de sucesso e refresh da lista.
+### 1. Server function pública de validação
+Novo `src/lib/guest-access.functions.ts`:
+- `validateCongregationCode({ code })` — server fn pública (usa `supabaseAdmin`, sem auth). Detecta sufixo `*`, faz lookup em `congregations.invite_code`, retorna `{ ok, congregationId, congregationName, mode: "elder" | "es" }` ou `{ ok: false, error }`.
 
----
+### 2. Hook de sessão "guest"
+Novo `src/hooks/use-guest-session.ts`:
+- Lê/escreve `localStorage` chave `visita-guest-session`.
+- Expõe `{ guest, setGuest, clearGuest, isElderGuest, isEsGuest }`.
+- Para ES: valida `weekStart === segunda-feira da semana atual`; se não, limpa.
 
-### 2. Web Share API nativa
+### 3. Login
+`LoginForm.tsx`: substituir o formulário do Ancião por um **único campo "Código da Congregação"** + botão Entrar. Chama `validateCongregationCode`, grava em `localStorage` e redireciona:
+- elder → `/cronograma`
+- es → `/dashboard`
 
-Criar helper `src/lib/share.ts` com função `shareJsonFile(filename, json)`:
+Manter botão "Sou superintendente" inalterado.
+Remover link "criar acesso" do ancião e "esqueci senha" do ancião (não aplicável).
 
-1. Cria `File` a partir do JSON
-2. Se `navigator.canShare({ files: [file] })` → chama `navigator.share({ files, title, text })` (abre a folha nativa: email, WhatsApp, etc.)
-3. Fallback: download direto via `<a download>` se Web Share API indisponível
+### 4. Rota raiz `/`
+`src/routes/index.tsx`: além de checar `user` do Supabase, checar guest session e redirecionar conforme o role.
 
-Usado por todos os botões "Exportar Modelo" e pelo "Gerar Backup" geral.
+### 5. Layout `_app`
+`src/routes/_app.tsx`:
+- Ler guest session.
+- Se `isElderGuest`: ocultar todas as abas exceto **Cronograma**. Bloquear acesso direto às outras rotas (redirect).
+- Se `isEsGuest`: mostrar apenas **Dashboard** + **Cronograma**. Ocultar Checklist da Congregação e todas as abas de edição/configuração/modelos/perfil.
+- Mostrar botão "Sair" que limpa guest session.
 
----
+### 6. Ocultar ações de escrita
+Nas páginas `_app.cronograma.tsx` e `_app.dashboard.tsx`: usar `isElderGuest || isEsGuest` para esconder botões de **editar, eliminar, criar, importar/exportar modelo, backup**.
 
-### 3. Backup Global (na aba **Meu Perfil**)
+### 7. RLS — IMPORTANTE
+As tabelas atuais exigem `auth.uid()` na congregação. Para guest funcionar sem login, o `validateCongregationCode` e a leitura dos dados precisam usar `supabaseAdmin` via server functions públicas:
+- Novo `getGuestSchedule({ congregationId })` — retorna `visits`, `schedule_events`, `field_meetings`, `field_assignments`, `meals`, `transport_schedule` da visita ativa daquela congregação. Sem dados privados (sem `private_notes`, sem checklist).
+- O cronograma do guest passa a chamar essa server fn em vez das queries diretas via `supabase` autenticado.
 
-Nova seção na página `/_app/perfil`:
+## Diagrama de fluxo
 
-- **Backup automático local**: hook `useAutoBackup` que escuta mudanças nas tabelas relevantes (via realtime ou polling leve) e salva snapshot no `localStorage` (`visita-sc:autobackup`) a cada alteração — com timestamp visível.
-- **Botão "Gerar Arquivo de Backup"**: server function `exportFullBackup` que lê *todas* as tabelas do superintendente (congregations, visits, checklist_items, field_meetings, field_assignments, schedule_events, meals, transport_schedule, *_templates, *_template_items, user_roles dos anciãos vinculados) → retorna JSON consolidado → dispara Web Share API.
-- **Botão "Restaurar Backup"**: upload de arquivo → valida estrutura com Zod → **AlertDialog de confirmação** com aviso claro ("isto irá sobrescrever os dados atuais") → server function `restoreFullBackup` que faz upsert em todas as tabelas dentro de uma transação.
+```text
+Login screen
+  │
+  ├── Código "1234"  ─► validateCongregationCode ─► guest{elder} ─► /cronograma (read-only)
+  ├── Código "1234*" ─► validateCongregationCode ─► guest{es,weekStart} ─► /dashboard (só cronograma)
+  └── E-mail/senha   ─► supabase signIn ─► /dashboard ou /cronograma (por role)
 
----
+Reabertura do PWA:
+  guest{elder}  → entra direto
+  guest{es}     → se weekStart != segunda atual → limpa, exige código
+  supabase user → entra direto
+```
 
-### Detalhes técnicos
+## Arquivos a criar/editar
 
-- **Server functions** em `src/lib/backup.functions.ts` e `src/lib/template-io.functions.ts` (apenas `createServerFn`, sem helpers misturados — evitar leak transitivo do `client.server`).
-- Cada função usa `requireSupabaseAuth` e valida que o usuário tem role `superintendent` antes de qualquer escrita.
-- Restauração filtra por `superintendent_id = userId` para nunca tocar dados de outros usuários.
-- Versionamento de schema: campo `version: 1` em todo JSON; importação rejeita versões desconhecidas.
-- UI: botões com ícones `Upload`/`Download`/`Share2` do lucide-react, variant `outline` size `sm`, no topo de cada página.
+**Criar:**
+- `src/lib/guest-access.functions.ts` — validação + leitura de cronograma para guest.
+- `src/hooks/use-guest-session.ts` — gestão do localStorage.
 
-### Arquivos novos
-- `src/lib/share.ts` (helper Web Share API)
-- `src/lib/template-io.functions.ts` (exportar/importar 3 tipos de modelos)
-- `src/lib/backup.functions.ts` (backup/restore global)
-- `src/components/TemplateIOButtons.tsx` (par de botões reutilizável)
-- `src/hooks/use-auto-backup.ts` (snapshot local)
+**Editar:**
+- `src/components/auth/LoginForm.tsx` — UI com campo único de código.
+- `src/routes/index.tsx` — redirecionar guests.
+- `src/routes/_app.tsx` — filtrar abas, bloquear rotas, botão sair.
+- `src/routes/_app.cronograma.tsx` — esconder ações de escrita, suportar fonte de dados guest.
+- `src/routes/_app.dashboard.tsx` — para ES, mostrar apenas cronograma.
 
-### Arquivos modificados
-- `src/routes/_app.checklist-modelos.tsx` — adiciona botões
-- `src/routes/_app.modelo-reunioes-de-campo.tsx` — adiciona botões
-- `src/routes/_app.modelos.tsx` — adiciona botões
-- `src/routes/_app.perfil.tsx` — adiciona seção Backup Global
+## Notas técnicas
+
+- `supabaseAdmin` em server functions é seguro: a entrada é só o código da congregação, e devolvemos apenas dados não sensíveis (programação pública da visita). Validamos `length` e formato do código com Zod.
+- O Cron da ES (re-pedir código toda segunda) usa `new Date()` no client, calcula segunda-feira da semana e compara com `weekStart` guardado. Sem servidor.
