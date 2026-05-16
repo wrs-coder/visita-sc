@@ -33,8 +33,11 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
       return { ok: false as const, error: signErr?.message ?? "Falha ao criar conta." };
     }
     const userId = created.user.id;
-    await supabaseAdmin.from("profiles").update({ full_name: data.fullName, email: data.email }).eq("id", userId);
-    await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "superintendent", congregation_id: null });
+    await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: data.fullName, email: data.email }, { onConflict: "id" });
+    await supabaseAdmin.from("user_roles").upsert(
+      { user_id: userId, role: "superintendent", congregation_id: null },
+      { onConflict: "user_id,role,congregation_id", ignoreDuplicates: true },
+    );
     return { ok: true as const };
   });
 
