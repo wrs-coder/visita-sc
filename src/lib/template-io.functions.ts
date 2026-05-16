@@ -99,7 +99,7 @@ export const exportFieldMeetingTemplate = createServerFn({ method: "POST" })
     if (!tpl || tpl.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
     const { data: items } = await supabaseAdmin
       .from("field_meeting_template_items")
-      .select("day_offset,period,modality,meeting_time,territory_number,territory_location,closing_prayer,sort_order")
+      .select("day_offset,period,modality,meeting_time,territory_number,territory_location,auxiliary_leaders,closing_prayer,sort_order")
       .eq("template_id", data.id).order("sort_order");
     return {
       ok: true as const,
