@@ -119,6 +119,7 @@ const backupFileSchema = z.object({
     field_assignments: recordArray,
     schedule_events: recordArray,
     meals: recordArray,
+    meal_day_notes: recordArray.optional().default([]),
     transport_schedule: recordArray,
     private_notes: recordArray,
     checklist_templates: recordArray,
