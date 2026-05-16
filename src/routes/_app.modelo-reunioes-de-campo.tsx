@@ -346,7 +346,7 @@ function Page() {
                   <div className="space-y-2">
                     {items.map((it, idx) => (
                       <div key={idx} className="border rounded-md p-3 space-y-2 bg-muted/30">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <Select value={String(it.day_offset)} onValueChange={(v) => updateItem(idx, { day_offset: Number(v) })}>
                             <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                             <SelectContent>{DAY_OPTS.map((d) => <SelectItem key={d} value={String(d)}>{DAY_LABEL[d]}</SelectItem>)}</SelectContent>
@@ -364,7 +364,18 @@ function Page() {
                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
                         </div>
-                        {active.modality === "casa_em_casa" && (
+                        <div>
+                          <Label className="text-xs">Modalidade</Label>
+                          <Select value={it.modality} onValueChange={(v) => updateItem(idx, { modality: v as Modality })}>
+                            <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {FIELD_MODALITIES.map((m) => (
+                                <SelectItem key={m} value={m}>{FIELD_MODALITY_LABELS[m]}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {it.modality === "casa_em_casa" && (
                           <div className="grid grid-cols-2 gap-2">
                             <Input placeholder="N° território S-13" value={it.territory_number} onChange={(e) => updateItem(idx, { territory_number: e.target.value })} className="h-8" />
                             <Input placeholder="Localização do território" value={it.territory_location} onChange={(e) => updateItem(idx, { territory_location: e.target.value })} className="h-8" />
