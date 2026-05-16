@@ -158,6 +158,23 @@ function Page() {
                     </CardContent></Card>
                   ))}
               </TabsContent>
+
+              {!snap.wifeMode && (
+                <TabsContent value="check" className="space-y-2 mt-4">
+                  {snap.checklist.length === 0 ? <Empty text="Sem itens na checklist." /> :
+                    snap.checklist.map((c) => (
+                      <Card key={c.id}><CardContent className="p-3 space-y-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-medium text-sm break-words min-w-0 flex-1">{c.title}</div>
+                          <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-muted text-muted-foreground shrink-0">{c.status}</span>
+                        </div>
+                        {c.description && <div className="text-xs text-muted-foreground break-words">{c.description}</div>}
+                        {c.info_text && <div className="text-xs text-muted-foreground break-words">{c.info_text}</div>}
+                        {c.link_or_notes && <div className="text-xs break-words">{c.link_or_notes}</div>}
+                      </CardContent></Card>
+                    ))}
+                </TabsContent>
+              )}
             </Tabs>
           </>
         )}
