@@ -33,6 +33,7 @@ const itemSchema = z.object({
   meeting_time: z.string().trim().max(8).nullable().optional(),
   territory_number: z.string().trim().max(60).nullable().optional(),
   territory_location: z.string().trim().max(200).nullable().optional(),
+  auxiliary_leaders: z.string().trim().max(200).nullable().optional(),
   closing_prayer: z.string().trim().max(200).nullable().optional(),
   sort_order: z.number().int().min(0).max(1000).default(0),
 });
