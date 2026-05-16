@@ -24,6 +24,17 @@ export function LoginForm() {
   const [superEmail, setSuperEmail] = useState("");
   const [superPwd, setSuperPwd] = useState("");
 
+  const redirectByRole = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true });
+    const roles = (data ?? []).map((r) => r.role);
+    const isSuper = roles.includes("superintendent");
+    nav({ to: isSuper ? "/dashboard" : "/cronograma" });
+  };
+
   const submitElder = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -31,21 +42,22 @@ export function LoginForm() {
       const fullPhone = buildFullPhone(country, phone);
       const r = await resolveFn({ data: { phone: fullPhone } });
       if (!r.ok) { toast.error(r.error); return; }
-      const { error } = await supabase.auth.signInWithPassword({ email: r.email, password });
-      if (error) { toast.error("Senha incorreta"); return; }
+      const { data: signIn, error } = await supabase.auth.signInWithPassword({ email: r.email, password });
+      if (error || !signIn.user) { toast.error("Senha incorreta"); return; }
       toast.success("Bem-vindo!");
-      nav({ to: "/dashboard" });
+      await redirectByRole(signIn.user.id);
     } finally { setBusy(false); }
   };
 
   const submitSuper = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: superEmail.trim(), password: superPwd });
-    setBusy(false);
-    if (error) { toast.error("Não foi possível entrar", { description: error.message }); return; }
-    toast.success("Bem-vindo!");
-    nav({ to: "/dashboard" });
+    try {
+      const { data: signIn, error } = await supabase.auth.signInWithPassword({ email: superEmail.trim(), password: superPwd });
+      if (error || !signIn.user) { toast.error("Não foi possível entrar", { description: error?.message }); return; }
+      toast.success("Bem-vindo!");
+      await redirectByRole(signIn.user.id);
+    } finally { setBusy(false); }
   };
 
   const dial = findCountry(country).dial;

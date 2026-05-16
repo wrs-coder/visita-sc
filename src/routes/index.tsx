@@ -7,11 +7,11 @@ export const Route = createFileRoute("/")({
 });
 
 function HomeRoute() {
-  const { loading, user, needsOnboarding } = useAuth();
+  const { loading, user, needsOnboarding, role } = useAuth();
   if (loading) return <FullLoader />;
   if (!user) return <LoginForm />;
   if (needsOnboarding) return <Navigate to="/onboarding" />;
-  return <Navigate to="/dashboard" />;
+  return <Navigate to={role === "superintendent" ? "/dashboard" : "/cronograma"} />;
 }
 
 function FullLoader() {
