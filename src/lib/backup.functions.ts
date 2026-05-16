@@ -3,8 +3,10 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-// Full backup of all data owned (directly or transitively) by the current superintendent.
-// Restoration scopes everything to the same superintendent_id and matches existing rows by primary key.
+// JSON-serializable row shape used for transport across the server-fn boundary.
+type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
+type Row = { [k: string]: Json };
+
 
 export const exportFullBackup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
