@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { registerElderByPhone } from "@/lib/auth.functions";
+import { registerElderByPhone, getAvailableElderPositions } from "@/lib/auth.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, DEFAULT_COUNTRY, buildFullPhone, findCountry } from "@/lib/countries";
 import { Button } from "@/components/ui/button";
