@@ -25,10 +25,12 @@ export const exportFullBackup = createServerFn({ method: "POST" })
       : { data: [] };
     const visitIds = (visits ?? []).map((v) => v.id);
 
-    const fetchByVisit = async (table: string) =>
-      visitIds.length
-        ? (await supabaseAdmin.from(table).select("*").in("visit_id", visitIds)).data ?? []
-        : [];
+    const fetchByVisit = async (table: string) => {
+      if (!visitIds.length) return [] as Record<string, unknown>[];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res = await (supabaseAdmin.from(table as any) as any).select("*").in("visit_id", visitIds);
+      return (res.data ?? []) as Record<string, unknown>[];
+    };
 
     const [
       checklist_items,
@@ -144,8 +146,9 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
 
     const upsert = async (table: string, rows: Record<string, unknown>[]) => {
       if (!rows.length) return null;
-      const { error } = await supabaseAdmin.from(table).upsert(rows, { onConflict: "id" });
-      return error?.message ?? null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabaseAdmin.from(table as any) as any).upsert(rows, { onConflict: "id" });
+      return (error as { message?: string } | null)?.message ?? null;
     };
 
     const steps: Array<[string, Record<string, unknown>[]]> = [

@@ -36,8 +36,9 @@ export function useAutoBackup() {
       const tables: Record<string, unknown[]> = { visits: visits ?? [] };
       if (visitIds.length) {
         for (const t of TABLES_BY_VISIT) {
-          const { data } = await supabase.from(t).select("*").in("visit_id", visitIds);
-          tables[t] = data ?? [];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data } = await (supabase.from(t as any) as any).select("*").in("visit_id", visitIds);
+          tables[t] = (data as unknown[]) ?? [];
         }
       }
       const snap: Snapshot = { updatedAt: new Date().toISOString(), tables };
