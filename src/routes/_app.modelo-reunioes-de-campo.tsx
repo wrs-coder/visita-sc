@@ -246,6 +246,7 @@ function Page() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-[260px_1fr] gap-4">
