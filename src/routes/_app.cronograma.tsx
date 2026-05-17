@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,10 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Clock, MapPin, Trash2, Pencil, Save } from "lucide-react";
-import { format, parseISO, eachDayOfInterval } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Plus, Clock, MapPin, Trash2, Pencil, Save, ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
+import { format, parseISO, eachDayOfInterval, startOfWeek, addDays, addWeeks, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/cronograma")({ component: Page });
 
@@ -38,6 +41,13 @@ function Page() {
   const [editing, setEditing] = useState<Partial<Event> | null>(null);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [calOpen, setCalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!visit) return;
+    setWeekStart(startOfWeek(parseISO(visit.start_date), { weekStartsOn: 1 }));
+  }, [visit?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!visit) return;
@@ -51,9 +61,26 @@ function Page() {
     return () => { supabase.removeChannel(ch); };
   }, [visit]);
 
-  if (!visit) return <Empty />;
+  // Swipe
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.current.x;
+    const dy = t.clientY - touchStart.current.y;
+    touchStart.current = null;
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < 0) setWeekStart((w) => addWeeks(w, 1));
+    else setWeekStart((w) => addWeeks(w, -1));
+  };
 
-  const days = eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) });
+  const days = useMemo(() => eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) }), [weekStart]);
+
+  if (!visit) return <Empty />;
 
   const save = async () => {
     if (!editing || !editing.title || !editing.event_date) { toast.error("Preencha título e data"); return; }
@@ -87,30 +114,66 @@ function Page() {
     if (error) toast.error(error.message);
   };
 
+  const weekEnd = addDays(weekStart, 6);
+
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Cronograma Semanal</h1>
-          <p className="text-sm text-muted-foreground mt-1">{format(parseISO(visit.start_date), "d MMM", { locale: ptBR })} – {format(parseISO(visit.end_date), "d 'de' MMMM", { locale: ptBR })}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {format(weekStart, "d 'de' MMM", { locale: ptBR })} – {format(weekEnd, "d 'de' MMM", { locale: ptBR })}
+          </p>
         </div>
-        {canEdit && (
-          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setEditing({ event_date: format(new Date(), "yyyy-MM-dd"), type: "other" })}><Plus className="h-4 w-4 mr-1" /> Novo</Button>
-            </DialogTrigger>
-            <EventDialog editing={editing} setEditing={setEditing} save={save} saving={saving} days={days} />
-          </Dialog>
-        )}
+        <div className="flex items-center gap-2">
+          <Popover open={calOpen} onOpenChange={setCalOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="icon" aria-label="Escolher semana"><CalendarIcon className="h-4 w-4" /></Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={weekStart}
+                onSelect={(d) => { if (d) { setWeekStart(startOfWeek(d, { weekStartsOn: 1 })); setCalOpen(false); } }}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+                locale={ptBR}
+              />
+            </PopoverContent>
+          </Popover>
+          {canEdit && (
+            <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setEditing({ event_date: format(new Date(), "yyyy-MM-dd"), type: "other" })}><Plus className="h-4 w-4 mr-1" /> Novo</Button>
+              </DialogTrigger>
+              <EventDialog editing={editing} setEditing={setEditing} save={save} saving={saving} days={days} />
+            </Dialog>
+          )}
+        </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="flex items-center justify-between gap-2">
+        <Button variant="outline" size="sm" onClick={() => setWeekStart((w) => addWeeks(w, -1))}>
+          <ChevronLeft className="h-4 w-4 mr-1" />Semana anterior
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}>
+          Esta semana
+        </Button>
+        <Button size="sm" onClick={() => setWeekStart((w) => addWeeks(w, 1))}>
+          Próxima semana<ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
+
+      <div className="space-y-6 select-none" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
           const dayEvents = events.filter((e) => e.event_date === key);
+          const todayMark = isSameDay(day, new Date());
           return (
             <section key={key}>
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">{format(day, "EEEE, d 'de' MMM", { locale: ptBR })}</h2>
+              <h2 className={cn("text-sm font-semibold uppercase tracking-wide mb-2", todayMark ? "text-primary" : "text-muted-foreground")}>
+                {format(day, "EEEE, d 'de' MMM", { locale: ptBR })}{todayMark && " · hoje"}
+              </h2>
               {dayEvents.length === 0 ? (
                 <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem compromissos.</CardContent></Card>
               ) : (
@@ -187,4 +250,4 @@ function EventDialog({ editing, setEditing, save, saving, days }: { editing: Par
   );
 }
 
-function Empty() { return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa. Cadastre uma em Configurações.</CardContent></Card>; }
+function Empty() { return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa. Cadastre uma em Itinerário.</CardContent></Card>; }
