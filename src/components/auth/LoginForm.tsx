@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { LogIn, Users, ShieldCheck, Eye } from "lucide-react";
+import { LogIn, Users, ShieldCheck, Eye, Info, Mail, MessageCircle } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export function LoginForm() {
