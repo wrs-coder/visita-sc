@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { LogIn, Users, ShieldCheck, Eye } from "lucide-react";
+import { LogIn, Users, ShieldCheck, Eye, Info, Mail, MessageCircle } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export function LoginForm() {
@@ -132,6 +132,53 @@ export function LoginForm() {
             <Link to="/visitante" className="mt-1 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2">
               <Eye className="h-4 w-4" /> Acesso Corpo de anciãos e ES
             </Link>
+
+            <Card className="mt-4 border-0 shadow-elevated">
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <Info className="h-4 w-4" />
+                  </div>
+                  <h3 className="font-semibold text-sm">Sobre o Aplicativo</h3>
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  O objetivo deste sistema é prover uma plataforma integrada para a gestão de informações
+                  e relatórios do painel. Através da automação de processos, o aplicativo visa simplificar
+                  as rotinas, assegurar a integridade dos dados compartilhados e facilitar o suporte às
+                  atividades na semana da visita à congregação.
+                </p>
+                <div className="rounded-lg bg-primary/5 border border-primary/10 p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+                    Desenvolvimento
+                  </p>
+                  <p className="text-xs mt-1 font-semibold text-foreground">
+                    Sistema totalmente idealizado, estruturado e programado de forma independente por
+                    <span className="text-primary"> Wanderson Pereira Rodrigues dos Santos</span>.
+                  </p>
+                </div>
+                <div className="space-y-2 pt-1">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+                    Suporte
+                  </p>
+                  <a
+                    href="mailto:wrscircuito@gmail.com"
+                    className="flex items-center gap-2 text-xs text-foreground hover:text-primary transition-colors"
+                  >
+                    <Mail className="h-3.5 w-3.5 text-primary" />
+                    wrscircuito@gmail.com
+                  </a>
+                  <a
+                    href="https://wa.me/5571983420366"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-xs text-foreground hover:text-primary transition-colors"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5 text-primary" />
+                    WhatsApp: 71 98342-0366
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
           </>
         ) : (
           <>
