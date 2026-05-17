@@ -15,6 +15,7 @@ import { Plus, Trash2, Pencil, Phone, Car } from "lucide-react";
 import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
 export const Route = createFileRoute("/_app/transporte")({ component: Page });
 
@@ -36,6 +37,8 @@ function Page() {
   const [items, setItems] = useState<Transport[]>([]);
   const [editing, setEditing] = useState<Partial<Transport> | null>(null);
   const [open, setOpen] = useState(false);
+  const [editEnabled, setEditEnabled] = useState(false);
+  const editAllowed = !isSuper || editEnabled;
 
   useEffect(() => {
     if (!visit) return;
