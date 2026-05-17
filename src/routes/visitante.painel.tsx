@@ -57,6 +57,72 @@ function Page() {
   }, [load, nav]);
 
   const exit = () => { clearGuestSession(); nav({ to: "/" }); };
+  const shareRef = useRef<HTMLDivElement>(null);
+
+  const exportPng = useCallback(async () => {
+    if (!shareRef.current) return;
+    try {
+      const dataUrl = await toPng(shareRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#ffffff" });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `programacao-${snap?.visit?.title?.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "visita"}.png`;
+      a.click();
+      toast.success("Imagem gerada");
+    } catch { toast.error("Falha ao gerar imagem"); }
+  }, [snap]);
+
+  const exportPdf = useCallback(async () => {
+    if (!shareRef.current) return;
+    try {
+      const dataUrl = await toPng(shareRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#ffffff" });
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((res) => { img.onload = res; });
+      const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const maxW = pageW - margin * 2;
+      const maxH = pageH - margin * 2;
+      const ratio = Math.min(maxW / img.width, maxH / img.height);
+      const w = img.width * ratio;
+      const h = img.height * ratio;
+      pdf.addImage(dataUrl, "PNG", (pageW - w) / 2, margin, w, h);
+      pdf.save(`programacao-${snap?.visit?.title?.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "visita"}.pdf`);
+      toast.success("PDF gerado");
+    } catch { toast.error("Falha ao gerar PDF"); }
+  }, [snap]);
+
+  const shareWhatsapp = useCallback(() => {
+    if (!snap || !snap.visit) return;
+    const L: string[] = [];
+    L.push(`*${snap.congregation.name}*`);
+    L.push(`*${snap.visit.title}*`);
+    L.push(`${fmtDate(snap.visit.start_date)} — ${fmtDate(snap.visit.end_date)}`);
+    if (snap.schedule.length) {
+      L.push("", "*Cronograma*");
+      snap.schedule.forEach((e) => L.push(`• ${fmtDate(e.event_date)} ${fmtTime(e.start_time)} — ${e.title}${e.location ? ` (${e.location})` : ""}`));
+    }
+    if (snap.field.length) {
+      L.push("", "*Estudos / Revisitas*");
+      snap.field.forEach((f) => L.push(`• ${fmtDate(f.event_date)} ${f.period} ${fmtTime(f.meeting_time)}${f.meeting_point ? ` — ${f.meeting_point}` : ""}${f.acompanhante ? ` | Acomp.: ${f.acompanhante}` : ""}`));
+    }
+    if (snap.fieldMeetings.length) {
+      L.push("", "*Reuniões de campo*");
+      snap.fieldMeetings.forEach((f) => L.push(`• ${fmtDate(f.event_date)} ${f.period} ${fmtTime(f.meeting_time)} — ${f.modality}${f.territory_location ? ` (${f.territory_location})` : ""}${f.auxiliary_leaders ? ` | Aux.: ${f.auxiliary_leaders}` : ""}`));
+    }
+    if (snap.meals.length || snap.mealDayNotes.length) {
+      L.push("", "*Refeições*");
+      snap.mealDayNotes.forEach((n) => L.push(`• ${fmtDate(n.meal_date)}: ${n.notes}`));
+      snap.meals.forEach((m) => L.push(`• ${fmtDate(m.meal_date)} ${mealLabel(m.type)} ${fmtTime(m.meal_time)}${m.host_name ? ` — ${m.host_name}` : ""}${m.location ? ` (${m.location})` : ""}`));
+    }
+    if (snap.transport.length) {
+      L.push("", "*Transporte*");
+      snap.transport.forEach((t) => L.push(`• ${t.event_date ? fmtDate(t.event_date) : "Sem data"} — ${t.driver_name}${t.contact_phone ? ` (${t.contact_phone})` : ""}`));
+    }
+    const text = encodeURIComponent(L.join("\n"));
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  }, [snap]);
 
   if (loading || !snap) {
     return <div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
@@ -73,13 +139,27 @@ function Page() {
               <div className="text-[11px] opacity-80">{snap.wifeMode ? "Esposa do superintendente" : "Corpo de anciãos e ES"} • somente leitura</div>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={exit} className="text-primary-foreground hover:bg-white/10">
-            <LogOut className="h-4 w-4 mr-1" /> Sair
-          </Button>
+          <div className="flex items-center gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-white/10">
+                  <Share2 className="h-4 w-4 mr-1" /> Partilhar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={exportPng}><ImageIcon className="h-4 w-4 mr-2" />Salvar como imagem (PNG)</DropdownMenuItem>
+                <DropdownMenuItem onClick={exportPdf}><FileDown className="h-4 w-4 mr-2" />Exportar como PDF</DropdownMenuItem>
+                <DropdownMenuItem onClick={shareWhatsapp}><MessageCircle className="h-4 w-4 mr-2" />Enviar para o WhatsApp</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="ghost" size="sm" onClick={exit} className="text-primary-foreground hover:bg-white/10">
+              <LogOut className="h-4 w-4 mr-1" /> Sair
+            </Button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
+      <main ref={shareRef} className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
         {!snap.visit ? (
           <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
             Nenhuma visita ativa nesta congregação no momento.
