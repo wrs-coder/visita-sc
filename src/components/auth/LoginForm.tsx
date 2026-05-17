@@ -9,9 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { LogIn, Users, ShieldCheck, Eye, Info, Mail, MessageCircle } from "lucide-react";
 import { Logo } from "@/components/Logo";
+
+const APP_VERSION = "1.0.0";
+const APP_BUILD = "2026.05.17";
+const APP_UPDATED_AT = "17/05/2026";
 
 export function LoginForm() {
   const nav = useNavigate();
