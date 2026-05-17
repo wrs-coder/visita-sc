@@ -142,6 +142,7 @@ function Page() {
           ))}
         </Accordion>
       )}
+      </fieldset>
 
       <Dialog open={!!editItem} onOpenChange={(o) => !o && setEditItem(null)}>
         <DialogContent className="max-w-md">
