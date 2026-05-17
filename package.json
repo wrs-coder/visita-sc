@@ -16,7 +16,10 @@
     "cap:sync": "cap sync",
     "cap:open:android": "cap open android",
     "android:build": "npm run build && cap sync android",
-    "android:run": "npm run build && cap sync android && cap open android"
+    "android:run": "npm run build && cap sync android && cap open android",
+    "android:keystore": "keytool -genkey -v -keystore android/app/visita-sc-release.keystore -alias visita-sc -keyalg RSA -keysize 2048 -validity 10000",
+    "android:release:apk": "npm run build && cap sync android && cd android && ./gradlew assembleRelease && cd .. && echo '\\n✅ APK em: android/app/build/outputs/apk/release/app-release.apk'",
+    "android:release:aab": "npm run build && cap sync android && cd android && ./gradlew bundleRelease && cd .. && echo '\\n✅ AAB em: android/app/build/outputs/bundle/release/app-release.aab'"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",

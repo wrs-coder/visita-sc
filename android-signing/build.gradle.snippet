@@ -1,0 +1,27 @@
+// Cole este snippet no arquivo `android/app/build.gradle` (gerado após `npm run cap:add:android`).
+// Adicione DENTRO do bloco `android { ... }`, antes de `buildTypes { ... }`.
+//
+// Também adicione no TOPO do mesmo arquivo (antes de `android { ... }`):
+//
+//   def keystorePropertiesFile = rootProject.file("keystore.properties")
+//   def keystoreProperties = new Properties()
+//   if (keystorePropertiesFile.exists()) {
+//       keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+//   }
+
+signingConfigs {
+    release {
+        if (keystorePropertiesFile.exists()) {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+        }
+    }
+}
+
+// E DENTRO de `buildTypes { release { ... } }` adicione:
+//
+//   signingConfig signingConfigs.release
+//   minifyEnabled true
+//   proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
