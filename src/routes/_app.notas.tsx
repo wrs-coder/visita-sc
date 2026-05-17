@@ -106,7 +106,25 @@ function Page() {
     return next;
   });
 
-  const filtered = notes.filter((n) => (n.note_type ?? "free") === tab);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const from = dateFrom ? new Date(dateFrom + "T00:00:00").getTime() : null;
+    const to = dateTo ? new Date(dateTo + "T23:59:59").getTime() : null;
+    return notes.filter((n) => {
+      if ((n.note_type ?? "free") !== tab) return false;
+      if (q) {
+        const hay = [n.title, n.content, n.companion, n.involved_names, n.additional_info, ...Object.values(n.payload ?? {})]
+          .filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (from || to) {
+        const ref = n.note_date ? new Date(n.note_date + "T12:00:00").getTime() : new Date(n.updated_at).getTime();
+        if (from && ref < from) return false;
+        if (to && ref > to) return false;
+      }
+      return true;
+    });
+  }, [notes, tab, query, dateFrom, dateTo]);
   const selectedNotes = useMemo(() => notes.filter((n) => selected.has(n.id)), [notes, selected]);
 
   const exportPdf = () => {
