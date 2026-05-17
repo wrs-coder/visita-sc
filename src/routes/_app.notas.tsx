@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import {
   Lock, Plus, Trash2, Loader2, Check, HeartHandshake, FileText,
-  ClipboardList, Mic, ThumbsUp, Mail, FileDown, Share2,
+  ClipboardList, Mic, ThumbsUp, Mail, FileDown, Share2, Search, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
