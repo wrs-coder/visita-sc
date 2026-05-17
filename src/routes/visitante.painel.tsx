@@ -159,7 +159,7 @@ function Page() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
+      <main ref={shareRef} className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
         {!snap.visit ? (
           <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
             Nenhuma visita ativa nesta congregação no momento.
