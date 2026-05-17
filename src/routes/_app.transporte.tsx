@@ -15,6 +15,7 @@ import { Plus, Trash2, Pencil, Phone, Car } from "lucide-react";
 import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
 export const Route = createFileRoute("/_app/transporte")({ component: Page });
 
@@ -36,6 +37,8 @@ function Page() {
   const [items, setItems] = useState<Transport[]>([]);
   const [editing, setEditing] = useState<Partial<Transport> | null>(null);
   const [open, setOpen] = useState(false);
+  const [editEnabled, setEditEnabled] = useState(false);
+  const editAllowed = !isSuper || editEnabled;
 
   useEffect(() => {
     if (!visit) return;
@@ -122,7 +125,9 @@ function Page() {
         )}
       </div>
 
-      <div className="grid gap-2">
+      {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
+
+      <fieldset disabled={!editAllowed} className="grid gap-2 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
         {items.length === 0 && <Card><CardContent className="p-4 text-sm text-muted-foreground">Nenhum transporte cadastrado.</CardContent></Card>}
         {items.map((t) => (
           <Card key={t.id} className={`shadow-card transition ${!t.is_active ? "opacity-50" : ""}`}>
@@ -149,7 +154,7 @@ function Page() {
             </CardContent>
           </Card>
         ))}
-      </div>
+      </fieldset>
     </div>
   );
 }

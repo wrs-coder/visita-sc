@@ -12,6 +12,7 @@ import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { FIELD_MODALITIES, FIELD_MODALITY_LABELS } from "@/lib/field-meeting-templates.functions";
 
 export const Route = createFileRoute("/_app/reunioes-de-campo")({ component: Page });
@@ -38,6 +39,8 @@ function Page() {
   const isSuper = role === "superintendent";
   const [rows, setRows] = useState<Row[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [editEnabled, setEditEnabled] = useState(false);
+  const editAllowed = !isSuper || editEnabled;
 
   useEffect(() => {
     if (!visit) return;
@@ -92,7 +95,9 @@ function Page() {
         </p>
       </div>
 
-      <div className="space-y-5">
+      {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
+
+      <fieldset disabled={!editAllowed} className="space-y-5 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
         {days.map((d) => {
           const key = format(d, "yyyy-MM-dd");
           const dayRows = rows.filter((r) => r.event_date === key);
@@ -117,7 +122,7 @@ function Page() {
             </section>
           );
         })}
-      </div>
+      </fieldset>
     </div>
   );
 }

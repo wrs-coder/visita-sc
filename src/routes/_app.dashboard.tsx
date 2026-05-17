@@ -4,9 +4,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CalendarDays, ListChecks, MapPin, Clock, ChevronRight, UtensilsCrossed } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarDays, ListChecks, MapPin, Clock, ChevronRight, UtensilsCrossed, Building2 } from "lucide-react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
-import { format, isToday, parseISO } from "date-fns";
+import { useActiveCongregation, getActiveCongregationOverride, setActiveCongregationOverride } from "@/hooks/use-active-congregation";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
 
@@ -19,12 +21,33 @@ interface ChecklistItem { id: string; status: string; }
 interface Meal { id: string; meal_date: string; type: string; host_name: string | null; location: string | null; }
 
 function Dashboard() {
-  const { profile, role } = useAuth();
+  const { profile, role, user } = useAuth();
+  const activeCong = useActiveCongregation();
   const { visit } = useActiveVisit();
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
+  const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
+  const [selected, setSelected] = useState<string | null>(() => getActiveCongregationOverride());
   const today = format(new Date(), "yyyy-MM-dd");
+
+  useEffect(() => {
+    if (role !== "superintendent" || !user) return;
+    supabase.from("congregations").select("id,name").eq("superintendent_id", user.id).order("name").then(({ data }) => {
+      setCongs(data ?? []);
+    });
+  }, [role, user]);
+
+  useEffect(() => {
+    if (role !== "superintendent") return;
+    // Initialize override to the auth congregation when nothing is set
+    if (!selected && activeCong) setSelected(activeCong.id);
+  }, [role, activeCong, selected]);
+
+  const handleSelectCong = (id: string) => {
+    setSelected(id);
+    setActiveCongregationOverride(id);
+  };
 
   useEffect(() => {
     if (!visit) return;
@@ -62,6 +85,24 @@ function Dashboard() {
           {visit ? ` · Visita: ${visit.title}` : " · Nenhuma visita ativa"}
         </p>
       </header>
+
+      {role === "superintendent" && congs.length > 0 && (
+        <Card className="shadow-card">
+          <CardContent className="p-4 flex items-center gap-3">
+            <Building2 className="h-4 w-4 text-primary shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Congregação ativa</div>
+              <div className="text-xs text-muted-foreground">Selecione a congregação do circuito para ver e gerenciar seus dados.</div>
+            </div>
+            <Select value={selected ?? activeCong?.id ?? ""} onValueChange={handleSelectCong}>
+              <SelectTrigger className="w-[200px] max-w-[60vw]"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+              <SelectContent>
+                {congs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      )}
 
       {!visit && (
         <Card>

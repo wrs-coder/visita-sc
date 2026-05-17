@@ -11,6 +11,7 @@ import { Plus, Trash2, Loader2, Check } from "lucide-react";
 import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
 export const Route = createFileRoute("/_app/refeicoes")({ component: Page });
 
@@ -37,6 +38,8 @@ function Page() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [dayNotes, setDayNotes] = useState<Record<string, string>>({});
+  const [editEnabled, setEditEnabled] = useState(false);
+  const editAllowed = !isSuper || editEnabled;
 
   useEffect(() => {
     if (!visit) return;
@@ -100,7 +103,9 @@ function Page() {
         </p>
       </div>
 
-      <div className="space-y-5">
+      {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
+
+      <fieldset disabled={!editAllowed} className="space-y-5 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
         {days.map((d) => {
           const key = format(d, "yyyy-MM-dd");
           const dayMeals = meals.filter((m) => m.meal_date === key);
@@ -128,7 +133,7 @@ function Page() {
             </section>
           );
         })}
-      </div>
+      </fieldset>
     </div>
   );
 }

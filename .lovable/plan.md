@@ -1,86 +1,53 @@
-## Objetivo
+# Plano de Implementação
 
-Permitir que **Anciãos** e **Esposa do Superintendente (ES)** acedam ao app apenas com o **código da congregação**, sem registo, sem e-mail e sem senha. O Superintendente continua a usar login normal (e-mail/senha).
+Antes de começar, preciso confirmar alguns pontos para não errar o escopo. Vou explorar o código primeiro, mas já estruturo aqui o plano em alto nível.
 
-## Regras de acesso por código
+## 1. Navegação avançada no Cronograma Semanal (`_app.cronograma.tsx`)
 
-- **Código exato** (ex.: `1234`) → modo **Ancião / Corpo de Anciãos** (apenas leitura da Programação/Cronograma daquela congregação). Botões de editar, eliminar, backup, modelos e configurações ficam ocultos.
-- **Código com `*` no final** (ex.: `1234*`) → modo **ES (Esposa do Superintendente)**. Acesso ao Dashboard mostrando **apenas Programação/Cronograma**. Checklist da Congregação fica oculto. Sem edição/configuração.
-- **Código inválido** → toast de erro.
+- Adicionar handlers de **swipe** (touch start/end com threshold ~50px) sobre o container principal da semana. Esquerda → próxima semana; direita → anterior.
+- Adicionar botão fixo **"Próxima Semana"** (junto aos controles existentes de navegação semanal).
+- Adicionar ícone de **calendário** no topo que abre um `Popover` + `Calendar` (shadcn DatePicker). Ao escolher uma data, a semana ativa salta para a semana ISO daquela data.
 
-## Persistência
+## 2. Fluxo pós-login + painel "Início" com seletor de congregação
 
-- **Ancião**: guardar `{ congregationId, role: "elder_viewer" }` em `localStorage` permanentemente.
-- **ES**: guardar `{ congregationId, role: "es", weekStart: <segunda-feira atual ISO> }` em `localStorage`. Ao abrir o app, se `weekStart` for diferente da segunda-feira da semana atual → limpar e exigir novo código.
-- Superintendente continua usando a sessão Supabase nativa (já persiste).
+- **Redirecionamento**: hoje `src/routes/index.tsx` já manda `superintendent` para `/dashboard` e os demais para `/cronograma`. Vou ampliar para que **Coordenador, Secretário e Sup. de Serviço** também caiam em `/dashboard`. Anciãos comuns e ES continuam em `/cronograma` (sem mudança).
+- **Dropdown de congregação no Dashboard (apenas Superintendente)**:
+  - Buscar todas as congregações onde `superintendent_id = auth.uid()` (o "circuito" do superintendente).
+  - Persistir a congregação ativa em `localStorage` (`active_congregation_id`) + contexto leve via `use-active-visit`/novo hook `use-active-congregation`.
+  - Todas as abas que hoje usam `private.get_user_congregation` continuam OK para anciãos; para o superintendente, as queries que dependem da congregação devem passar a usar o id selecionado. Vou centralizar isso no hook `use-active-visit` (que já localiza a visita ativa) para considerar a congregação selecionada.
 
-## Arquitetura
+## 3. Modo de Edição Supervisionada
 
-### 1. Server function pública de validação
-Novo `src/lib/guest-access.functions.ts`:
-- `validateCongregationCode({ code })` — server fn pública (usa `supabaseAdmin`, sem auth). Detecta sufixo `*`, faz lookup em `congregations.invite_code`, retorna `{ ok, congregationId, congregationName, mode: "elder" | "es" }` ou `{ ok: false, error }`.
+Abas afetadas: **Escala (Estudos/Revisitas)**, **Reuniões de Campo**, **Refeições**, **Transporte**, **Checklist**.
 
-### 2. Hook de sessão "guest"
-Novo `src/hooks/use-guest-session.ts`:
-- Lê/escreve `localStorage` chave `visita-guest-session`.
-- Expõe `{ guest, setGuest, clearGuest, isElderGuest, isEsGuest }`.
-- Para ES: valida `weekStart === segunda-feira da semana atual`; se não, limpa.
+- Adicionar, no topo de cada uma dessas páginas, um toggle **"Ativar Edição"** visível **apenas quando `role === 'superintendent'`**.
+- Estado local `editEnabled` (default `false`). Quando `false`, todos os `Input/Select/Textarea/Checkbox` recebem `disabled`, e o botão de salvar fica oculto. Quando `true`, comportamento atual + botão **"Salvar Alterações"**.
+- Para anciãos a UI continua exatamente como hoje (sem toggle, edição direta conforme RLS).
 
-### 3. Login
-`LoginForm.tsx`: substituir o formulário do Ancião por um **único campo "Código da Congregação"** + botão Entrar. Chama `validateCongregationCode`, grava em `localStorage` e redireciona:
-- elder → `/cronograma`
-- es → `/dashboard`
+## 4. Partilhar Programação no painel `/visitante/painel`
 
-Manter botão "Sou superintendente" inalterado.
-Remover link "criar acesso" do ancião e "esqueci senha" do ancião (não aplicável).
+Adicionar um menu "Partilhar Programação" com 3 ações sobre o bloco da semana exibida:
 
-### 4. Rota raiz `/`
-`src/routes/index.tsx`: além de checar `user` do Supabase, checar guest session e redirecionar conforme o role.
+- **PNG**: usar `html-to-image` (`toPng`) sobre o `ref` do bloco da programação semanal e disparar download.
+- **PDF**: usar `jspdf` + a imagem PNG renderizada (uma página A4, ajuste por proporção). Mantém layout fiel e simples.
+- **WhatsApp**: montar texto estruturado (Dias / Horários / Designações / Irmãos) a partir dos arrays `schedule`, `meals`, `field`, `fieldMeetings`, `transport` da semana visível, e abrir `https://wa.me/?text=<encoded>`.
 
-### 5. Layout `_app`
-`src/routes/_app.tsx`:
-- Ler guest session.
-- Se `isElderGuest`: ocultar todas as abas exceto **Cronograma**. Bloquear acesso direto às outras rotas (redirect).
-- Se `isEsGuest`: mostrar apenas **Dashboard** + **Cronograma**. Ocultar Checklist da Congregação e todas as abas de edição/configuração/modelos/perfil.
-- Mostrar botão "Sair" que limpa guest session.
+Bibliotecas novas: `html-to-image` e `jspdf` (instaladas via `bun add`).
 
-### 6. Ocultar ações de escrita
-Nas páginas `_app.cronograma.tsx` e `_app.dashboard.tsx`: usar `isElderGuest || isEsGuest` para esconder botões de **editar, eliminar, criar, importar/exportar modelo, backup**.
+## Detalhes técnicos
 
-### 7. RLS — IMPORTANTE
-As tabelas atuais exigem `auth.uid()` na congregação. Para guest funcionar sem login, o `validateCongregationCode` e a leitura dos dados precisam usar `supabaseAdmin` via server functions públicas:
-- Novo `getGuestSchedule({ congregationId })` — retorna `visits`, `schedule_events`, `field_meetings`, `field_assignments`, `meals`, `transport_schedule` da visita ativa daquela congregação. Sem dados privados (sem `private_notes`, sem checklist).
-- O cronograma do guest passa a chamar essa server fn em vez das queries diretas via `supabase` autenticado.
+- Nenhuma mudança de schema/DB necessária.
+- Nada nas funções server além de uma possível server fn `listSuperintendentCongregations` (já dá pra fazer client-side com Supabase + RLS existente — superintendente vê suas congregações).
+- Toggle de edição é puramente client-side (RLS no Supabase já garante segurança real; o toggle é uma trava de UX para evitar edição acidental).
+- Swipe implementado com handlers nativos (sem nova dependência).
 
-## Diagrama de fluxo
+## Ordem de execução
 
-```text
-Login screen
-  │
-  ├── Código "1234"  ─► validateCongregationCode ─► guest{elder} ─► /cronograma (read-only)
-  ├── Código "1234*" ─► validateCongregationCode ─► guest{es,weekStart} ─► /dashboard (só cronograma)
-  └── E-mail/senha   ─► supabase signIn ─► /dashboard ou /cronograma (por role)
+1. Instalar `html-to-image` e `jspdf`.
+2. Cronograma: swipe + botão "Próxima Semana" + DatePicker.
+3. `index.tsx`: redirecionar 4 funções para `/dashboard`.
+4. Dashboard: dropdown de congregações + hook `useActiveCongregation`.
+5. Modo edição supervisionada nas 5 abas.
+6. Painel visitante: menu Partilhar + 3 exportações.
 
-Reabertura do PWA:
-  guest{elder}  → entra direto
-  guest{es}     → se weekStart != segunda atual → limpa, exige código
-  supabase user → entra direto
-```
-
-## Arquivos a criar/editar
-
-**Criar:**
-- `src/lib/guest-access.functions.ts` — validação + leitura de cronograma para guest.
-- `src/hooks/use-guest-session.ts` — gestão do localStorage.
-
-**Editar:**
-- `src/components/auth/LoginForm.tsx` — UI com campo único de código.
-- `src/routes/index.tsx` — redirecionar guests.
-- `src/routes/_app.tsx` — filtrar abas, bloquear rotas, botão sair.
-- `src/routes/_app.cronograma.tsx` — esconder ações de escrita, suportar fonte de dados guest.
-- `src/routes/_app.dashboard.tsx` — para ES, mostrar apenas cronograma.
-
-## Notas técnicas
-
-- `supabaseAdmin` em server functions é seguro: a entrada é só o código da congregação, e devolvemos apenas dados não sensíveis (programação pública da visita). Validamos `length` e formato do código com Zod.
-- O Cron da ES (re-pedir código toda segunda) usa `new Date()` no client, calcula segunda-feira da semana e compara com `weekStart` guardado. Sem servidor.
+Pergunta rápida (a confirmar com o usuário antes da implementação, se necessário): a partilha por WhatsApp deve abrir contato livre (`wa.me/?text=...`) ou já com número pré-configurado? Vou assumir contato livre (padrão mais comum).

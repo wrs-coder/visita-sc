@@ -9,7 +9,7 @@ export const Route = createFileRoute("/")({
 });
 
 function HomeRoute() {
-  const { loading, user, needsOnboarding, role } = useAuth();
+  const { loading, user, needsOnboarding, role, elderPosition } = useAuth();
   const [guestCode, setGuestCode] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
@@ -19,7 +19,10 @@ function HomeRoute() {
   if (loading || guestCode === undefined) return <FullLoader />;
   if (user) {
     if (needsOnboarding) return <Navigate to="/onboarding" />;
-    return <Navigate to={role === "superintendent" ? "/dashboard" : "/cronograma"} />;
+    const goDashboard =
+      role === "superintendent" ||
+      (role === "elder" && (elderPosition === "coordenador" || elderPosition === "secretario" || elderPosition === "sup_servico"));
+    return <Navigate to={goDashboard ? "/dashboard" : "/cronograma"} />;
   }
   if (guestCode) return <Navigate to="/visitante/painel" />;
   return <LoginForm />;
