@@ -52,6 +52,9 @@ function Page() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [tab, setTab] = useState<NoteType>("free");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
     if (!visit) { setNotes([]); return; }
