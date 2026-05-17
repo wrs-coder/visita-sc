@@ -123,6 +123,10 @@ function Page() {
   }, [notes, tab, query, dateFrom, dateTo]);
   const selectedNotes = useMemo(() => notes.filter((n) => selected.has(n.id)), [notes, selected]);
 
+  if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">Acesso restrito ao superintendente.</CardContent></Card>;
+  if (!congregation) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Selecione uma congregação na aba Início.</CardContent></Card>;
+  if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa para {congregation.name}.</CardContent></Card>;
+
   const exportPdf = () => {
     if (selectedNotes.length === 0) { toast.error("Selecione ao menos uma nota."); return; }
     const doc = new jsPDF({ unit: "pt", format: "a4" });
