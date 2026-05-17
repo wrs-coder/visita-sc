@@ -139,9 +139,23 @@ function Page() {
               <div className="text-[11px] opacity-80">{snap.wifeMode ? "Esposa do superintendente" : "Corpo de anciãos e ES"} • somente leitura</div>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={exit} className="text-primary-foreground hover:bg-white/10">
-            <LogOut className="h-4 w-4 mr-1" /> Sair
-          </Button>
+          <div className="flex items-center gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-white/10">
+                  <Share2 className="h-4 w-4 mr-1" /> Partilhar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={exportPng}><ImageIcon className="h-4 w-4 mr-2" />Salvar como imagem (PNG)</DropdownMenuItem>
+                <DropdownMenuItem onClick={exportPdf}><FileDown className="h-4 w-4 mr-2" />Exportar como PDF</DropdownMenuItem>
+                <DropdownMenuItem onClick={shareWhatsapp}><MessageCircle className="h-4 w-4 mr-2" />Enviar para o WhatsApp</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="ghost" size="sm" onClick={exit} className="text-primary-foreground hover:bg-white/10">
+              <LogOut className="h-4 w-4 mr-1" /> Sair
+            </Button>
+          </div>
         </div>
       </header>
 
