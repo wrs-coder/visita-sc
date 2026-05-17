@@ -66,12 +66,8 @@ function Page() {
     load();
   }, [visit?.id]);
 
-  if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">Acesso restrito ao superintendente.</CardContent></Card>;
-  if (!congregation) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Selecione uma congregação na aba Início.</CardContent></Card>;
-  if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa para {congregation.name}.</CardContent></Card>;
-
   const add = async (note_type: NoteType) => {
-    if (!user) return;
+    if (!user || !visit) return;
     const base: Partial<Note> = note_type === "free"
       ? { title: "Nova nota", content: "" }
       : note_type === "pastoral"
