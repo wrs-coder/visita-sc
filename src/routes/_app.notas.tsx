@@ -132,28 +132,93 @@ function Page() {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
-    const margin = 40;
-    let y = margin;
-    const writeLine = (text: string, size = 11, bold = false) => {
+    const margin = 48;
+    const headerH = 56;
+    const footerH = 28;
+    const contentTop = margin + headerH;
+    const contentBottom = pageH - margin - footerH;
+    const generatedAt = format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR });
+    let y = contentTop;
+    let pageNum = 1;
+    let totalPages = 1;
+
+    const drawHeader = () => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(20);
+      doc.text("Notas Privadas — Confidencial", margin, margin + 4);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(90);
+      doc.text(`${congregation.name} • ${visit.title}`, margin, margin + 20);
+      doc.text(generatedAt, pageW - margin, margin + 20, { align: "right" });
+      doc.setDrawColor(210);
+      doc.setLineWidth(0.6);
+      doc.line(margin, margin + headerH - 12, pageW - margin, margin + headerH - 12);
+      doc.setTextColor(0);
+    };
+    const drawFooter = () => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.setDrawColor(220);
+      doc.line(margin, pageH - margin - footerH + 8, pageW - margin, pageH - margin - footerH + 8);
+      doc.text("Confidencial — uso exclusivo do superintendente", margin, pageH - margin - 6);
+      doc.text(`Página ${pageNum} de ${totalPages}`, pageW - margin, pageH - margin - 6, { align: "right" });
+      doc.setTextColor(0);
+    };
+    const newPage = () => {
+      drawFooter();
+      doc.addPage();
+      pageNum++;
+      y = contentTop;
+      drawHeader();
+    };
+    const ensure = (needed: number) => { if (y + needed > contentBottom) newPage(); };
+    const writeLine = (text: string, size = 10, bold = false, color = 0) => {
       doc.setFont("helvetica", bold ? "bold" : "normal");
       doc.setFontSize(size);
-      const lines = doc.splitTextToSize(text, pageW - margin * 2);
+      doc.setTextColor(color);
+      const lh = size * 1.35;
+      const lines = doc.splitTextToSize(text || " ", pageW - margin * 2);
       for (const ln of lines) {
-        if (y > pageH - margin) { doc.addPage(); y = margin; }
+        ensure(lh);
         doc.text(ln, margin, y);
-        y += size * 1.25;
+        y += lh;
       }
+      doc.setTextColor(0);
     };
-    writeLine("Notas Privadas — Confidencial", 16, true);
-    writeLine(`${congregation.name} • ${visit.title}`, 10);
-    writeLine(format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR }), 9);
-    y += 8;
+
+    drawHeader();
     selectedNotes.forEach((n, i) => {
-      if (i > 0) { y += 6; doc.setDrawColor(200); doc.line(margin, y, pageW - margin, y); y += 14; }
+      if (i > 0) {
+        y += 8;
+        ensure(24);
+        doc.setDrawColor(230);
+        doc.setLineWidth(0.4);
+        doc.line(margin, y, pageW - margin, y);
+        y += 14;
+      }
       const cat = CATEGORIES.find((c) => c.value === n.note_type)?.label ?? "Nota";
-      writeLine(`[${cat}] ${n.title ?? ""}`, 13, true);
+      ensure(40);
+      writeLine(cat.toUpperCase(), 8, true, 110);
+      y += 2;
+      writeLine(n.title ?? "(sem título)", 13, true);
+      y += 4;
       renderNoteToPdf(n, writeLine);
     });
+
+    // finalize: stamp total page count on every page
+    totalPages = doc.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) {
+      doc.setPage(p);
+      pageNum = p;
+      // overwrite footer area with white to avoid double-print, then redraw
+      doc.setFillColor(255, 255, 255);
+      doc.rect(margin, pageH - margin - footerH, pageW - margin * 2, footerH, "F");
+      drawFooter();
+    }
+
     doc.save(`notas-privadas-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`);
   };
 
