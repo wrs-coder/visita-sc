@@ -268,6 +268,31 @@ function Page() {
           ))}
         </TabsList>
 
+        <Card className="mt-3">
+          <CardContent className="p-3 grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-2 items-end">
+            <div>
+              <Label className="text-xs">Buscar por título ou conteúdo</Label>
+              <div className="relative">
+                <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Digite para filtrar..." className="pl-7" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">De</Label>
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">Até</Label>
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            </div>
+            {(query || dateFrom || dateTo) && (
+              <Button variant="ghost" size="sm" onClick={() => { setQuery(""); setDateFrom(""); setDateTo(""); }}>
+                <X className="h-3.5 w-3.5 mr-1" />Limpar
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
         {CATEGORIES.map((c) => (
           <TabsContent key={c.value} value={c.value} className="space-y-3 mt-3">
             <Button onClick={() => add(c.value)} variant="outline" className="w-full"><Plus className="h-4 w-4 mr-1" />{c.addLabel}</Button>
