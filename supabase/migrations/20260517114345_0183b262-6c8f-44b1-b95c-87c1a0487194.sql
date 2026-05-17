@@ -1,0 +1,2 @@
+ALTER TABLE public.private_notes DROP CONSTRAINT IF EXISTS private_notes_note_type_check;
+ALTER TABLE public.private_notes ADD CONSTRAINT private_notes_note_type_check CHECK (note_type = ANY (ARRAY['free'::text, 'pastoral'::text, 's303'::text, 'oradores'::text, 'recomendados'::text, 'peticoes'::text]));
