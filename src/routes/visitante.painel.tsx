@@ -1,12 +1,14 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getGuestSnapshot } from "@/lib/guest.functions";
 import { readGuestSession, clearGuestSession } from "@/lib/guest-session";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks, Compass, Share2, Image as ImageIcon, FileDown, MessageCircle } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { format, parseISO } from "date-fns";
@@ -29,6 +31,17 @@ interface Snapshot {
   transport: Array<{ id: string; event_date: string | null; driver_name: string; contact_phone: string | null; description: string | null; notes: string | null }>;
   checklist: Array<{ id: string; title: string; description: string | null; status: string; link_or_notes: string | null; info_text: string | null }>;
 }
+
+type SectionKey = "cron" | "estudos" | "campo" | "ref" | "trans" | "check";
+
+const SECTION_LABELS: Record<SectionKey, string> = {
+  cron: "Cronograma",
+  estudos: "Estudos / Revisitas",
+  campo: "Reuniões de campo",
+  ref: "Refeições",
+  trans: "Transporte",
+  check: "Checklist",
+};
 
 function fmtDate(d: string) { return format(parseISO(d), "EEE, d 'de' MMM", { locale: ptBR }); }
 function fmtTime(t: string | null) { return t ? t.slice(0, 5) : "—"; }
@@ -57,24 +70,38 @@ function Page() {
   }, [load, nav]);
 
   const exit = () => { clearGuestSession(); nav({ to: "/" }); };
-  const shareRef = useRef<HTMLDivElement>(null);
+
+  // ── Share dialog state ────────────────────────────────────────────────
+  const [shareOpen, setShareOpen] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const availableSections = useMemo<SectionKey[]>(() => {
+    const all: SectionKey[] = ["cron", "estudos", "campo", "ref", "trans"];
+    if (snap && !snap.wifeMode) all.push("check");
+    return all;
+  }, [snap]);
+  const [selected, setSelected] = useState<Record<SectionKey, boolean>>({
+    cron: true, estudos: true, campo: true, ref: true, trans: true, check: true,
+  });
+  const toggle = (k: SectionKey) => setSelected((s) => ({ ...s, [k]: !s[k] }));
+
+  const filenameBase = (snap?.visit?.title || "visita").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
 
   const exportPng = useCallback(async () => {
-    if (!shareRef.current) return;
+    if (!previewRef.current) return;
     try {
-      const dataUrl = await toPng(shareRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#ffffff" });
+      const dataUrl = await toPng(previewRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#ffffff" });
       const a = document.createElement("a");
       a.href = dataUrl;
-      a.download = `programacao-${snap?.visit?.title?.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "visita"}.png`;
+      a.download = `programacao-${filenameBase}.png`;
       a.click();
       toast.success("Imagem gerada");
     } catch { toast.error("Falha ao gerar imagem"); }
-  }, [snap]);
+  }, [filenameBase]);
 
   const exportPdf = useCallback(async () => {
-    if (!shareRef.current) return;
+    if (!previewRef.current) return;
     try {
-      const dataUrl = await toPng(shareRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#ffffff" });
+      const dataUrl = await toPng(previewRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#ffffff" });
       const img = new Image();
       img.src = dataUrl;
       await new Promise((res) => { img.onload = res; });
@@ -88,10 +115,10 @@ function Page() {
       const w = img.width * ratio;
       const h = img.height * ratio;
       pdf.addImage(dataUrl, "PNG", (pageW - w) / 2, margin, w, h);
-      pdf.save(`programacao-${snap?.visit?.title?.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "visita"}.pdf`);
+      pdf.save(`programacao-${filenameBase}.pdf`);
       toast.success("PDF gerado");
     } catch { toast.error("Falha ao gerar PDF"); }
-  }, [snap]);
+  }, [filenameBase]);
 
   const shareWhatsapp = useCallback(() => {
     if (!snap || !snap.visit) return;
@@ -99,30 +126,34 @@ function Page() {
     L.push(`*${snap.congregation.name}*`);
     L.push(`*${snap.visit.title}*`);
     L.push(`${fmtDate(snap.visit.start_date)} — ${fmtDate(snap.visit.end_date)}`);
-    if (snap.schedule.length) {
+    if (selected.cron && snap.schedule.length) {
       L.push("", "*Cronograma*");
       snap.schedule.forEach((e) => L.push(`• ${fmtDate(e.event_date)} ${fmtTime(e.start_time)} — ${e.title}${e.location ? ` (${e.location})` : ""}`));
     }
-    if (snap.field.length) {
+    if (selected.estudos && snap.field.length) {
       L.push("", "*Estudos / Revisitas*");
       snap.field.forEach((f) => L.push(`• ${fmtDate(f.event_date)} ${f.period} ${fmtTime(f.meeting_time)}${f.meeting_point ? ` — ${f.meeting_point}` : ""}${f.acompanhante ? ` | Acomp.: ${f.acompanhante}` : ""}`));
     }
-    if (snap.fieldMeetings.length) {
+    if (selected.campo && snap.fieldMeetings.length) {
       L.push("", "*Reuniões de campo*");
       snap.fieldMeetings.forEach((f) => L.push(`• ${fmtDate(f.event_date)} ${f.period} ${fmtTime(f.meeting_time)} — ${f.modality}${f.territory_location ? ` (${f.territory_location})` : ""}${f.auxiliary_leaders ? ` | Aux.: ${f.auxiliary_leaders}` : ""}`));
     }
-    if (snap.meals.length || snap.mealDayNotes.length) {
+    if (selected.ref && (snap.meals.length || snap.mealDayNotes.length)) {
       L.push("", "*Refeições*");
       snap.mealDayNotes.forEach((n) => L.push(`• ${fmtDate(n.meal_date)}: ${n.notes}`));
       snap.meals.forEach((m) => L.push(`• ${fmtDate(m.meal_date)} ${mealLabel(m.type)} ${fmtTime(m.meal_time)}${m.host_name ? ` — ${m.host_name}` : ""}${m.location ? ` (${m.location})` : ""}`));
     }
-    if (snap.transport.length) {
+    if (selected.trans && snap.transport.length) {
       L.push("", "*Transporte*");
       snap.transport.forEach((t) => L.push(`• ${t.event_date ? fmtDate(t.event_date) : "Sem data"} — ${t.driver_name}${t.contact_phone ? ` (${t.contact_phone})` : ""}`));
     }
+    if (selected.check && snap.checklist.length && !snap.wifeMode) {
+      L.push("", "*Checklist*");
+      snap.checklist.forEach((c) => L.push(`• [${c.status}] ${c.title}${c.description ? ` — ${c.description}` : ""}`));
+    }
     const text = encodeURIComponent(L.join("\n"));
     window.open(`https://wa.me/?text=${text}`, "_blank");
-  }, [snap]);
+  }, [snap, selected]);
 
   if (loading || !snap) {
     return <div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
@@ -140,18 +171,41 @@ function Page() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+              <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-white/10">
                   <Share2 className="h-4 w-4 mr-1" /> Partilhar
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={exportPng}><ImageIcon className="h-4 w-4 mr-2" />Salvar como imagem (PNG)</DropdownMenuItem>
-                <DropdownMenuItem onClick={exportPdf}><FileDown className="h-4 w-4 mr-2" />Exportar como PDF</DropdownMenuItem>
-                <DropdownMenuItem onClick={shareWhatsapp}><MessageCircle className="h-4 w-4 mr-2" />Enviar para o WhatsApp</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                <DialogHeader>
+                  <DialogTitle>Partilhar programação</DialogTitle>
+                  <DialogDescription>Escolha as seções e veja uma pré-visualização antes de exportar.</DialogDescription>
+                </DialogHeader>
+
+                <div className="flex flex-wrap gap-3 py-2 border-b">
+                  {availableSections.map((k) => (
+                    <Label key={k} className="flex items-center gap-2 text-sm font-normal cursor-pointer">
+                      <Checkbox checked={selected[k]} onCheckedChange={() => toggle(k)} />
+                      {SECTION_LABELS[k]}
+                    </Label>
+                  ))}
+                </div>
+
+                <div className="overflow-auto flex-1 -mx-6 px-6 py-3 bg-muted/30">
+                  <div className="text-xs text-muted-foreground mb-2">Pré-visualização</div>
+                  <div ref={previewRef} className="bg-white p-4 rounded shadow-sm">
+                    <SharePreview snap={snap} selected={selected} />
+                  </div>
+                </div>
+
+                <DialogFooter className="flex-row flex-wrap justify-end gap-2 pt-3 border-t">
+                  <Button variant="outline" size="sm" onClick={exportPng}><ImageIcon className="h-4 w-4 mr-1" />PNG</Button>
+                  <Button variant="outline" size="sm" onClick={exportPdf}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
+                  <Button size="sm" onClick={shareWhatsapp}><MessageCircle className="h-4 w-4 mr-1" />WhatsApp</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <Button variant="ghost" size="sm" onClick={exit} className="text-primary-foreground hover:bg-white/10">
               <LogOut className="h-4 w-4 mr-1" /> Sair
             </Button>
@@ -159,7 +213,7 @@ function Page() {
         </div>
       </header>
 
-      <main ref={shareRef} className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
+      <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
         {!snap.visit ? (
           <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
             Nenhuma visita ativa nesta congregação no momento.
@@ -307,4 +361,118 @@ function Page() {
 
 function Empty({ text }: { text: string }) {
   return <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{text}</CardContent></Card>;
+}
+
+// ── Share preview (rendered inside the dialog and used as the export source) ──
+function SharePreview({ snap, selected }: { snap: Snapshot; selected: Record<SectionKey, boolean> }) {
+  if (!snap.visit) return <div className="text-sm text-gray-500">Nenhuma visita ativa.</div>;
+  const noteMap = new Map(snap.mealDayNotes.map((n) => [n.meal_date, n.notes]));
+  const mealDates = Array.from(new Set([...snap.meals.map((m) => m.meal_date), ...snap.mealDayNotes.map((n) => n.meal_date)])).sort();
+  const anySelected = Object.entries(selected).some(([, v]) => v);
+
+  return (
+    <div className="text-gray-900 text-sm space-y-3">
+      <div className="border-b pb-2">
+        <div className="font-semibold text-base">{snap.congregation.name}</div>
+        <div className="font-medium">{snap.visit.title}</div>
+        <div className="text-xs text-gray-600">{fmtDate(snap.visit.start_date)} — {fmtDate(snap.visit.end_date)}</div>
+      </div>
+
+      {!anySelected && <div className="text-xs text-gray-500 italic">Selecione ao menos uma seção.</div>}
+
+      {selected.cron && (
+        <Section title="Cronograma" empty={snap.schedule.length === 0}>
+          {snap.schedule.map((e) => (
+            <div key={e.id} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">{fmtDate(e.event_date)} • {fmtTime(e.start_time)} — {e.title}</div>
+              {e.location && <div className="text-xs text-gray-600">📍 {e.location}</div>}
+              {e.notes && <div className="text-xs text-gray-600">{e.notes}</div>}
+            </div>
+          ))}
+        </Section>
+      )}
+
+      {selected.estudos && (
+        <Section title="Estudos / Revisitas" empty={snap.field.length === 0}>
+          {snap.field.map((f) => (
+            <div key={f.id} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">{fmtDate(f.event_date)} • {f.period} • {fmtTime(f.meeting_time)}</div>
+              {f.meeting_point && <div className="text-xs text-gray-600">📍 {f.meeting_point}</div>}
+              {f.acompanhante && <div className="text-xs">Acomp.: {f.acompanhante}{f.acompanhante_for ? ` (com ${f.acompanhante_for})` : ""}</div>}
+              {f.contact_phone && <div className="text-xs">📞 {f.contact_phone}</div>}
+            </div>
+          ))}
+        </Section>
+      )}
+
+      {selected.campo && (
+        <Section title="Reuniões de campo" empty={snap.fieldMeetings.length === 0}>
+          {snap.fieldMeetings.map((f) => (
+            <div key={f.id} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">{fmtDate(f.event_date)} • {f.period} • {fmtTime(f.meeting_time)}</div>
+              <div className="text-xs">Modalidade: {f.modality}</div>
+              {f.territory_number && <div className="text-xs">Território S-13: {f.territory_number}</div>}
+              {f.territory_location && <div className="text-xs text-gray-600">📍 {f.territory_location}</div>}
+              {f.auxiliary_leaders && <div className="text-xs">Dirigentes auxiliares: {f.auxiliary_leaders}</div>}
+              {f.closing_prayer && <div className="text-xs">Oração final: {f.closing_prayer}</div>}
+            </div>
+          ))}
+        </Section>
+      )}
+
+      {selected.ref && (
+        <Section title="Refeições" empty={mealDates.length === 0}>
+          {mealDates.map((date) => {
+            const note = noteMap.get(date);
+            const dayMeals = snap.meals.filter((m) => m.meal_date === date);
+            return (
+              <div key={date} className="py-1 border-b border-gray-100 last:border-0">
+                {note && <div className="text-xs text-red-700 font-medium whitespace-pre-wrap">{note}</div>}
+                {dayMeals.map((m) => (
+                  <div key={m.id} className="text-xs">
+                    <span className="font-medium">{fmtDate(m.meal_date)} • {mealLabel(m.type)} • {fmtTime(m.meal_time)}</span>
+                    {m.host_name && <> — {m.host_name}</>}
+                    {m.location && <> ({m.location})</>}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </Section>
+      )}
+
+      {selected.trans && (
+        <Section title="Transporte" empty={snap.transport.length === 0}>
+          {snap.transport.map((t) => (
+            <div key={t.id} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">{t.event_date ? fmtDate(t.event_date) : "Sem data"} — {t.driver_name}</div>
+              {t.contact_phone && <div className="text-xs">📞 {t.contact_phone}</div>}
+              {t.description && <div className="text-xs text-gray-600">{t.description}</div>}
+              {t.notes && <div className="text-xs text-gray-600">{t.notes}</div>}
+            </div>
+          ))}
+        </Section>
+      )}
+
+      {selected.check && !snap.wifeMode && (
+        <Section title="Checklist" empty={snap.checklist.length === 0}>
+          {snap.checklist.map((c) => (
+            <div key={c.id} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">[{c.status}] {c.title}</div>
+              {c.description && <div className="text-xs text-gray-600">{c.description}</div>}
+            </div>
+          ))}
+        </Section>
+      )}
+    </div>
+  );
+}
+
+function Section({ title, empty, children }: { title: string; empty: boolean; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="font-semibold text-sm border-b border-gray-300 mb-1 pb-0.5">{title}</div>
+      {empty ? <div className="text-xs text-gray-400 italic">— vazio —</div> : <div>{children}</div>}
+    </div>
+  );
 }
