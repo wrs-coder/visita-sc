@@ -4,9 +4,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CalendarDays, ListChecks, MapPin, Clock, ChevronRight, UtensilsCrossed } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarDays, ListChecks, MapPin, Clock, ChevronRight, UtensilsCrossed, Building2 } from "lucide-react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
-import { format, isToday, parseISO } from "date-fns";
+import { useActiveCongregation, getActiveCongregationOverride, setActiveCongregationOverride } from "@/hooks/use-active-congregation";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
 
@@ -19,12 +21,33 @@ interface ChecklistItem { id: string; status: string; }
 interface Meal { id: string; meal_date: string; type: string; host_name: string | null; location: string | null; }
 
 function Dashboard() {
-  const { profile, role } = useAuth();
+  const { profile, role, user } = useAuth();
+  const activeCong = useActiveCongregation();
   const { visit } = useActiveVisit();
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
+  const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
+  const [selected, setSelected] = useState<string | null>(() => getActiveCongregationOverride());
   const today = format(new Date(), "yyyy-MM-dd");
+
+  useEffect(() => {
+    if (role !== "superintendent" || !user) return;
+    supabase.from("congregations").select("id,name").eq("superintendent_id", user.id).order("name").then(({ data }) => {
+      setCongs(data ?? []);
+    });
+  }, [role, user]);
+
+  useEffect(() => {
+    if (role !== "superintendent") return;
+    // Initialize override to the auth congregation when nothing is set
+    if (!selected && activeCong) setSelected(activeCong.id);
+  }, [role, activeCong, selected]);
+
+  const handleSelectCong = (id: string) => {
+    setSelected(id);
+    setActiveCongregationOverride(id);
+  };
 
   useEffect(() => {
     if (!visit) return;
