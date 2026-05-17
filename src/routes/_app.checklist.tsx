@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Check, Trash2, Loader2, Pencil, Download } from "lucide-react";
 import { toast } from "sonner";
+import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
 export const Route = createFileRoute("/_app/checklist")({ component: Page });
 
@@ -28,6 +29,8 @@ function Page() {
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [editItem, setEditItem] = useState<Item | null>(null);
+  const [editEnabled, setEditEnabled] = useState(false);
+  const editAllowed = !canManage || editEnabled;
 
   useEffect(() => {
     if (!visit) return;
@@ -92,6 +95,9 @@ function Page() {
         </div>
       </div>
 
+      {canManage && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
+
+      <fieldset disabled={!editAllowed} className="space-y-5 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
       <Card><CardContent className="p-5">
         <div className="flex justify-between items-end mb-2"><div className="text-sm font-medium">Progresso</div><div className="text-sm font-semibold">{done}/{items.length} ({progress}%)</div></div>
         <Progress value={progress} className="h-2" />
