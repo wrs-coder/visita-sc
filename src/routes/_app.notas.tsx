@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import {
   Lock, Plus, Trash2, Loader2, Check, HeartHandshake, FileText,
-  ClipboardList, Mic, ThumbsUp, Mail, FileDown, Share2,
+  ClipboardList, Mic, ThumbsUp, Mail, FileDown, Share2, Search, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -52,6 +52,9 @@ function Page() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [tab, setTab] = useState<NoteType>("free");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
     if (!visit) { setNotes([]); return; }
@@ -103,7 +106,25 @@ function Page() {
     return next;
   });
 
-  const filtered = notes.filter((n) => (n.note_type ?? "free") === tab);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const from = dateFrom ? new Date(dateFrom + "T00:00:00").getTime() : null;
+    const to = dateTo ? new Date(dateTo + "T23:59:59").getTime() : null;
+    return notes.filter((n) => {
+      if ((n.note_type ?? "free") !== tab) return false;
+      if (q) {
+        const hay = [n.title, n.content, n.companion, n.involved_names, n.additional_info, ...Object.values(n.payload ?? {})]
+          .filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (from || to) {
+        const ref = n.note_date ? new Date(n.note_date + "T12:00:00").getTime() : new Date(n.updated_at).getTime();
+        if (from && ref < from) return false;
+        if (to && ref > to) return false;
+      }
+      return true;
+    });
+  }, [notes, tab, query, dateFrom, dateTo]);
   const selectedNotes = useMemo(() => notes.filter((n) => selected.has(n.id)), [notes, selected]);
 
   const exportPdf = () => {
@@ -111,28 +132,93 @@ function Page() {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
-    const margin = 40;
-    let y = margin;
-    const writeLine = (text: string, size = 11, bold = false) => {
+    const margin = 48;
+    const headerH = 56;
+    const footerH = 28;
+    const contentTop = margin + headerH;
+    const contentBottom = pageH - margin - footerH;
+    const generatedAt = format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR });
+    let y = contentTop;
+    let pageNum = 1;
+    let totalPages = 1;
+
+    const drawHeader = () => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(20);
+      doc.text("Notas Privadas — Confidencial", margin, margin + 4);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(90);
+      doc.text(`${congregation.name} • ${visit.title}`, margin, margin + 20);
+      doc.text(generatedAt, pageW - margin, margin + 20, { align: "right" });
+      doc.setDrawColor(210);
+      doc.setLineWidth(0.6);
+      doc.line(margin, margin + headerH - 12, pageW - margin, margin + headerH - 12);
+      doc.setTextColor(0);
+    };
+    const drawFooter = () => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.setDrawColor(220);
+      doc.line(margin, pageH - margin - footerH + 8, pageW - margin, pageH - margin - footerH + 8);
+      doc.text("Confidencial — uso exclusivo do superintendente", margin, pageH - margin - 6);
+      doc.text(`Página ${pageNum} de ${totalPages}`, pageW - margin, pageH - margin - 6, { align: "right" });
+      doc.setTextColor(0);
+    };
+    const newPage = () => {
+      drawFooter();
+      doc.addPage();
+      pageNum++;
+      y = contentTop;
+      drawHeader();
+    };
+    const ensure = (needed: number) => { if (y + needed > contentBottom) newPage(); };
+    const writeLine = (text: string, size = 10, bold = false, color = 0) => {
       doc.setFont("helvetica", bold ? "bold" : "normal");
       doc.setFontSize(size);
-      const lines = doc.splitTextToSize(text, pageW - margin * 2);
+      doc.setTextColor(color);
+      const lh = size * 1.35;
+      const lines = doc.splitTextToSize(text || " ", pageW - margin * 2);
       for (const ln of lines) {
-        if (y > pageH - margin) { doc.addPage(); y = margin; }
+        ensure(lh);
         doc.text(ln, margin, y);
-        y += size * 1.25;
+        y += lh;
       }
+      doc.setTextColor(0);
     };
-    writeLine("Notas Privadas — Confidencial", 16, true);
-    writeLine(`${congregation.name} • ${visit.title}`, 10);
-    writeLine(format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR }), 9);
-    y += 8;
+
+    drawHeader();
     selectedNotes.forEach((n, i) => {
-      if (i > 0) { y += 6; doc.setDrawColor(200); doc.line(margin, y, pageW - margin, y); y += 14; }
+      if (i > 0) {
+        y += 8;
+        ensure(24);
+        doc.setDrawColor(230);
+        doc.setLineWidth(0.4);
+        doc.line(margin, y, pageW - margin, y);
+        y += 14;
+      }
       const cat = CATEGORIES.find((c) => c.value === n.note_type)?.label ?? "Nota";
-      writeLine(`[${cat}] ${n.title ?? ""}`, 13, true);
+      ensure(40);
+      writeLine(cat.toUpperCase(), 8, true, 110);
+      y += 2;
+      writeLine(n.title ?? "(sem título)", 13, true);
+      y += 4;
       renderNoteToPdf(n, writeLine);
     });
+
+    // finalize: stamp total page count on every page
+    totalPages = doc.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) {
+      doc.setPage(p);
+      pageNum = p;
+      // overwrite footer area with white to avoid double-print, then redraw
+      doc.setFillColor(255, 255, 255);
+      doc.rect(margin, pageH - margin - footerH, pageW - margin * 2, footerH, "F");
+      drawFooter();
+    }
+
     doc.save(`notas-privadas-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`);
   };
 
@@ -181,6 +267,31 @@ function Page() {
             </TabsTrigger>
           ))}
         </TabsList>
+
+        <Card className="mt-3">
+          <CardContent className="p-3 grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-2 items-end">
+            <div>
+              <Label className="text-xs">Buscar por título ou conteúdo</Label>
+              <div className="relative">
+                <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Digite para filtrar..." className="pl-7" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">De</Label>
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">Até</Label>
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            </div>
+            {(query || dateFrom || dateTo) && (
+              <Button variant="ghost" size="sm" onClick={() => { setQuery(""); setDateFrom(""); setDateTo(""); }}>
+                <X className="h-3.5 w-3.5 mr-1" />Limpar
+              </Button>
+            )}
+          </CardContent>
+        </Card>
 
         {CATEGORIES.map((c) => (
           <TabsContent key={c.value} value={c.value} className="space-y-3 mt-3">
