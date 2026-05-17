@@ -1,0 +1,1 @@
+ALTER TABLE public.private_notes ADD COLUMN IF NOT EXISTS payload jsonb NOT NULL DEFAULT '{}'::jsonb;

@@ -430,6 +430,7 @@ export type Database = {
           involved_names: string | null
           note_date: string | null
           note_type: string
+          payload: Json
           superintendent_id: string
           title: string | null
           updated_at: string
@@ -444,6 +445,7 @@ export type Database = {
           involved_names?: string | null
           note_date?: string | null
           note_type?: string
+          payload?: Json
           superintendent_id: string
           title?: string | null
           updated_at?: string
@@ -458,6 +460,7 @@ export type Database = {
           involved_names?: string | null
           note_date?: string | null
           note_type?: string
+          payload?: Json
           superintendent_id?: string
           title?: string | null
           updated_at?: string
