@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "./use-auth";
+import { useActiveCongregation } from "./use-active-congregation";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Visit {
@@ -12,7 +12,7 @@ export interface Visit {
 }
 
 export function useActiveVisit() {
-  const { congregation } = useAuth();
+  const congregation = useActiveCongregation();
   const [visit, setVisit] = useState<Visit | null>(null);
   const [loading, setLoading] = useState(true);
 
