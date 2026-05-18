@@ -13,6 +13,7 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
+import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
 
 export const Route = createFileRoute("/_app/escala")({ component: Page });
 
@@ -62,19 +63,20 @@ function Page() {
   const update = useCallback(async (id: string, patch: Partial<Row>) => {
     setSavingId(id);
     setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
-    const { error } = await supabase.from("field_assignments").update(patch).eq("id", id);
+    const { error, queued } = await offlineUpdate("field_assignments", patch, { id });
     setSavingId(null);
     if (error) toast.error(error.message);
+    else if (queued) toast.success("Salvo offline");
   }, []);
 
   const add = async (date: string, period: string) => {
     if (!visit) return;
-    const { error } = await supabase.from("field_assignments").insert({ visit_id: visit.id, event_date: date, period });
+    const { error } = await offlineInsert("field_assignments", { visit_id: visit.id, event_date: date, period });
     if (error) toast.error(error.message);
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("field_assignments").delete().eq("id", id);
+    const { error } = await offlineDelete("field_assignments", { id });
     if (error) toast.error(error.message);
   };
 

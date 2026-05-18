@@ -42,10 +42,11 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-const ELDER_POSITIONS = ["coordenador", "secretario", "sup_servico", "corpo"] as const;
 const ELDER_REGISTERABLE_POSITIONS = ["coordenador", "secretario", "sup_servico"] as const;
 
 // Returns which of the 3 registerable positions are still available for a congregation code.
+// SECURITY: never returns the list of taken positions to avoid leaking org structure
+// to unauthenticated callers.
 export const getAvailableElderPositions = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ inviteCode: z.string().trim().min(1).max(20) }).parse(input))
   .handler(async ({ data }) => {
@@ -60,7 +61,7 @@ export const getAvailableElderPositions = createServerFn({ method: "POST" })
       .in("elder_position", [...ELDER_REGISTERABLE_POSITIONS]);
     const taken = new Set((roles ?? []).map((r) => r.elder_position).filter(Boolean) as string[]);
     const available = ELDER_REGISTERABLE_POSITIONS.filter((p) => !taken.has(p));
-    return { ok: true as const, available, taken: Array.from(taken) };
+    return { ok: true as const, available };
   });
 
 export const registerElderByPhone = createServerFn({ method: "POST" })
@@ -246,34 +247,13 @@ export const deleteElderBySuper = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-// Backwards-compat: kept (now unused by the elder signup UI) for any older flow
+// DEPRECATED — kept only as a no-op for backwards-compat. The previous version
+// accepted `position: 'corpo'` for self-service registration, which the security
+// model forbids (corpo é assignável apenas pelo SC). Use `registerElderByPhone`
+// ou `linkAccount` (mode "elder") em vez deste endpoint.
 export const registerElder = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
-    z.object({
-      fullName: z.string().trim().min(2).max(120),
-      email: z.string().trim().email().max(200),
-      password: z.string().min(6).max(100),
-      inviteCode: z.string().trim().min(4).max(20),
-      position: z.enum(ELDER_POSITIONS),
-    }).parse(input),
-  )
-  .handler(async ({ data }) => {
-    const { data: cong } = await supabaseAdmin
-      .from("congregations").select("id,is_active").eq("invite_code", data.inviteCode.toUpperCase()).maybeSingle();
-    if (!cong) return { ok: false as const, error: "Código de congregação inválido." };
-    if (!cong.is_active) return { ok: false as const, error: "Esta congregação está inativa." };
-    const { data: created, error: signErr } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email, password: data.password, email_confirm: true,
-      user_metadata: { full_name: data.fullName },
-    });
-    if (signErr || !created.user) return { ok: false as const, error: signErr?.message ?? "Falha ao criar conta." };
-    await supabaseAdmin.from("profiles").update({
-      full_name: data.fullName, email: data.email, congregation_id: cong.id,
-    }).eq("id", created.user.id);
-    await supabaseAdmin.from("user_roles").insert({
-      user_id: created.user.id, role: "elder", congregation_id: cong.id, elder_position: data.position,
-    });
-    return { ok: true as const };
+  .handler(async () => {
+    return { ok: false as const, error: "Endpoint descontinuado. Use o fluxo de cadastro atual." };
   });
 
 export const linkAccount = createServerFn({ method: "POST" })
@@ -282,7 +262,8 @@ export const linkAccount = createServerFn({ method: "POST" })
       mode: z.enum(["superintendent", "elder"]),
       code: z.string().trim().min(1),
       fullName: z.string().trim().min(1).max(120).optional(),
-      position: z.enum(ELDER_POSITIONS).optional(),
+      // Elder self-onboarding só permite posições registráveis (exclui 'corpo').
+      position: z.enum(ELDER_REGISTERABLE_POSITIONS).optional(),
     }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -310,6 +291,17 @@ export const linkAccount = createServerFn({ method: "POST" })
         .select("id,is_active").eq("invite_code", data.code.toUpperCase()).maybeSingle();
       if (!cong) return { ok: false as const, error: "Código de congregação inválido." };
       if (!cong.is_active) return { ok: false as const, error: "Esta congregação está inativa." };
+
+      // Garantir que a posição ainda está disponível (uma de cada por congregação)
+      const { data: takenRoles } = await supabaseAdmin
+        .from("user_roles").select("elder_position")
+        .eq("role", "elder").eq("congregation_id", cong.id)
+        .in("elder_position", [...ELDER_REGISTERABLE_POSITIONS]);
+      const taken = new Set((takenRoles ?? []).map((r) => r.elder_position).filter(Boolean) as string[]);
+      if (taken.has(data.position)) {
+        return { ok: false as const, error: "Esta função já está cadastrada para esta congregação." };
+      }
+
       await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: data.fullName ?? undefined, email, congregation_id: cong.id }, { onConflict: "id" });
       const { data: existing } = await supabaseAdmin
         .from("user_roles").select("id").eq("user_id", userId).eq("role", "elder").maybeSingle();

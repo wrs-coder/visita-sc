@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, LogOut, Menu, Building2, Car, FileStack, MapPin, UserCircle, Plane } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
@@ -7,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { SyncButton } from "@/components/SyncButton";
+import { setActiveContext } from "@/lib/active-context";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
@@ -14,8 +16,14 @@ export const Route = createFileRoute("/_app")({
 
 function AppLayout() {
   const { loading, user, role, needsOnboarding, signOut, congregation, profile } = useAuth();
+  const activeCong = useActiveCongregation();
   const nav = useNavigate();
   const location = useLocation();
+
+  // Mantém o contexto ativo global em sincronia para a fila offline.
+  useEffect(() => {
+    setActiveContext({ congregationId: activeCong?.id ?? null, userId: user?.id ?? null });
+  }, [activeCong?.id, user?.id]);
 
   const redirectTo: string | null = !loading && !user
     ? "/"

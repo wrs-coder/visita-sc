@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Check, Trash2, Loader2, Pencil, Download } from "lucide-react";
 import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
+import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
 
 export const Route = createFileRoute("/_app/checklist")({ component: Page });
 
@@ -48,24 +49,25 @@ function Page() {
   const update = async (id: string, patch: Partial<Item>) => {
     setSavingId(id);
     setItems((s) => s.map((x) => x.id === id ? { ...x, ...patch } : x));
-    const { error } = await supabase.from("checklist_items").update(patch).eq("id", id);
+    const { error, queued } = await offlineUpdate("checklist_items", patch, { id });
     setSavingId(null);
     if (error) toast.error(error.message);
+    else if (queued) toast.success("Salvo offline — sincroniza ao reconectar");
   };
 
   const addItem = async () => {
     if (!newTitle.trim()) return;
-    const { error } = await supabase.from("checklist_items").insert({ visit_id: visit.id, title: newTitle.trim(), description: newDesc.trim() || null, sort_order: items.length });
-    if (error) toast.error(error.message); else { setNewOpen(false); setNewTitle(""); setNewDesc(""); toast.success("Item adicionado"); }
+    const { error, queued } = await offlineInsert("checklist_items", { visit_id: visit.id, title: newTitle.trim(), description: newDesc.trim() || null, sort_order: items.length });
+    if (error) toast.error(error.message); else { setNewOpen(false); setNewTitle(""); setNewDesc(""); toast.success(queued ? "Salvo offline" : "Item adicionado"); }
   };
 
-  const remove = async (id: string) => { const { error } = await supabase.from("checklist_items").delete().eq("id", id); if (error) toast.error(error.message); };
+  const remove = async (id: string) => { const { error } = await offlineDelete("checklist_items", { id }); if (error) toast.error(error.message); };
 
   const saveEdit = async () => {
     if (!editItem) return;
     if (!editItem.title.trim()) { toast.error("Título obrigatório"); return; }
-    const { error } = await supabase.from("checklist_items").update({ title: editItem.title.trim(), description: editItem.description?.trim() || null }).eq("id", editItem.id);
-    if (error) toast.error(error.message); else { toast.success("Atualizado"); setEditItem(null); }
+    const { error, queued } = await offlineUpdate("checklist_items", { title: editItem.title.trim(), description: editItem.description?.trim() || null }, { id: editItem.id });
+    if (error) toast.error(error.message); else { toast.success(queued ? "Salvo offline" : "Atualizado"); setEditItem(null); }
   };
 
   const done = items.filter((i) => i.status === "done").length;
