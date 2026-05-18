@@ -34,8 +34,9 @@ function pickStorage(): Storage {
   if (typeof window === "undefined") {
     return { getItem: () => null, setItem: () => undefined, removeItem: () => undefined, clear: () => undefined, key: () => null, length: 0 } as Storage;
   }
-  if ("indexedDB" in window) return makeIdbStorage();
-  return window.localStorage;
+  const w = window as Window & typeof globalThis;
+  if ("indexedDB" in w) return makeIdbStorage();
+  return w.localStorage;
 }
 
 export const queryPersister = createAsyncStoragePersister({
