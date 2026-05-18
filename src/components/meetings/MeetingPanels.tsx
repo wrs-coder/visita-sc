@@ -232,9 +232,9 @@ export function TalkThemesManager() {
           <p className="text-xs text-muted-foreground">Nenhum tema cadastrado ainda.</p>
         ) : (
           <ul className="divide-y border rounded-md">
-            {themes.map((t) => (
+        {themes.map((t) => (
               <li key={t.id} className="flex items-center gap-2 p-2">
-                <FieldText value={t.title} onSave={(v) => v && rename(t.id, v)} />
+                <FieldText value={t.title} onSave={(v) => { if (v) void rename(t.id, v); }} />
                 <Button size="icon" variant="ghost" onClick={() => remove(t.id)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>

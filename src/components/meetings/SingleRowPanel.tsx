@@ -8,7 +8,7 @@ import { offlineInsert, offlineUpdate } from "@/lib/offline-supabase";
 import type { Visit } from "@/hooks/use-active-visit";
 import { toast } from "sonner";
 
-export function useSingleRow<T extends Record<string, unknown> & { id: string }>(
+export function useSingleRow<T extends { id: string }>(
   table: string,
   columns: string,
   visit: Visit | null,
