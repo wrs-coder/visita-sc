@@ -12,6 +12,7 @@ import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
+import { offlineUpdate, offlineInsert, offlineDelete, offlineUpsert } from "@/lib/offline-supabase";
 
 export const Route = createFileRoute("/_app/refeicoes")({ component: Page });
 
@@ -63,29 +64,27 @@ function Page() {
 
   const saveDayNote = useCallback(async (date: string, notes: string) => {
     if (!visit) return;
-    const { error } = await supabase.from("meal_day_notes").upsert(
-      { visit_id: visit.id, meal_date: date, notes },
-      { onConflict: "visit_id,meal_date" },
-    );
+    const { error } = await offlineUpsert("meal_day_notes", { visit_id: visit.id, meal_date: date, notes });
     if (error) toast.error(error.message);
   }, [visit]);
 
   const update = useCallback(async (id: string, patch: Partial<Meal>) => {
     setSavingId(id);
     setMeals((s) => s.map((x) => x.id === id ? { ...x, ...patch } : x));
-    const { error } = await supabase.from("meals").update(patch).eq("id", id);
+    const { error, queued } = await offlineUpdate("meals", patch, { id });
     setSavingId(null);
     if (error) toast.error(error.message);
+    else if (queued) toast.success("Salvo offline");
   }, []);
 
   const add = async (date: string, type: MealKey) => {
     if (!visit) return;
-    const { error } = await supabase.from("meals").insert({ visit_id: visit.id, meal_date: date, type });
+    const { error } = await offlineInsert("meals", { visit_id: visit.id, meal_date: date, type });
     if (error) toast.error(error.message);
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("meals").delete().eq("id", id);
+    const { error } = await offlineDelete("meals", { id });
     if (error) toast.error(error.message);
   };
 
