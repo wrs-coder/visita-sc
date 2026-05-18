@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth, type Congregation } from "./use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -24,7 +25,6 @@ export function setActiveCongregationOverride(id: string | null) {
  */
 export function useActiveCongregation(): Congregation | null {
   const { role, congregation } = useAuth();
-  const [override, setOverride] = useState<Congregation | null>(null);
   const [overrideId, setOverrideId] = useState<string | null>(() => getActiveCongregationOverride());
 
   useEffect(() => {
@@ -37,17 +37,23 @@ export function useActiveCongregation(): Congregation | null {
     };
   }, []);
 
-  useEffect(() => {
-    if (role !== "superintendent" || !overrideId) { setOverride(null); return; }
-    if (congregation?.id === overrideId) { setOverride(null); return; }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase.from("congregations").select("id,name,superintendent_id").eq("id", overrideId).maybeSingle();
-      if (cancelled) return;
-      setOverride(data ? { ...(data as Omit<Congregation, "invite_code">), invite_code: "" } : null);
-    })();
-    return () => { cancelled = true; };
-  }, [overrideId, role, congregation?.id]);
+  const shouldFetchOverride =
+    role === "superintendent" && !!overrideId && congregation?.id !== overrideId;
+
+  const { data: override } = useQuery({
+    queryKey: ["congregations", "byId", overrideId],
+    enabled: shouldFetchOverride,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("congregations")
+        .select("id,name,superintendent_id")
+        .eq("id", overrideId!)
+        .maybeSingle();
+      return data
+        ? ({ ...(data as Omit<Congregation, "invite_code">), invite_code: "" } as Congregation)
+        : null;
+    },
+  });
 
   if (role === "superintendent" && overrideId && override) return override;
   return congregation;

@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import {
   Outlet,
   createRootRouteWithContext,
@@ -13,6 +14,8 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PwaRegister } from "@/components/PwaRegister";
+import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-persister";
+import { flushQueue } from "@/lib/offline-queue";
 
 function NotFoundComponent() {
   return (
@@ -99,20 +102,47 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       router.invalidate();
       queryClient.invalidateQueries();
+      // Limpa cache persistido em troca de sessão para evitar vazar dados
+      // do usuário anterior.
+      if (event === "SIGNED_OUT" || event === "SIGNED_IN") {
+        queryClient.clear();
+      }
     });
-    return () => subscription.unsubscribe();
+    const onOnline = () => { flushQueue(); };
+    window.addEventListener("online", onOnline);
+    // Capacitor: app retomado do background
+    document.addEventListener("resume", onOnline);
+    // Tenta flush no boot
+    flushQueue();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("online", onOnline);
+      document.removeEventListener("resume", onOnline);
+    };
   }, [router, queryClient]);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: queryPersister,
+        maxAge: PERSIST_MAX_AGE,
+        buster: PERSIST_BUSTER,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (q) =>
+            q.state.status === "success" &&
+            !(Array.isArray(q.queryKey) && typeof q.queryKey[0] === "string" && q.queryKey[0].startsWith("auth")),
+        },
+      }}
+    >
       <AuthProvider>
         <PwaRegister />
         <Outlet />
         <Toaster richColors position="top-center" />
       </AuthProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

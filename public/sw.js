@@ -5,7 +5,7 @@
 //  - Supabase API responses: NetworkFirst with cache fallback (offline read of last-loaded data)
 //  - Skips cross-origin third parties
 
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC_CACHE = `static-${VERSION}`;
 const HTML_CACHE = `html-${VERSION}`;
 const API_CACHE = `api-${VERSION}`;

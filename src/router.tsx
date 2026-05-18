@@ -6,12 +6,19 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        // Balanced cache for mobile: data stays fresh 5 min, kept in memory 30 min.
-        // Reduces requests to the database on reports, schedules, and assignments.
-        staleTime: 5 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
+        // Offline-first: dados ficam considerados frescos por 12h.
+        // Combinado com o persister (PersistQueryClientProvider), as telas
+        // abrem instantaneamente a partir do IndexedDB sem nova requisição.
+        staleTime: 12 * 60 * 60 * 1000,
+        gcTime: 24 * 60 * 60 * 1000,
         refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
         retry: 1,
+        networkMode: "offlineFirst",
+      },
+      mutations: {
+        networkMode: "offlineFirst",
+        retry: 0,
       },
     },
   });

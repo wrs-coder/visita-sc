@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCongregation } from "./use-active-congregation";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,24 +14,32 @@ export interface Visit {
 
 export function useActiveVisit() {
   const congregation = useActiveCongregation();
-  const [visit, setVisit] = useState<Visit | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const congId = congregation?.id ?? null;
+
+  const queryKey = ["visits", "active", congId] as const;
+
+  const { data: visit, isLoading } = useQuery<Visit | null>({
+    queryKey,
+    enabled: !!congId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("visits").select("*").eq("congregation_id", congId!)
+        .order("is_active", { ascending: false })
+        .order("start_date", { ascending: false })
+        .limit(1).maybeSingle();
+      return (data as Visit | null) ?? null;
+    },
+  });
 
   useEffect(() => {
-    if (!congregation) { setVisit(null); setLoading(false); return; }
-    const load = async () => {
-      const { data } = await supabase
-        .from("visits").select("*").eq("congregation_id", congregation.id)
-        .order("is_active", { ascending: false }).order("start_date", { ascending: false }).limit(1).maybeSingle();
-      setVisit(data as Visit | null);
-      setLoading(false);
-    };
-    load();
-    const ch = supabase.channel(`visits-${congregation.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "visits", filter: `congregation_id=eq.${congregation.id}` }, load)
+    if (!congId) return;
+    const ch = supabase.channel(`visits-${congId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "visits", filter: `congregation_id=eq.${congId}` },
+        () => { queryClient.invalidateQueries({ queryKey: ["visits", "active", congId] }); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [congregation]);
+  }, [congId, queryClient]);
 
-  return { visit, loading };
+  return { visit: visit ?? null, loading: !!congId && isLoading };
 }
