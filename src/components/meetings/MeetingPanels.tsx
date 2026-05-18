@@ -1,0 +1,358 @@
+import { useEffect, useState } from "react";
+import { useActiveVisit } from "@/hooks/use-active-visit";
+import { useActiveCongregation } from "@/hooks/use-active-congregation";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
+import { useSingleRow } from "./SingleRowPanel";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+
+function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+      {children}
+      {required && <span className="text-destructive"> *</span>}
+    </label>
+  );
+}
+
+function NoVisit() {
+  return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa.</CardContent></Card>;
+}
+
+// Pequeno editor de campo: digita e salva no blur quando muda.
+function FieldText({
+  value, onSave, readOnly, placeholder, type = "text",
+}: {
+  value: string | null;
+  onSave: (v: string | null) => void | Promise<void>;
+  readOnly?: boolean;
+  placeholder?: string;
+  type?: string;
+}) {
+  const [local, setLocal] = useState(value ?? "");
+  useEffect(() => { setLocal(value ?? ""); }, [value]);
+  return (
+    <Input
+      type={type}
+      value={local}
+      readOnly={readOnly}
+      placeholder={placeholder}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={() => { if (local !== (value ?? "")) onSave(local || null); }}
+      className="h-9 mt-0.5"
+    />
+  );
+}
+
+/* ============ MEIO DE SEMANA ============ */
+interface MidweekRow { id: string; visit_id: string; chairman: string | null; closing_prayer: string | null }
+
+export function MidweekPanel() {
+  const { visit } = useActiveVisit();
+  const { canEdit } = useAuth();
+  const { row, loading, save } = useSingleRow<MidweekRow>(
+    "midweek_meetings",
+    "id,visit_id,chairman,closing_prayer",
+    visit,
+  );
+  if (!visit) return <NoVisit />;
+  if (loading || !row) return <div className="p-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Carregando…</div>;
+  return (
+    <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+      <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
+        <div>
+          <Label>Presidente da Reunião</Label>
+          <FieldText value={row.chairman} onSave={(v) => save({ chairman: v })} placeholder="Nome do presidente" />
+        </div>
+        <div>
+          <Label>Oração Final</Label>
+          <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} placeholder="Nome de quem fará a oração" />
+        </div>
+      </fieldset>
+      {!canEdit && <p className="text-xs text-muted-foreground">Somente anciãos com permissão podem editar.</p>}
+    </CardContent></Card>
+  );
+}
+
+/* ============ FINAL DE SEMANA ============ */
+interface WeekendRow {
+  id: string; visit_id: string;
+  meeting_at: string | null;
+  talk_theme_id: string | null;
+  talk_theme_title: string | null;
+}
+interface Theme { id: string; title: string }
+
+function tsToLocalInput(ts: string | null) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function localInputToIso(s: string): string | null {
+  if (!s) return null;
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+export function WeekendPanel() {
+  const { visit } = useActiveVisit();
+  const { canEdit } = useAuth();
+  const congregation = useActiveCongregation();
+  const { row, loading, save } = useSingleRow<WeekendRow>(
+    "weekend_meetings",
+    "id,visit_id,meeting_at,talk_theme_id,talk_theme_title",
+    visit,
+  );
+  const [themes, setThemes] = useState<Theme[]>([]);
+
+  useEffect(() => {
+    if (!congregation) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("talk_themes").select("id,title")
+        .or(`congregation_id.eq.${congregation.id},superintendent_id.eq.${congregation.superintendent_id}`)
+        .order("title");
+      setThemes((data ?? []) as Theme[]);
+    };
+    load();
+    const ch = supabase.channel(`themes-${congregation.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "talk_themes" }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [congregation]);
+
+  if (!visit) return <NoVisit />;
+  if (loading || !row) return <div className="p-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Carregando…</div>;
+
+  const onPickTheme = async (id: string) => {
+    const t = themes.find((x) => x.id === id);
+    await save({ talk_theme_id: id, talk_theme_title: t?.title ?? null });
+  };
+
+  return (
+    <div className="space-y-3">
+      <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+        <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
+          <div>
+            <Label>Dia e Horário da Reunião</Label>
+            <FieldText
+              type="datetime-local"
+              value={tsToLocalInput(row.meeting_at)}
+              onSave={(v) => save({ meeting_at: v ? localInputToIso(v) : null })}
+            />
+          </div>
+          <div>
+            <Label>Tema do Discurso</Label>
+            {themes.length === 0 ? (
+              <p className="text-xs text-muted-foreground mt-1">
+                Nenhum tema cadastrado{canEdit ? " — peça ao Superintendente." : "."}
+              </p>
+            ) : (
+              <Select value={row.talk_theme_id ?? ""} onValueChange={onPickTheme}>
+                <SelectTrigger className="h-9 mt-0.5"><SelectValue placeholder="Selecione um tema" /></SelectTrigger>
+                <SelectContent>
+                  {themes.map((t) => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
+            {row.talk_theme_title && !themes.find((t) => t.id === row.talk_theme_id) && (
+              <p className="text-xs text-muted-foreground mt-1">Selecionado: {row.talk_theme_title}</p>
+            )}
+          </div>
+        </fieldset>
+      </CardContent></Card>
+      <TalkThemesManager />
+    </div>
+  );
+}
+
+/* ============ GERENCIADOR DE TEMAS (apenas SC) ============ */
+export function TalkThemesManager() {
+  const { role, user } = useAuth();
+  const congregation = useActiveCongregation();
+  const isSuper = role === "superintendent";
+  const [themes, setThemes] = useState<Theme[]>([]);
+  const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    if (!isSuper || !user) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("talk_themes").select("id,title")
+        .eq("superintendent_id", user.id).order("title");
+      setThemes((data ?? []) as Theme[]);
+    };
+    load();
+    const ch = supabase.channel(`themes-mgr-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "talk_themes", filter: `superintendent_id=eq.${user.id}` }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [isSuper, user]);
+
+  if (!isSuper) return null;
+
+  const add = async () => {
+    const title = draft.trim();
+    if (!title) return;
+    const { error } = await offlineInsert("talk_themes", {
+      title,
+      congregation_id: congregation?.id ?? null,
+    });
+    if (error) toast.error(error.message); else setDraft("");
+  };
+  const remove = async (id: string) => {
+    const { error } = await offlineDelete("talk_themes", { id });
+    if (error) toast.error(error.message);
+  };
+  const rename = async (id: string, title: string) => {
+    const { error } = await offlineUpdate("talk_themes", { title }, { id });
+    if (error) toast.error(error.message);
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-3">
+        <div>
+          <h3 className="font-semibold text-sm">Temas de Discurso (gerenciar)</h3>
+          <p className="text-xs text-muted-foreground">Os temas cadastrados aqui aparecerão para os anciãos escolherem.</p>
+        </div>
+        <div className="flex gap-2">
+          <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Novo tema" onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
+          <Button onClick={add}><Plus className="h-4 w-4 mr-1" />Adicionar</Button>
+        </div>
+        {themes.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Nenhum tema cadastrado ainda.</p>
+        ) : (
+          <ul className="divide-y border rounded-md">
+            {themes.map((t) => (
+              <li key={t.id} className="flex items-center gap-2 p-2">
+                <FieldText value={t.title} onSave={(v) => v && rename(t.id, v)} />
+                <Button size="icon" variant="ghost" onClick={() => remove(t.id)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ============ PIONEIROS ============ */
+interface PioneerRow {
+  id: string; visit_id: string;
+  opening_prayer: string | null;
+  closing_prayer: string | null;
+  location: string | null;
+  meeting_at: string | null;
+  super_meeting_at: string | null;
+}
+
+export function PioneerPanel() {
+  const { visit } = useActiveVisit();
+  const { role, canEdit } = useAuth();
+  const isSuper = role === "superintendent";
+  const { row, loading, save } = useSingleRow<PioneerRow>(
+    "pioneer_meetings",
+    "id,visit_id,opening_prayer,closing_prayer,location,meeting_at,super_meeting_at",
+    visit,
+  );
+  if (!visit) return <NoVisit />;
+  if (loading || !row) return <div className="p-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Carregando…</div>;
+
+  const changedByElder =
+    !!row.super_meeting_at && !!row.meeting_at && row.super_meeting_at !== row.meeting_at;
+
+  const onSaveDatetime = async (v: string | null) => {
+    const iso = v ? localInputToIso(v) : null;
+    if (isSuper) {
+      // SC redefine a referência original e também o valor atual
+      await save({ meeting_at: iso, super_meeting_at: iso });
+    } else {
+      // Ancião altera só o valor atual; mantemos super_meeting_at original
+      const patch: Partial<PioneerRow> = { meeting_at: iso };
+      if (!row.super_meeting_at && iso) patch.super_meeting_at = iso;
+      await save(patch);
+    }
+  };
+
+  return (
+    <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+      <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
+        <div>
+          <Label>Oração Inicial</Label>
+          <FieldText value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
+        </div>
+        <div>
+          <Label>Oração Final</Label>
+          <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
+        </div>
+        <div>
+          <Label>Local da Reunião</Label>
+          <FieldText value={row.location} onSave={(v) => save({ location: v })} />
+        </div>
+        <div>
+          <Label>
+            Data e Hora da Reunião
+            {isSuper ? " (define a referência)" : " (definida pelo Superintendente)"}
+          </Label>
+          <Input
+            type="datetime-local"
+            defaultValue={tsToLocalInput(row.meeting_at)}
+            key={row.meeting_at ?? ""}
+            onBlur={(e) => {
+              const cur = tsToLocalInput(row.meeting_at);
+              if (e.target.value !== cur) onSaveDatetime(e.target.value || null);
+            }}
+            className={`h-9 mt-0.5 ${changedByElder ? "border-destructive text-destructive focus-visible:ring-destructive bg-destructive/5" : ""}`}
+          />
+          {changedByElder && (
+            <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Alterado em relação à data/hora definida pelo Superintendente
+              ({new Date(row.super_meeting_at!).toLocaleString("pt-BR")}).
+            </p>
+          )}
+        </div>
+      </fieldset>
+    </CardContent></Card>
+  );
+}
+
+/* ============ ANCIÃOS E SERVOS ============ */
+interface EldersRow { id: string; visit_id: string; opening_prayer: string | null; closing_prayer: string | null }
+
+export function EldersServantsPanel() {
+  const { visit } = useActiveVisit();
+  const { canEdit } = useAuth();
+  const { row, loading, save } = useSingleRow<EldersRow>(
+    "elders_servants_meetings",
+    "id,visit_id,opening_prayer,closing_prayer",
+    visit,
+  );
+  if (!visit) return <NoVisit />;
+  if (loading || !row) return <div className="p-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Carregando…</div>;
+  return (
+    <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+      <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
+        <div>
+          <Label>Oração Inicial</Label>
+          <FieldText value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
+        </div>
+        <div>
+          <Label>Oração Final</Label>
+          <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
+        </div>
+      </fieldset>
+    </CardContent></Card>
+  );
+}
