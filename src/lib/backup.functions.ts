@@ -144,11 +144,42 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
 
     const d = data.file.data;
 
+    // SECURITY: prevent IDOR — só restaurar dados de congregações que o
+    // usuário possui ou que serão criadas em nome dele. Backups feitos por
+    // outros SCs ou adulterados não podem injetar/sobrescrever dados
+    // alheios.
+    const { data: ownedCongs } = await supabaseAdmin
+      .from("congregations").select("id").eq("superintendent_id", userId);
+    const ownedCongIds = new Set((ownedCongs ?? []).map((c) => c.id as string));
+
+    const incomingCongIds = new Set(
+      d.congregations
+        .map((r) => (r as Record<string, unknown>).id)
+        .filter((v): v is string => typeof v === "string"),
+    );
+    const allowedCongIds = new Set<string>([...ownedCongIds, ...incomingCongIds]);
+
     // Force ownership of congregations and templates to the current user
     const congregations = d.congregations.map((r) => ({ ...r, superintendent_id: userId }));
     const checklist_templates = d.checklist_templates.map((r) => ({ ...r, superintendent_id: userId }));
     const field_meeting_templates = d.field_meeting_templates.map((r) => ({ ...r, superintendent_id: userId }));
     const program_templates = d.program_templates.map((r) => ({ ...r, superintendent_id: userId }));
+
+    const allowedVisits = d.visits.filter((v) => {
+      const congId = (v as Record<string, unknown>).congregation_id;
+      return typeof congId === "string" && allowedCongIds.has(congId);
+    });
+    const allowedVisitIds = new Set(
+      allowedVisits
+        .map((v) => (v as Record<string, unknown>).id)
+        .filter((v): v is string => typeof v === "string"),
+    );
+
+    const filterByVisit = (rows: Row[]) =>
+      rows.filter((r) => {
+        const vId = (r as Record<string, unknown>).visit_id;
+        return typeof vId === "string" && allowedVisitIds.has(vId);
+      });
 
     const upsert = async (table: string, rows: Row[]) => {
       if (!rows.length) return null;
@@ -159,31 +190,32 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
 
     const steps: Array<[string, Row[]]> = [
       ["congregations", congregations],
-      ["visits", d.visits],
+      ["visits", allowedVisits],
       ["checklist_templates", checklist_templates],
       ["checklist_template_items", d.checklist_template_items],
       ["field_meeting_templates", field_meeting_templates],
       ["field_meeting_template_items", d.field_meeting_template_items],
       ["program_templates", program_templates],
       ["program_template_items", d.program_template_items],
-      ["checklist_items", d.checklist_items],
-      ["field_meetings", d.field_meetings],
-      ["field_assignments", d.field_assignments],
-      ["schedule_events", d.schedule_events],
-      ["meals", d.meals],
-      ["meal_day_notes", d.meal_day_notes ?? []],
-      ["transport_schedule", d.transport_schedule],
-      ["private_notes", d.private_notes.map((r) => ({ ...r, superintendent_id: userId }))],
+      ["checklist_items", filterByVisit(d.checklist_items)],
+      ["field_meetings", filterByVisit(d.field_meetings)],
+      ["field_assignments", filterByVisit(d.field_assignments)],
+      ["schedule_events", filterByVisit(d.schedule_events)],
+      ["meals", filterByVisit(d.meals)],
+      ["meal_day_notes", filterByVisit(d.meal_day_notes ?? [])],
+      ["transport_schedule", filterByVisit(d.transport_schedule)],
+      ["private_notes", filterByVisit(d.private_notes).map((r) => ({ ...r, superintendent_id: userId }))],
     ];
 
     const errors: string[] = [];
     let counted = 0;
+    const skipped = d.visits.length - allowedVisits.length;
     for (const [table, rows] of steps) {
       const err = await upsert(table, rows);
       if (err) errors.push(`${table}: ${err}`);
       else counted += rows.length;
     }
 
-    if (errors.length) return { ok: false as const, error: errors.join(" | "), restored: counted };
-    return { ok: true as const, restored: counted };
+    if (errors.length) return { ok: false as const, error: errors.join(" | "), restored: counted, skipped };
+    return { ok: true as const, restored: counted, skipped };
   });
