@@ -42,7 +42,6 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-const ELDER_POSITIONS = ["coordenador", "secretario", "sup_servico", "corpo"] as const;
 const ELDER_REGISTERABLE_POSITIONS = ["coordenador", "secretario", "sup_servico"] as const;
 
 // Returns which of the 3 registerable positions are still available for a congregation code.
