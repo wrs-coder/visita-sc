@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { SyncButton } from "@/components/SyncButton";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
@@ -88,9 +89,12 @@ function AppLayout() {
               <span className="font-semibold text-sm truncate">{congregation?.name ?? "Visita"}</span>
             </div>
           </div>
-          <button onClick={() => { signOut().then(() => nav({ to: "/" })); }} className="p-2 rounded-md hover:bg-white/10" aria-label="Sair">
-            <LogOut className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <SyncButton />
+            <button onClick={() => { signOut().then(() => nav({ to: "/" })); }} className="p-2 rounded-md hover:bg-white/10" aria-label="Sair">
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -99,7 +103,8 @@ function AppLayout() {
         <aside className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-sidebar text-sidebar-foreground">
           <SidebarHeader congregationName={congregation?.name} userName={profile?.full_name ?? null} role={role} />
           <div className="p-3 flex-1 overflow-y-auto"><Nav /></div>
-          <div className="p-3 border-t border-sidebar-border">
+          <div className="p-3 border-t border-sidebar-border space-y-2">
+            <div className="px-1"><SyncButton className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60 px-3 py-2 rounded-md" /></div>
             <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60"
               onClick={() => signOut().then(() => nav({ to: "/" }))}>
               <LogOut className="mr-2 h-4 w-4" /> Sair
