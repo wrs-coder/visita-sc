@@ -45,7 +45,7 @@ function AppLayout() {
     { to: "/dashboard", label: "Início", icon: LayoutDashboard },
     { to: "/cronograma", label: "Cronograma", icon: CalendarDays },
     { to: "/escala", label: "Estudos e Revisitas", icon: Users },
-    { to: "/reunioes-de-campo", label: "Reuniões de Campo", icon: MapPin },
+    { to: "/reunioes-discursos", label: "Reuniões e Discursos", icon: MapPin },
     { to: "/refeicoes", label: "Refeições", icon: UtensilsCrossed },
     { to: "/transporte", label: "Transporte", icon: Car },
     { to: "/checklist", label: "Checklist", icon: ListChecks },
