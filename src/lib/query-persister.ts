@@ -31,12 +31,12 @@ function makeIdbStorage(): Storage {
 }
 
 function pickStorage(): Storage {
-  if (typeof window === "undefined") {
+  const g = globalThis as unknown as { window?: Window; indexedDB?: IDBFactory; localStorage?: Storage };
+  if (!g.window) {
     return { getItem: () => null, setItem: () => undefined, removeItem: () => undefined, clear: () => undefined, key: () => null, length: 0 } as Storage;
   }
-  const w = window as Window & typeof globalThis;
-  if ("indexedDB" in w) return makeIdbStorage();
-  return w.localStorage;
+  if (g.indexedDB) return makeIdbStorage();
+  return g.localStorage!;
 }
 
 export const queryPersister = createAsyncStoragePersister({
