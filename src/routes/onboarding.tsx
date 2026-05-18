@@ -13,8 +13,6 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/onboarding")({ component: Page });
 
-const SUPER_CODE = "152832";
-
 function Page() {
   const { user, loading, refresh, signOut } = useAuth();
   const fn = useServerFn(linkAccount);
@@ -33,20 +31,19 @@ function Page() {
     const trimmed = code.trim();
     if (!trimmed) return;
 
-    // If it matches the super code → register as superintendent immediately
-    if (trimmed === SUPER_CODE) {
-      setBusy(true);
-      const res = await fn({ data: { mode: "superintendent", code: trimmed, fullName: fullName || undefined } });
+    // Tenta primeiro como código de superintendente (validado no servidor — o
+    // código nunca trafega no bundle do cliente).
+    setBusy(true);
+    const superRes = await fn({ data: { mode: "superintendent", code: trimmed, fullName: fullName || undefined } });
+    if (superRes.ok) {
       setBusy(false);
-      if (!res.ok) { toast.error(res.error); return; }
       toast.success("Conta criada! Agora cadastre as congregações do circuito.");
       await refresh();
       nav({ to: "/congregacoes" });
       return;
     }
 
-    // Otherwise check if it's a valid congregation invite code
-    setBusy(true);
+    // Não é código de SC → tenta como código de congregação (elder)
     const { data: cong } = await supabase
       .from("congregations")
       .select("id,is_active")
