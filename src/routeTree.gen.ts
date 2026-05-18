@@ -20,6 +20,7 @@ import { Route as VisitantePainelRouteImport } from './routes/visitante.painel'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
 import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 import { Route as AppTransporteRouteImport } from './routes/_app.transporte'
+import { Route as AppReunioesDiscursosRouteImport } from './routes/_app.reunioes-discursos'
 import { Route as AppReunioesDeCampoRouteImport } from './routes/_app.reunioes-de-campo'
 import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
 import { Route as AppPerfilRouteImport } from './routes/_app.perfil'
@@ -86,6 +87,11 @@ const CadastroAnciaoRoute = CadastroAnciaoRouteImport.update({
 const AppTransporteRoute = AppTransporteRouteImport.update({
   id: '/transporte',
   path: '/transporte',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReunioesDiscursosRoute = AppReunioesDiscursosRouteImport.update({
+  id: '/reunioes-discursos',
+  path: '/reunioes-discursos',
   getParentRoute: () => AppRoute,
 } as any)
 const AppReunioesDeCampoRoute = AppReunioesDeCampoRouteImport.update({
@@ -174,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof AppPerfilRoute
   '/refeicoes': typeof AppRefeicoesRoute
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
+  '/reunioes-discursos': typeof AppReunioesDiscursosRoute
   '/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/perfil': typeof AppPerfilRoute
   '/refeicoes': typeof AppRefeicoesRoute
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
+  '/reunioes-discursos': typeof AppReunioesDiscursosRoute
   '/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/_app/perfil': typeof AppPerfilRoute
   '/_app/refeicoes': typeof AppRefeicoesRoute
   '/_app/reunioes-de-campo': typeof AppReunioesDeCampoRoute
+  '/_app/reunioes-discursos': typeof AppReunioesDiscursosRoute
   '/_app/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
@@ -252,6 +261,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/refeicoes'
     | '/reunioes-de-campo'
+    | '/reunioes-discursos'
     | '/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
@@ -276,6 +286,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/refeicoes'
     | '/reunioes-de-campo'
+    | '/reunioes-discursos'
     | '/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
@@ -302,6 +313,7 @@ export interface FileRouteTypes {
     | '/_app/perfil'
     | '/_app/refeicoes'
     | '/_app/reunioes-de-campo'
+    | '/_app/reunioes-discursos'
     | '/_app/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
@@ -397,6 +409,13 @@ declare module '@tanstack/react-router' {
       path: '/transporte'
       fullPath: '/transporte'
       preLoaderRoute: typeof AppTransporteRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reunioes-discursos': {
+      id: '/_app/reunioes-discursos'
+      path: '/reunioes-discursos'
+      fullPath: '/reunioes-discursos'
+      preLoaderRoute: typeof AppReunioesDiscursosRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/reunioes-de-campo': {
@@ -507,6 +526,7 @@ interface AppRouteChildren {
   AppPerfilRoute: typeof AppPerfilRoute
   AppRefeicoesRoute: typeof AppRefeicoesRoute
   AppReunioesDeCampoRoute: typeof AppReunioesDeCampoRoute
+  AppReunioesDiscursosRoute: typeof AppReunioesDiscursosRoute
   AppTransporteRoute: typeof AppTransporteRoute
 }
 
@@ -524,6 +544,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPerfilRoute: AppPerfilRoute,
   AppRefeicoesRoute: AppRefeicoesRoute,
   AppReunioesDeCampoRoute: AppReunioesDeCampoRoute,
+  AppReunioesDiscursosRoute: AppReunioesDiscursosRoute,
   AppTransporteRoute: AppTransporteRoute,
 }
 

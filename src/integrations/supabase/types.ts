@@ -153,6 +153,33 @@ export type Database = {
         }
         Relationships: []
       }
+      elders_servants_meetings: {
+        Row: {
+          closing_prayer: string | null
+          created_at: string
+          id: string
+          opening_prayer: string | null
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          closing_prayer?: string | null
+          created_at?: string
+          id?: string
+          opening_prayer?: string | null
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          closing_prayer?: string | null
+          created_at?: string
+          id?: string
+          opening_prayer?: string | null
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: []
+      }
       field_assignments: {
         Row: {
           acompanhante: string | null
@@ -216,6 +243,7 @@ export type Database = {
           created_at: string
           day_offset: number
           id: string
+          meeting_location: string | null
           meeting_time: string | null
           modality: Database["public"]["Enums"]["field_modality"]
           period: string
@@ -230,6 +258,7 @@ export type Database = {
           created_at?: string
           day_offset?: number
           id?: string
+          meeting_location?: string | null
           meeting_time?: string | null
           modality?: Database["public"]["Enums"]["field_modality"]
           period?: string
@@ -244,6 +273,7 @@ export type Database = {
           created_at?: string
           day_offset?: number
           id?: string
+          meeting_location?: string | null
           meeting_time?: string | null
           modality?: Database["public"]["Enums"]["field_modality"]
           period?: string
@@ -300,6 +330,7 @@ export type Database = {
           event_date: string
           id: string
           is_active: boolean
+          meeting_location: string | null
           meeting_time: string | null
           modality: Database["public"]["Enums"]["field_modality"]
           period: string
@@ -315,6 +346,7 @@ export type Database = {
           event_date: string
           id?: string
           is_active?: boolean
+          meeting_location?: string | null
           meeting_time?: string | null
           modality?: Database["public"]["Enums"]["field_modality"]
           period: string
@@ -330,6 +362,7 @@ export type Database = {
           event_date?: string
           id?: string
           is_active?: boolean
+          meeting_location?: string | null
           meeting_time?: string | null
           modality?: Database["public"]["Enums"]["field_modality"]
           period?: string
@@ -419,6 +452,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      midweek_meetings: {
+        Row: {
+          chairman: string | null
+          closing_prayer: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          chairman?: string | null
+          closing_prayer?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          chairman?: string | null
+          closing_prayer?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: []
+      }
+      pioneer_meetings: {
+        Row: {
+          closing_prayer: string | null
+          created_at: string
+          id: string
+          location: string | null
+          meeting_at: string | null
+          opening_prayer: string | null
+          super_meeting_at: string | null
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          closing_prayer?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          meeting_at?: string | null
+          opening_prayer?: string | null
+          super_meeting_at?: string | null
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          closing_prayer?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          meeting_at?: string | null
+          opening_prayer?: string | null
+          super_meeting_at?: string | null
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: []
       }
       private_notes: {
         Row: {
@@ -632,6 +728,33 @@ export type Database = {
           },
         ]
       }
+      talk_themes: {
+        Row: {
+          congregation_id: string | null
+          created_at: string
+          id: string
+          superintendent_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          congregation_id?: string | null
+          created_at?: string
+          id?: string
+          superintendent_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          congregation_id?: string | null
+          created_at?: string
+          id?: string
+          superintendent_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       transport_schedule: {
         Row: {
           contact_phone: string | null
@@ -753,6 +876,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      weekend_meetings: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_at: string | null
+          talk_theme_id: string | null
+          talk_theme_title: string | null
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_at?: string | null
+          talk_theme_id?: string | null
+          talk_theme_title?: string | null
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_at?: string | null
+          talk_theme_id?: string | null
+          talk_theme_title?: string | null
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
