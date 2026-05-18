@@ -70,6 +70,8 @@ export function PwaInstallButton() {
   if (installed) return null;
   // Hide inside Lovable editor preview / iframe — won't work there.
   if (isPreviewHost() || isInIframe()) return null;
+  // Hide inside Capacitor native APK — app is already "installed".
+  if (isNativeApp()) return null;
 
   const ios = isIos();
 
