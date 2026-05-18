@@ -24,6 +24,21 @@ function isStandalone(): boolean {
   return window.matchMedia?.("(display-mode: standalone)").matches || navStandalone === true;
 }
 
+function isNativeApp(): boolean {
+  if (typeof window === "undefined") return false;
+  const w = window as unknown as {
+    Capacitor?: { isNativePlatform?: () => boolean; platform?: string };
+  };
+  if (w.Capacitor?.isNativePlatform?.()) return true;
+  if (w.Capacitor?.platform && w.Capacitor.platform !== "web") return true;
+  const ua = window.navigator.userAgent || "";
+  // Capacitor's Android WebView injects this UA fragment
+  if (/VisitaSC|CapacitorWebView/i.test(ua)) return true;
+  // Custom scheme used by the Capacitor Android build
+  if (window.location.protocol === "capacitor:" || window.location.protocol === "app:") return true;
+  return false;
+}
+
 function isIos(): boolean {
   if (typeof window === "undefined") return false;
   const ua = window.navigator.userAgent;
@@ -55,6 +70,8 @@ export function PwaInstallButton() {
   if (installed) return null;
   // Hide inside Lovable editor preview / iframe — won't work there.
   if (isPreviewHost() || isInIframe()) return null;
+  // Hide inside Capacitor native APK — app is already "installed".
+  if (isNativeApp()) return null;
 
   const ios = isIos();
 
