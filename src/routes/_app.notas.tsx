@@ -20,7 +20,19 @@ import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import jsPDF from "jspdf";
-import { offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
+import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
+
+function makeUuid(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // RFC4122 v4 fallback
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 
 export const Route = createFileRoute("/_app/notas")({ component: Page });
 
@@ -74,10 +86,33 @@ function Page() {
       : note_type === "pastoral"
         ? { title: "Visita de pastoreio", content: "", note_date: format(new Date(), "yyyy-MM-dd") }
         : { title: CATEGORIES.find((c) => c.value === note_type)?.label ?? "Nova nota", content: "", payload: {} };
-    const { data, error } = await supabase.from("private_notes").insert({
-      visit_id: visit.id, superintendent_id: user.id, note_type, ...base,
-    } as never).select().single();
-    if (error) toast.error(error.message); else if (data) setNotes([data as unknown as Note, ...notes]);
+    // ID gerado no cliente para suportar criação 100% offline.
+    const id = makeUuid();
+    const now = new Date().toISOString();
+    const optimistic: Note = {
+      id,
+      visit_id: visit.id,
+      superintendent_id: user.id,
+      title: (base.title as string) ?? null,
+      content: (base.content as string) ?? "",
+      note_type,
+      companion: null,
+      involved_names: null,
+      additional_info: null,
+      note_date: (base.note_date as string) ?? null,
+      payload: (base.payload as Record<string, string>) ?? null,
+      updated_at: now,
+    };
+    setNotes((n) => [optimistic, ...n]);
+    const { error, queued } = await offlineInsert("private_notes", {
+      id, visit_id: visit.id, superintendent_id: user.id, note_type, ...base,
+    } as Record<string, unknown>);
+    if (error) {
+      setNotes((n) => n.filter((x) => x.id !== id));
+      toast.error(error.message);
+    } else if (queued) {
+      toast.success("Nota criada offline");
+    }
   };
 
   const update = async (id: string, patch: Partial<Note>) => {
