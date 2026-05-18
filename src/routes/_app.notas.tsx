@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import jsPDF from "jspdf";
+import { offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
 
 export const Route = createFileRoute("/_app/notas")({ component: Page });
 
@@ -82,14 +83,15 @@ function Page() {
   const update = async (id: string, patch: Partial<Note>) => {
     setSavingId(id);
     setNotes((n) => n.map((x) => x.id === id ? { ...x, ...patch } : x));
-    const { error } = await supabase.from("private_notes").update(patch as never).eq("id", id);
+    const { error, queued } = await offlineUpdate("private_notes", patch as Record<string, unknown>, { id });
     setSavingId(null);
     if (error) toast.error(error.message);
+    else if (queued) toast.success("Salvo offline");
   };
 
   const remove = async (id: string) => {
     if (!confirm("Excluir esta nota?")) return;
-    const { error } = await supabase.from("private_notes").delete().eq("id", id);
+    const { error } = await offlineDelete("private_notes", { id });
     if (error) toast.error(error.message); else {
       setNotes((n) => n.filter((x) => x.id !== id));
       setSelected((s) => { const next = new Set(s); next.delete(id); return next; });

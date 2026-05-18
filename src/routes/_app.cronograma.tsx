@@ -18,6 +18,7 @@ import { format, parseISO, eachDayOfInterval, startOfWeek, addDays, addWeeks, is
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
 
 export const Route = createFileRoute("/_app/cronograma")({ component: Page });
 
@@ -96,21 +97,21 @@ function Page() {
       notes: editing.notes || null,
     };
     const res = editing.id
-      ? await supabase.from("schedule_events").update(payload).eq("id", editing.id)
-      : await supabase.from("schedule_events").insert(payload);
+      ? await offlineUpdate("schedule_events", payload, { id: editing.id })
+      : await offlineInsert("schedule_events", payload);
     setSaving(false);
     if (res.error) { toast.error(res.error.message); return; }
-    toast.success("Salvo");
+    toast.success(res.queued ? "Salvo offline" : "Salvo");
     setOpen(false); setEditing(null);
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("schedule_events").delete().eq("id", id);
+    const { error } = await offlineDelete("schedule_events", { id });
     if (error) toast.error(error.message); else toast.success("Removido");
   };
 
   const toggle = async (id: string, is_active: boolean) => {
-    const { error } = await supabase.from("schedule_events").update({ is_active }).eq("id", id);
+    const { error } = await offlineUpdate("schedule_events", { is_active }, { id });
     if (error) toast.error(error.message);
   };
 

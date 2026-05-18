@@ -16,6 +16,7 @@ import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
+import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
 
 export const Route = createFileRoute("/_app/transporte")({ component: Page });
 
@@ -72,18 +73,18 @@ function Page() {
       notes: editing.notes || null,
     };
     const r = editing.id
-      ? await supabase.from("transport_schedule").update(payload).eq("id", editing.id)
-      : await supabase.from("transport_schedule").insert(payload);
+      ? await offlineUpdate("transport_schedule", payload, { id: editing.id })
+      : await offlineInsert("transport_schedule", payload);
     if (r.error) toast.error(r.error.message);
-    else { toast.success("Salvo"); setOpen(false); setEditing(null); }
+    else { toast.success(r.queued ? "Salvo offline" : "Salvo"); setOpen(false); setEditing(null); }
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("transport_schedule").delete().eq("id", id);
+    const { error } = await offlineDelete("transport_schedule", { id });
     if (error) toast.error(error.message);
   };
   const toggle = async (id: string, is_active: boolean) => {
-    const { error } = await supabase.from("transport_schedule").update({ is_active }).eq("id", id);
+    const { error } = await offlineUpdate("transport_schedule", { is_active }, { id });
     if (error) toast.error(error.message);
   };
 
