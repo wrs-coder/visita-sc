@@ -1,53 +1,104 @@
-# Plano de Implementação
 
-Antes de começar, preciso confirmar alguns pontos para não errar o escopo. Vou explorar o código primeiro, mas já estruturo aqui o plano em alto nível.
+# Offline-First — Visita SC
 
-## 1. Navegação avançada no Cronograma Semanal (`_app.cronograma.tsx`)
+Objetivo: reduzir chamadas ao Supabase (plano grátis) e fazer o app abrir e funcionar sem rede, tanto no PWA quanto no APK Capacitor.
 
-- Adicionar handlers de **swipe** (touch start/end com threshold ~50px) sobre o container principal da semana. Esquerda → próxima semana; direita → anterior.
-- Adicionar botão fixo **"Próxima Semana"** (junto aos controles existentes de navegação semanal).
-- Adicionar ícone de **calendário** no topo que abre um `Popover` + `Calendar` (shadcn DatePicker). Ao escolher uma data, a semana ativa salta para a semana ISO daquela data.
+## 1. Cache persistente do TanStack Query (leitura instantânea)
 
-## 2. Fluxo pós-login + painel "Início" com seletor de congregação
+- Adicionar dependências: `@tanstack/query-sync-storage-persister`, `@tanstack/react-query-persist-client`, `idb-keyval`.
+- Em `src/router.tsx`:
+  - Manter `staleTime: 5min` como padrão geral.
+  - Criar `persistQueryClient` usando IndexedDB (via `idb-keyval`) com fallback para `localStorage`. `maxAge: 24h`, `buster` = versão do app.
+- Em `src/routes/__root.tsx`: trocar `QueryClientProvider` por `PersistQueryClientProvider` (mantendo o `client` que vem do contexto do router).
+- Resultado: qualquer `useQuery`/`useSuspenseQuery` ganha hidratação automática do disco → telas abrem instantaneamente sem rede.
 
-- **Redirecionamento**: hoje `src/routes/index.tsx` já manda `superintendent` para `/dashboard` e os demais para `/cronograma`. Vou ampliar para que **Coordenador, Secretário e Sup. de Serviço** também caiam em `/dashboard`. Anciãos comuns e ES continuam em `/cronograma` (sem mudança).
-- **Dropdown de congregação no Dashboard (apenas Superintendente)**:
-  - Buscar todas as congregações onde `superintendent_id = auth.uid()` (o "circuito" do superintendente).
-  - Persistir a congregação ativa em `localStorage` (`active_congregation_id`) + contexto leve via `use-active-visit`/novo hook `use-active-congregation`.
-  - Todas as abas que hoje usam `private.get_user_congregation` continuam OK para anciãos; para o superintendente, as queries que dependem da congregação devem passar a usar o id selecionado. Vou centralizar isso no hook `use-active-visit` (que já localiza a visita ativa) para considerar a congregação selecionada.
+## 2. Hooks de dados principais migrados para useQuery com cache longo
 
-## 3. Modo de Edição Supervisionada
+Converter os hooks/fetches mais usados em `useQuery` com `queryKey` estável e `staleTime: 12h`:
 
-Abas afetadas: **Escala (Estudos/Revisitas)**, **Reuniões de Campo**, **Refeições**, **Transporte**, **Checklist**.
+- `use-active-congregation` → `["congregations", userId]`
+- `use-active-visit` → `["visits", congregationId]` (mantém realtime, mas invalida via `queryClient.invalidateQueries`)
+- Leituras de `congregations`, `circuits` (se houver), relatórios em `_app.dashboard.tsx`, `_app.cronograma.tsx`, `_app.escala.tsx`, `_app.refeicoes.tsx`, `_app.reunioes-de-campo.tsx`, `_app.transporte.tsx`, `_app.checklist.tsx`.
 
-- Adicionar, no topo de cada uma dessas páginas, um toggle **"Ativar Edição"** visível **apenas quando `role === 'superintendent'`**.
-- Estado local `editEnabled` (default `false`). Quando `false`, todos os `Input/Select/Textarea/Checkbox` recebem `disabled`, e o botão de salvar fica oculto. Quando `true`, comportamento atual + botão **"Salvar Alterações"**.
-- Para anciãos a UI continua exatamente como hoje (sem toggle, edição direta conforme RLS).
+Cada uma passa a usar uma `queryKey` consistente para participar do cache persistido.
 
-## 4. Partilhar Programação no painel `/visitante/painel`
+## 3. Botão "Sincronizar" no topo
 
-Adicionar um menu "Partilhar Programação" com 3 ações sobre o bloco da semana exibida:
+- Novo componente `src/components/SyncButton.tsx`:
+  - Ícone `RefreshCw` discreto no header do layout `_app.tsx`.
+  - `onClick` → `queryClient.invalidateQueries()` + flush da fila offline.
+  - Mostra estado: ocioso / sincronizando / última sync (timestamp salvo em localStorage).
+  - Indicador visual de online/offline (`navigator.onLine`).
 
-- **PNG**: usar `html-to-image` (`toPng`) sobre o `ref` do bloco da programação semanal e disparar download.
-- **PDF**: usar `jspdf` + a imagem PNG renderizada (uma página A4, ajuste por proporção). Mantém layout fiel e simples.
-- **WhatsApp**: montar texto estruturado (Dias / Horários / Designações / Irmãos) a partir dos arrays `schedule`, `meals`, `field`, `fieldMeetings`, `transport` da semana visível, e abrir `https://wa.me/?text=<encoded>`.
+## 4. Fila offline de escritas (mutations)
 
-Bibliotecas novas: `html-to-image` e `jspdf` (instaladas via `bun add`).
+Novo módulo `src/lib/offline-queue.ts`:
+
+```ts
+type QueuedMutation = {
+  id: string;
+  table: string;
+  op: "insert" | "update" | "upsert" | "delete";
+  payload: unknown;
+  match?: Record<string, unknown>; // p/ update/delete
+  createdAt: string;
+};
+```
+
+- Persistência em `localStorage` (chave `visita-sc:offline-queue`).
+- API: `enqueue()`, `flush()`, `size()`, `subscribe()`.
+- `flush()` envia em lote (uma chamada por tabela quando possível) usando `supabase.from(table).insert/update/...`. Em sucesso → remove da fila. Em falha de rede → mantém.
+
+Novo hook `src/hooks/use-offline-mutation.ts`:
+- Wrapper sobre `useMutation` que:
+  - Aplica update otimista no cache do React Query.
+  - Se `navigator.onLine === false` → `enqueue()` e retorna sucesso local.
+  - Se online → tenta direto; em erro de rede também enfileira.
+- Refatorar as escritas de relatório/visita mais críticas (checklist toggle, refeições, escala) para usá-lo. Cadastros pesados (criação de congregação, perfil) continuam direto online.
+
+Auto-flush:
+- Listener global em `__root.tsx`: `window.addEventListener("online", flush)` e flush no mount se online.
+- Para Capacitor, também ouvir `document.addEventListener("resume", flush)`.
+
+## 5. Service Worker reforçado para shell offline
+
+Atualizar `public/sw.js`:
+- Bump `VERSION` para `v2`.
+- No `install`, pré-cachear o app shell: `/`, `/manifest.webmanifest`, ícones, e também os principais assets JS/CSS via `addAll` (best-effort) — opcional, já que `StaleWhileRevalidate` já cobre depois da 1ª visita.
+- Manter estratégia atual (NetworkFirst HTML, NetworkFirst Supabase REST, SWR estáticos) — já está alinhada com offline-first; a persistência do React Query é que dá a UX instantânea.
+
+## 6. Compatibilidade Capacitor
+
+- IndexedDB e localStorage funcionam dentro do WebView Android → nada a ajustar no `capacitor.config.ts`.
+- `npm run build` + `npx cap copy android` continuam funcionando: nenhuma dependência nativa nova.
+
+## Arquivos a criar/editar
+
+Criar:
+- `src/lib/offline-queue.ts`
+- `src/hooks/use-offline-mutation.ts`
+- `src/components/SyncButton.tsx`
+
+Editar:
+- `src/router.tsx` — configurar persister
+- `src/routes/__root.tsx` — `PersistQueryClientProvider` + listener `online`
+- `src/routes/_app.tsx` — montar `<SyncButton />` no header
+- `src/hooks/use-active-congregation.ts` — `useQuery` com cache 12h
+- `src/hooks/use-active-visit.ts` — `useQuery` com cache 12h (mantém realtime)
+- `src/hooks/use-auto-backup.ts` — sem mudança funcional
+- `public/sw.js` — bump versão e shell expandido
+- `package.json` — novas dependências
 
 ## Detalhes técnicos
 
-- Nenhuma mudança de schema/DB necessária.
-- Nada nas funções server além de uma possível server fn `listSuperintendentCongregations` (já dá pra fazer client-side com Supabase + RLS existente — superintendente vê suas congregações).
-- Toggle de edição é puramente client-side (RLS no Supabase já garante segurança real; o toggle é uma trava de UX para evitar edição acidental).
-- Swipe implementado com handlers nativos (sem nova dependência).
+- Persister: `experimental_createPersister` ou `createAsyncStoragePersister` apontando para `idb-keyval`. `maxAge: 1000*60*60*24` (24h), `buster` = `import.meta.env.VITE_APP_VERSION ?? "v1"`.
+- `dehydrateOptions`: só persistir queries com `queryKey[0] !== "auth"` e que tenham dados (`state.status === "success"`).
+- Realtime continua disparando `queryClient.invalidateQueries` para manter o cache fresco quando há rede.
+- Fila offline NÃO inclui auth/login/signup (sempre online).
 
-## Ordem de execução
+## Riscos conhecidos
 
-1. Instalar `html-to-image` e `jspdf`.
-2. Cronograma: swipe + botão "Próxima Semana" + DatePicker.
-3. `index.tsx`: redirecionar 4 funções para `/dashboard`.
-4. Dashboard: dropdown de congregações + hook `useActiveCongregation`.
-5. Modo edição supervisionada nas 5 abas.
-6. Painel visitante: menu Partilhar + 3 exportações.
+- Cache persistido pode mostrar dados antigos após login com outro usuário → invalidar tudo no `onAuthStateChange("SIGNED_OUT" | "SIGNED_IN")` (já parcialmente coberto no root).
+- Conflitos de escrita offline (mesmo registro editado em 2 dispositivos): última escrita vence — sem CRDT.
 
-Pergunta rápida (a confirmar com o usuário antes da implementação, se necessário): a partilha por WhatsApp deve abrir contato livre (`wa.me/?text=...`) ou já com número pré-configurado? Vou assumir contato livre (padrão mais comum).
+Após sua aprovação implemento tudo de uma vez.
