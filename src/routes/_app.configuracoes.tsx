@@ -170,9 +170,19 @@ function Page() {
       <h1 className="text-2xl md:text-3xl font-bold">Itinerário</h1>
 
       <Card><CardContent className="p-5">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Sua congregação</div>
-        <div className="text-lg font-semibold mt-1">{congregation?.name ?? "—"}</div>
-        <div className="text-xs text-muted-foreground mt-1">Você é {role === "superintendent" ? "Superintendente" : "Ancião"}</div>
+        {isSuper ? (
+          <>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Circuito</div>
+            <div className="text-lg font-semibold mt-1">{profile?.circuit?.trim() ? profile.circuit : "Não informado"}</div>
+            <div className="text-xs text-muted-foreground mt-1">Superintendente de Circuito — defina o circuito atual em "Meu perfil".</div>
+          </>
+        ) : (
+          <>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Sua congregação</div>
+            <div className="text-lg font-semibold mt-1">{congregation?.name ?? "—"}</div>
+            <div className="text-xs text-muted-foreground mt-1">Você é Ancião</div>
+          </>
+        )}
       </CardContent></Card>
 
       {isSuper && congregation && (

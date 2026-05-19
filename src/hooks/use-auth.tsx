@@ -17,6 +17,7 @@ export interface Profile {
   full_name: string | null;
   email: string | null;
   congregation_id: string | null;
+  circuit: string | null;
 }
 
 export interface Congregation {
