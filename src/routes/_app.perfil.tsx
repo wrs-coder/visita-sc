@@ -28,10 +28,12 @@ function Page() {
   const [pendingRestore, setPendingRestore] = useState<unknown | null>(null);
   const [busyBackup, setBusyBackup] = useState<null | "export" | "restore">(null);
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
+  const [circuit, setCircuit] = useState(profile?.circuit ?? "");
   const [email, setEmail] = useState(user?.email ?? profile?.email ?? "");
   const [pwd, setPwd] = useState("");
   const [pwd2, setPwd2] = useState("");
   const [busyName, setBusyName] = useState(false);
+  const [busyCircuit, setBusyCircuit] = useState(false);
   const [busyEmail, setBusyEmail] = useState(false);
   const [busyPwd, setBusyPwd] = useState(false);
 
@@ -77,6 +79,17 @@ function Page() {
     refresh();
   };
 
+  const saveCircuit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setBusyCircuit(true);
+    const { error } = await supabase.from("profiles").update({ circuit: circuit.trim() || null }).eq("id", user.id);
+    setBusyCircuit(false);
+    if (error) { toast.error("Erro ao salvar", { description: error.message }); return; }
+    toast.success("Circuito atualizado");
+    refresh();
+  };
+
   const saveEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusyEmail(true);
@@ -117,6 +130,22 @@ function Page() {
           </form>
         </CardContent>
       </Card>
+
+      {role === "superintendent" && (
+        <Card className="shadow-card">
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Circuito</CardTitle></CardHeader>
+          <CardContent>
+            <form onSubmit={saveCircuit} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="circuit">Identificação do circuito</Label>
+                <Input id="circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Ex: AGO-12" maxLength={60} />
+                <p className="text-xs text-muted-foreground">O superintendente de circuito não pertence a uma congregação fixa. Use este campo para registrar o código ou nome do circuito atual.</p>
+              </div>
+              <Button type="submit" disabled={busyCircuit}>Salvar circuito</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="shadow-card">
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> E-mail de acesso</CardTitle></CardHeader>
