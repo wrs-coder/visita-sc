@@ -163,10 +163,12 @@ function AppLayout() {
               <SheetTrigger asChild>
                 <button className="p-2 -ml-2 rounded-md hover:bg-white/10"><Menu className="h-5 w-5" /></button>
               </SheetTrigger>
-              <SheetContent side="left" className="bg-sidebar text-sidebar-foreground border-0 p-0 w-72">
+              <SheetContent side="left" className="bg-sidebar text-sidebar-foreground border-0 p-0 w-72 flex flex-col h-full">
                 <SheetTitle className="sr-only">Menu</SheetTitle>
-                <SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} />
-                <div className="p-3"><Nav /></div>
+                <div className="shrink-0">
+                  <SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} />
+                </div>
+                <div className="p-3 flex-1 overflow-y-auto overscroll-contain"><Nav /></div>
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-2">
