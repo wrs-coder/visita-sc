@@ -14,9 +14,9 @@ import { toast } from "sonner";
 import { LogIn, Users, ShieldCheck, Eye, Info, Mail, MessageCircle } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
-const APP_VERSION = "1.0.0";
-const APP_BUILD = "2026.05.17";
-const APP_UPDATED_AT = "17/05/2026";
+const APP_VERSION = "2.0.0";
+const APP_BUILD = "2026.05.19";
+const APP_UPDATED_AT = "19/05/2026";
 
 export function LoginForm() {
   const nav = useNavigate();
@@ -168,7 +168,7 @@ export function LoginForm() {
                     </p>
                     <p className="text-sm mt-1 font-semibold text-foreground">
                       Sistema totalmente idealizado, estruturado e programado de forma independente por
-                      <span className="text-primary"> Wanderson Pereira Rodrigues dos Santos</span>.
+                      <span className="text-primary"> Wanderson Rodrigues</span>.
                     </p>
                   </div>
                   <div className="space-y-2">
