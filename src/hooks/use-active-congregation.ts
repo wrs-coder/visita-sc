@@ -55,6 +55,25 @@ export function useActiveCongregation(): Congregation | null {
     },
   });
 
-  if (role === "superintendent" && overrideId && override) return override;
+  const { data: firstSuperCongregation } = useQuery({
+    queryKey: ["congregations", "firstSuperintendentFallback"],
+    enabled: role === "superintendent" && !overrideId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("congregations")
+        .select("id,name,superintendent_id,is_active")
+        .order("name")
+        .limit(1)
+        .maybeSingle();
+      return data
+        ? ({ ...(data as Omit<Congregation, "invite_code">), invite_code: "" } as Congregation)
+        : null;
+    },
+  });
+
+  if (role === "superintendent") {
+    if (overrideId) return override ?? null;
+    return firstSuperCongregation ?? null;
+  }
   return congregation;
 }
