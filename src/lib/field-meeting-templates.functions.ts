@@ -250,10 +250,17 @@ export const replaceFieldMeetingTemplateItems = createServerFn({ method: "POST" 
     return { ok: true as const };
   });
 
-// Apply the field-meeting template linked to the visit's congregation, seeding rows in field_meetings.
+// Aplica um modelo de reunião de campo a uma visita específica. Aceita templateId
+// explícito (padronizado com Programação). Se omitido, mantém o comportamento
+// legado de procurar o template vinculado à congregação (compat).
 export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
+  .inputValidator((input) =>
+    z.object({
+      visitId: z.string().uuid(),
+      templateId: z.string().uuid().optional(),
+    }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const { data: visit } = await supabaseAdmin
@@ -262,11 +269,23 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
     const { data: cong } = await supabaseAdmin
       .from("congregations").select("superintendent_id").eq("id", visit.congregation_id).maybeSingle();
     if (!cong || cong.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
-    const { data: tpl } = await supabaseAdmin
-      .from("field_meeting_templates").select("id").eq("congregation_id", visit.congregation_id).maybeSingle();
-    if (!tpl) return { ok: true as const, applied: 0 };
+
+    let templateId = data.templateId ?? null;
+    if (templateId) {
+      const own = await supabaseAdmin.from("field_meeting_templates")
+        .select("id").eq("id", templateId).eq("superintendent_id", userId).maybeSingle();
+      if (!own.data) return { ok: false as const, error: "Modelo não encontrado." };
+    } else {
+      const { data: tpl } = await supabaseAdmin
+        .from("field_meeting_templates").select("id").eq("congregation_id", visit.congregation_id).maybeSingle();
+      templateId = tpl?.id ?? null;
+    }
+    if (!templateId) return { ok: true as const, applied: 0 };
+
+    await supabaseAdmin.from("visits").update({ field_meeting_template_id: templateId }).eq("id", data.visitId);
+
     const { data: items } = await supabaseAdmin
-      .from("field_meeting_template_items").select("*").eq("template_id", tpl.id).order("sort_order");
+      .from("field_meeting_template_items").select("*").eq("template_id", templateId).order("sort_order");
     if (!items?.length) return { ok: true as const, applied: 0 };
     const start = new Date(visit.start_date + "T00:00:00");
     const dateAt = (off: number) => {
