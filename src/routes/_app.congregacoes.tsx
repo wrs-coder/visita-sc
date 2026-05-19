@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_app/congregacoes")({ component: Page });
 
 function Page() {
   const { user, role, profile, refresh } = useAuth();
-  const nav = useNavigate();
+  
   const fnList = useServerFn(listMyCongregations);
   const fnCreate = useServerFn(createCongregation);
   const fnUpdate = useServerFn(updateCongregation);
