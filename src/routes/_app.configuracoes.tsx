@@ -5,13 +5,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { listMyCongregations } from "@/lib/congregations.functions";
 import { listTemplates, applyTemplateToVisit } from "@/lib/templates.functions";
-import { applyFieldMeetingTemplateForVisit } from "@/lib/field-meeting-templates.functions";
+import {
+  applyFieldMeetingTemplateForVisit,
+  listFieldMeetingTemplates,
+} from "@/lib/field-meeting-templates.functions";
+import {
+  applyChecklistTemplateForVisit,
+  listChecklistTemplates,
+} from "@/lib/checklist-templates.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, KeyRound, Calendar, Check, Building2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -19,7 +26,7 @@ import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
-interface Visit { id: string; title: string; start_date: string; end_date: string; is_active: boolean; congregation_id: string; }
+interface Visit { id: string; title: string; start_date: string; end_date: string; is_active: boolean; congregation_id: string; checklist_template_id?: string | null; field_meeting_template_id?: string | null; template_id?: string | null; }
 interface Cong { id: string; name: string; invite_code: string; superintendent_id: string; }
 
 function Page() {
@@ -28,12 +35,17 @@ function Page() {
   const fnTpls = useServerFn(listTemplates);
   const fnApply = useServerFn(applyTemplateToVisit);
   const fnApplyField = useServerFn(applyFieldMeetingTemplateForVisit);
+  const fnApplyChecklist = useServerFn(applyChecklistTemplateForVisit);
+  const fnListField = useServerFn(listFieldMeetingTemplates);
+  const fnListChecklist = useServerFn(listChecklistTemplates);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [congs, setCongs] = useState<Cong[]>([]);
   const [tpls, setTpls] = useState<{ id: string; slot: number; name: string }[]>([]);
+  const [checklistTpls, setChecklistTpls] = useState<{ id: string; name: string }[]>([]);
+  const [fieldTpls, setFieldTpls] = useState<{ id: string; name: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: "", start_date: "", end_date: "", congregation_id: "", template_id: "" });
+  const [form, setForm] = useState({ title: "", start_date: "", end_date: "", congregation_id: "", template_id: "", checklist_template_id: "", field_template_id: "" });
   const isSuper = role === "superintendent";
 
   const loadCongs = useCallback(async () => {
@@ -42,7 +54,11 @@ function Page() {
     if (res.ok) setCongs(res.data as Cong[]);
     const tr = await fnTpls();
     if (tr.ok) setTpls(tr.templates);
-  }, [isSuper, fnList, fnTpls]);
+    const cr = await fnListChecklist();
+    if (cr.ok) setChecklistTpls(((cr as { templates?: { id: string; name: string }[] }).templates ?? []).map((t) => ({ id: t.id, name: t.name })));
+    const fr = await fnListField();
+    if (fr.ok) setFieldTpls(((fr as { templates?: { id: string; name: string }[] }).templates ?? []).map((t) => ({ id: t.id, name: t.name })));
+  }, [isSuper, fnList, fnTpls, fnListChecklist, fnListField]);
 
   useEffect(() => { loadCongs(); }, [loadCongs]);
 
@@ -62,13 +78,21 @@ function Page() {
 
   const openNew = () => {
     setEditId(null);
-    setForm({ title: "", start_date: "", end_date: "", congregation_id: congregation?.id ?? congs[0]?.id ?? "", template_id: "" });
+    setForm({ title: "", start_date: "", end_date: "", congregation_id: congregation?.id ?? congs[0]?.id ?? "", template_id: "", checklist_template_id: "", field_template_id: "" });
     setOpen(true);
   };
 
   const openEdit = (v: Visit) => {
     setEditId(v.id);
-    setForm({ title: v.title, start_date: v.start_date, end_date: v.end_date, congregation_id: v.congregation_id, template_id: "" });
+    setForm({
+      title: v.title,
+      start_date: v.start_date,
+      end_date: v.end_date,
+      congregation_id: v.congregation_id,
+      template_id: "",
+      checklist_template_id: "",
+      field_template_id: "",
+    });
     setOpen(true);
   };
 
@@ -82,6 +106,14 @@ function Page() {
         const r = await fnApply({ data: { visitId: editId, templateId: form.template_id } });
         if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
       }
+      if (form.checklist_template_id) {
+        const r = await fnApplyChecklist({ data: { visitId: editId, templateId: form.checklist_template_id } });
+        if (!r.ok) toast.error("Falha ao aplicar modelo de checklist: " + r.error);
+      }
+      if (form.field_template_id) {
+        const r = await fnApplyField({ data: { visitId: editId, templateId: form.field_template_id } });
+        if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
+      }
       toast.success("Visita atualizada");
       setOpen(false);
       return;
@@ -93,8 +125,14 @@ function Page() {
       const r = await fnApply({ data: { visitId: data.id, templateId: form.template_id } });
       if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
     }
-    const rf = await fnApplyField({ data: { visitId: data.id } });
-    if (!rf.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + rf.error);
+    if (form.checklist_template_id) {
+      const r = await fnApplyChecklist({ data: { visitId: data.id, templateId: form.checklist_template_id } });
+      if (!r.ok) toast.error("Falha ao aplicar modelo de checklist: " + r.error);
+    }
+    if (form.field_template_id) {
+      const r = await fnApplyField({ data: { visitId: data.id, templateId: form.field_template_id } });
+      if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
+    }
     if (user && profile?.congregation_id !== form.congregation_id) {
       await supabase.from("profiles").update({ congregation_id: form.congregation_id }).eq("id", user.id);
       await refresh();
@@ -187,6 +225,28 @@ function Page() {
                   </Select>
                   {tpls.length === 0 && <p className="text-xs text-muted-foreground mt-1">Crie um modelo em "Modelos" para aplicá-lo aqui.</p>}
                   {editId && <p className="text-xs text-muted-foreground mt-1">Selecionar um modelo aplicará novos itens à visita existente.</p>}
+                </div>
+                <div>
+                  <Label>Modelo de checklist aplicável (opcional)</Label>
+                  <Select value={form.checklist_template_id || "none"} onValueChange={(v) => setForm({ ...form, checklist_template_id: v === "none" ? "" : v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Sem modelo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Não aplicar modelo —</SelectItem>
+                      {checklistTpls.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {checklistTpls.length === 0 && <p className="text-xs text-muted-foreground mt-1">Crie um modelo em "Modelos de Checklist" para aplicá-lo aqui.</p>}
+                </div>
+                <div>
+                  <Label>Modelo de reunião de campo aplicável (opcional)</Label>
+                  <Select value={form.field_template_id || "none"} onValueChange={(v) => setForm({ ...form, field_template_id: v === "none" ? "" : v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Sem modelo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Não aplicar modelo —</SelectItem>
+                      {fieldTpls.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {fieldTpls.length === 0 && <p className="text-xs text-muted-foreground mt-1">Crie um modelo em "Modelo Reuniões de Campo" para aplicá-lo aqui.</p>}
                 </div>
                 <Button className="w-full" onClick={submit}>{editId ? "Salvar" : "Criar"}</Button>
               </div>

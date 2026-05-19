@@ -1,104 +1,49 @@
+Tenho três frentes para aplicar. Antes de mexer, quero alinhar o escopo porque #2 e #3 são refatorações grandes que tocam quase todas as telas de leitura/escrita — quero ter sua aprovação antes de mexer no app inteiro.
 
-# Offline-First — Visita SC
+## 1. Padronização dos modelos (entrega completa nesta rodada)
 
-Objetivo: reduzir chamadas ao Supabase (plano grátis) e fazer o app abrir e funcionar sem rede, tanto no PWA quanto no APK Capacitor.
+Espelhar a lógica do "Modelo de Programação" nos modelos de Checklist e Reuniões de Campo.
 
-## 1. Cache persistente do TanStack Query (leitura instantânea)
+**Migração no banco:**
+- Adicionar `checklist_template_id` e `field_meeting_template_id` em `visits` (FK opcional aos respectivos templates).
+- Manter as colunas `congregation_id` em `checklist_templates` / `field_meeting_templates` por compatibilidade, mas o app deixa de usá-las (modelos viram "globais" do superintendente, como Programação).
 
-- Adicionar dependências: `@tanstack/query-sync-storage-persister`, `@tanstack/react-query-persist-client`, `idb-keyval`.
-- Em `src/router.tsx`:
-  - Manter `staleTime: 5min` como padrão geral.
-  - Criar `persistQueryClient` usando IndexedDB (via `idb-keyval`) com fallback para `localStorage`. `maxAge: 24h`, `buster` = versão do app.
-- Em `src/routes/__root.tsx`: trocar `QueryClientProvider` por `PersistQueryClientProvider` (mantendo o `client` que vem do contexto do router).
-- Resultado: qualquer `useQuery`/`useSuspenseQuery` ganha hidratação automática do disco → telas abrem instantaneamente sem rede.
+**Server functions:**
+- `applyChecklistTemplateForVisit({ visitId, templateId })` (nova) — semeia `checklist_items` a partir do template escolhido.
+- `applyFieldMeetingTemplateForVisit({ visitId, templateId })` — passa a aceitar `templateId` explícito em vez de procurar pela congregação.
+- Remover/ocultar `linkChecklistTemplate` e `linkFieldMeetingTemplate` da UI (mantemos no servidor por compat).
 
-## 2. Hooks de dados principais migrados para useQuery com cache longo
+**UI:**
+- `_app.checklist-modelos.tsx`: remove o `Select` "Vincular à congregação" e seu texto explicativo. Lista deixa de mostrar "→ Congregação".
+- `_app.modelo-reunioes-de-campo.tsx`: idem.
+- `_app.configuracoes.tsx` (Itinerário, onde a visita é criada/editada): além do "Modelo de programação", adiciona dois novos dropdowns:
+  - "Modelo de Checklist aplicável"
+  - "Modelo de Reunião de Campo aplicável"
+  Os três modelos escolhidos são injetados via as três `applyXForVisit` na criação/edição da visita.
 
-Converter os hooks/fetches mais usados em `useQuery` com `queryKey` estável e `staleTime: 12h`:
+## 2. Cache local — proposta
 
-- `use-active-congregation` → `["congregations", userId]`
-- `use-active-visit` → `["visits", congregationId]` (mantém realtime, mas invalida via `queryClient.invalidateQueries`)
-- Leituras de `congregations`, `circuits` (se houver), relatórios em `_app.dashboard.tsx`, `_app.cronograma.tsx`, `_app.escala.tsx`, `_app.refeicoes.tsx`, `_app.reunioes-de-campo.tsx`, `_app.transporte.tsx`, `_app.checklist.tsx`.
+A infraestrutura **já está** em pé: TanStack Query com `staleTime: 12h`, `gcTime: 24h`, `networkMode: "offlineFirst"`, persister em IndexedDB. O problema é que **a maioria das telas não usa Query** — fazem `useEffect` + `supabase.from(...).select()` cru e, pior, abrem um `channel` realtime por tela, que dispara `load()` em qualquer mudança.
 
-Cada uma passa a usar uma `queryKey` consistente para participar do cache persistido.
+Para realmente reduzir requisições, precisaríamos migrar ~10 telas (`checklist`, `escala`, `refeicoes`, `transporte`, `cronograma`, `notas`, `reunioes-discursos` etc.) para `useQuery` com `queryKey` por `visit_id`, e remover as subscrições realtime (substituindo por refetch sob demanda + pull-to-refresh).
 
-## 3. Botão "Sincronizar" no topo
+**Pergunto:** topa que eu faça essa migração agora em todas as telas de leitura, ou prefere que eu faça primeiro só as 3 mais pesadas (checklist, escala, reunioes-discursos) para validar o padrão antes de propagar?
 
-- Novo componente `src/components/SyncButton.tsx`:
-  - Ícone `RefreshCw` discreto no header do layout `_app.tsx`.
-  - `onClick` → `queryClient.invalidateQueries()` + flush da fila offline.
-  - Mostra estado: ocioso / sincronizando / última sync (timestamp salvo em localStorage).
-  - Indicador visual de online/offline (`navigator.onLine`).
+## 3. Agrupamento de escrita — proposta
 
-## 4. Fila offline de escritas (mutations)
+Hoje a maioria dos campos já salva **on blur** (sai do input → salva), não a cada tecla. O que ainda salva por keystroke são alguns `Textarea` em `MeetingPanels` (orações, observações).
 
-Novo módulo `src/lib/offline-queue.ts`:
+Plano:
+- Criar `useDebouncedSave(value, save, { delay: 800 })` em `src/hooks/`.
+- Aplicar nos `Textarea` de `SingleRowPanel`/`MeetingPanels` (orações, notas privadas, notas por dia de refeição).
+- Garantir flush imediato no `beforeunload` e ao trocar de aba/visita (sem perder dado).
 
-```ts
-type QueuedMutation = {
-  id: string;
-  table: string;
-  op: "insert" | "update" | "upsert" | "delete";
-  payload: unknown;
-  match?: Record<string, unknown>; // p/ update/delete
-  createdAt: string;
-};
-```
+## Próximo passo
 
-- Persistência em `localStorage` (chave `visita-sc:offline-queue`).
-- API: `enqueue()`, `flush()`, `size()`, `subscribe()`.
-- `flush()` envia em lote (uma chamada por tabela quando possível) usando `supabase.from(table).insert/update/...`. Em sucesso → remove da fila. Em falha de rede → mantém.
+Vou aplicar a **Frente 1 inteira** agora (migração + servidor + UI). Para as Frentes 2 e 3, me confirme se prefere:
 
-Novo hook `src/hooks/use-offline-mutation.ts`:
-- Wrapper sobre `useMutation` que:
-  - Aplica update otimista no cache do React Query.
-  - Se `navigator.onLine === false` → `enqueue()` e retorna sucesso local.
-  - Se online → tenta direto; em erro de rede também enfileira.
-- Refatorar as escritas de relatório/visita mais críticas (checklist toggle, refeições, escala) para usá-lo. Cadastros pesados (criação de congregação, perfil) continuam direto online.
+(a) **Tudo de uma vez** — migro todas as telas para Query + aplico debounce em todos os textareas. Mexe em muitos arquivos numa única rodada.
 
-Auto-flush:
-- Listener global em `__root.tsx`: `window.addEventListener("online", flush)` e flush no mount se online.
-- Para Capacitor, também ouvir `document.addEventListener("resume", flush)`.
+(b) **Faseado** — começo pelas 3 telas mais pesadas (checklist, escala, reunioes-discursos) + debounce nos textareas das reuniões. Se passar bem, propago para o resto na próxima rodada.
 
-## 5. Service Worker reforçado para shell offline
-
-Atualizar `public/sw.js`:
-- Bump `VERSION` para `v2`.
-- No `install`, pré-cachear o app shell: `/`, `/manifest.webmanifest`, ícones, e também os principais assets JS/CSS via `addAll` (best-effort) — opcional, já que `StaleWhileRevalidate` já cobre depois da 1ª visita.
-- Manter estratégia atual (NetworkFirst HTML, NetworkFirst Supabase REST, SWR estáticos) — já está alinhada com offline-first; a persistência do React Query é que dá a UX instantânea.
-
-## 6. Compatibilidade Capacitor
-
-- IndexedDB e localStorage funcionam dentro do WebView Android → nada a ajustar no `capacitor.config.ts`.
-- `npm run build` + `npx cap copy android` continuam funcionando: nenhuma dependência nativa nova.
-
-## Arquivos a criar/editar
-
-Criar:
-- `src/lib/offline-queue.ts`
-- `src/hooks/use-offline-mutation.ts`
-- `src/components/SyncButton.tsx`
-
-Editar:
-- `src/router.tsx` — configurar persister
-- `src/routes/__root.tsx` — `PersistQueryClientProvider` + listener `online`
-- `src/routes/_app.tsx` — montar `<SyncButton />` no header
-- `src/hooks/use-active-congregation.ts` — `useQuery` com cache 12h
-- `src/hooks/use-active-visit.ts` — `useQuery` com cache 12h (mantém realtime)
-- `src/hooks/use-auto-backup.ts` — sem mudança funcional
-- `public/sw.js` — bump versão e shell expandido
-- `package.json` — novas dependências
-
-## Detalhes técnicos
-
-- Persister: `experimental_createPersister` ou `createAsyncStoragePersister` apontando para `idb-keyval`. `maxAge: 1000*60*60*24` (24h), `buster` = `import.meta.env.VITE_APP_VERSION ?? "v1"`.
-- `dehydrateOptions`: só persistir queries com `queryKey[0] !== "auth"` e que tenham dados (`state.status === "success"`).
-- Realtime continua disparando `queryClient.invalidateQueries` para manter o cache fresco quando há rede.
-- Fila offline NÃO inclui auth/login/signup (sempre online).
-
-## Riscos conhecidos
-
-- Cache persistido pode mostrar dados antigos após login com outro usuário → invalidar tudo no `onAuthStateChange("SIGNED_OUT" | "SIGNED_IN")` (já parcialmente coberto no root).
-- Conflitos de escrita offline (mesmo registro editado em 2 dispositivos): última escrita vence — sem CRDT.
-
-Após sua aprovação implemento tudo de uma vez.
+Recomendo (b) pelo menor risco de regressão.

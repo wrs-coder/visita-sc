@@ -1,18 +1,26 @@
 import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
-import { LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, LogOut, Menu, Building2, Car, FileStack, MapPin, UserCircle, Plane } from "lucide-react";
+import {
+  LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock, LogOut, Menu,
+  Building2, Car, FileStack, MapPin, UserCircle, Plane, ChevronDown, Layers,
+} from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Card, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SyncButton } from "@/components/SyncButton";
 import { setActiveContext } from "@/lib/active-context";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
 });
+
+type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }> };
+type NavSection = { id: string; label: string; items: NavItem[]; collapsible?: boolean };
 
 function AppLayout() {
   const { loading, user, role, needsOnboarding, signOut, congregation, profile } = useAuth();
@@ -41,36 +49,105 @@ function AppLayout() {
     return <div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
   }
 
-  const items = [
-    { to: "/dashboard", label: "Início", icon: LayoutDashboard },
-    { to: "/cronograma", label: "Cronograma", icon: CalendarDays },
-    { to: "/escala", label: "Estudos e Revisitas", icon: Users },
-    { to: "/reunioes-discursos", label: "Reuniões e Discursos", icon: MapPin },
-    { to: "/refeicoes", label: "Refeições", icon: UtensilsCrossed },
-    { to: "/transporte", label: "Transporte", icon: Car },
-    { to: "/checklist", label: "Checklist", icon: ListChecks },
-    ...(role === "superintendent" ? [{ to: "/modelos", label: "Modelos de Programação", icon: FileStack }] : []),
-    ...(role === "superintendent" ? [{ to: "/checklist-modelos", label: "Modelos de Checklist", icon: ListChecks }] : []),
-    ...(role === "superintendent" ? [{ to: "/modelo-reunioes-de-campo", label: "Modelo Reuniões de Campo", icon: MapPin }] : []),
-    ...(role === "superintendent" ? [{ to: "/notas", label: "Notas Privadas", icon: Lock }] : []),
-    ...(role === "superintendent" ? [{ to: "/congregacoes", label: "Congregações", icon: Building2 }] : []),
-    { to: "/configuracoes", label: "Itinerário", icon: Plane },
-    { to: "/perfil", label: "Meu perfil", icon: UserCircle },
-  ];
+  // Bloqueio de membros comuns quando a congregação está inativa.
+  const blocked = role !== "superintendent" && congregation && congregation.is_active === false;
+
+  const sections: NavSection[] = [
+    {
+      id: "principal",
+      label: "Principal",
+      items: [
+        { to: "/dashboard", label: "Início", icon: LayoutDashboard },
+        { to: "/cronograma", label: "Cronograma", icon: CalendarDays },
+        { to: "/configuracoes", label: "Itinerário", icon: Plane },
+        ...(role === "superintendent" ? [{ to: "/congregacoes", label: "Congregações", icon: Building2 }] : []),
+      ],
+    },
+    {
+      id: "visita",
+      label: "Semana da Visita",
+      items: [
+        { to: "/escala", label: "Estudos e Revisitas", icon: Users },
+        { to: "/reunioes-discursos", label: "Reuniões e Discursos", icon: MapPin },
+        { to: "/refeicoes", label: "Refeições", icon: UtensilsCrossed },
+        { to: "/transporte", label: "Transporte", icon: Car },
+        { to: "/checklist", label: "Checklist", icon: ListChecks },
+        ...(role === "superintendent" ? [{ to: "/notas", label: "Notas Privadas", icon: Lock }] : []),
+      ],
+    },
+    {
+      id: "modelos",
+      label: "Modelos e Configurações",
+      items: [
+        ...(role === "superintendent" ? [
+          { to: "/modelos", label: "Modelos de Programação", icon: FileStack },
+          { to: "/checklist-modelos", label: "Modelos de Checklist", icon: ListChecks },
+          { to: "/modelo-reunioes-de-campo", label: "Modelo Reuniões de Campo", icon: MapPin },
+        ] : []),
+        { to: "/perfil", label: "Meu perfil", icon: UserCircle },
+      ],
+      collapsible: role === "superintendent",
+    },
+  ].filter((s) => s.items.length > 0);
+
+  const isActiveLink = (to: string) =>
+    location.pathname === to || (to !== "/dashboard" && location.pathname.startsWith(to));
+
+  const LinkItem = ({ it, onClick }: { it: NavItem; onClick?: () => void }) => {
+    const active = isActiveLink(it.to);
+    const Icon = it.icon;
+    return (
+      <Link
+        to={it.to}
+        onClick={onClick}
+        className={cn(
+          "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition",
+          active
+            ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+            : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+        )}
+      >
+        <Icon className="h-4 w-4" /> {it.label}
+      </Link>
+    );
+  };
 
   const Nav = ({ onClick }: { onClick?: () => void }) => (
-    <nav className="space-y-1">
-      {items.map((it) => {
-        const active = location.pathname === it.to || (it.to !== "/dashboard" && location.pathname.startsWith(it.to));
-        const Icon = it.icon;
+    <nav className="space-y-5">
+      {sections.map((sec) => {
+        if (sec.collapsible) {
+          // "Modelos de Base" — accordion com os 3 itens de modelos; perfil fica fora, abaixo.
+          const modelItems = sec.items.filter((i) => i.to !== "/perfil");
+          const perfil = sec.items.find((i) => i.to === "/perfil");
+          const anyActive = modelItems.some((i) => isActiveLink(i.to));
+          return (
+            <div key={sec.id} className="space-y-1">
+              <SectionLabel>{sec.label}</SectionLabel>
+              {modelItems.length > 0 && (
+                <Collapsible defaultOpen={anyActive}>
+                  <CollapsibleTrigger
+                    className={cn(
+                      "group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition",
+                      "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+                    )}
+                  >
+                    <span className="flex items-center gap-3"><Layers className="h-4 w-4" /> Modelos de Base</span>
+                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pl-3 mt-1 space-y-1">
+                    {modelItems.map((it) => <LinkItem key={it.to} it={it} onClick={onClick} />)}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+              {perfil && <LinkItem it={perfil} onClick={onClick} />}
+            </div>
+          );
+        }
         return (
-          <Link key={it.to} to={it.to} onClick={onClick}
-            className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition",
-              active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground")}>
-            <Icon className="h-4 w-4" /> {it.label}
-          </Link>
+          <div key={sec.id} className="space-y-1">
+            <SectionLabel>{sec.label}</SectionLabel>
+            {sec.items.map((it) => <LinkItem key={it.to} it={it} onClick={onClick} />)}
+          </div>
         );
       })}
     </nav>
@@ -88,13 +165,13 @@ function AppLayout() {
               </SheetTrigger>
               <SheetContent side="left" className="bg-sidebar text-sidebar-foreground border-0 p-0 w-72">
                 <SheetTitle className="sr-only">Menu</SheetTitle>
-                <SidebarHeader congregationName={congregation?.name} userName={profile?.full_name ?? null} role={role} />
+                <SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} />
                 <div className="p-3"><Nav /></div>
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-2">
               <Logo className="h-6 w-6" />
-              <span className="font-semibold text-sm truncate">{congregation?.name ?? "Visita"}</span>
+              <span className="font-semibold text-sm truncate">{activeCong?.name ?? congregation?.name ?? "Visita"}</span>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -109,7 +186,7 @@ function AppLayout() {
       <div className="md:flex">
         {/* Desktop sidebar */}
         <aside className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-sidebar text-sidebar-foreground">
-          <SidebarHeader congregationName={congregation?.name} userName={profile?.full_name ?? null} role={role} />
+          <SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} />
           <div className="p-3 flex-1 overflow-y-auto"><Nav /></div>
           <div className="p-3 border-t border-sidebar-border space-y-2">
             <div className="px-1"><SyncButton className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60 px-3 py-2 rounded-md" /></div>
@@ -122,10 +199,31 @@ function AppLayout() {
 
         <main className="flex-1 md:ml-72 min-w-0">
           <div className="max-w-5xl mx-auto p-4 md:p-8 pb-24">
-            <Outlet />
+            {blocked ? (
+              <Card>
+                <CardContent className="p-6 text-center space-y-2">
+                  <Lock className="h-8 w-8 text-muted-foreground mx-auto" />
+                  <h2 className="font-semibold">Congregação inativa</h2>
+                  <p className="text-sm text-muted-foreground">
+                    O acesso a <strong>{congregation?.name}</strong> está temporariamente indisponível.
+                    Fale com o superintendente para reativar.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Outlet />
+            )}
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/50">
+      {children}
     </div>
   );
 }
