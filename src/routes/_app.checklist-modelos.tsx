@@ -6,14 +6,12 @@ import {
   listChecklistTemplates,
   createChecklistTemplate,
   renameChecklistTemplate,
-  linkChecklistTemplate,
   duplicateChecklistTemplate,
   deleteChecklistTemplate,
   replaceChecklistTemplateItems,
 } from "@/lib/checklist-templates.functions";
 import { exportChecklistTemplate, importChecklistTemplate } from "@/lib/template-io.functions";
 import { TemplateIOButtons } from "@/components/TemplateIOButtons";
-import { listMyCongregations } from "@/lib/congregations.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
