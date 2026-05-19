@@ -208,7 +208,7 @@ function AppLayout() {
                     </div>
                     <h2 className="text-lg font-semibold">Ainda não há novidades</h2>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Por favor, aguarde até que o Superintendente disponibilize a programação da visita.
+                      Por favor, aguarde até que o Superintendente disponibilize um agendamento de visita.
                     </p>
                   </CardContent>
                 </Card>
