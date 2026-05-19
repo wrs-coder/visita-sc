@@ -82,6 +82,7 @@ interface Event {
 function Page() {
   const { visit } = useActiveVisit();
   const { role, user, profile } = useAuth();
+  const userId = user?.id;
   const canEdit = role === "superintendent";
   const [events, setEvents] = useState<Event[]>([]);
   const [editing, setEditing] = useState<Partial<Event> | null>(null);
@@ -96,7 +97,7 @@ function Page() {
   // cruzando a data de hoje com o intervalo de cada visita cadastrada (Itinerário).
   // A lógica interna do cronograma (escalas, dias, campos) permanece intacta.
   useEffect(() => {
-    if (role !== "superintendent" || !user) return;
+    if (role !== "superintendent" || !userId) return;
     if (!profile?.circuit?.trim()) {
       setActiveCongregationOverride(null);
       return;
@@ -107,7 +108,7 @@ function Page() {
       const { data: congs } = await supabase
         .from("congregations")
         .select("id")
-        .eq("superintendent_id", user.id);
+        .eq("superintendent_id", userId);
       const ids = (congs ?? []).map((c) => c.id);
       if (!ids.length || cancelled) return;
       const { data: vs } = await supabase
@@ -130,7 +131,7 @@ function Page() {
     return () => {
       cancelled = true;
     };
-  }, [role, user?.id, profile?.circuit]);
+  }, [role, userId, profile?.circuit]);
 
   useEffect(() => {
     if (!visit) return;
