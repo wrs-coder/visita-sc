@@ -94,10 +94,6 @@ function Page() {
     toast.success("Congregação criada");
     setForm({ name: "", invite_code: "" });
     setOpenNew(false);
-    if (!profile?.congregation_id && res.data) {
-      await supabase.from("profiles").update({ congregation_id: res.data.id }).eq("id", user.id);
-      await refresh();
-    }
     load();
   };
 
@@ -120,10 +116,6 @@ function Page() {
     if (!confirm("Excluir esta congregação? Os dados de visitas relacionadas serão perdidos.")) return;
     const { error } = await supabase.from("congregations").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
-    if (profile?.congregation_id === id && user) {
-      await supabase.from("profiles").update({ congregation_id: null }).eq("id", user.id);
-      await refresh();
-    }
     toast.success("Excluída");
     load();
   };
