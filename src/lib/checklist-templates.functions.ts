@@ -180,3 +180,40 @@ export const replaceChecklistTemplateItems = createServerFn({ method: "POST" })
     await supabaseAdmin.from("checklist_templates").update({ updated_at: new Date().toISOString() }).eq("id", data.templateId);
     return { ok: true as const };
   });
+
+// Aplica um modelo de checklist a uma visita específica (igual ao fluxo do
+// modelo de programação). Semeia checklist_items a partir dos itens do template.
+export const applyChecklistTemplateForVisit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ visitId: z.string().uuid(), templateId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: visit } = await supabaseAdmin
+      .from("visits").select("id,congregation_id").eq("id", data.visitId).maybeSingle();
+    if (!visit) return { ok: false as const, error: "Visita não encontrada." };
+    const { data: cong } = await supabaseAdmin
+      .from("congregations").select("superintendent_id").eq("id", visit.congregation_id).maybeSingle();
+    if (!cong || cong.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
+    const { data: tpl } = await supabaseAdmin
+      .from("checklist_templates").select("id").eq("id", data.templateId).eq("superintendent_id", userId).maybeSingle();
+    if (!tpl) return { ok: false as const, error: "Modelo não encontrado." };
+
+    await supabaseAdmin.from("visits").update({ checklist_template_id: data.templateId }).eq("id", data.visitId);
+
+    const { data: items } = await supabaseAdmin
+      .from("checklist_template_items").select("title,description,sort_order")
+      .eq("template_id", data.templateId).order("sort_order");
+    if (!items?.length) return { ok: true as const, applied: 0 };
+    const rows = items.map((it) => ({
+      visit_id: data.visitId,
+      title: it.title,
+      description: it.description,
+      sort_order: it.sort_order,
+      status: "pending" as const,
+    }));
+    const { error } = await supabaseAdmin.from("checklist_items").insert(rows);
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const, applied: rows.length };
+  });
