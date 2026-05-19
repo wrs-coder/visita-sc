@@ -78,13 +78,21 @@ function Page() {
 
   const openNew = () => {
     setEditId(null);
-    setForm({ title: "", start_date: "", end_date: "", congregation_id: congregation?.id ?? congs[0]?.id ?? "", template_id: "" });
+    setForm({ title: "", start_date: "", end_date: "", congregation_id: congregation?.id ?? congs[0]?.id ?? "", template_id: "", checklist_template_id: "", field_template_id: "" });
     setOpen(true);
   };
 
   const openEdit = (v: Visit) => {
     setEditId(v.id);
-    setForm({ title: v.title, start_date: v.start_date, end_date: v.end_date, congregation_id: v.congregation_id, template_id: "" });
+    setForm({
+      title: v.title,
+      start_date: v.start_date,
+      end_date: v.end_date,
+      congregation_id: v.congregation_id,
+      template_id: "",
+      checklist_template_id: "",
+      field_template_id: "",
+    });
     setOpen(true);
   };
 
@@ -98,6 +106,14 @@ function Page() {
         const r = await fnApply({ data: { visitId: editId, templateId: form.template_id } });
         if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
       }
+      if (form.checklist_template_id) {
+        const r = await fnApplyChecklist({ data: { visitId: editId, templateId: form.checklist_template_id } });
+        if (!r.ok) toast.error("Falha ao aplicar modelo de checklist: " + r.error);
+      }
+      if (form.field_template_id) {
+        const r = await fnApplyField({ data: { visitId: editId, templateId: form.field_template_id } });
+        if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
+      }
       toast.success("Visita atualizada");
       setOpen(false);
       return;
@@ -109,8 +125,14 @@ function Page() {
       const r = await fnApply({ data: { visitId: data.id, templateId: form.template_id } });
       if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
     }
-    const rf = await fnApplyField({ data: { visitId: data.id } });
-    if (!rf.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + rf.error);
+    if (form.checklist_template_id) {
+      const r = await fnApplyChecklist({ data: { visitId: data.id, templateId: form.checklist_template_id } });
+      if (!r.ok) toast.error("Falha ao aplicar modelo de checklist: " + r.error);
+    }
+    if (form.field_template_id) {
+      const r = await fnApplyField({ data: { visitId: data.id, templateId: form.field_template_id } });
+      if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
+    }
     if (user && profile?.congregation_id !== form.congregation_id) {
       await supabase.from("profiles").update({ congregation_id: form.congregation_id }).eq("id", user.id);
       await refresh();
