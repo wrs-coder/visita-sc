@@ -140,15 +140,6 @@ function Page() {
 
 
 
-  const handleLink = async (val: string) => {
-    if (!active) return;
-    const congregationId = val === "__none__" ? null : val;
-    const r = await fnLink({ data: { id: active.id, congregationId } });
-    if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Vínculo atualizado");
-    await load();
-  };
-
   const handleDuplicate = async () => {
     if (!active) return;
     setBusy(true);
