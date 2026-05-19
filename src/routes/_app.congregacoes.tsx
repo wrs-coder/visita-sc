@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Building2, Trash2, Pencil, Check, KeyRound, Copy, Users, UserCog } from "lucide-react";
+import { Plus, Building2, Trash2, Pencil, KeyRound, Copy, Users, UserCog } from "lucide-react";
 import { toast } from "sonner";
 
 interface Elder {
@@ -128,14 +128,10 @@ function Page() {
     load();
   };
 
-  const setActive = async (id: string) => {
-    if (!user) return;
-    const { error } = await supabase.from("profiles").update({ congregation_id: id }).eq("id", user.id);
-    if (error) { toast.error(error.message); return; }
-    await refresh();
-    toast.success("Congregação ativa atualizada");
-    nav({ to: "/dashboard" });
-  };
+  // A seleção da congregação ativa foi centralizada no Dashboard.
+  // Esta tela serve apenas para cadastro, edição e ativação/inativação.
+
+
 
   const copy = (code: string) => {
     navigator.clipboard.writeText(code);
