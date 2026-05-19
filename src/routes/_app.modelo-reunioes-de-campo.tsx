@@ -6,7 +6,6 @@ import {
   listFieldMeetingTemplates,
   createFieldMeetingTemplate,
   updateFieldMeetingTemplate,
-  linkFieldMeetingTemplate,
   duplicateFieldMeetingTemplate,
   deleteFieldMeetingTemplate,
   replaceFieldMeetingTemplateItems,
@@ -15,7 +14,6 @@ import {
 } from "@/lib/field-meeting-templates.functions";
 import { exportFieldMeetingTemplate, importFieldMeetingTemplate } from "@/lib/template-io.functions";
 import { TemplateIOButtons } from "@/components/TemplateIOButtons";
-import { listMyCongregations } from "@/lib/congregations.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
