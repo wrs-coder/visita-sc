@@ -276,24 +276,6 @@ function Page() {
                 <p className="text-xs text-muted-foreground">
                   Cada turno tem sua própria modalidade. Quando a modalidade não for "Pregação de casa em casa", apenas o campo "Oração final" ficará disponível para a congregação naquele turno.
                 </p>
-
-                <div>
-                  <Label className="text-xs">Vincular à congregação</Label>
-                  <Select value={active.congregation_id ?? "__none__"} onValueChange={handleLink}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Sem vínculo</SelectItem>
-                      {congs.map((c) => (
-                        <SelectItem key={c.id} value={c.id} disabled={usedCongIds.has(c.id)}>
-                          {c.name}{usedCongIds.has(c.id) ? " (já vinculada)" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Ao criar uma visita para a congregação vinculada, estes turnos serão aplicados automaticamente.
-                  </p>
-                </div>
               </CardContent></Card>
 
               <Card><CardContent className="p-4 space-y-3">
