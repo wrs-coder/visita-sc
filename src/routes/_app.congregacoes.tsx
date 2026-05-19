@@ -42,7 +42,7 @@ interface Congregation {
 export const Route = createFileRoute("/_app/congregacoes")({ component: Page });
 
 function Page() {
-  const { user, role, profile, refresh } = useAuth();
+  const { user, role } = useAuth();
   
   const fnList = useServerFn(listMyCongregations);
   const fnCreate = useServerFn(createCongregation);
@@ -180,7 +180,6 @@ function Page() {
 
       <div className="space-y-2">
         {list.map((c) => {
-          const active = profile?.congregation_id === c.id;
           const isActive = c.is_active !== false;
           return (
             <Card key={c.id} className={`shadow-card ${!isActive ? "opacity-60" : ""}`}>
@@ -189,7 +188,6 @@ function Page() {
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold truncate flex items-center gap-2">
                     {c.name}
-                    {active && <span className="text-[10px] uppercase font-bold bg-success text-success-foreground px-1.5 py-0.5 rounded">Atual</span>}
                     {!isActive && <span className="text-[10px] uppercase font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Inativa</span>}
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">

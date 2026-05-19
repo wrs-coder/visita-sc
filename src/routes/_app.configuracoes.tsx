@@ -30,7 +30,7 @@ interface Visit { id: string; title: string; start_date: string; end_date: strin
 interface Cong { id: string; name: string; invite_code: string; superintendent_id: string; }
 
 function Page() {
-  const { congregation, role, profile, refresh, user } = useAuth();
+  const { congregation, role, profile } = useAuth();
   const fnList = useServerFn(listMyCongregations);
   const fnTpls = useServerFn(listTemplates);
   const fnApply = useServerFn(applyTemplateToVisit);
