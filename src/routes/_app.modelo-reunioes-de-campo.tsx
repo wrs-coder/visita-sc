@@ -241,19 +241,13 @@ function Page() {
         <Card><CardContent className="p-3 space-y-1">
           {tpls.length === 0 ? (
             <div className="text-sm text-muted-foreground p-3 text-center">Nenhum modelo ainda.</div>
-          ) : tpls.map((t) => {
-            const cong = congs.find((c) => c.id === t.congregation_id);
-            return (
-              <button key={t.id}
-                onClick={() => setActiveId(t.id)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === t.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-                <div className="truncate">{t.name}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {cong ? cong.name : "sem congregação"}
-                </div>
-              </button>
-            );
-          })}
+          ) : tpls.map((t) => (
+            <button key={t.id}
+              onClick={() => setActiveId(t.id)}
+              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === t.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
+              <div className="truncate">{t.name}</div>
+            </button>
+          ))}
         </CardContent></Card>
 
         <div className="space-y-4">
