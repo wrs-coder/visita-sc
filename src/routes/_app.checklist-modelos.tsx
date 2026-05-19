@@ -41,17 +41,14 @@ function Page() {
   const fnList = useServerFn(listChecklistTemplates);
   const fnCreate = useServerFn(createChecklistTemplate);
   const fnRename = useServerFn(renameChecklistTemplate);
-  const fnLink = useServerFn(linkChecklistTemplate);
   const fnDup = useServerFn(duplicateChecklistTemplate);
   const fnDel = useServerFn(deleteChecklistTemplate);
   const fnReplace = useServerFn(replaceChecklistTemplateItems);
-  const fnCongs = useServerFn(listMyCongregations);
   const fnExport = useServerFn(exportChecklistTemplate);
   const fnImport = useServerFn(importChecklistTemplate);
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
-  const [congs, setCongs] = useState<CongRow[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -63,7 +60,7 @@ function Page() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const [r, c] = await Promise.all([fnList(), fnCongs()]);
+    const r = await fnList();
     if (r.ok) {
       setTpls(r.templates as TemplateRow[]);
       const map: Record<string, ItemDraft[]> = {};
@@ -75,8 +72,7 @@ function Page() {
       setItemsByTpl(map);
       if (!activeId && r.templates.length > 0) setActiveId(r.templates[0].id);
     }
-    if (c.ok) setCongs(c.data as CongRow[]);
-  }, [fnList, fnCongs, activeId]);
+  }, [fnList, activeId]);
 
   useEffect(() => { load(); }, [load]);
 
