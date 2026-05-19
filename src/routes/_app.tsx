@@ -165,13 +165,13 @@ function AppLayout() {
               </SheetTrigger>
               <SheetContent side="left" className="bg-sidebar text-sidebar-foreground border-0 p-0 w-72">
                 <SheetTitle className="sr-only">Menu</SheetTitle>
-                <SidebarHeader congregationName={congregation?.name} userName={profile?.full_name ?? null} role={role} />
+                <SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} />
                 <div className="p-3"><Nav /></div>
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-2">
               <Logo className="h-6 w-6" />
-              <span className="font-semibold text-sm truncate">{congregation?.name ?? "Visita"}</span>
+              <span className="font-semibold text-sm truncate">{activeCong?.name ?? congregation?.name ?? "Visita"}</span>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -186,7 +186,7 @@ function AppLayout() {
       <div className="md:flex">
         {/* Desktop sidebar */}
         <aside className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-sidebar text-sidebar-foreground">
-          <SidebarHeader congregationName={congregation?.name} userName={profile?.full_name ?? null} role={role} />
+          <SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} />
           <div className="p-3 flex-1 overflow-y-auto"><Nav /></div>
           <div className="p-3 border-t border-sidebar-border space-y-2">
             <div className="px-1"><SyncButton className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60 px-3 py-2 rounded-md" /></div>
