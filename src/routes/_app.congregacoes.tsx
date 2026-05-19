@@ -141,16 +141,9 @@ function Page() {
   const activeCount = list.filter((c) => c.is_active !== false).length;
 
   const toggleActive = async (c: Congregation, next: boolean) => {
-    if (next && activeCount >= 20 && c.is_active === false) {
-      toast.error("Limite de 20 congregações ativas atingido. Inative outra para liberar espaço.");
-      return;
-    }
     const { error } = await supabase.from("congregations").update({ is_active: next }).eq("id", c.id);
     if (error) {
-      const msg = /Limite de 20/i.test(error.message)
-        ? "Limite de 20 congregações ativas atingido. Inative outra para liberar espaço."
-        : error.message;
-      toast.error(msg);
+      toast.error(error.message);
       return;
     }
     load();
