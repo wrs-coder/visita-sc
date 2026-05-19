@@ -186,7 +186,7 @@ function AppLayout() {
       <div className="md:flex">
         {/* Desktop sidebar */}
         <aside className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-sidebar text-sidebar-foreground">
-          <SidebarHeader congregationName={congregation?.name} userName={profile?.full_name ?? null} role={role} />
+          <SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} />
           <div className="p-3 flex-1 overflow-y-auto"><Nav /></div>
           <div className="p-3 border-t border-sidebar-border space-y-2">
             <div className="px-1"><SyncButton className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60 px-3 py-2 rounded-md" /></div>
