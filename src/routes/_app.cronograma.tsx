@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useAuth } from "@/hooks/use-auth";
+import { getActiveCongregationOverride, setActiveCongregationOverride } from "@/hooks/use-active-congregation";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +37,7 @@ interface Event { id: string; visit_id: string; event_date: string; start_time: 
 
 function Page() {
   const { visit } = useActiveVisit();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const canEdit = role === "superintendent";
   const [events, setEvents] = useState<Event[]>([]);
   const [editing, setEditing] = useState<Partial<Event> | null>(null);
@@ -44,6 +45,32 @@ function Page() {
   const [saving, setSaving] = useState(false);
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [calOpen, setCalOpen] = useState(false);
+
+  // Auto-detecta a congregação da semana corrente para o superintendente,
+  // cruzando a data de hoje com o intervalo de cada visita cadastrada (Itinerário).
+  // A lógica interna do cronograma (escalas, dias, campos) permanece intacta.
+  useEffect(() => {
+    if (role !== "superintendent" || !user) return;
+    const today = format(new Date(), "yyyy-MM-dd");
+    let cancelled = false;
+    (async () => {
+      const { data: congs } = await supabase
+        .from("congregations").select("id").eq("superintendent_id", user.id);
+      const ids = (congs ?? []).map((c) => c.id);
+      if (!ids.length || cancelled) return;
+      const { data: vs } = await supabase
+        .from("visits").select("congregation_id,start_date,end_date")
+        .in("congregation_id", ids)
+        .lte("start_date", today).gte("end_date", today)
+        .order("is_active", { ascending: false })
+        .limit(1);
+      const target = vs?.[0]?.congregation_id;
+      if (!cancelled && target && getActiveCongregationOverride() !== target) {
+        setActiveCongregationOverride(target);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [role, user?.id]);
 
   useEffect(() => {
     if (!visit) return;
