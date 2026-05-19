@@ -192,7 +192,7 @@ function Page() {
     toast.success("Itens salvos");
   };
 
-  const usedCongIds = new Set(tpls.filter((t) => t.congregation_id && t.id !== active?.id).map((t) => t.congregation_id!));
+  
 
   return (
     <div className="space-y-5">
