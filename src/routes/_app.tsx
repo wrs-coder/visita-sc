@@ -37,8 +37,6 @@ function AppLayout() {
     ? "/"
     : !loading && needsOnboarding && location.pathname !== "/onboarding"
     ? "/onboarding"
-    : !loading && role === "superintendent" && !congregation && location.pathname !== "/congregacoes"
-    ? "/congregacoes"
     : null;
 
   useEffect(() => {
