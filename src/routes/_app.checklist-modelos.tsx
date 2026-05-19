@@ -199,7 +199,7 @@ function Page() {
   const addItem = () => setItems([...items, { title: "", description: "" }]);
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
 
-  const usedCongIds = new Set(tpls.filter((t) => t.congregation_id && t.id !== active?.id).map((t) => t.congregation_id!));
+
 
   return (
     <div className="space-y-5">
