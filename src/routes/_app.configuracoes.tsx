@@ -133,10 +133,6 @@ function Page() {
       const r = await fnApplyField({ data: { visitId: data.id, templateId: form.field_template_id } });
       if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
     }
-    if (user && profile?.congregation_id !== form.congregation_id) {
-      await supabase.from("profiles").update({ congregation_id: form.congregation_id }).eq("id", user.id);
-      await refresh();
-    }
     toast.success("Visita criada");
     setOpen(false);
   };
@@ -146,10 +142,6 @@ function Page() {
     if (!v) return;
     await supabase.from("visits").update({ is_active: false }).eq("congregation_id", v.congregation_id);
     await supabase.from("visits").update({ is_active: true }).eq("id", id);
-    if (user && profile?.congregation_id !== v.congregation_id) {
-      await supabase.from("profiles").update({ congregation_id: v.congregation_id }).eq("id", user.id);
-      await refresh();
-    }
     toast.success("Visita ativa atualizada");
   };
 
