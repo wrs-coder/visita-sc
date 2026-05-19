@@ -574,6 +574,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          circuit: string | null
           congregation_id: string | null
           created_at: string
           email: string | null
@@ -582,6 +583,7 @@ export type Database = {
           phone: string | null
         }
         Insert: {
+          circuit?: string | null
           congregation_id?: string | null
           created_at?: string
           email?: string | null
@@ -590,6 +592,7 @@ export type Database = {
           phone?: string | null
         }
         Update: {
+          circuit?: string | null
           congregation_id?: string | null
           created_at?: string
           email?: string | null
