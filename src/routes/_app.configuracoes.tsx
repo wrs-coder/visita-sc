@@ -226,6 +226,28 @@ function Page() {
                   {tpls.length === 0 && <p className="text-xs text-muted-foreground mt-1">Crie um modelo em "Modelos" para aplicá-lo aqui.</p>}
                   {editId && <p className="text-xs text-muted-foreground mt-1">Selecionar um modelo aplicará novos itens à visita existente.</p>}
                 </div>
+                <div>
+                  <Label>Modelo de checklist aplicável (opcional)</Label>
+                  <Select value={form.checklist_template_id || "none"} onValueChange={(v) => setForm({ ...form, checklist_template_id: v === "none" ? "" : v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Sem modelo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Não aplicar modelo —</SelectItem>
+                      {checklistTpls.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {checklistTpls.length === 0 && <p className="text-xs text-muted-foreground mt-1">Crie um modelo em "Modelos de Checklist" para aplicá-lo aqui.</p>}
+                </div>
+                <div>
+                  <Label>Modelo de reunião de campo aplicável (opcional)</Label>
+                  <Select value={form.field_template_id || "none"} onValueChange={(v) => setForm({ ...form, field_template_id: v === "none" ? "" : v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Sem modelo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Não aplicar modelo —</SelectItem>
+                      {fieldTpls.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {fieldTpls.length === 0 && <p className="text-xs text-muted-foreground mt-1">Crie um modelo em "Modelo Reuniões de Campo" para aplicá-lo aqui.</p>}
+                </div>
                 <Button className="w-full" onClick={submit}>{editId ? "Salvar" : "Criar"}</Button>
               </div>
             </DialogContent>
