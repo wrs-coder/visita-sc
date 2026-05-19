@@ -179,8 +179,13 @@ function Page() {
   };
 
   const activeCount = list.filter((c) => c.is_active !== false).length;
+  const MAX_ACTIVE = 30;
 
   const toggleActive = async (c: Congregation, next: boolean) => {
+    if (next && activeCount >= MAX_ACTIVE && !c.is_active) {
+      toast.error(`Limite de ${MAX_ACTIVE} congregações ativas atingido.`);
+      return;
+    }
     const { error } = await supabase
       .from("congregations")
       .update({ is_active: next })
