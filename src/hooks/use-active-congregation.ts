@@ -13,6 +13,7 @@ export function getActiveCongregationOverride(): string | null {
 
 export function setActiveCongregationOverride(id: string | null) {
   if (typeof window === "undefined") return;
+  if (localStorage.getItem(KEY) === id) return;
   if (id) localStorage.setItem(KEY, id);
   else localStorage.removeItem(KEY);
   window.dispatchEvent(new CustomEvent(EVT));
@@ -24,8 +25,10 @@ export function setActiveCongregationOverride(id: string | null) {
  * - Other users always get the congregation from auth context.
  */
 export function useActiveCongregation(): Congregation | null {
-  const { role, congregation } = useAuth();
-  const [overrideId, setOverrideId] = useState<string | null>(() => getActiveCongregationOverride());
+  const { role, congregation, user } = useAuth();
+  const [overrideId, setOverrideId] = useState<string | null>(() =>
+    getActiveCongregationOverride(),
+  );
 
   useEffect(() => {
     const handler = () => setOverrideId(getActiveCongregationOverride());
@@ -56,8 +59,8 @@ export function useActiveCongregation(): Congregation | null {
   });
 
   const { data: firstSuperCongregation } = useQuery({
-    queryKey: ["congregations", "firstSuperintendentFallback"],
-    enabled: role === "superintendent" && !overrideId,
+    queryKey: ["congregations", "firstSuperintendentFallback", user?.id],
+    enabled: role === "superintendent" && !!user?.id && !overrideId,
     queryFn: async () => {
       const { data } = await supabase
         .from("congregations")
