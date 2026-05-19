@@ -234,15 +234,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function SidebarHeader({ congregationName, userName, role, circuit }: { congregationName?: string; userName: string | null; role: string | null; circuit?: string | null }) {
+  const title = role === "superintendent"
+    ? (circuit?.trim() || congregationName || "Circuito não informado")
+    : (congregationName ?? "Sem congregação");
   return (
     <div className="p-5 border-b border-sidebar-border">
       <div className="flex items-center gap-2 mb-3">
         <div className="h-9 w-9 rounded-lg bg-white/15 flex items-center justify-center overflow-hidden"><Logo className="h-7 w-7" /></div>
         <div className="text-xs uppercase tracking-wider opacity-70">Visita do SC</div>
       </div>
-      <div className="font-semibold leading-tight truncate">{congregationName ?? "Sem congregação"}</div>
-      {role === "superintendent" && circuit && circuit.trim() && (
-        <div className="text-[11px] opacity-75 mt-0.5 truncate">Circuito: <span className="font-medium">{circuit}</span></div>
+      <div className="font-semibold leading-tight truncate">{title}</div>
+      {role === "superintendent" && congregationName && (
+        <div className="text-[11px] opacity-75 mt-0.5 truncate">Ativa: <span className="font-medium">{congregationName}</span></div>
       )}
       <div className="text-xs opacity-80 mt-1 truncate">{userName ?? ""}</div>
       <div className="mt-2 inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/15">
