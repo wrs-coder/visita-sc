@@ -37,7 +37,7 @@ interface Event { id: string; visit_id: string; event_date: string; start_time: 
 
 function Page() {
   const { visit } = useActiveVisit();
-  const { role, user } = useAuth();
+  const { role, user, profile } = useAuth();
   const canEdit = role === "superintendent";
   const [events, setEvents] = useState<Event[]>([]);
   const [editing, setEditing] = useState<Partial<Event> | null>(null);
@@ -51,6 +51,10 @@ function Page() {
   // A lógica interna do cronograma (escalas, dias, campos) permanece intacta.
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
+    if (!profile?.circuit?.trim()) {
+      setActiveCongregationOverride(null);
+      return;
+    }
     const today = format(new Date(), "yyyy-MM-dd");
     let cancelled = false;
     (async () => {
@@ -65,12 +69,16 @@ function Page() {
         .order("is_active", { ascending: false })
         .limit(1);
       const target = vs?.[0]?.congregation_id;
-      if (!cancelled && target && getActiveCongregationOverride() !== target) {
+      if (cancelled) return;
+      const current = getActiveCongregationOverride();
+      if (target && current !== target) {
         setActiveCongregationOverride(target);
+      } else if (!target && current) {
+        setActiveCongregationOverride(null);
       }
     })();
     return () => { cancelled = true; };
-  }, [role, user?.id]);
+  }, [role, user?.id, profile?.circuit]);
 
   useEffect(() => {
     if (!visit) return;
