@@ -22,6 +22,7 @@
     "android:release:aab": "npm run build && cap sync android && cd android && ./gradlew bundleRelease && cd .. && echo '\\n✅ AAB em: android/app/build/outputs/bundle/release/app-release.aab'"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
     "@cloudflare/vite-plugin": "^1.25.5",
     "@hookform/resolvers": "^5.2.2",
     "@lovable.dev/cloud-auth-js": "^1.1.2",
@@ -84,6 +85,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "^1.7.0",
     "@types/node": "^22.16.5",
