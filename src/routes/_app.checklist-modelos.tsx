@@ -6,14 +6,12 @@ import {
   listChecklistTemplates,
   createChecklistTemplate,
   renameChecklistTemplate,
-  linkChecklistTemplate,
   duplicateChecklistTemplate,
   deleteChecklistTemplate,
   replaceChecklistTemplateItems,
 } from "@/lib/checklist-templates.functions";
 import { exportChecklistTemplate, importChecklistTemplate } from "@/lib/template-io.functions";
 import { TemplateIOButtons } from "@/components/TemplateIOButtons";
-import { listMyCongregations } from "@/lib/congregations.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +31,7 @@ export const Route = createFileRoute("/_app/checklist-modelos")({ component: Pag
 
 interface TemplateRow { id: string; name: string; congregation_id: string | null; }
 interface ItemRow { id: string; template_id: string; title: string; description: string | null; sort_order: number; }
-interface CongRow { id: string; name: string; }
+
 interface ItemDraft { title: string; description: string; }
 
 const MAX = 24;
@@ -43,17 +41,14 @@ function Page() {
   const fnList = useServerFn(listChecklistTemplates);
   const fnCreate = useServerFn(createChecklistTemplate);
   const fnRename = useServerFn(renameChecklistTemplate);
-  const fnLink = useServerFn(linkChecklistTemplate);
   const fnDup = useServerFn(duplicateChecklistTemplate);
   const fnDel = useServerFn(deleteChecklistTemplate);
   const fnReplace = useServerFn(replaceChecklistTemplateItems);
-  const fnCongs = useServerFn(listMyCongregations);
   const fnExport = useServerFn(exportChecklistTemplate);
   const fnImport = useServerFn(importChecklistTemplate);
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
-  const [congs, setCongs] = useState<CongRow[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -65,7 +60,7 @@ function Page() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const [r, c] = await Promise.all([fnList(), fnCongs()]);
+    const r = await fnList();
     if (r.ok) {
       setTpls(r.templates as TemplateRow[]);
       const map: Record<string, ItemDraft[]> = {};
@@ -77,8 +72,7 @@ function Page() {
       setItemsByTpl(map);
       if (!activeId && r.templates.length > 0) setActiveId(r.templates[0].id);
     }
-    if (c.ok) setCongs(c.data as CongRow[]);
-  }, [fnList, fnCongs, activeId]);
+  }, [fnList, activeId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -124,14 +118,8 @@ function Page() {
     await load();
   };
 
-  const handleLink = async (val: string) => {
-    if (!active) return;
-    const congregationId = val === "__none__" ? null : val;
-    const r = await fnLink({ data: { id: active.id, congregationId } });
-    if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Vínculo atualizado");
-    await load();
-  };
+
+
 
   const handleDuplicate = async () => {
     if (!active) return;
@@ -211,7 +199,7 @@ function Page() {
   const addItem = () => setItems([...items, { title: "", description: "" }]);
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
 
-  const usedCongIds = new Set(tpls.filter((t) => t.congregation_id && t.id !== active?.id).map((t) => t.congregation_id!));
+
 
   return (
     <div className="space-y-5">
@@ -221,7 +209,7 @@ function Page() {
             <ListChecks className="h-6 w-6" />Modelos de Checklist
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Crie checklists e vincule cada uma a uma congregação. {tpls.length}/{MAX} modelos.
+            Crie checklists e aplique a cada visita pelo Itinerário. {tpls.length}/{MAX} modelos.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -264,15 +252,11 @@ function Page() {
           {tpls.length === 0 ? (
             <div className="text-sm text-muted-foreground p-3 text-center">Nenhum modelo ainda.</div>
           ) : tpls.map((t) => {
-            const cong = congs.find((c) => c.id === t.congregation_id);
             return (
               <button key={t.id}
                 onClick={() => setActiveId(t.id)}
                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === t.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
                 <div className="truncate">{t.name}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {cong ? `→ ${cong.name}` : "sem congregação"}
-                </div>
               </button>
             );
           })}
@@ -300,23 +284,9 @@ function Page() {
                     </Button>
                   </div>
                 </div>
-                <div>
-                  <Label className="text-xs">Vincular à congregação</Label>
-                  <Select value={active.congregation_id ?? "__none__"} onValueChange={handleLink}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Sem vínculo</SelectItem>
-                      {congs.map((c) => (
-                        <SelectItem key={c.id} value={c.id} disabled={usedCongIds.has(c.id)}>
-                          {c.name}{usedCongIds.has(c.id) ? " (já vinculada)" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Ao criar uma visita para a congregação vinculada, esta checklist será aplicada.
-                  </p>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Escolha este modelo no Itinerário ao criar ou editar uma visita para aplicá-lo àquela semana.
+                </p>
               </CardContent></Card>
 
               <Card><CardContent className="p-4 space-y-3">

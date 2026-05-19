@@ -6,7 +6,6 @@ import {
   listFieldMeetingTemplates,
   createFieldMeetingTemplate,
   updateFieldMeetingTemplate,
-  linkFieldMeetingTemplate,
   duplicateFieldMeetingTemplate,
   deleteFieldMeetingTemplate,
   replaceFieldMeetingTemplateItems,
@@ -15,7 +14,6 @@ import {
 } from "@/lib/field-meeting-templates.functions";
 import { exportFieldMeetingTemplate, importFieldMeetingTemplate } from "@/lib/template-io.functions";
 import { TemplateIOButtons } from "@/components/TemplateIOButtons";
-import { listMyCongregations } from "@/lib/congregations.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +30,7 @@ export const Route = createFileRoute("/_app/modelo-reunioes-de-campo")({ compone
 
 type Modality = (typeof FIELD_MODALITIES)[number];
 interface TemplateRow { id: string; name: string; congregation_id: string | null; modality: Modality; }
-interface CongRow { id: string; name: string; }
+
 interface ItemDraft {
   day_offset: number;
   period: string;
@@ -53,17 +51,14 @@ function Page() {
   const fnList = useServerFn(listFieldMeetingTemplates);
   const fnCreate = useServerFn(createFieldMeetingTemplate);
   const fnUpdate = useServerFn(updateFieldMeetingTemplate);
-  const fnLink = useServerFn(linkFieldMeetingTemplate);
   const fnDup = useServerFn(duplicateFieldMeetingTemplate);
   const fnDel = useServerFn(deleteFieldMeetingTemplate);
   const fnReplace = useServerFn(replaceFieldMeetingTemplateItems);
-  const fnCongs = useServerFn(listMyCongregations);
   const fnExport = useServerFn(exportFieldMeetingTemplate);
   const fnImport = useServerFn(importFieldMeetingTemplate);
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
-  const [congs, setCongs] = useState<CongRow[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -75,7 +70,7 @@ function Page() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const [r, c] = await Promise.all([fnList(), fnCongs()]);
+    const r = await fnList();
     if (r.ok) {
       setTpls(r.templates as TemplateRow[]);
       const map: Record<string, ItemDraft[]> = {};
@@ -96,8 +91,7 @@ function Page() {
       setItemsByTpl(map);
       if (!activeId && r.templates.length > 0) setActiveId(r.templates[0].id);
     }
-    if (c.ok) setCongs(c.data as CongRow[]);
-  }, [fnList, fnCongs, activeId]);
+  }, [fnList, activeId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -145,15 +139,6 @@ function Page() {
   };
 
 
-
-  const handleLink = async (val: string) => {
-    if (!active) return;
-    const congregationId = val === "__none__" ? null : val;
-    const r = await fnLink({ data: { id: active.id, congregationId } });
-    if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Vínculo atualizado");
-    await load();
-  };
 
   const handleDuplicate = async () => {
     if (!active) return;
@@ -207,7 +192,7 @@ function Page() {
     toast.success("Itens salvos");
   };
 
-  const usedCongIds = new Set(tpls.filter((t) => t.congregation_id && t.id !== active?.id).map((t) => t.congregation_id!));
+  
 
   return (
     <div className="space-y-5">
@@ -256,19 +241,13 @@ function Page() {
         <Card><CardContent className="p-3 space-y-1">
           {tpls.length === 0 ? (
             <div className="text-sm text-muted-foreground p-3 text-center">Nenhum modelo ainda.</div>
-          ) : tpls.map((t) => {
-            const cong = congs.find((c) => c.id === t.congregation_id);
-            return (
-              <button key={t.id}
-                onClick={() => setActiveId(t.id)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === t.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-                <div className="truncate">{t.name}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {cong ? cong.name : "sem congregação"}
-                </div>
-              </button>
-            );
-          })}
+          ) : tpls.map((t) => (
+            <button key={t.id}
+              onClick={() => setActiveId(t.id)}
+              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === t.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
+              <div className="truncate">{t.name}</div>
+            </button>
+          ))}
         </CardContent></Card>
 
         <div className="space-y-4">
@@ -297,24 +276,6 @@ function Page() {
                 <p className="text-xs text-muted-foreground">
                   Cada turno tem sua própria modalidade. Quando a modalidade não for "Pregação de casa em casa", apenas o campo "Oração final" ficará disponível para a congregação naquele turno.
                 </p>
-
-                <div>
-                  <Label className="text-xs">Vincular à congregação</Label>
-                  <Select value={active.congregation_id ?? "__none__"} onValueChange={handleLink}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Sem vínculo</SelectItem>
-                      {congs.map((c) => (
-                        <SelectItem key={c.id} value={c.id} disabled={usedCongIds.has(c.id)}>
-                          {c.name}{usedCongIds.has(c.id) ? " (já vinculada)" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Ao criar uma visita para a congregação vinculada, estes turnos serão aplicados automaticamente.
-                  </p>
-                </div>
               </CardContent></Card>
 
               <Card><CardContent className="p-4 space-y-3">
