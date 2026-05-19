@@ -165,13 +165,13 @@ function AppLayout() {
               </SheetTrigger>
               <SheetContent side="left" className="bg-sidebar text-sidebar-foreground border-0 p-0 w-72">
                 <SheetTitle className="sr-only">Menu</SheetTitle>
-                <SidebarHeader congregationName={congregation?.name} userName={profile?.full_name ?? null} role={role} />
+                <SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} />
                 <div className="p-3"><Nav /></div>
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-2">
               <Logo className="h-6 w-6" />
-              <span className="font-semibold text-sm truncate">{congregation?.name ?? "Visita"}</span>
+              <span className="font-semibold text-sm truncate">{activeCong?.name ?? congregation?.name ?? "Visita"}</span>
             </div>
           </div>
           <div className="flex items-center gap-1">
