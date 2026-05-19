@@ -221,7 +221,7 @@ function Page() {
             <ListChecks className="h-6 w-6" />Modelos de Checklist
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Crie checklists e vincule cada uma a uma congregação. {tpls.length}/{MAX} modelos.
+            Crie checklists e aplique a cada visita pelo Itinerário. {tpls.length}/{MAX} modelos.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -264,15 +264,11 @@ function Page() {
           {tpls.length === 0 ? (
             <div className="text-sm text-muted-foreground p-3 text-center">Nenhum modelo ainda.</div>
           ) : tpls.map((t) => {
-            const cong = congs.find((c) => c.id === t.congregation_id);
             return (
               <button key={t.id}
                 onClick={() => setActiveId(t.id)}
                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === t.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
                 <div className="truncate">{t.name}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {cong ? `→ ${cong.name}` : "sem congregação"}
-                </div>
               </button>
             );
           })}
@@ -300,23 +296,9 @@ function Page() {
                     </Button>
                   </div>
                 </div>
-                <div>
-                  <Label className="text-xs">Vincular à congregação</Label>
-                  <Select value={active.congregation_id ?? "__none__"} onValueChange={handleLink}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Sem vínculo</SelectItem>
-                      {congs.map((c) => (
-                        <SelectItem key={c.id} value={c.id} disabled={usedCongIds.has(c.id)}>
-                          {c.name}{usedCongIds.has(c.id) ? " (já vinculada)" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Ao criar uma visita para a congregação vinculada, esta checklist será aplicada.
-                  </p>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Escolha este modelo no Itinerário ao criar ou editar uma visita para aplicá-lo àquela semana.
+                </p>
               </CardContent></Card>
 
               <Card><CardContent className="p-4 space-y-3">
