@@ -49,6 +49,8 @@ function AppLayout() {
 
   // Bloqueio de membros comuns quando a congregação está inativa.
   const blocked = role !== "superintendent" && congregation && congregation.is_active === false;
+  const displayedCongregationName =
+    role === "superintendent" ? activeCong?.name : (activeCong?.name ?? congregation?.name);
 
   const sections: NavSection[] = [
     {
@@ -164,14 +166,14 @@ function AppLayout() {
               <SheetContent side="left" className="bg-sidebar text-sidebar-foreground border-0 p-0 w-72 flex flex-col h-full">
                 <SheetTitle className="sr-only">Menu</SheetTitle>
                 <div className="shrink-0">
-                  <SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} circuit={profile?.circuit ?? null} />
+                  <SidebarHeader congregationName={displayedCongregationName} userName={profile?.full_name ?? null} role={role} circuit={profile?.circuit ?? null} />
                 </div>
                 <div className="p-3 flex-1 overflow-y-auto overscroll-contain"><Nav /></div>
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-2">
               <Logo className="h-6 w-6" />
-              <span className="font-semibold text-sm truncate">{activeCong?.name ?? congregation?.name ?? "Visita"}</span>
+              <span className="font-semibold text-sm truncate">{displayedCongregationName ?? profile?.circuit ?? "Visita"}</span>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -186,7 +188,7 @@ function AppLayout() {
       <div className="md:flex">
         {/* Desktop sidebar */}
         <aside className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-sidebar text-sidebar-foreground">
-          <div className="shrink-0"><SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} circuit={profile?.circuit ?? null} /></div>
+          <div className="shrink-0"><SidebarHeader congregationName={displayedCongregationName} userName={profile?.full_name ?? null} role={role} circuit={profile?.circuit ?? null} /></div>
           <div className="p-3 flex-1 overflow-y-auto overscroll-contain min-h-0"><Nav /></div>
           <div className="p-3 border-t border-sidebar-border space-y-2">
             <div className="px-1"><SyncButton className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60 px-3 py-2 rounded-md" /></div>
