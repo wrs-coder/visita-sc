@@ -14,8 +14,8 @@ import { Logo } from "@/components/Logo";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { toPng } from "html-to-image";
-import { jsPDF } from "jspdf";
+// html-to-image e jsPDF são carregados sob demanda apenas quando o utilizador
+// clica em "Exportar PNG" ou "Exportar PDF".
 
 export const Route = createFileRoute("/visitante/painel")({ component: Page });
 
@@ -89,6 +89,7 @@ function Page() {
   const exportPng = useCallback(async () => {
     if (!previewRef.current) return;
     try {
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(previewRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#ffffff" });
       const a = document.createElement("a");
       a.href = dataUrl;
@@ -101,6 +102,10 @@ function Page() {
   const exportPdf = useCallback(async () => {
     if (!previewRef.current) return;
     try {
+      const [{ toPng }, { jsPDF }] = await Promise.all([
+        import("html-to-image"),
+        import("jspdf"),
+      ]);
       const dataUrl = await toPng(previewRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#ffffff" });
       const img = new Image();
       img.src = dataUrl;

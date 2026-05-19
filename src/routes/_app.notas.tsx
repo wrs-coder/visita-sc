@@ -19,7 +19,8 @@ import {
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import jsPDF from "jspdf";
+// jsPDF é carregado sob demanda apenas quando o utilizador clica em "Exportar PDF".
+import type jsPDFType from "jspdf";
 import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
 
 function makeUuid(): string {
@@ -164,9 +165,10 @@ function Page() {
   if (!congregation) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Selecione uma congregação na aba Início.</CardContent></Card>;
   if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa para {congregation.name}.</CardContent></Card>;
 
-  const exportPdf = () => {
+  const exportPdf = async () => {
     if (selectedNotes.length === 0) { toast.error("Selecione ao menos uma nota."); return; }
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const { default: jsPDF } = await import("jspdf");
+    const doc: jsPDFType = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 48;

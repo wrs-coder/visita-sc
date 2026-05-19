@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Building2, Trash2, Pencil, Check, KeyRound, Copy, Users, UserCog } from "lucide-react";
+import { Plus, Building2, Trash2, Pencil, KeyRound, Copy, Users, UserCog } from "lucide-react";
 import { toast } from "sonner";
 
 interface Elder {
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_app/congregacoes")({ component: Page });
 
 function Page() {
   const { user, role, profile, refresh } = useAuth();
-  const nav = useNavigate();
+  
   const fnList = useServerFn(listMyCongregations);
   const fnCreate = useServerFn(createCongregation);
   const fnUpdate = useServerFn(updateCongregation);
@@ -128,14 +128,10 @@ function Page() {
     load();
   };
 
-  const setActive = async (id: string) => {
-    if (!user) return;
-    const { error } = await supabase.from("profiles").update({ congregation_id: id }).eq("id", user.id);
-    if (error) { toast.error(error.message); return; }
-    await refresh();
-    toast.success("Congregação ativa atualizada");
-    nav({ to: "/dashboard" });
-  };
+  // A seleção da congregação ativa foi centralizada no Dashboard.
+  // Esta tela serve apenas para cadastro, edição e ativação/inativação.
+
+
 
   const copy = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -145,8 +141,18 @@ function Page() {
   const activeCount = list.filter((c) => c.is_active !== false).length;
 
   const toggleActive = async (c: Congregation, next: boolean) => {
+    if (next && activeCount >= 20 && c.is_active === false) {
+      toast.error("Limite de 20 congregações ativas atingido. Inative outra para liberar espaço.");
+      return;
+    }
     const { error } = await supabase.from("congregations").update({ is_active: next }).eq("id", c.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      const msg = /Limite de 20/i.test(error.message)
+        ? "Limite de 20 congregações ativas atingido. Inative outra para liberar espaço."
+        : error.message;
+      toast.error(msg);
+      return;
+    }
     load();
   };
 
@@ -209,7 +215,6 @@ function Page() {
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <Switch checked={isActive} onCheckedChange={(v) => toggleActive(c, v)} aria-label="Ativa" />
-                  {!active && isActive && <Button size="sm" variant="outline" onClick={() => setActive(c.id)}><Check className="h-3.5 w-3.5 mr-1" />Usar</Button>}
                   <Button size="icon" variant="ghost" onClick={() => setEditing({ ...c })}><Pencil className="h-3.5 w-3.5" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => remove(c.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                 </div>
