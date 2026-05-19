@@ -831,9 +831,11 @@ export type Database = {
       }
       visits: {
         Row: {
+          checklist_template_id: string | null
           congregation_id: string
           created_at: string
           end_date: string
+          field_meeting_template_id: string | null
           id: string
           is_active: boolean
           start_date: string
@@ -841,9 +843,11 @@ export type Database = {
           title: string
         }
         Insert: {
+          checklist_template_id?: string | null
           congregation_id: string
           created_at?: string
           end_date: string
+          field_meeting_template_id?: string | null
           id?: string
           is_active?: boolean
           start_date: string
@@ -851,9 +855,11 @@ export type Database = {
           title: string
         }
         Update: {
+          checklist_template_id?: string | null
           congregation_id?: string
           created_at?: string
           end_date?: string
+          field_meeting_template_id?: string | null
           id?: string
           is_active?: boolean
           start_date?: string
@@ -862,10 +868,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "visits_checklist_template_id_fkey"
+            columns: ["checklist_template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "visits_congregation_id_fkey"
             columns: ["congregation_id"]
             isOneToOne: false
             referencedRelation: "congregations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visits_field_meeting_template_id_fkey"
+            columns: ["field_meeting_template_id"]
+            isOneToOne: false
+            referencedRelation: "field_meeting_templates"
             referencedColumns: ["id"]
           },
           {
