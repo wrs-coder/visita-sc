@@ -65,6 +65,7 @@ export function useActiveCongregation(): Congregation | null {
       const { data } = await supabase
         .from("congregations")
         .select("id,name,superintendent_id,is_active")
+        .eq("superintendent_id", user!.id)
         .order("name")
         .limit(1)
         .maybeSingle();
