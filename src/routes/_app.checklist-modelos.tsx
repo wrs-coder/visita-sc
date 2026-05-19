@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_app/checklist-modelos")({ component: Pag
 
 interface TemplateRow { id: string; name: string; congregation_id: string | null; }
 interface ItemRow { id: string; template_id: string; title: string; description: string | null; sort_order: number; }
-interface CongRow { id: string; name: string; }
+
 interface ItemDraft { title: string; description: string; }
 
 const MAX = 24;
