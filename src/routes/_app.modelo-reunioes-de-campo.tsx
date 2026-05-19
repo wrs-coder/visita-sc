@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_app/modelo-reunioes-de-campo")({ compone
 
 type Modality = (typeof FIELD_MODALITIES)[number];
 interface TemplateRow { id: string; name: string; congregation_id: string | null; modality: Modality; }
-interface CongRow { id: string; name: string; }
+
 interface ItemDraft {
   day_offset: number;
   period: string;
