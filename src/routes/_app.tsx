@@ -163,10 +163,12 @@ function AppLayout() {
               <SheetTrigger asChild>
                 <button className="p-2 -ml-2 rounded-md hover:bg-white/10"><Menu className="h-5 w-5" /></button>
               </SheetTrigger>
-              <SheetContent side="left" className="bg-sidebar text-sidebar-foreground border-0 p-0 w-72">
+              <SheetContent side="left" className="bg-sidebar text-sidebar-foreground border-0 p-0 w-72 flex flex-col h-full">
                 <SheetTitle className="sr-only">Menu</SheetTitle>
-                <SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} />
-                <div className="p-3"><Nav /></div>
+                <div className="shrink-0">
+                  <SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} />
+                </div>
+                <div className="p-3 flex-1 overflow-y-auto overscroll-contain"><Nav /></div>
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-2">
@@ -186,8 +188,8 @@ function AppLayout() {
       <div className="md:flex">
         {/* Desktop sidebar */}
         <aside className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-sidebar text-sidebar-foreground">
-          <SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} />
-          <div className="p-3 flex-1 overflow-y-auto"><Nav /></div>
+          <div className="shrink-0"><SidebarHeader congregationName={activeCong?.name ?? congregation?.name} userName={profile?.full_name ?? null} role={role} /></div>
+          <div className="p-3 flex-1 overflow-y-auto overscroll-contain min-h-0"><Nav /></div>
           <div className="p-3 border-t border-sidebar-border space-y-2">
             <div className="px-1"><SyncButton className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60 px-3 py-2 rounded-md" /></div>
             <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60"
