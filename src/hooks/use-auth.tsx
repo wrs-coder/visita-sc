@@ -24,6 +24,7 @@ export interface Congregation {
   name: string;
   invite_code: string;
   superintendent_id: string;
+  is_active?: boolean;
 }
 
 interface AuthContextValue {
@@ -68,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setElderPosition((r?.elder_position as ElderPosition | null) ?? null);
     if (p?.congregation_id) {
       const { data: c } = await supabase.from("congregations")
-        .select("id,name,superintendent_id")
+        .select("id,name,superintendent_id,is_active")
         .eq("id", p.congregation_id).maybeSingle();
       // invite_code is hidden from non-owner clients; default to "" so the type stays stable
       setCongregation(c ? ({ ...(c as Omit<Congregation, "invite_code">), invite_code: "" }) : null);
