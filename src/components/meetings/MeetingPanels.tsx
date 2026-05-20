@@ -51,14 +51,15 @@ function FieldText({
 }
 
 /* ============ MEIO DE SEMANA ============ */
-interface MidweekRow { id: string; visit_id: string; chairman: string | null; closing_prayer: string | null }
+interface MidweekRow { id: string; visit_id: string; service_talk_theme: string | null; chairman: string | null; closing_prayer: string | null }
 
 export function MidweekPanel() {
   const { visit } = useActiveVisit();
-  const { canEdit } = useAuth();
+  const { role, canEdit } = useAuth();
+  const isSuper = role === "superintendent";
   const { row, loading, save } = useSingleRow<MidweekRow>(
     "midweek_meetings",
-    "id,visit_id,chairman,closing_prayer",
+    "id,visit_id,service_talk_theme,chairman,closing_prayer",
     visit,
   );
   if (!visit) return <NoVisit />;
@@ -66,6 +67,10 @@ export function MidweekPanel() {
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
+        <div>
+          <Label>Tema: Discurso de serviço</Label>
+          <FieldText value={row.service_talk_theme} onSave={(v) => save({ service_talk_theme: v })} readOnly={!isSuper} />
+        </div>
         <div>
           <Label>Presidente da Reunião</Label>
           <FieldText value={row.chairman} onSave={(v) => save({ chairman: v })} placeholder="Nome do presidente" />
