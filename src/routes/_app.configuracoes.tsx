@@ -199,10 +199,9 @@ function Page() {
       setOpen(false);
       return;
     }
-    await supabase
-      .from("visits")
-      .update({ is_active: false })
-      .eq("congregation_id", form.congregation_id);
+    // Itinerário é apenas calendário de planeamento — sem limite de "ativas"
+    // e sem marcar/desmarcar outras visitas. A seleção da visita corrente é
+    // feita automaticamente pelo Cronograma com base na data de hoje.
     const { data, error } = await supabase
       .from("visits")
       .insert({
@@ -210,7 +209,6 @@ function Page() {
         title: form.title,
         start_date: form.start_date,
         end_date: form.end_date,
-        is_active: true,
       })
       .select()
       .single();
