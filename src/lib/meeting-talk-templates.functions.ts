@@ -285,7 +285,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
     const templateId = data.templateId ?? visit.meeting_talk_template_id ?? null;
     if (!templateId) return { ok: false as const, error: "Nenhum modelo selecionado para esta visita." };
     const own = await supabaseAdmin.from("meeting_talk_templates")
-      .select("id").eq("id", templateId).eq("superintendent_id", userId).maybeSingle();
+      .select("id,weekend_public_talk_theme").eq("id", templateId).eq("superintendent_id", userId).maybeSingle();
     if (!own.data) return { ok: false as const, error: "Modelo não encontrado." };
 
     if (visit.meeting_talk_template_id !== templateId) {
