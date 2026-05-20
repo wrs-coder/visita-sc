@@ -160,15 +160,21 @@ function Dashboard() {
                 <Link to="/refeicoes" className="text-primary text-xs font-medium inline-flex items-center hover:underline">Ver tudo <ChevronRight className="h-3 w-3" /></Link>
               </div>
               {meals.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nada agendado para hoje.</p>
+                <p className="text-sm text-muted-foreground">Nenhuma atividade programada para hoje.</p>
               ) : (
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {meals.map((m) => (
                     <li key={m.id} className="text-sm flex items-start gap-2">
                       <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
                         {m.type === "lunch" ? "Almoço" : m.type === "dinner" ? "Jantar" : "Café"}
+                        {m.meal_time ? ` · ${m.meal_time.slice(0,5)}` : ""}
                       </span>
-                      <div><div className="font-medium">{m.host_name}</div>{m.location && <div className="text-xs text-muted-foreground">{m.location}</div>}</div>
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        {m.host_name && <div className="font-medium break-words whitespace-normal">{m.host_name}</div>}
+                        {m.location && <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{m.location}</span></div>}
+                        {m.contact_phone && <div className="text-xs text-muted-foreground break-words">📞 {m.contact_phone}</div>}
+                        {m.notes && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{m.notes}</div>}
+                      </div>
                     </li>
                   ))}
                 </ul>
