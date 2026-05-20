@@ -107,7 +107,15 @@ function Page() {
           name: t.name,
         })),
       );
-  }, [isSuper, fnList, fnTpls, fnListChecklist, fnListField]);
+    const mr = await fnListMeetingTalk();
+    if (mr.ok)
+      setMeetingTalkTpls(
+        ((mr as { templates?: { id: string; name: string }[] }).templates ?? []).map((t) => ({
+          id: t.id,
+          name: t.name,
+        })),
+      );
+  }, [isSuper, fnList, fnTpls, fnListChecklist, fnListField, fnListMeetingTalk]);
 
   useEffect(() => {
     loadCongs();
