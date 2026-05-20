@@ -437,7 +437,7 @@ export const exportMeetingTalkTemplate = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: tpl } = await supabaseAdmin
       .from("meeting_talk_templates")
-      .select("id,name,superintendent_id")
+      .select("id,name,superintendent_id,weekend_public_talk_theme")
       .eq("id", data.id).maybeSingle();
     if (!tpl || tpl.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
     const [mid, themes, pioneer, elders] = await Promise.all([
@@ -454,6 +454,7 @@ export const exportMeetingTalkTemplate = createServerFn({ method: "POST" })
         exportedAt: new Date().toISOString(),
         name: tpl.name,
         midweek: mid.data ?? null,
+        weekend_public_talk_theme: tpl.weekend_public_talk_theme ?? null,
         weekend_themes: themes.data ?? [],
         pioneer: pioneer.data ?? null,
         elders: elders.data ?? null,
