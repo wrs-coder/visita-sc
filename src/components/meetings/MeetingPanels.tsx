@@ -91,6 +91,7 @@ interface WeekendRow {
   meeting_at: string | null;
   talk_theme_id: string | null;
   talk_theme_title: string | null;
+  public_talk_theme: string | null;
 }
 interface Theme { id: string; title: string }
 
@@ -109,11 +110,12 @@ function localInputToIso(s: string): string | null {
 
 export function WeekendPanel() {
   const { visit } = useActiveVisit();
-  const { canEdit } = useAuth();
+  const { canEdit, role } = useAuth();
+  const isSuper = role === "superintendent";
   const congregation = useActiveCongregation();
   const { row, loading, save } = useSingleRow<WeekendRow>(
     "weekend_meetings",
-    "id,visit_id,meeting_at,talk_theme_id,talk_theme_title",
+    "id,visit_id,meeting_at,talk_theme_id,talk_theme_title,public_talk_theme",
     visit,
   );
   const [themes, setThemes] = useState<Theme[]>([]);
