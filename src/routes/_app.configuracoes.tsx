@@ -63,11 +63,14 @@ function Page() {
   const fnApplyChecklist = useServerFn(applyChecklistTemplateForVisit);
   const fnListField = useServerFn(listFieldMeetingTemplates);
   const fnListChecklist = useServerFn(listChecklistTemplates);
+  const fnListMeetingTalk = useServerFn(listMeetingTalkTemplates);
+  const fnApplyMeetingTalk = useServerFn(applyMeetingTalkTemplateForVisit);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [congs, setCongs] = useState<Cong[]>([]);
   const [tpls, setTpls] = useState<{ id: string; slot: number; name: string }[]>([]);
   const [checklistTpls, setChecklistTpls] = useState<{ id: string; name: string }[]>([]);
   const [fieldTpls, setFieldTpls] = useState<{ id: string; name: string }[]>([]);
+  const [meetingTalkTpls, setMeetingTalkTpls] = useState<{ id: string; name: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -78,6 +81,7 @@ function Page() {
     template_id: "",
     checklist_template_id: "",
     field_template_id: "",
+    meeting_talk_template_id: "",
   });
   const isSuper = role === "superintendent";
 
