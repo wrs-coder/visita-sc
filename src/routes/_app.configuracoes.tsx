@@ -236,16 +236,7 @@ function Page() {
     setOpen(false);
   };
 
-  const setActive = async (id: string) => {
-    const v = visits.find((x) => x.id === id);
-    if (!v) return;
-    await supabase
-      .from("visits")
-      .update({ is_active: false })
-      .eq("congregation_id", v.congregation_id);
-    await supabase.from("visits").update({ is_active: true }).eq("id", id);
-    toast.success("Visita ativa atualizada");
-  };
+
 
   const remove = async (id: string) => {
     if (!confirm("Excluir visita e todos os dados relacionados?")) return;
