@@ -22,6 +22,7 @@ const textOpt = z.string().trim().max(400).nullable().optional();
 
 const itemsPayloadSchema = z.object({
   midweek: z.object({
+    service_talk_theme: textOpt,
     chairman: textOpt,
     closing_prayer: textOpt,
   }),
@@ -32,10 +33,12 @@ const itemsPayloadSchema = z.object({
     super_meeting_weekday: weekdaySchema,
     super_meeting_time: timeSchema,
     location: textOpt,
+    theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
   }),
   elders: z.object({
+    theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
   }),
@@ -43,15 +46,32 @@ const itemsPayloadSchema = z.object({
 
 export type MeetingTalkTemplatePayload = z.infer<typeof itemsPayloadSchema>;
 
+async function getMeetingTalkViewer(userId: string) {
+  const { data: roles } = await supabaseAdmin
+    .from("user_roles")
+    .select("role,congregation_id")
+    .eq("user_id", userId);
+  const isSuper = (roles ?? []).some((r) => r.role === "superintendent");
+  const elderCongregationId = (roles ?? []).find((r) => r.role === "elder")?.congregation_id ?? null;
+  return { isSuper, elderCongregationId };
+}
+
 export const listMeetingTalkTemplates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
-    const { data: tpls, error } = await supabaseAdmin
+    const viewer = await getMeetingTalkViewer(userId);
+    if (!viewer.isSuper && !viewer.elderCongregationId) {
+      return { ok: true as const, templates: [] };
+    }
+    const query = supabaseAdmin
       .from("meeting_talk_templates")
       .select("id,name,congregation_id,created_at,updated_at")
-      .eq("superintendent_id", userId)
       .order("created_at");
+    const scopedQuery = viewer.isSuper
+      ? query.eq("superintendent_id", userId)
+      : query.eq("congregation_id", viewer.elderCongregationId!);
+    const { data: tpls, error } = await scopedQuery;
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const, templates: tpls ?? [] };
   });
@@ -61,12 +81,17 @@ export const getMeetingTalkTemplate = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const viewer = await getMeetingTalkViewer(userId);
     const { data: tpl } = await supabaseAdmin
       .from("meeting_talk_templates")
       .select("id,name,congregation_id,superintendent_id")
       .eq("id", data.id)
       .maybeSingle();
-    if (!tpl || tpl.superintendent_id !== userId) {
+    const canView = !!tpl && (
+      tpl.superintendent_id === userId ||
+      (!!viewer.elderCongregationId && tpl.congregation_id === viewer.elderCongregationId)
+    );
+    if (!canView) {
       return { ok: false as const, error: "Não autorizado." };
     }
     const [mid, themes, pioneer, elders] = await Promise.all([
@@ -199,6 +224,7 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
     // Upsert midweek
     await supabaseAdmin.from("meeting_talk_template_midweek").upsert({
       template_id: data.templateId,
+      service_talk_theme: p.midweek.service_talk_theme ?? null,
       chairman: p.midweek.chairman ?? null,
       closing_prayer: p.midweek.closing_prayer ?? null,
     });
@@ -217,12 +243,14 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
       super_meeting_weekday: p.pioneer.super_meeting_weekday ?? null,
       super_meeting_time: p.pioneer.super_meeting_time || null,
       location: p.pioneer.location ?? null,
+      theme: p.pioneer.theme ?? null,
       opening_prayer: p.pioneer.opening_prayer ?? null,
       closing_prayer: p.pioneer.closing_prayer ?? null,
     });
     // Upsert elders
     await supabaseAdmin.from("meeting_talk_template_elders").upsert({
       template_id: data.templateId,
+      theme: p.elders.theme ?? null,
       opening_prayer: p.elders.opening_prayer ?? null,
       closing_prayer: p.elders.closing_prayer ?? null,
     });
@@ -269,6 +297,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
       const { data: existing } = await supabaseAdmin
         .from("midweek_meetings").select("id").eq("visit_id", data.visitId).maybeSingle();
       const payload = {
+        service_talk_theme: mid.data?.service_talk_theme ?? null,
         chairman: mid.data?.chairman ?? null,
         closing_prayer: mid.data?.closing_prayer ?? null,
         visit_id: data.visitId,
@@ -318,6 +347,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
         opening_prayer: pioneer.data?.opening_prayer ?? null,
         closing_prayer: pioneer.data?.closing_prayer ?? null,
         location: pioneer.data?.location ?? null,
+        theme: pioneer.data?.theme ?? null,
         meeting_at: meetingAt,
         super_meeting_at: superMeetingAt,
       };
@@ -331,6 +361,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
         .from("elders_servants_meetings").select("id").eq("visit_id", data.visitId).maybeSingle();
       const payload = {
         visit_id: data.visitId,
+        theme: elders.data?.theme ?? null,
         opening_prayer: elders.data?.opening_prayer ?? null,
         closing_prayer: elders.data?.closing_prayer ?? null,
       };
@@ -365,6 +396,7 @@ const meetingTalkFileSchema = z.object({
   version: z.literal(1),
   name: z.string().trim().min(1).max(120),
   midweek: z.object({
+    service_talk_theme: z.string().trim().max(400).nullable().optional(),
     chairman: z.string().trim().max(400).nullable().optional(),
     closing_prayer: z.string().trim().max(400).nullable().optional(),
   }).nullable().optional(),
@@ -378,10 +410,12 @@ const meetingTalkFileSchema = z.object({
     super_meeting_weekday: weekdaySchema,
     super_meeting_time: timeSchema,
     location: textOpt,
+    theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
   }).nullable().optional(),
   elders: z.object({
+    theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
   }).nullable().optional(),
@@ -398,10 +432,10 @@ export const exportMeetingTalkTemplate = createServerFn({ method: "POST" })
       .eq("id", data.id).maybeSingle();
     if (!tpl || tpl.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
     const [mid, themes, pioneer, elders] = await Promise.all([
-      supabaseAdmin.from("meeting_talk_template_midweek").select("chairman,closing_prayer").eq("template_id", data.id).maybeSingle(),
+      supabaseAdmin.from("meeting_talk_template_midweek").select("service_talk_theme,chairman,closing_prayer").eq("template_id", data.id).maybeSingle(),
       supabaseAdmin.from("meeting_talk_template_weekend_themes").select("title,sort_order").eq("template_id", data.id).order("sort_order"),
-      supabaseAdmin.from("meeting_talk_template_pioneer").select("weekday,meeting_time,super_meeting_weekday,super_meeting_time,location,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
-      supabaseAdmin.from("meeting_talk_template_elders").select("opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
+      supabaseAdmin.from("meeting_talk_template_pioneer").select("weekday,meeting_time,super_meeting_weekday,super_meeting_time,location,theme,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
+      supabaseAdmin.from("meeting_talk_template_elders").select("theme,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
     ]);
     return {
       ok: true as const,
@@ -440,6 +474,7 @@ export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
     if (f.midweek) {
       await supabaseAdmin.from("meeting_talk_template_midweek").insert({
         template_id: newId,
+        service_talk_theme: f.midweek.service_talk_theme ?? null,
         chairman: f.midweek.chairman ?? null,
         closing_prayer: f.midweek.closing_prayer ?? null,
       });
@@ -457,6 +492,7 @@ export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
         super_meeting_weekday: f.pioneer.super_meeting_weekday ?? null,
         super_meeting_time: f.pioneer.super_meeting_time || null,
         location: f.pioneer.location ?? null,
+        theme: f.pioneer.theme ?? null,
         opening_prayer: f.pioneer.opening_prayer ?? null,
         closing_prayer: f.pioneer.closing_prayer ?? null,
       });
@@ -464,6 +500,7 @@ export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
     if (f.elders) {
       await supabaseAdmin.from("meeting_talk_template_elders").insert({
         template_id: newId,
+        theme: f.elders.theme ?? null,
         opening_prayer: f.elders.opening_prayer ?? null,
         closing_prayer: f.elders.closing_prayer ?? null,
       });

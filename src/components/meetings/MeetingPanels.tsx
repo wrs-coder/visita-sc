@@ -51,14 +51,15 @@ function FieldText({
 }
 
 /* ============ MEIO DE SEMANA ============ */
-interface MidweekRow { id: string; visit_id: string; chairman: string | null; closing_prayer: string | null }
+interface MidweekRow { id: string; visit_id: string; service_talk_theme: string | null; chairman: string | null; closing_prayer: string | null }
 
 export function MidweekPanel() {
   const { visit } = useActiveVisit();
-  const { canEdit } = useAuth();
+  const { role, canEdit } = useAuth();
+  const isSuper = role === "superintendent";
   const { row, loading, save } = useSingleRow<MidweekRow>(
     "midweek_meetings",
-    "id,visit_id,chairman,closing_prayer",
+    "id,visit_id,service_talk_theme,chairman,closing_prayer",
     visit,
   );
   if (!visit) return <NoVisit />;
@@ -66,6 +67,10 @@ export function MidweekPanel() {
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
+        <div>
+          <Label>Tema: Discurso de serviço</Label>
+          <FieldText value={row.service_talk_theme} onSave={(v) => save({ service_talk_theme: v })} readOnly={!isSuper} />
+        </div>
         <div>
           <Label>Presidente da Reunião</Label>
           <FieldText value={row.chairman} onSave={(v) => save({ chairman: v })} placeholder="Nome do presidente" />
@@ -250,6 +255,7 @@ export function TalkThemesManager() {
 /* ============ PIONEIROS ============ */
 interface PioneerRow {
   id: string; visit_id: string;
+  theme: string | null;
   opening_prayer: string | null;
   closing_prayer: string | null;
   location: string | null;
@@ -263,7 +269,7 @@ export function PioneerPanel() {
   const isSuper = role === "superintendent";
   const { row, loading, save } = useSingleRow<PioneerRow>(
     "pioneer_meetings",
-    "id,visit_id,opening_prayer,closing_prayer,location,meeting_at,super_meeting_at",
+    "id,visit_id,theme,opening_prayer,closing_prayer,location,meeting_at,super_meeting_at",
     visit,
   );
   if (!visit) return <NoVisit />;
@@ -288,6 +294,10 @@ export function PioneerPanel() {
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
+        <div>
+          <Label>Tema:</Label>
+          <FieldText value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
+        </div>
         <div>
           <Label>Oração Inicial</Label>
           <FieldText value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
@@ -329,14 +339,15 @@ export function PioneerPanel() {
 }
 
 /* ============ ANCIÃOS E SERVOS ============ */
-interface EldersRow { id: string; visit_id: string; opening_prayer: string | null; closing_prayer: string | null }
+interface EldersRow { id: string; visit_id: string; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }
 
 export function EldersServantsPanel() {
   const { visit } = useActiveVisit();
-  const { canEdit } = useAuth();
+  const { role, canEdit } = useAuth();
+  const isSuper = role === "superintendent";
   const { row, loading, save } = useSingleRow<EldersRow>(
     "elders_servants_meetings",
-    "id,visit_id,opening_prayer,closing_prayer",
+    "id,visit_id,theme,opening_prayer,closing_prayer",
     visit,
   );
   if (!visit) return <NoVisit />;
@@ -344,6 +355,10 @@ export function EldersServantsPanel() {
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
+        <div>
+          <Label>Tema:</Label>
+          <FieldText value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
+        </div>
         <div>
           <Label>Oração Inicial</Label>
           <FieldText value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />

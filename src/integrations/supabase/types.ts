@@ -159,6 +159,7 @@ export type Database = {
           created_at: string
           id: string
           opening_prayer: string | null
+          theme: string | null
           updated_at: string
           visit_id: string
         }
@@ -167,6 +168,7 @@ export type Database = {
           created_at?: string
           id?: string
           opening_prayer?: string | null
+          theme?: string | null
           updated_at?: string
           visit_id: string
         }
@@ -175,6 +177,7 @@ export type Database = {
           created_at?: string
           id?: string
           opening_prayer?: string | null
+          theme?: string | null
           updated_at?: string
           visit_id?: string
         }
@@ -459,6 +462,7 @@ export type Database = {
           created_at: string
           opening_prayer: string | null
           template_id: string
+          theme: string | null
           updated_at: string
         }
         Insert: {
@@ -466,6 +470,7 @@ export type Database = {
           created_at?: string
           opening_prayer?: string | null
           template_id: string
+          theme?: string | null
           updated_at?: string
         }
         Update: {
@@ -473,6 +478,7 @@ export type Database = {
           created_at?: string
           opening_prayer?: string | null
           template_id?: string
+          theme?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -490,6 +496,7 @@ export type Database = {
           chairman: string | null
           closing_prayer: string | null
           created_at: string
+          service_talk_theme: string | null
           template_id: string
           updated_at: string
         }
@@ -497,6 +504,7 @@ export type Database = {
           chairman?: string | null
           closing_prayer?: string | null
           created_at?: string
+          service_talk_theme?: string | null
           template_id: string
           updated_at?: string
         }
@@ -504,6 +512,7 @@ export type Database = {
           chairman?: string | null
           closing_prayer?: string | null
           created_at?: string
+          service_talk_theme?: string | null
           template_id?: string
           updated_at?: string
         }
@@ -527,6 +536,7 @@ export type Database = {
           super_meeting_time: string | null
           super_meeting_weekday: number | null
           template_id: string
+          theme: string | null
           updated_at: string
           weekday: number | null
         }
@@ -539,6 +549,7 @@ export type Database = {
           super_meeting_time?: string | null
           super_meeting_weekday?: number | null
           template_id: string
+          theme?: string | null
           updated_at?: string
           weekday?: number | null
         }
@@ -551,6 +562,7 @@ export type Database = {
           super_meeting_time?: string | null
           super_meeting_weekday?: number | null
           template_id?: string
+          theme?: string | null
           updated_at?: string
           weekday?: number | null
         }
@@ -629,6 +641,7 @@ export type Database = {
           closing_prayer: string | null
           created_at: string
           id: string
+          service_talk_theme: string | null
           updated_at: string
           visit_id: string
         }
@@ -637,6 +650,7 @@ export type Database = {
           closing_prayer?: string | null
           created_at?: string
           id?: string
+          service_talk_theme?: string | null
           updated_at?: string
           visit_id: string
         }
@@ -645,6 +659,7 @@ export type Database = {
           closing_prayer?: string | null
           created_at?: string
           id?: string
+          service_talk_theme?: string | null
           updated_at?: string
           visit_id?: string
         }
@@ -659,6 +674,7 @@ export type Database = {
           meeting_at: string | null
           opening_prayer: string | null
           super_meeting_at: string | null
+          theme: string | null
           updated_at: string
           visit_id: string
         }
@@ -670,6 +686,7 @@ export type Database = {
           meeting_at?: string | null
           opening_prayer?: string | null
           super_meeting_at?: string | null
+          theme?: string | null
           updated_at?: string
           visit_id: string
         }
@@ -681,6 +698,7 @@ export type Database = {
           meeting_at?: string | null
           opening_prayer?: string | null
           super_meeting_at?: string | null
+          theme?: string | null
           updated_at?: string
           visit_id?: string
         }
