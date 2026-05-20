@@ -116,9 +116,11 @@ function Page() {
   useEffect(() => { loadList(); }, [loadList]);
   useEffect(() => { if (activeId) loadActive(activeId); else setPayload(emptyPayload()); }, [activeId, loadActive]);
 
-  if (role !== "superintendent") {
-    return <Card><CardContent className="p-6 text-sm">Acesso restrito ao superintendente.</CardContent></Card>;
+  if (!role) {
+    return <Card><CardContent className="p-6 text-sm">Acesso restrito.</CardContent></Card>;
   }
+
+  const isSuper = role === "superintendent";
 
   const active = tpls.find((t) => t.id === activeId) ?? null;
 
@@ -228,36 +230,38 @@ function Page() {
             Crie modelos reutilizáveis com Meio de Semana, Fim de Semana (vários temas), Pioneiros e Anciãos/Servos. {tpls.length}/{MAX} modelos.
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <TemplateIOButtons
-            filenameBase={active?.name ?? "modelo-reuniao-discurso"}
-            disabled={!active}
-            onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: "Selecione um modelo" }}
-            onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await loadList(); return r; }}
-          />
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />Novo modelo</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle>Novo modelo</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <div>
-                  <Label>Nome</Label>
-                  <Input
-                    className={`mt-1 ${newNameErr ? "border-destructive" : ""}`}
-                    value={newName}
-                    onChange={(e) => { setNewName(e.target.value); if (newNameErr) setNewNameErr(null); }}
-                    placeholder="Ex: Modelo padrão"
-                    maxLength={120}
-                  />
-                  {newNameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{newNameErr}</p>}
+        {isSuper && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <TemplateIOButtons
+              filenameBase={active?.name ?? "modelo-reuniao-discurso"}
+              disabled={!active}
+              onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: "Selecione um modelo" }}
+              onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await loadList(); return r; }}
+            />
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />Novo modelo</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader><DialogTitle>Novo modelo</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <Label>Nome</Label>
+                    <Input
+                      className={`mt-1 ${newNameErr ? "border-destructive" : ""}`}
+                      value={newName}
+                      onChange={(e) => { setNewName(e.target.value); if (newNameErr) setNewNameErr(null); }}
+                      placeholder="Ex: Modelo padrão"
+                      maxLength={120}
+                    />
+                    {newNameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{newNameErr}</p>}
+                  </div>
+                  <Button className="w-full" onClick={handleCreate} disabled={busy}>Criar</Button>
                 </div>
-                <Button className="w-full" onClick={handleCreate} disabled={busy}>Criar</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
       </div>
 
       <div className="grid md:grid-cols-[260px_1fr] gap-4">
