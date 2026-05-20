@@ -185,7 +185,7 @@ function Dashboard() {
       )}
 
       {visit && (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3 auto-rows-fr">
           <Card className="shadow-card">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
@@ -195,12 +195,13 @@ function Dashboard() {
               {transports.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhuma atividade programada para hoje.</p>
               ) : (
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {transports.map((t) => (
-                    <li key={t.id} className="text-sm">
-                      <div className="font-medium">{t.driver_name}</div>
-                      {t.description && <div className="text-xs text-muted-foreground">{t.description}</div>}
-                      {t.contact_phone && <div className="text-xs text-muted-foreground">{t.contact_phone}</div>}
+                    <li key={t.id} className="text-sm space-y-0.5">
+                      <div className="font-medium break-words whitespace-normal">{t.driver_name}</div>
+                      {t.contact_phone && <div className="text-xs text-muted-foreground break-words">📞 {t.contact_phone}</div>}
+                      {t.description && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{t.description}</div>}
+                      {t.notes && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{t.notes}</div>}
                     </li>
                   ))}
                 </ul>
@@ -217,15 +218,17 @@ function Dashboard() {
               {assignments.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhuma atividade programada para hoje.</p>
               ) : (
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {assignments.map((a) => (
                     <li key={a.id} className="text-sm flex items-start gap-2">
                       <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
                         {a.period}{a.meeting_time ? ` · ${a.meeting_time.slice(0,5)}` : ""}
                       </span>
-                      <div className="min-w-0">
-                        {a.acompanhante && <div className="font-medium truncate">{a.acompanhante}{a.acompanhante_for ? ` → ${a.acompanhante_for}` : ""}</div>}
-                        {a.meeting_point && <div className="text-xs text-muted-foreground truncate">{a.meeting_point}</div>}
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        {a.acompanhante && <div className="font-medium break-words whitespace-normal">{a.acompanhante}{a.acompanhante_for ? ` → ${a.acompanhante_for}` : ""}</div>}
+                        {a.meeting_point && <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{a.meeting_point}</span></div>}
+                        {a.contact_phone && <div className="text-xs text-muted-foreground break-words">📞 {a.contact_phone}</div>}
+                        {a.notes && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{a.notes}</div>}
                       </div>
                     </li>
                   ))}
@@ -243,17 +246,19 @@ function Dashboard() {
               {fieldMeetings.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhuma atividade programada para hoje.</p>
               ) : (
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {fieldMeetings.map((f) => (
-                    <li key={f.id} className="text-sm">
+                    <li key={f.id} className="text-sm space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
                           {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0,5)}` : ""}
                         </span>
                         <span className="text-xs text-muted-foreground">{MODALITY_LABEL[f.modality] ?? f.modality}</span>
                       </div>
-                      {f.meeting_location && <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><MapPin className="h-3 w-3" />{f.meeting_location}</div>}
-                      {f.territory_number && <div className="text-xs text-muted-foreground">Território {f.territory_number}{f.territory_location ? ` · ${f.territory_location}` : ""}</div>}
+                      {f.meeting_location && <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{f.meeting_location}</span></div>}
+                      {f.territory_number && <div className="text-xs text-muted-foreground break-words whitespace-normal">Território {f.territory_number}{f.territory_location ? ` · ${f.territory_location}` : ""}</div>}
+                      {f.auxiliary_leaders && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">Arranjos: {f.auxiliary_leaders}</div>}
+                      {f.closing_prayer && <div className="text-xs text-muted-foreground break-words whitespace-normal">Oração final: {f.closing_prayer}</div>}
                     </li>
                   ))}
                 </ul>
