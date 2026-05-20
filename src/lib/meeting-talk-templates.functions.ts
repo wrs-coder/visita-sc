@@ -322,6 +322,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
         visit_id: data.visitId,
         talk_theme_title: firstTitle,
         talk_theme_id: null as string | null,
+        public_talk_theme: own.data.weekend_public_talk_theme ?? null,
       };
       if (existing) await supabaseAdmin.from("weekend_meetings").update(payload).eq("id", existing.id);
       else await supabaseAdmin.from("weekend_meetings").insert(payload);
