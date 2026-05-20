@@ -54,6 +54,8 @@ export function MeetingsDraftProvider({
   const [drafts, setDrafts] = useState<DraftStore>({});
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  const [lastFailedTables, setLastFailedTables] = useState<string[]>([]);
   const hydratedRef = useRef(false);
   const queryClient = useQueryClient();
 
