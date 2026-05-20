@@ -181,6 +181,7 @@ function Page() {
         templateId: activeId,
         payload: {
           midweek: {
+              service_talk_theme: payload.midweek.service_talk_theme || null,
             chairman: payload.midweek.chairman || null,
             closing_prayer: payload.midweek.closing_prayer || null,
           },
@@ -191,10 +192,12 @@ function Page() {
             super_meeting_weekday: payload.pioneer.super_meeting_weekday,
             super_meeting_time: payload.pioneer.super_meeting_time || null,
             location: payload.pioneer.location || null,
+              theme: payload.pioneer.theme || null,
             opening_prayer: payload.pioneer.opening_prayer || null,
             closing_prayer: payload.pioneer.closing_prayer || null,
           },
           elders: {
+              theme: payload.elders.theme || null,
             opening_prayer: payload.elders.opening_prayer || null,
             closing_prayer: payload.elders.closing_prayer || null,
           },
