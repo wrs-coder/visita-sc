@@ -107,6 +107,7 @@ function AppLayout() {
               { to: "/modelos", label: "Modelos de Programação", icon: FileStack },
               { to: "/checklist-modelos", label: "Modelos de Checklist", icon: ListChecks },
               { to: "/modelo-reunioes-de-campo", label: "Modelo Reuniões de Campo", icon: MapPin },
+              { to: "/modelo-reunioes-discursos", label: "Modelos de Reunião e Discurso", icon: Layers },
             ]
           : []),
         { to: "/perfil", label: "Meu perfil", icon: UserCircle },
