@@ -616,6 +616,7 @@ export type Database = {
           name: string
           superintendent_id: string
           updated_at: string
+          weekend_public_talk_theme: string | null
         }
         Insert: {
           congregation_id?: string | null
@@ -624,6 +625,7 @@ export type Database = {
           name: string
           superintendent_id: string
           updated_at?: string
+          weekend_public_talk_theme?: string | null
         }
         Update: {
           congregation_id?: string | null
@@ -632,6 +634,7 @@ export type Database = {
           name?: string
           superintendent_id?: string
           updated_at?: string
+          weekend_public_talk_theme?: string | null
         }
         Relationships: []
       }
@@ -1096,6 +1099,7 @@ export type Database = {
           created_at: string
           id: string
           meeting_at: string | null
+          public_talk_theme: string | null
           talk_theme_id: string | null
           talk_theme_title: string | null
           updated_at: string
@@ -1105,6 +1109,7 @@ export type Database = {
           created_at?: string
           id?: string
           meeting_at?: string | null
+          public_talk_theme?: string | null
           talk_theme_id?: string | null
           talk_theme_title?: string | null
           updated_at?: string
@@ -1114,6 +1119,7 @@ export type Database = {
           created_at?: string
           id?: string
           meeting_at?: string | null
+          public_talk_theme?: string | null
           talk_theme_id?: string | null
           talk_theme_title?: string | null
           updated_at?: string
