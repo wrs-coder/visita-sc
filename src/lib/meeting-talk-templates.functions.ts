@@ -476,7 +476,7 @@ export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await supabaseAdmin
       .from("meeting_talk_templates")
-      .insert({ superintendent_id: userId, name: data.file.name, congregation_id: null })
+      .insert({ superintendent_id: userId, name: data.file.name, congregation_id: null, weekend_public_talk_theme: data.file.weekend_public_talk_theme ?? null })
       .select("id").single();
     if (error || !row) return { ok: false as const, error: error?.message ?? "Falha ao criar." };
     const newId = row.id;
