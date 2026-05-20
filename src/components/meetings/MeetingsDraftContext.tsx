@@ -20,6 +20,7 @@ import {
 import { offlineUpdate } from "@/lib/offline-supabase";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useBlocker } from "@tanstack/react-router";
 
 type DraftPatch = Record<string, unknown>;
 type DraftStore = Record<string, DraftPatch>; // key = `${table}:${rowId}`
@@ -34,6 +35,8 @@ interface DraftCtx {
   saving: boolean;
   progress: number; // 0..100 durante flush
   pendingCount: number;
+  lastSyncedAt: Date | null;
+  lastFailedTables: string[];
 }
 
 const Ctx = createContext<DraftCtx | null>(null);
