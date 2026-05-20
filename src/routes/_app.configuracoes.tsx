@@ -412,16 +412,15 @@ function Page() {
                   </div>
                 </div>
                 <div>
-                  <Label>Modelo de programação (opcional)</Label>
+                  <Label>Modelo de Programação *</Label>
                   <Select
-                    value={form.template_id || "none"}
-                    onValueChange={(v) => setForm({ ...form, template_id: v === "none" ? "" : v })}
+                    value={form.template_id || ""}
+                    onValueChange={(v) => setForm({ ...form, template_id: v })}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Sem modelo" />
+                      <SelectValue placeholder="Selecione…" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— Não aplicar modelo —</SelectItem>
                       {tpls.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.name}
@@ -434,25 +433,17 @@ function Page() {
                       Crie um modelo em "Modelos" para aplicá-lo aqui.
                     </p>
                   )}
-                  {editId && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Selecionar um modelo aplicará novos itens à visita existente.
-                    </p>
-                  )}
                 </div>
                 <div>
-                  <Label>Modelo de checklist aplicável (opcional)</Label>
+                  <Label>Modelo de Checklist *</Label>
                   <Select
-                    value={form.checklist_template_id || "none"}
-                    onValueChange={(v) =>
-                      setForm({ ...form, checklist_template_id: v === "none" ? "" : v })
-                    }
+                    value={form.checklist_template_id || ""}
+                    onValueChange={(v) => setForm({ ...form, checklist_template_id: v })}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Sem modelo" />
+                      <SelectValue placeholder="Selecione…" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— Não aplicar modelo —</SelectItem>
                       {checklistTpls.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.name}
@@ -467,18 +458,15 @@ function Page() {
                   )}
                 </div>
                 <div>
-                  <Label>Modelo de reunião de campo aplicável (opcional)</Label>
+                  <Label>Modelo de Reuniões de Campo *</Label>
                   <Select
-                    value={form.field_template_id || "none"}
-                    onValueChange={(v) =>
-                      setForm({ ...form, field_template_id: v === "none" ? "" : v })
-                    }
+                    value={form.field_template_id || ""}
+                    onValueChange={(v) => setForm({ ...form, field_template_id: v })}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Sem modelo" />
+                      <SelectValue placeholder="Selecione…" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— Não aplicar modelo —</SelectItem>
                       {fieldTpls.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.name}
@@ -489,6 +477,29 @@ function Page() {
                   {fieldTpls.length === 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Crie um modelo em "Modelo Reuniões de Campo" para aplicá-lo aqui.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label>Modelo de Reunião e Discurso *</Label>
+                  <Select
+                    value={form.meeting_talk_template_id || ""}
+                    onValueChange={(v) => setForm({ ...form, meeting_talk_template_id: v })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecione…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {meetingTalkTpls.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {meetingTalkTpls.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Crie um modelo em "Modelos de Reunião e Discurso" para aplicá-lo aqui.
                     </p>
                   )}
                 </div>
