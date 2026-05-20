@@ -157,7 +157,18 @@ export function WeekendPanel() {
             />
           </div>
           <div>
-            <Label>Tema do Discurso</Label>
+            <Label>Discurso Público</Label>
+            <FieldText
+              value={row.public_talk_theme ?? ""}
+              readOnly={!isSuper}
+              onSave={(v) => save({ public_talk_theme: v || null })}
+            />
+            {!isSuper && (
+              <p className="text-xs text-muted-foreground mt-1">Apenas leitura — editado pelo superintendente.</p>
+            )}
+          </div>
+          <div>
+            <Label>Discurso Final</Label>
             {themes.length === 0 ? (
               <p className="text-xs text-muted-foreground mt-1">
                 Nenhum tema cadastrado{canEdit ? " — peça ao Superintendente." : "."}
