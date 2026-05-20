@@ -18,10 +18,10 @@ export const Route = createFileRoute("/_app/dashboard")({
 
 interface ScheduleEvent { id: string; event_date: string; start_time: string | null; title: string; location: string | null; type: string; }
 interface ChecklistItem { id: string; status: string; }
-interface Meal { id: string; meal_date: string; type: string; host_name: string | null; location: string | null; }
+interface Meal { id: string; meal_date: string; meal_time: string | null; type: string; host_name: string | null; location: string | null; contact_phone: string | null; notes: string | null; }
 interface Transport { id: string; driver_name: string; contact_phone: string | null; description: string | null; notes: string | null; }
 interface FieldAssignment { id: string; period: string; meeting_point: string | null; meeting_time: string | null; acompanhante: string | null; acompanhante_for: string | null; contact_phone: string | null; notes: string | null; }
-interface FieldMeetingToday { id: string; period: string; modality: string; meeting_time: string | null; meeting_location: string | null; territory_number: string | null; territory_location: string | null; auxiliary_leaders: string | null; }
+interface FieldMeetingToday { id: string; period: string; modality: string; meeting_time: string | null; meeting_location: string | null; territory_number: string | null; territory_location: string | null; auxiliary_leaders: string | null; closing_prayer: string | null; }
 
 const MODALITY_LABEL: Record<string, string> = {
   casa_em_casa: "Casa em Casa",
