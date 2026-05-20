@@ -341,7 +341,7 @@ function Page() {
                   <Card><CardContent className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-semibold text-sm">Temas de Discurso</div>
+                        <div className="font-semibold text-sm">Tema: Discurso Público</div>
                         <p className="text-xs text-muted-foreground">Cadastre vários temas. Os anciãos escolherão um deles num dropdown.</p>
                       </div>
                       <Button size="sm" variant="outline" onClick={addTheme}><Plus className="h-3.5 w-3.5 mr-1" />Tema</Button>
@@ -366,6 +366,11 @@ function Page() {
                 <TabsContent value="pio" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <p className="text-xs text-muted-foreground">Apenas dia da semana + horário; sem calendário de datas específicas.</p>
+                    <div>
+                      <Label>Tema:</Label>
+                      <Input className="mt-1" value={payload.pioneer.theme}
+                        onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, theme: e.target.value } })} />
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label>Dia da semana</Label>
@@ -426,6 +431,11 @@ function Page() {
 
                 <TabsContent value="anc" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
+                    <div>
+                      <Label>Tema:</Label>
+                      <Input className="mt-1" value={payload.elders.theme}
+                        onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, theme: e.target.value } })} />
+                    </div>
                     <div>
                       <Label>Oração Inicial</Label>
                       <Input className="mt-1" value={payload.elders.opening_prayer}
