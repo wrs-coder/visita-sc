@@ -65,6 +65,8 @@ function Page() {
   const fnDup = useServerFn(duplicateMeetingTalkTemplate);
   const fnDel = useServerFn(deleteMeetingTalkTemplate);
   const fnSave = useServerFn(saveMeetingTalkTemplateItems);
+  const fnExport = useServerFn(exportMeetingTalkTemplate);
+  const fnImport = useServerFn(importMeetingTalkTemplate);
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
