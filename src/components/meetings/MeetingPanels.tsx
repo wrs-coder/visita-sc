@@ -1,17 +1,13 @@
 import { useEffect, useState } from "react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
-import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { getVisitWeekendThemes } from "@/lib/meeting-talk-templates.functions";
-import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
 import { useSingleRow } from "./SingleRowPanel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Trash2, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
