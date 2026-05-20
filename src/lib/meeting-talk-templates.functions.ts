@@ -64,17 +64,14 @@ export const listMeetingTalkTemplates = createServerFn({ method: "POST" })
     if (!viewer.isSuper && !viewer.elderCongregationId) {
       return { ok: true as const, templates: [] };
     }
-    let query = supabaseAdmin
+    const query = supabaseAdmin
       .from("meeting_talk_templates")
       .select("id,name,congregation_id,created_at,updated_at")
       .order("created_at");
-    query = viewer.isSuper
+    const scopedQuery = viewer.isSuper
       ? query.eq("superintendent_id", userId)
       : query.eq("congregation_id", viewer.elderCongregationId!);
-    const { data: tpls, error } = await supabaseAdmin
-      .from("meeting_talk_templates")
-      .select("id,name,congregation_id,created_at,updated_at")
-      .match(viewer.isSuper ? { superintendent_id: userId } : { congregation_id: viewer.elderCongregationId });
+    const { data: tpls, error } = await scopedQuery;
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const, templates: tpls ?? [] };
   });
@@ -84,12 +81,17 @@ export const getMeetingTalkTemplate = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const viewer = await getMeetingTalkViewer(userId);
     const { data: tpl } = await supabaseAdmin
       .from("meeting_talk_templates")
       .select("id,name,congregation_id,superintendent_id")
       .eq("id", data.id)
       .maybeSingle();
-    if (!tpl || tpl.superintendent_id !== userId) {
+    const canView = !!tpl && (
+      tpl.superintendent_id === userId ||
+      (!!viewer.elderCongregationId && tpl.congregation_id === viewer.elderCongregationId)
+    );
+    if (!canView) {
       return { ok: false as const, error: "Não autorizado." };
     }
     const [mid, themes, pioneer, elders] = await Promise.all([
