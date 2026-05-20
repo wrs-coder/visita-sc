@@ -301,7 +301,7 @@ function Page() {
                 </div>
 
                 <TabsContent value="meio" className="mt-3">
-                  <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+                  <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <div>
                       <Label>Presidente da Reunião</Label>
                       <Input className="mt-1" value={payload.midweek.chairman}
@@ -342,7 +342,7 @@ function Page() {
                 </TabsContent>
 
                 <TabsContent value="pio" className="mt-3">
-                  <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+                  <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <p className="text-xs text-muted-foreground">Apenas dia da semana + horário; sem calendário de datas específicas.</p>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -403,7 +403,7 @@ function Page() {
                 </TabsContent>
 
                 <TabsContent value="anc" className="mt-3">
-                  <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+                  <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <div>
                       <Label>Oração Inicial</Label>
                       <Input className="mt-1" value={payload.elders.opening_prayer}
