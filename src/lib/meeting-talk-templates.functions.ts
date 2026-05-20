@@ -380,21 +380,63 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
     return { ok: true as const, weekendThemes: themes.data?.map((t) => t.title) ?? [] };
   });
 
-// Lê (para qualquer membro autorizado) os temas de fim de semana do modelo
-// vinculado a uma visita — alimenta o dropdown da aba "Reuniões e Discursos".
+// Lê (para qualquer membro autorizado) os temas de fim de semana —
+// primeiro do modelo vinculado à visita; se não houver, agrega todos os
+// temas dos modelos acessíveis ao usuário (super: próprios; ancião:
+// vinculados à sua congregação). Alimenta o dropdown da aba
+// "Reuniões e Discursos" → sub-aba "Fim de Semana" → "Discurso Final".
 export const getVisitWeekendThemes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
-  .handler(async ({ data }) => {
-    const { data: visit } = await supabaseAdmin
-      .from("visits").select("meeting_talk_template_id").eq("id", data.visitId).maybeSingle();
-    if (!visit?.meeting_talk_template_id) return { ok: true as const, themes: [] as string[] };
+  .inputValidator((input) => z.object({ visitId: z.string().uuid().nullable().optional() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    type ThemeRow = { id: string; title: string; sort_order?: number };
+    const dedupe = (rows: ThemeRow[]) => {
+      const seen = new Set<string>();
+      const out: { id: string; title: string }[] = [];
+      for (const r of rows) {
+        const key = (r.title ?? "").trim().toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push({ id: r.id, title: r.title });
+      }
+      return out;
+    };
+
+    if (data.visitId) {
+      const { data: visit } = await supabaseAdmin
+        .from("visits").select("meeting_talk_template_id").eq("id", data.visitId).maybeSingle();
+      if (visit?.meeting_talk_template_id) {
+        const { data: themes } = await supabaseAdmin
+          .from("meeting_talk_template_weekend_themes")
+          .select("id,title,sort_order")
+          .eq("template_id", visit.meeting_talk_template_id)
+          .order("sort_order");
+        if ((themes ?? []).length > 0) {
+          return { ok: true as const, themes: dedupe(themes as ThemeRow[]) };
+        }
+      }
+    }
+
+    const viewer = await getMeetingTalkViewer(userId);
+    let templateIds: string[] = [];
+    if (viewer.isSuper) {
+      const { data: tpls } = await supabaseAdmin
+        .from("meeting_talk_templates").select("id").eq("superintendent_id", userId);
+      templateIds = (tpls ?? []).map((t) => t.id);
+    } else if (viewer.elderCongregationId) {
+      const { data: tpls } = await supabaseAdmin
+        .from("meeting_talk_templates").select("id").eq("congregation_id", viewer.elderCongregationId);
+      templateIds = (tpls ?? []).map((t) => t.id);
+    }
+    if (templateIds.length === 0) return { ok: true as const, themes: [] };
+
     const { data: themes } = await supabaseAdmin
       .from("meeting_talk_template_weekend_themes")
-      .select("title,sort_order")
-      .eq("template_id", visit.meeting_talk_template_id)
-      .order("sort_order");
-    return { ok: true as const, themes: (themes ?? []).map((t) => t.title) };
+      .select("id,title,sort_order")
+      .in("template_id", templateIds)
+      .order("title");
+    return { ok: true as const, themes: dedupe((themes ?? []) as ThemeRow[]) };
   });
 
 // ---------- EXPORT / IMPORT ----------

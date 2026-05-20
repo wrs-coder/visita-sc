@@ -1,16 +1,13 @@
 import { useEffect, useState } from "react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
-import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
+import { getVisitWeekendThemes } from "@/lib/meeting-talk-templates.functions";
 import { useSingleRow } from "./SingleRowPanel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Trash2, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
@@ -112,7 +109,6 @@ export function WeekendPanel() {
   const { visit } = useActiveVisit();
   const { canEdit, role } = useAuth();
   const isSuper = role === "superintendent";
-  const congregation = useActiveCongregation();
   const { row, loading, save } = useSingleRow<WeekendRow>(
     "weekend_meetings",
     "id,visit_id,meeting_at,talk_theme_id,talk_theme_title,public_talk_theme",
@@ -121,20 +117,23 @@ export function WeekendPanel() {
   const [themes, setThemes] = useState<Theme[]>([]);
 
   useEffect(() => {
-    if (!congregation) return;
+    let cancelled = false;
     const load = async () => {
-      const { data } = await supabase
-        .from("talk_themes").select("id,title")
-        .or(`congregation_id.eq.${congregation.id},superintendent_id.eq.${congregation.superintendent_id}`)
-        .order("title");
-      setThemes((data ?? []) as Theme[]);
+      try {
+        const res = await getVisitWeekendThemes({ data: { visitId: visit?.id ?? null } });
+        if (cancelled) return;
+        if (res.ok) setThemes(res.themes as Theme[]);
+      } catch {
+        if (!cancelled) setThemes([]);
+      }
     };
     load();
-    const ch = supabase.channel(`themes-${congregation.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "talk_themes" }, load)
+    // recarrega quando temas do modelo mudarem
+    const ch = supabase.channel(`weekend-themes-${visit?.id ?? "none"}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "meeting_talk_template_weekend_themes" }, load)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [congregation]);
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, [visit?.id]);
 
   if (!visit) return <NoVisit />;
   if (loading || !row) return <div className="p-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Carregando…</div>;
@@ -171,7 +170,9 @@ export function WeekendPanel() {
             <Label>Discurso Final</Label>
             {themes.length === 0 ? (
               <p className="text-xs text-muted-foreground mt-1">
-                Nenhum tema cadastrado{canEdit ? " — peça ao Superintendente." : "."}
+                {isSuper
+                  ? "Nenhum tema cadastrado. Adicione em Modelos de Reunião e Discurso → Fim de Semana."
+                  : "Nenhum tema cadastrado — peça ao Superintendente."}
               </p>
             ) : (
               <Select value={row.talk_theme_id ?? ""} onValueChange={onPickTheme}>
@@ -181,89 +182,18 @@ export function WeekendPanel() {
                 </SelectContent>
               </Select>
             )}
-            {row.talk_theme_title && !themes.find((t) => t.id === row.talk_theme_id) && (
+            {row.talk_theme_title && themes.length > 0 && !themes.find((t) => t.id === row.talk_theme_id) && (
               <p className="text-xs text-muted-foreground mt-1">Selecionado: {row.talk_theme_title}</p>
             )}
           </div>
         </fieldset>
       </CardContent></Card>
-      <TalkThemesManager />
     </div>
   );
 }
 
-/* ============ GERENCIADOR DE TEMAS (apenas SC) ============ */
-export function TalkThemesManager() {
-  const { role, user } = useAuth();
-  const congregation = useActiveCongregation();
-  const isSuper = role === "superintendent";
-  const [themes, setThemes] = useState<Theme[]>([]);
-  const [draft, setDraft] = useState("");
-
-  useEffect(() => {
-    if (!isSuper || !user) return;
-    const load = async () => {
-      const { data } = await supabase
-        .from("talk_themes").select("id,title")
-        .eq("superintendent_id", user.id).order("title");
-      setThemes((data ?? []) as Theme[]);
-    };
-    load();
-    const ch = supabase.channel(`themes-mgr-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "talk_themes", filter: `superintendent_id=eq.${user.id}` }, load)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [isSuper, user]);
-
-  if (!isSuper) return null;
-
-  const add = async () => {
-    const title = draft.trim();
-    if (!title) return;
-    const { error } = await offlineInsert("talk_themes", {
-      title,
-      congregation_id: congregation?.id ?? null,
-    });
-    if (error) toast.error(error.message); else setDraft("");
-  };
-  const remove = async (id: string) => {
-    const { error } = await offlineDelete("talk_themes", { id });
-    if (error) toast.error(error.message);
-  };
-  const rename = async (id: string, title: string) => {
-    const { error } = await offlineUpdate("talk_themes", { title }, { id });
-    if (error) toast.error(error.message);
-  };
-
-  return (
-    <Card>
-      <CardContent className="p-4 space-y-3">
-        <div>
-          <h3 className="font-semibold text-sm">Temas de Discurso (gerenciar)</h3>
-          <p className="text-xs text-muted-foreground">Os temas cadastrados aqui aparecerão para os anciãos escolherem.</p>
-        </div>
-        <div className="flex gap-2">
-          <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Novo tema" onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
-          <Button onClick={add}><Plus className="h-4 w-4 mr-1" />Adicionar</Button>
-        </div>
-        {themes.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Nenhum tema cadastrado ainda.</p>
-        ) : (
-          <ul className="divide-y border rounded-md">
-        {themes.map((t) => (
-              <li key={t.id} className="flex items-center gap-2 p-2">
-                <FieldText value={t.title} onSave={(v) => { if (v) void rename(t.id, v); }} />
-                <Button size="icon" variant="ghost" onClick={() => remove(t.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+/* Gerenciador de Temas removido — temas do Discurso Final agora vivem em
+   Modelos de Reunião e Discurso → Fim de Semana. */
 
 /* ============ PIONEIROS ============ */
 interface PioneerRow {
