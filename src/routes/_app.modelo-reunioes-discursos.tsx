@@ -191,6 +191,7 @@ function Page() {
             chairman: payload.midweek.chairman || null,
             closing_prayer: payload.midweek.closing_prayer || null,
           },
+          weekend_public_talk_theme: payload.weekend_public_talk_theme.trim() || null,
           weekend_themes: payload.weekend_themes.filter((t) => t.title.trim()).map((t) => ({ title: t.title.trim() })),
           pioneer: {
             weekday: payload.pioneer.weekday,
