@@ -204,6 +204,29 @@ function SaveProgressBar() {
   );
 }
 
+function SyncStatusLine() {
+  const draft = useMeetingsDraft();
+  if (!draft) return null;
+  const { lastSyncedAt, lastFailedTables, dirty, saving } = draft;
+  if (!lastSyncedAt && lastFailedTables.length === 0) return null;
+  const hh = lastSyncedAt ? String(lastSyncedAt.getHours()).padStart(2, "0") : null;
+  const mm = lastSyncedAt ? String(lastSyncedAt.getMinutes()).padStart(2, "0") : null;
+  return (
+    <div className="flex flex-col items-end gap-1 text-xs">
+      {lastSyncedAt && lastFailedTables.length === 0 && !dirty && !saving && (
+        <span className="text-emerald-600 dark:text-emerald-400">
+          ✓ Última sincronização: {hh}:{mm}
+        </span>
+      )}
+      {lastFailedTables.length > 0 && (
+        <span className="text-destructive text-right">
+          Falha ao sincronizar: {lastFailedTables.join(", ")}. Clique em “Salvar dados” para tentar novamente.
+        </span>
+      )}
+    </div>
+  );
+}
+
 function Page() {
   const { role, user } = useAuth();
   const isSuper = role === "superintendent";
