@@ -26,6 +26,7 @@ const itemsPayloadSchema = z.object({
     chairman: textOpt,
     closing_prayer: textOpt,
   }),
+  weekend_public_talk_theme: textOpt,
   weekend_themes: z.array(z.object({ title: z.string().trim().min(1).max(200) })).max(50),
   pioneer: z.object({
     weekday: weekdaySchema,
@@ -84,7 +85,7 @@ export const getMeetingTalkTemplate = createServerFn({ method: "POST" })
     const viewer = await getMeetingTalkViewer(userId);
     const { data: tpl } = await supabaseAdmin
       .from("meeting_talk_templates")
-      .select("id,name,congregation_id,superintendent_id")
+      .select("id,name,congregation_id,superintendent_id,weekend_public_talk_theme")
       .eq("id", data.id)
       .maybeSingle();
     const canView = !!tpl && (
@@ -104,6 +105,7 @@ export const getMeetingTalkTemplate = createServerFn({ method: "POST" })
       ok: true as const,
       template: { id: tpl.id, name: tpl.name, congregation_id: tpl.congregation_id },
       midweek: mid.data ?? null,
+      weekend_public_talk_theme: tpl.weekend_public_talk_theme ?? null,
       weekend_themes: themes.data ?? [],
       pioneer: pioneer.data ?? null,
       elders: elders.data ?? null,
@@ -180,7 +182,7 @@ export const duplicateMeetingTalkTemplate = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: src } = await supabaseAdmin
       .from("meeting_talk_templates")
-      .select("id,superintendent_id").eq("id", data.id).maybeSingle();
+      .select("id,superintendent_id,weekend_public_talk_theme").eq("id", data.id).maybeSingle();
     if (!src || src.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
     const { count } = await supabaseAdmin
       .from("meeting_talk_templates")
@@ -191,7 +193,7 @@ export const duplicateMeetingTalkTemplate = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await supabaseAdmin
       .from("meeting_talk_templates")
-      .insert({ superintendent_id: userId, name: data.name, congregation_id: null })
+      .insert({ superintendent_id: userId, name: data.name, congregation_id: null, weekend_public_talk_theme: src.weekend_public_talk_theme ?? null })
       .select("id").single();
     if (error || !row) return { ok: false as const, error: error?.message ?? "Falha." };
     const newId = row.id;
@@ -221,6 +223,11 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
     if (!own) return { ok: false as const, error: "Não autorizado." };
 
     const p = data.payload;
+    // Persist weekend public talk theme on template root
+    await supabaseAdmin
+      .from("meeting_talk_templates")
+      .update({ weekend_public_talk_theme: p.weekend_public_talk_theme ?? null })
+      .eq("id", data.templateId);
     // Upsert midweek
     await supabaseAdmin.from("meeting_talk_template_midweek").upsert({
       template_id: data.templateId,
@@ -278,7 +285,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
     const templateId = data.templateId ?? visit.meeting_talk_template_id ?? null;
     if (!templateId) return { ok: false as const, error: "Nenhum modelo selecionado para esta visita." };
     const own = await supabaseAdmin.from("meeting_talk_templates")
-      .select("id").eq("id", templateId).eq("superintendent_id", userId).maybeSingle();
+      .select("id,weekend_public_talk_theme").eq("id", templateId).eq("superintendent_id", userId).maybeSingle();
     if (!own.data) return { ok: false as const, error: "Modelo não encontrado." };
 
     if (visit.meeting_talk_template_id !== templateId) {
@@ -315,6 +322,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
         visit_id: data.visitId,
         talk_theme_title: firstTitle,
         talk_theme_id: null as string | null,
+        public_talk_theme: own.data.weekend_public_talk_theme ?? null,
       };
       if (existing) await supabaseAdmin.from("weekend_meetings").update(payload).eq("id", existing.id);
       else await supabaseAdmin.from("weekend_meetings").insert(payload);
@@ -400,6 +408,7 @@ const meetingTalkFileSchema = z.object({
     chairman: z.string().trim().max(400).nullable().optional(),
     closing_prayer: z.string().trim().max(400).nullable().optional(),
   }).nullable().optional(),
+  weekend_public_talk_theme: textOpt,
   weekend_themes: z.array(z.object({
     title: z.string().trim().min(1).max(200),
     sort_order: z.number().int().min(0).max(1000).optional(),
@@ -428,7 +437,7 @@ export const exportMeetingTalkTemplate = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: tpl } = await supabaseAdmin
       .from("meeting_talk_templates")
-      .select("id,name,superintendent_id")
+      .select("id,name,superintendent_id,weekend_public_talk_theme")
       .eq("id", data.id).maybeSingle();
     if (!tpl || tpl.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
     const [mid, themes, pioneer, elders] = await Promise.all([
@@ -445,6 +454,7 @@ export const exportMeetingTalkTemplate = createServerFn({ method: "POST" })
         exportedAt: new Date().toISOString(),
         name: tpl.name,
         midweek: mid.data ?? null,
+        weekend_public_talk_theme: tpl.weekend_public_talk_theme ?? null,
         weekend_themes: themes.data ?? [],
         pioneer: pioneer.data ?? null,
         elders: elders.data ?? null,
@@ -466,7 +476,7 @@ export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await supabaseAdmin
       .from("meeting_talk_templates")
-      .insert({ superintendent_id: userId, name: data.file.name, congregation_id: null })
+      .insert({ superintendent_id: userId, name: data.file.name, congregation_id: null, weekend_public_talk_theme: data.file.weekend_public_talk_theme ?? null })
       .select("id").single();
     if (error || !row) return { ok: false as const, error: error?.message ?? "Falha ao criar." };
     const newId = row.id;

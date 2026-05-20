@@ -34,6 +34,7 @@ interface TemplateRow { id: string; name: string; congregation_id: string | null
 
 type Payload = {
   midweek: { service_talk_theme: string; chairman: string; closing_prayer: string };
+  weekend_public_talk_theme: string;
   weekend_themes: { title: string }[];
   pioneer: {
     weekday: number | null;
@@ -50,6 +51,7 @@ type Payload = {
 
 const emptyPayload = (): Payload => ({
   midweek: { service_talk_theme: "", chairman: "", closing_prayer: "" },
+  weekend_public_talk_theme: "",
   weekend_themes: [],
   pioneer: { weekday: null, meeting_time: "", super_meeting_weekday: null, super_meeting_time: "", location: "", theme: "", opening_prayer: "", closing_prayer: "" },
   elders: { theme: "", opening_prayer: "", closing_prayer: "" },
@@ -94,6 +96,7 @@ function Page() {
         chairman: r.midweek?.chairman ?? "",
         closing_prayer: r.midweek?.closing_prayer ?? "",
       },
+      weekend_public_talk_theme: r.weekend_public_talk_theme ?? "",
       weekend_themes: (r.weekend_themes ?? []).map((t) => ({ title: t.title })),
       pioneer: {
         weekday: r.pioneer?.weekday ?? null,
@@ -188,6 +191,7 @@ function Page() {
             chairman: payload.midweek.chairman || null,
             closing_prayer: payload.midweek.closing_prayer || null,
           },
+          weekend_public_talk_theme: payload.weekend_public_talk_theme.trim() || null,
           weekend_themes: payload.weekend_themes.filter((t) => t.title.trim()).map((t) => ({ title: t.title.trim() })),
           pioneer: {
             weekday: payload.pioneer.weekday,
@@ -349,30 +353,46 @@ function Page() {
                 </TabsContent>
 
                 <TabsContent value="fim" className="mt-3">
-                  <Card><CardContent className="p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-semibold text-sm">Tema: Discurso Público</div>
-                        <p className="text-xs text-muted-foreground">Cadastre vários temas. Os anciãos escolherão um deles num dropdown.</p>
-                      </div>
-                      {isSuper && <Button size="sm" variant="outline" onClick={addTheme}><Plus className="h-3.5 w-3.5 mr-1" />Tema</Button>}
+                  <Card><CardContent className="p-4 space-y-4">
+                    <div>
+                      <Label>Discurso Público</Label>
+                      <Input
+                        className="mt-1"
+                        value={payload.weekend_public_talk_theme}
+                        readOnly={!isSuper}
+                        placeholder="Tema do Discurso Público"
+                        onChange={(e) => setPayload({ ...payload, weekend_public_talk_theme: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {isSuper ? "Edição restrita ao superintendente." : "Apenas leitura."}
+                      </p>
                     </div>
-                    {payload.weekend_themes.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">Nenhum tema. Adicione pelo menos um.</p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {payload.weekend_themes.map((t, i) => (
-                          <li key={i} className="flex items-center gap-2">
-                            <Input value={t.title} readOnly={!isSuper} onChange={(e) => updateTheme(i, e.target.value)} placeholder="Ex.: O Reino vai resolver..." />
-                            {isSuper && <Button size="icon" variant="ghost" onClick={() => removeTheme(i)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    <div className="border-t pt-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold text-sm">Discurso Final</div>
+                          <p className="text-xs text-muted-foreground">Cadastre vários temas. Os anciãos escolherão um deles num dropdown.</p>
+                        </div>
+                        {isSuper && <Button size="sm" variant="outline" onClick={addTheme}><Plus className="h-3.5 w-3.5 mr-1" />Tema</Button>}
+                      </div>
+                      {payload.weekend_themes.length === 0 ? (
+                        <p className="text-xs text-muted-foreground mt-2">Nenhum tema. Adicione pelo menos um.</p>
+                      ) : (
+                        <ul className="space-y-2 mt-2">
+                          {payload.weekend_themes.map((t, i) => (
+                            <li key={i} className="flex items-center gap-2">
+                              <Input value={t.title} readOnly={!isSuper} onChange={(e) => updateTheme(i, e.target.value)} placeholder="Ex.: O Reino vai resolver..." />
+                              {isSuper && <Button size="icon" variant="ghost" onClick={() => removeTheme(i)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </CardContent></Card>
                 </TabsContent>
+
 
                 <TabsContent value="pio" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
