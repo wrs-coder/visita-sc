@@ -10,8 +10,11 @@ import {
   duplicateMeetingTalkTemplate,
   deleteMeetingTalkTemplate,
   saveMeetingTalkTemplateItems,
+  exportMeetingTalkTemplate,
+  importMeetingTalkTemplate,
   WEEKDAY_LABELS,
 } from "@/lib/meeting-talk-templates.functions";
+import { TemplateIOButtons } from "@/components/TemplateIOButtons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
