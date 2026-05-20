@@ -22,22 +22,34 @@ export function useSingleRow<T extends { id: string }>(
     let cancelled = false;
     const load = async () => {
       setLoading(true);
-      const { data } = await supabase
+      // Resiliente a múltiplas linhas legadas: pega a mais recente.
+      const { data, error } = await supabase
         .from(table as never)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .select(columns as any)
         .eq("visit_id", visit.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (cancelled) return;
       if (data) {
         setRow(data as unknown as T);
-      } else if (!creatingRef.current) {
+        setLoading(false);
+        return;
+      }
+      if (error) {
+        // Não trava a UI; deixa o utilizador tentar novamente / o realtime recarregar.
+        setRow(null);
+        setLoading(false);
+        return;
+      }
+      if (!creatingRef.current) {
         creatingRef.current = true;
         await offlineInsert(table, { visit_id: visit.id });
-        // recarrega
         const r = await supabase.from(table as never)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .select(columns as any).eq("visit_id", visit.id).maybeSingle();
+          .select(columns as any).eq("visit_id", visit.id)
+          .order("created_at", { ascending: false }).limit(1).maybeSingle();
         if (!cancelled) setRow((r.data as unknown as T) ?? null);
         creatingRef.current = false;
       }

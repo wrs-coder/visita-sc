@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, ListChecks, MapPin, Clock, ChevronRight, UtensilsCrossed, Building2 } from "lucide-react";
+import { CalendarDays, ListChecks, MapPin, Clock, ChevronRight, UtensilsCrossed, Building2, Car, BookOpen, Users } from "lucide-react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useActiveCongregation, getActiveCongregationOverride, setActiveCongregationOverride } from "@/hooks/use-active-congregation";
 import { format, parseISO } from "date-fns";
@@ -19,6 +19,18 @@ export const Route = createFileRoute("/_app/dashboard")({
 interface ScheduleEvent { id: string; event_date: string; start_time: string | null; title: string; location: string | null; type: string; }
 interface ChecklistItem { id: string; status: string; }
 interface Meal { id: string; meal_date: string; type: string; host_name: string | null; location: string | null; }
+interface Transport { id: string; driver_name: string; contact_phone: string | null; description: string | null; notes: string | null; }
+interface FieldAssignment { id: string; period: string; meeting_point: string | null; meeting_time: string | null; acompanhante: string | null; acompanhante_for: string | null; contact_phone: string | null; notes: string | null; }
+interface FieldMeetingToday { id: string; period: string; modality: string; meeting_time: string | null; meeting_location: string | null; territory_number: string | null; territory_location: string | null; auxiliary_leaders: string | null; }
+
+const MODALITY_LABEL: Record<string, string> = {
+  casa_em_casa: "Casa em Casa",
+  cartas: "Cartas",
+  telefone: "Telefone",
+  testemunho_publico: "Testemunho Público",
+  revisitas: "Revisitas",
+  estudos: "Estudos Bíblicos",
+};
 
 function Dashboard() {
   const { profile, role, user } = useAuth();
@@ -27,6 +39,9 @@ function Dashboard() {
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
+  const [transports, setTransports] = useState<Transport[]>([]);
+  const [assignments, setAssignments] = useState<FieldAssignment[]>([]);
+  const [fieldMeetings, setFieldMeetings] = useState<FieldMeetingToday[]>([]);
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [selected, setSelected] = useState<string | null>(() => getActiveCongregationOverride());
   const today = format(new Date(), "yyyy-MM-dd");
@@ -40,7 +55,6 @@ function Dashboard() {
 
   useEffect(() => {
     if (role !== "superintendent") return;
-    // Initialize override to the auth congregation when nothing is set
     if (!selected && activeCong) setSelected(activeCong.id);
   }, [role, activeCong, selected]);
 
@@ -52,19 +66,28 @@ function Dashboard() {
   useEffect(() => {
     if (!visit) return;
     const fetchAll = async () => {
-      const [{ data: e }, { data: c }, { data: m }] = await Promise.all([
+      const [{ data: e }, { data: c }, { data: m }, { data: t }, { data: a }, { data: fm }] = await Promise.all([
         supabase.from("schedule_events").select("id, event_date, start_time, title, location, type").eq("visit_id", visit.id).order("event_date").order("start_time"),
         supabase.from("checklist_items").select("id, status").eq("visit_id", visit.id),
         supabase.from("meals").select("id, meal_date, type, host_name, location").eq("visit_id", visit.id).eq("meal_date", today),
+        supabase.from("transport_schedule").select("id, driver_name, contact_phone, description, notes").eq("visit_id", visit.id).eq("event_date", today).eq("is_active", true),
+        supabase.from("field_assignments").select("id, period, meeting_point, meeting_time, acompanhante, acompanhante_for, contact_phone, notes").eq("visit_id", visit.id).eq("event_date", today).eq("is_active", true).order("period"),
+        supabase.from("field_meetings").select("id, period, modality, meeting_time, meeting_location, territory_number, territory_location, auxiliary_leaders").eq("visit_id", visit.id).eq("event_date", today).eq("is_active", true).order("period"),
       ]);
       setEvents(e ?? []);
       setChecklist(c ?? []);
       setMeals(m ?? []);
+      setTransports((t ?? []) as Transport[]);
+      setAssignments((a ?? []) as FieldAssignment[]);
+      setFieldMeetings((fm ?? []) as FieldMeetingToday[]);
     };
     fetchAll();
     const ch = supabase.channel(`dash-${visit.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "checklist_items", filter: `visit_id=eq.${visit.id}` }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "schedule_events", filter: `visit_id=eq.${visit.id}` }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "transport_schedule", filter: `visit_id=eq.${visit.id}` }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "field_assignments", filter: `visit_id=eq.${visit.id}` }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "field_meetings", filter: `visit_id=eq.${visit.id}` }, fetchAll)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [visit, today]);
@@ -146,6 +169,85 @@ function Dashboard() {
                         {m.type === "lunch" ? "Almoço" : m.type === "dinner" ? "Jantar" : "Café"}
                       </span>
                       <div><div className="font-medium">{m.host_name}</div>{m.location && <div className="text-xs text-muted-foreground">{m.location}</div>}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {visit && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="shadow-card">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2"><Car className="h-4 w-4 text-primary" /><h3 className="font-semibold">Transporte do dia</h3></div>
+                <Link to="/transporte" className="text-primary text-xs font-medium inline-flex items-center hover:underline">Ver tudo <ChevronRight className="h-3 w-3" /></Link>
+              </div>
+              {transports.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma atividade programada para hoje.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {transports.map((t) => (
+                    <li key={t.id} className="text-sm">
+                      <div className="font-medium">{t.driver_name}</div>
+                      {t.description && <div className="text-xs text-muted-foreground">{t.description}</div>}
+                      {t.contact_phone && <div className="text-xs text-muted-foreground">{t.contact_phone}</div>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" /><h3 className="font-semibold">Estudos e Revisitas</h3></div>
+                <Link to="/reunioes-de-campo" className="text-primary text-xs font-medium inline-flex items-center hover:underline">Ver tudo <ChevronRight className="h-3 w-3" /></Link>
+              </div>
+              {assignments.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma atividade programada para hoje.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {assignments.map((a) => (
+                    <li key={a.id} className="text-sm flex items-start gap-2">
+                      <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
+                        {a.period}{a.meeting_time ? ` · ${a.meeting_time.slice(0,5)}` : ""}
+                      </span>
+                      <div className="min-w-0">
+                        {a.acompanhante && <div className="font-medium truncate">{a.acompanhante}{a.acompanhante_for ? ` → ${a.acompanhante_for}` : ""}</div>}
+                        {a.meeting_point && <div className="text-xs text-muted-foreground truncate">{a.meeting_point}</div>}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><h3 className="font-semibold">Reunião de Campo</h3></div>
+                <Link to="/reunioes-discursos" className="text-primary text-xs font-medium inline-flex items-center hover:underline">Ver tudo <ChevronRight className="h-3 w-3" /></Link>
+              </div>
+              {fieldMeetings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma atividade programada para hoje.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {fieldMeetings.map((f) => (
+                    <li key={f.id} className="text-sm">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
+                          {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0,5)}` : ""}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{MODALITY_LABEL[f.modality] ?? f.modality}</span>
+                      </div>
+                      {f.meeting_location && <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><MapPin className="h-3 w-3" />{f.meeting_location}</div>}
+                      {f.territory_number && <div className="text-xs text-muted-foreground">Território {f.territory_number}{f.territory_location ? ` · ${f.territory_location}` : ""}</div>}
                     </li>
                   ))}
                 </ul>
