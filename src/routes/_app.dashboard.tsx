@@ -69,10 +69,10 @@ function Dashboard() {
       const [{ data: e }, { data: c }, { data: m }, { data: t }, { data: a }, { data: fm }] = await Promise.all([
         supabase.from("schedule_events").select("id, event_date, start_time, title, location, type").eq("visit_id", visit.id).order("event_date").order("start_time"),
         supabase.from("checklist_items").select("id, status").eq("visit_id", visit.id),
-        supabase.from("meals").select("id, meal_date, type, host_name, location").eq("visit_id", visit.id).eq("meal_date", today),
+        supabase.from("meals").select("id, meal_date, meal_time, type, host_name, location, contact_phone, notes").eq("visit_id", visit.id).eq("meal_date", today).eq("is_active", true).order("meal_time"),
         supabase.from("transport_schedule").select("id, driver_name, contact_phone, description, notes").eq("visit_id", visit.id).eq("event_date", today).eq("is_active", true),
         supabase.from("field_assignments").select("id, period, meeting_point, meeting_time, acompanhante, acompanhante_for, contact_phone, notes").eq("visit_id", visit.id).eq("event_date", today).eq("is_active", true).order("period"),
-        supabase.from("field_meetings").select("id, period, modality, meeting_time, meeting_location, territory_number, territory_location, auxiliary_leaders").eq("visit_id", visit.id).eq("event_date", today).eq("is_active", true).order("period"),
+        supabase.from("field_meetings").select("id, period, modality, meeting_time, meeting_location, territory_number, territory_location, auxiliary_leaders, closing_prayer").eq("visit_id", visit.id).eq("event_date", today).eq("is_active", true).order("period"),
       ]);
       setEvents(e ?? []);
       setChecklist(c ?? []);
