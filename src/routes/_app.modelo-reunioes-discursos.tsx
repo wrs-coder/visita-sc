@@ -78,6 +78,7 @@ function Page() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameVal, setRenameVal] = useState("");
   const [busy, setBusy] = useState(false);
+  const [activeTab, setActiveTab] = useState("meio");
 
   const loadList = useCallback(async () => {
     const r = await fnList();
@@ -297,16 +298,32 @@ function Page() {
                 </div>
               </CardContent></Card>
 
-              <Tabs defaultValue="meio" className="w-full">
-                <TabsList className="flex overflow-x-auto whitespace-nowrap flex-nowrap scrollbar-none w-full h-auto gap-1 bg-transparent p-1">
-                  <TabsTrigger value="meio" className="shrink rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Meio de Semana</TabsTrigger>
-                  <TabsTrigger value="fim" className="shrink rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Fim de Semana</TabsTrigger>
-                  <TabsTrigger value="pio" className="shrink rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Pioneiros</TabsTrigger>
-                  <TabsTrigger value="anc" className="shrink rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Anciãos e Servos</TabsTrigger>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <div className="sm:hidden">
+                  <Select value={activeTab} onValueChange={setActiveTab}>
+                    <SelectTrigger className="w-full"><SelectValue placeholder="Escolha a sub-aba" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="meio">Meio de Semana</SelectItem>
+                      <SelectItem value="fim">Fim de Semana</SelectItem>
+                      <SelectItem value="pio">Pioneiros</SelectItem>
+                      <SelectItem value="anc">Anciãos e Servos Ministeriais</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <TabsList className="hidden sm:grid grid-cols-4 w-full h-auto gap-1 bg-transparent p-1">
+                  <TabsTrigger value="meio" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Meio de Semana</TabsTrigger>
+                  <TabsTrigger value="fim" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Fim de Semana</TabsTrigger>
+                  <TabsTrigger value="pio" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Pioneiros</TabsTrigger>
+                  <TabsTrigger value="anc" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Anciãos e Servos</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="meio" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
+                    <div>
+                      <Label>Tema: Discurso de serviço</Label>
+                      <Input className="mt-1" value={payload.midweek.service_talk_theme}
+                        onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, service_talk_theme: e.target.value } })} />
+                    </div>
                     <div>
                       <Label>Presidente da Reunião</Label>
                       <Input className="mt-1" value={payload.midweek.chairman}
