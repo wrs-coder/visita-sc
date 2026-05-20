@@ -183,6 +183,13 @@ function Page() {
       toast.error("Preencha todos os campos");
       return;
     }
+    // Em criações novas, todos os modelos são obrigatórios (regra do Itinerário).
+    if (!editId) {
+      if (!form.template_id) { toast.error("Selecione o Modelo de Programação"); return; }
+      if (!form.checklist_template_id) { toast.error("Selecione o Modelo de Checklist"); return; }
+      if (!form.field_template_id) { toast.error("Selecione o Modelo de Reuniões de Campo"); return; }
+      if (!form.meeting_talk_template_id) { toast.error("Selecione o Modelo de Reunião e Discurso"); return; }
+    }
     if (editId) {
       const { error } = await supabase
         .from("visits")
@@ -191,6 +198,7 @@ function Page() {
           start_date: form.start_date,
           end_date: form.end_date,
           congregation_id: form.congregation_id,
+          ...(form.meeting_talk_template_id ? { meeting_talk_template_id: form.meeting_talk_template_id } : {}),
         })
         .eq("id", editId);
       if (error) {
@@ -213,13 +221,16 @@ function Page() {
         });
         if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
       }
+      if (form.meeting_talk_template_id) {
+        const r = await fnApplyMeetingTalk({
+          data: { visitId: editId, templateId: form.meeting_talk_template_id },
+        });
+        if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
+      }
       toast.success("Visita atualizada");
       setOpen(false);
       return;
     }
-    // Itinerário é apenas calendário de planeamento — sem limite de "ativas"
-    // e sem marcar/desmarcar outras visitas. A seleção da visita corrente é
-    // feita automaticamente pelo Cronograma com base na data de hoje.
     const { data, error } = await supabase
       .from("visits")
       .insert({
@@ -227,6 +238,7 @@ function Page() {
         title: form.title,
         start_date: form.start_date,
         end_date: form.end_date,
+        meeting_talk_template_id: form.meeting_talk_template_id,
       })
       .select()
       .single();
@@ -249,6 +261,12 @@ function Page() {
         data: { visitId: data.id, templateId: form.field_template_id },
       });
       if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
+    }
+    if (form.meeting_talk_template_id) {
+      const r = await fnApplyMeetingTalk({
+        data: { visitId: data.id, templateId: form.meeting_talk_template_id },
+      });
+      if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
     }
     toast.success("Visita criada");
     setOpen(false);
