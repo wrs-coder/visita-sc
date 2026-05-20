@@ -179,6 +179,85 @@ function Dashboard() {
       )}
 
       {visit && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="shadow-card">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2"><Car className="h-4 w-4 text-primary" /><h3 className="font-semibold">Transporte do dia</h3></div>
+                <Link to="/transporte" className="text-primary text-xs font-medium inline-flex items-center hover:underline">Ver tudo <ChevronRight className="h-3 w-3" /></Link>
+              </div>
+              {transports.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma atividade programada para hoje.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {transports.map((t) => (
+                    <li key={t.id} className="text-sm">
+                      <div className="font-medium">{t.driver_name}</div>
+                      {t.description && <div className="text-xs text-muted-foreground">{t.description}</div>}
+                      {t.contact_phone && <div className="text-xs text-muted-foreground">{t.contact_phone}</div>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" /><h3 className="font-semibold">Estudos e Revisitas</h3></div>
+                <Link to="/reunioes-de-campo" className="text-primary text-xs font-medium inline-flex items-center hover:underline">Ver tudo <ChevronRight className="h-3 w-3" /></Link>
+              </div>
+              {assignments.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma atividade programada para hoje.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {assignments.map((a) => (
+                    <li key={a.id} className="text-sm flex items-start gap-2">
+                      <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
+                        {a.period}{a.meeting_time ? ` · ${a.meeting_time.slice(0,5)}` : ""}
+                      </span>
+                      <div className="min-w-0">
+                        {a.acompanhante && <div className="font-medium truncate">{a.acompanhante}{a.acompanhante_for ? ` → ${a.acompanhante_for}` : ""}</div>}
+                        {a.meeting_point && <div className="text-xs text-muted-foreground truncate">{a.meeting_point}</div>}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><h3 className="font-semibold">Reunião de Campo</h3></div>
+                <Link to="/reunioes-discursos" className="text-primary text-xs font-medium inline-flex items-center hover:underline">Ver tudo <ChevronRight className="h-3 w-3" /></Link>
+              </div>
+              {fieldMeetings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma atividade programada para hoje.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {fieldMeetings.map((f) => (
+                    <li key={f.id} className="text-sm">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
+                          {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0,5)}` : ""}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{MODALITY_LABEL[f.modality] ?? f.modality}</span>
+                      </div>
+                      {f.meeting_location && <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><MapPin className="h-3 w-3" />{f.meeting_location}</div>}
+                      {f.territory_number && <div className="text-xs text-muted-foreground">Território {f.territory_number}{f.territory_location ? ` · ${f.territory_location}` : ""}</div>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {visit && (
         <Card className="shadow-card">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-4">
