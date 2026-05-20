@@ -22,6 +22,7 @@ const textOpt = z.string().trim().max(400).nullable().optional();
 
 const itemsPayloadSchema = z.object({
   midweek: z.object({
+    service_talk_theme: textOpt,
     chairman: textOpt,
     closing_prayer: textOpt,
   }),
@@ -32,10 +33,12 @@ const itemsPayloadSchema = z.object({
     super_meeting_weekday: weekdaySchema,
     super_meeting_time: timeSchema,
     location: textOpt,
+    theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
   }),
   elders: z.object({
+    theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
   }),
@@ -199,6 +202,7 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
     // Upsert midweek
     await supabaseAdmin.from("meeting_talk_template_midweek").upsert({
       template_id: data.templateId,
+      service_talk_theme: p.midweek.service_talk_theme ?? null,
       chairman: p.midweek.chairman ?? null,
       closing_prayer: p.midweek.closing_prayer ?? null,
     });
@@ -217,12 +221,14 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
       super_meeting_weekday: p.pioneer.super_meeting_weekday ?? null,
       super_meeting_time: p.pioneer.super_meeting_time || null,
       location: p.pioneer.location ?? null,
+      theme: p.pioneer.theme ?? null,
       opening_prayer: p.pioneer.opening_prayer ?? null,
       closing_prayer: p.pioneer.closing_prayer ?? null,
     });
     // Upsert elders
     await supabaseAdmin.from("meeting_talk_template_elders").upsert({
       template_id: data.templateId,
+      theme: p.elders.theme ?? null,
       opening_prayer: p.elders.opening_prayer ?? null,
       closing_prayer: p.elders.closing_prayer ?? null,
     });
