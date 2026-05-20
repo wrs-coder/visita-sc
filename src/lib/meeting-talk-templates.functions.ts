@@ -452,6 +452,7 @@ export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
     if (f.midweek) {
       await supabaseAdmin.from("meeting_talk_template_midweek").insert({
         template_id: newId,
+        service_talk_theme: f.midweek.service_talk_theme ?? null,
         chairman: f.midweek.chairman ?? null,
         closing_prayer: f.midweek.closing_prayer ?? null,
       });
@@ -469,6 +470,7 @@ export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
         super_meeting_weekday: f.pioneer.super_meeting_weekday ?? null,
         super_meeting_time: f.pioneer.super_meeting_time || null,
         location: f.pioneer.location ?? null,
+        theme: f.pioneer.theme ?? null,
         opening_prayer: f.pioneer.opening_prayer ?? null,
         closing_prayer: f.pioneer.closing_prayer ?? null,
       });
@@ -476,6 +478,7 @@ export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
     if (f.elders) {
       await supabaseAdmin.from("meeting_talk_template_elders").insert({
         template_id: newId,
+        theme: f.elders.theme ?? null,
         opening_prayer: f.elders.opening_prayer ?? null,
         closing_prayer: f.elders.closing_prayer ?? null,
       });
