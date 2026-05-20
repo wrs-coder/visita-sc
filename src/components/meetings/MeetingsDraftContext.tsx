@@ -95,6 +95,17 @@ export function MeetingsDraftProvider({
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
 
+  // Bloqueio de navegação interna (menu lateral / outras rotas) com rascunho pendente.
+  useBlocker({
+    shouldBlockFn: () => {
+      if (!dirty) return false;
+      return !window.confirm(
+        "Há um rascunho com alterações não salvas nesta tela. Sair sem clicar em \"Salvar dados\" mantém o rascunho local, mas o servidor não será atualizado. Continuar?",
+      );
+    },
+    enableBeforeUnload: false,
+  });
+
   const queue = useCallback((table: string, rowId: string, patch: DraftPatch) => {
     setDrafts((prev) => {
       const k = makeKey(table, rowId);
