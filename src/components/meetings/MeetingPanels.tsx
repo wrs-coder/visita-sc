@@ -196,78 +196,8 @@ export function WeekendPanel() {
   );
 }
 
-/* ============ GERENCIADOR DE TEMAS (apenas SC) ============ */
-export function TalkThemesManager() {
-  const { role, user } = useAuth();
-  const congregation = useActiveCongregation();
-  const isSuper = role === "superintendent";
-  const [themes, setThemes] = useState<Theme[]>([]);
-  const [draft, setDraft] = useState("");
-
-  useEffect(() => {
-    if (!isSuper || !user) return;
-    const load = async () => {
-      const { data } = await supabase
-        .from("talk_themes").select("id,title")
-        .eq("superintendent_id", user.id).order("title");
-      setThemes((data ?? []) as Theme[]);
-    };
-    load();
-    const ch = supabase.channel(`themes-mgr-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "talk_themes", filter: `superintendent_id=eq.${user.id}` }, load)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [isSuper, user]);
-
-  if (!isSuper) return null;
-
-  const add = async () => {
-    const title = draft.trim();
-    if (!title) return;
-    const { error } = await offlineInsert("talk_themes", {
-      title,
-      congregation_id: congregation?.id ?? null,
-    });
-    if (error) toast.error(error.message); else setDraft("");
-  };
-  const remove = async (id: string) => {
-    const { error } = await offlineDelete("talk_themes", { id });
-    if (error) toast.error(error.message);
-  };
-  const rename = async (id: string, title: string) => {
-    const { error } = await offlineUpdate("talk_themes", { title }, { id });
-    if (error) toast.error(error.message);
-  };
-
-  return (
-    <Card>
-      <CardContent className="p-4 space-y-3">
-        <div>
-          <h3 className="font-semibold text-sm">Temas de Discurso (gerenciar)</h3>
-          <p className="text-xs text-muted-foreground">Os temas cadastrados aqui aparecerão para os anciãos escolherem.</p>
-        </div>
-        <div className="flex gap-2">
-          <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Novo tema" onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
-          <Button onClick={add}><Plus className="h-4 w-4 mr-1" />Adicionar</Button>
-        </div>
-        {themes.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Nenhum tema cadastrado ainda.</p>
-        ) : (
-          <ul className="divide-y border rounded-md">
-        {themes.map((t) => (
-              <li key={t.id} className="flex items-center gap-2 p-2">
-                <FieldText value={t.title} onSave={(v) => { if (v) void rename(t.id, v); }} />
-                <Button size="icon" variant="ghost" onClick={() => remove(t.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+/* Gerenciador de Temas removido — temas do Discurso Final agora vivem em
+   Modelos de Reunião e Discurso → Fim de Semana. */
 
 /* ============ PIONEIROS ============ */
 interface PioneerRow {
