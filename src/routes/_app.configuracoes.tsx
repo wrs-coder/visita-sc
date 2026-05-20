@@ -154,6 +154,7 @@ function Page() {
       template_id: "",
       checklist_template_id: "",
       field_template_id: "",
+      meeting_talk_template_id: "",
     });
     setOpen(true);
   };
@@ -168,6 +169,7 @@ function Page() {
       template_id: "",
       checklist_template_id: "",
       field_template_id: "",
+      meeting_talk_template_id: "",
     });
     setOpen(true);
   };
