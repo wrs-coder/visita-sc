@@ -13,6 +13,10 @@ import {
   applyChecklistTemplateForVisit,
   listChecklistTemplates,
 } from "@/lib/checklist-templates.functions";
+import {
+  listMeetingTalkTemplates,
+  applyMeetingTalkTemplateForVisit,
+} from "@/lib/meeting-talk-templates.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
