@@ -26,6 +26,7 @@ const itemsPayloadSchema = z.object({
     chairman: textOpt,
     closing_prayer: textOpt,
   }),
+  weekend_public_talk_theme: textOpt,
   weekend_themes: z.array(z.object({ title: z.string().trim().min(1).max(200) })).max(50),
   pioneer: z.object({
     weekday: weekdaySchema,
