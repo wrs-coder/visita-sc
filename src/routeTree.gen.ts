@@ -26,6 +26,7 @@ import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
 import { Route as AppPerfilRouteImport } from './routes/_app.perfil'
 import { Route as AppNotasRouteImport } from './routes/_app.notas'
 import { Route as AppModelosRouteImport } from './routes/_app.modelos'
+import { Route as AppModeloReunioesDiscursosRouteImport } from './routes/_app.modelo-reunioes-discursos'
 import { Route as AppModeloReunioesDeCampoRouteImport } from './routes/_app.modelo-reunioes-de-campo'
 import { Route as AppEscalaRouteImport } from './routes/_app.escala'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
@@ -119,6 +120,12 @@ const AppModelosRoute = AppModelosRouteImport.update({
   path: '/modelos',
   getParentRoute: () => AppRoute,
 } as any)
+const AppModeloReunioesDiscursosRoute =
+  AppModeloReunioesDiscursosRouteImport.update({
+    id: '/modelo-reunioes-discursos',
+    path: '/modelo-reunioes-discursos',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppModeloReunioesDeCampoRoute =
   AppModeloReunioesDeCampoRouteImport.update({
     id: '/modelo-reunioes-de-campo',
@@ -175,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
   '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
+  '/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
   '/perfil': typeof AppPerfilRoute
@@ -200,6 +208,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
   '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
+  '/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
   '/perfil': typeof AppPerfilRoute
@@ -228,6 +237,7 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/escala': typeof AppEscalaRoute
   '/_app/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
+  '/_app/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/_app/modelos': typeof AppModelosRoute
   '/_app/notas': typeof AppNotasRoute
   '/_app/perfil': typeof AppPerfilRoute
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/escala'
     | '/modelo-reunioes-de-campo'
+    | '/modelo-reunioes-discursos'
     | '/modelos'
     | '/notas'
     | '/perfil'
@@ -281,6 +292,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/escala'
     | '/modelo-reunioes-de-campo'
+    | '/modelo-reunioes-discursos'
     | '/modelos'
     | '/notas'
     | '/perfil'
@@ -308,6 +320,7 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/escala'
     | '/_app/modelo-reunioes-de-campo'
+    | '/_app/modelo-reunioes-discursos'
     | '/_app/modelos'
     | '/_app/notas'
     | '/_app/perfil'
@@ -453,6 +466,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppModelosRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/modelo-reunioes-discursos': {
+      id: '/_app/modelo-reunioes-discursos'
+      path: '/modelo-reunioes-discursos'
+      fullPath: '/modelo-reunioes-discursos'
+      preLoaderRoute: typeof AppModeloReunioesDiscursosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/modelo-reunioes-de-campo': {
       id: '/_app/modelo-reunioes-de-campo'
       path: '/modelo-reunioes-de-campo'
@@ -521,6 +541,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppEscalaRoute: typeof AppEscalaRoute
   AppModeloReunioesDeCampoRoute: typeof AppModeloReunioesDeCampoRoute
+  AppModeloReunioesDiscursosRoute: typeof AppModeloReunioesDiscursosRoute
   AppModelosRoute: typeof AppModelosRoute
   AppNotasRoute: typeof AppNotasRoute
   AppPerfilRoute: typeof AppPerfilRoute
@@ -539,6 +560,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppEscalaRoute: AppEscalaRoute,
   AppModeloReunioesDeCampoRoute: AppModeloReunioesDeCampoRoute,
+  AppModeloReunioesDiscursosRoute: AppModeloReunioesDiscursosRoute,
   AppModelosRoute: AppModelosRoute,
   AppNotasRoute: AppNotasRoute,
   AppPerfilRoute: AppPerfilRoute,

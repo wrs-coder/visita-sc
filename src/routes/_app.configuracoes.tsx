@@ -13,6 +13,10 @@ import {
   applyChecklistTemplateForVisit,
   listChecklistTemplates,
 } from "@/lib/checklist-templates.functions";
+import {
+  listMeetingTalkTemplates,
+  applyMeetingTalkTemplateForVisit,
+} from "@/lib/meeting-talk-templates.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,11 +63,14 @@ function Page() {
   const fnApplyChecklist = useServerFn(applyChecklistTemplateForVisit);
   const fnListField = useServerFn(listFieldMeetingTemplates);
   const fnListChecklist = useServerFn(listChecklistTemplates);
+  const fnListMeetingTalk = useServerFn(listMeetingTalkTemplates);
+  const fnApplyMeetingTalk = useServerFn(applyMeetingTalkTemplateForVisit);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [congs, setCongs] = useState<Cong[]>([]);
   const [tpls, setTpls] = useState<{ id: string; slot: number; name: string }[]>([]);
   const [checklistTpls, setChecklistTpls] = useState<{ id: string; name: string }[]>([]);
   const [fieldTpls, setFieldTpls] = useState<{ id: string; name: string }[]>([]);
+  const [meetingTalkTpls, setMeetingTalkTpls] = useState<{ id: string; name: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -74,6 +81,7 @@ function Page() {
     template_id: "",
     checklist_template_id: "",
     field_template_id: "",
+    meeting_talk_template_id: "",
   });
   const isSuper = role === "superintendent";
 
@@ -99,7 +107,15 @@ function Page() {
           name: t.name,
         })),
       );
-  }, [isSuper, fnList, fnTpls, fnListChecklist, fnListField]);
+    const mr = await fnListMeetingTalk();
+    if (mr.ok)
+      setMeetingTalkTpls(
+        ((mr as { templates?: { id: string; name: string }[] }).templates ?? []).map((t) => ({
+          id: t.id,
+          name: t.name,
+        })),
+      );
+  }, [isSuper, fnList, fnTpls, fnListChecklist, fnListField, fnListMeetingTalk]);
 
   useEffect(() => {
     loadCongs();
@@ -138,6 +154,7 @@ function Page() {
       template_id: "",
       checklist_template_id: "",
       field_template_id: "",
+      meeting_talk_template_id: "",
     });
     setOpen(true);
   };
@@ -152,6 +169,7 @@ function Page() {
       template_id: "",
       checklist_template_id: "",
       field_template_id: "",
+      meeting_talk_template_id: "",
     });
     setOpen(true);
   };
@@ -165,6 +183,13 @@ function Page() {
       toast.error("Preencha todos os campos");
       return;
     }
+    // Em criações novas, todos os modelos são obrigatórios (regra do Itinerário).
+    if (!editId) {
+      if (!form.template_id) { toast.error("Selecione o Modelo de Programação"); return; }
+      if (!form.checklist_template_id) { toast.error("Selecione o Modelo de Checklist"); return; }
+      if (!form.field_template_id) { toast.error("Selecione o Modelo de Reuniões de Campo"); return; }
+      if (!form.meeting_talk_template_id) { toast.error("Selecione o Modelo de Reunião e Discurso"); return; }
+    }
     if (editId) {
       const { error } = await supabase
         .from("visits")
@@ -173,6 +198,7 @@ function Page() {
           start_date: form.start_date,
           end_date: form.end_date,
           congregation_id: form.congregation_id,
+          ...(form.meeting_talk_template_id ? { meeting_talk_template_id: form.meeting_talk_template_id } : {}),
         })
         .eq("id", editId);
       if (error) {
@@ -195,13 +221,16 @@ function Page() {
         });
         if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
       }
+      if (form.meeting_talk_template_id) {
+        const r = await fnApplyMeetingTalk({
+          data: { visitId: editId, templateId: form.meeting_talk_template_id },
+        });
+        if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
+      }
       toast.success("Visita atualizada");
       setOpen(false);
       return;
     }
-    // Itinerário é apenas calendário de planeamento — sem limite de "ativas"
-    // e sem marcar/desmarcar outras visitas. A seleção da visita corrente é
-    // feita automaticamente pelo Cronograma com base na data de hoje.
     const { data, error } = await supabase
       .from("visits")
       .insert({
@@ -209,6 +238,7 @@ function Page() {
         title: form.title,
         start_date: form.start_date,
         end_date: form.end_date,
+        meeting_talk_template_id: form.meeting_talk_template_id,
       })
       .select()
       .single();
@@ -231,6 +261,12 @@ function Page() {
         data: { visitId: data.id, templateId: form.field_template_id },
       });
       if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
+    }
+    if (form.meeting_talk_template_id) {
+      const r = await fnApplyMeetingTalk({
+        data: { visitId: data.id, templateId: form.meeting_talk_template_id },
+      });
+      if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
     }
     toast.success("Visita criada");
     setOpen(false);
@@ -376,16 +412,15 @@ function Page() {
                   </div>
                 </div>
                 <div>
-                  <Label>Modelo de programação (opcional)</Label>
+                  <Label>Modelo de Programação *</Label>
                   <Select
-                    value={form.template_id || "none"}
-                    onValueChange={(v) => setForm({ ...form, template_id: v === "none" ? "" : v })}
+                    value={form.template_id || ""}
+                    onValueChange={(v) => setForm({ ...form, template_id: v })}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Sem modelo" />
+                      <SelectValue placeholder="Selecione…" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— Não aplicar modelo —</SelectItem>
                       {tpls.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.name}
@@ -398,25 +433,17 @@ function Page() {
                       Crie um modelo em "Modelos" para aplicá-lo aqui.
                     </p>
                   )}
-                  {editId && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Selecionar um modelo aplicará novos itens à visita existente.
-                    </p>
-                  )}
                 </div>
                 <div>
-                  <Label>Modelo de checklist aplicável (opcional)</Label>
+                  <Label>Modelo de Checklist *</Label>
                   <Select
-                    value={form.checklist_template_id || "none"}
-                    onValueChange={(v) =>
-                      setForm({ ...form, checklist_template_id: v === "none" ? "" : v })
-                    }
+                    value={form.checklist_template_id || ""}
+                    onValueChange={(v) => setForm({ ...form, checklist_template_id: v })}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Sem modelo" />
+                      <SelectValue placeholder="Selecione…" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— Não aplicar modelo —</SelectItem>
                       {checklistTpls.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.name}
@@ -431,18 +458,15 @@ function Page() {
                   )}
                 </div>
                 <div>
-                  <Label>Modelo de reunião de campo aplicável (opcional)</Label>
+                  <Label>Modelo de Reuniões de Campo *</Label>
                   <Select
-                    value={form.field_template_id || "none"}
-                    onValueChange={(v) =>
-                      setForm({ ...form, field_template_id: v === "none" ? "" : v })
-                    }
+                    value={form.field_template_id || ""}
+                    onValueChange={(v) => setForm({ ...form, field_template_id: v })}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Sem modelo" />
+                      <SelectValue placeholder="Selecione…" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— Não aplicar modelo —</SelectItem>
                       {fieldTpls.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.name}
@@ -453,6 +477,29 @@ function Page() {
                   {fieldTpls.length === 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Crie um modelo em "Modelo Reuniões de Campo" para aplicá-lo aqui.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label>Modelo de Reunião e Discurso *</Label>
+                  <Select
+                    value={form.meeting_talk_template_id || ""}
+                    onValueChange={(v) => setForm({ ...form, meeting_talk_template_id: v })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecione…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {meetingTalkTpls.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {meetingTalkTpls.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Crie um modelo em "Modelos de Reunião e Discurso" para aplicá-lo aqui.
                     </p>
                   )}
                 </div>

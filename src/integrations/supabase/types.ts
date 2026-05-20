@@ -453,6 +453,176 @@ export type Database = {
           },
         ]
       }
+      meeting_talk_template_elders: {
+        Row: {
+          closing_prayer: string | null
+          created_at: string
+          opening_prayer: string | null
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          closing_prayer?: string | null
+          created_at?: string
+          opening_prayer?: string | null
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          closing_prayer?: string | null
+          created_at?: string
+          opening_prayer?: string | null
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_talk_template_elders_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: true
+            referencedRelation: "meeting_talk_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_talk_template_midweek: {
+        Row: {
+          chairman: string | null
+          closing_prayer: string | null
+          created_at: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          chairman?: string | null
+          closing_prayer?: string | null
+          created_at?: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          chairman?: string | null
+          closing_prayer?: string | null
+          created_at?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_talk_template_midweek_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: true
+            referencedRelation: "meeting_talk_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_talk_template_pioneer: {
+        Row: {
+          closing_prayer: string | null
+          created_at: string
+          location: string | null
+          meeting_time: string | null
+          opening_prayer: string | null
+          super_meeting_time: string | null
+          super_meeting_weekday: number | null
+          template_id: string
+          updated_at: string
+          weekday: number | null
+        }
+        Insert: {
+          closing_prayer?: string | null
+          created_at?: string
+          location?: string | null
+          meeting_time?: string | null
+          opening_prayer?: string | null
+          super_meeting_time?: string | null
+          super_meeting_weekday?: number | null
+          template_id: string
+          updated_at?: string
+          weekday?: number | null
+        }
+        Update: {
+          closing_prayer?: string | null
+          created_at?: string
+          location?: string | null
+          meeting_time?: string | null
+          opening_prayer?: string | null
+          super_meeting_time?: string | null
+          super_meeting_weekday?: number | null
+          template_id?: string
+          updated_at?: string
+          weekday?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_talk_template_pioneer_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: true
+            referencedRelation: "meeting_talk_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_talk_template_weekend_themes: {
+        Row: {
+          created_at: string
+          id: string
+          sort_order: number
+          template_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sort_order?: number
+          template_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sort_order?: number
+          template_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_talk_template_weekend_themes_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_talk_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_talk_templates: {
+        Row: {
+          congregation_id: string | null
+          created_at: string
+          id: string
+          name: string
+          superintendent_id: string
+          updated_at: string
+        }
+        Insert: {
+          congregation_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          superintendent_id: string
+          updated_at?: string
+        }
+        Update: {
+          congregation_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          superintendent_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       midweek_meetings: {
         Row: {
           chairman: string | null
@@ -841,6 +1011,7 @@ export type Database = {
           field_meeting_template_id: string | null
           id: string
           is_active: boolean
+          meeting_talk_template_id: string | null
           start_date: string
           template_id: string | null
           title: string
@@ -853,6 +1024,7 @@ export type Database = {
           field_meeting_template_id?: string | null
           id?: string
           is_active?: boolean
+          meeting_talk_template_id?: string | null
           start_date: string
           template_id?: string | null
           title: string
@@ -865,6 +1037,7 @@ export type Database = {
           field_meeting_template_id?: string | null
           id?: string
           is_active?: boolean
+          meeting_talk_template_id?: string | null
           start_date?: string
           template_id?: string | null
           title?: string

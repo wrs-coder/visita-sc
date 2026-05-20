@@ -1,49 +1,59 @@
-Tenho três frentes para aplicar. Antes de mexer, quero alinhar o escopo porque #2 e #3 são refatorações grandes que tocam quase todas as telas de leitura/escrita — quero ter sua aprovação antes de mexer no app inteiro.
+## Plano de build consolidado — Visita SC
 
-## 1. Padronização dos modelos (entrega completa nesta rodada)
+### 1) Arquivo de diretrizes
+- Criar `instructions.md` na raiz com o conteúdo integral fornecido pelo utilizador (regras 1–5). Este passa a ser a referência de arquitetura para builds futuros.
 
-Espelhar a lógica do "Modelo de Programação" nos modelos de Checklist e Reuniões de Campo.
+### 2) Nova aba "Modelos de Reunião e Discurso"
+Espelho exato da arquitetura da aba "Modelos de Reuniões de Campo" (`_app.modelo-reunioes-de-campo.tsx` + `field-meeting-templates.functions.ts`), com as adaptações de domínio:
 
-**Migração no banco:**
-- Adicionar `checklist_template_id` e `field_meeting_template_id` em `visits` (FK opcional aos respectivos templates).
-- Manter as colunas `congregation_id` em `checklist_templates` / `field_meeting_templates` por compatibilidade, mas o app deixa de usá-las (modelos viram "globais" do superintendente, como Programação).
+- **Banco de dados** (migração SQL nova):
+  - `meeting_talk_templates` (id, superintendent_id, congregation_id?, name, slot, created_at, updated_at).
+  - `meeting_talk_template_midweek` (template_id, chairman, closing_prayer).
+  - `meeting_talk_template_weekend_themes` (template_id, title, sort_order) — permite múltiplos temas (gera dropdown na visita).
+  - `meeting_talk_template_pioneer` (template_id, weekday `0..6`, meeting_time, super_meeting_weekday, super_meeting_time, location, opening_prayer, closing_prayer) — apenas dia da semana + hora, **sem data fixa**.
+  - `meeting_talk_template_elders` (template_id, opening_prayer, closing_prayer).
+  - RLS: superintendente dono pode `ALL`; membros da congregação vinculada podem `SELECT` quando `congregation_id IS NOT NULL`.
+  - Acrescentar coluna `meeting_talk_template_id uuid` em `visits` (FK lógica para o novo template) para a vinculação obrigatória no Itinerário.
 
-**Server functions:**
-- `applyChecklistTemplateForVisit({ visitId, templateId })` (nova) — semeia `checklist_items` a partir do template escolhido.
-- `applyFieldMeetingTemplateForVisit({ visitId, templateId })` — passa a aceitar `templateId` explícito em vez de procurar pela congregação.
-- Remover/ocultar `linkChecklistTemplate` e `linkFieldMeetingTemplate` da UI (mantemos no servidor por compat).
+- **Server functions** (`src/lib/meeting-talk-templates.functions.ts`):
+  - `listMeetingTalkTemplates`, `getMeetingTalkTemplate`, `createMeetingTalkTemplate`, `updateMeetingTalkTemplate`, `deleteMeetingTalkTemplate`, **`duplicateMeetingTalkTemplate`** (regra: todos os modelos devem ter "duplicar"), `applyMeetingTalkTemplate(visitId, templateId)` — copia para `midweek_meetings`, `weekend_meetings` (cria 1 linha por tema, ou única + payload de opções), `pioneer_meetings` (resolve dia da semana → data dentro da visita), `elders_servants_meetings`.
 
-**UI:**
-- `_app.checklist-modelos.tsx`: remove o `Select` "Vincular à congregação" e seu texto explicativo. Lista deixa de mostrar "→ Congregação".
-- `_app.modelo-reunioes-de-campo.tsx`: idem.
-- `_app.configuracoes.tsx` (Itinerário, onde a visita é criada/editada): além do "Modelo de programação", adiciona dois novos dropdowns:
-  - "Modelo de Checklist aplicável"
-  - "Modelo de Reunião de Campo aplicável"
-  Os três modelos escolhidos são injetados via as três `applyXForVisit` na criação/edição da visita.
+- **Rota**: `src/routes/_app.modelo-reunioes-discursos.tsx` com sub-abas "Meio de Semana", "Fim de Semana" (lista editável de temas, add/remove), "Pioneiros" (dropdown de dia da semana 2ª–Dom + time picker, sem calendário), "Anciãos e Servos". Botões: Criar, Editar, **Duplicar**, Eliminar.
 
-## 2. Cache local — proposta
+- **Aba "Modelos" (`_app.modelos.tsx`)**: adicionar card de entrada para o novo tipo, ao lado dos cards existentes.
 
-A infraestrutura **já está** em pé: TanStack Query com `staleTime: 12h`, `gcTime: 24h`, `networkMode: "offlineFirst"`, persister em IndexedDB. O problema é que **a maioria das telas não usa Query** — fazem `useEffect` + `supabase.from(...).select()` cru e, pior, abrem um `channel` realtime por tela, que dispara `load()` em qualquer mudança.
+### 3) Aba Itinerário — vinculação obrigatória
+- No formulário de criar/editar visita em `_app.cronograma.tsx`:
+  - Adicionar Select obrigatório **"Modelo de Reunião e Discurso"** (carrega de `listMeetingTalkTemplates`).
+  - Tornar **obrigatórios** também `template_id` (programa), `checklist_template_id`, `field_meeting_template_id`. Remover qualquer rótulo "(opcional)".
+  - Validar antes do submit; bloquear criação se algum modelo faltar; mensagem clara em PT-PT.
+  - Garantir botão "Duplicar" em todos os tipos de modelos existentes (verificar `_app.modelos.tsx` e ajustar se faltar em algum).
 
-Para realmente reduzir requisições, precisaríamos migrar ~10 telas (`checklist`, `escala`, `refeicoes`, `transporte`, `cronograma`, `notas`, `reunioes-discursos` etc.) para `useQuery` com `queryKey` por `visit_id`, e remover as subscrições realtime (substituindo por refetch sob demanda + pull-to-refresh).
+### 4) Aba "Reuniões e Discursos" — botão Aplicar Modelo
+- Em `src/routes/_app.reunioes-discursos.tsx` adicionar botão **"Aplicar Modelo"** (visível ao Superintendente) que chama `applyMeetingTalkTemplate(activeVisitId, visit.meeting_talk_template_id)`, com confirmação ("isto irá sobrescrever os campos atuais da semana"). Após aplicar: `queryClient.invalidateQueries()` para refrescar os painéis.
+- Manter intactos: rascunho global em `localStorage` e botão "Salvar dados" no topo (já implementados).
+- Painel "Fim de Semana": quando o modelo tem múltiplos temas, o campo `talk_theme_title` vira **dropdown** com as opções vindas do template (anciãos podem escolher).
+- Painel "Pioneiros": ao aplicar, calcular `meeting_at` = data da visita correspondente ao weekday escolhido + hora.
 
-**Pergunto:** topa que eu faça essa migração agora em todas as telas de leitura, ou prefere que eu faça primeiro só as 3 mais pesadas (checklist, escala, reunioes-discursos) para validar o padrão antes de propagar?
+### 5) RLS / Supabase
+- Migração única que:
+  - Cria as 5 novas tabelas + RLS (super = ALL via `superintendent_id = auth.uid()` + `has_role(... ,'superintendent')`; membros = SELECT via `congregation_id = private.get_user_congregation(auth.uid())`).
+  - Reforça que o Superintendente pode `INSERT/UPDATE/SELECT/DELETE` em `talk_themes`, `meeting_templates` correlatas e nas novas tabelas — auditar políticas existentes em `talk_themes` (já OK) e nas tabelas filhas de `visits` (já cobrem `is_superintendent_of`).
+  - Adiciona `visits.meeting_talk_template_id`.
 
-## 3. Agrupamento de escrita — proposta
+### 6) Sem alterações fora do escopo
+- Não tocar em Dashboard, Congregações, Auth, ou outras telas — já estão conformes às regras 1 e 5.
 
-Hoje a maioria dos campos já salva **on blur** (sai do input → salva), não a cada tecla. O que ainda salva por keystroke são alguns `Textarea` em `MeetingPanels` (orações, observações).
+---
 
-Plano:
-- Criar `useDebouncedSave(value, save, { delay: 800 })` em `src/hooks/`.
-- Aplicar nos `Textarea` de `SingleRowPanel`/`MeetingPanels` (orações, notas privadas, notas por dia de refeição).
-- Garantir flush imediato no `beforeunload` e ao trocar de aba/visita (sem perder dado).
+### Detalhes técnicos relevantes
+- Server functions seguem o padrão existente: `createServerFn` + `requireSupabaseAuth`, copiar a estrutura de `field-meeting-templates.functions.ts`.
+- `applyMeetingTalkTemplate` resolve weekday→data assim: itera `start_date..end_date` da visita e escolhe o primeiro dia cujo `getDay()` corresponda (ou todos os matches, caso haja múltiplos pioneiros).
+- Migração escreve políticas usando `private.has_role` e `private.get_user_congregation` (já existem no schema).
+- Tipos do Supabase regeneram automaticamente após a migração — não tocar em `src/integrations/supabase/types.ts`.
 
-## Próximo passo
+### Ordem de execução
+1. Migração SQL (cria tabelas + RLS + coluna em `visits`) — aguardar aprovação.
+2. Após aprovação: criar `instructions.md`, `meeting-talk-templates.functions.ts`, rota `_app.modelo-reunioes-discursos.tsx`, atualizar `_app.modelos.tsx`, `_app.cronograma.tsx`, `_app.reunioes-discursos.tsx` e painel de Fim de Semana / Pioneiros para suportar dropdown de temas e weekday.
 
-Vou aplicar a **Frente 1 inteira** agora (migração + servidor + UI). Para as Frentes 2 e 3, me confirme se prefere:
-
-(a) **Tudo de uma vez** — migro todas as telas para Query + aplico debounce em todos os textareas. Mexe em muitos arquivos numa única rodada.
-
-(b) **Faseado** — começo pelas 3 telas mais pesadas (checklist, escala, reunioes-discursos) + debounce nos textareas das reuniões. Se passar bem, propago para o resto na próxima rodada.
-
-Recomendo (b) pelo menor risco de regressão.
+Confirmas para eu seguir nesta ordem?
