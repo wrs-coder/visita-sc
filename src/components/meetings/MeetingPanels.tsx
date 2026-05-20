@@ -112,7 +112,6 @@ export function WeekendPanel() {
   const { visit } = useActiveVisit();
   const { canEdit, role } = useAuth();
   const isSuper = role === "superintendent";
-  const congregation = useActiveCongregation();
   const { row, loading, save } = useSingleRow<WeekendRow>(
     "weekend_meetings",
     "id,visit_id,meeting_at,talk_theme_id,talk_theme_title,public_talk_theme",
@@ -121,20 +120,23 @@ export function WeekendPanel() {
   const [themes, setThemes] = useState<Theme[]>([]);
 
   useEffect(() => {
-    if (!congregation) return;
+    let cancelled = false;
     const load = async () => {
-      const { data } = await supabase
-        .from("talk_themes").select("id,title")
-        .or(`congregation_id.eq.${congregation.id},superintendent_id.eq.${congregation.superintendent_id}`)
-        .order("title");
-      setThemes((data ?? []) as Theme[]);
+      try {
+        const res = await getVisitWeekendThemes({ data: { visitId: visit?.id ?? null } });
+        if (cancelled) return;
+        if (res.ok) setThemes(res.themes as Theme[]);
+      } catch {
+        if (!cancelled) setThemes([]);
+      }
     };
     load();
-    const ch = supabase.channel(`themes-${congregation.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "talk_themes" }, load)
+    // recarrega quando temas do modelo mudarem
+    const ch = supabase.channel(`weekend-themes-${visit?.id ?? "none"}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "meeting_talk_template_weekend_themes" }, load)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [congregation]);
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, [visit?.id]);
 
   if (!visit) return <NoVisit />;
   if (loading || !row) return <div className="p-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Carregando…</div>;
@@ -171,7 +173,9 @@ export function WeekendPanel() {
             <Label>Discurso Final</Label>
             {themes.length === 0 ? (
               <p className="text-xs text-muted-foreground mt-1">
-                Nenhum tema cadastrado{canEdit ? " — peça ao Superintendente." : "."}
+                {isSuper
+                  ? "Nenhum tema cadastrado. Adicione em Modelos de Reunião e Discurso → Fim de Semana."
+                  : "Nenhum tema cadastrado — peça ao Superintendente."}
               </p>
             ) : (
               <Select value={row.talk_theme_id ?? ""} onValueChange={onPickTheme}>
@@ -181,13 +185,12 @@ export function WeekendPanel() {
                 </SelectContent>
               </Select>
             )}
-            {row.talk_theme_title && !themes.find((t) => t.id === row.talk_theme_id) && (
+            {row.talk_theme_title && themes.length > 0 && !themes.find((t) => t.id === row.talk_theme_id) && (
               <p className="text-xs text-muted-foreground mt-1">Selecionado: {row.talk_theme_title}</p>
             )}
           </div>
         </fieldset>
       </CardContent></Card>
-      <TalkThemesManager />
     </div>
   );
 }
