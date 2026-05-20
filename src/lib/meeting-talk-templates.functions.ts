@@ -275,6 +275,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
       const { data: existing } = await supabaseAdmin
         .from("midweek_meetings").select("id").eq("visit_id", data.visitId).maybeSingle();
       const payload = {
+        service_talk_theme: mid.data?.service_talk_theme ?? null,
         chairman: mid.data?.chairman ?? null,
         closing_prayer: mid.data?.closing_prayer ?? null,
         visit_id: data.visitId,
@@ -324,6 +325,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
         opening_prayer: pioneer.data?.opening_prayer ?? null,
         closing_prayer: pioneer.data?.closing_prayer ?? null,
         location: pioneer.data?.location ?? null,
+        theme: pioneer.data?.theme ?? null,
         meeting_at: meetingAt,
         super_meeting_at: superMeetingAt,
       };
@@ -337,6 +339,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
         .from("elders_servants_meetings").select("id").eq("visit_id", data.visitId).maybeSingle();
       const payload = {
         visit_id: data.visitId,
+        theme: elders.data?.theme ?? null,
         opening_prayer: elders.data?.opening_prayer ?? null,
         closing_prayer: elders.data?.closing_prayer ?? null,
       };
