@@ -182,7 +182,7 @@ export const duplicateMeetingTalkTemplate = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: src } = await supabaseAdmin
       .from("meeting_talk_templates")
-      .select("id,superintendent_id").eq("id", data.id).maybeSingle();
+      .select("id,superintendent_id,weekend_public_talk_theme").eq("id", data.id).maybeSingle();
     if (!src || src.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
     const { count } = await supabaseAdmin
       .from("meeting_talk_templates")
@@ -193,7 +193,7 @@ export const duplicateMeetingTalkTemplate = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await supabaseAdmin
       .from("meeting_talk_templates")
-      .insert({ superintendent_id: userId, name: data.name, congregation_id: null })
+      .insert({ superintendent_id: userId, name: data.name, congregation_id: null, weekend_public_talk_theme: src.weekend_public_talk_theme ?? null })
       .select("id").single();
     if (error || !row) return { ok: false as const, error: error?.message ?? "Falha." };
     const newId = row.id;
