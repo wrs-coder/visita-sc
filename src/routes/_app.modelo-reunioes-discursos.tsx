@@ -286,20 +286,24 @@ function Page() {
             <>
               <Card><CardContent className="p-4 flex items-center justify-between gap-2 flex-wrap">
                 <div className="font-semibold truncate">{active.name}</div>
-                <div className="flex gap-2 flex-wrap">
-                  <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
-                    <Pencil className="h-3.5 w-3.5 mr-1" />Renomear
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
-                    <Copy className="h-3.5 w-3.5 mr-1" />Duplicar
-                  </Button>
-                  <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
-                    <Trash2 className="h-3.5 w-3.5 mr-1" />Excluir
-                  </Button>
-                  <Button size="sm" onClick={handleSave} disabled={busy}>
-                    <Save className="h-3.5 w-3.5 mr-1" />Salvar modelo
-                  </Button>
-                </div>
+                {isSuper ? (
+                  <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5 mr-1" />Renomear
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
+                      <Copy className="h-3.5 w-3.5 mr-1" />Duplicar
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />Excluir
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={busy}>
+                      <Save className="h-3.5 w-3.5 mr-1" />Salvar modelo
+                    </Button>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Somente visualização</span>
+                )}
               </CardContent></Card>
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
