@@ -374,6 +374,7 @@ const meetingTalkFileSchema = z.object({
   version: z.literal(1),
   name: z.string().trim().min(1).max(120),
   midweek: z.object({
+    service_talk_theme: z.string().trim().max(400).nullable().optional(),
     chairman: z.string().trim().max(400).nullable().optional(),
     closing_prayer: z.string().trim().max(400).nullable().optional(),
   }).nullable().optional(),
@@ -387,10 +388,12 @@ const meetingTalkFileSchema = z.object({
     super_meeting_weekday: weekdaySchema,
     super_meeting_time: timeSchema,
     location: textOpt,
+    theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
   }).nullable().optional(),
   elders: z.object({
+    theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
   }).nullable().optional(),
@@ -407,10 +410,10 @@ export const exportMeetingTalkTemplate = createServerFn({ method: "POST" })
       .eq("id", data.id).maybeSingle();
     if (!tpl || tpl.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
     const [mid, themes, pioneer, elders] = await Promise.all([
-      supabaseAdmin.from("meeting_talk_template_midweek").select("chairman,closing_prayer").eq("template_id", data.id).maybeSingle(),
+      supabaseAdmin.from("meeting_talk_template_midweek").select("service_talk_theme,chairman,closing_prayer").eq("template_id", data.id).maybeSingle(),
       supabaseAdmin.from("meeting_talk_template_weekend_themes").select("title,sort_order").eq("template_id", data.id).order("sort_order"),
-      supabaseAdmin.from("meeting_talk_template_pioneer").select("weekday,meeting_time,super_meeting_weekday,super_meeting_time,location,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
-      supabaseAdmin.from("meeting_talk_template_elders").select("opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
+      supabaseAdmin.from("meeting_talk_template_pioneer").select("weekday,meeting_time,super_meeting_weekday,super_meeting_time,location,theme,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
+      supabaseAdmin.from("meeting_talk_template_elders").select("theme,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
     ]);
     return {
       ok: true as const,
