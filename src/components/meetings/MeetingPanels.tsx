@@ -3,6 +3,7 @@ import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { getVisitWeekendThemes } from "@/lib/meeting-talk-templates.functions";
 import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
 import { useSingleRow } from "./SingleRowPanel";
 import { Card, CardContent } from "@/components/ui/card";
