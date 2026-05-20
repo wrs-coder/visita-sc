@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_app/modelo-reunioes-discursos")({ compon
 interface TemplateRow { id: string; name: string; congregation_id: string | null }
 
 type Payload = {
-  midweek: { chairman: string; closing_prayer: string };
+  midweek: { service_talk_theme: string; chairman: string; closing_prayer: string };
   weekend_themes: { title: string }[];
   pioneer: {
     weekday: number | null;
@@ -41,17 +41,18 @@ type Payload = {
     super_meeting_weekday: number | null;
     super_meeting_time: string;
     location: string;
+    theme: string;
     opening_prayer: string;
     closing_prayer: string;
   };
-  elders: { opening_prayer: string; closing_prayer: string };
+  elders: { theme: string; opening_prayer: string; closing_prayer: string };
 };
 
 const emptyPayload = (): Payload => ({
-  midweek: { chairman: "", closing_prayer: "" },
+  midweek: { service_talk_theme: "", chairman: "", closing_prayer: "" },
   weekend_themes: [],
-  pioneer: { weekday: null, meeting_time: "", super_meeting_weekday: null, super_meeting_time: "", location: "", opening_prayer: "", closing_prayer: "" },
-  elders: { opening_prayer: "", closing_prayer: "" },
+  pioneer: { weekday: null, meeting_time: "", super_meeting_weekday: null, super_meeting_time: "", location: "", theme: "", opening_prayer: "", closing_prayer: "" },
+  elders: { theme: "", opening_prayer: "", closing_prayer: "" },
 });
 
 const MAX = 24;
