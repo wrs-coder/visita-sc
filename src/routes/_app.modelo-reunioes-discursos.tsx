@@ -96,6 +96,7 @@ function Page() {
         chairman: r.midweek?.chairman ?? "",
         closing_prayer: r.midweek?.closing_prayer ?? "",
       },
+      weekend_public_talk_theme: r.weekend_public_talk_theme ?? "",
       weekend_themes: (r.weekend_themes ?? []).map((t) => ({ title: t.title })),
       pioneer: {
         weekday: r.pioneer?.weekday ?? null,
