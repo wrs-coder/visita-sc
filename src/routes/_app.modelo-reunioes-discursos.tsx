@@ -380,6 +380,7 @@ function Page() {
                     <div>
                       <Label>Tema:</Label>
                       <Input className="mt-1" value={payload.pioneer.theme}
+                        readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, theme: e.target.value } })} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -387,6 +388,7 @@ function Page() {
                         <Label>Dia da semana</Label>
                         <Select
                           value={payload.pioneer.weekday === null ? "" : String(payload.pioneer.weekday)}
+                          disabled={!isSuper}
                           onValueChange={(v) => setPayload({ ...payload, pioneer: { ...payload.pioneer, weekday: v ? Number(v) : null } })}
                         >
                           <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione…" /></SelectTrigger>
@@ -397,7 +399,7 @@ function Page() {
                       </div>
                       <div>
                         <Label>Horário</Label>
-                        <Input type="time" className="mt-1" value={payload.pioneer.meeting_time}
+                        <Input type="time" className="mt-1" value={payload.pioneer.meeting_time} readOnly={!isSuper}
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, meeting_time: e.target.value } })} />
                       </div>
                     </div>
@@ -406,6 +408,7 @@ function Page() {
                         <Label>Dia da reunião com SC (opcional)</Label>
                         <Select
                           value={payload.pioneer.super_meeting_weekday === null ? "" : String(payload.pioneer.super_meeting_weekday)}
+                          disabled={!isSuper}
                           onValueChange={(v) => setPayload({ ...payload, pioneer: { ...payload.pioneer, super_meeting_weekday: v ? Number(v) : null } })}
                         >
                           <SelectTrigger className="mt-1"><SelectValue placeholder="Mesmo do principal" /></SelectTrigger>
@@ -416,24 +419,24 @@ function Page() {
                       </div>
                       <div>
                         <Label>Horário SC (opcional)</Label>
-                        <Input type="time" className="mt-1" value={payload.pioneer.super_meeting_time}
+                        <Input type="time" className="mt-1" value={payload.pioneer.super_meeting_time} readOnly={!isSuper}
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, super_meeting_time: e.target.value } })} />
                       </div>
                     </div>
                     <div>
                       <Label>Local</Label>
-                      <Input className="mt-1" value={payload.pioneer.location}
+                      <Input className="mt-1" value={payload.pioneer.location} readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, location: e.target.value } })} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label>Oração Inicial</Label>
-                        <Input className="mt-1" value={payload.pioneer.opening_prayer}
+                        <Input className="mt-1" value={payload.pioneer.opening_prayer} readOnly={!isSuper}
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, opening_prayer: e.target.value } })} />
                       </div>
                       <div>
                         <Label>Oração Final</Label>
-                        <Input className="mt-1" value={payload.pioneer.closing_prayer}
+                        <Input className="mt-1" value={payload.pioneer.closing_prayer} readOnly={!isSuper}
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, closing_prayer: e.target.value } })} />
                       </div>
                     </div>
