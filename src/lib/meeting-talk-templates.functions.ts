@@ -357,3 +357,116 @@ export const getVisitWeekendThemes = createServerFn({ method: "POST" })
       .order("sort_order");
     return { ok: true as const, themes: (themes ?? []).map((t) => t.title) };
   });
+
+// ---------- EXPORT / IMPORT ----------
+
+const meetingTalkFileSchema = z.object({
+  type: z.literal("meeting_talk_template"),
+  version: z.literal(1),
+  name: z.string().trim().min(1).max(120),
+  midweek: z.object({
+    chairman: z.string().trim().max(400).nullable().optional(),
+    closing_prayer: z.string().trim().max(400).nullable().optional(),
+  }).nullable().optional(),
+  weekend_themes: z.array(z.object({
+    title: z.string().trim().min(1).max(200),
+    sort_order: z.number().int().min(0).max(1000).optional(),
+  })).max(50).optional(),
+  pioneer: z.object({
+    weekday: weekdaySchema,
+    meeting_time: timeSchema,
+    super_meeting_weekday: weekdaySchema,
+    super_meeting_time: timeSchema,
+    location: textOpt,
+    opening_prayer: textOpt,
+    closing_prayer: textOpt,
+  }).nullable().optional(),
+  elders: z.object({
+    opening_prayer: textOpt,
+    closing_prayer: textOpt,
+  }).nullable().optional(),
+});
+
+export const exportMeetingTalkTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: tpl } = await supabaseAdmin
+      .from("meeting_talk_templates")
+      .select("id,name,superintendent_id")
+      .eq("id", data.id).maybeSingle();
+    if (!tpl || tpl.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
+    const [mid, themes, pioneer, elders] = await Promise.all([
+      supabaseAdmin.from("meeting_talk_template_midweek").select("chairman,closing_prayer").eq("template_id", data.id).maybeSingle(),
+      supabaseAdmin.from("meeting_talk_template_weekend_themes").select("title,sort_order").eq("template_id", data.id).order("sort_order"),
+      supabaseAdmin.from("meeting_talk_template_pioneer").select("weekday,meeting_time,super_meeting_weekday,super_meeting_time,location,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
+      supabaseAdmin.from("meeting_talk_template_elders").select("opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
+    ]);
+    return {
+      ok: true as const,
+      file: {
+        type: "meeting_talk_template" as const,
+        version: 1 as const,
+        exportedAt: new Date().toISOString(),
+        name: tpl.name,
+        midweek: mid.data ?? null,
+        weekend_themes: themes.data ?? [],
+        pioneer: pioneer.data ?? null,
+        elders: elders.data ?? null,
+      },
+    };
+  });
+
+export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ file: meetingTalkFileSchema }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { count } = await supabaseAdmin
+      .from("meeting_talk_templates")
+      .select("id", { count: "exact", head: true })
+      .eq("superintendent_id", userId);
+    if ((count ?? 0) >= MAX_TEMPLATES) {
+      return { ok: false as const, error: `Limite de ${MAX_TEMPLATES} modelos atingido.` };
+    }
+    const { data: row, error } = await supabaseAdmin
+      .from("meeting_talk_templates")
+      .insert({ superintendent_id: userId, name: data.file.name, congregation_id: null })
+      .select("id").single();
+    if (error || !row) return { ok: false as const, error: error?.message ?? "Falha ao criar." };
+    const newId = row.id;
+    const f = data.file;
+    if (f.midweek) {
+      await supabaseAdmin.from("meeting_talk_template_midweek").insert({
+        template_id: newId,
+        chairman: f.midweek.chairman ?? null,
+        closing_prayer: f.midweek.closing_prayer ?? null,
+      });
+    }
+    if (f.weekend_themes?.length) {
+      await supabaseAdmin.from("meeting_talk_template_weekend_themes").insert(
+        f.weekend_themes.map((t, i) => ({ template_id: newId, title: t.title, sort_order: t.sort_order ?? i })),
+      );
+    }
+    if (f.pioneer) {
+      await supabaseAdmin.from("meeting_talk_template_pioneer").insert({
+        template_id: newId,
+        weekday: f.pioneer.weekday ?? null,
+        meeting_time: f.pioneer.meeting_time || null,
+        super_meeting_weekday: f.pioneer.super_meeting_weekday ?? null,
+        super_meeting_time: f.pioneer.super_meeting_time || null,
+        location: f.pioneer.location ?? null,
+        opening_prayer: f.pioneer.opening_prayer ?? null,
+        closing_prayer: f.pioneer.closing_prayer ?? null,
+      });
+    }
+    if (f.elders) {
+      await supabaseAdmin.from("meeting_talk_template_elders").insert({
+        template_id: newId,
+        opening_prayer: f.elders.opening_prayer ?? null,
+        closing_prayer: f.elders.closing_prayer ?? null,
+      });
+    }
+    return { ok: true as const, id: newId };
+  });

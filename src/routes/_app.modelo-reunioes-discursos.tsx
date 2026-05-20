@@ -10,8 +10,11 @@ import {
   duplicateMeetingTalkTemplate,
   deleteMeetingTalkTemplate,
   saveMeetingTalkTemplateItems,
+  exportMeetingTalkTemplate,
+  importMeetingTalkTemplate,
   WEEKDAY_LABELS,
 } from "@/lib/meeting-talk-templates.functions";
+import { TemplateIOButtons } from "@/components/TemplateIOButtons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,6 +65,8 @@ function Page() {
   const fnDup = useServerFn(duplicateMeetingTalkTemplate);
   const fnDel = useServerFn(deleteMeetingTalkTemplate);
   const fnSave = useServerFn(saveMeetingTalkTemplateItems);
+  const fnExport = useServerFn(exportMeetingTalkTemplate);
+  const fnImport = useServerFn(importMeetingTalkTemplate);
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -205,9 +210,9 @@ function Page() {
   });
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 max-w-full overflow-x-hidden">
       <div className="flex items-start justify-between gap-2 flex-wrap">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
             <Layers className="h-6 w-6" />Modelos de Reunião e Discurso
           </h1>
@@ -215,28 +220,36 @@ function Page() {
             Crie modelos reutilizáveis com Meio de Semana, Fim de Semana (vários temas), Pioneiros e Anciãos/Servos. {tpls.length}/{MAX} modelos.
           </p>
         </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />Novo modelo</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Novo modelo</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label>Nome</Label>
-                <Input
-                  className={`mt-1 ${newNameErr ? "border-destructive" : ""}`}
-                  value={newName}
-                  onChange={(e) => { setNewName(e.target.value); if (newNameErr) setNewNameErr(null); }}
-                  placeholder="Ex: Modelo padrão"
-                  maxLength={120}
-                />
-                {newNameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{newNameErr}</p>}
+        <div className="flex items-center gap-2 flex-wrap">
+          <TemplateIOButtons
+            filenameBase={active?.name ?? "modelo-reuniao-discurso"}
+            disabled={!active}
+            onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: "Selecione um modelo" }}
+            onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await loadList(); return r; }}
+          />
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />Novo modelo</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Novo modelo</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <Label>Nome</Label>
+                  <Input
+                    className={`mt-1 ${newNameErr ? "border-destructive" : ""}`}
+                    value={newName}
+                    onChange={(e) => { setNewName(e.target.value); if (newNameErr) setNewNameErr(null); }}
+                    placeholder="Ex: Modelo padrão"
+                    maxLength={120}
+                  />
+                  {newNameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{newNameErr}</p>}
+                </div>
+                <Button className="w-full" onClick={handleCreate} disabled={busy}>Criar</Button>
               </div>
-              <Button className="w-full" onClick={handleCreate} disabled={busy}>Criar</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-[260px_1fr] gap-4">
@@ -278,15 +291,17 @@ function Page() {
               </CardContent></Card>
 
               <Tabs defaultValue="meio" className="w-full">
-                <TabsList>
-                  <TabsTrigger value="meio">Meio de Semana</TabsTrigger>
-                  <TabsTrigger value="fim">Fim de Semana</TabsTrigger>
-                  <TabsTrigger value="pio">Pioneiros</TabsTrigger>
-                  <TabsTrigger value="anc">Anciãos e Servos</TabsTrigger>
-                </TabsList>
+                <div className="-mx-1 overflow-x-auto scrollbar-none">
+                  <TabsList className="flex flex-nowrap w-max h-auto gap-1 bg-transparent p-0">
+                    <TabsTrigger value="meio" className="shrink-0 rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Meio de Semana</TabsTrigger>
+                    <TabsTrigger value="fim" className="shrink-0 rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Fim de Semana</TabsTrigger>
+                    <TabsTrigger value="pio" className="shrink-0 rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Pioneiros</TabsTrigger>
+                    <TabsTrigger value="anc" className="shrink-0 rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Anciãos e Servos</TabsTrigger>
+                  </TabsList>
+                </div>
 
                 <TabsContent value="meio" className="mt-3">
-                  <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+                  <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <div>
                       <Label>Presidente da Reunião</Label>
                       <Input className="mt-1" value={payload.midweek.chairman}
@@ -327,7 +342,7 @@ function Page() {
                 </TabsContent>
 
                 <TabsContent value="pio" className="mt-3">
-                  <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+                  <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <p className="text-xs text-muted-foreground">Apenas dia da semana + horário; sem calendário de datas específicas.</p>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -388,7 +403,7 @@ function Page() {
                 </TabsContent>
 
                 <TabsContent value="anc" className="mt-3">
-                  <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+                  <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <div>
                       <Label>Oração Inicial</Label>
                       <Input className="mt-1" value={payload.elders.opening_prayer}

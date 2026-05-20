@@ -20,6 +20,7 @@ import {
 import { offlineUpdate } from "@/lib/offline-supabase";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useBlocker } from "@tanstack/react-router";
 
 type DraftPatch = Record<string, unknown>;
 type DraftStore = Record<string, DraftPatch>; // key = `${table}:${rowId}`
@@ -34,6 +35,8 @@ interface DraftCtx {
   saving: boolean;
   progress: number; // 0..100 durante flush
   pendingCount: number;
+  lastSyncedAt: Date | null;
+  lastFailedTables: string[];
 }
 
 const Ctx = createContext<DraftCtx | null>(null);
@@ -51,6 +54,8 @@ export function MeetingsDraftProvider({
   const [drafts, setDrafts] = useState<DraftStore>({});
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  const [lastFailedTables, setLastFailedTables] = useState<string[]>([]);
   const hydratedRef = useRef(false);
   const queryClient = useQueryClient();
 
@@ -90,6 +95,17 @@ export function MeetingsDraftProvider({
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
 
+  // Bloqueio de navegação interna (menu lateral / outras rotas) com rascunho pendente.
+  useBlocker({
+    shouldBlockFn: () => {
+      if (!dirty) return false;
+      return !window.confirm(
+        "Há um rascunho com alterações não salvas nesta tela. Sair sem clicar em \"Salvar dados\" mantém o rascunho local, mas o servidor não será atualizado. Continuar?",
+      );
+    },
+    enableBeforeUnload: false,
+  });
+
   const queue = useCallback((table: string, rowId: string, patch: DraftPatch) => {
     setDrafts((prev) => {
       const k = makeKey(table, rowId);
@@ -123,8 +139,11 @@ export function MeetingsDraftProvider({
     }
     setSaving(true);
     setProgress(0);
+    setLastFailedTables([]);
     try {
-      const failed: string[] = [];
+      const failedKeys: string[] = [];
+      const failedTables = new Set<string>();
+      const failedMessages = new Set<string>();
       const touched = new Set<string>();
       let done = 0;
       for (const [k, patch] of entries) {
@@ -132,23 +151,47 @@ export function MeetingsDraftProvider({
         const table = k.slice(0, sep);
         const id = k.slice(sep + 1);
         const { error } = await offlineUpdate(table, patch, { id });
-        if (error) failed.push(`${table}: ${error.message}`);
-        else touched.add(table);
+        if (error) {
+          failedKeys.push(k);
+          failedTables.add(table);
+          failedMessages.add(`${table}: ${error.message}`);
+        } else {
+          touched.add(table);
+        }
         done += 1;
         setProgress(Math.round((done / entries.length) * 100));
       }
-      if (failed.length) {
-        toast.error(failed[0]);
-      } else {
-        toast.success("Dados salvos");
-        setDrafts({});
-        // Recarrega automaticamente os painéis após salvar.
+      // Invalida caches das tabelas com sucesso (recarrega painéis).
+      if (touched.size) {
         await Promise.all(
           Array.from(touched).map((t) =>
             queryClient.invalidateQueries({ queryKey: [t] }),
           ),
         );
         await queryClient.invalidateQueries();
+      }
+      if (failedKeys.length === 0) {
+        toast.success("Dados salvos");
+        setDrafts({});
+        setLastSyncedAt(new Date());
+        setLastFailedTables([]);
+      } else {
+        // Mantém apenas os rascunhos que falharam para permitir nova tentativa
+        // sem perder o que o utilizador digitou.
+        setDrafts((prev) => {
+          const next: DraftStore = {};
+          for (const key of failedKeys) {
+            if (prev[key]) next[key] = prev[key];
+          }
+          return next;
+        });
+        setLastFailedTables(Array.from(failedTables));
+        toast.error(
+          `Falha ao salvar ${failedKeys.length} alteraç${failedKeys.length === 1 ? "ão" : "ões"}`,
+          {
+            description: `Tabelas afetadas: ${Array.from(failedTables).join(", ")}. Clique em "Salvar dados" para tentar novamente — o rascunho local foi preservado.`,
+          },
+        );
       }
     } finally {
       setSaving(false);
@@ -167,8 +210,10 @@ export function MeetingsDraftProvider({
       saving,
       progress,
       pendingCount: Object.keys(drafts).length,
+      lastSyncedAt,
+      lastFailedTables,
     }),
-    [drafts, queue, clearRow, discardAll, flush, dirty, saving, progress],
+    [drafts, queue, clearRow, discardAll, flush, dirty, saving, progress, lastSyncedAt, lastFailedTables],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
