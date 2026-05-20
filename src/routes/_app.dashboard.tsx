@@ -76,7 +76,7 @@ function Dashboard() {
       ]);
       setEvents(e ?? []);
       setChecklist(c ?? []);
-      setMeals(m ?? []);
+      setMeals((m ?? []) as Meal[]);
       setTransports((t ?? []) as Transport[]);
       setAssignments((a ?? []) as FieldAssignment[]);
       setFieldMeetings((fm ?? []) as FieldMeetingToday[]);
