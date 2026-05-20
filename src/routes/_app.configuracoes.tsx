@@ -479,14 +479,7 @@ function Page() {
             <Card key={v.id} className="shadow-card">
               <CardContent className="p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-semibold truncate flex items-center gap-2">
-                    {v.title}{" "}
-                    {v.is_active && (
-                      <span className="text-[10px] uppercase font-bold bg-success text-success-foreground px-1.5 py-0.5 rounded">
-                        Ativa
-                      </span>
-                    )}
-                  </div>
+                  <div className="font-semibold truncate">{v.title}</div>
                   <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                     <Building2 className="h-3 w-3" />
                     {cong?.name ?? "—"}
@@ -498,12 +491,6 @@ function Page() {
                 </div>
                 {isSuper && (
                   <div className="flex gap-1">
-                    {!v.is_active && (
-                      <Button size="sm" variant="outline" onClick={() => setActive(v.id)}>
-                        <Check className="h-3.5 w-3.5 mr-1" />
-                        Ativar
-                      </Button>
-                    )}
                     <Button size="icon" variant="ghost" onClick={() => openEdit(v)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
