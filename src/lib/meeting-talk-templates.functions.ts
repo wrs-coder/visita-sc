@@ -46,15 +46,35 @@ const itemsPayloadSchema = z.object({
 
 export type MeetingTalkTemplatePayload = z.infer<typeof itemsPayloadSchema>;
 
+async function getMeetingTalkViewer(userId: string) {
+  const { data: roles } = await supabaseAdmin
+    .from("user_roles")
+    .select("role,congregation_id")
+    .eq("user_id", userId);
+  const isSuper = (roles ?? []).some((r) => r.role === "superintendent");
+  const elderCongregationId = (roles ?? []).find((r) => r.role === "elder")?.congregation_id ?? null;
+  return { isSuper, elderCongregationId };
+}
+
 export const listMeetingTalkTemplates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
+    const viewer = await getMeetingTalkViewer(userId);
+    if (!viewer.isSuper && !viewer.elderCongregationId) {
+      return { ok: true as const, templates: [] };
+    }
+    let query = supabaseAdmin
+      .from("meeting_talk_templates")
+      .select("id,name,congregation_id,created_at,updated_at")
+      .order("created_at");
+    query = viewer.isSuper
+      ? query.eq("superintendent_id", userId)
+      : query.eq("congregation_id", viewer.elderCongregationId!);
     const { data: tpls, error } = await supabaseAdmin
       .from("meeting_talk_templates")
       .select("id,name,congregation_id,created_at,updated_at")
-      .eq("superintendent_id", userId)
-      .order("created_at");
+      .match(viewer.isSuper ? { superintendent_id: userId } : { congregation_id: viewer.elderCongregationId });
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const, templates: tpls ?? [] };
   });
