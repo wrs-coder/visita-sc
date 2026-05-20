@@ -34,6 +34,7 @@ interface TemplateRow { id: string; name: string; congregation_id: string | null
 
 type Payload = {
   midweek: { service_talk_theme: string; chairman: string; closing_prayer: string };
+  weekend_public_talk_theme: string;
   weekend_themes: { title: string }[];
   pioneer: {
     weekday: number | null;
@@ -50,6 +51,7 @@ type Payload = {
 
 const emptyPayload = (): Payload => ({
   midweek: { service_talk_theme: "", chairman: "", closing_prayer: "" },
+  weekend_public_talk_theme: "",
   weekend_themes: [],
   pioneer: { weekday: null, meeting_time: "", super_meeting_weekday: null, super_meeting_time: "", location: "", theme: "", opening_prayer: "", closing_prayer: "" },
   elders: { theme: "", opening_prayer: "", closing_prayer: "" },
