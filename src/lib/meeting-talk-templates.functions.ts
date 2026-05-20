@@ -408,6 +408,7 @@ const meetingTalkFileSchema = z.object({
     chairman: z.string().trim().max(400).nullable().optional(),
     closing_prayer: z.string().trim().max(400).nullable().optional(),
   }).nullable().optional(),
+  weekend_public_talk_theme: textOpt,
   weekend_themes: z.array(z.object({
     title: z.string().trim().min(1).max(200),
     sort_order: z.number().int().min(0).max(1000).optional(),
