@@ -448,16 +448,17 @@ function Page() {
                     <div>
                       <Label>Tema:</Label>
                       <Input className="mt-1" value={payload.elders.theme}
+                        readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, theme: e.target.value } })} />
                     </div>
                     <div>
                       <Label>Oração Inicial</Label>
-                      <Input className="mt-1" value={payload.elders.opening_prayer}
+                      <Input className="mt-1" value={payload.elders.opening_prayer} readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, opening_prayer: e.target.value } })} />
                     </div>
                     <div>
                       <Label>Oração Final</Label>
-                      <Input className="mt-1" value={payload.elders.closing_prayer}
+                      <Input className="mt-1" value={payload.elders.closing_prayer} readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, closing_prayer: e.target.value } })} />
                     </div>
                   </CardContent></Card>
