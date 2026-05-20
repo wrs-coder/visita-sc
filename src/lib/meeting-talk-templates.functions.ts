@@ -223,6 +223,11 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
     if (!own) return { ok: false as const, error: "Não autorizado." };
 
     const p = data.payload;
+    // Persist weekend public talk theme on template root
+    await supabaseAdmin
+      .from("meeting_talk_templates")
+      .update({ weekend_public_talk_theme: p.weekend_public_talk_theme ?? null })
+      .eq("id", data.templateId);
     // Upsert midweek
     await supabaseAdmin.from("meeting_talk_template_midweek").upsert({
       template_id: data.templateId,
