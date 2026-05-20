@@ -220,13 +220,6 @@ function Page() {
             Crie modelos reutilizáveis com Meio de Semana, Fim de Semana (vários temas), Pioneiros e Anciãos/Servos. {tpls.length}/{MAX} modelos.
           </p>
         </div>
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <Layers className="h-6 w-6" />Modelos de Reunião e Discurso
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Crie modelos reutilizáveis com Meio de Semana, Fim de Semana (vários temas), Pioneiros e Anciãos/Servos. {tpls.length}/{MAX} modelos.
-          </p>
-        </div>
         <div className="flex items-center gap-2 flex-wrap">
           <TemplateIOButtons
             filenameBase={active?.name ?? "modelo-reuniao-discurso"}
