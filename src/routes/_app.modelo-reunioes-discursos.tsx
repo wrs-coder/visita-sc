@@ -291,14 +291,12 @@ function Page() {
               </CardContent></Card>
 
               <Tabs defaultValue="meio" className="w-full">
-                <div className="-mx-1 overflow-x-auto scrollbar-none">
-                  <TabsList className="flex flex-nowrap w-max h-auto gap-1 bg-transparent p-0">
-                    <TabsTrigger value="meio" className="shrink-0 rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Meio de Semana</TabsTrigger>
-                    <TabsTrigger value="fim" className="shrink-0 rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Fim de Semana</TabsTrigger>
-                    <TabsTrigger value="pio" className="shrink-0 rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Pioneiros</TabsTrigger>
-                    <TabsTrigger value="anc" className="shrink-0 rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Anciãos e Servos</TabsTrigger>
-                  </TabsList>
-                </div>
+                <TabsList className="flex overflow-x-auto whitespace-nowrap flex-nowrap scrollbar-none w-full h-auto gap-1 bg-transparent p-1">
+                  <TabsTrigger value="meio" className="shrink rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Meio de Semana</TabsTrigger>
+                  <TabsTrigger value="fim" className="shrink rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Fim de Semana</TabsTrigger>
+                  <TabsTrigger value="pio" className="shrink rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Pioneiros</TabsTrigger>
+                  <TabsTrigger value="anc" className="shrink rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Anciãos e Servos</TabsTrigger>
+                </TabsList>
 
                 <TabsContent value="meio" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
