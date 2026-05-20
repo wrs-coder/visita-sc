@@ -3,7 +3,8 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, Save } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   useActiveCongregation,
@@ -14,6 +15,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { listMyCongregations } from "@/lib/congregations.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import {
+  MeetingsDraftProvider,
+  useMeetingsDraft,
+} from "@/components/meetings/MeetingsDraftContext";
 
 // Lazy: cada painel só carrega quando o utilizador entra na respectiva aba.
 const FieldMeetingsPanel = lazy(() =>
