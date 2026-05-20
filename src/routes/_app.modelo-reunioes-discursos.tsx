@@ -89,6 +89,7 @@ function Page() {
     if (!r.ok) { toast.error(r.error); return; }
     setPayload({
       midweek: {
+        service_talk_theme: r.midweek?.service_talk_theme ?? "",
         chairman: r.midweek?.chairman ?? "",
         closing_prayer: r.midweek?.closing_prayer ?? "",
       },
@@ -99,10 +100,12 @@ function Page() {
         super_meeting_weekday: r.pioneer?.super_meeting_weekday ?? null,
         super_meeting_time: r.pioneer?.super_meeting_time ?? "",
         location: r.pioneer?.location ?? "",
+        theme: r.pioneer?.theme ?? "",
         opening_prayer: r.pioneer?.opening_prayer ?? "",
         closing_prayer: r.pioneer?.closing_prayer ?? "",
       },
       elders: {
+        theme: r.elders?.theme ?? "",
         opening_prayer: r.elders?.opening_prayer ?? "",
         closing_prayer: r.elders?.closing_prayer ?? "",
       },
