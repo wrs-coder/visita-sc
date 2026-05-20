@@ -279,9 +279,12 @@ function TabsGuarded({
             Pacote unificado por visita: reuniões de campo, meio de semana, fim de semana, pioneiros e anciãos/servos.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <DiscardDraftButton />
-          <SaveDraftButton />
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-2">
+            <DiscardDraftButton />
+            <SaveDraftButton />
+          </div>
+          <SyncStatusLine />
         </div>
       </div>
 
