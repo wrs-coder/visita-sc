@@ -4,7 +4,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Trash2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import {
   useActiveCongregation,
@@ -124,6 +136,42 @@ function SuperCongregationSelector() {
   );
 }
 
+function DiscardDraftButton() {
+  const draft = useMeetingsDraft();
+  const { canEdit } = useAuth();
+  if (!draft || !canEdit) return null;
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={!draft.dirty || draft.saving}
+          className="gap-2 text-muted-foreground hover:text-destructive"
+        >
+          <Trash2 className="h-4 w-4" />
+          Descartar
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Vai apagar {draft.pendingCount} alteraç{draft.pendingCount === 1 ? "ão" : "ões"} em
+            rascunho local e voltar ao estado atual do servidor. Esta ação não pode ser desfeita.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={() => draft.discardAll()}>
+            Descartar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 function SaveDraftButton() {
   const draft = useMeetingsDraft();
   const { canEdit } = useAuth();
@@ -143,6 +191,19 @@ function SaveDraftButton() {
   );
 }
 
+function SaveProgressBar() {
+  const draft = useMeetingsDraft();
+  if (!draft || (!draft.saving && draft.progress === 0)) return null;
+  return (
+    <div className="space-y-1">
+      <Progress value={draft.progress} />
+      <div className="text-xs text-muted-foreground">
+        {draft.saving ? `Sincronizando alterações… ${draft.progress}%` : "Sincronizado"}
+      </div>
+    </div>
+  );
+}
+
 function Page() {
   const { role, user } = useAuth();
   const isSuper = role === "superintendent";
@@ -150,45 +211,84 @@ function Page() {
   const ready = useEnsureVisitForSuper(active?.id ?? null, isSuper);
   const panelsReady = !isSuper || ready;
   const scopeKey = `${user?.id ?? "anon"}:${active?.id ?? "none"}`;
+  const [currentTab, setCurrentTab] = useState("campo");
 
   return (
     <MeetingsDraftProvider scopeKey={scopeKey}>
-      <div className="space-y-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Reuniões e Discursos</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Pacote unificado por visita: reuniões de campo, meio de semana, fim de semana, pioneiros e anciãos/servos.
-            </p>
-          </div>
-          <SaveDraftButton />
-        </div>
-
-        {isSuper && <SuperCongregationSelector />}
-
-        <Tabs defaultValue="campo" className="w-full">
-          <div className="-mx-1 overflow-x-auto scrollbar-none">
-            <TabsList className="flex flex-nowrap w-max h-auto gap-1 bg-transparent p-0">
-              <TabsTrigger value="campo" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Campo</TabsTrigger>
-              <TabsTrigger value="meio" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Meio de Semana</TabsTrigger>
-              <TabsTrigger value="fim" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Fim de Semana</TabsTrigger>
-              <TabsTrigger value="pioneiros" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Pioneiros</TabsTrigger>
-              <TabsTrigger value="ancios" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Anciãos e Servos</TabsTrigger>
-            </TabsList>
-          </div>
-          {panelsReady ? (
-            <>
-              <TabsContent value="campo" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><FieldMeetingsPanel /></Suspense></TabsContent>
-              <TabsContent value="meio" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><MidweekPanel /></Suspense></TabsContent>
-              <TabsContent value="fim" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><WeekendPanel /></Suspense></TabsContent>
-              <TabsContent value="pioneiros" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><PioneerPanel /></Suspense></TabsContent>
-              <TabsContent value="ancios" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><EldersServantsPanel /></Suspense></TabsContent>
-            </>
-          ) : (
-            <PanelFallback />
-          )}
-        </Tabs>
-      </div>
+      <TabsGuarded
+        currentTab={currentTab}
+        setCurrentTab={setCurrentTab}
+        isSuper={isSuper}
+        panelsReady={panelsReady}
+      />
     </MeetingsDraftProvider>
   );
 }
+
+function TabsGuarded({
+  currentTab,
+  setCurrentTab,
+  isSuper,
+  panelsReady,
+}: {
+  currentTab: string;
+  setCurrentTab: (v: string) => void;
+  isSuper: boolean;
+  panelsReady: boolean;
+}) {
+  const draft = useMeetingsDraft();
+  const handleTabChange = (v: string) => {
+    if (draft?.dirty) {
+      const ok = window.confirm(
+        "Tens alterações no rascunho que ainda não foram salvas. Mudar de aba não perde os dados, mas recomendamos clicar em \"Salvar dados\" primeiro. Continuar?",
+      );
+      if (!ok) return;
+    }
+    setCurrentTab(v);
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">Reuniões e Discursos</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Pacote unificado por visita: reuniões de campo, meio de semana, fim de semana, pioneiros e anciãos/servos.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <DiscardDraftButton />
+          <SaveDraftButton />
+        </div>
+      </div>
+
+      <SaveProgressBar />
+
+      {isSuper && <SuperCongregationSelector />}
+
+      <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
+        <div className="-mx-1 overflow-x-auto scrollbar-none">
+          <TabsList className="flex flex-nowrap w-max h-auto gap-1 bg-transparent p-0">
+            <TabsTrigger value="campo" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Campo</TabsTrigger>
+            <TabsTrigger value="meio" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Meio de Semana</TabsTrigger>
+            <TabsTrigger value="fim" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Fim de Semana</TabsTrigger>
+            <TabsTrigger value="pioneiros" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Pioneiros</TabsTrigger>
+            <TabsTrigger value="ancios" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Anciãos e Servos</TabsTrigger>
+          </TabsList>
+        </div>
+        {panelsReady ? (
+          <>
+            <TabsContent value="campo" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><FieldMeetingsPanel /></Suspense></TabsContent>
+            <TabsContent value="meio" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><MidweekPanel /></Suspense></TabsContent>
+            <TabsContent value="fim" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><WeekendPanel /></Suspense></TabsContent>
+            <TabsContent value="pioneiros" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><PioneerPanel /></Suspense></TabsContent>
+            <TabsContent value="ancios" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><EldersServantsPanel /></Suspense></TabsContent>
+          </>
+        ) : (
+          <PanelFallback />
+        )}
+      </Tabs>
+    </div>
+  );
+}
+
