@@ -210,9 +210,16 @@ function Page() {
   });
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 max-w-full overflow-x-hidden">
       <div className="flex items-start justify-between gap-2 flex-wrap">
-        <div>
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <Layers className="h-6 w-6" />Modelos de Reunião e Discurso
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Crie modelos reutilizáveis com Meio de Semana, Fim de Semana (vários temas), Pioneiros e Anciãos/Servos. {tpls.length}/{MAX} modelos.
+          </p>
+        </div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
             <Layers className="h-6 w-6" />Modelos de Reunião e Discurso
           </h1>
