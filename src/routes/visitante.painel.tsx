@@ -30,6 +30,10 @@ interface Snapshot {
   fieldMeetings: Array<{ id: string; event_date: string; period: string; modality: string; meeting_time: string | null; territory_number: string | null; territory_location: string | null; auxiliary_leaders: string | null; closing_prayer: string | null }>;
   transport: Array<{ id: string; event_date: string | null; driver_name: string; contact_phone: string | null; description: string | null; notes: string | null }>;
   checklist: Array<{ id: string; title: string; description: string | null; status: string; link_or_notes: string | null; info_text: string | null }>;
+  midweek: Array<{ id: string; chairman: string | null; service_talk_theme: string | null; closing_prayer: string | null }>;
+  weekend: Array<{ id: string; meeting_at: string | null; public_talk_theme: string | null; talk_theme_title: string | null }>;
+  pioneer: Array<{ id: string; meeting_at: string | null; super_meeting_at: string | null; location: string | null; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
+  elders: Array<{ id: string; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
 }
 
 type SectionKey = "cron" | "estudos" | "campo" | "ref" | "trans" | "check";
