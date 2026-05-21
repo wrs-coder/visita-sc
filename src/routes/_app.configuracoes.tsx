@@ -83,7 +83,7 @@ function Page() {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
-    title: "",
+    title: "Visita" as string,
     start_date: "",
     end_date: "",
     congregation_id: "",
@@ -91,6 +91,8 @@ function Page() {
     checklist_template_id: "",
     field_template_id: "",
     meeting_talk_template_id: "",
+    substitute_name: "",
+    substitute_phone: "",
   });
   const isSuper = role === "superintendent";
 
