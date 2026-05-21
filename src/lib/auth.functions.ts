@@ -10,6 +10,14 @@ export function elderEmailFromPhone(phone: string) {
   return `elder-${digits}@visita-sc.local`;
 }
 
+export function syntheticEmailFromUsername(username: string) {
+  return `usr-${username.trim().toLowerCase()}@visita-sc.local`;
+}
+
+const USERNAME_REGEX = /^[a-zA-Z0-9_.-]{3,30}$/;
+const SYNTHETIC_EMAIL_REGEX = /@visita-sc\.local$/i;
+
+
 export const registerSuperintendent = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({
