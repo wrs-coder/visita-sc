@@ -252,6 +252,10 @@ function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Paylo
         <SelectContent>
           <SelectItem value="superintendente">Superintendente</SelectItem>
           <SelectItem value="esposa">Esposa do superintendente</SelectItem>
+          <SelectItem value="sc_substituto">S.C Substituto</SelectItem>
+          <SelectItem value="esposa_sc_substituto">Esposa do S.C Substituto</SelectItem>
+          <SelectItem value="sc_pastor">S.C Pastor</SelectItem>
+          <SelectItem value="esposa_sc_pastor">Esposa do S.C Pastor</SelectItem>
         </SelectContent>
       </Select>
       <Input className="h-9 col-span-2" placeholder="Telefone de contato" value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
