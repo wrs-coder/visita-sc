@@ -442,9 +442,10 @@ function Page() {
                       <Label>Telefone do Substituto</Label>
                       <Input
                         type="tel"
+                        inputMode="numeric"
                         className="mt-1"
                         value={form.substitute_phone}
-                        onChange={(e) => setForm({ ...form, substitute_phone: e.target.value })}
+                        onChange={(e) => setForm({ ...form, substitute_phone: maskPhone(e.target.value) })}
                         placeholder="(00) 00000-0000"
                       />
                     </div>
@@ -457,7 +458,15 @@ function Page() {
                       type="date"
                       className="mt-1"
                       value={form.start_date}
-                      onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                      onChange={(e) => {
+                        const start = e.target.value;
+                        setForm((f) => ({
+                          ...f,
+                          start_date: start,
+                          // UX reativa: se end_date está vazia ou anterior, alinha com a inicial
+                          end_date: !f.end_date || f.end_date < start ? start : f.end_date,
+                        }));
+                      }}
                     />
                   </div>
                   <div>
@@ -465,6 +474,7 @@ function Page() {
                     <Input
                       type="date"
                       className="mt-1"
+                      min={form.start_date || undefined}
                       value={form.end_date}
                       onChange={(e) => setForm({ ...form, end_date: e.target.value })}
                     />
