@@ -1,10 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { lookupRecoverableEmail } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { ArrowLeft, KeyRound, Mail } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -13,26 +19,36 @@ export const Route = createFileRoute("/esqueci-senha")({ component: ForgotPasswo
 
 function ForgotPasswordPage() {
   const nav = useNavigate();
-  const [email, setEmail] = useState("");
+  const lookupFn = useServerFn(lookupRecoverableEmail);
+  const [identifier, setIdentifier] = useState("");
+  const [resolvedEmail, setResolvedEmail] = useState("");
   const [code, setCode] = useState("");
   const [pwd, setPwd] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState<"request" | "verify">("request");
+  const [noEmailAlert, setNoEmailAlert] = useState(false);
 
   const sendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${window.location.origin}/redefinir-senha`,
-    });
-    setBusy(false);
-    if (error) {
-      toast.error("Não foi possível enviar o código", { description: error.message });
-      return;
-    }
-    setStep("verify");
-    toast.success("Código enviado!", { description: "Verifique seu e-mail." });
+    try {
+      const r = await lookupFn({ data: { identifier: identifier.trim() } });
+      if (!r.ok) {
+        setNoEmailAlert(true);
+        return;
+      }
+      const { error } = await supabase.auth.resetPasswordForEmail(r.email, {
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+      });
+      if (error) {
+        toast.error("Não foi possível enviar o código", { description: error.message });
+        return;
+      }
+      setResolvedEmail(r.email);
+      setStep("verify");
+      toast.success("Código enviado!", { description: "Verifique seu e-mail." });
+    } finally { setBusy(false); }
   };
 
   const verifyAndReset = async (e: React.FormEvent) => {
@@ -42,7 +58,7 @@ function ForgotPasswordPage() {
     if (pwd !== confirm) { toast.error("As senhas não coincidem."); return; }
     setBusy(true);
     const { error: vErr } = await supabase.auth.verifyOtp({
-      email: email.trim().toLowerCase(),
+      email: resolvedEmail,
       token: code,
       type: "recovery",
     });
@@ -67,7 +83,7 @@ function ForgotPasswordPage() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Recuperar senha</h1>
           <p className="text-sm text-primary-foreground/80 mt-1">
-            {step === "request" ? "Enviaremos um código de 6 dígitos por e-mail" : "Insira o código recebido e defina sua nova senha"}
+            {step === "request" ? "Informe seu utilizador ou e-mail" : "Insira o código recebido e defina sua nova senha"}
           </p>
         </div>
 
@@ -76,11 +92,11 @@ function ForgotPasswordPage() {
             {step === "request" ? (
               <form onSubmit={sendCode} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">E-mail cadastrado</Label>
-                  <Input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Label htmlFor="identifier">Utilizador / E-mail / ID do Circuito</Label>
+                  <Input id="identifier" required autoComplete="username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
                 </div>
                 <Button type="submit" className="w-full h-11" disabled={busy}>
-                  <Mail className="mr-2 h-4 w-4" /> {busy ? "Enviando..." : "Enviar código"}
+                  <Mail className="mr-2 h-4 w-4" /> {busy ? "Verificando..." : "Enviar código"}
                 </Button>
                 <Link to="/" className="flex items-center justify-center text-sm text-muted-foreground hover:text-primary">
                   <ArrowLeft className="h-4 w-4 mr-1" /> Voltar para o login
@@ -89,7 +105,7 @@ function ForgotPasswordPage() {
             ) : (
               <form onSubmit={verifyAndReset} className="space-y-4">
                 <div className="text-center text-sm text-muted-foreground">
-                  Enviamos um código para <span className="font-medium text-foreground">{email}</span>
+                  Enviamos um código para <span className="font-medium text-foreground">{resolvedEmail}</span>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="code">Código de 6 dígitos</Label>
@@ -116,6 +132,24 @@ function ForgotPasswordPage() {
             )}
           </CardContent>
         </Card>
+
+        <AlertDialog open={noEmailAlert} onOpenChange={setNoEmailAlert}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Sem e-mail associado</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta conta não possui um e-mail de recuperação cadastrado.
+                Solicite o reset manual da senha diretamente ao <strong>Superintendente do Circuito</strong>.
+                <br /><br />
+                Depois de recuperar o acesso, você pode adicionar um e-mail em <strong>Meu Perfil</strong>
+                para usar a recuperação automática no futuro.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => setNoEmailAlert(false)}>Entendi</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

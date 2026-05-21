@@ -10,6 +10,14 @@ export function elderEmailFromPhone(phone: string) {
   return `elder-${digits}@visita-sc.local`;
 }
 
+export function syntheticEmailFromUsername(username: string) {
+  return `usr-${username.trim().toLowerCase()}@visita-sc.local`;
+}
+
+const USERNAME_REGEX = /^[a-zA-Z0-9_.-]{3,30}$/;
+const SYNTHETIC_EMAIL_REGEX = /@visita-sc\.local$/i;
+
+
 export const registerSuperintendent = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({
@@ -315,3 +323,151 @@ export const linkAccount = createServerFn({ method: "POST" })
       return { ok: true as const };
     }
   });
+
+// =====================================================================
+// Username-based flow (no email required for elders)
+// =====================================================================
+
+// Elder signup with only username + phone + invite + password (no email, no full name).
+// full_name and email may be filled later in profile.
+export const registerElderByUsername = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z.object({
+      username: z.string().trim().regex(USERNAME_REGEX, "Use 3–30 letras, números, _ . ou -"),
+      phone: z.string().trim().min(8).max(20),
+      password: z.string().min(6).max(100),
+      inviteCode: z.string().trim().min(4).max(20),
+      position: z.enum(ELDER_REGISTERABLE_POSITIONS),
+    }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const username = data.username.trim().toLowerCase();
+    const digits = data.phone.replace(/\D/g, "");
+    if (digits.length < 8) return { ok: false as const, error: "Telefone inválido." };
+
+    const code = data.inviteCode.toUpperCase();
+    const { data: cong } = await supabaseAdmin
+      .from("congregations").select("id,is_active").eq("invite_code", code).maybeSingle();
+    if (!cong) return { ok: false as const, error: "Código de congregação inválido." };
+    if (!cong.is_active) return { ok: false as const, error: "Esta congregação está inativa." };
+
+    // Position availability
+    const { data: takenRoles } = await supabaseAdmin
+      .from("user_roles").select("elder_position")
+      .eq("role", "elder").eq("congregation_id", cong.id)
+      .in("elder_position", [...ELDER_REGISTERABLE_POSITIONS]);
+    const takenSet = new Set((takenRoles ?? []).map((r) => r.elder_position).filter(Boolean) as string[]);
+    if (takenSet.has(data.position)) {
+      return { ok: false as const, error: "Esta função já está cadastrada para esta congregação." };
+    }
+
+    // Uniqueness: username + phone
+    const { data: existingUser } = await supabaseAdmin
+      .from("profiles").select("id").ilike("username", username).maybeSingle();
+    if (existingUser) return { ok: false as const, error: "Nome de utilizador já está em uso." };
+    const { data: existingPhone } = await supabaseAdmin
+      .from("profiles").select("id").eq("phone", digits).maybeSingle();
+    if (existingPhone) return { ok: false as const, error: "Já existe um cadastro com este telefone." };
+
+    const syntheticEmail = syntheticEmailFromUsername(username);
+    const { data: created, error: signErr } = await supabaseAdmin.auth.admin.createUser({
+      email: syntheticEmail,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { username, phone: digits },
+    });
+    if (signErr || !created.user) {
+      return { ok: false as const, error: signErr?.message ?? "Falha ao criar conta." };
+    }
+    const userId = created.user.id;
+
+    const { error: pErr } = await supabaseAdmin.from("profiles").upsert({
+      id: userId,
+      username,
+      phone: digits,
+      email: null,
+      full_name: null,
+      congregation_id: cong.id,
+    }, { onConflict: "id" });
+    if (pErr) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      return { ok: false as const, error: pErr.message };
+    }
+
+    const { error: rErr } = await supabaseAdmin.from("user_roles").insert({
+      user_id: userId, role: "elder", congregation_id: cong.id, elder_position: data.position,
+    });
+    if (rErr) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      return { ok: false as const, error: rErr.message };
+    }
+
+    return { ok: true as const, email: syntheticEmail };
+  });
+
+// Unified login resolver: accepts username, email, or circuit identifier.
+// Returns the (real or synthetic) auth email to pass to signInWithPassword.
+export const resolveLoginIdentifier = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ identifier: z.string().trim().min(1).max(200) }).parse(input))
+  .handler(async ({ data }) => {
+    const id = data.identifier.trim();
+    if (!id) return { ok: false as const, error: "Informe o utilizador." };
+
+    // 1) Direct email match
+    if (id.includes("@")) {
+      const lower = id.toLowerCase();
+      const { data: byEmail } = await supabaseAdmin
+        .from("profiles").select("id,email").ilike("email", lower).maybeSingle();
+      if (byEmail?.email) return { ok: true as const, email: byEmail.email };
+      return { ok: false as const, error: "E-mail não cadastrado." };
+    }
+
+    // 2) Username match (works for any user)
+    const { data: byUser } = await supabaseAdmin
+      .from("profiles").select("id,email,username").ilike("username", id).maybeSingle();
+    if (byUser) {
+      if (byUser.email) return { ok: true as const, email: byUser.email };
+      if (byUser.username) return { ok: true as const, email: syntheticEmailFromUsername(byUser.username) };
+    }
+
+    // 3) Circuit identifier (super only)
+    const { data: byCircuit } = await supabaseAdmin
+      .from("profiles").select("id,email,username").ilike("circuit", id).maybeSingle();
+    if (byCircuit) {
+      // Confirm it's a super
+      const { data: role } = await supabaseAdmin
+        .from("user_roles").select("role").eq("user_id", byCircuit.id).eq("role", "superintendent").maybeSingle();
+      if (role) {
+        if (byCircuit.email) return { ok: true as const, email: byCircuit.email };
+        if (byCircuit.username) return { ok: true as const, email: syntheticEmailFromUsername(byCircuit.username) };
+      }
+    }
+
+    return { ok: false as const, error: "Utilizador não encontrado." };
+  });
+
+// Returns whether the user identified by `identifier` has a real recoverable email.
+// If `ok: false` with `reason: "no_email"`, the UI should tell the elder to ask the
+// superintendent to reset their password manually.
+export const lookupRecoverableEmail = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ identifier: z.string().trim().min(1).max(200) }).parse(input))
+  .handler(async ({ data }) => {
+    const id = data.identifier.trim();
+    let email: string | null = null;
+    if (id.includes("@")) {
+      const { data: row } = await supabaseAdmin.from("profiles").select("email").ilike("email", id.toLowerCase()).maybeSingle();
+      email = row?.email ?? null;
+    } else {
+      const { data: row } = await supabaseAdmin.from("profiles").select("email").ilike("username", id).maybeSingle();
+      email = row?.email ?? null;
+      if (!email) {
+        const { data: row2 } = await supabaseAdmin.from("profiles").select("email").ilike("circuit", id).maybeSingle();
+        email = row2?.email ?? null;
+      }
+    }
+    if (!email || SYNTHETIC_EMAIL_REGEX.test(email)) {
+      return { ok: false as const, reason: "no_email" as const };
+    }
+    return { ok: true as const, email };
+  });
+

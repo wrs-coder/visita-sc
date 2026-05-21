@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { registerElderByPhone, getAvailableElderPositions } from "@/lib/auth.functions";
+import { registerElderByUsername, getAvailableElderPositions } from "@/lib/auth.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, DEFAULT_COUNTRY, buildFullPhone, findCountry } from "@/lib/countries";
 import { Button } from "@/components/ui/button";
@@ -19,12 +19,12 @@ const ALL_POSITIONS: ElderPosition[] = ["coordenador", "secretario", "sup_servic
 
 function Page() {
   const nav = useNavigate();
-  const fn = useServerFn(registerElderByPhone);
+  const fn = useServerFn(registerElderByUsername);
   const checkFn = useServerFn(getAvailableElderPositions);
   const [busy, setBusy] = useState(false);
   const [country, setCountry] = useState(DEFAULT_COUNTRY);
-  const [form, setForm] = useState<{ fullName: string; phone: string; email: string; password: string; inviteCode: string; position: ElderPosition | "" }>({
-    fullName: "", phone: "", email: "", password: "", inviteCode: "", position: "",
+  const [form, setForm] = useState<{ username: string; phone: string; password: string; inviteCode: string; position: ElderPosition | "" }>({
+    username: "", phone: "", password: "", inviteCode: "", position: "",
   });
   const [available, setAvailable] = useState<ElderPosition[] | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
@@ -33,13 +33,16 @@ function Page() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.position) { toast.error("Selecione sua designação."); return; }
+    if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(form.username.trim())) {
+      toast.error("Nome de utilizador inválido", { description: "Use 3–30 caracteres: letras, números, _ . ou -." });
+      return;
+    }
     setBusy(true);
     try {
       const fullPhone = buildFullPhone(country, form.phone);
       const res = await fn({ data: {
-        fullName: form.fullName,
+        username: form.username.trim().toLowerCase(),
         phone: fullPhone,
-        email: form.email.trim().toLowerCase(),
         password: form.password,
         inviteCode: form.inviteCode.toUpperCase(),
         position: form.position,
@@ -47,7 +50,7 @@ function Page() {
       if (!res.ok) { toast.error("Erro no cadastro", { description: res.error }); setBusy(false); return; }
       const { error } = await supabase.auth.signInWithPassword({ email: res.email, password: form.password });
       if (error) { toast.error(error.message); setBusy(false); return; }
-      toast.success("Cadastro concluído!");
+      toast.success("Cadastro concluído!", { description: "Você pode adicionar nome e e-mail em Meu Perfil." });
       nav({ to: "/dashboard" });
     } catch (err: unknown) {
       toast.error("Erro inesperado", { description: err instanceof Error ? err.message : String(err) });
@@ -55,7 +58,6 @@ function Page() {
     }
   };
 
-  // Dynamic availability lookup as user types congregation code (debounced)
   useEffect(() => {
     const code = form.inviteCode.trim();
     if (code.length < 4) {
@@ -101,12 +103,10 @@ function Page() {
               </div>
               <div>
                 <h2 className="font-semibold text-lg">Cadastro de Ancião</h2>
-                <p className="text-xs text-muted-foreground">Telefone, e-mail, designação e código</p>
+                <p className="text-xs text-muted-foreground">Telefone, utilizador, código e senha</p>
               </div>
             </div>
             <form onSubmit={submit} className="space-y-3">
-              <Field id="fullName" label="Nome completo" value={form.fullName} onChange={(v) => setForm({ ...form, fullName: v })} />
-
               <div className="space-y-1.5">
                 <Label>País</Label>
                 <Select value={country} onValueChange={setCountry}>
@@ -127,18 +127,35 @@ function Page() {
                 </div>
               </div>
 
-              <Field id="email" label="E-mail (para recuperar senha)" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
-              <PasswordField value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
               <div className="space-y-1.5">
-                <Field id="code" label="Código da congregação" value={form.inviteCode} onChange={(v) => setForm({ ...form, inviteCode: v.toUpperCase() })} />
+                <Label htmlFor="username">Nome de utilizador (login)</Label>
+                <Input
+                  id="username"
+                  required
+                  autoComplete="username"
+                  value={form.username}
+                  onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, "") })}
+                  placeholder="ex: joao_silva"
+                  minLength={3}
+                  maxLength={30}
+                />
+                <p className="text-[11px] text-muted-foreground">Letras, números, _ . ou -. Será o seu login.</p>
+              </div>
+
+              <PasswordField value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
+
+              <div className="space-y-1.5">
+                <Label htmlFor="code">Código da congregação</Label>
+                <Input id="code" required value={form.inviteCode} onChange={(e) => setForm({ ...form, inviteCode: e.target.value.toUpperCase() })} />
                 {checking && <p className="text-[11px] text-muted-foreground">Verificando funções disponíveis...</p>}
                 {codeError && <p className="text-[11px] text-destructive">{codeError}</p>}
                 {allFilled && (
                   <p className="text-[12px] text-destructive font-medium">
-                    O corpo de anciãos desta congregação já está totalmente cadastrado. Se precisar de alterar um utilizador, contacte o Superintendente de Circuito.
+                    O corpo de anciãos desta congregação já está totalmente cadastrado. Contacte o Superintendente.
                   </p>
                 )}
               </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="pos">Designação no corpo de anciãos</Label>
                 <Select
@@ -153,8 +170,9 @@ function Page() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">Cadastro disponível apenas para Coordenador, Secretário e Sup. de Serviço. Apenas um por congregação. Os demais anciãos e a ES usam o acesso "Corpo de anciãos e ES" no login.</p>
+                <p className="text-[11px] text-muted-foreground">Você poderá adicionar seu nome completo e um e-mail (opcional) em "Meu Perfil" após entrar.</p>
               </div>
+
               <Button type="submit" className="w-full h-11 mt-2" disabled={disableSubmit}>
                 {busy ? "Criando..." : "Entrar na Congregação"}
               </Button>
@@ -162,15 +180,6 @@ function Page() {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function Field({ id, label, value, onChange, type = "text" }: { id: string; label: string; value: string; onChange: (v: string) => void; type?: string }) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type={type} required value={value} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
 }
