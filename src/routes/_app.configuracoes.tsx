@@ -29,10 +29,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil } from "lucide-react";
+import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { offlineInsert, offlineUpdate } from "@/lib/offline-supabase";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
