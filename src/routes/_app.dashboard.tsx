@@ -137,6 +137,38 @@ function Dashboard() {
           </CardContent>
         </Card>
       )}
+      {visit && visit.title === "Visita SCS" && (
+        (() => {
+          const v = visit as unknown as { substitute_name?: string | null; substitute_phone?: string | null };
+          if (!v.substitute_name && !v.substitute_phone) return null;
+          return (
+            <Card className="shadow-card border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5">
+              <CardContent className="p-5 flex items-start gap-4">
+                <div className="h-12 w-12 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                  <UserCheck className="h-6 w-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] uppercase tracking-wider text-primary font-semibold">
+                    Visita SCS · Substituto
+                  </div>
+                  {v.substitute_name && (
+                    <div className="text-lg font-bold mt-0.5 break-words">{v.substitute_name}</div>
+                  )}
+                  {v.substitute_phone && (
+                    <a
+                      href={`tel:${v.substitute_phone}`}
+                      className="text-sm text-foreground/80 mt-1 inline-flex items-center gap-1 hover:text-primary"
+                    >
+                      📞 {v.substitute_phone}
+                    </a>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()
+      )}
+
 
       {visit && (
         <div className="grid gap-4 md:grid-cols-2">
