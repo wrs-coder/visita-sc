@@ -29,10 +29,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil } from "lucide-react";
+import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { offlineInsert, offlineUpdate } from "@/lib/offline-supabase";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
@@ -201,71 +202,72 @@ function Page() {
       return;
     }
     const isScs = form.title === "Visita SCS";
-    // Em criações novas, modelos são obrigatórios — exceto para "Visita SCS".
+    // Em criações novas, modelos são obrigatórios — exceto para "Visita SCS",
+    // cujo fluxo offline ignora completamente essa validação.
     if (!editId && !isScs) {
       if (!form.template_id) { toast.error("Selecione o Modelo de Programação"); return; }
       if (!form.checklist_template_id) { toast.error("Selecione o Modelo de Checklist"); return; }
       if (!form.field_template_id) { toast.error("Selecione o Modelo de Reuniões de Campo"); return; }
       if (!form.meeting_talk_template_id) { toast.error("Selecione o Modelo de Reunião e Discurso"); return; }
     }
+
+    const basePayload = {
+      title: form.title,
+      start_date: form.start_date,
+      end_date: form.end_date,
+      congregation_id: form.congregation_id,
+      substitute_name: isScs ? (form.substitute_name.trim() || null) : null,
+      substitute_phone: isScs ? (form.substitute_phone.trim() || null) : null,
+      ...(form.meeting_talk_template_id ? { meeting_talk_template_id: form.meeting_talk_template_id } : {}),
+    };
+
     if (editId) {
-      const { error } = await supabase
-        .from("visits")
-        .update({
-          title: form.title,
-          start_date: form.start_date,
-          end_date: form.end_date,
-          congregation_id: form.congregation_id,
-          substitute_name: isScs ? (form.substitute_name || null) : null,
-          substitute_phone: isScs ? (form.substitute_phone || null) : null,
-          ...(form.meeting_talk_template_id ? { meeting_talk_template_id: form.meeting_talk_template_id } : {}),
-        })
-        .eq("id", editId);
-      if (error) {
-        toast.error(error.message);
+      const res = await offlineUpdate("visits", basePayload, { id: editId });
+      if (res.error) {
+        toast.error(res.error.message);
         return;
       }
-      if (form.template_id) {
-        const r = await fnApply({ data: { visitId: editId, templateId: form.template_id } });
-        if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
+      if (res.queued) {
+        toast.success("Visita salva offline — sincronizará quando voltar a ficar online.");
+      } else {
+        if (form.template_id) {
+          const r = await fnApply({ data: { visitId: editId, templateId: form.template_id } });
+          if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
+        }
+        if (form.checklist_template_id) {
+          const r = await fnApplyChecklist({ data: { visitId: editId, templateId: form.checklist_template_id } });
+          if (!r.ok) toast.error("Falha ao aplicar modelo de checklist: " + r.error);
+        }
+        if (form.field_template_id) {
+          const r = await fnApplyField({ data: { visitId: editId, templateId: form.field_template_id } });
+          if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
+        }
+        if (form.meeting_talk_template_id) {
+          const r = await fnApplyMeetingTalk({ data: { visitId: editId, templateId: form.meeting_talk_template_id } });
+          if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
+        }
+        toast.success("Visita atualizada");
       }
-      if (form.checklist_template_id) {
-        const r = await fnApplyChecklist({
-          data: { visitId: editId, templateId: form.checklist_template_id },
-        });
-        if (!r.ok) toast.error("Falha ao aplicar modelo de checklist: " + r.error);
-      }
-      if (form.field_template_id) {
-        const r = await fnApplyField({
-          data: { visitId: editId, templateId: form.field_template_id },
-        });
-        if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
-      }
-      if (form.meeting_talk_template_id) {
-        const r = await fnApplyMeetingTalk({
-          data: { visitId: editId, templateId: form.meeting_talk_template_id },
-        });
-        if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
-      }
-      toast.success("Visita atualizada");
       setOpen(false);
       return;
     }
+
+    // INSERT (novo) — tenta online direto para conseguir o id e aplicar modelos;
+    // se falhar por rede, enfileira como rascunho offline.
     const { data, error } = await supabase
       .from("visits")
-      .insert({
-        congregation_id: form.congregation_id,
-        title: form.title,
-        start_date: form.start_date,
-        end_date: form.end_date,
-        substitute_name: isScs ? (form.substitute_name || null) : null,
-        substitute_phone: isScs ? (form.substitute_phone || null) : null,
-        ...(form.meeting_talk_template_id ? { meeting_talk_template_id: form.meeting_talk_template_id } : {}),
-      })
+      .insert(basePayload)
       .select()
       .single();
     if (error || !data) {
-      toast.error(error?.message ?? "Falha");
+      // Fallback offline: enfileira o INSERT (sem aplicar modelos, que dependem de id remoto).
+      const fallback = await offlineInsert("visits", basePayload);
+      if (fallback.error) {
+        toast.error(error?.message ?? fallback.error.message);
+        return;
+      }
+      toast.success("Visita salva offline — sincronizará quando voltar a ficar online.");
+      setOpen(false);
       return;
     }
     if (form.template_id) {
@@ -273,21 +275,15 @@ function Page() {
       if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
     }
     if (form.checklist_template_id) {
-      const r = await fnApplyChecklist({
-        data: { visitId: data.id, templateId: form.checklist_template_id },
-      });
+      const r = await fnApplyChecklist({ data: { visitId: data.id, templateId: form.checklist_template_id } });
       if (!r.ok) toast.error("Falha ao aplicar modelo de checklist: " + r.error);
     }
     if (form.field_template_id) {
-      const r = await fnApplyField({
-        data: { visitId: data.id, templateId: form.field_template_id },
-      });
+      const r = await fnApplyField({ data: { visitId: data.id, templateId: form.field_template_id } });
       if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
     }
     if (form.meeting_talk_template_id) {
-      const r = await fnApplyMeetingTalk({
-        data: { visitId: data.id, templateId: form.meeting_talk_template_id },
-      });
+      const r = await fnApplyMeetingTalk({ data: { visitId: data.id, templateId: form.meeting_talk_template_id } });
       if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
     }
     toast.success("Visita criada");
@@ -630,9 +626,35 @@ function Page() {
                             {v.title}
                           </div>
                           {v.title === "Visita SCS" && (v.substitute_name || v.substitute_phone) && (
-                            <div className="text-xs text-muted-foreground mt-1 break-words">
-                              Substituto: {v.substitute_name ?? "—"}
-                              {v.substitute_phone ? ` · 📞 ${v.substitute_phone}` : ""}
+                            <div
+                              className="mt-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2"
+                              aria-readonly="true"
+                            >
+                              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                                <UserCheck className="h-3 w-3" />
+                                Substituto do Superintendente
+                              </div>
+                              {v.substitute_name && (
+                                <div className="mt-1 text-sm font-semibold text-foreground break-words">
+                                  {v.substitute_name}
+                                </div>
+                              )}
+                              {v.substitute_phone && (
+                                isSuper ? (
+                                  <a
+                                    href={`tel:${v.substitute_phone}`}
+                                    className="mt-0.5 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                                  >
+                                    <Phone className="h-3 w-3" />
+                                    {v.substitute_phone}
+                                  </a>
+                                ) : (
+                                  <div className="mt-0.5 inline-flex items-center gap-1 text-sm font-medium text-foreground/80">
+                                    <Phone className="h-3 w-3" />
+                                    <span aria-readonly="true">{v.substitute_phone}</span>
+                                  </div>
+                                )
+                              )}
                             </div>
                           )}
                         </div>
