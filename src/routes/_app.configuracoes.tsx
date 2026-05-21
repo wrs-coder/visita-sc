@@ -36,6 +36,13 @@ import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
+const VISIT_TITLE_OPTIONS = [
+  "Visita",
+  "Visita + Pastoreio",
+  "Visita + Treinamento SCS",
+  "Visita SCS",
+] as const;
+
 interface Visit {
   id: string;
   title: string;
@@ -46,6 +53,8 @@ interface Visit {
   checklist_template_id?: string | null;
   field_meeting_template_id?: string | null;
   template_id?: string | null;
+  substitute_name?: string | null;
+  substitute_phone?: string | null;
 }
 interface Cong {
   id: string;
