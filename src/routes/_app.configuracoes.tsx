@@ -577,9 +577,41 @@ function Page() {
                 </div>
                 </>
                 )}
-                <Button className="w-full" onClick={submit}>
-                  {editId ? "Salvar" : "Criar"}
-                </Button>
+                {editId ? (
+                  <div className="flex flex-col gap-2 pt-1">
+                    <Button className="w-full" onClick={submit}>Atualizar</Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full">
+                          <Trash2 className="h-4 w-4 mr-1" /> Excluir esta visita
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir visita?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação removerá a visita e todos os dados relacionados
+                            (refeições, transportes, escalas, reuniões). Não é possível desfazer.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => editId && removeById(editId)}
+                          >
+                            Sim, excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <Button variant="ghost" className="w-full" onClick={() => setOpen(false)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                ) : (
+                  <Button className="w-full" onClick={submit}>Criar</Button>
+                )}
               </div>
             </DialogContent>
           </Dialog>
