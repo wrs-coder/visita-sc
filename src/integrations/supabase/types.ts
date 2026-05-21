@@ -1034,6 +1034,8 @@ export type Database = {
           is_active: boolean
           meeting_talk_template_id: string | null
           start_date: string
+          substitute_name: string | null
+          substitute_phone: string | null
           template_id: string | null
           title: string
         }
@@ -1047,6 +1049,8 @@ export type Database = {
           is_active?: boolean
           meeting_talk_template_id?: string | null
           start_date: string
+          substitute_name?: string | null
+          substitute_phone?: string | null
           template_id?: string | null
           title: string
         }
@@ -1060,6 +1064,8 @@ export type Database = {
           is_active?: boolean
           meeting_talk_template_id?: string | null
           start_date?: string
+          substitute_name?: string | null
+          substitute_phone?: string | null
           template_id?: string | null
           title?: string
         }
