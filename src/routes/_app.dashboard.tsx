@@ -122,6 +122,27 @@ function Dashboard() {
         </p>
       </header>
 
+      {pendingCount > 0 && (
+        <div className="flex items-center gap-2 rounded-md border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 px-3 py-2 text-xs">
+          <CloudOff className="h-4 w-4 shrink-0" />
+          <span className="flex-1">
+            <strong>{pendingCount}</strong> {pendingCount === 1 ? "alteração guardada" : "alterações guardadas"} no dispositivo, aguardando sincronização.
+          </span>
+          <span className="hidden sm:inline opacity-70">Toque em ↻ no topo para enviar.</span>
+        </div>
+      )}
+
+      {visit && (
+        <div className="flex justify-end print:hidden">
+          <Button asChild size="sm" variant="outline">
+            <Link to="/relatorio/$visitId" params={{ visitId: visit.id }}>
+              <FileText className="h-4 w-4 mr-1" /> Relatório executivo
+            </Link>
+          </Button>
+        </div>
+      )}
+
+
       {role === "superintendent" && congs.length > 0 && (
         <Card className="shadow-card">
           <CardContent className="p-4 flex items-center gap-3">
