@@ -17,6 +17,15 @@ import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supab
 
 export const Route = createFileRoute("/_app/escala")({ component: Page });
 
+const ACOMPANHANTE_FOR_LABELS: Record<string, string> = {
+  superintendente: "Superintendente",
+  esposa: "Esposa do superintendente",
+  sc_substituto: "S.C Substituto",
+  esposa_sc_substituto: "Esposa do S.C Substituto",
+  sc_pastor: "S.C Pastor",
+  esposa_sc_pastor: "Esposa do S.C Pastor",
+};
+
 interface Row {
   id: string;
   visit_id: string;
