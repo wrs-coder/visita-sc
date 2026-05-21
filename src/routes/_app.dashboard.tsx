@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, ListChecks, MapPin, Clock, ChevronRight, UtensilsCrossed, Building2, Car, BookOpen, Users } from "lucide-react";
+import { CalendarDays, ListChecks, MapPin, Clock, ChevronRight, UtensilsCrossed, Building2, Car, BookOpen, Users, UserCheck } from "lucide-react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useActiveCongregation, getActiveCongregationOverride, setActiveCongregationOverride } from "@/hooks/use-active-congregation";
 import { format, parseISO } from "date-fns";
@@ -30,6 +30,15 @@ const MODALITY_LABEL: Record<string, string> = {
   testemunho_publico: "Testemunho Público",
   revisitas: "Revisitas",
   estudos: "Estudos Bíblicos",
+};
+
+const ACOMPANHANTE_FOR_LABEL: Record<string, string> = {
+  superintendente: "Superintendente",
+  esposa: "Esposa do superintendente",
+  sc_substituto: "S.C Substituto",
+  esposa_sc_substituto: "Esposa do S.C Substituto",
+  sc_pastor: "S.C Pastor",
+  esposa_sc_pastor: "Esposa do S.C Pastor",
 };
 
 function Dashboard() {
@@ -137,6 +146,38 @@ function Dashboard() {
           </CardContent>
         </Card>
       )}
+      {visit && visit.title === "Visita SCS" && (
+        (() => {
+          const v = visit as unknown as { substitute_name?: string | null; substitute_phone?: string | null };
+          if (!v.substitute_name && !v.substitute_phone) return null;
+          return (
+            <Card className="shadow-card border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5">
+              <CardContent className="p-5 flex items-start gap-4">
+                <div className="h-12 w-12 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                  <UserCheck className="h-6 w-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] uppercase tracking-wider text-primary font-semibold">
+                    Visita SCS · Substituto
+                  </div>
+                  {v.substitute_name && (
+                    <div className="text-lg font-bold mt-0.5 break-words">{v.substitute_name}</div>
+                  )}
+                  {v.substitute_phone && (
+                    <a
+                      href={`tel:${v.substitute_phone}`}
+                      className="text-sm text-foreground/80 mt-1 inline-flex items-center gap-1 hover:text-primary"
+                    >
+                      📞 {v.substitute_phone}
+                    </a>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()
+      )}
+
 
       {visit && (
         <div className="grid gap-4 md:grid-cols-2">
@@ -225,7 +266,7 @@ function Dashboard() {
                         {a.period}{a.meeting_time ? ` · ${a.meeting_time.slice(0,5)}` : ""}
                       </span>
                       <div className="min-w-0 flex-1 space-y-0.5">
-                        {a.acompanhante && <div className="font-medium break-words whitespace-normal">{a.acompanhante}{a.acompanhante_for ? ` → ${a.acompanhante_for}` : ""}</div>}
+                        {a.acompanhante && <div className="font-medium break-words whitespace-normal">{a.acompanhante}{a.acompanhante_for ? ` → ${ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for}` : ""}</div>}
                         {a.meeting_point && <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{a.meeting_point}</span></div>}
                         {a.contact_phone && <div className="text-xs text-muted-foreground break-words">📞 {a.contact_phone}</div>}
                         {a.notes && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{a.notes}</div>}

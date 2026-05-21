@@ -36,6 +36,13 @@ import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
+const VISIT_TITLE_OPTIONS = [
+  "Visita",
+  "Visita + Pastoreio",
+  "Visita + Treinamento SCS",
+  "Visita SCS",
+] as const;
+
 interface Visit {
   id: string;
   title: string;
@@ -46,6 +53,8 @@ interface Visit {
   checklist_template_id?: string | null;
   field_meeting_template_id?: string | null;
   template_id?: string | null;
+  substitute_name?: string | null;
+  substitute_phone?: string | null;
 }
 interface Cong {
   id: string;
@@ -74,7 +83,7 @@ function Page() {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
-    title: "",
+    title: "Visita" as string,
     start_date: "",
     end_date: "",
     congregation_id: "",
@@ -82,6 +91,8 @@ function Page() {
     checklist_template_id: "",
     field_template_id: "",
     meeting_talk_template_id: "",
+    substitute_name: "",
+    substitute_phone: "",
   });
   const isSuper = role === "superintendent";
 
@@ -147,7 +158,7 @@ function Page() {
   const openNew = () => {
     setEditId(null);
     setForm({
-      title: "",
+      title: "Visita",
       start_date: "",
       end_date: "",
       congregation_id: congregation?.id ?? congs[0]?.id ?? "",
@@ -155,6 +166,8 @@ function Page() {
       checklist_template_id: "",
       field_template_id: "",
       meeting_talk_template_id: "",
+      substitute_name: "",
+      substitute_phone: "",
     });
     setOpen(true);
   };
@@ -162,7 +175,9 @@ function Page() {
   const openEdit = (v: Visit) => {
     setEditId(v.id);
     setForm({
-      title: v.title,
+      title: VISIT_TITLE_OPTIONS.includes(v.title as typeof VISIT_TITLE_OPTIONS[number])
+        ? v.title
+        : "Visita",
       start_date: v.start_date,
       end_date: v.end_date,
       congregation_id: v.congregation_id,
@@ -170,6 +185,8 @@ function Page() {
       checklist_template_id: "",
       field_template_id: "",
       meeting_talk_template_id: "",
+      substitute_name: v.substitute_name ?? "",
+      substitute_phone: v.substitute_phone ?? "",
     });
     setOpen(true);
   };
@@ -183,8 +200,9 @@ function Page() {
       toast.error("Preencha todos os campos");
       return;
     }
-    // Em criações novas, todos os modelos são obrigatórios (regra do Itinerário).
-    if (!editId) {
+    const isScs = form.title === "Visita SCS";
+    // Em criações novas, modelos são obrigatórios — exceto para "Visita SCS".
+    if (!editId && !isScs) {
       if (!form.template_id) { toast.error("Selecione o Modelo de Programação"); return; }
       if (!form.checklist_template_id) { toast.error("Selecione o Modelo de Checklist"); return; }
       if (!form.field_template_id) { toast.error("Selecione o Modelo de Reuniões de Campo"); return; }
@@ -198,6 +216,8 @@ function Page() {
           start_date: form.start_date,
           end_date: form.end_date,
           congregation_id: form.congregation_id,
+          substitute_name: isScs ? (form.substitute_name || null) : null,
+          substitute_phone: isScs ? (form.substitute_phone || null) : null,
           ...(form.meeting_talk_template_id ? { meeting_talk_template_id: form.meeting_talk_template_id } : {}),
         })
         .eq("id", editId);
@@ -238,7 +258,9 @@ function Page() {
         title: form.title,
         start_date: form.start_date,
         end_date: form.end_date,
-        meeting_talk_template_id: form.meeting_talk_template_id,
+        substitute_name: isScs ? (form.substitute_name || null) : null,
+        substitute_phone: isScs ? (form.substitute_phone || null) : null,
+        ...(form.meeting_talk_template_id ? { meeting_talk_template_id: form.meeting_talk_template_id } : {}),
       })
       .select()
       .single();
@@ -383,14 +405,49 @@ function Page() {
                   )}
                 </div>
                 <div>
-                  <Label>Título</Label>
-                  <Input
-                    className="mt-1"
+                  <Label>Tipo de visita</Label>
+                  <Select
                     value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    placeholder="Ex: Visita Out/2025"
-                  />
+                    onValueChange={(v) => setForm({ ...form, title: v })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecione…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VISIT_TITLE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+                {form.title === "Visita SCS" && (
+                  <div className="grid grid-cols-1 gap-3 rounded-md border border-dashed border-primary/40 bg-primary/5 p-3">
+                    <div className="text-xs font-medium text-primary">
+                      Substituto do Superintendente
+                    </div>
+                    <div>
+                      <Label>Nome do Substituto</Label>
+                      <Input
+                        className="mt-1"
+                        value={form.substitute_name}
+                        onChange={(e) => setForm({ ...form, substitute_name: e.target.value })}
+                        placeholder="Nome completo"
+                      />
+                    </div>
+                    <div>
+                      <Label>Telefone do Substituto</Label>
+                      <Input
+                        type="tel"
+                        className="mt-1"
+                        value={form.substitute_phone}
+                        onChange={(e) => setForm({ ...form, substitute_phone: e.target.value })}
+                        placeholder="(00) 00000-0000"
+                      />
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Início (terça)</Label>
@@ -411,6 +468,9 @@ function Page() {
                     />
                   </div>
                 </div>
+                {form.title !== "Visita SCS" && (
+                <>
+
                 <div>
                   <Label>Modelo de Programação *</Label>
                   <Select
@@ -503,6 +563,8 @@ function Page() {
                     </p>
                   )}
                 </div>
+                </>
+                )}
                 <Button className="w-full" onClick={submit}>
                   {editId ? "Salvar" : "Criar"}
                 </Button>
@@ -525,16 +587,26 @@ function Page() {
           return (
             <Card key={v.id} className="shadow-card">
               <CardContent className="p-4 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-semibold truncate">{v.title}</div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <Building2 className="h-3 w-3" />
-                    {cong?.name ?? "—"}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Building2 className="h-4 w-4 text-primary shrink-0" />
+                    <div className="text-lg md:text-xl font-bold truncate">
+                      {cong?.name ?? "—"}
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-base font-semibold text-foreground mt-1">
                     {format(parseISO(v.start_date), "d MMM", { locale: ptBR })} –{" "}
                     {format(parseISO(v.end_date), "d MMM yyyy", { locale: ptBR })}
                   </div>
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium mt-1 truncate">
+                    {v.title}
+                  </div>
+                  {v.title === "Visita SCS" && (v.substitute_name || v.substitute_phone) && (
+                    <div className="text-xs text-muted-foreground mt-1 break-words">
+                      Substituto: {v.substitute_name ?? "—"}
+                      {v.substitute_phone ? ` · 📞 ${v.substitute_phone}` : ""}
+                    </div>
+                  )}
                 </div>
                 {isSuper && (
                   <div className="flex gap-1">
