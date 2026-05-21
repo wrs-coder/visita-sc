@@ -158,7 +158,7 @@ function Page() {
   const openNew = () => {
     setEditId(null);
     setForm({
-      title: "",
+      title: "Visita",
       start_date: "",
       end_date: "",
       congregation_id: congregation?.id ?? congs[0]?.id ?? "",
@@ -166,6 +166,8 @@ function Page() {
       checklist_template_id: "",
       field_template_id: "",
       meeting_talk_template_id: "",
+      substitute_name: "",
+      substitute_phone: "",
     });
     setOpen(true);
   };
@@ -173,7 +175,9 @@ function Page() {
   const openEdit = (v: Visit) => {
     setEditId(v.id);
     setForm({
-      title: v.title,
+      title: VISIT_TITLE_OPTIONS.includes(v.title as typeof VISIT_TITLE_OPTIONS[number])
+        ? v.title
+        : "Visita",
       start_date: v.start_date,
       end_date: v.end_date,
       congregation_id: v.congregation_id,
@@ -181,6 +185,8 @@ function Page() {
       checklist_template_id: "",
       field_template_id: "",
       meeting_talk_template_id: "",
+      substitute_name: v.substitute_name ?? "",
+      substitute_phone: v.substitute_phone ?? "",
     });
     setOpen(true);
   };
