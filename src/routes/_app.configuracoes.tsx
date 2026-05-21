@@ -626,9 +626,35 @@ function Page() {
                             {v.title}
                           </div>
                           {v.title === "Visita SCS" && (v.substitute_name || v.substitute_phone) && (
-                            <div className="text-xs text-muted-foreground mt-1 break-words">
-                              Substituto: {v.substitute_name ?? "—"}
-                              {v.substitute_phone ? ` · 📞 ${v.substitute_phone}` : ""}
+                            <div
+                              className="mt-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2"
+                              aria-readonly="true"
+                            >
+                              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                                <UserCheck className="h-3 w-3" />
+                                Substituto do Superintendente
+                              </div>
+                              {v.substitute_name && (
+                                <div className="mt-1 text-sm font-semibold text-foreground break-words">
+                                  {v.substitute_name}
+                                </div>
+                              )}
+                              {v.substitute_phone && (
+                                isSuper ? (
+                                  <a
+                                    href={`tel:${v.substitute_phone}`}
+                                    className="mt-0.5 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                                  >
+                                    <Phone className="h-3 w-3" />
+                                    {v.substitute_phone}
+                                  </a>
+                                ) : (
+                                  <div className="mt-0.5 inline-flex items-center gap-1 text-sm font-medium text-foreground/80">
+                                    <Phone className="h-3 w-3" />
+                                    <span aria-readonly="true">{v.substitute_phone}</span>
+                                  </div>
+                                )
+                              )}
                             </div>
                           )}
                         </div>
