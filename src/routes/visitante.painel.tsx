@@ -374,6 +374,188 @@ function Page() {
   );
 }
 
+function TodayDashboard({ snap }: { snap: Snapshot }) {
+  const todayIso = format(new Date(), "yyyy-MM-dd");
+  const todayLabel = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
+
+  const todayMeals = snap.meals.filter((m) => m.meal_date === todayIso);
+  const todayNote = snap.mealDayNotes.find((n) => n.meal_date === todayIso);
+  const todayTransport = snap.transport.filter((t) => t.event_date === todayIso);
+  const todayField = snap.field.filter((f) => f.event_date === todayIso);
+  const todayFieldMeetings = snap.fieldMeetings.filter((f) => f.event_date === todayIso);
+  const todaySchedule = snap.schedule.filter((e) => e.event_date === todayIso);
+
+  const inVisit = snap.visit
+    ? todayIso >= snap.visit.start_date && todayIso <= snap.visit.end_date
+    : false;
+
+  const isSameDay = (iso: string | null) => !!iso && iso.slice(0, 10) === todayIso;
+  const todayWeekend = snap.weekend.filter((w) => isSameDay(w.meeting_at));
+  const todayPioneer = snap.pioneer.filter(
+    (p) => isSameDay(p.meeting_at) || isSameDay(p.super_meeting_at),
+  );
+  // Midweek e Anciãos/SM não têm data própria — exibe durante a janela da visita.
+  const showMidweek = inVisit && snap.midweek.length > 0;
+  const showElders = inVisit && snap.elders.length > 0;
+
+  const hasMeetings =
+    todayWeekend.length > 0 || todayPioneer.length > 0 || showMidweek || showElders;
+
+  const fmtAt = (iso: string | null) => (iso ? format(parseISO(iso), "HH:mm") : "—");
+
+  return (
+    <div className="space-y-3">
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Resumo do dia</div>
+          <div className="font-semibold capitalize">{todayLabel}</div>
+        </CardContent>
+      </Card>
+
+      {/* Refeições do dia */}
+      <Card>
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center gap-2 font-semibold text-sm">
+            <UtensilsCrossed className="h-4 w-4" /> Refeições do dia
+          </div>
+          {todayNote && (
+            <div className="text-sm font-medium text-destructive whitespace-pre-wrap">{todayNote.notes}</div>
+          )}
+          {todayMeals.length === 0 && !todayNote ? (
+            <div className="text-xs text-muted-foreground">Nenhuma refeição agendada para hoje.</div>
+          ) : (
+            todayMeals.map((m) => (
+              <div key={m.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
+                <div className="font-medium">{mealLabel(m.type)} • {fmtTime(m.meal_time)}</div>
+                {m.host_name && <div className="text-xs"><span className="text-muted-foreground">Anfitrião: </span>{m.host_name}</div>}
+                {m.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{m.location}</div>}
+                {m.contact_phone && <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{m.contact_phone}</div>}
+                {m.notes && <div className="text-xs text-muted-foreground">{m.notes}</div>}
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Transporte do dia */}
+      <Card>
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center gap-2 font-semibold text-sm">
+            <Car className="h-4 w-4" /> Transporte do dia
+          </div>
+          {todayTransport.length === 0 ? (
+            <div className="text-xs text-muted-foreground">Nenhum transporte agendado para hoje.</div>
+          ) : (
+            todayTransport.map((t) => (
+              <div key={t.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
+                <div className="font-medium">{t.driver_name}</div>
+                {t.contact_phone && <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{t.contact_phone}</div>}
+                {t.description && <div className="text-xs text-muted-foreground">{t.description}</div>}
+                {t.notes && <div className="text-xs text-muted-foreground">{t.notes}</div>}
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Estudos / Revisitas e Reuniões de campo do dia */}
+      {(todayField.length > 0 || todayFieldMeetings.length > 0) && (
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              <Users className="h-4 w-4" /> Estudos e Campo do dia
+            </div>
+            {todayField.map((f) => (
+              <div key={f.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
+                <div className="font-medium">{f.period} • {fmtTime(f.meeting_time)}</div>
+                {f.meeting_point && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.meeting_point}</div>}
+                {f.acompanhante && <div className="text-xs">Acompanhante: {f.acompanhante}</div>}
+              </div>
+            ))}
+            {todayFieldMeetings.map((f) => (
+              <div key={f.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
+                <div className="font-medium">{f.period} • {fmtTime(f.meeting_time)} • {f.modality}</div>
+                {f.territory_location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.territory_location}</div>}
+                {f.auxiliary_leaders && <div className="text-xs">Dirigentes: {f.auxiliary_leaders}</div>}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Reuniões e Discursos */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2 font-semibold text-sm">
+            <Mic className="h-4 w-4" /> Reuniões e Discursos
+          </div>
+          {!hasMeetings ? (
+            <div className="text-xs text-muted-foreground">Nenhuma reunião ou discurso agendado para hoje.</div>
+          ) : (
+            <>
+              {showMidweek && snap.midweek.map((m) => (
+                <div key={m.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
+                  <div className="font-medium">Reunião do meio de semana</div>
+                  {m.chairman && <div className="text-xs"><span className="text-muted-foreground">Presidente: </span>{m.chairman}</div>}
+                  {m.service_talk_theme && <div className="text-xs"><span className="text-muted-foreground">Discurso de Serviço: </span>{m.service_talk_theme}</div>}
+                  {m.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">Oração final: </span>{m.closing_prayer}</div>}
+                </div>
+              ))}
+              {todayWeekend.map((w) => (
+                <div key={w.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
+                  <div className="font-medium">Reunião do fim de semana • {fmtAt(w.meeting_at)}</div>
+                  {w.public_talk_theme && <div className="text-xs"><span className="text-muted-foreground">Discurso público: </span>{w.public_talk_theme}</div>}
+                  {w.talk_theme_title && <div className="text-xs"><span className="text-muted-foreground">Discurso final: </span>{w.talk_theme_title}</div>}
+                </div>
+              ))}
+              {todayPioneer.map((p) => (
+                <div key={p.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
+                  <div className="font-medium">Reunião com Pioneiros • {fmtAt(p.meeting_at)}</div>
+                  {p.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{p.location}</div>}
+                  {p.theme && <div className="text-xs"><span className="text-muted-foreground">Tema: </span>{p.theme}</div>}
+                  {p.opening_prayer && <div className="text-xs"><span className="text-muted-foreground">Oração inicial: </span>{p.opening_prayer}</div>}
+                  {p.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">Oração final: </span>{p.closing_prayer}</div>}
+                </div>
+              ))}
+              {showElders && snap.elders.map((e) => (
+                <div key={e.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
+                  <div className="font-medium">Reunião do Corpo de Anciãos e SM</div>
+                  {e.theme && <div className="text-xs"><span className="text-muted-foreground">Tema: </span>{e.theme}</div>}
+                  {e.opening_prayer && <div className="text-xs"><span className="text-muted-foreground">Oração inicial: </span>{e.opening_prayer}</div>}
+                  {e.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">Oração final: </span>{e.closing_prayer}</div>}
+                </div>
+              ))}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Eventos extras do cronograma de hoje */}
+      {todaySchedule.length > 0 && (
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              <CalendarDays className="h-4 w-4" /> Outros eventos de hoje
+            </div>
+            {todaySchedule.map((e) => (
+              <div key={e.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
+                <div className="font-medium">{fmtTime(e.start_time)} — {e.title}</div>
+                {e.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{e.location}</div>}
+                {e.notes && <div className="text-xs text-muted-foreground">{e.notes}</div>}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="text-center pt-2 text-xs text-muted-foreground">
+        Para ver toda a semana, abra a aba <span className="font-medium">Programação</span> acima.
+      </div>
+    </div>
+  );
+}
+
+
 function Empty({ text }: { text: string }) {
   return <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{text}</CardContent></Card>;
 }
