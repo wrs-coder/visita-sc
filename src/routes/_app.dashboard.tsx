@@ -55,6 +55,8 @@ function Dashboard() {
   const [fieldMeetings, setFieldMeetings] = useState<FieldMeetingToday[]>([]);
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [selected, setSelected] = useState<string | null>(() => getActiveCongregationOverride());
+  const [pendingCount, setPendingCount] = useState(0);
+  useEffect(() => subscribeQueue(setPendingCount), []);
   const today = format(new Date(), "yyyy-MM-dd");
 
   useEffect(() => {
