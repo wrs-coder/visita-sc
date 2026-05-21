@@ -29,11 +29,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { offlineInsert, offlineUpdate } from "@/lib/offline-supabase";
+import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
+import { maskPhone } from "@/lib/masks";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
@@ -193,17 +198,10 @@ function Page() {
   };
 
   const submit = async () => {
-    if (!form.congregation_id) {
-      toast.error("Selecione a congregação");
-      return;
-    }
-    if (!form.title || !form.start_date || !form.end_date) {
-      toast.error("Preencha todos os campos");
-      return;
-    }
+    if (!form.congregation_id) { toast.error("Selecione a congregação"); return; }
+    if (!form.title || !form.start_date || !form.end_date) { toast.error("Preencha todos os campos"); return; }
+    if (form.end_date < form.start_date) { toast.error("A data final não pode ser anterior à inicial"); return; }
     const isScs = form.title === "Visita SCS";
-    // Em criações novas, modelos são obrigatórios — exceto para "Visita SCS",
-    // cujo fluxo offline ignora completamente essa validação.
     if (!editId && !isScs) {
       if (!form.template_id) { toast.error("Selecione o Modelo de Programação"); return; }
       if (!form.checklist_template_id) { toast.error("Selecione o Modelo de Checklist"); return; }
@@ -221,81 +219,89 @@ function Page() {
       ...(form.meeting_talk_template_id ? { meeting_talk_template_id: form.meeting_talk_template_id } : {}),
     };
 
+    // TRAVA ANTI-DUPLICAÇÃO: se há editId, é UPDATE estrito. Jamais cai em INSERT.
     if (editId) {
-      const res = await offlineUpdate("visits", basePayload, { id: editId });
-      if (res.error) {
-        toast.error(res.error.message);
-        return;
+      try {
+        const res = await offlineUpdate("visits", basePayload, { id: editId });
+        if (res.error) { toast.error(res.error.message); return; }
+        if (res.queued) {
+          toast.success("Visita salva offline — sincronizará quando voltar a ficar online.");
+        } else {
+          if (form.template_id) {
+            const r = await fnApply({ data: { visitId: editId, templateId: form.template_id } });
+            if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
+          }
+          if (form.checklist_template_id) {
+            const r = await fnApplyChecklist({ data: { visitId: editId, templateId: form.checklist_template_id } });
+            if (!r.ok) toast.error("Falha ao aplicar modelo de checklist: " + r.error);
+          }
+          if (form.field_template_id) {
+            const r = await fnApplyField({ data: { visitId: editId, templateId: form.field_template_id } });
+            if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
+          }
+          if (form.meeting_talk_template_id) {
+            const r = await fnApplyMeetingTalk({ data: { visitId: editId, templateId: form.meeting_talk_template_id } });
+            if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
+          }
+          toast.success("Visita atualizada");
+        }
+        setOpen(false);
+      } catch (err) {
+        console.warn("[visit:update] erro", err);
+        toast.warning("Ligação instável. Os seus dados continuam guardados em segurança no dispositivo.");
       }
-      if (res.queued) {
-        toast.success("Visita salva offline — sincronizará quando voltar a ficar online.");
-      } else {
-        if (form.template_id) {
-          const r = await fnApply({ data: { visitId: editId, templateId: form.template_id } });
-          if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
-        }
-        if (form.checklist_template_id) {
-          const r = await fnApplyChecklist({ data: { visitId: editId, templateId: form.checklist_template_id } });
-          if (!r.ok) toast.error("Falha ao aplicar modelo de checklist: " + r.error);
-        }
-        if (form.field_template_id) {
-          const r = await fnApplyField({ data: { visitId: editId, templateId: form.field_template_id } });
-          if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
-        }
-        if (form.meeting_talk_template_id) {
-          const r = await fnApplyMeetingTalk({ data: { visitId: editId, templateId: form.meeting_talk_template_id } });
-          if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
-        }
-        toast.success("Visita atualizada");
-      }
-      setOpen(false);
       return;
     }
 
-    // INSERT (novo) — tenta online direto para conseguir o id e aplicar modelos;
-    // se falhar por rede, enfileira como rascunho offline.
-    const { data, error } = await supabase
-      .from("visits")
-      .insert(basePayload)
-      .select()
-      .single();
-    if (error || !data) {
-      // Fallback offline: enfileira o INSERT (sem aplicar modelos, que dependem de id remoto).
-      const fallback = await offlineInsert("visits", basePayload);
-      if (fallback.error) {
-        toast.error(error?.message ?? fallback.error.message);
+    // INSERT (novo) — tenta online direto para conseguir o id e aplicar modelos.
+    try {
+      const { data, error } = await supabase
+        .from("visits")
+        .insert(basePayload)
+        .select()
+        .single();
+      if (error || !data) {
+        const fallback = await offlineInsert("visits", basePayload);
+        if (fallback.error) { toast.error(error?.message ?? fallback.error.message); return; }
+        toast.success("Visita salva offline — sincronizará quando voltar a ficar online.");
+        setOpen(false);
         return;
       }
-      toast.success("Visita salva offline — sincronizará quando voltar a ficar online.");
+      if (form.template_id) {
+        const r = await fnApply({ data: { visitId: data.id, templateId: form.template_id } });
+        if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
+      }
+      if (form.checklist_template_id) {
+        const r = await fnApplyChecklist({ data: { visitId: data.id, templateId: form.checklist_template_id } });
+        if (!r.ok) toast.error("Falha ao aplicar modelo de checklist: " + r.error);
+      }
+      if (form.field_template_id) {
+        const r = await fnApplyField({ data: { visitId: data.id, templateId: form.field_template_id } });
+        if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
+      }
+      if (form.meeting_talk_template_id) {
+        const r = await fnApplyMeetingTalk({ data: { visitId: data.id, templateId: form.meeting_talk_template_id } });
+        if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
+      }
+      toast.success("Visita criada");
       setOpen(false);
-      return;
+    } catch (err) {
+      console.warn("[visit:insert] erro", err);
+      toast.warning("Ligação instável. Tente novamente quando a rede voltar — nenhum dado foi perdido.");
     }
-    if (form.template_id) {
-      const r = await fnApply({ data: { visitId: data.id, templateId: form.template_id } });
-      if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
-    }
-    if (form.checklist_template_id) {
-      const r = await fnApplyChecklist({ data: { visitId: data.id, templateId: form.checklist_template_id } });
-      if (!r.ok) toast.error("Falha ao aplicar modelo de checklist: " + r.error);
-    }
-    if (form.field_template_id) {
-      const r = await fnApplyField({ data: { visitId: data.id, templateId: form.field_template_id } });
-      if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
-    }
-    if (form.meeting_talk_template_id) {
-      const r = await fnApplyMeetingTalk({ data: { visitId: data.id, templateId: form.meeting_talk_template_id } });
-      if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
-    }
-    toast.success("Visita criada");
-    setOpen(false);
   };
 
-
-
-  const remove = async (id: string) => {
-    if (!confirm("Excluir visita e todos os dados relacionados?")) return;
-    const { error } = await supabase.from("visits").delete().eq("id", id);
-    if (error) toast.error(error.message);
+  const removeById = async (id: string) => {
+    try {
+      const res = await offlineDelete("visits", { id });
+      if (res.error) { toast.error(res.error.message); return; }
+      if (res.queued) toast.success("Exclusão guardada offline — sincronizará quando voltar a ficar online.");
+      else toast.success("Visita excluída");
+      if (editId === id) setOpen(false);
+    } catch (err) {
+      console.warn("[visit:delete] erro", err);
+      toast.warning("Ligação instável. Os seus dados continuam guardados em segurança no dispositivo.");
+    }
   };
 
   const copyCode = () => {
