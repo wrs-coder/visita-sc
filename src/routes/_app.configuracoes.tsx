@@ -574,7 +574,7 @@ function Page() {
         )}
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-4">
         {visits.length === 0 && (
           <Card>
             <CardContent className="p-4 text-sm text-muted-foreground">
@@ -582,47 +582,80 @@ function Page() {
             </CardContent>
           </Card>
         )}
-        {visits.map((v) => {
-          const cong = congs.find((c) => c.id === v.congregation_id);
-          return (
-            <Card key={v.id} className="shadow-card">
-              <CardContent className="p-4 flex items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Building2 className="h-4 w-4 text-primary shrink-0" />
-                    <div className="text-lg md:text-xl font-bold truncate">
-                      {cong?.name ?? "—"}
-                    </div>
-                  </div>
-                  <div className="text-base font-semibold text-foreground mt-1">
-                    {format(parseISO(v.start_date), "d MMM", { locale: ptBR })} –{" "}
-                    {format(parseISO(v.end_date), "d MMM yyyy", { locale: ptBR })}
-                  </div>
-                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium mt-1 truncate">
-                    {v.title}
-                  </div>
-                  {v.title === "Visita SCS" && (v.substitute_name || v.substitute_phone) && (
-                    <div className="text-xs text-muted-foreground mt-1 break-words">
-                      Substituto: {v.substitute_name ?? "—"}
-                      {v.substitute_phone ? ` · 📞 ${v.substitute_phone}` : ""}
-                    </div>
-                  )}
-                </div>
-                {isSuper && (
-                  <div className="flex gap-1">
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(v)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={() => remove(v.id)}>
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+        {(() => {
+          // Group visits by month (start_date), preserving the already-ASC order
+          const groups: { key: string; label: string; items: Visit[] }[] = [];
+          const byKey = new Map<string, { key: string; label: string; items: Visit[] }>();
+          for (const v of visits) {
+            const d = parseISO(v.start_date);
+            const key = format(d, "yyyy-MM");
+            let g = byKey.get(key);
+            if (!g) {
+              const label = format(d, "MMMM 'de' yyyy", { locale: ptBR });
+              g = { key, label: label.charAt(0).toUpperCase() + label.slice(1), items: [] };
+              byKey.set(key, g);
+              groups.push(g);
+            }
+            g.items.push(v);
+          }
+          return groups.map((g) => (
+            <section key={g.key} className="space-y-2">
+              <div className="flex items-center gap-3 px-1">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
+                  {g.label}
+                </h3>
+                <div className="h-px flex-1 bg-gradient-to-r from-primary/40 via-border to-transparent" />
+                <span className="text-[11px] text-muted-foreground font-medium">
+                  {g.items.length} {g.items.length === 1 ? "visita" : "visitas"}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {g.items.map((v) => {
+                  const cong = congs.find((c) => c.id === v.congregation_id);
+                  return (
+                    <Card key={v.id} className="shadow-card">
+                      <CardContent className="p-4 flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Building2 className="h-4 w-4 text-primary shrink-0" />
+                            <div className="text-lg md:text-xl font-bold truncate">
+                              {cong?.name ?? "—"}
+                            </div>
+                          </div>
+                          <div className="text-base font-semibold text-foreground mt-1">
+                            {format(parseISO(v.start_date), "d MMM", { locale: ptBR })} –{" "}
+                            {format(parseISO(v.end_date), "d MMM yyyy", { locale: ptBR })}
+                          </div>
+                          <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium mt-1 truncate">
+                            {v.title}
+                          </div>
+                          {v.title === "Visita SCS" && (v.substitute_name || v.substitute_phone) && (
+                            <div className="text-xs text-muted-foreground mt-1 break-words">
+                              Substituto: {v.substitute_name ?? "—"}
+                              {v.substitute_phone ? ` · 📞 ${v.substitute_phone}` : ""}
+                            </div>
+                          )}
+                        </div>
+                        {isSuper && (
+                          <div className="flex gap-1">
+                            <Button size="icon" variant="ghost" onClick={() => openEdit(v)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={() => remove(v.id)}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </section>
+          ));
+        })()}
       </div>
+
     </div>
   );
 }
