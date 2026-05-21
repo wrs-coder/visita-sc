@@ -587,16 +587,26 @@ function Page() {
           return (
             <Card key={v.id} className="shadow-card">
               <CardContent className="p-4 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-semibold truncate">{v.title}</div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <Building2 className="h-3 w-3" />
-                    {cong?.name ?? "—"}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Building2 className="h-4 w-4 text-primary shrink-0" />
+                    <div className="text-lg md:text-xl font-bold truncate">
+                      {cong?.name ?? "—"}
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-base font-semibold text-foreground mt-1">
                     {format(parseISO(v.start_date), "d MMM", { locale: ptBR })} –{" "}
                     {format(parseISO(v.end_date), "d MMM yyyy", { locale: ptBR })}
                   </div>
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium mt-1 truncate">
+                    {v.title}
+                  </div>
+                  {v.title === "Visita SCS" && (v.substitute_name || v.substitute_phone) && (
+                    <div className="text-xs text-muted-foreground mt-1 break-words">
+                      Substituto: {v.substitute_name ?? "—"}
+                      {v.substitute_phone ? ` · 📞 ${v.substitute_phone}` : ""}
+                    </div>
+                  )}
                 </div>
                 {isSuper && (
                   <div className="flex gap-1">
