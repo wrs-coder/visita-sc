@@ -144,3 +144,14 @@
   to { opacity: 1; transform: translateY(0); }
 }
 .tab-fade-in { animation: tab-fade-in 180ms ease-out; }
+
+/* Impressão / Salvar como PDF — usado pelo Resumo Executivo (/relatorio/:visitId) */
+@media print {
+  @page { margin: 14mm 12mm; }
+  html, body { background: #fff !important; color: #000 !important; }
+  .print\:hidden { display: none !important; }
+  .report { box-shadow: none !important; padding: 0 !important; max-width: none !important; }
+  a { color: #000 !important; text-decoration: none !important; }
+  /* esconde o app shell / sidebar / header durante impressão */
+  header[role="banner"], nav, aside, [data-app-shell] { display: none !important; }
+}

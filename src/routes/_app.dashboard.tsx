@@ -4,13 +4,15 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, ListChecks, MapPin, Clock, ChevronRight, UtensilsCrossed, Building2, Car, BookOpen, Users, UserCheck } from "lucide-react";
+import { CalendarDays, ListChecks, MapPin, Clock, ChevronRight, UtensilsCrossed, Building2, Car, BookOpen, Users, UserCheck, CloudOff, FileText } from "lucide-react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useActiveCongregation, getActiveCongregationOverride, setActiveCongregationOverride } from "@/hooks/use-active-congregation";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
+import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
@@ -53,6 +55,8 @@ function Dashboard() {
   const [fieldMeetings, setFieldMeetings] = useState<FieldMeetingToday[]>([]);
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [selected, setSelected] = useState<string | null>(() => getActiveCongregationOverride());
+  const [pendingCount, setPendingCount] = useState(0);
+  useEffect(() => subscribeQueue(setPendingCount), []);
   const today = format(new Date(), "yyyy-MM-dd");
 
   useEffect(() => {
@@ -117,6 +121,27 @@ function Dashboard() {
           {visit ? ` · Visita: ${visit.title}` : " · Nenhuma visita ativa"}
         </p>
       </header>
+
+      {pendingCount > 0 && (
+        <div className="flex items-center gap-2 rounded-md border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 px-3 py-2 text-xs">
+          <CloudOff className="h-4 w-4 shrink-0" />
+          <span className="flex-1">
+            <strong>{pendingCount}</strong> {pendingCount === 1 ? "alteração guardada" : "alterações guardadas"} no dispositivo, aguardando sincronização.
+          </span>
+          <span className="hidden sm:inline opacity-70">Toque em ↻ no topo para enviar.</span>
+        </div>
+      )}
+
+      {visit && (
+        <div className="flex justify-end print:hidden">
+          <Button asChild size="sm" variant="outline">
+            <Link to="/relatorio/$visitId" params={{ visitId: visit.id }}>
+              <FileText className="h-4 w-4 mr-1" /> Relatório executivo
+            </Link>
+          </Button>
+        </div>
+      )}
+
 
       {role === "superintendent" && congs.length > 0 && (
         <Card className="shadow-card">

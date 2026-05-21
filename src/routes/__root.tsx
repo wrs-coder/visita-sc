@@ -111,16 +111,26 @@ function RootComponent() {
         queryClient.clear();
       }
     });
-    const onOnline = () => { flushQueue(); };
+    const onOnline = () => { flushQueue().catch((e) => console.warn("[boot] flush", e)); };
     window.addEventListener("online", onOnline);
     // Capacitor: app retomado do background
     document.addEventListener("resume", onOnline);
+    // Rede crítica: rejeições não tratadas não devem matar a tela.
+    const onUnhandled = (ev: PromiseRejectionEvent) => {
+      const msg = String((ev.reason as { message?: string })?.message ?? ev.reason ?? "");
+      if (/network|fetch|timeout|offline|failed/i.test(msg)) {
+        ev.preventDefault();
+        console.warn("[unhandledrejection] suprimido (rede):", msg);
+      }
+    };
+    window.addEventListener("unhandledrejection", onUnhandled);
     // Tenta flush no boot
-    flushQueue();
+    flushQueue().catch((e) => console.warn("[boot] flush", e));
     return () => {
       subscription.unsubscribe();
       window.removeEventListener("online", onOnline);
       document.removeEventListener("resume", onOnline);
+      window.removeEventListener("unhandledrejection", onUnhandled);
     };
   }, [router, queryClient]);
 

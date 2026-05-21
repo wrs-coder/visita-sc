@@ -61,47 +61,60 @@ export function enqueue(m: Omit<QueuedMutation, "id" | "createdAt">): QueuedMuta
 }
 
 let flushing = false;
+const MUTATION_TIMEOUT_MS = 15_000;
 
-export async function flushQueue(): Promise<{ sent: number; failed: number; remaining: number }> {
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error("timeout")), ms);
+    p.then((v) => { clearTimeout(t); resolve(v); }).catch((e) => { clearTimeout(t); reject(e); });
+  });
+}
+
+export async function flushQueue(): Promise<{ sent: number; failed: number; remaining: number; aborted?: boolean }> {
   if (flushing) return { sent: 0, failed: 0, remaining: queueSize() };
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
-    return { sent: 0, failed: 0, remaining: queueSize() };
+    return { sent: 0, failed: 0, remaining: queueSize(), aborted: true };
   }
   flushing = true;
   let sent = 0;
   let failed = 0;
   try {
-    let queue = read();
+    const queue = read();
     const remaining: QueuedMutation[] = [];
     for (const m of queue) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const ref: any = supabase.from(m.table as never);
-        let res;
-        if (m.op === "insert") res = await ref.insert(m.payload);
-        else if (m.op === "upsert") res = await ref.upsert(m.payload);
+        let p: Promise<{ error: unknown } | undefined> | undefined;
+        if (m.op === "insert") p = ref.insert(m.payload);
+        else if (m.op === "upsert") p = ref.upsert(m.payload);
         else if (m.op === "update") {
           let q = ref.update(m.payload);
           for (const [k, v] of Object.entries(m.match ?? {})) q = q.eq(k, v);
-          res = await q;
+          p = q;
         } else if (m.op === "delete") {
           let q = ref.delete();
           for (const [k, v] of Object.entries(m.match ?? {})) q = q.eq(k, v);
-          res = await q;
+          p = q;
         }
-        if (res?.error) throw res.error;
+        const res = p ? await withTimeout(p, MUTATION_TIMEOUT_MS) : undefined;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((res as any)?.error) throw (res as any).error;
         sent++;
       } catch (err) {
-        // Erro de rede → mantém para retry. Erro de validação → também mantém
-        // para que o usuário veja na próxima sync (poderemos sofisticar depois).
+        // Erro de rede/timeout → mantém para retry. Erro de validação → também
+        // mantém para que o usuário veja na próxima sync.
         console.warn("[offline-queue] falha ao enviar", m, err);
         failed++;
         remaining.push(m);
       }
     }
     write(remaining);
-    queue = remaining;
-    return { sent, failed, remaining: queue.length };
+    return { sent, failed, remaining: remaining.length };
+  } catch (err) {
+    // Falha catastrófica do flush — preserva fila intacta e devolve estado.
+    console.warn("[offline-queue] flush abortado", err);
+    return { sent, failed, remaining: queueSize(), aborted: true };
   } finally {
     flushing = false;
   }

@@ -35,6 +35,7 @@ import { Route as AppCongregacoesRouteImport } from './routes/_app.congregacoes'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
 import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist-modelos'
 import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
+import { Route as AppRelatorioVisitIdRouteImport } from './routes/_app.relatorio.$visitId'
 
 const VisitanteRoute = VisitanteRouteImport.update({
   id: '/visitante',
@@ -167,6 +168,11 @@ const AppChecklistRoute = AppChecklistRouteImport.update({
   path: '/checklist',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRelatorioVisitIdRoute = AppRelatorioVisitIdRouteImport.update({
+  id: '/relatorio/$visitId',
+  path: '/relatorio/$visitId',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/visitante/painel': typeof VisitantePainelRoute
   '/visitante/': typeof VisitanteIndexRoute
+  '/relatorio/$visitId': typeof AppRelatorioVisitIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/visitante/painel': typeof VisitantePainelRoute
   '/visitante': typeof VisitanteIndexRoute
+  '/relatorio/$visitId': typeof AppRelatorioVisitIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/visitante/painel': typeof VisitantePainelRoute
   '/visitante/': typeof VisitanteIndexRoute
+  '/_app/relatorio/$visitId': typeof AppRelatorioVisitIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -278,6 +287,7 @@ export interface FileRouteTypes {
     | '/cadastro/superintendente'
     | '/visitante/painel'
     | '/visitante/'
+    | '/relatorio/$visitId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -304,6 +314,7 @@ export interface FileRouteTypes {
     | '/cadastro/superintendente'
     | '/visitante/painel'
     | '/visitante'
+    | '/relatorio/$visitId'
   id:
     | '__root__'
     | '/'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/cadastro/superintendente'
     | '/visitante/painel'
     | '/visitante/'
+    | '/_app/relatorio/$visitId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -529,6 +541,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppChecklistRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/relatorio/$visitId': {
+      id: '/_app/relatorio/$visitId'
+      path: '/relatorio/$visitId'
+      fullPath: '/relatorio/$visitId'
+      preLoaderRoute: typeof AppRelatorioVisitIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -549,6 +568,7 @@ interface AppRouteChildren {
   AppReunioesDeCampoRoute: typeof AppReunioesDeCampoRoute
   AppReunioesDiscursosRoute: typeof AppReunioesDiscursosRoute
   AppTransporteRoute: typeof AppTransporteRoute
+  AppRelatorioVisitIdRoute: typeof AppRelatorioVisitIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -568,6 +588,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppReunioesDeCampoRoute: AppReunioesDeCampoRoute,
   AppReunioesDiscursosRoute: AppReunioesDiscursosRoute,
   AppTransporteRoute: AppTransporteRoute,
+  AppRelatorioVisitIdRoute: AppRelatorioVisitIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -599,13 +620,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -47,16 +47,23 @@ export function SyncButton({ className }: { className?: string }) {
     setSyncing(true);
     try {
       const res = await flushQueue();
-      await queryClient.invalidateQueries();
+      try { await queryClient.invalidateQueries(); } catch { /* offline read cache */ }
       const now = Date.now();
-      localStorage.setItem(LAST_SYNC_KEY, String(now));
+      try { localStorage.setItem(LAST_SYNC_KEY, String(now)); } catch { /* quota */ }
       setLastSync(now);
-      if (res.sent > 0) toast.success(`${res.sent} alteração(ões) enviada(s)`);
-      else if (res.remaining > 0) toast.warning(`${res.remaining} alteração(ões) pendente(s)`);
-      else toast.success("Dados atualizados");
+      if (res.aborted) {
+        toast.warning("Ligação instável. Os seus dados continuam guardados em segurança no dispositivo.");
+      } else if (res.sent > 0 && res.remaining === 0) {
+        toast.success(`${res.sent} alteração(ões) enviada(s)`);
+      } else if (res.remaining > 0) {
+        toast.warning(`${res.remaining} alteração(ões) ainda pendente(s) — guardadas localmente.`);
+      } else {
+        toast.success("Dados atualizados");
+      }
     } catch (err) {
-      toast.error("Falha ao sincronizar");
-      console.error(err);
+      // Nunca propagar — fila preservada, UI permanece ativa.
+      console.warn("[sync] falha", err);
+      toast.warning("Ligação instável. Os seus dados continuam guardados em segurança no dispositivo.");
     } finally {
       setSyncing(false);
     }
