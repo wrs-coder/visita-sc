@@ -32,6 +32,15 @@ const MODALITY_LABEL: Record<string, string> = {
   estudos: "Estudos Bíblicos",
 };
 
+const ACOMPANHANTE_FOR_LABEL: Record<string, string> = {
+  superintendente: "Superintendente",
+  esposa: "Esposa do superintendente",
+  sc_substituto: "S.C Substituto",
+  esposa_sc_substituto: "Esposa do S.C Substituto",
+  sc_pastor: "S.C Pastor",
+  esposa_sc_pastor: "Esposa do S.C Pastor",
+};
+
 function Dashboard() {
   const { profile, role, user } = useAuth();
   const activeCong = useActiveCongregation();
