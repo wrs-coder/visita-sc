@@ -135,7 +135,7 @@ function Page() {
   useEffect(() => {
     if (!isSuper && !congregation) return;
     const load = async () => {
-      let q = supabase.from("visits").select("*").order("start_date", { ascending: false });
+      let q = supabase.from("visits").select("*").order("start_date", { ascending: true });
       if (isSuper && congs.length > 0)
         q = q.in(
           "congregation_id",
