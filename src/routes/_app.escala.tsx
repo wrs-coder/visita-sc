@@ -200,10 +200,14 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
                 <SelectContent>
                   <SelectItem value="superintendente">Superintendente</SelectItem>
                   <SelectItem value="esposa">Esposa do superintendente</SelectItem>
+                  <SelectItem value="sc_substituto">S.C Substituto</SelectItem>
+                  <SelectItem value="esposa_sc_substituto">Esposa do S.C Substituto</SelectItem>
+                  <SelectItem value="sc_pastor">S.C Pastor</SelectItem>
+                  <SelectItem value="esposa_sc_pastor">Esposa do S.C Pastor</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
-              <Input readOnly value={acompanhante_for === "esposa" ? "Esposa do superintendente" : acompanhante_for === "superintendente" ? "Superintendente" : "—"} className="h-9 mt-0.5" />
+              <Input readOnly value={ACOMPANHANTE_FOR_LABELS[acompanhante_for] ?? "—"} className="h-9 mt-0.5" />
             )}
           </div>
           <div className="col-span-2">
