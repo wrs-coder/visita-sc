@@ -405,14 +405,49 @@ function Page() {
                   )}
                 </div>
                 <div>
-                  <Label>Título</Label>
-                  <Input
-                    className="mt-1"
+                  <Label>Tipo de visita</Label>
+                  <Select
                     value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    placeholder="Ex: Visita Out/2025"
-                  />
+                    onValueChange={(v) => setForm({ ...form, title: v })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecione…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VISIT_TITLE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+                {form.title === "Visita SCS" && (
+                  <div className="grid grid-cols-1 gap-3 rounded-md border border-dashed border-primary/40 bg-primary/5 p-3">
+                    <div className="text-xs font-medium text-primary">
+                      Substituto do Superintendente
+                    </div>
+                    <div>
+                      <Label>Nome do Substituto</Label>
+                      <Input
+                        className="mt-1"
+                        value={form.substitute_name}
+                        onChange={(e) => setForm({ ...form, substitute_name: e.target.value })}
+                        placeholder="Nome completo"
+                      />
+                    </div>
+                    <div>
+                      <Label>Telefone do Substituto</Label>
+                      <Input
+                        type="tel"
+                        className="mt-1"
+                        value={form.substitute_phone}
+                        onChange={(e) => setForm({ ...form, substitute_phone: e.target.value })}
+                        placeholder="(00) 00000-0000"
+                      />
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Início (terça)</Label>
@@ -433,6 +468,9 @@ function Page() {
                     />
                   </div>
                 </div>
+                {form.title !== "Visita SCS" && (
+                <>
+
                 <div>
                   <Label>Modelo de Programação *</Label>
                   <Select
