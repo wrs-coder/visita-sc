@@ -772,6 +772,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          username: string | null
         }
         Insert: {
           circuit?: string | null
@@ -781,6 +782,7 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          username?: string | null
         }
         Update: {
           circuit?: string | null
@@ -790,6 +792,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          username?: string | null
         }
         Relationships: [
           {
