@@ -150,18 +150,19 @@ function Page() {
       )}
 
       <Card className="shadow-card">
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> E-mail de acesso</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> E-mail (opcional, para recuperação de senha)</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={saveEmail} className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="email">Novo e-mail</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              <p className="text-xs text-muted-foreground">Você receberá um link de confirmação no novo endereço.</p>
+              <Label htmlFor="email">E-mail</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" />
+              <p className="text-xs text-muted-foreground">Adicione um e-mail real para poder usar "Esqueci minha senha". Você receberá um link de confirmação no novo endereço.</p>
             </div>
-            <Button type="submit" disabled={busyEmail}>Atualizar e-mail</Button>
+            <Button type="submit" disabled={busyEmail || !email.trim()}>Atualizar e-mail</Button>
           </form>
         </CardContent>
       </Card>
+
 
       <Card className="shadow-card">
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><KeyRound className="h-4 w-4 text-primary" /> Alterar senha</CardTitle></CardHeader>
