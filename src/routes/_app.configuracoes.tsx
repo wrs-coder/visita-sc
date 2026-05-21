@@ -200,8 +200,9 @@ function Page() {
       toast.error("Preencha todos os campos");
       return;
     }
-    // Em criações novas, todos os modelos são obrigatórios (regra do Itinerário).
-    if (!editId) {
+    const isScs = form.title === "Visita SCS";
+    // Em criações novas, modelos são obrigatórios — exceto para "Visita SCS".
+    if (!editId && !isScs) {
       if (!form.template_id) { toast.error("Selecione o Modelo de Programação"); return; }
       if (!form.checklist_template_id) { toast.error("Selecione o Modelo de Checklist"); return; }
       if (!form.field_template_id) { toast.error("Selecione o Modelo de Reuniões de Campo"); return; }
@@ -215,6 +216,8 @@ function Page() {
           start_date: form.start_date,
           end_date: form.end_date,
           congregation_id: form.congregation_id,
+          substitute_name: isScs ? (form.substitute_name || null) : null,
+          substitute_phone: isScs ? (form.substitute_phone || null) : null,
           ...(form.meeting_talk_template_id ? { meeting_talk_template_id: form.meeting_talk_template_id } : {}),
         })
         .eq("id", editId);
@@ -255,7 +258,9 @@ function Page() {
         title: form.title,
         start_date: form.start_date,
         end_date: form.end_date,
-        meeting_talk_template_id: form.meeting_talk_template_id,
+        substitute_name: isScs ? (form.substitute_name || null) : null,
+        substitute_phone: isScs ? (form.substitute_phone || null) : null,
+        ...(form.meeting_talk_template_id ? { meeting_talk_template_id: form.meeting_talk_template_id } : {}),
       })
       .select()
       .single();
