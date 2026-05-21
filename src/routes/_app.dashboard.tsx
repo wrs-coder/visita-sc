@@ -266,7 +266,7 @@ function Dashboard() {
                         {a.period}{a.meeting_time ? ` · ${a.meeting_time.slice(0,5)}` : ""}
                       </span>
                       <div className="min-w-0 flex-1 space-y-0.5">
-                        {a.acompanhante && <div className="font-medium break-words whitespace-normal">{a.acompanhante}{a.acompanhante_for ? ` → ${a.acompanhante_for}` : ""}</div>}
+                        {a.acompanhante && <div className="font-medium break-words whitespace-normal">{a.acompanhante}{a.acompanhante_for ? ` → ${ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for}` : ""}</div>}
                         {a.meeting_point && <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{a.meeting_point}</span></div>}
                         {a.contact_phone && <div className="text-xs text-muted-foreground break-words">📞 {a.contact_phone}</div>}
                         {a.notes && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{a.notes}</div>}
