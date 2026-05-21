@@ -26,10 +26,10 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       .limit(1);
     const visit = visits?.[0] ?? null;
     if (!visit) {
-      return { ok: true as const, wifeMode, congregation: cong, visit: null, schedule: [], meals: [], mealDayNotes: [], field: [], fieldMeetings: [], transport: [], checklist: [] };
+      return { ok: true as const, wifeMode, congregation: cong, visit: null, schedule: [], meals: [], mealDayNotes: [], field: [], fieldMeetings: [], transport: [], checklist: [], midweek: [], weekend: [], pioneer: [], elders: [] };
     }
 
-    const [{ data: schedule }, { data: meals }, { data: mealDayNotes }, { data: field }, { data: fieldMeetings }, { data: transport }, checklistRes] = await Promise.all([
+    const [{ data: schedule }, { data: meals }, { data: mealDayNotes }, { data: field }, { data: fieldMeetings }, { data: transport }, checklistRes, { data: midweek }, { data: weekend }, { data: pioneer }, { data: elders }] = await Promise.all([
       supabaseAdmin.from("schedule_events").select("id,event_date,start_time,end_time,title,location,type,notes").eq("visit_id", visit.id).eq("is_active", true).order("event_date").order("start_time"),
       supabaseAdmin.from("meals").select("id,meal_date,type,host_name,location,meal_time,contact_phone,notes").eq("visit_id", visit.id).eq("is_active", true).order("meal_date"),
       supabaseAdmin.from("meal_day_notes").select("meal_date,notes").eq("visit_id", visit.id),
@@ -39,6 +39,10 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       wifeMode
         ? Promise.resolve({ data: [] as Array<{ id: string; title: string; description: string | null; status: string; link_or_notes: string | null; info_text: string | null }> })
         : supabaseAdmin.from("checklist_items").select("id,title,status,description,link_or_notes,info_text").eq("visit_id", visit.id).order("sort_order").order("created_at"),
+      supabaseAdmin.from("midweek_meetings").select("id,chairman,service_talk_theme,closing_prayer").eq("visit_id", visit.id),
+      supabaseAdmin.from("weekend_meetings").select("id,meeting_at,public_talk_theme,talk_theme_title").eq("visit_id", visit.id).order("meeting_at"),
+      supabaseAdmin.from("pioneer_meetings").select("id,meeting_at,super_meeting_at,location,theme,opening_prayer,closing_prayer").eq("visit_id", visit.id).order("meeting_at"),
+      supabaseAdmin.from("elders_servants_meetings").select("id,theme,opening_prayer,closing_prayer").eq("visit_id", visit.id),
     ]);
 
     return {
@@ -53,5 +57,9 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       fieldMeetings: fieldMeetings ?? [],
       transport: transport ?? [],
       checklist: checklistRes.data ?? [],
+      midweek: midweek ?? [],
+      weekend: weekend ?? [],
+      pioneer: pioneer ?? [],
+      elders: elders ?? [],
     };
   });
