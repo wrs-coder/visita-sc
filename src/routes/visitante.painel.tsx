@@ -236,9 +236,10 @@ function Page() {
               </p>
             </CardContent></Card>
 
-            <Tabs defaultValue="cron">
-              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-5" : "grid-cols-6"}`}>
-                <TabsTrigger value="cron"><CalendarDays className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Cronograma</span></TabsTrigger>
+            <Tabs defaultValue="hoje">
+              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-7"}`}>
+                <TabsTrigger value="hoje"><Sun className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Hoje</span></TabsTrigger>
+                <TabsTrigger value="cron"><CalendarDays className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Programação</span></TabsTrigger>
                 <TabsTrigger value="estudos"><Users className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Estudos</span></TabsTrigger>
                 <TabsTrigger value="campo"><Compass className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Campo</span></TabsTrigger>
                 <TabsTrigger value="ref"><UtensilsCrossed className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Refeições</span></TabsTrigger>
@@ -247,6 +248,11 @@ function Page() {
                   <TabsTrigger value="check"><ListChecks className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Checklist</span></TabsTrigger>
                 )}
               </TabsList>
+
+              <TabsContent value="hoje" className="mt-4">
+                <TodayDashboard snap={snap} />
+              </TabsContent>
+
 
               <TabsContent value="cron" className="space-y-2 mt-4">
                 {snap.schedule.length === 0 ? <Empty text="Sem eventos." /> :
