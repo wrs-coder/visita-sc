@@ -563,6 +563,8 @@ function Page() {
                     </p>
                   )}
                 </div>
+                </>
+                )}
                 <Button className="w-full" onClick={submit}>
                   {editId ? "Salvar" : "Criar"}
                 </Button>
