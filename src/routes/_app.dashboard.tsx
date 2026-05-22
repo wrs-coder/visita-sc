@@ -176,7 +176,7 @@ function Dashboard() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Congregação ativa</div>
               <div className="text-xs text-muted-foreground">Selecione a congregação do circuito para ver e gerenciar seus dados.</div>
             </div>
-            <Select value={selected ?? activeCong?.id ?? ""} onValueChange={handleSelectCong}>
+            <Select value={selected ?? ""} onValueChange={handleSelectCong}>
               <SelectTrigger className="w-[200px] max-w-[60vw]"><SelectValue placeholder="Selecione…" /></SelectTrigger>
               <SelectContent>
                 {congs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
