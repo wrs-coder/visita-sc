@@ -586,7 +586,9 @@ function Page() {
                 )}
                 {editId ? (
                   <div className="flex flex-col gap-2 pt-1">
-                    <Button className="w-full" onClick={submit}>Atualizar</Button>
+                    <Button className="w-full" onClick={submit} disabled={submitting}>
+                      {submitting ? "Atualizando..." : "Atualizar"}
+                    </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="destructive" className="w-full">
