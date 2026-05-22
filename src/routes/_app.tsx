@@ -202,7 +202,7 @@ function AppLayout() {
       <header className="md:hidden sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm">
         <div className="flex items-center justify-between px-3 h-14">
           <div className="flex items-center gap-2">
-            <Sheet>
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <button className="p-2 -ml-2 rounded-md hover:bg-white/10">
                   <Menu className="h-5 w-5" />
@@ -222,7 +222,7 @@ function AppLayout() {
                   />
                 </div>
                 <div className="p-3 flex-1 overflow-y-auto overscroll-contain">
-                  <Nav />
+                  <Nav onClick={() => setMobileMenuOpen(false)} />
                 </div>
               </SheetContent>
             </Sheet>
