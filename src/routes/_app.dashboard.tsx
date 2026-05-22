@@ -45,7 +45,7 @@ const ACOMPANHANTE_FOR_LABEL: Record<string, string> = {
 
 function Dashboard() {
   const { profile, role, user } = useAuth();
-  const activeCong = useActiveCongregation();
+  useActiveCongregation(); // mantém o hook montado para sincronizar contexto
   const { visit: rawVisit } = useActiveVisit();
   // Para o superintendente, só consideramos uma visita "ativa" no painel se
   // houve auto-seleção pela semana corrente OU escolha manual no select.
