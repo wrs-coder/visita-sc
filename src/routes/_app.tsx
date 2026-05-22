@@ -42,6 +42,12 @@ function AppLayout() {
   const activeCong = useActiveCongregation();
   const nav = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Fecha automaticamente o menu lateral em mobile ao trocar de rota.
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   // Mantém o contexto ativo global em sincronia para a fila offline.
   useEffect(() => {
