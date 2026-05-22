@@ -66,10 +66,31 @@ function Dashboard() {
     });
   }, [role, user]);
 
+  // Auto-seleção pela semana corrente: se hoje cair entre start_date e end_date
+  // de alguma visita do superintendente, essa congregação vira a ativa.
+  // Sem visita para hoje, mantém vazio (sem pré-seleção). RLS garante que o
+  // superintendente só veja as próprias visitas.
   useEffect(() => {
-    if (role !== "superintendent") return;
-    if (!selected && activeCong) setSelected(activeCong.id);
-  }, [role, activeCong, selected]);
+    if (role !== "superintendent" || !user) return;
+    if (getActiveCongregationOverride()) return; // respeita escolha manual prévia
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("visits")
+        .select("congregation_id")
+        .lte("start_date", today)
+        .gte("end_date", today)
+        .eq("is_active", true)
+        .limit(1);
+      if (cancelled) return;
+      const match = data?.[0]?.congregation_id ?? null;
+      if (match) {
+        setSelected(match);
+        setActiveCongregationOverride(match);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [role, user, today]);
 
   const handleSelectCong = (id: string) => {
     setSelected(id);
