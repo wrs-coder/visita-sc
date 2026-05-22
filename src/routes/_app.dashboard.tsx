@@ -61,6 +61,7 @@ function Dashboard() {
   const [pendingCount, setPendingCount] = useState(0);
   useEffect(() => subscribeQueue(setPendingCount), []);
   const today = format(new Date(), "yyyy-MM-dd");
+  const visit = role === "superintendent" && !selected ? null : rawVisit;
 
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
