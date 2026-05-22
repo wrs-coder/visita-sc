@@ -24,20 +24,45 @@ export interface Visit {
  *   para que os painéis de Reuniões e Discursos abram imediatamente para
  *   edição, mesmo com os campos vazios.
  */
-export function useActiveVisit() {
+type UseActiveVisitOptions = {
+  enabled?: boolean;
+  allowPlaceholder?: boolean;
+  congregationId?: string | null;
+};
+
+export function useActiveVisit(options: UseActiveVisitOptions = {}) {
   const congregation = useActiveCongregation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const congId = congregation?.id ?? null;
+  const congId = options.congregationId ?? congregation?.id ?? null;
+  const today = format(new Date(), "yyyy-MM-dd");
+  const enabled = (options.enabled ?? true) && !!congId;
+  const allowPlaceholder = options.allowPlaceholder ?? true;
   const isSuperOfCong =
-    !!user && !!congregation && congregation.superintendent_id === user.id;
+    !!user &&
+    !!congregation &&
+    congregation.id === congId &&
+    congregation.superintendent_id === user.id;
 
-  const queryKey = ["visits", "ensured", congId] as const;
+  const queryKey = ["visits", "ensured", congId, today, allowPlaceholder] as const;
 
   const { data: visit, isLoading } = useQuery<Visit | null>({
     queryKey,
-    enabled: !!congId,
+    enabled,
     queryFn: async () => {
+      const { data: currentVisit } = await supabase
+        .from("visits")
+        .select("*")
+        .eq("congregation_id", congId!)
+        .eq("is_active", true)
+        .lte("start_date", today)
+        .gte("end_date", today)
+        .order("start_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (currentVisit) return currentVisit as Visit;
+
       const { data } = await supabase
         .from("visits")
         .select("*")
@@ -49,8 +74,7 @@ export function useActiveVisit() {
       if (data) return data as Visit;
 
       // Sem visitas: cria placeholder se for o Superintendente.
-      if (!isSuperOfCong) return null;
-      const today = format(new Date(), "yyyy-MM-dd");
+      if (!allowPlaceholder || !isSuperOfCong) return null;
       const { data: inserted } = await supabase
         .from("visits")
         .insert({
@@ -67,7 +91,7 @@ export function useActiveVisit() {
   });
 
   useEffect(() => {
-    if (!congId) return;
+    if (!enabled || !congId) return;
     const ch = supabase
       .channel(`visits-${congId}`)
       .on(
@@ -81,7 +105,7 @@ export function useActiveVisit() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [congId, queryClient]);
+  }, [congId, enabled, queryClient]);
 
-  return { visit: visit ?? null, loading: !!congId && isLoading };
+  return { visit: visit ?? null, loading: enabled && isLoading };
 }
