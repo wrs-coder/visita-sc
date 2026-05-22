@@ -199,6 +199,7 @@ function Page() {
   };
 
   const submit = async () => {
+    if (submitting) return;
     if (!form.congregation_id) { toast.error("Selecione a congregação"); return; }
     if (!form.title || !form.start_date || !form.end_date) { toast.error("Preencha todos os campos"); return; }
     if (form.end_date < form.start_date) { toast.error("A data final não pode ser anterior à inicial"); return; }
