@@ -619,7 +619,9 @@ function Page() {
                     </Button>
                   </div>
                 ) : (
-                  <Button className="w-full" onClick={submit}>Criar</Button>
+                  <Button className="w-full" onClick={submit} disabled={submitting}>
+                    {submitting ? "Agendando visita..." : "Criar"}
+                  </Button>
                 )}
               </div>
             </DialogContent>
