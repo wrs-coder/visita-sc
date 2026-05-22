@@ -574,7 +574,7 @@ function Page() {
               Cancelar
             </Button>
             <Button onClick={saveEdit} disabled={busy}>
-              Salvar
+              {busy ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
