@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarDays, ListChecks, MapPin, Clock, ChevronRight, UtensilsCrossed, Building2, Car, BookOpen, Users, UserCheck, CloudOff, FileText } from "lucide-react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
-import { useActiveCongregation, getActiveCongregationOverride, setActiveCongregationOverride } from "@/hooks/use-active-congregation";
+import { useActiveCongregation, setActiveCongregationOverride } from "@/hooks/use-active-congregation";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
@@ -43,10 +43,17 @@ const ACOMPANHANTE_FOR_LABEL: Record<string, string> = {
   esposa_sc_pastor: "Esposa do S.C Pastor",
 };
 
+const NO_CURRENT_VISIT_VALUE = "__sem-visita__";
+
 function Dashboard() {
   const { profile, role, user } = useAuth();
   useActiveCongregation(); // mantém o hook montado para sincronizar contexto
-  const { visit: rawVisit } = useActiveVisit();
+  const [selected, setSelected] = useState<string | null>(null);
+  const { visit } = useActiveVisit({
+    enabled: role !== "superintendent" || !!selected,
+    allowPlaceholder: role !== "superintendent",
+    congregationId: role === "superintendent" ? selected : undefined,
+  });
   // Para o superintendente, só consideramos uma visita "ativa" no painel se
   // houve auto-seleção pela semana corrente OU escolha manual no select.
   // Sem nada selecionado → painel inicia vazio (sem fallback automático).
@@ -57,11 +64,9 @@ function Dashboard() {
   const [assignments, setAssignments] = useState<FieldAssignment[]>([]);
   const [fieldMeetings, setFieldMeetings] = useState<FieldMeetingToday[]>([]);
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
-  const [selected, setSelected] = useState<string | null>(() => getActiveCongregationOverride());
   const [pendingCount, setPendingCount] = useState(0);
   useEffect(() => subscribeQueue(setPendingCount), []);
   const today = format(new Date(), "yyyy-MM-dd");
-  const visit = role === "superintendent" && !selected ? null : rawVisit;
 
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
@@ -70,13 +75,12 @@ function Dashboard() {
     });
   }, [role, user]);
 
-  // Auto-seleção pela semana corrente: se hoje cair entre start_date e end_date
-  // de alguma visita do superintendente, essa congregação vira a ativa.
-  // Sem visita para hoje, mantém vazio (sem pré-seleção). RLS garante que o
-  // superintendente só veja as próprias visitas.
+  // Auto-seleção pela data do dispositivo: sempre que o superintendente entra
+  // no Início, a seleção reflete a visita que cobre o dia de hoje. A escolha
+  // manual continua disponível, mas não impede a próxima entrada de voltar à
+  // semana corrente. Sem visita hoje → seleção mostra "Sem visita".
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
-    if (getActiveCongregationOverride()) return; // respeita escolha manual prévia
     let cancelled = false;
     (async () => {
       const { data } = await supabase
@@ -85,11 +89,13 @@ function Dashboard() {
         .lte("start_date", today)
         .gte("end_date", today)
         .eq("is_active", true)
+        .order("start_date", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(1);
       if (cancelled) return;
       const match = data?.[0]?.congregation_id ?? null;
+      setSelected(match);
       if (match) {
-        setSelected(match);
         setActiveCongregationOverride(match);
       }
     })();
@@ -97,12 +103,24 @@ function Dashboard() {
   }, [role, user, today]);
 
   const handleSelectCong = (id: string) => {
+    if (id === NO_CURRENT_VISIT_VALUE) {
+      setSelected(null);
+      return;
+    }
     setSelected(id);
     setActiveCongregationOverride(id);
   };
 
   useEffect(() => {
-    if (!visit) return;
+    if (!visit) {
+      setEvents([]);
+      setChecklist([]);
+      setMeals([]);
+      setTransports([]);
+      setAssignments([]);
+      setFieldMeetings([]);
+      return;
+    }
     const fetchAll = async () => {
       const [{ data: e }, { data: c }, { data: m }, { data: t }, { data: a }, { data: fm }] = await Promise.all([
         supabase.from("schedule_events").select("id, event_date, start_time, title, location, type").eq("visit_id", visit.id).order("event_date").order("start_time"),
