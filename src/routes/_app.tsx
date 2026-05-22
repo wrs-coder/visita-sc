@@ -1,5 +1,4 @@
-import { createFileRoute, Outlet, Link, useLocation, useNavigate, useRouter } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import {
@@ -42,6 +41,12 @@ function AppLayout() {
   const activeCong = useActiveCongregation();
   const nav = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Fecha automaticamente o menu lateral em mobile ao trocar de rota.
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   // Mantém o contexto ativo global em sincronia para a fila offline.
   useEffect(() => {
@@ -120,8 +125,6 @@ function AppLayout() {
   const isActiveLink = (to: string) =>
     location.pathname === to || (to !== "/dashboard" && location.pathname.startsWith(to));
 
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const LinkItem = ({ it, onClick }: { it: NavItem; onClick?: () => void }) => {
     const active = isActiveLink(it.to);
     const Icon = it.icon;
@@ -129,10 +132,8 @@ function AppLayout() {
       <Link
         to={it.to}
         onClick={() => {
-          // Força refetch de queries e re-execução de loaders ao trocar de aba,
-          // garantindo que o conteúdo da nova rota apareça imediatamente atualizado.
-          queryClient.invalidateQueries();
-          router.invalidate();
+          // Navegação somente-cache: não dispara refetch ao Supabase.
+          // Sync acontece apenas via botão "Sincronizar" ou pull-to-refresh.
           onClick?.();
         }}
         className={cn(
@@ -200,7 +201,7 @@ function AppLayout() {
       <header className="md:hidden sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm">
         <div className="flex items-center justify-between px-3 h-14">
           <div className="flex items-center gap-2">
-            <Sheet>
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <button className="p-2 -ml-2 rounded-md hover:bg-white/10">
                   <Menu className="h-5 w-5" />
@@ -220,7 +221,7 @@ function AppLayout() {
                   />
                 </div>
                 <div className="p-3 flex-1 overflow-y-auto overscroll-contain">
-                  <Nav />
+                  <Nav onClick={() => setMobileMenuOpen(false)} />
                 </div>
               </SheetContent>
             </Sheet>
