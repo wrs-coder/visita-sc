@@ -39,7 +39,10 @@ export function useActiveVisit(options: UseActiveVisitOptions = {}) {
   const enabled = (options.enabled ?? true) && !!congId;
   const allowPlaceholder = options.allowPlaceholder ?? true;
   const isSuperOfCong =
-    !!user && !!congregation && congregation.id === congId && congregation.superintendent_id === user.id;
+    !!user &&
+    !!congregation &&
+    congregation.id === congId &&
+    congregation.superintendent_id === user.id;
 
   const queryKey = ["visits", "ensured", congId, today, allowPlaceholder] as const;
 
