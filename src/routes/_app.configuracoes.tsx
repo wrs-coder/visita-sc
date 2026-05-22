@@ -293,6 +293,9 @@ function Page() {
       console.warn("[visit:insert] erro", err);
       toast.warning("Ligação instável. Tente novamente quando a rede voltar — nenhum dado foi perdido.");
     }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const removeById = async (id: string) => {
