@@ -242,7 +242,7 @@ function Page() {
                 Cancelar
               </Button>
               <Button onClick={create} disabled={busy}>
-                Criar
+                {busy ? "Criando..." : "Criar"}
               </Button>
             </DialogFooter>
           </DialogContent>
