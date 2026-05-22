@@ -120,8 +120,6 @@ function AppLayout() {
   const isActiveLink = (to: string) =>
     location.pathname === to || (to !== "/dashboard" && location.pathname.startsWith(to));
 
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const LinkItem = ({ it, onClick }: { it: NavItem; onClick?: () => void }) => {
     const active = isActiveLink(it.to);
     const Icon = it.icon;
@@ -129,10 +127,8 @@ function AppLayout() {
       <Link
         to={it.to}
         onClick={() => {
-          // Força refetch de queries e re-execução de loaders ao trocar de aba,
-          // garantindo que o conteúdo da nova rota apareça imediatamente atualizado.
-          queryClient.invalidateQueries();
-          router.invalidate();
+          // Navegação somente-cache: não dispara refetch ao Supabase.
+          // Sync acontece apenas via botão "Sincronizar" ou pull-to-refresh.
           onClick?.();
         }}
         className={cn(
