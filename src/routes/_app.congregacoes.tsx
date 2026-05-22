@@ -480,7 +480,7 @@ function Page() {
                 load();
               }}
             >
-              Salvar
+              {busy ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
