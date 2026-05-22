@@ -535,7 +535,7 @@ function Page() {
                 setNewPwd("");
               }}
             >
-              Redefinir
+              {busy ? "Redefinindo..." : "Redefinir"}
             </Button>
           </DialogFooter>
         </DialogContent>
