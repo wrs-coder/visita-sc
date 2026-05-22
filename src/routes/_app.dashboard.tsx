@@ -46,7 +46,10 @@ const ACOMPANHANTE_FOR_LABEL: Record<string, string> = {
 function Dashboard() {
   const { profile, role, user } = useAuth();
   const activeCong = useActiveCongregation();
-  const { visit } = useActiveVisit();
+  const { visit: rawVisit } = useActiveVisit();
+  // Para o superintendente, só consideramos uma visita "ativa" no painel se
+  // houve auto-seleção pela semana corrente OU escolha manual no select.
+  // Sem nada selecionado → painel inicia vazio (sem fallback automático).
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
