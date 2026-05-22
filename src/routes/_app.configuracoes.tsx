@@ -88,6 +88,7 @@ function Page() {
   const [meetingTalkTpls, setMeetingTalkTpls] = useState<{ id: string; name: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: "Visita" as string,
     start_date: "",
@@ -198,6 +199,7 @@ function Page() {
   };
 
   const submit = async () => {
+    if (submitting) return;
     if (!form.congregation_id) { toast.error("Selecione a congregação"); return; }
     if (!form.title || !form.start_date || !form.end_date) { toast.error("Preencha todos os campos"); return; }
     if (form.end_date < form.start_date) { toast.error("A data final não pode ser anterior à inicial"); return; }
@@ -209,6 +211,8 @@ function Page() {
       if (!form.meeting_talk_template_id) { toast.error("Selecione o Modelo de Reunião e Discurso"); return; }
     }
 
+    setSubmitting(true);
+    try {
     const basePayload = {
       title: form.title,
       start_date: form.start_date,
@@ -288,6 +292,9 @@ function Page() {
     } catch (err) {
       console.warn("[visit:insert] erro", err);
       toast.warning("Ligação instável. Tente novamente quando a rede voltar — nenhum dado foi perdido.");
+    }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -579,7 +586,9 @@ function Page() {
                 )}
                 {editId ? (
                   <div className="flex flex-col gap-2 pt-1">
-                    <Button className="w-full" onClick={submit}>Atualizar</Button>
+                    <Button className="w-full" onClick={submit} disabled={submitting}>
+                      {submitting ? "Atualizando..." : "Atualizar"}
+                    </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="destructive" className="w-full">
@@ -610,7 +619,9 @@ function Page() {
                     </Button>
                   </div>
                 ) : (
-                  <Button className="w-full" onClick={submit}>Criar</Button>
+                  <Button className="w-full" onClick={submit} disabled={submitting}>
+                    {submitting ? "Agendando visita..." : "Criar"}
+                  </Button>
                 )}
               </div>
             </DialogContent>

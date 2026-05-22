@@ -1,4 +1,5 @@
-import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useLocation, useNavigate, useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import {
@@ -119,13 +120,21 @@ function AppLayout() {
   const isActiveLink = (to: string) =>
     location.pathname === to || (to !== "/dashboard" && location.pathname.startsWith(to));
 
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const LinkItem = ({ it, onClick }: { it: NavItem; onClick?: () => void }) => {
     const active = isActiveLink(it.to);
     const Icon = it.icon;
     return (
       <Link
         to={it.to}
-        onClick={onClick}
+        onClick={() => {
+          // Força refetch de queries e re-execução de loaders ao trocar de aba,
+          // garantindo que o conteúdo da nova rota apareça imediatamente atualizado.
+          queryClient.invalidateQueries();
+          router.invalidate();
+          onClick?.();
+        }}
         className={cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition",
           active

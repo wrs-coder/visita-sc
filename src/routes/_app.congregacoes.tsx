@@ -242,7 +242,7 @@ function Page() {
                 Cancelar
               </Button>
               <Button onClick={create} disabled={busy}>
-                Criar
+                {busy ? "Criando..." : "Criar"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -480,7 +480,7 @@ function Page() {
                 load();
               }}
             >
-              Salvar
+              {busy ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -535,7 +535,7 @@ function Page() {
                 setNewPwd("");
               }}
             >
-              Redefinir
+              {busy ? "Redefinindo..." : "Redefinir"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -574,7 +574,7 @@ function Page() {
               Cancelar
             </Button>
             <Button onClick={saveEdit} disabled={busy}>
-              Salvar
+              {busy ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
