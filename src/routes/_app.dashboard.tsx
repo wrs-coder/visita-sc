@@ -97,6 +97,8 @@ function Dashboard() {
       setSelected(match);
       if (match) {
         setActiveCongregationOverride(match);
+      } else {
+        setActiveCongregationOverride(null);
       }
     })();
     return () => { cancelled = true; };
@@ -105,6 +107,7 @@ function Dashboard() {
   const handleSelectCong = (id: string) => {
     if (id === NO_CURRENT_VISIT_VALUE) {
       setSelected(null);
+      setActiveCongregationOverride(null);
       return;
     }
     setSelected(id);
@@ -194,9 +197,10 @@ function Dashboard() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Congregação ativa</div>
               <div className="text-xs text-muted-foreground">Selecione a congregação do circuito para ver e gerenciar seus dados.</div>
             </div>
-            <Select value={selected ?? ""} onValueChange={handleSelectCong}>
-              <SelectTrigger className="w-[200px] max-w-[60vw]"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+            <Select value={selected ?? NO_CURRENT_VISIT_VALUE} onValueChange={handleSelectCong}>
+              <SelectTrigger className="w-[200px] max-w-[60vw]"><SelectValue /></SelectTrigger>
               <SelectContent>
+                <SelectItem value={NO_CURRENT_VISIT_VALUE}>Sem visita</SelectItem>
                 {congs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
