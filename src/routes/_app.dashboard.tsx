@@ -45,8 +45,11 @@ const ACOMPANHANTE_FOR_LABEL: Record<string, string> = {
 
 function Dashboard() {
   const { profile, role, user } = useAuth();
-  const activeCong = useActiveCongregation();
-  const { visit } = useActiveVisit();
+  useActiveCongregation(); // mantém o hook montado para sincronizar contexto
+  const { visit: rawVisit } = useActiveVisit();
+  // Para o superintendente, só consideramos uma visita "ativa" no painel se
+  // houve auto-seleção pela semana corrente OU escolha manual no select.
+  // Sem nada selecionado → painel inicia vazio (sem fallback automático).
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -58,6 +61,7 @@ function Dashboard() {
   const [pendingCount, setPendingCount] = useState(0);
   useEffect(() => subscribeQueue(setPendingCount), []);
   const today = format(new Date(), "yyyy-MM-dd");
+  const visit = role === "superintendent" && !selected ? null : rawVisit;
 
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
@@ -66,10 +70,31 @@ function Dashboard() {
     });
   }, [role, user]);
 
+  // Auto-seleção pela semana corrente: se hoje cair entre start_date e end_date
+  // de alguma visita do superintendente, essa congregação vira a ativa.
+  // Sem visita para hoje, mantém vazio (sem pré-seleção). RLS garante que o
+  // superintendente só veja as próprias visitas.
   useEffect(() => {
-    if (role !== "superintendent") return;
-    if (!selected && activeCong) setSelected(activeCong.id);
-  }, [role, activeCong, selected]);
+    if (role !== "superintendent" || !user) return;
+    if (getActiveCongregationOverride()) return; // respeita escolha manual prévia
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("visits")
+        .select("congregation_id")
+        .lte("start_date", today)
+        .gte("end_date", today)
+        .eq("is_active", true)
+        .limit(1);
+      if (cancelled) return;
+      const match = data?.[0]?.congregation_id ?? null;
+      if (match) {
+        setSelected(match);
+        setActiveCongregationOverride(match);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [role, user, today]);
 
   const handleSelectCong = (id: string) => {
     setSelected(id);
@@ -151,7 +176,7 @@ function Dashboard() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Congregação ativa</div>
               <div className="text-xs text-muted-foreground">Selecione a congregação do circuito para ver e gerenciar seus dados.</div>
             </div>
-            <Select value={selected ?? activeCong?.id ?? ""} onValueChange={handleSelectCong}>
+            <Select value={selected ?? ""} onValueChange={handleSelectCong}>
               <SelectTrigger className="w-[200px] max-w-[60vw]"><SelectValue placeholder="Selecione…" /></SelectTrigger>
               <SelectContent>
                 {congs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
