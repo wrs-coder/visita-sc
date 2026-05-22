@@ -211,6 +211,8 @@ function Page() {
       if (!form.meeting_talk_template_id) { toast.error("Selecione o Modelo de Reunião e Discurso"); return; }
     }
 
+    setSubmitting(true);
+    try {
     const basePayload = {
       title: form.title,
       start_date: form.start_date,
