@@ -205,7 +205,7 @@ function Page() {
 
 
   const exportPdf = async () => {
-    if (selectedNotes.length === 0) { toast.error("Selecione ao menos uma nota."); return; }
+    if (selectedNotes.length === 0) { toast.error("Por favor, selecione pelo menos uma nota para exportar."); return; }
     const { default: jsPDF } = await import("jspdf");
     const doc: jsPDFType = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
