@@ -342,26 +342,63 @@ function Page() {
       </Card>
 
 
-      {selected.size > 0 && (
-        <Card className="border-primary/40">
-          <CardContent className="p-3 flex flex-wrap items-center justify-between gap-2">
-            <span className="text-sm">{selected.size} nota(s) selecionada(s)</span>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setSelected(new Set())}>Limpar</Button>
-              <Button size="sm" variant="outline" onClick={exportPdf}><FileDown className="h-3.5 w-3.5 mr-1" />PDF</Button>
-              <Button size="sm" onClick={shareWhatsapp}><Share2 className="h-3.5 w-3.5 mr-1" />WhatsApp</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Card className="border-primary/40">
+        <CardContent className="p-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm">
+            <FileDown className="h-4 w-4 text-primary" />
+            <span className="font-medium">Exportar Notas</span>
+            <span className="text-muted-foreground">
+              • {selected.size} selecionada(s){selected.size > 0 ? " (pode incluir notas de várias sub-abas)" : ""}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm" variant="outline"
+              onClick={() => {
+                const ids = filtered.map((n) => n.id);
+                setSelected((s) => {
+                  const next = new Set(s);
+                  const allOn = ids.every((id) => next.has(id));
+                  if (allOn) ids.forEach((id) => next.delete(id));
+                  else ids.forEach((id) => next.add(id));
+                  return next;
+                });
+              }}
+              disabled={filtered.length === 0}
+            >
+              <Check className="h-3.5 w-3.5 mr-1" />
+              {filtered.length > 0 && filtered.every((n) => selected.has(n.id)) ? "Desmarcar desta aba" : "Selecionar desta aba"}
+            </Button>
+            {selected.size > 0 && (
+              <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+                <X className="h-3.5 w-3.5 mr-1" />Limpar
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={exportPdf}>
+              <FileDown className="h-3.5 w-3.5 mr-1" />Exportar PDF
+            </Button>
+            <Button size="sm" onClick={shareWhatsapp}>
+              <Share2 className="h-3.5 w-3.5 mr-1" />WhatsApp
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as NoteType)}>
         <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full h-auto">
-          {CATEGORIES.map((c) => (
-            <TabsTrigger key={c.value} value={c.value} className="text-xs">
-              <c.icon className="h-3.5 w-3.5 mr-1" />{c.label}
-            </TabsTrigger>
-          ))}
+          {CATEGORIES.map((c) => {
+            const count = notes.filter((n) => n.note_type === c.value && selected.has(n.id)).length;
+            return (
+              <TabsTrigger key={c.value} value={c.value} className="text-xs relative">
+                <c.icon className="h-3.5 w-3.5 mr-1" />{c.label}
+                {count > 0 && (
+                  <span className="ml-1 inline-flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
+                    {count}
+                  </span>
+                )}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         <Card className="mt-3">
