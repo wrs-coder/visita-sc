@@ -320,9 +320,27 @@ function Page() {
         <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Lock className="h-5 w-5" /></div>
         <div className="flex-1">
           <h1 className="text-2xl md:text-3xl font-bold">Notas Privadas</h1>
-          <p className="text-sm text-muted-foreground mt-1">Visíveis apenas para você • {congregation.name}</p>
+          <p className="text-sm text-muted-foreground mt-1">Visíveis apenas para você{congregation ? ` • ${congregation.name}` : ""}</p>
         </div>
       </div>
+
+      <Card>
+        <CardContent className="p-3 flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <Label className="text-xs text-muted-foreground">Congregação (apenas para esta aba)</Label>
+            <Select value={congId ?? ""} onValueChange={(v) => setCongId(v)}>
+              <SelectTrigger><SelectValue placeholder="Selecione uma congregação..." /></SelectTrigger>
+              <SelectContent>
+                {congs.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
 
       {selected.size > 0 && (
         <Card className="border-primary/40">
