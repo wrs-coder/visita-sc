@@ -27,6 +27,8 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/s
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SyncButton } from "@/components/SyncButton";
+import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
+import { Coffee } from "lucide-react";
 import { setActiveContext } from "@/lib/active-context";
 
 export const Route = createFileRoute("/_app")({
