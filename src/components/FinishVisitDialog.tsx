@@ -36,10 +36,26 @@ interface Props {
   visitId: string;
   visitTitle: string;
   onFinished?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }
 
-export function FinishVisitDialog({ visitId, visitTitle, onFinished }: Props) {
-  const [open, setOpen] = useState(false);
+export function FinishVisitDialog({
+  visitId,
+  visitTitle,
+  onFinished,
+  open: openProp,
+  onOpenChange,
+  hideTrigger,
+}: Props) {
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = (o: boolean) => {
+    if (onOpenChange) onOpenChange(o);
+    else setOpenState(o);
+  };
+
   const [s303, setS303] = useState(false);
   const [designacoes, setDesignacoes] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -86,11 +102,14 @@ export function FinishVisitDialog({ visitId, visitTitle, onFinished }: Props) {
         if (!o) reset();
       }}
     >
-      <DialogTrigger asChild>
-        <Button variant="destructive" size="sm">
-          <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Visita
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="destructive" size="sm">
+            <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Visita
+          </Button>
+        </DialogTrigger>
+      )}
+
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

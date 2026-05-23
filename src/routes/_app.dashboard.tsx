@@ -26,6 +26,7 @@ import {
   UserCheck,
   CloudOff,
   FileText,
+  AlertTriangle,
 } from "lucide-react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import {
@@ -135,7 +136,29 @@ function Dashboard() {
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [pendingCount, setPendingCount] = useState(0);
   useEffect(() => subscribeQueue(setPendingCount), []);
+  const [overdueVisits, setOverdueVisits] = useState<
+    Array<{ id: string; title: string; end_date: string; congregation_id: string }>
+  >([]);
+  const [overdueDialogId, setOverdueDialogId] = useState<string | null>(null);
   const today = format(new Date(), "yyyy-MM-dd");
+
+  // Detecta visitas encerradas (end_date < hoje) cujos dados operacionais
+  // ainda não foram limpos via "Finalizar Visita". Consulta única e leve por
+  // entrada no painel, escopada por RLS às congregações do superintendente.
+  useEffect(() => {
+    if (role !== "superintendent" || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("visits")
+        .select("id, title, end_date, congregation_id")
+        .lt("end_date", today)
+        .order("end_date", { ascending: false });
+      if (cancelled) return;
+      setOverdueVisits(data ?? []);
+    })();
+  }, [role, user, today, selected]);
+
 
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
@@ -340,6 +363,71 @@ function Dashboard() {
           <span className="hidden sm:inline opacity-70">Toque em ↻ no topo para enviar.</span>
         </div>
       )}
+
+      {role === "superintendent" && overdueVisits.length > 0 && (
+        <div className="rounded-md border-2 border-amber-500/60 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100 px-4 py-3 shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+            <div className="flex-1 min-w-0 space-y-2">
+              <p className="text-sm font-semibold">
+                Atenção: Você possui{" "}
+                {overdueVisits.length === 1
+                  ? "uma visita encerrada"
+                  : `${overdueVisits.length} visitas encerradas`}{" "}
+                que ainda não {overdueVisits.length === 1 ? "foi finalizada" : "foram finalizadas"} no sistema.
+              </p>
+              <p className="text-xs leading-relaxed opacity-90">
+                Lembre-se de enviar o S-303 e clicar em "Finalizar Visita" para limpar os dados
+                operacionais e liberar o histórico.
+              </p>
+              <ul className="space-y-1.5 pt-1">
+                {overdueVisits.map((v) => (
+                  <li
+                    key={v.id}
+                    className="flex flex-wrap items-center gap-2 text-xs bg-amber-100/60 dark:bg-amber-900/30 rounded px-2 py-1.5"
+                  >
+                    <span className="font-medium flex-1 min-w-0 truncate">
+                      {v.title}
+                      <span className="opacity-70 font-normal">
+                        {" · encerrada em "}
+                        {format(parseISO(v.end_date), "dd/MM/yyyy")}
+                      </span>
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="h-7 text-xs"
+                      onClick={() => setOverdueDialogId(v.id)}
+                    >
+                      Finalizar Agora
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          {overdueVisits.map((v) => (
+            <FinishVisitDialog
+              key={`dlg-${v.id}`}
+              visitId={v.id}
+              visitTitle={v.title}
+              hideTrigger
+              open={overdueDialogId === v.id}
+              onOpenChange={(o) => setOverdueDialogId(o ? v.id : null)}
+              onFinished={() => {
+                setOverdueVisits((prev) => prev.filter((x) => x.id !== v.id));
+                setOverdueDialogId(null);
+                if (selected === v.congregation_id) {
+                  setSelected(null);
+                  setActiveCongregationOverride(null);
+                }
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+
 
       {visit && (
         <div className="flex flex-wrap justify-end gap-2 print:hidden">
