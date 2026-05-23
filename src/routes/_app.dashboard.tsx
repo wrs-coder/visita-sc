@@ -136,7 +136,29 @@ function Dashboard() {
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [pendingCount, setPendingCount] = useState(0);
   useEffect(() => subscribeQueue(setPendingCount), []);
+  const [overdueVisits, setOverdueVisits] = useState<
+    Array<{ id: string; title: string; end_date: string; congregation_id: string }>
+  >([]);
+  const [overdueDialogId, setOverdueDialogId] = useState<string | null>(null);
   const today = format(new Date(), "yyyy-MM-dd");
+
+  // Detecta visitas encerradas (end_date < hoje) cujos dados operacionais
+  // ainda não foram limpos via "Finalizar Visita". Consulta única e leve por
+  // entrada no painel, escopada por RLS às congregações do superintendente.
+  useEffect(() => {
+    if (role !== "superintendent" || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("visits")
+        .select("id, title, end_date, congregation_id")
+        .lt("end_date", today)
+        .order("end_date", { ascending: false });
+      if (cancelled) return;
+      setOverdueVisits(data ?? []);
+    })();
+  }, [role, user, today, selected]);
+
 
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
