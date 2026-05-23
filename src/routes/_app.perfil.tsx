@@ -216,6 +216,19 @@ function Page() {
         </Card>
       )}
 
+      <Card className="shadow-card border-primary/30">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Coffee className="h-4 w-4 text-primary" /> Apoie o Desenvolvedor ☕
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SupportDeveloperContent />
+        </CardContent>
+      </Card>
+
+
+
       <AlertDialog open={pendingRestore !== null} onOpenChange={(o) => { if (!o) setPendingRestore(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
