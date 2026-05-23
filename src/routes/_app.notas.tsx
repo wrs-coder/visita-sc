@@ -301,7 +301,7 @@ function Page() {
   };
 
   const shareWhatsapp = () => {
-    if (selectedNotes.length === 0) { toast.error("Selecione ao menos uma nota."); return; }
+    if (selectedNotes.length === 0) { toast.error("Por favor, selecione pelo menos uma nota para exportar."); return; }
     const L: string[] = [];
     L.push(`*Notas Privadas — Confidencial*`);
     L.push(`${congregation?.name ?? ""}`);
