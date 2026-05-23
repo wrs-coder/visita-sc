@@ -189,18 +189,13 @@ function AppLayout() {
                 </Collapsible>
               )}
               {perfil && <LinkItem it={perfil} onClick={onClick} />}
-              <SupportDeveloperDialog
-                trigger={
-                  <button
-                    type="button"
-                    onClick={onClick}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
-                  >
-                    <Coffee className="h-4 w-4" /> Apoie o Desenvolvedor ☕
-                  </button>
-                }
-              />
-            </div>
+              <button
+                type="button"
+                onClick={openSupport}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+              >
+                <Coffee className="h-4 w-4" /> Apoie o Desenvolvedor ☕
+              </button>
           );
         }
         const hasPerfil = sec.items.some((i) => i.to === "/perfil");
