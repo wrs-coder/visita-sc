@@ -304,7 +304,7 @@ function Page() {
     if (selectedNotes.length === 0) { toast.error("Selecione ao menos uma nota."); return; }
     const L: string[] = [];
     L.push(`*Notas Privadas — Confidencial*`);
-    L.push(`${congregation.name} • ${visit.title}`);
+    L.push(`${congregation?.name ?? ""}`);
     selectedNotes.forEach((n) => {
       const cat = CATEGORIES.find((c) => c.value === n.note_type)?.label ?? "Nota";
       L.push("", `*[${cat}] ${n.title ?? ""}*`);
