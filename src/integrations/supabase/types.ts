@@ -711,6 +711,7 @@ export type Database = {
         Row: {
           additional_info: string | null
           companion: string | null
+          congregation_id: string | null
           content: string
           created_at: string
           id: string
@@ -721,11 +722,12 @@ export type Database = {
           superintendent_id: string
           title: string | null
           updated_at: string
-          visit_id: string
+          visit_id: string | null
         }
         Insert: {
           additional_info?: string | null
           companion?: string | null
+          congregation_id?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -736,11 +738,12 @@ export type Database = {
           superintendent_id: string
           title?: string | null
           updated_at?: string
-          visit_id: string
+          visit_id?: string | null
         }
         Update: {
           additional_info?: string | null
           companion?: string | null
+          congregation_id?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -751,9 +754,16 @@ export type Database = {
           superintendent_id?: string
           title?: string | null
           updated_at?: string
-          visit_id?: string
+          visit_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "private_notes_congregation_id_fkey"
+            columns: ["congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "private_notes_visit_id_fkey"
             columns: ["visit_id"]
