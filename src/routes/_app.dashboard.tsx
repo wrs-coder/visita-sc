@@ -26,6 +26,7 @@ import {
   UserCheck,
   CloudOff,
   FileText,
+  AlertTriangle,
 } from "lucide-react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import {
