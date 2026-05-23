@@ -44,6 +44,13 @@ function AppLayout() {
   const nav = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+
+  const openSupport = () => {
+    setMobileMenuOpen(false);
+    // espera o Sheet fechar antes de abrir o Dialog (evita conflito de foco/overlay)
+    setTimeout(() => setSupportOpen(true), 50);
+  };
 
   // Fecha automaticamente o menu lateral em mobile ao trocar de rota.
   useEffect(() => {
