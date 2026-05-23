@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { LogIn, Eye, Info, Mail, MessageCircle, UserCircle2 } from "lucide-react";
+import { LogIn, Eye, Info, Mail, MessageCircle, UserCircle2, Coffee } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 
 const APP_VERSION = "2.1.0";
 const APP_BUILD = "2026.05.21";
@@ -108,6 +109,17 @@ export function LoginForm() {
         <Link to="/visitante" className="mt-4 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2">
           <Eye className="h-4 w-4" /> Acesso Corpo de anciãos e ES
         </Link>
+
+        <SupportDeveloperDialog
+          trigger={
+            <button
+              type="button"
+              className="mt-1 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2"
+            >
+              <Coffee className="h-4 w-4" /> Apoie o Desenvolvedor ☕
+            </button>
+          }
+        />
 
         <Dialog>
           <DialogTrigger asChild>

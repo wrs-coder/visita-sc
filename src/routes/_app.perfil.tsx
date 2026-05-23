@@ -15,7 +15,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2 } from "lucide-react";
+import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee } from "lucide-react";
+import { SupportDeveloperContent } from "@/components/SupportDeveloper";
 
 export const Route = createFileRoute("/_app/perfil")({ component: Page });
 
@@ -214,6 +215,19 @@ function Page() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="shadow-card border-primary/30">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Coffee className="h-4 w-4 text-primary" /> Apoie o Desenvolvedor ☕
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SupportDeveloperContent />
+        </CardContent>
+      </Card>
+
+
 
       <AlertDialog open={pendingRestore !== null} onOpenChange={(o) => { if (!o) setPendingRestore(null); }}>
         <AlertDialogContent>
