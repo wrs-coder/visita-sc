@@ -78,11 +78,19 @@ export function SupportDeveloperContent() {
   );
 }
 
-/** Diálogo "Apoie o Desenvolvedor" — recebe um trigger customizado. */
-export function SupportDeveloperDialog({ trigger }: { trigger: ReactNode }) {
+/** Diálogo "Apoie o Desenvolvedor" — trigger opcional + controle externo opcional. */
+export function SupportDeveloperDialog({
+  trigger,
+  open,
+  onOpenChange,
+}: {
+  trigger?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   return (
-    <Dialog>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
