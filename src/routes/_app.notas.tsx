@@ -228,7 +228,7 @@ function Page() {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(90);
-      doc.text(`${congregation.name} • ${visit.title}`, margin, margin + 20);
+      doc.text(`${congregation?.name ?? ""}`, margin, margin + 20);
       doc.text(generatedAt, pageW - margin, margin + 20, { align: "right" });
       doc.setDrawColor(210);
       doc.setLineWidth(0.6);
