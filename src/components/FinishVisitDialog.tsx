@@ -102,11 +102,14 @@ export function FinishVisitDialog({
         if (!o) reset();
       }}
     >
-      <DialogTrigger asChild>
-        <Button variant="destructive" size="sm">
-          <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Visita
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="destructive" size="sm">
+            <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Visita
+          </Button>
+        </DialogTrigger>
+      )}
+
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
