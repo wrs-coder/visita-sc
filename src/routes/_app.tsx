@@ -324,6 +324,7 @@ function AppLayout() {
           </div>
         </main>
       </div>
+      <SupportDeveloperDialog open={supportOpen} onOpenChange={setSupportOpen} />
     </div>
   );
 }
