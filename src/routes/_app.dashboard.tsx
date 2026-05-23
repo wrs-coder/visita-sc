@@ -340,14 +340,25 @@ function Dashboard() {
       )}
 
       {visit && (
-        <div className="flex justify-end print:hidden">
+        <div className="flex flex-wrap justify-end gap-2 print:hidden">
           <Button asChild size="sm" variant="outline">
             <Link to="/relatorio/$visitId" params={{ visitId: visit.id }}>
               <FileText className="h-4 w-4 mr-1" /> Relatório executivo
             </Link>
           </Button>
+          {role === "superintendent" && (
+            <FinishVisitDialog
+              visitId={visit.id}
+              visitTitle={visit.title}
+              onFinished={() => {
+                setSelected(null);
+                setActiveCongregationOverride(null);
+              }}
+            />
+          )}
         </div>
       )}
+
 
       {role === "superintendent" && congs.length > 0 && (
         <Card className="shadow-card">
