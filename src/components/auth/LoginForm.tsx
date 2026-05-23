@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { LogIn, Eye, Info, Mail, MessageCircle, UserCircle2 } from "lucide-react";
+import { LogIn, Eye, Info, Mail, MessageCircle, UserCircle2, Coffee } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 
 const APP_VERSION = "2.1.0";
 const APP_BUILD = "2026.05.21";
