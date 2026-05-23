@@ -1,7 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useActiveVisit } from "@/hooks/use-active-visit";
-import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import {
   Lock, Plus, Trash2, Loader2, Check, HeartHandshake, FileText,
-  ClipboardList, Mic, ThumbsUp, Mail, FileDown, Share2, Search, X,
+  ClipboardList, Mic, ThumbsUp, Mail, FileDown, Share2, Search, X, Building2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -40,7 +38,10 @@ export const Route = createFileRoute("/_app/notas")({ component: Page });
 type NoteType = "free" | "pastoral" | "s303" | "oradores" | "recomendados" | "peticoes";
 
 interface Note {
-  id: string; visit_id: string; superintendent_id: string;
+  id: string;
+  visit_id: string | null;
+  congregation_id: string;
+  superintendent_id: string;
   title: string | null; content: string;
   note_type: NoteType;
   companion: string | null; involved_names: string | null; additional_info: string | null;
@@ -58,10 +59,15 @@ const CATEGORIES: { value: NoteType; label: string; icon: React.ComponentType<{ 
   { value: "peticoes", label: "Petições", icon: Mail, addLabel: "Nova petição", empty: "Nenhuma petição." },
 ];
 
+const NOTAS_CONG_KEY = "notas_privadas_congregation_id";
+
 function Page() {
-  const { visit } = useActiveVisit();
-  const congregation = useActiveCongregation();
   const { user, role } = useAuth();
+  const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
+  const [congId, setCongId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(NOTAS_CONG_KEY);
+  });
   const [notes, setNotes] = useState<Note[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [tab, setTab] = useState<NoteType>("free");
@@ -70,18 +76,50 @@ function Page() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  // Carrega congregações do superintendente (independente do estado global).
   useEffect(() => {
-    if (!visit) { setNotes([]); return; }
+    if (role !== "superintendent" || !user) return;
+    supabase
+      .from("congregations")
+      .select("id,name")
+      .eq("superintendent_id", user.id)
+      .order("name")
+      .then(({ data }) => {
+        const list = data ?? [];
+        setCongs(list);
+        // Se nada selecionado e há congregações, escolhe a primeira.
+        setCongId((prev) => {
+          if (prev && list.some((c) => c.id === prev)) return prev;
+          return list[0]?.id ?? null;
+        });
+      });
+  }, [role, user]);
+
+  useEffect(() => {
+    if (congId) localStorage.setItem(NOTAS_CONG_KEY, congId);
+  }, [congId]);
+
+  const congregation = useMemo(
+    () => congs.find((c) => c.id === congId) ?? null,
+    [congs, congId],
+  );
+
+  useEffect(() => {
+    if (!congId) { setNotes([]); return; }
     const load = async () => {
-      const { data } = await supabase.from("private_notes").select("*").eq("visit_id", visit.id).order("created_at", { ascending: false });
+      const { data } = await supabase
+        .from("private_notes")
+        .select("*")
+        .eq("congregation_id", congId)
+        .order("created_at", { ascending: false });
       setNotes((data ?? []) as unknown as Note[]);
       setSelected(new Set());
     };
     load();
-  }, [visit?.id]);
+  }, [congId]);
 
   const add = async (note_type: NoteType) => {
-    if (!user || !visit) return;
+    if (!user || !congId) return;
     const base: Partial<Note> = note_type === "free"
       ? { title: "Nova nota", content: "" }
       : note_type === "pastoral"
@@ -92,7 +130,8 @@ function Page() {
     const now = new Date().toISOString();
     const optimistic: Note = {
       id,
-      visit_id: visit.id,
+      visit_id: null,
+      congregation_id: congId,
       superintendent_id: user.id,
       title: (base.title as string) ?? null,
       content: (base.content as string) ?? "",
@@ -106,7 +145,7 @@ function Page() {
     };
     setNotes((n) => [optimistic, ...n]);
     const { error, queued } = await offlineInsert("private_notes", {
-      id, visit_id: visit.id, superintendent_id: user.id, note_type, ...base,
+      id, congregation_id: congId, superintendent_id: user.id, note_type, ...base,
     } as Record<string, unknown>);
     if (error) {
       setNotes((n) => n.filter((x) => x.id !== id));
@@ -162,8 +201,8 @@ function Page() {
   const selectedNotes = useMemo(() => notes.filter((n) => selected.has(n.id)), [notes, selected]);
 
   if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">Acesso restrito ao superintendente.</CardContent></Card>;
-  if (!congregation) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Selecione uma congregação na aba Início.</CardContent></Card>;
-  if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa para {congregation.name}.</CardContent></Card>;
+  if (congs.length === 0) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Cadastre uma congregação para começar.</CardContent></Card>;
+
 
   const exportPdf = async () => {
     if (selectedNotes.length === 0) { toast.error("Selecione ao menos uma nota."); return; }
@@ -189,7 +228,7 @@ function Page() {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(90);
-      doc.text(`${congregation.name} • ${visit.title}`, margin, margin + 20);
+      doc.text(`${congregation?.name ?? ""}`, margin, margin + 20);
       doc.text(generatedAt, pageW - margin, margin + 20, { align: "right" });
       doc.setDrawColor(210);
       doc.setLineWidth(0.6);
@@ -265,7 +304,7 @@ function Page() {
     if (selectedNotes.length === 0) { toast.error("Selecione ao menos uma nota."); return; }
     const L: string[] = [];
     L.push(`*Notas Privadas — Confidencial*`);
-    L.push(`${congregation.name} • ${visit.title}`);
+    L.push(`${congregation?.name ?? ""}`);
     selectedNotes.forEach((n) => {
       const cat = CATEGORIES.find((c) => c.value === n.note_type)?.label ?? "Nota";
       L.push("", `*[${cat}] ${n.title ?? ""}*`);
@@ -281,9 +320,27 @@ function Page() {
         <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Lock className="h-5 w-5" /></div>
         <div className="flex-1">
           <h1 className="text-2xl md:text-3xl font-bold">Notas Privadas</h1>
-          <p className="text-sm text-muted-foreground mt-1">Visíveis apenas para você • {congregation.name}</p>
+          <p className="text-sm text-muted-foreground mt-1">Visíveis apenas para você{congregation ? ` • ${congregation.name}` : ""}</p>
         </div>
       </div>
+
+      <Card>
+        <CardContent className="p-3 flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <Label className="text-xs text-muted-foreground">Congregação (apenas para esta aba)</Label>
+            <Select value={congId ?? ""} onValueChange={(v) => setCongId(v)}>
+              <SelectTrigger><SelectValue placeholder="Selecione uma congregação..." /></SelectTrigger>
+              <SelectContent>
+                {congs.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
 
       {selected.size > 0 && (
         <Card className="border-primary/40">
