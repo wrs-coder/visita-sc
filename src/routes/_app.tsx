@@ -1,8 +1,6 @@
 import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -85,27 +83,8 @@ function AppLayout() {
 
   // Bloqueio de membros comuns quando a congregação está inativa.
   const blocked = role !== "superintendent" && congregation && congregation.is_active === false;
-
-  // Para superintendente: só considera uma congregação "Ativa" se houver pelo menos
-  // uma visita com is_active=true no banco. Caso contrário, exibe o circuito do perfil.
-  const { data: hasActiveVisit = false } = useQuery({
-    queryKey: ["super-has-active-visit", user?.id],
-    enabled: role === "superintendent" && !!user?.id,
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("visits")
-        .select("id", { count: "exact", head: true })
-        .eq("is_active", true);
-      return (count ?? 0) > 0;
-    },
-  });
-
   const displayedCongregationName =
-    role === "superintendent"
-      ? hasActiveVisit
-        ? activeCong?.name
-        : undefined
-      : (activeCong?.name ?? congregation?.name);
+    role === "superintendent" ? activeCong?.name : (activeCong?.name ?? congregation?.name);
 
   const sections: NavSection[] = [
     {
