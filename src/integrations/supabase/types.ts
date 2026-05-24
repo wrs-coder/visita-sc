@@ -181,7 +181,15 @@ export type Database = {
           updated_at?: string
           visit_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "elders_servants_meetings_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: true
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       field_assignments: {
         Row: {
@@ -374,7 +382,15 @@ export type Database = {
           updated_at?: string
           visit_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "field_meetings_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       meal_day_notes: {
         Row: {
@@ -401,7 +417,15 @@ export type Database = {
           updated_at?: string
           visit_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "meal_day_notes_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       meals: {
         Row: {
@@ -666,7 +690,15 @@ export type Database = {
           updated_at?: string
           visit_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "midweek_meetings_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: true
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pioneer_meetings: {
         Row: {
@@ -705,7 +737,15 @@ export type Database = {
           updated_at?: string
           visit_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pioneer_meetings_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: true
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       private_notes: {
         Row: {
@@ -999,7 +1039,15 @@ export type Database = {
           updated_at?: string
           visit_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transport_schedule_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -1144,7 +1192,15 @@ export type Database = {
           updated_at?: string
           visit_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "weekend_meetings_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: true
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
