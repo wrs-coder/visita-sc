@@ -71,6 +71,22 @@ function AppLayout() {
         ? "/onboarding"
         : null;
 
+  // Para superintendente: só considera uma congregação "Ativa" se houver pelo menos
+  // uma visita com is_active=true no banco. Caso contrário, exibe "Pioneiro".
+  // IMPORTANTE: este hook precisa ficar ANTES de qualquer early return para
+  // manter a ordem dos hooks estável entre renders.
+  const { data: hasActiveVisit = false } = useQuery({
+    queryKey: ["super-has-active-visit", user?.id],
+    enabled: role === "superintendent" && !!user?.id,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("visits")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true);
+      return (count ?? 0) > 0;
+    },
+  });
+
   useEffect(() => {
     if (redirectTo) nav({ to: redirectTo });
   }, [redirectTo, nav]);
@@ -85,20 +101,6 @@ function AppLayout() {
 
   // Bloqueio de membros comuns quando a congregação está inativa.
   const blocked = role !== "superintendent" && congregation && congregation.is_active === false;
-
-  // Para superintendente: só considera uma congregação "Ativa" se houver pelo menos
-  // uma visita com is_active=true no banco. Caso contrário, exibe o circuito do perfil.
-  const { data: hasActiveVisit = false } = useQuery({
-    queryKey: ["super-has-active-visit", user?.id],
-    enabled: role === "superintendent" && !!user?.id,
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("visits")
-        .select("id", { count: "exact", head: true })
-        .eq("is_active", true);
-      return (count ?? 0) > 0;
-    },
-  });
 
   const displayedCongregationName =
     role === "superintendent"
