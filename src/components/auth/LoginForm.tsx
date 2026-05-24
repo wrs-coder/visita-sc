@@ -13,9 +13,9 @@ import { LogIn, Eye, Info, Mail, MessageCircle, UserCircle2, Coffee } from "luci
 import { Logo } from "@/components/Logo";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 
-const APP_VERSION = "2.1.0";
-const APP_BUILD = "2026.05.21";
-const APP_UPDATED_AT = "21/05/2026";
+const APP_VERSION = "2.4.0";
+const APP_BUILD = "2026.05.24";
+const APP_UPDATED_AT = "24/05/2026";
 
 export function LoginForm() {
   const nav = useNavigate();
