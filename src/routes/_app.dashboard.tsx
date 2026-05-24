@@ -33,7 +33,7 @@ import {
   useActiveCongregation,
   setActiveCongregationOverride,
 } from "@/hooks/use-active-congregation";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, startOfWeek, endOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
@@ -172,31 +172,36 @@ function Dashboard() {
       });
   }, [role, user]);
 
-  // Auto-seleção pela data do dispositivo: sempre que o superintendente entra
-  // no Início, a seleção reflete a visita que cobre o dia de hoje. A escolha
-  // manual continua disponível, mas não impede a próxima entrada de voltar à
-  // semana corrente. Sem visita hoje → seleção mostra "Sem visita".
+  // Auto-seleção pela SEMANA VIGENTE (segunda a domingo, com base no
+  // relógio do dispositivo): sempre que o superintendente entra no Início,
+  // a seleção reflete a visita que toca a semana atual. A escolha manual
+  // continua disponível, mas a próxima entrada volta a refletir a semana
+  // corrente. Sem visita na semana → seleção mostra "Sem visita".
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
+    const now = new Date();
+    const weekStart = format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
+    const weekEnd = format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
     let cancelled = false;
     (async () => {
+      // Visita que se sobrepõe à semana atual:
+      //   visit.start_date <= weekEnd AND visit.end_date >= weekStart
+      // Prioriza a que cobre o dia de hoje; depois a mais próxima do início.
       const { data } = await supabase
         .from("visits")
-        .select("congregation_id")
-        .lte("start_date", today)
-        .gte("end_date", today)
+        .select("congregation_id, start_date, end_date")
+        .lte("start_date", weekEnd)
+        .gte("end_date", weekStart)
         .eq("is_active", true)
-        .order("start_date", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .order("start_date", { ascending: true });
       if (cancelled) return;
-      const match = data?.[0]?.congregation_id ?? null;
+      const list = data ?? [];
+      const covering = list.find(
+        (v) => v.start_date <= today && v.end_date >= today,
+      );
+      const match = (covering ?? list[0])?.congregation_id ?? null;
       setSelected(match);
-      if (match) {
-        setActiveCongregationOverride(match);
-      } else {
-        setActiveCongregationOverride(null);
-      }
+      setActiveCongregationOverride(match);
     })();
     return () => {
       cancelled = true;
