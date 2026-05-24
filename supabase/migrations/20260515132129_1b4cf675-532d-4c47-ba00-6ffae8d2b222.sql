@@ -69,7 +69,7 @@ ALTER TABLE public.visits ENABLE ROW LEVEL SECURITY;
 -- Schedule events
 CREATE TABLE public.schedule_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  visit_id UUID NOT NULL REFERENCES public.visits(id) ON DELETE CASCADE,
+  visit_id UUID REFERENCES public.visits(id) ON DELETE SET NULL,
   event_date DATE NOT NULL,
   start_time TIME,
   end_time TIME,
@@ -85,7 +85,7 @@ ALTER TABLE public.schedule_events ENABLE ROW LEVEL SECURITY;
 -- Field service assignments
 CREATE TABLE public.field_assignments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  visit_id UUID NOT NULL REFERENCES public.visits(id) ON DELETE CASCADE,
+  visit_id UUID REFERENCES public.visits(id) ON DELETE SET NULL,
   event_date DATE NOT NULL,
   period TEXT NOT NULL,
   meeting_point TEXT,
@@ -102,7 +102,7 @@ ALTER TABLE public.field_assignments ENABLE ROW LEVEL SECURITY;
 -- Meals
 CREATE TABLE public.meals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  visit_id UUID NOT NULL REFERENCES public.visits(id) ON DELETE CASCADE,
+  visit_id UUID REFERENCES public.visits(id) ON DELETE SET NULL,
   meal_date DATE NOT NULL,
   type meal_type NOT NULL,
   host_name TEXT NOT NULL,
@@ -117,7 +117,7 @@ ALTER TABLE public.meals ENABLE ROW LEVEL SECURITY;
 -- Checklist
 CREATE TABLE public.checklist_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  visit_id UUID NOT NULL REFERENCES public.visits(id) ON DELETE CASCADE,
+  visit_id UUID REFERENCES public.visits(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
   description TEXT,
   info_text TEXT,
@@ -133,7 +133,7 @@ ALTER TABLE public.checklist_items ENABLE ROW LEVEL SECURITY;
 -- Private notes (only superintendent)
 CREATE TABLE public.private_notes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  visit_id UUID NOT NULL REFERENCES public.visits(id) ON DELETE CASCADE,
+  visit_id UUID REFERENCES public.visits(id) ON DELETE SET NULL,
   superintendent_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   title TEXT,
   content TEXT NOT NULL DEFAULT '',
