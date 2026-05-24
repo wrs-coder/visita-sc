@@ -104,7 +104,7 @@ function AppLayout() {
     role === "superintendent"
       ? hasActiveVisit
         ? activeCong?.name
-        : undefined
+        : "Pioneiro"
       : (activeCong?.name ?? congregation?.name);
 
   const sections: NavSection[] = [
