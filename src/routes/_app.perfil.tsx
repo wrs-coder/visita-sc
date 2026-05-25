@@ -15,13 +15,16 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee } from "lucide-react";
+import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee, Globe } from "lucide-react";
 import { SupportDeveloperContent } from "@/components/SupportDeveloper";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/_app/perfil")({ component: Page });
 
 function Page() {
   const { user, profile, refresh, role } = useAuth();
+  const { t } = useTranslation();
   const autoBackup = useAutoBackup();
   const fnExportBackup = useServerFn(exportFullBackup);
   const fnRestoreBackup = useServerFn(restoreFullBackup);
