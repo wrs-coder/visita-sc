@@ -28,6 +28,15 @@ const DAY_OPTS = [0, 1, 2, 3, 4, 5, 6];
 const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 function Page() {
+  const { t } = useTranslation();
+  const DAY_LABEL: Record<number, string> = useMemo(() => ({
+    0: t("templates.days.0"), 1: t("templates.days.1"), 2: t("templates.days.2"),
+    3: t("templates.days.3"), 4: t("templates.days.4"), 5: t("templates.days.5"), 6: t("templates.days.6"),
+  }), [t]);
+  const DEFAULT_NAMES: Record<number, string> = useMemo(
+    () => Object.fromEntries(SLOTS.map((s) => [s, t("templates.templateNumber", { n: s })])),
+    [t]
+  );
   const { role } = useAuth();
   const fnList = useServerFn(listTemplates);
   const fnUpsert = useServerFn(upsertTemplate);
@@ -36,7 +45,7 @@ function Page() {
   const fnImport = useServerFn(importProgramTemplate);
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
-  const [namesBySlot, setNamesBySlot] = useState<Record<number, string>>({ ...DEFAULT_NAMES });
+  const [namesBySlot, setNamesBySlot] = useState<Record<number, string>>({});
   const [notesBySlot, setNotesBySlot] = useState<Record<number, Record<string, string>>>({});
   const [activeSlot, setActiveSlot] = useState("1");
   const [busy, setBusy] = useState(false);
