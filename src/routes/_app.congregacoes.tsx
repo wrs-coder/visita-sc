@@ -199,52 +199,54 @@ function Page() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <Building2 className="h-6 w-6" /> Congregações
+            <Building2 className="h-6 w-6" /> {t("congregations.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {activeCount} congregaç{activeCount === 1 ? "ão ativa" : "ões ativas"} no circuito.
+            {activeCount === 1
+              ? t("congregations.activeOne", { count: activeCount })
+              : t("congregations.activeMany", { count: activeCount })}
           </p>
         </div>
         <Dialog open={openNew} onOpenChange={setOpenNew}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="h-4 w-4 mr-1" /> Nova
+              <Plus className="h-4 w-4 mr-1" /> {t("common.new")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Nova congregação</DialogTitle>
+              <DialogTitle>{t("congregations.newCongregation")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
               <div>
-                <Label>Nome</Label>
+                <Label>{t("congregations.name")}</Label>
                 <Input
                   className="mt-1"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Ex: Congregação Central"
+                  placeholder={t("congregations.namePlaceholder")}
                 />
               </div>
               <div>
-                <Label>Código de acesso dos anciãos</Label>
+                <Label>{t("congregations.accessCode")}</Label>
                 <Input
                   className="mt-1 font-mono uppercase"
                   value={form.invite_code}
                   onChange={(e) => setForm({ ...form, invite_code: e.target.value.toUpperCase() })}
-                  placeholder="Ex: CENTRAL01"
+                  placeholder={t("congregations.accessCodePlaceholder")}
                   maxLength={12}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  4-12 caracteres, letras e números. Único no sistema.
+                  {t("congregations.accessCodeHint")}
                 </p>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpenNew(false)}>
-                Cancelar
+                {t("common.cancel")}
               </Button>
               <Button onClick={create} disabled={busy}>
-                {busy ? "Criando..." : "Criar"}
+                {busy ? t("congregations.creating") : t("congregations.create")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -253,7 +255,7 @@ function Page() {
 
       {loading && (
         <Card>
-          <CardContent className="p-4 text-sm text-muted-foreground">Carregando…</CardContent>
+          <CardContent className="p-4 text-sm text-muted-foreground">{t("congregations.loading")}</CardContent>
         </Card>
       )}
 
