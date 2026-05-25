@@ -38,7 +38,7 @@ function Page() {
           <div className="mx-auto h-14 w-14 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center mb-4 overflow-hidden">
             <Logo className="h-10 w-10" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Acesso Corpo de anciãos e ES</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Acesso Corpo de anciãos e ESC</h1>
           <p className="text-sm text-primary-foreground/80 mt-1">Visualização da programação da congregação</p>
         </div>
         <Card className="shadow-elevated border-0">
