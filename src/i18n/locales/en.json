@@ -884,5 +884,101 @@
     "successTitle": "Account created!",
     "successDesc": "Now add the congregations in your circuit.",
     "unexpectedError": "Unexpected error"
+  },
+  "guest": {
+    "loginTitle": "Body of Elders and Service Committee access",
+    "loginSubtitle": "View the congregation's schedule",
+    "readOnly": "Read-only access",
+    "enterCode": "Enter the code provided by the circuit overseer",
+    "code": "Congregation code",
+    "codePlaceholder": "E.G. CENTRAL01",
+    "access": "Enter",
+    "backToLogin": "Back to login",
+    "invalidCode": "Invalid code",
+    "wifeMode": "Circuit overseer's wife",
+    "eldersMode": "Body of Elders and Service Committee",
+    "readOnlyTag": "read-only",
+    "share": "Share",
+    "shareTitle": "Share schedule",
+    "shareDescription": "Pick the sections and preview before exporting.",
+    "preview": "Preview",
+    "exit": "Exit",
+    "noActiveVisit": "No active visit in this congregation at the moment.",
+    "noActiveVisitShort": "No active visit.",
+    "refresh": "Refresh",
+    "openSchedule": "To view the whole week, open the tab",
+    "scheduleTab": "Schedule",
+    "tabs": {
+      "today": "Today",
+      "schedule": "Schedule",
+      "studies": "Studies",
+      "field": "Field",
+      "meals": "Meals",
+      "transport": "Transport",
+      "checklist": "Checklist"
+    },
+    "sections": {
+      "cron": "Schedule",
+      "estudos": "Studies / Return Visits",
+      "campo": "Field meetings",
+      "ref": "Meals",
+      "trans": "Transport",
+      "check": "Checklist"
+    },
+    "empty": {
+      "schedule": "No events.",
+      "studies": "No studies scheduled.",
+      "field": "No field meetings.",
+      "meals": "No meals scheduled.",
+      "transport": "No transport scheduled.",
+      "checklist": "No checklist items.",
+      "section": "— empty —",
+      "selectSection": "Select at least one section."
+    },
+    "labels": {
+      "modality": "Modality",
+      "territoryS13": "Territory S-13",
+      "auxLeaders": "Auxiliary leaders",
+      "closingPrayer": "Closing prayer",
+      "openingPrayer": "Opening prayer",
+      "companion": "Companion",
+      "companionShort": "Comp.",
+      "withCompanion": "with",
+      "driver": "Driver",
+      "noDate": "No date",
+      "host": "Host",
+      "chairman": "Chairman",
+      "serviceTalk": "Service Talk",
+      "publicTalk": "Public talk",
+      "finalTalk": "Final talk",
+      "theme": "Theme",
+      "leaders": "Leaders"
+    },
+    "today": {
+      "summary": "Today's summary",
+      "meals": "Today's meals",
+      "noMeals": "No meals scheduled for today.",
+      "transport": "Today's transport",
+      "noTransport": "No transport scheduled for today.",
+      "studiesField": "Today's studies and field",
+      "meetings": "Meetings and Talks",
+      "noMeetings": "No meeting or talk scheduled for today.",
+      "midweek": "Midweek meeting",
+      "weekend": "Weekend meeting",
+      "pioneer": "Meeting with Pioneers",
+      "elders": "Body of Elders and Service Committee meeting",
+      "otherEvents": "Other events today"
+    },
+    "meal": {
+      "lunch": "Lunch",
+      "dinner": "Dinner",
+      "breakfast": "Breakfast"
+    },
+    "export": {
+      "image": "Image generated",
+      "imageFail": "Failed to generate image",
+      "pdf": "PDF generated",
+      "pdfFail": "Failed to generate PDF"
+    }
   }
 }

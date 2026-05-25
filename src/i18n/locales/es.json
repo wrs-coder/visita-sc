@@ -884,5 +884,101 @@
     "successTitle": "¡Cuenta creada!",
     "successDesc": "Ahora registra las congregaciones de tu circuito.",
     "unexpectedError": "Error inesperado"
+  },
+  "guest": {
+    "loginTitle": "Acceso Cuerpo de ancianos y Comité de Servicio",
+    "loginSubtitle": "Visualización del programa de la congregación",
+    "readOnly": "Acceso solo lectura",
+    "enterCode": "Ingresa el código proporcionado por el superintendente",
+    "code": "Código de la congregación",
+    "codePlaceholder": "EJ.: CENTRAL01",
+    "access": "Acceder",
+    "backToLogin": "Volver al inicio de sesión",
+    "invalidCode": "Código inválido",
+    "wifeMode": "Esposa del superintendente",
+    "eldersMode": "Cuerpo de ancianos y Comité de Servicio",
+    "readOnlyTag": "solo lectura",
+    "share": "Compartir",
+    "shareTitle": "Compartir programa",
+    "shareDescription": "Elige las secciones y ve una vista previa antes de exportar.",
+    "preview": "Vista previa",
+    "exit": "Salir",
+    "noActiveVisit": "No hay visita activa en esta congregación en este momento.",
+    "noActiveVisitShort": "No hay visita activa.",
+    "refresh": "Actualizar",
+    "openSchedule": "Para ver toda la semana, abre la pestaña",
+    "scheduleTab": "Programa",
+    "tabs": {
+      "today": "Hoy",
+      "schedule": "Programa",
+      "studies": "Estudios",
+      "field": "Campo",
+      "meals": "Comidas",
+      "transport": "Transporte",
+      "checklist": "Lista"
+    },
+    "sections": {
+      "cron": "Programa",
+      "estudos": "Estudios / Revisitas",
+      "campo": "Reuniones para el servicio",
+      "ref": "Comidas",
+      "trans": "Transporte",
+      "check": "Lista de verificación"
+    },
+    "empty": {
+      "schedule": "Sin eventos.",
+      "studies": "Sin estudios programados.",
+      "field": "Sin reuniones para el servicio.",
+      "meals": "Sin comidas programadas.",
+      "transport": "Sin transporte programado.",
+      "checklist": "Sin elementos en la lista.",
+      "section": "— vacío —",
+      "selectSection": "Selecciona al menos una sección."
+    },
+    "labels": {
+      "modality": "Modalidad",
+      "territoryS13": "Territorio S-13",
+      "auxLeaders": "Dirigentes auxiliares",
+      "closingPrayer": "Oración final",
+      "openingPrayer": "Oración inicial",
+      "companion": "Acompañante",
+      "companionShort": "Acomp.",
+      "withCompanion": "con",
+      "driver": "Conductor",
+      "noDate": "Sin fecha",
+      "host": "Anfitrión",
+      "chairman": "Presidente",
+      "serviceTalk": "Discurso de Servicio",
+      "publicTalk": "Discurso público",
+      "finalTalk": "Discurso final",
+      "theme": "Tema",
+      "leaders": "Dirigentes"
+    },
+    "today": {
+      "summary": "Resumen del día",
+      "meals": "Comidas del día",
+      "noMeals": "No hay comidas programadas para hoy.",
+      "transport": "Transporte del día",
+      "noTransport": "No hay transporte programado para hoy.",
+      "studiesField": "Estudios y Campo del día",
+      "meetings": "Reuniones y Discursos",
+      "noMeetings": "No hay reuniones ni discursos programados para hoy.",
+      "midweek": "Reunión de entre semana",
+      "weekend": "Reunión del fin de semana",
+      "pioneer": "Reunión con Precursores",
+      "elders": "Reunión del Cuerpo de Ancianos y CS",
+      "otherEvents": "Otros eventos de hoy"
+    },
+    "meal": {
+      "lunch": "Almuerzo",
+      "dinner": "Cena",
+      "breakfast": "Desayuno"
+    },
+    "export": {
+      "image": "Imagen generada",
+      "imageFail": "No se pudo generar la imagen",
+      "pdf": "PDF generado",
+      "pdfFail": "No se pudo generar el PDF"
+    }
   }
 }
