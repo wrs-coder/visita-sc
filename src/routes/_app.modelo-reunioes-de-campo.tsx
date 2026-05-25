@@ -205,38 +205,38 @@ function Page() {
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <MapPin className="h-6 w-6" />Modelo Reuniões de Campo
+            <MapPin className="h-6 w-6" />{t("templates.field.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Programe vários turnos por semana, cada um com sua modalidade, e vincule o modelo a uma congregação. {tpls.length}/{MAX} modelos.
+            {t("templates.field.subtitle", { n: tpls.length, max: MAX })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <TemplateIOButtons
-            filenameBase={active?.name ?? "reuniao-campo-modelo"}
+            filenameBase={active?.name ?? t("templates.exportField")}
             disabled={!active}
-            onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: "Selecione um modelo" }}
+            onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: t("templates.selectTemplate") }}
             onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await load(); return r; }}
           />
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />Novo modelo</Button>
+            <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />{t("templates.newTemplate")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Novo modelo de reuniões de campo</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("templates.field.newDialogTitle")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div>
-                <Label>Nome</Label>
+                <Label>{t("templates.name")}</Label>
                 <Input
                   className={`mt-1 ${newNameErr ? "border-destructive" : ""}`}
                   value={newName}
                   onChange={(e) => { setNewName(e.target.value); if (newNameErr) setNewNameErr(null); }}
-                  placeholder="Ex: Cong. Centro"
+                  placeholder={t("templates.field.namePlaceholder")}
                   maxLength={120}
                 />
                 {newNameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{newNameErr}</p>}
               </div>
-              <Button className="w-full" onClick={handleCreate} disabled={busy}>Criar</Button>
+              <Button className="w-full" onClick={handleCreate} disabled={busy}>{t("common.create")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -246,12 +246,12 @@ function Page() {
       <div className="grid md:grid-cols-[260px_1fr] gap-4">
         <Card><CardContent className="p-3 space-y-1">
           {tpls.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-3 text-center">Nenhum modelo ainda.</div>
-          ) : tpls.map((t) => (
-            <button key={t.id}
-              onClick={() => setActiveId(t.id)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === t.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-              <div className="truncate">{t.name}</div>
+            <div className="text-sm text-muted-foreground p-3 text-center">{t("templates.noTemplates")}</div>
+          ) : tpls.map((tp) => (
+            <button key={tp.id}
+              onClick={() => setActiveId(tp.id)}
+              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === tp.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
+              <div className="truncate">{tp.name}</div>
             </button>
           ))}
         </CardContent></Card>
@@ -259,7 +259,7 @@ function Page() {
         <div className="space-y-4">
           {!active ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
-              Selecione um modelo ou crie um novo.
+              {t("templates.selectOrCreate")}
             </CardContent></Card>
           ) : (
             <>
@@ -268,33 +268,33 @@ function Page() {
                   <div className="font-semibold truncate">{active.name}</div>
                   <div className="flex gap-2 flex-wrap">
                     <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" />Renomear
+                      <Pencil className="h-3.5 w-3.5 mr-1" />{t("common.rename")}
                     </Button>
                     <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
-                      <Copy className="h-3.5 w-3.5 mr-1" />Duplicar
+                      <Copy className="h-3.5 w-3.5 mr-1" />{t("common.duplicate")}
                     </Button>
                     <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
-                      <Trash2 className="h-3.5 w-3.5 mr-1" />Excluir
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />{t("common.delete")}
                     </Button>
                   </div>
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  Cada turno tem sua própria modalidade. Quando a modalidade não for "Pregação de casa em casa", apenas o campo "Oração final" ficará disponível para a congregação naquele turno.
+                  {t("templates.field.hint")}
                 </p>
               </CardContent></Card>
 
               <Card><CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="font-semibold">Turnos do modelo</div>
+                  <div className="font-semibold">{t("templates.field.shiftsTitle")}</div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" />Turno</Button>
-                    <Button size="sm" onClick={handleSaveItems} disabled={busy}><Save className="h-3.5 w-3.5 mr-1" />Salvar</Button>
+                    <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" />{t("templates.field.addShift")}</Button>
+                    <Button size="sm" onClick={handleSaveItems} disabled={busy}><Save className="h-3.5 w-3.5 mr-1" />{t("common.save")}</Button>
                   </div>
                 </div>
                 {items.length === 0 ? (
                   <div className="text-sm text-muted-foreground text-center py-6">
-                    Nenhum turno. Adicione dias/horários para esta congregação.
+                    {t("templates.field.noShifts")}
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -308,8 +308,8 @@ function Page() {
                           <Select value={it.period} onValueChange={(v) => updateItem(idx, { period: v })}>
                             <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Manhã">Manhã</SelectItem>
-                              <SelectItem value="Tarde">Tarde</SelectItem>
+                              <SelectItem value="Manhã">{t("templates.field.morning")}</SelectItem>
+                              <SelectItem value="Tarde">{t("templates.field.afternoon")}</SelectItem>
                             </SelectContent>
                           </Select>
                           <Input type="time" value={it.meeting_time} onChange={(e) => updateItem(idx, { meeting_time: e.target.value })} className="h-8 w-28" />
@@ -319,12 +319,12 @@ function Page() {
                           </Button>
                         </div>
                         <div>
-                          <Label className="text-xs">Modalidade</Label>
+                          <Label className="text-xs">{t("templates.field.modality")}</Label>
                           <Select value={it.modality} onValueChange={(v) => updateItem(idx, { modality: v as Modality })}>
                             <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {FIELD_MODALITIES.map((m) => (
-                                <SelectItem key={m} value={m}>{FIELD_MODALITY_LABELS[m]}</SelectItem>
+                                <SelectItem key={m} value={m}>{modalityLabel(m)}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -332,13 +332,13 @@ function Page() {
                         {it.modality === "casa_em_casa" && (
                           <>
                             <div className="grid grid-cols-2 gap-2">
-                              <Input placeholder="N° território S-13" value={it.territory_number} onChange={(e) => updateItem(idx, { territory_number: e.target.value })} className="h-8" />
-                              <Input placeholder="Localização do território" value={it.territory_location} onChange={(e) => updateItem(idx, { territory_location: e.target.value })} className="h-8" />
+                              <Input placeholder={t("templates.field.territoryNumber")} value={it.territory_number} onChange={(e) => updateItem(idx, { territory_number: e.target.value })} className="h-8" />
+                              <Input placeholder={t("templates.field.territoryLocation")} value={it.territory_location} onChange={(e) => updateItem(idx, { territory_location: e.target.value })} className="h-8" />
                             </div>
-                            <Input placeholder="Dirigentes auxiliares" value={it.auxiliary_leaders} onChange={(e) => updateItem(idx, { auxiliary_leaders: e.target.value })} className="h-8" />
+                            <Input placeholder={t("templates.field.auxiliaryLeaders")} value={it.auxiliary_leaders} onChange={(e) => updateItem(idx, { auxiliary_leaders: e.target.value })} className="h-8" />
                           </>
                         )}
-                        <Input placeholder="Oração final" value={it.closing_prayer} onChange={(e) => updateItem(idx, { closing_prayer: e.target.value })} className="h-8" />
+                        <Input placeholder={t("templates.field.closingPrayer")} value={it.closing_prayer} onChange={(e) => updateItem(idx, { closing_prayer: e.target.value })} className="h-8" />
                       </div>
                     ))}
                   </div>
@@ -351,7 +351,7 @@ function Page() {
 
       <Dialog open={renameOpen} onOpenChange={(o) => { setRenameOpen(o); if (!o) setRenameErr(null); }}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Renomear modelo</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("templates.renameTemplate")}</DialogTitle></DialogHeader>
           <div>
             <Input
               value={renameVal}
@@ -362,7 +362,7 @@ function Page() {
             {renameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{renameErr}</p>}
           </div>
           <DialogFooter>
-            <Button onClick={handleRename} disabled={busy}>Salvar</Button>
+            <Button onClick={handleRename} disabled={busy}>{t("common.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
