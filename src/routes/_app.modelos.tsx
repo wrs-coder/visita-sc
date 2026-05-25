@@ -75,7 +75,7 @@ function Page() {
 
   useEffect(() => { load(); }, [load]);
 
-  if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">Acesso restrito ao superintendente.</CardContent></Card>;
+  if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">{t("templates.restricted")}</CardContent></Card>;
 
   const ensureTemplate = async (slot: number): Promise<string | null> => {
     const existing = tpls.find((t) => t.slot === slot);
@@ -100,7 +100,7 @@ function Page() {
     const r = await fnReplace({ data: { templateId: id, items } });
     setBusy(false);
     if (!r.ok) toast.error(r.error);
-    else { toast.success("Modelo salvo"); load(); }
+    else { toast.success(t("templates.templateSaved")); load(); }
   };
 
   const updateDraft = (tplId: string, idx: number, patch: Partial<ItemDraft>) => {
@@ -247,28 +247,29 @@ function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLa
 }
 
 function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Payload; onChange: (p: Payload) => void }) {
+  const { t } = useTranslation();
   const set = (k: string, v: PayloadValue) => onChange({ ...payload, [k]: v });
   if (kind === "study") return (
     <div className="grid grid-cols-2 gap-2">
       <Select value={String(payload.period ?? "Manhã")} onValueChange={(v) => set("period", v)}>
         <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-        <SelectContent><SelectItem value="Manhã">Manhã</SelectItem><SelectItem value="Tarde">Tarde</SelectItem></SelectContent>
+        <SelectContent><SelectItem value="Manhã">{t("templates.program.study.morning")}</SelectItem><SelectItem value="Tarde">{t("templates.program.study.afternoon")}</SelectItem></SelectContent>
       </Select>
       <Input className="h-9" type="time" value={String(payload.meeting_time ?? "")} onChange={(e) => set("meeting_time", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder="Local de encontro" value={String(payload.meeting_point ?? "")} onChange={(e) => set("meeting_point", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder="Acompanhante para estudos" value={String(payload.acompanhante ?? "")} onChange={(e) => set("acompanhante", e.target.value)} />
+      <Input className="h-9 col-span-2" placeholder={t("templates.program.study.meetingPoint")} value={String(payload.meeting_point ?? "")} onChange={(e) => set("meeting_point", e.target.value)} />
+      <Input className="h-9 col-span-2" placeholder={t("templates.program.study.companion")} value={String(payload.acompanhante ?? "")} onChange={(e) => set("acompanhante", e.target.value)} />
       <Select value={String(payload.acompanhante_for ?? "")} onValueChange={(v) => set("acompanhante_for", v)}>
-        <SelectTrigger className="h-9 col-span-2"><SelectValue placeholder="Acompanhante para…" /></SelectTrigger>
+        <SelectTrigger className="h-9 col-span-2"><SelectValue placeholder={t("templates.program.study.companionFor")} /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="superintendente">Superintendente</SelectItem>
-          <SelectItem value="esposa">Esposa do superintendente</SelectItem>
-          <SelectItem value="sc_substituto">S.C Substituto</SelectItem>
-          <SelectItem value="esposa_sc_substituto">Esposa do S.C Substituto</SelectItem>
-          <SelectItem value="sc_pastor">S.C Pastor</SelectItem>
-          <SelectItem value="esposa_sc_pastor">Esposa do S.C Pastor</SelectItem>
+          <SelectItem value="superintendente">{t("templates.program.study.superintendent")}</SelectItem>
+          <SelectItem value="esposa">{t("templates.program.study.wife")}</SelectItem>
+          <SelectItem value="sc_substituto">{t("templates.program.study.scSub")}</SelectItem>
+          <SelectItem value="esposa_sc_substituto">{t("templates.program.study.wifeScSub")}</SelectItem>
+          <SelectItem value="sc_pastor">{t("templates.program.study.scPastor")}</SelectItem>
+          <SelectItem value="esposa_sc_pastor">{t("templates.program.study.wifeScPastor")}</SelectItem>
         </SelectContent>
       </Select>
-      <Input className="h-9 col-span-2" placeholder="Telefone de contato" value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
+      <Input className="h-9 col-span-2" placeholder={t("templates.program.study.contactPhone")} value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
     </div>
   );
   if (kind === "meal") return (
@@ -276,21 +277,21 @@ function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Paylo
       <Select value={String(payload.type ?? "lunch")} onValueChange={(v) => set("type", v)}>
         <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="breakfast">Café</SelectItem>
-          <SelectItem value="lunch">Almoço</SelectItem>
-          <SelectItem value="dinner">Jantar</SelectItem>
+          <SelectItem value="breakfast">{t("templates.program.meal.breakfast")}</SelectItem>
+          <SelectItem value="lunch">{t("templates.program.meal.lunch")}</SelectItem>
+          <SelectItem value="dinner">{t("templates.program.meal.dinner")}</SelectItem>
         </SelectContent>
       </Select>
       <Input className="h-9" type="time" value={String(payload.meal_time ?? "")} onChange={(e) => set("meal_time", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder="Anfitrião" value={String(payload.host_name ?? "")} onChange={(e) => set("host_name", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder="Local" value={String(payload.location ?? "")} onChange={(e) => set("location", e.target.value)} />
+      <Input className="h-9 col-span-2" placeholder={t("templates.program.meal.host")} value={String(payload.host_name ?? "")} onChange={(e) => set("host_name", e.target.value)} />
+      <Input className="h-9 col-span-2" placeholder={t("templates.program.meal.location")} value={String(payload.location ?? "")} onChange={(e) => set("location", e.target.value)} />
     </div>
   );
   return (
     <div className="grid grid-cols-2 gap-2">
-      <Input className="h-9 col-span-2" placeholder="Nome do motorista" value={String(payload.driver_name ?? "")} onChange={(e) => set("driver_name", e.target.value)} />
-      <Input className="h-9" placeholder="Telefone" value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
-      <Input className="h-9" placeholder="Descrição/evento" value={String(payload.description ?? "")} onChange={(e) => set("description", e.target.value)} />
+      <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.driverName")} value={String(payload.driver_name ?? "")} onChange={(e) => set("driver_name", e.target.value)} />
+      <Input className="h-9" placeholder={t("templates.program.transport.phone")} value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
+      <Input className="h-9" placeholder={t("templates.program.transport.description")} value={String(payload.description ?? "")} onChange={(e) => set("description", e.target.value)} />
     </div>
   );
 }
