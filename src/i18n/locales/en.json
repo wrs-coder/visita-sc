@@ -638,14 +638,43 @@
       "clear": "Clear"
     },
     "categories": {
-      "free": { "label": "Free notes", "add": "New free note", "empty": "No notes yet.", "default": "New note" },
-      "pastoral": { "label": "Shepherding", "add": "New shepherding visit", "empty": "No visits recorded.", "default": "Shepherding visit" },
-      "s303": { "label": "S-303", "add": "New S-303 entry", "empty": "No entries yet." },
-      "oradores": { "label": "Speakers", "add": "New speaker", "empty": "No speakers recorded." },
-      "recomendados": { "label": "Recommendations", "add": "New recommendation", "empty": "No recommendations." },
-      "peticoes": { "label": "Petitions", "add": "New petition", "empty": "No petitions." }
+      "free": {
+        "label": "Free notes",
+        "add": "New free note",
+        "empty": "No notes yet.",
+        "default": "New note"
+      },
+      "pastoral": {
+        "label": "Shepherding",
+        "add": "New shepherding visit",
+        "empty": "No visits recorded.",
+        "default": "Shepherding visit"
+      },
+      "s303": {
+        "label": "S-303",
+        "add": "New S-303 entry",
+        "empty": "No entries yet."
+      },
+      "oradores": {
+        "label": "Speakers",
+        "add": "New speaker",
+        "empty": "No speakers recorded."
+      },
+      "recomendados": {
+        "label": "Recommendations",
+        "add": "New recommendation",
+        "empty": "No recommendations."
+      },
+      "peticoes": {
+        "label": "Petitions",
+        "add": "New petition",
+        "empty": "No petitions."
+      }
     },
-    "free": { "content": "Content:", "contentPlaceholder": "Notes..." },
+    "free": {
+      "content": "Content:",
+      "contentPlaceholder": "Notes..."
+    },
     "pastoral": {
       "noDate": "No date",
       "dateLabel": "Visit date",
@@ -678,7 +707,12 @@
         "corpoShort": "Body of elders",
         "super": "Circuit overseer's observations",
         "superShort": "Circuit overseer",
-        "options": { "ancião": "Elder", "servo": "Ministerial servant", "cca": "CCA", "cancelamento": "Cancellation" }
+        "options": {
+          "ancião": "Elder",
+          "servo": "Ministerial servant",
+          "cca": "CCA",
+          "cancelamento": "Cancellation"
+        }
       },
       "peticoes": {
         "nome": "Name",
@@ -687,7 +721,11 @@
         "corpoShort": "Body of elders",
         "super": "Circuit overseer's observations",
         "superShort": "Circuit overseer",
-        "options": { "a8": "A-8", "g8": "G-8", "outras": "Other" }
+        "options": {
+          "a8": "A-8",
+          "g8": "G-8",
+          "outras": "Other"
+        }
       }
     },
     "pdf": {
@@ -697,7 +735,9 @@
       "fileName": "private-notes",
       "categoryFallback": "Note"
     },
-    "whatsapp": { "header": "*Private Notes — Confidential*" }
+    "whatsapp": {
+      "header": "*Private Notes — Confidential*"
+    }
   },
   "report": {
     "loading": "Loading report…",
@@ -735,6 +775,114 @@
       "in": "at",
       "dash": "—"
     }
+  },
+  "onboarding": {
+    "title": "Let's set up your account",
+    "subtitleCode": "Enter your name and the code provided by the circuit overseer.",
+    "subtitleElder": "Select your assignment on the body of elders.",
+    "fullName": "Full name",
+    "code": "Code",
+    "codePlaceholder": "Congregation or circuit overseer code",
+    "exit": "Sign out",
+    "continue": "Continue",
+    "wait": "Please wait...",
+    "position": "Assignment",
+    "positionHelp": "Coordinator, Secretary and Service Overseer can edit; the rest of the body of elders has view-only access.",
+    "back": "Back",
+    "enter": "Enter",
+    "superCreated": "Account created! Now add the congregations in the circuit.",
+    "invalidCode": "Invalid code.",
+    "inactiveCongregation": "This congregation is inactive. Please contact the circuit overseer.",
+    "selectPosition": "Please select your assignment.",
+    "welcome": "Welcome to the congregation!"
+  },
+  "forgotPassword": {
+    "title": "Recover password",
+    "subtitleRequest": "Enter your username or email",
+    "subtitleVerify": "Enter the code you received and set your new password",
+    "identifierLabel": "Username / Email / Circuit ID",
+    "sendCode": "Send code",
+    "verifying": "Verifying...",
+    "backToLogin": "Back to login",
+    "sentTo": "We sent a code to",
+    "codeLabel": "6-digit code",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "resetPassword": "Reset password",
+    "saving": "Saving...",
+    "resend": "Didn't receive it — send again",
+    "noEmailTitle": "No email on file",
+    "noEmailDescription": "This account has no recovery email registered. Request a manual password reset directly from the Circuit Overseer. After regaining access, you can add an email under My Profile to enable automatic recovery in the future.",
+    "understood": "Got it",
+    "errSend": "Could not send the code",
+    "errCodeFormat": "Enter the 6-digit code.",
+    "errPwdShort": "Password must be at least 6 characters.",
+    "errPwdMismatch": "Passwords do not match.",
+    "errCodeInvalid": "Invalid or expired code",
+    "errReset": "Could not reset the password",
+    "successCodeSent": "Code sent!",
+    "checkEmail": "Check your email.",
+    "successReset": "Password reset!"
+  },
+  "resetPassword": {
+    "title": "Set a new password",
+    "subtitle": "Choose a strong password for your account",
+    "validating": "Validating recovery link...",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "submit": "Reset password",
+    "saving": "Saving...",
+    "errPwdShort": "Password must be at least 6 characters",
+    "errPwdMismatch": "Passwords do not match",
+    "errUpdate": "Could not reset the password",
+    "success": "Password reset!",
+    "successDesc": "You can now use your new password."
+  },
+  "registerElder": {
+    "back": "Back",
+    "heading": "Elder Registration",
+    "subheading": "Phone, username, code and password",
+    "country": "Country",
+    "phone": "Phone",
+    "phonePlaceholder": "number with area code",
+    "username": "Username (login)",
+    "usernamePlaceholder": "e.g. john_smith",
+    "usernameHelp": "Letters, numbers, _ . or -. This will be your login.",
+    "passwordLabel": "Set a password (min. 6)",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "inviteCode": "Congregation code",
+    "checking": "Checking available roles...",
+    "allFilled": "The body of elders in this congregation is fully registered. Please contact the Circuit Overseer.",
+    "positionLabel": "Assignment on the body of elders",
+    "positionTypeCodeFirst": "Type the code first...",
+    "positionPlaceholder": "Select...",
+    "positionHelp": "You can add your full name and an optional email under \"My Profile\" after signing in.",
+    "submit": "Join the Congregation",
+    "creating": "Creating...",
+    "selectPosition": "Please select your assignment.",
+    "invalidUsername": "Invalid username",
+    "invalidUsernameDesc": "Use 3–30 characters: letters, numbers, _ . or -.",
+    "registerError": "Registration error",
+    "successTitle": "Registration complete!",
+    "successDesc": "You can add your name and email under My Profile.",
+    "unexpectedError": "Unexpected error"
+  },
+  "registerSuper": {
+    "back": "Back",
+    "heading": "Circuit Overseer Registration",
+    "subheading": "Use the identification code provided",
+    "fullName": "Full name",
+    "email": "Email",
+    "passwordLabel": "Password (min. 6)",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "code": "Identification code",
+    "submit": "Create Circuit Overseer account",
+    "creating": "Creating...",
+    "registerError": "Registration error",
+    "successTitle": "Account created!",
+    "successDesc": "Now add the congregations in your circuit.",
+    "unexpectedError": "Unexpected error"
   }
 }
-

@@ -638,14 +638,43 @@
       "clear": "Limpar"
     },
     "categories": {
-      "free": { "label": "Notas livres", "add": "Nova nota livre", "empty": "Nenhuma nota ainda.", "default": "Nova nota" },
-      "pastoral": { "label": "Pastoreio", "add": "Nova visita de pastoreio", "empty": "Nenhuma visita registrada.", "default": "Visita de pastoreio" },
-      "s303": { "label": "S-303", "add": "Novo registro S-303", "empty": "Nenhum registro ainda." },
-      "oradores": { "label": "Oradores", "add": "Novo orador", "empty": "Nenhum orador registrado." },
-      "recomendados": { "label": "Recomendados", "add": "Novo recomendado", "empty": "Nenhum recomendado." },
-      "peticoes": { "label": "Petições", "add": "Nova petição", "empty": "Nenhuma petição." }
+      "free": {
+        "label": "Notas livres",
+        "add": "Nova nota livre",
+        "empty": "Nenhuma nota ainda.",
+        "default": "Nova nota"
+      },
+      "pastoral": {
+        "label": "Pastoreio",
+        "add": "Nova visita de pastoreio",
+        "empty": "Nenhuma visita registrada.",
+        "default": "Visita de pastoreio"
+      },
+      "s303": {
+        "label": "S-303",
+        "add": "Novo registro S-303",
+        "empty": "Nenhum registro ainda."
+      },
+      "oradores": {
+        "label": "Oradores",
+        "add": "Novo orador",
+        "empty": "Nenhum orador registrado."
+      },
+      "recomendados": {
+        "label": "Recomendados",
+        "add": "Novo recomendado",
+        "empty": "Nenhum recomendado."
+      },
+      "peticoes": {
+        "label": "Petições",
+        "add": "Nova petição",
+        "empty": "Nenhuma petição."
+      }
     },
-    "free": { "content": "Conteúdo:", "contentPlaceholder": "Anotações..." },
+    "free": {
+      "content": "Conteúdo:",
+      "contentPlaceholder": "Anotações..."
+    },
     "pastoral": {
       "noDate": "Sem data",
       "dateLabel": "Data da visita",
@@ -678,7 +707,12 @@
         "corpoShort": "Corpo de anciãos",
         "super": "Observações do superintendente",
         "superShort": "Superintendente",
-        "options": { "ancião": "Ancião", "servo": "Servo ministerial", "cca": "CCA", "cancelamento": "Cancelamento" }
+        "options": {
+          "ancião": "Ancião",
+          "servo": "Servo ministerial",
+          "cca": "CCA",
+          "cancelamento": "Cancelamento"
+        }
       },
       "peticoes": {
         "nome": "Nome",
@@ -687,7 +721,11 @@
         "corpoShort": "Corpo de anciãos",
         "super": "Observações do superintendente",
         "superShort": "Superintendente",
-        "options": { "a8": "A-8", "g8": "G-8", "outras": "Outras" }
+        "options": {
+          "a8": "A-8",
+          "g8": "G-8",
+          "outras": "Outras"
+        }
       }
     },
     "pdf": {
@@ -697,7 +735,9 @@
       "fileName": "notas-privadas",
       "categoryFallback": "Nota"
     },
-    "whatsapp": { "header": "*Notas Privadas — Confidencial*" }
+    "whatsapp": {
+      "header": "*Notas Privadas — Confidencial*"
+    }
   },
   "report": {
     "loading": "A carregar relatório…",
@@ -735,6 +775,114 @@
       "in": "em",
       "dash": "—"
     }
+  },
+  "onboarding": {
+    "title": "Vamos configurar sua conta",
+    "subtitleCode": "Informe seu nome e o código fornecido pelo superintendente.",
+    "subtitleElder": "Selecione sua designação no corpo de anciãos.",
+    "fullName": "Nome completo",
+    "code": "Código",
+    "codePlaceholder": "Código da congregação ou de superintendente",
+    "exit": "Sair",
+    "continue": "Continuar",
+    "wait": "Aguarde...",
+    "position": "Designação",
+    "positionHelp": "Coordenador, Secretário e Sup. de Serviço podem editar; Corpo de Anciãos apenas visualiza.",
+    "back": "Voltar",
+    "enter": "Entrar",
+    "superCreated": "Conta criada! Agora cadastre as congregações do circuito.",
+    "invalidCode": "Código inválido.",
+    "inactiveCongregation": "Esta congregação está inativa. Fale com o superintendente.",
+    "selectPosition": "Selecione sua designação.",
+    "welcome": "Bem-vindo à congregação!"
+  },
+  "forgotPassword": {
+    "title": "Recuperar senha",
+    "subtitleRequest": "Informe seu utilizador ou e-mail",
+    "subtitleVerify": "Insira o código recebido e defina sua nova senha",
+    "identifierLabel": "Utilizador / E-mail / ID do Circuito",
+    "sendCode": "Enviar código",
+    "verifying": "Verificando...",
+    "backToLogin": "Voltar para o login",
+    "sentTo": "Enviamos um código para",
+    "codeLabel": "Código de 6 dígitos",
+    "newPassword": "Nova senha",
+    "confirmPassword": "Confirmar senha",
+    "resetPassword": "Redefinir senha",
+    "saving": "Salvando...",
+    "resend": "Não recebi — enviar novamente",
+    "noEmailTitle": "Sem e-mail associado",
+    "noEmailDescription": "Esta conta não possui um e-mail de recuperação cadastrado. Solicite o reset manual da senha diretamente ao Superintendente do Circuito. Depois de recuperar o acesso, você pode adicionar um e-mail em Meu Perfil para usar a recuperação automática no futuro.",
+    "understood": "Entendi",
+    "errSend": "Não foi possível enviar o código",
+    "errCodeFormat": "Informe o código de 6 dígitos.",
+    "errPwdShort": "A senha deve ter ao menos 6 caracteres.",
+    "errPwdMismatch": "As senhas não coincidem.",
+    "errCodeInvalid": "Código inválido ou expirado",
+    "errReset": "Não foi possível redefinir",
+    "successCodeSent": "Código enviado!",
+    "checkEmail": "Verifique seu e-mail.",
+    "successReset": "Senha redefinida!"
+  },
+  "resetPassword": {
+    "title": "Definir nova senha",
+    "subtitle": "Escolha uma senha forte para sua conta",
+    "validating": "Validando link de recuperação...",
+    "newPassword": "Nova senha",
+    "confirmPassword": "Confirmar senha",
+    "submit": "Redefinir senha",
+    "saving": "Salvando...",
+    "errPwdShort": "A senha deve ter ao menos 6 caracteres",
+    "errPwdMismatch": "As senhas não coincidem",
+    "errUpdate": "Não foi possível redefinir",
+    "success": "Senha redefinida!",
+    "successDesc": "Você já pode usar sua nova senha."
+  },
+  "registerElder": {
+    "back": "Voltar",
+    "heading": "Cadastro de Ancião",
+    "subheading": "Telefone, utilizador, código e senha",
+    "country": "País",
+    "phone": "Telefone",
+    "phonePlaceholder": "número com DDD",
+    "username": "Nome de utilizador (login)",
+    "usernamePlaceholder": "ex: joao_silva",
+    "usernameHelp": "Letras, números, _ . ou -. Será o seu login.",
+    "passwordLabel": "Defina uma senha (mín. 6)",
+    "showPassword": "Mostrar senha",
+    "hidePassword": "Ocultar senha",
+    "inviteCode": "Código da congregação",
+    "checking": "Verificando funções disponíveis...",
+    "allFilled": "O corpo de anciãos desta congregação já está totalmente cadastrado. Contacte o Superintendente.",
+    "positionLabel": "Designação no corpo de anciãos",
+    "positionTypeCodeFirst": "Digite o código primeiro...",
+    "positionPlaceholder": "Selecione...",
+    "positionHelp": "Você poderá adicionar seu nome completo e um e-mail (opcional) em \"Meu Perfil\" após entrar.",
+    "submit": "Entrar na Congregação",
+    "creating": "Criando...",
+    "selectPosition": "Selecione sua designação.",
+    "invalidUsername": "Nome de utilizador inválido",
+    "invalidUsernameDesc": "Use 3–30 caracteres: letras, números, _ . ou -.",
+    "registerError": "Erro no cadastro",
+    "successTitle": "Cadastro concluído!",
+    "successDesc": "Você pode adicionar nome e e-mail em Meu Perfil.",
+    "unexpectedError": "Erro inesperado"
+  },
+  "registerSuper": {
+    "back": "Voltar",
+    "heading": "Cadastro de Superintendente",
+    "subheading": "Use o código de identificação fornecido",
+    "fullName": "Nome completo",
+    "email": "E-mail",
+    "passwordLabel": "Senha (mín. 6)",
+    "showPassword": "Mostrar senha",
+    "hidePassword": "Ocultar senha",
+    "code": "Código de identificação",
+    "submit": "Criar conta de Superintendente",
+    "creating": "Criando...",
+    "registerError": "Erro no cadastro",
+    "successTitle": "Conta criada!",
+    "successDesc": "Agora cadastre as congregações do seu circuito.",
+    "unexpectedError": "Erro inesperado"
   }
 }
-
