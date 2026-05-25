@@ -400,66 +400,66 @@ function Page() {
 
                 <TabsContent value="pio" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
-                    <p className="text-xs text-muted-foreground">Apenas dia da semana + horário; sem calendário de datas específicas.</p>
+                    <p className="text-xs text-muted-foreground">{t("templates.meetingTalk.pioneer.intro")}</p>
                     <div>
-                      <Label>Tema:</Label>
+                      <Label>{t("templates.meetingTalk.pioneer.theme")}</Label>
                       <Input className="mt-1" value={payload.pioneer.theme}
                         readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, theme: e.target.value } })} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label>Dia da semana</Label>
+                        <Label>{t("templates.meetingTalk.pioneer.weekday")}</Label>
                         <Select
                           value={payload.pioneer.weekday === null ? "" : String(payload.pioneer.weekday)}
                           disabled={!isSuper}
                           onValueChange={(v) => setPayload({ ...payload, pioneer: { ...payload.pioneer, weekday: v ? Number(v) : null } })}
                         >
-                          <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                          <SelectTrigger className="mt-1"><SelectValue placeholder={t("common.select")} /></SelectTrigger>
                           <SelectContent>
-                            {Object.entries(WEEKDAY_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                            {Object.keys(WEEKDAY_LABELS).map((k) => <SelectItem key={k} value={k}>{weekdayLabel(Number(k))}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <Label>Horário</Label>
+                        <Label>{t("templates.meetingTalk.pioneer.time")}</Label>
                         <Input type="time" className="mt-1" value={payload.pioneer.meeting_time} readOnly={!isSuper}
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, meeting_time: e.target.value } })} />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label>Dia da reunião com SC (opcional)</Label>
+                        <Label>{t("templates.meetingTalk.pioneer.weekdayCO")}</Label>
                         <Select
                           value={payload.pioneer.super_meeting_weekday === null ? "" : String(payload.pioneer.super_meeting_weekday)}
                           disabled={!isSuper}
                           onValueChange={(v) => setPayload({ ...payload, pioneer: { ...payload.pioneer, super_meeting_weekday: v ? Number(v) : null } })}
                         >
-                          <SelectTrigger className="mt-1"><SelectValue placeholder="Mesmo do principal" /></SelectTrigger>
+                          <SelectTrigger className="mt-1"><SelectValue placeholder={t("templates.meetingTalk.pioneer.sameAsMain")} /></SelectTrigger>
                           <SelectContent>
-                            {Object.entries(WEEKDAY_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                            {Object.keys(WEEKDAY_LABELS).map((k) => <SelectItem key={k} value={k}>{weekdayLabel(Number(k))}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <Label>Horário SC (opcional)</Label>
+                        <Label>{t("templates.meetingTalk.pioneer.timeCO")}</Label>
                         <Input type="time" className="mt-1" value={payload.pioneer.super_meeting_time} readOnly={!isSuper}
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, super_meeting_time: e.target.value } })} />
                       </div>
                     </div>
                     <div>
-                      <Label>Local</Label>
+                      <Label>{t("templates.meetingTalk.pioneer.location")}</Label>
                       <Input className="mt-1" value={payload.pioneer.location} readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, location: e.target.value } })} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label>Oração Inicial</Label>
+                        <Label>{t("templates.meetingTalk.pioneer.openingPrayer")}</Label>
                         <Input className="mt-1" value={payload.pioneer.opening_prayer} readOnly={!isSuper}
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, opening_prayer: e.target.value } })} />
                       </div>
                       <div>
-                        <Label>Oração Final</Label>
+                        <Label>{t("templates.meetingTalk.pioneer.closingPrayer")}</Label>
                         <Input className="mt-1" value={payload.pioneer.closing_prayer} readOnly={!isSuper}
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, closing_prayer: e.target.value } })} />
                       </div>
@@ -470,18 +470,18 @@ function Page() {
                 <TabsContent value="anc" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <div>
-                      <Label>Tema:</Label>
+                      <Label>{t("templates.meetingTalk.elders.theme")}</Label>
                       <Input className="mt-1" value={payload.elders.theme}
                         readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, theme: e.target.value } })} />
                     </div>
                     <div>
-                      <Label>Oração Inicial</Label>
+                      <Label>{t("templates.meetingTalk.elders.openingPrayer")}</Label>
                       <Input className="mt-1" value={payload.elders.opening_prayer} readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, opening_prayer: e.target.value } })} />
                     </div>
                     <div>
-                      <Label>Oração Final</Label>
+                      <Label>{t("templates.meetingTalk.elders.closingPrayer")}</Label>
                       <Input className="mt-1" value={payload.elders.closing_prayer} readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, closing_prayer: e.target.value } })} />
                     </div>
