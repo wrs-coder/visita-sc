@@ -79,10 +79,10 @@ function Page() {
   useEffect(() => { load(); }, [load]);
 
   if (role !== "superintendent") {
-    return <Card><CardContent className="p-6 text-sm">Acesso restrito ao superintendente.</CardContent></Card>;
+    return <Card><CardContent className="p-6 text-sm">{t("templates.restricted")}</CardContent></Card>;
   }
 
-  const active = tpls.find((t) => t.id === activeId) ?? null;
+  const active = tpls.find((tp) => tp.id === activeId) ?? null;
   const items = activeId ? itemsByTpl[activeId] ?? [] : [];
 
   const setItems = (next: ItemDraft[]) => {
@@ -94,12 +94,12 @@ function Page() {
     const parsed = nameSchema.safeParse(newName);
     if (!parsed.success) { setNewNameErr(parsed.error.issues[0].message); return; }
     setNewNameErr(null);
-    if (tpls.length >= MAX) { toast.error(`Limite de ${MAX} modelos atingido.`); return; }
+    if (tpls.length >= MAX) { toast.error(t("templates.limitReached", { max: MAX })); return; }
     setBusy(true);
     const r = await fnCreate({ data: { name: parsed.data } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Modelo criado");
+    toast.success(t("templates.templateCreated"));
     setCreateOpen(false);
     setNewName("");
     setActiveId(r.id);
@@ -115,7 +115,7 @@ function Page() {
     const r = await fnRename({ data: { id: active.id, name: parsed.data } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Renomeado");
+    toast.success(t("templates.renamed"));
     setRenameOpen(false);
     await load();
   };
@@ -125,24 +125,24 @@ function Page() {
 
   const handleDuplicate = async () => {
     if (!active) return;
-    const name = `${active.name} (cópia)`;
+    const name = `${active.name} ${t("templates.copySuffix")}`;
     setBusy(true);
     const r = await fnDup({ data: { id: active.id, name } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Modelo duplicado");
+    toast.success(t("templates.templateDuplicated"));
     setActiveId(r.id);
     await load();
   };
 
   const handleDelete = async () => {
     if (!active) return;
-    if (!confirm(`Excluir o modelo "${active.name}"?`)) return;
+    if (!confirm(t("templates.deleteConfirm", { name: active.name }))) return;
     setBusy(true);
     const r = await fnDel({ data: { id: active.id } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Excluído");
+    toast.success(t("templates.deleted"));
     setActiveId(null);
     await load();
   };
