@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { listTemplates, upsertTemplate, replaceTemplateItems } from "@/lib/templates.functions";
 import { exportProgramTemplate, importProgramTemplate } from "@/lib/template-io.functions";
@@ -24,9 +25,7 @@ interface TemplateRow { id: string; slot: number; name: string; meal_day_notes?:
 interface TemplateItemRow { id: string; template_id: string; kind: string; day_offset: number; payload: Payload; sort_order: number; }
 
 const DAY_OPTS = [0, 1, 2, 3, 4, 5, 6];
-const DAY_LABEL: Record<number, string> = { 0: "Ter (1º dia)", 1: "Qua", 2: "Qui", 3: "Sex", 4: "Sáb", 5: "Dom", 6: "Seg" };
 const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-const DEFAULT_NAMES: Record<number, string> = Object.fromEntries(SLOTS.map((s) => [s, `Modelo ${s}`]));
 
 function Page() {
   const { role } = useAuth();
