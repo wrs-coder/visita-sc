@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { flushQueue, subscribe as subscribeQueue } from "@/lib/offline-queue";
@@ -7,18 +8,8 @@ import { cn } from "@/lib/utils";
 
 const LAST_SYNC_KEY = "visita-sc:last-sync";
 
-function formatRelative(ts: number | null): string {
-  if (!ts) return "nunca";
-  const diff = Date.now() - ts;
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return "agora";
-  if (min < 60) return `há ${min} min`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `há ${h} h`;
-  return `há ${Math.floor(h / 24)} d`;
-}
-
 export function SyncButton({ className }: { className?: string }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [syncing, setSyncing] = useState(false);
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
@@ -28,6 +19,17 @@ export function SyncButton({ className }: { className?: string }) {
     const v = localStorage.getItem(LAST_SYNC_KEY);
     return v ? Number(v) : null;
   });
+
+  const formatRelative = (ts: number | null): string => {
+    if (!ts) return t("sync.never");
+    const diff = Date.now() - ts;
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return t("sync.now");
+    if (min < 60) return t("sync.minutesAgo", { n: min });
+    const h = Math.floor(min / 60);
+    if (h < 24) return t("sync.hoursAgo", { n: h });
+    return t("sync.daysAgo", { n: Math.floor(h / 24) });
+  };
 
   useEffect(() => {
     const on = () => setOnline(true);
@@ -52,18 +54,17 @@ export function SyncButton({ className }: { className?: string }) {
       try { localStorage.setItem(LAST_SYNC_KEY, String(now)); } catch { /* quota */ }
       setLastSync(now);
       if (res.aborted) {
-        toast.warning("Ligação instável. Os seus dados continuam guardados em segurança no dispositivo.");
+        toast.warning(t("sync.unstable"));
       } else if (res.sent > 0 && res.remaining === 0) {
-        toast.success(`${res.sent} alteração(ões) enviada(s)`);
+        toast.success(t("sync.sent", { n: res.sent }));
       } else if (res.remaining > 0) {
-        toast.warning(`${res.remaining} alteração(ões) ainda pendente(s) — guardadas localmente.`);
+        toast.warning(t("sync.remaining", { n: res.remaining }));
       } else {
-        toast.success("Dados atualizados");
+        toast.success(t("sync.updated"));
       }
     } catch (err) {
-      // Nunca propagar — fila preservada, UI permanece ativa.
       console.warn("[sync] falha", err);
-      toast.warning("Ligação instável. Os seus dados continuam guardados em segurança no dispositivo.");
+      toast.warning(t("sync.unstable"));
     } finally {
       setSyncing(false);
     }
@@ -73,12 +74,12 @@ export function SyncButton({ className }: { className?: string }) {
     <button
       onClick={sync}
       disabled={syncing}
-      title={`Última sync: ${formatRelative(lastSync)}${pending ? ` • ${pending} pendente(s)` : ""}${online ? "" : " • Offline"}`}
+      title={`${t("sync.lastSync")}: ${formatRelative(lastSync)}${pending ? ` • ${pending} ${t("sync.pending")}` : ""}${online ? "" : ` • ${t("sync.offline")}`}`}
       className={cn(
         "relative inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium hover:bg-white/10 transition disabled:opacity-60",
         className,
       )}
-      aria-label="Sincronizar dados"
+      aria-label={t("sync.ariaSync")}
     >
       {online ? <Wifi className="h-3.5 w-3.5 opacity-70" /> : <WifiOff className="h-3.5 w-3.5 opacity-70" />}
       <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />

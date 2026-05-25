@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function TemplateIOButtons({ filenameBase, onExport, onImport, disabled }: Props) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<null | "export" | "import">(null);
 
@@ -19,14 +21,14 @@ export function TemplateIOButtons({ filenameBase, onExport, onImport, disabled }
     setBusy("export");
     const r = await onExport();
     setBusy(null);
-    if (!r.ok || !r.file) { toast.error(r.error ?? "Falha ao exportar"); return; }
+    if (!r.ok || !r.file) { toast.error(r.error ?? t("templateIO.exportFail")); return; }
     const safe = filenameBase.replace(/[^\p{L}\p{N}_-]+/gu, "-").slice(0, 60) || "modelo";
     const fname = `${safe}-${new Date().toISOString().slice(0, 10)}.json`;
     try {
       const result = await shareJsonFile(fname, r.file);
-      toast.success(result === "shared" ? "Compartilhamento aberto" : "Arquivo baixado");
+      toast.success(result === "shared" ? t("templateIO.shared") : t("templateIO.downloaded"));
     } catch (e) {
-      toast.error("Falha ao compartilhar", { description: (e as Error).message });
+      toast.error(t("templateIO.shareFail"), { description: (e as Error).message });
     }
   };
 
@@ -35,10 +37,10 @@ export function TemplateIOButtons({ filenameBase, onExport, onImport, disabled }
     try {
       const json = await readJsonFile(file);
       const r = await onImport(json);
-      if (!r.ok) toast.error(r.error ?? "Falha ao importar");
-      else toast.success("Modelo importado");
+      if (!r.ok) toast.error(r.error ?? t("templateIO.importFail"));
+      else toast.success(t("templateIO.imported"));
     } catch (e) {
-      toast.error("Arquivo inválido", { description: (e as Error).message });
+      toast.error(t("templateIO.invalidFile"), { description: (e as Error).message });
     } finally {
       setBusy(null);
       if (inputRef.current) inputRef.current.value = "";
@@ -49,11 +51,11 @@ export function TemplateIOButtons({ filenameBase, onExport, onImport, disabled }
     <div className="flex items-center gap-2">
       <Button type="button" variant="outline" size="sm" onClick={doExport} disabled={disabled || busy !== null}>
         {busy === "export" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
-        Exportar modelo
+        {t("templateIO.export")}
       </Button>
       <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={disabled || busy !== null}>
         {busy === "import" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Upload className="h-4 w-4 mr-1" />}
-        Importar modelo
+        {t("templateIO.import")}
       </Button>
       <input
         ref={inputRef} type="file" accept="application/json,.json" className="hidden"

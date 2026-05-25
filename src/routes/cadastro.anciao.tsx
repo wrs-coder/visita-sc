@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { registerElderByUsername, getAvailableElderPositions } from "@/lib/auth.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/cadastro/anciao")({ component: Page });
 const ALL_POSITIONS: ElderPosition[] = ["coordenador", "secretario", "sup_servico"];
 
 function Page() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const fn = useServerFn(registerElderByUsername);
   const checkFn = useServerFn(getAvailableElderPositions);
@@ -32,9 +34,9 @@ function Page() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.position) { toast.error("Selecione sua designação."); return; }
+    if (!form.position) { toast.error(t("registerElder.selectPosition")); return; }
     if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(form.username.trim())) {
-      toast.error("Nome de utilizador inválido", { description: "Use 3–30 caracteres: letras, números, _ . ou -." });
+      toast.error(t("registerElder.invalidUsername"), { description: t("registerElder.invalidUsernameDesc") });
       return;
     }
     setBusy(true);
@@ -47,13 +49,13 @@ function Page() {
         inviteCode: form.inviteCode.toUpperCase(),
         position: form.position,
       } });
-      if (!res.ok) { toast.error("Erro no cadastro", { description: res.error }); setBusy(false); return; }
+      if (!res.ok) { toast.error(t("registerElder.registerError"), { description: res.error }); setBusy(false); return; }
       const { error } = await supabase.auth.signInWithPassword({ email: res.email, password: form.password });
       if (error) { toast.error(error.message); setBusy(false); return; }
-      toast.success("Cadastro concluído!", { description: "Você pode adicionar nome e e-mail em Meu Perfil." });
+      toast.success(t("registerElder.successTitle"), { description: t("registerElder.successDesc") });
       nav({ to: "/dashboard" });
     } catch (err: unknown) {
-      toast.error("Erro inesperado", { description: err instanceof Error ? err.message : String(err) });
+      toast.error(t("registerElder.unexpectedError"), { description: err instanceof Error ? err.message : String(err) });
       setBusy(false);
     }
   };
@@ -93,7 +95,7 @@ function Page() {
     <div className="min-h-screen bg-gradient-to-br from-primary to-primary-soft/30 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Link to="/" className="inline-flex items-center text-sm text-primary-foreground/90 hover:text-primary-foreground mb-4">
-          <ArrowLeft className="mr-1 h-4 w-4" /> Voltar
+          <ArrowLeft className="mr-1 h-4 w-4" /> {t("registerElder.back")}
         </Link>
         <Card className="shadow-elevated border-0">
           <CardContent className="p-6">
@@ -102,13 +104,13 @@ function Page() {
                 <Users className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="font-semibold text-lg">Cadastro de Ancião</h2>
-                <p className="text-xs text-muted-foreground">Telefone, utilizador, código e senha</p>
+                <h2 className="font-semibold text-lg">{t("registerElder.heading")}</h2>
+                <p className="text-xs text-muted-foreground">{t("registerElder.subheading")}</p>
               </div>
             </div>
             <form onSubmit={submit} className="space-y-3">
               <div className="space-y-1.5">
-                <Label>País</Label>
+                <Label>{t("registerElder.country")}</Label>
                 <Select value={country} onValueChange={setCountry}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -120,61 +122,61 @@ function Page() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="phone">Telefone</Label>
+                <Label htmlFor="phone">{t("registerElder.phone")}</Label>
                 <div className="flex gap-2">
                   <div className="flex items-center px-3 rounded-md border bg-muted text-sm text-muted-foreground">+{dial}</div>
-                  <Input id="phone" type="tel" inputMode="tel" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="número com DDD" />
+                  <Input id="phone" type="tel" inputMode="tel" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={t("registerElder.phonePlaceholder")} />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="username">Nome de utilizador (login)</Label>
+                <Label htmlFor="username">{t("registerElder.username")}</Label>
                 <Input
                   id="username"
                   required
                   autoComplete="username"
                   value={form.username}
                   onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, "") })}
-                  placeholder="ex: joao_silva"
+                  placeholder={t("registerElder.usernamePlaceholder")}
                   minLength={3}
                   maxLength={30}
                 />
-                <p className="text-[11px] text-muted-foreground">Letras, números, _ . ou -. Será o seu login.</p>
+                <p className="text-[11px] text-muted-foreground">{t("registerElder.usernameHelp")}</p>
               </div>
 
               <PasswordField value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
 
               <div className="space-y-1.5">
-                <Label htmlFor="code">Código da congregação</Label>
+                <Label htmlFor="code">{t("registerElder.inviteCode")}</Label>
                 <Input id="code" required value={form.inviteCode} onChange={(e) => setForm({ ...form, inviteCode: e.target.value.toUpperCase() })} />
-                {checking && <p className="text-[11px] text-muted-foreground">Verificando funções disponíveis...</p>}
+                {checking && <p className="text-[11px] text-muted-foreground">{t("registerElder.checking")}</p>}
                 {codeError && <p className="text-[11px] text-destructive">{codeError}</p>}
                 {allFilled && (
                   <p className="text-[12px] text-destructive font-medium">
-                    O corpo de anciãos desta congregação já está totalmente cadastrado. Contacte o Superintendente.
+                    {t("registerElder.allFilled")}
                   </p>
                 )}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="pos">Designação no corpo de anciãos</Label>
+                <Label htmlFor="pos">{t("registerElder.positionLabel")}</Label>
                 <Select
                   value={form.position}
                   onValueChange={(v) => setForm({ ...form, position: v as ElderPosition })}
                   disabled={available === null || allFilled || !!codeError}
                 >
-                  <SelectTrigger id="pos"><SelectValue placeholder={available === null ? "Digite o código primeiro..." : "Selecione..."} /></SelectTrigger>
+                  <SelectTrigger id="pos"><SelectValue placeholder={available === null ? t("registerElder.positionTypeCodeFirst") : t("registerElder.positionPlaceholder")} /></SelectTrigger>
                   <SelectContent>
                     {(available ?? ALL_POSITIONS).map((k) => (
                       <SelectItem key={k} value={k}>{ELDER_POSITION_LABELS[k]}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">Você poderá adicionar seu nome completo e um e-mail (opcional) em "Meu Perfil" após entrar.</p>
+                <p className="text-[11px] text-muted-foreground">{t("registerElder.positionHelp")}</p>
               </div>
 
               <Button type="submit" className="w-full h-11 mt-2" disabled={disableSubmit}>
-                {busy ? "Criando..." : "Entrar na Congregação"}
+                {busy ? t("registerElder.creating") : t("registerElder.submit")}
               </Button>
             </form>
           </CardContent>
@@ -185,13 +187,14 @@ function Page() {
 }
 
 function PasswordField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
   return (
     <div className="space-y-1.5">
-      <Label htmlFor="password">Defina uma senha (mín. 6)</Label>
+      <Label htmlFor="password">{t("registerElder.passwordLabel")}</Label>
       <div className="relative">
         <Input id="password" type={show ? "text" : "password"} required value={value} onChange={(e) => onChange(e.target.value)} className="pr-10" />
-        <button type="button" onClick={() => setShow((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground" aria-label={show ? "Ocultar senha" : "Mostrar senha"}>
+        <button type="button" onClick={() => setShow((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground" aria-label={show ? t("registerElder.hidePassword") : t("registerElder.showPassword")}>
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
