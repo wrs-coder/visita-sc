@@ -202,7 +202,7 @@ function Page() {
 
   const save = async () => {
     if (!editing || !editing.title || !editing.event_date) {
-      toast.error("Preencha título e data");
+      toast.error(t("schedule.requireTitleDate"));
       return;
     }
     setSaving(true);
@@ -224,7 +224,7 @@ function Page() {
       toast.error(res.error.message);
       return;
     }
-    toast.success(res.queued ? "Salvo offline" : "Salvo");
+    toast.success(res.queued ? t("common.savedOffline") : t("common.saved"));
     setOpen(false);
     setEditing(null);
   };
@@ -232,7 +232,7 @@ function Page() {
   const remove = async (id: string) => {
     const { error } = await offlineDelete("schedule_events", { id });
     if (error) toast.error(error.message);
-    else toast.success("Removido");
+    else toast.success(t("common.removed"));
   };
 
   const toggle = async (id: string, is_active: boolean) => {
@@ -246,16 +246,15 @@ function Page() {
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Cronograma Semanal</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">{t("schedule.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {format(weekStart, "d 'de' MMM", { locale: ptBR })} –{" "}
-            {format(weekEnd, "d 'de' MMM", { locale: ptBR })}
+            {format(weekStart, "d MMM", { locale })} – {format(weekEnd, "d MMM", { locale })}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Popover open={calOpen} onOpenChange={setCalOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="Escolher semana">
+              <Button variant="outline" size="icon" aria-label={t("schedule.pickWeek")}>
                 <CalendarIcon className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
@@ -271,7 +270,7 @@ function Page() {
                 }}
                 initialFocus
                 className={cn("p-3 pointer-events-auto")}
-                locale={ptBR}
+                locale={locale}
               />
             </PopoverContent>
           </Popover>
@@ -289,7 +288,7 @@ function Page() {
                     setEditing({ event_date: format(new Date(), "yyyy-MM-dd"), type: "other" })
                   }
                 >
-                  <Plus className="h-4 w-4 mr-1" /> Novo
+                  <Plus className="h-4 w-4 mr-1" /> {t("schedule.newEvent")}
                 </Button>
               </DialogTrigger>
               <EventDialog
@@ -298,6 +297,7 @@ function Page() {
                 save={save}
                 saving={saving}
                 days={days}
+                locale={locale}
               />
             </Dialog>
           )}
@@ -307,17 +307,17 @@ function Page() {
       <div className="flex items-center justify-between gap-2">
         <Button variant="outline" size="sm" onClick={() => setWeekStart((w) => addWeeks(w, -1))}>
           <ChevronLeft className="h-4 w-4 mr-1" />
-          Semana anterior
+          {t("schedule.prevWeek")}
         </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
         >
-          Esta semana
+          {t("schedule.thisWeek")}
         </Button>
         <Button size="sm" onClick={() => setWeekStart((w) => addWeeks(w, 1))}>
-          Próxima semana
+          {t("schedule.nextWeek")}
           <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
@@ -335,13 +335,13 @@ function Page() {
                   todayMark ? "text-primary" : "text-muted-foreground",
                 )}
               >
-                {format(day, "EEEE, d 'de' MMM", { locale: ptBR })}
-                {todayMark && " · hoje"}
+                {format(day, "EEEE, d MMM", { locale })}
+                {todayMark && ` · ${t("schedule.today")}`}
               </h2>
               {dayEvents.length === 0 ? (
                 <Card>
                   <CardContent className="p-4 text-sm text-muted-foreground">
-                    Sem compromissos.
+                    {t("schedule.noEvents")}
                   </CardContent>
                 </Card>
               ) : (
@@ -358,7 +358,7 @@ function Page() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-[11px] font-medium uppercase tracking-wide text-primary/70">
-                            {TYPES[e.type]}
+                            {t(`schedule.types.${e.type}`)}
                           </div>
                           <div className={`font-semibold ${!e.is_active ? "line-through" : ""}`}>
                             {e.title}
@@ -378,7 +378,7 @@ function Page() {
                             <Switch
                               checked={e.is_active}
                               onCheckedChange={(v) => toggle(e.id, v)}
-                              aria-label="Ativar/desativar"
+                              aria-label={t("schedule.toggleAria")}
                             />
                             <div className="flex">
                               <Button
@@ -409,6 +409,7 @@ function Page() {
     </div>
   );
 }
+
 
 function EventDialog({
   editing,
