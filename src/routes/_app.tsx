@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -43,6 +44,7 @@ function AppLayout() {
   const activeCong = useActiveCongregation();
   const nav = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
 
@@ -89,43 +91,43 @@ function AppLayout() {
   const sections: NavSection[] = [
     {
       id: "principal",
-      label: "Principal",
+      label: t("sidebar.sectionPrincipal"),
       items: [
-        { to: "/dashboard", label: "Início", icon: LayoutDashboard },
-        { to: "/cronograma", label: "Cronograma", icon: CalendarDays },
-        { to: "/configuracoes", label: "Itinerário", icon: Plane },
+        { to: "/dashboard", label: t("sidebar.home"), icon: LayoutDashboard },
+        { to: "/cronograma", label: t("sidebar.schedule"), icon: CalendarDays },
+        { to: "/configuracoes", label: t("sidebar.itinerary"), icon: Plane },
         ...(role === "superintendent"
-          ? [{ to: "/congregacoes", label: "Congregações", icon: Building2 }]
+          ? [{ to: "/congregacoes", label: t("sidebar.congregations"), icon: Building2 }]
           : []),
       ],
     },
     {
       id: "visita",
-      label: "Semana da Visita",
+      label: t("sidebar.sectionVisita"),
       items: [
-        { to: "/escala", label: "Estudos e Revisitas", icon: Users },
-        { to: "/reunioes-discursos", label: "Reuniões e Discursos", icon: MapPin },
-        { to: "/refeicoes", label: "Refeições", icon: UtensilsCrossed },
-        { to: "/transporte", label: "Transporte", icon: Car },
-        { to: "/checklist", label: "Checklist", icon: ListChecks },
+        { to: "/escala", label: t("sidebar.fieldStudies"), icon: Users },
+        { to: "/reunioes-discursos", label: t("sidebar.meetingsTalks"), icon: MapPin },
+        { to: "/refeicoes", label: t("sidebar.meals"), icon: UtensilsCrossed },
+        { to: "/transporte", label: t("sidebar.transport"), icon: Car },
+        { to: "/checklist", label: t("sidebar.checklist"), icon: ListChecks },
         ...(role === "superintendent"
-          ? [{ to: "/notas", label: "Notas Privadas", icon: Lock }]
+          ? [{ to: "/notas", label: t("sidebar.privateNotes"), icon: Lock }]
           : []),
       ],
     },
     {
       id: "modelos",
-      label: "Modelos e Configurações",
+      label: t("sidebar.sectionModelos"),
       items: [
         ...(role === "superintendent"
           ? [
-              { to: "/modelos", label: "Modelos de Programação", icon: FileStack },
-              { to: "/checklist-modelos", label: "Modelos de Checklist", icon: ListChecks },
-              { to: "/modelo-reunioes-de-campo", label: "Modelo Reuniões de Campo", icon: MapPin },
-              { to: "/modelo-reunioes-discursos", label: "Modelos de Reunião e Discurso", icon: Layers },
+              { to: "/modelos", label: t("sidebar.scheduleTemplates"), icon: FileStack },
+              { to: "/checklist-modelos", label: t("sidebar.checklistTemplates"), icon: ListChecks },
+              { to: "/modelo-reunioes-de-campo", label: t("sidebar.fieldMeetingTemplate"), icon: MapPin },
+              { to: "/modelo-reunioes-discursos", label: t("sidebar.meetingTalkTemplates"), icon: Layers },
             ]
           : []),
-        { to: "/perfil", label: "Meu perfil", icon: UserCircle },
+        { to: "/perfil", label: t("sidebar.myProfile"), icon: UserCircle },
       ],
       collapsible: role === "superintendent",
     },
@@ -177,7 +179,7 @@ function AppLayout() {
                     )}
                   >
                     <span className="flex items-center gap-3">
-                      <Layers className="h-4 w-4" /> Modelos de Base
+                      <Layers className="h-4 w-4" /> {t("sidebar.baseTemplates")}
                     </span>
                     <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
@@ -194,7 +196,7 @@ function AppLayout() {
                 onClick={openSupport}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
               >
-                <Coffee className="h-4 w-4" /> Apoie o Desenvolvedor ☕
+                <Coffee className="h-4 w-4" /> {t("sidebar.supportDev")}
               </button>
             </div>
           );
@@ -212,7 +214,7 @@ function AppLayout() {
                 onClick={openSupport}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
               >
-                <Coffee className="h-4 w-4" /> Apoie o Desenvolvedor ☕
+                <Coffee className="h-4 w-4" /> {t("sidebar.supportDev")}
               </button>
             )}
           </div>
@@ -237,7 +239,7 @@ function AppLayout() {
                 side="left"
                 className="bg-sidebar text-sidebar-foreground border-0 p-0 w-72 flex flex-col h-full"
               >
-                <SheetTitle className="sr-only">Menu</SheetTitle>
+                <SheetTitle className="sr-only">{t("sidebar.menu")}</SheetTitle>
                 <div className="shrink-0">
                   <SidebarHeader
                     congregationName={displayedCongregationName}
@@ -254,7 +256,7 @@ function AppLayout() {
             <div className="flex items-center gap-2">
               <Logo className="h-6 w-6" />
               <span className="font-semibold text-sm truncate">
-                {displayedCongregationName ?? profile?.circuit ?? "Visita"}
+                {displayedCongregationName ?? profile?.circuit ?? t("login.appTitle")}
               </span>
             </div>
           </div>
@@ -265,7 +267,7 @@ function AppLayout() {
                 signOut().then(() => nav({ to: "/" }));
               }}
               className="p-2 rounded-md hover:bg-white/10"
-              aria-label="Sair"
+              aria-label={t("sidebar.logout")}
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -296,7 +298,7 @@ function AppLayout() {
               className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60"
               onClick={() => signOut().then(() => nav({ to: "/" }))}
             >
-              <LogOut className="mr-2 h-4 w-4" /> Sair
+              <LogOut className="mr-2 h-4 w-4" /> {t("sidebar.logout")}
             </Button>
           </div>
         </aside>
@@ -310,10 +312,9 @@ function AppLayout() {
                     <div className="h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
                       <Lock className="h-7 w-7" />
                     </div>
-                    <h2 className="text-lg font-semibold">Ainda não há novidades</h2>
+                    <h2 className="text-lg font-semibold">{t("sidebar.blockedTitle")}</h2>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Por favor, aguarde até que o Superintendente disponibilize um agendamento de
-                      visita.
+                      {t("sidebar.blockedDesc")}
                     </p>
                   </CardContent>
                 </Card>
