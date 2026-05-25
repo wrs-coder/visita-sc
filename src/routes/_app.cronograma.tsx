@@ -49,22 +49,28 @@ import {
   addWeeks,
   isSameDay,
 } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR, enUS, es } from "date-fns/locale";
+import type { Locale } from "date-fns";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
 
 export const Route = createFileRoute("/_app/cronograma")({ component: Page });
 
-const TYPES = {
-  field_morning: "Reunião de Campo (Manhã)",
-  field_afternoon: "Reunião de Campo (Tarde)",
-  elders_meeting: "Corpo de Anciãos",
-  pioneers_meeting: "Reunião com Pioneiros",
-  midweek_meeting: "Reunião do Meio de Semana",
-  weekend_meeting: "Reunião do Fim de Semana",
-  other: "Outro",
-};
+const LOCALES: Record<string, Locale> = { pt: ptBR, en: enUS, es };
+const resolveLocale = (lng: string): Locale => LOCALES[lng?.slice(0, 2)] ?? ptBR;
+
+const TYPE_KEYS = [
+  "field_morning",
+  "field_afternoon",
+  "elders_meeting",
+  "pioneers_meeting",
+  "midweek_meeting",
+  "weekend_meeting",
+  "other",
+] as const;
+type EventType = (typeof TYPE_KEYS)[number];
 
 interface Event {
   id: string;
@@ -72,7 +78,7 @@ interface Event {
   event_date: string;
   start_time: string | null;
   end_time: string | null;
-  type: keyof typeof TYPES;
+  type: EventType;
   title: string;
   location: string | null;
   notes: string | null;
@@ -82,6 +88,8 @@ interface Event {
 function Page() {
   const { visit } = useActiveVisit();
   const { role, user, profile } = useAuth();
+  const { t, i18n } = useTranslation();
+  const locale = resolveLocale(i18n.language);
   const userId = user?.id;
   const canEdit = role === "superintendent";
   const [events, setEvents] = useState<Event[]>([]);
@@ -194,7 +202,7 @@ function Page() {
 
   const save = async () => {
     if (!editing || !editing.title || !editing.event_date) {
-      toast.error("Preencha título e data");
+      toast.error(t("schedule.requireTitleDate"));
       return;
     }
     setSaving(true);
@@ -216,7 +224,7 @@ function Page() {
       toast.error(res.error.message);
       return;
     }
-    toast.success(res.queued ? "Salvo offline" : "Salvo");
+    toast.success(res.queued ? t("common.savedOffline") : t("common.saved"));
     setOpen(false);
     setEditing(null);
   };
@@ -224,7 +232,7 @@ function Page() {
   const remove = async (id: string) => {
     const { error } = await offlineDelete("schedule_events", { id });
     if (error) toast.error(error.message);
-    else toast.success("Removido");
+    else toast.success(t("common.removed"));
   };
 
   const toggle = async (id: string, is_active: boolean) => {
@@ -238,16 +246,15 @@ function Page() {
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Cronograma Semanal</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">{t("schedule.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {format(weekStart, "d 'de' MMM", { locale: ptBR })} –{" "}
-            {format(weekEnd, "d 'de' MMM", { locale: ptBR })}
+            {format(weekStart, "d MMM", { locale })} – {format(weekEnd, "d MMM", { locale })}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Popover open={calOpen} onOpenChange={setCalOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="Escolher semana">
+              <Button variant="outline" size="icon" aria-label={t("schedule.pickWeek")}>
                 <CalendarIcon className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
@@ -263,7 +270,7 @@ function Page() {
                 }}
                 initialFocus
                 className={cn("p-3 pointer-events-auto")}
-                locale={ptBR}
+                locale={locale}
               />
             </PopoverContent>
           </Popover>
@@ -281,7 +288,7 @@ function Page() {
                     setEditing({ event_date: format(new Date(), "yyyy-MM-dd"), type: "other" })
                   }
                 >
-                  <Plus className="h-4 w-4 mr-1" /> Novo
+                  <Plus className="h-4 w-4 mr-1" /> {t("schedule.newEvent")}
                 </Button>
               </DialogTrigger>
               <EventDialog
@@ -290,6 +297,7 @@ function Page() {
                 save={save}
                 saving={saving}
                 days={days}
+                locale={locale}
               />
             </Dialog>
           )}
@@ -299,17 +307,17 @@ function Page() {
       <div className="flex items-center justify-between gap-2">
         <Button variant="outline" size="sm" onClick={() => setWeekStart((w) => addWeeks(w, -1))}>
           <ChevronLeft className="h-4 w-4 mr-1" />
-          Semana anterior
+          {t("schedule.prevWeek")}
         </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
         >
-          Esta semana
+          {t("schedule.thisWeek")}
         </Button>
         <Button size="sm" onClick={() => setWeekStart((w) => addWeeks(w, 1))}>
-          Próxima semana
+          {t("schedule.nextWeek")}
           <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
@@ -327,13 +335,13 @@ function Page() {
                   todayMark ? "text-primary" : "text-muted-foreground",
                 )}
               >
-                {format(day, "EEEE, d 'de' MMM", { locale: ptBR })}
-                {todayMark && " · hoje"}
+                {format(day, "EEEE, d MMM", { locale })}
+                {todayMark && ` · ${t("schedule.today")}`}
               </h2>
               {dayEvents.length === 0 ? (
                 <Card>
                   <CardContent className="p-4 text-sm text-muted-foreground">
-                    Sem compromissos.
+                    {t("schedule.noEvents")}
                   </CardContent>
                 </Card>
               ) : (
@@ -350,7 +358,7 @@ function Page() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-[11px] font-medium uppercase tracking-wide text-primary/70">
-                            {TYPES[e.type]}
+                            {t(`schedule.types.${e.type}`)}
                           </div>
                           <div className={`font-semibold ${!e.is_active ? "line-through" : ""}`}>
                             {e.title}
@@ -370,7 +378,7 @@ function Page() {
                             <Switch
                               checked={e.is_active}
                               onCheckedChange={(v) => toggle(e.id, v)}
-                              aria-label="Ativar/desativar"
+                              aria-label={t("schedule.toggleAria")}
                             />
                             <div className="flex">
                               <Button
@@ -402,46 +410,50 @@ function Page() {
   );
 }
 
+
 function EventDialog({
   editing,
   setEditing,
   save,
   saving,
   days,
+  locale,
 }: {
   editing: Partial<Event> | null;
   setEditing: (e: Partial<Event> | null) => void;
   save: () => void;
   saving: boolean;
   days: Date[];
+  locale: Locale;
 }) {
+  const { t } = useTranslation();
   if (!editing) return null;
   return (
     <DialogContent className="max-w-md">
       <DialogHeader>
-        <DialogTitle>{editing.id ? "Editar" : "Novo"} compromisso</DialogTitle>
+        <DialogTitle>{editing.id ? t("schedule.editEvent") : t("schedule.newEventTitle")}</DialogTitle>
       </DialogHeader>
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Label>Tipo</Label>
+          <Label>{t("schedule.type")}</Label>
           <Select
             value={editing.type ?? "other"}
-            onValueChange={(v) => setEditing({ ...editing, type: v as keyof typeof TYPES })}
+            onValueChange={(v) => setEditing({ ...editing, type: v as EventType })}
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(TYPES).map(([k, v]) => (
+              {TYPE_KEYS.map((k) => (
                 <SelectItem key={k} value={k}>
-                  {v}
+                  {t(`schedule.types.${k}`)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label>Título</Label>
+          <Label>{t("schedule.titleField")}</Label>
           <Input
             value={editing.title ?? ""}
             onChange={(e) => setEditing({ ...editing, title: e.target.value })}
@@ -449,7 +461,7 @@ function EventDialog({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label>Data</Label>
+            <Label>{t("schedule.date")}</Label>
             <Select
               value={editing.event_date}
               onValueChange={(v) => setEditing({ ...editing, event_date: v })}
@@ -462,7 +474,7 @@ function EventDialog({
                   const k = format(d, "yyyy-MM-dd");
                   return (
                     <SelectItem key={k} value={k}>
-                      {format(d, "EEE, d MMM", { locale: ptBR })}
+                      {format(d, "EEE, d MMM", { locale })}
                     </SelectItem>
                   );
                 })}
@@ -470,7 +482,7 @@ function EventDialog({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Horário início</Label>
+            <Label>{t("schedule.startTime")}</Label>
             <Input
               type="time"
               value={editing.start_time ?? ""}
@@ -479,14 +491,14 @@ function EventDialog({
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label>Local</Label>
+          <Label>{t("schedule.place")}</Label>
           <Input
             value={editing.location ?? ""}
             onChange={(e) => setEditing({ ...editing, location: e.target.value })}
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Observações</Label>
+          <Label>{t("schedule.notes")}</Label>
           <Textarea
             rows={2}
             value={editing.notes ?? ""}
@@ -495,7 +507,7 @@ function EventDialog({
         </div>
         <Button className="w-full" onClick={save} disabled={saving}>
           <Save className="h-4 w-4 mr-1" />
-          {saving ? "Salvando..." : "Salvar"}
+          {saving ? t("common.saving") : t("common.save")}
         </Button>
       </div>
     </DialogContent>
@@ -503,10 +515,11 @@ function EventDialog({
 }
 
 function Empty() {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardContent className="p-6 text-sm text-muted-foreground">
-        Nenhuma visita ativa. Cadastre uma em Itinerário.
+        {t("schedule.emptyNoVisit")}
       </CardContent>
     </Card>
   );
