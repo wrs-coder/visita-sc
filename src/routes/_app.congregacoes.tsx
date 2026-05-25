@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Building2, Trash2, Pencil, KeyRound, Copy, Users, UserCog } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface Elder {
   user_id: string;
