@@ -78,7 +78,7 @@ interface Event {
   event_date: string;
   start_time: string | null;
   end_time: string | null;
-  type: keyof typeof TYPES;
+  type: EventType;
   title: string;
   location: string | null;
   notes: string | null;
