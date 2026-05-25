@@ -335,19 +335,19 @@ function Page() {
                 <TabsContent value="meio" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <div>
-                      <Label>Tema: Discurso de serviço</Label>
+                      <Label>{t("templates.meetingTalk.midweek.serviceTalk")}</Label>
                       <Input className="mt-1" value={payload.midweek.service_talk_theme}
                         readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, service_talk_theme: e.target.value } })} />
                     </div>
                     <div>
-                      <Label>Presidente da Reunião</Label>
+                      <Label>{t("templates.meetingTalk.midweek.chairman")}</Label>
                       <Input className="mt-1" value={payload.midweek.chairman}
                         readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, chairman: e.target.value } })} />
                     </div>
                     <div>
-                      <Label>Oração Final</Label>
+                      <Label>{t("templates.meetingTalk.midweek.closingPrayer")}</Label>
                       <Input className="mt-1" value={payload.midweek.closing_prayer}
                         readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, closing_prayer: e.target.value } })} />
@@ -358,33 +358,33 @@ function Page() {
                 <TabsContent value="fim" className="mt-3">
                   <Card><CardContent className="p-4 space-y-4">
                     <div>
-                      <Label>Discurso Público</Label>
+                      <Label>{t("templates.meetingTalk.weekend.publicTalk")}</Label>
                       <Input
                         className="mt-1"
                         value={payload.weekend_public_talk_theme}
                         readOnly={!isSuper}
-                        placeholder="Tema do Discurso Público"
+                        placeholder={t("templates.meetingTalk.weekend.publicTalkPlaceholder")}
                         onChange={(e) => setPayload({ ...payload, weekend_public_talk_theme: e.target.value })}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        {isSuper ? "Edição restrita ao superintendente." : "Apenas leitura."}
+                        {isSuper ? t("templates.meetingTalk.weekend.editorHint") : t("templates.meetingTalk.weekend.readOnly")}
                       </p>
                     </div>
                     <div className="border-t pt-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-semibold text-sm">Discurso Final</div>
-                          <p className="text-xs text-muted-foreground">Cadastre vários temas. Os anciãos escolherão um deles num dropdown.</p>
+                          <div className="font-semibold text-sm">{t("templates.meetingTalk.weekend.finalTalk")}</div>
+                          <p className="text-xs text-muted-foreground">{t("templates.meetingTalk.weekend.finalTalkHint")}</p>
                         </div>
-                        {isSuper && <Button size="sm" variant="outline" onClick={addTheme}><Plus className="h-3.5 w-3.5 mr-1" />Tema</Button>}
+                        {isSuper && <Button size="sm" variant="outline" onClick={addTheme}><Plus className="h-3.5 w-3.5 mr-1" />{t("templates.meetingTalk.weekend.addTheme")}</Button>}
                       </div>
                       {payload.weekend_themes.length === 0 ? (
-                        <p className="text-xs text-muted-foreground mt-2">Nenhum tema. Adicione pelo menos um.</p>
+                        <p className="text-xs text-muted-foreground mt-2">{t("templates.meetingTalk.weekend.noThemes")}</p>
                       ) : (
                         <ul className="space-y-2 mt-2">
-                          {payload.weekend_themes.map((t, i) => (
+                          {payload.weekend_themes.map((th, i) => (
                             <li key={i} className="flex items-center gap-2">
-                              <Input value={t.title} readOnly={!isSuper} onChange={(e) => updateTheme(i, e.target.value)} placeholder="Ex.: O Reino vai resolver..." />
+                              <Input value={th.title} readOnly={!isSuper} onChange={(e) => updateTheme(i, e.target.value)} placeholder={t("templates.meetingTalk.weekend.themePlaceholder")} />
                               {isSuper && <Button size="icon" variant="ghost" onClick={() => removeTheme(i)}>
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>}
@@ -395,6 +395,7 @@ function Page() {
                     </div>
                   </CardContent></Card>
                 </TabsContent>
+
 
 
                 <TabsContent value="pio" className="mt-3">
