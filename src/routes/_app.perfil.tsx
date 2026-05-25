@@ -15,13 +15,16 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee } from "lucide-react";
+import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee, Globe } from "lucide-react";
 import { SupportDeveloperContent } from "@/components/SupportDeveloper";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/_app/perfil")({ component: Page });
 
 function Page() {
   const { user, profile, refresh, role } = useAuth();
+  const { t } = useTranslation();
   const autoBackup = useAutoBackup();
   const fnExportBackup = useServerFn(exportFullBackup);
   const fnRestoreBackup = useServerFn(restoreFullBackup);
@@ -118,6 +121,18 @@ function Page() {
         <h1 className="text-2xl md:text-3xl font-bold">Meu perfil</h1>
         <p className="text-sm text-muted-foreground mt-1">Atualize seus dados pessoais, e-mail e senha</p>
       </header>
+
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Globe className="h-4 w-4 text-primary" /> {t("profile.language")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <LanguageSwitcher />
+          <p className="text-xs text-muted-foreground">{t("profile.languageHelp")}</p>
+        </CardContent>
+      </Card>
 
       <Card className="shadow-card">
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary" /> Dados pessoais</CardTitle></CardHeader>

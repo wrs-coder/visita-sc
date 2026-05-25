@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PwaRegister } from "@/components/PwaRegister";
 import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-persister";
 import { flushQueue } from "@/lib/offline-queue";
+import "@/i18n";
 
 function NotFoundComponent() {
   return (

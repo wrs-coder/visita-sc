@@ -1,0 +1,63 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "loading": "Loading...",
+    "language": "Language"
+  },
+  "languages": {
+    "pt": "Portuguese",
+    "en": "English",
+    "es": "Spanish"
+  },
+  "login": {
+    "appTitle": "Circuit Overseer's Visit",
+    "signIn": "Sign in",
+    "identifierHelp": "Username, email or circuit ID",
+    "identifierLabel": "Username / Email / Circuit ID",
+    "identifierPlaceholder": "e.g. john_doe, john@email.com or AGO-12",
+    "password": "Password",
+    "signingIn": "Signing in...",
+    "welcome": "Welcome!",
+    "invalidCredentials": "Invalid credentials",
+    "newElder": "I'm a new elder —",
+    "createAccessElder": "create access",
+    "newSuper": "I'm a new circuit overseer —",
+    "createAccount": "create account",
+    "forgotPassword": "Forgot my password",
+    "guestAccess": "Body of Elders and MS access",
+    "supportDev": "Support the Developer ☕",
+    "aboutApp": "About the App"
+  },
+  "profile": {
+    "title": "My profile",
+    "subtitle": "Update your personal data, email and password",
+    "personalData": "Personal data",
+    "fullName": "Full name (optional)",
+    "fullNamePlaceholder": "Your full name",
+    "fullNameHelp": "You can fill this in later — it is not required to use the system.",
+    "saveName": "Save name",
+    "nameUpdated": "Name updated",
+    "circuit": "Circuit",
+    "circuitId": "Circuit identifier",
+    "circuitHelp": "The circuit overseer does not belong to a fixed congregation. Use this field to record the code or name of the current circuit.",
+    "saveCircuit": "Save circuit",
+    "circuitUpdated": "Circuit updated",
+    "email": "Email (optional, for password recovery)",
+    "emailLabel": "Email",
+    "emailHelp": "Add a real email to be able to use \"Forgot my password\". You will receive a confirmation link at the new address.",
+    "updateEmail": "Update email",
+    "emailConfirm": "Confirm the new email in your inbox to complete the change.",
+    "changePassword": "Change password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "updatePassword": "Update password",
+    "passwordUpdated": "Password updated",
+    "passwordMin": "Password must be at least 6 characters",
+    "passwordMismatch": "Passwords do not match",
+    "saveError": "Error saving",
+    "language": "App language",
+    "languageHelp": "Choose the interface language. The preference is saved on this device."
+  }
+}
