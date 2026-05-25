@@ -122,7 +122,7 @@ export function LoginForm() {
               type="button"
               className="mt-1 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2"
             >
-              <Coffee className="h-4 w-4" /> Apoie o Desenvolvedor ☕
+              <Coffee className="h-4 w-4" /> {t("login.supportDev")}
             </button>
           }
         />
@@ -133,7 +133,7 @@ export function LoginForm() {
               type="button"
               className="mt-1 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2"
             >
-              <Info className="h-4 w-4" /> Sobre o Aplicativo
+              <Info className="h-4 w-4" /> {t("login.aboutApp")}
             </button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
