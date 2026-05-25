@@ -49,22 +49,28 @@ import {
   addWeeks,
   isSameDay,
 } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR, enUS, es } from "date-fns/locale";
+import type { Locale } from "date-fns";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
 
 export const Route = createFileRoute("/_app/cronograma")({ component: Page });
 
-const TYPES = {
-  field_morning: "Reunião de Campo (Manhã)",
-  field_afternoon: "Reunião de Campo (Tarde)",
-  elders_meeting: "Corpo de Anciãos",
-  pioneers_meeting: "Reunião com Pioneiros",
-  midweek_meeting: "Reunião do Meio de Semana",
-  weekend_meeting: "Reunião do Fim de Semana",
-  other: "Outro",
-};
+const LOCALES: Record<string, Locale> = { pt: ptBR, en: enUS, es };
+const resolveLocale = (lng: string): Locale => LOCALES[lng?.slice(0, 2)] ?? ptBR;
+
+const TYPE_KEYS = [
+  "field_morning",
+  "field_afternoon",
+  "elders_meeting",
+  "pioneers_meeting",
+  "midweek_meeting",
+  "weekend_meeting",
+  "other",
+] as const;
+type EventType = (typeof TYPE_KEYS)[number];
 
 interface Event {
   id: string;
