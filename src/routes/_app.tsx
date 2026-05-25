@@ -97,7 +97,10 @@ function AppLayout() {
         { to: "/cronograma", label: t("sidebar.schedule"), icon: CalendarDays },
         { to: "/configuracoes", label: t("sidebar.itinerary"), icon: Plane },
         ...(role === "superintendent"
-          ? [{ to: "/congregacoes", label: t("sidebar.congregations"), icon: Building2 }]
+          ? [
+              { to: "/congregacoes", label: t("sidebar.congregations"), icon: Building2 },
+              { to: "/notas", label: t("sidebar.privateNotes"), icon: Lock },
+            ]
           : []),
       ],
     },
@@ -110,9 +113,6 @@ function AppLayout() {
         { to: "/refeicoes", label: t("sidebar.meals"), icon: UtensilsCrossed },
         { to: "/transporte", label: t("sidebar.transport"), icon: Car },
         { to: "/checklist", label: t("sidebar.checklist"), icon: ListChecks },
-        ...(role === "superintendent"
-          ? [{ to: "/notas", label: t("sidebar.privateNotes"), icon: Lock }]
-          : []),
       ],
     },
     {
