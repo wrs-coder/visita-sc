@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import {
   listChecklistTemplates,
@@ -37,6 +38,7 @@ interface ItemDraft { title: string; description: string; }
 const MAX = 24;
 
 function Page() {
+  const { t } = useTranslation();
   const { role } = useAuth();
   const fnList = useServerFn(listChecklistTemplates);
   const fnCreate = useServerFn(createChecklistTemplate);
