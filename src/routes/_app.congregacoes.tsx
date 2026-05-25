@@ -66,6 +66,7 @@ export const Route = createFileRoute("/_app/congregacoes")({ component: Page });
 
 function Page() {
   const { user, role } = useAuth();
+  const { t } = useTranslation();
 
   const fnList = useServerFn(listMyCongregations);
   const fnCreate = useServerFn(createCongregation);
