@@ -211,27 +211,29 @@ function Page() {
   );
 }
 
-function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove }: {
+function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLabel }: {
   title: string; kind: Kind; tplId: string | undefined; items: ItemDraft[];
   onAdd: () => void;
   onUpdate: (tplId: string, idx: number, patch: Partial<ItemDraft>) => void;
   onRemove: (tplId: string, idx: number) => void;
+  dayLabel: Record<number, string>;
 }) {
+  const { t } = useTranslation();
   const filtered = items.map((it, i) => ({ it, i })).filter(({ it }) => it.kind === kind);
   return (
     <div className="border rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold">{title}</h3>
-        <Button size="sm" variant="outline" onClick={onAdd}><Plus className="h-3 w-3 mr-1" />Adicionar</Button>
+        <Button size="sm" variant="outline" onClick={onAdd}><Plus className="h-3 w-3 mr-1" />{t("common.add")}</Button>
       </div>
-      {filtered.length === 0 && <p className="text-xs text-muted-foreground">Nenhum item.</p>}
+      {filtered.length === 0 && <p className="text-xs text-muted-foreground">{t("templates.program.noItems")}</p>}
       <div className="space-y-2">
         {filtered.map(({ it, i }) => (
           <div key={i} className="bg-muted/30 rounded-md p-2 space-y-2">
             <div className="flex items-center gap-2">
               <Select value={String(it.day_offset)} onValueChange={(v) => tplId && onUpdate(tplId, i, { day_offset: Number(v) })}>
                 <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
-                <SelectContent>{DAY_OPTS.map((d) => <SelectItem key={d} value={String(d)}>{DAY_LABEL[d]}</SelectItem>)}</SelectContent>
+                <SelectContent>{DAY_OPTS.map((d) => <SelectItem key={d} value={String(d)}>{dayLabel[d]}</SelectItem>)}</SelectContent>
               </Select>
               <div className="flex-1" />
               <Button size="icon" variant="ghost" onClick={() => tplId && onRemove(tplId, i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
