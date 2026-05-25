@@ -349,27 +349,28 @@ function SidebarHeader({
   role: string | null;
   circuit?: string | null;
 }) {
+  const { t } = useTranslation();
   const title =
     role === "superintendent"
-      ? circuit?.trim() || congregationName || "Circuito não informado"
-      : (congregationName ?? "Sem congregação");
+      ? circuit?.trim() || congregationName || t("sidebar.circuitNotSet")
+      : (congregationName ?? t("sidebar.noCongregation"));
   return (
     <div className="p-5 border-b border-sidebar-border">
       <div className="flex items-center gap-2 mb-3">
         <div className="h-9 w-9 rounded-lg bg-white/15 flex items-center justify-center overflow-hidden">
           <Logo className="h-7 w-7" />
         </div>
-        <div className="text-xs uppercase tracking-wider opacity-70">Visita do SC</div>
+        <div className="text-xs uppercase tracking-wider opacity-70">{t("sidebar.appName")}</div>
       </div>
       <div className="font-semibold leading-tight truncate">{title}</div>
       {role === "superintendent" && congregationName && (
         <div className="text-[11px] opacity-75 mt-0.5 truncate">
-          Ativa: <span className="font-medium">{congregationName}</span>
+          {t("sidebar.active")}: <span className="font-medium">{congregationName}</span>
         </div>
       )}
       <div className="text-xs opacity-80 mt-1 truncate">{userName ?? ""}</div>
       <div className="mt-2 inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/15">
-        {role === "superintendent" ? "Superintendente" : role === "elder" ? "Ancião" : "—"}
+        {role === "superintendent" ? t("sidebar.roleSuper") : role === "elder" ? t("sidebar.roleElder") : "—"}
       </div>
     </div>
   );
