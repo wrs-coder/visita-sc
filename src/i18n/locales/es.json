@@ -604,5 +604,137 @@
       "telefone_cartas": "Teléfono + Cartas",
       "grupo_de_campo": "Grupo de campo"
     }
+  },
+  "notes": {
+    "title": "Notas Privadas",
+    "subtitle": "Visibles solo para ti",
+    "restricted": "Acceso restringido al superintendente.",
+    "noCongregations": "Registra una congregación para comenzar.",
+    "congregationLabel": "Congregación (solo para esta pestaña)",
+    "congregationPlaceholder": "Selecciona una congregación...",
+    "createdOffline": "Nota creada sin conexión",
+    "deleteConfirm": "¿Eliminar esta nota?",
+    "titlePlaceholder": "Título",
+    "untitled": "(sin título)",
+    "save": "Guardar",
+    "saveChanges": "Guardar cambios",
+    "selectPlaceholder": "Selecciona...",
+    "selectAtLeastOne": "Por favor, selecciona al menos una nota para exportar.",
+    "export": {
+      "title": "Exportar Notas",
+      "selectedCount": "• {{count}} seleccionada(s)",
+      "includesMultiple": " (puede incluir notas de varias sub-pestañas)",
+      "selectFromTab": "Seleccionar de esta pestaña",
+      "unselectFromTab": "Deseleccionar de esta pestaña",
+      "clear": "Limpiar",
+      "pdf": "Exportar PDF",
+      "whatsapp": "WhatsApp"
+    },
+    "filters": {
+      "search": "Buscar por título o contenido",
+      "searchPlaceholder": "Escribe para filtrar...",
+      "from": "Desde",
+      "to": "Hasta",
+      "clear": "Limpiar"
+    },
+    "categories": {
+      "free": { "label": "Notas libres", "add": "Nueva nota libre", "empty": "Aún no hay notas.", "default": "Nueva nota" },
+      "pastoral": { "label": "Pastoreo", "add": "Nueva visita de pastoreo", "empty": "Sin visitas registradas.", "default": "Visita de pastoreo" },
+      "s303": { "label": "S-303", "add": "Nuevo registro S-303", "empty": "Aún no hay registros." },
+      "oradores": { "label": "Oradores", "add": "Nuevo orador", "empty": "Ningún orador registrado." },
+      "recomendados": { "label": "Recomendados", "add": "Nuevo recomendado", "empty": "Ningún recomendado." },
+      "peticoes": { "label": "Peticiones", "add": "Nueva petición", "empty": "Ninguna petición." }
+    },
+    "free": { "content": "Contenido:", "contentPlaceholder": "Anotaciones..." },
+    "pastoral": {
+      "noDate": "Sin fecha",
+      "dateLabel": "Fecha de la visita",
+      "companion": "Acompañante",
+      "companionPlaceholder": "Nombre del acompañante",
+      "involved": "Nombre de los involucrados",
+      "involvedPlaceholder": "Personas visitadas",
+      "additional": "Información adicional",
+      "additionalPlaceholder": "Puntos tratados, ánimo, próximos pasos...",
+      "dateLine": "Fecha"
+    },
+    "structured": {
+      "s303": {
+        "positivos": "Aspectos positivos y elogios",
+        "encorajar": "Puntos para animar (Hechos 11:23)",
+        "preocupantes": "Puntos preocupantes (Tito 1:5)"
+      },
+      "oradores": {
+        "nome": "Nombre del orador",
+        "classificacao": "Clasificación",
+        "habilidades": "Descripción de las habilidades como orador",
+        "habilidadesShort": "Habilidades",
+        "observacoes": "Observaciones sobre el propio orador",
+        "observacoesShort": "Observaciones"
+      },
+      "recomendados": {
+        "nome": "Nombre",
+        "tipo": "Recomendación",
+        "corpo": "Información del cuerpo de ancianos",
+        "corpoShort": "Cuerpo de ancianos",
+        "super": "Observaciones del superintendente",
+        "superShort": "Superintendente",
+        "options": { "ancião": "Anciano", "servo": "Siervo ministerial", "cca": "CCA", "cancelamento": "Cancelación" }
+      },
+      "peticoes": {
+        "nome": "Nombre",
+        "tipo": "Petición",
+        "corpo": "Información del cuerpo de ancianos",
+        "corpoShort": "Cuerpo de ancianos",
+        "super": "Observaciones del superintendente",
+        "superShort": "Superintendente",
+        "options": { "a8": "A-8", "g8": "G-8", "outras": "Otras" }
+      }
+    },
+    "pdf": {
+      "header": "Notas Privadas — Confidencial",
+      "footerConfidential": "Confidencial — uso exclusivo del superintendente",
+      "page": "Página {{page}} de {{total}}",
+      "fileName": "notas-privadas",
+      "categoryFallback": "Nota"
+    },
+    "whatsapp": { "header": "*Notas Privadas — Confidencial*" }
+  },
+  "report": {
+    "loading": "Cargando informe…",
+    "notFound": "Visita no encontrada.",
+    "back": "Volver",
+    "markdown": "Markdown",
+    "print": "Imprimir / Guardar PDF",
+    "title": "Resumen Ejecutivo de la Visita",
+    "congregation": "Congregación:",
+    "type": "Tipo:",
+    "period": "Período:",
+    "periodSeparator": "a",
+    "substitute": "Sustituto:",
+    "generatedAt": "Generado el {{date}} · Visita SC",
+    "markdownExported": "Markdown exportado",
+    "sections": {
+      "schedule": "Programa",
+      "meals": "Comidas",
+      "transport": "Transporte",
+      "fieldAssignments": "Asignaciones de Campo",
+      "fieldMeetings": "Reuniones de Campo",
+      "midweek": "Reunión Entre Semana",
+      "weekend": "Reunión de Fin de Semana",
+      "pioneer": "Reunión con Precursores",
+      "elders": "Reunión con Ancianos y Siervos",
+      "checklist": "Lista de verificación"
+    },
+    "labels": {
+      "chairman": "Presidente",
+      "serviceTalk": "Discurso de servicio",
+      "publicTalk": "Discurso público",
+      "finalTalk": "Discurso final",
+      "theme": "Tema",
+      "territory": "Territorio",
+      "in": "en",
+      "dash": "—"
+    }
   }
 }
+
