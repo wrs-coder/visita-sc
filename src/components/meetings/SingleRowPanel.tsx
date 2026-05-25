@@ -7,6 +7,7 @@
 //   reflita o que o utilizador está digitando.
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { offlineInsert, offlineUpdate } from "@/lib/offline-supabase";
 import type { Visit } from "@/hooks/use-active-visit";
@@ -18,6 +19,7 @@ export function useSingleRow<T extends { id: string }>(
   columns: string,
   visit: Visit | null,
 ) {
+  const { t } = useTranslation();
   const [row, setRow] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const creatingRef = useRef(false);
@@ -77,8 +79,8 @@ export function useSingleRow<T extends { id: string }>(
     setRow((r) => (r ? { ...r, ...patch } : r));
     const { error, queued } = await offlineUpdate(table, patch as Record<string, unknown>, { id: row.id });
     if (error) toast.error(error.message);
-    else if (queued) toast.success("Salvo offline");
-  }, [row, table, draftCtx]);
+    else if (queued) toast.success(t("common.savedOffline"));
+  }, [row, table, draftCtx, t]);
 
   return { row: mergedRow, loading, save };
 }
