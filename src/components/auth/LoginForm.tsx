@@ -140,29 +140,23 @@ export function LoginForm() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Info className="h-5 w-5 text-primary" />
-                Sobre o Aplicativo
+                {t("about.title")}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                O objetivo deste sistema é prover uma plataforma integrada para a gestão de
-                informações e relatórios do painel. Através da automação de processos, o
-                aplicativo visa simplificar as rotinas, assegurar a integridade dos dados
-                compartilhados e facilitar o suporte às atividades na semana da visita à
-                congregação.
-              </p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{t("about.body")}</p>
               <div className="rounded-lg bg-primary/5 border border-primary/10 p-3">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
-                  Desenvolvimento
+                  {t("about.developmentLabel")}
                 </p>
                 <p className="text-sm mt-1 font-semibold text-foreground">
-                  Sistema totalmente idealizado, estruturado e programado de forma independente por
+                  {t("about.developmentBody")}
                   <span className="text-primary"> Wanderson Rodrigues</span>.
                 </p>
               </div>
               <div className="space-y-2">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
-                  Suporte
+                  {t("about.supportLabel")}
                 </p>
                 <a
                   href="mailto:wrscircuito@gmail.com"
@@ -182,11 +176,11 @@ export function LoginForm() {
                 </a>
               </div>
               <div className="border-t pt-3 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>Versão {APP_VERSION} · Build {APP_BUILD}</span>
-                <span>Atualizado: {APP_UPDATED_AT}</span>
+                <span>{t("about.versionLine", { version: APP_VERSION, build: APP_BUILD })}</span>
+                <span>{t("about.updated", { date: APP_UPDATED_AT })}</span>
               </div>
               <DialogClose asChild>
-                <Button variant="outline" className="w-full">Fechar</Button>
+                <Button variant="outline" className="w-full">{t("about.close")}</Button>
               </DialogClose>
             </div>
           </DialogContent>

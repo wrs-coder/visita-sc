@@ -10,70 +10,63 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 const PIX_EMAIL = "wrscircuito@gmail.com";
 const WISE_USER = "wandersonp264";
 const WISE_URL = "https://wise.com/pay/me/wandersonp264";
 const WHATSAPP_URL = "https://wa.me/5571983420366";
 
-async function copyPix() {
-  try {
-    await navigator.clipboard.writeText(PIX_EMAIL);
-    toast.success("Chave PIX copiada com sucesso!");
-  } catch {
-    toast.error("Não foi possível copiar. Copie manualmente: " + PIX_EMAIL);
-  }
-}
-
 /** Conteúdo reutilizável da seção "Apoie o Desenvolvedor". */
 export function SupportDeveloperContent() {
+  const { t } = useTranslation();
+
+  const copyPix = async () => {
+    try {
+      await navigator.clipboard.writeText(PIX_EMAIL);
+      toast.success(t("support.pixCopied"));
+    } catch {
+      toast.error(t("support.pixCopyFail") + PIX_EMAIL);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <p className="text-sm leading-relaxed text-muted-foreground">
-        O Visita SC é feito de irmão para irmão, 100% gratuito e sem anúncios, com o objetivo de
-        simplificar a rotina da visita do superintendente. Se este projeto tem sido útil no circuito
-        e você deseja expressar sua gratidão, sinta-se à vontade para enviar um apoio voluntário em
-        forma de presente. É um gesto espontâneo de carinho que valoriza a dedicação investida
-        neste app.
-      </p>
+      <p className="text-sm leading-relaxed text-muted-foreground">{t("support.body")}</p>
 
       <div className="space-y-3">
         <div className="rounded-lg border border-primary/15 bg-primary/5 p-3 space-y-2">
           <p className="text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground">Nacional (PIX):</span> {PIX_EMAIL}
+            <span className="font-semibold text-foreground">{t("support.pixLabel")}</span> {PIX_EMAIL}
           </p>
           <Button onClick={copyPix} className="w-full" size="sm">
-            <Copy className="h-4 w-4 mr-2" /> Copiar chave PIX
+            <Copy className="h-4 w-4 mr-2" /> {t("support.copyPix")}
           </Button>
         </div>
 
         <div className="rounded-lg border border-primary/15 bg-primary/5 p-3 space-y-2">
           <p className="text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground">Internacional (Wise):</span>{" "}
+            <span className="font-semibold text-foreground">{t("support.wiseLabel")}</span>{" "}
             {WISE_USER}
           </p>
           <Button asChild variant="outline" className="w-full" size="sm">
             <a href={WISE_URL} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4 mr-2" /> Abrir Wise
+              <ExternalLink className="h-4 w-4 mr-2" /> {t("support.openWise")}
             </a>
           </Button>
         </div>
 
         <div className="rounded-lg border border-primary/15 bg-primary/5 p-3 space-y-2">
-          <p className="text-xs text-muted-foreground">
-            Se desejar ajudar de outra forma, entre em contato direto comigo pelo WhatsApp.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("support.otherWayHint")}</p>
           <Button asChild variant="outline" className="w-full" size="sm">
             <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-              <MessageCircle className="h-4 w-4 mr-2" /> Falar no WhatsApp
+              <MessageCircle className="h-4 w-4 mr-2" /> {t("support.whatsapp")}
             </a>
           </Button>
         </div>
       </div>
 
-      <p className="text-[11px] italic text-muted-foreground text-center">
-        Nota: O acesso continua 100% liberado e gratuito para todos, sem limitações.
-      </p>
+      <p className="text-[11px] italic text-muted-foreground text-center">{t("support.note")}</p>
     </div>
   );
 }
@@ -88,6 +81,7 @@ export function SupportDeveloperDialog({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
@@ -95,13 +89,13 @@ export function SupportDeveloperDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Coffee className="h-5 w-5 text-primary" />
-            Apoie o Desenvolvedor ☕
+            {t("support.title")}
           </DialogTitle>
         </DialogHeader>
         <SupportDeveloperContent />
         <DialogClose asChild>
           <Button variant="outline" className="w-full">
-            Fechar
+            {t("support.close")}
           </Button>
         </DialogClose>
       </DialogContent>
