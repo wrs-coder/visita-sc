@@ -361,6 +361,29 @@
         "openingPrayer": "Oración Inicial",
         "closingPrayer": "Oración Final"
       }
+    },
+    "copySuffix": "(copia)",
+    "templateNumber": "Plantilla {{n}}",
+    "exportProgram": "plantilla-{{n}}",
+    "exportChecklist": "plantilla-lista",
+    "exportField": "plantilla-reunion-campo",
+    "exportMeetingTalk": "plantilla-reunion-discurso",
+    "weekdays": {
+      "0": "Lunes",
+      "1": "Martes",
+      "2": "Miércoles",
+      "3": "Jueves",
+      "4": "Viernes",
+      "5": "Sábado",
+      "6": "Domingo"
+    },
+    "modalities": {
+      "casa_em_casa": "Predicación de casa en casa",
+      "estudos_revisitas": "Estudios y revisitas",
+      "telefone": "Teléfono",
+      "cartas": "Cartas",
+      "telefone_cartas": "Teléfono + Cartas",
+      "grupo_de_campo": "Grupo de campo"
     }
   }
 }

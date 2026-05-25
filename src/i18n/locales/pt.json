@@ -361,6 +361,29 @@
         "openingPrayer": "Oração Inicial",
         "closingPrayer": "Oração Final"
       }
+    },
+    "copySuffix": "(cópia)",
+    "templateNumber": "Modelo {{n}}",
+    "exportProgram": "modelo-{{n}}",
+    "exportChecklist": "checklist-modelo",
+    "exportField": "reuniao-campo-modelo",
+    "exportMeetingTalk": "modelo-reuniao-discurso",
+    "weekdays": {
+      "0": "Segunda-feira",
+      "1": "Terça-feira",
+      "2": "Quarta-feira",
+      "3": "Quinta-feira",
+      "4": "Sexta-feira",
+      "5": "Sábado",
+      "6": "Domingo"
+    },
+    "modalities": {
+      "casa_em_casa": "Pregação de casa em casa",
+      "estudos_revisitas": "Estudos e revisitas",
+      "telefone": "Telefone",
+      "cartas": "Cartas",
+      "telefone_cartas": "Telefone + Cartas",
+      "grupo_de_campo": "Grupo de campo"
     }
   }
 }
