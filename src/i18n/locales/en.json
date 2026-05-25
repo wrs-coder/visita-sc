@@ -604,5 +604,137 @@
       "telefone_cartas": "Phone + Letters",
       "grupo_de_campo": "Field group"
     }
+  },
+  "notes": {
+    "title": "Private Notes",
+    "subtitle": "Visible only to you",
+    "restricted": "Restricted to the circuit overseer.",
+    "noCongregations": "Register a congregation to start.",
+    "congregationLabel": "Congregation (this tab only)",
+    "congregationPlaceholder": "Select a congregation...",
+    "createdOffline": "Note created offline",
+    "deleteConfirm": "Delete this note?",
+    "titlePlaceholder": "Title",
+    "untitled": "(untitled)",
+    "save": "Save",
+    "saveChanges": "Save changes",
+    "selectPlaceholder": "Select...",
+    "selectAtLeastOne": "Please select at least one note to export.",
+    "export": {
+      "title": "Export Notes",
+      "selectedCount": "• {{count}} selected",
+      "includesMultiple": " (may include notes from several sub-tabs)",
+      "selectFromTab": "Select from this tab",
+      "unselectFromTab": "Unselect from this tab",
+      "clear": "Clear",
+      "pdf": "Export PDF",
+      "whatsapp": "WhatsApp"
+    },
+    "filters": {
+      "search": "Search by title or content",
+      "searchPlaceholder": "Type to filter...",
+      "from": "From",
+      "to": "To",
+      "clear": "Clear"
+    },
+    "categories": {
+      "free": { "label": "Free notes", "add": "New free note", "empty": "No notes yet.", "default": "New note" },
+      "pastoral": { "label": "Shepherding", "add": "New shepherding visit", "empty": "No visits recorded.", "default": "Shepherding visit" },
+      "s303": { "label": "S-303", "add": "New S-303 entry", "empty": "No entries yet." },
+      "oradores": { "label": "Speakers", "add": "New speaker", "empty": "No speakers recorded." },
+      "recomendados": { "label": "Recommendations", "add": "New recommendation", "empty": "No recommendations." },
+      "peticoes": { "label": "Petitions", "add": "New petition", "empty": "No petitions." }
+    },
+    "free": { "content": "Content:", "contentPlaceholder": "Notes..." },
+    "pastoral": {
+      "noDate": "No date",
+      "dateLabel": "Visit date",
+      "companion": "Companion",
+      "companionPlaceholder": "Companion's name",
+      "involved": "Names of those involved",
+      "involvedPlaceholder": "People visited",
+      "additional": "Additional information",
+      "additionalPlaceholder": "Points discussed, encouragement, next steps...",
+      "dateLine": "Date"
+    },
+    "structured": {
+      "s303": {
+        "positivos": "Positive highlights and commendations",
+        "encorajar": "Points to encourage (Acts 11:23)",
+        "preocupantes": "Concerning points (Titus 1:5)"
+      },
+      "oradores": {
+        "nome": "Speaker's name",
+        "classificacao": "Rating",
+        "habilidades": "Description of speaking skills",
+        "habilidadesShort": "Skills",
+        "observacoes": "Observations about the speaker",
+        "observacoesShort": "Observations"
+      },
+      "recomendados": {
+        "nome": "Name",
+        "tipo": "Recommendation",
+        "corpo": "Body of elders' information",
+        "corpoShort": "Body of elders",
+        "super": "Circuit overseer's observations",
+        "superShort": "Circuit overseer",
+        "options": { "ancião": "Elder", "servo": "Ministerial servant", "cca": "CCA", "cancelamento": "Cancellation" }
+      },
+      "peticoes": {
+        "nome": "Name",
+        "tipo": "Petition",
+        "corpo": "Body of elders' information",
+        "corpoShort": "Body of elders",
+        "super": "Circuit overseer's observations",
+        "superShort": "Circuit overseer",
+        "options": { "a8": "A-8", "g8": "G-8", "outras": "Other" }
+      }
+    },
+    "pdf": {
+      "header": "Private Notes — Confidential",
+      "footerConfidential": "Confidential — for the circuit overseer's exclusive use",
+      "page": "Page {{page}} of {{total}}",
+      "fileName": "private-notes",
+      "categoryFallback": "Note"
+    },
+    "whatsapp": { "header": "*Private Notes — Confidential*" }
+  },
+  "report": {
+    "loading": "Loading report…",
+    "notFound": "Visit not found.",
+    "back": "Back",
+    "markdown": "Markdown",
+    "print": "Print / Save PDF",
+    "title": "Visit Executive Summary",
+    "congregation": "Congregation:",
+    "type": "Type:",
+    "period": "Period:",
+    "periodSeparator": "to",
+    "substitute": "Substitute:",
+    "generatedAt": "Generated on {{date}} · Visita SC",
+    "markdownExported": "Markdown exported",
+    "sections": {
+      "schedule": "Schedule",
+      "meals": "Meals",
+      "transport": "Transport",
+      "fieldAssignments": "Field Service Assignments",
+      "fieldMeetings": "Field Meetings",
+      "midweek": "Midweek Meeting",
+      "weekend": "Weekend Meeting",
+      "pioneer": "Pioneer Meeting",
+      "elders": "Meeting with Elders & Servants",
+      "checklist": "Checklist"
+    },
+    "labels": {
+      "chairman": "Chairman",
+      "serviceTalk": "Service talk",
+      "publicTalk": "Public talk",
+      "finalTalk": "Closing talk",
+      "theme": "Theme",
+      "territory": "Territory",
+      "in": "at",
+      "dash": "—"
+    }
   }
 }
+

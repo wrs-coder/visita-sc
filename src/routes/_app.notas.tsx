@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,8 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
-// jsPDF é carregado sob demanda apenas quando o utilizador clica em "Exportar PDF".
+import { getDateLocale } from "@/lib/date-locale";
 import type jsPDFType from "jspdf";
 import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
 
@@ -25,7 +25,6 @@ function makeUuid(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
-  // RFC4122 v4 fallback
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === "x" ? r : (r & 0x3) | 0x8;
@@ -50,18 +49,20 @@ interface Note {
   updated_at: string;
 }
 
-const CATEGORIES: { value: NoteType; label: string; icon: React.ComponentType<{ className?: string }>; addLabel: string; empty: string }[] = [
-  { value: "free", label: "Notas livres", icon: FileText, addLabel: "Nova nota livre", empty: "Nenhuma nota ainda." },
-  { value: "pastoral", label: "Pastoreio", icon: HeartHandshake, addLabel: "Nova visita de pastoreio", empty: "Nenhuma visita registrada." },
-  { value: "s303", label: "S-303", icon: ClipboardList, addLabel: "Novo registro S-303", empty: "Nenhum registro ainda." },
-  { value: "oradores", label: "Oradores", icon: Mic, addLabel: "Novo orador", empty: "Nenhum orador registrado." },
-  { value: "recomendados", label: "Recomendados", icon: ThumbsUp, addLabel: "Novo recomendado", empty: "Nenhum recomendado." },
-  { value: "peticoes", label: "Petições", icon: Mail, addLabel: "Nova petição", empty: "Nenhuma petição." },
+const CATEGORY_DEFS: { value: NoteType; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: "free", icon: FileText },
+  { value: "pastoral", icon: HeartHandshake },
+  { value: "s303", icon: ClipboardList },
+  { value: "oradores", icon: Mic },
+  { value: "recomendados", icon: ThumbsUp },
+  { value: "peticoes", icon: Mail },
 ];
 
 const NOTAS_CONG_KEY = "notas_privadas_congregation_id";
 
 function Page() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = getDateLocale(i18n.language);
   const { user, role } = useAuth();
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [congId, setCongId] = useState<string | null>(() => {
@@ -76,7 +77,10 @@ function Page() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  // Carrega congregações do superintendente (independente do estado global).
+  const catLabel = (v: NoteType) => t(`notes.categories.${v}.label`);
+  const catAdd = (v: NoteType) => t(`notes.categories.${v}.add`);
+  const catEmpty = (v: NoteType) => t(`notes.categories.${v}.empty`);
+
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
     supabase
@@ -87,7 +91,6 @@ function Page() {
       .then(({ data }) => {
         const list = data ?? [];
         setCongs(list);
-        // Se nada selecionado e há congregações, escolhe a primeira.
         setCongId((prev) => {
           if (prev && list.some((c) => c.id === prev)) return prev;
           return list[0]?.id ?? null;
@@ -120,12 +123,12 @@ function Page() {
 
   const add = async (note_type: NoteType) => {
     if (!user || !congId) return;
+    const defaultTitle = t(`notes.categories.${note_type}.default`, { defaultValue: catLabel(note_type) });
     const base: Partial<Note> = note_type === "free"
-      ? { title: "Nova nota", content: "" }
+      ? { title: defaultTitle, content: "" }
       : note_type === "pastoral"
-        ? { title: "Visita de pastoreio", content: "", note_date: format(new Date(), "yyyy-MM-dd") }
-        : { title: CATEGORIES.find((c) => c.value === note_type)?.label ?? "Nova nota", content: "", payload: {} };
-    // ID gerado no cliente para suportar criação 100% offline.
+        ? { title: defaultTitle, content: "", note_date: format(new Date(), "yyyy-MM-dd") }
+        : { title: defaultTitle, content: "", payload: {} };
     const id = makeUuid();
     const now = new Date().toISOString();
     const optimistic: Note = {
@@ -151,7 +154,7 @@ function Page() {
       setNotes((n) => n.filter((x) => x.id !== id));
       toast.error(error.message);
     } else if (queued) {
-      toast.success("Nota criada offline");
+      toast.success(t("notes.createdOffline"));
     }
   };
 
@@ -161,11 +164,11 @@ function Page() {
     const { error, queued } = await offlineUpdate("private_notes", patch as Record<string, unknown>, { id });
     setSavingId(null);
     if (error) toast.error(error.message);
-    else if (queued) toast.success("Salvo offline");
+    else if (queued) toast.success(t("common.savedOffline"));
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Excluir esta nota?")) return;
+    if (!confirm(t("notes.deleteConfirm"))) return;
     const { error } = await offlineDelete("private_notes", { id });
     if (error) toast.error(error.message); else {
       setNotes((n) => n.filter((x) => x.id !== id));
@@ -200,12 +203,11 @@ function Page() {
   }, [notes, tab, query, dateFrom, dateTo]);
   const selectedNotes = useMemo(() => notes.filter((n) => selected.has(n.id)), [notes, selected]);
 
-  if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">Acesso restrito ao superintendente.</CardContent></Card>;
-  if (congs.length === 0) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Cadastre uma congregação para começar.</CardContent></Card>;
-
+  if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">{t("notes.restricted")}</CardContent></Card>;
+  if (congs.length === 0) return <Card><CardContent className="p-6 text-sm text-muted-foreground">{t("notes.noCongregations")}</CardContent></Card>;
 
   const exportPdf = async () => {
-    if (selectedNotes.length === 0) { toast.error("Por favor, selecione pelo menos uma nota para exportar."); return; }
+    if (selectedNotes.length === 0) { toast.error(t("notes.selectAtLeastOne")); return; }
     const { default: jsPDF } = await import("jspdf");
     const doc: jsPDFType = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
@@ -215,7 +217,7 @@ function Page() {
     const footerH = 28;
     const contentTop = margin + headerH;
     const contentBottom = pageH - margin - footerH;
-    const generatedAt = format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR });
+    const generatedAt = format(new Date(), "dd/MM/yyyy HH:mm", { locale: dateLocale });
     let y = contentTop;
     let pageNum = 1;
     let totalPages = 1;
@@ -224,7 +226,7 @@ function Page() {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(13);
       doc.setTextColor(20);
-      doc.text("Notas Privadas — Confidencial", margin, margin + 4);
+      doc.text(t("notes.pdf.header"), margin, margin + 4);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(90);
@@ -241,8 +243,8 @@ function Page() {
       doc.setTextColor(120);
       doc.setDrawColor(220);
       doc.line(margin, pageH - margin - footerH + 8, pageW - margin, pageH - margin - footerH + 8);
-      doc.text("Confidencial — uso exclusivo do superintendente", margin, pageH - margin - 6);
-      doc.text(`Página ${pageNum} de ${totalPages}`, pageW - margin, pageH - margin - 6, { align: "right" });
+      doc.text(t("notes.pdf.footerConfidential"), margin, pageH - margin - 6);
+      doc.text(t("notes.pdf.page", { page: pageNum, total: totalPages }), pageW - margin, pageH - margin - 6, { align: "right" });
       doc.setTextColor(0);
     };
     const newPage = () => {
@@ -277,38 +279,36 @@ function Page() {
         doc.line(margin, y, pageW - margin, y);
         y += 14;
       }
-      const cat = CATEGORIES.find((c) => c.value === n.note_type)?.label ?? "Nota";
+      const cat = catLabel(n.note_type) || t("notes.pdf.categoryFallback");
       ensure(40);
       writeLine(cat.toUpperCase(), 8, true, 110);
       y += 2;
-      writeLine(n.title ?? "(sem título)", 13, true);
+      writeLine(n.title ?? t("notes.untitled"), 13, true);
       y += 4;
-      renderNoteToPdf(n, writeLine);
+      renderNoteToPdf(n, writeLine, t, dateLocale);
     });
 
-    // finalize: stamp total page count on every page
     totalPages = doc.getNumberOfPages();
     for (let p = 1; p <= totalPages; p++) {
       doc.setPage(p);
       pageNum = p;
-      // overwrite footer area with white to avoid double-print, then redraw
       doc.setFillColor(255, 255, 255);
       doc.rect(margin, pageH - margin - footerH, pageW - margin * 2, footerH, "F");
       drawFooter();
     }
 
-    doc.save(`notas-privadas-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`);
+    doc.save(`${t("notes.pdf.fileName")}-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`);
   };
 
   const shareWhatsapp = () => {
-    if (selectedNotes.length === 0) { toast.error("Por favor, selecione pelo menos uma nota para exportar."); return; }
+    if (selectedNotes.length === 0) { toast.error(t("notes.selectAtLeastOne")); return; }
     const L: string[] = [];
-    L.push(`*Notas Privadas — Confidencial*`);
+    L.push(t("notes.whatsapp.header"));
     L.push(`${congregation?.name ?? ""}`);
     selectedNotes.forEach((n) => {
-      const cat = CATEGORIES.find((c) => c.value === n.note_type)?.label ?? "Nota";
+      const cat = catLabel(n.note_type) || t("notes.pdf.categoryFallback");
       L.push("", `*[${cat}] ${n.title ?? ""}*`);
-      L.push(...noteToTextLines(n));
+      L.push(...noteToTextLines(n, t, dateLocale));
     });
     const url = `https://wa.me/?text=${encodeURIComponent(L.join("\n"))}`;
     window.open(url, "_blank");
@@ -319,8 +319,8 @@ function Page() {
       <div className="flex items-start gap-3">
         <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Lock className="h-5 w-5" /></div>
         <div className="flex-1">
-          <h1 className="text-2xl md:text-3xl font-bold">Notas Privadas</h1>
-          <p className="text-sm text-muted-foreground mt-1">Visíveis apenas para você{congregation ? ` • ${congregation.name}` : ""}</p>
+          <h1 className="text-2xl md:text-3xl font-bold">{t("notes.title")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{t("notes.subtitle")}{congregation ? ` • ${congregation.name}` : ""}</p>
         </div>
       </div>
 
@@ -328,9 +328,9 @@ function Page() {
         <CardContent className="p-3 flex items-center gap-2">
           <Building2 className="h-4 w-4 text-primary shrink-0" />
           <div className="flex-1 min-w-0">
-            <Label className="text-xs text-muted-foreground">Congregação (apenas para esta aba)</Label>
+            <Label className="text-xs text-muted-foreground">{t("notes.congregationLabel")}</Label>
             <Select value={congId ?? ""} onValueChange={(v) => setCongId(v)}>
-              <SelectTrigger><SelectValue placeholder="Selecione uma congregação..." /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t("notes.congregationPlaceholder")} /></SelectTrigger>
               <SelectContent>
                 {congs.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -341,14 +341,13 @@ function Page() {
         </CardContent>
       </Card>
 
-
       <Card className="border-primary/40">
         <CardContent className="p-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm">
             <FileDown className="h-4 w-4 text-primary" />
-            <span className="font-medium">Exportar Notas</span>
+            <span className="font-medium">{t("notes.export.title")}</span>
             <span className="text-muted-foreground">
-              • {selected.size} selecionada(s){selected.size > 0 ? " (pode incluir notas de várias sub-abas)" : ""}
+              {t("notes.export.selectedCount", { count: selected.size })}{selected.size > 0 ? t("notes.export.includesMultiple") : ""}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -367,18 +366,18 @@ function Page() {
               disabled={filtered.length === 0}
             >
               <Check className="h-3.5 w-3.5 mr-1" />
-              {filtered.length > 0 && filtered.every((n) => selected.has(n.id)) ? "Desmarcar desta aba" : "Selecionar desta aba"}
+              {filtered.length > 0 && filtered.every((n) => selected.has(n.id)) ? t("notes.export.unselectFromTab") : t("notes.export.selectFromTab")}
             </Button>
             {selected.size > 0 && (
               <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
-                <X className="h-3.5 w-3.5 mr-1" />Limpar
+                <X className="h-3.5 w-3.5 mr-1" />{t("notes.export.clear")}
               </Button>
             )}
             <Button size="sm" variant="outline" onClick={exportPdf}>
-              <FileDown className="h-3.5 w-3.5 mr-1" />Exportar PDF
+              <FileDown className="h-3.5 w-3.5 mr-1" />{t("notes.export.pdf")}
             </Button>
             <Button size="sm" onClick={shareWhatsapp}>
-              <Share2 className="h-3.5 w-3.5 mr-1" />WhatsApp
+              <Share2 className="h-3.5 w-3.5 mr-1" />{t("notes.export.whatsapp")}
             </Button>
           </div>
         </CardContent>
@@ -386,11 +385,11 @@ function Page() {
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as NoteType)}>
         <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full h-auto">
-          {CATEGORIES.map((c) => {
+          {CATEGORY_DEFS.map((c) => {
             const count = notes.filter((n) => n.note_type === c.value && selected.has(n.id)).length;
             return (
               <TabsTrigger key={c.value} value={c.value} className="text-xs relative">
-                <c.icon className="h-3.5 w-3.5 mr-1" />{c.label}
+                <c.icon className="h-3.5 w-3.5 mr-1" />{catLabel(c.value)}
                 {count > 0 && (
                   <span className="ml-1 inline-flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
                     {count}
@@ -404,33 +403,33 @@ function Page() {
         <Card className="mt-3">
           <CardContent className="p-3 grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-2 items-end">
             <div>
-              <Label className="text-xs">Buscar por título ou conteúdo</Label>
+              <Label className="text-xs">{t("notes.filters.search")}</Label>
               <div className="relative">
                 <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Digite para filtrar..." className="pl-7" />
+                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("notes.filters.searchPlaceholder")} className="pl-7" />
               </div>
             </div>
             <div>
-              <Label className="text-xs">De</Label>
+              <Label className="text-xs">{t("notes.filters.from")}</Label>
               <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs">Até</Label>
+              <Label className="text-xs">{t("notes.filters.to")}</Label>
               <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
             </div>
             {(query || dateFrom || dateTo) && (
               <Button variant="ghost" size="sm" onClick={() => { setQuery(""); setDateFrom(""); setDateTo(""); }}>
-                <X className="h-3.5 w-3.5 mr-1" />Limpar
+                <X className="h-3.5 w-3.5 mr-1" />{t("notes.filters.clear")}
               </Button>
             )}
           </CardContent>
         </Card>
 
-        {CATEGORIES.map((c) => (
+        {CATEGORY_DEFS.map((c) => (
           <TabsContent key={c.value} value={c.value} className="space-y-3 mt-3">
-            <Button onClick={() => add(c.value)} variant="outline" className="w-full"><Plus className="h-4 w-4 mr-1" />{c.addLabel}</Button>
+            <Button onClick={() => add(c.value)} variant="outline" className="w-full"><Plus className="h-4 w-4 mr-1" />{catAdd(c.value)}</Button>
             {filtered.length === 0 && tab === c.value && (
-              <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{c.empty}</CardContent></Card>
+              <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{catEmpty(c.value)}</CardContent></Card>
             )}
             {tab === c.value && filtered.map((n) => (
               <NoteCard
@@ -445,7 +444,10 @@ function Page() {
   );
 }
 
-function renderNoteToPdf(n: Note, writeLine: (t: string, s?: number, b?: boolean) => void) {
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+type DateLocale = ReturnType<typeof getDateLocale>;
+
+function renderNoteToPdf(n: Note, writeLine: (t: string, s?: number, b?: boolean) => void, t: TFn, dateLocale: DateLocale) {
   const p = n.payload ?? {};
   const field = (label: string, value?: string | null) => {
     if (!value) return;
@@ -454,41 +456,41 @@ function renderNoteToPdf(n: Note, writeLine: (t: string, s?: number, b?: boolean
   };
   switch (n.note_type) {
     case "free":
-      field("Conteúdo:", n.content);
+      field(t("notes.free.content"), n.content);
       break;
     case "pastoral":
-      if (n.note_date) writeLine(`Data: ${format(parseISO(n.note_date), "dd/MM/yyyy", { locale: ptBR })}`, 10);
-      field("Acompanhante:", n.companion);
-      field("Envolvidos:", n.involved_names);
-      field("Informações adicionais:", n.additional_info);
+      if (n.note_date) writeLine(`${t("notes.pastoral.dateLine")}: ${format(parseISO(n.note_date), "dd/MM/yyyy", { locale: dateLocale })}`, 10);
+      field(`${t("notes.pastoral.companion")}:`, n.companion);
+      field(`${t("notes.pastoral.involved")}:`, n.involved_names);
+      field(`${t("notes.pastoral.additional")}:`, n.additional_info);
       break;
     case "s303":
-      field("Destaques positivos e elogios:", p.positivos);
-      field("Pontos para encorajar (Atos 11:23):", p.encorajar);
-      field("Pontos preocupantes (Tito 1:5):", p.preocupantes);
+      field(`${t("notes.structured.s303.positivos")}:`, p.positivos);
+      field(`${t("notes.structured.s303.encorajar")}:`, p.encorajar);
+      field(`${t("notes.structured.s303.preocupantes")}:`, p.preocupantes);
       break;
     case "oradores":
-      field("Nome do orador:", p.nome);
-      field("Classificação:", p.classificacao);
-      field("Habilidades como orador:", p.habilidades);
-      field("Observações sobre o orador:", p.observacoes);
+      field(`${t("notes.structured.oradores.nome")}:`, p.nome);
+      field(`${t("notes.structured.oradores.classificacao")}:`, p.classificacao);
+      field(`${t("notes.structured.oradores.habilidades")}:`, p.habilidades);
+      field(`${t("notes.structured.oradores.observacoes")}:`, p.observacoes);
       break;
     case "recomendados":
-      field("Nome:", p.nome);
-      field("Recomendação:", p.tipo);
-      field("Informações do corpo de anciãos:", p.corpo);
-      field("Observações do superintendente:", p.super);
+      field(`${t("notes.structured.recomendados.nome")}:`, p.nome);
+      field(`${t("notes.structured.recomendados.tipo")}:`, p.tipo);
+      field(`${t("notes.structured.recomendados.corpo")}:`, p.corpo);
+      field(`${t("notes.structured.recomendados.super")}:`, p.super);
       break;
     case "peticoes":
-      field("Nome:", p.nome);
-      field("Petição:", p.tipo);
-      field("Informações do corpo de anciãos:", p.corpo);
-      field("Observações do superintendente:", p.super);
+      field(`${t("notes.structured.peticoes.nome")}:`, p.nome);
+      field(`${t("notes.structured.peticoes.tipo")}:`, p.tipo);
+      field(`${t("notes.structured.peticoes.corpo")}:`, p.corpo);
+      field(`${t("notes.structured.peticoes.super")}:`, p.super);
       break;
   }
 }
 
-function noteToTextLines(n: Note): string[] {
+function noteToTextLines(n: Note, t: TFn, dateLocale: DateLocale): string[] {
   const L: string[] = [];
   const p = n.payload ?? {};
   const add = (label: string, value?: string | null) => { if (value) L.push(`• ${label}: ${value}`); };
@@ -497,33 +499,33 @@ function noteToTextLines(n: Note): string[] {
       if (n.content) L.push(n.content);
       break;
     case "pastoral":
-      if (n.note_date) L.push(`• Data: ${format(parseISO(n.note_date), "dd/MM/yyyy", { locale: ptBR })}`);
-      add("Acompanhante", n.companion);
-      add("Envolvidos", n.involved_names);
-      add("Informações adicionais", n.additional_info);
+      if (n.note_date) L.push(`• ${t("notes.pastoral.dateLine")}: ${format(parseISO(n.note_date), "dd/MM/yyyy", { locale: dateLocale })}`);
+      add(t("notes.pastoral.companion"), n.companion);
+      add(t("notes.pastoral.involved"), n.involved_names);
+      add(t("notes.pastoral.additional"), n.additional_info);
       break;
     case "s303":
-      add("Destaques positivos", p.positivos);
-      add("Encorajar (Atos 11:23)", p.encorajar);
-      add("Preocupantes (Tito 1:5)", p.preocupantes);
+      add(t("notes.structured.s303.positivos"), p.positivos);
+      add(t("notes.structured.s303.encorajar"), p.encorajar);
+      add(t("notes.structured.s303.preocupantes"), p.preocupantes);
       break;
     case "oradores":
-      add("Nome", p.nome);
-      add("Classificação", p.classificacao);
-      add("Habilidades", p.habilidades);
-      add("Observações", p.observacoes);
+      add(t("notes.structured.oradores.nome"), p.nome);
+      add(t("notes.structured.oradores.classificacao"), p.classificacao);
+      add(t("notes.structured.oradores.habilidadesShort"), p.habilidades);
+      add(t("notes.structured.oradores.observacoesShort"), p.observacoes);
       break;
     case "recomendados":
-      add("Nome", p.nome);
-      add("Recomendação", p.tipo);
-      add("Corpo de anciãos", p.corpo);
-      add("Superintendente", p.super);
+      add(t("notes.structured.recomendados.nome"), p.nome);
+      add(t("notes.structured.recomendados.tipo"), p.tipo);
+      add(t("notes.structured.recomendados.corpoShort"), p.corpo);
+      add(t("notes.structured.recomendados.superShort"), p.super);
       break;
     case "peticoes":
-      add("Nome", p.nome);
-      add("Petição", p.tipo);
-      add("Corpo de anciãos", p.corpo);
-      add("Superintendente", p.super);
+      add(t("notes.structured.peticoes.nome"), p.nome);
+      add(t("notes.structured.peticoes.tipo"), p.tipo);
+      add(t("notes.structured.peticoes.corpoShort"), p.corpo);
+      add(t("notes.structured.peticoes.superShort"), p.super);
       break;
   }
   return L;
@@ -556,6 +558,7 @@ function CardHeader({ checked, onToggleSelect, onRemove, right }: { checked: boo
 }
 
 function FreeNoteCard({ note, savingId, update, remove, checked, onToggleSelect }: { note: Note; savingId: string | null; update: (id: string, p: Partial<Note>) => void; remove: (id: string) => void; checked: boolean; onToggleSelect: () => void }) {
+  const { t } = useTranslation();
   const [title, setTitle] = useState(note.title ?? "");
   const [content, setContent] = useState(note.content);
   useEffect(() => { setTitle(note.title ?? ""); setContent(note.content); }, [note.id, note.title, note.content]);
@@ -566,12 +569,12 @@ function FreeNoteCard({ note, savingId, update, remove, checked, onToggleSelect 
     <Card className="shadow-card">
       <CardContent className="p-4 space-y-2">
         <CardHeader checked={checked} onToggleSelect={onToggleSelect} onRemove={() => remove(note.id)} />
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="font-semibold border-0 px-0 focus-visible:ring-0 shadow-none" placeholder="Título" />
-        <Textarea rows={4} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Anotações..." />
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="font-semibold border-0 px-0 focus-visible:ring-0 shadow-none" placeholder={t("notes.titlePlaceholder")} />
+        <Textarea rows={4} value={content} onChange={(e) => setContent(e.target.value)} placeholder={t("notes.free.contentPlaceholder")} />
         <div className="flex justify-end">
           <Button size="sm" disabled={!dirty || savingId === note.id} onClick={handleSave}>
             {savingId === note.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
-            {everSaved ? "Salvar alterações" : "Salvar"}
+            {everSaved ? t("notes.saveChanges") : t("notes.save")}
           </Button>
         </div>
       </CardContent>
@@ -580,6 +583,8 @@ function FreeNoteCard({ note, savingId, update, remove, checked, onToggleSelect 
 }
 
 function PastoralNoteCard({ note, savingId, update, remove, checked, onToggleSelect }: { note: Note; savingId: string | null; update: (id: string, p: Partial<Note>) => void; remove: (id: string) => void; checked: boolean; onToggleSelect: () => void }) {
+  const { t, i18n } = useTranslation();
+  const dateLocale = getDateLocale(i18n.language);
   const [date, setDate] = useState(note.note_date ?? "");
   const [companion, setCompanion] = useState(note.companion ?? "");
   const [involved, setInvolved] = useState(note.involved_names ?? "");
@@ -596,18 +601,18 @@ function PastoralNoteCard({ note, savingId, update, remove, checked, onToggleSel
       <CardContent className="p-4 space-y-3">
         <CardHeader
           checked={checked} onToggleSelect={onToggleSelect} onRemove={() => remove(note.id)}
-          right={note.note_date ? format(parseISO(note.note_date), "EEE, d MMM yyyy", { locale: ptBR }) : "Sem data"}
+          right={note.note_date ? format(parseISO(note.note_date), "EEE, d MMM yyyy", { locale: dateLocale }) : t("notes.pastoral.noDate")}
         />
         <div className="grid grid-cols-1 gap-2">
-          <div><Label className="text-xs">Data da visita</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-          <div><Label className="text-xs">Acompanhante</Label><Input value={companion} onChange={(e) => setCompanion(e.target.value)} placeholder="Nome do acompanhante" /></div>
-          <div><Label className="text-xs">Nome dos envolvidos</Label><Input value={involved} onChange={(e) => setInvolved(e.target.value)} placeholder="Pessoas visitadas" /></div>
-          <div><Label className="text-xs">Informações adicionais</Label><Textarea rows={4} value={additional} onChange={(e) => setAdditional(e.target.value)} placeholder="Pontos discutidos, encorajamento, próximos passos..." /></div>
+          <div><Label className="text-xs">{t("notes.pastoral.dateLabel")}</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          <div><Label className="text-xs">{t("notes.pastoral.companion")}</Label><Input value={companion} onChange={(e) => setCompanion(e.target.value)} placeholder={t("notes.pastoral.companionPlaceholder")} /></div>
+          <div><Label className="text-xs">{t("notes.pastoral.involved")}</Label><Input value={involved} onChange={(e) => setInvolved(e.target.value)} placeholder={t("notes.pastoral.involvedPlaceholder")} /></div>
+          <div><Label className="text-xs">{t("notes.pastoral.additional")}</Label><Textarea rows={4} value={additional} onChange={(e) => setAdditional(e.target.value)} placeholder={t("notes.pastoral.additionalPlaceholder")} /></div>
         </div>
         <div className="flex justify-end">
           <Button size="sm" disabled={!dirty || savingId === note.id} onClick={handleSave}>
             {savingId === note.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
-            {everSaved ? "Salvar alterações" : "Salvar"}
+            {everSaved ? t("notes.saveChanges") : t("notes.save")}
           </Button>
         </div>
       </CardContent>
@@ -617,38 +622,60 @@ function PastoralNoteCard({ note, savingId, update, remove, checked, onToggleSel
 
 interface StructuredFieldDef {
   key: string;
-  label: string;
+  labelKey: string;
   type: "text" | "textarea" | "select";
-  options?: string[];
+  optionKeys?: { value: string; labelKey: string }[];
 }
 
 const STRUCTURED_DEFS: Record<string, StructuredFieldDef[]> = {
   s303: [
-    { key: "positivos", label: "Destaques positivos e elogios", type: "textarea" },
-    { key: "encorajar", label: "Pontos para encorajar (Atos 11:23)", type: "textarea" },
-    { key: "preocupantes", label: "Pontos preocupantes (Tito 1:5)", type: "textarea" },
+    { key: "positivos", labelKey: "notes.structured.s303.positivos", type: "textarea" },
+    { key: "encorajar", labelKey: "notes.structured.s303.encorajar", type: "textarea" },
+    { key: "preocupantes", labelKey: "notes.structured.s303.preocupantes", type: "textarea" },
   ],
   oradores: [
-    { key: "nome", label: "Nome do orador", type: "text" },
-    { key: "classificacao", label: "Classificação", type: "select", options: ["A", "B", "C", "D"] },
-    { key: "habilidades", label: "Descrição das habilidades como orador", type: "textarea" },
-    { key: "observacoes", label: "Observações sobre o próprio orador", type: "textarea" },
+    { key: "nome", labelKey: "notes.structured.oradores.nome", type: "text" },
+    {
+      key: "classificacao", labelKey: "notes.structured.oradores.classificacao", type: "select",
+      optionKeys: [
+        { value: "A", labelKey: "A" }, { value: "B", labelKey: "B" },
+        { value: "C", labelKey: "C" }, { value: "D", labelKey: "D" },
+      ],
+    },
+    { key: "habilidades", labelKey: "notes.structured.oradores.habilidades", type: "textarea" },
+    { key: "observacoes", labelKey: "notes.structured.oradores.observacoes", type: "textarea" },
   ],
   recomendados: [
-    { key: "nome", label: "Nome", type: "text" },
-    { key: "tipo", label: "Recomendação", type: "select", options: ["Ancião", "Servo ministerial", "CCA", "Cancelamento"] },
-    { key: "corpo", label: "Informações do corpo de anciãos", type: "textarea" },
-    { key: "super", label: "Observações do superintendente", type: "textarea" },
+    { key: "nome", labelKey: "notes.structured.recomendados.nome", type: "text" },
+    {
+      key: "tipo", labelKey: "notes.structured.recomendados.tipo", type: "select",
+      optionKeys: [
+        { value: "Ancião", labelKey: "notes.structured.recomendados.options.ancião" },
+        { value: "Servo ministerial", labelKey: "notes.structured.recomendados.options.servo" },
+        { value: "CCA", labelKey: "notes.structured.recomendados.options.cca" },
+        { value: "Cancelamento", labelKey: "notes.structured.recomendados.options.cancelamento" },
+      ],
+    },
+    { key: "corpo", labelKey: "notes.structured.recomendados.corpo", type: "textarea" },
+    { key: "super", labelKey: "notes.structured.recomendados.super", type: "textarea" },
   ],
   peticoes: [
-    { key: "nome", label: "Nome", type: "text" },
-    { key: "tipo", label: "Petição", type: "select", options: ["A-8", "G-8", "Outras"] },
-    { key: "corpo", label: "Informações do corpo de anciãos", type: "textarea" },
-    { key: "super", label: "Observações do superintendente", type: "textarea" },
+    { key: "nome", labelKey: "notes.structured.peticoes.nome", type: "text" },
+    {
+      key: "tipo", labelKey: "notes.structured.peticoes.tipo", type: "select",
+      optionKeys: [
+        { value: "A-8", labelKey: "notes.structured.peticoes.options.a8" },
+        { value: "G-8", labelKey: "notes.structured.peticoes.options.g8" },
+        { value: "Outras", labelKey: "notes.structured.peticoes.options.outras" },
+      ],
+    },
+    { key: "corpo", labelKey: "notes.structured.peticoes.corpo", type: "textarea" },
+    { key: "super", labelKey: "notes.structured.peticoes.super", type: "textarea" },
   ],
 };
 
 function StructuredNoteCard({ note, savingId, update, remove, checked, onToggleSelect }: { note: Note; savingId: string | null; update: (id: string, p: Partial<Note>) => void; remove: (id: string) => void; checked: boolean; onToggleSelect: () => void }) {
+  const { t } = useTranslation();
   const defs = STRUCTURED_DEFS[note.note_type] ?? [];
   const initial = note.payload ?? {};
   const [values, setValues] = useState<Record<string, string>>(initial);
@@ -662,11 +689,11 @@ function StructuredNoteCard({ note, savingId, update, remove, checked, onToggleS
     <Card className="shadow-card">
       <CardContent className="p-4 space-y-3">
         <CardHeader checked={checked} onToggleSelect={onToggleSelect} onRemove={() => remove(note.id)} />
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="font-semibold border-0 px-0 focus-visible:ring-0 shadow-none" placeholder="Título" />
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="font-semibold border-0 px-0 focus-visible:ring-0 shadow-none" placeholder={t("notes.titlePlaceholder")} />
         <div className="grid grid-cols-1 gap-2">
           {defs.map((f) => (
             <div key={f.key}>
-              <Label className="text-xs">{f.label}</Label>
+              <Label className="text-xs">{t(f.labelKey)}</Label>
               {f.type === "text" && (
                 <Input value={values[f.key] ?? ""} onChange={(e) => setField(f.key, e.target.value)} />
               )}
@@ -675,9 +702,9 @@ function StructuredNoteCard({ note, savingId, update, remove, checked, onToggleS
               )}
               {f.type === "select" && (
                 <Select value={values[f.key] ?? ""} onValueChange={(v) => setField(f.key, v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("notes.selectPlaceholder")} /></SelectTrigger>
                   <SelectContent>
-                    {f.options?.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    {f.optionKeys?.map((o) => <SelectItem key={o.value} value={o.value}>{t(o.labelKey, { defaultValue: o.value })}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}
@@ -687,7 +714,7 @@ function StructuredNoteCard({ note, savingId, update, remove, checked, onToggleS
         <div className="flex justify-end">
           <Button size="sm" disabled={!dirty || savingId === note.id} onClick={handleSave}>
             {savingId === note.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
-            {everSaved ? "Salvar alterações" : "Salvar"}
+            {everSaved ? t("notes.saveChanges") : t("notes.save")}
           </Button>
         </div>
       </CardContent>
