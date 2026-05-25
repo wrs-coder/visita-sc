@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import {
   listMeetingTalkTemplates,
@@ -60,6 +61,8 @@ const emptyPayload = (): Payload => ({
 const MAX = 24;
 
 function Page() {
+  const { t } = useTranslation();
+  const weekdayLabel = (k: number) => t(`templates.weekdays.${k}`);
   const { role } = useAuth();
   const fnList = useServerFn(listMeetingTalkTemplates);
   const fnGet = useServerFn(getMeetingTalkTemplate);
