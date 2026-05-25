@@ -980,5 +980,65 @@
       "pdf": "PDF gerado",
       "pdfFail": "Falha ao gerar PDF"
     }
+  },
+  "finishVisit": {
+    "trigger": "Finalizar Visita",
+    "title": "Finalizar visita",
+    "description": "Confirme os itens abaixo antes de encerrar <strong>{{title}}</strong>. Esta ação apaga a visita e todos os dados operacionais (cronogramas, escalas, refeições, transporte, reuniões). As <strong>Notas Privadas</strong> permanecem preservadas.",
+    "s303": "Enviei S-303",
+    "s303Help": "Obrigatório para confirmar o encerramento.",
+    "designations": "Concluir as Designações de Anc/S.M",
+    "designationsHelp": "Opcional.",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar fim da visita",
+    "success": "Visita finalizada e dados operacionais limpos.",
+    "fail": "Falha ao finalizar visita."
+  },
+  "supervisorToggle": {
+    "editingOn": "Edição ativa",
+    "readonly": "Somente visualização",
+    "editingDesc": "Os campos estão editáveis. Salve as alterações em cada item.",
+    "readonlyDesc": "Os dados preenchidos pelos anciãos aparecem em modo leitura. Ative para editar.",
+    "enable": "Ativar edição"
+  },
+  "sync": {
+    "never": "nunca",
+    "now": "agora",
+    "minutesAgo": "há {{n}} min",
+    "hoursAgo": "há {{n}} h",
+    "daysAgo": "há {{n}} d",
+    "lastSync": "Última sync",
+    "pending": "pendente(s)",
+    "offline": "Offline",
+    "ariaSync": "Sincronizar dados",
+    "unstable": "Ligação instável. Os seus dados continuam guardados em segurança no dispositivo.",
+    "sent": "{{n}} alteração(ões) enviada(s)",
+    "remaining": "{{n}} alteração(ões) ainda pendente(s) — guardadas localmente.",
+    "updated": "Dados atualizados"
+  },
+  "templateIO": {
+    "export": "Exportar modelo",
+    "import": "Importar modelo",
+    "exportFail": "Falha ao exportar",
+    "importFail": "Falha ao importar",
+    "shared": "Compartilhamento aberto",
+    "downloaded": "Arquivo baixado",
+    "shareFail": "Falha ao compartilhar",
+    "imported": "Modelo importado",
+    "invalidFile": "Arquivo inválido"
+  },
+  "pwa": {
+    "install": "Instalar no Telemóvel",
+    "installTitle": "Instalar no telemóvel",
+    "iosIntro": "Para instalar no iPhone/iPad, siga estes passos no Safari:",
+    "genericIntro": "Para instalar, abra esta página no navegador do seu telemóvel e use o menu para adicionar ao ecrã principal.",
+    "step1Tap": "Toque no botão",
+    "step1Share": "Partilhar",
+    "step1Tail": "na barra do navegador.",
+    "step2Choose": "Escolha",
+    "step2Action": "Adicionar ao Ecrã Principal",
+    "step3Confirm": "Confirme em",
+    "step3Action": "Adicionar",
+    "step3Tail": ". O ícone aparecerá no seu telemóvel."
   }
 }

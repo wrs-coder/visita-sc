@@ -980,5 +980,65 @@
       "pdf": "PDF generado",
       "pdfFail": "No se pudo generar el PDF"
     }
+  },
+  "finishVisit": {
+    "trigger": "Finalizar Visita",
+    "title": "Finalizar visita",
+    "description": "Confirma los elementos a continuación antes de cerrar <strong>{{title}}</strong>. Esta acción elimina la visita y todos los datos operativos (programas, asignaciones, comidas, transporte, reuniones). Las <strong>Notas Privadas</strong> se conservan.",
+    "s303": "S-303 enviado",
+    "s303Help": "Obligatorio para confirmar el cierre.",
+    "designations": "Concluir las Asignaciones de Anc./SM",
+    "designationsHelp": "Opcional.",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar fin de la visita",
+    "success": "Visita finalizada y datos operativos eliminados.",
+    "fail": "No se pudo finalizar la visita."
+  },
+  "supervisorToggle": {
+    "editingOn": "Edición activa",
+    "readonly": "Solo lectura",
+    "editingDesc": "Los campos son editables. Guarda los cambios en cada elemento.",
+    "readonlyDesc": "Los datos completados por los ancianos están en modo solo lectura. Activa para editar.",
+    "enable": "Activar edición"
+  },
+  "sync": {
+    "never": "nunca",
+    "now": "ahora",
+    "minutesAgo": "hace {{n}} min",
+    "hoursAgo": "hace {{n}} h",
+    "daysAgo": "hace {{n}} d",
+    "lastSync": "Última sincronización",
+    "pending": "pendiente(s)",
+    "offline": "Sin conexión",
+    "ariaSync": "Sincronizar datos",
+    "unstable": "Conexión inestable. Tus datos siguen guardados de forma segura en el dispositivo.",
+    "sent": "{{n}} cambio(s) enviado(s)",
+    "remaining": "{{n}} cambio(s) aún pendiente(s) — guardados localmente.",
+    "updated": "Datos actualizados"
+  },
+  "templateIO": {
+    "export": "Exportar plantilla",
+    "import": "Importar plantilla",
+    "exportFail": "Error al exportar",
+    "importFail": "Error al importar",
+    "shared": "Se abrió compartir",
+    "downloaded": "Archivo descargado",
+    "shareFail": "Error al compartir",
+    "imported": "Plantilla importada",
+    "invalidFile": "Archivo inválido"
+  },
+  "pwa": {
+    "install": "Instalar en el Móvil",
+    "installTitle": "Instalar en el móvil",
+    "iosIntro": "Para instalar en iPhone/iPad, sigue estos pasos en Safari:",
+    "genericIntro": "Para instalar, abre esta página en el navegador de tu móvil y usa el menú para agregar a la pantalla principal.",
+    "step1Tap": "Toca el botón",
+    "step1Share": "Compartir",
+    "step1Tail": "en la barra del navegador.",
+    "step2Choose": "Elige",
+    "step2Action": "Agregar a la pantalla principal",
+    "step3Confirm": "Confirma con",
+    "step3Action": "Agregar",
+    "step3Tail": ". El ícono aparecerá en tu móvil."
   }
 }

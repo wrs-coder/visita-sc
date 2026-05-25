@@ -980,5 +980,65 @@
       "pdf": "PDF generated",
       "pdfFail": "Failed to generate PDF"
     }
+  },
+  "finishVisit": {
+    "trigger": "Finish Visit",
+    "title": "Finish visit",
+    "description": "Confirm the items below before closing <strong>{{title}}</strong>. This action deletes the visit and all operational data (schedules, assignments, meals, transport, meetings). <strong>Private Notes</strong> are preserved.",
+    "s303": "S-303 sent",
+    "s303Help": "Required to confirm closure.",
+    "designations": "Complete Elders/MS designations",
+    "designationsHelp": "Optional.",
+    "cancel": "Cancel",
+    "confirm": "Confirm end of visit",
+    "success": "Visit finished and operational data cleared.",
+    "fail": "Failed to finish visit."
+  },
+  "supervisorToggle": {
+    "editingOn": "Editing on",
+    "readonly": "Read only",
+    "editingDesc": "Fields are editable. Save your changes on each item.",
+    "readonlyDesc": "Data filled by elders is read-only. Turn on to edit.",
+    "enable": "Enable editing"
+  },
+  "sync": {
+    "never": "never",
+    "now": "now",
+    "minutesAgo": "{{n}} min ago",
+    "hoursAgo": "{{n}} h ago",
+    "daysAgo": "{{n}} d ago",
+    "lastSync": "Last sync",
+    "pending": "pending",
+    "offline": "Offline",
+    "ariaSync": "Sync data",
+    "unstable": "Unstable connection. Your data is safely stored on the device.",
+    "sent": "{{n}} change(s) sent",
+    "remaining": "{{n}} change(s) still pending — stored locally.",
+    "updated": "Data updated"
+  },
+  "templateIO": {
+    "export": "Export template",
+    "import": "Import template",
+    "exportFail": "Failed to export",
+    "importFail": "Failed to import",
+    "shared": "Share sheet opened",
+    "downloaded": "File downloaded",
+    "shareFail": "Failed to share",
+    "imported": "Template imported",
+    "invalidFile": "Invalid file"
+  },
+  "pwa": {
+    "install": "Install on Phone",
+    "installTitle": "Install on phone",
+    "iosIntro": "To install on iPhone/iPad, follow these steps in Safari:",
+    "genericIntro": "To install, open this page in your phone's browser and use the menu to add it to the home screen.",
+    "step1Tap": "Tap the",
+    "step1Share": "Share",
+    "step1Tail": "button in the browser bar.",
+    "step2Choose": "Choose",
+    "step2Action": "Add to Home Screen",
+    "step3Confirm": "Confirm with",
+    "step3Action": "Add",
+    "step3Tail": ". The icon will appear on your phone."
   }
 }
