@@ -123,6 +123,18 @@ function Page() {
       </header>
 
       <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Globe className="h-4 w-4 text-primary" /> {t("profile.language")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <LanguageSwitcher />
+          <p className="text-xs text-muted-foreground">{t("profile.languageHelp")}</p>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-card">
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary" /> Dados pessoais</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={saveName} className="space-y-3">
