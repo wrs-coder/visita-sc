@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import {
   listFieldMeetingTemplates,
@@ -44,9 +45,14 @@ interface ItemDraft {
 
 const MAX = 24;
 const DAY_OPTS = [0, 1, 2, 3, 4, 5, 6];
-const DAY_LABEL: Record<number, string> = { 0: "Ter (1º dia)", 1: "Qua", 2: "Qui", 3: "Sex", 4: "Sáb", 5: "Dom", 6: "Seg" };
 
 function Page() {
+  const { t } = useTranslation();
+  const DAY_LABEL: Record<number, string> = useMemo(() => ({
+    0: t("templates.days.0"), 1: t("templates.days.1"), 2: t("templates.days.2"),
+    3: t("templates.days.3"), 4: t("templates.days.4"), 5: t("templates.days.5"), 6: t("templates.days.6"),
+  }), [t]);
+  const modalityLabel = (m: Modality) => t(`templates.modalities.${m}`);
   const { role } = useAuth();
   const fnList = useServerFn(listFieldMeetingTemplates);
   const fnCreate = useServerFn(createFieldMeetingTemplate);
