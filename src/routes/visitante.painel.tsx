@@ -176,7 +176,7 @@ function Page() {
             <Logo className="h-6 w-6 shrink-0" />
             <div className="min-w-0">
               <div className="font-semibold text-sm truncate">{snap.congregation.name}</div>
-              <div className="text-[11px] opacity-80">{snap.wifeMode ? "Esposa do superintendente" : "Corpo de anciãos e ES"} • somente leitura</div>
+              <div className="text-[11px] opacity-80">{snap.wifeMode ? "Esposa do superintendente" : "Corpo de anciãos e ESC"} • somente leitura</div>
             </div>
           </div>
           <div className="flex items-center gap-1">
