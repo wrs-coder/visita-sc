@@ -138,14 +138,14 @@ function Page() {
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><FileStack className="h-6 w-6" /> Modelos de Programação</h1>
-          <p className="text-sm text-muted-foreground mt-1">Crie até 10 modelos reutilizáveis. Use-os ao criar uma visita para uma congregação específica.</p>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><FileStack className="h-6 w-6" /> {t("templates.program.title")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{t("templates.program.subtitle")}</p>
         </div>
         <TemplateIOButtons
-          filenameBase={namesBySlot[Number(activeSlot)] ?? `modelo-${activeSlot}`}
+          filenameBase={namesBySlot[Number(activeSlot)] ?? t("templates.exportProgram", { n: activeSlot })}
           onExport={async () => {
-            const tpl = tpls.find((t) => t.slot === Number(activeSlot));
-            if (!tpl) return { ok: false, error: "Salve o modelo antes de exportar." };
+            const tpl = tpls.find((tp) => tp.slot === Number(activeSlot));
+            if (!tpl) return { ok: false, error: t("templates.exportFirst") };
             return fnExport({ data: { id: tpl.id } });
           }}
           onImport={async (file) => { const r = await fnImport({ data: { file: file as never, slot: Number(activeSlot) } }); if (r.ok) await load(); return r; }}
@@ -153,41 +153,41 @@ function Page() {
       </div>
 
       <div className="flex items-center gap-2">
-        <Label className="text-xs uppercase tracking-wide text-muted-foreground">Modelo</Label>
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t("templates.program.templateLabel")}</Label>
         <Select value={activeSlot} onValueChange={setActiveSlot}>
           <SelectTrigger className="h-9 max-w-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || `Modelo ${s}`}</SelectItem>)}
+            {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || t("templates.templateNumber", { n: s })}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
       <Tabs value={activeSlot} onValueChange={setActiveSlot}>
         {SLOTS.map((slot) => {
-          const tpl = tpls.find((t) => t.slot === slot);
+          const tpl = tpls.find((tp) => tp.slot === slot);
           const items = tpl ? (itemsByTpl[tpl.id] ?? []) : [];
           const notes = notesBySlot[slot] ?? {};
           return (
             <TabsContent key={slot} value={String(slot)} className="space-y-4">
               <Card><CardContent className="p-4 space-y-3">
                 <div>
-                  <Label>Nome do modelo</Label>
+                  <Label>{t("templates.program.templateName")}</Label>
                   <Input className="mt-1" value={namesBySlot[slot] ?? ""} onChange={(e) => setNamesBySlot({ ...namesBySlot, [slot]: e.target.value })} onBlur={(e) => renameSlot(slot, e.target.value)} />
                 </div>
 
-                <KindBlock title="Estudos e Revisitas" kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study")} onUpdate={updateDraft} onRemove={removeItem} />
-                <KindBlock title="Refeições" kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal")} onUpdate={updateDraft} onRemove={removeItem} />
+                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
+                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
 
                 <div className="border rounded-lg p-3 space-y-2">
-                  <h3 className="text-sm font-semibold">Observações de refeições por dia</h3>
-                  <p className="text-xs text-muted-foreground">Texto opcional exibido em vermelho aos anciãos abaixo do título do dia, na aba Refeições.</p>
+                  <h3 className="text-sm font-semibold">{t("templates.program.mealNotesTitle")}</h3>
+                  <p className="text-xs text-muted-foreground">{t("templates.program.mealNotesHelp")}</p>
                   <div className="grid grid-cols-1 gap-2">
                     {DAY_OPTS.map((d) => (
                       <div key={d} className="flex items-center gap-2">
                         <div className="text-xs font-medium w-24 shrink-0 text-muted-foreground">{DAY_LABEL[d]}</div>
                         <Input
                           className="h-9 flex-1"
-                          placeholder="Ex.: Reunião entre 7h e 16h30, não marquem almoço"
+                          placeholder={t("templates.program.mealNotesPlaceholder")}
                           value={notes[String(d)] ?? ""}
                           onChange={(e) => setNotesBySlot({ ...notesBySlot, [slot]: { ...(notesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
                           onBlur={(e) => saveMealNote(slot, String(d), e.target.value)}
@@ -197,10 +197,10 @@ function Page() {
                   </div>
                 </div>
 
-                <KindBlock title="Transporte" kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport")} onUpdate={updateDraft} onRemove={removeItem} />
+                <KindBlock title={t("templates.program.transportTitle")} kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
 
                 <Button className="w-full" onClick={() => saveItems(slot)} disabled={busy}>
-                  <Save className="h-4 w-4 mr-1" /> Salvar Modelo
+                  <Save className="h-4 w-4 mr-1" /> {t("templates.program.saveTemplate")}
                 </Button>
               </CardContent></Card>
             </TabsContent>
