@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee, Globe } from "lucide-react";
@@ -45,10 +45,10 @@ function Page() {
     setBusyBackup("export");
     const r = await fnExportBackup();
     setBusyBackup(null);
-    if (!r.ok || !r.file) { toast.error(r.error ?? "Falha"); return; }
+    if (!r.ok || !r.file) { toast.error(r.error ?? t("profile.failGeneric")); return; }
     const fname = `visita-sc-backup-${new Date().toISOString().slice(0, 10)}.json`;
     const res = await shareJsonFile(fname, r.file);
-    toast.success(res === "shared" ? "Compartilhamento aberto" : "Backup baixado");
+    toast.success(res === "shared" ? t("profile.shareOpened") : t("profile.backupDownloaded"));
   };
 
   const pickRestoreFile = async (file: File) => {
@@ -56,7 +56,7 @@ function Page() {
       const json = await readJsonFile(file);
       setPendingRestore(json);
     } catch (e) {
-      toast.error("Arquivo inválido", { description: (e as Error).message });
+      toast.error(t("profile.invalidFile"), { description: (e as Error).message });
     } finally {
       if (restoreInputRef.current) restoreInputRef.current.value = "";
     }
@@ -68,8 +68,8 @@ function Page() {
     const r = await fnRestoreBackup({ data: { file: pendingRestore as never } });
     setBusyBackup(null);
     setPendingRestore(null);
-    if (!r.ok) { toast.error("Falha ao restaurar", { description: r.error }); return; }
-    toast.success(`Backup restaurado (${r.restored} registros).`);
+    if (!r.ok) { toast.error(t("profile.restoreFail"), { description: r.error }); return; }
+    toast.success(t("profile.restoredCount", { count: r.restored }));
   };
 
   const saveName = async (e: React.FormEvent) => {
@@ -78,8 +78,8 @@ function Page() {
     setBusyName(true);
     const { error } = await supabase.from("profiles").update({ full_name: fullName.trim() }).eq("id", user.id);
     setBusyName(false);
-    if (error) { toast.error("Erro ao salvar", { description: error.message }); return; }
-    toast.success("Nome atualizado");
+    if (error) { toast.error(t("profile.saveError"), { description: error.message }); return; }
+    toast.success(t("profile.nameUpdated"));
     refresh();
   };
 
@@ -89,8 +89,8 @@ function Page() {
     setBusyCircuit(true);
     const { error } = await supabase.from("profiles").update({ circuit: circuit.trim() || null }).eq("id", user.id);
     setBusyCircuit(false);
-    if (error) { toast.error("Erro ao salvar", { description: error.message }); return; }
-    toast.success("Circuito atualizado");
+    if (error) { toast.error(t("profile.saveError"), { description: error.message }); return; }
+    toast.success(t("profile.circuitUpdated"));
     refresh();
   };
 
@@ -99,27 +99,27 @@ function Page() {
     setBusyEmail(true);
     const { error } = await supabase.auth.updateUser({ email: email.trim() });
     setBusyEmail(false);
-    if (error) { toast.error("Não foi possível atualizar o e-mail", { description: error.message }); return; }
-    toast.success("Confirme o novo e-mail na sua caixa de entrada para concluir a alteração.");
+    if (error) { toast.error(t("profile.emailUpdateFail"), { description: error.message }); return; }
+    toast.success(t("profile.emailConfirm"));
   };
 
   const savePwd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pwd.length < 6) { toast.error("A senha deve ter pelo menos 6 caracteres"); return; }
-    if (pwd !== pwd2) { toast.error("As senhas não coincidem"); return; }
+    if (pwd.length < 6) { toast.error(t("profile.passwordMin")); return; }
+    if (pwd !== pwd2) { toast.error(t("profile.passwordMismatch")); return; }
     setBusyPwd(true);
     const { error } = await supabase.auth.updateUser({ password: pwd });
     setBusyPwd(false);
-    if (error) { toast.error("Não foi possível atualizar a senha", { description: error.message }); return; }
-    toast.success("Senha atualizada");
+    if (error) { toast.error(t("profile.passwordUpdateFail"), { description: error.message }); return; }
+    toast.success(t("profile.passwordUpdated"));
     setPwd(""); setPwd2("");
   };
 
   return (
     <div className="space-y-6 max-w-2xl">
       <header>
-        <h1 className="text-2xl md:text-3xl font-bold">Meu perfil</h1>
-        <p className="text-sm text-muted-foreground mt-1">Atualize seus dados pessoais, e-mail e senha</p>
+        <h1 className="text-2xl md:text-3xl font-bold">{t("profile.title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t("profile.subtitle")}</p>
       </header>
 
       <Card className="shadow-card">
@@ -135,15 +135,15 @@ function Page() {
       </Card>
 
       <Card className="shadow-card">
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary" /> Dados pessoais</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary" /> {t("profile.personalData")}</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={saveName} className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="name">Nome completo (opcional)</Label>
-              <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={120} placeholder="Seu nome completo" />
-              <p className="text-xs text-muted-foreground">Você pode preencher depois — não é obrigatório para usar o sistema.</p>
+              <Label htmlFor="name">{t("profile.fullName")}</Label>
+              <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={120} placeholder={t("profile.fullNamePlaceholder")} />
+              <p className="text-xs text-muted-foreground">{t("profile.fullNameHelp")}</p>
             </div>
-            <Button type="submit" disabled={busyName}>Salvar nome</Button>
+            <Button type="submit" disabled={busyName}>{t("profile.saveName")}</Button>
           </form>
         </CardContent>
       </Card>
@@ -151,48 +151,48 @@ function Page() {
 
       {role === "superintendent" && (
         <Card className="shadow-card">
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Circuito</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> {t("profile.circuit")}</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={saveCircuit} className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="circuit">Identificação do circuito</Label>
-                <Input id="circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder="Ex: AGO-12" maxLength={60} />
-                <p className="text-xs text-muted-foreground">O superintendente de circuito não pertence a uma congregação fixa. Use este campo para registrar o código ou nome do circuito atual.</p>
+                <Label htmlFor="circuit">{t("profile.circuitId")}</Label>
+                <Input id="circuit" value={circuit} onChange={(e) => setCircuit(e.target.value)} placeholder={t("profile.circuitPlaceholder")} maxLength={60} />
+                <p className="text-xs text-muted-foreground">{t("profile.circuitHelp")}</p>
               </div>
-              <Button type="submit" disabled={busyCircuit}>Salvar circuito</Button>
+              <Button type="submit" disabled={busyCircuit}>{t("profile.saveCircuit")}</Button>
             </form>
           </CardContent>
         </Card>
       )}
 
       <Card className="shadow-card">
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> E-mail (opcional, para recuperação de senha)</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> {t("profile.email")}</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={saveEmail} className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" />
-              <p className="text-xs text-muted-foreground">Adicione um e-mail real para poder usar "Esqueci minha senha". Você receberá um link de confirmação no novo endereço.</p>
+              <Label htmlFor="email">{t("profile.emailLabel")}</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("profile.emailPlaceholder")} />
+              <p className="text-xs text-muted-foreground">{t("profile.emailHelp")}</p>
             </div>
-            <Button type="submit" disabled={busyEmail || !email.trim()}>Atualizar e-mail</Button>
+            <Button type="submit" disabled={busyEmail || !email.trim()}>{t("profile.updateEmail")}</Button>
           </form>
         </CardContent>
       </Card>
 
 
       <Card className="shadow-card">
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><KeyRound className="h-4 w-4 text-primary" /> Alterar senha</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><KeyRound className="h-4 w-4 text-primary" /> {t("profile.changePassword")}</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={savePwd} className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="pwd">Nova senha</Label>
+              <Label htmlFor="pwd">{t("profile.newPassword")}</Label>
               <Input id="pwd" type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} required minLength={6} autoComplete="new-password" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="pwd2">Confirmar nova senha</Label>
+              <Label htmlFor="pwd2">{t("profile.confirmPassword")}</Label>
               <Input id="pwd2" type="password" value={pwd2} onChange={(e) => setPwd2(e.target.value)} required minLength={6} autoComplete="new-password" />
             </div>
-            <Button type="submit" disabled={busyPwd}>Atualizar senha</Button>
+            <Button type="submit" disabled={busyPwd}>{t("profile.updatePassword")}</Button>
           </form>
         </CardContent>
       </Card>
@@ -201,32 +201,29 @@ function Page() {
         <Card className="shadow-card border-primary/30">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-primary" /> Backup e restauração
+              <ShieldCheck className="h-4 w-4 text-primary" /> {t("profile.backupSection")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-xs text-muted-foreground">
-              Backup automático local: {autoBackup
-                ? <>último em <strong>{new Date(autoBackup.updatedAt).toLocaleString("pt-BR")}</strong>.</>
-                : "ainda não gerado."}
+              {autoBackup
+                ? t("profile.autoBackupLast", { date: new Date(autoBackup.updatedAt).toLocaleString() })
+                : t("profile.autoBackupNone")}
             </p>
             <div className="flex flex-wrap gap-2">
               <Button onClick={doExportBackup} disabled={busyBackup !== null}>
                 {busyBackup === "export" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
-                Gerar arquivo de backup
+                {t("profile.generateBackup")}
               </Button>
               <Button variant="outline" onClick={() => restoreInputRef.current?.click()} disabled={busyBackup !== null}>
-                <Upload className="h-4 w-4 mr-1" />Restaurar backup
+                <Upload className="h-4 w-4 mr-1" />{t("profile.restoreBackup")}
               </Button>
               <input
                 ref={restoreInputRef} type="file" accept="application/json,.json" className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) pickRestoreFile(f); }}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              O backup geral inclui congregações, visitas, cronogramas, escalas, refeições, transporte, checklists e modelos.
-              A restauração sobrescreve registros existentes que tenham o mesmo identificador.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("profile.backupIncludes")}</p>
           </CardContent>
         </Card>
       )}
@@ -234,7 +231,7 @@ function Page() {
       <Card className="shadow-card border-primary/30">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Coffee className="h-4 w-4 text-primary" /> Apoie o Desenvolvedor ☕
+            <Coffee className="h-4 w-4 text-primary" /> {t("support.title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -247,16 +244,15 @@ function Page() {
       <AlertDialog open={pendingRestore !== null} onOpenChange={(o) => { if (!o) setPendingRestore(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar restauração</AlertDialogTitle>
+            <AlertDialogTitle>{t("profile.confirmRestoreTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação irá <strong>sobrescrever</strong> os dados atuais com o conteúdo do arquivo selecionado.
-              Esta operação não pode ser desfeita. Deseja continuar?
+              {t("profile.confirmRestoreDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmRestore} disabled={busyBackup === "restore"}>
-              {busyBackup === "restore" ? "Restaurando…" : "Sim, restaurar"}
+              {busyBackup === "restore" ? t("profile.restoring") : t("profile.yesRestore")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

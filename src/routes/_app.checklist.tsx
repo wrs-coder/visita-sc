@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +24,7 @@ interface Item { id: string; visit_id: string; title: string; description: strin
 function Page() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
+  const { t } = useTranslation();
   const canManage = role === "superintendent";
   const [items, setItems] = useState<Item[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -44,7 +46,7 @@ function Page() {
     return () => { supabase.removeChannel(ch); };
   }, [visit]);
 
-  if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa.</CardContent></Card>;
+  if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">{t("checklistPage.noActiveVisit")}</CardContent></Card>;
 
   const update = async (id: string, patch: Partial<Item>) => {
     setSavingId(id);
@@ -52,22 +54,22 @@ function Page() {
     const { error, queued } = await offlineUpdate("checklist_items", patch, { id });
     setSavingId(null);
     if (error) toast.error(error.message);
-    else if (queued) toast.success("Salvo offline — sincroniza ao reconectar");
+    else if (queued) toast.success(t("checklistPage.savedOfflineHint"));
   };
 
   const addItem = async () => {
     if (!newTitle.trim()) return;
     const { error, queued } = await offlineInsert("checklist_items", { visit_id: visit.id, title: newTitle.trim(), description: newDesc.trim() || null, sort_order: items.length });
-    if (error) toast.error(error.message); else { setNewOpen(false); setNewTitle(""); setNewDesc(""); toast.success(queued ? "Salvo offline" : "Item adicionado"); }
+    if (error) toast.error(error.message); else { setNewOpen(false); setNewTitle(""); setNewDesc(""); toast.success(queued ? t("common.savedOffline") : t("checklistPage.added")); }
   };
 
   const remove = async (id: string) => { const { error } = await offlineDelete("checklist_items", { id }); if (error) toast.error(error.message); };
 
   const saveEdit = async () => {
     if (!editItem) return;
-    if (!editItem.title.trim()) { toast.error("Título obrigatório"); return; }
+    if (!editItem.title.trim()) { toast.error(t("checklistPage.titleRequired")); return; }
     const { error, queued } = await offlineUpdate("checklist_items", { title: editItem.title.trim(), description: editItem.description?.trim() || null }, { id: editItem.id });
-    if (error) toast.error(error.message); else { toast.success(queued ? "Salvo offline" : "Atualizado"); setEditItem(null); }
+    if (error) toast.error(error.message); else { toast.success(queued ? t("common.savedOffline") : t("checklistPage.updated")); setEditItem(null); }
   };
 
   const done = items.filter((i) => i.status === "done").length;
@@ -76,21 +78,21 @@ function Page() {
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-2 flex-wrap">
-        <div><h1 className="text-2xl md:text-3xl font-bold">Checklist da Congregação</h1><p className="text-sm text-muted-foreground mt-1">Dados necessários para a visita</p></div>
+        <div><h1 className="text-2xl md:text-3xl font-bold">{t("checklistPage.title")}</h1><p className="text-sm text-muted-foreground mt-1">{t("checklistPage.subtitle")}</p></div>
         <div className="flex gap-2 flex-wrap">
           {canManage && (
-            <Button variant="outline" onClick={() => exportCsv(items, visit.title)}>
-              <Download className="h-4 w-4 mr-1" />Exportar planilha
+            <Button variant="outline" onClick={() => exportCsv(items, visit.title, t)}>
+              <Download className="h-4 w-4 mr-1" />{t("checklistPage.exportSheet")}
             </Button>
           )}
           {canManage && <Dialog open={newOpen} onOpenChange={setNewOpen}>
-            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Novo item</Button></DialogTrigger>
+            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("checklistPage.newItem")}</Button></DialogTrigger>
             <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle>Novo item da checklist</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{t("checklistPage.newItemDialogTitle")}</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div><Label>Título</Label><Input className="mt-1" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} /></div>
-                <div><Label>Descrição (opcional)</Label><Textarea rows={2} className="mt-1" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} /></div>
-                <Button className="w-full" onClick={addItem}>Adicionar</Button>
+                <div><Label>{t("checklistPage.itemTitle")}</Label><Input className="mt-1" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} /></div>
+                <div><Label>{t("checklistPage.descriptionOptional")}</Label><Textarea rows={2} className="mt-1" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} /></div>
+                <Button className="w-full" onClick={addItem}>{t("checklistPage.add")}</Button>
               </div>
             </DialogContent>
           </Dialog>}
@@ -101,12 +103,12 @@ function Page() {
 
       <fieldset disabled={!editAllowed} className="space-y-5 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
       <Card><CardContent className="p-5">
-        <div className="flex justify-between items-end mb-2"><div className="text-sm font-medium">Progresso</div><div className="text-sm font-semibold">{done}/{items.length} ({progress}%)</div></div>
+        <div className="flex justify-between items-end mb-2"><div className="text-sm font-medium">{t("checklistPage.progress")}</div><div className="text-sm font-semibold">{done}/{items.length} ({progress}%)</div></div>
         <Progress value={progress} className="h-2" />
       </CardContent></Card>
 
       {items.length === 0 ? (
-        <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum item ainda.</CardContent></Card>
+        <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{t("checklistPage.noItems")}</CardContent></Card>
       ) : (
         <Accordion type="multiple" className="space-y-2">
           {items.map((it) => (
@@ -130,12 +132,12 @@ function Page() {
               </div>
               <AccordionContent>
                 <div className="space-y-3 pt-1 pb-3">
-                  <FieldArea label="Informação (ex: Total de Publicadores)" v={it.info_text ?? ""} onSave={(v) => update(it.id, { info_text: v })} readOnly={!canEdit} />
-                  <FieldArea label="Link ou observações" v={it.link_or_notes ?? ""} onSave={(v) => update(it.id, { link_or_notes: v })} readOnly={!canEdit} />
+                  <FieldArea label={t("checklistPage.infoLabel")} v={it.info_text ?? ""} onSave={(v) => update(it.id, { info_text: v })} readOnly={!canEdit} />
+                  <FieldArea label={t("checklistPage.linkNotesLabel")} v={it.link_or_notes ?? ""} onSave={(v) => update(it.id, { link_or_notes: v })} readOnly={!canEdit} />
                   {canManage && (
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => setEditItem(it)}><Pencil className="h-3.5 w-3.5 mr-1" />Editar</Button>
-                      <Button size="sm" variant="ghost" onClick={() => remove(it.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5 mr-1" />Remover</Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditItem(it)}><Pencil className="h-3.5 w-3.5 mr-1" />{t("checklistPage.edit")}</Button>
+                      <Button size="sm" variant="ghost" onClick={() => remove(it.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5 mr-1" />{t("checklistPage.remove")}</Button>
                     </div>
                   )}
                 </div>
@@ -148,12 +150,12 @@ function Page() {
 
       <Dialog open={!!editItem} onOpenChange={(o) => !o && setEditItem(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Editar item</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("checklistPage.editTitle")}</DialogTitle></DialogHeader>
           {editItem && (
             <div className="space-y-3">
-              <div><Label>Título</Label><Input className="mt-1" value={editItem.title} onChange={(e) => setEditItem({ ...editItem, title: e.target.value })} /></div>
-              <div><Label>Descrição</Label><Textarea rows={3} className="mt-1" value={editItem.description ?? ""} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} /></div>
-              <Button className="w-full" onClick={saveEdit}>Salvar</Button>
+              <div><Label>{t("checklistPage.itemTitle")}</Label><Input className="mt-1" value={editItem.title} onChange={(e) => setEditItem({ ...editItem, title: e.target.value })} /></div>
+              <div><Label>{t("checklistPage.description")}</Label><Textarea rows={3} className="mt-1" value={editItem.description ?? ""} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} /></div>
+              <Button className="w-full" onClick={saveEdit}>{t("checklistPage.save")}</Button>
             </div>
           )}
         </DialogContent>
@@ -163,6 +165,7 @@ function Page() {
 }
 
 function FieldArea({ label, v, onSave, readOnly = false }: { label: string; v: string; onSave: (val: string) => void; readOnly?: boolean }) {
+  const { t } = useTranslation();
   const [val, setVal] = useState(v);
   useEffect(() => setVal(v), [v]);
   const dirty = val !== v;
@@ -172,7 +175,7 @@ function FieldArea({ label, v, onSave, readOnly = false }: { label: string; v: s
       <Textarea rows={2} value={val} readOnly={readOnly} onChange={(e) => setVal(e.target.value)} className="mt-1" />
       {!readOnly && dirty && (
         <div className="flex justify-end mt-1">
-          <Button size="sm" onClick={() => onSave(val)}>{v ? "Salvar alterações" : "Salvar"}</Button>
+          <Button size="sm" onClick={() => onSave(val)}>{v ? t("checklistPage.saveChanges") : t("checklistPage.save")}</Button>
         </div>
       )}
     </div>
@@ -184,12 +187,12 @@ function csvEscape(v: string) {
   return v;
 }
 
-function exportCsv(items: Item[], visitTitle: string) {
-  const header = ["Item", "Descrição", "Status", "Informação", "Link / Observações"];
+function exportCsv(items: Item[], visitTitle: string, t: (k: string) => string) {
+  const header = [t("checklistPage.exportItem"), t("checklistPage.exportDescription"), t("checklistPage.exportStatus"), t("checklistPage.exportInfo"), t("checklistPage.exportLinkNotes")];
   const rows = items.map((it) => [
     it.title,
     it.description ?? "",
-    it.status === "done" ? "Concluído" : "Pendente",
+    it.status === "done" ? t("checklistPage.exportDone") : t("checklistPage.exportPending"),
     it.info_text ?? "",
     it.link_or_notes ?? "",
   ]);

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,9 +53,10 @@ const EldersServantsPanel = lazy(() =>
 export const Route = createFileRoute("/_app/reunioes-discursos")({ component: Page });
 
 function PanelFallback() {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-center py-10 text-muted-foreground">
-      <Loader2 className="h-4 w-4 animate-spin mr-2" /> Carregando…
+      <Loader2 className="h-4 w-4 animate-spin mr-2" /> {t("meetingsTalks.loading")}
     </div>
   );
 }
@@ -93,6 +95,7 @@ function useEnsureVisitForSuper(congregationId: string | null, enabled: boolean)
 }
 
 function SuperCongregationSelector() {
+  const { t } = useTranslation();
   const fnList = useServerFn(listMyCongregations);
   const [congs, setCongs] = useState<{ id: string; name: string }[]>([]);
   const active = useActiveCongregation();
@@ -119,11 +122,11 @@ function SuperCongregationSelector() {
     <Card>
       <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium sm:min-w-[160px]">
-          Congregação selecionada
+          {t("meetingsTalks.selectedCongregation")}
         </div>
         <div className="flex-1">
           <Select value={value} onValueChange={onChange}>
-            <SelectTrigger><SelectValue placeholder="Escolha uma congregação…" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={t("meetingsTalks.chooseCongregation")} /></SelectTrigger>
             <SelectContent>
               {congs.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -137,9 +140,13 @@ function SuperCongregationSelector() {
 }
 
 function DiscardDraftButton() {
+  const { t } = useTranslation();
   const draft = useMeetingsDraft();
   const { canEdit } = useAuth();
   if (!draft || !canEdit) return null;
+  const descKey = draft.pendingCount === 1
+    ? "meetingsTalks.discardConfirmDescOne"
+    : "meetingsTalks.discardConfirmDescMany";
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -150,21 +157,20 @@ function DiscardDraftButton() {
           className="gap-2 text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="h-4 w-4" />
-          Descartar
+          {t("meetingsTalks.discard")}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
+          <AlertDialogTitle>{t("meetingsTalks.discardConfirmTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Vai apagar {draft.pendingCount} alteraç{draft.pendingCount === 1 ? "ão" : "ões"} em
-            rascunho local e voltar ao estado atual do servidor. Esta ação não pode ser desfeita.
+            {t(descKey, { count: draft.pendingCount })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel>{t("meetingsTalks.cancel")}</AlertDialogCancel>
           <AlertDialogAction onClick={() => draft.discardAll()}>
-            Descartar
+            {t("meetingsTalks.discard")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -173,6 +179,7 @@ function DiscardDraftButton() {
 }
 
 function SaveDraftButton() {
+  const { t } = useTranslation();
   const draft = useMeetingsDraft();
   const { canEdit } = useAuth();
   if (!draft || !canEdit) return null;
@@ -183,28 +190,30 @@ function SaveDraftButton() {
       className="gap-2"
     >
       {draft.saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-      Salvar dados
+      {t("meetingsTalks.saveData")}
       {draft.dirty && !draft.saving && (
-        <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-destructive" aria-label="alterações pendentes" />
+        <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-destructive" aria-label={t("meetingsTalks.pendingChangesAria")} />
       )}
     </Button>
   );
 }
 
 function SaveProgressBar() {
+  const { t } = useTranslation();
   const draft = useMeetingsDraft();
   if (!draft || (!draft.saving && draft.progress === 0)) return null;
   return (
     <div className="space-y-1">
       <Progress value={draft.progress} />
       <div className="text-xs text-muted-foreground">
-        {draft.saving ? `Sincronizando alterações… ${draft.progress}%` : "Sincronizado"}
+        {draft.saving ? t("meetingsTalks.syncing", { progress: draft.progress }) : t("meetingsTalks.synced")}
       </div>
     </div>
   );
 }
 
 function SyncStatusLine() {
+  const { t } = useTranslation();
   const draft = useMeetingsDraft();
   if (!draft) return null;
   const { lastSyncedAt, lastFailedTables, dirty, saving } = draft;
@@ -215,12 +224,12 @@ function SyncStatusLine() {
     <div className="flex flex-col items-end gap-1 text-xs">
       {lastSyncedAt && lastFailedTables.length === 0 && !dirty && !saving && (
         <span className="text-emerald-600 dark:text-emerald-400">
-          ✓ Última sincronização: {hh}:{mm}
+          {t("meetingsTalks.lastSync", { time: `${hh}:${mm}` })}
         </span>
       )}
       {lastFailedTables.length > 0 && (
         <span className="text-destructive text-right">
-          Falha ao sincronizar: {lastFailedTables.join(", ")}. Clique em “Salvar dados” para tentar novamente.
+          {t("meetingsTalks.syncFail", { tables: lastFailedTables.join(", ") })}
         </span>
       )}
     </div>
@@ -259,12 +268,11 @@ function TabsGuarded({
   isSuper: boolean;
   panelsReady: boolean;
 }) {
+  const { t } = useTranslation();
   const draft = useMeetingsDraft();
   const handleTabChange = (v: string) => {
     if (draft?.dirty) {
-      const ok = window.confirm(
-        "Tens alterações no rascunho que ainda não foram salvas. Mudar de aba não perde os dados, mas recomendamos clicar em \"Salvar dados\" primeiro. Continuar?",
-      );
+      const ok = window.confirm(t("meetingsTalks.unsavedConfirm"));
       if (!ok) return;
     }
     setCurrentTab(v);
@@ -274,9 +282,9 @@ function TabsGuarded({
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Reuniões e Discursos</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">{t("meetingsTalks.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Pacote unificado por visita: reuniões de campo, meio de semana, fim de semana, pioneiros e anciãos/servos.
+            {t("meetingsTalks.subtitle")}
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -295,11 +303,11 @@ function TabsGuarded({
       <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
         <div className="-mx-1 overflow-x-auto scrollbar-none">
           <TabsList className="flex flex-nowrap w-max h-auto gap-1 bg-transparent p-0">
-            <TabsTrigger value="campo" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Campo</TabsTrigger>
-            <TabsTrigger value="meio" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Meio de Semana</TabsTrigger>
-            <TabsTrigger value="fim" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Fim de Semana</TabsTrigger>
-            <TabsTrigger value="pioneiros" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Pioneiros</TabsTrigger>
-            <TabsTrigger value="ancios" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">Anciãos e Servos</TabsTrigger>
+            <TabsTrigger value="campo" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabCampo")}</TabsTrigger>
+            <TabsTrigger value="meio" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabMeio")}</TabsTrigger>
+            <TabsTrigger value="fim" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabFim")}</TabsTrigger>
+            <TabsTrigger value="pioneiros" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabPioneiros")}</TabsTrigger>
+            <TabsTrigger value="ancios" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabAncios")}</TabsTrigger>
           </TabsList>
         </div>
         {panelsReady ? (

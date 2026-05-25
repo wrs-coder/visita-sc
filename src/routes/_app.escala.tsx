@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,22 +10,13 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Loader2, Check } from "lucide-react";
 import { format, parseISO, eachDayOfInterval } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
 
 export const Route = createFileRoute("/_app/escala")({ component: Page });
-
-const ACOMPANHANTE_FOR_LABELS: Record<string, string> = {
-  superintendente: "Superintendente",
-  esposa: "Esposa do superintendente",
-  sc_substituto: "S.C Substituto",
-  esposa_sc_substituto: "Esposa do S.C Substituto",
-  sc_pastor: "S.C Pastor",
-  esposa_sc_pastor: "Esposa do S.C Pastor",
-};
 
 interface Row {
   id: string;
@@ -42,6 +34,8 @@ interface Row {
 function Page() {
   const { visit } = useActiveVisit();
   const { role } = useAuth();
+  const { t, i18n } = useTranslation();
+  const dateLocale = getDateLocale(i18n.language);
   const isSuper = role === "superintendent";
   const [rows, setRows] = useState<Row[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -75,8 +69,8 @@ function Page() {
     const { error, queued } = await offlineUpdate("field_assignments", patch, { id });
     setSavingId(null);
     if (error) toast.error(error.message);
-    else if (queued) toast.success("Salvo offline");
-  }, []);
+    else if (queued) toast.success(t("common.savedOffline"));
+  }, [t]);
 
   const add = async (date: string, period: string) => {
     if (!visit) return;
@@ -89,18 +83,16 @@ function Page() {
     if (error) toast.error(error.message);
   };
 
-  if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa.</CardContent></Card>;
+  if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">{t("fieldStudies.noActiveVisit")}</CardContent></Card>;
 
   const days = eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) });
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold">Estudos e Revisitas</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">{t("fieldStudies.title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {isSuper
-            ? "Defina os turnos e edite acompanhante, local e telefone. Itens desativados ficam ocultos para a congregação."
-            : "Edite acompanhante, local de encontro e telefone de contato."}
+          {isSuper ? t("fieldStudies.subtitleSuper") : t("fieldStudies.subtitleElder")}
         </p>
       </div>
 
@@ -113,16 +105,16 @@ function Page() {
           return (
             <section key={key}>
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: ptBR })}</h2>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>
                 {isSuper && (
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline" onClick={() => add(key, "Manhã")}><Plus className="h-3 w-3 mr-1" />Manhã</Button>
-                    <Button size="sm" variant="outline" onClick={() => add(key, "Tarde")}><Plus className="h-3 w-3 mr-1" />Tarde</Button>
+                    <Button size="sm" variant="outline" onClick={() => add(key, "Manhã")}><Plus className="h-3 w-3 mr-1" />{t("fieldStudies.morning")}</Button>
+                    <Button size="sm" variant="outline" onClick={() => add(key, "Tarde")}><Plus className="h-3 w-3 mr-1" />{t("fieldStudies.afternoon")}</Button>
                   </div>
                 )}
               </div>
               {dayRows.length === 0 ? (
-                <Card><CardContent className="p-4 text-sm text-muted-foreground">Sem turnos definidos.</CardContent></Card>
+                <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("fieldStudies.noShifts")}</CardContent></Card>
               ) : (
                 dayRows.map((r) => (
                   <RowCard key={r.id} row={r} isSuper={isSuper} saving={savingId === r.id} update={update} remove={remove} />
@@ -137,6 +129,19 @@ function Page() {
 }
 
 function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSuper: boolean; saving: boolean; update: (id: string, p: Partial<Row>) => Promise<void>; remove: (id: string) => void }) {
+  const { t } = useTranslation();
+  const ACOMPANHANTE_FOR_LABELS = useMemo<Record<string, string>>(() => ({
+    superintendente: t("fieldStudies.companionRoles.superintendente"),
+    esposa: t("fieldStudies.companionRoles.esposa"),
+    sc_substituto: t("fieldStudies.companionRoles.sc_substituto"),
+    esposa_sc_substituto: t("fieldStudies.companionRoles.esposa_sc_substituto"),
+    sc_pastor: t("fieldStudies.companionRoles.sc_pastor"),
+    esposa_sc_pastor: t("fieldStudies.companionRoles.esposa_sc_pastor"),
+  }), [t]);
+  const PERIOD_LABELS: Record<string, string> = {
+    "Manhã": t("fieldStudies.morning"),
+    "Tarde": t("fieldStudies.afternoon"),
+  };
   const [meeting_point, setMeetingPoint] = useState(r.meeting_point ?? "");
   const [meeting_time, setMeetingTime] = useState(r.meeting_time ?? "");
   const [acompanhante, setAcompanhante] = useState(r.acompanhante ?? "");
@@ -176,11 +181,11 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
       <CardContent className="p-4 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <div className={`text-xs font-semibold px-2 py-1 rounded ${r.is_active ? "text-primary bg-primary/10" : "text-muted-foreground bg-muted"}`}>
-            {r.period}
-            {!r.is_active && " · desativado"}
+            {PERIOD_LABELS[r.period] ?? r.period}
+            {!r.is_active && ` · ${t("fieldStudies.deactivated")}`}
           </div>
           <div className="flex items-center gap-2">
-            {isSuper && <Switch checked={r.is_active} onCheckedChange={(v) => update(r.id, { is_active: v })} aria-label="Ativar/desativar" />}
+            {isSuper && <Switch checked={r.is_active} onCheckedChange={(v) => update(r.id, { is_active: v })} aria-label={t("fieldStudies.toggleAria")} />}
             {isSuper && (
               <Button size="icon" variant="ghost" onClick={() => remove(r.id)}>
                 <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -190,29 +195,29 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Local de encontro</label>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("fieldStudies.meetingPoint")}</label>
             <Input value={meeting_point} onChange={(e) => setMeetingPoint(e.target.value)} className="h-9 mt-0.5" />
           </div>
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Horário</label>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("fieldStudies.time")}</label>
             <Input type="time" value={meeting_time} readOnly={!isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />
           </div>
           <div className="col-span-2">
-            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Acompanhante para estudos</label>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("fieldStudies.companion")}</label>
             <Input value={acompanhante} onChange={(e) => setAcompanhante(e.target.value)} className="h-9 mt-0.5" />
           </div>
           <div className="col-span-2">
-            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Acompanhante para</label>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("fieldStudies.companionFor")}</label>
             {isSuper ? (
               <Select value={acompanhante_for} onValueChange={(v) => setAcompanhanteFor(v)}>
-                <SelectTrigger className="h-9 mt-0.5"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                <SelectTrigger className="h-9 mt-0.5"><SelectValue placeholder={t("common.select")} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="superintendente">Superintendente</SelectItem>
-                  <SelectItem value="esposa">Esposa do superintendente</SelectItem>
-                  <SelectItem value="sc_substituto">S.C Substituto</SelectItem>
-                  <SelectItem value="esposa_sc_substituto">Esposa do S.C Substituto</SelectItem>
-                  <SelectItem value="sc_pastor">S.C Pastor</SelectItem>
-                  <SelectItem value="esposa_sc_pastor">Esposa do S.C Pastor</SelectItem>
+                  <SelectItem value="superintendente">{t("fieldStudies.companionRoles.superintendente")}</SelectItem>
+                  <SelectItem value="esposa">{t("fieldStudies.companionRoles.esposa")}</SelectItem>
+                  <SelectItem value="sc_substituto">{t("fieldStudies.companionRoles.sc_substituto")}</SelectItem>
+                  <SelectItem value="esposa_sc_substituto">{t("fieldStudies.companionRoles.esposa_sc_substituto")}</SelectItem>
+                  <SelectItem value="sc_pastor">{t("fieldStudies.companionRoles.sc_pastor")}</SelectItem>
+                  <SelectItem value="esposa_sc_pastor">{t("fieldStudies.companionRoles.esposa_sc_pastor")}</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
@@ -220,14 +225,14 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
             )}
           </div>
           <div className="col-span-2">
-            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Telefone de contato</label>
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("fieldStudies.contactPhone")}</label>
             <Input type="tel" value={contact_phone} onChange={(e) => setContactPhone(e.target.value)} className="h-9 mt-0.5" />
           </div>
         </div>
         <div className="flex justify-end pt-1">
           <Button size="sm" disabled={!dirty || saving} onClick={handleSave}>
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
-            {everSaved ? "Salvar alterações" : "Salvar"}
+            {everSaved ? t("fieldStudies.saveChanges") : t("fieldStudies.save")}
           </Button>
         </div>
       </CardContent>
