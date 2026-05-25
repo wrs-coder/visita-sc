@@ -417,40 +417,43 @@ function EventDialog({
   save,
   saving,
   days,
+  locale,
 }: {
   editing: Partial<Event> | null;
   setEditing: (e: Partial<Event> | null) => void;
   save: () => void;
   saving: boolean;
   days: Date[];
+  locale: Locale;
 }) {
+  const { t } = useTranslation();
   if (!editing) return null;
   return (
     <DialogContent className="max-w-md">
       <DialogHeader>
-        <DialogTitle>{editing.id ? "Editar" : "Novo"} compromisso</DialogTitle>
+        <DialogTitle>{editing.id ? t("schedule.editEvent") : t("schedule.newEventTitle")}</DialogTitle>
       </DialogHeader>
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Label>Tipo</Label>
+          <Label>{t("schedule.type")}</Label>
           <Select
             value={editing.type ?? "other"}
-            onValueChange={(v) => setEditing({ ...editing, type: v as keyof typeof TYPES })}
+            onValueChange={(v) => setEditing({ ...editing, type: v as EventType })}
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(TYPES).map(([k, v]) => (
+              {TYPE_KEYS.map((k) => (
                 <SelectItem key={k} value={k}>
-                  {v}
+                  {t(`schedule.types.${k}`)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label>Título</Label>
+          <Label>{t("schedule.titleField")}</Label>
           <Input
             value={editing.title ?? ""}
             onChange={(e) => setEditing({ ...editing, title: e.target.value })}
@@ -458,7 +461,7 @@ function EventDialog({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label>Data</Label>
+            <Label>{t("schedule.date")}</Label>
             <Select
               value={editing.event_date}
               onValueChange={(v) => setEditing({ ...editing, event_date: v })}
@@ -471,7 +474,7 @@ function EventDialog({
                   const k = format(d, "yyyy-MM-dd");
                   return (
                     <SelectItem key={k} value={k}>
-                      {format(d, "EEE, d MMM", { locale: ptBR })}
+                      {format(d, "EEE, d MMM", { locale })}
                     </SelectItem>
                   );
                 })}
@@ -479,7 +482,7 @@ function EventDialog({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Horário início</Label>
+            <Label>{t("schedule.startTime")}</Label>
             <Input
               type="time"
               value={editing.start_time ?? ""}
@@ -488,14 +491,14 @@ function EventDialog({
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label>Local</Label>
+          <Label>{t("schedule.place")}</Label>
           <Input
             value={editing.location ?? ""}
             onChange={(e) => setEditing({ ...editing, location: e.target.value })}
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Observações</Label>
+          <Label>{t("schedule.notes")}</Label>
           <Textarea
             rows={2}
             value={editing.notes ?? ""}
@@ -504,7 +507,7 @@ function EventDialog({
         </div>
         <Button className="w-full" onClick={save} disabled={saving}>
           <Save className="h-4 w-4 mr-1" />
-          {saving ? "Salvando..." : "Salvar"}
+          {saving ? t("common.saving") : t("common.save")}
         </Button>
       </div>
     </DialogContent>
