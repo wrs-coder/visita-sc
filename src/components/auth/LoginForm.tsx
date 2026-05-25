@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { LogIn, Eye, Info, Mail, MessageCircle, UserCircle2, Coffee } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 const APP_VERSION = "2.4.0";
 const APP_BUILD = "2026.05.24";
