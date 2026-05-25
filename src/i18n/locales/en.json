@@ -361,6 +361,29 @@
         "openingPrayer": "Opening Prayer",
         "closingPrayer": "Closing Prayer"
       }
+    },
+    "copySuffix": "(copy)",
+    "templateNumber": "Template {{n}}",
+    "exportProgram": "template-{{n}}",
+    "exportChecklist": "checklist-template",
+    "exportField": "field-meeting-template",
+    "exportMeetingTalk": "meeting-talk-template",
+    "weekdays": {
+      "0": "Monday",
+      "1": "Tuesday",
+      "2": "Wednesday",
+      "3": "Thursday",
+      "4": "Friday",
+      "5": "Saturday",
+      "6": "Sunday"
+    },
+    "modalities": {
+      "casa_em_casa": "House-to-house preaching",
+      "estudos_revisitas": "Studies & return visits",
+      "telefone": "Phone",
+      "cartas": "Letters",
+      "telefone_cartas": "Phone + Letters",
+      "grupo_de_campo": "Field group"
     }
   }
 }

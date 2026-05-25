@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { listTemplates, upsertTemplate, replaceTemplateItems } from "@/lib/templates.functions";
 import { exportProgramTemplate, importProgramTemplate } from "@/lib/template-io.functions";
@@ -24,11 +25,18 @@ interface TemplateRow { id: string; slot: number; name: string; meal_day_notes?:
 interface TemplateItemRow { id: string; template_id: string; kind: string; day_offset: number; payload: Payload; sort_order: number; }
 
 const DAY_OPTS = [0, 1, 2, 3, 4, 5, 6];
-const DAY_LABEL: Record<number, string> = { 0: "Ter (1º dia)", 1: "Qua", 2: "Qui", 3: "Sex", 4: "Sáb", 5: "Dom", 6: "Seg" };
 const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-const DEFAULT_NAMES: Record<number, string> = Object.fromEntries(SLOTS.map((s) => [s, `Modelo ${s}`]));
 
 function Page() {
+  const { t } = useTranslation();
+  const DAY_LABEL: Record<number, string> = useMemo(() => ({
+    0: t("templates.days.0"), 1: t("templates.days.1"), 2: t("templates.days.2"),
+    3: t("templates.days.3"), 4: t("templates.days.4"), 5: t("templates.days.5"), 6: t("templates.days.6"),
+  }), [t]);
+  const DEFAULT_NAMES: Record<number, string> = useMemo(
+    () => Object.fromEntries(SLOTS.map((s) => [s, t("templates.templateNumber", { n: s })])),
+    [t]
+  );
   const { role } = useAuth();
   const fnList = useServerFn(listTemplates);
   const fnUpsert = useServerFn(upsertTemplate);
@@ -37,7 +45,7 @@ function Page() {
   const fnImport = useServerFn(importProgramTemplate);
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
-  const [namesBySlot, setNamesBySlot] = useState<Record<number, string>>({ ...DEFAULT_NAMES });
+  const [namesBySlot, setNamesBySlot] = useState<Record<number, string>>({});
   const [notesBySlot, setNotesBySlot] = useState<Record<number, Record<string, string>>>({});
   const [activeSlot, setActiveSlot] = useState("1");
   const [busy, setBusy] = useState(false);
@@ -67,7 +75,7 @@ function Page() {
 
   useEffect(() => { load(); }, [load]);
 
-  if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">Acesso restrito ao superintendente.</CardContent></Card>;
+  if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">{t("templates.restricted")}</CardContent></Card>;
 
   const ensureTemplate = async (slot: number): Promise<string | null> => {
     const existing = tpls.find((t) => t.slot === slot);
@@ -92,7 +100,7 @@ function Page() {
     const r = await fnReplace({ data: { templateId: id, items } });
     setBusy(false);
     if (!r.ok) toast.error(r.error);
-    else { toast.success("Modelo salvo"); load(); }
+    else { toast.success(t("templates.templateSaved")); load(); }
   };
 
   const updateDraft = (tplId: string, idx: number, patch: Partial<ItemDraft>) => {
@@ -130,14 +138,14 @@ function Page() {
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><FileStack className="h-6 w-6" /> Modelos de Programação</h1>
-          <p className="text-sm text-muted-foreground mt-1">Crie até 10 modelos reutilizáveis. Use-os ao criar uma visita para uma congregação específica.</p>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><FileStack className="h-6 w-6" /> {t("templates.program.title")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{t("templates.program.subtitle")}</p>
         </div>
         <TemplateIOButtons
-          filenameBase={namesBySlot[Number(activeSlot)] ?? `modelo-${activeSlot}`}
+          filenameBase={namesBySlot[Number(activeSlot)] ?? t("templates.exportProgram", { n: activeSlot })}
           onExport={async () => {
-            const tpl = tpls.find((t) => t.slot === Number(activeSlot));
-            if (!tpl) return { ok: false, error: "Salve o modelo antes de exportar." };
+            const tpl = tpls.find((tp) => tp.slot === Number(activeSlot));
+            if (!tpl) return { ok: false, error: t("templates.exportFirst") };
             return fnExport({ data: { id: tpl.id } });
           }}
           onImport={async (file) => { const r = await fnImport({ data: { file: file as never, slot: Number(activeSlot) } }); if (r.ok) await load(); return r; }}
@@ -145,41 +153,41 @@ function Page() {
       </div>
 
       <div className="flex items-center gap-2">
-        <Label className="text-xs uppercase tracking-wide text-muted-foreground">Modelo</Label>
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t("templates.program.templateLabel")}</Label>
         <Select value={activeSlot} onValueChange={setActiveSlot}>
           <SelectTrigger className="h-9 max-w-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || `Modelo ${s}`}</SelectItem>)}
+            {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || t("templates.templateNumber", { n: s })}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
       <Tabs value={activeSlot} onValueChange={setActiveSlot}>
         {SLOTS.map((slot) => {
-          const tpl = tpls.find((t) => t.slot === slot);
+          const tpl = tpls.find((tp) => tp.slot === slot);
           const items = tpl ? (itemsByTpl[tpl.id] ?? []) : [];
           const notes = notesBySlot[slot] ?? {};
           return (
             <TabsContent key={slot} value={String(slot)} className="space-y-4">
               <Card><CardContent className="p-4 space-y-3">
                 <div>
-                  <Label>Nome do modelo</Label>
+                  <Label>{t("templates.program.templateName")}</Label>
                   <Input className="mt-1" value={namesBySlot[slot] ?? ""} onChange={(e) => setNamesBySlot({ ...namesBySlot, [slot]: e.target.value })} onBlur={(e) => renameSlot(slot, e.target.value)} />
                 </div>
 
-                <KindBlock title="Estudos e Revisitas" kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study")} onUpdate={updateDraft} onRemove={removeItem} />
-                <KindBlock title="Refeições" kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal")} onUpdate={updateDraft} onRemove={removeItem} />
+                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
+                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
 
                 <div className="border rounded-lg p-3 space-y-2">
-                  <h3 className="text-sm font-semibold">Observações de refeições por dia</h3>
-                  <p className="text-xs text-muted-foreground">Texto opcional exibido em vermelho aos anciãos abaixo do título do dia, na aba Refeições.</p>
+                  <h3 className="text-sm font-semibold">{t("templates.program.mealNotesTitle")}</h3>
+                  <p className="text-xs text-muted-foreground">{t("templates.program.mealNotesHelp")}</p>
                   <div className="grid grid-cols-1 gap-2">
                     {DAY_OPTS.map((d) => (
                       <div key={d} className="flex items-center gap-2">
                         <div className="text-xs font-medium w-24 shrink-0 text-muted-foreground">{DAY_LABEL[d]}</div>
                         <Input
                           className="h-9 flex-1"
-                          placeholder="Ex.: Reunião entre 7h e 16h30, não marquem almoço"
+                          placeholder={t("templates.program.mealNotesPlaceholder")}
                           value={notes[String(d)] ?? ""}
                           onChange={(e) => setNotesBySlot({ ...notesBySlot, [slot]: { ...(notesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
                           onBlur={(e) => saveMealNote(slot, String(d), e.target.value)}
@@ -189,10 +197,10 @@ function Page() {
                   </div>
                 </div>
 
-                <KindBlock title="Transporte" kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport")} onUpdate={updateDraft} onRemove={removeItem} />
+                <KindBlock title={t("templates.program.transportTitle")} kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
 
                 <Button className="w-full" onClick={() => saveItems(slot)} disabled={busy}>
-                  <Save className="h-4 w-4 mr-1" /> Salvar Modelo
+                  <Save className="h-4 w-4 mr-1" /> {t("templates.program.saveTemplate")}
                 </Button>
               </CardContent></Card>
             </TabsContent>
@@ -203,27 +211,29 @@ function Page() {
   );
 }
 
-function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove }: {
+function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLabel }: {
   title: string; kind: Kind; tplId: string | undefined; items: ItemDraft[];
   onAdd: () => void;
   onUpdate: (tplId: string, idx: number, patch: Partial<ItemDraft>) => void;
   onRemove: (tplId: string, idx: number) => void;
+  dayLabel: Record<number, string>;
 }) {
+  const { t } = useTranslation();
   const filtered = items.map((it, i) => ({ it, i })).filter(({ it }) => it.kind === kind);
   return (
     <div className="border rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold">{title}</h3>
-        <Button size="sm" variant="outline" onClick={onAdd}><Plus className="h-3 w-3 mr-1" />Adicionar</Button>
+        <Button size="sm" variant="outline" onClick={onAdd}><Plus className="h-3 w-3 mr-1" />{t("common.add")}</Button>
       </div>
-      {filtered.length === 0 && <p className="text-xs text-muted-foreground">Nenhum item.</p>}
+      {filtered.length === 0 && <p className="text-xs text-muted-foreground">{t("templates.program.noItems")}</p>}
       <div className="space-y-2">
         {filtered.map(({ it, i }) => (
           <div key={i} className="bg-muted/30 rounded-md p-2 space-y-2">
             <div className="flex items-center gap-2">
               <Select value={String(it.day_offset)} onValueChange={(v) => tplId && onUpdate(tplId, i, { day_offset: Number(v) })}>
                 <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
-                <SelectContent>{DAY_OPTS.map((d) => <SelectItem key={d} value={String(d)}>{DAY_LABEL[d]}</SelectItem>)}</SelectContent>
+                <SelectContent>{DAY_OPTS.map((d) => <SelectItem key={d} value={String(d)}>{dayLabel[d]}</SelectItem>)}</SelectContent>
               </Select>
               <div className="flex-1" />
               <Button size="icon" variant="ghost" onClick={() => tplId && onRemove(tplId, i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
@@ -237,28 +247,29 @@ function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove }: {
 }
 
 function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Payload; onChange: (p: Payload) => void }) {
+  const { t } = useTranslation();
   const set = (k: string, v: PayloadValue) => onChange({ ...payload, [k]: v });
   if (kind === "study") return (
     <div className="grid grid-cols-2 gap-2">
       <Select value={String(payload.period ?? "Manhã")} onValueChange={(v) => set("period", v)}>
         <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-        <SelectContent><SelectItem value="Manhã">Manhã</SelectItem><SelectItem value="Tarde">Tarde</SelectItem></SelectContent>
+        <SelectContent><SelectItem value="Manhã">{t("templates.program.study.morning")}</SelectItem><SelectItem value="Tarde">{t("templates.program.study.afternoon")}</SelectItem></SelectContent>
       </Select>
       <Input className="h-9" type="time" value={String(payload.meeting_time ?? "")} onChange={(e) => set("meeting_time", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder="Local de encontro" value={String(payload.meeting_point ?? "")} onChange={(e) => set("meeting_point", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder="Acompanhante para estudos" value={String(payload.acompanhante ?? "")} onChange={(e) => set("acompanhante", e.target.value)} />
+      <Input className="h-9 col-span-2" placeholder={t("templates.program.study.meetingPoint")} value={String(payload.meeting_point ?? "")} onChange={(e) => set("meeting_point", e.target.value)} />
+      <Input className="h-9 col-span-2" placeholder={t("templates.program.study.companion")} value={String(payload.acompanhante ?? "")} onChange={(e) => set("acompanhante", e.target.value)} />
       <Select value={String(payload.acompanhante_for ?? "")} onValueChange={(v) => set("acompanhante_for", v)}>
-        <SelectTrigger className="h-9 col-span-2"><SelectValue placeholder="Acompanhante para…" /></SelectTrigger>
+        <SelectTrigger className="h-9 col-span-2"><SelectValue placeholder={t("templates.program.study.companionFor")} /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="superintendente">Superintendente</SelectItem>
-          <SelectItem value="esposa">Esposa do superintendente</SelectItem>
-          <SelectItem value="sc_substituto">S.C Substituto</SelectItem>
-          <SelectItem value="esposa_sc_substituto">Esposa do S.C Substituto</SelectItem>
-          <SelectItem value="sc_pastor">S.C Pastor</SelectItem>
-          <SelectItem value="esposa_sc_pastor">Esposa do S.C Pastor</SelectItem>
+          <SelectItem value="superintendente">{t("templates.program.study.superintendent")}</SelectItem>
+          <SelectItem value="esposa">{t("templates.program.study.wife")}</SelectItem>
+          <SelectItem value="sc_substituto">{t("templates.program.study.scSub")}</SelectItem>
+          <SelectItem value="esposa_sc_substituto">{t("templates.program.study.wifeScSub")}</SelectItem>
+          <SelectItem value="sc_pastor">{t("templates.program.study.scPastor")}</SelectItem>
+          <SelectItem value="esposa_sc_pastor">{t("templates.program.study.wifeScPastor")}</SelectItem>
         </SelectContent>
       </Select>
-      <Input className="h-9 col-span-2" placeholder="Telefone de contato" value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
+      <Input className="h-9 col-span-2" placeholder={t("templates.program.study.contactPhone")} value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
     </div>
   );
   if (kind === "meal") return (
@@ -266,21 +277,21 @@ function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Paylo
       <Select value={String(payload.type ?? "lunch")} onValueChange={(v) => set("type", v)}>
         <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="breakfast">Café</SelectItem>
-          <SelectItem value="lunch">Almoço</SelectItem>
-          <SelectItem value="dinner">Jantar</SelectItem>
+          <SelectItem value="breakfast">{t("templates.program.meal.breakfast")}</SelectItem>
+          <SelectItem value="lunch">{t("templates.program.meal.lunch")}</SelectItem>
+          <SelectItem value="dinner">{t("templates.program.meal.dinner")}</SelectItem>
         </SelectContent>
       </Select>
       <Input className="h-9" type="time" value={String(payload.meal_time ?? "")} onChange={(e) => set("meal_time", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder="Anfitrião" value={String(payload.host_name ?? "")} onChange={(e) => set("host_name", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder="Local" value={String(payload.location ?? "")} onChange={(e) => set("location", e.target.value)} />
+      <Input className="h-9 col-span-2" placeholder={t("templates.program.meal.host")} value={String(payload.host_name ?? "")} onChange={(e) => set("host_name", e.target.value)} />
+      <Input className="h-9 col-span-2" placeholder={t("templates.program.meal.location")} value={String(payload.location ?? "")} onChange={(e) => set("location", e.target.value)} />
     </div>
   );
   return (
     <div className="grid grid-cols-2 gap-2">
-      <Input className="h-9 col-span-2" placeholder="Nome do motorista" value={String(payload.driver_name ?? "")} onChange={(e) => set("driver_name", e.target.value)} />
-      <Input className="h-9" placeholder="Telefone" value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
-      <Input className="h-9" placeholder="Descrição/evento" value={String(payload.description ?? "")} onChange={(e) => set("description", e.target.value)} />
+      <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.driverName")} value={String(payload.driver_name ?? "")} onChange={(e) => set("driver_name", e.target.value)} />
+      <Input className="h-9" placeholder={t("templates.program.transport.phone")} value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
+      <Input className="h-9" placeholder={t("templates.program.transport.description")} value={String(payload.description ?? "")} onChange={(e) => set("description", e.target.value)} />
     </div>
   );
 }
