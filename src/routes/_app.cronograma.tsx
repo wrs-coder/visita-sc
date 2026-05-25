@@ -515,10 +515,11 @@ function EventDialog({
 }
 
 function Empty() {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardContent className="p-6 text-sm text-muted-foreground">
-        Nenhuma visita ativa. Cadastre uma em Itinerário.
+        {t("schedule.emptyNoVisit")}
       </CardContent>
     </Card>
   );
