@@ -123,23 +123,23 @@ function Page() {
   useEffect(() => { if (activeId) loadActive(activeId); else setPayload(emptyPayload()); }, [activeId, loadActive]);
 
   if (!role) {
-    return <Card><CardContent className="p-6 text-sm">Acesso restrito.</CardContent></Card>;
+    return <Card><CardContent className="p-6 text-sm">{t("templates.meetingTalk.restricted")}</CardContent></Card>;
   }
 
   const isSuper = role === "superintendent";
 
-  const active = tpls.find((t) => t.id === activeId) ?? null;
+  const active = tpls.find((tp) => tp.id === activeId) ?? null;
 
   const handleCreate = async () => {
     const parsed = nameSchema.safeParse(newName);
     if (!parsed.success) { setNewNameErr(parsed.error.issues[0].message); return; }
     setNewNameErr(null);
-    if (tpls.length >= MAX) { toast.error(`Limite de ${MAX} modelos atingido.`); return; }
+    if (tpls.length >= MAX) { toast.error(t("templates.limitReached", { max: MAX })); return; }
     setBusy(true);
     const r = await fnCreate({ data: { name: parsed.data } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Modelo criado");
+    toast.success(t("templates.templateCreated"));
     setCreateOpen(false);
     setNewName("");
     setActiveId(r.id);
@@ -154,7 +154,7 @@ function Page() {
     const r = await fnUpdate({ data: { id: active.id, name: parsed.data } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Renomeado");
+    toast.success(t("templates.renamed"));
     setRenameOpen(false);
     await loadList();
   };
@@ -162,22 +162,22 @@ function Page() {
   const handleDuplicate = async () => {
     if (!active) return;
     setBusy(true);
-    const r = await fnDup({ data: { id: active.id, name: `${active.name} (cópia)` } });
+    const r = await fnDup({ data: { id: active.id, name: `${active.name} ${t("templates.copySuffix")}` } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Modelo duplicado");
+    toast.success(t("templates.templateDuplicated"));
     setActiveId(r.id);
     await loadList();
   };
 
   const handleDelete = async () => {
     if (!active) return;
-    if (!confirm(`Excluir o modelo "${active.name}"?`)) return;
+    if (!confirm(t("templates.deleteConfirm", { name: active.name }))) return;
     setBusy(true);
     const r = await fnDel({ data: { id: active.id } });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Excluído");
+    toast.success(t("templates.deleted"));
     setActiveId(null);
     await loadList();
   };
@@ -216,7 +216,7 @@ function Page() {
     });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Modelo salvo");
+    toast.success(t("templates.templateSaved"));
   };
 
   const addTheme = () => setPayload({ ...payload, weekend_themes: [...payload.weekend_themes, { title: "" }] });
