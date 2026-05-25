@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Building2, Trash2, Pencil, KeyRound, Copy, Users, UserCog } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface Elder {
   user_id: string;
@@ -65,6 +66,7 @@ export const Route = createFileRoute("/_app/congregacoes")({ component: Page });
 
 function Page() {
   const { user, role } = useAuth();
+  const { t } = useTranslation();
 
   const fnList = useServerFn(listMyCongregations);
   const fnCreate = useServerFn(createCongregation);
@@ -197,52 +199,54 @@ function Page() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <Building2 className="h-6 w-6" /> Congregações
+            <Building2 className="h-6 w-6" /> {t("congregations.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {activeCount} congregaç{activeCount === 1 ? "ão ativa" : "ões ativas"} no circuito.
+            {activeCount === 1
+              ? t("congregations.activeOne", { count: activeCount })
+              : t("congregations.activeMany", { count: activeCount })}
           </p>
         </div>
         <Dialog open={openNew} onOpenChange={setOpenNew}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="h-4 w-4 mr-1" /> Nova
+              <Plus className="h-4 w-4 mr-1" /> {t("common.new")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Nova congregação</DialogTitle>
+              <DialogTitle>{t("congregations.newCongregation")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
               <div>
-                <Label>Nome</Label>
+                <Label>{t("congregations.name")}</Label>
                 <Input
                   className="mt-1"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Ex: Congregação Central"
+                  placeholder={t("congregations.namePlaceholder")}
                 />
               </div>
               <div>
-                <Label>Código de acesso dos anciãos</Label>
+                <Label>{t("congregations.accessCode")}</Label>
                 <Input
                   className="mt-1 font-mono uppercase"
                   value={form.invite_code}
                   onChange={(e) => setForm({ ...form, invite_code: e.target.value.toUpperCase() })}
-                  placeholder="Ex: CENTRAL01"
+                  placeholder={t("congregations.accessCodePlaceholder")}
                   maxLength={12}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  4-12 caracteres, letras e números. Único no sistema.
+                  {t("congregations.accessCodeHint")}
                 </p>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpenNew(false)}>
-                Cancelar
+                {t("common.cancel")}
               </Button>
               <Button onClick={create} disabled={busy}>
-                {busy ? "Criando..." : "Criar"}
+                {busy ? t("congregations.creating") : t("congregations.create")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -251,7 +255,7 @@ function Page() {
 
       {loading && (
         <Card>
-          <CardContent className="p-4 text-sm text-muted-foreground">Carregando…</CardContent>
+          <CardContent className="p-4 text-sm text-muted-foreground">{t("congregations.loading")}</CardContent>
         </Card>
       )}
 
@@ -259,9 +263,9 @@ function Page() {
         <Card>
           <CardContent className="p-6 text-center">
             <Building2 className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-            <p className="font-medium">Nenhuma congregação cadastrada</p>
+            <p className="font-medium">{t("congregations.noneRegistered")}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Adicione a primeira congregação do circuito para começar.
+              {t("congregations.addFirst")}
             </p>
           </CardContent>
         </Card>
@@ -281,7 +285,7 @@ function Page() {
                     {c.name}
                     {!isActive && (
                       <span className="text-[10px] uppercase font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-                        Inativa
+                        {t("congregations.inactive")}
                       </span>
                     )}
                   </div>
@@ -297,7 +301,7 @@ function Page() {
                   <Switch
                     checked={isActive}
                     onCheckedChange={(v) => toggleActive(c, v)}
-                    aria-label="Ativa"
+                    aria-label={t("congregations.active")}
                   />
                   <Button size="icon" variant="ghost" onClick={() => setEditing({ ...c })}>
                     <Pencil className="h-3.5 w-3.5" />
@@ -316,13 +320,13 @@ function Page() {
       <div className="pt-2">
         <div className="flex items-center gap-2 mb-2">
           <Users className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">Anciãos cadastrados</h2>
+          <h2 className="text-lg font-semibold">{t("congregations.eldersRegistered")}</h2>
           <span className="text-xs text-muted-foreground">({elders.length})</span>
         </div>
         {elders.length === 0 ? (
           <Card>
             <CardContent className="p-4 text-sm text-muted-foreground">
-              Nenhum ancião cadastrado nas suas congregações ainda.
+              {t("congregations.noElders")}
             </CardContent>
           </Card>
         ) : (

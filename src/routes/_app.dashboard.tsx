@@ -38,6 +38,8 @@ import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
+import { useTranslation } from "react-i18next";
+
 
 
 export const Route = createFileRoute("/_app/dashboard")({
@@ -117,6 +119,7 @@ const NO_CURRENT_VISIT_VALUE = "__sem-visita__";
 
 function Dashboard() {
   const { profile, role, user } = useAuth();
+  const { t } = useTranslation();
   useActiveCongregation(); // mantém o hook montado para sincronizar contexto
   const [selected, setSelected] = useState<string | null>(null);
   const { visit } = useActiveVisit({
@@ -349,11 +352,11 @@ function Dashboard() {
           {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
         </p>
         <h1 className="text-2xl md:text-3xl font-bold mt-1">
-          Olá, {profile?.full_name?.split(" ")[0] ?? "irmão"}!
+          {t("dashboard.greeting", { name: profile?.full_name?.split(" ")[0] ?? t("dashboard.brother") })}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          {role === "superintendent" ? "Painel do Superintendente" : "Painel do Ancião"}
-          {visit ? ` · Visita: ${visit.title}` : " · Nenhuma visita ativa"}
+          {role === "superintendent" ? t("dashboard.panelSuper") : t("dashboard.panelElder")}
+          {visit ? ` · ${t("dashboard.visitLabel", { title: visit.title })}` : ` · ${t("dashboard.noActiveVisit")}`}
         </p>
       </header>
 
@@ -362,10 +365,10 @@ function Dashboard() {
           <CloudOff className="h-4 w-4 shrink-0" />
           <span className="flex-1">
             <strong>{pendingCount}</strong>{" "}
-            {pendingCount === 1 ? "alteração guardada" : "alterações guardadas"} no dispositivo,
-            aguardando sincronização.
+            {pendingCount === 1 ? t("dashboard.pendingOne") : t("dashboard.pendingMany")}{" "}
+            {t("dashboard.pendingSuffix")}
           </span>
-          <span className="hidden sm:inline opacity-70">Toque em ↻ no topo para enviar.</span>
+          <span className="hidden sm:inline opacity-70">{t("dashboard.pendingHint")}</span>
         </div>
       )}
 
@@ -375,15 +378,12 @@ function Dashboard() {
             <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
             <div className="flex-1 min-w-0 space-y-2">
               <p className="text-sm font-semibold">
-                Atenção: Você possui{" "}
                 {overdueVisits.length === 1
-                  ? "uma visita encerrada"
-                  : `${overdueVisits.length} visitas encerradas`}{" "}
-                que ainda não {overdueVisits.length === 1 ? "foi finalizada" : "foram finalizadas"} no sistema.
+                  ? t("dashboard.overdueTitle1")
+                  : t("dashboard.overdueTitleN", { count: overdueVisits.length })}
               </p>
               <p className="text-xs leading-relaxed opacity-90">
-                Lembre-se de enviar o S-303 e clicar em "Finalizar Visita" para limpar os dados
-                operacionais e liberar o histórico.
+                {t("dashboard.overdueHint")}
               </p>
               <ul className="space-y-1.5 pt-1">
                 {overdueVisits.map((v) => (
@@ -394,7 +394,7 @@ function Dashboard() {
                     <span className="font-medium flex-1 min-w-0 truncate">
                       {v.title}
                       <span className="opacity-70 font-normal">
-                        {" · encerrada em "}
+                        {" · "}{t("dashboard.endedOn")}{" "}
                         {format(parseISO(v.end_date), "dd/MM/yyyy")}
                       </span>
                     </span>
@@ -404,7 +404,7 @@ function Dashboard() {
                       className="h-7 text-xs"
                       onClick={() => setOverdueDialogId(v.id)}
                     >
-                      Finalizar Agora
+                      {t("dashboard.finishNow")}
                     </Button>
                   </li>
                 ))}
@@ -438,7 +438,7 @@ function Dashboard() {
         <div className="flex flex-wrap justify-end gap-2 print:hidden">
           <Button asChild size="sm" variant="outline">
             <Link to="/relatorio/$visitId" params={{ visitId: visit.id }}>
-              <FileText className="h-4 w-4 mr-1" /> Relatório executivo
+              <FileText className="h-4 w-4 mr-1" /> {t("dashboard.executiveReport")}
             </Link>
           </Button>
           {role === "superintendent" && (
@@ -461,10 +461,10 @@ function Dashboard() {
             <Building2 className="h-4 w-4 text-primary shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-                Congregação ativa
+                {t("dashboard.activeCongregation")}
               </div>
               <div className="text-xs text-muted-foreground">
-                Selecione a congregação do circuito para ver e gerenciar seus dados.
+                {t("dashboard.activeCongregationHelp")}
               </div>
             </div>
             <Select value={selected ?? NO_CURRENT_VISIT_VALUE} onValueChange={handleSelectCong}>
@@ -472,7 +472,7 @@ function Dashboard() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NO_CURRENT_VISIT_VALUE}>Sem visita</SelectItem>
+                <SelectItem value={NO_CURRENT_VISIT_VALUE}>{t("dashboard.noVisit")}</SelectItem>
                 {congs.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
@@ -488,13 +488,13 @@ function Dashboard() {
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">
-              Nenhuma visita ativa.{" "}
+              {t("dashboard.noActiveVisitMsg")}{" "}
               {role === "superintendent" ? (
                 <Link to="/configuracoes" className="text-primary font-medium hover:underline">
-                  Cadastre uma nova visita
+                  {t("dashboard.registerNewVisit")}
                 </Link>
               ) : (
-                "Aguarde o superintendente cadastrar."
+                t("dashboard.waitSuper")
               )}
             </p>
           </CardContent>
@@ -516,7 +516,7 @@ function Dashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[11px] uppercase tracking-wider text-primary font-semibold">
-                    Visita SCS · Substituto
+                    {t("dashboard.scsSubstitute")}
                   </div>
                   {v.substitute_name && (
                     <div className="text-lg font-bold mt-0.5 break-words">{v.substitute_name}</div>
@@ -542,20 +542,20 @@ function Dashboard() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <ListChecks className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">Checklist da Congregação</h3>
+                  <h3 className="font-semibold">{t("dashboard.checklistTitle")}</h3>
                 </div>
                 <Link
                   to="/checklist"
                   className="text-primary text-xs font-medium inline-flex items-center hover:underline"
                 >
-                  Ver tudo <ChevronRight className="h-3 w-3" />
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
               <div className="flex items-end justify-between mb-2">
                 <div>
                   <div className="text-3xl font-bold">{progress}%</div>
                   <div className="text-xs text-muted-foreground">
-                    {doneCount} de {total} concluídos
+                    {t("dashboard.doneOf", { done: doneCount, total })}
                   </div>
                 </div>
               </div>
@@ -568,25 +568,25 @@ function Dashboard() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <UtensilsCrossed className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">Refeições de hoje</h3>
+                  <h3 className="font-semibold">{t("dashboard.mealsToday")}</h3>
                 </div>
                 <Link
                   to="/refeicoes"
                   className="text-primary text-xs font-medium inline-flex items-center hover:underline"
                 >
-                  Ver tudo <ChevronRight className="h-3 w-3" />
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
               {meals.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Nenhuma atividade programada para hoje.
+                  {t("dashboard.noActivityToday")}
                 </p>
               ) : (
                 <ul className="space-y-3">
                   {meals.map((m) => (
                     <li key={m.id} className="text-sm flex items-start gap-2">
                       <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
-                        {m.type === "lunch" ? "Almoço" : m.type === "dinner" ? "Jantar" : "Café"}
+                        {m.type === "lunch" ? t("dashboard.meals.lunch") : m.type === "dinner" ? t("dashboard.meals.dinner") : t("dashboard.meals.breakfast")}
                         {m.meal_time ? ` · ${m.meal_time.slice(0, 5)}` : ""}
                       </span>
                       <div className="min-w-0 flex-1 space-y-0.5">
@@ -628,18 +628,18 @@ function Dashboard() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Car className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">Transporte do dia</h3>
+                  <h3 className="font-semibold">{t("dashboard.transportToday")}</h3>
                 </div>
                 <Link
                   to="/transporte"
                   className="text-primary text-xs font-medium inline-flex items-center hover:underline"
                 >
-                  Ver tudo <ChevronRight className="h-3 w-3" />
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
               {transports.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Nenhuma atividade programada para hoje.
+                  {t("dashboard.noActivityToday")}
                 </p>
               ) : (
                 <ul className="space-y-3">
@@ -675,18 +675,18 @@ function Dashboard() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">Estudos e Revisitas</h3>
+                  <h3 className="font-semibold">{t("dashboard.studiesVisits")}</h3>
                 </div>
                 <Link
                   to="/reunioes-de-campo"
                   className="text-primary text-xs font-medium inline-flex items-center hover:underline"
                 >
-                  Ver tudo <ChevronRight className="h-3 w-3" />
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
               {assignments.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Nenhuma atividade programada para hoje.
+                  {t("dashboard.noActivityToday")}
                 </p>
               ) : (
                 <ul className="space-y-3">
@@ -734,18 +734,18 @@ function Dashboard() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">Reunião de Campo</h3>
+                  <h3 className="font-semibold">{t("dashboard.fieldMeeting")}</h3>
                 </div>
                 <Link
                   to="/reunioes-discursos"
                   className="text-primary text-xs font-medium inline-flex items-center hover:underline"
                 >
-                  Ver tudo <ChevronRight className="h-3 w-3" />
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
               {fieldMeetings.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Nenhuma atividade programada para hoje.
+                  {t("dashboard.noActivityToday")}
                 </p>
               ) : (
                 <ul className="space-y-3">
@@ -768,18 +768,18 @@ function Dashboard() {
                       )}
                       {f.territory_number && (
                         <div className="text-xs text-muted-foreground break-words whitespace-normal">
-                          Território {f.territory_number}
+                          {t("dashboard.territory")} {f.territory_number}
                           {f.territory_location ? ` · ${f.territory_location}` : ""}
                         </div>
                       )}
                       {f.auxiliary_leaders && (
                         <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
-                          Arranjos: {f.auxiliary_leaders}
+                          {t("dashboard.arrangements")} {f.auxiliary_leaders}
                         </div>
                       )}
                       {f.closing_prayer && (
                         <div className="text-xs text-muted-foreground break-words whitespace-normal">
-                          Oração final: {f.closing_prayer}
+                          {t("dashboard.closingPrayer")} {f.closing_prayer}
                         </div>
                       )}
                     </li>
@@ -797,18 +797,18 @@ function Dashboard() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold">Programação de hoje</h3>
+                <h3 className="font-semibold">{t("dashboard.todaySchedule")}</h3>
               </div>
               <Link
                 to="/cronograma"
                 className="text-primary text-xs font-medium inline-flex items-center hover:underline"
               >
-                Cronograma completo <ChevronRight className="h-3 w-3" />
+                {t("dashboard.fullSchedule")} <ChevronRight className="h-3 w-3" />
               </Link>
             </div>
             {todayEvents.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Nenhum compromisso registrado para hoje.
+                {t("dashboard.noEventsToday")}
               </p>
             ) : (
               <ul className="space-y-3">
