@@ -53,9 +53,10 @@ const EldersServantsPanel = lazy(() =>
 export const Route = createFileRoute("/_app/reunioes-discursos")({ component: Page });
 
 function PanelFallback() {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-center py-10 text-muted-foreground">
-      <Loader2 className="h-4 w-4 animate-spin mr-2" /> Carregando…
+      <Loader2 className="h-4 w-4 animate-spin mr-2" /> {t("meetingsTalks.loading")}
     </div>
   );
 }
@@ -94,6 +95,7 @@ function useEnsureVisitForSuper(congregationId: string | null, enabled: boolean)
 }
 
 function SuperCongregationSelector() {
+  const { t } = useTranslation();
   const fnList = useServerFn(listMyCongregations);
   const [congs, setCongs] = useState<{ id: string; name: string }[]>([]);
   const active = useActiveCongregation();
@@ -120,11 +122,11 @@ function SuperCongregationSelector() {
     <Card>
       <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium sm:min-w-[160px]">
-          Congregação selecionada
+          {t("meetingsTalks.selectedCongregation")}
         </div>
         <div className="flex-1">
           <Select value={value} onValueChange={onChange}>
-            <SelectTrigger><SelectValue placeholder="Escolha uma congregação…" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={t("meetingsTalks.chooseCongregation")} /></SelectTrigger>
             <SelectContent>
               {congs.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
