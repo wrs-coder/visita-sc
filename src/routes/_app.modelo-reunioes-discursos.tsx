@@ -495,10 +495,10 @@ function Page() {
 
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Renomear modelo</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("templates.renameTemplate")}</DialogTitle></DialogHeader>
           <Input value={renameVal} onChange={(e) => setRenameVal(e.target.value)} maxLength={120} />
           <DialogFooter>
-            <Button onClick={handleRename} disabled={busy}>Salvar</Button>
+            <Button onClick={handleRename} disabled={busy}>{t("common.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
