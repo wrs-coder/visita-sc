@@ -160,7 +160,7 @@ function Page() {
     });
     if (Object.keys(errs).length > 0) {
       setItemErrs(errs);
-      toast.error("Corrija os campos destacados antes de salvar.");
+      toast.error(t("templates.checklist.fixErrors"));
       return;
     }
     setItemErrs({});
@@ -168,7 +168,7 @@ function Page() {
       .map((it) => ({ title: it.title.trim(), description: it.description.trim() }))
       .filter((it) => it.title.length > 0);
     if (cleaned.length === 0) {
-      if (!confirm("Salvar modelo sem itens?")) return;
+      if (!confirm(t("templates.checklist.saveEmptyConfirm"))) return;
     }
     setBusy(true);
     const r = await fnReplace({
@@ -183,7 +183,7 @@ function Page() {
     });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
-    toast.success("Itens salvos");
+    toast.success(t("templates.itemsSaved"));
   };
 
   const move = (idx: number, dir: -1 | 1) => {
@@ -208,41 +208,41 @@ function Page() {
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <ListChecks className="h-6 w-6" />Modelos de Checklist
+            <ListChecks className="h-6 w-6" />{t("templates.checklist.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Crie checklists e aplique a cada visita pelo Itinerário. {tpls.length}/{MAX} modelos.
+            {t("templates.checklist.subtitle", { n: tpls.length, max: MAX })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {role === "superintendent" && (
             <TemplateIOButtons
-              filenameBase={active?.name ?? "checklist-modelo"}
+              filenameBase={active?.name ?? t("templates.exportChecklist")}
               disabled={!active}
-              onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: "Selecione um modelo" }}
+              onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: t("templates.selectTemplate") }}
               onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await load(); return r; }}
             />
           )}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />Novo modelo</Button>
+            <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />{t("templates.newTemplate")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Novo modelo de checklist</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("templates.checklist.newDialogTitle")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div>
-                <Label>Nome</Label>
+                <Label>{t("templates.name")}</Label>
                 <Input
                   className={`mt-1 ${newNameErr ? "border-destructive" : ""}`}
                   value={newName}
                   onChange={(e) => { setNewName(e.target.value); if (newNameErr) setNewNameErr(null); }}
-                  placeholder="Ex: Padrão 2026"
+                  placeholder={t("templates.namePlaceholderDefault")}
                   maxLength={120}
                 />
                 {newNameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{newNameErr}</p>}
-                <p className="text-xs text-muted-foreground mt-1">{newName.trim().length}/120 caracteres</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("templates.charactersOf", { n: newName.trim().length })}</p>
               </div>
-              <Button className="w-full" onClick={handleCreate} disabled={busy}>Criar</Button>
+              <Button className="w-full" onClick={handleCreate} disabled={busy}>{t("common.create")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -252,13 +252,13 @@ function Page() {
       <div className="grid md:grid-cols-[260px_1fr] gap-4">
         <Card><CardContent className="p-3 space-y-1">
           {tpls.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-3 text-center">Nenhum modelo ainda.</div>
-          ) : tpls.map((t) => {
+            <div className="text-sm text-muted-foreground p-3 text-center">{t("templates.noTemplates")}</div>
+          ) : tpls.map((tp) => {
             return (
-              <button key={t.id}
-                onClick={() => setActiveId(t.id)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === t.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-                <div className="truncate">{t.name}</div>
+              <button key={tp.id}
+                onClick={() => setActiveId(tp.id)}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === tp.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
+                <div className="truncate">{tp.name}</div>
               </button>
             );
           })}
@@ -267,7 +267,7 @@ function Page() {
         <div className="space-y-4">
           {!active ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
-              Selecione um modelo ou crie um novo.
+              {t("templates.selectOrCreate")}
             </CardContent></Card>
           ) : (
             <>
@@ -276,32 +276,32 @@ function Page() {
                   <div className="font-semibold truncate">{active.name}</div>
                   <div className="flex gap-2 flex-wrap">
                     <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" />Renomear
+                      <Pencil className="h-3.5 w-3.5 mr-1" />{t("common.rename")}
                     </Button>
                     <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
-                      <Copy className="h-3.5 w-3.5 mr-1" />Duplicar
+                      <Copy className="h-3.5 w-3.5 mr-1" />{t("common.duplicate")}
                     </Button>
                     <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
-                      <Trash2 className="h-3.5 w-3.5 mr-1" />Excluir
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />{t("common.delete")}
                     </Button>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Escolha este modelo no Itinerário ao criar ou editar uma visita para aplicá-lo àquela semana.
+                  {t("templates.checklist.applyHint")}
                 </p>
               </CardContent></Card>
 
               <Card><CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="font-semibold">Itens da checklist</div>
+                  <div className="font-semibold">{t("templates.checklist.itemsTitle")}</div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" />Item</Button>
-                    <Button size="sm" onClick={handleSaveItems} disabled={busy}><Save className="h-3.5 w-3.5 mr-1" />Salvar</Button>
+                    <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" />{t("templates.checklist.addItem")}</Button>
+                    <Button size="sm" onClick={handleSaveItems} disabled={busy}><Save className="h-3.5 w-3.5 mr-1" />{t("templates.checklist.save")}</Button>
                   </div>
                 </div>
                 {items.length === 0 ? (
                   <div className="text-sm text-muted-foreground text-center py-6">
-                    Nenhum item. Adicione perguntas ou tópicos para esta checklist.
+                    {t("templates.checklist.noItemsHelp")}
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -311,7 +311,7 @@ function Page() {
                           <div className="text-xs font-medium text-muted-foreground pt-2 w-6">{idx + 1}.</div>
                           <div className="flex-1 space-y-2">
                             <Input
-                              placeholder="Título do item"
+                              placeholder={t("templates.checklist.itemTitlePlaceholder")}
                               value={it.title}
                               onChange={(e) => { updateItem(idx, { title: e.target.value }); if (itemErrs[idx]?.title) setItemErrs((s) => ({ ...s, [idx]: { ...s[idx], title: undefined } })); }}
                               maxLength={300}
@@ -320,7 +320,7 @@ function Page() {
                             {itemErrs[idx]?.title && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{itemErrs[idx]?.title}</p>}
                             <Textarea
                               rows={2}
-                              placeholder="Descrição (opcional)"
+                              placeholder={t("templates.checklist.itemDescPlaceholder")}
                               value={it.description}
                               onChange={(e) => { updateItem(idx, { description: e.target.value }); if (itemErrs[idx]?.description) setItemErrs((s) => ({ ...s, [idx]: { ...s[idx], description: undefined } })); }}
                               maxLength={2000}
@@ -352,7 +352,7 @@ function Page() {
 
       <Dialog open={renameOpen} onOpenChange={(o) => { setRenameOpen(o); if (!o) setRenameErr(null); }}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Renomear modelo</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("templates.renameTemplate")}</DialogTitle></DialogHeader>
           <div>
             <Input
               value={renameVal}
@@ -361,10 +361,10 @@ function Page() {
               className={renameErr ? "border-destructive" : ""}
             />
             {renameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{renameErr}</p>}
-            <p className="text-xs text-muted-foreground mt-1">{renameVal.trim().length}/120 caracteres</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("templates.charactersOf", { n: renameVal.trim().length })}</p>
           </div>
           <DialogFooter>
-            <Button onClick={handleRename} disabled={busy}>Salvar</Button>
+            <Button onClick={handleRename} disabled={busy}>{t("common.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
