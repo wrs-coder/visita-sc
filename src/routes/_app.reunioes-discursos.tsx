@@ -140,9 +140,13 @@ function SuperCongregationSelector() {
 }
 
 function DiscardDraftButton() {
+  const { t } = useTranslation();
   const draft = useMeetingsDraft();
   const { canEdit } = useAuth();
   if (!draft || !canEdit) return null;
+  const descKey = draft.pendingCount === 1
+    ? "meetingsTalks.discardConfirmDescOne"
+    : "meetingsTalks.discardConfirmDescMany";
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -153,21 +157,20 @@ function DiscardDraftButton() {
           className="gap-2 text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="h-4 w-4" />
-          Descartar
+          {t("meetingsTalks.discard")}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
+          <AlertDialogTitle>{t("meetingsTalks.discardConfirmTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Vai apagar {draft.pendingCount} alteraç{draft.pendingCount === 1 ? "ão" : "ões"} em
-            rascunho local e voltar ao estado atual do servidor. Esta ação não pode ser desfeita.
+            {t(descKey, { count: draft.pendingCount })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel>{t("meetingsTalks.cancel")}</AlertDialogCancel>
           <AlertDialogAction onClick={() => draft.discardAll()}>
-            Descartar
+            {t("meetingsTalks.discard")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -176,6 +179,7 @@ function DiscardDraftButton() {
 }
 
 function SaveDraftButton() {
+  const { t } = useTranslation();
   const draft = useMeetingsDraft();
   const { canEdit } = useAuth();
   if (!draft || !canEdit) return null;
@@ -186,28 +190,30 @@ function SaveDraftButton() {
       className="gap-2"
     >
       {draft.saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-      Salvar dados
+      {t("meetingsTalks.saveData")}
       {draft.dirty && !draft.saving && (
-        <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-destructive" aria-label="alterações pendentes" />
+        <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-destructive" aria-label={t("meetingsTalks.pendingChangesAria")} />
       )}
     </Button>
   );
 }
 
 function SaveProgressBar() {
+  const { t } = useTranslation();
   const draft = useMeetingsDraft();
   if (!draft || (!draft.saving && draft.progress === 0)) return null;
   return (
     <div className="space-y-1">
       <Progress value={draft.progress} />
       <div className="text-xs text-muted-foreground">
-        {draft.saving ? `Sincronizando alterações… ${draft.progress}%` : "Sincronizado"}
+        {draft.saving ? t("meetingsTalks.syncing", { progress: draft.progress }) : t("meetingsTalks.synced")}
       </div>
     </div>
   );
 }
 
 function SyncStatusLine() {
+  const { t } = useTranslation();
   const draft = useMeetingsDraft();
   if (!draft) return null;
   const { lastSyncedAt, lastFailedTables, dirty, saving } = draft;
@@ -218,12 +224,12 @@ function SyncStatusLine() {
     <div className="flex flex-col items-end gap-1 text-xs">
       {lastSyncedAt && lastFailedTables.length === 0 && !dirty && !saving && (
         <span className="text-emerald-600 dark:text-emerald-400">
-          ✓ Última sincronização: {hh}:{mm}
+          {t("meetingsTalks.lastSync", { time: `${hh}:${mm}` })}
         </span>
       )}
       {lastFailedTables.length > 0 && (
         <span className="text-destructive text-right">
-          Falha ao sincronizar: {lastFailedTables.join(", ")}. Clique em “Salvar dados” para tentar novamente.
+          {t("meetingsTalks.syncFail", { tables: lastFailedTables.join(", ") })}
         </span>
       )}
     </div>
