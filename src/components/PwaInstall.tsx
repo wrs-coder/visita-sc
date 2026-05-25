@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Download, Share, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -46,6 +47,7 @@ function isIos(): boolean {
 }
 
 export function PwaInstallButton() {
+  const { t } = useTranslation();
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [showIosHelp, setShowIosHelp] = useState(false);
@@ -99,31 +101,29 @@ export function PwaInstallButton() {
         className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 shadow-elevated"
       >
         <Download className="mr-2 h-5 w-5" />
-        Instalar no Telemóvel
+        {t("pwa.install")}
       </Button>
 
       <Dialog open={showIosHelp} onOpenChange={setShowIosHelp}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Instalar no telemóvel</DialogTitle>
+            <DialogTitle>{t("pwa.installTitle")}</DialogTitle>
             <DialogDescription>
-              {ios
-                ? "Para instalar no iPhone/iPad, siga estes passos no Safari:"
-                : "Para instalar, abra esta página no navegador do seu telemóvel e use o menu para adicionar ao ecrã principal."}
+              {ios ? t("pwa.iosIntro") : t("pwa.genericIntro")}
             </DialogDescription>
           </DialogHeader>
           <ol className="space-y-3 text-sm">
             <li className="flex items-start gap-2">
               <Share className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-              <span>Toque no botão <strong>Partilhar</strong> na barra do navegador.</span>
+              <span>{t("pwa.step1Tap")} <strong>{t("pwa.step1Share")}</strong> {t("pwa.step1Tail")}</span>
             </li>
             <li className="flex items-start gap-2">
               <Plus className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-              <span>Escolha <strong>Adicionar ao Ecrã Principal</strong>.</span>
+              <span>{t("pwa.step2Choose")} <strong>{t("pwa.step2Action")}</strong>.</span>
             </li>
             <li className="flex items-start gap-2">
               <Download className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-              <span>Confirme em <strong>Adicionar</strong>. O ícone aparecerá no seu telemóvel.</span>
+              <span>{t("pwa.step3Confirm")} <strong>{t("pwa.step3Action")}</strong>{t("pwa.step3Tail")}</span>
             </li>
           </ol>
         </DialogContent>

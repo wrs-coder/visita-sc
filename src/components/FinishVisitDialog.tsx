@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -49,6 +50,7 @@ export function FinishVisitDialog({
   onOpenChange,
   hideTrigger,
 }: Props) {
+  const { t } = useTranslation();
   const [openState, setOpenState] = useState(false);
   const open = openProp ?? openState;
   const setOpen = (o: boolean) => {
@@ -82,12 +84,12 @@ export function FinishVisitDialog({
         .eq("id", visitId);
       if (vErr) throw new Error(vErr.message);
 
-      toast.success("Visita finalizada e dados operacionais limpos.");
+      toast.success(t("finishVisit.success"));
       setOpen(false);
       reset();
       onFinished?.();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Falha ao finalizar visita.";
+      const msg = e instanceof Error ? e.message : t("finishVisit.fail");
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -105,7 +107,7 @@ export function FinishVisitDialog({
       {!hideTrigger && (
         <DialogTrigger asChild>
           <Button variant="destructive" size="sm">
-            <CheckCircle2 className="h-4 w-4 mr-1" /> Finalizar Visita
+            <CheckCircle2 className="h-4 w-4 mr-1" /> {t("finishVisit.trigger")}
           </Button>
         </DialogTrigger>
       )}
@@ -114,13 +116,14 @@ export function FinishVisitDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
-            Finalizar visita
+            {t("finishVisit.title")}
           </DialogTitle>
           <DialogDescription>
-            Confirme os itens abaixo antes de encerrar <strong>{visitTitle}</strong>.
-            Esta ação apaga a visita e todos os dados operacionais (cronogramas,
-            escalas, refeições, transporte, reuniões). As <strong>Notas Privadas</strong>
-            {" "}permanecem preservadas.
+            <Trans
+              i18nKey="finishVisit.description"
+              values={{ title: visitTitle }}
+              components={{ strong: <strong /> }}
+            />
           </DialogDescription>
         </DialogHeader>
 
@@ -133,10 +136,10 @@ export function FinishVisitDialog({
             />
             <div className="flex-1">
               <Label className="cursor-pointer font-medium">
-                Enviei S-303 <span className="text-destructive">*</span>
+                {t("finishVisit.s303")} <span className="text-destructive">*</span>
               </Label>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Obrigatório para confirmar o encerramento.
+                {t("finishVisit.s303Help")}
               </p>
             </div>
           </label>
@@ -149,9 +152,9 @@ export function FinishVisitDialog({
             />
             <div className="flex-1">
               <Label className="cursor-pointer font-medium">
-                Concluir as Designações de Anc/S.M
+                {t("finishVisit.designations")}
               </Label>
-              <p className="text-xs text-muted-foreground mt-0.5">Opcional.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("finishVisit.designationsHelp")}</p>
             </div>
           </label>
         </div>
@@ -162,7 +165,7 @@ export function FinishVisitDialog({
             onClick={() => setOpen(false)}
             disabled={loading}
           >
-            Cancelar
+            {t("finishVisit.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -174,7 +177,7 @@ export function FinishVisitDialog({
             ) : (
               <CheckCircle2 className="h-4 w-4 mr-1" />
             )}
-            Confirmar fim da visita
+            {t("finishVisit.confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>
