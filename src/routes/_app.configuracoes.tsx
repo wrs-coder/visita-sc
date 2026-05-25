@@ -38,6 +38,7 @@ import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
+import { useTranslation } from "react-i18next";
 import { maskPhone } from "@/lib/masks";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
@@ -71,6 +72,7 @@ interface Cong {
 
 function Page() {
   const { congregation, role, profile } = useAuth();
+  const { t } = useTranslation();
   const fnList = useServerFn(listMyCongregations);
   const fnTpls = useServerFn(listTemplates);
   const fnApply = useServerFn(applyTemplateToVisit);
@@ -319,29 +321,29 @@ function Page() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl md:text-3xl font-bold">Itinerário</h1>
+      <h1 className="text-2xl md:text-3xl font-bold">{t("itinerary.title")}</h1>
 
       <Card>
         <CardContent className="p-5">
           {isSuper ? (
             <>
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-                Circuito
+                {t("itinerary.circuit")}
               </div>
               <div className="text-lg font-semibold mt-1">
-                {profile?.circuit?.trim() ? profile.circuit : "Não informado"}
+                {profile?.circuit?.trim() ? profile.circuit : t("itinerary.notSet")}
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                Superintendente de Circuito — defina o circuito atual em "Meu perfil".
+                {t("itinerary.circuitHint")}
               </div>
             </>
           ) : (
             <>
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-                Sua congregação
+                {t("itinerary.yourCongregation")}
               </div>
               <div className="text-lg font-semibold mt-1">{congregation?.name ?? "—"}</div>
-              <div className="text-xs text-muted-foreground mt-1">Você é Ancião</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("itinerary.youAreElder")}</div>
             </>
           )}
         </CardContent>
@@ -356,18 +358,18 @@ function Page() {
               </div>
               <div className="flex-1">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-                  Código de convite para anciãos
+                  {t("itinerary.inviteCode")}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <code className="text-2xl font-bold font-mono tracking-widest text-primary">
                     {congregation.invite_code}
                   </code>
                   <Button size="sm" variant="outline" onClick={copyCode}>
-                    Copiar
+                    {t("common.copy")}
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Compartilhe esse código com os anciãos para que entrem na congregação.
+                  {t("itinerary.inviteHint")}
                 </p>
               </div>
             </div>
@@ -377,27 +379,27 @@ function Page() {
 
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Calendar className="h-4 w-4" /> Visitas
+          <Calendar className="h-4 w-4" /> {t("itinerary.visits")}
         </h2>
         {isSuper && (
           <Dialog open={open} onOpenChange={setOpen}>
             <Button onClick={openNew}>
               <Plus className="h-4 w-4 mr-1" />
-              Nova visita
+              {t("itinerary.newVisit")}
             </Button>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>{editId ? "Editar visita" : "Nova visita"}</DialogTitle>
+                <DialogTitle>{editId ? t("itinerary.editVisit") : t("itinerary.newVisit")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
                 <div>
-                  <Label>Congregação</Label>
+                  <Label>{t("itinerary.congregation")}</Label>
                   <Select
                     value={form.congregation_id}
                     onValueChange={(v) => setForm({ ...form, congregation_id: v })}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Selecione…" />
+                      <SelectValue placeholder={t("itinerary.selectPlaceholder")}/>
                     </SelectTrigger>
                     <SelectContent>
                       {congs.map((c) => (
