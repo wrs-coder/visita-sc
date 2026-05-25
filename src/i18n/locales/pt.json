@@ -1,0 +1,63 @@
+{
+  "common": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "loading": "Carregando...",
+    "language": "Idioma"
+  },
+  "languages": {
+    "pt": "Português",
+    "en": "Inglês",
+    "es": "Espanhol"
+  },
+  "login": {
+    "appTitle": "Visita do Superintendente",
+    "signIn": "Entrar",
+    "identifierHelp": "Utilizador, e-mail ou ID do circuito",
+    "identifierLabel": "Utilizador / E-mail / ID do Circuito",
+    "identifierPlaceholder": "ex: joao_silva, joao@email.com ou AGO-12",
+    "password": "Senha",
+    "signingIn": "Entrando...",
+    "welcome": "Bem-vindo!",
+    "invalidCredentials": "Credenciais inválidas",
+    "newElder": "Sou ancião novo —",
+    "createAccessElder": "criar acesso",
+    "newSuper": "Sou superintendente novo —",
+    "createAccount": "criar conta",
+    "forgotPassword": "Esqueci minha senha",
+    "guestAccess": "Acesso Corpo de anciãos e ES",
+    "supportDev": "Apoie o Desenvolvedor ☕",
+    "aboutApp": "Sobre o Aplicativo"
+  },
+  "profile": {
+    "title": "Meu perfil",
+    "subtitle": "Atualize seus dados pessoais, e-mail e senha",
+    "personalData": "Dados pessoais",
+    "fullName": "Nome completo (opcional)",
+    "fullNamePlaceholder": "Seu nome completo",
+    "fullNameHelp": "Você pode preencher depois — não é obrigatório para usar o sistema.",
+    "saveName": "Salvar nome",
+    "nameUpdated": "Nome atualizado",
+    "circuit": "Circuito",
+    "circuitId": "Identificação do circuito",
+    "circuitHelp": "O superintendente de circuito não pertence a uma congregação fixa. Use este campo para registrar o código ou nome do circuito atual.",
+    "saveCircuit": "Salvar circuito",
+    "circuitUpdated": "Circuito atualizado",
+    "email": "E-mail (opcional, para recuperação de senha)",
+    "emailLabel": "E-mail",
+    "emailHelp": "Adicione um e-mail real para poder usar \"Esqueci minha senha\". Você receberá um link de confirmação no novo endereço.",
+    "updateEmail": "Atualizar e-mail",
+    "emailConfirm": "Confirme o novo e-mail na sua caixa de entrada para concluir a alteração.",
+    "changePassword": "Alterar senha",
+    "newPassword": "Nova senha",
+    "confirmPassword": "Confirmar nova senha",
+    "updatePassword": "Atualizar senha",
+    "passwordUpdated": "Senha atualizada",
+    "passwordMin": "A senha deve ter pelo menos 6 caracteres",
+    "passwordMismatch": "As senhas não coincidem",
+    "saveError": "Erro ao salvar",
+    "language": "Idioma do aplicativo",
+    "languageHelp": "Escolha o idioma da interface. A preferência é salva neste dispositivo."
+  }
+}
