@@ -38,6 +38,8 @@ import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
+import { useTranslation } from "react-i18next";
+
 
 
 export const Route = createFileRoute("/_app/dashboard")({
@@ -117,6 +119,7 @@ const NO_CURRENT_VISIT_VALUE = "__sem-visita__";
 
 function Dashboard() {
   const { profile, role, user } = useAuth();
+  const { t } = useTranslation();
   useActiveCongregation(); // mantém o hook montado para sincronizar contexto
   const [selected, setSelected] = useState<string | null>(null);
   const { visit } = useActiveVisit({
