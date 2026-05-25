@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth, ELDER_POSITION_LABELS, type ElderPosition } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { linkAccount } from "@/lib/auth.functions";
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/onboarding")({ component: Page });
 
 function Page() {
+  const { t } = useTranslation();
   const { user, loading, refresh, signOut } = useAuth();
   const fn = useServerFn(linkAccount);
   const nav = useNavigate();
@@ -31,19 +33,16 @@ function Page() {
     const trimmed = code.trim();
     if (!trimmed) return;
 
-    // Tenta primeiro como código de superintendente (validado no servidor — o
-    // código nunca trafega no bundle do cliente).
     setBusy(true);
     const superRes = await fn({ data: { mode: "superintendent", code: trimmed, fullName: fullName || undefined } });
     if (superRes.ok) {
       setBusy(false);
-      toast.success("Conta criada! Agora cadastre as congregações do circuito.");
+      toast.success(t("onboarding.superCreated"));
       await refresh();
       nav({ to: "/congregacoes" });
       return;
     }
 
-    // Não é código de SC → tenta como código de congregação (elder)
     const { data: cong } = await supabase
       .from("congregations")
       .select("id,is_active")
@@ -51,19 +50,19 @@ function Page() {
       .maybeSingle();
     setBusy(false);
 
-    if (!cong) { toast.error("Código inválido."); return; }
-    if (!cong.is_active) { toast.error("Esta congregação está inativa. Fale com o superintendente."); return; }
+    if (!cong) { toast.error(t("onboarding.invalidCode")); return; }
+    if (!cong.is_active) { toast.error(t("onboarding.inactiveCongregation")); return; }
     setStep("elder-position");
   };
 
   const submitElder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!position) { toast.error("Selecione sua designação."); return; }
+    if (!position) { toast.error(t("onboarding.selectPosition")); return; }
     setBusy(true);
     const res = await fn({ data: { mode: "elder", code: code.trim(), fullName: fullName || undefined, position: position as ElderPosition } });
     setBusy(false);
     if (!res.ok) { toast.error(res.error); return; }
-    toast.success("Bem-vindo à congregação!");
+    toast.success(t("onboarding.welcome"));
     await refresh();
     nav({ to: "/dashboard" });
   };
@@ -72,26 +71,24 @@ function Page() {
     <div className="min-h-screen bg-gradient-to-br from-primary to-primary-soft/40 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-elevated border-0">
         <CardContent className="p-6">
-          <h2 className="text-xl font-bold mb-2">Vamos configurar sua conta</h2>
+          <h2 className="text-xl font-bold mb-2">{t("onboarding.title")}</h2>
           <p className="text-sm text-muted-foreground mb-5">
-            {step === "code"
-              ? "Informe seu nome e o código fornecido pelo superintendente."
-              : "Selecione sua designação no corpo de anciãos."}
+            {step === "code" ? t("onboarding.subtitleCode") : t("onboarding.subtitleElder")}
           </p>
 
           {step === "code" && (
             <form onSubmit={submitCode} className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="fn">Nome completo</Label>
+                <Label htmlFor="fn">{t("onboarding.fullName")}</Label>
                 <Input id="fn" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="code">Código</Label>
-                <Input id="code" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="Código da congregação ou de superintendente" />
+                <Label htmlFor="code">{t("onboarding.code")}</Label>
+                <Input id="code" required value={code} onChange={(e) => setCode(e.target.value)} placeholder={t("onboarding.codePlaceholder")} />
               </div>
               <div className="flex gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => signOut().then(() => nav({ to: "/" }))} className="flex-1">Sair</Button>
-                <Button type="submit" disabled={busy} className="flex-1">{busy ? "Aguarde..." : "Continuar"}</Button>
+                <Button type="button" variant="outline" onClick={() => signOut().then(() => nav({ to: "/" }))} className="flex-1">{t("onboarding.exit")}</Button>
+                <Button type="submit" disabled={busy} className="flex-1">{busy ? t("onboarding.wait") : t("onboarding.continue")}</Button>
               </div>
             </form>
           )}
@@ -99,20 +96,20 @@ function Page() {
           {step === "elder-position" && (
             <form onSubmit={submitElder} className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="pos">Designação</Label>
+                <Label htmlFor="pos">{t("onboarding.position")}</Label>
                 <Select value={position} onValueChange={(v) => setPosition(v as ElderPosition)}>
-                  <SelectTrigger id="pos"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectTrigger id="pos"><SelectValue placeholder={t("common.select")} /></SelectTrigger>
                   <SelectContent>
                     {(Object.keys(ELDER_POSITION_LABELS) as ElderPosition[]).map((k) => (
                       <SelectItem key={k} value={k}>{ELDER_POSITION_LABELS[k]}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">Coordenador, Secretário e Sup. de Serviço podem editar; Corpo de Anciãos apenas visualiza.</p>
+                <p className="text-[11px] text-muted-foreground">{t("onboarding.positionHelp")}</p>
               </div>
               <div className="flex gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setStep("code")} className="flex-1">Voltar</Button>
-                <Button type="submit" disabled={busy} className="flex-1">{busy ? "Aguarde..." : "Entrar"}</Button>
+                <Button type="button" variant="outline" onClick={() => setStep("code")} className="flex-1">{t("onboarding.back")}</Button>
+                <Button type="submit" disabled={busy} className="flex-1">{busy ? t("onboarding.wait") : t("onboarding.enter")}</Button>
               </div>
             </form>
           )}

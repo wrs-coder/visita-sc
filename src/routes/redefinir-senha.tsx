@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { Logo } from "@/components/Logo";
 export const Route = createFileRoute("/redefinir-senha")({ component: ResetPasswordPage });
 
 function ResetPasswordPage() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const [pwd, setPwd] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -19,11 +21,9 @@ function ResetPasswordPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Supabase processa o token do hash automaticamente e dispara PASSWORD_RECOVERY
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
-    // Caso o evento já tenha ocorrido antes do listener
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) setReady(true);
     });
@@ -32,16 +32,16 @@ function ResetPasswordPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pwd.length < 6) { toast.error("A senha deve ter ao menos 6 caracteres"); return; }
-    if (pwd !== confirm) { toast.error("As senhas não coincidem"); return; }
+    if (pwd.length < 6) { toast.error(t("resetPassword.errPwdShort")); return; }
+    if (pwd !== confirm) { toast.error(t("resetPassword.errPwdMismatch")); return; }
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password: pwd });
     setBusy(false);
     if (error) {
-      toast.error("Não foi possível redefinir", { description: error.message });
+      toast.error(t("resetPassword.errUpdate"), { description: error.message });
       return;
     }
-    toast.success("Senha redefinida!", { description: "Você já pode usar sua nova senha." });
+    toast.success(t("resetPassword.success"), { description: t("resetPassword.successDesc") });
     nav({ to: "/dashboard" });
   };
 
@@ -52,26 +52,26 @@ function ResetPasswordPage() {
           <div className="mx-auto h-14 w-14 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center mb-4 overflow-hidden">
             <Logo className="h-10 w-10" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Definir nova senha</h1>
-          <p className="text-sm text-primary-foreground/80 mt-1">Escolha uma senha forte para sua conta</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("resetPassword.title")}</h1>
+          <p className="text-sm text-primary-foreground/80 mt-1">{t("resetPassword.subtitle")}</p>
         </div>
 
         <Card className="shadow-elevated border-0">
           <CardContent className="p-6">
             {!ready ? (
-              <p className="text-sm text-muted-foreground text-center">Validando link de recuperação...</p>
+              <p className="text-sm text-muted-foreground text-center">{t("resetPassword.validating")}</p>
             ) : (
               <form onSubmit={submit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="pwd">Nova senha</Label>
+                  <Label htmlFor="pwd">{t("resetPassword.newPassword")}</Label>
                   <Input id="pwd" type="password" required minLength={6} autoComplete="new-password" value={pwd} onChange={(e) => setPwd(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirm">Confirmar senha</Label>
+                  <Label htmlFor="confirm">{t("resetPassword.confirmPassword")}</Label>
                   <Input id="confirm" type="password" required minLength={6} autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
                 </div>
                 <Button type="submit" className="w-full h-11" disabled={busy}>
-                  <KeyRound className="mr-2 h-4 w-4" /> {busy ? "Salvando..." : "Redefinir senha"}
+                  <KeyRound className="mr-2 h-4 w-4" /> {busy ? t("resetPassword.saving") : t("resetPassword.submit")}
                 </Button>
               </form>
             )}
