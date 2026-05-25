@@ -231,39 +231,39 @@ function Page() {
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <Layers className="h-6 w-6" />Modelos de Reunião e Discurso
+            <Layers className="h-6 w-6" />{t("templates.meetingTalk.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Crie modelos reutilizáveis com Meio de Semana, Fim de Semana (vários temas), Pioneiros e Anciãos/Servos. {tpls.length}/{MAX} modelos.
+            {t("templates.meetingTalk.subtitle", { n: tpls.length, max: MAX })}
           </p>
         </div>
         {isSuper && (
           <div className="flex items-center gap-2 flex-wrap">
             <TemplateIOButtons
-              filenameBase={active?.name ?? "modelo-reuniao-discurso"}
+              filenameBase={active?.name ?? t("templates.exportMeetingTalk")}
               disabled={!active}
-              onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: "Selecione um modelo" }}
+              onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: t("templates.selectTemplate") }}
               onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await loadList(); return r; }}
             />
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
-                <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />Novo modelo</Button>
+                <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />{t("templates.newTemplate")}</Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
-                <DialogHeader><DialogTitle>Novo modelo</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>{t("templates.meetingTalk.newDialogTitle")}</DialogTitle></DialogHeader>
                 <div className="space-y-3">
                   <div>
-                    <Label>Nome</Label>
+                    <Label>{t("templates.name")}</Label>
                     <Input
                       className={`mt-1 ${newNameErr ? "border-destructive" : ""}`}
                       value={newName}
                       onChange={(e) => { setNewName(e.target.value); if (newNameErr) setNewNameErr(null); }}
-                      placeholder="Ex: Modelo padrão"
+                      placeholder={t("templates.meetingTalk.namePlaceholder")}
                       maxLength={120}
                     />
                     {newNameErr && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{newNameErr}</p>}
                   </div>
-                  <Button className="w-full" onClick={handleCreate} disabled={busy}>Criar</Button>
+                  <Button className="w-full" onClick={handleCreate} disabled={busy}>{t("common.create")}</Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -274,12 +274,12 @@ function Page() {
       <div className="grid md:grid-cols-[260px_1fr] gap-4">
         <Card><CardContent className="p-3 space-y-1">
           {tpls.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-3 text-center">Nenhum modelo ainda.</div>
-          ) : tpls.map((t) => (
-            <button key={t.id}
-              onClick={() => setActiveId(t.id)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === t.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-              <div className="truncate">{t.name}</div>
+            <div className="text-sm text-muted-foreground p-3 text-center">{t("templates.noTemplates")}</div>
+          ) : tpls.map((tp) => (
+            <button key={tp.id}
+              onClick={() => setActiveId(tp.id)}
+              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === tp.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
+              <div className="truncate">{tp.name}</div>
             </button>
           ))}
         </CardContent></Card>
@@ -287,7 +287,7 @@ function Page() {
         <div className="space-y-4">
           {!active ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
-              Selecione um modelo ou crie um novo.
+              {t("templates.selectOrCreate")}
             </CardContent></Card>
           ) : (
             <>
@@ -296,40 +296,40 @@ function Page() {
                 {isSuper ? (
                   <div className="flex gap-2 flex-wrap">
                     <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" />Renomear
+                      <Pencil className="h-3.5 w-3.5 mr-1" />{t("common.rename")}
                     </Button>
                     <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
-                      <Copy className="h-3.5 w-3.5 mr-1" />Duplicar
+                      <Copy className="h-3.5 w-3.5 mr-1" />{t("common.duplicate")}
                     </Button>
                     <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
-                      <Trash2 className="h-3.5 w-3.5 mr-1" />Excluir
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />{t("common.delete")}
                     </Button>
                     <Button size="sm" onClick={handleSave} disabled={busy}>
-                      <Save className="h-3.5 w-3.5 mr-1" />Salvar modelo
+                      <Save className="h-3.5 w-3.5 mr-1" />{t("templates.meetingTalk.saveTemplate")}
                     </Button>
                   </div>
                 ) : (
-                  <span className="text-xs text-muted-foreground">Somente visualização</span>
+                  <span className="text-xs text-muted-foreground">{t("templates.viewOnly")}</span>
                 )}
               </CardContent></Card>
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <div className="sm:hidden">
                   <Select value={activeTab} onValueChange={setActiveTab}>
-                    <SelectTrigger className="w-full"><SelectValue placeholder="Escolha a sub-aba" /></SelectTrigger>
+                    <SelectTrigger className="w-full"><SelectValue placeholder={t("templates.meetingTalk.subTabPlaceholder")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="meio">Meio de Semana</SelectItem>
-                      <SelectItem value="fim">Fim de Semana</SelectItem>
-                      <SelectItem value="pio">Pioneiros</SelectItem>
-                      <SelectItem value="anc">Anciãos e Servos Ministeriais</SelectItem>
+                      <SelectItem value="meio">{t("templates.meetingTalk.tabMidweek")}</SelectItem>
+                      <SelectItem value="fim">{t("templates.meetingTalk.tabWeekend")}</SelectItem>
+                      <SelectItem value="pio">{t("templates.meetingTalk.tabPioneers")}</SelectItem>
+                      <SelectItem value="anc">{t("templates.meetingTalk.tabElders")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <TabsList className="hidden sm:grid grid-cols-4 w-full h-auto gap-1 bg-transparent p-1">
-                  <TabsTrigger value="meio" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Meio de Semana</TabsTrigger>
-                  <TabsTrigger value="fim" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Fim de Semana</TabsTrigger>
-                  <TabsTrigger value="pio" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Pioneiros</TabsTrigger>
-                  <TabsTrigger value="anc" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Anciãos e Servos</TabsTrigger>
+                  <TabsTrigger value="meio" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t("templates.meetingTalk.tabMidweek")}</TabsTrigger>
+                  <TabsTrigger value="fim" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t("templates.meetingTalk.tabWeekend")}</TabsTrigger>
+                  <TabsTrigger value="pio" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t("templates.meetingTalk.tabPioneers")}</TabsTrigger>
+                  <TabsTrigger value="anc" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t("templates.meetingTalk.tabEldersShort")}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="meio" className="mt-3">
