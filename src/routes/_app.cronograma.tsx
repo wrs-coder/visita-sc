@@ -88,6 +88,8 @@ interface Event {
 function Page() {
   const { visit } = useActiveVisit();
   const { role, user, profile } = useAuth();
+  const { t, i18n } = useTranslation();
+  const locale = resolveLocale(i18n.language);
   const userId = user?.id;
   const canEdit = role === "superintendent";
   const [events, setEvents] = useState<Event[]>([]);
