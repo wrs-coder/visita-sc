@@ -16,6 +16,7 @@ import { Plus, Check, Trash2, Loader2, Pencil, Download } from "lucide-react";
 import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
+import { saveBlob } from "@/lib/share";
 
 export const Route = createFileRoute("/_app/checklist")({ component: Page });
 
