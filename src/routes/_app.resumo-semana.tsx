@@ -36,6 +36,7 @@ function Page() {
   const activeCong = useActiveCongregation();
   const nav = useNavigate();
   const fn = useServerFn(getSuperVisitSummary);
+  const deactivateFn = useServerFn(deactivateScheduleEvent);
   const [snap, setSnap] = useState<VisitSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   // ID candidato a ser ocultado localmente (evento "fantasma" que persiste em cache).
