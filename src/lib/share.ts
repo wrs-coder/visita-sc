@@ -24,11 +24,17 @@ interface SaveOptions {
 }
 
 function hasSaveFilePicker(): boolean {
-  return typeof window !== "undefined" && typeof (window as unknown as { showSaveFilePicker?: unknown }).showSaveFilePicker === "function";
+  return (
+    typeof window !== "undefined" &&
+    typeof (window as unknown as { showSaveFilePicker?: unknown }).showSaveFilePicker === "function"
+  );
 }
 
 function hasOpenFilePicker(): boolean {
-  return typeof window !== "undefined" && typeof (window as unknown as { showOpenFilePicker?: unknown }).showOpenFilePicker === "function";
+  return (
+    typeof window !== "undefined" &&
+    typeof (window as unknown as { showOpenFilePicker?: unknown }).showOpenFilePicker === "function"
+  );
 }
 
 function canShareFiles(file: File): boolean {
@@ -52,13 +58,21 @@ function downloadAnchor(filename: string, blob: Blob) {
 function isCapacitorNative(): boolean {
   try {
     if (Capacitor.isNativePlatform()) return true;
-  } catch { /* noop */ }
+  } catch {
+    /* noop */
+  }
   if (typeof window === "undefined") return false;
-  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor;
+  const cap = (
+    window as unknown as {
+      Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
+    }
+  ).Capacitor;
   try {
     if (typeof cap?.isNativePlatform === "function") return cap.isNativePlatform();
     if (typeof cap?.getPlatform === "function") return cap.getPlatform() !== "web";
-  } catch { /* noop */ }
+  } catch {
+    /* noop */
+  }
   return Boolean((window as unknown as { androidBridge?: unknown }).androidBridge);
 }
 
@@ -88,7 +102,8 @@ async function saveViaCapacitor(blob: Blob, filename: string): Promise<SaveOutco
     import("@capacitor/share"),
   ]);
   const data = await blobToBase64(blob);
-  const safeFilename = filename.replace(/[\\/:*?"<>|]+/g, "-").replace(/^\.+/, "file") || "export.dat";
+  const safeFilename =
+    filename.replace(/[\\/:*?"<>|]+/g, "-").replace(/^\.+/, "file") || "export.dat";
   const path = `VisitaSC/${safeFilename}`;
   let directory = Directory.Documents;
 
@@ -99,7 +114,9 @@ async function saveViaCapacitor(blob: Blob, filename: string): Promise<SaveOutco
     try {
       await Filesystem.writeFile({ path, data, directory, recursive: true });
     } catch (externalError) {
-      throw new Error(`Não foi possível salvar o arquivo no armazenamento nativo. ${(externalError as Error)?.message || (documentsError as Error)?.message || ""}`.trim());
+      throw new Error(
+        `Não foi possível salvar o arquivo no armazenamento nativo. ${(externalError as Error)?.message || (documentsError as Error)?.message || ""}`.trim(),
+      );
     }
   }
 
@@ -137,10 +154,20 @@ export async function saveBlob(blob: Blob, opts: SaveOptions): Promise<SaveOutco
   // 1. File System Access API — true folder picker
   if (hasSaveFilePicker()) {
     try {
-      const types = pickerTypes ?? [{ description: filename, accept: { [mimeType]: [`.${filename.split(".").pop() ?? "bin"}`] } }];
-      const handle = await (window as unknown as {
-        showSaveFilePicker: (o: { suggestedName: string; types: typeof types }) => Promise<FileSystemFileHandle>;
-      }).showSaveFilePicker({ suggestedName: filename, types });
+      const types = pickerTypes ?? [
+        {
+          description: filename,
+          accept: { [mimeType]: [`.${filename.split(".").pop() ?? "bin"}`] },
+        },
+      ];
+      const handle = await (
+        window as unknown as {
+          showSaveFilePicker: (o: {
+            suggestedName: string;
+            types: typeof types;
+          }) => Promise<FileSystemFileHandle>;
+        }
+      ).showSaveFilePicker({ suggestedName: filename, types });
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
@@ -178,7 +205,10 @@ export async function saveBlob(blob: Blob, opts: SaveOptions): Promise<SaveOutco
  * existing call sites. Returns "shared" | "downloaded" for legacy callers
  * — the new "saved" outcome maps to "downloaded" semantics for the UI.
  */
-export async function shareJsonFile(filename: string, payload: unknown): Promise<"shared" | "downloaded"> {
+export async function shareJsonFile(
+  filename: string,
+  payload: unknown,
+): Promise<"shared" | "downloaded"> {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const out = await saveBlob(blob, {
     filename,
@@ -195,14 +225,28 @@ export async function shareJsonFile(filename: string, payload: unknown): Promise
 export async function pickFile(accept: string): Promise<File | null> {
   if (hasOpenFilePicker()) {
     try {
-      const exts = accept.split(",").map((s) => s.trim()).filter((s) => s.startsWith("."));
-      const mimes = accept.split(",").map((s) => s.trim()).filter((s) => !s.startsWith("."));
+      const exts = accept
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.startsWith("."));
+      const mimes = accept
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => !s.startsWith("."));
       const acceptObj: Record<string, string[]> = {};
       for (const m of mimes) acceptObj[m] = exts.length ? exts : [];
       if (!Object.keys(acceptObj).length) acceptObj["*/*"] = exts;
-      const [handle] = await (window as unknown as {
-        showOpenFilePicker: (o: { multiple: boolean; types: Array<{ description: string; accept: Record<string, string[]> }> }) => Promise<FileSystemFileHandle[]>;
-      }).showOpenFilePicker({ multiple: false, types: [{ description: "Arquivo", accept: acceptObj }] });
+      const [handle] = await (
+        window as unknown as {
+          showOpenFilePicker: (o: {
+            multiple: boolean;
+            types: Array<{ description: string; accept: Record<string, string[]> }>;
+          }) => Promise<FileSystemFileHandle[]>;
+        }
+      ).showOpenFilePicker({
+        multiple: false,
+        types: [{ description: "Arquivo", accept: acceptObj }],
+      });
       return await handle.getFile();
     } catch (err) {
       if ((err as Error)?.name === "AbortError") return null;
