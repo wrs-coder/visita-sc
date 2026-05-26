@@ -254,6 +254,9 @@ function AppLayout() {
                     circuit={profile?.circuit ?? null}
                   />
                 </div>
+                <div className="p-3 pb-0">
+                  <OfflineModeButton />
+                </div>
                 <div className="p-3 flex-1 overflow-y-auto overscroll-contain">
                   <Nav onClick={() => setMobileMenuOpen(false)} />
                 </div>
@@ -292,6 +295,9 @@ function AppLayout() {
               circuit={profile?.circuit ?? null}
             />
           </div>
+          <div className="p-3 pb-0">
+            <OfflineModeButton />
+          </div>
           <div className="p-3 flex-1 overflow-y-auto overscroll-contain min-h-0">
             <Nav />
           </div>
@@ -326,7 +332,9 @@ function AppLayout() {
                 </Card>
               </div>
             ) : (
-              <Outlet />
+              <ChunkErrorBoundary>
+                <Outlet />
+              </ChunkErrorBoundary>
             )}
           </div>
         </main>
