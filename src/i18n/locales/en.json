@@ -1105,6 +1105,10 @@
   },
   "weekSummary": {
     "subtitle": "Full view of the visit week",
-    "selectCongregation": "Select an active congregation to see the summary."
+    "selectCongregation": "Select an active congregation to see the summary.",
+    "editEvent": "Edit event",
+    "eventGone": "This event has been completed or removed.",
+    "offlineUnavailable": "Event unavailable in Offline Mode.",
+    "notEditableHere": "This item cannot be edited from the schedule."
   }
 }
