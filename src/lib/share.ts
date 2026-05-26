@@ -44,6 +44,9 @@ function canShareFiles(file: File): boolean {
 }
 
 function downloadAnchor(filename: string, blob: Blob) {
+  if (isCapacitorNative()) {
+    throw new Error("Exportação nativa não pode usar download do navegador.");
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
