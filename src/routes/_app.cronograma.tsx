@@ -67,7 +67,12 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
 
-export const Route = createFileRoute("/_app/cronograma")({ component: Page });
+export const Route = createFileRoute("/_app/cronograma")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    event: typeof search.event === "string" ? search.event : undefined,
+  }),
+  component: Page,
+});
 
 const LOCALES: Record<string, Locale> = { pt: ptBR, en: enUS, es };
 const resolveLocale = (lng: string): Locale => LOCALES[lng?.slice(0, 2)] ?? ptBR;
