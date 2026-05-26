@@ -145,16 +145,21 @@ function Page() {
     const today = format(new Date(), "yyyy-MM-dd");
 
     const load = async () => {
+      // Filtra na origem: eventos concluídos (status=completed) não devem voltar à UI.
       // For superintendent → own events. For others → events visible to them (RLS filters).
       let query = supabase
         .from("circuit_schedule_events")
         .select("*")
+        .neq("status", "completed")
         .gte("event_date", today)
         .order("event_date")
         .order("start_time");
       if (canEdit) query = query.eq("superintendent_id", userId);
       const { data } = await query;
-      if (!cancelled) setEvents((data ?? []) as Event[]);
+      if (!cancelled) {
+        const hidden = getHiddenEventIds();
+        setEvents(((data ?? []) as Event[]).filter((e) => !hidden.has(e.id)));
+      }
     };
 
     const loadCongs = async () => {
