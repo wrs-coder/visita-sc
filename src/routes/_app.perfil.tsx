@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { useAutoBackup } from "@/hooks/use-auto-backup";
 import { supabase } from "@/integrations/supabase/client";
 import { exportFullBackup, restoreFullBackup } from "@/lib/backup.functions";
-import { shareJsonFile, readJsonFile } from "@/lib/share";
+import { shareJsonFile, readJsonFile, pickFile } from "@/lib/share";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ function Page() {
   const autoBackup = useAutoBackup();
   const fnExportBackup = useServerFn(exportFullBackup);
   const fnRestoreBackup = useServerFn(restoreFullBackup);
-  const restoreInputRef = useRef<HTMLInputElement>(null);
+  
   const [pendingRestore, setPendingRestore] = useState<unknown | null>(null);
   const [busyBackup, setBusyBackup] = useState<null | "export" | "restore">(null);
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
@@ -57,8 +57,6 @@ function Page() {
       setPendingRestore(json);
     } catch (e) {
       toast.error(t("profile.invalidFile"), { description: (e as Error).message });
-    } finally {
-      if (restoreInputRef.current) restoreInputRef.current.value = "";
     }
   };
 
@@ -215,13 +213,16 @@ function Page() {
                 {busyBackup === "export" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
                 {t("profile.generateBackup")}
               </Button>
-              <Button variant="outline" onClick={() => restoreInputRef.current?.click()} disabled={busyBackup !== null}>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  const f = await pickFile("application/json,.json");
+                  if (f) pickRestoreFile(f);
+                }}
+                disabled={busyBackup !== null}
+              >
                 <Upload className="h-4 w-4 mr-1" />{t("profile.restoreBackup")}
               </Button>
-              <input
-                ref={restoreInputRef} type="file" accept="application/json,.json" className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) pickRestoreFile(f); }}
-              />
             </div>
             <p className="text-xs text-muted-foreground">{t("profile.backupIncludes")}</p>
           </CardContent>

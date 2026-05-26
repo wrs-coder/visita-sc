@@ -16,6 +16,7 @@ import { Plus, Check, Trash2, Loader2, Pencil, Download } from "lucide-react";
 import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
+import { saveBlob } from "@/lib/share";
 
 export const Route = createFileRoute("/_app/checklist")({ component: Page });
 
@@ -198,12 +199,10 @@ function exportCsv(items: Item[], visitTitle: string, t: (k: string) => string) 
   ]);
   const csv = "\uFEFF" + [header, ...rows].map((r) => r.map((c) => csvEscape(String(c))).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `checklist-${visitTitle.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const filename = `checklist-${visitTitle.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.csv`;
+  void saveBlob(blob, {
+    filename,
+    mimeType: "text/csv",
+    pickerTypes: [{ description: "CSV", accept: { "text/csv": [".csv"] } }],
+  });
 }

@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { shareJsonFile, readJsonFile } from "@/lib/share";
+import { shareJsonFile, readJsonFile, pickFile } from "@/lib/share";
 
 interface Props {
   filenameBase: string;
@@ -14,7 +14,7 @@ interface Props {
 
 export function TemplateIOButtons({ filenameBase, onExport, onImport, disabled }: Props) {
   const { t } = useTranslation();
-  const inputRef = useRef<HTMLInputElement>(null);
+  
   const [busy, setBusy] = useState<null | "export" | "import">(null);
 
   const doExport = async () => {
@@ -43,8 +43,12 @@ export function TemplateIOButtons({ filenameBase, onExport, onImport, disabled }
       toast.error(t("templateIO.invalidFile"), { description: (e as Error).message });
     } finally {
       setBusy(null);
-      if (inputRef.current) inputRef.current.value = "";
     }
+  };
+
+  const triggerImport = async () => {
+    const f = await pickFile("application/json,.json");
+    if (f) doImport(f);
   };
 
   return (
@@ -53,14 +57,10 @@ export function TemplateIOButtons({ filenameBase, onExport, onImport, disabled }
         {busy === "export" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
         {t("templateIO.export")}
       </Button>
-      <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={disabled || busy !== null}>
+      <Button type="button" variant="outline" size="sm" onClick={triggerImport} disabled={disabled || busy !== null}>
         {busy === "import" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Upload className="h-4 w-4 mr-1" />}
         {t("templateIO.import")}
       </Button>
-      <input
-        ref={inputRef} type="file" accept="application/json,.json" className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) doImport(f); }}
-      />
     </div>
   );
 }
