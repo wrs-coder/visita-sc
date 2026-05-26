@@ -111,6 +111,9 @@ function AppLayout() {
       id: "visita",
       label: t("sidebar.sectionVisita"),
       items: [
+        ...(role === "superintendent"
+          ? [{ to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList }]
+          : []),
         { to: "/escala", label: t("sidebar.fieldStudies"), icon: Users },
         { to: "/reunioes-discursos", label: t("sidebar.meetingsTalks"), icon: MapPin },
         { to: "/refeicoes", label: t("sidebar.meals"), icon: UtensilsCrossed },
