@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { getSuperVisitSummary } from "@/lib/visit-summary.functions";
+import { deactivateScheduleEvent } from "@/lib/schedule-cleanup.functions";
 import { VisitSummaryView, type VisitSnapshot } from "@/components/visit-summary/VisitSummaryView";
 import { getHiddenEventIds, hideEventId } from "@/lib/hidden-events";
 
