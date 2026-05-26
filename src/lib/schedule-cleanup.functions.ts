@@ -1,9 +1,8 @@
-// Server fn que permite ao Superintendente desativar (soft-delete) uma linha
+// Server fn que permite ao Superintendente excluir permanentemente uma linha
 // órfã em `schedule_events` que não é mais editável pelo cronograma do
 // circuito mas continua aparecendo para o corpo de anciãos / esposa do
-// superintendente via guest snapshot. Nenhuma alteração de schema ou RLS:
-// apenas UPDATE `is_active=false` autorizado pelas policies existentes
-// ("super manages schedule" usa is_superintendent_of).
+// superintendente via guest snapshot. RLS "super deletes ..."/"super manages
+// schedule" (usa is_superintendent_of) autoriza o DELETE.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -17,7 +16,7 @@ export const deactivateScheduleEvent = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { error } = await supabase
       .from("schedule_events")
-      .update({ is_active: false })
+      .delete()
       .eq("id", data.eventId);
     if (error) {
       return { ok: false as const, error: error.message };
