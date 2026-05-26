@@ -1,6 +1,9 @@
 // Unified file save / pick helpers.
 //
 // Strategy (in order of preference, with graceful fallbacks):
+//   0. Capacitor native APK — strictly writes Base64 data with Capacitor
+//      Filesystem and opens the native Share sheet. No object URLs, no anchors,
+//      and no WebView downloads are used while running natively.
 //   1. File System Access API (`showSaveFilePicker` / `showOpenFilePicker`) —
 //      lets the user choose ANY folder on desktop Chromium browsers.
 //   2. Web Share API with files — on mobile (incl. Capacitor WebView) opens
@@ -8,6 +11,8 @@
 //      the file anywhere or save it to Downloads.
 //   3. Anchor download fallback — saves directly to the device Downloads
 //      folder, where the user can locate it via the file manager.
+
+import { Capacitor } from "@capacitor/core";
 
 type SaveOutcome = "saved" | "shared" | "downloaded";
 
@@ -19,11 +24,17 @@ interface SaveOptions {
 }
 
 function hasSaveFilePicker(): boolean {
-  return typeof window !== "undefined" && typeof (window as unknown as { showSaveFilePicker?: unknown }).showSaveFilePicker === "function";
+  return (
+    typeof window !== "undefined" &&
+    typeof (window as unknown as { showSaveFilePicker?: unknown }).showSaveFilePicker === "function"
+  );
 }
 
 function hasOpenFilePicker(): boolean {
-  return typeof window !== "undefined" && typeof (window as unknown as { showOpenFilePicker?: unknown }).showOpenFilePicker === "function";
+  return (
+    typeof window !== "undefined" &&
+    typeof (window as unknown as { showOpenFilePicker?: unknown }).showOpenFilePicker === "function"
+  );
 }
 
 function canShareFiles(file: File): boolean {
@@ -33,6 +44,9 @@ function canShareFiles(file: File): boolean {
 }
 
 function downloadAnchor(filename: string, blob: Blob) {
+  if (isCapacitorNative()) {
+    throw new Error("Exportação nativa não pode usar download do navegador.");
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -45,14 +59,24 @@ function downloadAnchor(filename: string, blob: Blob) {
 }
 
 function isCapacitorNative(): boolean {
-  if (typeof window === "undefined") return false;
-  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor;
-  if (!cap) return false;
   try {
-    if (typeof cap.isNativePlatform === "function") return cap.isNativePlatform();
-    if (typeof cap.getPlatform === "function") return cap.getPlatform() !== "web";
-  } catch { /* noop */ }
-  return false;
+    if (Capacitor.isNativePlatform()) return true;
+  } catch {
+    /* noop */
+  }
+  if (typeof window === "undefined") return false;
+  const cap = (
+    window as unknown as {
+      Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
+    }
+  ).Capacitor;
+  try {
+    if (typeof cap?.isNativePlatform === "function") return cap.isNativePlatform();
+    if (typeof cap?.getPlatform === "function") return cap.getPlatform() !== "web";
+  } catch {
+    /* noop */
+  }
+  return Boolean((window as unknown as { androidBridge?: unknown }).androidBridge);
 }
 
 function blobToBase64(blob: Blob): Promise<string> {
@@ -69,44 +93,49 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 /**
- * Capacitor-native save: writes the blob to the app's Cache directory
- * and opens the native Share sheet so the user can save it to Files,
- * Drive, email, etc. Returns true on success, false to allow fallback.
+ * Capacitor-native save: converts the already-generated export blob to Base64,
+ * writes it through the native Filesystem plugin, then opens the native Share
+ * sheet with the persisted file URI. This helper is intentionally read-only
+ * with respect to app data: it only consumes the provided Blob and never writes
+ * to local database stores, sync queues, IndexedDB records, or timestamps.
  */
-async function saveViaCapacitor(blob: Blob, filename: string, mimeType: string): Promise<boolean> {
-  if (!isCapacitorNative()) return false;
+async function saveViaCapacitor(blob: Blob, filename: string): Promise<SaveOutcome> {
+  const [{ Filesystem, Directory }, { Share }] = await Promise.all([
+    import("@capacitor/filesystem"),
+    import("@capacitor/share"),
+  ]);
+  const data = await blobToBase64(blob);
+  const safeFilename =
+    filename.replace(/[\\/:*?"<>|]+/g, "-").replace(/^\.+/, "file") || "export.dat";
+  const path = `VisitaSC/${safeFilename}`;
+  let directory = Directory.Documents;
+
   try {
-    const [{ Filesystem, Directory }, { Share }] = await Promise.all([
-      import("@capacitor/filesystem"),
-      import("@capacitor/share"),
-    ]);
-    const data = await blobToBase64(blob);
-    const written = await Filesystem.writeFile({
-      path: filename,
-      data,
-      directory: Directory.Cache,
-    });
+    await Filesystem.writeFile({ path, data, directory, recursive: true });
+  } catch (documentsError) {
+    directory = Directory.External;
     try {
-      await Share.share({
-        title: filename,
-        url: written.uri,
-        dialogTitle: filename,
-      });
-    } catch (err) {
-      // User cancel = success; only treat real failures as fallback
-      const name = (err as Error)?.name ?? "";
-      const msg = (err as Error)?.message ?? "";
-      if (!/cancel/i.test(name) && !/cancel/i.test(msg)) {
-        // Fall back to copying to Documents so file is at least findable
-        try {
-          await Filesystem.writeFile({ path: filename, data, directory: Directory.Documents });
-        } catch { /* ignore */ }
-      }
+      await Filesystem.writeFile({ path, data, directory, recursive: true });
+    } catch (externalError) {
+      throw new Error(
+        `Não foi possível salvar o arquivo no armazenamento nativo. ${(externalError as Error)?.message || (documentsError as Error)?.message || ""}`.trim(),
+      );
     }
-    return true;
-  } catch {
-    return false;
   }
+
+  const { uri } = await Filesystem.getUri({ path, directory });
+  try {
+    await Share.share({
+      title: safeFilename,
+      url: uri,
+      dialogTitle: safeFilename,
+    });
+  } catch (err) {
+    const name = (err as Error)?.name ?? "";
+    const msg = (err as Error)?.message ?? "";
+    if (!/cancel/i.test(name) && !/cancel/i.test(msg)) throw err;
+  }
+  return "shared";
 }
 
 /**
@@ -118,20 +147,30 @@ export async function saveBlob(blob: Blob, opts: SaveOptions): Promise<SaveOutco
   const { filename, mimeType, pickerTypes } = opts;
 
   // 0. Capacitor native (APK) — use Filesystem + Share plugin so the user
-  //    can save anywhere or send the file, instead of an invisible WebView download.
+  //    can save anywhere or send the file, instead of an invisible WebView
+  //    download. In native mode, never fall through to object URLs, anchors,
+  //    or any browser download behavior.
   if (isCapacitorNative()) {
-    const ok = await saveViaCapacitor(blob, filename, mimeType);
-    if (ok) return "shared";
-    // fall through to web fallbacks
+    return saveViaCapacitor(blob, filename);
   }
 
   // 1. File System Access API — true folder picker
   if (hasSaveFilePicker()) {
     try {
-      const types = pickerTypes ?? [{ description: filename, accept: { [mimeType]: [`.${filename.split(".").pop() ?? "bin"}`] } }];
-      const handle = await (window as unknown as {
-        showSaveFilePicker: (o: { suggestedName: string; types: typeof types }) => Promise<FileSystemFileHandle>;
-      }).showSaveFilePicker({ suggestedName: filename, types });
+      const types = pickerTypes ?? [
+        {
+          description: filename,
+          accept: { [mimeType]: [`.${filename.split(".").pop() ?? "bin"}`] },
+        },
+      ];
+      const handle = await (
+        window as unknown as {
+          showSaveFilePicker: (o: {
+            suggestedName: string;
+            types: typeof types;
+          }) => Promise<FileSystemFileHandle>;
+        }
+      ).showSaveFilePicker({ suggestedName: filename, types });
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
@@ -169,7 +208,10 @@ export async function saveBlob(blob: Blob, opts: SaveOptions): Promise<SaveOutco
  * existing call sites. Returns "shared" | "downloaded" for legacy callers
  * — the new "saved" outcome maps to "downloaded" semantics for the UI.
  */
-export async function shareJsonFile(filename: string, payload: unknown): Promise<"shared" | "downloaded"> {
+export async function shareJsonFile(
+  filename: string,
+  payload: unknown,
+): Promise<"shared" | "downloaded"> {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const out = await saveBlob(blob, {
     filename,
@@ -186,14 +228,28 @@ export async function shareJsonFile(filename: string, payload: unknown): Promise
 export async function pickFile(accept: string): Promise<File | null> {
   if (hasOpenFilePicker()) {
     try {
-      const exts = accept.split(",").map((s) => s.trim()).filter((s) => s.startsWith("."));
-      const mimes = accept.split(",").map((s) => s.trim()).filter((s) => !s.startsWith("."));
+      const exts = accept
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.startsWith("."));
+      const mimes = accept
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => !s.startsWith("."));
       const acceptObj: Record<string, string[]> = {};
       for (const m of mimes) acceptObj[m] = exts.length ? exts : [];
       if (!Object.keys(acceptObj).length) acceptObj["*/*"] = exts;
-      const [handle] = await (window as unknown as {
-        showOpenFilePicker: (o: { multiple: boolean; types: Array<{ description: string; accept: Record<string, string[]> }> }) => Promise<FileSystemFileHandle[]>;
-      }).showOpenFilePicker({ multiple: false, types: [{ description: "Arquivo", accept: acceptObj }] });
+      const [handle] = await (
+        window as unknown as {
+          showOpenFilePicker: (o: {
+            multiple: boolean;
+            types: Array<{ description: string; accept: Record<string, string[]> }>;
+          }) => Promise<FileSystemFileHandle[]>;
+        }
+      ).showOpenFilePicker({
+        multiple: false,
+        types: [{ description: "Arquivo", accept: acceptObj }],
+      });
       return await handle.getFile();
     } catch (err) {
       if ((err as Error)?.name === "AbortError") return null;
