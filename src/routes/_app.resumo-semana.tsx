@@ -93,17 +93,18 @@ function Page() {
     async (snapshotEventId: string) => {
       const circuitId = extractCircuitId(snapshotEventId);
       if (!circuitId) {
-        toast.info(t("weekSummary.notEditableHere"));
+        // Evento veio de schedule_events (escopo da visita) — não é editável
+        // pelo cronograma do circuito. Oferece ocultar localmente para limpar
+        // resíduos de eventos antigos que persistem na visita ativa.
+        setCorruptId(snapshotEventId);
         return;
       }
 
       const online = typeof navigator === "undefined" ? true : navigator.onLine;
 
       if (!online) {
-        // Modo offline: confia no snapshot já em tela (não tenta network).
         const stillExists = snap?.schedule.some((e) => e.id === snapshotEventId);
         if (!stillExists) {
-          // Sem rede: não conseguimos confirmar — oferece remoção local.
           setCorruptId(snapshotEventId);
           return;
         }
@@ -111,18 +112,16 @@ function Page() {
         return;
       }
 
-      // Online: revalida no servidor (limpando cache) antes de navegar.
       if (!activeCong?.id) return;
       const fresh = await load(activeCong.id);
       const stillExists = fresh?.schedule.some((e) => e.id === snapshotEventId);
       if (!stillExists) {
-        // Evento sumiu na fonte — possivelmente concluído/excluído mas persistiu em cache.
         setCorruptId(snapshotEventId);
         return;
       }
       nav({ to: "/cronograma", search: { event: circuitId } as never });
     },
-    [activeCong?.id, load, nav, snap, t],
+    [activeCong?.id, load, nav, snap],
   );
 
   const confirmHide = useCallback(() => {
