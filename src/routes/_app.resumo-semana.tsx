@@ -1,13 +1,24 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getSuperVisitSummary } from "@/lib/visit-summary.functions";
 import { VisitSummaryView, type VisitSnapshot } from "@/components/visit-summary/VisitSummaryView";
+import { getHiddenEventIds, hideEventId } from "@/lib/hidden-events";
 
 export const Route = createFileRoute("/_app/resumo-semana")({ component: Page });
 
@@ -26,6 +37,10 @@ function Page() {
   const fn = useServerFn(getSuperVisitSummary);
   const [snap, setSnap] = useState<VisitSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
+  // ID candidato a ser ocultado localmente (evento "fantasma" que persiste em cache).
+  const [corruptId, setCorruptId] = useState<string | null>(null);
+  // Bump força reaplicação do filtro de IDs ocultos sem refetch.
+  const [hiddenBump, setHiddenBump] = useState(0);
 
   // Redireciona se não for superintendente — esta tela é exclusiva do super.
   useEffect(() => {
@@ -63,6 +78,17 @@ function Page() {
     return () => window.removeEventListener("focus", onFocus);
   }, [activeCong?.id, load]);
 
+  // Aplica o filtro local de IDs ocultos sobre o snapshot já carregado.
+  // Não muta a referência original do `snap` — apenas deriva uma cópia segura.
+  const filteredSnap = useMemo<VisitSnapshot | null>(() => {
+    if (!snap) return null;
+    const hidden = getHiddenEventIds();
+    if (hidden.size === 0) return snap;
+    return { ...snap, schedule: snap.schedule.filter((e) => !hidden.has(e.id)) };
+    // hiddenBump força recomputação após hideEventId
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snap, hiddenBump]);
+
   const handleEditEvent = useCallback(
     async (snapshotEventId: string) => {
       const circuitId = extractCircuitId(snapshotEventId);
@@ -77,7 +103,8 @@ function Page() {
         // Modo offline: confia no snapshot já em tela (não tenta network).
         const stillExists = snap?.schedule.some((e) => e.id === snapshotEventId);
         if (!stillExists) {
-          toast.error(t("weekSummary.offlineUnavailable"));
+          // Sem rede: não conseguimos confirmar — oferece remoção local.
+          setCorruptId(snapshotEventId);
           return;
         }
         nav({ to: "/cronograma", search: { event: circuitId } as never });
@@ -89,13 +116,22 @@ function Page() {
       const fresh = await load(activeCong.id);
       const stillExists = fresh?.schedule.some((e) => e.id === snapshotEventId);
       if (!stillExists) {
-        toast.error(t("weekSummary.eventGone"));
+        // Evento sumiu na fonte — possivelmente concluído/excluído mas persistiu em cache.
+        setCorruptId(snapshotEventId);
         return;
       }
       nav({ to: "/cronograma", search: { event: circuitId } as never });
     },
     [activeCong?.id, load, nav, snap, t],
   );
+
+  const confirmHide = useCallback(() => {
+    if (!corruptId) return;
+    hideEventId(corruptId);
+    setCorruptId(null);
+    setHiddenBump((n) => n + 1);
+    toast.success(t("weekSummary.removedLocally"));
+  }, [corruptId, t]);
 
   if (!activeCong) {
     return (
@@ -110,7 +146,7 @@ function Page() {
     );
   }
 
-  if (loading || !snap) {
+  if (loading || !filteredSnap) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -123,14 +159,29 @@ function Page() {
       <div>
         <h1 className="text-2xl md:text-3xl font-bold">{t("sidebar.weekSummary")}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {snap.congregation.name} • {t("weekSummary.subtitle")}
+          {filteredSnap.congregation.name} • {t("weekSummary.subtitle")}
         </p>
       </div>
       <VisitSummaryView
-        snap={snap}
+        snap={filteredSnap}
         onRefresh={() => activeCong?.id && load(activeCong.id)}
         onEditEvent={handleEditEvent}
       />
+
+      <AlertDialog open={!!corruptId} onOpenChange={(o) => !o && setCorruptId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("weekSummary.corruptTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("weekSummary.corruptConfirm")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmHide}>
+              {t("weekSummary.removeLocal")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
