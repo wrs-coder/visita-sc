@@ -66,6 +66,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
+import { getHiddenEventIds } from "@/lib/hidden-events";
 
 export const Route = createFileRoute("/_app/cronograma")({
   validateSearch: (search: Record<string, unknown>) => ({
