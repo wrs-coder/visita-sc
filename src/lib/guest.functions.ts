@@ -81,7 +81,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       return (a.start_time ?? "").localeCompare(b.start_time ?? "");
     });
 
-    return {
+    const payload = {
       ok: true as const,
       wifeMode,
       congregation: cong,
@@ -98,4 +98,5 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       pioneer: pioneer ?? [],
       elders: elders ?? [],
     };
+    return JSON.parse(JSON.stringify(payload)) as typeof payload;
   });
