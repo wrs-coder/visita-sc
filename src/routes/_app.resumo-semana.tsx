@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { getSuperVisitSummary } from "@/lib/visit-summary.functions";
+import { deactivateScheduleEvent } from "@/lib/schedule-cleanup.functions";
 import { VisitSummaryView, type VisitSnapshot } from "@/components/visit-summary/VisitSummaryView";
 import { getHiddenEventIds, hideEventId } from "@/lib/hidden-events";
 
@@ -35,6 +36,7 @@ function Page() {
   const activeCong = useActiveCongregation();
   const nav = useNavigate();
   const fn = useServerFn(getSuperVisitSummary);
+  const deactivateFn = useServerFn(deactivateScheduleEvent);
   const [snap, setSnap] = useState<VisitSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   // ID candidato a ser ocultado localmente (evento "fantasma" que persiste em cache).
@@ -124,13 +126,32 @@ function Page() {
     [activeCong?.id, load, nav, snap],
   );
 
-  const confirmHide = useCallback(() => {
+  const confirmHide = useCallback(async () => {
     if (!corruptId) return;
-    hideEventId(corruptId);
+    const id = corruptId;
+    // Sempre oculta localmente para feedback imediato.
+    hideEventId(id);
     setCorruptId(null);
     setHiddenBump((n) => n + 1);
+
+    // Se for evento da visita (UUID puro, sem prefixo cse_), também desativa
+    // no servidor para que suma do acesso de anciãos/ESC. Falhas silenciosas
+    // (offline / sem permissão) não bloqueiam o hide local.
+    const circuitId = extractCircuitId(id);
+    if (!circuitId) {
+      try {
+        const r = await deactivateFn({ data: { eventId: id } });
+        if (r.ok) {
+          toast.success(t("weekSummary.removedLocally"));
+          if (activeCong?.id) load(activeCong.id);
+          return;
+        }
+      } catch (err) {
+        console.warn("[resumo-semana] deactivate falhou", err);
+      }
+    }
     toast.success(t("weekSummary.removedLocally"));
-  }, [corruptId, t]);
+  }, [corruptId, t, deactivateFn, activeCong?.id, load]);
 
   if (!activeCong) {
     return (
