@@ -1,11 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  getActiveCongregationOverride,
-  setActiveCongregationOverride,
-} from "@/hooks/use-active-congregation";
+import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,9 +16,11 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -33,12 +31,14 @@ import {
   Plus,
   Clock,
   MapPin,
-  Trash2,
   Pencil,
-  Save,
   ChevronLeft,
   ChevronRight,
   CalendarIcon,
+  Users,
+  Check,
+  CalendarClock,
+  EyeOff,
 } from "lucide-react";
 import {
   format,
@@ -62,119 +62,105 @@ const LOCALES: Record<string, Locale> = { pt: ptBR, en: enUS, es };
 const resolveLocale = (lng: string): Locale => LOCALES[lng?.slice(0, 2)] ?? ptBR;
 
 const TYPE_KEYS = [
-  "field_morning",
-  "field_afternoon",
-  "elders_meeting",
-  "pioneers_meeting",
-  "midweek_meeting",
-  "weekend_meeting",
+  "ca_br",
+  "ca_co",
+  "pioneer_week",
+  "free_week",
+  "pioneer_special_meeting",
+  "regional_convention",
+  "pioneer_school",
+  "shepherding",
   "other",
 ] as const;
 type EventType = (typeof TYPE_KEYS)[number];
 
+type Scope = "congregation" | "multi" | "all" | "personal";
+
 interface Event {
   id: string;
-  visit_id: string;
+  superintendent_id: string;
   event_date: string;
   start_time: string | null;
   end_time: string | null;
-  type: EventType;
+  event_type: EventType;
   title: string;
   location: string | null;
   notes: string | null;
-  is_active: boolean;
+  companion: string | null;
+  scope: Scope;
+  congregation_ids: string[];
+  visible_to_spouse: boolean;
+  status: string;
+}
+
+interface CongregationLite {
+  id: string;
+  name: string;
 }
 
 function Page() {
-  const { visit } = useActiveVisit();
-  const { role, user, profile } = useAuth();
+  const { role, user } = useAuth();
+  const activeCong = useActiveCongregation();
   const { t, i18n } = useTranslation();
   const locale = resolveLocale(i18n.language);
   const userId = user?.id;
   const canEdit = role === "superintendent";
   const [events, setEvents] = useState<Event[]>([]);
+  const [congregations, setCongregations] = useState<CongregationLite[]>([]);
   const [editing, setEditing] = useState<Partial<Event> | null>(null);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [postponeFor, setPostponeFor] = useState<Event | null>(null);
   const [weekStart, setWeekStart] = useState<Date>(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 }),
   );
   const [calOpen, setCalOpen] = useState(false);
 
-  // Auto-detecta a congregação da semana corrente para o superintendente,
-  // cruzando a data de hoje com o intervalo de cada visita cadastrada (Itinerário).
-  // A lógica interna do cronograma (escalas, dias, campos) permanece intacta.
+  // Load events + congregations
   useEffect(() => {
-    if (role !== "superintendent" || !userId) return;
-    if (!profile?.circuit?.trim()) {
-      setActiveCongregationOverride(null);
-      return;
-    }
-    const today = format(new Date(), "yyyy-MM-dd");
+    if (!userId) return;
     let cancelled = false;
-    (async () => {
-      const { data: congs } = await supabase
-        .from("congregations")
-        .select("id")
-        .eq("superintendent_id", userId);
-      const ids = (congs ?? []).map((c) => c.id);
-      if (!ids.length || cancelled) return;
-      const { data: vs } = await supabase
-        .from("visits")
-        .select("congregation_id,start_date,end_date")
-        .in("congregation_id", ids)
-        .lte("start_date", today)
-        .gte("end_date", today)
-        .order("is_active", { ascending: false })
-        .limit(1);
-      const target = vs?.[0]?.congregation_id;
-      if (cancelled) return;
-      const current = getActiveCongregationOverride();
-      if (target && current !== target) {
-        setActiveCongregationOverride(target);
-      } else if (!target && current) {
-        setActiveCongregationOverride(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [role, userId, profile?.circuit]);
+    const today = format(new Date(), "yyyy-MM-dd");
 
-  useEffect(() => {
-    if (!visit) return;
-    setWeekStart(startOfWeek(parseISO(visit.start_date), { weekStartsOn: 1 }));
-  }, [visit?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!visit) return;
     const load = async () => {
-      const { data } = await supabase
-        .from("schedule_events")
+      // For superintendent → own events. For others → events visible to them (RLS filters).
+      let query = supabase
+        .from("circuit_schedule_events")
         .select("*")
-        .eq("visit_id", visit.id)
+        .gte("event_date", today)
         .order("event_date")
         .order("start_time");
-      setEvents((data ?? []) as Event[]);
+      if (canEdit) query = query.eq("superintendent_id", userId);
+      const { data } = await query;
+      if (!cancelled) setEvents((data ?? []) as Event[]);
     };
+
+    const loadCongs = async () => {
+      if (!canEdit) return;
+      const { data } = await supabase
+        .from("congregations")
+        .select("id,name")
+        .eq("superintendent_id", userId)
+        .order("name");
+      if (!cancelled) setCongregations((data ?? []) as CongregationLite[]);
+    };
+
     load();
+    loadCongs();
+
     const ch = supabase
-      .channel(`sched-${visit.id}`)
+      .channel(`cse-${userId}`)
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "schedule_events",
-          filter: `visit_id=eq.${visit.id}`,
-        },
+        { event: "*", schema: "public", table: "circuit_schedule_events" },
         load,
       )
       .subscribe();
     return () => {
+      cancelled = true;
       supabase.removeChannel(ch);
     };
-  }, [visit]);
+  }, [userId, canEdit]);
 
   // Swipe
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -198,27 +184,37 @@ function Page() {
     [weekStart],
   );
 
-  if (!visit) return <Empty />;
-
   const save = async () => {
     if (!editing || !editing.title || !editing.event_date) {
       toast.error(t("schedule.requireTitleDate"));
       return;
     }
+    const scope = (editing.scope ?? "personal") as Scope;
+    const congIds = editing.congregation_ids ?? [];
+    if ((scope === "congregation" || scope === "multi") && congIds.length === 0) {
+      toast.error(t("schedule.requireScopeCongregations"));
+      return;
+    }
+    if (!userId) return;
+
     setSaving(true);
     const payload = {
-      visit_id: visit.id,
+      superintendent_id: userId,
       event_date: editing.event_date,
       start_time: editing.start_time || null,
       end_time: editing.end_time || null,
-      type: editing.type ?? "other",
+      event_type: (editing.event_type ?? "other") as EventType,
       title: editing.title,
       location: editing.location || null,
       notes: editing.notes || null,
+      companion: editing.companion || null,
+      scope,
+      congregation_ids: scope === "all" || scope === "personal" ? [] : congIds,
+      visible_to_spouse: editing.visible_to_spouse ?? true,
     };
     const res = editing.id
-      ? await offlineUpdate("schedule_events", payload, { id: editing.id })
-      : await offlineInsert("schedule_events", payload);
+      ? await offlineUpdate("circuit_schedule_events", payload, { id: editing.id })
+      : await offlineInsert("circuit_schedule_events", payload);
     setSaving(false);
     if (res.error) {
       toast.error(res.error.message);
@@ -229,15 +225,24 @@ function Page() {
     setEditing(null);
   };
 
-  const remove = async (id: string) => {
-    const { error } = await offlineDelete("schedule_events", { id });
+  const complete = async (id: string) => {
+    if (!confirm(t("schedule.confirmComplete"))) return;
+    const { error } = await offlineDelete("circuit_schedule_events", { id });
     if (error) toast.error(error.message);
-    else toast.success(t("common.removed"));
+    else toast.success(t("schedule.completedToast"));
   };
 
-  const toggle = async (id: string, is_active: boolean) => {
-    const { error } = await offlineUpdate("schedule_events", { is_active }, { id });
+  const postpone = async (id: string, newDate: string) => {
+    const { error } = await offlineUpdate(
+      "circuit_schedule_events",
+      { event_date: newDate, status: "postponed" },
+      { id },
+    );
     if (error) toast.error(error.message);
+    else {
+      toast.success(t("schedule.postponedToast"));
+      setPostponeFor(null);
+    }
   };
 
   const weekEnd = addDays(weekStart, 6);
@@ -285,7 +290,13 @@ function Page() {
               <DialogTrigger asChild>
                 <Button
                   onClick={() =>
-                    setEditing({ event_date: format(new Date(), "yyyy-MM-dd"), type: "other" })
+                    setEditing({
+                      event_date: format(new Date(), "yyyy-MM-dd"),
+                      event_type: "other",
+                      scope: "personal",
+                      congregation_ids: [],
+                      visible_to_spouse: true,
+                    })
                   }
                 >
                   <Plus className="h-4 w-4 mr-1" /> {t("schedule.newEvent")}
@@ -296,7 +307,7 @@ function Page() {
                 setEditing={setEditing}
                 save={save}
                 saving={saving}
-                days={days}
+                congregations={congregations}
                 locale={locale}
               />
             </Dialog>
@@ -347,58 +358,18 @@ function Page() {
               ) : (
                 <div className="grid gap-2">
                   {dayEvents.map((e) => (
-                    <Card
+                    <EventCard
                       key={e.id}
-                      className={`shadow-card transition ${!e.is_active ? "opacity-50" : ""}`}
-                    >
-                      <CardContent className="p-4 flex items-start gap-3">
-                        <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[64px] text-center">
-                          <Clock className="inline h-3 w-3 mr-0.5" />
-                          {e.start_time?.slice(0, 5) ?? "—"}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[11px] font-medium uppercase tracking-wide text-primary/70">
-                            {t(`schedule.types.${e.type}`)}
-                          </div>
-                          <div className={`font-semibold ${!e.is_active ? "line-through" : ""}`}>
-                            {e.title}
-                          </div>
-                          {e.location && (
-                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <MapPin className="h-3 w-3" />
-                              {e.location}
-                            </div>
-                          )}
-                          {e.notes && (
-                            <div className="text-xs mt-1 text-muted-foreground">{e.notes}</div>
-                          )}
-                        </div>
-                        {canEdit && (
-                          <div className="flex flex-col items-end gap-1">
-                            <Switch
-                              checked={e.is_active}
-                              onCheckedChange={(v) => toggle(e.id, v)}
-                              aria-label={t("schedule.toggleAria")}
-                            />
-                            <div className="flex">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => {
-                                  setEditing(e);
-                                  setOpen(true);
-                                }}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button size="icon" variant="ghost" onClick={() => remove(e.id)}>
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                      e={e}
+                      canEdit={canEdit}
+                      congregations={congregations}
+                      onEdit={() => {
+                        setEditing(e);
+                        setOpen(true);
+                      }}
+                      onComplete={() => complete(e.id)}
+                      onPostpone={() => setPostponeFor(e)}
+                    />
                   ))}
                 </div>
               )}
@@ -406,39 +377,146 @@ function Page() {
           );
         })}
       </div>
+
+      {/* Postpone dialog */}
+      <Dialog open={!!postponeFor} onOpenChange={(o) => !o && setPostponeFor(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("schedule.postponeTo")}</DialogTitle>
+          </DialogHeader>
+          {postponeFor && (
+            <Calendar
+              mode="single"
+              selected={parseISO(postponeFor.event_date)}
+              onSelect={(d) => {
+                if (d) postpone(postponeFor.id, format(d, "yyyy-MM-dd"));
+              }}
+              initialFocus
+              className="p-3 pointer-events-auto"
+              locale={locale}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {!activeCong && !canEdit && (
+        <p className="text-xs text-muted-foreground text-center">{t("schedule.emptyNoVisit")}</p>
+      )}
     </div>
   );
 }
 
+function EventCard({
+  e,
+  canEdit,
+  congregations,
+  onEdit,
+  onComplete,
+  onPostpone,
+}: {
+  e: Event;
+  canEdit: boolean;
+  congregations: CongregationLite[];
+  onEdit: () => void;
+  onComplete: () => void;
+  onPostpone: () => void;
+}) {
+  const { t } = useTranslation();
+  const congNames = useMemo(() => {
+    if (e.scope === "personal") return t("schedule.personalBadge");
+    if (e.scope === "all") return t("schedule.allCongsBadge");
+    const map = new Map(congregations.map((c) => [c.id, c.name]));
+    return e.congregation_ids.map((id) => map.get(id) ?? "—").join(", ");
+  }, [e, congregations, t]);
+
+  return (
+    <Card className="shadow-card transition">
+      <CardContent className="p-4 flex items-start gap-3">
+        <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[64px] text-center">
+          <Clock className="inline h-3 w-3 mr-0.5" />
+          {e.start_time?.slice(0, 5) ?? "—"}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[11px] font-medium uppercase tracking-wide text-primary/70">
+            {t(`schedule.types.${e.event_type}`)}
+          </div>
+          <div className="font-semibold">{e.title}</div>
+          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+            <Users className="h-3 w-3" />
+            {congNames}
+            {!e.visible_to_spouse && <EyeOff className="h-3 w-3 ml-1" />}
+          </div>
+          {e.location && (
+            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+              <MapPin className="h-3 w-3" />
+              {e.location}
+            </div>
+          )}
+          {e.companion && (
+            <div className="text-xs mt-1">
+              <span className="text-muted-foreground">{t("schedule.companion")}: </span>
+              {e.companion}
+            </div>
+          )}
+          {e.notes && <div className="text-xs mt-1 text-muted-foreground">{e.notes}</div>}
+          {canEdit && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Button size="sm" variant="default" onClick={onComplete}>
+                <Check className="h-3.5 w-3.5 mr-1" />
+                {t("schedule.complete")}
+              </Button>
+              <Button size="sm" variant="outline" onClick={onPostpone}>
+                <CalendarClock className="h-3.5 w-3.5 mr-1" />
+                {t("schedule.postpone")}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={onEdit}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 function EventDialog({
   editing,
   setEditing,
   save,
   saving,
-  days,
-  locale,
+  congregations,
+  locale: _locale,
 }: {
   editing: Partial<Event> | null;
   setEditing: (e: Partial<Event> | null) => void;
   save: () => void;
   saving: boolean;
-  days: Date[];
+  congregations: CongregationLite[];
   locale: Locale;
 }) {
   const { t } = useTranslation();
   if (!editing) return null;
+  const scope = (editing.scope ?? "personal") as Scope;
+  const congIds = editing.congregation_ids ?? [];
+  const toggleCong = (id: string) => {
+    const next = congIds.includes(id) ? congIds.filter((x) => x !== id) : [...congIds, id];
+    setEditing({ ...editing, congregation_ids: next });
+  };
+
   return (
-    <DialogContent className="max-w-md">
+    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
       <DialogHeader>
-        <DialogTitle>{editing.id ? t("schedule.editEvent") : t("schedule.newEventTitle")}</DialogTitle>
+        <DialogTitle>
+          {editing.id ? t("schedule.editEvent") : t("schedule.newEventTitle")}
+        </DialogTitle>
       </DialogHeader>
       <div className="space-y-3">
         <div className="space-y-1.5">
           <Label>{t("schedule.type")}</Label>
           <Select
-            value={editing.type ?? "other"}
-            onValueChange={(v) => setEditing({ ...editing, type: v as EventType })}
+            value={editing.event_type ?? "other"}
+            onValueChange={(v) => setEditing({ ...editing, event_type: v as EventType })}
           >
             <SelectTrigger>
               <SelectValue />
@@ -452,6 +530,7 @@ function EventDialog({
             </SelectContent>
           </Select>
         </div>
+
         <div className="space-y-1.5">
           <Label>{t("schedule.titleField")}</Label>
           <Input
@@ -459,27 +538,15 @@ function EventDialog({
             onChange={(e) => setEditing({ ...editing, title: e.target.value })}
           />
         </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>{t("schedule.date")}</Label>
-            <Select
-              value={editing.event_date}
-              onValueChange={(v) => setEditing({ ...editing, event_date: v })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {days.map((d) => {
-                  const k = format(d, "yyyy-MM-dd");
-                  return (
-                    <SelectItem key={k} value={k}>
-                      {format(d, "EEE, d MMM", { locale })}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            <Input
+              type="date"
+              value={editing.event_date ?? ""}
+              onChange={(e) => setEditing({ ...editing, event_date: e.target.value })}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>{t("schedule.startTime")}</Label>
@@ -490,6 +557,51 @@ function EventDialog({
             />
           </div>
         </div>
+
+        <div className="space-y-1.5">
+          <Label>{t("schedule.scope")}</Label>
+          <Select
+            value={scope}
+            onValueChange={(v) => setEditing({ ...editing, scope: v as Scope })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="congregation">{t("schedule.scopes.congregation")}</SelectItem>
+              <SelectItem value="multi">{t("schedule.scopes.multi")}</SelectItem>
+              <SelectItem value="all">{t("schedule.scopes.all")}</SelectItem>
+              <SelectItem value="personal">{t("schedule.scopes.personal")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {(scope === "congregation" || scope === "multi") && (
+          <div className="space-y-1.5">
+            <Label>{t("schedule.selectCongregations")}</Label>
+            <div className="border rounded-md p-2 max-h-40 overflow-y-auto space-y-1.5">
+              {congregations.length === 0 && (
+                <p className="text-xs text-muted-foreground">—</p>
+              )}
+              {congregations.map((c) => (
+                <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={congIds.includes(c.id)}
+                    onCheckedChange={() => {
+                      if (scope === "congregation") {
+                        setEditing({ ...editing, congregation_ids: [c.id] });
+                      } else {
+                        toggleCong(c.id);
+                      }
+                    }}
+                  />
+                  <span>{c.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-1.5">
           <Label>{t("schedule.place")}</Label>
           <Input
@@ -497,6 +609,16 @@ function EventDialog({
             onChange={(e) => setEditing({ ...editing, location: e.target.value })}
           />
         </div>
+
+        <div className="space-y-1.5">
+          <Label>{t("schedule.companion")}</Label>
+          <Input
+            placeholder={t("schedule.companionPh")}
+            value={editing.companion ?? ""}
+            onChange={(e) => setEditing({ ...editing, companion: e.target.value })}
+          />
+        </div>
+
         <div className="space-y-1.5">
           <Label>{t("schedule.notes")}</Label>
           <Textarea
@@ -505,22 +627,23 @@ function EventDialog({
             onChange={(e) => setEditing({ ...editing, notes: e.target.value })}
           />
         </div>
-        <Button className="w-full" onClick={save} disabled={saving}>
-          <Save className="h-4 w-4 mr-1" />
-          {saving ? t("common.saving") : t("common.save")}
-        </Button>
-      </div>
-    </DialogContent>
-  );
-}
 
-function Empty() {
-  const { t } = useTranslation();
-  return (
-    <Card>
-      <CardContent className="p-6 text-sm text-muted-foreground">
-        {t("schedule.emptyNoVisit")}
-      </CardContent>
-    </Card>
+        <div className="flex items-center justify-between rounded-md border p-3">
+          <Label htmlFor="visible-spouse" className="cursor-pointer">
+            {t("schedule.visibleToSpouse")}
+          </Label>
+          <Switch
+            id="visible-spouse"
+            checked={editing.visible_to_spouse ?? true}
+            onCheckedChange={(v) => setEditing({ ...editing, visible_to_spouse: v })}
+          />
+        </div>
+      </div>
+      <DialogFooter>
+        <Button onClick={save} disabled={saving}>
+          {saving ? "…" : t("common.save")}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
   );
 }
