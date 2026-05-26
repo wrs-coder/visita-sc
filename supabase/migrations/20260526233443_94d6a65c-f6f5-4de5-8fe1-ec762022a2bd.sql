@@ -1,0 +1,1 @@
+UPDATE public.schedule_events SET is_active = false WHERE id IN ('bf7e3454-2ac6-4b8b-85a6-9d66473f503e','f1aa16f3-e17f-44d8-a9b6-6da529f8dd10');
