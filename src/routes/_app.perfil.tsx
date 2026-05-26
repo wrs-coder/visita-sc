@@ -28,7 +28,7 @@ function Page() {
   const autoBackup = useAutoBackup();
   const fnExportBackup = useServerFn(exportFullBackup);
   const fnRestoreBackup = useServerFn(restoreFullBackup);
-  const restoreInputRef = useRef<HTMLInputElement>(null);
+  
   const [pendingRestore, setPendingRestore] = useState<unknown | null>(null);
   const [busyBackup, setBusyBackup] = useState<null | "export" | "restore">(null);
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
