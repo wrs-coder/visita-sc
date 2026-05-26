@@ -15,6 +15,7 @@ import { Logo } from "@/components/Logo";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
+import { saveBlob } from "@/lib/share";
 
 export const Route = createFileRoute("/visitante/painel")({ component: Page });
 
@@ -94,12 +95,14 @@ function Page() {
   const exportPng = useCallback(async () => {
     if (!previewRef.current) return;
     try {
-      const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(previewRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#ffffff" });
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `programacao-${filenameBase}.png`;
-      a.click();
+      const { toBlob } = await import("html-to-image");
+      const blob = await toBlob(previewRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#ffffff" });
+      if (!blob) throw new Error("blob");
+      await saveBlob(blob, {
+        filename: `programacao-${filenameBase}.png`,
+        mimeType: "image/png",
+        pickerTypes: [{ description: "PNG", accept: { "image/png": [".png"] } }],
+      });
       toast.success(t("guest.export.image"));
     } catch { toast.error(t("guest.export.imageFail")); }
   }, [filenameBase, t]);
@@ -125,10 +128,16 @@ function Page() {
       const w = img.width * ratio;
       const h = img.height * ratio;
       pdf.addImage(dataUrl, "PNG", (pageW - w) / 2, margin, w, h);
-      pdf.save(`programacao-${filenameBase}.pdf`);
+      const blob = pdf.output("blob");
+      await saveBlob(blob, {
+        filename: `programacao-${filenameBase}.pdf`,
+        mimeType: "application/pdf",
+        pickerTypes: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }],
+      });
       toast.success(t("guest.export.pdf"));
     } catch { toast.error(t("guest.export.pdfFail")); }
   }, [filenameBase, t]);
+
 
   const shareWhatsapp = useCallback(() => {
     if (!snap || !snap.visit) return;
