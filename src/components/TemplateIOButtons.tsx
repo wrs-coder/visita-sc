@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { shareJsonFile, readJsonFile } from "@/lib/share";
+import { shareJsonFile, readJsonFile, pickFile } from "@/lib/share";
 
 interface Props {
   filenameBase: string;
