@@ -14,7 +14,7 @@ interface Props {
 
 export function TemplateIOButtons({ filenameBase, onExport, onImport, disabled }: Props) {
   const { t } = useTranslation();
-  const inputRef = useRef<HTMLInputElement>(null);
+  
   const [busy, setBusy] = useState<null | "export" | "import">(null);
 
   const doExport = async () => {
