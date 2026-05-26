@@ -106,12 +106,12 @@ function ReportPage() {
 
     const md = lines.join("\n");
     const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `relatorio-${cong?.name ?? "visita"}-${visit.start_date}.md`.replace(/\s+/g, "_");
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const filename = `relatorio-${cong?.name ?? "visita"}-${visit.start_date}.md`.replace(/\s+/g, "_");
+    await saveBlob(blob, {
+      filename,
+      mimeType: "text/markdown",
+      pickerTypes: [{ description: "Markdown", accept: { "text/markdown": [".md"] } }],
+    });
     toast.success(t("report.markdownExported"));
   };
 
