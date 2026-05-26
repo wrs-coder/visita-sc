@@ -1109,6 +1109,10 @@
     "editEvent": "Edit event",
     "eventGone": "This event has been completed or removed.",
     "offlineUnavailable": "Event unavailable in Offline Mode.",
-    "notEditableHere": "This item cannot be edited from the schedule."
+    "notEditableHere": "This item cannot be edited from the schedule.",
+    "corruptTitle": "Event unavailable",
+    "corruptConfirm": "This event appears to be corrupted or already removed. Hide it from your view?",
+    "removeLocal": "Hide from view",
+    "removedLocally": "Event hidden from your view."
   }
 }

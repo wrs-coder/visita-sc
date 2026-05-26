@@ -1109,6 +1109,10 @@
     "editEvent": "Editar evento",
     "eventGone": "Este evento ya fue concluido o eliminado.",
     "offlineUnavailable": "Evento no disponible en Modo Offline.",
-    "notEditableHere": "Este elemento no se puede editar desde el cronograma."
+    "notEditableHere": "Este elemento no se puede editar desde el cronograma.",
+    "corruptTitle": "Evento no disponible",
+    "corruptConfirm": "Este evento parece estar dañado o ya fue eliminado. ¿Deseas ocultarlo de la vista?",
+    "removeLocal": "Ocultar de la vista",
+    "removedLocally": "Evento ocultado de tu vista."
   }
 }
