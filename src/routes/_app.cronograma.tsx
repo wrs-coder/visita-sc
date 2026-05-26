@@ -39,7 +39,18 @@ import {
   Check,
   CalendarClock,
   EyeOff,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   format,
   parseISO,
@@ -111,6 +122,8 @@ function Page() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [postponeFor, setPostponeFor] = useState<Event | null>(null);
+  const [deleteFor, setDeleteFor] = useState<Event | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [weekStart, setWeekStart] = useState<Date>(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 }),
   );
