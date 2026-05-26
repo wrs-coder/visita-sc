@@ -39,7 +39,18 @@ import {
   Check,
   CalendarClock,
   EyeOff,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   format,
   parseISO,
@@ -111,6 +122,8 @@ function Page() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [postponeFor, setPostponeFor] = useState<Event | null>(null);
+  const [deleteFor, setDeleteFor] = useState<Event | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [weekStart, setWeekStart] = useState<Date>(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 }),
   );
@@ -245,6 +258,18 @@ function Page() {
     }
   };
 
+  const removeEvent = async (id: string) => {
+    setDeleting(true);
+    const { error, queued } = await offlineDelete("circuit_schedule_events", { id });
+    setDeleting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(queued ? t("common.savedOffline") : t("schedule.deletedToast"));
+    setDeleteFor(null);
+  };
+
   const weekEnd = addDays(weekStart, 6);
 
   return (
@@ -369,6 +394,7 @@ function Page() {
                       }}
                       onComplete={() => complete(e.id)}
                       onPostpone={() => setPostponeFor(e)}
+                      onDelete={() => setDeleteFor(e)}
                     />
                   ))}
                 </div>
