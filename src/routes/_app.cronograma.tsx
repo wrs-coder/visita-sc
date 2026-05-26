@@ -183,6 +183,27 @@ function Page() {
     };
   }, [userId, canEdit]);
 
+  // Deep-link: ?event=<id> abre o editor para o evento alvo (vindo do Resumo da Semana).
+  // Se o evento já não existir (concluído / excluído), exibe aviso amigável e limpa a URL.
+  useEffect(() => {
+    const target = search.event;
+    if (!target || !canEdit) return;
+    if (events.length === 0) return; // espera primeira carga
+    if (handledDeepLinkRef.current === target) return;
+    handledDeepLinkRef.current = target;
+    const found = events.find((ev) => ev.id === target);
+    if (found) {
+      setEditing(found);
+      setOpen(true);
+      setWeekStart(startOfWeek(parseISO(found.event_date), { weekStartsOn: 1 }));
+    } else {
+      toast.error(t("weekSummary.eventGone"));
+    }
+    navigate({ search: { event: undefined } as never, replace: true });
+  }, [search.event, events, canEdit, navigate, t]);
+
+
+
   // Swipe
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
