@@ -425,6 +425,29 @@ function Page() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteFor} onOpenChange={(o) => !o && setDeleteFor(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("schedule.confirmDeleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("schedule.confirmDeleteDesc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteFor) removeEvent(deleteFor.id);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("schedule.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {!activeCong && !canEdit && (
         <p className="text-xs text-muted-foreground text-center">{t("schedule.emptyNoVisit")}</p>
       )}
