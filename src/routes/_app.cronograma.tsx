@@ -121,6 +121,9 @@ function Page() {
   const locale = resolveLocale(i18n.language);
   const userId = user?.id;
   const canEdit = role === "superintendent";
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const handledDeepLinkRef = useRef<string | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [congregations, setCongregations] = useState<CongregationLite[]>([]);
   const [editing, setEditing] = useState<Partial<Event> | null>(null);
