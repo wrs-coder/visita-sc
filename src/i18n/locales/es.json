@@ -120,6 +120,7 @@
     "meetingTalkTemplates": "Plantillas de Reunión y Discurso",
     "myProfile": "Mi perfil",
     "baseTemplates": "Plantillas Base",
+    "weekSummary": "Resumen de la Semana",
     "supportDev": "Apoya al Desarrollador ☕",
     "appName": "Visita del SC",
     "active": "Activa",
@@ -244,6 +245,10 @@
     "toggleAria": "Activar/desactivar",
     "requireTitleDate": "Completa título y fecha",
     "emptyNoVisit": "Ninguna visita activa. Registra una en Itinerario.",
+    "delete": "Eliminar",
+    "confirmDeleteTitle": "¿Eliminar compromiso?",
+    "confirmDeleteDesc": "¿Estás seguro de que deseas eliminar este compromiso? Esta acción no se puede deshacer.",
+    "deletedToast": "Compromiso eliminado.",
     "scopes": {
       "congregation": "Una congregación",
       "multi": "Varias congregaciones",
@@ -1077,5 +1082,29 @@
     "step3Confirm": "Confirma con",
     "step3Action": "Agregar",
     "step3Tail": ". El ícono aparecerá en tu móvil."
+  },
+  "offline": {
+    "modeTitle": "Modo Offline",
+    "modeDesc": "Descarga todos los datos de la app para usar sin internet.",
+    "modeHelp": "Al continuar, descargaremos tus congregaciones, compromisos, plantillas y demás datos. Esto puede tardar unos segundos.",
+    "activate": "Activar Modo Offline",
+    "start": "Iniciar descarga",
+    "cancel": "Cancelar",
+    "cancelled": "Cancelado por el usuario.",
+    "syncing": "Sincronizando",
+    "done": "¡Listo! Datos disponibles sin conexión.",
+    "doneToast": "Modo offline listo.",
+    "partial": "{{n}} elemento(s) fallaron — puedes intentarlo de nuevo.",
+    "partialToast": "Modo offline parcial: {{n}} fallo(s).",
+    "failToast": "Error al activar el modo offline.",
+    "requireLogin": "Inicia sesión para usar el modo offline.",
+    "lastSync": "Última actualización offline",
+    "chunkErrorTitle": "Sin conexión para cargar esta pantalla",
+    "chunkErrorDesc": "No pudimos cargar este módulo. Revisa tu conexión e intenta de nuevo.",
+    "retry": "Intentar de nuevo"
+  },
+  "weekSummary": {
+    "subtitle": "Vista completa de la semana de visita",
+    "selectCongregation": "Selecciona una congregación activa para ver el resumen."
   }
 }

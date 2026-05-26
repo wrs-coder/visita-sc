@@ -120,6 +120,7 @@
     "meetingTalkTemplates": "Modelos de Reunião e Discurso",
     "myProfile": "Meu perfil",
     "baseTemplates": "Modelos de Base",
+    "weekSummary": "Resumo da Semana",
     "supportDev": "Apoie o Desenvolvedor ☕",
     "appName": "Visita do SC",
     "active": "Ativa",
@@ -244,6 +245,10 @@
     "toggleAria": "Ativar/desativar",
     "requireTitleDate": "Preencha título e data",
     "emptyNoVisit": "Nenhuma visita ativa. Cadastre uma em Itinerário.",
+    "delete": "Excluir",
+    "confirmDeleteTitle": "Excluir compromisso?",
+    "confirmDeleteDesc": "Tem certeza que deseja excluir este compromisso? Esta ação não pode ser desfeita.",
+    "deletedToast": "Compromisso excluído.",
     "scopes": {
       "congregation": "Congregação individual",
       "multi": "Várias congregações",
@@ -1077,5 +1082,29 @@
     "step3Confirm": "Confirme em",
     "step3Action": "Adicionar",
     "step3Tail": ". O ícone aparecerá no seu telemóvel."
+  },
+  "offline": {
+    "modeTitle": "Modo Offline",
+    "modeDesc": "Baixa todos os dados do app para uso sem internet.",
+    "modeHelp": "Ao continuar, vamos baixar suas congregações, compromissos, modelos e demais dados. Isso pode levar alguns segundos.",
+    "activate": "Ativar Modo Offline",
+    "start": "Iniciar download",
+    "cancel": "Cancelar",
+    "cancelled": "Cancelado pelo usuário.",
+    "syncing": "Sincronizando",
+    "done": "Pronto! Dados disponíveis offline.",
+    "doneToast": "Modo offline pronto.",
+    "partial": "{{n}} item(ns) falharam — você pode tentar novamente.",
+    "partialToast": "Modo offline parcial: {{n}} falha(s).",
+    "failToast": "Falha ao ativar modo offline.",
+    "requireLogin": "Faça login para usar o modo offline.",
+    "lastSync": "Última atualização offline",
+    "chunkErrorTitle": "Sem conexão para carregar esta tela",
+    "chunkErrorDesc": "Não conseguimos carregar este módulo. Verifique sua conexão e tente novamente.",
+    "retry": "Tentar novamente"
+  },
+  "weekSummary": {
+    "subtitle": "Visão completa da semana de visita",
+    "selectCongregation": "Selecione uma congregação ativa para ver o resumo."
   }
 }

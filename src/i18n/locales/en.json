@@ -120,6 +120,7 @@
     "meetingTalkTemplates": "Meeting & Talk Templates",
     "myProfile": "My profile",
     "baseTemplates": "Base Templates",
+    "weekSummary": "Week Summary",
     "supportDev": "Support the Developer ☕",
     "appName": "CO's Visit",
     "active": "Active",
@@ -244,6 +245,10 @@
     "toggleAria": "Enable/disable",
     "requireTitleDate": "Fill in title and date",
     "emptyNoVisit": "No active visit. Register one in Itinerary.",
+    "delete": "Delete",
+    "confirmDeleteTitle": "Delete event?",
+    "confirmDeleteDesc": "Are you sure you want to delete this event? This action cannot be undone.",
+    "deletedToast": "Event deleted.",
     "scopes": {
       "congregation": "Single congregation",
       "multi": "Multiple congregations",
@@ -1077,5 +1082,29 @@
     "step3Confirm": "Confirm with",
     "step3Action": "Add",
     "step3Tail": ". The icon will appear on your phone."
+  },
+  "offline": {
+    "modeTitle": "Offline Mode",
+    "modeDesc": "Download all app data for use without internet.",
+    "modeHelp": "Continuing will download your congregations, events, templates and other data. This may take a few seconds.",
+    "activate": "Activate Offline Mode",
+    "start": "Start download",
+    "cancel": "Cancel",
+    "cancelled": "Cancelled by user.",
+    "syncing": "Syncing",
+    "done": "Ready! Data available offline.",
+    "doneToast": "Offline mode ready.",
+    "partial": "{{n}} item(s) failed — you can try again.",
+    "partialToast": "Offline mode partial: {{n}} failure(s).",
+    "failToast": "Failed to activate offline mode.",
+    "requireLogin": "Sign in to use offline mode.",
+    "lastSync": "Last offline update",
+    "chunkErrorTitle": "No connection to load this screen",
+    "chunkErrorDesc": "We could not load this module. Check your connection and try again.",
+    "retry": "Try again"
+  },
+  "weekSummary": {
+    "subtitle": "Full view of the visit week",
+    "selectCongregation": "Select an active congregation to see the summary."
   }
 }

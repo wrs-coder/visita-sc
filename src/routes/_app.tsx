@@ -18,6 +18,7 @@ import {
   Plane,
   ChevronDown,
   Layers,
+  ClipboardList,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
@@ -29,6 +30,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SyncButton } from "@/components/SyncButton";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
+import { OfflineModeButton } from "@/components/OfflineModeButton";
+import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { Coffee } from "lucide-react";
 import { setActiveContext } from "@/lib/active-context";
 
@@ -108,6 +111,9 @@ function AppLayout() {
       id: "visita",
       label: t("sidebar.sectionVisita"),
       items: [
+        ...(role === "superintendent"
+          ? [{ to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList }]
+          : []),
         { to: "/escala", label: t("sidebar.fieldStudies"), icon: Users },
         { to: "/reunioes-discursos", label: t("sidebar.meetingsTalks"), icon: MapPin },
         { to: "/refeicoes", label: t("sidebar.meals"), icon: UtensilsCrossed },
@@ -248,6 +254,9 @@ function AppLayout() {
                     circuit={profile?.circuit ?? null}
                   />
                 </div>
+                <div className="p-3 pb-0">
+                  <OfflineModeButton />
+                </div>
                 <div className="p-3 flex-1 overflow-y-auto overscroll-contain">
                   <Nav onClick={() => setMobileMenuOpen(false)} />
                 </div>
@@ -286,6 +295,9 @@ function AppLayout() {
               circuit={profile?.circuit ?? null}
             />
           </div>
+          <div className="p-3 pb-0">
+            <OfflineModeButton />
+          </div>
           <div className="p-3 flex-1 overflow-y-auto overscroll-contain min-h-0">
             <Nav />
           </div>
@@ -320,7 +332,9 @@ function AppLayout() {
                 </Card>
               </div>
             ) : (
-              <Outlet />
+              <ChunkErrorBoundary>
+                <Outlet />
+              </ChunkErrorBoundary>
             )}
           </div>
         </main>
