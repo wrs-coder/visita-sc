@@ -57,8 +57,6 @@ function Page() {
       setPendingRestore(json);
     } catch (e) {
       toast.error(t("profile.invalidFile"), { description: (e as Error).message });
-    } finally {
-      if (restoreInputRef.current) restoreInputRef.current.value = "";
     }
   };
 
