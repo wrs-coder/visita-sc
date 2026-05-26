@@ -15,6 +15,7 @@ import { Logo } from "@/components/Logo";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
+import { saveBlob } from "@/lib/share";
 
 export const Route = createFileRoute("/visitante/painel")({ component: Page });
 
