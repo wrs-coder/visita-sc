@@ -20,6 +20,7 @@ import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import type jsPDFType from "jspdf";
 import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
+import { saveBlob } from "@/lib/share";
 
 function makeUuid(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
