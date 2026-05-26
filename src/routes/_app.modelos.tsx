@@ -116,7 +116,7 @@ function Page() {
     const defaults: Payload =
       kind === "study" ? { period: "Manhã", meeting_point: "", meeting_time: "", acompanhante: "", acompanhante_for: "", contact_phone: "" }
       : kind === "meal" ? { type: "lunch", host_name: "", location: "", meal_time: "", notes: "" }
-      : { driver_name: "", contact_phone: "", description: "", notes: "" };
+      : { driver_name: "", contact_phone: "", description: "", notes: "", departure_time_1: "", departure_time_2: "", return_time_1: "", return_time_2: "" };
     setItemsByTpl((m) => ({ ...m, [id]: [...(m[id] ?? []), { kind, day_offset: 0, payload: defaults, sort_order: (m[id]?.length ?? 0) }] }));
   };
 
