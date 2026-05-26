@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAutoBackup } from "@/hooks/use-auto-backup";
 import { supabase } from "@/integrations/supabase/client";
 import { exportFullBackup, restoreFullBackup } from "@/lib/backup.functions";
-import { shareJsonFile, readJsonFile } from "@/lib/share";
+import { shareJsonFile, readJsonFile, pickFile } from "@/lib/share";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
