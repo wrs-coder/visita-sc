@@ -78,7 +78,7 @@ function ReportPage() {
   const dash = t("report.labels.dash");
   const _in = t("report.labels.in");
 
-  const exportMarkdown = () => {
+  const exportMarkdown = async () => {
     if (!visit) return;
     const lines: string[] = [];
     lines.push(`# ${t("report.title")}`);
