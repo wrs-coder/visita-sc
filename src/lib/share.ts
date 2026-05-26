@@ -117,6 +117,14 @@ async function saveViaCapacitor(blob: Blob, filename: string, mimeType: string):
 export async function saveBlob(blob: Blob, opts: SaveOptions): Promise<SaveOutcome> {
   const { filename, mimeType, pickerTypes } = opts;
 
+  // 0. Capacitor native (APK) — use Filesystem + Share plugin so the user
+  //    can save anywhere or send the file, instead of an invisible WebView download.
+  if (isCapacitorNative()) {
+    const ok = await saveViaCapacitor(blob, filename, mimeType);
+    if (ok) return "shared";
+    // fall through to web fallbacks
+  }
+
   // 1. File System Access API — true folder picker
   if (hasSaveFilePicker()) {
     try {
