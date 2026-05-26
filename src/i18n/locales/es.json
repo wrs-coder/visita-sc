@@ -1105,6 +1105,10 @@
   },
   "weekSummary": {
     "subtitle": "Vista completa de la semana de visita",
-    "selectCongregation": "Selecciona una congregación activa para ver el resumen."
+    "selectCongregation": "Selecciona una congregación activa para ver el resumen.",
+    "editEvent": "Editar evento",
+    "eventGone": "Este evento ya fue concluido o eliminado.",
+    "offlineUnavailable": "Evento no disponible en Modo Offline.",
+    "notEditableHere": "Este elemento no se puede editar desde el cronograma."
   }
 }

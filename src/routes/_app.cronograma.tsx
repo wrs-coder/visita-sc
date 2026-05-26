@@ -67,7 +67,12 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
 
-export const Route = createFileRoute("/_app/cronograma")({ component: Page });
+export const Route = createFileRoute("/_app/cronograma")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    event: typeof search.event === "string" ? search.event : undefined,
+  }),
+  component: Page,
+});
 
 const LOCALES: Record<string, Locale> = { pt: ptBR, en: enUS, es };
 const resolveLocale = (lng: string): Locale => LOCALES[lng?.slice(0, 2)] ?? ptBR;
@@ -116,6 +121,9 @@ function Page() {
   const locale = resolveLocale(i18n.language);
   const userId = user?.id;
   const canEdit = role === "superintendent";
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const handledDeepLinkRef = useRef<string | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [congregations, setCongregations] = useState<CongregationLite[]>([]);
   const [editing, setEditing] = useState<Partial<Event> | null>(null);
@@ -174,6 +182,27 @@ function Page() {
       supabase.removeChannel(ch);
     };
   }, [userId, canEdit]);
+
+  // Deep-link: ?event=<id> abre o editor para o evento alvo (vindo do Resumo da Semana).
+  // Se o evento já não existir (concluído / excluído), exibe aviso amigável e limpa a URL.
+  useEffect(() => {
+    const target = search.event;
+    if (!target || !canEdit) return;
+    if (events.length === 0) return; // espera primeira carga
+    if (handledDeepLinkRef.current === target) return;
+    handledDeepLinkRef.current = target;
+    const found = events.find((ev) => ev.id === target);
+    if (found) {
+      setEditing(found);
+      setOpen(true);
+      setWeekStart(startOfWeek(parseISO(found.event_date), { weekStartsOn: 1 }));
+    } else {
+      toast.error(t("weekSummary.eventGone"));
+    }
+    navigate({ search: { event: undefined } as never, replace: true });
+  }, [search.event, events, canEdit, navigate, t]);
+
+
 
   // Swipe
   const touchStart = useRef<{ x: number; y: number } | null>(null);

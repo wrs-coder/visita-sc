@@ -32,8 +32,9 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
     const todayIso = new Date().toISOString().slice(0, 10);
     let circuitQuery = supabaseAdmin
       .from("circuit_schedule_events")
-      .select("id,event_date,start_time,end_time,title,location,event_type,notes,scope,congregation_ids,visible_to_spouse,superintendent_id")
+      .select("id,event_date,start_time,end_time,title,location,event_type,notes,scope,congregation_ids,visible_to_spouse,superintendent_id,status")
       .neq("scope", "personal")
+      .neq("status", "completed")
       .gte("event_date", todayIso)
       .order("event_date")
       .order("start_time");

@@ -35,6 +35,7 @@ import {
   MessageCircle,
   Sun,
   Mic,
+  Pencil,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
@@ -68,11 +69,14 @@ export function VisitSummaryView({
   snap,
   onRefresh,
   headerSlot,
+  onEditEvent,
 }: {
   snap: VisitSnapshot;
   onRefresh?: () => void;
   /** Conteúdo extra renderizado ao lado dos botões de Share (ex: botão de sair do guest). */
   headerSlot?: React.ReactNode;
+  /** Quando definido, exibe um botão "Editar" em cada evento do cronograma. */
+  onEditEvent?: (eventId: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const dateLocale = getDateLocale(i18n.language);
@@ -379,6 +383,17 @@ export function VisitSummaryView({
                           <div className="text-xs text-muted-foreground mt-1">{e.notes}</div>
                         )}
                       </div>
+                      {onEditEvent && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          aria-label={t("weekSummary.editEvent")}
+                          onClick={() => onEditEvent(e.id)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 ))
