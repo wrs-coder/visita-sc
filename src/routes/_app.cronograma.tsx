@@ -439,6 +439,7 @@ function EventCard({
   onEdit,
   onComplete,
   onPostpone,
+  onDelete,
 }: {
   e: Event;
   canEdit: boolean;
@@ -446,6 +447,7 @@ function EventCard({
   onEdit: () => void;
   onComplete: () => void;
   onPostpone: () => void;
+  onDelete: () => void;
 }) {
   const { t } = useTranslation();
   const congNames = useMemo(() => {
@@ -497,6 +499,9 @@ function EventCard({
               </Button>
               <Button size="sm" variant="ghost" onClick={onEdit}>
                 <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={onDelete} className="text-destructive hover:text-destructive">
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>
           )}
