@@ -19,7 +19,12 @@
     "savedOffline": "Salvo offline",
     "removed": "Removido",
     "select": "Selecione…",
-    "saving": "Salvando..."
+    "saving": "Salvando...",
+    "notFoundTitle": "Página não encontrada",
+    "notFoundDesc": "A página que você procura não existe.",
+    "goHome": "Ir para o início",
+    "somethingWrong": "Algo deu errado",
+    "tryAgain": "Tentar novamente"
   },
   "languages": {
     "pt": "Português",

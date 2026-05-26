@@ -19,7 +19,12 @@
     "savedOffline": "Guardado sin conexión",
     "removed": "Eliminado",
     "select": "Selecciona…",
-    "saving": "Guardando..."
+    "saving": "Guardando...",
+    "notFoundTitle": "Página no encontrada",
+    "notFoundDesc": "La página que buscas no existe.",
+    "goHome": "Ir al inicio",
+    "somethingWrong": "Algo salió mal",
+    "tryAgain": "Intentar de nuevo"
   },
   "languages": {
     "pt": "Portugués",
