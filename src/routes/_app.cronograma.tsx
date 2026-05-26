@@ -439,6 +439,7 @@ function EventCard({
   onEdit,
   onComplete,
   onPostpone,
+  onDelete,
 }: {
   e: Event;
   canEdit: boolean;
@@ -446,6 +447,7 @@ function EventCard({
   onEdit: () => void;
   onComplete: () => void;
   onPostpone: () => void;
+  onDelete: () => void;
 }) {
   const { t } = useTranslation();
   const congNames = useMemo(() => {
