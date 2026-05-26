@@ -116,7 +116,7 @@ function Page() {
     const defaults: Payload =
       kind === "study" ? { period: "Manhã", meeting_point: "", meeting_time: "", acompanhante: "", acompanhante_for: "", contact_phone: "" }
       : kind === "meal" ? { type: "lunch", host_name: "", location: "", meal_time: "", notes: "" }
-      : { driver_name: "", contact_phone: "", description: "", notes: "" };
+      : { driver_name: "", contact_phone: "", description: "", notes: "", departure_time_1: "", departure_time_2: "", return_time_1: "", return_time_2: "" };
     setItemsByTpl((m) => ({ ...m, [id]: [...(m[id] ?? []), { kind, day_offset: 0, payload: defaults, sort_order: (m[id]?.length ?? 0) }] }));
   };
 
@@ -292,6 +292,24 @@ function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Paylo
       <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.driverName")} value={String(payload.driver_name ?? "")} onChange={(e) => set("driver_name", e.target.value)} />
       <Input className="h-9" placeholder={t("templates.program.transport.phone")} value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
       <Input className="h-9" placeholder={t("templates.program.transport.description")} value={String(payload.description ?? "")} onChange={(e) => set("description", e.target.value)} />
+      <div className="col-span-2 grid grid-cols-2 gap-2 pt-1">
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.departure1")}</label>
+          <Input className="h-9" type="time" value={String(payload.departure_time_1 ?? "")} onChange={(e) => set("departure_time_1", e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.departure2")}</label>
+          <Input className="h-9" type="time" value={String(payload.departure_time_2 ?? "")} onChange={(e) => set("departure_time_2", e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.return1")}</label>
+          <Input className="h-9" type="time" value={String(payload.return_time_1 ?? "")} onChange={(e) => set("return_time_1", e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.return2")}</label>
+          <Input className="h-9" type="time" value={String(payload.return_time_2 ?? "")} onChange={(e) => set("return_time_2", e.target.value)} />
+        </div>
+      </div>
     </div>
   );
 }

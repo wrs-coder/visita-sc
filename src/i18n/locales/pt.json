@@ -533,7 +533,11 @@
       "transport": {
         "driverName": "Nome do motorista",
         "phone": "Telefone",
-        "description": "Descrição/evento"
+        "description": "Descrição/evento",
+        "departure1": "Ida 1",
+        "departure2": "Ida 2",
+        "return1": "Volta 1",
+        "return2": "Volta 2"
       }
     },
     "checklist": {

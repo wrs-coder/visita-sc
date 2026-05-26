@@ -533,7 +533,11 @@
       "transport": {
         "driverName": "Driver name",
         "phone": "Phone",
-        "description": "Description/event"
+        "description": "Description/event",
+        "departure1": "Departure 1",
+        "departure2": "Departure 2",
+        "return1": "Return 1",
+        "return2": "Return 2"
       }
     },
     "checklist": {
