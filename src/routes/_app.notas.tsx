@@ -298,7 +298,18 @@ function Page() {
       drawFooter();
     }
 
-    doc.save(`${t("notes.pdf.fileName")}-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`);
+    const filename = `${t("notes.pdf.fileName")}-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`.replace(/\s+/g, "_");
+    try {
+      const blob = doc.output("blob");
+      await saveBlob(blob, {
+        filename,
+        mimeType: "application/pdf",
+        pickerTypes: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }],
+      });
+      toast.success(t("notes.export.pdf"));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
 
   const shareWhatsapp = () => {
