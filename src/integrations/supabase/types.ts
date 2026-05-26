@@ -126,6 +126,63 @@ export type Database = {
         }
         Relationships: []
       }
+      circuit_schedule_events: {
+        Row: {
+          companion: string | null
+          congregation_ids: string[]
+          created_at: string
+          end_time: string | null
+          event_date: string
+          event_type: string
+          id: string
+          location: string | null
+          notes: string | null
+          scope: string
+          start_time: string | null
+          status: string
+          superintendent_id: string
+          title: string
+          updated_at: string
+          visible_to_spouse: boolean
+        }
+        Insert: {
+          companion?: string | null
+          congregation_ids?: string[]
+          created_at?: string
+          end_time?: string | null
+          event_date: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          scope?: string
+          start_time?: string | null
+          status?: string
+          superintendent_id: string
+          title: string
+          updated_at?: string
+          visible_to_spouse?: boolean
+        }
+        Update: {
+          companion?: string | null
+          congregation_ids?: string[]
+          created_at?: string
+          end_time?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          scope?: string
+          start_time?: string | null
+          status?: string
+          superintendent_id?: string
+          title?: string
+          updated_at?: string
+          visible_to_spouse?: boolean
+        }
+        Relationships: []
+      }
       congregations: {
         Row: {
           created_at: string
@@ -1207,7 +1264,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_expired_circuit_events: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "superintendent" | "elder"
