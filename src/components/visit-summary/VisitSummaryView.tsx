@@ -35,6 +35,7 @@ import {
   MessageCircle,
   Sun,
   Mic,
+  Pencil,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
