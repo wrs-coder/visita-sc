@@ -1,99 +1,74 @@
 
-# Pacote unificado: Cronograma 2.0 + i18n
+## Missão 1 — Modo Offline Manual (pré-cache de dados)
 
-## 1. Nova arquitetura de dados (uma única migration)
+**Objetivo:** botão que baixa proativamente todos os dados do usuário ativo (perfil, congregação, visitas, modelos, eventos, refeições, etc.) e os deixa armazenados via TanStack Query + IndexedDB persister (já existe `query-persister.ts`), além de proteger a navegação contra falhas de chunk dinâmico.
 
-A tabela atual `schedule_events` está atrelada a `visit_id` (uma visita = uma congregação). Vamos desacoplar e criar uma nova fonte de verdade para eventos do superintendente, sem quebrar dados existentes.
+### Novos arquivos
+- `src/lib/offline-prefetch.ts` — função `prefetchAllForOffline(opts)` que recebe `{ queryClient, userId, congregationId, role, onProgress }`. Internamente faz chamadas Supabase em sequência paginada com passos nomeados (`profile`, `congregations`, `visits`, `schedule_events`, `meals`, `field_assignments`, `field_meetings`, `transport_schedule`, `checklist_items`, `midweek/weekend/pioneer/elders`, `circuit_schedule_events`, todos os `*_templates` e `*_template_items`, `private_notes` se super). Cada passo grava no `queryClient` via `setQueryData(['offline', table, scope], data)` para entrar no persister (já dehidrata `success`). `onProgress({ step, current, total, label })` reporta progresso. Tudo `try/catch` por passo — uma falha individual incrementa contador de erros mas não aborta o fluxo.
+- `src/components/OfflineModeDialog.tsx` — `Dialog` (shadcn) com `Progress`, label do passo atual ("Sincronizando: 45% — Refeições…"), botão Cancelar (AbortController) e estado final (sucesso / parcial). Marca `localStorage["visita-sc:offline-ready"] = ISO` quando termina.
+- `src/components/OfflineModeButton.tsx` — botão `CloudDownload` reutilizável que abre o `OfflineModeDialog`. Mostra badge "Atualizado há Xh" quando já existe a flag.
+- `src/components/ChunkErrorBoundary.tsx` — `class` ErrorBoundary que captura erros com `/failed to fetch dynamically imported module|Loading chunk|ChunkLoadError/i`, mostra card amigável "Sem conexão para carregar esta tela — toque para tentar novamente" + botão que faz `location.reload()`. Não engole outros erros (rethrow).
 
-**Nova tabela `circuit_schedule_events`** (separada, não toca `schedule_events`):
+### Edições
+- `src/routes/_app.tsx`
+  - Importar `OfflineModeButton` e renderizar logo abaixo do `SidebarHeader` (acima da `<Nav />`), tanto no Sheet mobile quanto na aside desktop.
+  - Envolver `<Outlet />` em `<ChunkErrorBoundary>`.
+- `src/router.tsx` — reduzir `staleTime` não muda; já está OK. Sem alterações.
+- `src/i18n/locales/{pt,en,es}.json` — chaves `offline.modeTitle`, `offline.modeDesc`, `offline.start`, `offline.cancel`, `offline.step.*`, `offline.done`, `offline.partial`, `offline.lastSync`, `offline.chunkError`, `offline.retry`.
 
-Campos de domínio:
-- `superintendent_id` (uuid, dono — sempre `auth.uid()`)
-- `event_date` (date), `start_time` (time, null), `end_time` (time, null)
-- `event_type` (text) — `ca_br`, `ca_co`, `pioneer_week`, `free_week`, `pioneer_special_meeting`, `regional_convention`, `pioneer_school`, `shepherding`, `other`
-- `title` (text), `location` (text, null), `notes` (text, null)
-- `companion` (text, null) — "Acompanhante" opcional
-- `scope` (text) — `congregation` | `multi` | `all` | `personal`
-- `congregation_ids` (uuid[]) — vazio para `personal`/`all`; uma ou várias para os outros
-- `visible_to_spouse` (boolean, default true) — quando `false`, oculta no painel "Acesso Corpo de anciãos e ESC"
-- `status` (text, default `pending`) — `pending` | `postponed` (concluir = DELETE permanente)
+### Notas de segurança
+- Operação é **somente leitura**: usa `supabase.from(...).select(...)` com filtros já permitidos por RLS (mesmas queries que as telas usam). Nenhuma escrita, nenhum trigger, nenhum SQL novo.
+- Reaproveita o persister IndexedDB existente (`query-persister.ts`) — nada de novo store.
+- `networkMode: "offlineFirst"` já configurado garante priorização do cache em telas seguintes.
 
-Índices: `(superintendent_id, event_date)`, GIN em `congregation_ids`.
+---
 
-**RLS (cobrindo o erro de violação de policy):**
-- `super manages own circuit events` → ALL para o dono (`superintendent_id = auth.uid()` + `has_role(auth.uid(),'superintendent')`).
-- `members read events for their congregation` → SELECT quando `private.get_user_congregation(auth.uid()) = ANY(congregation_ids)` OU `scope = 'all'` e o usuário pertence a alguma congregação do superintendente dono. Excluir `scope = 'personal'` para qualquer não-dono. Excluir quando `visible_to_spouse = false` e o usuário não for o próprio super.
+## Missão 2 — Excluir evento do cronograma
 
-**Auto-expiração D+1:** função SQL `delete_expired_circuit_events()` + job `pg_cron` diário às 03:00 BRT removendo `event_date < CURRENT_DATE`. Também aplicamos um filtro client-side `event_date >= today` como defesa em profundidade.
+**Objetivo:** ação destrutiva no `EventCard` com confirmação e fluxo offline-first.
 
-## 2. UI — `src/routes/_app.cronograma.tsx`
+### Edições
+- `src/routes/_app.cronograma.tsx`
+  - No `EventCard` (apenas quando `canEdit`), adicionar botão `Trash2` (variante `ghost` destrutivo) ao lado do `Pencil`.
+  - Usar `AlertDialog` (shadcn) para confirmação "Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita." com botões Cancelar / Excluir.
+  - Handler `onDelete(id)` chama `offlineDelete("circuit_schedule_events", { id })` — já enfileira quando offline (vide `offline-supabase.ts` + `offline-queue.ts`). Toast: `t("schedule.deletedToast")` ou `t("common.savedOffline")` se `queued`.
+- `src/i18n/locales/{pt,en,es}.json` — chaves `schedule.delete`, `schedule.confirmDeleteTitle`, `schedule.confirmDeleteDesc`, `schedule.deletedToast`.
 
-Reescrita focada (mantendo o visual atual de semana + cards):
+### Notas de segurança
+- Nenhuma mudança em RLS (a política `super manages own circuit events` já cobre DELETE para o próprio superintendente).
+- Não toca em outras tabelas. Reutiliza o caminho `offline-supabase` existente.
 
-- Carrega `circuit_schedule_events` do superintendente ativo + (para anciãos/ESC) eventos visíveis da sua congregação.
-- Filtra `event_date >= hoje` no client.
-- Botão "Novo evento" abre um dialog com os campos:
-  - Tipo de compromisso (lista nova: CA-br, CA-co, Semana de pioneiro, Semana Livre, Reunião especial com os Pioneiros, Congresso Regional, Escola de Pioneiros, Pastoreio, outro)
-  - Título, Data, Hora de início, Local, Notas
-  - **Evento com**: Congregação individual / Várias congregações / Todas / Pessoal
-  - Quando "individual" ou "várias": multiselect das congregações do superintendente
-  - **Acompanhante** (texto livre, opcional)
-  - **Visível para Esposa** (switch, default ligado)
-- Cada card de evento ganha dois botões:
-  - **Concluir** → DELETE permanente (com confirmação leve via toast)
-  - **Adiar** → abre date picker; UPDATE em `event_date` sem criar novo registro; marca `status='postponed'`
-- Mantém swipe semanal, navegação e seletor de calendário.
+---
 
-Realtime: assinatura em `circuit_schedule_events` filtrada por `superintendent_id`.
+## Missão 3 — Aba "Resumo da Semana" para o Superintendente
 
-## 3. Visibilidade no painel da congregação (anciãos/ESC e esposa)
+**Objetivo:** réplica funcional da visualização do painel do convidado (Acesso Corpo de Anciãos), exibida dentro do app autenticado do superintendente, como primeira entrada da seção "Semana da Visita" no sidebar.
 
-- A consulta dos anciãos/ESC usa as RLS acima (não vê `personal`, não vê o que tem `visible_to_spouse=false` se o leitor for a esposa). A identificação de "esposa" reaproveita o relacionamento existente em `user_roles` (perfil já registrado); na ausência desse marcador, o toggle simplesmente oculta para qualquer membro não-superintendente quando desligado (decisão segura por padrão).
-- Painel "Acesso Corpo de anciãos e ESC" (`visitante.painel.tsx` aba Cronograma) recebe os eventos novos somando aos da visita, sem mexer no layout.
+### Estratégia (reuso máximo, zero duplicação de RLS)
+- Extrair o conteúdo de renderização puro de `src/routes/visitante.painel.tsx` (tabs, cards, exportação PDF/PNG) para um componente apresentacional: `src/components/visit-summary/VisitSummaryView.tsx` que recebe `{ snap: Snapshot, mode: "guest" | "super" }`. Em `mode === "super"` esconde botões de "Sair" do convidado e mantém os botões de exportar (PDF/PNG já corrigidos com `saveBlob`).
+- Refatorar `visitante.painel.tsx` para apenas: carregar snapshot via `getGuestSnapshot` (inalterado) e renderizar `<VisitSummaryView snap={snap} mode="guest" />`. **Sem mudanças de lógica nem de exportação.**
 
-## 4. i18n (pt/en/es) simultâneo
+### Nova rota
+- `src/routes/_app.resumo-semana.tsx` — `createFileRoute("/_app/resumo-semana")`. Em vez de chamar `getGuestSnapshot` (que exige `invite_code`), criar um pequeno wrapper que reaproveita o mesmo *snapshot shape* via novo server fn:
+  - `src/lib/visit-summary.functions.ts` → `getSuperVisitSummary` (`createServerFn POST` + `requireSupabaseAuth`) que recebe `{ congregationId }`, valida que o caller é superintendente daquela congregação (via `is_superintendent_of` ou checagem direta em `congregations.superintendent_id = userId`), e roda **as mesmas queries** do `getGuestSnapshot` usando `supabase` autenticado (RLS já permite o super ler tudo da sua congregação). Retorna exatamente o mesmo `Snapshot` (sem `wifeMode`).
+- A nova rota usa `useActiveCongregation()` para obter `congregationId` e renderiza `<VisitSummaryView snap={snap} mode="super" />`. Se não houver congregação ativa, mostra empty state pedindo para selecionar.
 
-Novo namespace `schedule` extendido em `pt.json`/`en.json`/`es.json`:
-- Tipos: `eventTypes.ca_br`, `ca_co`, `pioneer_week`, `free_week`, `pioneer_special_meeting`, `regional_convention`, `pioneer_school`, `shepherding`, `other`
-- Escopos: `scopes.congregation|multi|all|personal`
-- Campos: `companion`, `visibleToSpouse`, `complete`, `postpone`, `postponeTo`, `completed`, `postponed`
-- Toasts: `completedToast`, `postponedToast`, `requireScopeCongregations`
+### Sidebar
+- `src/routes/_app.tsx` — na `NavSection` `"visita"`, inserir **como primeiro item**: `{ to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList }`.
+- `i18n` — `sidebar.weekSummary` em PT/EN/ES.
 
-Mantém o contexto Testemunhas de Jeová (ex.: "Pastoreio", "Reunião especial com os Pioneiros", "Congresso Regional", "Semana de pioneiro").
+### Notas de segurança / RLS
+- **Nada de SQL novo.** A função usa o cliente Supabase autenticado; as policies vigentes (`members read schedule`, `members read meals`, etc., baseadas em `get_user_congregation` / `is_superintendent_of`) já permitem ao super da congregação ler tudo. Comportamento idêntico ao painel do convidado, mas sem precisar do `invite_code` nem do bypass `supabaseAdmin`.
+- Read-only puro. Sem `updated_at`, sem fila offline, sem triggers.
 
-## 5. Segurança e qualidade
+---
 
-- Toda escrita do super usa `superintendent_id = auth.uid()` no payload (evita "new row violates RLS").
-- Validações client-side: escopo `congregation`/`multi` exige ≥ 1 congregação selecionada.
-- Sem alterações em `visits` ou `schedule_events` legados — esta migração é aditiva, evitando regressão.
-- Compatibilidade offline: usar `offlineInsert/Update/Delete` já existentes.
+## Diretrizes gerais aplicadas
+- **Estabilidade nativa:** os botões de exportação dentro de `VisitSummaryView` continuam usando `saveBlob`/`shareViaCapacitor` exatamente como hoje — sem regressão.
+- **Modularização:** `share.ts`, `offline-supabase.ts`, `offline-queue.ts`, `query-persister.ts` e o `VisitSummaryView` extraído são reutilizados; nenhuma duplicação.
+- **Sem mudanças de schema/RLS** em nenhuma das três missões.
+- **ErrorBoundary** específico para chunks evita que falhas de import dinâmico (comum no APK offline) derrubem toda a navegação.
 
-## 6. Ordem de execução
-
-1. Migration SQL (nova tabela, RLS, função de limpeza, cron).
-2. Locales pt/en/es com novas chaves.
-3. Reescrever `_app.cronograma.tsx`.
-4. Ajustar leitura no painel da esposa (`visitante.painel.tsx`, aba cronograma) para incluir os eventos da congregação ativa.
-5. Smoke: criar evento de cada escopo, concluir, adiar, virar de semana, trocar idioma.
-
-## Detalhes técnicos
-
-```sql
-CREATE TABLE public.circuit_schedule_events (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  superintendent_id uuid NOT NULL,
-  event_date date NOT NULL,
-  start_time time, end_time time,
-  event_type text NOT NULL DEFAULT 'other',
-  title text NOT NULL,
-  location text, notes text, companion text,
-  scope text NOT NULL CHECK (scope IN ('congregation','multi','all','personal')),
-  congregation_ids uuid[] NOT NULL DEFAULT '{}',
-  visible_to_spouse boolean NOT NULL DEFAULT true,
-  status text NOT NULL DEFAULT 'pending',
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-```
-
-RLS conforme descrito. `pg_cron` agendado para deletar `event_date < CURRENT_DATE` diariamente.
+### Resumo de arquivos
+- **Criar:** `src/lib/offline-prefetch.ts`, `src/components/OfflineModeButton.tsx`, `src/components/OfflineModeDialog.tsx`, `src/components/ChunkErrorBoundary.tsx`, `src/components/visit-summary/VisitSummaryView.tsx`, `src/lib/visit-summary.functions.ts`, `src/routes/_app.resumo-semana.tsx`.
+- **Editar:** `src/routes/_app.tsx` (sidebar + boundary), `src/routes/_app.cronograma.tsx` (botão excluir + AlertDialog), `src/routes/visitante.painel.tsx` (refatorar para usar `VisitSummaryView`), `src/i18n/locales/{pt,en,es}.json` (chaves novas).
