@@ -44,6 +44,71 @@ function downloadAnchor(filename: string, blob: Blob) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+function isCapacitorNative(): boolean {
+  if (typeof window === "undefined") return false;
+  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor;
+  if (!cap) return false;
+  try {
+    if (typeof cap.isNativePlatform === "function") return cap.isNativePlatform();
+    if (typeof cap.getPlatform === "function") return cap.getPlatform() !== "web";
+  } catch { /* noop */ }
+  return false;
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error ?? new Error("read error"));
+    reader.onload = () => {
+      const result = reader.result as string;
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Capacitor-native save: writes the blob to the app's Cache directory
+ * and opens the native Share sheet so the user can save it to Files,
+ * Drive, email, etc. Returns true on success, false to allow fallback.
+ */
+async function saveViaCapacitor(blob: Blob, filename: string, mimeType: string): Promise<boolean> {
+  if (!isCapacitorNative()) return false;
+  try {
+    const [{ Filesystem, Directory }, { Share }] = await Promise.all([
+      import("@capacitor/filesystem"),
+      import("@capacitor/share"),
+    ]);
+    const data = await blobToBase64(blob);
+    const written = await Filesystem.writeFile({
+      path: filename,
+      data,
+      directory: Directory.Cache,
+    });
+    try {
+      await Share.share({
+        title: filename,
+        url: written.uri,
+        dialogTitle: filename,
+      });
+    } catch (err) {
+      // User cancel = success; only treat real failures as fallback
+      const name = (err as Error)?.name ?? "";
+      const msg = (err as Error)?.message ?? "";
+      if (!/cancel/i.test(name) && !/cancel/i.test(msg)) {
+        // Fall back to copying to Documents so file is at least findable
+        try {
+          await Filesystem.writeFile({ path: filename, data, directory: Directory.Documents });
+        } catch { /* ignore */ }
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Save a Blob to disk. Opens the native file picker when supported,
  * falls back to the share sheet on mobile, and finally to a Downloads
