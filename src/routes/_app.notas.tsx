@@ -20,6 +20,7 @@ import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import type jsPDFType from "jspdf";
 import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
+import { saveBlob } from "@/lib/share";
 
 function makeUuid(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -297,7 +298,18 @@ function Page() {
       drawFooter();
     }
 
-    doc.save(`${t("notes.pdf.fileName")}-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`);
+    const filename = `${t("notes.pdf.fileName")}-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`.replace(/\s+/g, "_");
+    try {
+      const blob = doc.output("blob");
+      await saveBlob(blob, {
+        filename,
+        mimeType: "application/pdf",
+        pickerTypes: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }],
+      });
+      toast.success(t("notes.export.pdf"));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
 
   const shareWhatsapp = () => {
