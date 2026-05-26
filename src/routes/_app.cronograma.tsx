@@ -634,8 +634,8 @@ function EventDialog({
           </Label>
           <Switch
             id="visible-spouse"
-            checked={editing.visible_to_spouse ?? true}
-            onCheckedChange={(v) => setEditing({ ...editing, visible_to_spouse: v })}
+            checked={!(editing.visible_to_spouse ?? true)}
+            onCheckedChange={(v) => setEditing({ ...editing, visible_to_spouse: !v })}
           />
         </div>
       </div>
