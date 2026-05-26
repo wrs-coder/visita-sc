@@ -12,7 +12,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
 
     const { data: cong } = await supabaseAdmin
       .from("congregations")
-      .select("id,name,is_active")
+      .select("id,name,is_active,superintendent_id")
       .eq("invite_code", cleanCode)
       .maybeSingle();
     if (!cong) return { ok: false as const, error: "Código inválido." };
@@ -25,8 +25,38 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       .order("start_date", { ascending: false })
       .limit(1);
     const visit = visits?.[0] ?? null;
+
+    // Circuit-level events visible to this congregation (independent of any visit).
+    // The "visible_to_spouse" flag hides events ONLY from the spouse panel (wifeMode);
+    // elder/ESC guest access always sees the events targeted to their congregation.
+    const todayIso = new Date().toISOString().slice(0, 10);
+    let circuitQuery = supabaseAdmin
+      .from("circuit_schedule_events")
+      .select("id,event_date,start_time,end_time,title,location,event_type,notes,scope,congregation_ids,visible_to_spouse,superintendent_id")
+      .neq("scope", "personal")
+      .gte("event_date", todayIso)
+      .order("event_date")
+      .order("start_time");
+    if (wifeMode) circuitQuery = circuitQuery.eq("visible_to_spouse", true);
+    const { data: circuitRaw } = await circuitQuery;
+
+    const circuitFiltered = (circuitRaw ?? []).filter((e) => {
+      if (e.scope === "all") return e.superintendent_id === cong.superintendent_id;
+      return Array.isArray(e.congregation_ids) && e.congregation_ids.includes(cong.id);
+    });
+    const circuitAsSchedule = circuitFiltered.map((e) => ({
+      id: `cse_${e.id}`,
+      event_date: e.event_date,
+      start_time: e.start_time,
+      end_time: e.end_time,
+      title: e.title,
+      location: e.location,
+      type: e.event_type,
+      notes: e.notes,
+    }));
+
     if (!visit) {
-      return { ok: true as const, wifeMode, congregation: cong, visit: null, schedule: [], meals: [], mealDayNotes: [], field: [], fieldMeetings: [], transport: [], checklist: [], midweek: [], weekend: [], pioneer: [], elders: [] };
+      return { ok: true as const, wifeMode, congregation: cong, visit: null, schedule: circuitAsSchedule, meals: [], mealDayNotes: [], field: [], fieldMeetings: [], transport: [], checklist: [], midweek: [], weekend: [], pioneer: [], elders: [] };
     }
 
     const [{ data: schedule }, { data: meals }, { data: mealDayNotes }, { data: field }, { data: fieldMeetings }, { data: transport }, checklistRes, { data: midweek }, { data: weekend }, { data: pioneer }, { data: elders }] = await Promise.all([
@@ -45,12 +75,18 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       supabaseAdmin.from("elders_servants_meetings").select("id,theme,opening_prayer,closing_prayer").eq("visit_id", visit.id),
     ]);
 
+    const mergedSchedule = [...(schedule ?? []), ...circuitAsSchedule].sort((a, b) => {
+      const d = a.event_date.localeCompare(b.event_date);
+      if (d !== 0) return d;
+      return (a.start_time ?? "").localeCompare(b.start_time ?? "");
+    });
+
     return {
       ok: true as const,
       wifeMode,
       congregation: cong,
       visit,
-      schedule: schedule ?? [],
+      schedule: mergedSchedule,
       meals: meals ?? [],
       mealDayNotes: mealDayNotes ?? [],
       field: field ?? [],
