@@ -258,6 +258,18 @@ function Page() {
     }
   };
 
+  const removeEvent = async (id: string) => {
+    setDeleting(true);
+    const { error, queued } = await offlineDelete("circuit_schedule_events", { id });
+    setDeleting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(queued ? t("common.savedOffline") : t("schedule.deletedToast"));
+    setDeleteFor(null);
+  };
+
   const weekEnd = addDays(weekStart, 6);
 
   return (
@@ -382,6 +394,7 @@ function Page() {
                       }}
                       onComplete={() => complete(e.id)}
                       onPostpone={() => setPostponeFor(e)}
+                      onDelete={() => setDeleteFor(e)}
                     />
                   ))}
                 </div>
