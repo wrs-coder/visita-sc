@@ -262,14 +262,14 @@ export function WeekendPanel() {
     <div className="space-y-3">
       <Card><CardContent className="p-4 grid gap-3 max-w-xl">
         <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
-          <div>
-            <Label>{t("meetingsTalks.weekend.meetingDateTime")}</Label>
-            <FieldText
-              type="datetime-local"
-              value={tsToLocalInput(row.meeting_at)}
-              onSave={(v) => save({ meeting_at: v ? localInputToIso(v) : null })}
-            />
-          </div>
+          <DayTimePicker
+            value={row.meeting_at}
+            onChange={(iso) => save({ meeting_at: iso })}
+            disabled={!canEdit}
+            dayLabel={t("meetingsTalks.weekend.meetingDay")}
+            timeLabel={t("meetingsTalks.weekend.meetingTime")}
+          />
+
           <div>
             <Label>{t("meetingsTalks.weekend.publicTalk")}</Label>
             <FieldText
