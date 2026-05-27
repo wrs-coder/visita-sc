@@ -10,12 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks, Compass, Share2, Image as ImageIcon, FileDown, MessageCircle, Sun, Mic } from "lucide-react";
+import { LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks, Compass, Share2, Image as ImageIcon, FileDown, MessageCircle, Sun, Mic, CloudDownload } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { saveBlob } from "@/lib/share";
+import { saveSnapshot, loadSnapshot } from "@/lib/snapshot-cache";
+import { GuestOfflineDialog } from "@/components/GuestOfflineDialog";
 
 export const Route = createFileRoute("/visitante/painel")({ component: Page });
 
@@ -62,12 +64,32 @@ function Page() {
   }), [t]);
 
   const load = useCallback(async (c: string) => {
-    setLoading(true);
-    const r = await fn({ data: { inviteCode: c } });
-    setLoading(false);
-    if (!r.ok) { clearGuestSession(); nav({ to: "/" }); return; }
-    setSnap(r as unknown as Snapshot);
-  }, [fn, nav]);
+    // Hidrata imediatamente do cache local para funcionar offline.
+    const cached = loadSnapshot<Snapshot>("guest", c);
+    if (cached) {
+      setSnap(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+    try {
+      const r = await fn({ data: { inviteCode: c } });
+      if (!(r as { ok: boolean }).ok) {
+        // Resposta explícita do servidor: sessão inválida → desloga.
+        if (!cached) { clearGuestSession(); nav({ to: "/" }); }
+        return;
+      }
+      const fresh = r as unknown as Snapshot;
+      setSnap(fresh);
+      saveSnapshot("guest", c, fresh);
+    } catch (err) {
+      // Erro de rede (offline). Mantém o cache na tela; só notifica se não houver dados.
+      console.warn("[visitante] falha ao carregar — usando cache", err);
+      if (!cached) toast.error(t("offline.chunkErrorDesc"));
+    } finally {
+      setLoading(false);
+    }
+  }, [fn, nav, t]);
 
   useEffect(() => {
     const c = readGuestSession();
@@ -75,6 +97,8 @@ function Page() {
     setCode(c);
     load(c);
   }, [load, nav]);
+
+  const [offlineOpen, setOfflineOpen] = useState(false);
 
   const exit = () => { clearGuestSession(); nav({ to: "/" }); };
 
@@ -225,12 +249,23 @@ function Page() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setOfflineOpen(true)}
+              className="text-primary-foreground hover:bg-white/10"
+              title={t("offline.modeTitle")}
+            >
+              <CloudDownload className="h-4 w-4 md:mr-1" />
+              <span className="hidden md:inline">{t("offline.activate")}</span>
+            </Button>
             <Button variant="ghost" size="sm" onClick={exit} className="text-primary-foreground hover:bg-white/10">
               <LogOut className="h-4 w-4 mr-1" /> {t("guest.exit")}
             </Button>
           </div>
         </div>
       </header>
+      <GuestOfflineDialog open={offlineOpen} onOpenChange={setOfflineOpen} />
 
       <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
         {!snap.visit ? (
