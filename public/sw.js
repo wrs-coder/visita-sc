@@ -105,6 +105,28 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // TanStack Start server functions (/_serverFn/*) → NetworkFirst, cache para offline
+  if (sameOrigin && url.pathname.startsWith("/_serverFn/")) {
+    event.respondWith(
+      (async () => {
+        try {
+          const fresh = await fetch(req);
+          if (fresh && fresh.status === 200) {
+            const cache = await caches.open(API_CACHE);
+            cache.put(req, fresh.clone()).catch(() => undefined);
+          }
+          return fresh;
+        } catch {
+          const cache = await caches.open(API_CACHE);
+          const cached = await cache.match(req);
+          if (cached) return cached;
+          throw new Error("offline-no-cache");
+        }
+      })(),
+    );
+    return;
+  }
+
   if (!sameOrigin) return;
 
   // /assets/* hashed → CacheFirst (build-imutável)

@@ -92,20 +92,40 @@ function applyFetchInterceptor() {
   if (!originalFetch) originalFetch = window.fetch.bind(window);
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     if (current === "offline") {
+      let url = "";
       try {
-        const url =
+        url =
           typeof input === "string"
             ? input
             : input instanceof URL
               ? input.href
               : input.url;
-        const host = getSupabaseHost();
-        if (host && url.includes(host)) {
-          throw new TypeError("Failed to fetch (offline mode)");
+      } catch {
+        /* deixa passar */
+      }
+      const host = getSupabaseHost();
+      const isSupabase = !!host && url.includes(host);
+      if (isSupabase) {
+        // Em Modo Offline, NÃO derrubamos a chamada imediatamente: primeiro
+        // tentamos servir do Cache Storage (gravado pelo Service Worker em
+        // navegações anteriores) — é exatamente isso que mantém as telas
+        // populadas sem internet. Só quando não há nada em cache devolvemos
+        // um erro de rede sintético para que os fallbacks (snapshot-cache,
+        // React Query persistido) entrem em ação.
+        try {
+          if (typeof caches !== "undefined") {
+            const req = new Request(url, {
+              method: (init?.method ?? "GET").toUpperCase(),
+            });
+            if (req.method === "GET") {
+              const hit = await caches.match(req, { ignoreVary: true, ignoreSearch: false });
+              if (hit) return hit;
+            }
+          }
+        } catch {
+          /* segue para o erro abaixo */
         }
-      } catch (e) {
-        if (e instanceof TypeError) throw e;
-        /* parsing falhou, deixa passar */
+        throw new TypeError("Failed to fetch (offline mode)");
       }
     }
     return originalFetch!(input as RequestInfo, init);
