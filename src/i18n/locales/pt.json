@@ -416,6 +416,8 @@
       "saveChanges": "Salvar alterações"
     },
     "midweek": {
+      "meetingDay": "Dia da Reunião",
+      "meetingTime": "Hora da Reunião",
       "serviceTalk": "Tema: Discurso de serviço",
       "chairman": "Presidente da Reunião",
       "chairmanPlaceholder": "Nome do presidente",
@@ -425,6 +427,8 @@
     },
     "weekend": {
       "meetingDateTime": "Dia e Horário da Reunião",
+      "meetingDay": "Dia da Reunião",
+      "meetingTime": "Hora da Reunião",
       "publicTalk": "Discurso Público",
       "readOnlyNote": "Apenas leitura — editado pelo superintendente.",
       "finalTalk": "Discurso Final",
@@ -433,6 +437,16 @@
       "pickTheme": "Selecione um tema",
       "selectedTheme": "Selecionado: {{title}}"
     },
+    "weekdays": {
+      "sun": "Domingo",
+      "mon": "Segunda-feira",
+      "tue": "Terça-feira",
+      "wed": "Quarta-feira",
+      "thu": "Quinta-feira",
+      "fri": "Sexta-feira",
+      "sat": "Sábado"
+    },
+
     "pioneer": {
       "theme": "Tema:",
       "openingPrayer": "Oração Inicial",
