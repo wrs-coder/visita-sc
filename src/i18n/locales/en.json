@@ -592,8 +592,12 @@
       "midweek": {
         "serviceTalk": "Theme: Service Talk",
         "chairman": "Meeting Chairman",
-        "closingPrayer": "Closing Prayer"
+        "closingPrayer": "Closing Prayer",
+        "finalSong": "Closing Song",
+        "finalSongPlaceholder": "e.g.: 123",
+        "observations": "Notes"
       },
+      "observationsPlaceholder": "Free notes (up to 4000 characters)",
       "weekend": {
         "publicTalk": "Public Talk",
         "publicTalkPlaceholder": "Public Talk theme",
@@ -603,7 +607,10 @@
         "finalTalkHint": "Register multiple themes. The elders will pick one from a dropdown.",
         "addTheme": "Theme",
         "noThemes": "No themes. Add at least one.",
-        "themePlaceholder": "e.g.: The Kingdom will solve..."
+        "themePlaceholder": "e.g.: The Kingdom will solve...",
+        "openingSong": "Opening Song",
+        "closingSong": "Closing Song",
+        "observations": "Notes"
       },
       "pioneer": {
         "intro": "Only weekday + time; no calendar of specific dates.",
@@ -615,12 +622,14 @@
         "sameAsMain": "Same as main",
         "location": "Location",
         "openingPrayer": "Opening Prayer",
-        "closingPrayer": "Closing Prayer"
+        "closingPrayer": "Closing Prayer",
+        "observations": "Notes"
       },
       "elders": {
         "theme": "Theme:",
         "openingPrayer": "Opening Prayer",
-        "closingPrayer": "Closing Prayer"
+        "closingPrayer": "Closing Prayer",
+        "observations": "Notes"
       }
     },
     "copySuffix": "(copy)",

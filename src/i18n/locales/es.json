@@ -592,8 +592,12 @@
       "midweek": {
         "serviceTalk": "Tema: Discurso de servicio",
         "chairman": "Presidente de la Reunión",
-        "closingPrayer": "Oración Final"
+        "closingPrayer": "Oración Final",
+        "finalSong": "Cántico Final",
+        "finalSongPlaceholder": "Ej.: 123",
+        "observations": "Observaciones"
       },
+      "observationsPlaceholder": "Notas libres (hasta 4000 caracteres)",
       "weekend": {
         "publicTalk": "Discurso Público",
         "publicTalkPlaceholder": "Tema del Discurso Público",
@@ -603,7 +607,10 @@
         "finalTalkHint": "Registra varios temas. Los ancianos elegirán uno en un menú desplegable.",
         "addTheme": "Tema",
         "noThemes": "Sin temas. Agrega al menos uno.",
-        "themePlaceholder": "Ej.: El Reino resolverá..."
+        "themePlaceholder": "Ej.: El Reino resolverá...",
+        "openingSong": "Cántico Inicial",
+        "closingSong": "Cántico Final",
+        "observations": "Observaciones"
       },
       "pioneer": {
         "intro": "Solo día de la semana + horario; sin calendario de fechas específicas.",
@@ -615,12 +622,14 @@
         "sameAsMain": "Igual que el principal",
         "location": "Lugar",
         "openingPrayer": "Oración Inicial",
-        "closingPrayer": "Oración Final"
+        "closingPrayer": "Oración Final",
+        "observations": "Observaciones"
       },
       "elders": {
         "theme": "Tema:",
         "openingPrayer": "Oración Inicial",
-        "closingPrayer": "Oración Final"
+        "closingPrayer": "Oración Final",
+        "observations": "Observaciones"
       }
     },
     "copySuffix": "(copia)",

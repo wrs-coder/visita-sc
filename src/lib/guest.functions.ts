@@ -73,7 +73,9 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       supabaseAdmin.from("midweek_meetings").select("id,chairman,service_talk_theme,closing_prayer").eq("visit_id", visit.id),
       supabaseAdmin.from("weekend_meetings").select("id,meeting_at,public_talk_theme,talk_theme_title").eq("visit_id", visit.id).order("meeting_at"),
       supabaseAdmin.from("pioneer_meetings").select("id,meeting_at,super_meeting_at,location,theme,opening_prayer,closing_prayer").eq("visit_id", visit.id).order("meeting_at"),
-      supabaseAdmin.from("elders_servants_meetings").select("id,theme,opening_prayer,closing_prayer").eq("visit_id", visit.id),
+      wifeMode
+        ? Promise.resolve({ data: [] as Array<{ id: string; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }> })
+        : supabaseAdmin.from("elders_servants_meetings").select("id,theme,opening_prayer,closing_prayer").eq("visit_id", visit.id),
     ]);
 
     const mergedSchedule = [...(schedule ?? []), ...circuitAsSchedule].sort((a, b) => {

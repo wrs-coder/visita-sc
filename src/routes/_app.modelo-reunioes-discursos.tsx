@@ -106,8 +106,13 @@ function Page() {
         service_talk_theme: r.midweek?.service_talk_theme ?? "",
         chairman: r.midweek?.chairman ?? "",
         closing_prayer: r.midweek?.closing_prayer ?? "",
+        final_song: r.midweek?.final_song ?? "",
+        observations: r.midweek?.observations ?? "",
       },
       weekend_public_talk_theme: r.weekend_public_talk_theme ?? "",
+      weekend_opening_song: r.weekend_opening_song ?? "",
+      weekend_closing_song: r.weekend_closing_song ?? "",
+      weekend_observations: r.weekend_observations ?? "",
       weekend_themes: (r.weekend_themes ?? []).map((t) => ({ title: t.title })),
       pioneer: {
         weekday: r.pioneer?.weekday ?? null,
@@ -118,11 +123,13 @@ function Page() {
         theme: r.pioneer?.theme ?? "",
         opening_prayer: r.pioneer?.opening_prayer ?? "",
         closing_prayer: r.pioneer?.closing_prayer ?? "",
+        observations: r.pioneer?.observations ?? "",
       },
       elders: {
         theme: r.elders?.theme ?? "",
         opening_prayer: r.elders?.opening_prayer ?? "",
         closing_prayer: r.elders?.closing_prayer ?? "",
+        observations: r.elders?.observations ?? "",
       },
     });
   }, [fnGet]);
@@ -198,11 +205,16 @@ function Page() {
         templateId: activeId,
         payload: {
           midweek: {
-              service_talk_theme: payload.midweek.service_talk_theme || null,
+            service_talk_theme: payload.midweek.service_talk_theme || null,
             chairman: payload.midweek.chairman || null,
             closing_prayer: payload.midweek.closing_prayer || null,
+            final_song: payload.midweek.final_song || null,
+            observations: payload.midweek.observations || null,
           },
           weekend_public_talk_theme: payload.weekend_public_talk_theme.trim() || null,
+          weekend_opening_song: payload.weekend_opening_song.trim() || null,
+          weekend_closing_song: payload.weekend_closing_song.trim() || null,
+          weekend_observations: payload.weekend_observations || null,
           weekend_themes: payload.weekend_themes.filter((t) => t.title.trim()).map((t) => ({ title: t.title.trim() })),
           pioneer: {
             weekday: payload.pioneer.weekday,
@@ -210,14 +222,16 @@ function Page() {
             super_meeting_weekday: payload.pioneer.super_meeting_weekday,
             super_meeting_time: payload.pioneer.super_meeting_time || null,
             location: payload.pioneer.location || null,
-              theme: payload.pioneer.theme || null,
+            theme: payload.pioneer.theme || null,
             opening_prayer: payload.pioneer.opening_prayer || null,
             closing_prayer: payload.pioneer.closing_prayer || null,
+            observations: payload.pioneer.observations || null,
           },
           elders: {
-              theme: payload.elders.theme || null,
+            theme: payload.elders.theme || null,
             opening_prayer: payload.elders.opening_prayer || null,
             closing_prayer: payload.elders.closing_prayer || null,
+            observations: payload.elders.observations || null,
           },
         },
       },
@@ -360,6 +374,21 @@ function Page() {
                         readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, closing_prayer: e.target.value } })} />
                     </div>
+                    <div>
+                      <Label>{t("templates.meetingTalk.midweek.finalSong")}</Label>
+                      <Input className="mt-1" value={payload.midweek.final_song}
+                        readOnly={!isSuper}
+                        placeholder={t("templates.meetingTalk.midweek.finalSongPlaceholder")}
+                        onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, final_song: e.target.value } })} />
+                    </div>
+                    <div>
+                      <Label>{t("templates.meetingTalk.midweek.observations")}</Label>
+                      <Textarea className="mt-1 min-h-[80px]" value={payload.midweek.observations}
+                        readOnly={!isSuper}
+                        maxLength={4000}
+                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                        onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, observations: e.target.value } })} />
+                    </div>
                   </CardContent></Card>
                 </TabsContent>
 
@@ -401,8 +430,30 @@ function Page() {
                         </ul>
                       )}
                     </div>
+                    <div className="border-t pt-3 grid gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label>{t("templates.meetingTalk.weekend.openingSong")}</Label>
+                          <Input className="mt-1" value={payload.weekend_opening_song} readOnly={!isSuper}
+                            onChange={(e) => setPayload({ ...payload, weekend_opening_song: e.target.value })} />
+                        </div>
+                        <div>
+                          <Label>{t("templates.meetingTalk.weekend.closingSong")}</Label>
+                          <Input className="mt-1" value={payload.weekend_closing_song} readOnly={!isSuper}
+                            onChange={(e) => setPayload({ ...payload, weekend_closing_song: e.target.value })} />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>{t("templates.meetingTalk.weekend.observations")}</Label>
+                        <Textarea className="mt-1 min-h-[80px]" value={payload.weekend_observations} readOnly={!isSuper}
+                          maxLength={4000}
+                          placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                          onChange={(e) => setPayload({ ...payload, weekend_observations: e.target.value })} />
+                      </div>
+                    </div>
                   </CardContent></Card>
                 </TabsContent>
+
 
 
 
@@ -472,8 +523,16 @@ function Page() {
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, closing_prayer: e.target.value } })} />
                       </div>
                     </div>
+                    <div>
+                      <Label>{t("templates.meetingTalk.pioneer.observations")}</Label>
+                      <Textarea className="mt-1 min-h-[80px]" value={payload.pioneer.observations} readOnly={!isSuper}
+                        maxLength={4000}
+                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                        onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, observations: e.target.value } })} />
+                    </div>
                   </CardContent></Card>
                 </TabsContent>
+
 
                 <TabsContent value="anc" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
@@ -492,6 +551,13 @@ function Page() {
                       <Label>{t("templates.meetingTalk.elders.closingPrayer")}</Label>
                       <Input className="mt-1" value={payload.elders.closing_prayer} readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, closing_prayer: e.target.value } })} />
+                    </div>
+                    <div>
+                      <Label>{t("templates.meetingTalk.elders.observations")}</Label>
+                      <Textarea className="mt-1 min-h-[80px]" value={payload.elders.observations} readOnly={!isSuper}
+                        maxLength={4000}
+                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                        onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, observations: e.target.value } })} />
                     </div>
                   </CardContent></Card>
                 </TabsContent>
