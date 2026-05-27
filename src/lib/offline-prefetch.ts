@@ -4,6 +4,7 @@
 // em updated_at/sync_status. Falhas individuais não abortam o fluxo.
 import type { QueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { prefetchRouteShells } from "@/lib/offline-shells";
 
 export const OFFLINE_READY_KEY = "visita-sc:offline-ready";
 
@@ -266,6 +267,12 @@ export async function prefetchAllForOffline(opts: PrefetchOpts): Promise<{
           q.select("*").eq("superintendent_id", userId),
         );
         set(["offline", "private_notes", userId], data);
+      },
+    },
+    {
+      label: tr("offline.step.shells", "Telas do aplicativo"),
+      run: async () => {
+        await prefetchRouteShells({ signal });
       },
     },
   ];
