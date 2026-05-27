@@ -20,6 +20,7 @@ import { getSuperVisitSummary } from "@/lib/visit-summary.functions";
 import { deactivateScheduleEvent } from "@/lib/schedule-cleanup.functions";
 import { VisitSummaryView, type VisitSnapshot } from "@/components/visit-summary/VisitSummaryView";
 import { getHiddenEventIds, hideEventId } from "@/lib/hidden-events";
+import { loadSnapshot, saveSnapshot } from "@/lib/snapshot-cache";
 
 export const Route = createFileRoute("/_app/resumo-semana")({ component: Page });
 
