@@ -1103,6 +1103,24 @@
     "chunkErrorDesc": "We could not load this module. Check your connection and try again.",
     "retry": "Try again"
   },
+  "connection": {
+    "modeOnline": "Online Mode",
+    "modeOffline": "Offline Mode",
+    "switchToOnline": "Switch to Online Mode",
+    "switchToOffline": "Switch to Offline Mode",
+    "confirmGoOfflineTitle": "Enable Offline Mode?",
+    "confirmGoOfflineDesc": "The app will not use the internet. Reads come from local cache and your changes are queued until you switch back to Online Mode and sync.",
+    "confirmGoOnlineTitle": "Switch back to Online Mode?",
+    "confirmGoOnlineDesc": "The app will reconnect to the server. Pending changes will be sent now.",
+    "activateOffline": "Enable Offline Mode",
+    "activateOnline": "Enable Online Mode",
+    "pendingToSync": "{{n}} pending change(s) — will be sent on sync.",
+    "nowOffline": "Offline Mode active. You can use the app without internet.",
+    "nowOnline": "Online Mode active.",
+    "offlineWithStale": "Offline Mode active (using cached data).",
+    "disabledInOffline": "You are in Offline Mode. Switch to Online to sync.",
+    "firstLoginNeedsInternet": "For first login, switch to Online Mode and connect to the internet."
+  },
   "weekSummary": {
     "subtitle": "Full view of the visit week",
     "selectCongregation": "Select an active congregation to see the summary.",
