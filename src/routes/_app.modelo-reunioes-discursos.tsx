@@ -331,6 +331,7 @@ function Page() {
                     <Button size="sm" onClick={handleSave} disabled={busy}>
                       <Save className="h-3.5 w-3.5 mr-1" />{t("templates.meetingTalk.saveTemplate")}
                     </Button>
+                    <SavingIndicator saving={busy} />
                   </div>
                 ) : (
                   <span className="text-xs text-muted-foreground">{t("templates.viewOnly")}</span>
@@ -549,10 +550,14 @@ function Page() {
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <div>
                       <Label>{t("templates.meetingTalk.elders.observations")}</Label>
-                      <Textarea className="mt-1 min-h-[80px]" value={payload.elders.observations} readOnly={!isSuper}
-                        maxLength={4000}
+                      <CharCounterTextarea
+                        className="mt-1 min-h-[80px]"
+                        value={payload.elders.observations}
+                        readOnly={!isSuper}
+                        max={4000}
                         placeholder={t("templates.meetingTalk.observationsPlaceholder")}
-                        onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, observations: e.target.value } })} />
+                        onValueChange={(v) => setPayload({ ...payload, elders: { ...payload.elders, observations: v } })}
+                      />
                     </div>
                     <div>
                       <Label>{t("templates.meetingTalk.elders.openingPrayer")}</Label>
