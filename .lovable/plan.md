@@ -1,74 +1,112 @@
 
-## Missão 1 — Modo Offline Manual (pré-cache de dados)
+## Objetivo
 
-**Objetivo:** botão que baixa proativamente todos os dados do usuário ativo (perfil, congregação, visitas, modelos, eventos, refeições, etc.) e os deixa armazenados via TanStack Query + IndexedDB persister (já existe `query-persister.ts`), além de proteger a navegação contra falhas de chunk dinâmico.
-
-### Novos arquivos
-- `src/lib/offline-prefetch.ts` — função `prefetchAllForOffline(opts)` que recebe `{ queryClient, userId, congregationId, role, onProgress }`. Internamente faz chamadas Supabase em sequência paginada com passos nomeados (`profile`, `congregations`, `visits`, `schedule_events`, `meals`, `field_assignments`, `field_meetings`, `transport_schedule`, `checklist_items`, `midweek/weekend/pioneer/elders`, `circuit_schedule_events`, todos os `*_templates` e `*_template_items`, `private_notes` se super). Cada passo grava no `queryClient` via `setQueryData(['offline', table, scope], data)` para entrar no persister (já dehidrata `success`). `onProgress({ step, current, total, label })` reporta progresso. Tudo `try/catch` por passo — uma falha individual incrementa contador de erros mas não aborta o fluxo.
-- `src/components/OfflineModeDialog.tsx` — `Dialog` (shadcn) com `Progress`, label do passo atual ("Sincronizando: 45% — Refeições…"), botão Cancelar (AbortController) e estado final (sucesso / parcial). Marca `localStorage["visita-sc:offline-ready"] = ISO` quando termina.
-- `src/components/OfflineModeButton.tsx` — botão `CloudDownload` reutilizável que abre o `OfflineModeDialog`. Mostra badge "Atualizado há Xh" quando já existe a flag.
-- `src/components/ChunkErrorBoundary.tsx` — `class` ErrorBoundary que captura erros com `/failed to fetch dynamically imported module|Loading chunk|ChunkLoadError/i`, mostra card amigável "Sem conexão para carregar esta tela — toque para tentar novamente" + botão que faz `location.reload()`. Não engole outros erros (rethrow).
-
-### Edições
-- `src/routes/_app.tsx`
-  - Importar `OfflineModeButton` e renderizar logo abaixo do `SidebarHeader` (acima da `<Nav />`), tanto no Sheet mobile quanto na aside desktop.
-  - Envolver `<Outlet />` em `<ChunkErrorBoundary>`.
-- `src/router.tsx` — reduzir `staleTime` não muda; já está OK. Sem alterações.
-- `src/i18n/locales/{pt,en,es}.json` — chaves `offline.modeTitle`, `offline.modeDesc`, `offline.start`, `offline.cancel`, `offline.step.*`, `offline.done`, `offline.partial`, `offline.lastSync`, `offline.chunkError`, `offline.retry`.
-
-### Notas de segurança
-- Operação é **somente leitura**: usa `supabase.from(...).select(...)` com filtros já permitidos por RLS (mesmas queries que as telas usam). Nenhuma escrita, nenhum trigger, nenhum SQL novo.
-- Reaproveita o persister IndexedDB existente (`query-persister.ts`) — nada de novo store.
-- `networkMode: "offlineFirst"` já configurado garante priorização do cache em telas seguintes.
+Substituir o botão atual "Ativar Modo Offline" por um **seletor visual** (verde = Online, amarelo = Offline) que o usuário pode alternar a qualquer momento. O modo escolhido governa **como o app lê e escreve dados**, e impede logout automático para que o app continue utilizável sem internet.
 
 ---
 
-## Missão 2 — Excluir evento do cronograma
+## Como cada modo se comporta
 
-**Objetivo:** ação destrutiva no `EventCard` com confirmação e fluxo offline-first.
+### Modo Offline (seletor amarelo)
+- Toda leitura vem **só do cache local** (TanStack Query persistido + snapshots em localStorage). Nenhuma chamada de rede ao Supabase, mesmo se a internet estiver disponível.
+- Toda escrita (criar/editar/excluir) é **enfileirada** em `offline-queue` — nada vai ao servidor.
+- O app **não tenta validar sessão** com o Supabase; se a sessão estiver no `localStorage`, o usuário entra direto. Sem auto-logout em caso de token expirado.
+- Toast de aviso: "Modo Offline ativo — alterações ficam guardadas até você sincronizar."
 
-### Edições
-- `src/routes/_app.cronograma.tsx`
-  - No `EventCard` (apenas quando `canEdit`), adicionar botão `Trash2` (variante `ghost` destrutivo) ao lado do `Pencil`.
-  - Usar `AlertDialog` (shadcn) para confirmação "Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita." com botões Cancelar / Excluir.
-  - Handler `onDelete(id)` chama `offlineDelete("circuit_schedule_events", { id })` — já enfileira quando offline (vide `offline-supabase.ts` + `offline-queue.ts`). Toast: `t("schedule.deletedToast")` ou `t("common.savedOffline")` se `queued`.
-- `src/i18n/locales/{pt,en,es}.json` — chaves `schedule.delete`, `schedule.confirmDeleteTitle`, `schedule.confirmDeleteDesc`, `schedule.deletedToast`.
+### Modo Online (seletor verde)
+- Leituras: **cache primeiro** (sem refetch automático), servidor só quando o usuário clica em **Sincronizar**.
+- Escritas: vão **direto ao servidor** quando a rede está disponível; se a rede falhar, caem na fila offline (igual ao comportamento atual de `offline-supabase.ts`).
+- Clicar em **Sincronizar** dispara: (a) `flushQueue` (envia fila pendente) + (b) `prefetchAllForOffline` silencioso (atualiza cache local com dados frescos do servidor) + (c) `queryClient.invalidateQueries`.
 
-### Notas de segurança
-- Nenhuma mudança em RLS (a política `super manages own circuit events` já cobre DELETE para o próprio superintendente).
-- Não toca em outras tabelas. Reutiliza o caminho `offline-supabase` existente.
-
----
-
-## Missão 3 — Aba "Resumo da Semana" para o Superintendente
-
-**Objetivo:** réplica funcional da visualização do painel do convidado (Acesso Corpo de Anciãos), exibida dentro do app autenticado do superintendente, como primeira entrada da seção "Semana da Visita" no sidebar.
-
-### Estratégia (reuso máximo, zero duplicação de RLS)
-- Extrair o conteúdo de renderização puro de `src/routes/visitante.painel.tsx` (tabs, cards, exportação PDF/PNG) para um componente apresentacional: `src/components/visit-summary/VisitSummaryView.tsx` que recebe `{ snap: Snapshot, mode: "guest" | "super" }`. Em `mode === "super"` esconde botões de "Sair" do convidado e mantém os botões de exportar (PDF/PNG já corrigidos com `saveBlob`).
-- Refatorar `visitante.painel.tsx` para apenas: carregar snapshot via `getGuestSnapshot` (inalterado) e renderizar `<VisitSummaryView snap={snap} mode="guest" />`. **Sem mudanças de lógica nem de exportação.**
-
-### Nova rota
-- `src/routes/_app.resumo-semana.tsx` — `createFileRoute("/_app/resumo-semana")`. Em vez de chamar `getGuestSnapshot` (que exige `invite_code`), criar um pequeno wrapper que reaproveita o mesmo *snapshot shape* via novo server fn:
-  - `src/lib/visit-summary.functions.ts` → `getSuperVisitSummary` (`createServerFn POST` + `requireSupabaseAuth`) que recebe `{ congregationId }`, valida que o caller é superintendente daquela congregação (via `is_superintendent_of` ou checagem direta em `congregations.superintendent_id = userId`), e roda **as mesmas queries** do `getGuestSnapshot` usando `supabase` autenticado (RLS já permite o super ler tudo da sua congregação). Retorna exatamente o mesmo `Snapshot` (sem `wifeMode`).
-- A nova rota usa `useActiveCongregation()` para obter `congregationId` e renderiza `<VisitSummaryView snap={snap} mode="super" />`. Se não houver congregação ativa, mostra empty state pedindo para selecionar.
-
-### Sidebar
-- `src/routes/_app.tsx` — na `NavSection` `"visita"`, inserir **como primeiro item**: `{ to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList }`.
-- `i18n` — `sidebar.weekSummary` em PT/EN/ES.
-
-### Notas de segurança / RLS
-- **Nada de SQL novo.** A função usa o cliente Supabase autenticado; as policies vigentes (`members read schedule`, `members read meals`, etc., baseadas em `get_user_congregation` / `is_superintendent_of`) já permitem ao super da congregação ler tudo. Comportamento idêntico ao painel do convidado, mas sem precisar do `invite_code` nem do bypass `supabaseAdmin`.
-- Read-only puro. Sem `updated_at`, sem fila offline, sem triggers.
+### Alternância
+- Trocar Online → Offline: aborta refetches em andamento, marca flag. Nenhum dado é perdido.
+- Trocar Offline → Online: dispara automaticamente um Sincronizar (após confirmação rápida do usuário) para empurrar a fila acumulada.
 
 ---
 
-## Diretrizes gerais aplicadas
-- **Estabilidade nativa:** os botões de exportação dentro de `VisitSummaryView` continuam usando `saveBlob`/`shareViaCapacitor` exatamente como hoje — sem regressão.
-- **Modularização:** `share.ts`, `offline-supabase.ts`, `offline-queue.ts`, `query-persister.ts` e o `VisitSummaryView` extraído são reutilizados; nenhuma duplicação.
-- **Sem mudanças de schema/RLS** em nenhuma das três missões.
-- **ErrorBoundary** específico para chunks evita que falhas de import dinâmico (comum no APK offline) derrubem toda a navegação.
+## Mudanças no código
 
-### Resumo de arquivos
-- **Criar:** `src/lib/offline-prefetch.ts`, `src/components/OfflineModeButton.tsx`, `src/components/OfflineModeDialog.tsx`, `src/components/ChunkErrorBoundary.tsx`, `src/components/visit-summary/VisitSummaryView.tsx`, `src/lib/visit-summary.functions.ts`, `src/routes/_app.resumo-semana.tsx`.
-- **Editar:** `src/routes/_app.tsx` (sidebar + boundary), `src/routes/_app.cronograma.tsx` (botão excluir + AlertDialog), `src/routes/visitante.painel.tsx` (refatorar para usar `VisitSummaryView`), `src/i18n/locales/{pt,en,es}.json` (chaves novas).
+### 1. Novo estado global `connection-mode`
+**Novo arquivo `src/lib/connection-mode.ts`**
+- Tipo: `"online" | "offline"`.
+- Persiste em `localStorage` (`visita-sc:connection-mode`), default `"online"`.
+- API: `getMode()`, `setMode(m)`, `subscribe(cb)`, hook `useConnectionMode()`.
+- Função `isOfflineMode()` — usada por toda a camada de dados para curto-circuitar chamadas.
+
+### 2. Camada de dados respeita o modo
+**Editar `src/lib/offline-supabase.ts`**
+- `isOffline()` passa a retornar `true` se `navigator.onLine === false` **OU** `getMode() === "offline"`.
+- Resultado: todos `offlineInsert/Update/Delete/Upsert` enfileiram automaticamente em Modo Offline.
+
+**Editar `src/router.tsx` (QueryClient)**
+- Em Modo Offline, mudar `networkMode` para `"always"` ainda quebra; usar `defaultOptions.queries.queryFn` wrapper não é viável.
+- Solução simples: aumentar `staleTime` para `Infinity` em Offline e expor um helper `pauseRefetches()` que define `queryClient.setDefaultOptions({ queries: { enabled: false }})` enquanto Offline. Reverte ao voltar pra Online.
+
+**Editar `src/hooks/use-auth.tsx`**
+- Em Modo Offline: **não chamar** `supabase.auth.getSession()` nem registrar listener que limpa state em `SIGNED_OUT`. Reconstrói `user/session/profile` a partir do `localStorage` (snapshot já gravado no último login online + cache de perfil).
+- `signOut()` continua funcionando mas exige confirmação extra em Modo Offline (avisa que vai perder dados pendentes na fila).
+- Remover qualquer redirect-to-login em erro de rede; apenas redireciona em `SIGNED_OUT` explícito.
+
+### 3. UI do seletor
+**Novo `src/components/ConnectionModeToggle.tsx`** — substitui `OfflineModeButton`:
+- Switch visual com 2 estados:
+  - **Online (verde)**: ícone `Wifi`, fundo `bg-emerald-500/15`, borda esmeralda, label "Online".
+  - **Offline (amarelo)**: ícone `WifiOff`, fundo `bg-amber-500/15`, borda âmbar, label "Offline".
+- Exibe há quanto tempo foi a última sincronização (reaproveita `getOfflineReadyAt()`).
+- Clique abre dialog de confirmação:
+  - Indo pra **Offline**: explica comportamento + oferece "Baixar dados agora" (roda `prefetchAllForOffline` antes de trocar — garante que terá dados pra ler offline).
+  - Indo pra **Online**: explica que vai sincronizar pendências; mostra contagem da fila; botão "Trocar e Sincronizar".
+
+**Editar `src/routes/_app.tsx`** — trocar `<OfflineModeButton />` por `<ConnectionModeToggle />` na sidebar.
+
+**Editar `src/components/SyncButton.tsx`**:
+- Em Modo Offline o botão fica desabilitado com tooltip "Você está em Modo Offline — alterne para Online para sincronizar".
+- Em Modo Online, ao sincronizar, também roda `prefetchAllForOffline` em background (cache fresco).
+
+### 4. Login funcional offline
+**Editar `src/components/auth/LoginForm.tsx`**:
+- Se `getMode() === "offline"` E há sessão salva em `localStorage` (`sb-*-auth-token`), pular tela de login e ir direto pro app (hook `use-auth` já reconstrói).
+- Se Offline e não há sessão salva: mostra mensagem "Conecte-se à internet pelo menos uma vez para fazer o primeiro login" — não tenta ir ao Supabase.
+
+**Editar `src/routes/__root.tsx`** (listener `onAuthStateChange`):
+- Em Modo Offline, **ignorar** eventos `TOKEN_REFRESHED` falhos e `SIGNED_OUT` causados por refresh-token vencido. Apenas `SIGNED_OUT` originado de clique no botão sai de fato.
+
+### 5. Service Worker (já em v3)
+- Nenhuma mudança estrutural necessária — a navegação em Modo Offline cai naturalmente no fallback `caches.match`.
+- Adicionar header `X-Connection-Mode` em `fetch` interceptados? **Não** — manter SW agnóstico.
+
+### 6. i18n
+**Editar `src/i18n/locales/{pt,en,es}.json`** — novas chaves:
+- `connection.modeOnline`, `connection.modeOffline`
+- `connection.switchToOnline`, `connection.switchToOffline`
+- `connection.offlineActiveBanner`, `connection.confirmGoOnline`, `connection.confirmGoOffline`
+- `connection.firstLoginNeedsInternet`
+
+---
+
+## Por que não quebra APK / PWA
+
+- APK é um wrapper sobre `https://visita-sc.lovable.app` — herda tudo automaticamente após publicar.
+- Service Worker v3 já lida com navegação offline; o seletor só adiciona uma camada de decisão **antes** das chamadas, não mexe na rede em si.
+- `supabase-js` já persiste sessão em `localStorage` por padrão (`persistSession: true`); ignorar o auto-refresh em Modo Offline é seguro porque os JWTs ficam válidos por ~1h e as escritas são enfileiradas com `enrich()` (usa contexto local, não exige token válido).
+- Nenhuma migração SQL é necessária.
+
+---
+
+## Arquivos a criar / editar
+
+**Criar**
+- `src/lib/connection-mode.ts`
+- `src/components/ConnectionModeToggle.tsx`
+
+**Editar**
+- `src/lib/offline-supabase.ts` (respeitar modo)
+- `src/hooks/use-auth.tsx` (sem auto-logout offline, reconstruir do cache)
+- `src/components/auth/LoginForm.tsx` (login offline via sessão salva)
+- `src/routes/__root.tsx` (filtro de eventos auth em Offline)
+- `src/routes/_app.tsx` (trocar botão pelo toggle)
+- `src/components/SyncButton.tsx` (desabilitado em Offline, prefetch ao sincronizar)
+- `src/router.tsx` (pausar refetches em Offline)
+- `src/i18n/locales/{pt,en,es}.json` (novas strings)
+
+**Sem migração de banco. Sem novas dependências.**
