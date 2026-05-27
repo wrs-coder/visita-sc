@@ -374,6 +374,21 @@ function Page() {
                         readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, closing_prayer: e.target.value } })} />
                     </div>
+                    <div>
+                      <Label>{t("templates.meetingTalk.midweek.finalSong")}</Label>
+                      <Input className="mt-1" value={payload.midweek.final_song}
+                        readOnly={!isSuper}
+                        placeholder={t("templates.meetingTalk.midweek.finalSongPlaceholder")}
+                        onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, final_song: e.target.value } })} />
+                    </div>
+                    <div>
+                      <Label>{t("templates.meetingTalk.midweek.observations")}</Label>
+                      <Textarea className="mt-1 min-h-[80px]" value={payload.midweek.observations}
+                        readOnly={!isSuper}
+                        maxLength={4000}
+                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                        onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, observations: e.target.value } })} />
+                    </div>
                   </CardContent></Card>
                 </TabsContent>
 
