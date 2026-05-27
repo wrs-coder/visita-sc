@@ -255,7 +255,7 @@ function AppLayout() {
                   />
                 </div>
                 <div className="p-3 pb-0">
-                  <OfflineModeButton />
+                  <ConnectionModeToggle />
                 </div>
                 <div className="p-3 flex-1 overflow-y-auto overscroll-contain">
                   <Nav onClick={() => setMobileMenuOpen(false)} />
@@ -296,7 +296,7 @@ function AppLayout() {
             />
           </div>
           <div className="p-3 pb-0">
-            <OfflineModeButton />
+            <ConnectionModeToggle />
           </div>
           <div className="p-3 flex-1 overflow-y-auto overscroll-contain min-h-0">
             <Nav />
