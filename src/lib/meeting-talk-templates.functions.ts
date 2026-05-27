@@ -19,14 +19,21 @@ const nameSchema = z.string().trim().min(1).max(120);
 const timeSchema = z.string().trim().max(8).nullable().optional();
 const weekdaySchema = z.number().int().min(0).max(6).nullable().optional();
 const textOpt = z.string().trim().max(400).nullable().optional();
+// Observações: campo longo (até 4000 chars). Permite string vazia.
+const longTextOpt = z.string().max(4000).nullable().optional();
 
 const itemsPayloadSchema = z.object({
   midweek: z.object({
     service_talk_theme: textOpt,
     chairman: textOpt,
     closing_prayer: textOpt,
+    final_song: textOpt,
+    observations: longTextOpt,
   }),
   weekend_public_talk_theme: textOpt,
+  weekend_opening_song: textOpt,
+  weekend_closing_song: textOpt,
+  weekend_observations: longTextOpt,
   weekend_themes: z.array(z.object({ title: z.string().trim().min(1).max(200) })).max(50),
   pioneer: z.object({
     weekday: weekdaySchema,
@@ -37,11 +44,13 @@ const itemsPayloadSchema = z.object({
     theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
+    observations: longTextOpt,
   }),
   elders: z.object({
     theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
+    observations: longTextOpt,
   }),
 });
 
@@ -85,7 +94,7 @@ export const getMeetingTalkTemplate = createServerFn({ method: "POST" })
     const viewer = await getMeetingTalkViewer(userId);
     const { data: tpl } = await supabaseAdmin
       .from("meeting_talk_templates")
-      .select("id,name,congregation_id,superintendent_id,weekend_public_talk_theme")
+      .select("id,name,congregation_id,superintendent_id,weekend_public_talk_theme,weekend_opening_song,weekend_closing_song,weekend_observations")
       .eq("id", data.id)
       .maybeSingle();
     const canView = !!tpl && (
@@ -106,6 +115,9 @@ export const getMeetingTalkTemplate = createServerFn({ method: "POST" })
       template: { id: tpl.id, name: tpl.name, congregation_id: tpl.congregation_id },
       midweek: mid.data ?? null,
       weekend_public_talk_theme: tpl.weekend_public_talk_theme ?? null,
+      weekend_opening_song: tpl.weekend_opening_song ?? null,
+      weekend_closing_song: tpl.weekend_closing_song ?? null,
+      weekend_observations: tpl.weekend_observations ?? null,
       weekend_themes: themes.data ?? [],
       pioneer: pioneer.data ?? null,
       elders: elders.data ?? null,
@@ -223,10 +235,15 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
     if (!own) return { ok: false as const, error: "Não autorizado." };
 
     const p = data.payload;
-    // Persist weekend public talk theme on template root
+    // Persist weekend public talk theme + songs + observations on template root
     await supabaseAdmin
       .from("meeting_talk_templates")
-      .update({ weekend_public_talk_theme: p.weekend_public_talk_theme ?? null })
+      .update({
+        weekend_public_talk_theme: p.weekend_public_talk_theme ?? null,
+        weekend_opening_song: p.weekend_opening_song ?? null,
+        weekend_closing_song: p.weekend_closing_song ?? null,
+        weekend_observations: p.weekend_observations ?? null,
+      })
       .eq("id", data.templateId);
     // Upsert midweek
     await supabaseAdmin.from("meeting_talk_template_midweek").upsert({
@@ -234,6 +251,8 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
       service_talk_theme: p.midweek.service_talk_theme ?? null,
       chairman: p.midweek.chairman ?? null,
       closing_prayer: p.midweek.closing_prayer ?? null,
+      final_song: p.midweek.final_song ?? null,
+      observations: p.midweek.observations ?? null,
     });
     // Replace weekend themes
     await supabaseAdmin.from("meeting_talk_template_weekend_themes").delete().eq("template_id", data.templateId);
@@ -253,6 +272,7 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
       theme: p.pioneer.theme ?? null,
       opening_prayer: p.pioneer.opening_prayer ?? null,
       closing_prayer: p.pioneer.closing_prayer ?? null,
+      observations: p.pioneer.observations ?? null,
     });
     // Upsert elders
     await supabaseAdmin.from("meeting_talk_template_elders").upsert({
@@ -260,6 +280,7 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
       theme: p.elders.theme ?? null,
       opening_prayer: p.elders.opening_prayer ?? null,
       closing_prayer: p.elders.closing_prayer ?? null,
+      observations: p.elders.observations ?? null,
     });
     return { ok: true as const };
   });
