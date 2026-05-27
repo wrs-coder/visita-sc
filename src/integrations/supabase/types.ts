@@ -746,6 +746,7 @@ export type Database = {
           closing_prayer: string | null
           created_at: string
           id: string
+          meeting_at: string | null
           service_talk_theme: string | null
           updated_at: string
           visit_id: string
@@ -755,6 +756,7 @@ export type Database = {
           closing_prayer?: string | null
           created_at?: string
           id?: string
+          meeting_at?: string | null
           service_talk_theme?: string | null
           updated_at?: string
           visit_id: string
@@ -764,6 +766,7 @@ export type Database = {
           closing_prayer?: string | null
           created_at?: string
           id?: string
+          meeting_at?: string | null
           service_talk_theme?: string | null
           updated_at?: string
           visit_id?: string
