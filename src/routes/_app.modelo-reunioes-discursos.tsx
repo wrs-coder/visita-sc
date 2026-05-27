@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Trash2, Copy, Pencil, Save, AlertCircle, Layers } from "lucide-react";
@@ -34,8 +35,11 @@ export const Route = createFileRoute("/_app/modelo-reunioes-discursos")({ compon
 interface TemplateRow { id: string; name: string; congregation_id: string | null }
 
 type Payload = {
-  midweek: { service_talk_theme: string; chairman: string; closing_prayer: string };
+  midweek: { service_talk_theme: string; chairman: string; closing_prayer: string; final_song: string; observations: string };
   weekend_public_talk_theme: string;
+  weekend_opening_song: string;
+  weekend_closing_song: string;
+  weekend_observations: string;
   weekend_themes: { title: string }[];
   pioneer: {
     weekday: number | null;
@@ -46,16 +50,20 @@ type Payload = {
     theme: string;
     opening_prayer: string;
     closing_prayer: string;
+    observations: string;
   };
-  elders: { theme: string; opening_prayer: string; closing_prayer: string };
+  elders: { theme: string; opening_prayer: string; closing_prayer: string; observations: string };
 };
 
 const emptyPayload = (): Payload => ({
-  midweek: { service_talk_theme: "", chairman: "", closing_prayer: "" },
+  midweek: { service_talk_theme: "", chairman: "", closing_prayer: "", final_song: "", observations: "" },
   weekend_public_talk_theme: "",
+  weekend_opening_song: "",
+  weekend_closing_song: "",
+  weekend_observations: "",
   weekend_themes: [],
-  pioneer: { weekday: null, meeting_time: "", super_meeting_weekday: null, super_meeting_time: "", location: "", theme: "", opening_prayer: "", closing_prayer: "" },
-  elders: { theme: "", opening_prayer: "", closing_prayer: "" },
+  pioneer: { weekday: null, meeting_time: "", super_meeting_weekday: null, super_meeting_time: "", location: "", theme: "", opening_prayer: "", closing_prayer: "", observations: "" },
+  elders: { theme: "", opening_prayer: "", closing_prayer: "", observations: "" },
 });
 
 const MAX = 24;
