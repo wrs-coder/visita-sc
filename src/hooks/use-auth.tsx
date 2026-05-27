@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { isOfflineMode } from "@/lib/connection-mode";
 
 export type AppRole = "superintendent" | "elder";
 export type ElderPosition = "coordenador" | "secretario" | "sup_servico" | "corpo";
@@ -53,9 +54,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [congregation, setCongregation] = useState<Congregation | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const PROFILE_CACHE_KEY = (uid: string) => `visita-sc:auth-profile:${uid}`;
+
   const loadUserData = async (uid: string | undefined) => {
     if (!uid) {
       setProfile(null); setRole(null); setElderPosition(null); setCongregation(null);
+      return;
+    }
+    // Em Modo Offline: hidrata exclusivamente do cache local (sem rede).
+    if (isOfflineMode()) {
+      try {
+        const raw = localStorage.getItem(PROFILE_CACHE_KEY(uid));
+        if (raw) {
+          const cached = JSON.parse(raw) as {
+            profile: Profile | null;
+            role: AppRole | null;
+            elderPosition: ElderPosition | null;
+            congregation: Congregation | null;
+          };
+          setProfile(cached.profile);
+          setRole(cached.role);
+          setElderPosition(cached.elderPosition);
+          setCongregation(cached.congregation);
+        }
+      } catch { /* noop */ }
       return;
     }
     const [{ data: p }, { data: rs }] = await Promise.all([
@@ -66,17 +88,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Pick the most privileged role (superintendent over elder) to be resilient to duplicate rows.
     const roles = (rs ?? []) as Array<{ role: AppRole; congregation_id: string | null; elder_position: ElderPosition | null }>;
     const r = roles.find((x) => x.role === "superintendent") ?? roles[0] ?? null;
-    setRole((r?.role as AppRole) ?? null);
-    setElderPosition((r?.elder_position as ElderPosition | null) ?? null);
+    const newRole = (r?.role as AppRole) ?? null;
+    const newPosition = (r?.elder_position as ElderPosition | null) ?? null;
+    setRole(newRole);
+    setElderPosition(newPosition);
+    let newCong: Congregation | null = null;
     if (p?.congregation_id) {
       const { data: c } = await supabase.from("congregations")
         .select("id,name,superintendent_id,is_active")
         .eq("id", p.congregation_id).maybeSingle();
       // invite_code is hidden from non-owner clients; default to "" so the type stays stable
-      setCongregation(c ? ({ ...(c as Omit<Congregation, "invite_code">), invite_code: "" }) : null);
-    } else {
-      setCongregation(null);
+      newCong = c ? ({ ...(c as Omit<Congregation, "invite_code">), invite_code: "" }) : null;
     }
+    setCongregation(newCong);
+    // Snapshot do estado de auth para hidratar em Modo Offline.
+    try {
+      localStorage.setItem(PROFILE_CACHE_KEY(uid), JSON.stringify({
+        profile: p ?? null, role: newRole, elderPosition: newPosition, congregation: newCong,
+      }));
+    } catch { /* quota */ }
   };
 
   useEffect(() => {
