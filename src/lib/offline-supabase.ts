@@ -12,6 +12,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { enqueue } from "@/lib/offline-queue";
 import { getActiveContext } from "@/lib/active-context";
+import { isOfflineMode } from "@/lib/connection-mode";
 
 const TABLES_WITH_CONGREGATION_ID = new Set([
   "congregations",
@@ -50,6 +51,7 @@ function enrich(table: string, payload: Payload): Payload {
 }
 
 function isOffline() {
+  if (isOfflineMode()) return true;
   return typeof navigator !== "undefined" && navigator.onLine === false;
 }
 
