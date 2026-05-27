@@ -541,6 +541,7 @@ export type Database = {
         Row: {
           closing_prayer: string | null
           created_at: string
+          observations: string | null
           opening_prayer: string | null
           template_id: string
           theme: string | null
@@ -549,6 +550,7 @@ export type Database = {
         Insert: {
           closing_prayer?: string | null
           created_at?: string
+          observations?: string | null
           opening_prayer?: string | null
           template_id: string
           theme?: string | null
@@ -557,6 +559,7 @@ export type Database = {
         Update: {
           closing_prayer?: string | null
           created_at?: string
+          observations?: string | null
           opening_prayer?: string | null
           template_id?: string
           theme?: string | null
@@ -577,6 +580,8 @@ export type Database = {
           chairman: string | null
           closing_prayer: string | null
           created_at: string
+          final_song: string | null
+          observations: string | null
           service_talk_theme: string | null
           template_id: string
           updated_at: string
@@ -585,6 +590,8 @@ export type Database = {
           chairman?: string | null
           closing_prayer?: string | null
           created_at?: string
+          final_song?: string | null
+          observations?: string | null
           service_talk_theme?: string | null
           template_id: string
           updated_at?: string
@@ -593,6 +600,8 @@ export type Database = {
           chairman?: string | null
           closing_prayer?: string | null
           created_at?: string
+          final_song?: string | null
+          observations?: string | null
           service_talk_theme?: string | null
           template_id?: string
           updated_at?: string
@@ -613,6 +622,7 @@ export type Database = {
           created_at: string
           location: string | null
           meeting_time: string | null
+          observations: string | null
           opening_prayer: string | null
           super_meeting_time: string | null
           super_meeting_weekday: number | null
@@ -626,6 +636,7 @@ export type Database = {
           created_at?: string
           location?: string | null
           meeting_time?: string | null
+          observations?: string | null
           opening_prayer?: string | null
           super_meeting_time?: string | null
           super_meeting_weekday?: number | null
@@ -639,6 +650,7 @@ export type Database = {
           created_at?: string
           location?: string | null
           meeting_time?: string | null
+          observations?: string | null
           opening_prayer?: string | null
           super_meeting_time?: string | null
           super_meeting_weekday?: number | null
@@ -697,6 +709,9 @@ export type Database = {
           name: string
           superintendent_id: string
           updated_at: string
+          weekend_closing_song: string | null
+          weekend_observations: string | null
+          weekend_opening_song: string | null
           weekend_public_talk_theme: string | null
         }
         Insert: {
@@ -706,6 +721,9 @@ export type Database = {
           name: string
           superintendent_id: string
           updated_at?: string
+          weekend_closing_song?: string | null
+          weekend_observations?: string | null
+          weekend_opening_song?: string | null
           weekend_public_talk_theme?: string | null
         }
         Update: {
@@ -715,6 +733,9 @@ export type Database = {
           name?: string
           superintendent_id?: string
           updated_at?: string
+          weekend_closing_song?: string | null
+          weekend_observations?: string | null
+          weekend_opening_song?: string | null
           weekend_public_talk_theme?: string | null
         }
         Relationships: []
