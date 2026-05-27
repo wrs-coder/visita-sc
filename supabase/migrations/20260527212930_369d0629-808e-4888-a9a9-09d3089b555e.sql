@@ -1,0 +1,1 @@
+ALTER TABLE public.midweek_meetings ADD COLUMN IF NOT EXISTS meeting_at timestamptz NULL;
