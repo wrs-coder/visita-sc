@@ -1,14 +1,15 @@
 // Service Worker — Visita SC PWA
-// Strategy:
-//  - HTML navigations: NetworkFirst (so updates ship without stale shells)
-//  - Same-origin static assets (JS/CSS/img/fonts): StaleWhileRevalidate
-//  - Supabase API responses: NetworkFirst with cache fallback (offline read of last-loaded data)
-//  - Skips cross-origin third parties
+// v3 — adiciona suporte a navegação offline para qualquer rota previamente
+// pré-carregada (via Modo Offline), além de cache CacheFirst para assets
+// versionados (/assets/*) que nunca mudam para um mesmo build.
 
-const VERSION = "v2";
+const VERSION = "v3";
 const STATIC_CACHE = `static-${VERSION}`;
 const HTML_CACHE = `html-${VERSION}`;
 const API_CACHE = `api-${VERSION}`;
+
+// Exportado também via nome estável para o cliente (offline-shells.ts).
+self.__CACHE_NAMES = { STATIC_CACHE, HTML_CACHE, API_CACHE };
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -33,8 +34,21 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("message", (event) => {
+  const msg = event.data;
+  if (msg && msg.type === "GET_CACHE_NAMES") {
+    event.ports?.[0]?.postMessage({ STATIC_CACHE, HTML_CACHE, API_CACHE });
+  }
+  if (msg && msg.type === "SKIP_WAITING") self.skipWaiting();
+});
+
 function isSupabaseRequest(url) {
   return /\.supabase\.(co|in)$/.test(url.hostname);
+}
+
+function isHashedAsset(url) {
+  // Vite emite arquivos versionados em /assets/<name>-<hash>.<ext>
+  return url.pathname.startsWith("/assets/");
 }
 
 self.addEventListener("fetch", (event) => {
@@ -44,26 +58,34 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
 
-  // HTML navigations → NetworkFirst
+  // HTML navigations → NetworkFirst, com fallback para QUALQUER HTML em cache
   if (req.mode === "navigate") {
     event.respondWith(
       (async () => {
         try {
           const fresh = await fetch(req);
           const cache = await caches.open(HTML_CACHE);
+          // Salva tanto a URL específica quanto a raiz (fallback genérico).
+          cache.put(req, fresh.clone()).catch(() => undefined);
           cache.put("/", fresh.clone()).catch(() => undefined);
           return fresh;
         } catch {
           const cache = await caches.open(HTML_CACHE);
-          const cached = (await cache.match(req)) || (await cache.match("/"));
-          return cached || new Response("Offline", { status: 503, statusText: "Offline" });
+          const exact = await cache.match(req);
+          if (exact) return exact;
+          // Busca global em qualquer cache (caso a pré-carga tenha salvo).
+          const any = await caches.match(req);
+          if (any) return any;
+          const root = await cache.match("/");
+          if (root) return root;
+          return new Response("Offline", { status: 503, statusText: "Offline" });
         }
       })(),
     );
     return;
   }
 
-  // Supabase REST → NetworkFirst (last-known data offline)
+  // Supabase REST → NetworkFirst (último estado conhecido offline)
   if (isSupabaseRequest(url) && url.pathname.startsWith("/rest/")) {
     event.respondWith(
       (async () => {
@@ -83,22 +105,46 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Same-origin static assets → StaleWhileRevalidate
-  if (sameOrigin) {
+  if (!sameOrigin) return;
+
+  // /assets/* hashed → CacheFirst (build-imutável)
+  if (isHashedAsset(url)) {
     event.respondWith(
       (async () => {
         const cache = await caches.open(STATIC_CACHE);
         const cached = await cache.match(req);
-        const network = fetch(req)
-          .then((res) => {
-            if (res && res.status === 200 && res.type === "basic") {
-              cache.put(req, res.clone()).catch(() => undefined);
-            }
-            return res;
-          })
-          .catch(() => null);
-        return cached || (await network) || new Response("Offline", { status: 503 });
+        if (cached) return cached;
+        try {
+          const fresh = await fetch(req);
+          if (fresh && fresh.status === 200) {
+            cache.put(req, fresh.clone()).catch(() => undefined);
+          }
+          return fresh;
+        } catch {
+          // Última tentativa: qualquer cache pode ter o arquivo
+          const any = await caches.match(req);
+          if (any) return any;
+          return new Response("Offline", { status: 503 });
+        }
       })(),
     );
+    return;
   }
+
+  // Demais same-origin → StaleWhileRevalidate
+  event.respondWith(
+    (async () => {
+      const cache = await caches.open(STATIC_CACHE);
+      const cached = await cache.match(req);
+      const network = fetch(req)
+        .then((res) => {
+          if (res && res.status === 200 && res.type === "basic") {
+            cache.put(req, res.clone()).catch(() => undefined);
+          }
+          return res;
+        })
+        .catch(() => null);
+      return cached || (await network) || (await caches.match(req)) || new Response("Offline", { status: 503 });
+    })(),
+  );
 });
