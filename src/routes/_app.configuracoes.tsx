@@ -40,6 +40,7 @@ import { ptBR } from "date-fns/locale";
 import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
 import { useTranslation } from "react-i18next";
 import { maskPhone } from "@/lib/masks";
+import { SavingIndicator } from "@/components/SavingIndicator";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
@@ -207,6 +208,36 @@ function Page() {
     });
     setOpen(true);
   };
+
+  // Mission 5: ao abrir o diálogo "Nova visita", recalcula a próxima terça
+  // com base no snapshot mais recente de `visits` (cobre exclusões e edições
+  // que ocorreram após o último abrir).
+  useEffect(() => {
+    if (!open || editId) return;
+    const toIso = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${dd}`;
+    };
+    const tuesdayAfter = (base: Date) => {
+      const d = new Date(base);
+      const diff = ((2 - d.getDay() + 7) % 7) || 7;
+      d.setDate(d.getDate() + diff);
+      return d;
+    };
+    const lastIso = visits.length
+      ? visits.reduce((acc, v) => {
+          const cand = v.end_date || v.start_date;
+          return cand && cand > acc ? cand : acc;
+        }, "")
+      : "";
+    const baseDate = lastIso ? new Date(lastIso + "T00:00:00") : new Date();
+    const tue = tuesdayAfter(baseDate);
+    const sun = new Date(tue);
+    sun.setDate(sun.getDate() + 5);
+    setForm((f) => ({ ...f, start_date: toIso(tue), end_date: toIso(sun) }));
+  }, [open, editId, visits]);
 
   const openEdit = (v: Visit) => {
     setEditId(v.id);
@@ -416,7 +447,10 @@ function Page() {
             </Button>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>{editId ? t("itinerary.editVisit") : t("itinerary.newVisit")}</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  {editId ? t("itinerary.editVisit") : t("itinerary.newVisit")}
+                  <SavingIndicator saving={submitting} />
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
                 <div>

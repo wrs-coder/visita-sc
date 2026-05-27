@@ -27,6 +27,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Plus, Trash2, Copy, Pencil, Save, AlertCircle, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { CharCounterTextarea } from "@/components/ui/char-counter-textarea";
+import { SavingIndicator } from "@/components/SavingIndicator";
 
 const nameSchema = z.string().trim().min(2, "Nome deve ter pelo menos 2 caracteres").max(120);
 
@@ -329,6 +331,7 @@ function Page() {
                     <Button size="sm" onClick={handleSave} disabled={busy}>
                       <Save className="h-3.5 w-3.5 mr-1" />{t("templates.meetingTalk.saveTemplate")}
                     </Button>
+                    <SavingIndicator saving={busy} />
                   </div>
                 ) : (
                   <span className="text-xs text-muted-foreground">{t("templates.viewOnly")}</span>
@@ -383,11 +386,14 @@ function Page() {
                     </div>
                     <div>
                       <Label>{t("templates.meetingTalk.midweek.observations")}</Label>
-                      <Textarea className="mt-1 min-h-[80px]" value={payload.midweek.observations}
+                      <CharCounterTextarea
+                        className="mt-1 min-h-[80px]"
+                        value={payload.midweek.observations}
                         readOnly={!isSuper}
-                        maxLength={4000}
+                        max={4000}
                         placeholder={t("templates.meetingTalk.observationsPlaceholder")}
-                        onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, observations: e.target.value } })} />
+                        onValueChange={(v) => setPayload({ ...payload, midweek: { ...payload.midweek, observations: v } })}
+                      />
                     </div>
                   </CardContent></Card>
                 </TabsContent>
@@ -443,10 +449,14 @@ function Page() {
                       </div>
                       <div>
                         <Label>{t("templates.meetingTalk.weekend.observations")}</Label>
-                        <Textarea className="mt-1 min-h-[80px]" value={payload.weekend_observations} readOnly={!isSuper}
-                          maxLength={4000}
+                        <CharCounterTextarea
+                          className="mt-1 min-h-[80px]"
+                          value={payload.weekend_observations}
+                          readOnly={!isSuper}
+                          max={4000}
                           placeholder={t("templates.meetingTalk.observationsPlaceholder")}
-                          onChange={(e) => setPayload({ ...payload, weekend_observations: e.target.value })} />
+                          onValueChange={(v) => setPayload({ ...payload, weekend_observations: v })}
+                        />
                       </div>
                     </div>
                   </CardContent></Card>
@@ -523,10 +533,14 @@ function Page() {
                     </div>
                     <div>
                       <Label>{t("templates.meetingTalk.pioneer.observations")}</Label>
-                      <Textarea className="mt-1 min-h-[80px]" value={payload.pioneer.observations} readOnly={!isSuper}
-                        maxLength={4000}
+                      <CharCounterTextarea
+                        className="mt-1 min-h-[80px]"
+                        value={payload.pioneer.observations}
+                        readOnly={!isSuper}
+                        max={4000}
                         placeholder={t("templates.meetingTalk.observationsPlaceholder")}
-                        onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, observations: e.target.value } })} />
+                        onValueChange={(v) => setPayload({ ...payload, pioneer: { ...payload.pioneer, observations: v } })}
+                      />
                     </div>
                   </CardContent></Card>
                 </TabsContent>
@@ -536,10 +550,14 @@ function Page() {
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <div>
                       <Label>{t("templates.meetingTalk.elders.observations")}</Label>
-                      <Textarea className="mt-1 min-h-[80px]" value={payload.elders.observations} readOnly={!isSuper}
-                        maxLength={4000}
+                      <CharCounterTextarea
+                        className="mt-1 min-h-[80px]"
+                        value={payload.elders.observations}
+                        readOnly={!isSuper}
+                        max={4000}
                         placeholder={t("templates.meetingTalk.observationsPlaceholder")}
-                        onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, observations: e.target.value } })} />
+                        onValueChange={(v) => setPayload({ ...payload, elders: { ...payload.elders, observations: v } })}
+                      />
                     </div>
                     <div>
                       <Label>{t("templates.meetingTalk.elders.openingPrayer")}</Label>
