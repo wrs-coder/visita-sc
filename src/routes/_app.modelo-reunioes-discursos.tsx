@@ -106,8 +106,13 @@ function Page() {
         service_talk_theme: r.midweek?.service_talk_theme ?? "",
         chairman: r.midweek?.chairman ?? "",
         closing_prayer: r.midweek?.closing_prayer ?? "",
+        final_song: r.midweek?.final_song ?? "",
+        observations: r.midweek?.observations ?? "",
       },
       weekend_public_talk_theme: r.weekend_public_talk_theme ?? "",
+      weekend_opening_song: r.weekend_opening_song ?? "",
+      weekend_closing_song: r.weekend_closing_song ?? "",
+      weekend_observations: r.weekend_observations ?? "",
       weekend_themes: (r.weekend_themes ?? []).map((t) => ({ title: t.title })),
       pioneer: {
         weekday: r.pioneer?.weekday ?? null,
@@ -118,11 +123,13 @@ function Page() {
         theme: r.pioneer?.theme ?? "",
         opening_prayer: r.pioneer?.opening_prayer ?? "",
         closing_prayer: r.pioneer?.closing_prayer ?? "",
+        observations: r.pioneer?.observations ?? "",
       },
       elders: {
         theme: r.elders?.theme ?? "",
         opening_prayer: r.elders?.opening_prayer ?? "",
         closing_prayer: r.elders?.closing_prayer ?? "",
+        observations: r.elders?.observations ?? "",
       },
     });
   }, [fnGet]);
