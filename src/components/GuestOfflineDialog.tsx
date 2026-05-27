@@ -49,7 +49,7 @@ export function GuestOfflineDialog({
     let errors = 0;
     try {
       // 1) Snapshot do visitante (dados a exibir nas abas)
-      setProgress({ step: 0, total: 2, label: t("offline.step.guestData"), errors });
+      setProgress({ step: 0, total: 2, label: "Dados", errors });
       try {
         const r = await fetchSnap({ data: { inviteCode: code } });
         if ((r as { ok: boolean }).ok) {
@@ -63,7 +63,7 @@ export function GuestOfflineDialog({
       }
 
       // 2) Telas do app (shells de navegação)
-      setProgress({ step: 1, total: 2, label: t("offline.step.shells"), errors });
+      setProgress({ step: 1, total: 2, label: "Telas do aplicativo", errors });
       try {
         await prefetchRouteShells({
           signal: abortRef.current.signal,
