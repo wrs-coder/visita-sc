@@ -94,7 +94,7 @@ export const getMeetingTalkTemplate = createServerFn({ method: "POST" })
     const viewer = await getMeetingTalkViewer(userId);
     const { data: tpl } = await supabaseAdmin
       .from("meeting_talk_templates")
-      .select("id,name,congregation_id,superintendent_id,weekend_public_talk_theme")
+      .select("id,name,congregation_id,superintendent_id,weekend_public_talk_theme,weekend_opening_song,weekend_closing_song,weekend_observations")
       .eq("id", data.id)
       .maybeSingle();
     const canView = !!tpl && (
@@ -115,6 +115,9 @@ export const getMeetingTalkTemplate = createServerFn({ method: "POST" })
       template: { id: tpl.id, name: tpl.name, congregation_id: tpl.congregation_id },
       midweek: mid.data ?? null,
       weekend_public_talk_theme: tpl.weekend_public_talk_theme ?? null,
+      weekend_opening_song: tpl.weekend_opening_song ?? null,
+      weekend_closing_song: tpl.weekend_closing_song ?? null,
+      weekend_observations: tpl.weekend_observations ?? null,
       weekend_themes: themes.data ?? [],
       pioneer: pioneer.data ?? null,
       elders: elders.data ?? null,
