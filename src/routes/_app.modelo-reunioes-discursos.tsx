@@ -552,6 +552,13 @@ function Page() {
                       <Input className="mt-1" value={payload.elders.closing_prayer} readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, closing_prayer: e.target.value } })} />
                     </div>
+                    <div>
+                      <Label>{t("templates.meetingTalk.elders.observations")}</Label>
+                      <Textarea className="mt-1 min-h-[80px]" value={payload.elders.observations} readOnly={!isSuper}
+                        maxLength={4000}
+                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                        onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, observations: e.target.value } })} />
+                    </div>
                   </CardContent></Card>
                 </TabsContent>
               </Tabs>
