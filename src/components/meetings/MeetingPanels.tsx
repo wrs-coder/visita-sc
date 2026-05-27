@@ -100,6 +100,98 @@ interface WeekendRow {
 }
 interface Theme { id: string; title: string }
 
+/* ============ Helpers de Dia + Hora (timestamptz âncora) ============ */
+// Usamos uma data âncora fixa (2024-01-07 = domingo) + offset do dia da semana
+// + HH:MM para serializar em `timestamptz`. Assim, ao reler, recuperamos
+// `weekday` (0=Dom..6=Sáb) e `HH:MM` de forma estável e sem deriva de fuso.
+const WEEKDAY_ANCHOR_SUNDAY = "2024-01-07";
+
+function isoFromWeekdayTime(weekday: number, hhmm: string): string | null {
+  if (weekday == null || Number.isNaN(weekday)) return null;
+  if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return null;
+  const d = new Date(`${WEEKDAY_ANCHOR_SUNDAY}T${hhmm}:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setDate(d.getDate() + weekday);
+  return d.toISOString();
+}
+function weekdayFromIso(ts: string | null): number | null {
+  if (!ts) return null;
+  const d = new Date(ts);
+  return Number.isNaN(d.getTime()) ? null : d.getDay();
+}
+function hhmmFromIso(ts: string | null): string {
+  if (!ts) return "";
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Bloco reutilizável "Dia + Hora" para Meio de Semana e Fim de Semana.
+function DayTimePicker({
+  value, onChange, disabled, dayLabel, timeLabel,
+}: {
+  value: string | null;
+  onChange: (iso: string | null) => void | Promise<void>;
+  disabled?: boolean;
+  dayLabel: string;
+  timeLabel: string;
+}) {
+  const { t } = useTranslation();
+  const weekday = weekdayFromIso(value);
+  const time = hhmmFromIso(value);
+  const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+
+  const commit = (nextWeekday: number | null, nextTime: string) => {
+    if (nextWeekday == null || !nextTime) {
+      // só persiste quando ambos estão definidos; senão mantém valor anterior
+      // (evita gravar timestamp incompleto).
+      return;
+    }
+    const iso = isoFromWeekdayTime(nextWeekday, nextTime);
+    if (iso) onChange(iso);
+  };
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <div>
+        <Label>{dayLabel}</Label>
+        <Select
+          value={weekday != null ? String(weekday) : ""}
+          onValueChange={(v) => commit(Number(v), time || "00:00")}
+          disabled={disabled}
+        >
+          <SelectTrigger className="h-9 mt-0.5">
+            <SelectValue placeholder={dayLabel} />
+          </SelectTrigger>
+          <SelectContent>
+            {dayKeys.map((k, idx) => (
+              <SelectItem key={k} value={String(idx)}>
+                {t(`meetingsTalks.weekdays.${k}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>{timeLabel}</Label>
+        <Input
+          type="time"
+          defaultValue={time}
+          key={`${value ?? ""}`}
+          disabled={disabled}
+          onBlur={(e) => {
+            if (weekday == null) return; // exige dia escolhido
+            const next = e.target.value;
+            if (next && next !== time) commit(weekday, next);
+          }}
+          className="h-9 mt-0.5"
+        />
+      </div>
+    </div>
+  );
+}
+
 function tsToLocalInput(ts: string | null) {
   if (!ts) return "";
   const d = new Date(ts);
@@ -112,6 +204,7 @@ function localInputToIso(s: string): string | null {
   const d = new Date(s);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
+
 
 function bcp47(lang: string) {
   if (lang?.startsWith("pt")) return "pt-BR";
