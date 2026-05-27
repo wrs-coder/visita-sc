@@ -49,11 +49,28 @@ export function SyncButton({ className }: { className?: string }) {
 
   useEffect(() => subscribeQueue(setPending), []);
 
+  const offline = mode === "offline";
+
   const sync = async () => {
     if (syncing) return;
+    if (offline) {
+      toast.info(t("connection.disabledInOffline"));
+      return;
+    }
     setSyncing(true);
     try {
       const res = await flushQueue();
+      // Em modo Online, ao sincronizar também atualizamos o cache local
+      // com dados frescos do servidor (em background).
+      if (user?.id) {
+        prefetchAllForOffline({
+          queryClient,
+          userId: user.id,
+          congregationId: null,
+          role,
+          t,
+        }).catch((e) => console.warn("[sync] prefetch", e));
+      }
       try { await queryClient.invalidateQueries(); } catch { /* offline read cache */ }
       const now = Date.now();
       try { localStorage.setItem(LAST_SYNC_KEY, String(now)); } catch { /* quota */ }
@@ -79,9 +96,10 @@ export function SyncButton({ className }: { className?: string }) {
     <button
       onClick={sync}
       disabled={syncing}
-      title={`${t("sync.lastSync")}: ${formatRelative(lastSync)}${pending ? ` • ${pending} ${t("sync.pending")}` : ""}${online ? "" : ` • ${t("sync.offline")}`}`}
+      title={`${t("sync.lastSync")}: ${formatRelative(lastSync)}${pending ? ` • ${pending} ${t("sync.pending")}` : ""}${offline ? ` • ${t("connection.modeOffline")}` : online ? "" : ` • ${t("sync.offline")}`}`}
       className={cn(
         "relative inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium hover:bg-white/10 transition disabled:opacity-60",
+        offline && "opacity-50",
         className,
       )}
       aria-label={t("sync.ariaSync")}
