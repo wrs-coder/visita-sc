@@ -55,7 +55,7 @@ function FieldText({
 }
 
 /* ============ MEIO DE SEMANA ============ */
-interface MidweekRow { id: string; visit_id: string; service_talk_theme: string | null; chairman: string | null; closing_prayer: string | null }
+interface MidweekRow { id: string; visit_id: string; meeting_at: string | null; service_talk_theme: string | null; chairman: string | null; closing_prayer: string | null }
 
 export function MidweekPanel() {
   const { t } = useTranslation();
@@ -64,7 +64,7 @@ export function MidweekPanel() {
   const isSuper = role === "superintendent";
   const { row, loading, save } = useSingleRow<MidweekRow>(
     "midweek_meetings",
-    "id,visit_id,service_talk_theme,chairman,closing_prayer",
+    "id,visit_id,meeting_at,service_talk_theme,chairman,closing_prayer",
     visit,
   );
   if (!visit) return <NoVisit />;
@@ -72,6 +72,13 @@ export function MidweekPanel() {
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
+        <DayTimePicker
+          value={row.meeting_at}
+          onChange={(iso) => save({ meeting_at: iso })}
+          disabled={!canEdit}
+          dayLabel={t("meetingsTalks.midweek.meetingDay")}
+          timeLabel={t("meetingsTalks.midweek.meetingTime")}
+        />
         <div>
           <Label>{t("meetingsTalks.midweek.serviceTalk")}</Label>
           <FieldText value={row.service_talk_theme} onSave={(v) => save({ service_talk_theme: v })} readOnly={!isSuper} />
@@ -89,6 +96,7 @@ export function MidweekPanel() {
     </CardContent></Card>
   );
 }
+
 
 /* ============ FINAL DE SEMANA ============ */
 interface WeekendRow {
