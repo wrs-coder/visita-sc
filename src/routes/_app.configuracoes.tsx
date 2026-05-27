@@ -167,8 +167,9 @@ function Page() {
   const openNew = () => {
     setEditId(null);
     const congId = congregation?.id ?? congs[0]?.id ?? "";
-    // Mission 1: default start_date to Tuesday of the week AFTER the last visit
-    // (scoped to the selected congregation). Fallback: next Tuesday from today.
+    // Mission 2: default start_date to the first Tuesday AFTER the last visit
+    // across ALL congregations in the itinerary (not scoped to selected one).
+    // Uses end_date when available, otherwise start_date. Fallback: today.
     const toIso = (d: Date) => {
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -177,16 +178,18 @@ function Page() {
     };
     const tuesdayAfter = (base: Date) => {
       const d = new Date(base);
-      // getDay(): 0=Sun..6=Sat — Tuesday = 2
+      // getDay(): 0=Sun..6=Sat — Tuesday = 2. Strictly after base.
       const diff = ((2 - d.getDay() + 7) % 7) || 7;
       d.setDate(d.getDate() + diff);
       return d;
     };
-    const scoped = visits.filter((v) => !congId || v.congregation_id === congId);
-    const lastStart = scoped.length
-      ? scoped.reduce((acc, v) => (v.start_date > acc ? v.start_date : acc), scoped[0].start_date)
-      : null;
-    const baseDate = lastStart ? new Date(lastStart + "T00:00:00") : new Date();
+    const lastIso = visits.length
+      ? visits.reduce((acc, v) => {
+          const cand = v.end_date || v.start_date;
+          return cand && cand > acc ? cand : acc;
+        }, "")
+      : "";
+    const baseDate = lastIso ? new Date(lastIso + "T00:00:00") : new Date();
     const tue = tuesdayAfter(baseDate);
     const sun = new Date(tue);
     sun.setDate(sun.getDate() + 5);

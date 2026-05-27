@@ -357,22 +357,16 @@ function Page() {
                 <TabsContent value="meio" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <div>
-                      <Label>{t("templates.meetingTalk.midweek.serviceTalk")}</Label>
-                      <Input className="mt-1" value={payload.midweek.service_talk_theme}
-                        readOnly={!isSuper}
-                        onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, service_talk_theme: e.target.value } })} />
-                    </div>
-                    <div>
                       <Label>{t("templates.meetingTalk.midweek.chairman")}</Label>
                       <Input className="mt-1" value={payload.midweek.chairman}
                         readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, chairman: e.target.value } })} />
                     </div>
                     <div>
-                      <Label>{t("templates.meetingTalk.midweek.closingPrayer")}</Label>
-                      <Input className="mt-1" value={payload.midweek.closing_prayer}
+                      <Label>{t("templates.meetingTalk.midweek.serviceTalk")}</Label>
+                      <Input className="mt-1" value={payload.midweek.service_talk_theme}
                         readOnly={!isSuper}
-                        onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, closing_prayer: e.target.value } })} />
+                        onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, service_talk_theme: e.target.value } })} />
                     </div>
                     <div>
                       <Label>{t("templates.meetingTalk.midweek.finalSong")}</Label>
@@ -380,6 +374,12 @@ function Page() {
                         readOnly={!isSuper}
                         placeholder={t("templates.meetingTalk.midweek.finalSongPlaceholder")}
                         onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, final_song: e.target.value } })} />
+                    </div>
+                    <div>
+                      <Label>{t("templates.meetingTalk.midweek.closingPrayer")}</Label>
+                      <Input className="mt-1" value={payload.midweek.closing_prayer}
+                        readOnly={!isSuper}
+                        onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, closing_prayer: e.target.value } })} />
                     </div>
                     <div>
                       <Label>{t("templates.meetingTalk.midweek.observations")}</Label>
@@ -395,6 +395,11 @@ function Page() {
                 <TabsContent value="fim" className="mt-3">
                   <Card><CardContent className="p-4 space-y-4">
                     <div>
+                      <Label>{t("templates.meetingTalk.weekend.openingSong")}</Label>
+                      <Input className="mt-1" value={payload.weekend_opening_song} readOnly={!isSuper}
+                        onChange={(e) => setPayload({ ...payload, weekend_opening_song: e.target.value })} />
+                    </div>
+                    <div className="border-t pt-3">
                       <Label>{t("templates.meetingTalk.weekend.publicTalk")}</Label>
                       <Input
                         className="mt-1"
@@ -431,17 +436,10 @@ function Page() {
                       )}
                     </div>
                     <div className="border-t pt-3 grid gap-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <Label>{t("templates.meetingTalk.weekend.openingSong")}</Label>
-                          <Input className="mt-1" value={payload.weekend_opening_song} readOnly={!isSuper}
-                            onChange={(e) => setPayload({ ...payload, weekend_opening_song: e.target.value })} />
-                        </div>
-                        <div>
-                          <Label>{t("templates.meetingTalk.weekend.closingSong")}</Label>
-                          <Input className="mt-1" value={payload.weekend_closing_song} readOnly={!isSuper}
-                            onChange={(e) => setPayload({ ...payload, weekend_closing_song: e.target.value })} />
-                        </div>
+                      <div>
+                        <Label>{t("templates.meetingTalk.weekend.closingSong")}</Label>
+                        <Input className="mt-1" value={payload.weekend_closing_song} readOnly={!isSuper}
+                          onChange={(e) => setPayload({ ...payload, weekend_closing_song: e.target.value })} />
                       </div>
                       <div>
                         <Label>{t("templates.meetingTalk.weekend.observations")}</Label>
@@ -537,10 +535,11 @@ function Page() {
                 <TabsContent value="anc" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <div>
-                      <Label>{t("templates.meetingTalk.elders.theme")}</Label>
-                      <Input className="mt-1" value={payload.elders.theme}
-                        readOnly={!isSuper}
-                        onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, theme: e.target.value } })} />
+                      <Label>{t("templates.meetingTalk.elders.observations")}</Label>
+                      <Textarea className="mt-1 min-h-[80px]" value={payload.elders.observations} readOnly={!isSuper}
+                        maxLength={4000}
+                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                        onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, observations: e.target.value } })} />
                     </div>
                     <div>
                       <Label>{t("templates.meetingTalk.elders.openingPrayer")}</Label>
@@ -548,16 +547,15 @@ function Page() {
                         onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, opening_prayer: e.target.value } })} />
                     </div>
                     <div>
+                      <Label>{t("templates.meetingTalk.elders.theme")}</Label>
+                      <Input className="mt-1" value={payload.elders.theme}
+                        readOnly={!isSuper}
+                        onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, theme: e.target.value } })} />
+                    </div>
+                    <div>
                       <Label>{t("templates.meetingTalk.elders.closingPrayer")}</Label>
                       <Input className="mt-1" value={payload.elders.closing_prayer} readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, closing_prayer: e.target.value } })} />
-                    </div>
-                    <div>
-                      <Label>{t("templates.meetingTalk.elders.observations")}</Label>
-                      <Textarea className="mt-1 min-h-[80px]" value={payload.elders.observations} readOnly={!isSuper}
-                        maxLength={4000}
-                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
-                        onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, observations: e.target.value } })} />
                     </div>
                   </CardContent></Card>
                 </TabsContent>
