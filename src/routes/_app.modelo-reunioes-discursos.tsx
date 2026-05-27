@@ -430,8 +430,30 @@ function Page() {
                         </ul>
                       )}
                     </div>
+                    <div className="border-t pt-3 grid gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label>{t("templates.meetingTalk.weekend.openingSong")}</Label>
+                          <Input className="mt-1" value={payload.weekend_opening_song} readOnly={!isSuper}
+                            onChange={(e) => setPayload({ ...payload, weekend_opening_song: e.target.value })} />
+                        </div>
+                        <div>
+                          <Label>{t("templates.meetingTalk.weekend.closingSong")}</Label>
+                          <Input className="mt-1" value={payload.weekend_closing_song} readOnly={!isSuper}
+                            onChange={(e) => setPayload({ ...payload, weekend_closing_song: e.target.value })} />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>{t("templates.meetingTalk.weekend.observations")}</Label>
+                        <Textarea className="mt-1 min-h-[80px]" value={payload.weekend_observations} readOnly={!isSuper}
+                          maxLength={4000}
+                          placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                          onChange={(e) => setPayload({ ...payload, weekend_observations: e.target.value })} />
+                      </div>
+                    </div>
                   </CardContent></Card>
                 </TabsContent>
+
 
 
 
