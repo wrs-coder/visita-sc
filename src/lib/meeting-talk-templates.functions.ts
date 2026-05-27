@@ -19,14 +19,21 @@ const nameSchema = z.string().trim().min(1).max(120);
 const timeSchema = z.string().trim().max(8).nullable().optional();
 const weekdaySchema = z.number().int().min(0).max(6).nullable().optional();
 const textOpt = z.string().trim().max(400).nullable().optional();
+// Observações: campo longo (até 4000 chars). Permite string vazia.
+const longTextOpt = z.string().max(4000).nullable().optional();
 
 const itemsPayloadSchema = z.object({
   midweek: z.object({
     service_talk_theme: textOpt,
     chairman: textOpt,
     closing_prayer: textOpt,
+    final_song: textOpt,
+    observations: longTextOpt,
   }),
   weekend_public_talk_theme: textOpt,
+  weekend_opening_song: textOpt,
+  weekend_closing_song: textOpt,
+  weekend_observations: longTextOpt,
   weekend_themes: z.array(z.object({ title: z.string().trim().min(1).max(200) })).max(50),
   pioneer: z.object({
     weekday: weekdaySchema,
@@ -37,11 +44,13 @@ const itemsPayloadSchema = z.object({
     theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
+    observations: longTextOpt,
   }),
   elders: z.object({
     theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
+    observations: longTextOpt,
   }),
 });
 
