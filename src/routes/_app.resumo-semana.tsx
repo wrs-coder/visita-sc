@@ -53,15 +53,24 @@ function Page() {
   const load = useCallback(
     async (congregationId: string) => {
       setLoading(true);
+      // Hidratação imediata a partir do cache local (suporta offline / falha).
+      const cached = loadSnapshot<VisitSnapshot>("resumo", congregationId);
+      if (cached) setSnap(cached);
       try {
         const r = await fn({ data: { congregationId } });
-        if (r.ok) setSnap(r as unknown as VisitSnapshot);
-        else setSnap(null);
-        return r.ok ? (r as unknown as VisitSnapshot) : null;
+        if (r.ok) {
+          const fresh = r as unknown as VisitSnapshot;
+          setSnap(fresh);
+          saveSnapshot("resumo", congregationId, fresh);
+          return fresh;
+        }
+        // resposta não-ok: mantém cache se existir
+        if (!cached) setSnap(null);
+        return cached ?? null;
       } catch (err) {
-        console.warn("[resumo-semana] falha ao carregar", err);
-        setSnap(null);
-        return null;
+        console.warn("[resumo-semana] falha ao carregar — usando cache", err);
+        if (!cached) setSnap(null);
+        return cached ?? null;
       } finally {
         setLoading(false);
       }
