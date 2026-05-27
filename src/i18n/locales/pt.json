@@ -1103,6 +1103,24 @@
     "chunkErrorDesc": "Não conseguimos carregar este módulo. Verifique sua conexão e tente novamente.",
     "retry": "Tentar novamente"
   },
+  "connection": {
+    "modeOnline": "Modo Online",
+    "modeOffline": "Modo Offline",
+    "switchToOnline": "Trocar para Modo Online",
+    "switchToOffline": "Trocar para Modo Offline",
+    "confirmGoOfflineTitle": "Ativar Modo Offline?",
+    "confirmGoOfflineDesc": "O app não usará a internet. Leituras virão do cache local e suas alterações ficarão guardadas até você voltar para o Modo Online e sincronizar.",
+    "confirmGoOnlineTitle": "Voltar para o Modo Online?",
+    "confirmGoOnlineDesc": "O app voltará a se comunicar com o servidor. Alterações pendentes serão enviadas agora.",
+    "activateOffline": "Ativar Modo Offline",
+    "activateOnline": "Ativar Modo Online",
+    "pendingToSync": "{{n}} alteração(ões) pendente(s) — serão enviadas ao sincronizar.",
+    "nowOffline": "Modo Offline ativo. Você pode usar o app sem internet.",
+    "nowOnline": "Modo Online ativo.",
+    "offlineWithStale": "Modo Offline ativo (usando dados em cache).",
+    "disabledInOffline": "Você está em Modo Offline. Troque para Online para sincronizar.",
+    "firstLoginNeedsInternet": "Para o primeiro login, troque para o Modo Online e conecte-se à internet."
+  },
   "weekSummary": {
     "subtitle": "Visão completa da semana de visita",
     "selectCongregation": "Selecione uma congregação ativa para ver o resumo.",

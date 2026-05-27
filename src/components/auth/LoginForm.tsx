@@ -14,6 +14,7 @@ import { Logo } from "@/components/Logo";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
+import { useConnectionMode } from "@/lib/connection-mode";
 
 const APP_VERSION = "2.4.0";
 const APP_BUILD = "2026.05.24";
@@ -38,8 +39,12 @@ export function LoginForm() {
     nav({ to: isSuper ? "/dashboard" : "/cronograma" });
   };
 
+  const mode = useConnectionMode();
+  const offline = mode === "offline";
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (offline) { toast.error(t("connection.firstLoginNeedsInternet")); return; }
     setBusy(true);
     try {
       const r = await resolveFn({ data: { identifier: identifier.trim() } });

@@ -110,10 +110,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+      // Em Modo Offline, ignoramos qualquer evento que possa derrubar a
+      // sessão (TOKEN_REFRESHED falho, SIGNED_OUT por token expirado).
+      // Só SIGNED_IN é processado (login manual).
+      if (isOfflineMode() && event !== "SIGNED_IN") return;
       setSession(s);
       setUser(s?.user ?? null);
-      // defer to avoid recursive deadlocks
       setTimeout(() => loadUserData(s?.user?.id), 0);
     });
     supabase.auth.getSession().then(({ data: { session: s } }) => {
