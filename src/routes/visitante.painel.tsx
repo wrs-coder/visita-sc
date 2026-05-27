@@ -65,10 +65,27 @@ function Page() {
 
   const load = useCallback(async (c: string) => {
     setLoading(true);
-    const r = await fn({ data: { inviteCode: c } });
-    setLoading(false);
-    if (!r.ok) { clearGuestSession(); nav({ to: "/" }); return; }
-    setSnap(r as unknown as Snapshot);
+    // Hidrata imediatamente do cache local para funcionar offline.
+    const cached = loadSnapshot<Snapshot>("guest", c);
+    if (cached) {
+      setSnap(cached);
+      setLoading(false);
+    }
+    try {
+      const r = await fn({ data: { inviteCode: c } });
+      if (!(r as { ok: boolean }).ok) {
+        if (!cached) { clearGuestSession(); nav({ to: "/" }); }
+        return;
+      }
+      const fresh = r as unknown as Snapshot;
+      setSnap(fresh);
+      saveSnapshot("guest", c, fresh);
+    } catch (err) {
+      console.warn("[visitante] falha ao carregar — usando cache", err);
+      if (!cached) { clearGuestSession(); nav({ to: "/" }); }
+    } finally {
+      setLoading(false);
+    }
   }, [fn, nav]);
 
   useEffect(() => {
@@ -77,6 +94,8 @@ function Page() {
     setCode(c);
     load(c);
   }, [load, nav]);
+
+  const [offlineOpen, setOfflineOpen] = useState(false);
 
   const exit = () => { clearGuestSession(); nav({ to: "/" }); };
 
