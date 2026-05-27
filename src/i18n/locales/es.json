@@ -20,6 +20,8 @@
     "removed": "Eliminado",
     "select": "Selecciona…",
     "saving": "Guardando...",
+    "charsRemaining": "{{n}} caracteres restantes",
+    "charsOver": "Excedió el límite por {{n}} caracteres",
     "notFoundTitle": "Página no encontrada",
     "notFoundDesc": "La página que buscas no existe.",
     "goHome": "Ir al inicio",

@@ -20,6 +20,8 @@
     "removed": "Removed",
     "select": "Select…",
     "saving": "Saving...",
+    "charsRemaining": "{{n}} characters remaining",
+    "charsOver": "Exceeded limit by {{n}} characters",
     "notFoundTitle": "Page not found",
     "notFoundDesc": "The page you are looking for does not exist.",
     "goHome": "Go to home",
