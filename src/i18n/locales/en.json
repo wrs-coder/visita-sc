@@ -416,6 +416,8 @@
       "saveChanges": "Save changes"
     },
     "midweek": {
+      "meetingDay": "Meeting Day",
+      "meetingTime": "Meeting Time",
       "serviceTalk": "Theme: Service Talk",
       "chairman": "Meeting Chairman",
       "chairmanPlaceholder": "Chairman's name",
@@ -425,6 +427,8 @@
     },
     "weekend": {
       "meetingDateTime": "Meeting day and time",
+      "meetingDay": "Meeting Day",
+      "meetingTime": "Meeting Time",
       "publicTalk": "Public Talk",
       "readOnlyNote": "Read only — edited by the circuit overseer.",
       "finalTalk": "Closing Talk",
@@ -433,6 +437,16 @@
       "pickTheme": "Select a theme",
       "selectedTheme": "Selected: {{title}}"
     },
+    "weekdays": {
+      "sun": "Sunday",
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday"
+    },
+
     "pioneer": {
       "theme": "Theme:",
       "openingPrayer": "Opening Prayer",
