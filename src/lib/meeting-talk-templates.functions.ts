@@ -235,10 +235,15 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
     if (!own) return { ok: false as const, error: "Não autorizado." };
 
     const p = data.payload;
-    // Persist weekend public talk theme on template root
+    // Persist weekend public talk theme + songs + observations on template root
     await supabaseAdmin
       .from("meeting_talk_templates")
-      .update({ weekend_public_talk_theme: p.weekend_public_talk_theme ?? null })
+      .update({
+        weekend_public_talk_theme: p.weekend_public_talk_theme ?? null,
+        weekend_opening_song: p.weekend_opening_song ?? null,
+        weekend_closing_song: p.weekend_closing_song ?? null,
+        weekend_observations: p.weekend_observations ?? null,
+      })
       .eq("id", data.templateId);
     // Upsert midweek
     await supabaseAdmin.from("meeting_talk_template_midweek").upsert({
@@ -246,6 +251,8 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
       service_talk_theme: p.midweek.service_talk_theme ?? null,
       chairman: p.midweek.chairman ?? null,
       closing_prayer: p.midweek.closing_prayer ?? null,
+      final_song: p.midweek.final_song ?? null,
+      observations: p.midweek.observations ?? null,
     });
     // Replace weekend themes
     await supabaseAdmin.from("meeting_talk_template_weekend_themes").delete().eq("template_id", data.templateId);
@@ -265,6 +272,7 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
       theme: p.pioneer.theme ?? null,
       opening_prayer: p.pioneer.opening_prayer ?? null,
       closing_prayer: p.pioneer.closing_prayer ?? null,
+      observations: p.pioneer.observations ?? null,
     });
     // Upsert elders
     await supabaseAdmin.from("meeting_talk_template_elders").upsert({
@@ -272,6 +280,7 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
       theme: p.elders.theme ?? null,
       opening_prayer: p.elders.opening_prayer ?? null,
       closing_prayer: p.elders.closing_prayer ?? null,
+      observations: p.elders.observations ?? null,
     });
     return { ok: true as const };
   });
