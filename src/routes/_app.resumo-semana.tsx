@@ -52,10 +52,14 @@ function Page() {
 
   const load = useCallback(
     async (congregationId: string) => {
-      setLoading(true);
       // Hidratação imediata a partir do cache local (suporta offline / falha).
       const cached = loadSnapshot<VisitSnapshot>("resumo", congregationId);
-      if (cached) setSnap(cached);
+      if (cached) {
+        setSnap(cached);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       try {
         const r = await fn({ data: { congregationId } });
         if (r.ok) {
