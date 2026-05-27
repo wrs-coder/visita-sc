@@ -246,12 +246,23 @@ function Page() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setOfflineOpen(true)}
+              className="text-primary-foreground hover:bg-white/10"
+              title={t("offline.modeTitle")}
+            >
+              <CloudDownload className="h-4 w-4 md:mr-1" />
+              <span className="hidden md:inline">{t("offline.activate")}</span>
+            </Button>
             <Button variant="ghost" size="sm" onClick={exit} className="text-primary-foreground hover:bg-white/10">
               <LogOut className="h-4 w-4 mr-1" /> {t("guest.exit")}
             </Button>
           </div>
         </div>
       </header>
+      <GuestOfflineDialog open={offlineOpen} onOpenChange={setOfflineOpen} />
 
       <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
         {!snap.visit ? (
