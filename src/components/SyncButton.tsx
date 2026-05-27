@@ -3,6 +3,9 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { flushQueue, subscribe as subscribeQueue } from "@/lib/offline-queue";
+import { useConnectionMode } from "@/lib/connection-mode";
+import { useAuth } from "@/hooks/use-auth";
+import { prefetchAllForOffline } from "@/lib/offline-prefetch";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +14,8 @@ const LAST_SYNC_KEY = "visita-sc:last-sync";
 export function SyncButton({ className }: { className?: string }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const mode = useConnectionMode();
+  const { user, role } = useAuth();
   const [syncing, setSyncing] = useState(false);
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [pending, setPending] = useState(0);
