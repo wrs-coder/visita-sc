@@ -523,8 +523,16 @@ function Page() {
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, closing_prayer: e.target.value } })} />
                       </div>
                     </div>
+                    <div>
+                      <Label>{t("templates.meetingTalk.pioneer.observations")}</Label>
+                      <Textarea className="mt-1 min-h-[80px]" value={payload.pioneer.observations} readOnly={!isSuper}
+                        maxLength={4000}
+                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                        onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, observations: e.target.value } })} />
+                    </div>
                   </CardContent></Card>
                 </TabsContent>
+
 
                 <TabsContent value="anc" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
