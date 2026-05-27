@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PwaRegister } from "@/components/PwaRegister";
 import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-persister";
 import { flushQueue } from "@/lib/offline-queue";
+import { isOfflineMode } from "@/lib/connection-mode";
 import "@/i18n";
 
 function NotFoundComponent() {
@@ -107,6 +108,11 @@ function RootComponent() {
   const router = useRouter();
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      // Em Modo Offline, ignoramos eventos do supabase auth para evitar
+      // logout automático causado por refresh-token vencido / falha de rede.
+      // Só processamos SIGNED_IN (que vem do login manual) e SIGNED_OUT
+      // explícito quando o app está em Modo Online.
+      if (isOfflineMode() && event !== "SIGNED_IN") return;
       router.invalidate();
       queryClient.invalidateQueries();
       // Limpa cache persistido em troca de sessão para evitar vazar dados
