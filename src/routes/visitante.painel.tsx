@@ -64,16 +64,18 @@ function Page() {
   }), [t]);
 
   const load = useCallback(async (c: string) => {
-    setLoading(true);
     // Hidrata imediatamente do cache local para funcionar offline.
     const cached = loadSnapshot<Snapshot>("guest", c);
     if (cached) {
       setSnap(cached);
       setLoading(false);
+    } else {
+      setLoading(true);
     }
     try {
       const r = await fn({ data: { inviteCode: c } });
       if (!(r as { ok: boolean }).ok) {
+        // Resposta explícita do servidor: sessão inválida → desloga.
         if (!cached) { clearGuestSession(); nav({ to: "/" }); }
         return;
       }
@@ -81,12 +83,13 @@ function Page() {
       setSnap(fresh);
       saveSnapshot("guest", c, fresh);
     } catch (err) {
+      // Erro de rede (offline). Mantém o cache na tela; só notifica se não houver dados.
       console.warn("[visitante] falha ao carregar — usando cache", err);
-      if (!cached) { clearGuestSession(); nav({ to: "/" }); }
+      if (!cached) toast.error(t("offline.chunkErrorDesc"));
     } finally {
       setLoading(false);
     }
-  }, [fn, nav]);
+  }, [fn, nav, t]);
 
   useEffect(() => {
     const c = readGuestSession();
