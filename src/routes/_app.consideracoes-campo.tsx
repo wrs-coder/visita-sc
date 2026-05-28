@@ -434,24 +434,8 @@ function Page() {
           </div>
         </header>
 
-        {/* Active Bible strip */}
-        <Card>
-          <CardContent className="p-3 flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">{t("bibleManager.activeLabel")}:</span>
-            <Badge variant={activeBible ? "secondary" : "outline"}>
-              {activeBible
-                ? `${activeBible.title} (${activeBible.langLabel}) · ${activeBible.verseCount}`
-                : t("bibleManager.noneActive", { defaultValue: "Nenhuma" })}
-            </Badge>
-            <div className="flex-1" />
-            <Button variant="outline" size="sm" onClick={() => setBibleOpen(true)}>
-              <Languages className="h-4 w-4 mr-1.5" />
-              {t("bibleManager.manage")}
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Gerenciamento da Bíblia migrou para "Meu Perfil" */}
 
-        <BibleManagerDialog open={bibleOpen} onOpenChange={setBibleOpen} onChanged={refreshActiveBible} />
 
         {/* Seletor de tipo (obrigatório) */}
         <Card>
