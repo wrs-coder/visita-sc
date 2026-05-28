@@ -56,12 +56,14 @@ export interface BibleVerseRecord {
 }
 
 const DB_NAME = "visita-sc-field";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NOTES = "notes";
 const STORE_BIBLES = "bibles";
 const STORE_LIBRARIES = "bible_libraries";
+const STORE_FOLDERS = "note_folders";
 
 const LS_FALLBACK_KEY = "visita-sc:field-notes";
+const LS_FALLBACK_FOLDERS = "visita-sc:note-folders";
 const LS_ACTIVE_LIBRARY = "visita-sc-bible-active";
 
 function hasIDB(): boolean {
@@ -93,6 +95,12 @@ function openDB(): Promise<IDBDatabase> {
         libs.createIndex("by_lang", "lang", { unique: false });
         libs.createIndex("by_imported_at", "imported_at", { unique: false });
       }
+
+      if (!db.objectStoreNames.contains(STORE_FOLDERS)) {
+        const folders = db.createObjectStore(STORE_FOLDERS, { keyPath: "id" });
+        folders.createIndex("by_parent", "parentId", { unique: false });
+        folders.createIndex("by_type", "type", { unique: false });
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -109,6 +117,7 @@ async function idbAll(): Promise<FieldNote[]> {
     req.onerror = () => reject(req.error);
   });
 }
+
 
 async function idbPut(note: FieldNote): Promise<void> {
   const db = await openDB();
