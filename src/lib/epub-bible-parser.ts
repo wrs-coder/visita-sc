@@ -549,6 +549,44 @@ function extractVersesFromDoc(
   return out;
 }
 
+/** Detecta a qual livro canônico um arquivo XHTML pertence.
+ *  Ordem: filename → headings (h1/h2/h3/title) → primeiras palavras do body.
+ */
+function detectCanonicalBookForDoc(href: string, doc: Document): { book: CanonicalBook; label: string } | null {
+  // 1) filename: mt_07.xhtml, matthew-01.xhtml, 40-Mat-01.xhtml, gn1.xhtml...
+  const base = (href.split("/").pop() ?? "").replace(/\.[^.]+$/, "");
+  const baseClean = base.replace(/[_\-.\d]+/g, " ").trim();
+  const fromFile = baseClean ? resolveCanonical(baseClean) : null;
+  if (fromFile) return { book: fromFile, label: fromFile.english };
+
+  // 2) headings/title
+  const headings = [
+    doc.getElementsByTagName("h1")[0]?.textContent ?? "",
+    doc.getElementsByTagName("h2")[0]?.textContent ?? "",
+    doc.getElementsByTagName("h3")[0]?.textContent ?? "",
+    doc.getElementsByTagName("title")[0]?.textContent ?? "",
+  ];
+  for (const h of headings) {
+    const text = h.trim();
+    if (!text) continue;
+    const hit = findCanonicalInText(text);
+    if (hit) {
+      // Limpa sufixo de capítulo do label, mantendo o nome do livro como aparece no EPUB
+      const label = text.replace(/\s+\d{1,3}.*$/, "").trim() || hit.english;
+      return { book: hit, label };
+    }
+  }
+
+  // 3) primeiros ~300 chars do body
+  const body = (doc.body?.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 300);
+  if (body) {
+    const hit = findCanonicalInText(body);
+    if (hit) return { book: hit, label: hit.english };
+  }
+
+  return null;
+}
+
 /** Função principal: parseia um File EPUB e devolve livros + versículos. */
 export async function parseEpub(file: File, onProgress?: ParseProgress): Promise<ParsedEpub> {
   onProgress?.("unzip", 0);
@@ -560,73 +598,130 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
   const opf = await parseOpf(zip, opfPath);
   onProgress?.("parse-opf", 1);
 
-  const slots = await buildBookSlots(zip, opf);
-
-  // Diagnóstico inicial
   // eslint-disable-next-line no-console
-  console.info(`[epub-bible] OPF: ${opfPath}  | spine=${opf.spine.length}  | slots=${slots.length}`);
+  console.info(`[epub-bible] OPF: ${opfPath}  | spine=${opf.spine.length}`);
 
+  // Agrupa os arquivos do spine por livro canônico detectado.
+  type Bucket = { book: CanonicalBook; label: string; hrefs: string[] };
+  const buckets = new Map<string, Bucket>(); // key = canon.id
+  let skipped = 0;
+
+  for (let i = 0; i < opf.spine.length; i++) {
+    onProgress?.("index-books", (i / Math.max(opf.spine.length, 1)) * 0.3);
+    const idref = opf.spine[i];
+    const item = opf.manifest.get(idref);
+    if (!item) continue;
+    const path = resolvePath(opf.basePath, item.href);
+    const f = zip.file(path);
+    if (!f) continue;
+    let doc: Document;
+    try {
+      const html = await f.async("string");
+      doc = new DOMParser().parseFromString(html, XHTML_MIME);
+    } catch {
+      skipped++;
+      continue;
+    }
+    const detection = detectCanonicalBookForDoc(path, doc);
+    if (!detection) {
+      skipped++;
+      continue;
+    }
+    const existing = buckets.get(detection.book.id);
+    if (existing) {
+      existing.hrefs.push(path);
+    } else {
+      buckets.set(detection.book.id, {
+        book: detection.book,
+        label: detection.label,
+        hrefs: [path],
+      });
+    }
+  }
+
+  // eslint-disable-next-line no-console
+  console.info(`[epub-bible] canonical buckets=${buckets.size}  skipped=${skipped}`);
+
+  // Extrai versículos de cada bucket.
   const books: ParsedBookInfo[] = [];
   const verses: ParsedVerse[] = [];
+  const sortedBuckets = Array.from(buckets.values()).sort((a, b) => a.book.order - b.book.order);
 
-  const total = Math.max(slots.length, 1);
-  for (let i = 0; i < slots.length; i++) {
-    onProgress?.("index-books", i / total);
-    const slot = slots[i];
-    const bookId = `B${String(books.length + 1).padStart(2, "0")}`;
+  const total = Math.max(sortedBuckets.length, 1);
+  for (let bi = 0; bi < sortedBuckets.length; bi++) {
+    onProgress?.("index-books", 0.3 + (bi / total) * 0.7);
+    const bucket = sortedBuckets[bi];
+    const bookId = bucket.book.id;
+    const multiFile = bucket.hrefs.length > 1;
 
-    const bookVerses: ParsedVerse[] = [];
-    const chaptersSeen = new Set<number>();
-    const multiFile = slot.hrefs.length > 1;
-    for (let hi = 0; hi < slot.hrefs.length; hi++) {
-      const href = slot.hrefs[hi];
+    // Dedup por chave "chap:verse" — mantém o texto mais longo.
+    const verseMap = new Map<string, { chapter: number; verse: number; text: string }>();
+
+    for (let hi = 0; hi < bucket.hrefs.length; hi++) {
+      const href = bucket.hrefs[hi];
       const f = zip.file(href);
       if (!f) continue;
       try {
         const html = await f.async("string");
         const doc = new DOMParser().parseFromString(html, XHTML_MIME);
-        // Capítulo padrão: 1) nome do arquivo  2) heading  3) índice do arquivo
         const chapByName = chapterFromFilename(href);
         const chapByHead = chapterFromHeading(doc);
         const fallback = chapByName ?? chapByHead ?? (multiFile ? hi + 1 : 1);
         const extracted = extractVersesFromDoc(doc, fallback);
 
-        // Se todos os versos extraídos caíram em "1" mas multiFile, usa fallback
         const distinctChaps = new Set(extracted.map((v) => v.chapter));
         const overrideChapter =
           multiFile && distinctChaps.size <= 1 && fallback !== 1 ? fallback : null;
         for (const v of extracted) {
           const chap = overrideChapter ?? v.chapter;
-          chaptersSeen.add(chap);
-          bookVerses.push({ bookId, chapter: chap, verse: v.verse, text: v.text });
+          const key = `${chap}:${v.verse}`;
+          const prev = verseMap.get(key);
+          if (!prev || v.text.length > prev.text.length) {
+            verseMap.set(key, { chapter: chap, verse: v.verse, text: v.text });
+          }
         }
       } catch {
         /* arquivo malformado — ignora */
       }
     }
 
-    // Filtro de validade: pelo menos 1 capítulo e 3 versículos
-    if (chaptersSeen.size < 1 || bookVerses.length < 3) {
+    const bookVerses = Array.from(verseMap.values());
+    if (bookVerses.length < 3) {
       // eslint-disable-next-line no-console
-      console.warn(`[epub-bible] skip slot "${slot.displayName}" (chs=${chaptersSeen.size} vs=${bookVerses.length})`);
+      console.warn(`[epub-bible] skip canon "${bucket.book.english}" (verses=${bookVerses.length})`);
       continue;
     }
 
+    const displayName = bucket.label || bucket.book.english;
     books.push({
       bookId,
-      displayName: slot.displayName,
-      aliases: buildAliases(slot.displayName),
-      order: books.length + 1,
+      displayName,
+      aliases: Array.from(new Set([displayName, ...bucket.book.aliases, ...buildAliases(displayName)])),
+      order: bucket.book.order,
     });
-    verses.push(...bookVerses);
+    for (const v of bookVerses) {
+      verses.push({ bookId, chapter: v.chapter, verse: v.verse, text: v.text });
+    }
 
-    // Cede o thread a cada 5 livros para não travar
-    if (i % 5 === 4) await new Promise((r) => setTimeout(r, 0));
+    if (bi % 3 === 2) await new Promise((r) => setTimeout(r, 0));
   }
   onProgress?.("index-books", 1);
 
+  // Diagnóstico de livros canônicos faltantes
+  const foundIds = new Set(books.map((b) => b.bookId));
+  const missing = CANON.filter((c) => !foundIds.has(c.id)).map((c) => `${c.id} ${c.english}`);
   // eslint-disable-next-line no-console
-  console.info(`[epub-bible] DONE  books=${books.length}  verses=${verses.length}`);
+  console.info(
+    `[epub-bible] DONE  books=${books.length}/66  verses=${verses.length}  missing=${missing.length}`,
+    missing.length ? missing : "",
+  );
+
+  // Garante 'order' consistente
+  books.sort((a, b) => a.order - b.order);
 
   return { meta: opf.meta, books, verses };
 }
+
+// Suprime aviso de "import não utilizado" caso normalizeName não seja usado aqui.
+void normalizeName;
+
