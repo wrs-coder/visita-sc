@@ -201,6 +201,34 @@ describe("Intervalos", () => {
 });
 
 // ============================================================================
+// H2. Listas por vírgula
+// ============================================================================
+describe("Listas por vírgula", () => {
+  it("1 Pedro 1:3,5 → verses=[3,5]", () => {
+    const m = firstMatch(ptBooks, "Estudei 1 Pedro 1:3,5 hoje");
+    expect(m?.bookId).toBe("B60");
+    expect(m?.chapter).toBe(1);
+    expect(m?.verse).toBe(3);
+    expect(m?.verses).toEqual([3, 5]);
+    expect(m?.verseEnd).toBeUndefined();
+  });
+  it("1 Pedro 1:3, 5 (com espaço) → verses=[3,5]", () => {
+    const m = firstMatch(ptBooks, "1 Pedro 1:3, 5");
+    expect(m?.verses).toEqual([3, 5]);
+  });
+  it("Salmo 23:1,3,5 → verses=[1,3,5]", () => {
+    const m = firstMatch(ptBooks, "Salmo 23:1,3,5");
+    expect(m?.bookId).toBe("B19");
+    expect(m?.verses).toEqual([1, 3, 5]);
+  });
+  it("João 3:16-18 continua como range (sem verses)", () => {
+    const m = firstMatch(ptBooks, "João 3:16-18");
+    expect(m?.verseEnd).toBe(18);
+    expect(m?.verses).toBeUndefined();
+  });
+});
+
+// ============================================================================
 // I. Forma antiga preservada
 // ============================================================================
 describe("Forma cap:vers antiga", () => {

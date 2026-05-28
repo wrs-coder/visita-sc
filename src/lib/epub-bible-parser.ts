@@ -426,8 +426,8 @@ function chapterFromHeading(doc: Document): number | null {
 }
 
 /** Verifica se um nó está dentro de uma subárvore "ruidosa" (nota/rodapé/cross-ref/etc.). */
-const NOISY_CLASS_RE = /\b(fn|footnote|footnotes|note|notes|rearnote|annotation|xref|cross|crossref|study|caption|figcaption|byline|callout|sidebar)\b/i;
-const NOISY_EPUB_TYPE_RE = /(footnote|rearnote|annotation|note-ref|noteref)/i;
+const NOISY_CLASS_RE = /\b(fn|footnote|footnotes|note|notes|rearnote|annotation|xref|cross|crossref|study|caption|figcaption|byline|callout|sidebar|outline|chapterOutline|chapter-outline|synopsis|summary|ss|sb|sb1|sb2|boxStudy|box|box1|box2|bridgehead)\b/i;
+const NOISY_EPUB_TYPE_RE = /(footnote|rearnote|annotation|note-ref|noteref|bridgehead|sidebar|titlepage)/i;
 const NOISY_TAGS = new Set(["aside", "nav", "figure", "figcaption"]);
 
 function isNoisyElement(el: Element): boolean {
@@ -490,9 +490,38 @@ function chapterNumberFromHeading(el: Element): number | null {
   return null;
 }
 
+/** Detecta blocos de "esboço de capítulo" (ex.: "Tópico A (1-6) Tópico B (7-11)"). */
+const OUTLINE_PAREN_RE = /\(\s*\d{1,3}(?:\s*[-–]\s*\d{1,3})?\s*\)/g;
+function findOutlineRoots(doc: Document): Set<Element> {
+  const roots = new Set<Element>();
+  const candidates = doc.querySelectorAll("p, div, section, header");
+  candidates.forEach((el) => {
+    const txt = (el.textContent ?? "").trim();
+    if (txt.length < 8 || txt.length > 1500) return;
+    const matches = txt.match(OUTLINE_PAREN_RE);
+    if (matches && matches.length >= 2) roots.add(el);
+  });
+  return roots;
+}
+
+function isInsideOutline(node: Node, outlineRoots: Set<Element>): boolean {
+  if (outlineRoots.size === 0) return false;
+  let p: Node | null = node.nodeType === 1 ? (node as Element) : node.parentNode;
+  while (p && p.nodeType === 1) {
+    if (outlineRoots.has(p as Element)) return true;
+    p = p.parentNode;
+  }
+  return false;
+}
+
 /** Coleta o texto entre dois marcadores, pulando notas/rodapés/cross-refs
  *  e parando em cabeçalhos de capítulo subsequentes. */
-function textBetween(doc: Document, start: Node, end: Node | null): string {
+function textBetween(
+  doc: Document,
+  start: Node,
+  end: Node | null,
+  outlineRoots: Set<Element> = new Set(),
+): string {
   const root = doc.body ?? doc;
   const walker = doc.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
   const buf: string[] = [];
@@ -509,7 +538,7 @@ function textBetween(doc: Document, start: Node, end: Node | null): string {
     if (end && (node === end || (end.nodeType === 1 && (end as Element).contains(node)))) break;
     if (node.nodeType === 1) {
       const el = node as Element;
-      if (isNoisyElement(el) || isChapterHeadingEl(el)) {
+      if (isNoisyElement(el) || isChapterHeadingEl(el) || outlineRoots.has(el)) {
         // Pula a subárvore inteira: avança até o próximo nó FORA dela.
         let nxt: Node | null = walker.nextSibling();
         while (!nxt) {
@@ -521,7 +550,7 @@ function textBetween(doc: Document, start: Node, end: Node | null): string {
         continue;
       }
     } else if (node.nodeType === 3) {
-      if (!hasNoisyAncestor(node)) {
+      if (!hasNoisyAncestor(node) && !isInsideOutline(node, outlineRoots)) {
         buf.push(node.nodeValue ?? "");
       }
     }
@@ -577,8 +606,12 @@ function extractVersesFromDoc(
   const allEls = Array.from(doc.getElementsByTagName("*"));
   const markers: VerseMarker[] = [];
   let currentChapter = fallbackChapter;
+  const outlineRoots = findOutlineRoots(doc);
 
   for (const el of allEls) {
+    // Pula qualquer elemento dentro de um bloco de esboço.
+    if (isInsideOutline(el, outlineRoots)) continue;
+
     // Detecta heading de capítulo (atualiza currentChapter para os próximos marcadores)
     if (isChapterHeadingEl(el)) {
       const n = chapterNumberFromHeading(el);
@@ -628,7 +661,7 @@ function extractVersesFromDoc(
   for (let i = 0; i < markers.length; i++) {
     const cur = markers[i];
     const next = markers[i + 1]?.node ?? null;
-    let text = textBetween(doc, cur.node, next);
+    let text = textBetween(doc, cur.node, next, outlineRoots);
     // Remove o número do versículo se ele aparecer "colado" no início.
     text = text.replace(new RegExp(`^\\s*${cur.verse}\\s*[\\.\\)]?\\s*`), "");
     text = text.replace(/\s{2,}/g, " ").trim();

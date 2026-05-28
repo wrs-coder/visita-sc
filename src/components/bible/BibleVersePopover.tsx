@@ -27,7 +27,6 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
   const [parts, setParts] = useState<VersePart[] | null>(null);
   const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(false);
-
   useEffect(() => {
     if (!open || parts !== null) return;
     if (!libraryId) {
@@ -36,15 +35,25 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
     }
     setLoading(true);
 
-    const start = match.verse;
-    let end = match.verseEnd && match.verseEnd > start ? match.verseEnd : start;
+    let nums: number[];
     let cappedTruncation = false;
-    if (end - start + 1 > MAX_RANGE) {
-      end = start + MAX_RANGE - 1;
-      cappedTruncation = true;
+    if (match.verses && match.verses.length > 0) {
+      // Lista discreta (vírgulas): busca exatamente esses versos.
+      nums = [...match.verses];
+      if (nums.length > MAX_RANGE) {
+        nums = nums.slice(0, MAX_RANGE);
+        cappedTruncation = true;
+      }
+    } else {
+      const start = match.verse;
+      let end = match.verseEnd && match.verseEnd > start ? match.verseEnd : start;
+      if (end - start + 1 > MAX_RANGE) {
+        end = start + MAX_RANGE - 1;
+        cappedTruncation = true;
+      }
+      nums = [];
+      for (let v = start; v <= end; v++) nums.push(v);
     }
-    const nums: number[] = [];
-    for (let v = start; v <= end; v++) nums.push(v);
 
     Promise.all(
       nums.map((v) =>
@@ -58,9 +67,15 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
       setTruncated(cappedTruncation);
       setLoading(false);
     });
-  }, [open, libraryId, match.bookId, match.chapter, match.verse, match.verseEnd, parts]);
+  }, [open, libraryId, match.bookId, match.chapter, match.verse, match.verseEnd, match.verses, parts]);
 
-  const isRange = match.verseEnd && match.verseEnd > match.verse;
+  const isList = Boolean(match.verses && match.verses.length > 1);
+  const isRange = !isList && match.verseEnd && match.verseEnd > match.verse;
+  const headerVerses = isList
+    ? match.verses!.join(",")
+    : match.verseEnd
+      ? `${match.verse}-${match.verseEnd}`
+      : `${match.verse}`;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -81,8 +96,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
         <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground sticky top-0 bg-popover pb-1">
           <BookOpen className="h-3.5 w-3.5" />
           <span className="font-semibold text-foreground">
-            {match.bookName} {match.chapter}:{match.verse}
-            {match.verseEnd ? `-${match.verseEnd}` : ""}
+            {match.bookName} {match.chapter}:{headerVerses}
           </span>
         </div>
         {loading ? (
@@ -95,8 +109,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
             className="text-sm leading-relaxed space-y-1.5"
             style={fontScale !== 1 ? { fontSize: `${fontScale}rem` } : undefined}
           >
-
-            {isRange ? (
+            {isRange || isList ? (
               <p>
                 {parts.map((p, i) => (
                   <span key={p.verse}>
