@@ -676,16 +676,46 @@ function Page() {
                         className="pl-7 h-9"
                       />
                     </div>
+                    {clipboardNoteId && (
+                      <div className="flex items-center gap-2 rounded-md border border-dashed bg-muted/40 px-2 py-1.5 text-xs">
+                        <Scissors className="h-3.5 w-3.5 text-primary" />
+                        <span className="flex-1 truncate">
+                          {t("personalOutlines.folders.clipboardHint", {
+                            defaultValue: "1 nota recortada. Toque em \"Colar aqui\" na pasta de destino.",
+                          })}
+                        </span>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground underline"
+                          onClick={() => setClipboardNoteId(null)}
+                        >
+                          {t("personalOutlines.folders.clearClipboard", { defaultValue: "Cancelar" })}
+                        </button>
+                      </div>
+                    )}
                     <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
                       <div
                         className={cn(
-                          "flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
+                          "group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
                           selectedFolderId === null ? "bg-primary/10 text-primary" : "hover:bg-muted",
                         )}
                         onClick={() => setSelectedFolderId(null)}
                       >
                         <FolderOpen className="h-4 w-4" />
                         <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
+                        {clipboardNoteId && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePasteNote(null);
+                            }}
+                            className="text-[11px] inline-flex items-center gap-1 rounded px-1.5 py-0.5 bg-primary/15 text-primary hover:bg-primary/25"
+                          >
+                            <ClipboardPaste className="h-3 w-3" />
+                            {t("personalOutlines.folders.pasteHere", { defaultValue: "Colar aqui" })}
+                          </button>
+                        )}
                       </div>
                       {rootFolders.length === 0 && rootNotes.length === 0 && (
                         <p className="text-xs text-muted-foreground text-center py-4">
