@@ -423,7 +423,7 @@ function Page() {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-4 overflow-x-hidden overflow-y-auto">
         <header className="flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-2 text-primary">
             <FileText className="h-5 w-5" />
