@@ -560,8 +560,9 @@ function Page() {
             </Card>
 
             {/* Editor */}
-            <Card>
-              <CardContent className="p-5 space-y-4">
+            <Card className="w-full max-w-full overflow-hidden min-w-0">
+              <CardContent className="p-5 space-y-4 w-full max-w-full overflow-x-hidden box-border min-w-0">
+
                 {!draft ? (
                   <p className="text-sm text-muted-foreground text-center py-12">
                     {t("personalOutlines.folders.selectFolder")}
