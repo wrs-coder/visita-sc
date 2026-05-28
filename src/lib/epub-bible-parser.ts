@@ -452,16 +452,42 @@ function hasNoisyAncestor(node: Node): boolean {
   return false;
 }
 
+const CHAPTER_CLASS_RE = /\b(chapter|cap[ií]tulo|chap|chapno|chap-?num|chapter-?num(?:ber)?|cn|ch)\b/i;
+
 function isChapterHeadingEl(el: Element): boolean {
   const id = el.getAttribute("id") ?? "";
   const cls = el.getAttribute("class") ?? "";
-  if (/\b(chapter|cap[ií]tulo)\b/i.test(cls)) return true;
-  if (/^chapter[-_]?\d+$/i.test(id) || /^cap[-_]?\d+$/i.test(id)) return true;
+  const epubType = el.getAttribute("epub:type") ?? "";
+  if (cls && CHAPTER_CLASS_RE.test(cls)) return true;
+  if (/^chapter[-_]?\d+$/i.test(id) || /^cap[-_]?\d+$/i.test(id) || /^ch[-_]?\d+$/i.test(id)) return true;
+  if (epubType && /chapter/i.test(epubType)) return true;
   const tag = el.tagName.toLowerCase();
-  if ((tag === "h1" || tag === "h2") && /(cap[ií]tulo|chapter)\s*\d+/i.test(el.textContent ?? "")) {
+  const txt = (el.textContent ?? "").trim();
+  if ((tag === "h1" || tag === "h2" || tag === "h3") && /(cap[ií]tulo|chapter)\s*\d+/i.test(txt)) {
     return true;
   }
+  // <h1>3</h1> / <h2>12</h2> — heading cujo texto é apenas um número 1-150
+  if ((tag === "h1" || tag === "h2" || tag === "h3") && /^\d{1,3}$/.test(txt)) {
+    const n = parseInt(txt, 10);
+    if (n >= 1 && n <= 150) return true;
+  }
   return false;
+}
+
+/** Tenta extrair o número do capítulo a partir de uma heading reconhecida. */
+function chapterNumberFromHeading(el: Element): number | null {
+  const id = el.getAttribute("id") ?? "";
+  const dataCh = el.getAttribute("data-chapter") ?? "";
+  const txt = (el.textContent ?? "").trim();
+  for (const src of [dataCh, id, txt]) {
+    if (!src) continue;
+    const m = src.match(/(\d{1,3})/);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (n >= 1 && n <= 150) return n;
+    }
+  }
+  return null;
 }
 
 /** Coleta o texto entre dois marcadores, pulando notas/rodapés/cross-refs
