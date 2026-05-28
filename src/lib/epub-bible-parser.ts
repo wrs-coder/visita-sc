@@ -606,8 +606,12 @@ function extractVersesFromDoc(
   const allEls = Array.from(doc.getElementsByTagName("*"));
   const markers: VerseMarker[] = [];
   let currentChapter = fallbackChapter;
+  const outlineRoots = findOutlineRoots(doc);
 
   for (const el of allEls) {
+    // Pula qualquer elemento dentro de um bloco de esboço.
+    if (isInsideOutline(el, outlineRoots)) continue;
+
     // Detecta heading de capítulo (atualiza currentChapter para os próximos marcadores)
     if (isChapterHeadingEl(el)) {
       const n = chapterNumberFromHeading(el);
