@@ -21,7 +21,7 @@ interface VersePart {
   text: string;
 }
 
-export function VerseLink({ match, libraryId, className }: VerseLinkProps) {
+export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseLinkProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [parts, setParts] = useState<VersePart[] | null>(null);
