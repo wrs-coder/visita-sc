@@ -1,5 +1,7 @@
 // Detecção dinâmica de citações bíblicas baseada nos livros da biblioteca ativa.
-// Os nomes/aliases vêm do próprio EPUB importado — sem listas fixas por idioma.
+// Os nomes/aliases vêm do próprio EPUB importado + catálogo canônico multilíngue.
+
+import { CANON } from "./bible-canon";
 
 /** Tipo legado mantido apenas para compat com código antigo (será removido em 3.3). */
 export type BibleLang = "pt" | "en" | "es";
