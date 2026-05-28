@@ -423,7 +423,7 @@ function Page() {
 
   return (
     <>
-      <div className="space-y-4 overflow-x-hidden overflow-y-auto">
+      <div className="space-y-4 w-full max-w-full overflow-x-hidden overflow-y-auto box-border min-w-0">
         <header className="flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-2 text-primary">
             <FileText className="h-5 w-5" />
@@ -491,7 +491,8 @@ function Page() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-[300px_1fr]">
+          <div className="grid gap-4 md:grid-cols-[300px_1fr] w-full max-w-full min-w-0">
+
             {/* Sidebar: árvore de pastas */}
             <Card className="h-fit">
               <CardContent className="p-3 space-y-3">
@@ -559,8 +560,9 @@ function Page() {
             </Card>
 
             {/* Editor */}
-            <Card>
-              <CardContent className="p-5 space-y-4">
+            <Card className="w-full max-w-full overflow-hidden min-w-0">
+              <CardContent className="p-5 space-y-4 w-full max-w-full overflow-x-hidden box-border min-w-0">
+
                 {!draft ? (
                   <p className="text-sm text-muted-foreground text-center py-12">
                     {t("personalOutlines.folders.selectFolder")}
@@ -627,8 +629,9 @@ function NoteEditor({
   const isField = type === "field_consideration";
 
   return (
-    <>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words">
+      <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0">
+
         <div className="flex items-center gap-2">
           <Badge variant={mode === "edit" ? "default" : "secondary"}>
             {mode === "edit"
@@ -665,7 +668,7 @@ function NoteEditor({
         </div>
       </div>
 
-      <div className="grid gap-3">
+      <div className="grid gap-3 w-full max-w-full min-w-0">
         <div className="grid gap-1.5">
           <Label>{t("fieldConsiderations.fields.title")}</Label>
           <Input
@@ -673,55 +676,63 @@ function NoteEditor({
             onChange={(e) => onPatch("title", e.target.value)}
             placeholder={t("fieldConsiderations.fields.titlePh")}
             readOnly={mode === "outline"}
+            className="w-full max-w-full min-w-0"
           />
+
         </div>
 
         {isField ? (
           <>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="grid gap-1.5">
+            <div className="grid gap-3 md:grid-cols-2 w-full max-w-full min-w-0">
+              <div className="grid gap-1.5 min-w-0">
                 <Label>{t("fieldConsiderations.fields.prayer")}</Label>
                 <Input
                   value={draft.prayer ?? ""}
                   onChange={(e) => onPatch("prayer", e.target.value)}
                   placeholder={t("fieldConsiderations.fields.prayerPh")}
                   readOnly={mode === "outline"}
+                  className="w-full max-w-full min-w-0"
                 />
               </div>
-              <div className="grid gap-1.5">
+              <div className="grid gap-1.5 min-w-0">
                 <Label>{t("fieldConsiderations.fields.territory")}</Label>
                 <Input
                   value={draft.territory ?? ""}
                   onChange={(e) => onPatch("territory", e.target.value)}
                   placeholder={t("fieldConsiderations.fields.territoryPh")}
                   readOnly={mode === "outline"}
+                  className="w-full max-w-full min-w-0"
                 />
               </div>
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-1.5 w-full max-w-full min-w-0">
               <Label>{t("fieldConsiderations.fields.assistants")}</Label>
               <Input
                 value={draft.assistants ?? ""}
                 onChange={(e) => onPatch("assistants", e.target.value)}
                 placeholder={t("fieldConsiderations.fields.assistantsPh")}
                 readOnly={mode === "outline"}
+                className="w-full max-w-full min-w-0"
               />
             </div>
+
           </>
         ) : (
-          <div className="grid gap-1.5">
+          <div className="grid gap-1.5 w-full max-w-full min-w-0">
             <Label>{t("personalOutlines.fields.description")}</Label>
             <Input
               value={draft.description ?? ""}
               onChange={(e) => onPatch("description", e.target.value)}
               placeholder={t("personalOutlines.fields.descriptionPh")}
               readOnly={mode === "outline"}
+              className="w-full max-w-full min-w-0"
             />
           </div>
+
         )}
 
         {mode === "edit" && (
-          <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-2 w-full max-w-full min-w-0 overflow-hidden break-words">
             <div className="flex items-center gap-2 text-xs font-semibold">
               <BookOpen className="h-3.5 w-3.5 text-primary" />
               {t("fieldConsiderations.detected")}
@@ -731,7 +742,7 @@ function NoteEditor({
                 {t("fieldConsiderations.detectedEmpty")}
               </p>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 max-w-full min-w-0">
                 {detected.map((m, i) => (
                   <VerseLink key={`${m.index}-${i}`} match={m} libraryId={activeBible?.id ?? null} />
                 ))}
@@ -740,7 +751,8 @@ function NoteEditor({
           </div>
         )}
 
-        <div className="grid gap-1.5">
+        <div className="grid gap-1.5 w-full max-w-full min-w-0">
+
           <Label>{t("fieldConsiderations.fields.content")}</Label>
           {mode === "edit" ? (
             <RichNoteEditor
@@ -763,9 +775,10 @@ function NoteEditor({
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
+
 
 // =============================================================
 // Fullscreen outline
