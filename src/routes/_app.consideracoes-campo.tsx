@@ -1076,3 +1076,115 @@ function FullscreenOutline({
     </div>
   );
 }
+
+// =============================================================
+// Move-to dialog (escolhe pasta destino para uma nota ou pasta)
+// =============================================================
+
+function MoveToDialog({
+  folders,
+  notes,
+  target,
+  onClose,
+  onConfirm,
+  getDescendantFolderIds,
+}: {
+  folders: NoteFolder[];
+  notes: FieldNote[];
+  target: { kind: "note"; id: string } | { kind: "folder"; id: string };
+  onClose: () => void;
+  onConfirm: (targetFolderId: string | null) => Promise<void> | void;
+  getDescendantFolderIds: (rootId: string) => Set<string>;
+}) {
+  const { t } = useTranslation();
+
+  // Pasta atual do item (origem) — para mostrar "aqui".
+  const currentParentId: string | null =
+    target.kind === "note"
+      ? (notes.find((n) => n.id === target.id)?.folderId ?? null)
+      : (folders.find((f) => f.id === target.id)?.parentId ?? null);
+
+  // Pastas inválidas como destino: a si mesma e descendentes (apenas para folder).
+  const forbidden: Set<string> = target.kind === "folder"
+    ? getDescendantFolderIds(target.id)
+    : new Set();
+
+  function Row({
+    label,
+    depth,
+    folderId,
+    icon,
+  }: {
+    label: string;
+    depth: number;
+    folderId: string | null;
+    icon: React.ReactNode;
+  }) {
+    const isCurrent = (folderId ?? null) === (currentParentId ?? null);
+    const isForbidden = folderId !== null && forbidden.has(folderId);
+    const disabled = isCurrent || isForbidden;
+    return (
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onConfirm(folderId)}
+        className={cn(
+          "w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm",
+          disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-muted",
+        )}
+        style={{ paddingLeft: 8 + depth * 14 }}
+      >
+        {icon}
+        <span className="flex-1 truncate">{label}</span>
+        {isCurrent && (
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {t("personalOutlines.folders.hereLabel", { defaultValue: "aqui" })}
+          </span>
+        )}
+      </button>
+    );
+  }
+
+  function renderTree(parentId: string | null, depth: number): React.ReactNode {
+    return folders
+      .filter((f) => (f.parentId ?? null) === parentId)
+      .map((f) => (
+        <div key={f.id}>
+          <Row
+            label={f.name}
+            depth={depth}
+            folderId={f.id}
+            icon={<Folder className="h-4 w-4 text-muted-foreground" />}
+          />
+          {renderTree(f.id, depth + 1)}
+        </div>
+      ));
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto -mx-2 px-2 space-y-0.5">
+          <Row
+            label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
+            depth={0}
+            folderId={null}
+            icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
+          />
+          {renderTree(null, 0)}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            {t("common.cancel", { defaultValue: "Cancelar" })}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
