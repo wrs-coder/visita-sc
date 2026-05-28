@@ -12,21 +12,53 @@ interface VerseLinkProps {
   className?: string;
 }
 
+const MAX_RANGE = 10;
+
+interface VersePart {
+  verse: number;
+  text: string;
+}
+
 export function VerseLink({ match, libraryId, className }: VerseLinkProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [text, setText] = useState<string | null>(null);
+  const [parts, setParts] = useState<VersePart[] | null>(null);
+  const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!open || text !== null) return;
-    if (!libraryId) { setText(""); return; }
+    if (!open || parts !== null) return;
+    if (!libraryId) {
+      setParts([]);
+      return;
+    }
     setLoading(true);
-    getVerseFromLibrary(libraryId, match.bookId, match.chapter, match.verse).then((rec) => {
-      setText(rec?.text ?? "");
+
+    const start = match.verse;
+    let end = match.verseEnd && match.verseEnd > start ? match.verseEnd : start;
+    let cappedTruncation = false;
+    if (end - start + 1 > MAX_RANGE) {
+      end = start + MAX_RANGE - 1;
+      cappedTruncation = true;
+    }
+    const nums: number[] = [];
+    for (let v = start; v <= end; v++) nums.push(v);
+
+    Promise.all(
+      nums.map((v) =>
+        getVerseFromLibrary(libraryId, match.bookId, match.chapter, v).then((rec) => ({
+          verse: v,
+          text: rec?.text ?? "",
+        })),
+      ),
+    ).then((results) => {
+      setParts(results.filter((r) => r.text));
+      setTruncated(cappedTruncation);
       setLoading(false);
     });
-  }, [open, libraryId, match.bookId, match.chapter, match.verse, text]);
+  }, [open, libraryId, match.bookId, match.chapter, match.verse, match.verseEnd, parts]);
+
+  const isRange = match.verseEnd && match.verseEnd > match.verse;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -54,8 +86,29 @@ export function VerseLink({ match, libraryId, className }: VerseLinkProps) {
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             {t("bibleVerse.loading")}
           </div>
-        ) : text ? (
-          <p className="text-sm leading-relaxed">{text}</p>
+        ) : parts && parts.length > 0 ? (
+          <div className="text-sm leading-relaxed space-y-1.5">
+            {isRange ? (
+              <p>
+                {parts.map((p, i) => (
+                  <span key={p.verse}>
+                    {i > 0 ? " " : ""}
+                    <sup className="text-[10px] font-semibold text-muted-foreground mr-0.5">
+                      {p.verse}
+                    </sup>
+                    {p.text}
+                  </span>
+                ))}
+              </p>
+            ) : (
+              <p>{parts[0].text}</p>
+            )}
+            {truncated && (
+              <p className="text-[11px] text-muted-foreground italic pt-1">
+                Intervalo grande — mostrando apenas os primeiros {MAX_RANGE} versículos.
+              </p>
+            )}
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground italic">
             {t("bibleVerse.notFound")}
