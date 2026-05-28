@@ -629,8 +629,9 @@ function NoteEditor({
   const isField = type === "field_consideration";
 
   return (
-    <>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words">
+      <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0">
+
         <div className="flex items-center gap-2">
           <Badge variant={mode === "edit" ? "default" : "secondary"}>
             {mode === "edit"
