@@ -1222,7 +1222,16 @@
       "imported": "Imported: {{folders}} folder(s) and {{notes}} note(s).",
       "sectionTitle": "Folders and notes",
       "expand": "Expand",
-      "collapse": "Minimize"
+      "collapse": "Minimize",
+      "moveTo": "Move to…",
+      "pasteHere": "Paste here",
+      "root": "📁 Root (no folder)",
+      "hereLabel": "here",
+      "cut": "Cut",
+      "moved": "Moved.",
+      "cannotMoveIntoSelf": "Can't move a folder into itself.",
+      "clipboardHint": "1 note cut. Tap \"Paste here\" on the destination folder.",
+      "clearClipboard": "Cancel"
     },
     "fields": {
       "description": "Description",
