@@ -184,7 +184,7 @@ function compile(books: BookInfo[], lang: Lang): CompiledIndex {
   const source = `(?:^|[^${boundary}])(${branches.join("|")})(?=$|[^${boundary}])`;
   const regex = new RegExp(source, "giu");
   const out = { regex, lookup };
-  CACHE.set(books, out);
+  perLang.set(lang, out);
   return out;
 }
 
