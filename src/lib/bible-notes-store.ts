@@ -1,9 +1,9 @@
-// IndexedDB wrapper for "Considerações de campo" notes + bibles.
-// Falls back to localStorage if IndexedDB is unavailable (rare; private mode etc.).
-// 100% local — no network, no Supabase.
+// IndexedDB wrapper for "Considerações de campo" notes + Bíblias importadas via EPUB.
+// Fallback para localStorage apenas para as notas (a Bíblia exige IndexedDB pelo volume).
+// 100% local — sem rede, sem Supabase.
 
 import type { BibleLang, BookId } from "./bible-refs";
-import { BIBLE_SEED } from "./bible-seed";
+import { parseEpub, type ParseProgress, type ParsedBookInfo } from "./epub-bible-parser";
 
 export interface FieldNote {
   id: string;
@@ -16,21 +16,39 @@ export interface FieldNote {
   updated_at: number;
 }
 
+// =============================================================
+// Bíblia importada via EPUB
+// =============================================================
+
+export interface BibleLibrary {
+  id: string;            // uuid
+  lang: string;          // ISO ("pt", "en"...)
+  langLabel: string;     // "Português", "English"...
+  title: string;         // título do EPUB
+  identifier?: string;
+  books: ParsedBookInfo[];
+  bookCount: number;
+  verseCount: number;
+  imported_at: number;
+}
+
 export interface BibleVerseRecord {
-  key: string; // `${lang}:${bookId}:${chapter}:${verse}`
-  lang: BibleLang;
-  bookId: BookId;
+  key: string;           // `${libraryId}:${bookId}:${chapter}:${verse}`
+  libraryId: string;
+  bookId: string;
   chapter: number;
   verse: number;
   text: string;
 }
 
 const DB_NAME = "visita-sc-field";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NOTES = "notes";
-const STORE_BIBLES = "bibles"; // reserved for Etapa 3
+const STORE_BIBLES = "bibles";
+const STORE_LIBRARIES = "bible_libraries";
 
 const LS_FALLBACK_KEY = "visita-sc:field-notes";
+const LS_ACTIVE_LIBRARY = "visita-sc-bible-active";
 
 function hasIDB(): boolean {
   try {
@@ -48,8 +66,18 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(STORE_NOTES)) {
         db.createObjectStore(STORE_NOTES, { keyPath: "id" });
       }
-      if (!db.objectStoreNames.contains(STORE_BIBLES)) {
-        db.createObjectStore(STORE_BIBLES, { keyPath: "key" });
+      // Recria o store de Bíblias com o novo formato (libraryId-based).
+      if (db.objectStoreNames.contains(STORE_BIBLES)) {
+        db.deleteObjectStore(STORE_BIBLES);
+      }
+      const bibles = db.createObjectStore(STORE_BIBLES, { keyPath: "key" });
+      bibles.createIndex("by_library", "libraryId", { unique: false });
+      bibles.createIndex("by_book", ["libraryId", "bookId"], { unique: false });
+
+      if (!db.objectStoreNames.contains(STORE_LIBRARIES)) {
+        const libs = db.createObjectStore(STORE_LIBRARIES, { keyPath: "id" });
+        libs.createIndex("by_lang", "lang", { unique: false });
+        libs.createIndex("by_imported_at", "imported_at", { unique: false });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -57,6 +85,7 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
+// ---- Notas (inalterado) ----
 async function idbAll(): Promise<FieldNote[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -87,7 +116,6 @@ async function idbDelete(id: string): Promise<void> {
   });
 }
 
-// ---- localStorage fallback ----
 function lsAll(): FieldNote[] {
   try {
     const raw = localStorage.getItem(LS_FALLBACK_KEY);
@@ -104,7 +132,6 @@ function lsWrite(all: FieldNote[]) {
   }
 }
 
-// ---- Public API ----
 export async function listNotes(): Promise<FieldNote[]> {
   try {
     if (hasIDB()) return await idbAll();
@@ -148,11 +175,194 @@ export function newNoteId(): string {
 }
 
 // =============================================================
-// Bíblia offline
+// Bibles — nova API (EPUB libraries)
 // =============================================================
 
-const LS_BIBLES_KEY = "visita-sc:bibles";
-const LS_LANG_STATUS_KEY = "visita-sc:bible-lang-status";
+function libraryId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return "lib-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function verseKey(libId: string, bookId: string, chapter: number, verse: number): string {
+  return `${libId}:${bookId}:${chapter}:${verse}`;
+}
+
+function putChunkAsync(
+  store: IDBObjectStore,
+  records: BibleVerseRecord[],
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let last: IDBRequest | null = null;
+    for (const r of records) last = store.put(r);
+    if (!last) return resolve();
+    last.onsuccess = () => resolve();
+    last.onerror = () => reject(last!.error);
+  });
+}
+
+/** Importa um EPUB para o IndexedDB. Retorna o registro da biblioteca criada. */
+export async function importEpub(
+  file: File,
+  onProgress?: (phase: string, pct: number) => void,
+): Promise<BibleLibrary> {
+  const parserProgress: ParseProgress = (phase, pct) => {
+    // Mapeia: unzip 0–5%, parse-opf 5–10%, index-books 10–90%
+    let overall = 0;
+    if (phase === "unzip") overall = pct * 0.05;
+    else if (phase === "parse-opf") overall = 0.05 + pct * 0.05;
+    else if (phase === "index-books") overall = 0.1 + pct * 0.8;
+    onProgress?.(phase, overall);
+  };
+
+  const parsed = await parseEpub(file, parserProgress);
+
+  const id = libraryId();
+  const library: BibleLibrary = {
+    id,
+    lang: parsed.meta.lang,
+    langLabel: parsed.meta.langLabel,
+    title: parsed.meta.title,
+    identifier: parsed.meta.identifier,
+    books: parsed.books,
+    bookCount: parsed.books.length,
+    verseCount: parsed.verses.length,
+    imported_at: Date.now(),
+  };
+
+  if (!hasIDB()) {
+    throw new Error("IndexedDB indisponível: a importação requer armazenamento local.");
+  }
+
+  const db = await openDB();
+  const CHUNK = 1000;
+  const total = parsed.verses.length;
+
+  for (let i = 0; i < total; i += CHUNK) {
+    const slice = parsed.verses.slice(i, i + CHUNK);
+    const records: BibleVerseRecord[] = slice.map((v) => ({
+      key: verseKey(id, v.bookId, v.chapter, v.verse),
+      libraryId: id,
+      bookId: v.bookId,
+      chapter: v.chapter,
+      verse: v.verse,
+      text: v.text,
+    }));
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_BIBLES, "readwrite");
+      const store = tx.objectStore(STORE_BIBLES);
+      for (const r of records) store.put(r);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    onProgress?.("write-db", 0.9 + ((i + slice.length) / Math.max(total, 1)) * 0.1);
+    // Cede o thread principal entre chunks
+    await new Promise((r) => setTimeout(r, 0));
+  }
+
+  // Grava metadados da biblioteca
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_LIBRARIES, "readwrite");
+    tx.objectStore(STORE_LIBRARIES).put(library);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+
+  onProgress?.("write-db", 1);
+  setActiveLibraryId(id);
+  return library;
+}
+
+export async function listLibraries(): Promise<BibleLibrary[]> {
+  if (!hasIDB()) return [];
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_LIBRARIES, "readonly");
+    const req = tx.objectStore(STORE_LIBRARIES).getAll();
+    req.onsuccess = () => {
+      const all = (req.result as BibleLibrary[]) ?? [];
+      all.sort((a, b) => b.imported_at - a.imported_at);
+      resolve(all);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function removeLibrary(id: string): Promise<void> {
+  if (!hasIDB()) return;
+  const db = await openDB();
+  // Apaga versículos
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_BIBLES, "readwrite");
+    const store = tx.objectStore(STORE_BIBLES);
+    const range = IDBKeyRange.bound(`${id}:`, `${id}:\uffff`);
+    const req = store.openCursor(range);
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (cursor) {
+        cursor.delete();
+        cursor.continue();
+      }
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  // Apaga registro da biblioteca
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_LIBRARIES, "readwrite");
+    tx.objectStore(STORE_LIBRARIES).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  if (getActiveLibraryId() === id) {
+    try { localStorage.removeItem(LS_ACTIVE_LIBRARY); } catch { /* noop */ }
+  }
+}
+
+export function getActiveLibraryId(): string | null {
+  try { return localStorage.getItem(LS_ACTIVE_LIBRARY); } catch { return null; }
+}
+
+export function setActiveLibraryId(id: string | null): void {
+  try {
+    if (id) localStorage.setItem(LS_ACTIVE_LIBRARY, id);
+    else localStorage.removeItem(LS_ACTIVE_LIBRARY);
+  } catch { /* noop */ }
+}
+
+export async function getActiveLibrary(): Promise<BibleLibrary | null> {
+  const id = getActiveLibraryId();
+  if (!id) return null;
+  if (!hasIDB()) return null;
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_LIBRARIES, "readonly");
+    const req = tx.objectStore(STORE_LIBRARIES).get(id);
+    req.onsuccess = () => resolve((req.result as BibleLibrary | undefined) ?? null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function getVerseFromLibrary(
+  libId: string,
+  bookId: string,
+  chapter: number,
+  verse: number,
+): Promise<BibleVerseRecord | null> {
+  if (!hasIDB()) return null;
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_BIBLES, "readonly");
+    const req = tx.objectStore(STORE_BIBLES).get(verseKey(libId, bookId, chapter, verse));
+    req.onsuccess = () => resolve((req.result as BibleVerseRecord | undefined) ?? null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// =============================================================
+// Stubs de compatibilidade (removidos na sub-etapa 3.3)
+// Mantidos apenas para o código antigo (BibleManagerDialog, VersePopover)
+// compilar até a migração da UI.
+// =============================================================
 
 export interface BibleLangStatus {
   lang: BibleLang;
@@ -161,206 +371,37 @@ export interface BibleLangStatus {
   updated_at: number;
 }
 
-function verseKey(lang: BibleLang, bookId: BookId, chapter: number, verse: number): string {
-  return `${lang}:${bookId}:${chapter}:${verse}`;
+export async function getLangStatus(lang: BibleLang): Promise<BibleLangStatus> {
+  return { lang, downloaded: false, verseCount: 0, updated_at: 0 };
 }
 
-async function idbPutVerses(records: BibleVerseRecord[]): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_BIBLES, "readwrite");
-    const store = tx.objectStore(STORE_BIBLES);
-    for (const r of records) store.put(r);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+export async function downloadLanguage(
+  _lang: BibleLang,
+  _onProgress?: (pct: number) => void,
+): Promise<number> {
+  throw new Error("DEPRECATED: use importEpub() — a UI será atualizada na próxima etapa.");
 }
 
-async function idbGetVerse(key: string): Promise<BibleVerseRecord | null> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_BIBLES, "readonly");
-    const req = tx.objectStore(STORE_BIBLES).get(key);
-    req.onsuccess = () => resolve((req.result as BibleVerseRecord | undefined) ?? null);
-    req.onerror = () => reject(req.error);
-  });
+export async function removeLanguage(_lang: BibleLang): Promise<void> {
+  /* no-op (UI antiga) */
 }
 
-async function idbCountVerses(lang: BibleLang): Promise<number> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_BIBLES, "readonly");
-    const req = tx.objectStore(STORE_BIBLES).getAllKeys();
-    req.onsuccess = () => {
-      const keys = (req.result as string[]) ?? [];
-      resolve(keys.filter((k) => k.startsWith(`${lang}:`)).length);
-    };
-    req.onerror = () => reject(req.error);
-  });
+export async function countVerses(_lang: BibleLang): Promise<number> {
+  return 0;
 }
 
-async function idbDeleteLang(lang: BibleLang): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_BIBLES, "readwrite");
-    const store = tx.objectStore(STORE_BIBLES);
-    const req = store.getAllKeys();
-    req.onsuccess = () => {
-      const keys = (req.result as string[]) ?? [];
-      for (const k of keys) if (k.startsWith(`${lang}:`)) store.delete(k);
-    };
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+export async function ensureSeed(): Promise<void> {
+  /* no-op — sem seed; usuário importa o EPUB. */
 }
 
-// ---- localStorage fallback for bibles ----
-function lsBibles(): Record<string, BibleVerseRecord> {
-  try {
-    const raw = localStorage.getItem(LS_BIBLES_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, BibleVerseRecord>) : {};
-  } catch {
-    return {};
-  }
-}
-function lsWriteBibles(all: Record<string, BibleVerseRecord>) {
-  try {
-    localStorage.setItem(LS_BIBLES_KEY, JSON.stringify(all));
-  } catch {
-    /* quota */
-  }
-}
-
-// ---- Public API ----
-
+/** Compat: tenta resolver via biblioteca ativa (ignora lang). */
 export async function getVerse(
-  lang: BibleLang,
+  _lang: BibleLang,
   bookId: BookId,
   chapter: number,
   verse: number,
 ): Promise<BibleVerseRecord | null> {
-  const k = verseKey(lang, bookId, chapter, verse);
-  try {
-    if (hasIDB()) return await idbGetVerse(k);
-  } catch {
-    /* fall through */
-  }
-  return lsBibles()[k] ?? null;
-}
-
-/** Conta versículos disponíveis para um idioma. */
-export async function countVerses(lang: BibleLang): Promise<number> {
-  try {
-    if (hasIDB()) return await idbCountVerses(lang);
-  } catch {
-    /* fall through */
-  }
-  return Object.keys(lsBibles()).filter((k) => k.startsWith(`${lang}:`)).length;
-}
-
-/**
- * "Baixa" o idioma — nesta versão, expande a seed local (offline-first).
- * O onProgress (0..1) é chamado para alimentar a barra de progresso da UI.
- */
-export async function downloadLanguage(
-  lang: BibleLang,
-  onProgress?: (pct: number) => void,
-): Promise<number> {
-  const seed = BIBLE_SEED[lang] ?? [];
-  const records: BibleVerseRecord[] = seed.map((v) => ({
-    key: verseKey(lang, v.bookId, v.chapter, v.verse),
-    lang,
-    bookId: v.bookId,
-    chapter: v.chapter,
-    verse: v.verse,
-    text: v.text,
-  }));
-
-  // Progresso simulado em etapas curtas (mantém UX consistente em <1s).
-  const steps = 5;
-  for (let i = 1; i <= steps; i++) {
-    await new Promise((r) => setTimeout(r, 80));
-    onProgress?.(i / steps);
-  }
-
-  try {
-    if (hasIDB()) {
-      await idbPutVerses(records);
-    } else {
-      const all = lsBibles();
-      for (const r of records) all[r.key] = r;
-      lsWriteBibles(all);
-    }
-  } catch {
-    const all = lsBibles();
-    for (const r of records) all[r.key] = r;
-    lsWriteBibles(all);
-  }
-
-  markLangDownloaded(lang, records.length);
-  return records.length;
-}
-
-export async function removeLanguage(lang: BibleLang): Promise<void> {
-  try {
-    if (hasIDB()) await idbDeleteLang(lang);
-  } catch {
-    /* fall through */
-  }
-  const all = lsBibles();
-  for (const k of Object.keys(all)) if (k.startsWith(`${lang}:`)) delete all[k];
-  lsWriteBibles(all);
-  unmarkLang(lang);
-}
-
-function getLangStatusMap(): Record<BibleLang, BibleLangStatus> {
-  try {
-    const raw = localStorage.getItem(LS_LANG_STATUS_KEY);
-    if (raw) return JSON.parse(raw) as Record<BibleLang, BibleLangStatus>;
-  } catch {
-    /* noop */
-  }
-  return {} as Record<BibleLang, BibleLangStatus>;
-}
-function setLangStatusMap(m: Record<BibleLang, BibleLangStatus>) {
-  try {
-    localStorage.setItem(LS_LANG_STATUS_KEY, JSON.stringify(m));
-  } catch {
-    /* quota */
-  }
-}
-function markLangDownloaded(lang: BibleLang, count: number) {
-  const m = getLangStatusMap();
-  m[lang] = { lang, downloaded: true, verseCount: count, updated_at: Date.now() };
-  setLangStatusMap(m);
-}
-function unmarkLang(lang: BibleLang) {
-  const m = getLangStatusMap();
-  delete m[lang];
-  setLangStatusMap(m);
-}
-
-export async function getLangStatus(lang: BibleLang): Promise<BibleLangStatus> {
-  const m = getLangStatusMap();
-  const stored = m[lang];
-  const count = await countVerses(lang);
-  if (stored && count === stored.verseCount) return stored;
-  // Reconcilia (ex.: idioma seedado mas sem flag).
-  return {
-    lang,
-    downloaded: count > 0,
-    verseCount: count,
-    updated_at: stored?.updated_at ?? 0,
-  };
-}
-
-/** Garante que cada idioma tenha pelo menos a seed disponível (executado uma vez). */
-export async function ensureSeed(): Promise<void> {
-  for (const lang of ["pt", "en", "es"] as BibleLang[]) {
-    const c = await countVerses(lang);
-    if (c === 0) {
-      // Aplica seed silenciosamente (sem progresso) — primeira execução.
-      await downloadLanguage(lang);
-    }
-  }
+  const id = getActiveLibraryId();
+  if (!id) return null;
+  return getVerseFromLibrary(id, bookId as unknown as string, chapter, verse);
 }
