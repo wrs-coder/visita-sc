@@ -17,12 +17,11 @@ import {
   saveNote as persistNote,
   deleteNote as removeNote,
   newNoteId,
-  ensureSeed,
-  getLangStatus,
+  getActiveLibrary,
   type FieldNote,
-  type BibleLangStatus,
+  type BibleLibrary,
 } from "@/lib/bible-notes-store";
-import { findCitations, type BibleLang, type CitationMatch } from "@/lib/bible-refs";
+import { findCitations, type CitationMatch } from "@/lib/bible-refs";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { cn } from "@/lib/utils";
 
