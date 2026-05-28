@@ -960,12 +960,39 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
       string,
       { chapter: number; verse: number; text: string; source: "marker" | "fallback" }
     >();
-        }
 
+    for (let hi = 0; hi < bucket.hrefs.length; hi++) {
+      const href = bucket.hrefs[hi];
+      const f = zip.file(href);
+      if (!f) continue;
+      try {
+        const html = await f.async("string");
+        const doc = new DOMParser().parseFromString(html, XHTML_MIME);
+        const chapByName = chapterFromFilename(href);
+        const chapByHead = chapterFromHeading(doc);
+        const fallback = chapByName ?? chapByHead ?? (multiFile ? hi + 1 : 1);
+        const extracted = extractVersesFromDoc(doc, fallback);
+
+        for (const v of extracted) {
+          const key = `${v.chapter}:${v.verse}`;
+          const prev = verseMap.get(key);
+          if (!prev) {
+            verseMap.set(key, v);
+            continue;
+          }
+          // Marker sempre vence fallback. Entre dois do mesmo tipo, o mais longo vence.
+          if (v.source === "marker" && prev.source === "fallback") {
+            verseMap.set(key, v);
+          } else if (v.source === prev.source && v.text.length > prev.text.length) {
+            verseMap.set(key, v);
+          }
+          // fallback novo vs marker existente → mantém o marker (não sobrescreve).
+        }
       } catch {
         /* arquivo malformado — ignora */
       }
     }
+
 
     const bookVerses = Array.from(verseMap.values());
     if (bookVerses.length < 3) {
