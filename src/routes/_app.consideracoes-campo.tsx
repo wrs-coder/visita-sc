@@ -773,6 +773,17 @@ function Page() {
           onClose={() => setFullscreen(false)}
         />
       )}
+
+      {moveTarget && (
+        <MoveToDialog
+          folders={folders}
+          target={moveTarget}
+          notes={notes}
+          onClose={() => setMoveTarget(null)}
+          onConfirm={handleConfirmMove}
+          getDescendantFolderIds={getDescendantFolderIds}
+        />
+      )}
     </>
   );
 }
