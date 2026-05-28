@@ -453,16 +453,23 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
 
     const bookVerses: ParsedVerse[] = [];
     const chaptersSeen = new Set<number>();
-    for (const href of slot.hrefs) {
+    const multiFile = slot.hrefs.length > 1;
+    for (let hi = 0; hi < slot.hrefs.length; hi++) {
+      const href = slot.hrefs[hi];
       const f = zip.file(href);
       if (!f) continue;
       try {
         const html = await f.async("string");
         const doc = new DOMParser().parseFromString(html, XHTML_MIME);
         const extracted = extractVersesFromDoc(doc);
+        // Se há múltiplos arquivos (um por capítulo) e os capítulos extraídos
+        // ficaram todos em 1, usa o índice do arquivo como capítulo.
+        const distinctChaps = new Set(extracted.map((v) => v.chapter));
+        const overrideChapter = multiFile && distinctChaps.size <= 1 ? hi + 1 : null;
         for (const v of extracted) {
-          chaptersSeen.add(v.chapter);
-          bookVerses.push({ bookId, chapter: v.chapter, verse: v.verse, text: v.text });
+          const chap = overrideChapter ?? v.chapter;
+          chaptersSeen.add(chap);
+          bookVerses.push({ bookId, chapter: chap, verse: v.verse, text: v.text });
         }
       } catch {
         /* arquivo malformado — ignora */
