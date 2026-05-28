@@ -67,6 +67,7 @@ function Page() {
   const [saving, setSaving] = useState(false);
   const [bibleOpen, setBibleOpen] = useState(false);
   const [activeBible, setActiveBible] = useState<BibleLangStatus | null>(null);
+  const [mode, setMode] = useState<"edit" | "outline">("outline");
 
   const activeLang: BibleLang =
     i18n.language?.startsWith("en") ? "en" : i18n.language?.startsWith("es") ? "es" : "pt";
