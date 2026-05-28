@@ -21,7 +21,17 @@ import {
   Maximize2,
   X,
   Minus,
+  Move,
+  Scissors,
+  ClipboardPaste,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
