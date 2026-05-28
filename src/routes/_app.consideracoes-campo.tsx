@@ -649,12 +649,29 @@ function NoteEditor({
     <div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words pb-24">
       <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0">
 
-        <div className="flex items-center gap-2">
-          <Badge variant={mode === "edit" ? "default" : "secondary"}>
-            {mode === "edit"
-              ? t("fieldConsiderations.editMode")
-              : t("fieldConsiderations.outlineMode")}
-          </Badge>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="inline-flex rounded-md border bg-background p-0.5">
+            <button
+              type="button"
+              onClick={() => onModeChange("edit")}
+              className={cn(
+                "px-3 py-1 text-xs rounded-sm transition",
+                mode === "edit" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+              )}
+            >
+              {t("fieldConsiderations.editMode")}
+            </button>
+            <button
+              type="button"
+              onClick={() => onModeChange("outline")}
+              className={cn(
+                "px-3 py-1 text-xs rounded-sm transition",
+                mode === "outline" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+              )}
+            >
+              {t("fieldConsiderations.outlineMode")}
+            </button>
+          </div>
           <span className="text-[11px] text-muted-foreground">
             {t("fieldConsiderations.updatedAt")}: {dateFmt(draft.updated_at)}
           </span>
@@ -778,7 +795,7 @@ function NoteEditor({
       </div>
 
       {/* Sticky action bar — sempre visível no rodapé do editor */}
-      <div className="sticky bottom-0 left-0 right-0 z-30 -mx-5 px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-end gap-2 w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
+      <div className="sticky bottom-0 left-0 right-0 z-30 -mx-5 px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-center gap-2 w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
         {mode === "outline" && (
           <Button variant="outline" size="sm" onClick={() => onModeChange("edit")}>
             <Pencil className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.edit")}
