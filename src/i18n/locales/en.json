@@ -1184,7 +1184,13 @@
     "createdAt": "Created on",
     "updatedAt": "Updated on",
     "saved": "Note saved",
-    "deleted": "Note deleted"
+    "deleted": "Note deleted",
+    "editMode": "Edit mode",
+    "outlineMode": "Outline mode",
+    "edit": "Edit note",
+    "detected": "Detected verses",
+    "detectedEmpty": "Type a citation (e.g. John 3:16) to preview.",
+    "contentEmpty": "No content."
   },
   "bibleManager": {
     "title": "Manage Bible languages",
@@ -1204,5 +1210,9 @@
       "en": "English",
       "es": "Spanish"
     }
+  },
+  "bibleVerse": {
+    "loading": "Loading verse...",
+    "notFound": "Verse not available offline. Download the Bible from Manage languages."
   }
 }

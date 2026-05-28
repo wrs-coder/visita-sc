@@ -1184,7 +1184,13 @@
     "createdAt": "Creada el",
     "updatedAt": "Actualizada el",
     "saved": "Nota guardada",
-    "deleted": "Nota eliminada"
+    "deleted": "Nota eliminada",
+    "editMode": "Modo edición",
+    "outlineMode": "Modo esquema",
+    "edit": "Editar nota",
+    "detected": "Versículos detectados",
+    "detectedEmpty": "Escribe una cita (ej. Juan 3:16) para previsualizar.",
+    "contentEmpty": "Sin contenido."
   },
   "bibleManager": {
     "title": "Administrar idiomas de la Biblia",
@@ -1204,5 +1210,9 @@
       "en": "Inglés",
       "es": "Español"
     }
+  },
+  "bibleVerse": {
+    "loading": "Cargando versículo...",
+    "notFound": "Versículo no disponible sin conexión. Descarga la Biblia en Administrar idiomas."
   }
 }
