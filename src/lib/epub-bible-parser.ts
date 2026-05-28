@@ -950,27 +950,16 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
     const bookId = bucket.book.id;
     const multiFile = bucket.hrefs.length > 1;
 
-    // Dedup por chave "chap:verse" — mantém o texto mais longo.
-    const verseMap = new Map<string, { chapter: number; verse: number; text: string }>();
-
-    for (let hi = 0; hi < bucket.hrefs.length; hi++) {
-      const href = bucket.hrefs[hi];
-      const f = zip.file(href);
-      if (!f) continue;
-      try {
-        const html = await f.async("string");
-        const doc = new DOMParser().parseFromString(html, XHTML_MIME);
-        const chapByName = chapterFromFilename(href);
-        const chapByHead = chapterFromHeading(doc);
-        const fallback = chapByName ?? chapByHead ?? (multiFile ? hi + 1 : 1);
-        const extracted = extractVersesFromDoc(doc, fallback);
-
-        for (const v of extracted) {
-          const key = `${v.chapter}:${v.verse}`;
-          const prev = verseMap.get(key);
-          if (!prev || v.text.length > prev.text.length) {
-            verseMap.set(key, { chapter: v.chapter, verse: v.verse, text: v.text });
-          }
+    // Dedup por chave "chap:verse". Regra:
+    //  - texto vindo de marcadores DOM reais ("marker") substitui qualquer
+    //    versão anterior se for mais longo (ou se a anterior veio do fallback).
+    //  - texto vindo do fallback regex ("fallback") só preenche chaves ainda
+    //    vazias — NUNCA sobrescreve verso real (proteção contra "Conteúdo
+    //    do livro" sobrescrever 1 Pedro 1:4 etc.).
+    const verseMap = new Map<
+      string,
+      { chapter: number; verse: number; text: string; source: "marker" | "fallback" }
+    >();
         }
 
       } catch {
