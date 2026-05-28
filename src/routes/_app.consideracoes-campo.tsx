@@ -65,19 +65,16 @@ function Page() {
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [bibleOpen, setBibleOpen] = useState(false);
-  const [activeBible, setActiveBible] = useState<BibleLangStatus | null>(null);
+  const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
   const [mode, setMode] = useState<"edit" | "outline">("outline");
 
-  const activeLang: BibleLang =
-    i18n.language?.startsWith("en") ? "en" : i18n.language?.startsWith("es") ? "es" : "pt";
-
   async function refreshActiveBible() {
-    setActiveBible(await getLangStatus(activeLang));
+    setActiveBible(await getActiveLibrary());
   }
 
-  // Initial load + seed.
+  // Initial load.
   useEffect(() => {
-    ensureSeed().then(refreshActiveBible);
+    refreshActiveBible();
     listNotes().then((all) => {
       const sorted = all.sort((a, b) => b.updated_at - a.updated_at);
       setNotes(sorted);
@@ -88,12 +85,6 @@ function Page() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Reload active bible when app language changes.
-  useEffect(() => {
-    refreshActiveBible();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLang]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
