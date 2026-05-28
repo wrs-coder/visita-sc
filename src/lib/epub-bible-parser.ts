@@ -500,6 +500,10 @@ const PURGE_SELECTORS = [
   '[role="doc-endnote"]',
   '[role="doc-noteref"]',
   '.footnote', '.footnotes', '.footnoteref', '.fn', '.rearnote', '.endnote',
+  // TNM: cada arquivo XHTML termina com <div class="groupFootnote">…</div>
+  // contendo as notas do capítulo. Precisa sair ANTES da extração, senão o
+  // texto do último versículo é "engolido" pelo bloco de notas.
+  '.groupFootnote', 'div.groupFootnote', '[class*="groupFootnote"]',
   'a[href*="#footnotesource"]',
   'a[href*="#footnote"]', 'a[href*="#fn"]', 'a[href*="#note"]', 'a[href*="#xref"]',
 
