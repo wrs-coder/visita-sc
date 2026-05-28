@@ -45,8 +45,11 @@ const ACCENT_CLASSES: Record<string, string> = {
 };
 
 function accentInsensitivePattern(term: string): string {
+  // Normaliza primeiro: "João" → "Joao", "Filêmon" → "Filemon", para que
+  // cada letra-base mapeie corretamente para a classe que aceita acentos.
+  const base = stripDiacritics(term);
   let out = "";
-  for (const ch of term) {
+  for (const ch of base) {
     const lower = ch.toLowerCase();
     if (ACCENT_CLASSES[lower]) {
       out += ACCENT_CLASSES[lower];
@@ -59,24 +62,68 @@ function accentInsensitivePattern(term: string): string {
   return out;
 }
 
+
 interface CompiledIndex {
   regex: RegExp;
   lookup: Map<string, { bookId: string; displayName: string }>;
 }
 
-const CACHE = new WeakMap<BookInfo[], CompiledIndex>();
+export type Lang = "pt" | "en" | "es" | "unknown";
+
+const CACHE = new WeakMap<BookInfo[], Map<Lang, CompiledIndex>>();
+const LANG_CACHE = new WeakMap<BookInfo[], Lang>();
 
 // Livros bíblicos com apenas 1 capítulo — aceitam citação sem capítulo
 // (ex.: "Judas 5" em vez de "Judas 1:5").
 const SINGLE_CHAPTER_BOOK_IDS = new Set(["B31", "B57", "B63", "B64", "B65"]);
 
-function compile(books: BookInfo[]): CompiledIndex {
-  const cached = CACHE.get(books);
+// Aliases que aparecem em mais de um livro do CANON. Mapeia idioma → bookId preferido.
+// Para "unknown" mantemos o comportamento atual (primeiro a registrar vence).
+const AMBIGUOUS_ALIASES: Record<string, Partial<Record<Lang, string>>> = {
+  jo: { pt: "B43", en: "B18", es: "B18" }, // João vs Job
+  jn: { pt: "B43", en: "B32" },             // João vs Jonas
+  dn: { pt: "B27", en: "B05" },             // Daniel vs Deuteronômio
+  jd: { pt: "B65", en: "B07" },             // Judas vs Juízes
+  nm: { pt: "B04", en: "B04" },             // Números (sempre)
+};
+
+// Marcadores fortes por idioma (presentes nos displayName dos livros)
+const LANG_MARKERS: Record<Exclude<Lang, "unknown">, RegExp[]> = {
+  pt: [/\bjo[ãa]o\b/i, /\bmateus\b/i, /\bg[êe]nese/i, /\bapocalipse\b/i, /\bju[íi]zes\b/i, /\b[êe]xodo\b/i],
+  en: [/\bjohn\b/i, /\bmatthew\b/i, /\bgenesis\b/i, /\brevelation\b/i, /\bjudges\b/i, /\bexodus\b/i],
+  es: [/\bjuan\b/i, /\bmateo\b/i, /\bg[ée]nesis\b/i, /\bapocalipsis\b/i, /\bjueces\b/i, /\b[ée]xodo\b/i],
+};
+
+export function detectBibleLanguage(books: BookInfo[]): Lang {
+  const cached = LANG_CACHE.get(books);
   if (cached) return cached;
+  const scores: Record<Exclude<Lang, "unknown">, number> = { pt: 0, en: 0, es: 0 };
+  for (const b of books) {
+    const name = b.displayName;
+    for (const lang of ["pt", "en", "es"] as const) {
+      for (const re of LANG_MARKERS[lang]) {
+        if (re.test(name)) scores[lang]++;
+      }
+    }
+  }
+  const best = (Object.entries(scores) as [Exclude<Lang, "unknown">, number][])
+    .sort((a, b) => b[1] - a[1])[0];
+  const lang: Lang = best && best[1] > 0 ? best[0] : "unknown";
+  LANG_CACHE.set(books, lang);
+  return lang;
+}
+
+function compile(books: BookInfo[], lang: Lang): CompiledIndex {
+  let perLang = CACHE.get(books);
+  if (perLang) {
+    const cached = perLang.get(lang);
+    if (cached) return cached;
+  } else {
+    perLang = new Map();
+    CACHE.set(books, perLang);
+  }
 
   const lookup = new Map<string, { bookId: string; displayName: string }>();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _canon = CANON; // usado abaixo
   const terms: { term: string; bookId: string; displayName: string }[] = [];
   for (const b of books) {
     const all = [b.displayName, ...b.aliases];
@@ -86,10 +133,17 @@ function compile(books: BookInfo[]): CompiledIndex {
       const t = term.trim();
       if (!t) continue;
       const key = stripDiacritics(t.toLowerCase()).replace(/\.$/, "");
+      // Filtro de aliases ambíguos por idioma da Bíblia
+      const ambig = AMBIGUOUS_ALIASES[key];
+      if (ambig && lang !== "unknown") {
+        const preferred = ambig[lang];
+        if (preferred && preferred !== b.bookId) continue; // pula: outro livro vence neste idioma
+      }
       if (!lookup.has(key)) lookup.set(key, { bookId: b.bookId, displayName: b.displayName });
       terms.push({ term: t, bookId: b.bookId, displayName: b.displayName });
     }
   }
+
 
   // Ordena por comprimento decrescente para casar primeiro o nome mais longo.
   terms.sort((a, b) => b.term.length - a.term.length);
@@ -134,7 +188,7 @@ function compile(books: BookInfo[]): CompiledIndex {
   const source = `(?:^|[^${boundary}])(${branches.join("|")})(?=$|[^${boundary}])`;
   const regex = new RegExp(source, "giu");
   const out = { regex, lookup };
-  CACHE.set(books, out);
+  perLang.set(lang, out);
   return out;
 }
 
@@ -166,14 +220,16 @@ function dissect(raw: string): { bookTerm: string; chapter: number; verse: numbe
 
 
 export function resolveBookId(books: BookInfo[], name: string): string | null {
-  const { lookup } = compile(books);
+  const lang = detectBibleLanguage(books);
+  const { lookup } = compile(books, lang);
   const key = stripDiacritics(name.toLowerCase()).replace(/\.$/, "");
   return lookup.get(key)?.bookId ?? null;
 }
 
 export function findCitations(books: BookInfo[] | undefined, text: string): CitationMatch[] {
   if (!books || books.length === 0 || !text) return [];
-  const { regex, lookup } = compile(books);
+  const lang = detectBibleLanguage(books);
+  const { regex, lookup } = compile(books, lang);
   // Cria instância fresca para evitar lastIndex compartilhado
   const re = new RegExp(regex.source, regex.flags);
   const out: CitationMatch[] = [];

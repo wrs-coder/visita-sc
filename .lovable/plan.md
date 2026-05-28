@@ -1,62 +1,116 @@
-## Goal
+## Objetivo
+1. Resolver aliases ambíguos (`Jo`, `Jn`, `Dn`, `Jd`, `Nm`) com base no **idioma da Bíblia EPUB importada**. Bíblia em PT → `Jo`=João; Bíblia em EN → `Jo`=Job. Sem quebrar a estrutura existente.
+2. Adicionar suíte de testes automatizados para garantir regressão zero.
 
-Permitir citar livros de **um único capítulo** sem digitar o capítulo. Hoje o usuário precisa escrever `Judas 1:5`; depois desta mudança, `Judas 5` (ou `Jd 5`, `Judas 5-7`) também abrirá o versículo. A forma antiga (`Judas 1:5`) continua funcionando.
+---
 
-Livros afetados (5):
-- **Obadias** (B31)
-- **Filêmon** (B57)
-- **2 João** (B63)
-- **3 João** (B64)
-- **Judas** (B65)
+## Parte 1 — Resolução por idioma
 
-## Mudanças
+### Por que o conflito existe
+`compile()` em `bible-refs.ts` faz `for (b of books) → for (alias of [...book.aliases, ...canonAliases]) → lookup.set(key, …) se !lookup.has(key)`. Como os livros são processados em ordem canônica (Job=18 antes de João=43) e todos os aliases multilíngues do `CANON` são despejados em todos os casos, **o primeiro a registrar uma chave ambígua vence sempre** — independente do idioma da Bíblia importada.
 
-Tudo em **`src/lib/bible-refs.ts`** — apenas detecção/parsing de citações. Sem alterar parser EPUB, popover, ou armazenamento.
+### Estratégia
+1. **Detectar idioma** da Bíblia importada (`detectBibleLanguage(books)`):
+   - Examina os `displayName` dos livros.
+   - Conta marcadores fortes: `joao|mateus|salmos|genese|apocalipse` → `pt`; `john|matthew|psalms|genesis|revelation` → `en`; `juan|mateo|salmos|genesis|apocalipsis` → `es` (Salmos colide com PT mas o desempate por outros marcadores resolve).
+   - Retorna `"pt" | "en" | "es" | "unknown"`.
 
-### 1. Marcar livros de capítulo único
-Adicionar constante:
-```ts
-const SINGLE_CHAPTER_BOOK_IDS = new Set(["B31", "B57", "B63", "B64", "B65"]);
-```
+2. **Tabela `AMBIGUOUS_ALIASES`** declarando o livro preferido por idioma:
+   ```ts
+   const AMBIGUOUS_ALIASES: Record<string, Partial<Record<Lang, string>>> = {
+     jo: { pt: "B43", en: "B18", es: "B18" }, // João vs Job
+     jn: { pt: "B43", en: "B32" },            // João vs Jonas
+     dn: { pt: "B27", en: "B05" },            // Daniel vs Deuteronomy
+     jd: { pt: "B65", en: "B07" },            // Judas vs Judges
+     nm: { pt: "B04", en: "B04" },            // Números (Nahum nunca usa)
+   };
+   ```
+   Esses aliases continuam **presentes em ambos os livros do CANON** (não removemos nada — mantém compatibilidade com outras possíveis Bíblias).
 
-### 2. Em `compile(books)` — adicionar 2 novas branches no regex
-Hoje há 2 branches (`longParts` e `shortParts`), todas exigindo `chapter:verse`. Vamos separar os termos de livros de capítulo único e gerar 2 branches extras que aceitam apenas `verse` (sem `:`):
+3. **Filtro no `compile(books, lang)`**: ao iterar aliases de cada livro, se o alias normalizado for chave de `AMBIGUOUS_ALIASES` **e** o livro atual não for o preferido para `lang`, pula esse alias. Quando `lang === "unknown"`, mantém o comportamento atual (primeiro vence).
 
-- `longSingleParts` → `(?:nome)\.?\s*(\d{1,3})(?:[-–](\d{1,3}))?` (sem `:`)
-- `shortSingleParts` → `(?:abrev)(?:\.\s*|\s+)(\d{1,3})(?:[-–](\d{1,3}))?`
+4. **Cache**: trocar o `WeakMap<BookInfo[], CompiledIndex>` por `WeakMap<BookInfo[], Map<Lang, CompiledIndex>>` para evitar recompilar quando o idioma muda. Idioma é detectado uma vez por chamada de `findCitations`/`resolveBookId`.
 
-Importante: os mesmos termos **continuam também** nas branches `longParts`/`shortParts` originais (com `chapter:verse`), para preservar `Judas 1:5`.
+### Mudanças concretas em `src/lib/bible-refs.ts`
+- Adicionar `type Lang = "pt" | "en" | "es" | "unknown"`.
+- Adicionar `detectBibleLanguage(books)` (pode ser memoizado por referência de `books`).
+- Adicionar `AMBIGUOUS_ALIASES`.
+- Trocar assinatura interna de `compile(books)` para `compile(books, lang)`.
+- Em `findCitations` e `resolveBookId`: chamar `const lang = detectBibleLanguage(books)` e passar para `compile`.
+- Ajustar cache para chave composta (books + lang).
+- Não mexer em `bible-canon.ts` — fica intocado.
 
-Ordem das alternativas no regex: colocar as branches `chapter:verse` **antes** das `verse-only` para que `Judas 1:5` case primeiro como `cap:vers` e não como `livro 1` + lixo.
+---
 
-### 3. Ajustar `dissect(raw)`
-Hoje exige `\d+:\d+`. Atualizar para também aceitar `nome \d+(-\d+)?` (sem `:`); nesse caso retorna `chapter: 1`, `verse: N`.
+## Parte 2 — Testes automatizados (Vitest)
 
-Pseudo:
-```ts
-// tenta cap:vers primeiro
-const m1 = raw.match(/^(.+?)\.?\s*(\d{1,3}):(\d{1,3})(?:[-–](\d{1,3}))?$/);
-if (m1) return { bookTerm, chapter, verse, verseEnd };
-// fallback: nome + verso(s) — somente válido se livro de capítulo único
-const m2 = raw.match(/^(.+?)\.?\s*(\d{1,3})(?:[-–](\d{1,3}))?$/);
-if (m2) return { bookTerm, chapter: 1, verse, verseEnd };
-return null;
-```
+### Setup
+- `bun add -d vitest` (não precisa `@vitest/ui` nem jsdom — testes são puramente de função).
+- Adicionar script: `"test": "vitest run"`.
+- Criar `vitest.config.ts` mínimo (sem JSX, apenas Node).
 
-### 4. Em `findCitations`, validar contexto do fallback
-Quando `dissect` devolver chapter=1 vindo da forma sem `:`, **rejeitar** se o `bookId` resolvido não estiver em `SINGLE_CHAPTER_BOOK_IDS`. Isso evita que `Mateus 5` (sem capítulo) vire indevidamente `Mt 1:5`.
+### Arquivo `src/lib/bible-refs.test.ts`
+Duas fixtures: `ptBooks` (66 livros com `displayName` em PT) e `enBooks` (em EN), ambas geradas a partir de listas explícitas (não usa o EPUB).
 
-Implementação: o `dissect` pode devolver um flag `noColon: boolean`; `findCitations` descarta matches com `noColon && !SINGLE_CHAPTER_BOOK_IDS.has(info.bookId)`.
+**A. Idioma detectado**
+- `detectBibleLanguage(ptBooks)` === `"pt"`
+- `detectBibleLanguage(enBooks)` === `"en"`
 
-## Validação
+**B. Resolução PT (Bíblia em português)**
+- `Jo 3:16` → João (B43)
+- `Jn 1:1` → João (B43)
+- `Dn 7:13` → Daniel (B27)
+- `Jd 5` → Judas (B65, single-chapter)
+- `Nm 6:24` → Números (B04)
 
-Após o build, no campo de Considerações de Campo:
-- `Judas 5` → abre Jd 1:5 ✅
-- `Jd 5-7` → abre Jd 1:5-7 ✅
-- `2 João 4` → abre 2Jo 1:4 ✅
-- `3 Jo 8` → abre 3Jo 1:8 ✅
-- `Filêmon 6` → abre Fm 1:6 ✅
-- `Obadias 15` → abre Ob 1:15 ✅
-- `Judas 1:5` (forma antiga) → continua funcionando ✅
-- `Mateus 5` → **não** deve virar popover (Mateus tem múltiplos capítulos) ✅
-- `Mt 5:9` (multi-cap normal) → continua funcionando ✅
+**C. Resolução EN (Bíblia em inglês)**
+- `Jo 1:1` → Job (B18)
+- `Jn 1:1` → Jonah (B32)
+- `Dn 7:13` → Deuteronomy (B05)
+- `Jd 5` → Judges (B07)
+- `Jude 5` → Jude (B65)
+
+**D. Acentuação PT**
+- `João 2:1`, `joao 2:1`, `JOÃO 2:1` → todos resolvem João 2:1
+- `Colossenses 3:14`, `colossenses 3:14`
+- `Filêmon 6`, `filemon 6`
+
+**E. Livros numerados**
+- `1 João 4:8`, `I João 4:8`, `1Jo 4:8`, `1 Jo 4:8`
+- `2 Pedro 3:10`, `2Pe 3:10`
+- `1Co 13:4`, `1 Co 13:4`
+
+**F. Livros de capítulo único (verso-only)**
+- `Judas 5` → Jude 1:5
+- `2 João 4` → 2 John 1:4
+- `3 Jo 8` → 3 John 1:8
+- `Obadias 15` → Obadiah 1:15
+- `Filêmon 6` → Philemon 1:6
+- **negativo:** `Mateus 5` (sem `:`) → não casa
+
+**G. Bordas com pontuação**
+- `(João 2:1)` casa
+- `João 2:1,` casa
+- `... João 2:1. Próxima` casa
+- `abcJoão 2:1` não casa
+
+**H. Intervalos**
+- `João 3:16-18`, `João 3:16–18` (en-dash), `Jd 5-7`
+
+**I. Forma antiga preservada**
+- `Judas 1:5` → Jude 1:5 (mesmo em Bíblia PT)
+
+**J. Múltiplas citações**
+- `Veja Mt 5:9 e Jo 14:6.` → 2 matches em ordem, ambos resolvidos para o livro correto em PT.
+
+Total: ~30 asserções organizadas em `describe` por categoria.
+
+### Validação
+- `bun run test` deve passar 100%.
+- Verificar manualmente no app que `Jo 3:16` agora abre João (com EPUB PT importado).
+
+---
+
+## Fora de escopo
+- Não tocar em `bible-canon.ts` (aliases ficam como estão).
+- Não tocar em `BibleVersePopover.tsx`, parser EPUB, ou armazenamento.
