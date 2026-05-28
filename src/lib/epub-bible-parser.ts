@@ -341,91 +341,203 @@ async function buildBookSlots(zip: JSZip, opf: OpfData): Promise<BookSlot[]> {
   return groupFlatEntries(flatSpine);
 }
 
-/** Extrai versículos de um documento xhtml. Retorna lista por capítulo. */
-function extractVersesFromDoc(doc: Document): { chapter: number; verse: number; text: string }[] {
-  const out: { chapter: number; verse: number; text: string }[] = [];
+// =============================================================
+// Extração de versículos — abordagem por "marcadores"
+// =============================================================
+//
+// Em vez de tentar pegar o texto do versículo DE DENTRO do elemento marcador
+// (que é o que falhava na TNM: o marcador é só um <sup>1</sup> ou <a id="v1"/>
+// e o texto do versículo vem nos nós irmãos seguintes), nós:
+//
+//  1. Listamos todos os nós que parecem ser MARCADORES de versículo
+//     (em ordem de documento).
+//  2. Para cada marcador, coletamos o texto que aparece DEPOIS dele e ANTES
+//     do próximo marcador.
 
-  // Estratégia 1: TNM/JW — elementos com id começando em "v" no formato "vNN-CC-VV"
-  // ou classes verse/v.
-  const candidates: Element[] = [];
-  doc.querySelectorAll('[id^="v"], [id^="chapter"], .v, .verse, [class*="verse"]').forEach((el) => {
-    candidates.push(el);
-  });
+interface VerseMarker {
+  node: Node;       // o nó marcador no DOM
+  chapter: number;  // capítulo derivado (id/href/contexto)
+  verse: number;    // número do versículo
+}
 
-  if (candidates.length >= 3) {
-    let currentChapter = 1;
-    for (const el of candidates) {
-      const id = el.getAttribute("id") ?? "";
-      const cls = el.getAttribute("class") ?? "";
-      // Tenta extrair chapter/verse do id (formatos: v1-2-3, c1v1, v001002003, etc.)
-      let chap = 0;
-      let vers = 0;
+/** Tenta extrair (chapter, verse) de uma string de id/atributo qualquer. */
+function parseChapVerseFromAttr(raw: string): { chap?: number; verse?: number } {
+  if (!raw) return {};
+  // chapter11_verse5, ch11v5, c11v5, 11_5, 11.5, 11:5
+  const m1 = raw.match(/chapter[_-]?(\d+)[^\d]*verse[_-]?(\d+)/i);
+  if (m1) return { chap: parseInt(m1[1], 10), verse: parseInt(m1[2], 10) };
+  const m2 = raw.match(/c(?:hap)?[_-]?(\d+)[^\d]{0,3}v(?:erse)?[_-]?(\d+)/i);
+  if (m2) return { chap: parseInt(m2[1], 10), verse: parseInt(m2[2], 10) };
+  const m3 = raw.match(/(\d+)\s*[:._-]\s*(\d+)/);
+  if (m3) return { chap: parseInt(m3[1], 10), verse: parseInt(m3[2], 10) };
+  // Padrão JW: v\d{2,3}\d{3} = chap+verse concatenado
+  const m4 = raw.match(/v(\d{2,3})(\d{3})\b/i);
+  if (m4) return { chap: parseInt(m4[1], 10), verse: parseInt(m4[2], 10) };
+  // Só verso (vN, verseN)
+  const m5 = raw.match(/^v(?:erse)?[_-]?(\d+)$/i);
+  if (m5) return { verse: parseInt(m5[1], 10) };
+  return {};
+}
 
-      const m1 = id.match(/(\d+)[-_:.](\d+)[-_:.](\d+)/); // book-chap-vers
-      const m2 = id.match(/c?(\d+)[vV](\d+)/);            // c1v2
-      const m3 = id.match(/v(\d{2,3})(\d{3})/);           // v001002 (chap+vers)
-      const m4 = id.match(/v(\d+)/);                       // só vers
-      if (m1) { chap = parseInt(m1[2], 10); vers = parseInt(m1[3], 10); }
-      else if (m2) { chap = parseInt(m2[1], 10); vers = parseInt(m2[2], 10); }
-      else if (m3) { chap = parseInt(m3[1], 10); vers = parseInt(m3[2], 10); }
-      else if (m4) { vers = parseInt(m4[1], 10); chap = currentChapter; }
+/** Detecta o número do capítulo a partir do nome do arquivo, ex. mt_07.xhtml -> 7. */
+function chapterFromFilename(href: string): number | null {
+  const base = href.split("/").pop() ?? "";
+  // padrões: ch01, chap01, cap01, c01, _01, -01
+  const m = base.match(/(?:ch|chap|cap|c|_|-)(\d{1,3})(?:\.|_|-|$)/i);
+  if (m) {
+    const n = parseInt(m[1], 10);
+    if (n >= 1 && n <= 200) return n;
+  }
+  // último número antes da extensão
+  const m2 = base.replace(/\.[^.]+$/, "").match(/(\d{1,3})$/);
+  if (m2) {
+    const n = parseInt(m2[1], 10);
+    if (n >= 1 && n <= 200) return n;
+  }
+  return null;
+}
 
-      // Detecta cabeçalho de capítulo via classe
-      if (/chapter|chap|cap/i.test(cls) || /chapter/i.test(id)) {
-        const cn = id.match(/(\d+)/);
-        if (cn) currentChapter = parseInt(cn[1], 10);
+/** Lê um número de capítulo a partir do <h1>/<h2>/<title> do documento. */
+function chapterFromHeading(doc: Document): number | null {
+  const heads = [
+    doc.getElementsByTagName("h1")[0]?.textContent ?? "",
+    doc.getElementsByTagName("h2")[0]?.textContent ?? "",
+    doc.getElementsByTagName("h3")[0]?.textContent ?? "",
+    doc.getElementsByTagName("title")[0]?.textContent ?? "",
+  ];
+  for (const h of heads) {
+    const m = h.match(/(?:cap[ií]tulo|chapter|cap\.?)\s*(\d{1,3})/i);
+    if (m) return parseInt(m[1], 10);
+    const m2 = h.match(/\b(\d{1,3})\b/);
+    if (m2) {
+      const n = parseInt(m2[1], 10);
+      if (n >= 1 && n <= 200) return n;
+    }
+  }
+  return null;
+}
+
+/** Coleta o texto entre dois marcadores no DOM, em ordem de documento. */
+function textBetween(doc: Document, start: Node, end: Node | null): string {
+  const walker = doc.createTreeWalker(doc.body ?? doc, NodeFilter.SHOW_TEXT);
+  const buf: string[] = [];
+  let started = false;
+  let node = walker.nextNode();
+  while (node) {
+    if (!started) {
+      // Começa a coletar APÓS o nó marcador
+      if (node === start || start.contains(node)) {
+        started = true;
+        // se o start é o próprio nó de texto (raro), pula
+        node = walker.nextNode();
         continue;
       }
-
-      if (chap > 0) currentChapter = chap;
-      if (!vers) continue;
-      const text = (el.textContent ?? "").replace(/\s+/g, " ").trim();
-      if (!text) continue;
-      // Remove o número do versículo do início, se presente
-      const cleaned = text.replace(new RegExp(`^${vers}\\s+`), "");
-      out.push({ chapter: currentChapter || 1, verse: vers, text: cleaned });
+    } else {
+      if (end && (node === end || end.contains(node))) break;
+      buf.push(node.nodeValue ?? "");
     }
-    if (out.length >= 3) return out;
+    node = walker.nextNode();
+  }
+  return buf.join("").replace(/\s+/g, " ").trim();
+}
+
+/** Considera um elemento como marcador de versículo se atender aos padrões TNM/genéricos. */
+function isVerseMarker(el: Element): { verse: number; chap?: number } | null {
+  const id = el.getAttribute("id") ?? "";
+  const cls = el.getAttribute("class") ?? "";
+  const tag = el.tagName.toLowerCase();
+  const epubType = el.getAttribute("epub:type") ?? "";
+
+  // 1) id explicitamente reconhecível
+  const fromId = parseChapVerseFromAttr(id);
+  if (fromId.verse) return { verse: fromId.verse, chap: fromId.chap };
+
+  // 2) class com "verse"/"vl"/"verseNum"/"vnum"
+  const isVerseClass =
+    /\b(?:verse(?:num(?:ber)?)?|vnum|vl|vn|vs|v)\b/i.test(cls) ||
+    /verse/i.test(epubType);
+
+  // 3) <sup> contendo apenas um número 1-3 dígitos (padrão clássico de Bíblia)
+  const txt = (el.textContent ?? "").trim();
+  const numOnly = txt.match(/^(\d{1,3})$/);
+
+  if ((isVerseClass || tag === "sup") && numOnly) {
+    const n = parseInt(numOnly[1], 10);
+    if (n >= 1 && n <= 200) return { verse: n };
   }
 
-  // Estratégia 2: EPUB3 genérico — [epub\:type="verse"]
-  try {
-    const epubVerses = doc.querySelectorAll('[*|type="verse"]');
-    if (epubVerses.length >= 3) {
-      let currentChapter = 1;
-      epubVerses.forEach((el, i) => {
-        const id = el.getAttribute("id") ?? "";
-        const m = id.match(/(\d+)/g);
-        const vers = m ? parseInt(m[m.length - 1], 10) : i + 1;
-        const text = (el.textContent ?? "").replace(/\s+/g, " ").trim();
-        if (text) out.push({ chapter: currentChapter, verse: vers, text });
-      });
-      if (out.length >= 3) return out;
-    }
-  } catch {
-    /* algumas implementações do DOMParser não suportam *|type */
+  // 4) anchor vazio (id-only) com nome reconhecível
+  if (tag === "a" && !txt) {
+    const name = el.getAttribute("name") ?? "";
+    const fromName = parseChapVerseFromAttr(name);
+    if (fromName.verse) return { verse: fromName.verse, chap: fromName.chap };
   }
 
-  // Estratégia 3: regex no texto puro
-  const plain = (doc.body?.textContent ?? "").replace(/\s+/g, " ").trim();
-  if (plain) {
-    const regex = /(?:^|\s)(\d{1,3})\s+([^\d]{3,}?)(?=\s+\d{1,3}\s|$)/g;
-    let currentChapter = 1;
+  return null;
+}
+
+/** Extrai versículos de um documento xhtml, com inferência de capítulo via filename. */
+function extractVersesFromDoc(
+  doc: Document,
+  fallbackChapter: number,
+): { chapter: number; verse: number; text: string }[] {
+  // Coleta todos os marcadores possíveis em ordem de documento.
+  const allEls = Array.from(doc.getElementsByTagName("*"));
+  const markers: VerseMarker[] = [];
+  let currentChapter = fallbackChapter;
+
+  for (const el of allEls) {
+    // Detecta cabeçalho de capítulo (atualiza o "currentChapter" para os próximos marcadores)
+    const id = el.getAttribute("id") ?? "";
+    const cls = el.getAttribute("class") ?? "";
+    const isChapterHeader =
+      /chapter|cap[ií]tulo/i.test(cls) ||
+      /^chapter[-_]?\d+$/i.test(id) ||
+      /^cap[-_]?\d+$/i.test(id);
+    if (isChapterHeader) {
+      const cn = (id + " " + (el.textContent ?? "")).match(/(\d{1,3})/);
+      if (cn) currentChapter = parseInt(cn[1], 10);
+      continue;
+    }
+
+    const hit = isVerseMarker(el);
+    if (!hit) continue;
+    const chap = hit.chap ?? currentChapter;
+    if (hit.chap) currentChapter = hit.chap;
+    markers.push({ node: el, chapter: chap, verse: hit.verse });
+  }
+
+  // Sem marcadores → tenta regex texto puro (raro mas backup).
+  if (markers.length < 3) {
+    const plain = (doc.body?.textContent ?? "").replace(/\s+/g, " ").trim();
+    const out: { chapter: number; verse: number; text: string }[] = [];
+    const regex = /(?:^|\s|[.;!?»"”])(\d{1,3})\s+(.{3,}?)(?=\s+\d{1,3}\s+|$)/g;
     let m: RegExpExecArray | null;
-    const buffer: { chapter: number; verse: number; text: string }[] = [];
+    let chap = fallbackChapter;
     while ((m = regex.exec(plain)) !== null) {
       const v = parseInt(m[1], 10);
+      if (v < 1 || v > 200) continue;
       const t = m[2].trim();
       if (!t) continue;
-      // Heurística: se o número resetar para 1 e já vimos versículos, novo capítulo
-      if (v === 1 && buffer.length > 0 && buffer[buffer.length - 1].verse > 1) {
-        currentChapter++;
-      }
-      buffer.push({ chapter: currentChapter, verse: v, text: t });
+      if (v === 1 && out.length > 0 && out[out.length - 1].verse > 1) chap++;
+      out.push({ chapter: chap, verse: v, text: t });
     }
-    if (buffer.length >= 3) return buffer;
+    return out;
   }
 
+  // Para cada marcador, coleta o texto entre ele e o próximo.
+  const out: { chapter: number; verse: number; text: string }[] = [];
+  for (let i = 0; i < markers.length; i++) {
+    const cur = markers[i];
+    const next = markers[i + 1]?.node ?? null;
+    let text = textBetween(doc, cur.node, next);
+    // Remove o número do versículo se ele aparecer "colado" no início.
+    text = text.replace(new RegExp(`^\\s*${cur.verse}\\s*[\\.\\)]?\\s*`), "");
+    // Remove ruído típico de notas/refs entre colchetes vazios.
+    text = text.replace(/\s{2,}/g, " ").trim();
+    if (text.length < 2) continue;
+    out.push({ chapter: cur.chapter, verse: cur.verse, text });
+  }
   return out;
 }
 
@@ -441,6 +553,10 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
   onProgress?.("parse-opf", 1);
 
   const slots = await buildBookSlots(zip, opf);
+
+  // Diagnóstico inicial
+  // eslint-disable-next-line no-console
+  console.info(`[epub-bible] OPF: ${opfPath}  | spine=${opf.spine.length}  | slots=${slots.length}`);
 
   const books: ParsedBookInfo[] = [];
   const verses: ParsedVerse[] = [];
@@ -461,11 +577,16 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
       try {
         const html = await f.async("string");
         const doc = new DOMParser().parseFromString(html, XHTML_MIME);
-        const extracted = extractVersesFromDoc(doc);
-        // Se há múltiplos arquivos (um por capítulo) e os capítulos extraídos
-        // ficaram todos em 1, usa o índice do arquivo como capítulo.
+        // Capítulo padrão: 1) nome do arquivo  2) heading  3) índice do arquivo
+        const chapByName = chapterFromFilename(href);
+        const chapByHead = chapterFromHeading(doc);
+        const fallback = chapByName ?? chapByHead ?? (multiFile ? hi + 1 : 1);
+        const extracted = extractVersesFromDoc(doc, fallback);
+
+        // Se todos os versos extraídos caíram em "1" mas multiFile, usa fallback
         const distinctChaps = new Set(extracted.map((v) => v.chapter));
-        const overrideChapter = multiFile && distinctChaps.size <= 1 ? hi + 1 : null;
+        const overrideChapter =
+          multiFile && distinctChaps.size <= 1 && fallback !== 1 ? fallback : null;
         for (const v of extracted) {
           const chap = overrideChapter ?? v.chapter;
           chaptersSeen.add(chap);
@@ -477,7 +598,11 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
     }
 
     // Filtro de validade: pelo menos 1 capítulo e 3 versículos
-    if (chaptersSeen.size < 1 || bookVerses.length < 3) continue;
+    if (chaptersSeen.size < 1 || bookVerses.length < 3) {
+      // eslint-disable-next-line no-console
+      console.warn(`[epub-bible] skip slot "${slot.displayName}" (chs=${chaptersSeen.size} vs=${bookVerses.length})`);
+      continue;
+    }
 
     books.push({
       bookId,
@@ -491,6 +616,9 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
     if (i % 5 === 4) await new Promise((r) => setTimeout(r, 0));
   }
   onProgress?.("index-books", 1);
+
+  // eslint-disable-next-line no-console
+  console.info(`[epub-bible] DONE  books=${books.length}  verses=${verses.length}`);
 
   return { meta: opf.meta, books, verses };
 }
