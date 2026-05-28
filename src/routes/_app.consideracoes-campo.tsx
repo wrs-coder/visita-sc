@@ -799,6 +799,8 @@ function FullscreenOutline({
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   // Trava scroll horizontal do body enquanto a tela cheia está aberta.
   useEffect(() => {
     const prev = document.body.style.overflowX;
