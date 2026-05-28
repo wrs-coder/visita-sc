@@ -409,7 +409,6 @@ function parseChapVerseFromAttr(raw: string): { chap?: number; verse?: number } 
   if (m5) return { verse: parseInt(m5[1], 10) };
   return {};
 }
-}
 
 /** Detecta o número do capítulo a partir do nome do arquivo, ex. mt_07.xhtml -> 7. */
 function chapterFromFilename(href: string): number | null {
