@@ -449,7 +449,6 @@
       "fri": "Viernes",
       "sat": "Sábado"
     },
-
     "pioneer": {
       "theme": "Tema:",
       "openingPrayer": "Oración Inicial",
@@ -1158,5 +1157,10 @@
     "corruptConfirm": "Este evento parece estar dañado o ya fue eliminado. ¿Deseas ocultarlo de la vista?",
     "removeLocal": "Ocultar de la vista",
     "removedLocally": "Evento ocultado de tu vista."
+  },
+  "fieldConsiderations": {
+    "title": "Consideraciones de Campo",
+    "subtitle": "Notas personales del superintendente con integración bíblica sin conexión",
+    "placeholder": "En construcción — pronto podrás crear notas con versículos clicables."
   }
 }
