@@ -77,8 +77,8 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
           {match.raw}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 max-w-[90vw]" align="start">
-        <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+      <PopoverContent className="w-80 max-w-[90vw] max-h-[60vh] overflow-y-auto" align="start">
+        <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground sticky top-0 bg-popover pb-1">
           <BookOpen className="h-3.5 w-3.5" />
           <span className="font-semibold text-foreground">
             {match.bookName} {match.chapter}:{match.verse}
@@ -91,7 +91,11 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
             {t("bibleVerse.loading")}
           </div>
         ) : parts && parts.length > 0 ? (
-          <div className="text-sm leading-relaxed space-y-1.5">
+          <div
+            className="text-sm leading-relaxed space-y-1.5"
+            style={fontScale !== 1 ? { fontSize: `${fontScale}rem` } : undefined}
+          >
+
             {isRange ? (
               <p>
                 {parts.map((p, i) => (
