@@ -1,36 +1,49 @@
-## Plano
+## Diagnóstico
 
-1. **Detectar os 66 livros bíblicos em múltiplos idiomas**
-   - Criar um catálogo canônico interno com os 66 livros e seus aliases em vários idiomas comuns, incluindo português, inglês, espanhol, francês, alemão, italiano e formas sem acento.
-   - Não depender apenas do idioma do app nem do título exato no EPUB.
-   - Mapear cada livro para IDs estáveis `B01` a `B66`, independentemente de o EPUB usar “Mateus”, “Matthew”, “Mateo”, “Matthieu”, “Matthäus”, etc.
+O log mostra `books=66/66 verses=31956 missing=0`, então a contagem está correta. Os dois problemas restantes são qualitativos:
 
-2. **Agrupar corretamente o spine/TOC do EPUB**
-   - O EPUB atual mostra `spine=3935` e `slots=196`, então o parser não deve tratar cada item do TOC como livro.
-   - Usar o catálogo multilíngue para distinguir livros bíblicos reais de prefácios, notas, índices, apêndices e páginas de conteúdo.
-   - Agrupar arquivos consecutivos do mesmo livro, mesmo quando cada capítulo/parte estiver em um XHTML separado.
+1. **O popover mostra muito mais texto do que o versículo pedido.** Há duas causas combinadas:
+   - O parser (`textBetween` em `src/lib/epub-bible-parser.ts`) caminha por **todos** os nós de texto entre um marcador `<sup>1</sup>` e o próximo, **sem pular** notas de rodapé, referências cruzadas, `<aside>`, `<span class="fn">`, links `<a class="xref">` etc. — tudo isso fica colado dentro do texto do versículo.
+   - Quando o **último** marcador de um arquivo é alcançado, o `textBetween` continua até o **fim do `<body>`**, capturando títulos, créditos e apêndices que aparecem após o último versículo.
+2. **Citações com intervalo (`Mt 6:33-35`) abrem só o primeiro versículo.** O `VerseLink` em `src/components/bible/BibleVersePopover.tsx` chama `getVerseFromLibrary(... , match.verse)` ignorando `match.verseEnd`. Quando o usuário digita um intervalo, ele vê só `v.33` e tem a impressão de que "o texto está cortado / errado".
 
-3. **Corrigir extração de versículos da TNM e de EPUBs similares**
-   - Ler marcadores de versículo por IDs, classes, âncoras, `epub:type`, `<sup>` e padrões textuais.
-   - Coletar o texto entre marcadores sem capturar notas, índices ou referências cruzadas como versículos.
-   - Deduplicar por `bookId + chapter + verse` e manter o texto mais completo.
+A entrada `manifest.webmanifest 401` é independente (PWA carregando no preview autenticado) e não afeta a Bíblia.
 
-4. **Validar a importação antes de aceitar a Bíblia**
-   - Exigir contagens coerentes para uma Bíblia completa, idealmente 66 livros e dezenas de milhares de versículos.
-   - Se a importação ficar parcial, mostrar erro/aviso claro em vez de salvar silenciosamente uma Bíblia incompleta.
-   - Registrar no console livros encontrados, livros faltantes, arquivos ignorados e total final.
+## Mudanças
 
-5. **Corrigir reconhecimento de referências no texto**
-   - Reconhecer referências usando aliases multilíngues e normalização: maiúsculas/minúsculas, acentos, pontos e abreviações.
-   - Exemplos esperados: `Mateus 6:33`, `mateus 6:33`, `Mat. 6:33`, `Matthew 6:33`, `Mateo 6:33`.
-   - Garantir funcionamento no modo Edição e no modo Esboço da página `/consideracoes-campo`.
+### 1. `src/lib/epub-bible-parser.ts` — limpar o texto do versículo
 
-6. **Tratar separadamente o erro do manifest**
-   - `manifest.webmanifest 401` não parece ser a causa da importação parcial.
-   - Verificar se o manifesto público está sendo bloqueado por autenticação e ajustar apenas se necessário.
+- **Filtrar nós ruidosos** no `textBetween`: ao caminhar pelo TreeWalker, pular qualquer nó de texto cujo ancestral mais próximo seja:
+  - `<aside>`, `<nav>`, `<figure>`, `<figcaption>`
+  - um elemento com `epub:type` contendo `footnote|note|rearnote|annotation`
+  - um elemento com `class` casando `/\b(fn|footnote|note|xref|cross|crossref|ref|study|caption|byline|callout)\b/i`
+  - links `<a>` cujo `href` aponta para um `#fn…` ou `#note…`
+- **Parar no próximo cabeçalho de capítulo** além de no próximo marcador, para que o último versículo de um capítulo não absorva títulos/apêndices do capítulo seguinte (quando o arquivo agrupa vários capítulos).
+- **Tornar `isVerseMarker` mais rígido**: não considerar marcadores que estejam dentro de uma subárvore de nota/rodapé (mesma lista acima). Isso evita que um `<sup>` de chamada de nota seja contado como início de versículo.
+- **Sanity-check de tamanho**: se `text.length > 1200` ou contiver `\n\n` suspeito, truncar no primeiro ponto final após 600 chars e logar via `console.warn("[epub-bible] long verse", bookId, chap, verse, length)` para visibilidade em DEV.
 
-## Notas técnicas
+### 2. `src/components/bible/BibleVersePopover.tsx` — suportar intervalos
 
-- IndexedDB, UI de gerenciamento, i18n e dependência `jszip` já estão implementados.
-- O ponto crítico agora é tornar o parser realmente canônico e multilíngue, em vez de inferir livros apenas pelo TOC do EPUB.
-- Depois da correção, será necessário remover a Bíblia parcial e importar novamente o EPUB.
+- Quando `match.verseEnd && match.verseEnd > match.verse`, buscar `verse..verseEnd` em paralelo (`Promise.all` chamando `getVerseFromLibrary` por versículo) e concatenar como  
+  `"33  Buscai primeiro… 34  Não vos inquieteis… 35  …"` (número em superscript pequeno + espaço).
+- Limitar o intervalo a um teto razoável (ex.: 10 versículos) para evitar consultas exageradas; se exceder, mostrar só `verse` e um rodapé `"Intervalo grande — abrindo apenas o primeiro versículo"`.
+- Manter o cabeçalho atual (`Mt 6:33-35`), só o corpo muda.
+
+### 3. (opcional, sem custo) `BibleManagerDialog.tsx`
+
+- Não muda fluxo; apenas ajustar o `toast.warning` para também avisar se algum versículo individual ficou anormalmente longo (contagem vinda do log do parser). Pode ficar para um próximo passo se preferir manter este PR pequeno — sinalizar e seguir sem isso por padrão.
+
+## Validação após implementar
+
+1. Remover a Bíblia atual em **Gerenciar Bíblias** e reimportar o EPUB (a estrutura do texto armazenado muda; reimportar é necessário).
+2. No console (F12) confirmar:
+   - `[epub-bible] DONE books=66/66 verses≈31102` (deve ficar próximo de 31.102, não mais 31.956 — a queda confirma que estávamos absorvendo notas).
+   - Nenhum (ou poucos) `[epub-bible] long verse …`.
+3. Em Considerações de Campo, digitar:
+   - `Mt 6:33` → popover mostra **apenas** Mateus 6:33.
+   - `Mt 6:33-35` → popover mostra os três versículos numerados.
+   - `Sl 23:1` e `João 3:16` → texto sem rodapés/cross-refs.
+
+## Observação sobre o 401 do manifest
+
+`manifest.webmanifest:1 401` ocorre porque o preview está atrás de autenticação e o navegador pede o manifest sem credenciais. Não afeta a importação nem a leitura. Some no domínio publicado. Não vou tocar nele neste plano.
