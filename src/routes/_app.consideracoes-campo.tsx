@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, Plus, Trash2, Search, Save, Languages } from "lucide-react";
+import { BookOpen, Plus, Trash2, Search, Save, Languages, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,8 @@ import {
   type FieldNote,
   type BibleLangStatus,
 } from "@/lib/bible-notes-store";
-import type { BibleLang } from "@/lib/bible-refs";
+import { findCitations, type BibleLang, type CitationMatch } from "@/lib/bible-refs";
+import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
@@ -66,6 +67,7 @@ function Page() {
   const [saving, setSaving] = useState(false);
   const [bibleOpen, setBibleOpen] = useState(false);
   const [activeBible, setActiveBible] = useState<BibleLangStatus | null>(null);
+  const [mode, setMode] = useState<"edit" | "outline">("outline");
 
   const activeLang: BibleLang =
     i18n.language?.startsWith("en") ? "en" : i18n.language?.startsWith("es") ? "es" : "pt";
@@ -103,13 +105,22 @@ function Page() {
   function selectNote(n: FieldNote) {
     setSelectedId(n.id);
     setDraft(n);
+    // Reabrir uma nota existente sempre entra em modo Esboço.
+    setMode("outline");
   }
 
   function handleNew() {
     const n = emptyNote();
     setDraft(n);
     setSelectedId(n.id);
+    setMode("edit");
   }
+
+  // Citações detectadas em tempo real no conteúdo (apenas modo Edição).
+  const detected: CitationMatch[] = useMemo(
+    () => (draft ? findCitations(activeLang, draft.content) : []),
+    [draft, activeLang],
+  );
 
   function patch<K extends keyof FieldNote>(key: K, value: FieldNote[K]) {
     setDraft((d) => (d ? { ...d, [key]: value } : d));
@@ -128,6 +139,7 @@ function Page() {
         return next.sort((a, b) => b.updated_at - a.updated_at);
       });
       setDraft(updated);
+      setMode("outline"); // após salvar, vai para Modo Esboço
       toast.success(t("fieldConsiderations.saved"));
     } catch {
       toast.error(t("common.errorGeneric", { defaultValue: "Erro" }));
@@ -245,18 +257,32 @@ function Page() {
               </p>
             ) : (
               <>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-[11px] text-muted-foreground">
-                    {t("fieldConsiderations.updatedAt")}: {dateFmt(draft.updated_at)}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={mode === "edit" ? "default" : "secondary"}>
+                      {mode === "edit"
+                        ? t("fieldConsiderations.editMode")
+                        : t("fieldConsiderations.outlineMode")}
+                    </Badge>
+                    <span className="text-[11px] text-muted-foreground">
+                      {t("fieldConsiderations.updatedAt")}: {dateFmt(draft.updated_at)}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <SavingIndicator saving={saving} />
+                    {mode === "outline" && (
+                      <Button variant="outline" size="sm" onClick={() => setMode("edit")}>
+                        <Pencil className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.edit")}
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive">
                       <Trash2 className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.delete")}
                     </Button>
-                    <Button size="sm" onClick={handleSave} disabled={saving}>
-                      <Save className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.save")}
-                    </Button>
+                    {mode === "edit" && (
+                      <Button size="sm" onClick={handleSave} disabled={saving}>
+                        <Save className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.save")}
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -267,6 +293,7 @@ function Page() {
                       value={draft.title}
                       onChange={(e) => patch("title", e.target.value)}
                       placeholder={t("fieldConsiderations.fields.titlePh")}
+                      readOnly={mode === "outline"}
                     />
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
@@ -276,6 +303,7 @@ function Page() {
                         value={draft.prayer}
                         onChange={(e) => patch("prayer", e.target.value)}
                         placeholder={t("fieldConsiderations.fields.prayerPh")}
+                        readOnly={mode === "outline"}
                       />
                     </div>
                     <div className="grid gap-1.5">
@@ -284,6 +312,7 @@ function Page() {
                         value={draft.territory}
                         onChange={(e) => patch("territory", e.target.value)}
                         placeholder={t("fieldConsiderations.fields.territoryPh")}
+                        readOnly={mode === "outline"}
                       />
                     </div>
                   </div>
@@ -293,17 +322,52 @@ function Page() {
                       value={draft.assistants}
                       onChange={(e) => patch("assistants", e.target.value)}
                       placeholder={t("fieldConsiderations.fields.assistantsPh")}
+                      readOnly={mode === "outline"}
                     />
                   </div>
+
+                  {/* Painel superior: versículos detectados (apenas modo Edição) */}
+                  {mode === "edit" && (
+                    <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                      <div className="flex items-center gap-2 text-xs font-semibold">
+                        <BookOpen className="h-3.5 w-3.5 text-primary" />
+                        {t("fieldConsiderations.detected")}
+                      </div>
+                      {detected.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          {t("fieldConsiderations.detectedEmpty")}
+                        </p>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {detected.map((m, i) => (
+                            <VerseLink key={`${m.index}-${i}`} match={m} lang={activeLang} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="grid gap-1.5">
                     <Label>{t("fieldConsiderations.fields.content")}</Label>
-                    <Textarea
-                      value={draft.content}
-                      onChange={(e) => patch("content", e.target.value)}
-                      placeholder={t("fieldConsiderations.fields.contentPh")}
-                      rows={12}
-                      className="resize-y min-h-[240px]"
-                    />
+                    {mode === "edit" ? (
+                      <Textarea
+                        value={draft.content}
+                        onChange={(e) => patch("content", e.target.value)}
+                        placeholder={t("fieldConsiderations.fields.contentPh")}
+                        rows={12}
+                        className="resize-y min-h-[240px]"
+                      />
+                    ) : (
+                      <div className="rounded-md border bg-background px-3 py-2 min-h-[240px] text-sm leading-relaxed whitespace-pre-wrap">
+                        {draft.content ? (
+                          <OutlineContent text={draft.content} lang={activeLang} />
+                        ) : (
+                          <span className="text-muted-foreground italic">
+                            {t("fieldConsiderations.contentEmpty")}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
@@ -313,4 +377,22 @@ function Page() {
       </div>
     </div>
   );
+}
+
+/**
+ * Renderiza o texto da nota substituindo cada citação bíblica detectada
+ * por um VerseLink clicável. Resto do texto permanece intacto.
+ */
+function OutlineContent({ text, lang }: { text: string; lang: BibleLang }) {
+  const matches = findCitations(lang, text);
+  if (matches.length === 0) return <>{text}</>;
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  matches.forEach((m, i) => {
+    if (m.index > cursor) parts.push(text.slice(cursor, m.index));
+    parts.push(<VerseLink key={`m-${i}`} match={m} lang={lang} />);
+    cursor = m.index + m.length;
+  });
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return <>{parts}</>;
 }
