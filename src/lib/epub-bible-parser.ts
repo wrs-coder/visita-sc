@@ -788,6 +788,11 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
     }
 
     const displayName = bucket.label || bucket.book.english;
+    const chapsCount = new Set(bookVerses.map((v) => v.chapter)).size;
+    // eslint-disable-next-line no-console
+    console.info(
+      `[epub-bible] book ${bucket.book.id} ${bucket.book.english}  chapters=${chapsCount}  verses=${bookVerses.length}`,
+    );
     books.push({
       bookId,
       displayName,
