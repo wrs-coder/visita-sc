@@ -137,11 +137,24 @@ function Page() {
   const [draft, setDraft] = useState<FieldNote | null>(null);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
-  const [bibleOpen, setBibleOpen] = useState(false);
   const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
   const [mode, setMode] = useState<"edit" | "outline">("outline");
   const [fullscreen, setFullscreen] = useState(false);
+  const [foldersCollapsed, setFoldersCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("personal-outlines.folders-collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("personal-outlines.folders-collapsed", foldersCollapsed ? "1" : "0");
+    } catch { /* ignore */ }
+  }, [foldersCollapsed]);
+
 
   async function refreshActiveBible() {
     setActiveBible(await getActiveLibrary());
