@@ -52,9 +52,9 @@ export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
         t("bibleManager.imported", { title: lib.title }) +
           `  (${lib.bookCount} / ${lib.verseCount})`,
       );
-      if (lib.verseCount < 5000) {
+      if (lib.bookCount < 60 || lib.verseCount < 20000) {
         toast.warning(
-          `Importação parcial: apenas ${lib.bookCount} livros e ${lib.verseCount} versículos foram lidos. Abra o console (F12) para ver o diagnóstico.`,
+          `Importação parcial: ${lib.bookCount}/66 livros e ${lib.verseCount} versículos. Abra o console (F12) para ver quais livros faltaram.`,
         );
       }
     } catch (err) {
