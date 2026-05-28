@@ -661,7 +661,7 @@ function extractVersesFromDoc(
   for (let i = 0; i < markers.length; i++) {
     const cur = markers[i];
     const next = markers[i + 1]?.node ?? null;
-    let text = textBetween(doc, cur.node, next);
+    let text = textBetween(doc, cur.node, next, outlineRoots);
     // Remove o número do versículo se ele aparecer "colado" no início.
     text = text.replace(new RegExp(`^\\s*${cur.verse}\\s*[\\.\\)]?\\s*`), "");
     text = text.replace(/\s{2,}/g, " ").trim();
