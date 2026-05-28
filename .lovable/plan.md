@@ -1,73 +1,60 @@
-## Garantir que o versículo 1 capture todo o texto após `id="chapter N_verse1"`
+## Correção: não quebrar em `.w_ch` inline do número do capítulo
 
 ### Diagnóstico
 
-Mesmo após a correção anterior, o versículo 1 segue sumindo em alguns capítulos. A causa é que o ramo "chapter heading" na coleta de marcadores (linhas 822-845) só registra o verso 1 quando o **próprio elemento** de heading carrega o atributo `id="chapter N_verse1"`. Na TNM o id pode estar:
+Na estrutura padrão TNM dos 66 livros, logo após `<span id="chapterN_verse1"></span>` vem `<span class="w_ch"><strong>N</strong> </span>` (o número do capítulo inline) e em seguida o texto do versículo 1, tudo dentro do mesmo `<p>`.
 
-- num elemento sem classe `w_ch` (ex.: `<span id="chapter  1_verse1">`),
-- ou no heading `w_ch` (já coberto pela correção anterior),
-- ou num âncora vazio (`<a id="chapter  1_verse1"></a>`) imediatamente antes do texto.
+O pré-pass `verse1Anchors` (linhas 828-835) já registra o anchor de `verse1` corretamente como marker. O problema está em `textBetween` (linha 708-714): a **Parada 3** quebra ao encontrar qualquer elemento com classe `w_ch` (via `isChapterAnchorEl`). O span `.w_ch` que carrega só o número "1" é o **próximo irmão** do anchor `start`, então a guarda `!start.contains(el)` não protege. A coleta para antes mesmo de começar, o texto fica vazio, e o versículo 1 é descartado em `continue` (linha 920).
 
-Adicionalmente, `textBetween` (linha 703) tem uma "Parada 3" que quebra ao encontrar qualquer `isChapterAnchorEl`/`isChapterHeadingEl` — sem guarda contra descendentes do `start`. Quando o marker do versículo 1 é o próprio bloco de capítulo (`<p class="w_ch" id="chapter  N_verse1">`), um descendente com `w_ch` (ex.: span interno do número) dispara a parada e o texto sai vazio. Após o strip do "1" inicial (linha 901), `text.length < 2` cai no `continue` (linha 903) e o versículo 1 nunca é emitido.
+### Mudança única em `src/lib/epub-bible-parser.ts`
 
-### Mudanças em `src/lib/epub-bible-parser.ts`
+Em `textBetween`, na "Parada 3" (linhas 708-714), tratar o `.w_ch` que é **apenas prefixo numérico do capítulo** (id começa com `chapter` puro, sem `_verse`, OU conteúdo é só dígitos) como **subárvore a pular** — não como parada. Apenas headings de capítulo reais (`isChapterHeadingEl` em blocos `<h1>`/`<h2>`/`<p class="w_ch">` que contêm um novo número de capítulo distinto do atual) devem quebrar.
 
-#### 1. Pré-pass garantido de verso 1 (em `extractVersesFromDoc`, antes do loop de marcadores em ~822)
-
-Após `truncatePreChapterContent(doc)` e antes do `for (const el of allEls)`, escanear:
+Lógica nova dentro do `if (node.nodeType === 1)`:
 
 ```ts
-const verse1Anchors = new Map<Element, { chap: number; verse: number }>();
-const allWithId = doc.querySelectorAll<HTMLElement>('[id^="chapter"]');
-allWithId.forEach((el) => {
-  const parsed = parseChapVerseFromAttr(el.getAttribute("id") ?? "");
-  if (parsed.verse === 1 && parsed.chap) {
-    verse1Anchors.set(el, { chap: parsed.chap, verse: 1 });
+// Se for um span/anchor inline com classe w_ch carregando só o número do
+// capítulo (prefixo do versículo 1), pula a SUBÁRVORE em vez de parar.
+if (/\bw_ch\b/i.test(el.getAttribute("class") ?? "")) {
+  const txt = (el.textContent ?? "").trim();
+  const idAttr = el.getAttribute("id") ?? "";
+  const isInlineChapterNumber =
+    /^\d{1,3}$/.test(txt) ||
+    (/^chapter\d+$/i.test(idAttr) && !/_verse/i.test(idAttr));
+  if (isInlineChapterNumber) {
+    // pula subárvore (mesma técnica usada para nós ruidosos)
+    let nxt: Node | null = walker.nextSibling();
+    while (!nxt) {
+      const parent = walker.parentNode();
+      if (!parent) break;
+      nxt = walker.nextSibling();
+    }
+    node = nxt;
+    continue;
   }
-});
-```
-
-No loop principal, antes do `isChapterHeadingEl(el)`, se `verse1Anchors.has(el)`, empurrar marker e seguir (sem `continue` que descarte). Garante a inserção do marker de v1 independente da classificação posterior.
-
-#### 2. Guarda em `textBetween` (linha 703)
-
-Adicionar a mesma proteção que já existe na Parada 2 (linha 699):
-
-```ts
-if (
-  (isChapterAnchorEl(el) || isChapterHeadingEl(el)) &&
-  el !== start &&
-  !(start.nodeType === 1 && (start as Element).contains(el))
-) {
-  break;
 }
 ```
 
-Isso impede que descendentes do próprio `start` (quando ele é o bloco de capítulo) abortem a coleta.
+Esse bloco vai **antes** da Parada 3 atual (linha 708). Assim:
+- `.w_ch` inline do número do capítulo → skip da subárvore, continua coletando texto do v1.
+- `<p class="w_ch">` que abre um novo capítulo (com conteúdo além do número, ou heading com texto) → cai na Parada 3 e quebra como hoje.
+- Anchors `id="chapterN"` puros (sem `_verse`) que aparecem como irmãos do v1 anchor → também tratados como skip (não param a coleta).
 
-#### 3. Relaxar `parseChapVerseFromAttr` para id-só-de-capítulo (linha 392)
+### Preservações (intocadas)
 
-Adicionar antes do `m5` (verso isolado):
-
-```ts
-const m4b = raw.match(/^chapter[\s_-]*(\d+)$/i);
-if (m4b) return { chap: parseInt(m4b[1], 10) };
-```
-
-Sem efeito sobre versos; só ajuda quando o id é `chapter N` puro.
-
-### Preservações (intocados)
-
-- `PURGE_SELECTORS` (linha 506) — `.groupFootnote` continua sendo purgado em `hardPurgeDoc` antes da extração. **Sem alteração.**
-- Lógica de coleta do último versículo do capítulo (linhas 889-914), incluindo o `next = null` deliberado para o último marker, **intocada** — sem regressão no último versículo.
-- `truncatePreChapterContent`, `isVerseMarker`, `NOISY_CLASS_RE`, `textBetween` (exceto a guarda do ponto 2), `isChapterHeadingEl`, `chapterNumberFromHeading` — todos preservados.
-- Sem mudanças em CSS, rotas, componentes ou UI.
+- **`PURGE_SELECTORS` e `hardPurgeDoc`** — `.groupFootnote` continua purgado antes da extração. **Sem alteração.**
+- **Pré-pass `verse1Anchors`** (linhas 828-835) — mantido.
+- **Coleta do último versículo do capítulo** (linhas 906-920, com `next = null` deliberado) — intocada. Sem regressão no último versículo.
+- **Parada 1 (próximo marker), Parada 2 (anchor de verso órfão)** — intocadas.
+- `parseChapVerseFromAttr`, `isVerseMarker`, `isChapterHeadingEl`, `chapterNumberFromHeading`, `truncatePreChapterContent`, `findOutlineRoots`, `isNoisyElement` — todos preservados.
+- Sem mudanças em CSS, rotas, componentes, UI ou parsing de OPF.
 
 ### Verificação
 
 - `bunx vitest run` — 54/54 testes devem continuar passando.
-- Reimportar a TNM em **Gerenciar Bíblias** e conferir que o versículo 1 aparece em todos os 1189 capítulos, sem quebrar o último versículo de cada capítulo.
+- Reimportar a TNM em **Gerenciar Bíblias** e conferir Gênesis 1:1, Mateus 1:1, 1 Pedro 1:1 (estrutura do exemplo), e amostragem de capítulos no meio de cada livro.
+- Confirmar que o último versículo de cada capítulo continua íntegro (regressão crítica).
 
 ### Fora de escopo
 
-Qualquer alteração em purge de rodapés, parsing de OPF, agrupamento por livro, ou camada de UI.
+Qualquer alteração em purge de rodapés, parsing de OPF, agrupamento por livro, fallback regex, ou camada de UI.
