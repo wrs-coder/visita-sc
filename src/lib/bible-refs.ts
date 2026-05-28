@@ -66,6 +66,10 @@ interface CompiledIndex {
 
 const CACHE = new WeakMap<BookInfo[], CompiledIndex>();
 
+// Livros bíblicos com apenas 1 capítulo — aceitam citação sem capítulo
+// (ex.: "Judas 5" em vez de "Judas 1:5").
+const SINGLE_CHAPTER_BOOK_IDS = new Set(["B31", "B57", "B63", "B64", "B65"]);
+
 function compile(books: BookInfo[]): CompiledIndex {
   const cached = CACHE.get(books);
   if (cached) return cached;
@@ -94,21 +98,36 @@ function compile(books: BookInfo[]): CompiledIndex {
   const seenTerms = new Set<string>();
   const longParts: string[] = [];
   const shortParts: string[] = [];
-  for (const { term } of terms) {
+  const longSingleParts: string[] = [];
+  const shortSingleParts: string[] = [];
+  for (const { term, bookId } of terms) {
     const k = stripDiacritics(term.toLowerCase());
     if (seenTerms.has(k)) continue;
     seenTerms.add(k);
     const visible = term.replace(/\s+/g, "");
-    if (visible.length <= 2) shortParts.push(accentInsensitivePattern(term));
-    else longParts.push(accentInsensitivePattern(term));
+    const pattern = accentInsensitivePattern(term);
+    if (visible.length <= 2) shortParts.push(pattern);
+    else longParts.push(pattern);
+    if (SINGLE_CHAPTER_BOOK_IDS.has(bookId)) {
+      if (visible.length <= 2) shortSingleParts.push(pattern);
+      else longSingleParts.push(pattern);
+    }
   }
 
   const branches: string[] = [];
+  // Branches com cap:vers — vêm primeiro para que "Judas 1:5" case como cap:vers
   if (longParts.length > 0) {
-    branches.push(`(?:${longParts.join("|")})\\.?\\s*(\\d{1,3}):(\\d{1,3})(?:[-–](\\d{1,3}))?`);
+    branches.push(`(?:${longParts.join("|")})\\.?\\s*\\d{1,3}:\\d{1,3}(?:[-–]\\d{1,3})?`);
   }
   if (shortParts.length > 0) {
-    branches.push(`(?:${shortParts.join("|")})(?:\\.\\s*|\\s+)(\\d{1,3}):(\\d{1,3})(?:[-–](\\d{1,3}))?`);
+    branches.push(`(?:${shortParts.join("|")})(?:\\.\\s*|\\s+)\\d{1,3}:\\d{1,3}(?:[-–]\\d{1,3})?`);
+  }
+  // Branches "verso-only" para livros de capítulo único (Judas 5, Fm 6...)
+  if (longSingleParts.length > 0) {
+    branches.push(`(?:${longSingleParts.join("|")})\\.?\\s*\\d{1,3}(?:[-–]\\d{1,3})?`);
+  }
+  if (shortSingleParts.length > 0) {
+    branches.push(`(?:${shortSingleParts.join("|")})(?:\\.\\s*|\\s+)\\d{1,3}(?:[-–]\\d{1,3})?`);
   }
 
   const boundary = "a-zA-ZáéíóúâêîôûãõçñüÁÉÍÓÚÂÊÎÔÛÃÕÇÑÜ0-9";
@@ -120,16 +139,31 @@ function compile(books: BookInfo[]): CompiledIndex {
 }
 
 /** Re-extrai chapter:verse[-verseEnd] e o "termo do livro" da string casada. */
-function dissect(raw: string): { bookTerm: string; chapter: number; verse: number; verseEnd?: number } | null {
+function dissect(raw: string): { bookTerm: string; chapter: number; verse: number; verseEnd?: number; noColon: boolean } | null {
   const m = raw.match(/^(.+?)\.?\s*(\d{1,3}):(\d{1,3})(?:[-–](\d{1,3}))?$/);
-  if (!m) return null;
-  return {
-    bookTerm: m[1].trim(),
-    chapter: parseInt(m[2], 10),
-    verse: parseInt(m[3], 10),
-    verseEnd: m[4] ? parseInt(m[4], 10) : undefined,
-  };
+  if (m) {
+    return {
+      bookTerm: m[1].trim(),
+      chapter: parseInt(m[2], 10),
+      verse: parseInt(m[3], 10),
+      verseEnd: m[4] ? parseInt(m[4], 10) : undefined,
+      noColon: false,
+    };
+  }
+  // Fallback sem capítulo (apenas livros de 1 capítulo)
+  const m2 = raw.match(/^(.+?)\.?\s*(\d{1,3})(?:[-–](\d{1,3}))?$/);
+  if (m2) {
+    return {
+      bookTerm: m2[1].trim(),
+      chapter: 1,
+      verse: parseInt(m2[2], 10),
+      verseEnd: m2[3] ? parseInt(m2[3], 10) : undefined,
+      noColon: true,
+    };
+  }
+  return null;
 }
+
 
 export function resolveBookId(books: BookInfo[], name: string): string | null {
   const { lookup } = compile(books);
@@ -153,6 +187,8 @@ export function findCitations(books: BookInfo[] | undefined, text: string): Cita
     const key = stripDiacritics(d.bookTerm.toLowerCase()).replace(/\.$/, "");
     const info = lookup.get(key);
     if (!info) continue;
+    // Forma sem ":" só é válida para livros de capítulo único
+    if (d.noColon && !SINGLE_CHAPTER_BOOK_IDS.has(info.bookId)) continue;
     out.push({
       raw,
       bookId: info.bookId,

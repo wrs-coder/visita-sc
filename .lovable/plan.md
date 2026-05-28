@@ -1,44 +1,62 @@
-## Problema
+## Goal
 
-Citações em português com acento (`João 2:1`, `1 João 4:8`, `2 João`, etc.) não disparam o popover, mas as mesmas referências sem acento (`Joh 2:1`, `1Jo 4:8`) funcionam.
+Permitir citar livros de **um único capítulo** sem digitar o capítulo. Hoje o usuário precisa escrever `Judas 1:5`; depois desta mudança, `Judas 5` (ou `Jd 5`, `Judas 5-7`) também abrirá o versículo. A forma antiga (`Judas 1:5`) continua funcionando.
 
-## Causa
+Livros afetados (5):
+- **Obadias** (B31)
+- **Filêmon** (B57)
+- **2 João** (B63)
+- **3 João** (B64)
+- **Judas** (B65)
 
-Em `src/lib/bible-refs.ts`, a função `compile()` constrói a regex de detecção a partir dos aliases do `CANON`. Esses aliases já são normalizados sem acento em `bible-canon.ts` (`normalizeName` → `stripDiacritics`), então o padrão final contém literalmente `joao`, `mateus`, `colossenses`, etc.
+## Mudanças
 
-A regex é então aplicada com `re.exec(text)` sobre o **texto original** (com acentos). Como `joao` ≠ `João`, o match falha em qualquer nome português acentuado. Por isso só funcionam abreviações ASCII (`Joh`, `1Jo`, `Mt`).
+Tudo em **`src/lib/bible-refs.ts`** — apenas detecção/parsing de citações. Sem alterar parser EPUB, popover, ou armazenamento.
 
-O lookup posterior já normaliza via `stripDiacritics`, então basta o regex casar — o resto do pipeline está correto.
+### 1. Marcar livros de capítulo único
+Adicionar constante:
+```ts
+const SINGLE_CHAPTER_BOOK_IDS = new Set(["B31", "B57", "B63", "B64", "B65"]);
+```
 
-## Correção (1 arquivo)
+### 2. Em `compile(books)` — adicionar 2 novas branches no regex
+Hoje há 2 branches (`longParts` e `shortParts`), todas exigindo `chapter:verse`. Vamos separar os termos de livros de capítulo único e gerar 2 branches extras que aceitam apenas `verse` (sem `:`):
 
-**`src/lib/bible-refs.ts`** — tornar o regex insensível a acentos sem alterar o índice de lookup:
+- `longSingleParts` → `(?:nome)\.?\s*(\d{1,3})(?:[-–](\d{1,3}))?` (sem `:`)
+- `shortSingleParts` → `(?:abrev)(?:\.\s*|\s+)(\d{1,3})(?:[-–](\d{1,3}))?`
 
-1. Adicionar helper `accentInsensitivePattern(term)` que percorre cada caractere do alias e, para vogais e `c`/`n`, emite uma classe de caracteres aceitando as variantes acentuadas:
-   - `a` → `[aáàâãä]`
-   - `e` → `[eéèêë]`
-   - `i` → `[iíìîï]`
-   - `o` → `[oóòôõö]`
-   - `u` → `[uúùûü]`
-   - `c` → `[cç]`
-   - `n` → `[nñ]`
-   - espaço → `\s+` (já é o caso na prática; manter)
-   - outros caracteres → `escapeRegex(char)`
+Importante: os mesmos termos **continuam também** nas branches `longParts`/`shortParts` originais (com `chapter:verse`), para preservar `Judas 1:5`.
 
-2. Substituir as duas chamadas `escapeRegex(term)` (em `longParts` e `shortParts`) por `accentInsensitivePattern(term)`.
+Ordem das alternativas no regex: colocar as branches `chapter:verse` **antes** das `verse-only` para que `Judas 1:5` case primeiro como `cap:vers` e não como `livro 1` + lixo.
 
-3. Atualizar os "boundary chars" do regex externo para também aceitar maiúsculas acentuadas (`ÁÉÍÓÚÂÊÎÔÛÃÕÇÑÜ`) — hoje só lista minúsculas, o que pode quebrar boundaries quando a citação vem logo após uma palavra com maiúscula acentuada. Adicionar essas letras às duas classes negadas `[^a-z…0-9]`.
+### 3. Ajustar `dissect(raw)`
+Hoje exige `\d+:\d+`. Atualizar para também aceitar `nome \d+(-\d+)?` (sem `:`); nesse caso retorna `chapter: 1`, `verse: N`.
 
-4. Em `dissect()`, a regex `^(.+?)\.?\s*(\d…)` continua funcionando com acentos (usa `.`), então não precisa mudar. O `resolveBookId`/`findCitations` já chamam `stripDiacritics` antes do `lookup.get`, logo o match de "João" → bucket `B43` continua válido.
+Pseudo:
+```ts
+// tenta cap:vers primeiro
+const m1 = raw.match(/^(.+?)\.?\s*(\d{1,3}):(\d{1,3})(?:[-–](\d{1,3}))?$/);
+if (m1) return { bookTerm, chapter, verse, verseEnd };
+// fallback: nome + verso(s) — somente válido se livro de capítulo único
+const m2 = raw.match(/^(.+?)\.?\s*(\d{1,3})(?:[-–](\d{1,3}))?$/);
+if (m2) return { bookTerm, chapter: 1, verse, verseEnd };
+return null;
+```
 
-5. (Sanity) Garantir que o `CACHE: WeakMap` segue válido — não há mudança na assinatura.
+### 4. Em `findCitations`, validar contexto do fallback
+Quando `dissect` devolver chapter=1 vindo da forma sem `:`, **rejeitar** se o `bookId` resolvido não estiver em `SINGLE_CHAPTER_BOOK_IDS`. Isso evita que `Mateus 5` (sem capítulo) vire indevidamente `Mt 1:5`.
+
+Implementação: o `dissect` pode devolver um flag `noColon: boolean`; `findCitations` descarta matches com `noColon && !SINGLE_CHAPTER_BOOK_IDS.has(info.bookId)`.
 
 ## Validação
 
-Após o build:
-- Digitar `João 2:1`, `Mt 6:33`, `1 João 4:8`, `2 João 5`, `Colossenses 3:14`, `1 Pedro 2:9` no campo de Considerações de Campo.
-- Todos devem virar link sublinhado azul que abre o popover com o versículo.
-- Abreviações ASCII existentes (`Joh 2:1`, `1Jo`) devem continuar funcionando.
-- Não deve haver regressão em referências sem acento (`Genesis 1:1`, `Mt 5:3`).
-
-Nenhuma mudança no parser EPUB ou na store — o problema é puramente de detecção textual.
+Após o build, no campo de Considerações de Campo:
+- `Judas 5` → abre Jd 1:5 ✅
+- `Jd 5-7` → abre Jd 1:5-7 ✅
+- `2 João 4` → abre 2Jo 1:4 ✅
+- `3 Jo 8` → abre 3Jo 1:8 ✅
+- `Filêmon 6` → abre Fm 1:6 ✅
+- `Obadias 15` → abre Ob 1:15 ✅
+- `Judas 1:5` (forma antiga) → continua funcionando ✅
+- `Mateus 5` → **não** deve virar popover (Mateus tem múltiplos capítulos) ✅
+- `Mt 5:9` (multi-cap normal) → continua funcionando ✅
