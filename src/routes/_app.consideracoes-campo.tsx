@@ -257,18 +257,32 @@ function Page() {
               </p>
             ) : (
               <>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-[11px] text-muted-foreground">
-                    {t("fieldConsiderations.updatedAt")}: {dateFmt(draft.updated_at)}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={mode === "edit" ? "default" : "secondary"}>
+                      {mode === "edit"
+                        ? t("fieldConsiderations.editMode")
+                        : t("fieldConsiderations.outlineMode")}
+                    </Badge>
+                    <span className="text-[11px] text-muted-foreground">
+                      {t("fieldConsiderations.updatedAt")}: {dateFmt(draft.updated_at)}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <SavingIndicator saving={saving} />
+                    {mode === "outline" && (
+                      <Button variant="outline" size="sm" onClick={() => setMode("edit")}>
+                        <Pencil className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.edit")}
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive">
                       <Trash2 className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.delete")}
                     </Button>
-                    <Button size="sm" onClick={handleSave} disabled={saving}>
-                      <Save className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.save")}
-                    </Button>
+                    {mode === "edit" && (
+                      <Button size="sm" onClick={handleSave} disabled={saving}>
+                        <Save className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.save")}
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -279,6 +293,7 @@ function Page() {
                       value={draft.title}
                       onChange={(e) => patch("title", e.target.value)}
                       placeholder={t("fieldConsiderations.fields.titlePh")}
+                      readOnly={mode === "outline"}
                     />
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
@@ -288,6 +303,7 @@ function Page() {
                         value={draft.prayer}
                         onChange={(e) => patch("prayer", e.target.value)}
                         placeholder={t("fieldConsiderations.fields.prayerPh")}
+                        readOnly={mode === "outline"}
                       />
                     </div>
                     <div className="grid gap-1.5">
@@ -296,6 +312,7 @@ function Page() {
                         value={draft.territory}
                         onChange={(e) => patch("territory", e.target.value)}
                         placeholder={t("fieldConsiderations.fields.territoryPh")}
+                        readOnly={mode === "outline"}
                       />
                     </div>
                   </div>
@@ -305,17 +322,52 @@ function Page() {
                       value={draft.assistants}
                       onChange={(e) => patch("assistants", e.target.value)}
                       placeholder={t("fieldConsiderations.fields.assistantsPh")}
+                      readOnly={mode === "outline"}
                     />
                   </div>
+
+                  {/* Painel superior: versículos detectados (apenas modo Edição) */}
+                  {mode === "edit" && (
+                    <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                      <div className="flex items-center gap-2 text-xs font-semibold">
+                        <BookOpen className="h-3.5 w-3.5 text-primary" />
+                        {t("fieldConsiderations.detected")}
+                      </div>
+                      {detected.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          {t("fieldConsiderations.detectedEmpty")}
+                        </p>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {detected.map((m, i) => (
+                            <VerseLink key={`${m.index}-${i}`} match={m} lang={activeLang} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="grid gap-1.5">
                     <Label>{t("fieldConsiderations.fields.content")}</Label>
-                    <Textarea
-                      value={draft.content}
-                      onChange={(e) => patch("content", e.target.value)}
-                      placeholder={t("fieldConsiderations.fields.contentPh")}
-                      rows={12}
-                      className="resize-y min-h-[240px]"
-                    />
+                    {mode === "edit" ? (
+                      <Textarea
+                        value={draft.content}
+                        onChange={(e) => patch("content", e.target.value)}
+                        placeholder={t("fieldConsiderations.fields.contentPh")}
+                        rows={12}
+                        className="resize-y min-h-[240px]"
+                      />
+                    ) : (
+                      <div className="rounded-md border bg-background px-3 py-2 min-h-[240px] text-sm leading-relaxed whitespace-pre-wrap">
+                        {draft.content ? (
+                          <OutlineContent text={draft.content} lang={activeLang} />
+                        ) : (
+                          <span className="text-muted-foreground italic">
+                            {t("fieldConsiderations.contentEmpty")}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
