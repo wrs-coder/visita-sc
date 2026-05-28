@@ -520,21 +520,45 @@ function Page() {
 
   function NoteRow({ note, depth }: { note: FieldNote; depth: number }) {
     const selected = selectedNoteId === note.id;
+    const isClipped = clipboardNoteId === note.id;
     return (
-      <button
-        type="button"
-        onClick={() => selectNote(note)}
+      <div
         className={cn(
-          "w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-sm",
+          "group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm",
           selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
+          isClipped && "opacity-60 italic",
         )}
         style={{ paddingLeft: 6 + depth * 12 + 16 }}
       >
-        <FileText className="h-3.5 w-3.5 shrink-0 opacity-70" />
-        <span className="truncate flex-1">{note.title || t("fieldConsiderations.fields.title")}</span>
-      </button>
+        <button
+          type="button"
+          onClick={() => selectNote(note)}
+          className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
+        >
+          <FileText className="h-3.5 w-3.5 shrink-0 opacity-70" />
+          <span className="truncate flex-1">{note.title || t("fieldConsiderations.fields.title")}</span>
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded hover:bg-background">
+              <MoreVertical className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setMoveTarget({ kind: "note", id: note.id })}>
+              <Move className="h-4 w-4 mr-2" />
+              {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleCutNote(note.id)}>
+              <Scissors className="h-4 w-4 mr-2" />
+              {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     );
   }
+
 
   const isField = activeType === "field_consideration";
   const isOutline = activeType === "outline";
