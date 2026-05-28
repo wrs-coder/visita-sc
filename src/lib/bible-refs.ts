@@ -45,16 +45,11 @@ function compile(books: BookInfo[]): CompiledIndex {
   if (cached) return cached;
 
   const lookup = new Map<string, { bookId: string; displayName: string }>();
-  // Importa o catálogo canônico de forma síncrona via require dinâmico
-  // (evita ciclo em build). Usamos import estático no topo do bundle.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { CANON } = require("./bible-canon") as typeof import("./bible-canon");
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _canon = CANON; // usado abaixo
   const terms: { term: string; bookId: string; displayName: string }[] = [];
   for (const b of books) {
-    // Aliases vindos do EPUB
     const all = [b.displayName, ...b.aliases];
-    // Aliases canônicos multilíngues (se o bookId casar com B01..B66)
     const canon = CANON.find((c) => c.id === b.bookId);
     if (canon) all.push(...canon.aliases);
     for (const term of all) {
