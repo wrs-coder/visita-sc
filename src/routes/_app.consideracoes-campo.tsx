@@ -853,5 +853,3 @@ function FullscreenOutline({
     </div>
   );
 }
-  return <>{parts}</>;
-}
