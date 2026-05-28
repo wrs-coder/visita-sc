@@ -287,6 +287,7 @@ export function findCitations(books: BookInfo[] | undefined, text: string): Cita
       chapter: d.chapter,
       verse: d.verse,
       verseEnd: d.verseEnd,
+      verses: d.verses,
       index: startIdx,
       length: raw.length,
     });
