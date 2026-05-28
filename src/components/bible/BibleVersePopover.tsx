@@ -77,7 +77,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
           {match.raw}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 max-w-[90vw] max-h-[60vh] overflow-y-auto z-[60]" align="start">
+      <PopoverContent className="w-80 max-w-[90vw] max-h-[60vh] overflow-y-auto z-[110]" align="start">
         <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground sticky top-0 bg-popover pb-1">
           <BookOpen className="h-3.5 w-3.5" />
           <span className="font-semibold text-foreground">
