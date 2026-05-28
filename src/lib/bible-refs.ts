@@ -43,10 +43,18 @@ function compile(books: BookInfo[]): CompiledIndex {
   if (cached) return cached;
 
   const lookup = new Map<string, { bookId: string; displayName: string }>();
-  // Coleta todos os "termos" (display + aliases) com referência ao livro
+  // Importa o catálogo canônico de forma síncrona via require dinâmico
+  // (evita ciclo em build). Usamos import estático no topo do bundle.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { CANON } = require("./bible-canon") as typeof import("./bible-canon");
+
   const terms: { term: string; bookId: string; displayName: string }[] = [];
   for (const b of books) {
+    // Aliases vindos do EPUB
     const all = [b.displayName, ...b.aliases];
+    // Aliases canônicos multilíngues (se o bookId casar com B01..B66)
+    const canon = CANON.find((c) => c.id === b.bookId);
+    if (canon) all.push(...canon.aliases);
     for (const term of all) {
       const t = term.trim();
       if (!t) continue;
@@ -59,11 +67,14 @@ function compile(books: BookInfo[]): CompiledIndex {
   // Ordena por comprimento decrescente para casar primeiro o nome mais longo.
   terms.sort((a, b) => b.term.length - a.term.length);
 
-  // Separa termos curtos (≤2 letras, ex: "Sl", "Jó") dos longos para
-  // aplicar guarda contra falsos positivos.
+  // Deduplica por termo (case/accents-insensitive) preservando o mais longo
+  const seenTerms = new Set<string>();
   const longParts: string[] = [];
   const shortParts: string[] = [];
   for (const { term } of terms) {
+    const k = stripDiacritics(term.toLowerCase());
+    if (seenTerms.has(k)) continue;
+    seenTerms.add(k);
     const visible = term.replace(/\s+/g, "");
     if (visible.length <= 2) shortParts.push(escapeRegex(term));
     else longParts.push(escapeRegex(term));
@@ -71,18 +82,14 @@ function compile(books: BookInfo[]): CompiledIndex {
 
   const branches: string[] = [];
   if (longParts.length > 0) {
-    // Termos longos: aceitam "Gn 1:1", "Gênesis 1:1", "Gn.1:1"
     branches.push(`(?:${longParts.join("|")})\\.?\\s*(\\d{1,3}):(\\d{1,3})(?:[-–](\\d{1,3}))?`);
   }
   if (shortParts.length > 0) {
-    // Termos curtos: exigem ponto OU espaço antes do número — evita "ex" em "exemplo".
     branches.push(`(?:${shortParts.join("|")})(?:\\.\\s*|\\s+)(\\d{1,3}):(\\d{1,3})(?:[-–](\\d{1,3}))?`);
   }
 
-  // Note: cada branch tem 3 grupos de captura — usamos números fixos.
-  // O grupo 0 (texto inteiro) é tudo que importa; chap/vers são re-extraídos por regex auxiliar.
-  const source = `\\b(${branches.join("|")})\\b`;
-  const regex = new RegExp(source, "gi");
+  const source = `(?:^|[^a-záéíóúâêîôûãõçñü0-9])(${branches.join("|")})(?=$|[^a-záéíóúâêîôûãõçñü0-9])`;
+  const regex = new RegExp(source, "giu");
   const out = { regex, lookup };
   CACHE.set(books, out);
   return out;
