@@ -599,9 +599,17 @@ function extractVersesFromDoc(
     let text = textBetween(doc, cur.node, next);
     // Remove o número do versículo se ele aparecer "colado" no início.
     text = text.replace(new RegExp(`^\\s*${cur.verse}\\s*[\\.\\)]?\\s*`), "");
-    // Remove ruído típico de notas/refs entre colchetes vazios.
     text = text.replace(/\s{2,}/g, " ").trim();
     if (text.length < 2) continue;
+    // Sanity-check de tamanho — versículos absurdamente longos indicam que algo
+    // do tipo apêndice/rodapé escapou do filtro; trunca no primeiro ponto após 600 chars.
+    if (text.length > 1200) {
+      const cut = text.slice(0, 600);
+      const dot = text.indexOf(". ", 600);
+      text = dot > 0 && dot < 1200 ? text.slice(0, dot + 1) : cut + "…";
+      // eslint-disable-next-line no-console
+      console.warn("[epub-bible] long verse truncated", cur.chapter, cur.verse, text.length);
+    }
     out.push({ chapter: cur.chapter, verse: cur.verse, text });
   }
   return out;
