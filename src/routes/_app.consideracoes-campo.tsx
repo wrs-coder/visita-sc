@@ -64,9 +64,19 @@ function Page() {
   const [draft, setDraft] = useState<FieldNote | null>(null);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
+  const [bibleOpen, setBibleOpen] = useState(false);
+  const [activeBible, setActiveBible] = useState<BibleLangStatus | null>(null);
 
-  // Initial load.
+  const activeLang: BibleLang =
+    i18n.language?.startsWith("en") ? "en" : i18n.language?.startsWith("es") ? "es" : "pt";
+
+  async function refreshActiveBible() {
+    setActiveBible(await getLangStatus(activeLang));
+  }
+
+  // Initial load + seed.
   useEffect(() => {
+    ensureSeed().then(refreshActiveBible);
     listNotes().then((all) => {
       const sorted = all.sort((a, b) => b.updated_at - a.updated_at);
       setNotes(sorted);
@@ -75,7 +85,14 @@ function Page() {
         setDraft(sorted[0]);
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Reload active bible when app language changes.
+  useEffect(() => {
+    refreshActiveBible();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLang]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
