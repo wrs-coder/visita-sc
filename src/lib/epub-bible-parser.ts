@@ -538,6 +538,8 @@ function truncatePreChapterContent(doc: Document): void {
   // Snapshot do HTML para rollback se a truncagem ficar destrutiva demais.
   const originalLen = (body.textContent ?? "").trim().length;
   const originalHtml = body.innerHTML;
+  const hadVerseAnchorBefore = /id=["'][^"']*chapter\d+[_-]?verse\d+/i.test(originalHtml);
+
 
   // Sobe da âncora até filho direto de body, removendo irmãos anteriores
   // em cada nível. Conteúdo posterior nunca é tocado.
