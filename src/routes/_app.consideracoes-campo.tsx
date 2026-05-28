@@ -387,4 +387,3 @@ function OutlineContent({ text, library }: { text: string; library: BibleLibrary
   if (cursor < text.length) parts.push(text.slice(cursor));
   return <>{parts}</>;
 }
-}
