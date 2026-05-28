@@ -703,7 +703,13 @@ function textBetween(
         break;
       }
       // Parada 3: novo capítulo encontrado no caminho.
-      if (isChapterAnchorEl(el) || isChapterHeadingEl(el)) {
+      // Guarda: não quebrar em descendentes do próprio `start` (quando o marker
+      // de v1 é o bloco de capítulo `<p class="w_ch" id="chapter N_verse1">`).
+      if (
+        (isChapterAnchorEl(el) || isChapterHeadingEl(el)) &&
+        el !== start &&
+        !(start.nodeType === 1 && (start as Element).contains(el))
+      ) {
         break;
       }
       // Pula subárvores ruidosas / outline inteiras.
