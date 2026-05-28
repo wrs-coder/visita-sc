@@ -300,6 +300,81 @@ function Page() {
     }
   }
 
+  // ---------- Mover / Recortar / Colar ----------
+
+  function getDescendantFolderIds(rootId: string): Set<string> {
+    const out = new Set<string>([rootId]);
+    let added = true;
+    while (added) {
+      added = false;
+      for (const f of folders) {
+        if (f.parentId && out.has(f.parentId) && !out.has(f.id)) {
+          out.add(f.id);
+          added = true;
+        }
+      }
+    }
+    return out;
+  }
+
+  async function moveNoteTo(noteId: string, targetFolderId: string | null) {
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+    if ((note.folderId ?? null) === targetFolderId) return;
+    const updated: FieldNote = {
+      ...note,
+      folderId: targetFolderId,
+      updated_at: Date.now(),
+    };
+    await persistNote(updated);
+    setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
+      .sort((a, b) => b.updated_at - a.updated_at));
+    if (draft && draft.id === noteId) setDraft(updated);
+    if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
+    toast.success(t("personalOutlines.folders.moved", { defaultValue: "Movido." }));
+  }
+
+  async function moveFolderTo(folderId: string, targetParentId: string | null) {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+    if ((folder.parentId ?? null) === targetParentId) return;
+    if (targetParentId && getDescendantFolderIds(folderId).has(targetParentId)) {
+      toast.error(t("personalOutlines.folders.cannotMoveIntoSelf", {
+        defaultValue: "Não é possível mover uma pasta para dentro dela mesma.",
+      }));
+      return;
+    }
+    const updated: NoteFolder = { ...folder, parentId: targetParentId };
+    await saveFolder(updated);
+    setFolders((all) => all.map((f) => (f.id === folderId ? updated : f)));
+    if (targetParentId) setExpanded((s) => new Set(s).add(targetParentId));
+    toast.success(t("personalOutlines.folders.moved", { defaultValue: "Movido." }));
+  }
+
+  async function handleConfirmMove(targetFolderId: string | null) {
+    if (!moveTarget) return;
+    if (moveTarget.kind === "note") {
+      await moveNoteTo(moveTarget.id, targetFolderId);
+    } else {
+      await moveFolderTo(moveTarget.id, targetFolderId);
+    }
+    setMoveTarget(null);
+  }
+
+  function handleCutNote(noteId: string) {
+    setClipboardNoteId(noteId);
+    toast.success(t("personalOutlines.folders.clipboardHint", {
+      defaultValue: "1 nota recortada. Toque em \"Colar aqui\" na pasta de destino.",
+    }));
+  }
+
+  async function handlePasteNote(targetFolderId: string | null) {
+    if (!clipboardNoteId) return;
+    await moveNoteTo(clipboardNoteId, targetFolderId);
+    setClipboardNoteId(null);
+  }
+
+
   async function handleExportFolder(folder: NoteFolder) {
     try {
       const payload = await exportFolderJSON(folder.id);
