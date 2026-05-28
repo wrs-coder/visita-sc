@@ -176,12 +176,65 @@ function resolvePath(base: string, href: string): string {
 
 interface BookSlot {
   displayName: string;
-  hrefs: string[]; // arquivos xhtml deste livro
+  hrefs: string[]; // arquivos xhtml deste livro (pode ser vários capítulos)
 }
 
-/** Constrói a lista de livros usando nav.xhtml > toc.ncx > spine. */
+/** Remove sufixos numéricos de capítulo: "Mateus 1" -> "Mateus", "1 Reis 5" -> "1 Reis". */
+function stripChapterSuffix(name: string): string {
+  let s = name.trim();
+  s = s.replace(/\s*[-–—:]\s*(cap[ií]tulo|cap\.?|chapter)\s*\d+\s*$/i, "");
+  s = s.replace(/\s+(cap[ií]tulo|cap\.?|chapter)\s*\d+\s*$/i, "");
+  const m = s.match(/^(([123])\s+)?(.+?)\s+\d{1,3}\s*$/);
+  if (m) {
+    const prefix = m[1] ?? "";
+    const core = m[3].trim();
+    if (core.length >= 2) s = `${prefix}${core}`;
+  }
+  return s.trim();
+}
+
+/** Agrupa entradas planas de TOC em livros, juntando capítulos consecutivos do mesmo livro. */
+function groupFlatEntries(entries: { name: string; href: string }[]): BookSlot[] {
+  const slots: BookSlot[] = [];
+  for (const e of entries) {
+    if (!e.href) continue;
+    const bookName = stripChapterSuffix(e.name) || e.name;
+    const last = slots[slots.length - 1];
+    if (last && last.displayName === bookName) {
+      last.hrefs.push(e.href);
+    } else {
+      slots.push({ displayName: bookName, hrefs: [e.href] });
+    }
+  }
+  return slots;
+}
+
+interface NavNode { name: string; href: string; children: NavNode[] }
+
+function readNavList(list: Element, base: string): NavNode[] {
+  const out: NavNode[] = [];
+  const lis = Array.from(list.children).filter((c) => c.tagName.toLowerCase() === "li");
+  for (const li of lis) {
+    const a = li.querySelector("a");
+    const name = (a?.textContent ?? "").trim();
+    const hrefRaw = a?.getAttribute("href") ?? "";
+    const childList = Array.from(li.children).find(
+      (c) => c.tagName.toLowerCase() === "ol" || c.tagName.toLowerCase() === "ul",
+    );
+    const children = childList ? readNavList(childList, base) : [];
+    if (!name && children.length === 0) continue;
+    out.push({
+      name,
+      href: hrefRaw ? resolvePath(base, hrefRaw.split("#")[0]) : "",
+      children,
+    });
+  }
+  return out;
+}
+
+/** Constrói a lista de livros, agrupando capítulos por livro. */
 async function buildBookSlots(zip: JSZip, opf: OpfData): Promise<BookSlot[]> {
-  // 1) Tenta nav.xhtml (EPUB3)
+  // 1) nav.xhtml (EPUB3)
   const navItem = Array.from(opf.manifest.values()).find(
     (m) => m.mediaType === XHTML_MIME && /nav/i.test(m.href),
   );
@@ -191,27 +244,36 @@ async function buildBookSlots(zip: JSZip, opf: OpfData): Promise<BookSlot[]> {
     if (navFile) {
       const html = await navFile.async("string");
       const doc = new DOMParser().parseFromString(html, XHTML_MIME);
-      // procura nav[epub:type=toc] ou primeiro nav com lista
       const navs = Array.from(doc.getElementsByTagName("nav"));
       const tocNav =
         navs.find((n) => (n.getAttribute("epub:type") ?? "").includes("toc")) ?? navs[0];
       if (tocNav) {
-        const links = Array.from(tocNav.getElementsByTagName("a"));
-        const slots: BookSlot[] = [];
-        for (const a of links) {
-          const name = (a.textContent ?? "").trim();
-          const href = a.getAttribute("href") ?? "";
-          if (!name || !href) continue;
-          const hrefPath = resolvePath(opf.basePath, href.split("#")[0]);
-          if (!hrefPath) continue;
-          slots.push({ displayName: name, hrefs: [hrefPath] });
+        const rootList = tocNav.querySelector("ol, ul");
+        if (rootList) {
+          const tree = readNavList(rootList, opf.basePath);
+          const hasChildren = tree.some((t) => t.children.length > 0);
+          if (hasChildren) {
+            const slots: BookSlot[] = [];
+            for (const t of tree) {
+              const hrefs = t.children.length > 0
+                ? t.children.map((c) => c.href).filter(Boolean)
+                : (t.href ? [t.href] : []);
+              if (hrefs.length === 0 || !t.name) continue;
+              slots.push({ displayName: t.name, hrefs });
+            }
+            if (slots.length >= 5) return slots;
+          }
+          const flat = tree
+            .filter((t) => t.href && t.name)
+            .map((t) => ({ name: t.name, href: t.href }));
+          const grouped = groupFlatEntries(flat);
+          if (grouped.length >= 5) return grouped;
         }
-        if (slots.length >= 5) return slots;
       }
     }
   }
 
-  // 2) Fallback: toc.ncx
+  // 2) toc.ncx
   const ncxItem = Array.from(opf.manifest.values()).find((m) =>
     m.mediaType.includes("ncx") || m.href.toLowerCase().endsWith(".ncx"),
   );
@@ -221,21 +283,46 @@ async function buildBookSlots(zip: JSZip, opf: OpfData): Promise<BookSlot[]> {
     if (ncxFile) {
       const xml = await ncxFile.async("string");
       const doc = new DOMParser().parseFromString(xml, XML_MIME);
-      const points = Array.from(doc.getElementsByTagName("navPoint"));
-      const slots: BookSlot[] = [];
-      for (const p of points) {
-        const name = p.getElementsByTagName("text")[0]?.textContent?.trim() ?? "";
-        const content = p.getElementsByTagName("content")[0]?.getAttribute("src") ?? "";
-        if (!name || !content) continue;
-        const hrefPath = resolvePath(opf.basePath, content.split("#")[0]);
-        slots.push({ displayName: name, hrefs: [hrefPath] });
+      const navMap = doc.getElementsByTagName("navMap")[0];
+      if (navMap) {
+        const topPoints = Array.from(navMap.children).filter(
+          (c) => c.tagName.toLowerCase() === "navpoint",
+        );
+        const readPoint = (p: Element) => {
+          const name = p.getElementsByTagName("navLabel")[0]
+            ?.getElementsByTagName("text")[0]?.textContent?.trim() ?? "";
+          const content = p.getElementsByTagName("content")[0]?.getAttribute("src") ?? "";
+          const href = content ? resolvePath(opf.basePath, content.split("#")[0]) : "";
+          const children = Array.from(p.children).filter(
+            (c) => c.tagName.toLowerCase() === "navpoint",
+          );
+          return { name, href, children };
+        };
+        const hasChildren = topPoints.some((p) => readPoint(p).children.length > 0);
+        if (hasChildren) {
+          const slots: BookSlot[] = [];
+          for (const p of topPoints) {
+            const info = readPoint(p);
+            const childHrefs = info.children.map((c) => readPoint(c).href).filter(Boolean);
+            const hrefs = childHrefs.length > 0 ? childHrefs : (info.href ? [info.href] : []);
+            if (hrefs.length === 0 || !info.name) continue;
+            slots.push({ displayName: info.name, hrefs });
+          }
+          if (slots.length >= 5) return slots;
+        }
+        const flat: { name: string; href: string }[] = [];
+        for (const p of topPoints) {
+          const info = readPoint(p);
+          if (info.name && info.href) flat.push({ name: info.name, href: info.href });
+        }
+        const grouped = groupFlatEntries(flat);
+        if (grouped.length >= 5) return grouped;
       }
-      if (slots.length >= 5) return slots;
     }
   }
 
-  // 3) Último fallback: spine — cada item vira um "livro" usando <title> ou <h1>
-  const slots: BookSlot[] = [];
+  // 3) Spine — agrupa por título de cada xhtml
+  const flatSpine: { name: string; href: string }[] = [];
   for (const idref of opf.spine) {
     const item = opf.manifest.get(idref);
     if (!item) continue;
@@ -245,13 +332,13 @@ async function buildBookSlots(zip: JSZip, opf: OpfData): Promise<BookSlot[]> {
     const html = await file.async("string");
     const doc = new DOMParser().parseFromString(html, XHTML_MIME);
     const name =
-      doc.getElementsByTagName("title")[0]?.textContent?.trim() ||
       doc.getElementsByTagName("h1")[0]?.textContent?.trim() ||
       doc.getElementsByTagName("h2")[0]?.textContent?.trim() ||
-      `Item ${slots.length + 1}`;
-    slots.push({ displayName: name, hrefs: [path] });
+      doc.getElementsByTagName("title")[0]?.textContent?.trim() ||
+      `Item ${flatSpine.length + 1}`;
+    flatSpine.push({ name, href: path });
   }
-  return slots;
+  return groupFlatEntries(flatSpine);
 }
 
 /** Extrai versículos de um documento xhtml. Retorna lista por capítulo. */
