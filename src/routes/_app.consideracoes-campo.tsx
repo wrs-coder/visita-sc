@@ -423,7 +423,7 @@ function Page() {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-4 w-full max-w-full min-w-0 overflow-x-hidden">
         <header className="flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-2 text-primary">
             <FileText className="h-5 w-5" />
@@ -491,7 +491,7 @@ function Page() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-[300px_1fr]">
+          <div className="grid gap-4 md:grid-cols-[300px_1fr] min-w-0 max-w-full">
             {/* Sidebar: árvore de pastas */}
             <Card className="h-fit">
               <CardContent className="p-3 space-y-3">
@@ -559,8 +559,8 @@ function Page() {
             </Card>
 
             {/* Editor */}
-            <Card>
-              <CardContent className="p-5 space-y-4">
+            <Card className="min-w-0 max-w-full overflow-x-hidden">
+              <CardContent className="p-5 space-y-4 min-w-0 max-w-full">
                 {!draft ? (
                   <p className="text-sm text-muted-foreground text-center py-12">
                     {t("personalOutlines.folders.selectFolder")}
@@ -751,7 +751,7 @@ function NoteEditor({
               minHeight="240px"
             />
           ) : (
-            <div className="rounded-md border bg-background px-3 py-2 min-h-[240px] text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
+            <div className="rounded-md border bg-background px-3 py-2 min-h-[240px] text-sm leading-relaxed break-words [overflow-wrap:anywhere] w-full max-w-full min-w-0 overflow-x-hidden overflow-y-auto">
               {draft.content ? (
                 <RichOutlineContent html={draft.content} library={activeBible} />
               ) : (
