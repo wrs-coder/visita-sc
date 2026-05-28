@@ -539,35 +539,65 @@ function hardPurgeDoc(doc: Document): void {
  *  tiver âncora estrutural de capítulo. Reverte se a truncagem
  *  destruir mais de 80% do texto (proteção para livros pequenos
  *  / de 1 capítulo onde a âncora pode ser tardia no documento). */
-/** Trunca tudo que aparece ANTES da âncora oficial do capítulo 1.
- *  Regra ESTRITA validada na estrutura do EPUB TNM/NWT:
- *    âncora = `[id="chapter1"]` OU `.w_ch` cujo texto seja exatamente "1".
- *  Se nenhuma das duas existir no documento, NÃO trunca (no-op). */
+/** Trunca tudo que aparece ANTES da âncora de início do capítulo 1.
+ *
+ *  Regra DUPLA CAMADA (validada na estrutura do EPUB TNM/NWT):
+ *    - Camada 1 (validação): o arquivo só é processado se contiver
+ *      `[id="chapter1"]` (presença do marcador de capítulo). Sem isso,
+ *      no-op.
+ *    - Camada 2 (ponto de corte): o truncamento usa preferencialmente
+ *      `[id="chapter1_verse1"]` como âncora, garantindo que o versículo 1
+ *      (que em alguns layouts vem ANTES do anchor `chapter1` no DOM) não
+ *      seja removido. Se `chapter1_verse1` não existir, cai para
+ *      `[id="chapter1"]` e por fim `.w_ch` cujo texto seja exatamente "1".
+ */
 function truncatePreChapterContent(doc: Document): void {
   const body = doc.body;
   if (!body) return;
 
-  let anchor: Element | null = null;
+  // Camada 1: validação — arquivo só processado se tiver id="chapter1".
+  let chapter1: Element | null = null;
   try {
-    anchor = body.querySelector('[id="chapter1"]');
+    chapter1 = body.querySelector('[id="chapter1"]');
   } catch {
-    anchor = null;
+    chapter1 = null;
   }
-  if (!anchor) {
+  if (!chapter1) {
+    // Fallback de validação: .w_ch com texto "1" também conta como
+    // presença de capítulo 1 (alguns EPUBs não usam id explícito).
     try {
       const candidates = body.querySelectorAll('.w_ch');
       for (let i = 0; i < candidates.length; i++) {
-        const txt = (candidates[i].textContent ?? '').trim();
-        if (txt === '1') {
-          anchor = candidates[i];
+        if ((candidates[i].textContent ?? '').trim() === '1') {
+          chapter1 = candidates[i];
           break;
         }
       }
     } catch {
-      anchor = null;
+      chapter1 = null;
     }
   }
-  if (!anchor) return;
+  if (!chapter1) return; // sem âncora de capítulo → no-op (proteção).
+
+  // Camada 2: ponto de corte — prefere id="chapter1_verse1" (literal).
+  let anchor: Element | null = null;
+  try {
+    anchor = body.querySelector('[id="chapter1_verse1"]');
+  } catch {
+    anchor = null;
+  }
+  if (!anchor) anchor = chapter1;
+
+  // Se as duas âncoras existem e a `chapter1_verse1` vier DEPOIS de
+  // `chapter1` no DOM, usar a mais cedo (chapter1) para não amputar
+  // conteúdo do início do capítulo 1.
+  if (anchor !== chapter1) {
+    const cmp = chapter1.compareDocumentPosition(anchor);
+    // DOCUMENT_POSITION_FOLLOWING = 0x04 → anchor vem depois de chapter1
+    if (cmp & Node.DOCUMENT_POSITION_FOLLOWING) {
+      anchor = chapter1;
+    }
+  }
 
   // Sobe da âncora até filho direto do body, removendo irmãos anteriores
   // em cada nível. Conteúdo posterior nunca é tocado.
@@ -588,6 +618,7 @@ function truncatePreChapterContent(doc: Document): void {
     toRemove.remove();
   }
 }
+
 
 
 function isChapterHeadingEl(el: Element): boolean {
