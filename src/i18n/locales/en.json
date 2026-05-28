@@ -1185,5 +1185,24 @@
     "updatedAt": "Updated on",
     "saved": "Note saved",
     "deleted": "Note deleted"
+  },
+  "bibleManager": {
+    "title": "Manage Bible languages",
+    "subtitle": "Download the New World Translation for 100% offline use.",
+    "download": "Download",
+    "update": "Update",
+    "downloadedBadge": "Downloaded",
+    "notDownloaded": "Not downloaded",
+    "downloaded": "{{lang}} downloaded",
+    "removed": "{{lang}} removed",
+    "removeConfirm": "Remove this Bible from the device?",
+    "verseCount": "{{count}} verses available",
+    "activeLabel": "Active Bible",
+    "manage": "Manage languages",
+    "langs": {
+      "pt": "Portuguese",
+      "en": "English",
+      "es": "Spanish"
+    }
   }
 }

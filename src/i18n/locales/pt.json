@@ -1185,5 +1185,24 @@
     "updatedAt": "Atualizada em",
     "saved": "Nota salva",
     "deleted": "Nota excluída"
+  },
+  "bibleManager": {
+    "title": "Gerenciar idiomas da Bíblia",
+    "subtitle": "Baixe a Tradução do Novo Mundo para uso 100% offline.",
+    "download": "Baixar",
+    "update": "Atualizar",
+    "downloadedBadge": "Baixado",
+    "notDownloaded": "Não baixado",
+    "downloaded": "{{lang}} baixado",
+    "removed": "{{lang}} removido",
+    "removeConfirm": "Remover esta Bíblia do dispositivo?",
+    "verseCount": "{{count}} versículos disponíveis",
+    "activeLabel": "Bíblia ativa",
+    "manage": "Gerenciar idiomas",
+    "langs": {
+      "pt": "Português",
+      "en": "Inglês",
+      "es": "Espanhol"
+    }
   }
 }

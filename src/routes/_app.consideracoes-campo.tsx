@@ -1,22 +1,28 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, Plus, Trash2, Search, Save } from "lucide-react";
+import { BookOpen, Plus, Trash2, Search, Save, Languages } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { SavingIndicator } from "@/components/SavingIndicator";
+import { BibleManagerDialog } from "@/components/bible/BibleManagerDialog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listNotes,
   saveNote as persistNote,
   deleteNote as removeNote,
   newNoteId,
+  ensureSeed,
+  getLangStatus,
   type FieldNote,
+  type BibleLangStatus,
 } from "@/lib/bible-notes-store";
+import type { BibleLang } from "@/lib/bible-refs";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
@@ -58,9 +64,19 @@ function Page() {
   const [draft, setDraft] = useState<FieldNote | null>(null);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
+  const [bibleOpen, setBibleOpen] = useState(false);
+  const [activeBible, setActiveBible] = useState<BibleLangStatus | null>(null);
 
-  // Initial load.
+  const activeLang: BibleLang =
+    i18n.language?.startsWith("en") ? "en" : i18n.language?.startsWith("es") ? "es" : "pt";
+
+  async function refreshActiveBible() {
+    setActiveBible(await getLangStatus(activeLang));
+  }
+
+  // Initial load + seed.
   useEffect(() => {
+    ensureSeed().then(refreshActiveBible);
     listNotes().then((all) => {
       const sorted = all.sort((a, b) => b.updated_at - a.updated_at);
       setNotes(sorted);
@@ -69,7 +85,14 @@ function Page() {
         setDraft(sorted[0]);
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Reload active bible when app language changes.
+  useEffect(() => {
+    refreshActiveBible();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLang]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -144,6 +167,29 @@ function Page() {
           <p className="text-sm text-muted-foreground">{t("fieldConsiderations.subtitle")}</p>
         </div>
       </header>
+
+      {/* Active Bible strip */}
+      <Card>
+        <CardContent className="p-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted-foreground">{t("bibleManager.activeLabel")}:</span>
+          <Badge variant={activeBible?.downloaded ? "secondary" : "outline"}>
+            {t(`bibleManager.langs.${activeLang}`)}
+            {activeBible?.downloaded && ` · ${activeBible.verseCount}`}
+          </Badge>
+          <div className="flex-1" />
+          <Button variant="outline" size="sm" onClick={() => setBibleOpen(true)}>
+            <Languages className="h-4 w-4 mr-1.5" />
+            {t("bibleManager.manage")}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <BibleManagerDialog
+        open={bibleOpen}
+        onOpenChange={setBibleOpen}
+        onChanged={refreshActiveBible}
+      />
+
 
       <div className="grid gap-4 md:grid-cols-[280px_1fr]">
         {/* Sidebar */}

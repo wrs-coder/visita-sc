@@ -1185,5 +1185,24 @@
     "updatedAt": "Actualizada el",
     "saved": "Nota guardada",
     "deleted": "Nota eliminada"
+  },
+  "bibleManager": {
+    "title": "Administrar idiomas de la Biblia",
+    "subtitle": "Descarga la Traducción del Nuevo Mundo para uso 100% sin conexión.",
+    "download": "Descargar",
+    "update": "Actualizar",
+    "downloadedBadge": "Descargado",
+    "notDownloaded": "No descargado",
+    "downloaded": "{{lang}} descargado",
+    "removed": "{{lang}} eliminado",
+    "removeConfirm": "¿Eliminar esta Biblia del dispositivo?",
+    "verseCount": "{{count}} versículos disponibles",
+    "activeLabel": "Biblia activa",
+    "manage": "Administrar idiomas",
+    "langs": {
+      "pt": "Portugués",
+      "en": "Inglés",
+      "es": "Español"
+    }
   }
 }
