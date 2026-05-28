@@ -187,6 +187,8 @@ export function findCitations(books: BookInfo[] | undefined, text: string): Cita
     const key = stripDiacritics(d.bookTerm.toLowerCase()).replace(/\.$/, "");
     const info = lookup.get(key);
     if (!info) continue;
+    // Forma sem ":" só é válida para livros de capítulo único
+    if (d.noColon && !SINGLE_CHAPTER_BOOK_IDS.has(info.bookId)) continue;
     out.push({
       raw,
       bookId: info.bookId,
