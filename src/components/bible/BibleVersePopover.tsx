@@ -98,11 +98,17 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
             {match.bookName} {match.chapter}:{headerVerses}
           </span>
         </div>
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {t("bibleVerse.loading")}
+          </div>
+        ) : parts && parts.length > 0 ? (
+          <div
             className="text-sm leading-relaxed space-y-1.5"
             style={fontScale !== 1 ? { fontSize: `${fontScale}rem` } : undefined}
           >
-
-            {isRange ? (
+            {isRange || isList ? (
               <p>
                 {parts.map((p, i) => (
                   <span key={p.verse}>
