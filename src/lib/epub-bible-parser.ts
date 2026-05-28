@@ -500,6 +500,10 @@ const PURGE_SELECTORS = [
   '[role="doc-endnote"]',
   '[role="doc-noteref"]',
   '.footnote', '.footnotes', '.footnoteref', '.fn', '.rearnote', '.endnote',
+  // TNM: cada arquivo XHTML termina com <div class="groupFootnote">…</div>
+  // contendo as notas do capítulo. Precisa sair ANTES da extração, senão o
+  // texto do último versículo é "engolido" pelo bloco de notas.
+  '.groupFootnote', 'div.groupFootnote', '[class*="groupFootnote"]',
   'a[href*="#footnotesource"]',
   'a[href*="#footnote"]', 'a[href*="#fn"]', 'a[href*="#note"]', 'a[href*="#xref"]',
 
@@ -869,10 +873,15 @@ function extractVersesFromDoc(
   }
 
   // Para cada marcador, coleta o texto entre ele e o próximo.
+  // IMPORTANTE: para o ÚLTIMO marcador (i === markers.length - 1) passamos
+  // `next = null` deliberadamente. `textBetween` então percorre o TreeWalker
+  // até o fim do <body> — capturando o texto final do capítulo mesmo quando
+  // não existe próxima âncora de versículo no arquivo XHTML (após o purge
+  // de `.groupFootnote`, o final do body é o fim real do texto bíblico).
   const out: ExtractedVerse[] = [];
   for (let i = 0; i < markers.length; i++) {
     const cur = markers[i];
-    const next = markers[i + 1]?.node ?? null;
+    const next = i + 1 < markers.length ? markers[i + 1].node : null;
     let text = textBetween(doc, cur.node, next, outlineRoots);
     // Remove o número do versículo se ele aparecer "colado" no início.
     text = text.replace(new RegExp(`^\\s*${cur.verse}\\s*[\\.\\)]?\\s*`), "");
