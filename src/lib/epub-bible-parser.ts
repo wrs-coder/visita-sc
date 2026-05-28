@@ -767,17 +767,14 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
         const fallback = chapByName ?? chapByHead ?? (multiFile ? hi + 1 : 1);
         const extracted = extractVersesFromDoc(doc, fallback);
 
-        const distinctChaps = new Set(extracted.map((v) => v.chapter));
-        const overrideChapter =
-          multiFile && distinctChaps.size <= 1 && fallback !== 1 ? fallback : null;
         for (const v of extracted) {
-          const chap = overrideChapter ?? v.chapter;
-          const key = `${chap}:${v.verse}`;
+          const key = `${v.chapter}:${v.verse}`;
           const prev = verseMap.get(key);
           if (!prev || v.text.length > prev.text.length) {
-            verseMap.set(key, { chapter: chap, verse: v.verse, text: v.text });
+            verseMap.set(key, { chapter: v.chapter, verse: v.verse, text: v.text });
           }
         }
+
       } catch {
         /* arquivo malformado — ignora */
       }
