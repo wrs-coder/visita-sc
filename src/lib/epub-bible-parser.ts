@@ -579,25 +579,31 @@ function extractVersesFromDoc(
   let currentChapter = fallbackChapter;
 
   for (const el of allEls) {
-    // Detecta cabeçalho de capítulo (atualiza o "currentChapter" para os próximos marcadores)
-    const id = el.getAttribute("id") ?? "";
-    const cls = el.getAttribute("class") ?? "";
-    const isChapterHeader =
-      /chapter|cap[ií]tulo/i.test(cls) ||
-      /^chapter[-_]?\d+$/i.test(id) ||
-      /^cap[-_]?\d+$/i.test(id);
-    if (isChapterHeader) {
-      const cn = (id + " " + (el.textContent ?? "")).match(/(\d{1,3})/);
-      if (cn) currentChapter = parseInt(cn[1], 10);
+    // Detecta heading de capítulo (atualiza currentChapter para os próximos marcadores)
+    if (isChapterHeadingEl(el)) {
+      const n = chapterNumberFromHeading(el);
+      if (n) currentChapter = n;
+      else currentChapter += 1; // heading sem número legível → avança 1
       continue;
     }
 
     const hit = isVerseMarker(el);
     if (!hit) continue;
-    const chap = hit.chap ?? currentChapter;
-    if (hit.chap) currentChapter = hit.chap;
+    let chap = hit.chap ?? currentChapter;
+    if (hit.chap) {
+      currentChapter = hit.chap;
+    } else if (hit.verse === 1 && markers.length > 0) {
+      // Sem indicação de capítulo, mas o versículo reiniciou em 1 e já tínhamos
+      // versículos > 1 no capítulo atual → assume troca de capítulo.
+      const last = markers[markers.length - 1];
+      if (last.chapter === currentChapter && last.verse > 1) {
+        currentChapter += 1;
+        chap = currentChapter;
+      }
+    }
     markers.push({ node: el, chapter: chap, verse: hit.verse });
   }
+
 
   // Sem marcadores → tenta regex texto puro (raro mas backup).
   if (markers.length < 3) {
