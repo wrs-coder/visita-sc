@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { useAutoBackup } from "@/hooks/use-auto-backup";
@@ -21,7 +21,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { BibleManagerDialog } from "@/components/bible/BibleManagerDialog";
 import { getActiveLibrary, type BibleLibrary } from "@/lib/bible-notes-store";
-import { useEffect as useEffectReact } from "react";
+
 import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/_app/perfil")({ component: Page });
