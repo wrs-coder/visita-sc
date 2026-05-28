@@ -1161,6 +1161,29 @@
   "fieldConsiderations": {
     "title": "Consideraciones de Campo",
     "subtitle": "Notas personales del superintendente con integración bíblica sin conexión",
-    "placeholder": "En construcción — pronto podrás crear notas con versículos clicables."
+    "placeholder": "Crea tu primera nota para comenzar.",
+    "newNote": "Nueva nota",
+    "save": "Guardar nota",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Eliminar esta nota?",
+    "search": "Buscar por título...",
+    "empty": "Aún no hay notas.",
+    "noSelection": "Selecciona una nota o crea una nueva.",
+    "fields": {
+      "title": "Título",
+      "titlePh": "Ej.: Consideraciones para la visita de febrero",
+      "prayer": "Oración final",
+      "prayerPh": "Quién dará la oración final",
+      "territory": "Territorio asignado",
+      "territoryPh": "Ej.: T-12 — Centro",
+      "assistants": "Dirigentes auxiliares",
+      "assistantsPh": "Nombres separados por comas",
+      "content": "Contenido",
+      "contentPh": "Escribe tus consideraciones..."
+    },
+    "createdAt": "Creada el",
+    "updatedAt": "Actualizada el",
+    "saved": "Nota guardada",
+    "deleted": "Nota eliminada"
   }
 }
