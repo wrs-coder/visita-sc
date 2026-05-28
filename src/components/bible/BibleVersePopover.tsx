@@ -71,6 +71,8 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
             "text-sky-600 dark:text-sky-400 underline-offset-2 hover:underline font-medium",
             className,
           )}
+          style={fontScale !== 1 ? { fontSize: `${fontScale}em` } : undefined}
+
         >
           {match.raw}
         </button>
