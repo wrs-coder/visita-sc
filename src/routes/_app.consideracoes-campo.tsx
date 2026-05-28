@@ -108,8 +108,8 @@ function Page() {
 
   // Citações detectadas em tempo real no conteúdo (apenas modo Edição).
   const detected: CitationMatch[] = useMemo(
-    () => (draft ? findCitations(activeLang, draft.content) : []),
-    [draft, activeLang],
+    () => (draft && activeBible ? findCitations(activeBible.books, draft.content) : []),
+    [draft, activeBible],
   );
 
   function patch<K extends keyof FieldNote>(key: K, value: FieldNote[K]) {
@@ -174,9 +174,10 @@ function Page() {
       <Card>
         <CardContent className="p-3 flex flex-wrap items-center gap-2">
           <span className="text-xs text-muted-foreground">{t("bibleManager.activeLabel")}:</span>
-          <Badge variant={activeBible?.downloaded ? "secondary" : "outline"}>
-            {t(`bibleManager.langs.${activeLang}`)}
-            {activeBible?.downloaded && ` · ${activeBible.verseCount}`}
+          <Badge variant={activeBible ? "secondary" : "outline"}>
+            {activeBible
+              ? `${activeBible.title} (${activeBible.langLabel}) · ${activeBible.verseCount}`
+              : t("bibleManager.noneActive", { defaultValue: "Nenhuma" })}
           </Badge>
           <div className="flex-1" />
           <Button variant="outline" size="sm" onClick={() => setBibleOpen(true)}>
