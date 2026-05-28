@@ -425,24 +425,79 @@ function chapterFromHeading(doc: Document): number | null {
   return null;
 }
 
-/** Coleta o texto entre dois marcadores no DOM, em ordem de documento. */
+/** Verifica se um nó está dentro de uma subárvore "ruidosa" (nota/rodapé/cross-ref/etc.). */
+const NOISY_CLASS_RE = /\b(fn|footnote|footnotes|note|notes|rearnote|annotation|xref|cross|crossref|study|caption|figcaption|byline|callout|sidebar)\b/i;
+const NOISY_EPUB_TYPE_RE = /(footnote|rearnote|annotation|note-ref|noteref)/i;
+const NOISY_TAGS = new Set(["aside", "nav", "figure", "figcaption"]);
+
+function isNoisyElement(el: Element): boolean {
+  if (NOISY_TAGS.has(el.tagName.toLowerCase())) return true;
+  const cls = el.getAttribute("class") ?? "";
+  if (cls && NOISY_CLASS_RE.test(cls)) return true;
+  const epubType = el.getAttribute("epub:type") ?? "";
+  if (epubType && NOISY_EPUB_TYPE_RE.test(epubType)) return true;
+  if (el.tagName.toLowerCase() === "a") {
+    const href = el.getAttribute("href") ?? "";
+    if (/#(fn|note|footnote|xref|cross)/i.test(href)) return true;
+  }
+  return false;
+}
+
+function hasNoisyAncestor(node: Node): boolean {
+  let p: Node | null = node.parentNode;
+  while (p && p.nodeType === 1) {
+    if (isNoisyElement(p as Element)) return true;
+    p = p.parentNode;
+  }
+  return false;
+}
+
+function isChapterHeadingEl(el: Element): boolean {
+  const id = el.getAttribute("id") ?? "";
+  const cls = el.getAttribute("class") ?? "";
+  if (/\b(chapter|cap[ií]tulo)\b/i.test(cls)) return true;
+  if (/^chapter[-_]?\d+$/i.test(id) || /^cap[-_]?\d+$/i.test(id)) return true;
+  const tag = el.tagName.toLowerCase();
+  if ((tag === "h1" || tag === "h2") && /(cap[ií]tulo|chapter)\s*\d+/i.test(el.textContent ?? "")) {
+    return true;
+  }
+  return false;
+}
+
+/** Coleta o texto entre dois marcadores, pulando notas/rodapés/cross-refs
+ *  e parando em cabeçalhos de capítulo subsequentes. */
 function textBetween(doc: Document, start: Node, end: Node | null): string {
-  const walker = doc.createTreeWalker(doc.body ?? doc, NodeFilter.SHOW_TEXT);
+  const root = doc.body ?? doc;
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
   const buf: string[] = [];
   let started = false;
-  let node = walker.nextNode();
+  let node: Node | null = walker.nextNode();
   while (node) {
     if (!started) {
-      // Começa a coletar APÓS o nó marcador
-      if (node === start || start.contains(node)) {
+      if (node === start || (start.nodeType === 1 && (start as Element).contains(node))) {
         started = true;
-        // se o start é o próprio nó de texto (raro), pula
-        node = walker.nextNode();
+      }
+      node = walker.nextNode();
+      continue;
+    }
+    if (end && (node === end || (end.nodeType === 1 && (end as Element).contains(node)))) break;
+    if (node.nodeType === 1) {
+      const el = node as Element;
+      if (isNoisyElement(el) || isChapterHeadingEl(el)) {
+        // Pula a subárvore inteira: avança até o próximo nó FORA dela.
+        let nxt: Node | null = walker.nextSibling();
+        while (!nxt) {
+          const parent = walker.parentNode();
+          if (!parent) break;
+          nxt = walker.nextSibling();
+        }
+        node = nxt;
         continue;
       }
-    } else {
-      if (end && (node === end || end.contains(node))) break;
-      buf.push(node.nodeValue ?? "");
+    } else if (node.nodeType === 3) {
+      if (!hasNoisyAncestor(node)) {
+        buf.push(node.nodeValue ?? "");
+      }
     }
     node = walker.nextNode();
   }
@@ -451,6 +506,9 @@ function textBetween(doc: Document, start: Node, end: Node | null): string {
 
 /** Considera um elemento como marcador de versículo se atender aos padrões TNM/genéricos. */
 function isVerseMarker(el: Element): { verse: number; chap?: number } | null {
+  // Ignora marcadores dentro de notas/rodapés/cross-refs.
+  if (hasNoisyAncestor(el)) return null;
+
   const id = el.getAttribute("id") ?? "";
   const cls = el.getAttribute("class") ?? "";
   const tag = el.tagName.toLowerCase();
@@ -541,9 +599,17 @@ function extractVersesFromDoc(
     let text = textBetween(doc, cur.node, next);
     // Remove o número do versículo se ele aparecer "colado" no início.
     text = text.replace(new RegExp(`^\\s*${cur.verse}\\s*[\\.\\)]?\\s*`), "");
-    // Remove ruído típico de notas/refs entre colchetes vazios.
     text = text.replace(/\s{2,}/g, " ").trim();
     if (text.length < 2) continue;
+    // Sanity-check de tamanho — versículos absurdamente longos indicam que algo
+    // do tipo apêndice/rodapé escapou do filtro; trunca no primeiro ponto após 600 chars.
+    if (text.length > 1200) {
+      const cut = text.slice(0, 600);
+      const dot = text.indexOf(". ", 600);
+      text = dot > 0 && dot < 1200 ? text.slice(0, dot + 1) : cut + "…";
+      // eslint-disable-next-line no-console
+      console.warn("[epub-bible] long verse truncated", cur.chapter, cur.verse, text.length);
+    }
     out.push({ chapter: cur.chapter, verse: cur.verse, text });
   }
   return out;
