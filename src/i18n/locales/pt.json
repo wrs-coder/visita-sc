@@ -1230,6 +1230,20 @@
       "exit": "Sair da tela cheia",
       "fontUp": "Aumentar fonte",
       "fontDown": "Diminuir fonte"
+    },
+    "editor": {
+      "placeholder": "Escreva sua nota aqui…",
+      "toolbar": {
+        "normal": "Texto normal",
+        "title": "Título",
+        "subtitle": "Subtítulo",
+        "bold": "Negrito",
+        "italic": "Itálico",
+        "bullets": "Lista com marcadores",
+        "color": "Cor do texto",
+        "highlight": "Marca-texto",
+        "reset": "Remover formatação"
+      }
     }
   },
   "bibleManager": {

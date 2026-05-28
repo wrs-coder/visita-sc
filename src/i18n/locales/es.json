@@ -1230,6 +1230,20 @@
       "exit": "Salir de pantalla completa",
       "fontUp": "Aumentar fuente",
       "fontDown": "Reducir fuente"
+    },
+    "editor": {
+      "placeholder": "Escribe tu nota aquí…",
+      "toolbar": {
+        "normal": "Texto normal",
+        "title": "Título",
+        "subtitle": "Subtítulo",
+        "bold": "Negrita",
+        "italic": "Cursiva",
+        "bullets": "Lista con viñetas",
+        "color": "Color del texto",
+        "highlight": "Resaltador",
+        "reset": "Quitar formato"
+      }
     }
   },
   "bibleManager": {

@@ -1230,6 +1230,20 @@
       "exit": "Exit full screen",
       "fontUp": "Increase font",
       "fontDown": "Decrease font"
+    },
+    "editor": {
+      "placeholder": "Write your note here…",
+      "toolbar": {
+        "normal": "Normal text",
+        "title": "Title",
+        "subtitle": "Subtitle",
+        "bold": "Bold",
+        "italic": "Italic",
+        "bullets": "Bulleted list",
+        "color": "Text color",
+        "highlight": "Highlighter",
+        "reset": "Clear formatting"
+      }
     }
   },
   "bibleManager": {
