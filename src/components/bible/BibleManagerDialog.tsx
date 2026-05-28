@@ -48,7 +48,15 @@ export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
       });
       await refresh();
       onChanged?.();
-      toast.success(t("bibleManager.imported", { title: lib.title }));
+      toast.success(
+        t("bibleManager.imported", { title: lib.title }) +
+          `  (${lib.bookCount} / ${lib.verseCount})`,
+      );
+      if (lib.verseCount < 5000) {
+        toast.warning(
+          `Importação parcial: apenas ${lib.bookCount} livros e ${lib.verseCount} versículos foram lidos. Abra o console (F12) para ver o diagnóstico.`,
+        );
+      }
     } catch (err) {
       console.error(err);
       toast.error(t("bibleManager.importError"));
