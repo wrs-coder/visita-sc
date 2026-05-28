@@ -401,6 +401,9 @@ function parseChapVerseFromAttr(raw: string): { chap?: number; verse?: number } 
   // Padrão JW: v\d{2,3}\d{3} = chap+verse concatenado
   const m4 = raw.match(/v(\d{2,3})(\d{3})\b/i);
   if (m4) return { chap: parseInt(m4[1], 10), verse: parseInt(m4[2], 10) };
+  // id só de capítulo: "chapter  1", "chapter_3"
+  const m4b = raw.match(/^chapter[\s_-]*(\d+)$/i);
+  if (m4b) return { chap: parseInt(m4b[1], 10) };
   // Só verso (vN, verseN)
   const m5 = raw.match(/^v(?:erse)?[_-]?(\d+)$/i);
   if (m5) return { verse: parseInt(m5[1], 10) };
@@ -700,7 +703,13 @@ function textBetween(
         break;
       }
       // Parada 3: novo capítulo encontrado no caminho.
-      if (isChapterAnchorEl(el) || isChapterHeadingEl(el)) {
+      // Guarda: não quebrar em descendentes do próprio `start` (quando o marker
+      // de v1 é o bloco de capítulo `<p class="w_ch" id="chapter N_verse1">`).
+      if (
+        (isChapterAnchorEl(el) || isChapterHeadingEl(el)) &&
+        el !== start &&
+        !(start.nodeType === 1 && (start as Element).contains(el))
+      ) {
         break;
       }
       // Pula subárvores ruidosas / outline inteiras.
@@ -813,6 +822,18 @@ function extractVersesFromDoc(
   hardPurgeDoc(doc);
   truncatePreChapterContent(doc);
 
+  // Pré-pass: registra TODO elemento cujo id corresponda a "chapter N_verse1"
+  // como âncora garantida de versículo 1, independente de classe/heading.
+  // Cobre estruturas TNM onde o id pode estar em <span>/<a>/<p> sem w_ch.
+  const verse1Anchors = new Map<Element, { chap: number }>();
+  const allWithChapterId = doc.querySelectorAll<HTMLElement>('[id^="chapter"]');
+  allWithChapterId.forEach((el) => {
+    const parsed = parseChapVerseFromAttr(el.getAttribute("id") ?? "");
+    if (parsed.verse === 1 && parsed.chap) {
+      verse1Anchors.set(el, { chap: parsed.chap });
+    }
+  });
+
   // Coleta todos os marcadores possíveis em ordem de documento.
   const allEls = Array.from(doc.getElementsByTagName("*"));
   const markers: VerseMarker[] = [];
@@ -823,26 +844,22 @@ function extractVersesFromDoc(
     // Pula qualquer elemento dentro de um bloco de esboço.
     if (isInsideOutline(el, outlineRoots)) continue;
 
+    // Âncora garantida de versículo 1 via id "chapter N_verse1".
+    const v1 = verse1Anchors.get(el);
+    if (v1) {
+      currentChapter = v1.chap;
+      markers.push({ node: el, chapter: v1.chap, verse: 1 });
+      continue;
+    }
+
     // Detecta heading de capítulo (atualiza currentChapter para os próximos marcadores)
     if (isChapterHeadingEl(el)) {
       const n = chapterNumberFromHeading(el);
       if (n) currentChapter = n;
       else currentChapter += 1; // heading sem número legível → avança 1
-
-      // TNM: o mesmo elemento que é heading de capítulo carrega também
-      // `id="chapter N_verse1"` (versículo 1). Sem registrar como marker,
-      // o texto do versículo 1 some. Detecta via id e empurra como marker.
-      const headingId = el.getAttribute("id") ?? "";
-      const fromHeadingId = parseChapVerseFromAttr(headingId);
-      if (fromHeadingId.verse) {
-        markers.push({
-          node: el,
-          chapter: fromHeadingId.chap ?? currentChapter,
-          verse: fromHeadingId.verse,
-        });
-      }
       continue;
     }
+
 
 
     const hit = isVerseMarker(el);
