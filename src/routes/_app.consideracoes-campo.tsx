@@ -7,7 +7,7 @@ import {
   Trash2,
   Search,
   Save,
-  Languages,
+  
   Pencil,
   FileText,
   Folder,
@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SavingIndicator } from "@/components/SavingIndicator";
-import { BibleManagerDialog } from "@/components/bible/BibleManagerDialog";
+
 import { supabase } from "@/integrations/supabase/client";
 import {
   listNotes,
