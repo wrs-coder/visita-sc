@@ -33,6 +33,32 @@ function stripDiacritics(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
+// Mapeia cada letra "base" para uma classe regex que aceita variantes acentuadas.
+const ACCENT_CLASSES: Record<string, string> = {
+  a: "[aáàâãäAÁÀÂÃÄ]",
+  e: "[eéèêëEÉÈÊË]",
+  i: "[iíìîïIÍÌÎÏ]",
+  o: "[oóòôõöOÓÒÔÕÖ]",
+  u: "[uúùûüUÚÙÛÜ]",
+  c: "[cçCÇ]",
+  n: "[nñNÑ]",
+};
+
+function accentInsensitivePattern(term: string): string {
+  let out = "";
+  for (const ch of term) {
+    const lower = ch.toLowerCase();
+    if (ACCENT_CLASSES[lower]) {
+      out += ACCENT_CLASSES[lower];
+    } else if (/\s/.test(ch)) {
+      out += "\\s+";
+    } else {
+      out += ch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+  }
+  return out;
+}
+
 interface CompiledIndex {
   regex: RegExp;
   lookup: Map<string, { bookId: string; displayName: string }>;
