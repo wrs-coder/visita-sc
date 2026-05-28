@@ -105,13 +105,22 @@ function Page() {
   function selectNote(n: FieldNote) {
     setSelectedId(n.id);
     setDraft(n);
+    // Reabrir uma nota existente sempre entra em modo Esboço.
+    setMode("outline");
   }
 
   function handleNew() {
     const n = emptyNote();
     setDraft(n);
     setSelectedId(n.id);
+    setMode("edit");
   }
+
+  // Citações detectadas em tempo real no conteúdo (apenas modo Edição).
+  const detected: CitationMatch[] = useMemo(
+    () => (draft ? findCitations(activeLang, draft.content) : []),
+    [draft, activeLang],
+  );
 
   function patch<K extends keyof FieldNote>(key: K, value: FieldNote[K]) {
     setDraft((d) => (d ? { ...d, [key]: value } : d));
