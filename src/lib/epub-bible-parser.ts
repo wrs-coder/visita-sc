@@ -702,6 +702,37 @@ function textBetween(
       if (isVerseAnchorId(elId) && el !== start && !(start.nodeType === 1 && (start as Element).contains(el))) {
         break;
       }
+
+      // Skip: span/anchor inline com classe w_ch carregando só o número do
+      // capítulo (prefixo do versículo 1) — pula a SUBÁRVORE em vez de parar.
+      if (/\bw_ch\b/i.test(el.getAttribute("class") ?? "")) {
+        const txt = (el.textContent ?? "").trim();
+        const isInlineChapterNumber =
+          /^\d{1,3}$/.test(txt) ||
+          (/^chapter\d+$/i.test(elId) && !/_verse/i.test(elId));
+        if (isInlineChapterNumber) {
+          let nxt: Node | null = walker.nextSibling();
+          while (!nxt) {
+            const parent = walker.parentNode();
+            if (!parent) break;
+            nxt = walker.nextSibling();
+          }
+          node = nxt;
+          continue;
+        }
+      }
+      // Skip: anchor de capítulo puro (id="chapterN" sem _verse) — irmão do v1.
+      if (/^chapter\d+$/i.test(elId) && el !== start) {
+        let nxt: Node | null = walker.nextSibling();
+        while (!nxt) {
+          const parent = walker.parentNode();
+          if (!parent) break;
+          nxt = walker.nextSibling();
+        }
+        node = nxt;
+        continue;
+      }
+
       // Parada 3: novo capítulo encontrado no caminho.
       // Guarda: não quebrar em descendentes do próprio `start` (quando o marker
       // de v1 é o bloco de capítulo `<p class="w_ch" id="chapter N_verse1">`).
