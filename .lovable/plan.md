@@ -1,151 +1,78 @@
-## Objetivo
-Consolidar uma rotina universal de **Hard DOM Purge** + **truncamento do pré-conteúdo** em `src/lib/epub-bible-parser.ts`, e adicionar reconhecimento explícito das âncoras TNM (`w_ch`, `chapterX`, `chapterX_verseY`) — tudo baseado em **tags / ids / classes**, sem strings de idioma.
+## Problemas identificados
 
-## Arquivo afetado
-- `src/lib/epub-bible-parser.ts` (único)
+**1. Livros de 1 capítulo (Judas, Filêmon, Obadias, 2 João, 3 João)**
 
-Sem mudanças em `bible-refs.ts`, popover, IndexedDB, i18n, exports, ou nos 52 testes (todos devem continuar verdes).
+A regex de detecção (`bible-refs.ts`) está correta — os 52 testes incluindo `["Judas 5","B65"]`, `["Obadias 15","B31"]`, `["Filêmon 6","B57"]` continuam passando. Portanto a citação É reconhecida; o problema é que **o popover não encontra o texto do versículo no IndexedDB**, ou seja, o EPUB parser deixou de indexar esses livros corretamente após o Hard DOM Purge.
 
-## Mudanças
+Causa provável em `epub-bible-parser.ts`:
 
-### 1. Novo `hardPurgeDoc(doc)` — purga estrutural universal
+- A função `truncatePreChapterContent` usa seletores genéricos `[id^="ch"]` e `[id^="chapter"]`. Em arquivos XHTML de livros de 1 capítulo da NWT/TNM, o **único** elemento com `id` começando em `chapter` é o próprio `<span id="chapter1_verse1">`. O `querySelector` retorna esse span de versículo como "âncora", e o algoritmo então sobe a árvore removendo todos os irmãos anteriores em cada nível — incluindo o título e, dependendo da hierarquia, o próprio bloco que contém o verso 1.
+- Ainda que sobreviva o `<p>` do versículo 1, blocos de cabeçalho legítimos (que servem de `chapterFromHeading`) são removidos sem prejuízo aparente. O dano real é quando o anchor `chapter1_verse1` está aninhado dentro de um wrapper que também contém o nome do livro como irmão anterior: o wrapper inteiro é mutilado e a extração devolve `< 3` versículos, caindo no `console.warn("skip canon…")` e o livro é descartado.
 
-Executado **uma única vez** no topo de `extractVersesFromDoc`, antes de qualquer iteração.
+**2. "Conteúdo do livro" continua aparecendo em 1 Pedro**
 
-```ts
-const PURGE_SELECTORS = [
-  // Cabeçalho do livro (TNM coloca o título em <header>)
-  'header',
+Na estrutura JW (TNM/NWT) o sumário do livro ("Conteúdo do livro" / "Book Outline") vive em um arquivo XHTML SEPARADO do(s) capítulo(s) reais — mesmo bucket canônico, mas arquivo diferente. Esse arquivo:
 
-  // Notas de rodapé / referências / cross-refs (EPUB 3 + variantes)
-  'aside[epub\\:type~="footnote"]',
-  'aside[epub\\:type~="rearnote"]',
-  'aside[epub\\:type~="note"]',
-  'div[epub\\:type~="footnote"]',
-  'div[epub\\:type~="rearnote"]',
-  '[epub\\:type~="note"]',
-  '[epub\\:type~="noteref"]',
-  '[epub\\:type~="note-ref"]',
-  '[role="doc-footnote"]',
-  '[role="doc-endnote"]',
-  '[role="doc-noteref"]',
-  '.footnote', '.footnotes', '.footnoteref', '.fn', '.rearnote', '.endnote',
-  'a[href*="#footnotesource"]',
-  'a[href*="#footnote"]', 'a[href*="#fn"]', 'a[href*="#note"]', 'a[href*="#xref"]',
+- Não tem marcadores de versículo `chapter1_verseN`, então `truncatePreChapterContent` é no-op nele.
+- Tem texto narrativo com poucos blocos parentéticos no formato `(1-6)` que `findOutlineRoots` exige (≥ 2 por elemento), então a detecção atual de outline falha.
+- Como `markers.length < 3`, o parser cai no **fallback regex de texto puro** (linha 745-760) e gera "pseudo-versículos" a partir do texto do sumário — esses são gravados em `verseMap` com chave `1:1`, `1:2`, etc.
+- Como o `verseMap` mantém o texto mais longo por chave (`v.text.length > prev.text.length`), o sumário (texto longo, contínuo) sobrescreve o versículo real de 1 Pedro 1:4 com o índice/esboço.
 
-  // Navegação / TOC / réguas de botões
-  'nav', 'nav[epub\\:type~="toc"]', 'nav[epub\\:type~="landmarks"]',
-  '[epub\\:type~="toc"]', '[role="doc-toc"]', '[role="navigation"]',
-  'table.w_navigation', 'p.w_navigation', '.w_navigation',
-  '.nav', '.navigation', '.nav-bar', '.navbar', '.pageNav', '.page-nav',
+## Plano de correção (cirúrgico, único arquivo)
 
-  // Frente do livro (capa/colofão/título)
-  '[epub\\:type~="titlepage"]',
-  '[epub\\:type~="halftitlepage"]',
-  '[epub\\:type~="frontmatter"]',
-  '[epub\\:type~="colophon"]',
-  '[epub\\:type~="copyright-page"]',
-  '[epub\\:type~="bridgehead"]',
-];
+**Arquivo único:** `src/lib/epub-bible-parser.ts` (mais 2 casos novos em `src/lib/bible-refs.test.ts` apenas para regressão de citação).
 
-function hardPurgeDoc(doc: Document): void {
-  for (const sel of PURGE_SELECTORS) {
-    let nodes: NodeListOf<Element>;
-    try { nodes = doc.querySelectorAll(sel); } catch { continue; }
-    nodes.forEach((n) => n.remove());
-  }
-}
-```
+### Mudança 1 — Tornar `truncatePreChapterContent` seguro para livros de 1 capítulo
 
-`try/catch` por seletor evita que um seletor não suportado pelo parser XHTML derrube a limpeza inteira.
+- Ignorar anchors cujo `id` contenha `verse` (ex.: `chapter1_verse1`) — esses são marcadores de versículo, não de capítulo.
+- Remover o seletor genérico `[id^="ch"]` (matchava `chapter1_verse1`, `chapter-overview`, etc.) — manter apenas seletores estruturais de capítulo de verdade: `[id^="chapter"]:not([id*="verse"])`, `.w_ch`, `[id^="cap"]:not([id*="verse"])`, `[epub\\:type~="chapter"]`, `section[role="doc-chapter"]`.
+- **Guarda de segurança:** se após a truncagem o `body.textContent.trim().length` cair para menos de **20%** do tamanho original (ou < 200 chars), reverter (não aplicar a truncagem). Isso protege livros pequenos / 1-capítulo onde o anchor encontrado é tardio no documento.
 
-### 2. Novo `truncatePreChapterContent(doc)` — descarta o sumário
+### Mudança 2 — Detectar e descartar páginas de "Outline / Conteúdo do livro"
 
-Depois do purge, localiza a **primeira âncora de capítulo** (estrutural, sem texto) e remove **tudo que vier antes dela** em ordem de documento. Tudo que não tem âncora permanece intacto (fallback seguro).
+Adicionar uma checagem **antes** do fallback regex de texto puro em `extractVersesFromDoc`:
 
-Âncoras aceitas (em ordem de prioridade):
-- `[id^="chapter"]` (TNM: `<span id="chapter1">`)
-- `.w_ch` (TNM: `<span class="w_ch">`)
-- `[id^="ch"]`, `[id^="cap"]`
-- `[epub\\:type~="chapter"]`
-- `section[role="doc-chapter"]`
+- Se `markers.length < 3` E o documento tem **qualquer um** dos sinais abaixo, retornar `[]` (descartar o arquivo inteiro):
+  - `findOutlineRoots(doc).size >= 1` (com `OUTLINE_PAREN_RE` relaxado para aceitar `>= 2` ocorrências em qualquer lugar do body, não só dentro do mesmo elemento).
+  - Mais de 5 elementos `<a>` cujo `href` contém `#chapter` ou `_verse` (típica lista de links de um índice).
+  - Nenhum elemento com `id` que case `chapter\d+_verse\d+` ou classe `w_ch`/`verse` no documento todo.
 
-```ts
-function truncatePreChapterContent(doc: Document): void {
-  const body = doc.body;
-  if (!body) return;
-  const anchor =
-    body.querySelector('[id^="chapter"]') ||
-    body.querySelector('.w_ch') ||
-    body.querySelector('[id^="ch"]') ||
-    body.querySelector('[id^="cap"]') ||
-    body.querySelector('[epub\\:type~="chapter"]') ||
-    body.querySelector('section[role="doc-chapter"]');
-  if (!anchor) return;
+Ou seja: páginas que parecem índices/sumários **não** caem mais no fallback de texto puro — viram zero versículos e o `verseMap` do bucket fica preservado pelo arquivo de capítulos reais.
 
-  // Sobe da âncora até filho direto de body, removendo todos os irmãos anteriores
-  // em cada nível. Conteúdo posterior nunca é tocado.
-  let node: Element = anchor;
-  while (node.parentElement && node.parentElement !== body) {
-    let prev = node.previousElementSibling;
-    while (prev) {
-      const toRemove = prev;
-      prev = prev.previousElementSibling;
-      toRemove.remove();
-    }
-    node = node.parentElement;
-  }
-  // Último nível: irmãos diretos do body anteriores a `node`
-  let prev = node.previousElementSibling;
-  while (prev) {
-    const toRemove = prev;
-    prev = prev.previousElementSibling;
-    toRemove.remove();
-  }
-}
-```
+### Mudança 3 — Endurecer o fallback regex de texto puro
 
-### 3. Reconhecer `w_ch` como heading de capítulo
+Mesmo que algum sumário escape das checagens acima, o fallback nunca deve sobrescrever versículos já indexados:
 
-Em `CHAPTER_CLASS_RE` (linha 455), acrescentar `w_ch` à lista — assim `isChapterHeadingEl` reconhece o span e o número dentro do `<strong>` é tratado como **mudança de capítulo**, nunca como versículo.
+- Em `parseEpub` (loop de buckets, linha ~906), alterar a regra de dedup: o texto do fallback (sinalizado por nova flag opcional `source: "fallback"` retornada por `extractVersesFromDoc`) **só** é gravado se a chave `chap:verse` ainda não existir no `verseMap` — nunca sobrescreve um texto vindo de marcadores reais.
 
-Edit cirúrgico:
-```ts
-const CHAPTER_CLASS_RE = /\b(w_ch|chapter|cap[ií]tulo|chap|chapno|chap-?num|chapter-?num(?:ber)?|cn|ch)\b/i;
-```
+### Mudança 4 — Testes de regressão
 
-`chapterNumberFromHeading` já lê o número do `textContent` — pega o `<strong>X</strong>` automaticamente.
+Adicionar 2 testes em `bible-refs.test.ts` (já passam, servem de guarda contra futuras regressões na regex):
 
-### 4. Reforçar reconhecimento da âncora `chapterX_verseY`
+- `"Judas 5"` → bookId `B65`, chapter 1, verse 5.
+- `"Filêmon 6"` → bookId `B57`, chapter 1, verse 6.
 
-A função `parseChapVerseFromAttr` (linha 372) já suporta `chapter11_verse5` via `m1` — **nenhuma mudança necessária**, apenas confirmação. Quando o purge derrubar o lixo anterior, o primeiro `<span id="chapter1_verse1">` vira o marcador inicial correto.
+(Já existem testes semelhantes; reforçar via `it()` específicos com nomes claros não-regressão.)
 
-### 5. Integração no fluxo
+## Fora de escopo (não tocar)
 
-Em `extractVersesFromDoc` (linha 601), adicionar as duas primeiras linhas:
-
-```ts
-function extractVersesFromDoc(doc, fallbackChapter) {
-  hardPurgeDoc(doc);
-  truncatePreChapterContent(doc);
-  // ... restante intacto: allEls, outlineRoots, loop de markers, textBetween, etc.
-}
-```
-
-**Não removo** `findOutlineRoots`, `NOISY_*`, `isNoisyElement`, `isVerseMarker`, nem o fallback de regex texto-puro — continuam como segunda camada (defesa em profundidade) para EPUBs de outras editoras.
-
-### 6. Atenção a regressão: `chapterFromHeading`
-
-`chapterFromHeading` lê `h1/h2/h3/title` para inferir o capítulo do arquivo. Como `<header>` é purgado, se o título do livro estiver lá **dentro de um header**, ele somem — o que é o comportamento desejado. Headings de capítulo (`<h1>1</h1>`) **dentro do body normal** continuam funcionando. Sem alteração nessa função.
-
-## Não alterado
-- `bible-refs.ts`, `BibleVersePopover.tsx`, testes, IndexedDB, exports, popover, Tiptap, fullscreen, APK/PWA.
-- Heurísticas de marcador (`isVerseMarker`), `findOutlineRoots`, `isNoisyElement` — tudo permanece como defesa secundária.
+- `bible-refs.ts` (regex e dissect estão corretos, 52/52 testes verdes).
+- `BibleVersePopover.tsx`.
+- `bible-canon.ts`, IndexedDB, schema, ordering.
+- Demais heurísticas do EPUB (`PURGE_SELECTORS`, `isVerseMarker`, `isChapterHeadingEl`, `findOutlineRoots` exceto o ajuste de busca global).
+- Importação anterior dos usuários: as correções só entram em vigor após **re-importar o EPUB**. Aviso ao usuário no fim da execução.
 
 ## Validação
-- `bun test src/lib/bible-refs.test.ts` → 52/52 verdes (sem mudança no módulo).
-- Build TS strict verde.
-- Manual: reimportar EPUB TNM e abrir 1 Pe 1:4 → texto real; 1 Tm capítulo 1 não deve conter "A PRIMEIRA CARTA A TIMÓTEO" nem sumário.
+
+- `bunx vitest run` deve passar com 54/54 testes (52 atuais + 2 novos).
+- Importar a NWT em inglês e a TNM em português; conferir nos logs `[epub-bible]`:
+  - `books=66/66` (ou ≥ 64 com `missing` claro);
+  - Os 5 livros de 1 capítulo presentes em `verses`;
+  - 1 Pedro 1:4 retornando o texto real e não o esboço.
 
 ## Risco
-Baixo — operações estruturais aditivas. `truncatePreChapterContent` é no-op em EPUBs sem âncoras `chapter*`/`w_ch`, preservando o comportamento atual nos arquivos não-TNM.
+
+Baixo. Mudanças são aditivas/restritivas:
+- (1) só restringe seletores e adiciona guarda — pior caso é truncagem virar no-op (comportamento pré-Hard-Purge).
+- (2) só descarta arquivos que já não iam contribuir com versículos reais.
+- (3) só impede sobrescrita — nunca remove dados válidos.

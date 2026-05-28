@@ -508,17 +508,20 @@ function hardPurgeDoc(doc: Document): void {
 
 /** Remove tudo que aparece ANTES da primeira âncora de capítulo
  *  (sumário/intro/cabeçalho de livro). No-op se o documento não
- *  tiver âncora estrutural de capítulo. */
+ *  tiver âncora estrutural de capítulo. Reverte se a truncagem
+ *  destruir mais de 80% do texto (proteção para livros pequenos
+ *  / de 1 capítulo onde a âncora pode ser tardia no documento). */
 function truncatePreChapterContent(doc: Document): void {
   const body = doc.body;
   if (!body) return;
 
   let anchor: Element | null = null;
+  // Importante: NÃO usar `[id^="ch"]` genérico nem aceitar IDs de versículo
+  // (ex.: chapter1_verse1) como âncora — isso quebrava livros de 1 capítulo.
   const anchorSelectors = [
-    '[id^="chapter"]',
+    '[id^="chapter"]:not([id*="verse"])',
     '.w_ch',
-    '[id^="ch"]',
-    '[id^="cap"]',
+    '[id^="cap"]:not([id*="verse"])',
     '[epub\\:type~="chapter"]',
     'section[role="doc-chapter"]',
   ];
@@ -531,6 +534,10 @@ function truncatePreChapterContent(doc: Document): void {
     if (anchor) break;
   }
   if (!anchor) return;
+
+  // Snapshot do HTML para rollback se a truncagem ficar destrutiva demais.
+  const originalLen = (body.textContent ?? "").trim().length;
+  const originalHtml = body.innerHTML;
 
   // Sobe da âncora até filho direto de body, removendo irmãos anteriores
   // em cada nível. Conteúdo posterior nunca é tocado.
@@ -551,7 +558,14 @@ function truncatePreChapterContent(doc: Document): void {
     prev = prev.previousElementSibling;
     toRemove.remove();
   }
+
+  // Guarda de segurança: se o texto encolheu drasticamente, reverte.
+  const newLen = (body.textContent ?? "").trim().length;
+  if (originalLen > 0 && (newLen < 200 || newLen / originalLen < 0.2)) {
+    body.innerHTML = originalHtml;
+  }
 }
+
 
 function isChapterHeadingEl(el: Element): boolean {
   const id = el.getAttribute("id") ?? "";
