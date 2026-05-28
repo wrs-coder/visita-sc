@@ -168,6 +168,8 @@ function compile(books: BookInfo[], lang: Lang): CompiledIndex {
       if (visible.length <= 2) shortSingleParts.push(pattern);
       else longSingleParts.push(pattern);
     }
+  }
+
   // Sufixo opcional: intervalo "-N" OU lista ",N(,N)*"
   const RANGE_OR_LIST = `(?:\\s*[-–]\\s*\\d{1,3}|(?:\\s*,\\s*\\d{1,3})+)?`;
   const branches: string[] = [];
@@ -191,8 +193,6 @@ function compile(books: BookInfo[], lang: Lang): CompiledIndex {
   const regex = new RegExp(source, "giu");
   const out = { regex, lookup };
   perLang.set(lang, out);
-  return out;
-}
   return out;
 }
 
