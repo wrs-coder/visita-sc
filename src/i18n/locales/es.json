@@ -1212,14 +1212,17 @@
       "delete": "Eliminar carpeta",
       "deleteWarn": "¿Eliminar esta carpeta y TODO lo que contiene (subcarpetas y notas)? Es permanente.",
       "exportFolder": "Exportar carpeta (JSON)",
-      "exportNote": "Exportar nota (JSON)",
+      "exportNote": "Exportar",
       "import": "Importar JSON",
       "empty": "Aún no hay carpetas. Crea una para organizar tus notas.",
       "notesIn": "Notas",
       "selectFolder": "Selecciona una carpeta o crea una nueva nota.",
       "exportedFolder": "Carpeta exportada.",
       "exportedNote": "Nota exportada.",
-      "imported": "Importado: {{folders}} carpeta(s) y {{notes}} nota(s)."
+      "imported": "Importado: {{folders}} carpeta(s) y {{notes}} nota(s).",
+      "sectionTitle": "Carpetas y notas",
+      "expand": "Expandir",
+      "collapse": "Minimizar"
     },
     "fields": {
       "description": "Descripción",

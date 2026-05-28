@@ -1219,7 +1219,10 @@
       "selectFolder": "Selecione uma pasta ou crie uma nova nota.",
       "exportedFolder": "Pasta exportada.",
       "exportedNote": "Nota exportada.",
-      "imported": "Importado: {{folders}} pasta(s) e {{notes}} nota(s)."
+      "imported": "Importado: {{folders}} pasta(s) e {{notes}} nota(s).",
+      "sectionTitle": "Pastas e notas",
+      "expand": "Expandir",
+      "collapse": "Minimizar"
     },
     "fields": {
       "description": "Descrição",
