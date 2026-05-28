@@ -401,10 +401,14 @@ function parseChapVerseFromAttr(raw: string): { chap?: number; verse?: number } 
   // Padrão JW: v\d{2,3}\d{3} = chap+verse concatenado
   const m4 = raw.match(/v(\d{2,3})(\d{3})\b/i);
   if (m4) return { chap: parseInt(m4[1], 10), verse: parseInt(m4[2], 10) };
+  // id só de capítulo: "chapter  1", "chapter_3"
+  const m4b = raw.match(/^chapter[\s_-]*(\d+)$/i);
+  if (m4b) return { chap: parseInt(m4b[1], 10) };
   // Só verso (vN, verseN)
   const m5 = raw.match(/^v(?:erse)?[_-]?(\d+)$/i);
   if (m5) return { verse: parseInt(m5[1], 10) };
   return {};
+}
 }
 
 /** Detecta o número do capítulo a partir do nome do arquivo, ex. mt_07.xhtml -> 7. */

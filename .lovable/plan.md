@@ -1,47 +1,73 @@
-## Ajustes em `src/lib/epub-bible-parser.ts`
+## Garantir que o versículo 1 capture todo o texto após `id="chapter N_verse1"`
 
-A âncora real na TNM tem **espaços** entre `chapter` e o número (uma ou duas, dependendo do arquivo): `id="chapter  1_verse1"`, `id="chapter  2_verse1"`, …, `id="chapter  151_verse1"`.
+### Diagnóstico
 
-### 1. `truncatePreChapterContent` (linhas 552-569) — corrigir fallback
+Mesmo após a correção anterior, o versículo 1 segue sumindo em alguns capítulos. A causa é que o ramo "chapter heading" na coleta de marcadores (linhas 822-845) só registra o verso 1 quando o **próprio elemento** de heading carrega o atributo `id="chapter N_verse1"`. Na TNM o id pode estar:
 
-O seletor primário `[id^="chapter"][id$="_verse1"]` (linha 558) **já casa** com qualquer quantidade de espaços (começa com "chapter", termina com "_verse1"). Mantido.
+- num elemento sem classe `w_ch` (ex.: `<span id="chapter  1_verse1">`),
+- ou no heading `w_ch` (já coberto pela correção anterior),
+- ou num âncora vazio (`<a id="chapter  1_verse1"></a>`) imediatamente antes do texto.
 
-O fallback atual `[id="chapter1"]` (linha 564) está morto — o EPUB nunca usa esse formato. Substituir por:
+Adicionalmente, `textBetween` (linha 703) tem uma "Parada 3" que quebra ao encontrar qualquer `isChapterAnchorEl`/`isChapterHeadingEl` — sem guarda contra descendentes do `start`. Quando o marker do versículo 1 é o próprio bloco de capítulo (`<p class="w_ch" id="chapter  N_verse1">`), um descendente com `w_ch` (ex.: span interno do número) dispara a parada e o texto sai vazio. Após o strip do "1" inicial (linha 901), `text.length < 2` cai no `continue` (linha 903) e o versículo 1 nunca é emitido.
 
-```ts
-anchor = body.querySelector('[id^="chapter"]:not([id*="verse"])');
-```
+### Mudanças em `src/lib/epub-bible-parser.ts`
 
-Cobre o caso em que algum EPUB ancore só o número do capítulo (`id="chapter 1"`) sem versículo.
+#### 1. Pré-pass garantido de verso 1 (em `extractVersesFromDoc`, antes do loop de marcadores em ~822)
 
-### 2. `parseChapVerseFromAttr` (linha 395) — regex aceitar espaços
-
-A regex atual:
+Após `truncatePreChapterContent(doc)` e antes do `for (const el of allEls)`, escanear:
 
 ```ts
-/chapter[_-]?(\d+)[^\d]*verse[_-]?(\d+)/i
+const verse1Anchors = new Map<Element, { chap: number; verse: number }>();
+const allWithId = doc.querySelectorAll<HTMLElement>('[id^="chapter"]');
+allWithId.forEach((el) => {
+  const parsed = parseChapVerseFromAttr(el.getAttribute("id") ?? "");
+  if (parsed.verse === 1 && parsed.chap) {
+    verse1Anchors.set(el, { chap: parsed.chap, verse: 1 });
+  }
+});
 ```
 
-não casa `chapter  1_verse1` porque `[_-]?` não inclui espaço e só admite um separador. Trocar por:
+No loop principal, antes do `isChapterHeadingEl(el)`, se `verse1Anchors.has(el)`, empurrar marker e seguir (sem `continue` que descarte). Garante a inserção do marker de v1 independente da classificação posterior.
+
+#### 2. Guarda em `textBetween` (linha 703)
+
+Adicionar a mesma proteção que já existe na Parada 2 (linha 699):
 
 ```ts
-/chapter[\s_-]*(\d+)[^\d]*verse[\s_-]*(\d+)/i
+if (
+  (isChapterAnchorEl(el) || isChapterHeadingEl(el)) &&
+  el !== start &&
+  !(start.nodeType === 1 && (start as Element).contains(el))
+) {
+  break;
+}
 ```
 
-`[\s_-]*` aceita zero, um ou múltiplos espaços/underscores/hifens entre "chapter"/"verse" e o número. Sem essa mudança, a extração de (capítulo, versículo) a partir do `id` do marcador falha e cai em fallbacks (filename / contexto), o que pode atribuir versículos ao capítulo errado.
+Isso impede que descendentes do próprio `start` (quando ele é o bloco de capítulo) abortem a coleta.
 
-### Preservações
+#### 3. Relaxar `parseChapVerseFromAttr` para id-só-de-capítulo (linha 392)
 
-- `.groupFootnote` continua em `PURGE_SELECTORS` (linha 506).
-- Lógica de subida no DOM (linhas 572-589) intocada.
-- `NOISY_CLASS_RE`, `textBetween`, demais regexes de fallback — intocados.
-- Sem mudanças em CSS, rotas, componentes.
+Adicionar antes do `m5` (verso isolado):
+
+```ts
+const m4b = raw.match(/^chapter[\s_-]*(\d+)$/i);
+if (m4b) return { chap: parseInt(m4b[1], 10) };
+```
+
+Sem efeito sobre versos; só ajuda quando o id é `chapter N` puro.
+
+### Preservações (intocados)
+
+- `PURGE_SELECTORS` (linha 506) — `.groupFootnote` continua sendo purgado em `hardPurgeDoc` antes da extração. **Sem alteração.**
+- Lógica de coleta do último versículo do capítulo (linhas 889-914), incluindo o `next = null` deliberado para o último marker, **intocada** — sem regressão no último versículo.
+- `truncatePreChapterContent`, `isVerseMarker`, `NOISY_CLASS_RE`, `textBetween` (exceto a guarda do ponto 2), `isChapterHeadingEl`, `chapterNumberFromHeading` — todos preservados.
+- Sem mudanças em CSS, rotas, componentes ou UI.
 
 ### Verificação
 
 - `bunx vitest run` — 54/54 testes devem continuar passando.
-- Reimportar EPUB da TNM e conferir que os versículos 1 de cada capítulo aparecem corretamente atribuídos.
+- Reimportar a TNM em **Gerenciar Bíblias** e conferir que o versículo 1 aparece em todos os 1189 capítulos, sem quebrar o último versículo de cada capítulo.
 
 ### Fora de escopo
 
-Nada além desses dois pontos no parser.
+Qualquer alteração em purge de rodapés, parsing de OPF, agrupamento por livro, ou camada de UI.
