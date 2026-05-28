@@ -1193,26 +1193,28 @@
     "contentEmpty": "Sin contenido."
   },
   "bibleManager": {
-    "title": "Administrar idiomas de la Biblia",
-    "subtitle": "Descarga la Traducción del Nuevo Mundo para uso 100% sin conexión.",
-    "download": "Descargar",
-    "update": "Actualizar",
-    "downloadedBadge": "Descargado",
-    "notDownloaded": "No descargado",
-    "downloaded": "{{lang}} descargado",
-    "removed": "{{lang}} eliminado",
+    "title": "Administrar Biblias",
+    "subtitle": "Importa un archivo .epub de la Biblia (Traducción del Nuevo Mundo) para uso 100% sin conexión.",
+    "importButton": "Importar Biblia (.epub)",
+    "importing": "Importando…",
+    "importHint": "Usa el .epub exportado desde la app oficial JW Library o descargado en jw.org.",
+    "installedTitle": "Biblias instaladas en el dispositivo",
+    "installedEmpty": "Aún no se ha importado ninguna Biblia.",
+    "use": "Usar",
+    "active": "En uso",
+    "remove": "Eliminar",
     "removeConfirm": "¿Eliminar esta Biblia del dispositivo?",
-    "verseCount": "{{count}} versículos disponibles",
+    "imported": "Biblia importada: {{title}}",
+    "removed": "Biblia eliminada",
+    "importError": "No se pudo leer este archivo EPUB.",
+    "verseCount": "{{count}} versículos",
+    "bookCount": "{{count}} libros",
     "activeLabel": "Biblia activa",
-    "manage": "Administrar idiomas",
-    "langs": {
-      "pt": "Portugués",
-      "en": "Inglés",
-      "es": "Español"
-    }
+    "noneActive": "Ninguna Biblia activa",
+    "manage": "Administrar Biblias"
   },
   "bibleVerse": {
-    "loading": "Cargando versículo...",
-    "notFound": "Versículo no disponible sin conexión. Descarga la Biblia en Administrar idiomas."
+    "loading": "Cargando versículo…",
+    "notFound": "Versículo no disponible. Importa la Biblia en Administrar Biblias."
   }
 }
