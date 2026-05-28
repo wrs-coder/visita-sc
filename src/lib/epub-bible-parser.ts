@@ -452,16 +452,42 @@ function hasNoisyAncestor(node: Node): boolean {
   return false;
 }
 
+const CHAPTER_CLASS_RE = /\b(chapter|cap[ií]tulo|chap|chapno|chap-?num|chapter-?num(?:ber)?|cn|ch)\b/i;
+
 function isChapterHeadingEl(el: Element): boolean {
   const id = el.getAttribute("id") ?? "";
   const cls = el.getAttribute("class") ?? "";
-  if (/\b(chapter|cap[ií]tulo)\b/i.test(cls)) return true;
-  if (/^chapter[-_]?\d+$/i.test(id) || /^cap[-_]?\d+$/i.test(id)) return true;
+  const epubType = el.getAttribute("epub:type") ?? "";
+  if (cls && CHAPTER_CLASS_RE.test(cls)) return true;
+  if (/^chapter[-_]?\d+$/i.test(id) || /^cap[-_]?\d+$/i.test(id) || /^ch[-_]?\d+$/i.test(id)) return true;
+  if (epubType && /chapter/i.test(epubType)) return true;
   const tag = el.tagName.toLowerCase();
-  if ((tag === "h1" || tag === "h2") && /(cap[ií]tulo|chapter)\s*\d+/i.test(el.textContent ?? "")) {
+  const txt = (el.textContent ?? "").trim();
+  if ((tag === "h1" || tag === "h2" || tag === "h3") && /(cap[ií]tulo|chapter)\s*\d+/i.test(txt)) {
     return true;
   }
+  // <h1>3</h1> / <h2>12</h2> — heading cujo texto é apenas um número 1-150
+  if ((tag === "h1" || tag === "h2" || tag === "h3") && /^\d{1,3}$/.test(txt)) {
+    const n = parseInt(txt, 10);
+    if (n >= 1 && n <= 150) return true;
+  }
   return false;
+}
+
+/** Tenta extrair o número do capítulo a partir de uma heading reconhecida. */
+function chapterNumberFromHeading(el: Element): number | null {
+  const id = el.getAttribute("id") ?? "";
+  const dataCh = el.getAttribute("data-chapter") ?? "";
+  const txt = (el.textContent ?? "").trim();
+  for (const src of [dataCh, id, txt]) {
+    if (!src) continue;
+    const m = src.match(/(\d{1,3})/);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (n >= 1 && n <= 150) return n;
+    }
+  }
+  return null;
 }
 
 /** Coleta o texto entre dois marcadores, pulando notas/rodapés/cross-refs
@@ -553,25 +579,31 @@ function extractVersesFromDoc(
   let currentChapter = fallbackChapter;
 
   for (const el of allEls) {
-    // Detecta cabeçalho de capítulo (atualiza o "currentChapter" para os próximos marcadores)
-    const id = el.getAttribute("id") ?? "";
-    const cls = el.getAttribute("class") ?? "";
-    const isChapterHeader =
-      /chapter|cap[ií]tulo/i.test(cls) ||
-      /^chapter[-_]?\d+$/i.test(id) ||
-      /^cap[-_]?\d+$/i.test(id);
-    if (isChapterHeader) {
-      const cn = (id + " " + (el.textContent ?? "")).match(/(\d{1,3})/);
-      if (cn) currentChapter = parseInt(cn[1], 10);
+    // Detecta heading de capítulo (atualiza currentChapter para os próximos marcadores)
+    if (isChapterHeadingEl(el)) {
+      const n = chapterNumberFromHeading(el);
+      if (n) currentChapter = n;
+      else currentChapter += 1; // heading sem número legível → avança 1
       continue;
     }
 
     const hit = isVerseMarker(el);
     if (!hit) continue;
-    const chap = hit.chap ?? currentChapter;
-    if (hit.chap) currentChapter = hit.chap;
+    let chap = hit.chap ?? currentChapter;
+    if (hit.chap) {
+      currentChapter = hit.chap;
+    } else if (hit.verse === 1 && markers.length > 0) {
+      // Sem indicação de capítulo, mas o versículo reiniciou em 1 e já tínhamos
+      // versículos > 1 no capítulo atual → assume troca de capítulo.
+      const last = markers[markers.length - 1];
+      if (last.chapter === currentChapter && last.verse > 1) {
+        currentChapter += 1;
+        chap = currentChapter;
+      }
+    }
     markers.push({ node: el, chapter: chap, verse: hit.verse });
   }
+
 
   // Sem marcadores → tenta regex texto puro (raro mas backup).
   if (markers.length < 3) {
@@ -735,17 +767,14 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
         const fallback = chapByName ?? chapByHead ?? (multiFile ? hi + 1 : 1);
         const extracted = extractVersesFromDoc(doc, fallback);
 
-        const distinctChaps = new Set(extracted.map((v) => v.chapter));
-        const overrideChapter =
-          multiFile && distinctChaps.size <= 1 && fallback !== 1 ? fallback : null;
         for (const v of extracted) {
-          const chap = overrideChapter ?? v.chapter;
-          const key = `${chap}:${v.verse}`;
+          const key = `${v.chapter}:${v.verse}`;
           const prev = verseMap.get(key);
           if (!prev || v.text.length > prev.text.length) {
-            verseMap.set(key, { chapter: chap, verse: v.verse, text: v.text });
+            verseMap.set(key, { chapter: v.chapter, verse: v.verse, text: v.text });
           }
         }
+
       } catch {
         /* arquivo malformado — ignora */
       }
@@ -759,6 +788,11 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
     }
 
     const displayName = bucket.label || bucket.book.english;
+    const chapsCount = new Set(bookVerses.map((v) => v.chapter)).size;
+    // eslint-disable-next-line no-console
+    console.info(
+      `[epub-bible] book ${bucket.book.id} ${bucket.book.english}  chapters=${chapsCount}  verses=${bookVerses.length}`,
+    );
     books.push({
       bookId,
       displayName,
