@@ -1,41 +1,22 @@
-# Plano
+## Atualização de Versão para 3.0.0
 
-## 1. Mover gerenciamento da Bíblia para "Meu Perfil"
+### Objetivo
+Atualizar a versão do aplicativo de 2.5.2 para 3.0.0 em todas as bases necessárias.
 
-Hoje o card "Bíblia ativa + botão Gerenciar" e o `<BibleManagerDialog>` ficam em `src/routes/_app.consideracoes-campo.tsx` (linhas 438–454), ocupando espaço útil. Mover **sem alterar comportamento**:
+### Arquivos a alterar
+1. **package.json**
+   - `version`: `"2.5.2"` → `"3.0.0"`
 
-- Remover o card e o `<BibleManagerDialog>` de `_app.consideracoes-campo.tsx`. O hook `useActiveBible` (que devolve `activeBible` e `refreshActiveBible`) continua na página, pois é consumido pelo editor para detectar citações.
-- Em `src/routes/_app.perfil.tsx`, adicionar o mesmo bloco **logo acima** da seção de Backup (antes do card de `profile.backupSection`, linha ~202): card com badge da Bíblia ativa + botão "Gerenciar Bíblias" abrindo `BibleManagerDialog`. Usar `useActiveBible` lá também; quando a Bíblia muda, basta atualizar o estado local — `useActiveBible` em outras rotas vai reler ao remontar (e o popover já lê via `getActiveBibleLibrary`).
-- Nenhuma mudança em `BibleManagerDialog`, no parser EPUB nem no store. Sem regressão em popover, detecção de citações ou na importação.
+2. **android/app/build.gradle**
+   - `versionCode`: `5` → `6`
+   - `versionName`: `"2.5.2"` → `"3.0.0"`
 
-## 2. Botão de minimizar no card de gerenciamento de pastas
+3. **src/components/auth/LoginForm.tsx**
+   - `APP_VERSION`: `"2.4.0"` → `"3.0.0"`
+   - `APP_BUILD`: `"2026.05.24"` → `"2026.05.28"`
+   - `APP_UPDATED_AT`: `"24/05/2026"` → `"28/05/2026"`
 
-Em `_app.consideracoes-campo.tsx` (Card da sidebar de pastas, linhas 497–560):
-
-- Adicionar header compacto no topo do `CardContent` com título "Pastas" + botão fantasma com `ChevronUp` / `ChevronDown` controlado por `useState<boolean>` (`foldersCollapsed`).
-- Quando colapsado: esconder a linha de botões (Nova nota / Nova pasta / Importar), o campo de busca e a árvore. Mostrar só o header.
-- Persistir preferência em `localStorage` (`personal-outlines.folders-collapsed`) para sobreviver entre sessões.
-
-## 3. Modo esboço alternável a qualquer momento
-
-Hoje o botão "Editar nota" só aparece quando `mode === "outline"` e "Salvar" só em `mode === "edit"`. Trocar pelo padrão:
-
-- No topo do `NoteEditor` (linhas 633–653), substituir o `Badge` por um **toggle de dois estados** ("Modo edição" / "Modo esboço") sempre visível e clicável, chamando `onModeChange("edit" | "outline")`. Usar `ToggleGroup` (`@/components/ui/toggle-group`) ou par de botões `variant="default" / "outline"`.
-- Permite alternar a qualquer momento sem depender da barra inferior.
-
-## 4. Centralizar a barra de ações inferior
-
-Na sticky action bar (linha 764) substituir `justify-end` por `justify-center` e manter os 4 botões:
-
-- "Editar nota" — visível só em modo esboço (continua como atalho rápido, agora redundante com o toggle do topo, mas mantido conforme pedido).
-- "Exportar" — sempre.
-- "Excluir" — sempre.
-- "Salvar" — visível só em modo edição.
-
-Sem mexer no `pb-24` do container, no `RichNoteEditor` nem no fullscreen.
-
-## Validação
-
-- `bun test` (suíte do parser deve continuar passando).
-- Conferir em `/meu-perfil` que o card aparece acima de Backup e abre o diálogo.
-- Conferir em `/consideracoes-campo`: colapsar/expandir pastas, alternar modo livremente, barra inferior centralizada com os 4 botões.
+### Notas
+- A aba "Sobre" exibe a versão via o Dialog no LoginForm (chave `about.versionLine`). Não há rota separada de "Sobre"; a informação já aparece no popup de informações.
+- O `versionCode` do Android deve subir de 5 para 6 porque o Google Play exige incremento numérico obrigatório a cada release, independentemente do `versionName`.
+- Após aprovação, o harness executará build e testes automaticamente para validar.
