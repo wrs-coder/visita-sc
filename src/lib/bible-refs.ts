@@ -196,9 +196,28 @@ function compile(books: BookInfo[], lang: Lang): CompiledIndex {
   return out;
 }
 
-/** Re-extrai chapter:verse[-verseEnd] e o "termo do livro" da string casada. */
-function dissect(raw: string): { bookTerm: string; chapter: number; verse: number; verseEnd?: number; noColon: boolean } | null {
-  const m = raw.match(/^(.+?)\.?\s*(\d{1,3}):(\d{1,3})(?:[-–](\d{1,3}))?$/);
+/** Re-extrai chapter:verse[-verseEnd] OU lista por vírgula e o "termo do livro" da string casada. */
+function dissect(raw: string): {
+  bookTerm: string;
+  chapter: number;
+  verse: number;
+  verseEnd?: number;
+  verses?: number[];
+  noColon: boolean;
+} | null {
+  // Lista por vírgula com capítulo: "1 Pedro 1:3,5" ou "1 Pe 1:3, 5, 7"
+  const mList = raw.match(/^(.+?)\.?\s*(\d{1,3}):(\d{1,3}(?:\s*,\s*\d{1,3})+)$/);
+  if (mList) {
+    const nums = mList[3].split(",").map((n) => parseInt(n.trim(), 10)).filter((n) => n > 0);
+    return {
+      bookTerm: mList[1].trim(),
+      chapter: parseInt(mList[2], 10),
+      verse: nums[0],
+      verses: nums,
+      noColon: false,
+    };
+  }
+  const m = raw.match(/^(.+?)\.?\s*(\d{1,3}):(\d{1,3})(?:\s*[-–]\s*(\d{1,3}))?$/);
   if (m) {
     return {
       bookTerm: m[1].trim(),
@@ -208,8 +227,20 @@ function dissect(raw: string): { bookTerm: string; chapter: number; verse: numbe
       noColon: false,
     };
   }
+  // Lista por vírgula sem capítulo (livros de 1 capítulo): "Judas 3,5"
+  const mListNc = raw.match(/^(.+?)\.?\s*(\d{1,3}(?:\s*,\s*\d{1,3})+)$/);
+  if (mListNc) {
+    const nums = mListNc[2].split(",").map((n) => parseInt(n.trim(), 10)).filter((n) => n > 0);
+    return {
+      bookTerm: mListNc[1].trim(),
+      chapter: 1,
+      verse: nums[0],
+      verses: nums,
+      noColon: true,
+    };
+  }
   // Fallback sem capítulo (apenas livros de 1 capítulo)
-  const m2 = raw.match(/^(.+?)\.?\s*(\d{1,3})(?:[-–](\d{1,3}))?$/);
+  const m2 = raw.match(/^(.+?)\.?\s*(\d{1,3})(?:\s*[-–]\s*(\d{1,3}))?$/);
   if (m2) {
     return {
       bookTerm: m2[1].trim(),
