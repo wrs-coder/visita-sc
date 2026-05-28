@@ -33,6 +33,32 @@ function stripDiacritics(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
+// Mapeia cada letra "base" para uma classe regex que aceita variantes acentuadas.
+const ACCENT_CLASSES: Record<string, string> = {
+  a: "[aáàâãäAÁÀÂÃÄ]",
+  e: "[eéèêëEÉÈÊË]",
+  i: "[iíìîïIÍÌÎÏ]",
+  o: "[oóòôõöOÓÒÔÕÖ]",
+  u: "[uúùûüUÚÙÛÜ]",
+  c: "[cçCÇ]",
+  n: "[nñNÑ]",
+};
+
+function accentInsensitivePattern(term: string): string {
+  let out = "";
+  for (const ch of term) {
+    const lower = ch.toLowerCase();
+    if (ACCENT_CLASSES[lower]) {
+      out += ACCENT_CLASSES[lower];
+    } else if (/\s/.test(ch)) {
+      out += "\\s+";
+    } else {
+      out += ch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+  }
+  return out;
+}
+
 interface CompiledIndex {
   regex: RegExp;
   lookup: Map<string, { bookId: string; displayName: string }>;
@@ -73,8 +99,8 @@ function compile(books: BookInfo[]): CompiledIndex {
     if (seenTerms.has(k)) continue;
     seenTerms.add(k);
     const visible = term.replace(/\s+/g, "");
-    if (visible.length <= 2) shortParts.push(escapeRegex(term));
-    else longParts.push(escapeRegex(term));
+    if (visible.length <= 2) shortParts.push(accentInsensitivePattern(term));
+    else longParts.push(accentInsensitivePattern(term));
   }
 
   const branches: string[] = [];
@@ -85,7 +111,8 @@ function compile(books: BookInfo[]): CompiledIndex {
     branches.push(`(?:${shortParts.join("|")})(?:\\.\\s*|\\s+)(\\d{1,3}):(\\d{1,3})(?:[-–](\\d{1,3}))?`);
   }
 
-  const source = `(?:^|[^a-záéíóúâêîôûãõçñü0-9])(${branches.join("|")})(?=$|[^a-záéíóúâêîôûãõçñü0-9])`;
+  const boundary = "a-zA-ZáéíóúâêîôûãõçñüÁÉÍÓÚÂÊÎÔÛÃÕÇÑÜ0-9";
+  const source = `(?:^|[^${boundary}])(${branches.join("|")})(?=$|[^${boundary}])`;
   const regex = new RegExp(source, "giu");
   const out = { regex, lookup };
   CACHE.set(books, out);

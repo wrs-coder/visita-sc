@@ -1,33 +1,44 @@
 ## Problema
 
-A importação reporta `books=66/66 verses=31956 missing=0`, mas ao abrir um link tipo `Cl 3:14`, `1Pe 2:9` ou `1Jo 4:8` o popover mostra "não encontrado". Já outros livros como Mateus ou Salmos funcionam.
+Citações em português com acento (`João 2:1`, `1 João 4:8`, `2 João`, etc.) não disparam o popover, mas as mesmas referências sem acento (`Joh 2:1`, `1Jo 4:8`) funcionam.
 
-## Causa raiz
+## Causa
 
-Em EPUBs onde **um único arquivo XHTML contém vários capítulos** (típico de epístolas curtas: Colossenses, 1/2 Pedro, 1/2/3 João, Tito, Filemom, Judas), o parser hoje só atualiza `currentChapter` quando encontra um elemento com `class="chapter"`/`class="capítulo"` ou `id="chapter-N"`. Se a Bíblia usa apenas um `<h2>3</h2>`, um `<p class="cap">3</p>`, ou um `<span>Capítulo 3</span>` sem essas classes específicas, todos os versículos são gravados como `chapter=1`. O passo de deduplicação por `chap:verse` então **descarta** versículos 1, 2, 3… dos capítulos 2 em diante (mantém apenas o mais longo). Resultado: só sobra ~1 capítulo do livro e a citação `Cl 3:14` não acha nada.
+Em `src/lib/bible-refs.ts`, a função `compile()` constrói a regex de detecção a partir dos aliases do `CANON`. Esses aliases já são normalizados sem acento em `bible-canon.ts` (`normalizeName` → `stripDiacritics`), então o padrão final contém literalmente `joao`, `mateus`, `colossenses`, etc.
 
-A heurística `overrideChapter` em `parseEpub` (linha 738) confirma o problema mas não resolve: ela detecta "1 arquivo = vários capítulos" só se TODOS os versos extraídos ficarem no mesmo número, e quando isso acontece ela apenas usa `fallback` (que é 1) — mantendo o bug.
+A regex é então aplicada com `re.exec(text)` sobre o **texto original** (com acentos). Como `joao` ≠ `João`, o match falha em qualquer nome português acentuado. Por isso só funcionam abreviações ASCII (`Joh`, `1Jo`, `Mt`).
 
-## Plano
+O lookup posterior já normaliza via `stripDiacritics`, então basta o regex casar — o resto do pipeline está correto.
 
-Editar apenas `src/lib/epub-bible-parser.ts`:
+## Correção (1 arquivo)
 
-1. **Ampliar `isChapterHeadingEl`**: reconhecer também
-   - `<h1>`/`<h2>`/`<h3>` cujo `textContent` é só um número 1–150 (padrão "3"), com fonte grande/negrito implícito pela tag;
-   - elementos com `epub:type` contendo `chapter`;
-   - classes adicionais comuns: `c`, `ch`, `chapno`, `chapter-number`, `chap-num`, `cn`.
+**`src/lib/bible-refs.ts`** — tornar o regex insensível a acentos sem alterar o índice de lookup:
 
-2. **Atualizar `extractVersesFromDoc`** para tratar essas headings como troca de capítulo (extrair o número via `id`, `data-chapter`, ou `textContent`).
+1. Adicionar helper `accentInsensitivePattern(term)` que percorre cada caractere do alias e, para vogais e `c`/`n`, emite uma classe de caracteres aceitando as variantes acentuadas:
+   - `a` → `[aáàâãä]`
+   - `e` → `[eéèêë]`
+   - `i` → `[iíìîï]`
+   - `o` → `[oóòôõö]`
+   - `u` → `[uúùûü]`
+   - `c` → `[cç]`
+   - `n` → `[nñ]`
+   - espaço → `\s+` (já é o caso na prática; manter)
+   - outros caracteres → `escapeRegex(char)`
 
-3. **Auto-incremento por reset de versículo**: dentro do loop de markers, se `hit.verse === 1` e já existem markers anteriores cujo `verse > 1` (e nenhuma heading explícita foi vista entre eles), incrementar `currentChapter`. Isso cobre EPUBs sem nenhuma marcação de capítulo, apenas com `<sup>1</sup>` reiniciando.
+2. Substituir as duas chamadas `escapeRegex(term)` (em `longParts` e `shortParts`) por `accentInsensitivePattern(term)`.
 
-4. **Remover o `overrideChapter` enganoso** (linhas 738-740 do `parseEpub`): agora que o capítulo é detectado corretamente dentro de `extractVersesFromDoc`, esse override que força tudo para `fallback` em arquivos multi-capítulo passa a atrapalhar.
+3. Atualizar os "boundary chars" do regex externo para também aceitar maiúsculas acentuadas (`ÁÉÍÓÚÂÊÎÔÛÃÕÇÑÜ`) — hoje só lista minúsculas, o que pode quebrar boundaries quando a citação vem logo após uma palavra com maiúscula acentuada. Adicionar essas letras às duas classes negadas `[^a-z…0-9]`.
 
-5. **Log de diagnóstico**: imprimir `console.info("[epub-bible] book", id, "chapters=", N, "verses=", M)` por livro para futuras inspeções.
+4. Em `dissect()`, a regex `^(.+?)\.?\s*(\d…)` continua funcionando com acentos (usa `.`), então não precisa mudar. O `resolveBookId`/`findCitations` já chamam `stripDiacritics` antes do `lookup.get`, logo o match de "João" → bucket `B43` continua válido.
+
+5. (Sanity) Garantir que o `CACHE: WeakMap` segue válido — não há mudança na assinatura.
 
 ## Validação
 
-Após o usuário reimportar o EPUB:
-- Console deve mostrar `chapters` > 1 para Colossenses (4), 1 Pedro (5), 2 Pedro (3), 1 João (5), 2 João (1), 3 João (1), Tito (3), Filemom (1), Judas (1), etc.
-- Total de versos deve subir (estimado ~31.100 reais, atualmente ~31.956 com duplicatas equivocadas em outros livros pode até cair levemente).
-- Citações `Cl 3:14`, `1Pe 2:9`, `1Jo 4:8`, `2Pe 1:5` devem abrir o popover com o texto correto.
+Após o build:
+- Digitar `João 2:1`, `Mt 6:33`, `1 João 4:8`, `2 João 5`, `Colossenses 3:14`, `1 Pedro 2:9` no campo de Considerações de Campo.
+- Todos devem virar link sublinhado azul que abre o popover com o versículo.
+- Abreviações ASCII existentes (`Joh 2:1`, `1Jo`) devem continuar funcionando.
+- Não deve haver regressão em referências sem acento (`Genesis 1:1`, `Mt 5:3`).
+
+Nenhuma mudança no parser EPUB ou na store — o problema é puramente de detecção textual.
