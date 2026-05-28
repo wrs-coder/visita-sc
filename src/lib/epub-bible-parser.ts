@@ -426,8 +426,8 @@ function chapterFromHeading(doc: Document): number | null {
 }
 
 /** Verifica se um nó está dentro de uma subárvore "ruidosa" (nota/rodapé/cross-ref/etc.). */
-const NOISY_CLASS_RE = /\b(fn|footnote|footnotes|note|notes|rearnote|annotation|xref|cross|crossref|study|caption|figcaption|byline|callout|sidebar)\b/i;
-const NOISY_EPUB_TYPE_RE = /(footnote|rearnote|annotation|note-ref|noteref)/i;
+const NOISY_CLASS_RE = /\b(fn|footnote|footnotes|note|notes|rearnote|annotation|xref|cross|crossref|study|caption|figcaption|byline|callout|sidebar|outline|chapterOutline|chapter-outline|synopsis|summary|ss|sb|sb1|sb2|boxStudy|box|box1|box2|bridgehead)\b/i;
+const NOISY_EPUB_TYPE_RE = /(footnote|rearnote|annotation|note-ref|noteref|bridgehead|sidebar|titlepage)/i;
 const NOISY_TAGS = new Set(["aside", "nav", "figure", "figcaption"]);
 
 function isNoisyElement(el: Element): boolean {
