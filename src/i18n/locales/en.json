@@ -1281,6 +1281,8 @@
   },
   "bibleVerse": {
     "loading": "Loading verse…",
-    "notFound": "Verse unavailable. Import the Bible from Manage Bibles."
+    "notFound": "Verse unavailable. Import the Bible from Manage Bibles.",
+    "dragHandle": "Drag",
+    "close": "Close"
   }
 }
