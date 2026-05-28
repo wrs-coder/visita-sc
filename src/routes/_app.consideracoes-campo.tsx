@@ -676,7 +676,9 @@ function NoteEditor({
             onChange={(e) => onPatch("title", e.target.value)}
             placeholder={t("fieldConsiderations.fields.titlePh")}
             readOnly={mode === "outline"}
+            className="w-full max-w-full min-w-0"
           />
+
         </div>
 
         {isField ? (
