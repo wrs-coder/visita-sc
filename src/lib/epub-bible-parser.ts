@@ -539,35 +539,35 @@ function hardPurgeDoc(doc: Document): void {
  *  tiver âncora estrutural de capítulo. Reverte se a truncagem
  *  destruir mais de 80% do texto (proteção para livros pequenos
  *  / de 1 capítulo onde a âncora pode ser tardia no documento). */
-/** Trunca tudo que aparece ANTES da âncora oficial do capítulo 1.
- *  Regra ESTRITA validada na estrutura do EPUB TNM/NWT:
- *    âncora = `[id="chapter1"]` OU `.w_ch` cujo texto seja exatamente "1".
- *  Se nenhuma das duas existir no documento, NÃO trunca (no-op). */
+/** Trunca tudo que aparece ANTES da primeira âncora de versículo 1
+ *  de qualquer capítulo. Padrão universal validado na TNM:
+ *    id="chapterN_verse1"  (N = 1..150)
+ *  `querySelector` retorna o primeiro match em ordem de documento,
+ *  então em arquivos que começam no capítulo 1 pegamos
+ *  `chapter1_verse1`; em arquivos split que abrem em outro capítulo,
+ *  pegamos o primeiro versículo presente — comportamento correto
+ *  para truncar prólogo/cabeçalho.
+ *  Fallback: `[id="chapter1"]` para EPUBs que ancoram o número do
+ *  capítulo separado do versículo. Se nada existir, no-op. */
 function truncatePreChapterContent(doc: Document): void {
   const body = doc.body;
   if (!body) return;
 
   let anchor: Element | null = null;
   try {
-    anchor = body.querySelector('[id="chapter1"]');
+    anchor = body.querySelector('[id^="chapter"][id$="_verse1"]');
   } catch {
     anchor = null;
   }
   if (!anchor) {
     try {
-      const candidates = body.querySelectorAll('.w_ch');
-      for (let i = 0; i < candidates.length; i++) {
-        const txt = (candidates[i].textContent ?? '').trim();
-        if (txt === '1') {
-          anchor = candidates[i];
-          break;
-        }
-      }
+      anchor = body.querySelector('[id="chapter1"]');
     } catch {
       anchor = null;
     }
   }
   if (!anchor) return;
+
 
   // Sobe da âncora até filho direto do body, removendo irmãos anteriores
   // em cada nível. Conteúdo posterior nunca é tocado.
