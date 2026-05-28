@@ -112,7 +112,10 @@ function AppLayout() {
       label: t("sidebar.sectionVisita"),
       items: [
         ...(role === "superintendent"
-          ? [{ to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList }]
+          ? [
+              { to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList },
+              { to: "/consideracoes-campo", label: t("sidebar.fieldConsiderations"), icon: BookOpen },
+            ]
           : []),
         { to: "/escala", label: t("sidebar.fieldStudies"), icon: Users },
         { to: "/reunioes-discursos", label: t("sidebar.meetingsTalks"), icon: MapPin },
