@@ -490,9 +490,38 @@ function chapterNumberFromHeading(el: Element): number | null {
   return null;
 }
 
+/** Detecta blocos de "esboço de capítulo" (ex.: "Tópico A (1-6) Tópico B (7-11)"). */
+const OUTLINE_PAREN_RE = /\(\s*\d{1,3}(?:\s*[-–]\s*\d{1,3})?\s*\)/g;
+function findOutlineRoots(doc: Document): Set<Element> {
+  const roots = new Set<Element>();
+  const candidates = doc.querySelectorAll("p, div, section, header");
+  candidates.forEach((el) => {
+    const txt = (el.textContent ?? "").trim();
+    if (txt.length < 8 || txt.length > 1500) return;
+    const matches = txt.match(OUTLINE_PAREN_RE);
+    if (matches && matches.length >= 2) roots.add(el);
+  });
+  return roots;
+}
+
+function isInsideOutline(node: Node, outlineRoots: Set<Element>): boolean {
+  if (outlineRoots.size === 0) return false;
+  let p: Node | null = node.nodeType === 1 ? (node as Element) : node.parentNode;
+  while (p && p.nodeType === 1) {
+    if (outlineRoots.has(p as Element)) return true;
+    p = p.parentNode;
+  }
+  return false;
+}
+
 /** Coleta o texto entre dois marcadores, pulando notas/rodapés/cross-refs
  *  e parando em cabeçalhos de capítulo subsequentes. */
-function textBetween(doc: Document, start: Node, end: Node | null): string {
+function textBetween(
+  doc: Document,
+  start: Node,
+  end: Node | null,
+  outlineRoots: Set<Element> = new Set(),
+): string {
   const root = doc.body ?? doc;
   const walker = doc.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
   const buf: string[] = [];
@@ -509,7 +538,7 @@ function textBetween(doc: Document, start: Node, end: Node | null): string {
     if (end && (node === end || (end.nodeType === 1 && (end as Element).contains(node)))) break;
     if (node.nodeType === 1) {
       const el = node as Element;
-      if (isNoisyElement(el) || isChapterHeadingEl(el)) {
+      if (isNoisyElement(el) || isChapterHeadingEl(el) || outlineRoots.has(el)) {
         // Pula a subárvore inteira: avança até o próximo nó FORA dela.
         let nxt: Node | null = walker.nextSibling();
         while (!nxt) {
@@ -521,7 +550,7 @@ function textBetween(doc: Document, start: Node, end: Node | null): string {
         continue;
       }
     } else if (node.nodeType === 3) {
-      if (!hasNoisyAncestor(node)) {
+      if (!hasNoisyAncestor(node) && !isInsideOutline(node, outlineRoots)) {
         buf.push(node.nodeValue ?? "");
       }
     }
