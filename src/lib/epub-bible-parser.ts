@@ -701,6 +701,10 @@ function extractVersesFromDoc(
   doc: Document,
   fallbackChapter: number,
 ): { chapter: number; verse: number; text: string }[] {
+  // Hard DOM Purge + descarte do pré-conteúdo (sumário/cabeçalho do livro).
+  hardPurgeDoc(doc);
+  truncatePreChapterContent(doc);
+
   // Coleta todos os marcadores possíveis em ordem de documento.
   const allEls = Array.from(doc.getElementsByTagName("*"));
   const markers: VerseMarker[] = [];
