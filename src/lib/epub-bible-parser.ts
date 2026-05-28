@@ -722,6 +722,10 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
   return { meta: opf.meta, books, verses };
 }
 
-// Suprime aviso de "import não utilizado" caso normalizeName não seja usado aqui.
+// Suprime avisos de "símbolos não utilizados" para utilitários legados
+// que ficam à disposição para diagnósticos futuros.
 void normalizeName;
+void buildBookSlots;
+void groupFlatEntries;
+
 
