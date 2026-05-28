@@ -123,6 +123,7 @@
     "myProfile": "Meu perfil",
     "baseTemplates": "Modelos de Base",
     "weekSummary": "Resumo da Semana",
+    "fieldConsiderations": "Considerações de Campo",
     "supportDev": "Apoie o Desenvolvedor ☕",
     "appName": "Visita do SC",
     "active": "Ativa",
@@ -448,7 +449,6 @@
       "fri": "Sexta-feira",
       "sat": "Sábado"
     },
-
     "pioneer": {
       "theme": "Tema:",
       "openingPrayer": "Oração Inicial",
@@ -1157,5 +1157,10 @@
     "corruptConfirm": "Este evento parece estar corrompido ou já foi removido. Deseja removê-lo da visualização?",
     "removeLocal": "Remover da visualização",
     "removedLocally": "Evento removido da sua visualização."
+  },
+  "fieldConsiderations": {
+    "title": "Considerações de Campo",
+    "subtitle": "Notas pessoais do superintendente com integração bíblica offline",
+    "placeholder": "Em construção — em breve você poderá criar notas com versículos clicáveis."
   }
 }

@@ -32,6 +32,7 @@ import { Route as AppModeloReunioesDeCampoRouteImport } from './routes/_app.mode
 import { Route as AppEscalaRouteImport } from './routes/_app.escala'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCronogramaRouteImport } from './routes/_app.cronograma'
+import { Route as AppConsideracoesCampoRouteImport } from './routes/_app.consideracoes-campo'
 import { Route as AppCongregacoesRouteImport } from './routes/_app.congregacoes'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
 import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist-modelos'
@@ -154,6 +155,11 @@ const AppCronogramaRoute = AppCronogramaRouteImport.update({
   path: '/cronograma',
   getParentRoute: () => AppRoute,
 } as any)
+const AppConsideracoesCampoRoute = AppConsideracoesCampoRouteImport.update({
+  id: '/consideracoes-campo',
+  path: '/consideracoes-campo',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCongregacoesRoute = AppCongregacoesRouteImport.update({
   id: '/congregacoes',
   path: '/congregacoes',
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/checklist-modelos': typeof AppChecklistModelosRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/congregacoes': typeof AppCongregacoesRoute
+  '/consideracoes-campo': typeof AppConsideracoesCampoRoute
   '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByTo {
   '/checklist-modelos': typeof AppChecklistModelosRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/congregacoes': typeof AppCongregacoesRoute
+  '/consideracoes-campo': typeof AppConsideracoesCampoRoute
   '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   '/_app/checklist-modelos': typeof AppChecklistModelosRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/congregacoes': typeof AppCongregacoesRoute
+  '/_app/consideracoes-campo': typeof AppConsideracoesCampoRoute
   '/_app/cronograma': typeof AppCronogramaRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/escala': typeof AppEscalaRoute
@@ -280,6 +289,7 @@ export interface FileRouteTypes {
     | '/checklist-modelos'
     | '/configuracoes'
     | '/congregacoes'
+    | '/consideracoes-campo'
     | '/cronograma'
     | '/dashboard'
     | '/escala'
@@ -308,6 +318,7 @@ export interface FileRouteTypes {
     | '/checklist-modelos'
     | '/configuracoes'
     | '/congregacoes'
+    | '/consideracoes-campo'
     | '/cronograma'
     | '/dashboard'
     | '/escala'
@@ -338,6 +349,7 @@ export interface FileRouteTypes {
     | '/_app/checklist-modelos'
     | '/_app/configuracoes'
     | '/_app/congregacoes'
+    | '/_app/consideracoes-campo'
     | '/_app/cronograma'
     | '/_app/dashboard'
     | '/_app/escala'
@@ -532,6 +544,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCronogramaRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/consideracoes-campo': {
+      id: '/_app/consideracoes-campo'
+      path: '/consideracoes-campo'
+      fullPath: '/consideracoes-campo'
+      preLoaderRoute: typeof AppConsideracoesCampoRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/congregacoes': {
       id: '/_app/congregacoes'
       path: '/congregacoes'
@@ -575,6 +594,7 @@ interface AppRouteChildren {
   AppChecklistModelosRoute: typeof AppChecklistModelosRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppCongregacoesRoute: typeof AppCongregacoesRoute
+  AppConsideracoesCampoRoute: typeof AppConsideracoesCampoRoute
   AppCronogramaRoute: typeof AppCronogramaRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppEscalaRoute: typeof AppEscalaRoute
@@ -596,6 +616,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppChecklistModelosRoute: AppChecklistModelosRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppCongregacoesRoute: AppCongregacoesRoute,
+  AppConsideracoesCampoRoute: AppConsideracoesCampoRoute,
   AppCronogramaRoute: AppCronogramaRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppEscalaRoute: AppEscalaRoute,
@@ -641,13 +662,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

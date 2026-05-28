@@ -123,6 +123,7 @@
     "myProfile": "My profile",
     "baseTemplates": "Base Templates",
     "weekSummary": "Week Summary",
+    "fieldConsiderations": "Field Considerations",
     "supportDev": "Support the Developer ☕",
     "appName": "CO's Visit",
     "active": "Active",
@@ -448,7 +449,6 @@
       "fri": "Friday",
       "sat": "Saturday"
     },
-
     "pioneer": {
       "theme": "Theme:",
       "openingPrayer": "Opening Prayer",
@@ -1157,5 +1157,10 @@
     "corruptConfirm": "This event appears to be corrupted or already removed. Hide it from your view?",
     "removeLocal": "Hide from view",
     "removedLocally": "Event hidden from your view."
+  },
+  "fieldConsiderations": {
+    "title": "Field Considerations",
+    "subtitle": "Superintendent personal notes with offline Bible integration",
+    "placeholder": "Under construction — soon you'll be able to create notes with clickable verses."
   }
 }
