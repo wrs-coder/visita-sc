@@ -10,7 +10,9 @@ interface VerseLinkProps {
   match: CitationMatch;
   libraryId: string | null;
   className?: string;
+  fontScale?: number;
 }
+
 
 const MAX_RANGE = 10;
 
