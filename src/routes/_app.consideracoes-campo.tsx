@@ -58,8 +58,10 @@ import {
   type BibleLibrary,
   type ExportPayload,
 } from "@/lib/bible-notes-store";
-import { findCitations, type CitationMatch } from "@/lib/bible-refs";
+import { findCitations, stripHtmlForDetection, type CitationMatch } from "@/lib/bible-refs";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
+import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
+import { RichOutlineContent } from "@/lib/rich-content";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
@@ -168,7 +170,7 @@ function Page() {
   }, [activeType]);
 
   const detected: CitationMatch[] = useMemo(
-    () => (draft && activeBible ? findCitations(activeBible.books, draft.content) : []),
+    () => (draft && activeBible ? findCitations(activeBible.books, stripHtmlForDetection(draft.content)) : []),
     [draft, activeBible],
   );
 
