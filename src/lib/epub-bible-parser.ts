@@ -1053,6 +1053,24 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
   }
   onProgress?.("index-books", 1);
 
+  // ── Auditoria de contagem por livro ────────────────────────────────────────
+  const perBookCounts: Record<string, number> = {};
+  for (const v of verses) {
+    perBookCounts[v.bookId] = (perBookCounts[v.bookId] ?? 0) + 1;
+  }
+  const diffs = CANON
+    .map((c) => {
+      const got = perBookCounts[c.id] ?? 0;
+      const exp = EXPECTED_VERSE_COUNTS[c.id] ?? 0;
+      return { id: c.id, name: c.english, got, expected: exp, missing: Math.max(0, exp - got) };
+    })
+    .filter((r) => r.expected > 0 && r.got < r.expected)
+    .sort((a, b) => b.missing - a.missing);
+  // eslint-disable-next-line no-console
+  console.info("[epub-bible] AUDIT perBookCounts:", perBookCounts);
+  // eslint-disable-next-line no-console
+  console.table(diffs.slice(0, 25));
+
   // Diagnóstico de livros canônicos faltantes
   const foundIds = new Set(books.map((b) => b.bookId));
   const missing = CANON.filter((c) => !foundIds.has(c.id)).map((c) => `${c.id} ${c.english}`);
