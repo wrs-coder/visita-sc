@@ -159,6 +159,14 @@ function Page() {
   });
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Estado para mover/recortar
+  const [clipboardNoteId, setClipboardNoteId] = useState<string | null>(null);
+  const [moveTarget, setMoveTarget] = useState<
+    | { kind: "note"; id: string }
+    | { kind: "folder"; id: string }
+    | null
+  >(null);
+
   useEffect(() => {
     try {
       localStorage.setItem("personal-outlines.folders-collapsed", foldersCollapsed ? "1" : "0");
