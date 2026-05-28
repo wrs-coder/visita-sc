@@ -648,6 +648,13 @@ function isInsideOutline(node: Node, outlineRoots: Set<Element>): boolean {
 
 /** Coleta o texto entre dois marcadores, pulando notas/rodapés/cross-refs
  *  e parando em cabeçalhos de capítulo subsequentes. */
+/** Read-Until-Next-Anchor: concatena o texto entre `start` e `end`, atravessando
+ *  todos os irmãos sequenciais (p.sl, p.sb, etc.) via TreeWalker. Para em:
+ *   - `end` (próximo marker da lista), OU
+ *   - qualquer âncora de versículo `chapterN_verseM` que não seja `start`, OU
+ *   - qualquer âncora de capítulo (`.w_ch`, `[id^="chapter"]` sem `verse`), OU
+ *   - cabeçalho de capítulo / outline root.
+ *  Subárvores ruidosas (notas, cross-refs) são puladas inteiras. */
 function textBetween(
   doc: Document,
   start: Node,
@@ -659,6 +666,16 @@ function textBetween(
   const buf: string[] = [];
   let started = false;
   let node: Node | null = walker.nextNode();
+
+  const isVerseAnchorId = (id: string) => /^chapter\d+[_-]?verse\d+/i.test(id);
+  const isChapterAnchorEl = (el: Element) => {
+    const id = el.getAttribute("id") ?? "";
+    const cls = el.getAttribute("class") ?? "";
+    if (/\bw_ch\b/i.test(cls)) return true;
+    if (/^chapter\d+$/i.test(id) || /^cap\d+$/i.test(id) || /^ch\d+$/i.test(id)) return true;
+    return false;
+  };
+
   while (node) {
     if (!started) {
       if (node === start || (start.nodeType === 1 && (start as Element).contains(node))) {
@@ -667,11 +684,23 @@ function textBetween(
       node = walker.nextNode();
       continue;
     }
+    // Parada 1: chegamos no próximo marker oficial.
     if (end && (node === end || (end.nodeType === 1 && (end as Element).contains(node)))) break;
+
     if (node.nodeType === 1) {
       const el = node as Element;
-      if (isNoisyElement(el) || isChapterHeadingEl(el) || outlineRoots.has(el)) {
-        // Pula a subárvore inteira: avança até o próximo nó FORA dela.
+      const elId = el.getAttribute("id") ?? "";
+
+      // Parada 2: âncora de verso "órfã" (não listada como marker mas presente no DOM).
+      if (isVerseAnchorId(elId) && el !== start && !(start.nodeType === 1 && (start as Element).contains(el))) {
+        break;
+      }
+      // Parada 3: novo capítulo encontrado no caminho.
+      if (isChapterAnchorEl(el) || isChapterHeadingEl(el)) {
+        break;
+      }
+      // Pula subárvores ruidosas / outline inteiras.
+      if (isNoisyElement(el) || outlineRoots.has(el)) {
         let nxt: Node | null = walker.nextSibling();
         while (!nxt) {
           const parent = walker.parentNode();
@@ -690,6 +719,7 @@ function textBetween(
   }
   return buf.join("").replace(/\s+/g, " ").trim();
 }
+
 
 /** Considera um elemento como marcador de versículo se atender aos padrões TNM/genéricos. */
 function isVerseMarker(el: Element): { verse: number; chap?: number } | null {
