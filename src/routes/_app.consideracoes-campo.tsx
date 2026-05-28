@@ -683,35 +683,39 @@ function NoteEditor({
 
         {isField ? (
           <>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="grid gap-1.5">
+            <div className="grid gap-3 md:grid-cols-2 w-full max-w-full min-w-0">
+              <div className="grid gap-1.5 min-w-0">
                 <Label>{t("fieldConsiderations.fields.prayer")}</Label>
                 <Input
                   value={draft.prayer ?? ""}
                   onChange={(e) => onPatch("prayer", e.target.value)}
                   placeholder={t("fieldConsiderations.fields.prayerPh")}
                   readOnly={mode === "outline"}
+                  className="w-full max-w-full min-w-0"
                 />
               </div>
-              <div className="grid gap-1.5">
+              <div className="grid gap-1.5 min-w-0">
                 <Label>{t("fieldConsiderations.fields.territory")}</Label>
                 <Input
                   value={draft.territory ?? ""}
                   onChange={(e) => onPatch("territory", e.target.value)}
                   placeholder={t("fieldConsiderations.fields.territoryPh")}
                   readOnly={mode === "outline"}
+                  className="w-full max-w-full min-w-0"
                 />
               </div>
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-1.5 w-full max-w-full min-w-0">
               <Label>{t("fieldConsiderations.fields.assistants")}</Label>
               <Input
                 value={draft.assistants ?? ""}
                 onChange={(e) => onPatch("assistants", e.target.value)}
                 placeholder={t("fieldConsiderations.fields.assistantsPh")}
                 readOnly={mode === "outline"}
+                className="w-full max-w-full min-w-0"
               />
             </div>
+
           </>
         ) : (
           <div className="grid gap-1.5">
