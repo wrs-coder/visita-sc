@@ -2,6 +2,9 @@
 // Falls back to localStorage if IndexedDB is unavailable (rare; private mode etc.).
 // 100% local — no network, no Supabase.
 
+import type { BibleLang, BookId } from "./bible-refs";
+import { BIBLE_SEED } from "./bible-seed";
+
 export interface FieldNote {
   id: string;
   title: string;
@@ -11,6 +14,15 @@ export interface FieldNote {
   content: string;
   created_at: number;
   updated_at: number;
+}
+
+export interface BibleVerseRecord {
+  key: string; // `${lang}:${bookId}:${chapter}:${verse}`
+  lang: BibleLang;
+  bookId: BookId;
+  chapter: number;
+  verse: number;
+  text: string;
 }
 
 const DB_NAME = "visita-sc-field";
