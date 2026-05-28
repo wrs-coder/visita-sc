@@ -732,7 +732,7 @@ function NoteEditor({
         )}
 
         {mode === "edit" && (
-          <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-2 w-full max-w-full min-w-0 overflow-hidden break-words">
             <div className="flex items-center gap-2 text-xs font-semibold">
               <BookOpen className="h-3.5 w-3.5 text-primary" />
               {t("fieldConsiderations.detected")}
@@ -742,7 +742,7 @@ function NoteEditor({
                 {t("fieldConsiderations.detectedEmpty")}
               </p>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 max-w-full min-w-0">
                 {detected.map((m, i) => (
                   <VerseLink key={`${m.index}-${i}`} match={m} libraryId={activeBible?.id ?? null} />
                 ))}
@@ -751,7 +751,8 @@ function NoteEditor({
           </div>
         )}
 
-        <div className="grid gap-1.5">
+        <div className="grid gap-1.5 w-full max-w-full min-w-0">
+
           <Label>{t("fieldConsiderations.fields.content")}</Label>
           {mode === "edit" ? (
             <RichNoteEditor
