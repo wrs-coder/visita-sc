@@ -44,6 +44,26 @@ export type ParseProgress = (phase: "unzip" | "parse-opf" | "index-books" | "wri
 const XML_MIME = "application/xml";
 const XHTML_MIME = "application/xhtml+xml";
 
+/** Totais canônicos de versículos por livro (texto massorético/grego padrão).
+ *  Usado apenas para destacar defasagens no log de auditoria pós-import. */
+const EXPECTED_VERSE_COUNTS: Record<string, number> = {
+  B01: 1533, B02: 1213, B03: 859,  B04: 1288, B05: 959,
+  B06: 658,  B07: 618,  B08: 85,   B09: 810,  B10: 695,
+  B11: 816,  B12: 719,  B13: 942,  B14: 822,  B15: 280,
+  B16: 406,  B17: 167,  B18: 1070, B19: 2461, B20: 915,
+  B21: 222,  B22: 117,  B23: 1292, B24: 1364, B25: 154,
+  B26: 1273, B27: 357,  B28: 197,  B29: 73,   B30: 146,
+  B31: 21,   B32: 48,   B33: 105,  B34: 47,   B35: 56,
+  B36: 53,   B37: 38,   B38: 211,  B39: 55,
+  B40: 1071, B41: 678,  B42: 1151, B43: 879,  B44: 1007,
+  B45: 433,  B46: 437,  B47: 257,  B48: 149,  B49: 155,
+  B50: 104,  B51: 95,   B52: 89,   B53: 47,   B54: 113,
+  B55: 83,   B56: 46,   B57: 25,   B58: 303,  B59: 108,
+  B60: 105,  B61: 61,   B62: 105,  B63: 13,   B64: 14,
+  B65: 25,   B66: 404,
+};
+
+
 function normalizeLang(raw: string | null | undefined): string {
   if (!raw) return "xx";
   const m = raw.trim().toLowerCase().match(/^([a-z]{2,3})/);
