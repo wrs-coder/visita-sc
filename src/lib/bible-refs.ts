@@ -45,8 +45,11 @@ const ACCENT_CLASSES: Record<string, string> = {
 };
 
 function accentInsensitivePattern(term: string): string {
+  // Normaliza primeiro: "João" → "Joao", "Filêmon" → "Filemon", para que
+  // cada letra-base mapeie corretamente para a classe que aceita acentos.
+  const base = stripDiacritics(term);
   let out = "";
-  for (const ch of term) {
+  for (const ch of base) {
     const lower = ch.toLowerCase();
     if (ACCENT_CLASSES[lower]) {
       out += ACCENT_CLASSES[lower];
@@ -58,6 +61,7 @@ function accentInsensitivePattern(term: string): string {
   }
   return out;
 }
+
 
 interface CompiledIndex {
   regex: RegExp;
