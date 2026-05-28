@@ -1,49 +1,33 @@
-## Diagnóstico
+## Problema
 
-O log mostra `books=66/66 verses=31956 missing=0`, então a contagem está correta. Os dois problemas restantes são qualitativos:
+A importação reporta `books=66/66 verses=31956 missing=0`, mas ao abrir um link tipo `Cl 3:14`, `1Pe 2:9` ou `1Jo 4:8` o popover mostra "não encontrado". Já outros livros como Mateus ou Salmos funcionam.
 
-1. **O popover mostra muito mais texto do que o versículo pedido.** Há duas causas combinadas:
-   - O parser (`textBetween` em `src/lib/epub-bible-parser.ts`) caminha por **todos** os nós de texto entre um marcador `<sup>1</sup>` e o próximo, **sem pular** notas de rodapé, referências cruzadas, `<aside>`, `<span class="fn">`, links `<a class="xref">` etc. — tudo isso fica colado dentro do texto do versículo.
-   - Quando o **último** marcador de um arquivo é alcançado, o `textBetween` continua até o **fim do `<body>`**, capturando títulos, créditos e apêndices que aparecem após o último versículo.
-2. **Citações com intervalo (`Mt 6:33-35`) abrem só o primeiro versículo.** O `VerseLink` em `src/components/bible/BibleVersePopover.tsx` chama `getVerseFromLibrary(... , match.verse)` ignorando `match.verseEnd`. Quando o usuário digita um intervalo, ele vê só `v.33` e tem a impressão de que "o texto está cortado / errado".
+## Causa raiz
 
-A entrada `manifest.webmanifest 401` é independente (PWA carregando no preview autenticado) e não afeta a Bíblia.
+Em EPUBs onde **um único arquivo XHTML contém vários capítulos** (típico de epístolas curtas: Colossenses, 1/2 Pedro, 1/2/3 João, Tito, Filemom, Judas), o parser hoje só atualiza `currentChapter` quando encontra um elemento com `class="chapter"`/`class="capítulo"` ou `id="chapter-N"`. Se a Bíblia usa apenas um `<h2>3</h2>`, um `<p class="cap">3</p>`, ou um `<span>Capítulo 3</span>` sem essas classes específicas, todos os versículos são gravados como `chapter=1`. O passo de deduplicação por `chap:verse` então **descarta** versículos 1, 2, 3… dos capítulos 2 em diante (mantém apenas o mais longo). Resultado: só sobra ~1 capítulo do livro e a citação `Cl 3:14` não acha nada.
 
-## Mudanças
+A heurística `overrideChapter` em `parseEpub` (linha 738) confirma o problema mas não resolve: ela detecta "1 arquivo = vários capítulos" só se TODOS os versos extraídos ficarem no mesmo número, e quando isso acontece ela apenas usa `fallback` (que é 1) — mantendo o bug.
 
-### 1. `src/lib/epub-bible-parser.ts` — limpar o texto do versículo
+## Plano
 
-- **Filtrar nós ruidosos** no `textBetween`: ao caminhar pelo TreeWalker, pular qualquer nó de texto cujo ancestral mais próximo seja:
-  - `<aside>`, `<nav>`, `<figure>`, `<figcaption>`
-  - um elemento com `epub:type` contendo `footnote|note|rearnote|annotation`
-  - um elemento com `class` casando `/\b(fn|footnote|note|xref|cross|crossref|ref|study|caption|byline|callout)\b/i`
-  - links `<a>` cujo `href` aponta para um `#fn…` ou `#note…`
-- **Parar no próximo cabeçalho de capítulo** além de no próximo marcador, para que o último versículo de um capítulo não absorva títulos/apêndices do capítulo seguinte (quando o arquivo agrupa vários capítulos).
-- **Tornar `isVerseMarker` mais rígido**: não considerar marcadores que estejam dentro de uma subárvore de nota/rodapé (mesma lista acima). Isso evita que um `<sup>` de chamada de nota seja contado como início de versículo.
-- **Sanity-check de tamanho**: se `text.length > 1200` ou contiver `\n\n` suspeito, truncar no primeiro ponto final após 600 chars e logar via `console.warn("[epub-bible] long verse", bookId, chap, verse, length)` para visibilidade em DEV.
+Editar apenas `src/lib/epub-bible-parser.ts`:
 
-### 2. `src/components/bible/BibleVersePopover.tsx` — suportar intervalos
+1. **Ampliar `isChapterHeadingEl`**: reconhecer também
+   - `<h1>`/`<h2>`/`<h3>` cujo `textContent` é só um número 1–150 (padrão "3"), com fonte grande/negrito implícito pela tag;
+   - elementos com `epub:type` contendo `chapter`;
+   - classes adicionais comuns: `c`, `ch`, `chapno`, `chapter-number`, `chap-num`, `cn`.
 
-- Quando `match.verseEnd && match.verseEnd > match.verse`, buscar `verse..verseEnd` em paralelo (`Promise.all` chamando `getVerseFromLibrary` por versículo) e concatenar como  
-  `"33  Buscai primeiro… 34  Não vos inquieteis… 35  …"` (número em superscript pequeno + espaço).
-- Limitar o intervalo a um teto razoável (ex.: 10 versículos) para evitar consultas exageradas; se exceder, mostrar só `verse` e um rodapé `"Intervalo grande — abrindo apenas o primeiro versículo"`.
-- Manter o cabeçalho atual (`Mt 6:33-35`), só o corpo muda.
+2. **Atualizar `extractVersesFromDoc`** para tratar essas headings como troca de capítulo (extrair o número via `id`, `data-chapter`, ou `textContent`).
 
-### 3. (opcional, sem custo) `BibleManagerDialog.tsx`
+3. **Auto-incremento por reset de versículo**: dentro do loop de markers, se `hit.verse === 1` e já existem markers anteriores cujo `verse > 1` (e nenhuma heading explícita foi vista entre eles), incrementar `currentChapter`. Isso cobre EPUBs sem nenhuma marcação de capítulo, apenas com `<sup>1</sup>` reiniciando.
 
-- Não muda fluxo; apenas ajustar o `toast.warning` para também avisar se algum versículo individual ficou anormalmente longo (contagem vinda do log do parser). Pode ficar para um próximo passo se preferir manter este PR pequeno — sinalizar e seguir sem isso por padrão.
+4. **Remover o `overrideChapter` enganoso** (linhas 738-740 do `parseEpub`): agora que o capítulo é detectado corretamente dentro de `extractVersesFromDoc`, esse override que força tudo para `fallback` em arquivos multi-capítulo passa a atrapalhar.
 
-## Validação após implementar
+5. **Log de diagnóstico**: imprimir `console.info("[epub-bible] book", id, "chapters=", N, "verses=", M)` por livro para futuras inspeções.
 
-1. Remover a Bíblia atual em **Gerenciar Bíblias** e reimportar o EPUB (a estrutura do texto armazenado muda; reimportar é necessário).
-2. No console (F12) confirmar:
-   - `[epub-bible] DONE books=66/66 verses≈31102` (deve ficar próximo de 31.102, não mais 31.956 — a queda confirma que estávamos absorvendo notas).
-   - Nenhum (ou poucos) `[epub-bible] long verse …`.
-3. Em Considerações de Campo, digitar:
-   - `Mt 6:33` → popover mostra **apenas** Mateus 6:33.
-   - `Mt 6:33-35` → popover mostra os três versículos numerados.
-   - `Sl 23:1` e `João 3:16` → texto sem rodapés/cross-refs.
+## Validação
 
-## Observação sobre o 401 do manifest
-
-`manifest.webmanifest:1 401` ocorre porque o preview está atrás de autenticação e o navegador pede o manifest sem credenciais. Não afeta a importação nem a leitura. Some no domínio publicado. Não vou tocar nele neste plano.
+Após o usuário reimportar o EPUB:
+- Console deve mostrar `chapters` > 1 para Colossenses (4), 1 Pedro (5), 2 Pedro (3), 1 João (5), 2 João (1), 3 João (1), Tito (3), Filemom (1), Judas (1), etc.
+- Total de versos deve subir (estimado ~31.100 reais, atualmente ~31.956 com duplicatas equivocadas em outros livros pode até cair levemente).
+- Citações `Cl 3:14`, `1Pe 2:9`, `1Jo 4:8`, `2Pe 1:5` devem abrir o popover com o texto correto.
