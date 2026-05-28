@@ -1,8 +1,16 @@
 // EPUB Bible parser — universal, resiliente, 100% client-side.
 // Lê um arquivo .epub e devolve { meta, books, verses }.
-// Sem dependências de idioma: nomes de livros vêm do próprio arquivo.
+// Identificação dos 66 livros é feita por catálogo canônico multilíngue
+// (ver bible-canon.ts), independente do idioma do EPUB.
 
 import JSZip from "jszip";
+import {
+  CANON,
+  findCanonicalInText,
+  normalizeName,
+  resolveCanonical,
+  type CanonicalBook,
+} from "./bible-canon";
 
 export interface ParsedBookInfo {
   bookId: string;       // "B01", "B02"... estável por ordem de leitura
