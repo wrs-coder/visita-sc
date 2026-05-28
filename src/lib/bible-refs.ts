@@ -168,22 +168,22 @@ function compile(books: BookInfo[], lang: Lang): CompiledIndex {
       if (visible.length <= 2) shortSingleParts.push(pattern);
       else longSingleParts.push(pattern);
     }
-  }
-
+  // Sufixo opcional: intervalo "-N" OU lista ",N(,N)*"
+  const RANGE_OR_LIST = `(?:\\s*[-–]\\s*\\d{1,3}|(?:\\s*,\\s*\\d{1,3})+)?`;
   const branches: string[] = [];
   // Branches com cap:vers — vêm primeiro para que "Judas 1:5" case como cap:vers
   if (longParts.length > 0) {
-    branches.push(`(?:${longParts.join("|")})\\.?\\s*\\d{1,3}:\\d{1,3}(?:[-–]\\d{1,3})?`);
+    branches.push(`(?:${longParts.join("|")})\\.?\\s*\\d{1,3}:\\d{1,3}${RANGE_OR_LIST}`);
   }
   if (shortParts.length > 0) {
-    branches.push(`(?:${shortParts.join("|")})(?:\\.\\s*|\\s+)\\d{1,3}:\\d{1,3}(?:[-–]\\d{1,3})?`);
+    branches.push(`(?:${shortParts.join("|")})(?:\\.\\s*|\\s+)\\d{1,3}:\\d{1,3}${RANGE_OR_LIST}`);
   }
   // Branches "verso-only" para livros de capítulo único (Judas 5, Fm 6...)
   if (longSingleParts.length > 0) {
-    branches.push(`(?:${longSingleParts.join("|")})\\.?\\s*\\d{1,3}(?:[-–]\\d{1,3})?`);
+    branches.push(`(?:${longSingleParts.join("|")})\\.?\\s*\\d{1,3}${RANGE_OR_LIST}`);
   }
   if (shortSingleParts.length > 0) {
-    branches.push(`(?:${shortSingleParts.join("|")})(?:\\.\\s*|\\s+)\\d{1,3}(?:[-–]\\d{1,3})?`);
+    branches.push(`(?:${shortSingleParts.join("|")})(?:\\.\\s*|\\s+)\\d{1,3}${RANGE_OR_LIST}`);
   }
 
   const boundary = "a-zA-ZáéíóúâêîôûãõçñüÁÉÍÓÚÂÊÎÔÛÃÕÇÑÜ0-9";
@@ -191,6 +191,8 @@ function compile(books: BookInfo[], lang: Lang): CompiledIndex {
   const regex = new RegExp(source, "giu");
   const out = { regex, lookup };
   perLang.set(lang, out);
+  return out;
+}
   return out;
 }
 
