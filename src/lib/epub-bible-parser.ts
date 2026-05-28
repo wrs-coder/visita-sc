@@ -574,7 +574,7 @@ function truncatePreChapterContent(doc: Document): void {
     return false;
   })();
   const shrankTooMuch = originalLen > 0 && (newLen < 100 || newLen / originalLen < 0.5);
-  if (shrankTooMuch || !hasRealVerseAnchor) {
+  if (shrankTooMuch || (hadVerseAnchorBefore && !hasRealVerseAnchor)) {
     body.innerHTML = originalHtml;
   }
 }
