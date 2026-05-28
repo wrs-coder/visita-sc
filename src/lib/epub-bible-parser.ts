@@ -732,30 +732,29 @@ function looksLikeOutlinePage(doc: Document): boolean {
   const body = doc.body;
   if (!body) return false;
 
-  // 1) Tem âncoras reais de versículo? Então NÃO é página de outline.
-  const hasRealVerseAnchors =
-    body.querySelector('[id^="chapter"][id*="verse"], .w_ch, [class*="verseNum"], [class*="verse-num"]') !== null;
-  if (hasRealVerseAnchors) return false;
+  // 1) Pré-scan robusto: se existir QUALQUER âncora real de versículo
+  //    (id chapterN_verseN, classe w_ch, verseNum, verse-num) o arquivo
+  //    contém texto bíblico real e NUNCA deve ser descartado como outline.
+  const bodyHtml = body.innerHTML;
+  if (/id=["'][^"']*chapter\d+[_-]?verse\d+/i.test(bodyHtml)) return false;
+  if (/class=["'][^"']*(?:\bw_ch\b|verseNum|verse-num|\bverse\b)/i.test(bodyHtml)) return false;
 
-  // 2) Muitos links de navegação para versos/capítulos
+  // 2) Contagem de links de navegação para versos/capítulos.
   let navLinks = 0;
   const anchors = body.getElementsByTagName("a");
   for (let i = 0; i < anchors.length; i++) {
     const href = anchors[i].getAttribute("href") ?? "";
     if (/#chapter|_verse|#v\d/i.test(href)) navLinks++;
-    if (navLinks > 5) return true;
   }
 
-  // 3) Múltiplas ocorrências globais de "(N)" / "(N-M)" — assinatura de outline JW
-  const text = body.textContent ?? "";
-  const parens = text.match(/\(\s*\d{1,3}(?:\s*[-–]\s*\d{1,3})?\s*\)/g);
-  if (parens && parens.length >= 3) return true;
+  // 3) Critério unificado e conservador: só descarta se for muito claramente
+  //    uma página de índice/sumário (sem nenhuma âncora real de versículo, vide 1).
+  const manyNavLinks = navLinks >= 15;
+  const strongOutlineSignal = findOutlineRoots(doc).size >= 2;
 
-  // 4) findOutlineRoots já detectou pelo menos um bloco
-  if (findOutlineRoots(doc).size >= 1) return true;
-
-  return false;
+  return manyNavLinks || strongOutlineSignal;
 }
+
 
 interface ExtractedVerse {
   chapter: number;
