@@ -1193,6 +1193,45 @@
     "detectedEmpty": "Escribe una cita (ej. Juan 3:16) para previsualizar.",
     "contentEmpty": "Sin contenido."
   },
+  "personalOutlines": {
+    "title": "Bosquejos Personales",
+    "subtitle": "Organiza consideraciones de campo y bosquejos en carpetas, con Biblia offline.",
+    "typePicker": {
+      "label": "Elige el tipo de trabajo",
+      "field": "Consideración de Campo",
+      "outline": "Bosquejo",
+      "prompt": "Selecciona un tipo arriba para cargar tus carpetas y notas."
+    },
+    "folders": {
+      "rootLabel": "Raíz",
+      "new": "Nueva carpeta",
+      "newSub": "Nueva subcarpeta",
+      "rename": "Renombrar",
+      "renamePrompt": "Nuevo nombre de la carpeta:",
+      "namePrompt": "Nombre de la carpeta:",
+      "delete": "Eliminar carpeta",
+      "deleteWarn": "¿Eliminar esta carpeta y TODO lo que contiene (subcarpetas y notas)? Es permanente.",
+      "exportFolder": "Exportar carpeta (JSON)",
+      "exportNote": "Exportar nota (JSON)",
+      "import": "Importar JSON",
+      "empty": "Aún no hay carpetas. Crea una para organizar tus notas.",
+      "notesIn": "Notas",
+      "selectFolder": "Selecciona una carpeta o crea una nueva nota.",
+      "exportedFolder": "Carpeta exportada.",
+      "exportedNote": "Nota exportada.",
+      "imported": "Importado: {{folders}} carpeta(s) y {{notes}} nota(s)."
+    },
+    "fields": {
+      "description": "Descripción",
+      "descriptionPh": "Breve descripción del bosquejo"
+    },
+    "fullscreen": {
+      "enter": "Pantalla completa",
+      "exit": "Salir de pantalla completa",
+      "fontUp": "Aumentar fuente",
+      "fontDown": "Reducir fuente"
+    }
+  },
   "bibleManager": {
     "title": "Administrar Biblias",
     "subtitle": "Importa un archivo .epub de la Biblia (Traducción del Nuevo Mundo) para uso 100% sin conexión.",
