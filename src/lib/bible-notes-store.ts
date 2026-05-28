@@ -5,16 +5,30 @@
 import type { BibleLang, BookId } from "./bible-refs";
 import { parseEpub, type ParseProgress, type ParsedBookInfo } from "./epub-bible-parser";
 
+export type NoteType = "field_consideration" | "outline";
+
+export interface NoteFolder {
+  id: string;
+  name: string;
+  parentId: string | null;
+  type: NoteType;
+  created_at: number;
+}
+
 export interface FieldNote {
   id: string;
+  type?: NoteType;
+  folderId?: string | null;
   title: string;
-  prayer: string;
-  territory: string;
-  assistants: string;
+  prayer?: string;
+  territory?: string;
+  assistants?: string;
+  description?: string;
   content: string;
   created_at: number;
   updated_at: number;
 }
+
 
 // =============================================================
 // Bíblia importada via EPUB
