@@ -493,68 +493,88 @@ function Page() {
             {/* Sidebar: árvore de pastas */}
             <Card className="h-fit">
               <CardContent className="p-3 space-y-3">
-                <div className="flex gap-1.5">
-                  <Button size="sm" className="flex-1" onClick={handleNewNote}>
-                    <Plus className="h-4 w-4 mr-1" /> {t("fieldConsiderations.newNote")}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleCreateFolder(null)} title={t("personalOutlines.folders.new")}>
-                    <FolderPlus className="h-4 w-4" />
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <Folder className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold flex-1">
+                    {t("personalOutlines.folders.sectionTitle", { defaultValue: "Pastas e notas" })}
+                  </span>
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    title={t("personalOutlines.folders.import")}
+                    variant="ghost"
+                    onClick={() => setFoldersCollapsed((v) => !v)}
+                    title={foldersCollapsed
+                      ? t("personalOutlines.folders.expand", { defaultValue: "Expandir" })
+                      : t("personalOutlines.folders.collapse", { defaultValue: "Minimizar" })}
                   >
-                    <Upload className="h-4 w-4" />
+                    {foldersCollapsed ? <ChevronDown className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
                   </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="application/json"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleImportFile(f);
-                      e.target.value = "";
-                    }}
-                  />
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder={t("fieldConsiderations.search")}
-                    className="pl-7 h-9"
-                  />
-                </div>
-                <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
-                  {/* Raiz selecionável */}
-                  <div
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
-                      selectedFolderId === null ? "bg-primary/10 text-primary" : "hover:bg-muted",
-                    )}
-                    onClick={() => setSelectedFolderId(null)}
-                  >
-                    <FolderOpen className="h-4 w-4" />
-                    <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
-                  </div>
-                  {rootFolders.length === 0 && rootNotes.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center py-4">
-                      {t("personalOutlines.folders.empty")}
-                    </p>
-                  )}
-                  {rootFolders.map((f) => (
-                    <FolderRow key={f.id} folder={f} depth={0} />
-                  ))}
-                  {rootNotes.map((n) => (
-                    <NoteRow key={n.id} note={n} depth={0} />
-                  ))}
-                </div>
+                {!foldersCollapsed && (
+                  <>
+                    <div className="flex gap-1.5">
+                      <Button size="sm" className="flex-1" onClick={handleNewNote}>
+                        <Plus className="h-4 w-4 mr-1" /> {t("fieldConsiderations.newNote")}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleCreateFolder(null)} title={t("personalOutlines.folders.new")}>
+                        <FolderPlus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        title={t("personalOutlines.folders.import")}
+                      >
+                        <Upload className="h-4 w-4" />
+                      </Button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="application/json"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleImportFile(f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </div>
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder={t("fieldConsiderations.search")}
+                        className="pl-7 h-9"
+                      />
+                    </div>
+                    <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
+                      <div
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
+                          selectedFolderId === null ? "bg-primary/10 text-primary" : "hover:bg-muted",
+                        )}
+                        onClick={() => setSelectedFolderId(null)}
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                        <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
+                      </div>
+                      {rootFolders.length === 0 && rootNotes.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4">
+                          {t("personalOutlines.folders.empty")}
+                        </p>
+                      )}
+                      {rootFolders.map((f) => (
+                        <FolderRow key={f.id} folder={f} depth={0} />
+                      ))}
+                      {rootNotes.map((n) => (
+                        <NoteRow key={n.id} note={n} depth={0} />
+                      ))}
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
+
 
             {/* Editor */}
             <Card className="w-full max-w-full overflow-hidden min-w-0">
