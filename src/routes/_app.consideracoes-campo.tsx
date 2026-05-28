@@ -477,6 +477,18 @@ function Page() {
                 <Pencil className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.rename")}
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setMoveTarget({ kind: "folder", id: folder.id })}
+              >
+                <Move className="h-4 w-4 mr-2" />
+                {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
+              </DropdownMenuItem>
+              {clipboardNoteId && (
+                <DropdownMenuItem onClick={() => handlePasteNote(folder.id)}>
+                  <ClipboardPaste className="h-4 w-4 mr-2" />
+                  {t("personalOutlines.folders.pasteHere", { defaultValue: "Colar aqui" })}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => handleExportFolder(folder)}>
                 <Download className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.exportFolder")}
