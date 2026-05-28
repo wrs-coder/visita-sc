@@ -446,7 +446,11 @@ function chapterFromHeading(doc: Document): number | null {
 }
 
 /** Verifica se um nó está dentro de uma subárvore "ruidosa" (nota/rodapé/cross-ref/etc.). */
-const NOISY_CLASS_RE = /\b(fn|footnote|footnotes|note|notes|rearnote|annotation|xref|cross|crossref|study|caption|figcaption|byline|callout|sidebar|outline|chapterOutline|chapter-outline|synopsis|summary|ss|sb|sb1|sb2|boxStudy|box|box1|box2|bridgehead)\b/i;
+// Removido: ss|sb|sb1|sb2|boxStudy|box|box1|box2 — na TNM/NWT esses são blocos
+// de estrofe (strophe-block) que contêm o próprio texto bíblico em livros
+// poéticos (Salmos, Jeremias, Isaías, Ezequiel). Footnotes/cross-refs/sidebars
+// continuam filtrados via PURGE_SELECTORS (aside, [epub:type~="footnote"], etc.).
+const NOISY_CLASS_RE = /\b(fn|footnote|footnotes|note|notes|rearnote|annotation|xref|cross|crossref|study|caption|figcaption|byline|callout|sidebar|outline|chapterOutline|chapter-outline|synopsis|summary|bridgehead)\b/i;
 const NOISY_EPUB_TYPE_RE = /(footnote|rearnote|annotation|note-ref|noteref|bridgehead|sidebar|titlepage)/i;
 const NOISY_TAGS = new Set(["aside", "nav", "figure", "figcaption"]);
 
@@ -531,37 +535,37 @@ function hardPurgeDoc(doc: Document): void {
  *  tiver âncora estrutural de capítulo. Reverte se a truncagem
  *  destruir mais de 80% do texto (proteção para livros pequenos
  *  / de 1 capítulo onde a âncora pode ser tardia no documento). */
+/** Trunca tudo que aparece ANTES da âncora oficial do capítulo 1.
+ *  Regra ESTRITA validada na estrutura do EPUB TNM/NWT:
+ *    âncora = `[id="chapter1"]` OU `.w_ch` cujo texto seja exatamente "1".
+ *  Se nenhuma das duas existir no documento, NÃO trunca (no-op). */
 function truncatePreChapterContent(doc: Document): void {
   const body = doc.body;
   if (!body) return;
 
   let anchor: Element | null = null;
-  // Importante: NÃO usar `[id^="ch"]` genérico nem aceitar IDs de versículo
-  // (ex.: chapter1_verse1) como âncora — isso quebrava livros de 1 capítulo.
-  const anchorSelectors = [
-    '[id^="chapter"]:not([id*="verse"])',
-    '.w_ch',
-    '[id^="cap"]:not([id*="verse"])',
-    '[epub\\:type~="chapter"]',
-    'section[role="doc-chapter"]',
-  ];
-  for (const sel of anchorSelectors) {
+  try {
+    anchor = body.querySelector('[id="chapter1"]');
+  } catch {
+    anchor = null;
+  }
+  if (!anchor) {
     try {
-      anchor = body.querySelector(sel);
+      const candidates = body.querySelectorAll('.w_ch');
+      for (let i = 0; i < candidates.length; i++) {
+        const txt = (candidates[i].textContent ?? '').trim();
+        if (txt === '1') {
+          anchor = candidates[i];
+          break;
+        }
+      }
     } catch {
       anchor = null;
     }
-    if (anchor) break;
   }
   if (!anchor) return;
 
-  // Snapshot do HTML para rollback se a truncagem ficar destrutiva demais.
-  const originalLen = (body.textContent ?? "").trim().length;
-  const originalHtml = body.innerHTML;
-  const hadVerseAnchorBefore = /id=["'][^"']*chapter\d+[_-]?verse\d+/i.test(originalHtml);
-
-
-  // Sobe da âncora até filho direto de body, removendo irmãos anteriores
+  // Sobe da âncora até filho direto do body, removendo irmãos anteriores
   // em cada nível. Conteúdo posterior nunca é tocado.
   let node: Element = anchor;
   while (node.parentElement && node.parentElement !== body) {
@@ -573,29 +577,11 @@ function truncatePreChapterContent(doc: Document): void {
     }
     node = node.parentElement;
   }
-  // Último nível: irmãos diretos do body anteriores a `node`
   let prev = node.previousElementSibling;
   while (prev) {
     const toRemove = prev;
     prev = prev.previousElementSibling;
     toRemove.remove();
-  }
-
-  // Guarda de segurança: reverte se a truncagem ficou destrutiva.
-  //  - encolhimento extremo (texto < 100 chars OU < 50% do original), OU
-  //  - nenhuma âncora real de versículo `chapterN_verseN` sobreviveu.
-  const newLen = (body.textContent ?? "").trim().length;
-  const hasRealVerseAnchor = (() => {
-    const all = body.getElementsByTagName("*");
-    for (let i = 0; i < all.length; i++) {
-      const id = all[i].getAttribute("id") ?? "";
-      if (/^chapter\d+[_-]?verse\d+/i.test(id)) return true;
-    }
-    return false;
-  })();
-  const shrankTooMuch = originalLen > 0 && (newLen < 100 || newLen / originalLen < 0.5);
-  if (shrankTooMuch || (hadVerseAnchorBefore && !hasRealVerseAnchor)) {
-    body.innerHTML = originalHtml;
   }
 }
 
@@ -662,6 +648,13 @@ function isInsideOutline(node: Node, outlineRoots: Set<Element>): boolean {
 
 /** Coleta o texto entre dois marcadores, pulando notas/rodapés/cross-refs
  *  e parando em cabeçalhos de capítulo subsequentes. */
+/** Read-Until-Next-Anchor: concatena o texto entre `start` e `end`, atravessando
+ *  todos os irmãos sequenciais (p.sl, p.sb, etc.) via TreeWalker. Para em:
+ *   - `end` (próximo marker da lista), OU
+ *   - qualquer âncora de versículo `chapterN_verseM` que não seja `start`, OU
+ *   - qualquer âncora de capítulo (`.w_ch`, `[id^="chapter"]` sem `verse`), OU
+ *   - cabeçalho de capítulo / outline root.
+ *  Subárvores ruidosas (notas, cross-refs) são puladas inteiras. */
 function textBetween(
   doc: Document,
   start: Node,
@@ -673,6 +666,16 @@ function textBetween(
   const buf: string[] = [];
   let started = false;
   let node: Node | null = walker.nextNode();
+
+  const isVerseAnchorId = (id: string) => /^chapter\d+[_-]?verse\d+/i.test(id);
+  const isChapterAnchorEl = (el: Element) => {
+    const id = el.getAttribute("id") ?? "";
+    const cls = el.getAttribute("class") ?? "";
+    if (/\bw_ch\b/i.test(cls)) return true;
+    if (/^chapter\d+$/i.test(id) || /^cap\d+$/i.test(id) || /^ch\d+$/i.test(id)) return true;
+    return false;
+  };
+
   while (node) {
     if (!started) {
       if (node === start || (start.nodeType === 1 && (start as Element).contains(node))) {
@@ -681,11 +684,23 @@ function textBetween(
       node = walker.nextNode();
       continue;
     }
+    // Parada 1: chegamos no próximo marker oficial.
     if (end && (node === end || (end.nodeType === 1 && (end as Element).contains(node)))) break;
+
     if (node.nodeType === 1) {
       const el = node as Element;
-      if (isNoisyElement(el) || isChapterHeadingEl(el) || outlineRoots.has(el)) {
-        // Pula a subárvore inteira: avança até o próximo nó FORA dela.
+      const elId = el.getAttribute("id") ?? "";
+
+      // Parada 2: âncora de verso "órfã" (não listada como marker mas presente no DOM).
+      if (isVerseAnchorId(elId) && el !== start && !(start.nodeType === 1 && (start as Element).contains(el))) {
+        break;
+      }
+      // Parada 3: novo capítulo encontrado no caminho.
+      if (isChapterAnchorEl(el) || isChapterHeadingEl(el)) {
+        break;
+      }
+      // Pula subárvores ruidosas / outline inteiras.
+      if (isNoisyElement(el) || outlineRoots.has(el)) {
         let nxt: Node | null = walker.nextSibling();
         while (!nxt) {
           const parent = walker.parentNode();
@@ -704,6 +719,7 @@ function textBetween(
   }
   return buf.join("").replace(/\s+/g, " ").trim();
 }
+
 
 /** Considera um elemento como marcador de versículo se atender aos padrões TNM/genéricos. */
 function isVerseMarker(el: Element): { verse: number; chap?: number } | null {
