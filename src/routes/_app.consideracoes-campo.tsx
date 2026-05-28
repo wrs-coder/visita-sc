@@ -139,6 +139,7 @@ function Page() {
         return next.sort((a, b) => b.updated_at - a.updated_at);
       });
       setDraft(updated);
+      setMode("outline"); // após salvar, vai para Modo Esboço
       toast.success(t("fieldConsiderations.saved"));
     } catch {
       toast.error(t("common.errorGeneric", { defaultValue: "Erro" }));
