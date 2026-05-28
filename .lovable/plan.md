@@ -1,65 +1,68 @@
-## Objetivo
+## Mudanças (apenas CSS / classes Tailwind)
 
-Recuperar os versículos faltantes (déficit concentrado em Salmos, Jeremias, Isaías, Ezequiel, Números) e blindar o parser contra o "Conteúdo do livro" sem amputar capítulos reais.
+Aplicar hardening de largura nos componentes de "Esboço" em `src/routes/_app.consideracoes-campo.tsx`. Todas as alterações são em `className` — nada de lógica ou estado.
 
-Arquivo único: `src/lib/epub-bible-parser.ts`.
-
-## Diagnóstico
-
-1. **Truncagem complexa**: a `truncatePreChapterContent` atual tenta vários seletores (`[id^="chapter"]`, `[id^="cap"]`, `[epub:type]`, `section[role="doc-chapter"]`) com guardas de rollback. Em livros poéticos o seletor genérico engata em âncoras fora do "ch1" e corta versículos legítimos.
-2. **Travessia de versos**: o `textBetween` atual usa TreeWalker entre `marker[i]` e `marker[i+1]`. Funciona para prosa, mas qualquer falha no encadeamento (marker pulado, irmãos profundos) compromete a captura.
-3. **Causa raiz dos déficits em poesia/listas**: `NOISY_CLASS_RE` inclui `sb|sb1|sb2|ss|boxStudy|box|box1|box2`. Na TNM/NWT, blocos de estrofe e listas costumam usar classes `sb`/`sb1`/`sb2` (strophe-block) — o filtro está descartando o próprio texto bíblico em Salmos, Provérbios, Jeremias, Isaías, Ezequiel. Isso explica a defasagem massiva nesses livros.
-
-## Mudanças
-
-### 1. `truncatePreChapterContent` — reescrita estrita
-
-Substituir as linhas 534–601 por uma função enxuta. Âncora ÚNICA: `[id="chapter1"]` ou `.w_ch` cujo texto seja exatamente `"1"`. Se nenhuma existir, **no-op** (sem rollback, sem snapshot). Sem fallback por `verse`, sem busca por `cap`, `epub:type` ou `role`.
-
-### 2. `textBetween` — Read-Until-Next-Anchor reforçado
-
-Manter o TreeWalker, mas tornar as condições de parada explícitas e independentes da igualdade com `end`:
-
-- Para no `end` (next marker) — comportamento atual.
-- **NOVO**: para também ao encontrar qualquer elemento com `id` casando `/^chapter\d+[_-]?verse\d+/i` que não seja o próprio `start` (âncora de verso "órfã" não listada como marker).
-- **NOVO**: para também em `.w_ch` ou `[id^="chapter"]` que não seja id de versículo (novo capítulo).
-- Continua pulando subárvores `isNoisyElement` / `outlineRoots` / `isChapterHeadingEl`.
-
-Isso garante que, ao concatenar texto entre duas âncoras `chapterX_verseY`, capturamos todos os `<p class="sl">`, `<p class="sb">` e demais nós irmãos sequenciais até esbarrar na próxima âncora real — sem depender de cadeia de markers perfeita.
-
-### 3. `NOISY_CLASS_RE` — remover classes de poesia/estrofe
+### 1. Container raiz da aba (linha 426)
 
 Atual:
-```ts
-/\b(fn|footnote|footnotes|note|notes|rearnote|annotation|xref|cross|crossref|study|caption|figcaption|byline|callout|sidebar|outline|chapterOutline|chapter-outline|synopsis|summary|ss|sb|sb1|sb2|boxStudy|box|box1|box2|bridgehead)\b/i
+```
+<div className="space-y-4 overflow-x-hidden overflow-y-auto">
+```
+Novo:
+```
+<div className="space-y-4 w-full max-w-full overflow-x-hidden overflow-y-auto box-border">
 ```
 
-Novo (remove `ss|sb|sb1|sb2|boxStudy|box|box1|box2` — esses contêm texto bíblico em livros poéticos):
-```ts
-/\b(fn|footnote|footnotes|note|notes|rearnote|annotation|xref|cross|crossref|study|caption|figcaption|byline|callout|sidebar|outline|chapterOutline|chapter-outline|synopsis|summary|bridgehead)\b/i
+### 2. Card do editor (linha 562-563)
+
+- `<Card>` → `<Card className="w-full max-w-full overflow-hidden">`
+- `<CardContent className="p-5 space-y-4">` → adicionar `w-full max-w-full overflow-x-hidden box-border min-w-0`
+  - `min-w-0` é o que impede flex/grid children de empurrarem o container.
+
+### 3. Container raiz do `NoteEditor` (linha 630 — Fragment)
+
+Trocar o `<>` por um `<div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4">` para servir de âncora de largura.
+
+### 4. Toolbar (linha 631)
+
+`flex flex-wrap items-center justify-between gap-2` → adicionar `w-full max-w-full min-w-0` (o `flex-wrap` já está, garantimos a largura).
+
+### 5. Grid de campos / inputs (linha 668 em diante)
+
+- `<div className="grid gap-3">` → adicionar `w-full max-w-full min-w-0`.
+- Cada `<Input ... />` recebe `className="w-full max-w-full min-w-0"` (Título, Oração, Território, Designados, Descrição — linhas 671, 684, 693, 703, 714).
+
+### 6. Bloco "Versículos detectados" (linha 724) e grid de chips (734)
+
+- Card: adicionar `w-full max-w-full overflow-hidden break-words`.
+- Grid de chips (`flex flex-wrap gap-1.5`): adicionar `min-w-0 max-w-full`.
+
+### 7. Cards de notas criadas (lista de pastas/notas — varrer o JSX entre linhas 420 e 560)
+
+Cada `<Card>` de listagem de notas e cada elemento de texto (título da nota, descrição) recebe:
+- Card: `w-full max-w-full overflow-hidden`
+- Texto: `break-words` (= `overflow-wrap: break-word`) e `min-w-0` no container flex pai.
+
+### 8. Fullscreen outline (linha 816)
+
+Já tem `w-screen max-w-full overflow-x-hidden`. Adicionar `box-border` e garantir que o conteúdo interno (linha 843) também tenha `min-w-0 break-words` no wrapper de texto.
+
+### 9. (Opcional, leve) `src/styles.css`
+
+Adicionar uma classe utilitária `.esboco-safe` agrupando:
+```css
+.esboco-safe { max-width: 100vw; box-sizing: border-box; overflow-wrap: break-word; word-wrap: break-word; min-width: 0; }
 ```
+e aplicar nos containers principais (raiz da aba, NoteEditor, Card de listagem). Opcional — as classes Tailwind acima já cobrem o caso; só faria isso se quisermos centralizar.
 
-Notas de rodapé, sidebars e cross-refs continuam filtrados via `PURGE_SELECTORS` (que já remove `[epub:type~="footnote"]`, `.footnote`, `aside`, `nav` etc.) — não há regressão de "Conteúdo do livro".
+## Verificação
 
-### 4. Mantidos sem mudança
+- Abrir `/consideracoes-campo` em 390×845 (viewport atual do usuário) e em 320×568.
+- Colar um texto longo sem espaços (ex: `aaaaaaaaaa...`) no Título e na Descrição — não deve haver scroll horizontal.
+- Conferir a lista de notas com títulos longos — deve quebrar linha.
 
-- `hardPurgeDoc` e `PURGE_SELECTORS` (footnotes, navegação, capa).
-- `looksLikeOutlinePage` (descarte de páginas-índice sem marcadores reais).
-- Loop de `parseEpub`, dedup `marker > fallback`, auditoria `perBookCounts` + `diffs`.
-- `bible-refs.ts`, `bible-canon.ts`, `BibleVersePopover.tsx`.
+## Fora de escopo
 
-## Validação
-
-1. `bunx vitest run` — 54/54 verdes (Judas 5, Filêmon 6, 2/3 João, Obadias).
-2. Re-importar o EPUB com console aberto e capturar:
-   - `[epub-bible] AUDIT perBookCounts`
-   - `console.table(diffs.slice(0, 25))`
-3. Comparar total geral com baseline canônica (~31.102) e reportar livros ainda defasados.
-
-## Risco
-
-Baixo. Truncagem fica estritamente mais conservadora. Read-Until-Next-Anchor é estritamente aditivo (só adiciona pontos de parada — não estende a janela). A remoção de `sb/sb1/sb2/ss/box*` do filtro de ruído é a única mudança que pode reintroduzir conteúdo: se algum livro voltar a vazar texto de boxes de estudo, aparecerá nos logs de auditoria como excesso (e não defasagem), e tratamos via `PURGE_SELECTORS`.
-
-## Observação
-
-Os números só refletem após **re-importar o EPUB** (IndexedDB não re-processa automaticamente).
+- Nenhuma mudança no parser EPUB.
+- Nenhuma mudança de lógica de salvamento, navegação, ou estado.
+- Não tocar em outras rotas.
