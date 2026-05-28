@@ -1222,7 +1222,16 @@
       "imported": "Importado: {{folders}} carpeta(s) y {{notes}} nota(s).",
       "sectionTitle": "Carpetas y notas",
       "expand": "Expandir",
-      "collapse": "Minimizar"
+      "collapse": "Minimizar",
+      "moveTo": "Mover a…",
+      "pasteHere": "Pegar aquí",
+      "root": "📁 Raíz (sin carpeta)",
+      "hereLabel": "aquí",
+      "cut": "Cortar",
+      "moved": "Movido.",
+      "cannotMoveIntoSelf": "No se puede mover una carpeta dentro de sí misma.",
+      "clipboardHint": "1 nota cortada. Toca \"Pegar aquí\" en la carpeta de destino.",
+      "clearClipboard": "Cancelar"
     },
     "fields": {
       "description": "Descripción",
