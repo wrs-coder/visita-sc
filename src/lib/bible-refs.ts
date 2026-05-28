@@ -118,7 +118,9 @@ export function findCitations(books: BookInfo[] | undefined, text: string): Cita
   const out: CitationMatch[] = [];
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
-    const raw = m[0];
+    const raw = m[1]; // grupo 1 = citação real (sem o char de boundary do grupo 0)
+    if (!raw) continue;
+    const startIdx = m.index + m[0].indexOf(raw);
     const d = dissect(raw);
     if (!d) continue;
     const key = stripDiacritics(d.bookTerm.toLowerCase()).replace(/\.$/, "");
@@ -131,7 +133,7 @@ export function findCitations(books: BookInfo[] | undefined, text: string): Cita
       chapter: d.chapter,
       verse: d.verse,
       verseEnd: d.verseEnd,
-      index: m.index,
+      index: startIdx,
       length: raw.length,
     });
   }
