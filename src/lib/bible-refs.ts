@@ -21,6 +21,8 @@ export interface CitationMatch {
   chapter: number;
   verse: number;
   verseEnd?: number;
+  /** Versos discretos quando a citação usa vírgulas (ex.: "1 Pe 1:3,5" → [3, 5]). */
+  verses?: number[];
   index: number;
   length: number;
 }
