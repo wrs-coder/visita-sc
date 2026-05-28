@@ -1,60 +1,25 @@
-## Correção: não quebrar em `.w_ch` inline do número do capítulo
+# Plano
 
-### Diagnóstico
+## 1. Nomes de livros bíblicos voltando em inglês no popover
 
-Na estrutura padrão TNM dos 66 livros, logo após `<span id="chapterN_verse1"></span>` vem `<span class="w_ch"><strong>N</strong> </span>` (o número do capítulo inline) e em seguida o texto do versículo 1, tudo dentro do mesmo `<p>`.
+**Causa-raiz**: em `src/lib/epub-bible-parser.ts`, a função `detectCanonicalBookForDoc` (linhas 970–1003) retorna `label = hit.english` quando o livro é detectado pelo **nome do arquivo** (passo 1) ou pelo **corpo do texto** (passo 3). Só o passo 2 (heading) usa o texto localizado do EPUB. Como a TNM PT tem nomes de arquivo do tipo `60_Mat_01.xhtml`, o passo 1 vence e o `label` vira `"Matthew"` / `"John"`, que depois é usado como `displayName` em `compile()` (`src/lib/bible-refs.ts`) e renderizado no popover (`BibleVersePopover.tsx` linha 99).
 
-O pré-pass `verse1Anchors` (linhas 828-835) já registra o anchor de `verse1` corretamente como marker. O problema está em `textBetween` (linha 708-714): a **Parada 3** quebra ao encontrar qualquer elemento com classe `w_ch` (via `isChapterAnchorEl`). O span `.w_ch` que carrega só o número "1" é o **próximo irmão** do anchor `start`, então a guarda `!start.contains(el)` não protege. A coleta para antes mesmo de começar, o texto fica vazio, e o versículo 1 é descartado em `continue` (linha 920).
+**Correção** (apenas em `detectCanonicalBookForDoc`):
+- Após qualquer detecção (filename, heading, body), tentar **sempre** extrair um label localizado dos headings (`h1`/`h2`/`h3`/`title`) do próprio documento. Se algum heading resolver para o **mesmo** `CanonicalBook`, usar esse texto (com o sufixo de capítulo limpo) como `label`. Caso contrário, manter o fallback atual (`hit.english`).
+- Isso preserva o caminho rápido por filename, mas garante que o nome exibido venha do EPUB no idioma importado.
 
-### Mudança única em `src/lib/epub-bible-parser.ts`
+Sem alterações em `bible-canon.ts`, `bible-refs.ts`, `PURGE_SELECTORS`, `extractVersesFromDoc` ou na lógica do versículo 1 / último versículo. Requer reimportar a Bíblia em **Gerenciar Bíblias**.
 
-Em `textBetween`, na "Parada 3" (linhas 708-714), tratar o `.w_ch` que é **apenas prefixo numérico do capítulo** (id começa com `chapter` puro, sem `_verse`, OU conteúdo é só dígitos) como **subárvore a pular** — não como parada. Apenas headings de capítulo reais (`isChapterHeadingEl` em blocos `<h1>`/`<h2>`/`<p class="w_ch">` que contêm um novo número de capítulo distinto do atual) devem quebrar.
+## 2. Ajustes na aba de edição de Esboços Pessoais
 
-Lógica nova dentro do `if (node.nodeType === 1)`:
+Arquivo: `src/routes/_app.consideracoes-campo.tsx` + `src/i18n/locales/pt.json`.
 
-```ts
-// Se for um span/anchor inline com classe w_ch carregando só o número do
-// capítulo (prefixo do versículo 1), pula a SUBÁRVORE em vez de parar.
-if (/\bw_ch\b/i.test(el.getAttribute("class") ?? "")) {
-  const txt = (el.textContent ?? "").trim();
-  const idAttr = el.getAttribute("id") ?? "";
-  const isInlineChapterNumber =
-    /^\d{1,3}$/.test(txt) ||
-    (/^chapter\d+$/i.test(idAttr) && !/_verse/i.test(idAttr));
-  if (isInlineChapterNumber) {
-    // pula subárvore (mesma técnica usada para nós ruidosos)
-    let nxt: Node | null = walker.nextSibling();
-    while (!nxt) {
-      const parent = walker.parentNode();
-      if (!parent) break;
-      nxt = walker.nextSibling();
-    }
-    node = nxt;
-    continue;
-  }
-}
-```
+- **"Exportar nota (JSON)" → "Exportar"**: alterar a string PT da chave `personalOutlines.folders.exportNote` em `pt.json` (linha 1215). Manter chave e usos (linha 771). en/es ficam como estão.
+- **"Salvar nota" → "Salvar"**: alterar a string PT da chave `fieldConsiderations.save` em `pt.json` (linha 1167). Botão na linha 778 já usa essa chave.
+- **Layout: gerenciador de pastas + nova nota acima das notas (e não ao lado)**: trocar o grid `md:grid-cols-[300px_1fr]` (linha 494) por uma stack vertical (`flex flex-col gap-4` em todos os breakpoints). A `Card` lateral vira a primeira linha (com `w-full` e `h-fit`) e o `Card` do editor segue abaixo. Sem alterações na barra sticky de ações nem no `RichNoteEditor`.
 
-Esse bloco vai **antes** da Parada 3 atual (linha 708). Assim:
-- `.w_ch` inline do número do capítulo → skip da subárvore, continua coletando texto do v1.
-- `<p class="w_ch">` que abre um novo capítulo (com conteúdo além do número, ou heading com texto) → cai na Parada 3 e quebra como hoje.
-- Anchors `id="chapterN"` puros (sem `_verse`) que aparecem como irmãos do v1 anchor → também tratados como skip (não param a coleta).
+## Validação
 
-### Preservações (intocadas)
-
-- **`PURGE_SELECTORS` e `hardPurgeDoc`** — `.groupFootnote` continua purgado antes da extração. **Sem alteração.**
-- **Pré-pass `verse1Anchors`** (linhas 828-835) — mantido.
-- **Coleta do último versículo do capítulo** (linhas 906-920, com `next = null` deliberado) — intocada. Sem regressão no último versículo.
-- **Parada 1 (próximo marker), Parada 2 (anchor de verso órfão)** — intocadas.
-- `parseChapVerseFromAttr`, `isVerseMarker`, `isChapterHeadingEl`, `chapterNumberFromHeading`, `truncatePreChapterContent`, `findOutlineRoots`, `isNoisyElement` — todos preservados.
-- Sem mudanças em CSS, rotas, componentes, UI ou parsing de OPF.
-
-### Verificação
-
-- `bunx vitest run` — 54/54 testes devem continuar passando.
-- Reimportar a TNM em **Gerenciar Bíblias** e conferir Gênesis 1:1, Mateus 1:1, 1 Pedro 1:1 (estrutura do exemplo), e amostragem de capítulos no meio de cada livro.
-- Confirmar que o último versículo de cada capítulo continua íntegro (regressão crítica).
-
-### Fora de escopo
-
-Qualquer alteração em purge de rodapés, parsing de OPF, agrupamento por livro, fallback regex, ou camada de UI.
+- `bun test` (suíte do parser EPUB deve continuar passando).
+- Reimportar a Bíblia TNM PT e abrir o popover para citações de Mateus/João/Apocalipse — devem aparecer em português.
+- Conferir os 3 ajustes visuais na rota `/consideracoes-campo` (desktop e mobile a 770px).

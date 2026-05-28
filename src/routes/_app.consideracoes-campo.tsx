@@ -491,7 +491,7 @@ function Page() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-[300px_1fr] w-full max-w-full min-w-0">
+          <div className="flex flex-col gap-4 w-full max-w-full min-w-0">
 
             {/* Sidebar: árvore de pastas */}
             <Card className="h-fit">

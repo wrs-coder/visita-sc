@@ -968,25 +968,42 @@ function extractVersesFromDoc(
  *  Ordem: filename → headings (h1/h2/h3/title) → primeiras palavras do body.
  */
 function detectCanonicalBookForDoc(href: string, doc: Document): { book: CanonicalBook; label: string } | null {
-  // 1) filename: mt_07.xhtml, matthew-01.xhtml, 40-Mat-01.xhtml, gn1.xhtml...
-  const base = (href.split("/").pop() ?? "").replace(/\.[^.]+$/, "");
-  const baseClean = base.replace(/[_\-.\d]+/g, " ").trim();
-  const fromFile = baseClean ? resolveCanonical(baseClean) : null;
-  if (fromFile) return { book: fromFile, label: fromFile.english };
-
-  // 2) headings/title
-  const headings = [
+  // Helpers para extrair um label localizado dos headings do próprio documento.
+  // Usado em todos os caminhos de detecção (filename/heading/body) para garantir
+  // que o nome exibido venha do EPUB no idioma importado, e não do fallback inglês.
+  const getHeadingTexts = (): string[] => [
     doc.getElementsByTagName("h1")[0]?.textContent ?? "",
     doc.getElementsByTagName("h2")[0]?.textContent ?? "",
     doc.getElementsByTagName("h3")[0]?.textContent ?? "",
     doc.getElementsByTagName("title")[0]?.textContent ?? "",
   ];
-  for (const h of headings) {
+  const localizedLabelFor = (book: CanonicalBook): string | null => {
+    for (const h of getHeadingTexts()) {
+      const text = h.trim();
+      if (!text) continue;
+      const hit = findCanonicalInText(text);
+      if (hit && hit.id === book.id) {
+        const cleaned = text.replace(/\s+\d{1,3}.*$/, "").trim();
+        if (cleaned) return cleaned;
+      }
+    }
+    return null;
+  };
+
+  // 1) filename: mt_07.xhtml, matthew-01.xhtml, 40-Mat-01.xhtml, gn1.xhtml...
+  const base = (href.split("/").pop() ?? "").replace(/\.[^.]+$/, "");
+  const baseClean = base.replace(/[_\-.\d]+/g, " ").trim();
+  const fromFile = baseClean ? resolveCanonical(baseClean) : null;
+  if (fromFile) {
+    return { book: fromFile, label: localizedLabelFor(fromFile) ?? fromFile.english };
+  }
+
+  // 2) headings/title
+  for (const h of getHeadingTexts()) {
     const text = h.trim();
     if (!text) continue;
     const hit = findCanonicalInText(text);
     if (hit) {
-      // Limpa sufixo de capítulo do label, mantendo o nome do livro como aparece no EPUB
       const label = text.replace(/\s+\d{1,3}.*$/, "").trim() || hit.english;
       return { book: hit, label };
     }
@@ -996,7 +1013,7 @@ function detectCanonicalBookForDoc(href: string, doc: Document): { book: Canonic
   const body = (doc.body?.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 300);
   if (body) {
     const hit = findCanonicalInText(body);
-    if (hit) return { book: hit, label: hit.english };
+    if (hit) return { book: hit, label: localizedLabelFor(hit) ?? hit.english };
   }
 
   return null;
