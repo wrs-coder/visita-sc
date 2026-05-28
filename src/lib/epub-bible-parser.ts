@@ -44,6 +44,26 @@ export type ParseProgress = (phase: "unzip" | "parse-opf" | "index-books" | "wri
 const XML_MIME = "application/xml";
 const XHTML_MIME = "application/xhtml+xml";
 
+/** Totais canônicos de versículos por livro (texto massorético/grego padrão).
+ *  Usado apenas para destacar defasagens no log de auditoria pós-import. */
+const EXPECTED_VERSE_COUNTS: Record<string, number> = {
+  B01: 1533, B02: 1213, B03: 859,  B04: 1288, B05: 959,
+  B06: 658,  B07: 618,  B08: 85,   B09: 810,  B10: 695,
+  B11: 816,  B12: 719,  B13: 942,  B14: 822,  B15: 280,
+  B16: 406,  B17: 167,  B18: 1070, B19: 2461, B20: 915,
+  B21: 222,  B22: 117,  B23: 1292, B24: 1364, B25: 154,
+  B26: 1273, B27: 357,  B28: 197,  B29: 73,   B30: 146,
+  B31: 21,   B32: 48,   B33: 105,  B34: 47,   B35: 56,
+  B36: 53,   B37: 38,   B38: 211,  B39: 55,
+  B40: 1071, B41: 678,  B42: 1151, B43: 879,  B44: 1007,
+  B45: 433,  B46: 437,  B47: 257,  B48: 149,  B49: 155,
+  B50: 104,  B51: 95,   B52: 89,   B53: 47,   B54: 113,
+  B55: 83,   B56: 46,   B57: 25,   B58: 303,  B59: 108,
+  B60: 105,  B61: 61,   B62: 105,  B63: 13,   B64: 14,
+  B65: 25,   B66: 404,
+};
+
+
 function normalizeLang(raw: string | null | undefined): string {
   if (!raw) return "xx";
   const m = raw.trim().toLowerCase().match(/^([a-z]{2,3})/);
@@ -538,6 +558,8 @@ function truncatePreChapterContent(doc: Document): void {
   // Snapshot do HTML para rollback se a truncagem ficar destrutiva demais.
   const originalLen = (body.textContent ?? "").trim().length;
   const originalHtml = body.innerHTML;
+  const hadVerseAnchorBefore = /id=["'][^"']*chapter\d+[_-]?verse\d+/i.test(originalHtml);
+
 
   // Sobe da âncora até filho direto de body, removendo irmãos anteriores
   // em cada nível. Conteúdo posterior nunca é tocado.
@@ -559,9 +581,20 @@ function truncatePreChapterContent(doc: Document): void {
     toRemove.remove();
   }
 
-  // Guarda de segurança: se o texto encolheu drasticamente, reverte.
+  // Guarda de segurança: reverte se a truncagem ficou destrutiva.
+  //  - encolhimento extremo (texto < 100 chars OU < 50% do original), OU
+  //  - nenhuma âncora real de versículo `chapterN_verseN` sobreviveu.
   const newLen = (body.textContent ?? "").trim().length;
-  if (originalLen > 0 && (newLen < 200 || newLen / originalLen < 0.2)) {
+  const hasRealVerseAnchor = (() => {
+    const all = body.getElementsByTagName("*");
+    for (let i = 0; i < all.length; i++) {
+      const id = all[i].getAttribute("id") ?? "";
+      if (/^chapter\d+[_-]?verse\d+/i.test(id)) return true;
+    }
+    return false;
+  })();
+  const shrankTooMuch = originalLen > 0 && (newLen < 100 || newLen / originalLen < 0.5);
+  if (shrankTooMuch || (hadVerseAnchorBefore && !hasRealVerseAnchor)) {
     body.innerHTML = originalHtml;
   }
 }
@@ -719,30 +752,29 @@ function looksLikeOutlinePage(doc: Document): boolean {
   const body = doc.body;
   if (!body) return false;
 
-  // 1) Tem âncoras reais de versículo? Então NÃO é página de outline.
-  const hasRealVerseAnchors =
-    body.querySelector('[id^="chapter"][id*="verse"], .w_ch, [class*="verseNum"], [class*="verse-num"]') !== null;
-  if (hasRealVerseAnchors) return false;
+  // 1) Pré-scan robusto: se existir QUALQUER âncora real de versículo
+  //    (id chapterN_verseN, classe w_ch, verseNum, verse-num) o arquivo
+  //    contém texto bíblico real e NUNCA deve ser descartado como outline.
+  const bodyHtml = body.innerHTML;
+  if (/id=["'][^"']*chapter\d+[_-]?verse\d+/i.test(bodyHtml)) return false;
+  if (/class=["'][^"']*(?:\bw_ch\b|verseNum|verse-num|\bverse\b)/i.test(bodyHtml)) return false;
 
-  // 2) Muitos links de navegação para versos/capítulos
+  // 2) Contagem de links de navegação para versos/capítulos.
   let navLinks = 0;
   const anchors = body.getElementsByTagName("a");
   for (let i = 0; i < anchors.length; i++) {
     const href = anchors[i].getAttribute("href") ?? "";
     if (/#chapter|_verse|#v\d/i.test(href)) navLinks++;
-    if (navLinks > 5) return true;
   }
 
-  // 3) Múltiplas ocorrências globais de "(N)" / "(N-M)" — assinatura de outline JW
-  const text = body.textContent ?? "";
-  const parens = text.match(/\(\s*\d{1,3}(?:\s*[-–]\s*\d{1,3})?\s*\)/g);
-  if (parens && parens.length >= 3) return true;
+  // 3) Critério unificado e conservador: só descarta se for muito claramente
+  //    uma página de índice/sumário (sem nenhuma âncora real de versículo, vide 1).
+  const manyNavLinks = navLinks >= 15;
+  const strongOutlineSignal = findOutlineRoots(doc).size >= 2;
 
-  // 4) findOutlineRoots já detectou pelo menos um bloco
-  if (findOutlineRoots(doc).size >= 1) return true;
-
-  return false;
+  return manyNavLinks || strongOutlineSignal;
 }
+
 
 interface ExtractedVerse {
   chapter: number;
@@ -1020,6 +1052,24 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
     if (bi % 3 === 2) await new Promise((r) => setTimeout(r, 0));
   }
   onProgress?.("index-books", 1);
+
+  // ── Auditoria de contagem por livro ────────────────────────────────────────
+  const perBookCounts: Record<string, number> = {};
+  for (const v of verses) {
+    perBookCounts[v.bookId] = (perBookCounts[v.bookId] ?? 0) + 1;
+  }
+  const diffs = CANON
+    .map((c) => {
+      const got = perBookCounts[c.id] ?? 0;
+      const exp = EXPECTED_VERSE_COUNTS[c.id] ?? 0;
+      return { id: c.id, name: c.english, got, expected: exp, missing: Math.max(0, exp - got) };
+    })
+    .filter((r) => r.expected > 0 && r.got < r.expected)
+    .sort((a, b) => b.missing - a.missing);
+  // eslint-disable-next-line no-console
+  console.info("[epub-bible] AUDIT perBookCounts:", perBookCounts);
+  // eslint-disable-next-line no-console
+  console.table(diffs.slice(0, 25));
 
   // Diagnóstico de livros canônicos faltantes
   const foundIds = new Set(books.map((b) => b.bookId));
