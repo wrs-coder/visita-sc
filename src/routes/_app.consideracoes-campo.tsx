@@ -629,7 +629,7 @@ function NoteEditor({
   const isField = type === "field_consideration";
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words">
+    <div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words pb-24">
       <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0">
 
         <div className="flex items-center gap-2">
@@ -645,24 +645,8 @@ function NoteEditor({
         <div className="flex items-center gap-2">
           <SavingIndicator saving={saving} />
           {mode === "outline" && (
-            <>
-              <Button variant="outline" size="sm" onClick={onFullscreen}>
-                <Maximize2 className="h-4 w-4 mr-1.5" /> {t("personalOutlines.fullscreen.enter")}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => onModeChange("edit")}>
-                <Pencil className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.edit")}
-              </Button>
-            </>
-          )}
-          <Button variant="outline" size="sm" onClick={onExport}>
-            <Download className="h-4 w-4 mr-1.5" /> {t("personalOutlines.folders.exportNote")}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive">
-            <Trash2 className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.delete")}
-          </Button>
-          {mode === "edit" && (
-            <Button size="sm" onClick={onSave} disabled={saving}>
-              <Save className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.save")}
+            <Button variant="outline" size="sm" onClick={onFullscreen}>
+              <Maximize2 className="h-4 w-4 mr-1.5" /> {t("personalOutlines.fullscreen.enter")}
             </Button>
           )}
         </div>
@@ -774,6 +758,26 @@ function NoteEditor({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Sticky action bar — sempre visível no rodapé do editor */}
+      <div className="sticky bottom-0 left-0 right-0 z-30 -mx-5 px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-end gap-2 w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
+        {mode === "outline" && (
+          <Button variant="outline" size="sm" onClick={() => onModeChange("edit")}>
+            <Pencil className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.edit")}
+          </Button>
+        )}
+        <Button variant="outline" size="sm" onClick={onExport}>
+          <Download className="h-4 w-4 mr-1.5" /> {t("personalOutlines.folders.exportNote")}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive">
+          <Trash2 className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.delete")}
+        </Button>
+        {mode === "edit" && (
+          <Button size="sm" onClick={onSave} disabled={saving}>
+            <Save className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.save")}
+          </Button>
+        )}
       </div>
     </div>
   );
