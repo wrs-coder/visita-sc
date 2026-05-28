@@ -1,116 +1,128 @@
-## Objetivo
-1. Resolver aliases ambíguos (`Jo`, `Jn`, `Dn`, `Jd`, `Nm`) com base no **idioma da Bíblia EPUB importada**. Bíblia em PT → `Jo`=João; Bíblia em EN → `Jo`=Job. Sem quebrar a estrutura existente.
-2. Adicionar suíte de testes automatizados para garantir regressão zero.
+# Esboços Pessoais — Reestruturação completa
 
----
+Aditivo: nada do que já existe (notas atuais, exportações PDF, fila offline, sync, RLS, gate de superintendente) é alterado. Tudo abaixo é só IndexedDB/localStorage local + UI.
 
-## Parte 1 — Resolução por idioma
+## 1. Sidebar e nomenclatura (`src/routes/_app.tsx`, `src/i18n/locales/*.json`)
 
-### Por que o conflito existe
-`compile()` em `bible-refs.ts` faz `for (b of books) → for (alias of [...book.aliases, ...canonAliases]) → lookup.set(key, …) se !lookup.has(key)`. Como os livros são processados em ordem canônica (Job=18 antes de João=43) e todos os aliases multilíngues do `CANON` são despejados em todos os casos, **o primeiro a registrar uma chave ambígua vence sempre** — independente do idioma da Bíblia importada.
+- Mover `/resumo-semana` e `/consideracoes-campo` da seção **Visita** para **Principal**, posicionados **logo acima** de `/notas` (ordem: Home, Cronograma, Itinerário, Congregações, Resumo da semana, Esboços Pessoais, Notas Privadas).
+- Renomear chave i18n `sidebar.fieldConsiderations` e `fieldConsiderations.title/subtitle` para "Esboços Pessoais" (pt/en/es). URL `/consideracoes-campo` permanece para não quebrar links/rotas.
+- Ícone: trocar `BookOpen` por `FileText` (BookOpen continua representando a Bíblia ativa).
 
-### Estratégia
-1. **Detectar idioma** da Bíblia importada (`detectBibleLanguage(books)`):
-   - Examina os `displayName` dos livros.
-   - Conta marcadores fortes: `joao|mateus|salmos|genese|apocalipse` → `pt`; `john|matthew|psalms|genesis|revelation` → `en`; `juan|mateo|salmos|genesis|apocalipsis` → `es` (Salmos colide com PT mas o desempate por outros marcadores resolve).
-   - Retorna `"pt" | "en" | "es" | "unknown"`.
+## 2. Modelo de dados local (`src/lib/bible-notes-store.ts`)
 
-2. **Tabela `AMBIGUOUS_ALIASES`** declarando o livro preferido por idioma:
-   ```ts
-   const AMBIGUOUS_ALIASES: Record<string, Partial<Record<Lang, string>>> = {
-     jo: { pt: "B43", en: "B18", es: "B18" }, // João vs Job
-     jn: { pt: "B43", en: "B32" },            // João vs Jonas
-     dn: { pt: "B27", en: "B05" },            // Daniel vs Deuteronomy
-     jd: { pt: "B65", en: "B07" },            // Judas vs Judges
-     nm: { pt: "B04", en: "B04" },            // Números (Nahum nunca usa)
-   };
-   ```
-   Esses aliases continuam **presentes em ambos os livros do CANON** (não removemos nada — mantém compatibilidade com outras possíveis Bíblias).
+Bump `DB_VERSION` 2 → 3, adicionar `STORE_FOLDERS` com `keyPath: "id"` + índice `by_parent` em `parentId` e `by_type` em `type`. Migração `onupgradeneeded` cria a store sem tocar nas existentes.
 
-3. **Filtro no `compile(books, lang)`**: ao iterar aliases de cada livro, se o alias normalizado for chave de `AMBIGUOUS_ALIASES` **e** o livro atual não for o preferido para `lang`, pula esse alias. Quando `lang === "unknown"`, mantém o comportamento atual (primeiro vence).
+```ts
+export type NoteType = "field_consideration" | "outline";
 
-4. **Cache**: trocar o `WeakMap<BookInfo[], CompiledIndex>` por `WeakMap<BookInfo[], Map<Lang, CompiledIndex>>` para evitar recompilar quando o idioma muda. Idioma é detectado uma vez por chamada de `findCitations`/`resolveBookId`.
+export interface NoteFolder {
+  id: string;
+  name: string;
+  parentId: string | null;   // null = raiz
+  type: NoteType;
+  created_at: number;
+}
 
-### Mudanças concretas em `src/lib/bible-refs.ts`
-- Adicionar `type Lang = "pt" | "en" | "es" | "unknown"`.
-- Adicionar `detectBibleLanguage(books)` (pode ser memoizado por referência de `books`).
-- Adicionar `AMBIGUOUS_ALIASES`.
-- Trocar assinatura interna de `compile(books)` para `compile(books, lang)`.
-- Em `findCitations` e `resolveBookId`: chamar `const lang = detectBibleLanguage(books)` e passar para `compile`.
-- Ajustar cache para chave composta (books + lang).
-- Não mexer em `bible-canon.ts` — fica intocado.
+// FieldNote ganha campos opcionais (retrocompatíveis):
+export interface FieldNote {
+  id: string;
+  type?: NoteType;           // default "field_consideration" para notas antigas
+  folderId?: string | null;  // null = raiz; ausente em notas legadas
+  title: string;
+  // Field consideration:
+  prayer?: string;
+  territory?: string;
+  assistants?: string;
+  // Outline:
+  description?: string;
+  content: string;
+  created_at: number;
+  updated_at: number;
+}
+```
 
----
+Novas funções (todas com fallback localStorage espelhando o padrão atual):
+- `listFolders(type?: NoteType): Promise<NoteFolder[]>`
+- `saveFolder(f: NoteFolder)`, `newFolderId()`
+- `deleteFolderCascade(id: string)` — apaga subpastas (recursivo via `by_parent`) e todas as notas com `folderId` nessas pastas.
+- `listNotesByType(type: NoteType, folderId?: string | null)` — filtra por tipo e (opcional) pasta.
+- `exportFolderJSON(id)` → `{ version: 1, kind: "folder", folder, subfolders[], notes[] }`.
+- `exportNoteJSON(id)` → `{ version: 1, kind: "note", note }`.
+- `importJSON(payload, targetParentId?)` — recria estrutura com **novos IDs** (evita colisão) preservando hierarquia; respeita o `type` no payload.
 
-## Parte 2 — Testes automatizados (Vitest)
+Notas legadas (sem `type`/`folderId`) são tratadas como `field_consideration` na raiz; mostradas apenas após o usuário escolher esse tipo. Nada é apagado.
 
-### Setup
-- `bun add -d vitest` (não precisa `@vitest/ui` nem jsdom — testes são puramente de função).
-- Adicionar script: `"test": "vitest run"`.
-- Criar `vitest.config.ts` mínimo (sem JSX, apenas Node).
+## 3. Tela `/consideracoes-campo` (`src/routes/_app.consideracoes-campo.tsx`)
 
-### Arquivo `src/lib/bible-refs.test.ts`
-Duas fixtures: `ptBooks` (66 livros com `displayName` em PT) e `enBooks` (em EN), ambas geradas a partir de listas explícitas (não usa o EPUB).
+Reescrita preservando o gate de superintendente e o `BibleManagerDialog`.
 
-**A. Idioma detectado**
-- `detectBibleLanguage(ptBooks)` === `"pt"`
-- `detectBibleLanguage(enBooks)` === `"en"`
+**Layout**
 
-**B. Resolução PT (Bíblia em português)**
-- `Jo 3:16` → João (B43)
-- `Jn 1:1` → João (B43)
-- `Dn 7:13` → Daniel (B27)
-- `Jd 5` → Judas (B65, single-chapter)
-- `Nm 6:24` → Números (B04)
+```text
+[Header: Esboços Pessoais]
+[Strip da Bíblia ativa] (inalterado)
+[Seletor de tipo (segmented): "Consideração de Campo" | "Esboço"]    ← obrigatório
 
-**C. Resolução EN (Bíblia em inglês)**
-- `Jo 1:1` → Job (B18)
-- `Jn 1:1` → Jonah (B32)
-- `Dn 7:13` → Deuteronomy (B05)
-- `Jd 5` → Judges (B07)
-- `Jude 5` → Jude (B65)
+  ┌─ Sidebar (árvore) ─────────────┐  ┌─ Editor ───────────────────────┐
+  │ [+ Nova pasta] [Importar JSON] │  │ Vazio até abrir/criar nota     │
+  │ ▸ 📁 Pasta A          ⋮        │  │                                │
+  │   ▾ 📁 Sub A.1        ⋮        │  │                                │
+  │     • Nota X                   │  │                                │
+  │   • Nota Y                     │  └────────────────────────────────┘
+  │ ▸ 📁 Pasta B          ⋮        │
+  └────────────────────────────────┘
+```
 
-**D. Acentuação PT**
-- `João 2:1`, `joao 2:1`, `JOÃO 2:1` → todos resolvem João 2:1
-- `Colossenses 3:14`, `colossenses 3:14`
-- `Filêmon 6`, `filemon 6`
+- Enquanto `activeType === null`, painéis ficam ocultos com mensagem "Escolha um tipo para começar".
+- Árvore retrátil com toggle por pasta (chevron). Estado de expansão em `useState` (não persistido).
+- Menu `⋮` por pasta: **Nova subpasta**, **Renomear**, **Exportar Pasta (JSON)**, **Excluir** (confirm com aviso de cascata).
+- Botão **+ Nova nota** dentro da pasta selecionada salva com `folderId` corrente; se nenhuma pasta selecionada, salva na raiz do tipo ativo.
+- Formulário renderiza condicionalmente:
+  - `field_consideration`: Título, Oração Final, Território, Dirigentes, Conteúdo.
+  - `outline`: Título, Descrição, Conteúdo.
+- Cabeçalho da nota aberta inclui botão **Exportar Nota (JSON)** + botão **Tela cheia** (ver §5).
+- `Importar JSON`: input `<input type="file" accept="application/json">`; detecta `kind` e chama `importJSON`. Toast com nº de pastas/notas criadas.
 
-**E. Livros numerados**
-- `1 João 4:8`, `I João 4:8`, `1Jo 4:8`, `1 Jo 4:8`
-- `2 Pedro 3:10`, `2Pe 3:10`
-- `1Co 13:4`, `1 Co 13:4`
+Export/import seguem o padrão visual do `TemplateIOButtons` (botões `outline` discretos) mas com lógica própria (formato distinto dos modelos).
 
-**F. Livros de capítulo único (verso-only)**
-- `Judas 5` → Jude 1:5
-- `2 João 4` → 2 John 1:4
-- `3 Jo 8` → 3 John 1:8
-- `Obadias 15` → Obadiah 1:15
-- `Filêmon 6` → Philemon 1:6
-- **negativo:** `Mateus 5` (sem `:`) → não casa
+## 4. Popover bíblico (`src/components/bible/BibleVersePopover.tsx`)
 
-**G. Bordas com pontuação**
-- `(João 2:1)` casa
-- `João 2:1,` casa
-- `... João 2:1. Próxima` casa
-- `abcJoão 2:1` não casa
+- `PopoverContent`: trocar para `className="w-80 max-w-[90vw] max-h-[60vh] overflow-y-auto"`.
+- Wrapper interno do texto recebe `max-h` + `overflow-y-auto` para garantir rolagem mesmo em popovers nested.
+- Aceitar prop opcional `fontScale?: number` (default 1) que multiplica `font-size` do bloco de texto — usado pelo Modo Esboço.
 
-**H. Intervalos**
-- `João 3:16-18`, `João 3:16–18` (en-dash), `Jd 5-7`
+## 5. Modo Esboço em tela cheia
 
-**I. Forma antiga preservada**
-- `Judas 1:5` → Jude 1:5 (mesmo em Bíblia PT)
+Novo componente local `OutlineFullscreen` renderizado via portal (`fixed inset-0 z-50 bg-background`) quando o usuário clica **Tela cheia** numa nota salva.
 
-**J. Múltiplas citações**
-- `Veja Mt 5:9 e Jo 14:6.` → 2 matches em ordem, ambos resolvidos para o livro correto em PT.
+- Topo: barra fina com Título, controles `A−` / `A+` (font scale 0.85 → 1.6, passo 0.1, persistido em `localStorage` "esboco:fontScale"), botão `X` para sair.
+- Corpo: área única rolável (`overflow-y-auto`) com o conteúdo + `VerseLink`s. O popover bíblico mantém sua própria rolagem (§4) — rolagens independentes.
+- `fontScale` é passado ao `OutlineContent` (aplica `style={{ fontSize }}`) **e** ao `VerseLink`/`BibleVersePopover` via prop.
+- Esconde sidebar do app porque o overlay cobre toda a viewport (z-50 acima do `SidebarProvider`). Sem mudanças no layout global.
 
-Total: ~30 asserções organizadas em `describe` por categoria.
+## 6. i18n
 
-### Validação
-- `bun run test` deve passar 100%.
-- Verificar manualmente no app que `Jo 3:16` agora abre João (com EPUB PT importado).
+Adicionar em `pt.json` (e espelhar em en/es) chaves:
+`sidebar.personalOutlines`, `personalOutlines.title/subtitle`, `personalOutlines.typePicker.{field,outline,prompt}`, `personalOutlines.folders.{new,newSub,rename,delete,deleteWarn,exportFolder,exportNote,import,empty,root}`, `personalOutlines.fields.{description,descriptionPh}`, `personalOutlines.fullscreen.{enter,exit,fontUp,fontDown}`.
 
----
+Manter chaves `fieldConsiderations.*` antigas como fallback (já usadas dentro do formulário field_consideration).
 
-## Fora de escopo
-- Não tocar em `bible-canon.ts` (aliases ficam como estão).
-- Não tocar em `BibleVersePopover.tsx`, parser EPUB, ou armazenamento.
+## 7. Compatibilidade (APK/PWA/web)
+
+- `indexedDB` + `localStorage` já são usados pelo arquivo; nenhum API nova é introduzida.
+- Export usa `Blob` + `URL.createObjectURL` + `<a download>` (mesmo padrão do `TemplateIOButtons`), funcionando em Capacitor WebView, PWA e browser.
+- Import usa `<input type="file">` — suportado em Capacitor.
+- Nenhuma alteração em rotas de servidor, fila offline, sync ou políticas RLS.
+
+## Arquivos tocados
+
+- `src/lib/bible-notes-store.ts` — aditivo (nova store + funções).
+- `src/routes/_app.consideracoes-campo.tsx` — reescrita da UI.
+- `src/components/bible/BibleVersePopover.tsx` — rolagem + `fontScale`.
+- `src/routes/_app.tsx` — reordenação sidebar + nova label.
+- `src/i18n/locales/{pt,en,es}.json` — novas chaves.
+
+## Validação
+
+- `bun run test` — suíte existente (`bible-refs.test.ts`) continua verde.
+- Smoke manual: criar pasta/subpasta, criar notas dos dois tipos, exportar+importar pasta, abrir tela cheia, ajustar fonte, abrir popover longo (ex.: Salmo 119) e rolar.
