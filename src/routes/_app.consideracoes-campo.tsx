@@ -331,7 +331,7 @@ function Page() {
                       ) : (
                         <div className="flex flex-wrap gap-1.5">
                           {detected.map((m, i) => (
-                            <VerseLink key={`${m.index}-${i}`} match={m} lang={activeLang} />
+                            <VerseLink key={`${m.index}-${i}`} match={m} libraryId={activeBible?.id ?? null} />
                           ))}
                         </div>
                       )}
@@ -351,7 +351,7 @@ function Page() {
                     ) : (
                       <div className="rounded-md border bg-background px-3 py-2 min-h-[240px] text-sm leading-relaxed whitespace-pre-wrap">
                         {draft.content ? (
-                          <OutlineContent text={draft.content} lang={activeLang} />
+                          <OutlineContent text={draft.content} library={activeBible} />
                         ) : (
                           <span className="text-muted-foreground italic">
                             {t("fieldConsiderations.contentEmpty")}
@@ -374,16 +374,17 @@ function Page() {
  * Renderiza o texto da nota substituindo cada citação bíblica detectada
  * por um VerseLink clicável. Resto do texto permanece intacto.
  */
-function OutlineContent({ text, lang }: { text: string; lang: BibleLang }) {
-  const matches = findCitations(lang, text);
+function OutlineContent({ text, library }: { text: string; library: BibleLibrary | null }) {
+  const matches = findCitations(library?.books, text);
   if (matches.length === 0) return <>{text}</>;
   const parts: React.ReactNode[] = [];
   let cursor = 0;
   matches.forEach((m, i) => {
     if (m.index > cursor) parts.push(text.slice(cursor, m.index));
-    parts.push(<VerseLink key={`m-${i}`} match={m} lang={lang} />);
+    parts.push(<VerseLink key={`m-${i}`} match={m} libraryId={library?.id ?? null} />);
     cursor = m.index + m.length;
   });
   if (cursor < text.length) parts.push(text.slice(cursor));
   return <>{parts}</>;
+}
 }
