@@ -668,7 +668,7 @@ function NoteEditor({
         </div>
       </div>
 
-      <div className="grid gap-3">
+      <div className="grid gap-3 w-full max-w-full min-w-0">
         <div className="grid gap-1.5">
           <Label>{t("fieldConsiderations.fields.title")}</Label>
           <Input
