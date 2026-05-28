@@ -123,7 +123,8 @@
     "myProfile": "My profile",
     "baseTemplates": "Base Templates",
     "weekSummary": "Week Summary",
-    "fieldConsiderations": "Field Considerations",
+    "fieldConsiderations": "Personal Outlines",
+    "personalOutlines": "Personal Outlines",
     "supportDev": "Support the Developer ☕",
     "appName": "CO's Visit",
     "active": "Active",
@@ -1191,6 +1192,45 @@
     "detected": "Detected verses",
     "detectedEmpty": "Type a citation (e.g. John 3:16) to preview.",
     "contentEmpty": "No content."
+  },
+  "personalOutlines": {
+    "title": "Personal Outlines",
+    "subtitle": "Organize field considerations and outlines into folders, with offline Bible integration.",
+    "typePicker": {
+      "label": "Choose work type",
+      "field": "Field Consideration",
+      "outline": "Outline",
+      "prompt": "Select a type above to load your folders and notes."
+    },
+    "folders": {
+      "rootLabel": "Root",
+      "new": "New folder",
+      "newSub": "New subfolder",
+      "rename": "Rename",
+      "renamePrompt": "New folder name:",
+      "namePrompt": "Folder name:",
+      "delete": "Delete folder",
+      "deleteWarn": "Delete this folder and EVERYTHING inside it (subfolders and notes)? This is permanent.",
+      "exportFolder": "Export folder (JSON)",
+      "exportNote": "Export note (JSON)",
+      "import": "Import JSON",
+      "empty": "No folders yet. Create one to organize your notes.",
+      "notesIn": "Notes",
+      "selectFolder": "Select a folder or create a new note.",
+      "exportedFolder": "Folder exported.",
+      "exportedNote": "Note exported.",
+      "imported": "Imported: {{folders}} folder(s) and {{notes}} note(s)."
+    },
+    "fields": {
+      "description": "Description",
+      "descriptionPh": "Brief description of the outline"
+    },
+    "fullscreen": {
+      "enter": "Full screen",
+      "exit": "Exit full screen",
+      "fontUp": "Increase font",
+      "fontDown": "Decrease font"
+    }
   },
   "bibleManager": {
     "title": "Manage Bibles",

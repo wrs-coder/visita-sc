@@ -123,7 +123,8 @@
     "myProfile": "Meu perfil",
     "baseTemplates": "Modelos de Base",
     "weekSummary": "Resumo da Semana",
-    "fieldConsiderations": "Considerações de Campo",
+    "fieldConsiderations": "Esboços Pessoais",
+    "personalOutlines": "Esboços Pessoais",
     "supportDev": "Apoie o Desenvolvedor ☕",
     "appName": "Visita do SC",
     "active": "Ativa",
@@ -1191,6 +1192,45 @@
     "detected": "Versículos detectados",
     "detectedEmpty": "Digite uma citação (ex.: João 3:16) para visualizar.",
     "contentEmpty": "Sem conteúdo."
+  },
+  "personalOutlines": {
+    "title": "Esboços Pessoais",
+    "subtitle": "Organize considerações de campo e esboços em pastas, com integração bíblica offline.",
+    "typePicker": {
+      "label": "Escolha o tipo de trabalho",
+      "field": "Consideração de Campo",
+      "outline": "Esboço",
+      "prompt": "Selecione um tipo acima para carregar suas pastas e notas."
+    },
+    "folders": {
+      "rootLabel": "Raiz",
+      "new": "Nova pasta",
+      "newSub": "Nova subpasta",
+      "rename": "Renomear",
+      "renamePrompt": "Novo nome da pasta:",
+      "namePrompt": "Nome da pasta:",
+      "delete": "Excluir pasta",
+      "deleteWarn": "Excluir esta pasta e TUDO dentro dela (subpastas e notas)? Esta ação é permanente.",
+      "exportFolder": "Exportar pasta (JSON)",
+      "exportNote": "Exportar nota (JSON)",
+      "import": "Importar JSON",
+      "empty": "Nenhuma pasta ainda. Crie uma para organizar suas notas.",
+      "notesIn": "Notas",
+      "selectFolder": "Selecione uma pasta ou crie uma nova nota.",
+      "exportedFolder": "Pasta exportada.",
+      "exportedNote": "Nota exportada.",
+      "imported": "Importado: {{folders}} pasta(s) e {{notes}} nota(s)."
+    },
+    "fields": {
+      "description": "Descrição",
+      "descriptionPh": "Breve descrição do esboço"
+    },
+    "fullscreen": {
+      "enter": "Tela cheia",
+      "exit": "Sair da tela cheia",
+      "fontUp": "Aumentar fonte",
+      "fontDown": "Diminuir fonte"
+    }
   },
   "bibleManager": {
     "title": "Gerenciar Bíblias",

@@ -10,7 +10,9 @@ interface VerseLinkProps {
   match: CitationMatch;
   libraryId: string | null;
   className?: string;
+  fontScale?: number;
 }
+
 
 const MAX_RANGE = 10;
 
@@ -19,7 +21,7 @@ interface VersePart {
   text: string;
 }
 
-export function VerseLink({ match, libraryId, className }: VerseLinkProps) {
+export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseLinkProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [parts, setParts] = useState<VersePart[] | null>(null);
@@ -69,12 +71,14 @@ export function VerseLink({ match, libraryId, className }: VerseLinkProps) {
             "text-sky-600 dark:text-sky-400 underline-offset-2 hover:underline font-medium",
             className,
           )}
+          style={fontScale !== 1 ? { fontSize: `${fontScale}em` } : undefined}
+
         >
           {match.raw}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 max-w-[90vw]" align="start">
-        <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+      <PopoverContent className="w-80 max-w-[90vw] max-h-[60vh] overflow-y-auto" align="start">
+        <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground sticky top-0 bg-popover pb-1">
           <BookOpen className="h-3.5 w-3.5" />
           <span className="font-semibold text-foreground">
             {match.bookName} {match.chapter}:{match.verse}
@@ -87,7 +91,11 @@ export function VerseLink({ match, libraryId, className }: VerseLinkProps) {
             {t("bibleVerse.loading")}
           </div>
         ) : parts && parts.length > 0 ? (
-          <div className="text-sm leading-relaxed space-y-1.5">
+          <div
+            className="text-sm leading-relaxed space-y-1.5"
+            style={fontScale !== 1 ? { fontSize: `${fontScale}rem` } : undefined}
+          >
+
             {isRange ? (
               <p>
                 {parts.map((p, i) => (

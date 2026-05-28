@@ -5,16 +5,30 @@
 import type { BibleLang, BookId } from "./bible-refs";
 import { parseEpub, type ParseProgress, type ParsedBookInfo } from "./epub-bible-parser";
 
+export type NoteType = "field_consideration" | "outline";
+
+export interface NoteFolder {
+  id: string;
+  name: string;
+  parentId: string | null;
+  type: NoteType;
+  created_at: number;
+}
+
 export interface FieldNote {
   id: string;
+  type?: NoteType;
+  folderId?: string | null;
   title: string;
-  prayer: string;
-  territory: string;
-  assistants: string;
+  prayer?: string;
+  territory?: string;
+  assistants?: string;
+  description?: string;
   content: string;
   created_at: number;
   updated_at: number;
 }
+
 
 // =============================================================
 // Bíblia importada via EPUB
@@ -42,12 +56,14 @@ export interface BibleVerseRecord {
 }
 
 const DB_NAME = "visita-sc-field";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NOTES = "notes";
 const STORE_BIBLES = "bibles";
 const STORE_LIBRARIES = "bible_libraries";
+const STORE_FOLDERS = "note_folders";
 
 const LS_FALLBACK_KEY = "visita-sc:field-notes";
+const LS_FALLBACK_FOLDERS = "visita-sc:note-folders";
 const LS_ACTIVE_LIBRARY = "visita-sc-bible-active";
 
 function hasIDB(): boolean {
@@ -79,6 +95,12 @@ function openDB(): Promise<IDBDatabase> {
         libs.createIndex("by_lang", "lang", { unique: false });
         libs.createIndex("by_imported_at", "imported_at", { unique: false });
       }
+
+      if (!db.objectStoreNames.contains(STORE_FOLDERS)) {
+        const folders = db.createObjectStore(STORE_FOLDERS, { keyPath: "id" });
+        folders.createIndex("by_parent", "parentId", { unique: false });
+        folders.createIndex("by_type", "type", { unique: false });
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -95,6 +117,7 @@ async function idbAll(): Promise<FieldNote[]> {
     req.onerror = () => reject(req.error);
   });
 }
+
 
 async function idbPut(note: FieldNote): Promise<void> {
   const db = await openDB();
@@ -405,3 +428,263 @@ export async function getVerse(
   if (!id) return null;
   return getVerseFromLibrary(id, bookId as unknown as string, chapter, verse);
 }
+
+// =============================================================
+// Pastas / Subpastas (NoteFolder) — IndexedDB com fallback localStorage
+// =============================================================
+
+export function newFolderId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return "f-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function lsFoldersAll(): NoteFolder[] {
+  try {
+    const raw = localStorage.getItem(LS_FALLBACK_FOLDERS);
+    return raw ? (JSON.parse(raw) as NoteFolder[]) : [];
+  } catch {
+    return [];
+  }
+}
+function lsFoldersWrite(all: NoteFolder[]) {
+  try {
+    localStorage.setItem(LS_FALLBACK_FOLDERS, JSON.stringify(all));
+  } catch { /* quota */ }
+}
+
+async function idbFoldersAll(): Promise<NoteFolder[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_FOLDERS, "readonly");
+    const req = tx.objectStore(STORE_FOLDERS).getAll();
+    req.onsuccess = () => resolve((req.result as NoteFolder[]) ?? []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbFolderPut(folder: NoteFolder): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_FOLDERS, "readwrite");
+    tx.objectStore(STORE_FOLDERS).put(folder);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbFolderDelete(id: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_FOLDERS, "readwrite");
+    tx.objectStore(STORE_FOLDERS).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function listFolders(type?: NoteType): Promise<NoteFolder[]> {
+  let all: NoteFolder[] = [];
+  try {
+    if (hasIDB()) all = await idbFoldersAll();
+    else all = lsFoldersAll();
+  } catch {
+    all = lsFoldersAll();
+  }
+  return type ? all.filter((f) => f.type === type) : all;
+}
+
+export async function saveFolder(folder: NoteFolder): Promise<void> {
+  try {
+    if (hasIDB()) {
+      await idbFolderPut(folder);
+      return;
+    }
+  } catch { /* fallthrough */ }
+  const all = lsFoldersAll();
+  const idx = all.findIndex((f) => f.id === folder.id);
+  if (idx >= 0) all[idx] = folder; else all.push(folder);
+  lsFoldersWrite(all);
+}
+
+/** Apaga uma pasta, todas as subpastas recursivamente e todas as notas contidas. */
+export async function deleteFolderCascade(id: string): Promise<void> {
+  const folders = await listFolders();
+  const notes = await listNotes();
+  const toDeleteFolders = new Set<string>();
+  const stack = [id];
+  while (stack.length) {
+    const cur = stack.pop()!;
+    if (toDeleteFolders.has(cur)) continue;
+    toDeleteFolders.add(cur);
+    for (const f of folders) if (f.parentId === cur) stack.push(f.id);
+  }
+  // Apaga notas
+  for (const n of notes) {
+    if (n.folderId && toDeleteFolders.has(n.folderId)) {
+      await deleteNote(n.id);
+    }
+  }
+  // Apaga pastas
+  for (const fid of toDeleteFolders) {
+    try {
+      if (hasIDB()) await idbFolderDelete(fid);
+      else lsFoldersWrite(lsFoldersAll().filter((f) => f.id !== fid));
+    } catch {
+      lsFoldersWrite(lsFoldersAll().filter((f) => f.id !== fid));
+    }
+  }
+}
+
+export async function listNotesByType(
+  type: NoteType,
+  folderId?: string | null,
+): Promise<FieldNote[]> {
+  const all = await listNotes();
+  return all.filter((n) => {
+    const t = n.type ?? "field_consideration";
+    if (t !== type) return false;
+    if (folderId === undefined) return true;
+    const f = n.folderId ?? null;
+    return f === folderId;
+  });
+}
+
+// =============================================================
+// Export / Import JSON
+// =============================================================
+
+export interface FolderExportPayload {
+  version: 1;
+  kind: "folder";
+  exported_at: number;
+  folder: NoteFolder;
+  subfolders: NoteFolder[];
+  notes: FieldNote[];
+}
+
+export interface NoteExportPayload {
+  version: 1;
+  kind: "note";
+  exported_at: number;
+  note: FieldNote;
+}
+
+export type ExportPayload = FolderExportPayload | NoteExportPayload;
+
+export async function exportFolderJSON(id: string): Promise<FolderExportPayload> {
+  const folders = await listFolders();
+  const notes = await listNotes();
+  const folder = folders.find((f) => f.id === id);
+  if (!folder) throw new Error("Pasta não encontrada");
+  const descendants = new Set<string>([id]);
+  const stack = [id];
+  while (stack.length) {
+    const cur = stack.pop()!;
+    for (const f of folders) {
+      if (f.parentId === cur && !descendants.has(f.id)) {
+        descendants.add(f.id);
+        stack.push(f.id);
+      }
+    }
+  }
+  const subfolders = folders.filter((f) => descendants.has(f.id) && f.id !== id);
+  const includedNotes = notes.filter((n) => n.folderId && descendants.has(n.folderId));
+  return {
+    version: 1,
+    kind: "folder",
+    exported_at: Date.now(),
+    folder,
+    subfolders,
+    notes: includedNotes,
+  };
+}
+
+export async function exportNoteJSON(id: string): Promise<NoteExportPayload> {
+  const all = await listNotes();
+  const note = all.find((n) => n.id === id);
+  if (!note) throw new Error("Nota não encontrada");
+  return { version: 1, kind: "note", exported_at: Date.now(), note };
+}
+
+/**
+ * Importa um payload JSON recriando pastas/notas com novos IDs. Se for um
+ * payload de pasta, a pasta raiz é criada sob `targetParentId` (ou raiz),
+ * e a hierarquia interna é preservada.
+ * Retorna o número de pastas e notas criadas.
+ */
+export async function importJSON(
+  payload: ExportPayload,
+  targetParentId: string | null = null,
+): Promise<{ folders: number; notes: number }> {
+  if (!payload || typeof payload !== "object" || payload.version !== 1) {
+    throw new Error("Arquivo JSON inválido ou versão incompatível.");
+  }
+  const now = Date.now();
+  if (payload.kind === "note") {
+    const oldNote = payload.note;
+    const newNote: FieldNote = {
+      ...oldNote,
+      id: newNoteId(),
+      folderId: targetParentId,
+      type: oldNote.type ?? "field_consideration",
+      created_at: now,
+      updated_at: now,
+    };
+    await saveNote(newNote);
+    return { folders: 0, notes: 1 };
+  }
+  if (payload.kind === "folder") {
+    // Mapeia oldId -> newId
+    const idMap = new Map<string, string>();
+    const root = payload.folder;
+    const rootNewId = newFolderId();
+    idMap.set(root.id, rootNewId);
+    await saveFolder({
+      id: rootNewId,
+      name: root.name,
+      parentId: targetParentId,
+      type: root.type,
+      created_at: now,
+    });
+    // Sub-pastas: cria em qualquer ordem porque mapeamos depois
+    // (precisamos garantir parent já criado: ordenar topologicamente)
+    const remaining = [...payload.subfolders];
+    let safety = remaining.length * 2 + 10;
+    while (remaining.length && safety-- > 0) {
+      for (let i = 0; i < remaining.length; i++) {
+        const f = remaining[i];
+        const parentMapped = f.parentId ? idMap.get(f.parentId) : rootNewId;
+        if (f.parentId === null) {
+          // pasta órfã: anexa à raiz importada
+          const nid = newFolderId();
+          idMap.set(f.id, nid);
+          await saveFolder({ id: nid, name: f.name, parentId: rootNewId, type: f.type, created_at: now });
+          remaining.splice(i, 1);
+          break;
+        }
+        if (parentMapped) {
+          const nid = newFolderId();
+          idMap.set(f.id, nid);
+          await saveFolder({ id: nid, name: f.name, parentId: parentMapped, type: f.type, created_at: now });
+          remaining.splice(i, 1);
+          break;
+        }
+      }
+    }
+    // Notas
+    for (const n of payload.notes) {
+      const folderNew = n.folderId ? (idMap.get(n.folderId) ?? rootNewId) : rootNewId;
+      await saveNote({
+        ...n,
+        id: newNoteId(),
+        folderId: folderNew,
+        type: n.type ?? root.type,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+    return { folders: 1 + payload.subfolders.length, notes: payload.notes.length };
+  }
+  throw new Error("Tipo de payload desconhecido.");
+}
+

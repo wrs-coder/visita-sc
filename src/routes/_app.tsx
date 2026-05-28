@@ -20,6 +20,8 @@ import {
   Layers,
   ClipboardList,
   BookOpen,
+  FileText,
+
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
@@ -103,6 +105,8 @@ function AppLayout() {
         ...(role === "superintendent"
           ? [
               { to: "/congregacoes", label: t("sidebar.congregations"), icon: Building2 },
+              { to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList },
+              { to: "/consideracoes-campo", label: t("sidebar.personalOutlines"), icon: FileText },
               { to: "/notas", label: t("sidebar.privateNotes"), icon: Lock },
             ]
           : []),
@@ -112,12 +116,6 @@ function AppLayout() {
       id: "visita",
       label: t("sidebar.sectionVisita"),
       items: [
-        ...(role === "superintendent"
-          ? [
-              { to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList },
-              { to: "/consideracoes-campo", label: t("sidebar.fieldConsiderations"), icon: BookOpen },
-            ]
-          : []),
         { to: "/escala", label: t("sidebar.fieldStudies"), icon: Users },
         { to: "/reunioes-discursos", label: t("sidebar.meetingsTalks"), icon: MapPin },
         { to: "/refeicoes", label: t("sidebar.meals"), icon: UtensilsCrossed },
@@ -125,6 +123,7 @@ function AppLayout() {
         { to: "/checklist", label: t("sidebar.checklist"), icon: ListChecks },
       ],
     },
+
     {
       id: "modelos",
       label: t("sidebar.sectionModelos"),
