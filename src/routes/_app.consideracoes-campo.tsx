@@ -738,6 +738,8 @@ function NoteEditor({
               </div>
             )}
           </div>
+        )}
+
         <div className="grid gap-1.5">
           <Label>{t("fieldConsiderations.fields.content")}</Label>
           {mode === "edit" ? (
@@ -758,8 +760,6 @@ function NoteEditor({
                 </span>
               )}
             </div>
-          )}
-        </div>
           )}
         </div>
       </div>
