@@ -17,12 +17,11 @@ import {
   saveNote as persistNote,
   deleteNote as removeNote,
   newNoteId,
-  ensureSeed,
-  getLangStatus,
+  getActiveLibrary,
   type FieldNote,
-  type BibleLangStatus,
+  type BibleLibrary,
 } from "@/lib/bible-notes-store";
-import { findCitations, type BibleLang, type CitationMatch } from "@/lib/bible-refs";
+import { findCitations, type CitationMatch } from "@/lib/bible-refs";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { cn } from "@/lib/utils";
 
@@ -66,19 +65,16 @@ function Page() {
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [bibleOpen, setBibleOpen] = useState(false);
-  const [activeBible, setActiveBible] = useState<BibleLangStatus | null>(null);
+  const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
   const [mode, setMode] = useState<"edit" | "outline">("outline");
 
-  const activeLang: BibleLang =
-    i18n.language?.startsWith("en") ? "en" : i18n.language?.startsWith("es") ? "es" : "pt";
-
   async function refreshActiveBible() {
-    setActiveBible(await getLangStatus(activeLang));
+    setActiveBible(await getActiveLibrary());
   }
 
-  // Initial load + seed.
+  // Initial load.
   useEffect(() => {
-    ensureSeed().then(refreshActiveBible);
+    refreshActiveBible();
     listNotes().then((all) => {
       const sorted = all.sort((a, b) => b.updated_at - a.updated_at);
       setNotes(sorted);
@@ -89,12 +85,6 @@ function Page() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Reload active bible when app language changes.
-  useEffect(() => {
-    refreshActiveBible();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLang]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -118,8 +108,8 @@ function Page() {
 
   // Citações detectadas em tempo real no conteúdo (apenas modo Edição).
   const detected: CitationMatch[] = useMemo(
-    () => (draft ? findCitations(activeLang, draft.content) : []),
-    [draft, activeLang],
+    () => (draft && activeBible ? findCitations(activeBible.books, draft.content) : []),
+    [draft, activeBible],
   );
 
   function patch<K extends keyof FieldNote>(key: K, value: FieldNote[K]) {
@@ -184,9 +174,10 @@ function Page() {
       <Card>
         <CardContent className="p-3 flex flex-wrap items-center gap-2">
           <span className="text-xs text-muted-foreground">{t("bibleManager.activeLabel")}:</span>
-          <Badge variant={activeBible?.downloaded ? "secondary" : "outline"}>
-            {t(`bibleManager.langs.${activeLang}`)}
-            {activeBible?.downloaded && ` · ${activeBible.verseCount}`}
+          <Badge variant={activeBible ? "secondary" : "outline"}>
+            {activeBible
+              ? `${activeBible.title} (${activeBible.langLabel}) · ${activeBible.verseCount}`
+              : t("bibleManager.noneActive", { defaultValue: "Nenhuma" })}
           </Badge>
           <div className="flex-1" />
           <Button variant="outline" size="sm" onClick={() => setBibleOpen(true)}>
@@ -340,7 +331,7 @@ function Page() {
                       ) : (
                         <div className="flex flex-wrap gap-1.5">
                           {detected.map((m, i) => (
-                            <VerseLink key={`${m.index}-${i}`} match={m} lang={activeLang} />
+                            <VerseLink key={`${m.index}-${i}`} match={m} libraryId={activeBible?.id ?? null} />
                           ))}
                         </div>
                       )}
@@ -360,7 +351,7 @@ function Page() {
                     ) : (
                       <div className="rounded-md border bg-background px-3 py-2 min-h-[240px] text-sm leading-relaxed whitespace-pre-wrap">
                         {draft.content ? (
-                          <OutlineContent text={draft.content} lang={activeLang} />
+                          <OutlineContent text={draft.content} library={activeBible} />
                         ) : (
                           <span className="text-muted-foreground italic">
                             {t("fieldConsiderations.contentEmpty")}
@@ -383,14 +374,14 @@ function Page() {
  * Renderiza o texto da nota substituindo cada citação bíblica detectada
  * por um VerseLink clicável. Resto do texto permanece intacto.
  */
-function OutlineContent({ text, lang }: { text: string; lang: BibleLang }) {
-  const matches = findCitations(lang, text);
+function OutlineContent({ text, library }: { text: string; library: BibleLibrary | null }) {
+  const matches = findCitations(library?.books, text);
   if (matches.length === 0) return <>{text}</>;
   const parts: React.ReactNode[] = [];
   let cursor = 0;
   matches.forEach((m, i) => {
     if (m.index > cursor) parts.push(text.slice(cursor, m.index));
-    parts.push(<VerseLink key={`m-${i}`} match={m} lang={lang} />);
+    parts.push(<VerseLink key={`m-${i}`} match={m} libraryId={library?.id ?? null} />);
     cursor = m.index + m.length;
   });
   if (cursor < text.length) parts.push(text.slice(cursor));

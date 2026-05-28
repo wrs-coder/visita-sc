@@ -2,21 +2,17 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Loader2, BookOpen } from "lucide-react";
-import { getVerse } from "@/lib/bible-notes-store";
-import type { BibleLang, CitationMatch } from "@/lib/bible-refs";
+import { getVerseFromLibrary } from "@/lib/bible-notes-store";
+import type { CitationMatch } from "@/lib/bible-refs";
 import { cn } from "@/lib/utils";
 
 interface VerseLinkProps {
   match: CitationMatch;
-  lang: BibleLang;
+  libraryId: string | null;
   className?: string;
 }
 
-/**
- * Link clicável (azul) que abre um popover com o texto do versículo
- * carregado do IndexedDB. Usado no Modo Esboço.
- */
-export function VerseLink({ match, lang, className }: VerseLinkProps) {
+export function VerseLink({ match, libraryId, className }: VerseLinkProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState<string | null>(null);
@@ -24,12 +20,13 @@ export function VerseLink({ match, lang, className }: VerseLinkProps) {
 
   useEffect(() => {
     if (!open || text !== null) return;
+    if (!libraryId) { setText(""); return; }
     setLoading(true);
-    getVerse(lang, match.bookId, match.chapter, match.verse).then((rec) => {
+    getVerseFromLibrary(libraryId, match.bookId, match.chapter, match.verse).then((rec) => {
       setText(rec?.text ?? "");
       setLoading(false);
     });
-  }, [open, lang, match.bookId, match.chapter, match.verse, text]);
+  }, [open, libraryId, match.bookId, match.chapter, match.verse, text]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
