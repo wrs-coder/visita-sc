@@ -392,7 +392,7 @@ interface VerseMarker {
 function parseChapVerseFromAttr(raw: string): { chap?: number; verse?: number } {
   if (!raw) return {};
   // chapter11_verse5, ch11v5, c11v5, 11_5, 11.5, 11:5
-  const m1 = raw.match(/chapter[_-]?(\d+)[^\d]*verse[_-]?(\d+)/i);
+  const m1 = raw.match(/chapter[\s_-]*(\d+)[^\d]*verse[\s_-]*(\d+)/i);
   if (m1) return { chap: parseInt(m1[1], 10), verse: parseInt(m1[2], 10) };
   const m2 = raw.match(/c(?:hap)?[_-]?(\d+)[^\d]{0,3}v(?:erse)?[_-]?(\d+)/i);
   if (m2) return { chap: parseInt(m2[1], 10), verse: parseInt(m2[2], 10) };
@@ -561,7 +561,7 @@ function truncatePreChapterContent(doc: Document): void {
   }
   if (!anchor) {
     try {
-      anchor = body.querySelector('[id="chapter1"]');
+      anchor = body.querySelector('[id^="chapter"]:not([id*="verse"])');
     } catch {
       anchor = null;
     }
