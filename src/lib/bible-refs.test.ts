@@ -241,6 +241,25 @@ describe("Forma cap:vers antiga", () => {
 });
 
 // ============================================================================
+// I.1. Regressão: livros de 1 capítulo continuam casando sem ":"
+// ============================================================================
+describe("Regressão: livros de 1 capítulo (forma sem capítulo)", () => {
+  it("Judas 5 → B65 cap 1 verso 5", () => {
+    const m = firstMatch(ptBooks, "Judas 5");
+    expect(m?.bookId).toBe("B65");
+    expect(m?.chapter).toBe(1);
+    expect(m?.verse).toBe(5);
+  });
+  it("Filêmon 6 → B57 cap 1 verso 6", () => {
+    const m = firstMatch(ptBooks, "Filêmon 6");
+    expect(m?.bookId).toBe("B57");
+    expect(m?.chapter).toBe(1);
+    expect(m?.verse).toBe(6);
+  });
+});
+
+
+// ============================================================================
 // J. Múltiplas citações
 // ============================================================================
 describe("Múltiplas citações", () => {

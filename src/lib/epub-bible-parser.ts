@@ -508,17 +508,20 @@ function hardPurgeDoc(doc: Document): void {
 
 /** Remove tudo que aparece ANTES da primeira âncora de capítulo
  *  (sumário/intro/cabeçalho de livro). No-op se o documento não
- *  tiver âncora estrutural de capítulo. */
+ *  tiver âncora estrutural de capítulo. Reverte se a truncagem
+ *  destruir mais de 80% do texto (proteção para livros pequenos
+ *  / de 1 capítulo onde a âncora pode ser tardia no documento). */
 function truncatePreChapterContent(doc: Document): void {
   const body = doc.body;
   if (!body) return;
 
   let anchor: Element | null = null;
+  // Importante: NÃO usar `[id^="ch"]` genérico nem aceitar IDs de versículo
+  // (ex.: chapter1_verse1) como âncora — isso quebrava livros de 1 capítulo.
   const anchorSelectors = [
-    '[id^="chapter"]',
+    '[id^="chapter"]:not([id*="verse"])',
     '.w_ch',
-    '[id^="ch"]',
-    '[id^="cap"]',
+    '[id^="cap"]:not([id*="verse"])',
     '[epub\\:type~="chapter"]',
     'section[role="doc-chapter"]',
   ];
@@ -531,6 +534,10 @@ function truncatePreChapterContent(doc: Document): void {
     if (anchor) break;
   }
   if (!anchor) return;
+
+  // Snapshot do HTML para rollback se a truncagem ficar destrutiva demais.
+  const originalLen = (body.textContent ?? "").trim().length;
+  const originalHtml = body.innerHTML;
 
   // Sobe da âncora até filho direto de body, removendo irmãos anteriores
   // em cada nível. Conteúdo posterior nunca é tocado.
@@ -551,7 +558,14 @@ function truncatePreChapterContent(doc: Document): void {
     prev = prev.previousElementSibling;
     toRemove.remove();
   }
+
+  // Guarda de segurança: se o texto encolheu drasticamente, reverte.
+  const newLen = (body.textContent ?? "").trim().length;
+  if (originalLen > 0 && (newLen < 200 || newLen / originalLen < 0.2)) {
+    body.innerHTML = originalHtml;
+  }
 }
+
 
 function isChapterHeadingEl(el: Element): boolean {
   const id = el.getAttribute("id") ?? "";
@@ -696,11 +710,53 @@ function isVerseMarker(el: Element): { verse: number; chap?: number } | null {
   return null;
 }
 
+/** Heurística: o documento parece uma página de "outline" / "Conteúdo do livro"?
+ *  Páginas assim listam tópicos de capítulos com referências entre parênteses
+ *  (ex.: "(1-6)") ou são uma sequência de links para `#chapterX_verseY` — e
+ *  NÃO devem alimentar o fallback regex de texto puro (sobrescreveria versos
+ *  reais com o índice). */
+function looksLikeOutlinePage(doc: Document): boolean {
+  const body = doc.body;
+  if (!body) return false;
+
+  // 1) Tem âncoras reais de versículo? Então NÃO é página de outline.
+  const hasRealVerseAnchors =
+    body.querySelector('[id^="chapter"][id*="verse"], .w_ch, [class*="verseNum"], [class*="verse-num"]') !== null;
+  if (hasRealVerseAnchors) return false;
+
+  // 2) Muitos links de navegação para versos/capítulos
+  let navLinks = 0;
+  const anchors = body.getElementsByTagName("a");
+  for (let i = 0; i < anchors.length; i++) {
+    const href = anchors[i].getAttribute("href") ?? "";
+    if (/#chapter|_verse|#v\d/i.test(href)) navLinks++;
+    if (navLinks > 5) return true;
+  }
+
+  // 3) Múltiplas ocorrências globais de "(N)" / "(N-M)" — assinatura de outline JW
+  const text = body.textContent ?? "";
+  const parens = text.match(/\(\s*\d{1,3}(?:\s*[-–]\s*\d{1,3})?\s*\)/g);
+  if (parens && parens.length >= 3) return true;
+
+  // 4) findOutlineRoots já detectou pelo menos um bloco
+  if (findOutlineRoots(doc).size >= 1) return true;
+
+  return false;
+}
+
+interface ExtractedVerse {
+  chapter: number;
+  verse: number;
+  text: string;
+  /** "marker" = veio de marcadores DOM reais; "fallback" = regex de texto puro. */
+  source: "marker" | "fallback";
+}
+
 /** Extrai versículos de um documento xhtml, com inferência de capítulo via filename. */
 function extractVersesFromDoc(
   doc: Document,
   fallbackChapter: number,
-): { chapter: number; verse: number; text: string }[] {
+): ExtractedVerse[] {
   // Hard DOM Purge + descarte do pré-conteúdo (sumário/cabeçalho do livro).
   hardPurgeDoc(doc);
   truncatePreChapterContent(doc);
@@ -743,8 +799,13 @@ function extractVersesFromDoc(
 
   // Sem marcadores → tenta regex texto puro (raro mas backup).
   if (markers.length < 3) {
+    // Páginas de "outline" / sumário NUNCA devem alimentar o fallback —
+    // o texto delas sobrescreveria versículos reais vindos de outros arquivos
+    // do mesmo bucket (ex.: 1 Pedro "Conteúdo do livro").
+    if (looksLikeOutlinePage(doc)) return [];
+
     const plain = (doc.body?.textContent ?? "").replace(/\s+/g, " ").trim();
-    const out: { chapter: number; verse: number; text: string }[] = [];
+    const out: ExtractedVerse[] = [];
     const regex = /(?:^|\s|[.;!?»"”])(\d{1,3})\s+(.{3,}?)(?=\s+\d{1,3}\s+|$)/g;
     let m: RegExpExecArray | null;
     let chap = fallbackChapter;
@@ -754,13 +815,13 @@ function extractVersesFromDoc(
       const t = m[2].trim();
       if (!t) continue;
       if (v === 1 && out.length > 0 && out[out.length - 1].verse > 1) chap++;
-      out.push({ chapter: chap, verse: v, text: t });
+      out.push({ chapter: chap, verse: v, text: t, source: "fallback" });
     }
     return out;
   }
 
   // Para cada marcador, coleta o texto entre ele e o próximo.
-  const out: { chapter: number; verse: number; text: string }[] = [];
+  const out: ExtractedVerse[] = [];
   for (let i = 0; i < markers.length; i++) {
     const cur = markers[i];
     const next = markers[i + 1]?.node ?? null;
@@ -778,10 +839,11 @@ function extractVersesFromDoc(
       // eslint-disable-next-line no-console
       console.warn("[epub-bible] long verse truncated", cur.chapter, cur.verse, text.length);
     }
-    out.push({ chapter: cur.chapter, verse: cur.verse, text });
+    out.push({ chapter: cur.chapter, verse: cur.verse, text, source: "marker" });
   }
   return out;
 }
+
 
 /** Detecta a qual livro canônico um arquivo XHTML pertence.
  *  Ordem: filename → headings (h1/h2/h3/title) → primeiras palavras do body.
@@ -888,8 +950,16 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
     const bookId = bucket.book.id;
     const multiFile = bucket.hrefs.length > 1;
 
-    // Dedup por chave "chap:verse" — mantém o texto mais longo.
-    const verseMap = new Map<string, { chapter: number; verse: number; text: string }>();
+    // Dedup por chave "chap:verse". Regra:
+    //  - texto vindo de marcadores DOM reais ("marker") substitui qualquer
+    //    versão anterior se for mais longo (ou se a anterior veio do fallback).
+    //  - texto vindo do fallback regex ("fallback") só preenche chaves ainda
+    //    vazias — NUNCA sobrescreve verso real (proteção contra "Conteúdo
+    //    do livro" sobrescrever 1 Pedro 1:4 etc.).
+    const verseMap = new Map<
+      string,
+      { chapter: number; verse: number; text: string; source: "marker" | "fallback" }
+    >();
 
     for (let hi = 0; hi < bucket.hrefs.length; hi++) {
       const href = bucket.hrefs[hi];
@@ -906,15 +976,23 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
         for (const v of extracted) {
           const key = `${v.chapter}:${v.verse}`;
           const prev = verseMap.get(key);
-          if (!prev || v.text.length > prev.text.length) {
-            verseMap.set(key, { chapter: v.chapter, verse: v.verse, text: v.text });
+          if (!prev) {
+            verseMap.set(key, v);
+            continue;
           }
+          // Marker sempre vence fallback. Entre dois do mesmo tipo, o mais longo vence.
+          if (v.source === "marker" && prev.source === "fallback") {
+            verseMap.set(key, v);
+          } else if (v.source === prev.source && v.text.length > prev.text.length) {
+            verseMap.set(key, v);
+          }
+          // fallback novo vs marker existente → mantém o marker (não sobrescreve).
         }
-
       } catch {
         /* arquivo malformado — ignora */
       }
     }
+
 
     const bookVerses = Array.from(verseMap.values());
     if (bookVerses.length < 3) {
