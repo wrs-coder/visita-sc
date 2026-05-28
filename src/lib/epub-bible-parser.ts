@@ -559,9 +559,20 @@ function truncatePreChapterContent(doc: Document): void {
     toRemove.remove();
   }
 
-  // Guarda de segurança: se o texto encolheu drasticamente, reverte.
+  // Guarda de segurança: reverte se a truncagem ficou destrutiva.
+  //  - encolhimento extremo (texto < 100 chars OU < 50% do original), OU
+  //  - nenhuma âncora real de versículo `chapterN_verseN` sobreviveu.
   const newLen = (body.textContent ?? "").trim().length;
-  if (originalLen > 0 && (newLen < 200 || newLen / originalLen < 0.2)) {
+  const hasRealVerseAnchor = (() => {
+    const all = body.getElementsByTagName("*");
+    for (let i = 0; i < all.length; i++) {
+      const id = all[i].getAttribute("id") ?? "";
+      if (/^chapter\d+[_-]?verse\d+/i.test(id)) return true;
+    }
+    return false;
+  })();
+  const shrankTooMuch = originalLen > 0 && (newLen < 100 || newLen / originalLen < 0.5);
+  if (shrankTooMuch || !hasRealVerseAnchor) {
     body.innerHTML = originalHtml;
   }
 }
