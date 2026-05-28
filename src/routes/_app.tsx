@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Layers,
   ClipboardList,
+  BookOpen,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
