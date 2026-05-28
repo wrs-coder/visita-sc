@@ -671,7 +671,7 @@ function textBetween(
   let started = false;
   let node: Node | null = walker.nextNode();
 
-  const isVerseAnchorId = (id: string) => /^chapter\d+[_-]?verse\d+/i.test(id);
+  const isVerseAnchorId = (id: string) => /^chapter[\s_-]*\d+[\s_-]*verse\d+/i.test(id);
   const isChapterAnchorEl = (el: Element) => {
     const id = el.getAttribute("id") ?? "";
     const cls = el.getAttribute("class") ?? "";
