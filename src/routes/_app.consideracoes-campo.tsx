@@ -1,22 +1,28 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, Plus, Trash2, Search, Save } from "lucide-react";
+import { BookOpen, Plus, Trash2, Search, Save, Languages } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { SavingIndicator } from "@/components/SavingIndicator";
+import { BibleManagerDialog } from "@/components/bible/BibleManagerDialog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listNotes,
   saveNote as persistNote,
   deleteNote as removeNote,
   newNoteId,
+  ensureSeed,
+  getLangStatus,
   type FieldNote,
+  type BibleLangStatus,
 } from "@/lib/bible-notes-store";
+import type { BibleLang } from "@/lib/bible-refs";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
