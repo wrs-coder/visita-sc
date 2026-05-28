@@ -738,28 +738,28 @@ function NoteEditor({
               </div>
             )}
           </div>
-        )}
-
         <div className="grid gap-1.5">
           <Label>{t("fieldConsiderations.fields.content")}</Label>
           {mode === "edit" ? (
-            <Textarea
+            <RichNoteEditor
               value={draft.content}
-              onChange={(e) => onPatch("content", e.target.value)}
+              onChange={(html) => onPatch("content", html)}
               placeholder={t("fieldConsiderations.fields.contentPh")}
-              rows={12}
-              className="resize-y min-h-[240px]"
+              noteId={draft.id}
+              minHeight="240px"
             />
           ) : (
-            <div className="rounded-md border bg-background px-3 py-2 min-h-[240px] text-sm leading-relaxed whitespace-pre-wrap">
+            <div className="rounded-md border bg-background px-3 py-2 min-h-[240px] text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
               {draft.content ? (
-                <OutlineContent text={draft.content} library={activeBible} />
+                <RichOutlineContent html={draft.content} library={activeBible} />
               ) : (
                 <span className="text-muted-foreground italic">
                   {t("fieldConsiderations.contentEmpty")}
                 </span>
               )}
             </div>
+          )}
+        </div>
           )}
         </div>
       </div>
@@ -799,13 +799,22 @@ function FullscreenOutline({
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  // Trava scroll horizontal do body enquanto a tela cheia está aberta.
+  useEffect(() => {
+    const prev = document.body.style.overflowX;
+    document.body.style.overflowX = "hidden";
+    document.body.classList.add("overscroll-x-none");
+    return () => {
+      document.body.style.overflowX = prev;
+      document.body.classList.remove("overscroll-x-none");
+    };
+  }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background flex flex-col">
-      <div className="flex items-center gap-2 border-b px-4 py-2">
-        <FileText className="h-4 w-4 text-primary" />
-        <h2 className="text-sm font-semibold truncate flex-1">
+    <div className="fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none">
+      <div className="flex items-center gap-2 border-b px-4 py-2 min-w-0">
+        <FileText className="h-4 w-4 text-primary shrink-0" />
+        <h2 className="text-sm font-semibold truncate flex-1 min-w-0">
           {note.title || t("fieldConsiderations.fields.title")}
         </h2>
         <Button
@@ -829,13 +838,13 @@ function FullscreenOutline({
           <X className="h-4 w-4" />
         </Button>
       </div>
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-6">
         <div
-          className="max-w-3xl mx-auto leading-relaxed whitespace-pre-wrap"
+          className="max-w-3xl mx-auto leading-relaxed min-w-0 break-words [overflow-wrap:anywhere]"
           style={{ fontSize: `${scale}rem` }}
         >
           {note.content ? (
-            <OutlineContent text={note.content} library={library} fontScale={scale} />
+            <RichOutlineContent html={note.content} library={library} fontScale={scale} />
           ) : (
             <span className="text-muted-foreground italic">{t("fieldConsiderations.contentEmpty")}</span>
           )}
@@ -844,29 +853,5 @@ function FullscreenOutline({
     </div>
   );
 }
-
-/**
- * Renderiza o texto da nota substituindo cada citação bíblica detectada
- * por um VerseLink clicável.
- */
-function OutlineContent({
-  text,
-  library,
-  fontScale,
-}: {
-  text: string;
-  library: BibleLibrary | null;
-  fontScale?: number;
-}) {
-  const matches = findCitations(library?.books, text);
-  if (matches.length === 0) return <>{text}</>;
-  const parts: React.ReactNode[] = [];
-  let cursor = 0;
-  matches.forEach((m, i) => {
-    if (m.index > cursor) parts.push(text.slice(cursor, m.index));
-    parts.push(<VerseLink key={`m-${i}`} match={m} libraryId={library?.id ?? null} fontScale={fontScale} />);
-    cursor = m.index + m.length;
-  });
-  if (cursor < text.length) parts.push(text.slice(cursor));
   return <>{parts}</>;
 }
