@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { useAutoBackup } from "@/hooks/use-auto-backup";
@@ -15,9 +15,13 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee, Globe } from "lucide-react";
+import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee, Globe, Languages } from "lucide-react";
 import { SupportDeveloperContent } from "@/components/SupportDeveloper";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { Badge } from "@/components/ui/badge";
+import { BibleManagerDialog } from "@/components/bible/BibleManagerDialog";
+import { getActiveLibrary, type BibleLibrary } from "@/lib/bible-notes-store";
+
 import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/_app/perfil")({ component: Page });
@@ -40,6 +44,11 @@ function Page() {
   const [busyCircuit, setBusyCircuit] = useState(false);
   const [busyEmail, setBusyEmail] = useState(false);
   const [busyPwd, setBusyPwd] = useState(false);
+  const [bibleOpen, setBibleOpen] = useState(false);
+  const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
+
+  const refreshActiveBible = async () => setActiveBible(await getActiveLibrary());
+  useEffect(() => { refreshActiveBible(); }, []);
 
   const doExportBackup = async () => {
     setBusyBackup("export");
@@ -194,6 +203,30 @@ function Page() {
           </form>
         </CardContent>
       </Card>
+
+      <Card className="shadow-card border-primary/30">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Languages className="h-4 w-4 text-primary" /> {t("bibleManager.manage")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">{t("bibleManager.activeLabel")}:</span>
+            <Badge variant={activeBible ? "secondary" : "outline"}>
+              {activeBible
+                ? `${activeBible.title} (${activeBible.langLabel}) · ${activeBible.verseCount}`
+                : t("bibleManager.noneActive", { defaultValue: "Nenhuma" })}
+            </Badge>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setBibleOpen(true)}>
+            <Languages className="h-4 w-4 mr-1.5" />
+            {t("bibleManager.manage")}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <BibleManagerDialog open={bibleOpen} onOpenChange={setBibleOpen} onChanged={refreshActiveBible} />
 
       {role === "superintendent" && (
         <Card className="shadow-card border-primary/30">

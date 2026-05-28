@@ -1,25 +1,41 @@
 # Plano
 
-## 1. Nomes de livros bíblicos voltando em inglês no popover
+## 1. Mover gerenciamento da Bíblia para "Meu Perfil"
 
-**Causa-raiz**: em `src/lib/epub-bible-parser.ts`, a função `detectCanonicalBookForDoc` (linhas 970–1003) retorna `label = hit.english` quando o livro é detectado pelo **nome do arquivo** (passo 1) ou pelo **corpo do texto** (passo 3). Só o passo 2 (heading) usa o texto localizado do EPUB. Como a TNM PT tem nomes de arquivo do tipo `60_Mat_01.xhtml`, o passo 1 vence e o `label` vira `"Matthew"` / `"John"`, que depois é usado como `displayName` em `compile()` (`src/lib/bible-refs.ts`) e renderizado no popover (`BibleVersePopover.tsx` linha 99).
+Hoje o card "Bíblia ativa + botão Gerenciar" e o `<BibleManagerDialog>` ficam em `src/routes/_app.consideracoes-campo.tsx` (linhas 438–454), ocupando espaço útil. Mover **sem alterar comportamento**:
 
-**Correção** (apenas em `detectCanonicalBookForDoc`):
-- Após qualquer detecção (filename, heading, body), tentar **sempre** extrair um label localizado dos headings (`h1`/`h2`/`h3`/`title`) do próprio documento. Se algum heading resolver para o **mesmo** `CanonicalBook`, usar esse texto (com o sufixo de capítulo limpo) como `label`. Caso contrário, manter o fallback atual (`hit.english`).
-- Isso preserva o caminho rápido por filename, mas garante que o nome exibido venha do EPUB no idioma importado.
+- Remover o card e o `<BibleManagerDialog>` de `_app.consideracoes-campo.tsx`. O hook `useActiveBible` (que devolve `activeBible` e `refreshActiveBible`) continua na página, pois é consumido pelo editor para detectar citações.
+- Em `src/routes/_app.perfil.tsx`, adicionar o mesmo bloco **logo acima** da seção de Backup (antes do card de `profile.backupSection`, linha ~202): card com badge da Bíblia ativa + botão "Gerenciar Bíblias" abrindo `BibleManagerDialog`. Usar `useActiveBible` lá também; quando a Bíblia muda, basta atualizar o estado local — `useActiveBible` em outras rotas vai reler ao remontar (e o popover já lê via `getActiveBibleLibrary`).
+- Nenhuma mudança em `BibleManagerDialog`, no parser EPUB nem no store. Sem regressão em popover, detecção de citações ou na importação.
 
-Sem alterações em `bible-canon.ts`, `bible-refs.ts`, `PURGE_SELECTORS`, `extractVersesFromDoc` ou na lógica do versículo 1 / último versículo. Requer reimportar a Bíblia em **Gerenciar Bíblias**.
+## 2. Botão de minimizar no card de gerenciamento de pastas
 
-## 2. Ajustes na aba de edição de Esboços Pessoais
+Em `_app.consideracoes-campo.tsx` (Card da sidebar de pastas, linhas 497–560):
 
-Arquivo: `src/routes/_app.consideracoes-campo.tsx` + `src/i18n/locales/pt.json`.
+- Adicionar header compacto no topo do `CardContent` com título "Pastas" + botão fantasma com `ChevronUp` / `ChevronDown` controlado por `useState<boolean>` (`foldersCollapsed`).
+- Quando colapsado: esconder a linha de botões (Nova nota / Nova pasta / Importar), o campo de busca e a árvore. Mostrar só o header.
+- Persistir preferência em `localStorage` (`personal-outlines.folders-collapsed`) para sobreviver entre sessões.
 
-- **"Exportar nota (JSON)" → "Exportar"**: alterar a string PT da chave `personalOutlines.folders.exportNote` em `pt.json` (linha 1215). Manter chave e usos (linha 771). en/es ficam como estão.
-- **"Salvar nota" → "Salvar"**: alterar a string PT da chave `fieldConsiderations.save` em `pt.json` (linha 1167). Botão na linha 778 já usa essa chave.
-- **Layout: gerenciador de pastas + nova nota acima das notas (e não ao lado)**: trocar o grid `md:grid-cols-[300px_1fr]` (linha 494) por uma stack vertical (`flex flex-col gap-4` em todos os breakpoints). A `Card` lateral vira a primeira linha (com `w-full` e `h-fit`) e o `Card` do editor segue abaixo. Sem alterações na barra sticky de ações nem no `RichNoteEditor`.
+## 3. Modo esboço alternável a qualquer momento
+
+Hoje o botão "Editar nota" só aparece quando `mode === "outline"` e "Salvar" só em `mode === "edit"`. Trocar pelo padrão:
+
+- No topo do `NoteEditor` (linhas 633–653), substituir o `Badge` por um **toggle de dois estados** ("Modo edição" / "Modo esboço") sempre visível e clicável, chamando `onModeChange("edit" | "outline")`. Usar `ToggleGroup` (`@/components/ui/toggle-group`) ou par de botões `variant="default" / "outline"`.
+- Permite alternar a qualquer momento sem depender da barra inferior.
+
+## 4. Centralizar a barra de ações inferior
+
+Na sticky action bar (linha 764) substituir `justify-end` por `justify-center` e manter os 4 botões:
+
+- "Editar nota" — visível só em modo esboço (continua como atalho rápido, agora redundante com o toggle do topo, mas mantido conforme pedido).
+- "Exportar" — sempre.
+- "Excluir" — sempre.
+- "Salvar" — visível só em modo edição.
+
+Sem mexer no `pb-24` do container, no `RichNoteEditor` nem no fullscreen.
 
 ## Validação
 
-- `bun test` (suíte do parser EPUB deve continuar passando).
-- Reimportar a Bíblia TNM PT e abrir o popover para citações de Mateus/João/Apocalipse — devem aparecer em português.
-- Conferir os 3 ajustes visuais na rota `/consideracoes-campo` (desktop e mobile a 770px).
+- `bun test` (suíte do parser deve continuar passando).
+- Conferir em `/meu-perfil` que o card aparece acima de Backup e abre o diálogo.
+- Conferir em `/consideracoes-campo`: colapsar/expandir pastas, alternar modo livremente, barra inferior centralizada com os 4 botões.

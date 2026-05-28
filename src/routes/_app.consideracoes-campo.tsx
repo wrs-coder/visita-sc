@@ -7,7 +7,7 @@ import {
   Trash2,
   Search,
   Save,
-  Languages,
+  
   Pencil,
   FileText,
   Folder,
@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SavingIndicator } from "@/components/SavingIndicator";
-import { BibleManagerDialog } from "@/components/bible/BibleManagerDialog";
+
 import { supabase } from "@/integrations/supabase/client";
 import {
   listNotes,
@@ -137,11 +137,24 @@ function Page() {
   const [draft, setDraft] = useState<FieldNote | null>(null);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
-  const [bibleOpen, setBibleOpen] = useState(false);
   const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
   const [mode, setMode] = useState<"edit" | "outline">("outline");
   const [fullscreen, setFullscreen] = useState(false);
+  const [foldersCollapsed, setFoldersCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("personal-outlines.folders-collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("personal-outlines.folders-collapsed", foldersCollapsed ? "1" : "0");
+    } catch { /* ignore */ }
+  }, [foldersCollapsed]);
+
 
   async function refreshActiveBible() {
     setActiveBible(await getActiveLibrary());
@@ -434,24 +447,8 @@ function Page() {
           </div>
         </header>
 
-        {/* Active Bible strip */}
-        <Card>
-          <CardContent className="p-3 flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">{t("bibleManager.activeLabel")}:</span>
-            <Badge variant={activeBible ? "secondary" : "outline"}>
-              {activeBible
-                ? `${activeBible.title} (${activeBible.langLabel}) · ${activeBible.verseCount}`
-                : t("bibleManager.noneActive", { defaultValue: "Nenhuma" })}
-            </Badge>
-            <div className="flex-1" />
-            <Button variant="outline" size="sm" onClick={() => setBibleOpen(true)}>
-              <Languages className="h-4 w-4 mr-1.5" />
-              {t("bibleManager.manage")}
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Gerenciamento da Bíblia migrou para "Meu Perfil" */}
 
-        <BibleManagerDialog open={bibleOpen} onOpenChange={setBibleOpen} onChanged={refreshActiveBible} />
 
         {/* Seletor de tipo (obrigatório) */}
         <Card>
@@ -496,68 +493,88 @@ function Page() {
             {/* Sidebar: árvore de pastas */}
             <Card className="h-fit">
               <CardContent className="p-3 space-y-3">
-                <div className="flex gap-1.5">
-                  <Button size="sm" className="flex-1" onClick={handleNewNote}>
-                    <Plus className="h-4 w-4 mr-1" /> {t("fieldConsiderations.newNote")}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleCreateFolder(null)} title={t("personalOutlines.folders.new")}>
-                    <FolderPlus className="h-4 w-4" />
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <Folder className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold flex-1">
+                    {t("personalOutlines.folders.sectionTitle", { defaultValue: "Pastas e notas" })}
+                  </span>
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    title={t("personalOutlines.folders.import")}
+                    variant="ghost"
+                    onClick={() => setFoldersCollapsed((v) => !v)}
+                    title={foldersCollapsed
+                      ? t("personalOutlines.folders.expand", { defaultValue: "Expandir" })
+                      : t("personalOutlines.folders.collapse", { defaultValue: "Minimizar" })}
                   >
-                    <Upload className="h-4 w-4" />
+                    {foldersCollapsed ? <ChevronDown className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
                   </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="application/json"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleImportFile(f);
-                      e.target.value = "";
-                    }}
-                  />
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder={t("fieldConsiderations.search")}
-                    className="pl-7 h-9"
-                  />
-                </div>
-                <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
-                  {/* Raiz selecionável */}
-                  <div
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
-                      selectedFolderId === null ? "bg-primary/10 text-primary" : "hover:bg-muted",
-                    )}
-                    onClick={() => setSelectedFolderId(null)}
-                  >
-                    <FolderOpen className="h-4 w-4" />
-                    <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
-                  </div>
-                  {rootFolders.length === 0 && rootNotes.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center py-4">
-                      {t("personalOutlines.folders.empty")}
-                    </p>
-                  )}
-                  {rootFolders.map((f) => (
-                    <FolderRow key={f.id} folder={f} depth={0} />
-                  ))}
-                  {rootNotes.map((n) => (
-                    <NoteRow key={n.id} note={n} depth={0} />
-                  ))}
-                </div>
+                {!foldersCollapsed && (
+                  <>
+                    <div className="flex gap-1.5">
+                      <Button size="sm" className="flex-1" onClick={handleNewNote}>
+                        <Plus className="h-4 w-4 mr-1" /> {t("fieldConsiderations.newNote")}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleCreateFolder(null)} title={t("personalOutlines.folders.new")}>
+                        <FolderPlus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        title={t("personalOutlines.folders.import")}
+                      >
+                        <Upload className="h-4 w-4" />
+                      </Button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="application/json"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleImportFile(f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </div>
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder={t("fieldConsiderations.search")}
+                        className="pl-7 h-9"
+                      />
+                    </div>
+                    <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
+                      <div
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
+                          selectedFolderId === null ? "bg-primary/10 text-primary" : "hover:bg-muted",
+                        )}
+                        onClick={() => setSelectedFolderId(null)}
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                        <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
+                      </div>
+                      {rootFolders.length === 0 && rootNotes.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4">
+                          {t("personalOutlines.folders.empty")}
+                        </p>
+                      )}
+                      {rootFolders.map((f) => (
+                        <FolderRow key={f.id} folder={f} depth={0} />
+                      ))}
+                      {rootNotes.map((n) => (
+                        <NoteRow key={n.id} note={n} depth={0} />
+                      ))}
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
+
 
             {/* Editor */}
             <Card className="w-full max-w-full overflow-hidden min-w-0">
@@ -632,12 +649,29 @@ function NoteEditor({
     <div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words pb-24">
       <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0">
 
-        <div className="flex items-center gap-2">
-          <Badge variant={mode === "edit" ? "default" : "secondary"}>
-            {mode === "edit"
-              ? t("fieldConsiderations.editMode")
-              : t("fieldConsiderations.outlineMode")}
-          </Badge>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="inline-flex rounded-md border bg-background p-0.5">
+            <button
+              type="button"
+              onClick={() => onModeChange("edit")}
+              className={cn(
+                "px-3 py-1 text-xs rounded-sm transition",
+                mode === "edit" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+              )}
+            >
+              {t("fieldConsiderations.editMode")}
+            </button>
+            <button
+              type="button"
+              onClick={() => onModeChange("outline")}
+              className={cn(
+                "px-3 py-1 text-xs rounded-sm transition",
+                mode === "outline" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+              )}
+            >
+              {t("fieldConsiderations.outlineMode")}
+            </button>
+          </div>
           <span className="text-[11px] text-muted-foreground">
             {t("fieldConsiderations.updatedAt")}: {dateFmt(draft.updated_at)}
           </span>
@@ -761,7 +795,7 @@ function NoteEditor({
       </div>
 
       {/* Sticky action bar — sempre visível no rodapé do editor */}
-      <div className="sticky bottom-0 left-0 right-0 z-30 -mx-5 px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-end gap-2 w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
+      <div className="sticky bottom-0 left-0 right-0 z-30 -mx-5 px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-center gap-2 w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
         {mode === "outline" && (
           <Button variant="outline" size="sm" onClick={() => onModeChange("edit")}>
             <Pencil className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.edit")}
