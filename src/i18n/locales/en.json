@@ -1161,6 +1161,29 @@
   "fieldConsiderations": {
     "title": "Field Considerations",
     "subtitle": "Superintendent personal notes with offline Bible integration",
-    "placeholder": "Under construction — soon you'll be able to create notes with clickable verses."
+    "placeholder": "Create your first note to get started.",
+    "newNote": "New note",
+    "save": "Save note",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this note?",
+    "search": "Search by title...",
+    "empty": "No notes yet.",
+    "noSelection": "Select a note or create a new one.",
+    "fields": {
+      "title": "Title",
+      "titlePh": "E.g.: Considerations for February visit",
+      "prayer": "Closing prayer",
+      "prayerPh": "Who will give the closing prayer",
+      "territory": "Assigned territory",
+      "territoryPh": "E.g.: T-12 — Downtown",
+      "assistants": "Assistant chairmen",
+      "assistantsPh": "Names separated by commas",
+      "content": "Content",
+      "contentPh": "Write your considerations..."
+    },
+    "createdAt": "Created on",
+    "updatedAt": "Updated on",
+    "saved": "Note saved",
+    "deleted": "Note deleted"
   }
 }
