@@ -378,3 +378,21 @@ function Page() {
     </div>
   );
 }
+
+/**
+ * Renderiza o texto da nota substituindo cada citação bíblica detectada
+ * por um VerseLink clicável. Resto do texto permanece intacto.
+ */
+function OutlineContent({ text, lang }: { text: string; lang: BibleLang }) {
+  const matches = findCitations(lang, text);
+  if (matches.length === 0) return <>{text}</>;
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  matches.forEach((m, i) => {
+    if (m.index > cursor) parts.push(text.slice(cursor, m.index));
+    parts.push(<VerseLink key={`m-${i}`} match={m} lang={lang} />);
+    cursor = m.index + m.length;
+  });
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return <>{parts}</>;
+}
