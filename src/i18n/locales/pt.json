@@ -1281,6 +1281,8 @@
   },
   "bibleVerse": {
     "loading": "Carregando versículo…",
-    "notFound": "Versículo não disponível. Importe a Bíblia em Gerenciar Bíblias."
+    "notFound": "Versículo não disponível. Importe a Bíblia em Gerenciar Bíblias.",
+    "dragHandle": "Arrastar",
+    "close": "Fechar"
   }
 }
