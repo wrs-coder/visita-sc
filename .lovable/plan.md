@@ -1,79 +1,65 @@
 ## Objetivo
 
-1. Adicionar uma auditoria por livro que imprime quantos versículos foram extraídos por bookId (ex.: `{ B01: 1533, B02: 1213, ... }`) e qual a defasagem vs. o canônico esperado.
-2. Identificar e corrigir o(s) falso(s) positivo(s) que está(ão) descartando capítulos reais (sintomas: 1 Pedro 1 e 2 Pedro 1 ausentes; perda de ~865 versículos no total).
+Recuperar os versículos faltantes (déficit concentrado em Salmos, Jeremias, Isaías, Ezequiel, Números) e blindar o parser contra o "Conteúdo do livro" sem amputar capítulos reais.
 
 Arquivo único: `src/lib/epub-bible-parser.ts`.
 
-## Diagnóstico inicial (do código atual)
+## Diagnóstico
 
-Olhando `looksLikeOutlinePage` (linhas 718–745) e `truncatePreChapterContent`, há três gatilhos plausíveis para falso positivo:
+1. **Truncagem complexa**: a `truncatePreChapterContent` atual tenta vários seletores (`[id^="chapter"]`, `[id^="cap"]`, `[epub:type]`, `section[role="doc-chapter"]`) com guardas de rollback. Em livros poéticos o seletor genérico engata em âncoras fora do "ch1" e corta versículos legítimos.
+2. **Travessia de versos**: o `textBetween` atual usa TreeWalker entre `marker[i]` e `marker[i+1]`. Funciona para prosa, mas qualquer falha no encadeamento (marker pulado, irmãos profundos) compromete a captura.
+3. **Causa raiz dos déficits em poesia/listas**: `NOISY_CLASS_RE` inclui `sb|sb1|sb2|ss|boxStudy|box|box1|box2`. Na TNM/NWT, blocos de estrofe e listas costumam usar classes `sb`/`sb1`/`sb2` (strophe-block) — o filtro está descartando o próprio texto bíblico em Salmos, Provérbios, Jeremias, Isaías, Ezequiel. Isso explica a defasagem massiva nesses livros.
 
-- **Regra "≥ 3 parênteses (N) ou (N-M)"** (linha 738-739): páginas de capítulo único em livros poéticos (Salmos, Provérbios) e referências cruzadas embutidas no texto frequentemente contêm 3+ parentéticos numéricos legítimos. Disparo → descarta o arquivo inteiro.
-- **Regra "> 5 links com `#chapter|_verse|#v\d`"** (linha 728-734): o primeiro arquivo de cada livro na NWT/TNM costuma trazer um pequeno sumário interno com links para os próprios versículos do livro. Em 1 Pedro / 2 Pedro o primeiro arquivo (= capítulo 1) é a página combinada "outline + texto do cap. 1"; com mais de 5 links ele é classificado como outline e descartado por inteiro — explica exatamente "cap. 1 some, cap. 2 fica".
-- **Guarda de 80% em `truncatePreChapterContent`**: se acionada e revertida, o cabeçalho/sumário volta ao DOM e empurra `markers.length` para baixo de 3, caindo na branch de outline.
+## Mudanças
 
-A regra "`hasRealVerseAnchors` → não é outline" deveria ter blindado os arquivos com âncoras reais `chapter1_verseN`, mas o seletor `[id^="chapter"][id*="verse"]` pode estar falhando em XHTML (case-sensitive em `getElementsByTagName`/`querySelector` com namespaces) — vale revalidar.
+### 1. `truncatePreChapterContent` — reescrita estrita
 
-## Mudanças propostas
+Substituir as linhas 534–601 por uma função enxuta. Âncora ÚNICA: `[id="chapter1"]` ou `.w_ch` cujo texto seja exatamente `"1"`. Se nenhuma existir, **no-op** (sem rollback, sem snapshot). Sem fallback por `verse`, sem busca por `cap`, `epub:type` ou `role`.
 
-### 1. Auditoria por livro (novo log, sem mudança de comportamento)
+### 2. `textBetween` — Read-Until-Next-Anchor reforçado
 
-Em `parseEpub`, logo após o loop que preenche `verses` (antes do `console.info("DONE …")`), montar:
+Manter o TreeWalker, mas tornar as condições de parada explícitas e independentes da igualdade com `end`:
 
+- Para no `end` (next marker) — comportamento atual.
+- **NOVO**: para também ao encontrar qualquer elemento com `id` casando `/^chapter\d+[_-]?verse\d+/i` que não seja o próprio `start` (âncora de verso "órfã" não listada como marker).
+- **NOVO**: para também em `.w_ch` ou `[id^="chapter"]` que não seja id de versículo (novo capítulo).
+- Continua pulando subárvores `isNoisyElement` / `outlineRoots` / `isChapterHeadingEl`.
+
+Isso garante que, ao concatenar texto entre duas âncoras `chapterX_verseY`, capturamos todos os `<p class="sl">`, `<p class="sb">` e demais nós irmãos sequenciais até esbarrar na próxima âncora real — sem depender de cadeia de markers perfeita.
+
+### 3. `NOISY_CLASS_RE` — remover classes de poesia/estrofe
+
+Atual:
 ```ts
-const perBookCounts: Record<string, number> = {};
-for (const v of verses) {
-  perBookCounts[v.bookId] = (perBookCounts[v.bookId] ?? 0) + 1;
-}
-// Defasagem vs. canônico esperado
-const expected: Record<string, number> = { /* totais do CANON */ };
-const diffs = CANON
-  .map((c) => ({ id: c.id, name: c.english, got: perBookCounts[c.id] ?? 0, exp: expected[c.id] ?? 0 }))
-  .filter((r) => r.exp > 0 && r.got < r.exp)
-  .sort((a, b) => (b.exp - b.got) - (a.exp - a.got));
-console.table(perBookCounts);
-console.table(diffs.slice(0, 20));
+/\b(fn|footnote|footnotes|note|notes|rearnote|annotation|xref|cross|crossref|study|caption|figcaption|byline|callout|sidebar|outline|chapterOutline|chapter-outline|synopsis|summary|ss|sb|sb1|sb2|boxStudy|box|box1|box2|bridgehead)\b/i
 ```
 
-(Os 66 totais canônicos ficam num `const EXPECTED_VERSE_COUNTS` no topo do arquivo — números do texto massorético/grego padrão; servem apenas para destacar defasagens grosseiras, não como verdade absoluta.)
+Novo (remove `ss|sb|sb1|sb2|boxStudy|box|box1|box2` — esses contêm texto bíblico em livros poéticos):
+```ts
+/\b(fn|footnote|footnotes|note|notes|rearnote|annotation|xref|cross|crossref|study|caption|figcaption|byline|callout|sidebar|outline|chapterOutline|chapter-outline|synopsis|summary|bridgehead)\b/i
+```
 
-### 2. Tornar `looksLikeOutlinePage` mais conservador
+Notas de rodapé, sidebars e cross-refs continuam filtrados via `PURGE_SELECTORS` (que já remove `[epub:type~="footnote"]`, `.footnote`, `aside`, `nav` etc.) — não há regressão de "Conteúdo do livro".
 
-Para evitar descartar arquivos legítimos:
+### 4. Mantidos sem mudança
 
-- **Remover a regra "≥ 3 parênteses"** isolada. Em vez disso, exigir AMBOS: muitos parentéticos **E** zero marcadores de versículo no documento.
-- **Elevar o threshold de navLinks** de 5 → 15, e exigir adicionalmente `markers.length === 0` no doc (a checagem fica depois da coleta de markers, ou usa um pré-scan rápido por `chapter\d+_verse\d+` IDs).
-- **Critério unificado**: o arquivo só é classificado como outline se TODAS as condições abaixo forem verdadeiras:
-  1. Nenhum elemento com `id` matching `/chapter\d+_verse\d+/i`.
-  2. Nenhum elemento com classe `w_ch` / `verseNum` / `verse-num`.
-  3. (`navLinks ≥ 15`) OU (`findOutlineRoots(doc).size ≥ 2`).
-
-Isso elimina o caso "primeiro arquivo de 1 Pedro tem 6 links de navegação + texto real do cap. 1".
-
-### 3. Reforçar a guarda de `truncatePreChapterContent`
-
-- Mudar o threshold de 80% → 50% (preservar truncagem mais agressiva quando o sumário é grande), MAS adicionar segunda guarda: se após a truncagem nenhum elemento com `id` matching `chapter\d+_verse\d+` permanecer no body, reverter.
-
-### 4. Não-mudanças
-
-- `bible-refs.ts`, `bible-canon.ts`, `BibleVersePopover.tsx` — intocados.
-- `PURGE_SELECTORS`, `isVerseMarker`, `isChapterHeadingEl` — intocados.
+- `hardPurgeDoc` e `PURGE_SELECTORS` (footnotes, navegação, capa).
+- `looksLikeOutlinePage` (descarte de páginas-índice sem marcadores reais).
+- Loop de `parseEpub`, dedup `marker > fallback`, auditoria `perBookCounts` + `diffs`.
+- `bible-refs.ts`, `bible-canon.ts`, `BibleVersePopover.tsx`.
 
 ## Validação
 
-1. `bunx vitest run` — 54/54 devem continuar verdes.
-2. Pedir ao usuário que **re-importe o EPUB** com o console aberto e cole:
-   - A tabela `perBookCounts`.
-   - A tabela `diffs` (top 20 livros com maior defasagem).
-   - Linhas `[epub-bible] skip canon …` se houver.
-
-Com esses números isolamos exatamente quais livros perderam versículos e em qual ordem de magnitude antes de qualquer próxima mudança de regra.
+1. `bunx vitest run` — 54/54 verdes (Judas 5, Filêmon 6, 2/3 João, Obadias).
+2. Re-importar o EPUB com console aberto e capturar:
+   - `[epub-bible] AUDIT perBookCounts`
+   - `console.table(diffs.slice(0, 25))`
+3. Comparar total geral com baseline canônica (~31.102) e reportar livros ainda defasados.
 
 ## Risco
 
-Baixo. (1) é log puro. (2) e (3) só **afrouxam** as condições de descarte — pior caso volta ao comportamento pré-correção do "Conteúdo do livro" em arquivos muito específicos, que então será visível no log de auditoria e tratado em seguida.
+Baixo. Truncagem fica estritamente mais conservadora. Read-Until-Next-Anchor é estritamente aditivo (só adiciona pontos de parada — não estende a janela). A remoção de `sb/sb1/sb2/ss/box*` do filtro de ruído é a única mudança que pode reintroduzir conteúdo: se algum livro voltar a vazar texto de boxes de estudo, aparecerá nos logs de auditoria como excesso (e não defasagem), e tratamos via `PURGE_SELECTORS`.
 
-## Observação ao usuário
+## Observação
 
-As novas contagens só aparecem após **re-importar o EPUB** — o IndexedDB existente não é re-processado automaticamente.
+Os números só refletem após **re-importar o EPUB** (IndexedDB não re-processa automaticamente).
