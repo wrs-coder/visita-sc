@@ -16,9 +16,9 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { useConnectionMode } from "@/lib/connection-mode";
 
-const APP_VERSION = "2.4.0";
-const APP_BUILD = "2026.05.24";
-const APP_UPDATED_AT = "24/05/2026";
+const APP_VERSION = "3.0.0";
+const APP_BUILD = "2026.05.28";
+const APP_UPDATED_AT = "28/05/2026";
 
 export function LoginForm() {
   const nav = useNavigate();
