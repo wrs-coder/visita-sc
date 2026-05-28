@@ -1,20 +1,14 @@
-## Correção: Popover bíblico atrás do modo tela cheia
+# Plano executado: Tela cheia sem scroll lateral + Editor rich-text leve
 
-**Causa:** O `OutlineFullscreen` usa `z-50` (mesmo nível do `PopoverContent` padrão do Radix), então o popover renderiza por baixo.
+## Status: ✅ Implementado
 
-**Mudança única (somente UI, aditiva):**
+### Mudanças
+- **Tela cheia (`FullscreenOutline`)**: container raiz `w-screen max-w-full overflow-x-hidden overscroll-x-none`, body scroll horizontal travado via efeito, corpo com `overflow-y-auto overflow-x-hidden`, inner com `min-w-0 break-words [overflow-wrap:anywhere]`.
+- **Editor Tiptap**: `RichNoteEditor` + `RichNoteToolbar` com Normal/Título/Subtítulo (h2/h3), negrito, itálico, bullets, cor de texto, marca-texto. Emojis nativos suportados. Toolbar esconde quando teclado virtual recolhe via `useVirtualKeyboardVisible`.
+- **Sanitizer + renderer** em `src/lib/rich-content.tsx`: whitelist estrita de tags/atributos; renderiza HTML preservando formatação e injeta `VerseLink` em cada text node.
+- **`stripHtmlForDetection`** em `src/lib/bible-refs.ts` (aditivo) — usado pelos "chips" detectados.
+- **i18n** PT/EN/ES com novas chaves `personalOutlines.editor.*`.
+- **Testes**: 48/48 passando (4 novos para stripHtmlForDetection).
 
-Em `src/components/bible/BibleVersePopover.tsx`, no `<PopoverContent>`, adicionar `z-[60]` à className:
-
-```tsx
-<PopoverContent
-  className="w-80 max-w-[90vw] max-h-[60vh] overflow-y-auto z-[60]"
-  align="start"
->
-```
-
-O `PopoverContent` do shadcn já usa `Popover.Portal` (anexado ao `document.body`), então não é necessário tocar em portal/portalled — apenas garantir a camada acima do `z-50` da tela cheia.
-
-**Não alteradas:** lógica do popover, store IndexedDB, fullscreen, exportações, fila offline, RLS, restrições do superintendente.
-
-**Validação:** abrir um esboço em tela cheia, clicar em uma referência bíblica e confirmar que o popup aparece sobre o overlay; rodar os testes existentes (`bible-refs.test.ts`) para garantir que nada quebrou.
+### Não alterado
+IndexedDB schema, exportações PDF/JSON, fila offline, sincronização, RLS superintendente, popover bíblico (z-[110] mantido), APK/Capacitor/PWA.

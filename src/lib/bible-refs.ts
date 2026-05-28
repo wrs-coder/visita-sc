@@ -258,3 +258,43 @@ export function findCitations(books: BookInfo[] | undefined, text: string): Cita
   }
   return out;
 }
+
+/**
+ * Remove tags HTML preservando o texto, para que `findCitations` (usado nos
+ * "chips" detectados abaixo do editor) continue funcionando mesmo quando o
+ * conteúdo da nota traz formatação rich (cores, marca-texto, bullets...).
+ *
+ * Substitui tags de bloco por espaços para evitar colagem de palavras (ex.:
+ * "<p>João</p><p>3:16</p>" → "João 3:16" e não "João3:16").
+ */
+export function stripHtmlForDetection(html: string): string {
+  if (!html) return "";
+  if (typeof window !== "undefined" && "DOMParser" in window) {
+    try {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      // textContent já junta sem tags; mas blocos vizinhos perdem espaço.
+      // Inserimos espaços antes de fechar tags de bloco/quebra.
+      const blockTags = new Set(["P", "DIV", "BR", "LI", "UL", "OL", "H1", "H2", "H3", "H4", "H5", "H6"]);
+      const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT);
+      const blocks: Element[] = [];
+      let cur: Node | null = walker.currentNode;
+      while ((cur = walker.nextNode())) {
+        if (cur.nodeType === Node.ELEMENT_NODE && blockTags.has((cur as Element).tagName)) {
+          blocks.push(cur as Element);
+        }
+      }
+      for (const el of blocks) {
+        el.appendChild(doc.createTextNode(" "));
+      }
+      return (doc.body.textContent ?? "").replace(/\s+/g, " ").trim();
+    } catch {
+      // fallback regex
+    }
+  }
+  return html
+    .replace(/<(br|p|div|li|ul|ol|h[1-6])\b[^>]*>/gi, " ")
+    .replace(/<\/(p|div|li|ul|ol|h[1-6])>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}

@@ -4,6 +4,7 @@ import {
   findCitations,
   resolveBookId,
   detectBibleLanguage,
+  stripHtmlForDetection,
   type BookInfo,
 } from "./bible-refs";
 
@@ -236,5 +237,36 @@ describe("resolveBookId", () => {
   });
   it("PT: João (com acento)", () => {
     expect(resolveBookId(ptBooks, "João")).toBe("B43");
+  });
+});
+
+// ============================================================================
+// L. stripHtmlForDetection
+// ============================================================================
+describe("stripHtmlForDetection", () => {
+  it("remove tags simples preservando texto", () => {
+    expect(stripHtmlForDetection("<p>João 3:16</p>")).toBe("João 3:16");
+  });
+  it("insere espaço entre blocos vizinhos", () => {
+    const out = stripHtmlForDetection("<p>João</p><p>3:16</p>");
+    expect(out).toContain("João");
+    expect(out).toContain("3:16");
+    expect(out).not.toContain("João3:16");
+  });
+  it("preserva citação dentro de span colorido para findCitations", () => {
+    const html = '<p>Veja <span style="color: red">João 3:16</span> hoje.</p>';
+    const plain = stripHtmlForDetection(html);
+    const m = findCitations(ptBooks, plain);
+    expect(m[0]?.bookId).toBe("B43");
+    expect(m[0]?.chapter).toBe(3);
+    expect(m[0]?.verse).toBe(16);
+  });
+  it("preserva citação dentro de bullet", () => {
+    const html = "<ul><li>Mt 5:9</li><li>Jo 14:6</li></ul>";
+    const plain = stripHtmlForDetection(html);
+    const all = findCitations(ptBooks, plain);
+    expect(all).toHaveLength(2);
+    expect(all[0].bookId).toBe("B40");
+    expect(all[1].bookId).toBe("B43");
   });
 });
