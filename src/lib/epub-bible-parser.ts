@@ -828,8 +828,22 @@ function extractVersesFromDoc(
       const n = chapterNumberFromHeading(el);
       if (n) currentChapter = n;
       else currentChapter += 1; // heading sem número legível → avança 1
+
+      // TNM: o mesmo elemento que é heading de capítulo carrega também
+      // `id="chapter N_verse1"` (versículo 1). Sem registrar como marker,
+      // o texto do versículo 1 some. Detecta via id e empurra como marker.
+      const headingId = el.getAttribute("id") ?? "";
+      const fromHeadingId = parseChapVerseFromAttr(headingId);
+      if (fromHeadingId.verse) {
+        markers.push({
+          node: el,
+          chapter: fromHeadingId.chap ?? currentChapter,
+          verse: fromHeadingId.verse,
+        });
+      }
       continue;
     }
+
 
     const hit = isVerseMarker(el);
     if (!hit) continue;
