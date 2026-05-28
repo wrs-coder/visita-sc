@@ -26,6 +26,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
   const [open, setOpen] = useState(false);
   const [parts, setParts] = useState<VersePart[] | null>(null);
   const [truncated, setTruncated] = useState(false);
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     if (!open || parts !== null) return;
     if (!libraryId) {
