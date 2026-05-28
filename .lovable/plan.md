@@ -1,68 +1,71 @@
+# Sub-etapa 3.1 — Fundação (store + parser, sem mexer na UI)
 
-## Estratégia: implementação em 4 etapas
+Objetivo: preparar toda a camada de dados para Bíblias importadas via EPUB **sem quebrar nenhum import existente**. A UI (`BibleManagerDialog`, `BibleVersePopover`, `_app.consideracoes-campo.tsx`) continua usando a API antiga via *stubs* até as sub-etapas 3.2 e 3.3.
 
-Cada etapa é **independente, testável e não-destrutiva**. Só avançamos para a próxima depois de confirmar que a anterior funciona (sem regressão em exportação, offline, permissões ou nos ajustes recentes).
+## O que será feito
 
----
+### 1. Dependência
+- `bun add jszip` (única nova dependência; o parser usa `DOMParser` nativo).
 
-### Etapa 1 — Esqueleto da tela + permissão + i18n
-**Objetivo:** colocar a rota no ar, vazia, acessível só pelo superintendente.
+### 2. Novo arquivo: `src/lib/epub-bible-parser.ts`
+Parser puro, sem efeitos colaterais. Responsável por ler um `File` EPUB e devolver `{ meta, books, verses }`.
 
-- Criar `src/routes/_app.consideracoes-campo.tsx` com `beforeLoad` redirecionando ancião para `/dashboard`
-- Adicionar item **"Considerações de campo"** no menu lateral (`src/routes/_app.tsx`), seção **"Semana da visita"**, visível só quando `role === "superintendent"`
-- Chaves i18n em PT/EN/ES: `sidebar.fieldConsiderations` + `fieldConsiderations.title`, `.subtitle`
-- UI mínima: título + card "em construção"
+Resiliência em cascata (cada etapa tem fallback):
+- **Descompactação**: `JSZip.loadAsync(file)` direto da memória, sem gravar em disco.
+- **Localizar OPF**: lê `META-INF/container.xml` → `rootfile@full-path`; fallback: primeiro `*.opf` encontrado.
+- **Metadados** (`dc:language`, `dc:title`, `dc:identifier`): parse com `DOMParser` em `application/xml`. `lang` normalizado para ISO-639-1 (`pt-BR` → `pt`).
+- **Mapeamento de livros**:
+  1. Tenta `nav.xhtml` com `epub:type="toc"` → extrai `<a>` (ordem + nome de exibição).
+  2. Fallback: `toc.ncx` → `navPoint/navLabel/text`.
+  3. Fallback final: ordem do `<spine>` no OPF, usando `<title>` ou primeiro `<h1>/<h2>` de cada xhtml.
+- **IDs estáveis**: atribuição sequencial `B01`, `B02`, … na ordem de leitura. **`B01` será sempre o primeiro livro do EPUB**, independente da revisão TNM/idioma.
+- **Aliases automáticos**: a partir do `displayName`, gera variantes (primeiras 3 letras sem acento, com/sem ponto, número romano + nome para "1 Coríntios", etc.). Usuário pode importar EPUBs em qualquer idioma e o regex se adapta.
+- **Extração de versículos** por capítulo (xhtml do livro), em cascata:
+  1. Seletor TNM: `[id^="v"]`, `[id^="chapter"]`, `.v`, `.verse`, `[class*="verse"]`.
+  2. Genérico EPUB3: `[epub\\:type="verse"]`.
+  3. Regex fallback no texto puro: separa por `^\s*(\d{1,3})\s+` capturando até o próximo marcador.
+- **Filtro de validade**: descarta xhtml que produza < 1 capítulo OU < 3 versículos (evita capturar prefácios/índices como "livros").
 
-**Critério:** menu aparece só para super; ancião redireciona; sem erro de build.
+Performance:
+- Toda a etapa acima é *pura/sincrona após o unzip*; retorna estruturas em memória.
+- Reporta progresso via callback `onProgress(phase, pct)` com fases: `unzip` (0–5%), `parse-opf` (5–10%), `index-books` (10–90%), `write-db` (90–100%, controlado pelo store).
 
----
+### 3. Refatoração: `src/lib/bible-notes-store.ts`
 
-### Etapa 2 — Gerenciador de notas + persistência local
-**Objetivo:** CRUD completo de notas em IndexedDB (com fallback localStorage), sem nada de Bíblia ainda.
+Bumpar `DB_VERSION` para **2**. No `onupgradeneeded`:
+- Mantém o store `notes` (intacto).
+- **Cria**:
+  - `bible_libraries` — keyPath `id`, índices `by_lang`, `by_imported_at`.
+  - `bibles` — keyPath composto `${libraryId}:${bookId}:${chapter}:${verse}`, índice `by_library`, `by_book`.
+- **Remove** stores antigos (`bible_pt`, `bible_en`, `bible_es`, se existirem) usando `db.deleteObjectStore` quando presentes — *não* quebra usuários novos.
 
-- `src/lib/bible-notes-store.ts` — wrapper IndexedDB (store `notes`) com fallback localStorage
-- Sidebar interna com lista + botão **"+ Nova nota"** + busca por título
-- Formulário: Título, Oração final, Território, Dirigentes auxiliares, Conteúdo (`<textarea>` livre, sem limite), data de criação/atualização
-- Botões **Salvar nota**, **Excluir**, indicador "Salvo" (reaproveitar `SavingIndicator`)
-- Chaves i18n adicionadas em PT/EN/ES
+Nova API exportada:
+- `importEpub(file: File, onProgress?): Promise<BibleLibrary>` — chama o parser, depois abre **uma única transação `readwrite`** em `bibles` + `bible_libraries`, faz `put` em chunks de 1000 com `setTimeout(0)` entre chunks (evita travar o thread principal). Retorna o registro `BibleLibrary`.
+- `listLibraries(): Promise<BibleLibrary[]>`
+- `removeLibrary(id): Promise<void>` — apaga registros via `IDBKeyRange.bound(\`${id}:\`, \`${id}:\uffff\`)`.
+- `setActiveLibraryId(id)` / `getActiveLibraryId()` — em `localStorage` (`visita-sc-bible-active`).
+- `getActiveLibrary(): Promise<BibleLibrary | null>`
+- `getVerseFromLibrary(libraryId, bookId, chapter, verse): Promise<{text: string} | null>`
 
-**Critério:** criar nota, fechar app, reabrir — nota persiste. Funciona em browser, PWA e WebView.
+**Compatibilidade temporária (será removida em 3.3)**:
+Mantém as exports antigas como *stubs no-op* para o app compilar enquanto a UI ainda não foi migrada:
+- `downloadLanguage()` → lança erro amigável `"use importEpub"` (a UI antiga vai capturar).
+- `removeLanguage()` → no-op.
+- `getLangStatus()` → sempre retorna `{ downloaded: false, verseCount: 0 }`.
+- `getVerse()` → delega para `getVerseFromLibrary` usando a library ativa (best-effort).
+- Re-exporta `BibleLangStatus` como `type`.
 
----
+### 4. Não tocar nesta sub-etapa
+- `BibleManagerDialog.tsx` — continua mostrando PT/EN/ES, mas o botão "Baixar" vai falhar silenciosamente (será trocado em 3.3).
+- `BibleVersePopover.tsx` / `bible-refs.ts` / `_app.consideracoes-campo.tsx` — intocados (3.2 e 3.3).
+- `bible-seed.ts` — fica no repo, só é removido em 3.3.
+- i18n — sem mudanças aqui.
 
-### Etapa 3 — Bíblia offline (seed + gerenciador de idiomas)
-**Objetivo:** infra de versículos pronta, sem ainda integrar ao texto da nota.
+## Resultado esperado ao final de 3.1
+- App **compila e roda** normalmente.
+- IndexedDB migra para v2 sem perda de notas.
+- O modal antigo de Bíblia ainda aparece, mas o botão "Baixar" não faz nada útil (esperado — será trocado em 3.3).
+- Base pronta para 3.2 (regex dinâmico) e 3.3 (nova UI de import).
 
-- `src/lib/bible-seed.ts` — Gn 1:1 e Jo 3:16 em PT/EN/ES embutidos no bundle
-- `src/lib/bible-refs.ts` — mapas de livros por idioma + builder do regex dinâmico
-- Store `bibles` no wrapper IndexedDB, indexado por `{lang, book, chapter, verse}`
-- Seed automático na primeira execução
-- `BibleManagerDialog.tsx` — modal "Gerenciar idiomas" com status + barra de progresso para PT/EN/ES (download = expande seed local nesta versão)
-- Cabeçalho da tela: "Bíblia ativa: <idioma>" + botão **Gerenciar idiomas**
-
-**Critério:** abrir modal, ver 3 idiomas, "baixar" cada um, status atualiza. Sem rede, `getVerse("pt","João",3,16)` retorna texto.
-
----
-
-### Etapa 4 — Modo Edição × Modo Esboço (integração final)
-**Objetivo:** ligar regex + Bíblia ao editor de notas.
-
-- **Modo Edição:** `onChange` roda o regex do idioma ativo → painel superior mostra versículos detectados em tempo real
-- **Modo Esboço:** após Salvar (ou ao reabrir), conteúdo vira read-only com citações renderizadas como **links azuis clicáveis**
-- `BibleVersePopover.tsx` — popover/modal flutuante que abre ao tocar o link
-- Botão **"Editar nota"** volta ao Modo Edição
-- Alternância suave de modo sem perder texto
-
-**Critério:** digitar "João 3:16" mostra versículo no topo; salvar → vira link azul; tocar → popover abre. Trocar app para EN reconhece "John 3:16"; ES reconhece "Juan 3:16".
-
----
-
-## Garantias transversais (em todas as etapas)
-
-- **Zero alteração** em: `_app.modelo-reunioes-discursos.tsx`, `_app.configuracoes.tsx`, `_app.notas.tsx`, `src/lib/offline-*`, `template-io.functions.ts`, qualquer migration, RLS, server function, `client.ts` ou `types.ts`
-- **Nenhuma tabela nova no Supabase** — tudo local no dispositivo do super
-- Após cada etapa: verificar build, abrir preview, conferir que exportação PDF, fila offline e telas de modelos seguem intactas
-
-## Próximo passo
-
-Começamos pela **Etapa 1** assim que você aprovar este plano faseado. Cada etapa entra em uma mensagem separada para você validar antes de seguir.
+## Confirmar para prosseguir
+Posso aplicar a sub-etapa 3.1 conforme acima?
