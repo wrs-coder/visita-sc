@@ -868,12 +868,16 @@ function extractVersesFromDoc(
       if (!t) continue;
       if (v === 1 && out.length > 0 && out[out.length - 1].verse > 1) chap++;
       out.push({ chapter: chap, verse: v, text: t, source: "fallback" });
-    }
-    return out;
-  }
-
   // Para cada marcador, coleta o texto entre ele e o próximo.
+  // IMPORTANTE: para o ÚLTIMO marcador (i === markers.length - 1) passamos
+  // `next = null` deliberadamente. `textBetween` então percorre o TreeWalker
+  // até o fim do <body> — capturando o texto final do capítulo mesmo quando
+  // não existe próxima âncora de versículo no arquivo XHTML.
   const out: ExtractedVerse[] = [];
+  for (let i = 0; i < markers.length; i++) {
+    const cur = markers[i];
+    const next = i + 1 < markers.length ? markers[i + 1].node : null;
+    let text = textBetween(doc, cur.node, next, outlineRoots);
   for (let i = 0; i < markers.length; i++) {
     const cur = markers[i];
     const next = markers[i + 1]?.node ?? null;
