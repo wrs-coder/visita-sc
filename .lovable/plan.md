@@ -1,32 +1,36 @@
-Resposta ao seu ponto: quase todos os passos do planejamento foram aplicados, mas o plano salvo no projeto só contém oficialmente a Sub-etapa 3.1. Pelo código atual, já existem também a dependência `jszip`, o parser EPUB, o modelo IndexedDB, a UI de Gerenciar Bíblias, a integração na página, as traduções e o popover. O problema restante não é falta desses blocos, é que o parser ainda não está compatível com a estrutura real desse EPUB específico: ele está extraindo só 397 versículos e, por isso, a biblioteca ativa fica incompleta e a detecção de referências não encontra corretamente livros como Mateus.
+## Plano
 
-Plano de correção:
+1. **Detectar os 66 livros bíblicos em múltiplos idiomas**
+   - Criar um catálogo canônico interno com os 66 livros e seus aliases em vários idiomas comuns, incluindo português, inglês, espanhol, francês, alemão, italiano e formas sem acento.
+   - Não depender apenas do idioma do app nem do título exato no EPUB.
+   - Mapear cada livro para IDs estáveis `B01` a `B66`, independentemente de o EPUB usar “Mateus”, “Matthew”, “Mateo”, “Matthieu”, “Matthäus”, etc.
 
-1. Completar o diagnóstico do EPUB no parser atual
-   - Ajustar a leitura para não depender apenas de elementos com `id`, `.verse` ou texto puro com números soltos.
-   - Cobrir estruturas comuns da Tradução do Novo Mundo em EPUB, onde capítulos/versículos podem estar em spans, anchors, notas, marcadores sobrescritos ou arquivos por capítulo.
+2. **Agrupar corretamente o spine/TOC do EPUB**
+   - O EPUB atual mostra `spine=3935` e `slots=196`, então o parser não deve tratar cada item do TOC como livro.
+   - Usar o catálogo multilíngue para distinguir livros bíblicos reais de prefácios, notas, índices, apêndices e páginas de conteúdo.
+   - Agrupar arquivos consecutivos do mesmo livro, mesmo quando cada capítulo/parte estiver em um XHTML separado.
 
-2. Reforçar a extração de versículos
-   - Criar uma rotina mais tolerante que encontre marcadores de versículo dentro do HTML mesmo quando o texto do versículo está nos irmãos seguintes, no parágrafo pai ou em spans separados.
-   - Evitar capturar notas, índices, cabeçalhos e números de capítulo como se fossem versículos.
-   - Garantir que arquivos por capítulo sejam gravados com o número de capítulo correto.
+3. **Corrigir extração de versículos da TNM e de EPUBs similares**
+   - Ler marcadores de versículo por IDs, classes, âncoras, `epub:type`, `<sup>` e padrões textuais.
+   - Coletar o texto entre marcadores sem capturar notas, índices ou referências cruzadas como versículos.
+   - Deduplicar por `bookId + chapter + verse` e manter o texto mais completo.
 
-3. Melhorar o agrupamento de livros
-   - Tratar TOC/nav com níveis extras: partes, seções, livros e capítulos.
-   - Agrupar capítulos consecutivos pelo nome real do livro, sem transformar “Mateus 1”, “Mateus 2” etc. em livros separados.
-   - Manter IDs estáveis `B01`…`B66` na ordem de leitura.
+4. **Validar a importação antes de aceitar a Bíblia**
+   - Exigir contagens coerentes para uma Bíblia completa, idealmente 66 livros e dezenas de milhares de versículos.
+   - Se a importação ficar parcial, mostrar erro/aviso claro em vez de salvar silenciosamente uma Bíblia incompleta.
+   - Registrar no console livros encontrados, livros faltantes, arquivos ignorados e total final.
 
-4. Corrigir reconhecimento de referências no campo de texto
-   - Revisar o regex dinâmico para aceitar formatos usados pelo usuário: `mateus 6:33`, `Mateus 6:33`, abreviações e nomes com/sem acento.
-   - Corrigir um ponto provável: os termos curtos e longos hoje podem não ser recuperados corretamente se o nome importado vier com variações inesperadas do EPUB.
-   - Fazer a detecção funcionar tanto no modo edição quanto no modo esboço.
+5. **Corrigir reconhecimento de referências no texto**
+   - Reconhecer referências usando aliases multilíngues e normalização: maiúsculas/minúsculas, acentos, pontos e abreviações.
+   - Exemplos esperados: `Mateus 6:33`, `mateus 6:33`, `Mat. 6:33`, `Matthew 6:33`, `Mateo 6:33`.
+   - Garantir funcionamento no modo Edição e no modo Esboço da página `/consideracoes-campo`.
 
-5. Adicionar validações internas leves
-   - Após a importação, mostrar/guardar contagens coerentes: idealmente 66 livros e aproximadamente 31.102 versículos para a Bíblia completa.
-   - Se o EPUB importado gerar poucos versículos, retornar erro mais claro em vez de aceitar silenciosamente uma biblioteca incompleta.
+6. **Tratar separadamente o erro do manifest**
+   - `manifest.webmanifest 401` não parece ser a causa da importação parcial.
+   - Verificar se o manifesto público está sendo bloqueado por autenticação e ajustar apenas se necessário.
 
-6. Atualizar notas técnicas do planejamento
-   - Registrar que os passos 1, 2, 4, 5, 6, 7 e 8 já foram implementados.
-   - Marcar o parser como etapa em correção/robustez por causa da estrutura específica do EPUB TNM.
+## Notas técnicas
 
-Depois de aplicar, você precisará remover a Bíblia importada com 397 versículos e importar novamente o mesmo EPUB.
+- IndexedDB, UI de gerenciamento, i18n e dependência `jszip` já estão implementados.
+- O ponto crítico agora é tornar o parser realmente canônico e multilíngue, em vez de inferir livros apenas pelo TOC do EPUB.
+- Depois da correção, será necessário remover a Bíblia parcial e importar novamente o EPUB.
