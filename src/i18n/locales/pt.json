@@ -1193,26 +1193,28 @@
     "contentEmpty": "Sem conteúdo."
   },
   "bibleManager": {
-    "title": "Gerenciar idiomas da Bíblia",
-    "subtitle": "Baixe a Tradução do Novo Mundo para uso 100% offline.",
-    "download": "Baixar",
-    "update": "Atualizar",
-    "downloadedBadge": "Baixado",
-    "notDownloaded": "Não baixado",
-    "downloaded": "{{lang}} baixado",
-    "removed": "{{lang}} removido",
+    "title": "Gerenciar Bíblias",
+    "subtitle": "Importe um arquivo .epub da Bíblia (Tradução do Novo Mundo) para uso 100% offline.",
+    "importButton": "Importar Bíblia (.epub)",
+    "importing": "Importando…",
+    "importHint": "Use o arquivo .epub extraído do app oficial JW Library ou baixado em jw.org.",
+    "installedTitle": "Bíblias instaladas no dispositivo",
+    "installedEmpty": "Nenhuma Bíblia importada ainda.",
+    "use": "Usar",
+    "active": "Em uso",
+    "remove": "Remover",
     "removeConfirm": "Remover esta Bíblia do dispositivo?",
-    "verseCount": "{{count}} versículos disponíveis",
+    "imported": "Bíblia importada: {{title}}",
+    "removed": "Bíblia removida",
+    "importError": "Não foi possível ler este arquivo EPUB.",
+    "verseCount": "{{count}} versículos",
+    "bookCount": "{{count}} livros",
     "activeLabel": "Bíblia ativa",
-    "manage": "Gerenciar idiomas",
-    "langs": {
-      "pt": "Português",
-      "en": "Inglês",
-      "es": "Espanhol"
-    }
+    "noneActive": "Nenhuma Bíblia ativa",
+    "manage": "Gerenciar Bíblias"
   },
   "bibleVerse": {
-    "loading": "Carregando versículo...",
-    "notFound": "Versículo não disponível offline. Baixe a Bíblia em Gerenciar idiomas."
+    "loading": "Carregando versículo…",
+    "notFound": "Versículo não disponível. Importe a Bíblia em Gerenciar Bíblias."
   }
 }

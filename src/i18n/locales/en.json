@@ -1193,26 +1193,28 @@
     "contentEmpty": "No content."
   },
   "bibleManager": {
-    "title": "Manage Bible languages",
-    "subtitle": "Download the New World Translation for 100% offline use.",
-    "download": "Download",
-    "update": "Update",
-    "downloadedBadge": "Downloaded",
-    "notDownloaded": "Not downloaded",
-    "downloaded": "{{lang}} downloaded",
-    "removed": "{{lang}} removed",
+    "title": "Manage Bibles",
+    "subtitle": "Import a Bible .epub file (New World Translation) for 100% offline use.",
+    "importButton": "Import Bible (.epub)",
+    "importing": "Importing…",
+    "importHint": "Use the .epub exported from the official JW Library app or downloaded at jw.org.",
+    "installedTitle": "Bibles installed on this device",
+    "installedEmpty": "No Bible imported yet.",
+    "use": "Use",
+    "active": "In use",
+    "remove": "Remove",
     "removeConfirm": "Remove this Bible from the device?",
-    "verseCount": "{{count}} verses available",
+    "imported": "Bible imported: {{title}}",
+    "removed": "Bible removed",
+    "importError": "Could not read this EPUB file.",
+    "verseCount": "{{count}} verses",
+    "bookCount": "{{count}} books",
     "activeLabel": "Active Bible",
-    "manage": "Manage languages",
-    "langs": {
-      "pt": "Portuguese",
-      "en": "English",
-      "es": "Spanish"
-    }
+    "noneActive": "No active Bible",
+    "manage": "Manage Bibles"
   },
   "bibleVerse": {
-    "loading": "Loading verse...",
-    "notFound": "Verse not available offline. Download the Bible from Manage languages."
+    "loading": "Loading verse…",
+    "notFound": "Verse unavailable. Import the Bible from Manage Bibles."
   }
 }

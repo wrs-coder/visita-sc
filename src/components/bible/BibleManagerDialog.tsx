@@ -1,69 +1,77 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Download, Trash2, Check, Loader2 } from "lucide-react";
+import { Upload, Trash2, Check, Loader2, BookOpen } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
-  downloadLanguage,
-  removeLanguage,
-  getLangStatus,
-  type BibleLangStatus,
+  importEpub,
+  listLibraries,
+  removeLibrary,
+  getActiveLibraryId,
+  setActiveLibraryId,
+  type BibleLibrary,
 } from "@/lib/bible-notes-store";
-import type { BibleLang } from "@/lib/bible-refs";
 import { toast } from "sonner";
-
-const LANGS: BibleLang[] = ["pt", "en", "es"];
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Triggered after any change so the page can refresh "Bíblia ativa". */
   onChanged?: () => void;
 }
 
 export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
   const { t } = useTranslation();
-  const [statuses, setStatuses] = useState<Record<BibleLang, BibleLangStatus | null>>({
-    pt: null, en: null, es: null,
-  });
-  const [busy, setBusy] = useState<Record<BibleLang, number | null>>({
-    pt: null, en: null, es: null,
-  });
+  const [libs, setLibs] = useState<BibleLibrary[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  async function refreshAll() {
-    const entries = await Promise.all(LANGS.map(async (l) => [l, await getLangStatus(l)] as const));
-    setStatuses(Object.fromEntries(entries) as Record<BibleLang, BibleLangStatus>);
+  async function refresh() {
+    setLibs(await listLibraries());
+    setActiveId(getActiveLibraryId());
   }
 
   useEffect(() => {
-    if (open) refreshAll();
+    if (open) refresh();
   }, [open]);
 
-  async function handleDownload(lang: BibleLang) {
-    setBusy((b) => ({ ...b, [lang]: 0 }));
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setProgress(0);
     try {
-      await downloadLanguage(lang, (pct) => {
-        setBusy((b) => ({ ...b, [lang]: Math.round(pct * 100) }));
+      const lib = await importEpub(file, (_phase, pct) => {
+        setProgress(Math.round(pct * 100));
       });
-      await refreshAll();
+      await refresh();
       onChanged?.();
-      toast.success(t("bibleManager.downloaded", { lang: langLabel(lang, t) }));
-    } catch {
-      toast.error(t("common.errorGeneric", { defaultValue: "Erro" }));
+      toast.success(t("bibleManager.imported", { title: lib.title }));
+    } catch (err) {
+      console.error(err);
+      toast.error(t("bibleManager.importError"));
     } finally {
-      setBusy((b) => ({ ...b, [lang]: null }));
+      setProgress(null);
     }
   }
 
-  async function handleRemove(lang: BibleLang) {
-    if (!confirm(t("bibleManager.removeConfirm"))) return;
-    await removeLanguage(lang);
-    await refreshAll();
+  async function handleUse(id: string) {
+    setActiveLibraryId(id);
+    setActiveId(id);
     onChanged?.();
-    toast.success(t("bibleManager.removed", { lang: langLabel(lang, t) }));
   }
+
+  async function handleRemove(id: string) {
+    if (!confirm(t("bibleManager.removeConfirm"))) return;
+    await removeLibrary(id);
+    await refresh();
+    onChanged?.();
+    toast.success(t("bibleManager.removed"));
+  }
+
+  const isBusy = progress !== null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,61 +80,91 @@ export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
           <DialogTitle>{t("bibleManager.title")}</DialogTitle>
           <DialogDescription>{t("bibleManager.subtitle")}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          {LANGS.map((lang) => {
-            const s = statuses[lang];
-            const progress = busy[lang];
-            const isBusy = progress !== null;
-            return (
-              <div key={lang} className="rounded-lg border p-3 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{langLabel(lang, t)}</span>
-                    {s?.downloaded ? (
-                      <Badge variant="secondary" className="gap-1">
-                        <Check className="h-3 w-3" /> {t("bibleManager.downloadedBadge")}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">{t("bibleManager.notDownloaded")}</Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {s?.downloaded && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemove(lang)}
-                        disabled={isBusy}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button size="sm" onClick={() => handleDownload(lang)} disabled={isBusy}>
-                      {isBusy ? (
-                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                      ) : (
-                        <Download className="h-4 w-4 mr-1.5" />
-                      )}
-                      {s?.downloaded ? t("bibleManager.update") : t("bibleManager.download")}
-                    </Button>
-                  </div>
-                </div>
-                {isBusy && <Progress value={progress ?? 0} className="h-1.5" />}
-                {s?.downloaded && (
-                  <p className="text-[11px] text-muted-foreground">
-                    {t("bibleManager.verseCount", { count: s.verseCount })}
-                  </p>
-                )}
+
+        <div className="space-y-4">
+          {/* Import area */}
+          <div className="rounded-lg border-2 border-dashed p-4 text-center space-y-3">
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".epub,application/epub+zip"
+              className="hidden"
+              onChange={handleFile}
+            />
+            <Button
+              onClick={() => fileRef.current?.click()}
+              disabled={isBusy}
+              size="lg"
+              className="w-full"
+            >
+              {isBusy ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4 mr-2" />
+              )}
+              {isBusy ? t("bibleManager.importing") : t("bibleManager.importButton")}
+            </Button>
+            {isBusy && <Progress value={progress ?? 0} className="h-1.5" />}
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {t("bibleManager.importHint")}
+            </p>
+          </div>
+
+          {/* Installed list */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <BookOpen className="h-3.5 w-3.5" />
+              {t("bibleManager.installedTitle")}
+            </h3>
+            {libs.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">
+                {t("bibleManager.installedEmpty")}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {libs.map((lib) => {
+                  const isActive = lib.id === activeId;
+                  return (
+                    <div key={lib.id} className="rounded-lg border p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-sm truncate">{lib.title}</span>
+                            {isActive && (
+                              <Badge variant="secondary" className="gap-1 h-5">
+                                <Check className="h-3 w-3" /> {t("bibleManager.active")}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {lib.langLabel} · {t("bibleManager.bookCount", { count: lib.bookCount })} · {t("bibleManager.verseCount", { count: lib.verseCount })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {!isActive && (
+                            <Button size="sm" variant="outline" onClick={() => handleUse(lib.id)} disabled={isBusy}>
+                              {t("bibleManager.use")}
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleRemove(lib.id)}
+                            disabled={isBusy}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
-}
-
-function langLabel(lang: BibleLang, t: (k: string) => string): string {
-  return t(`bibleManager.langs.${lang}`);
 }
