@@ -4,6 +4,7 @@ import {
   findCitations,
   resolveBookId,
   detectBibleLanguage,
+  stripHtmlForDetection,
   type BookInfo,
 } from "./bible-refs";
 
