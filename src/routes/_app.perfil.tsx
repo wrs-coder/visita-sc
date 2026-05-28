@@ -204,6 +204,30 @@ function Page() {
         </CardContent>
       </Card>
 
+      <Card className="shadow-card border-primary/30">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Languages className="h-4 w-4 text-primary" /> {t("bibleManager.manage")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">{t("bibleManager.activeLabel")}:</span>
+            <Badge variant={activeBible ? "secondary" : "outline"}>
+              {activeBible
+                ? `${activeBible.title} (${activeBible.langLabel}) · ${activeBible.verseCount}`
+                : t("bibleManager.noneActive", { defaultValue: "Nenhuma" })}
+            </Badge>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setBibleOpen(true)}>
+            <Languages className="h-4 w-4 mr-1.5" />
+            {t("bibleManager.manage")}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <BibleManagerDialog open={bibleOpen} onOpenChange={setBibleOpen} onChanged={refreshActiveBible} />
+
       {role === "superintendent" && (
         <Card className="shadow-card border-primary/30">
           <CardHeader>
