@@ -44,6 +44,11 @@ function Page() {
   const [busyCircuit, setBusyCircuit] = useState(false);
   const [busyEmail, setBusyEmail] = useState(false);
   const [busyPwd, setBusyPwd] = useState(false);
+  const [bibleOpen, setBibleOpen] = useState(false);
+  const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
+
+  const refreshActiveBible = async () => setActiveBible(await getActiveLibrary());
+  useEffect(() => { refreshActiveBible(); }, []);
 
   const doExportBackup = async () => {
     setBusyBackup("export");
