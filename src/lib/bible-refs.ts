@@ -216,14 +216,16 @@ function dissect(raw: string): { bookTerm: string; chapter: number; verse: numbe
 
 
 export function resolveBookId(books: BookInfo[], name: string): string | null {
-  const { lookup } = compile(books);
+  const lang = detectBibleLanguage(books);
+  const { lookup } = compile(books, lang);
   const key = stripDiacritics(name.toLowerCase()).replace(/\.$/, "");
   return lookup.get(key)?.bookId ?? null;
 }
 
 export function findCitations(books: BookInfo[] | undefined, text: string): CitationMatch[] {
   if (!books || books.length === 0 || !text) return [];
-  const { regex, lookup } = compile(books);
+  const lang = detectBibleLanguage(books);
+  const { regex, lookup } = compile(books, lang);
   // Cria instância fresca para evitar lastIndex compartilhado
   const re = new RegExp(regex.source, regex.flags);
   const out: CitationMatch[] = [];
