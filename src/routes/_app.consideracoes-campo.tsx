@@ -21,7 +21,17 @@ import {
   Maximize2,
   X,
   Minus,
+  Move,
+  Scissors,
+  ClipboardPaste,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -148,6 +158,14 @@ function Page() {
     }
   });
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Estado para mover/recortar
+  const [clipboardNoteId, setClipboardNoteId] = useState<string | null>(null);
+  const [moveTarget, setMoveTarget] = useState<
+    | { kind: "note"; id: string }
+    | { kind: "folder"; id: string }
+    | null
+  >(null);
 
   useEffect(() => {
     try {
@@ -282,6 +300,81 @@ function Page() {
     }
   }
 
+  // ---------- Mover / Recortar / Colar ----------
+
+  function getDescendantFolderIds(rootId: string): Set<string> {
+    const out = new Set<string>([rootId]);
+    let added = true;
+    while (added) {
+      added = false;
+      for (const f of folders) {
+        if (f.parentId && out.has(f.parentId) && !out.has(f.id)) {
+          out.add(f.id);
+          added = true;
+        }
+      }
+    }
+    return out;
+  }
+
+  async function moveNoteTo(noteId: string, targetFolderId: string | null) {
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+    if ((note.folderId ?? null) === targetFolderId) return;
+    const updated: FieldNote = {
+      ...note,
+      folderId: targetFolderId,
+      updated_at: Date.now(),
+    };
+    await persistNote(updated);
+    setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
+      .sort((a, b) => b.updated_at - a.updated_at));
+    if (draft && draft.id === noteId) setDraft(updated);
+    if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
+    toast.success(t("personalOutlines.folders.moved", { defaultValue: "Movido." }));
+  }
+
+  async function moveFolderTo(folderId: string, targetParentId: string | null) {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+    if ((folder.parentId ?? null) === targetParentId) return;
+    if (targetParentId && getDescendantFolderIds(folderId).has(targetParentId)) {
+      toast.error(t("personalOutlines.folders.cannotMoveIntoSelf", {
+        defaultValue: "Não é possível mover uma pasta para dentro dela mesma.",
+      }));
+      return;
+    }
+    const updated: NoteFolder = { ...folder, parentId: targetParentId };
+    await saveFolder(updated);
+    setFolders((all) => all.map((f) => (f.id === folderId ? updated : f)));
+    if (targetParentId) setExpanded((s) => new Set(s).add(targetParentId));
+    toast.success(t("personalOutlines.folders.moved", { defaultValue: "Movido." }));
+  }
+
+  async function handleConfirmMove(targetFolderId: string | null) {
+    if (!moveTarget) return;
+    if (moveTarget.kind === "note") {
+      await moveNoteTo(moveTarget.id, targetFolderId);
+    } else {
+      await moveFolderTo(moveTarget.id, targetFolderId);
+    }
+    setMoveTarget(null);
+  }
+
+  function handleCutNote(noteId: string) {
+    setClipboardNoteId(noteId);
+    toast.success(t("personalOutlines.folders.clipboardHint", {
+      defaultValue: "1 nota recortada. Toque em \"Colar aqui\" na pasta de destino.",
+    }));
+  }
+
+  async function handlePasteNote(targetFolderId: string | null) {
+    if (!clipboardNoteId) return;
+    await moveNoteTo(clipboardNoteId, targetFolderId);
+    setClipboardNoteId(null);
+  }
+
+
   async function handleExportFolder(folder: NoteFolder) {
     try {
       const payload = await exportFolderJSON(folder.id);
@@ -384,6 +477,18 @@ function Page() {
                 <Pencil className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.rename")}
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setMoveTarget({ kind: "folder", id: folder.id })}
+              >
+                <Move className="h-4 w-4 mr-2" />
+                {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
+              </DropdownMenuItem>
+              {clipboardNoteId && (
+                <DropdownMenuItem onClick={() => handlePasteNote(folder.id)}>
+                  <ClipboardPaste className="h-4 w-4 mr-2" />
+                  {t("personalOutlines.folders.pasteHere", { defaultValue: "Colar aqui" })}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => handleExportFolder(folder)}>
                 <Download className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.exportFolder")}
@@ -415,21 +520,45 @@ function Page() {
 
   function NoteRow({ note, depth }: { note: FieldNote; depth: number }) {
     const selected = selectedNoteId === note.id;
+    const isClipped = clipboardNoteId === note.id;
     return (
-      <button
-        type="button"
-        onClick={() => selectNote(note)}
+      <div
         className={cn(
-          "w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-sm",
+          "group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm",
           selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
+          isClipped && "opacity-60 italic",
         )}
         style={{ paddingLeft: 6 + depth * 12 + 16 }}
       >
-        <FileText className="h-3.5 w-3.5 shrink-0 opacity-70" />
-        <span className="truncate flex-1">{note.title || t("fieldConsiderations.fields.title")}</span>
-      </button>
+        <button
+          type="button"
+          onClick={() => selectNote(note)}
+          className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
+        >
+          <FileText className="h-3.5 w-3.5 shrink-0 opacity-70" />
+          <span className="truncate flex-1">{note.title || t("fieldConsiderations.fields.title")}</span>
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded hover:bg-background">
+              <MoreVertical className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setMoveTarget({ kind: "note", id: note.id })}>
+              <Move className="h-4 w-4 mr-2" />
+              {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleCutNote(note.id)}>
+              <Scissors className="h-4 w-4 mr-2" />
+              {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     );
   }
+
 
   const isField = activeType === "field_consideration";
   const isOutline = activeType === "outline";
@@ -547,16 +676,46 @@ function Page() {
                         className="pl-7 h-9"
                       />
                     </div>
+                    {clipboardNoteId && (
+                      <div className="flex items-center gap-2 rounded-md border border-dashed bg-muted/40 px-2 py-1.5 text-xs">
+                        <Scissors className="h-3.5 w-3.5 text-primary" />
+                        <span className="flex-1 truncate">
+                          {t("personalOutlines.folders.clipboardHint", {
+                            defaultValue: "1 nota recortada. Toque em \"Colar aqui\" na pasta de destino.",
+                          })}
+                        </span>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground underline"
+                          onClick={() => setClipboardNoteId(null)}
+                        >
+                          {t("personalOutlines.folders.clearClipboard", { defaultValue: "Cancelar" })}
+                        </button>
+                      </div>
+                    )}
                     <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
                       <div
                         className={cn(
-                          "flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
+                          "group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
                           selectedFolderId === null ? "bg-primary/10 text-primary" : "hover:bg-muted",
                         )}
                         onClick={() => setSelectedFolderId(null)}
                       >
                         <FolderOpen className="h-4 w-4" />
                         <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
+                        {clipboardNoteId && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePasteNote(null);
+                            }}
+                            className="text-[11px] inline-flex items-center gap-1 rounded px-1.5 py-0.5 bg-primary/15 text-primary hover:bg-primary/25"
+                          >
+                            <ClipboardPaste className="h-3 w-3" />
+                            {t("personalOutlines.folders.pasteHere", { defaultValue: "Colar aqui" })}
+                          </button>
+                        )}
                       </div>
                       {rootFolders.length === 0 && rootNotes.length === 0 && (
                         <p className="text-xs text-muted-foreground text-center py-4">
@@ -612,6 +771,17 @@ function Page() {
           note={draft}
           library={activeBible}
           onClose={() => setFullscreen(false)}
+        />
+      )}
+
+      {moveTarget && (
+        <MoveToDialog
+          folders={folders}
+          target={moveTarget}
+          notes={notes}
+          onClose={() => setMoveTarget(null)}
+          onConfirm={handleConfirmMove}
+          getDescendantFolderIds={getDescendantFolderIds}
         />
       )}
     </>
@@ -906,3 +1076,115 @@ function FullscreenOutline({
     </div>
   );
 }
+
+// =============================================================
+// Move-to dialog (escolhe pasta destino para uma nota ou pasta)
+// =============================================================
+
+function MoveToDialog({
+  folders,
+  notes,
+  target,
+  onClose,
+  onConfirm,
+  getDescendantFolderIds,
+}: {
+  folders: NoteFolder[];
+  notes: FieldNote[];
+  target: { kind: "note"; id: string } | { kind: "folder"; id: string };
+  onClose: () => void;
+  onConfirm: (targetFolderId: string | null) => Promise<void> | void;
+  getDescendantFolderIds: (rootId: string) => Set<string>;
+}) {
+  const { t } = useTranslation();
+
+  // Pasta atual do item (origem) — para mostrar "aqui".
+  const currentParentId: string | null =
+    target.kind === "note"
+      ? (notes.find((n) => n.id === target.id)?.folderId ?? null)
+      : (folders.find((f) => f.id === target.id)?.parentId ?? null);
+
+  // Pastas inválidas como destino: a si mesma e descendentes (apenas para folder).
+  const forbidden: Set<string> = target.kind === "folder"
+    ? getDescendantFolderIds(target.id)
+    : new Set();
+
+  function Row({
+    label,
+    depth,
+    folderId,
+    icon,
+  }: {
+    label: string;
+    depth: number;
+    folderId: string | null;
+    icon: React.ReactNode;
+  }) {
+    const isCurrent = (folderId ?? null) === (currentParentId ?? null);
+    const isForbidden = folderId !== null && forbidden.has(folderId);
+    const disabled = isCurrent || isForbidden;
+    return (
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onConfirm(folderId)}
+        className={cn(
+          "w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm",
+          disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-muted",
+        )}
+        style={{ paddingLeft: 8 + depth * 14 }}
+      >
+        {icon}
+        <span className="flex-1 truncate">{label}</span>
+        {isCurrent && (
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {t("personalOutlines.folders.hereLabel", { defaultValue: "aqui" })}
+          </span>
+        )}
+      </button>
+    );
+  }
+
+  function renderTree(parentId: string | null, depth: number): React.ReactNode {
+    return folders
+      .filter((f) => (f.parentId ?? null) === parentId)
+      .map((f) => (
+        <div key={f.id}>
+          <Row
+            label={f.name}
+            depth={depth}
+            folderId={f.id}
+            icon={<Folder className="h-4 w-4 text-muted-foreground" />}
+          />
+          {renderTree(f.id, depth + 1)}
+        </div>
+      ));
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto -mx-2 px-2 space-y-0.5">
+          <Row
+            label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
+            depth={0}
+            folderId={null}
+            icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
+          />
+          {renderTree(null, 0)}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            {t("common.cancel", { defaultValue: "Cancelar" })}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
