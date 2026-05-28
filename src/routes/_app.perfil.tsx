@@ -15,9 +15,13 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee, Globe } from "lucide-react";
+import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee, Globe, Languages } from "lucide-react";
 import { SupportDeveloperContent } from "@/components/SupportDeveloper";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { Badge } from "@/components/ui/badge";
+import { BibleManagerDialog } from "@/components/bible/BibleManagerDialog";
+import { getActiveLibrary, type BibleLibrary } from "@/lib/bible-notes-store";
+import { useEffect as useEffectReact } from "react";
 import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/_app/perfil")({ component: Page });
