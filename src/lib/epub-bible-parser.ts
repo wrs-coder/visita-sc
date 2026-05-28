@@ -452,7 +452,106 @@ function hasNoisyAncestor(node: Node): boolean {
   return false;
 }
 
-const CHAPTER_CLASS_RE = /\b(chapter|cap[ií]tulo|chap|chapno|chap-?num|chapter-?num(?:ber)?|cn|ch)\b/i;
+const CHAPTER_CLASS_RE = /\b(w_ch|chapter|cap[ií]tulo|chap|chapno|chap-?num|chapter-?num(?:ber)?|cn|ch)\b/i;
+
+// ============================================================
+//  Hard DOM Purge — limpeza estrutural universal (sem strings de idioma).
+//  Roda 1x por documento, antes da extração.
+// ============================================================
+
+const PURGE_SELECTORS = [
+  // Cabeçalho do livro (TNM coloca o título em <header>)
+  'header',
+
+  // Notas de rodapé / referências / cross-refs (EPUB 3 + variantes)
+  'aside[epub\\:type~="footnote"]',
+  'aside[epub\\:type~="rearnote"]',
+  'aside[epub\\:type~="note"]',
+  'div[epub\\:type~="footnote"]',
+  'div[epub\\:type~="rearnote"]',
+  '[epub\\:type~="note"]',
+  '[epub\\:type~="noteref"]',
+  '[epub\\:type~="note-ref"]',
+  '[role="doc-footnote"]',
+  '[role="doc-endnote"]',
+  '[role="doc-noteref"]',
+  '.footnote', '.footnotes', '.footnoteref', '.fn', '.rearnote', '.endnote',
+  'a[href*="#footnotesource"]',
+  'a[href*="#footnote"]', 'a[href*="#fn"]', 'a[href*="#note"]', 'a[href*="#xref"]',
+
+  // Navegação / TOC / réguas de botões
+  'nav', 'nav[epub\\:type~="toc"]', 'nav[epub\\:type~="landmarks"]',
+  '[epub\\:type~="toc"]', '[role="doc-toc"]', '[role="navigation"]',
+  'table.w_navigation', 'p.w_navigation', '.w_navigation',
+  '.nav', '.navigation', '.nav-bar', '.navbar', '.pageNav', '.page-nav',
+
+  // Frente do livro (capa/colofão/título)
+  '[epub\\:type~="titlepage"]',
+  '[epub\\:type~="halftitlepage"]',
+  '[epub\\:type~="frontmatter"]',
+  '[epub\\:type~="colophon"]',
+  '[epub\\:type~="copyright-page"]',
+  '[epub\\:type~="bridgehead"]',
+];
+
+function hardPurgeDoc(doc: Document): void {
+  for (const sel of PURGE_SELECTORS) {
+    let nodes: NodeListOf<Element>;
+    try {
+      nodes = doc.querySelectorAll(sel);
+    } catch {
+      continue;
+    }
+    nodes.forEach((n) => n.remove());
+  }
+}
+
+/** Remove tudo que aparece ANTES da primeira âncora de capítulo
+ *  (sumário/intro/cabeçalho de livro). No-op se o documento não
+ *  tiver âncora estrutural de capítulo. */
+function truncatePreChapterContent(doc: Document): void {
+  const body = doc.body;
+  if (!body) return;
+
+  let anchor: Element | null = null;
+  const anchorSelectors = [
+    '[id^="chapter"]',
+    '.w_ch',
+    '[id^="ch"]',
+    '[id^="cap"]',
+    '[epub\\:type~="chapter"]',
+    'section[role="doc-chapter"]',
+  ];
+  for (const sel of anchorSelectors) {
+    try {
+      anchor = body.querySelector(sel);
+    } catch {
+      anchor = null;
+    }
+    if (anchor) break;
+  }
+  if (!anchor) return;
+
+  // Sobe da âncora até filho direto de body, removendo irmãos anteriores
+  // em cada nível. Conteúdo posterior nunca é tocado.
+  let node: Element = anchor;
+  while (node.parentElement && node.parentElement !== body) {
+    let prev = node.previousElementSibling;
+    while (prev) {
+      const toRemove = prev;
+      prev = prev.previousElementSibling;
+      toRemove.remove();
+    }
+    node = node.parentElement;
+  }
+  // Último nível: irmãos diretos do body anteriores a `node`
+  let prev = node.previousElementSibling;
+  while (prev) {
+    const toRemove = prev;
+    prev = prev.previousElementSibling;
+    toRemove.remove();
+  }
+}
 
 function isChapterHeadingEl(el: Element): boolean {
   const id = el.getAttribute("id") ?? "";
@@ -602,6 +701,10 @@ function extractVersesFromDoc(
   doc: Document,
   fallbackChapter: number,
 ): { chapter: number; verse: number; text: string }[] {
+  // Hard DOM Purge + descarte do pré-conteúdo (sumário/cabeçalho do livro).
+  hardPurgeDoc(doc);
+  truncatePreChapterContent(doc);
+
   // Coleta todos os marcadores possíveis em ordem de documento.
   const allEls = Array.from(doc.getElementsByTagName("*"));
   const markers: VerseMarker[] = [];
