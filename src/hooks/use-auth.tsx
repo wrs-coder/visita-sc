@@ -128,7 +128,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refresh = async () => { await loadUserData(user?.id); };
-  const signOut = async () => { await supabase.auth.signOut(); };
+  const signOut = async () => {
+    // Em Modo Offline, NUNCA executar logout — sem internet, o usuário não
+    // conseguirá voltar a entrar (primeiro login exige rede). Bloqueia tanto
+    // tentativas manuais quanto qualquer caminho que chame signOut.
+    if (isOfflineMode()) {
+      try {
+        const { toast } = await import("sonner");
+        const { default: i18n } = await import("@/i18n");
+        toast.warning(i18n.t("connection.cannotLogoutOffline"));
+      } catch { /* noop */ }
+      return;
+    }
+    await supabase.auth.signOut();
+  };
 
   // Super may have role but no active congregation yet — that's NOT onboarding,
   // they go to /congregacoes to set one up. Elders must have a congregation AND a position.

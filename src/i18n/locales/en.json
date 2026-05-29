@@ -1145,7 +1145,9 @@
     "nowOnline": "Online Mode active.",
     "offlineWithStale": "Offline Mode active (using cached data).",
     "disabledInOffline": "You are in Offline Mode. Switch to Online to sync.",
-    "firstLoginNeedsInternet": "For first login, switch to Online Mode and connect to the internet."
+    "firstLoginNeedsInternet": "For first login, switch to Online Mode and connect to the internet.",
+    "disableOfflineMode": "Disable Offline Mode",
+    "cannotLogoutOffline": "You can't sign out while in Offline Mode. Switch back to Online Mode first."
   },
   "weekSummary": {
     "subtitle": "Full view of the visit week",
