@@ -1,57 +1,42 @@
-# Mover notas entre pastas + Popup bíblico arrastável
+## Objetivo
 
-## Parte 1 — Mover notas/pastas entre pastas em "Esboços Pessoais"
+Evitar que o utilizador fique "preso" fora do aplicativo quando estiver em Modo Offline. Duas mudanças:
 
-Hoje uma nota só pode ser criada dentro da pasta selecionada — não há como movê-la depois. Solução simples, segura e que funciona bem no toque (sem drag-and-drop frágil):
+1. **Nunca deslogar em Modo Offline** — nem por expiração de token, nem por clique manual em "Sair".
+2. **Botão "Desativar Modo Offline" na tela de login** — visível apenas quando o app está em Modo Offline, posicionado no lado oposto ao seletor de idioma, para o utilizador conseguir voltar ao Modo Online e fazer login normalmente.
 
-### 1a. "Mover para…" (principal, 1 toque)
-- No menu `⋮` de cada **nota** e de cada **pasta**: novo item **"Mover para…"**.
-- Abre um `Dialog` com a árvore de pastas do tipo atual + opção **"📁 Raiz (sem pasta)"** no topo.
-- Toque na pasta destino → `saveNote({...note, folderId})` ou `saveFolder({...folder, parentId})` → recarrega.
-- Validações de segurança:
-  - Não permite mover uma pasta para dentro de si mesma ou de uma descendente (checagem anti-ciclo via `isDescendant`).
-  - Pasta atual aparece desabilitada com rótulo "aqui".
+---
 
-### 1b. Recortar/Colar (opcional, para mover várias em sequência)
-- Menu `⋮` da nota: **"Recortar"** → guarda id em estado de sessão (`clipboardNoteId`) e mostra um aviso discreto no topo ("1 nota recortada — Cancelar").
-- Enquanto há clipboard, aparece **"Colar aqui"** ao lado de cada pasta e da raiz.
-- Colar → atualiza `folderId` → limpa clipboard → toast.
-- Clipboard só na sessão (estado React), não persiste.
+## Mudanças
 
-Ambos os caminhos chamam o mesmo `saveNote`/`saveFolder`, então o Modo Offline continua funcionando automaticamente (mutação entra na fila).
+### 1. Bloquear logout em Modo Offline
 
-## Parte 2 — Popup bíblico arrastável
+**`src/hooks/use-auth.tsx`** — função `signOut`:
 
-Hoje o popup que aparece ao tocar numa citação bíblica é um Radix `Popover` ancorado à palavra. Vamos permitir que o usuário **arraste para qualquer canto da tela** e o popup permaneça lá enquanto estiver aberto. Funciona em todos os modos: edição, esboço (somente leitura) e tela cheia.
+- Se `isOfflineMode()` for `true`, **não chamar** `supabase.auth.signOut()`. Mostrar `toast.warning(t("connection.cannotLogoutOffline"))` explicando que é preciso voltar ao Modo Online antes de sair.
+- O listener `onAuthStateChange` já ignora eventos não-`SIGNED_IN` em offline, então tokens expirados continuam sendo absorvidos. Reforço extra: dentro do `signOut`, sair cedo antes mesmo de qualquer chamada de rede.
 
-### Como
-- Em `src/components/bible/BibleVersePopover.tsx`, dentro do `PopoverContent`:
-  - Adicionar uma **barra superior de "alça"** (handle) com ícone `GripHorizontal` à esquerda e botão fechar `X` à direita.
-  - Implementar drag manual com `pointerdown`/`pointermove`/`pointerup` (funciona em mouse e toque) aplicando `transform: translate(dx, dy)` ao próprio `PopoverContent`.
-  - Apenas a alça inicia o arrasto (o resto do popup mantém scroll/seleção de texto).
-  - Clamp para manter o popup dentro da viewport (margem de 8px) — evita perder o popup fora da tela.
-  - Reset do offset ao fechar (`onOpenChange(false)`), para que reabrir comece ancorado.
-- Z-index já é `z-[110]`, mantém-se acima do modo tela cheia.
-- Em telas pequenas, manter `max-w-[90vw]` e `max-h-[60vh]`.
+### 2. Botão de desativar offline na tela de login
 
-### Compatibilidade com os 3 modos
-- **Edição** e **Esboço**: `VerseLink` é o mesmo componente nos dois (usado em `RichOutlineContent`), então a mudança vale para ambos automaticamente.
-- **Tela cheia**: o `PopoverContent` é renderizado em `Portal` fora do container, então o arrasto não fica preso ao retângulo do modo tela cheia.
+**`src/components/auth/LoginForm.tsx`**:
 
-## Arquivos a alterar
+- Trocar o cabeçalho da página (linha 62) de `flex justify-end` para `flex justify-between items-center`.
+- À **esquerda**: quando `offline === true`, renderizar um botão "Desativar Modo Offline" (ícone `Wifi` + label `t("connection.disableOfflineMode")`) no mesmo estilo visual claro/inverso do `LanguageSwitcher`. Quando online, renderizar um spacer vazio (`<div />`) para manter o alinhamento à direita.
+- À **direita**: o `<LanguageSwitcher variant="inverted" />` existente.
+- Ao clicar no botão: chamar `setMode("online")` de `@/lib/connection-mode` e mostrar `toast.success(t("connection.nowOnline"))`. Isso já é suficiente — o `useConnectionMode()` re-renderiza o form, libera o campo de submit e o aviso `firstLoginNeedsInternet` desaparece.
+- Não precisa de Dialog de confirmação aqui: o utilizador está bloqueado fora; o caminho deve ser rápido.
 
-- `src/routes/_app.consideracoes-campo.tsx` — UI de mover/recortar/colar + `MoveToDialog`.
-- `src/components/bible/BibleVersePopover.tsx` — alça + lógica de arrasto + clamp na viewport.
-- `src/i18n/locales/{pt,en,es}.json` — novas chaves:
-  - `personalOutlines.folders`: `moveTo`, `moveHere`, `root`, `cut`, `paste`, `pasted`, `moved`, `cannotMoveIntoSelf`, `clipboardHint`, `clearClipboard`.
-  - `bibleVerse`: `dragHandle`, `close`.
+### 3. Novas chaves i18n
 
-## Detalhes técnicos
-- Sem mudanças no banco de dados, RLS ou schema do IndexedDB — `saveNote`/`saveFolder` e `folderId`/`parentId` já existem.
-- Sem dependências novas; o drag usa Pointer Events nativos.
-- Sem impacto em APK/PWA/navegador — APIs padrão e sem mudança no service worker.
-- Continua acessível: a alça tem `aria-label`, e o popup pode ser fechado por `Esc` (Radix) ou pelo botão `X`.
+Adicionar em `src/i18n/locales/{pt,en,es}.json`, dentro de `connection`:
+
+- `disableOfflineMode` — "Desativar Modo Offline" / "Disable Offline Mode" / "Desactivar Modo Sin Conexión"
+- `cannotLogoutOffline` — "Não é possível sair no Modo Offline. Volte ao Modo Online primeiro." (+ traduções)
+
+---
 
 ## Fora de escopo
-- Drag-and-drop de notas (ruim em mobile).
-- Persistir a posição do popup entre reaberturas (reseta ao fechar — comportamento mais previsível).
+
+- Mudanças na lógica de prefetch / queue / cache.
+- Mudar a regra "primeiro login precisa de internet" — ela continua válida; o botão novo só ajuda a sair do offline quando o utilizador já tem sessão prévia mas o app está travado.
+- Nenhuma mudança em backend, schema, RLS ou APK.
