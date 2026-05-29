@@ -1145,7 +1145,9 @@
     "nowOnline": "Modo Online activo.",
     "offlineWithStale": "Modo Offline activo (usando datos en caché).",
     "disabledInOffline": "Estás en Modo Offline. Cambia a Online para sincronizar.",
-    "firstLoginNeedsInternet": "Para el primer inicio de sesión, cambia a Modo Online y conéctate a internet."
+    "firstLoginNeedsInternet": "Para el primer inicio de sesión, cambia a Modo Online y conéctate a internet.",
+    "disableOfflineMode": "Desactivar Modo Sin Conexión",
+    "cannotLogoutOffline": "No puedes cerrar sesión en Modo Sin Conexión. Vuelve al Modo Online primero."
   },
   "weekSummary": {
     "subtitle": "Vista completa de la semana de visita",
