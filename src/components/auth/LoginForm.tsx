@@ -9,12 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { LogIn, Eye, Info, Mail, MessageCircle, UserCircle2, Coffee } from "lucide-react";
+import { LogIn, Eye, Info, Mail, MessageCircle, UserCircle2, Coffee, Wifi } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
-import { useConnectionMode } from "@/lib/connection-mode";
+import { useConnectionMode, setMode } from "@/lib/connection-mode";
 
 const APP_VERSION = "3.0.0";
 const APP_BUILD = "2026.05.28";
@@ -59,7 +59,23 @@ export function LoginForm() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-primary-soft/40 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="flex justify-end mb-2">
+        <div className="flex justify-between items-center mb-2 gap-2">
+          {offline ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMode("online");
+                toast.success(t("connection.nowOnline"));
+              }}
+              className="inline-flex items-center gap-1.5 rounded-md bg-white/15 hover:bg-white/25 text-primary-foreground text-xs font-medium px-2.5 py-1.5 backdrop-blur transition"
+              title={t("connection.disableOfflineMode")}
+            >
+              <Wifi className="h-3.5 w-3.5" />
+              <span>{t("connection.disableOfflineMode")}</span>
+            </button>
+          ) : (
+            <div />
+          )}
           <LanguageSwitcher variant="inverted" />
         </div>
         <div className="text-center text-primary-foreground mb-6">
