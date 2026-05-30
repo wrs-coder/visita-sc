@@ -1204,6 +1204,18 @@
       "outline": "Outline",
       "prompt": "Select a type above to load your folders and notes."
     },
+    "cloud": {
+      "button": "Cloud",
+      "title": "Cloud outlines",
+      "help": "Up to 10 outlines can be synced to the cloud — handy for accessing them from another device.",
+      "count": "Saved: {{n}}/10",
+      "push": "Push current outline",
+      "pushed": "Outline pushed to the cloud.",
+      "pulled": "Outline imported from the cloud.",
+      "deleted": "Removed from the cloud.",
+      "deleteConfirm": "Delete this outline from the cloud?",
+      "empty": "No outlines in the cloud."
+    },
     "folders": {
       "rootLabel": "Root",
       "new": "New folder",
