@@ -304,6 +304,7 @@
     }
   },
   "meals": {
+    "generalObservationsLabel": "Observaciones generales (del modelo)",
     "title": "Logística y Comidas",
     "subtitleSuper": "Define las comidas disponibles por día. Los ancianos completan anfitrión, dirección y teléfono. Los elementos desactivados se ocultan a la congregación.",
     "subtitleElder": "Edita anfitrión, dirección y teléfono de contacto de las comidas disponibles.",
