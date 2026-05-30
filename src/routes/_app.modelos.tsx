@@ -116,7 +116,12 @@ function Page() {
     const defaults: Payload =
       kind === "study" ? { period: "Manhã", meeting_point: "", meeting_time: "", acompanhante: "", acompanhante_for: "", contact_phone: "" }
       : kind === "meal" ? { type: "lunch", host_name: "", location: "", meal_time: "", notes: "" }
-      : { event_type: "field_service", direction: "round_trip", all_day: false, departure_time: "", return_time: "", driver_name: "", contact_phone: "", description: "", notes: "" };
+      : {
+          all_day: false, driver_name: "", contact_phone: "", notes: "",
+          events_json: JSON.stringify([
+            { event_type: "field_service", event_type_other: "", direction: "round_trip", departure_time: "", return_time: "" },
+          ]),
+        };
     setItemsByTpl((m) => ({ ...m, [id]: [...(m[id] ?? []), { kind, day_offset: 0, payload: defaults, sort_order: (m[id]?.length ?? 0) }] }));
   };
 
