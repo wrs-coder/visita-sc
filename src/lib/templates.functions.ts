@@ -163,11 +163,8 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
         if (transpDates.has(targetDate)) { skipped++; continue; }
         const allDay = bool(p.all_day, false);
         const weekday = new Date(targetDate + "T00:00:00").getDay();
-        const base = {
+        const baseShared = {
           visit_id: data.visitId, event_date: targetDate, weekday,
-          driver_name: str(p.driver_name) ?? "—",
-          contact_phone: str(p.contact_phone),
-          notes: str(p.notes),
           all_day: allDay,
           is_active: bool(p.is_active, true),
         };
@@ -177,21 +174,34 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
         if (typeof ej === "string" && ej.trim()) {
           try { const parsed = JSON.parse(ej); if (Array.isArray(parsed)) events = parsed as Array<Record<string, unknown>>; } catch { /* ignore */ }
         }
-        if (events.length === 0 && (p.event_type || p.direction || p.departure_time || p.return_time)) {
+        if (events.length === 0 && (p.event_type || p.direction || p.departure_time || p.return_time || p.driver_name)) {
           events = [{
             event_type: p.event_type, event_type_other: p.event_type_other,
             direction: p.direction, departure_time: p.departure_time, return_time: p.return_time,
+            driver_name: p.driver_name, contact_phone: p.contact_phone, notes: p.notes,
           }];
         }
         if (events.length === 0) {
-          await supabaseAdmin.from("transport_schedule").insert(base);
+          await supabaseAdmin.from("transport_schedule").insert({
+            ...baseShared,
+            driver_name: str(p.driver_name) ?? "—",
+            contact_phone: str(p.contact_phone),
+            notes: str(p.notes),
+          });
         } else {
-          const rows = events.map((ev) => ({
-            ...base,
+          // When all_day, only first event keeps driver/phone/notes; others inherit from first.
+          const firstDriver = str(events[0]?.driver_name) ?? str(p.driver_name) ?? "—";
+          const firstPhone = str(events[0]?.contact_phone) ?? str(p.contact_phone);
+          const firstNotes = str(events[0]?.notes) ?? str(p.notes);
+          const rows = events.map((ev, idx) => ({
+            ...baseShared,
             event_type: str(ev.event_type) === "other" ? (str(ev.event_type_other) ?? "other") : str(ev.event_type),
             direction: str(ev.direction),
             departure_time: allDay ? null : time(ev.departure_time),
             return_time: allDay ? null : time(ev.return_time),
+            driver_name: allDay ? firstDriver : (str(ev.driver_name) ?? "—"),
+            contact_phone: allDay ? firstPhone : str(ev.contact_phone),
+            notes: allDay ? firstNotes : str(ev.notes),
           }));
           await supabaseAdmin.from("transport_schedule").insert(rows);
         }
