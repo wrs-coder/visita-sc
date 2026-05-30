@@ -662,6 +662,7 @@ function EventDialog({
               <SelectItem value="multi">{t("schedule.scopes.multi")}</SelectItem>
               <SelectItem value="all">{t("schedule.scopes.all")}</SelectItem>
               <SelectItem value="personal">{t("schedule.scopes.personal")}</SelectItem>
+              <SelectItem value="wife">{t("schedule.scopes.wife")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
