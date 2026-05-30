@@ -266,6 +266,9 @@ export function WeekendPanel() {
   return (
     <div className="space-y-3">
       <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+        <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.openingSong")} value={extras.weekend?.opening_song} />
+        <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.closingSong")} value={extras.weekend?.closing_song} />
+        <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.weekend?.observations} />
         <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
           <DayTimePicker
             value={row.meeting_at}
