@@ -719,16 +719,18 @@ function EventDialog({
           />
         </div>
 
-        <div className="flex items-center justify-between rounded-md border p-3">
-          <Label htmlFor="visible-spouse" className="cursor-pointer">
-            {t("schedule.visibleToSpouse")}
-          </Label>
-          <Switch
-            id="visible-spouse"
-            checked={!(editing.visible_to_spouse ?? true)}
-            onCheckedChange={(v) => setEditing({ ...editing, visible_to_spouse: !v })}
-          />
-        </div>
+        {scope !== "wife" && (
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <Label htmlFor="visible-spouse" className="cursor-pointer">
+              {t("schedule.visibleToSpouse")}
+            </Label>
+            <Switch
+              id="visible-spouse"
+              checked={!(editing.visible_to_spouse ?? true)}
+              onCheckedChange={(v) => setEditing({ ...editing, visible_to_spouse: !v })}
+            />
+          </div>
+        )}
       </div>
       <DialogFooter>
         <Button onClick={save} disabled={saving}>
