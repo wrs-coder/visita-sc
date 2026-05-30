@@ -229,6 +229,7 @@ export function WeekendPanel() {
   const { visit } = useActiveVisit();
   const { canEdit, role } = useAuth();
   const isSuper = role === "superintendent";
+  const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<WeekendRow>(
     "weekend_meetings",
     "id,visit_id,meeting_at,talk_theme_id,talk_theme_title,public_talk_theme",
