@@ -445,11 +445,6 @@ function Page() {
   );
 }
 
-function PainelHeaderControls(_: unknown) {
-  // placeholder retained intentionally; controls are rendered inline in the header.
-  return null;
-}
-
 function TodayDashboard({ snap }: { snap: Snapshot }) {
   const { t, i18n } = useTranslation();
   const dateLocale = getDateLocale(i18n.language);
