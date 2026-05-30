@@ -926,12 +926,13 @@ interface EditorProps {
   onDelete: () => void;
   onExport: () => void;
   onFullscreen: () => void;
+  onCloud: () => void;
   dateFmt: (ts: number) => string;
 }
 
 function NoteEditor({
   draft, mode, type, saving, activeBible, detected,
-  onPatch, onModeChange, onSave, onDelete, onExport, onFullscreen, dateFmt,
+  onPatch, onModeChange, onSave, onDelete, onExport, onFullscreen, onCloud, dateFmt,
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
