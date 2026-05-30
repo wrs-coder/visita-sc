@@ -1096,6 +1096,9 @@ function NoteEditor({
         <Button variant="outline" size="sm" onClick={onExport}>
           <Download className="h-4 w-4 mr-1.5" /> {t("personalOutlines.folders.exportNote")}
         </Button>
+        <Button variant="outline" size="sm" onClick={onCloud}>
+          <Cloud className="h-4 w-4 mr-1.5" /> {t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}
+        </Button>
         <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive">
           <Trash2 className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.delete")}
         </Button>
