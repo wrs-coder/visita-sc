@@ -16,7 +16,7 @@ export const Route = createFileRoute("/onboarding")({ component: Page });
 
 function Page() {
   const { t } = useTranslation();
-  const { user, loading, refresh, signOut } = useAuth();
+  const { user, loading, refresh, signOut, needsOnboarding, role } = useAuth();
   const fn = useServerFn(linkAccount);
   const nav = useNavigate();
   const [step, setStep] = useState<"code" | "elder-position">("code");
@@ -27,6 +27,13 @@ function Page() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
   if (!user) { nav({ to: "/" }); return null; }
+  // Conta já possui role/congregação configurada — não exibir o onboarding
+  // novamente. Esse guard evita o card duplicado após login/cadastro.
+  if (!needsOnboarding) {
+    const goDashboard = role === "superintendent";
+    nav({ to: goDashboard ? "/dashboard" : "/cronograma", replace: true });
+    return null;
+  }
 
   const submitCode = async (e: React.FormEvent) => {
     e.preventDefault();
