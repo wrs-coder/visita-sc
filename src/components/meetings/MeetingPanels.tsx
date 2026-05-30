@@ -64,6 +64,7 @@ export function MidweekPanel() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const isSuper = role === "superintendent";
+  const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<MidweekRow>(
     "midweek_meetings",
     "id,visit_id,meeting_at,service_talk_theme,chairman,closing_prayer",
@@ -73,6 +74,7 @@ export function MidweekPanel() {
   if (loading || !row) return <LoadingCard />;
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.midweek?.observations} />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <DayTimePicker
           value={row.meeting_at}
