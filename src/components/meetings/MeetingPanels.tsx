@@ -331,6 +331,7 @@ export function PioneerPanel() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const isSuper = role === "superintendent";
+  const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<PioneerRow>(
     "pioneer_meetings",
     "id,visit_id,theme,opening_prayer,closing_prayer,location,meeting_at,super_meeting_at",
@@ -355,6 +356,7 @@ export function PioneerPanel() {
 
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.pioneer?.observations} />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <div>
           <Label>{t("meetingsTalks.pioneer.theme")}</Label>
