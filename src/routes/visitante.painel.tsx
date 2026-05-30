@@ -438,11 +438,16 @@ function Page() {
         )}
 
         <div className="text-center pt-4">
-          <Button variant="outline" size="sm" onClick={() => code && load(code)}>{t("guest.refresh")}</Button>
+          <Button variant="outline" size="sm" onClick={() => code && load(code, snap?.selectedCongregationId ?? null)}>{t("guest.refresh")}</Button>
         </div>
       </main>
     </div>
   );
+}
+
+function PainelHeaderControls(_: unknown) {
+  // placeholder retained intentionally; controls are rendered inline in the header.
+  return null;
 }
 
 function TodayDashboard({ snap }: { snap: Snapshot }) {
