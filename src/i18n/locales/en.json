@@ -643,7 +643,10 @@
       "auxiliaryLeaders": "Auxiliary leaders",
       "closingPrayer": "Closing prayer",
       "hint": "Each shift has its own modality. When the modality is not \"House-to-house preaching\", only the \"Closing prayer\" field will be available to the congregation for that shift.",
-      "namePlaceholder": "e.g.: Central Cong."
+      "namePlaceholder": "e.g.: Central Cong.",
+      "observations": "Circuit overseer notes",
+      "observationsPlaceholder": "Notes for this day/modality (up to 4000 characters). Shown in blue to the elders.",
+      "observationsHint": "Only the circuit overseer edits; elders see this as read-only on the Field Meetings tab."
     },
     "meetingTalk": {
       "title": "Meeting & Talk Templates",
