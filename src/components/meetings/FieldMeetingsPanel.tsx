@@ -53,7 +53,7 @@ export function FieldMeetingsPanel() {
     const load = async () => {
       const { data } = await supabase
         .from("field_meetings")
-        .select("id,visit_id,event_date,period,modality,meeting_time,meeting_location,territory_number,territory_location,auxiliary_leaders,closing_prayer,is_active")
+        .select("id,visit_id,event_date,period,modality,meeting_time,meeting_location,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations,is_active")
         .eq("visit_id", visit.id)
         .order("event_date")
         .order("period");
