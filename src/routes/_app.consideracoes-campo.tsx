@@ -877,6 +877,7 @@ function Page() {
                     onDelete={handleDeleteNote}
                     onExport={handleExportNote}
                     onFullscreen={() => setFullscreen(true)}
+                    onCloud={handleCloudOpen}
                     dateFmt={dateFmt}
                   />
                 )}
