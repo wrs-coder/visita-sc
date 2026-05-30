@@ -362,6 +362,10 @@ function Page() {
               </TabsContent>
 
               <TabsContent value="ref" className="space-y-2 mt-4">
+                <TemplateExtraBlock
+                  label={t("meals.generalObservationsLabel")}
+                  value={snap.templateExtras?.program?.general_observations}
+                />
                 {snap.meals.length === 0 && snap.mealDayNotes.length === 0 ? <Empty text={t("guest.empty.meals")} /> : (() => {
                   const noteMap = new Map(snap.mealDayNotes.map((n) => [n.meal_date, n.notes]));
                   const dates = Array.from(new Set([...snap.meals.map((m) => m.meal_date), ...snap.mealDayNotes.map((n) => n.meal_date)])).sort();
