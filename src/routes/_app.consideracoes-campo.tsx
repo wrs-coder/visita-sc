@@ -895,6 +895,56 @@ function Page() {
         />
       )}
 
+      <Dialog open={cloudOpen} onOpenChange={setCloudOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("personalOutlines.cloud.title", { defaultValue: "Esboços na nuvem" })}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              {t("personalOutlines.cloud.help", { defaultValue: "Até 10 esboços podem ser sincronizados com a nuvem. Útil para acessar de outro dispositivo." })}
+            </p>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">
+                {t("personalOutlines.cloud.count", { defaultValue: "Salvos: {{n}}/10", n: cloudList.length })}
+              </span>
+              <Button size="sm" disabled={!draft || cloudBusy} onClick={handleCloudPush}>
+                <CloudUpload className="h-4 w-4 mr-1.5" />
+                {t("personalOutlines.cloud.push", { defaultValue: "Enviar esboço atual" })}
+              </Button>
+            </div>
+            <div className="max-h-80 overflow-y-auto rounded-md border divide-y">
+              {cloudList.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground text-center">
+                  {t("personalOutlines.cloud.empty", { defaultValue: "Nenhum esboço na nuvem." })}
+                </p>
+              ) : (
+                cloudList.map((o) => (
+                  <div key={o.id} className="flex items-center gap-2 p-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{o.title}</p>
+                      {o.folder_path && <p className="text-xs text-muted-foreground truncate">{o.folder_path}</p>}
+                    </div>
+                    <Button size="sm" variant="outline" disabled={cloudBusy} onClick={() => handleCloudPull(o.id)}>
+                      <CloudDownload className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-destructive" disabled={cloudBusy} onClick={() => handleCloudDelete(o.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCloudOpen(false)}>
+              {t("common.close", { defaultValue: "Fechar" })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
       {moveTarget && (
         <MoveToDialog
           folders={folders}
