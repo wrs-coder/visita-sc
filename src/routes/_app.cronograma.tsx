@@ -257,8 +257,8 @@ function Page() {
       notes: editing.notes || null,
       companion: editing.companion || null,
       scope,
-      congregation_ids: scope === "all" || scope === "personal" ? [] : congIds,
-      visible_to_spouse: editing.visible_to_spouse ?? true,
+      congregation_ids: scope === "all" || scope === "personal" || scope === "wife" ? [] : congIds,
+      visible_to_spouse: scope === "wife" ? true : (editing.visible_to_spouse ?? true),
     };
     const res = editing.id
       ? await offlineUpdate("circuit_schedule_events", payload, { id: editing.id })
