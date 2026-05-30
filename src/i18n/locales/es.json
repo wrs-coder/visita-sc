@@ -1217,7 +1217,16 @@
       "title": "Título",
       "titlePh": "Ej.: Consideraciones para la visita de febrero",
       "date": "Día",
-      "datePh": "Selecciona la fecha",
+      "datePh": "Selecciona el día",
+      "weekdays": {
+        "monday": "Lunes",
+        "tuesday": "Martes",
+        "wednesday": "Miércoles",
+        "thursday": "Jueves",
+        "friday": "Viernes",
+        "saturday": "Sábado",
+        "sunday": "Domingo"
+      },
       "period": "Turno",
       "periodPh": "Selecciona el turno",
       "morning": "Mañana",
@@ -1246,7 +1255,7 @@
     "title": "Bosquejos Personales",
     "subtitle": "Organiza consideraciones de campo y bosquejos en carpetas, con Biblia offline.",
     "typePicker": {
-      "label": "Elige el tipo de trabajo",
+      "label": "Elige el tipo de creación",
       "field": "Consideración de Campo",
       "outline": "Bosquejo",
       "prompt": "Selecciona un tipo arriba para cargar tus carpetas y notas."
