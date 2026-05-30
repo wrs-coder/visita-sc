@@ -1,132 +1,170 @@
 ## Objetivo
 
-Três ajustes coordenados envolvendo modelos e visualização para anciãos, com migração de banco preservando dados existentes, RLS revisada e i18n completo (pt/en/es).
+Adicionar um novo modo de acesso para a esposa do superintendente:
 
-1. **Modelos de reunião de campo** → novo campo "Observações" por modalidade (azul, opcional, apenas superintendente edita; anciãos veem em leitura).
-2. **Reuniões e Discursos** → exibir, em **vermelho** e somente leitura, observações e cânticos dos modelos vinculados. Observações da reunião com os anciãos ocultas para a esposa (`wifeMode`).
-3. **Modelo de Refeições** → novo campo "Observações gerais" (até 4000 caracteres, vermelho, apenas superintendente edita) exibido como leitura para anciãos acima do primeiro dia.
+- O super cria um **código próprio da esposa** no "Meu perfil".
+- A esposa entra pelo mesmo botão **"Acesso corpo de anciãos e ESC"** da tela de login.
+- No painel, ela vê um **dropdown das congregações ativas** do super (igual ao "congregação ativa" do dashboard) e um botão **"Semana atual"** que reposiciona a visualização para a semana vigente da congregação escolhida.
+- Login **persistente** (não precisa redigitar o código ao reabrir o app).
+- **Restrições de visualização atuais preservadas** (sem checklist, sem reunião de anciãos/ESC, `visible_to_spouse` em eventos de circuito, etc.).
 
----
-
-## Garantias transversais
-
-- **Não destrutivo**: a migration apenas adiciona colunas `NULL` (sem `DEFAULT` que sobrescreva linhas). Nenhum `UPDATE` em massa. Todos os dados já preenchidos pela congregação permanecem intactos.
-- **Segurança/RLS**: as novas colunas herdam as policies existentes das tabelas (`field_meeting_templates` e `program_templates` → só o superintendente dono escreve; anciãos da congregação leem via `members read linked …`). Validação adicional no client (`role === "superintendent"` para edição) e validação no servidor via `superintendent_id = auth.uid()` que já existe.
-- **Limites de tamanho** validados no servidor com Zod (`general_observations ≤ 4000`, `observations ≤ 4000`) para evitar abuso.
-- **Fluidez**: leitura dos novos campos reaproveita as queries já feitas para o modelo vinculado à visita (sem requests adicionais). Renderização condicional simples (sem novos efeitos pesados).
-- **i18n**: todas as novas strings em `pt`, `en` e `es`.
-- **Sem breaking changes**: campos opcionais (`null` permitido), readers tolerantes a `undefined`.
+O fluxo antigo `código + *` **continua funcionando idêntico** para quem já usa. Sem migração de dados, sem deprecação imediata — os dois modos convivem.
 
 ---
 
-## 1. Observações por modalidade (Modelos de Reunião de Campo)
+## 1. Banco de dados (migração)
 
-**Banco (migration):**
-```sql
-ALTER TABLE public.field_meeting_templates
-  ADD COLUMN IF NOT EXISTS observations text;
-```
-RLS atual já cobre (super gerencia, anciãos da congregação leem). Nada a alterar em policies/GRANTs.
-
-**UI (`src/routes/_app.modelo-reunioes-de-campo.tsx`):**
-- `<Textarea>` opcional "Observações" no editor de cada modelo, `maxLength={4000}`.
-- `readOnly` quando `role !== "superintendent"`.
-- Texto em azul (`text-blue-600 dark:text-blue-400`) em edição e leitura.
-- Persistido junto com o save existente; sem sobrescrever outras colunas.
-
-**Server fn (`src/lib/field-meeting-templates.functions.ts`):**
-- Aceitar `observations: z.string().max(4000).nullable().optional()` no upsert.
-- Update parcial: passar apenas as chaves enviadas (não sobrescrever colunas omitidas).
-
----
-
-## 2. Observações e cânticos visíveis em "Reuniões e Discursos"
-
-Campos já existem em `meeting_talk_template_midweek.observations`, `weekend_observations`, `weekend_opening_song`, `weekend_closing_song`, `meeting_talk_template_pioneer.observations`, `meeting_talk_template_elders.observations` e — após item 1 — `field_meeting_templates.observations`.
-
-**UI (`src/routes/_app.reunioes-discursos.tsx` + painéis em `src/components/meetings/*`):**
-- Carregar modelo vinculado via `visits.meeting_talk_template_id` e `visits.field_meeting_template_id`.
-- Em cada painel exibir bloco "Do modelo" (somente leitura), em **vermelho** (`text-red-600 dark:text-red-400`):
-  - Midweek: `observations`
-  - Weekend: `weekend_opening_song`, `weekend_closing_song`, `weekend_observations`
-  - Pioneer: `observations`
-  - Elders: `observations` (ocultar quando `wifeMode`)
-  - Field (por dia/modalidade): `observations`
-- Nenhuma edição inline; edição continua apenas em "Modelos".
-
-**Visitante (`src/routes/visitante.painel.tsx`):**
-- Mesmo bloco vermelho. `snap.wifeMode === true` oculta o bloco de observações da reunião com os anciãos.
-- Atualizar `src/lib/guest.functions.ts` para incluir as colunas `observations`/`weekend_*` no select dos modelos.
-
----
-
-## 3. Observações gerais de refeições (Modelo)
-
-**Banco (migration):**
-```sql
-ALTER TABLE public.program_templates
-  ADD COLUMN IF NOT EXISTS general_observations text;
-```
-RLS atual já cobre. Sem GRANT/POLICY adicional.
-
-**UI Modelos (`src/routes/_app.modelos.tsx`, aba Refeições):**
-- Acima da grade de dias: `<Textarea maxLength={4000}>` "Observações gerais", vermelho. `readOnly` para não-superintendente.
-- Persistido no upsert existente (`fnUpsert`) sem tocar `meal_day_notes`.
-
-**UI Refeições da visita (`src/routes/_app.refeicoes.tsx` + visitante):**
-- Carregar `general_observations` do `program_templates` vinculado à visita (`visits.template_id`).
-- Bloco de leitura vermelho acima do primeiro dia, visível a todos os papéis (anciãos e esposa).
-
-**Server fn (`src/lib/templates.functions.ts`):**
-- Aceitar `general_observations: z.string().max(4000).nullable().optional()`.
-- Update parcial preservando colunas omitidas.
-
----
-
-## Migração consolidada
+Adicionar coluna na tabela `profiles`:
 
 ```sql
-ALTER TABLE public.field_meeting_templates
-  ADD COLUMN IF NOT EXISTS observations text;
-
-ALTER TABLE public.program_templates
-  ADD COLUMN IF NOT EXISTS general_observations text;
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS wife_invite_code text UNIQUE;
 ```
-- Não há `DEFAULT` → linhas existentes ficam com `NULL`.
-- Nenhum dado preexistente é alterado.
-- Policies/GRANTs herdam dos existentes — nenhuma brecha nova.
+
+- `NULL` por padrão; nenhum dado existente é alterado.
+- `UNIQUE` global (mesmo formato de `congregations.invite_code`).
+- Validação de formato no servidor: 4–12 chars `[A-Z0-9]`, sem `*`.
+- RLS de `profiles` já cobre: só o próprio super lê/edita o seu (`auth.uid() = id`). Sem GRANT/POLICY novas.
 
 ---
 
-## i18n (pt/en/es)
+## 2. `src/lib/guest.functions.ts` — resolver super-code
+
+`getGuestSnapshot` ganha um caminho adicional para resolver `wifeMode`, sem mexer no atual:
+
+Input passa a aceitar opcionalmente uma congregação escolhida:
+
+```ts
+{ inviteCode: string, congregationId?: string }
+```
+
+Lógica:
+
+1. Se o código **termina em `*`** → fluxo antigo (compatibilidade total), nada muda.
+2. Caso contrário, tenta primeiro casar com `profiles.wife_invite_code`:
+   - Se casar → `wifeMode = true`. Busca as **congregações ativas** do super (`superintendent_id = profile.id AND is_active = true`).
+   - `selectedCongregationId` = `input.congregationId` (se pertencer ao super) ou a primeira ativa.
+   - Monta o snapshot exatamente como hoje no `wifeMode`, só que para a congregação escolhida. Todos os filtros existentes (`visible_to_spouse`, sem checklist, sem elders, sem templates de reunião) continuam aplicados.
+3. Se não casar com `wife_invite_code` → cai no caminho atual (`congregations.invite_code` = elder/ESC).
+
+Resposta ganha 2 campos extras **apenas no modo novo**:
+
+- `availableCongregations: { id: string; name: string }[]`
+- `selectedCongregationId: string`
+
+Toda a lógica continua dentro do `createServerFn` com `supabaseAdmin` (igual ao guest atual). Nenhuma alteração em RLS.
+
+---
+
+## 3. `src/lib/guest-session.ts` — login persistente + estado do painel
+
+- Manter `guest_invite_code` e `guest_week_start` (fluxo antigo, expira semanalmente — sem mudança).
+- Novos itens no `localStorage`, **só usados quando o código é super-code**:
+  - `guest_selected_congregation_id` — última congregação escolhida pela esposa.
+  - `guest_week_anchor` — `null` (semana atual) ou ISO date (futuro, caso adicionemos navegação de semanas depois).
+- `readGuestSession()` passa a devolver `{ code, congregationId, weekAnchor }`.
+- Detecção do modo: se `code` não termina em `*`, **não aplicar expiração semanal** — login persistente. Só limpa em logout explícito.
+
+---
+
+## 4. Novo server function — salvar código da esposa
+
+Arquivo: `src/lib/profile.functions.ts` (criar se não existir; senão, acrescentar).
+
+```ts
+export const setWifeInviteCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({
+    code: z.string().trim().toUpperCase()
+      .regex(/^[A-Z0-9]{4,12}$/, "4–12 caracteres, A–Z e 0–9")
+      .nullable(),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ wife_invite_code: data.code })
+      .eq("id", userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+```
+
+- `UNIQUE` no banco protege contra colisão; o serverFn devolve mensagem amigável se o código já existir.
+- Helper `generateWifeCode()` no cliente para sugerir um código aleatório de 8 chars.
+
+---
+
+## 5. Perfil do superintendente (`src/routes/_app.perfil.tsx`)
+
+Nova seção **"Acesso da esposa"** (visível apenas quando `role === "superintendent"`):
+
+- Campo `wife_invite_code` (texto, 4–12 chars A–Z/0–9, uppercase automático).
+- Botão **"Gerar código"** (gera aleatório), botão **"Copiar"**, botão **"Salvar"**.
+- Botão **"Remover"** (limpa o código → invalida acessos novos; sessões já abertas continuam até logout).
+- Texto explicativo: *"Compartilhe este código com sua esposa. Ela usa o mesmo botão **Acesso corpo de anciãos e ESC** na tela de login. Esse acesso é persistente e dá visão de todas as suas congregações ativas, com as mesmas restrições do acesso atual da esposa."*
+
+---
+
+## 6. Tela de login do visitante
+
+Nenhuma mudança visível: o mesmo botão **"Acesso corpo de anciãos e ESC"** aceita qualquer código. O servidor decide se é elder, esposa-antiga (`*`) ou esposa-nova (super-code).
+
+---
+
+## 7. Painel do visitante (`src/routes/visitante.painel.tsx`)
+
+Quando `snap.wifeMode && snap.availableCongregations` (modo novo):
+
+- **Header**: dropdown "Congregação ativa" listando `availableCongregations` (já filtrado para ativas no servidor). Ao trocar:
+  1. Persiste em `localStorage` (`guest_selected_congregation_id`).
+  2. Refaz `getGuestSnapshot({ inviteCode, congregationId })`.
+- **Botão "Semana atual"** ao lado do dropdown: limpa `guest_week_anchor` e recarrega o snapshot, garantindo que a visualização reflita a semana vigente daquela congregação.
+- Resto da UI **idêntico** ao `wifeMode` atual (mesmas abas, mesmas restrições).
+
+Para o fluxo antigo (`código*`): painel renderiza exatamente como hoje (sem dropdown, sem botão "Semana atual").
+
+---
+
+## 8. i18n
 
 Novas chaves em `src/i18n/locales/{pt,en,es}.json`:
-- `templates.field.observations` / `observationsPlaceholder` / `observationsHint`
-- `templates.meals.generalObservations` / `generalObservationsPlaceholder`
-- `meetings.fromTemplate.title` (rótulo "Do modelo" / "From template" / "Del modelo")
-- `meetings.fromTemplate.songs.opening` / `closing`
-- `meetings.fromTemplate.observations`
+
+- `profile.wifeAccess.title / description / codeLabel / placeholder / generate / copy / save / remove / saved / copied / removed / errorTaken / errorFormat`
+- `guest.congregationPicker.label`
+- `guest.currentWeek`
+
+---
+
+## Garantias de não-quebra
+
+- **Esposas que já usam `código*`**: funcionam idênticas (mesmo path no serverFn, mesma expiração semanal, mesma UI).
+- **Acesso de anciãos/ESC**: intocado.
+- **RLS e policies**: zero alteração. Toda a lógica nova roda em `createServerFn` com `supabaseAdmin`, como o guest atual.
+- **Restrições de visualização**: as flags `wifeMode` no servidor já filtram checklist, elders e `visible_to_spouse`. Só passamos `wifeMode=true` por um caminho a mais.
+- **Bíblia, busca de versículos, importação EPUB**: intocados.
+- **Migração de dados**: nenhuma — os dois modelos convivem; a esposa migra naturalmente quando o super gerar o código novo e compartilhar.
 
 ---
 
 ## Arquivos previstos
 
-- `supabase/migrations/<timestamp>_add_template_observations.sql` (novo)
-- `src/routes/_app.modelo-reunioes-de-campo.tsx`
-- `src/routes/_app.modelos.tsx`
-- `src/routes/_app.refeicoes.tsx`
-- `src/routes/_app.reunioes-discursos.tsx`
-- `src/components/meetings/*` (painéis Midweek, Weekend, Pioneer, Elders, Field)
-- `src/routes/visitante.painel.tsx`
-- `src/lib/field-meeting-templates.functions.ts`
-- `src/lib/templates.functions.ts`
-- `src/lib/guest.functions.ts`
-- `src/i18n/locales/{pt,en,es}.json`
+- **Migração**: `supabase/migrations/<timestamp>_add_wife_invite_code.sql` (nova coluna em `profiles`).
+- **Edit** `src/lib/guest.functions.ts` — resolver super-code, devolver `availableCongregations` + `selectedCongregationId`.
+- **Edit** `src/lib/guest-session.ts` — persistência sem expiração para super-code; storage de congregação selecionada e weekAnchor.
+- **New/Edit** `src/lib/profile.functions.ts` — serverFn `setWifeInviteCode`.
+- **Edit** `src/routes/_app.perfil.tsx` — nova seção "Acesso da esposa".
+- **Edit** `src/routes/visitante.painel.tsx` — dropdown de congregação ativa + botão "Semana atual" no modo novo.
+- **Edit** `src/i18n/locales/{pt,en,es}.json` — chaves novas.
+
+Sem mudanças em: `bible-notes-store.ts`, `BibleManagerDialog.tsx`, parser EPUB, busca/exibição de versículos, RLS, edge functions, painel do super, modelos, reuniões.
 
 ---
 
 ## Verificação pós-implementação
 
-- Build TypeScript limpo (tipos do Supabase regenerados após migration).
-- Conferir no preview: super edita azul/vermelho; ancião vê leitura; visitante (esposa) não vê observações de anciãos.
-- Editar um modelo existente e confirmar que campos preenchidos previamente não foram alterados.
+- Build TypeScript limpo (tipos do Supabase regenerados após a migração).
+- Super gera código no perfil → esposa loga uma vez → fecha e reabre o app → continua logada.
+- Dropdown lista só congregações ativas; trocar atualiza o painel; "Semana atual" reposiciona corretamente.
+- Esposa-nova **não** vê: checklist, reunião de anciãos/ESC, eventos de circuito com `visible_to_spouse=false`.
+- Login antigo com `código*` continua funcionando exatamente como antes.
