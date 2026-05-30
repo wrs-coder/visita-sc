@@ -575,7 +575,8 @@
       "transport": {
         "driverName": "Nombre del conductor",
         "phone": "Teléfono",
-        "description": "Descripción/evento",
+        "addEvent": "Agregar evento",
+        "eventLabel": "Evento {{n}}",
         "notes": "Observaciones",
         "eventType": "Tipo de evento",
         "direction": "Dirección",
