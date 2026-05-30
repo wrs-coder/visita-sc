@@ -343,7 +343,27 @@
     "noTransport": "Nenhum transporte cadastrado.",
     "noDay": "Sem dia",
     "requireDriver": "Informe o nome do motorista",
-    "toggleAria": "Ativar/desativar"
+    "toggleAria": "Ativar/desativar",
+    "eventTypeLabel": "Tipo de evento",
+    "directionLabel": "Direção",
+    "departureTime": "Horário de saída",
+    "returnTime": "Horário de retorno",
+    "allDay": "Dia inteiro",
+    "applyAllDayHint": "Ao salvar, o motorista e o telefone serão replicados para os demais transportes deste mesmo dia.",
+    "allDayApplied": "Motorista replicado para {{count}} outro(s) transporte(s) do dia.",
+    "eventType": {
+      "field_service": "Serviço de campo",
+      "meeting": "Reunião",
+      "airport": "Aeroporto",
+      "meal": "Refeição",
+      "personal": "Pessoal",
+      "other": "Outro"
+    },
+    "direction": {
+      "pickup": "Buscar",
+      "dropoff": "Levar",
+      "round_trip": "Ida e volta"
+    }
   },
   "checklistPage": {
     "title": "Checklist da Congregação",
