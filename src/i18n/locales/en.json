@@ -1340,6 +1340,19 @@
     "loading": "Loading verse…",
     "notFound": "Verse unavailable. Import the Bible from Manage Bibles.",
     "dragHandle": "Drag",
-    "close": "Close"
+    "close": "Close",
+    "viewSettings": "Appearance",
+    "color": "Color",
+    "colors": {
+      "white": "White",
+      "black": "Black",
+      "sepia": "Sepia",
+      "yellow": "Yellow",
+      "night_blue": "Night blue"
+    },
+    "bold": "Bold",
+    "highlight": "Highlight selection",
+    "clearHighlights": "Clear highlights",
+    "selectToHighlight": "Select some text to highlight."
   }
 }
