@@ -331,7 +331,7 @@ function Page() {
       .sort((a, b) => b.updated_at - a.updated_at));
     if (draft && draft.id === noteId) setDraft(updated);
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
-    toast.success(t("personalOutlines.folders.moved", { defaultValue: "Movido." }));
+    toast.success(t("personalOutlines.folders.noteMoved", { defaultValue: "Nota movida." }));
   }
 
   async function moveFolderTo(folderId: string, targetParentId: string | null) {
@@ -348,7 +348,7 @@ function Page() {
     await saveFolder(updated);
     setFolders((all) => all.map((f) => (f.id === folderId ? updated : f)));
     if (targetParentId) setExpanded((s) => new Set(s).add(targetParentId));
-    toast.success(t("personalOutlines.folders.moved", { defaultValue: "Movido." }));
+    toast.success(t("personalOutlines.folders.folderMoved", { defaultValue: "Pasta movida." }));
   }
 
   async function handleConfirmMove(targetFolderId: string | null) {
@@ -363,15 +363,31 @@ function Page() {
 
   function handleCutNote(noteId: string) {
     setClipboardNoteId(noteId);
-    toast.success(t("personalOutlines.folders.clipboardHint", {
-      defaultValue: "1 nota recortada. Toque em \"Colar aqui\" na pasta de destino.",
-    }));
+    toast.success(t("personalOutlines.folders.noteCut", { defaultValue: "Nota recortada." }));
   }
 
   async function handlePasteNote(targetFolderId: string | null) {
     if (!clipboardNoteId) return;
-    await moveNoteTo(clipboardNoteId, targetFolderId);
+    const noteId = clipboardNoteId;
     setClipboardNoteId(null);
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+    if ((note.folderId ?? null) === targetFolderId) {
+      toast.info(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
+      return;
+    }
+    const updated: FieldNote = { ...note, folderId: targetFolderId, updated_at: Date.now() };
+    await persistNote(updated);
+    setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
+      .sort((a, b) => b.updated_at - a.updated_at));
+    if (draft && draft.id === noteId) setDraft(updated);
+    if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
+    toast.success(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
+  }
+
+  function handleClearClipboard() {
+    setClipboardNoteId(null);
+    toast.info(t("personalOutlines.folders.clipboardCleared", { defaultValue: "Recorte cancelado." }));
   }
 
 
@@ -677,20 +693,24 @@ function Page() {
                       />
                     </div>
                     {clipboardNoteId && (
-                      <div className="flex items-center gap-2 rounded-md border border-dashed bg-muted/40 px-2 py-1.5 text-xs">
-                        <Scissors className="h-3.5 w-3.5 text-primary" />
+                      <div className="flex items-center gap-2 rounded-md border border-dashed border-primary/40 bg-primary/5 px-2 py-1.5 text-xs">
+                        <Scissors className="h-3.5 w-3.5 text-primary shrink-0" />
                         <span className="flex-1 truncate">
                           {t("personalOutlines.folders.clipboardHint", {
                             defaultValue: "1 nota recortada. Toque em \"Colar aqui\" na pasta de destino.",
                           })}
                         </span>
-                        <button
+                        <Button
                           type="button"
-                          className="text-muted-foreground hover:text-foreground underline"
-                          onClick={() => setClipboardNoteId(null)}
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2"
+                          onClick={handleClearClipboard}
+                          title={t("personalOutlines.folders.cancelCut", { defaultValue: "Cancelar recorte" })}
                         >
-                          {t("personalOutlines.folders.clearClipboard", { defaultValue: "Cancelar" })}
-                        </button>
+                          <X className="h-3.5 w-3.5 mr-1" />
+                          {t("personalOutlines.folders.cancelCut", { defaultValue: "Cancelar recorte" })}
+                        </Button>
                       </div>
                     )}
                     <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">

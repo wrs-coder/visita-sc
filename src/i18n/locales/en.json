@@ -1233,7 +1233,13 @@
       "moved": "Moved.",
       "cannotMoveIntoSelf": "Can't move a folder into itself.",
       "clipboardHint": "1 note cut. Tap \"Paste here\" on the destination folder.",
-      "clearClipboard": "Cancel"
+      "clearClipboard": "Cancel",
+      "noteMoved": "Note moved.",
+      "folderMoved": "Folder moved.",
+      "noteCut": "Note cut.",
+      "notePasted": "Note pasted into folder.",
+      "clipboardCleared": "Cut cancelled.",
+      "cancelCut": "Cancel cut"
     },
     "fields": {
       "description": "Description",

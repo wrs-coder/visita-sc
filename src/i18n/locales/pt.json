@@ -1233,7 +1233,13 @@
       "moved": "Movido.",
       "cannotMoveIntoSelf": "Não é possível mover uma pasta para dentro dela mesma.",
       "clipboardHint": "1 nota recortada. Toque em \"Colar aqui\" na pasta de destino.",
-      "clearClipboard": "Cancelar"
+      "clearClipboard": "Cancelar",
+      "noteMoved": "Nota movida.",
+      "folderMoved": "Pasta movida.",
+      "noteCut": "Nota recortada.",
+      "notePasted": "Nota colada na pasta.",
+      "clipboardCleared": "Recorte cancelado.",
+      "cancelCut": "Cancelar recorte"
     },
     "fields": {
       "description": "Descrição",

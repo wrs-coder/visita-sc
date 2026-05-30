@@ -1233,7 +1233,13 @@
       "moved": "Movido.",
       "cannotMoveIntoSelf": "No se puede mover una carpeta dentro de sí misma.",
       "clipboardHint": "1 nota cortada. Toca \"Pegar aquí\" en la carpeta de destino.",
-      "clearClipboard": "Cancelar"
+      "clearClipboard": "Cancelar",
+      "noteMoved": "Nota movida.",
+      "folderMoved": "Carpeta movida.",
+      "noteCut": "Nota cortada.",
+      "notePasted": "Nota pegada en la carpeta.",
+      "clipboardCleared": "Corte cancelado.",
+      "cancelCut": "Cancelar corte"
     },
     "fields": {
       "description": "Descripción",
