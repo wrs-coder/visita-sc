@@ -487,7 +487,7 @@ function Page() {
   async function handleExportFolder(folder: NoteFolder) {
     try {
       const payload = await exportFolderJSON(folder.id);
-      downloadJSON(`pasta-${slugify(folder.name)}.json`, payload);
+      await downloadJSON(`pasta-${slugify(folder.name)}.json`, payload);
       toast.success(t("personalOutlines.folders.exportedFolder"));
     } catch (e) {
       toast.error(String(e instanceof Error ? e.message : e));
