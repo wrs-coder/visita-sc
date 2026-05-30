@@ -332,6 +332,16 @@ function Page() {
                           </Button>
                         </div>
                         <div>
+                          <Label className="text-xs">{t("templates.field.observations")}</Label>
+                          <Textarea
+                            className="mt-1 text-blue-600 dark:text-blue-400 min-h-[60px]"
+                            placeholder={t("templates.field.observationsPlaceholder")}
+                            value={it.observations}
+                            maxLength={4000}
+                            onChange={(e) => updateItem(idx, { observations: e.target.value })}
+                          />
+                        </div>
+                        <div>
                           <Label className="text-xs">{t("templates.field.modality")}</Label>
                           <Select value={it.modality} onValueChange={(v) => updateItem(idx, { modality: v as Modality })}>
                             <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
