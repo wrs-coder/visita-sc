@@ -100,7 +100,22 @@
     "restoredCount": "Respaldo restaurado ({{count}} registros).",
     "shareOpened": "Diálogo de compartir abierto",
     "backupDownloaded": "Respaldo descargado",
-    "failGeneric": "Error"
+    "failGeneric": "Error",
+    "wifeAccess": {
+      "title": "Acceso de la esposa",
+      "description": "Crea un código exclusivo para que tu esposa abra el panel (solo lectura). Podrá alternar entre las congregaciones activas y volver a la semana actual en cualquier momento. Su sesión queda guardada en su dispositivo.",
+      "codeLabel": "Código de la esposa",
+      "placeholder": "Ej.: MARIA2026",
+      "generate": "Generar",
+      "copy": "Copiar",
+      "save": "Guardar",
+      "remove": "Quitar",
+      "saved": "Código guardado",
+      "removed": "Código eliminado",
+      "copied": "Código copiado",
+      "errorFormat": "Usa de 4 a 12 caracteres (solo letras mayúsculas y números).",
+      "errorTaken": "Este código ya está en uso. Elige otro."
+    }
   },
   "sidebar": {
     "sectionPrincipal": "Principal",
@@ -1019,6 +1034,8 @@
     "backToLogin": "Volver al inicio de sesión",
     "invalidCode": "Código inválido",
     "wifeMode": "Esposa del superintendente",
+    "currentWeek": "Semana actual",
+    "congregationPicker": { "label": "Congregación:" },
     "eldersMode": "Cuerpo de ancianos y Comité de Servicio",
     "readOnlyTag": "solo lectura",
     "share": "Compartir",
