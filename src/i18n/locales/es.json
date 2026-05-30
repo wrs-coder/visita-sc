@@ -558,6 +558,9 @@
       "mealNotesTitle": "Observaciones de comidas por día",
       "mealNotesHelp": "Texto opcional mostrado en rojo a los ancianos debajo del título del día, en la pestaña Comidas.",
       "mealNotesPlaceholder": "Ej.: Reunión entre 7h y 16h30, no programen almuerzo",
+      "generalObservations": "Observaciones generales",
+      "generalObservationsPlaceholder": "Notas generales sobre la programación de comidas (hasta 4000 caracteres). Visible en rojo a los ancianos.",
+      "generalObservationsHint": "Solo el superintendente edita; los ancianos lo ven en solo lectura arriba de la pestaña Comidas.",
       "duplicateTemplate": "Duplicar modelo",
       "duplicateTo": "Copiar a",
       "duplicated": "Modelo duplicado con éxito",
@@ -640,7 +643,10 @@
       "auxiliaryLeaders": "Dirigentes auxiliares",
       "closingPrayer": "Oración final",
       "hint": "Cada turno tiene su propia modalidad. Cuando la modalidad no sea \"Predicación de casa en casa\", solo el campo \"Oración final\" estará disponible para la congregación en ese turno.",
-      "namePlaceholder": "Ej.: Cong. Centro"
+      "namePlaceholder": "Ej.: Cong. Centro",
+      "observations": "Notas del superintendente",
+      "observationsPlaceholder": "Notas para este día/modalidad (hasta 4000 caracteres). Mostradas en azul a los ancianos.",
+      "observationsHint": "Solo el superintendente edita; los ancianos lo ven en solo lectura en la pestaña Reuniones de Campo."
     },
     "meetingTalk": {
       "title": "Plantillas de Reunión y Discurso",

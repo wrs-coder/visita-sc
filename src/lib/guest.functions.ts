@@ -65,7 +65,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       supabaseAdmin.from("meals").select("id,meal_date,type,host_name,location,meal_time,contact_phone,notes").eq("visit_id", visit.id).eq("is_active", true).order("meal_date"),
       supabaseAdmin.from("meal_day_notes").select("meal_date,notes").eq("visit_id", visit.id),
       supabaseAdmin.from("field_assignments").select("id,event_date,period,meeting_point,meeting_time,acompanhante,acompanhante_for,contact_phone").eq("visit_id", visit.id).eq("is_active", true).order("event_date"),
-      supabaseAdmin.from("field_meetings").select("id,event_date,period,modality,meeting_time,territory_number,territory_location,auxiliary_leaders,closing_prayer").eq("visit_id", visit.id).eq("is_active", true).order("event_date").order("period"),
+      supabaseAdmin.from("field_meetings").select("id,event_date,period,modality,meeting_time,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations").eq("visit_id", visit.id).eq("is_active", true).order("event_date").order("period"),
       supabaseAdmin.from("transport_schedule").select("id,event_date,driver_name,contact_phone,description,notes").eq("visit_id", visit.id).eq("is_active", true).order("event_date"),
       wifeMode
         ? Promise.resolve({ data: [] as Array<{ id: string; title: string; description: string | null; status: string; link_or_notes: string | null; info_text: string | null }> })

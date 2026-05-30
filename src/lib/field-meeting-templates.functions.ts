@@ -35,6 +35,7 @@ const itemSchema = z.object({
   territory_location: z.string().trim().max(200).nullable().optional(),
   auxiliary_leaders: z.string().trim().max(200).nullable().optional(),
   closing_prayer: z.string().trim().max(200).nullable().optional(),
+  observations: z.string().max(4000).nullable().optional(),
   sort_order: z.number().int().min(0).max(1000).default(0),
 });
 
@@ -52,7 +53,8 @@ export const listFieldMeetingTemplates = createServerFn({ method: "POST" })
     let items: Array<{
       id: string; template_id: string; day_offset: number; period: string;
       meeting_time: string | null; territory_number: string | null;
-      territory_location: string | null; auxiliary_leaders: string | null; closing_prayer: string | null; sort_order: number;
+      territory_location: string | null; auxiliary_leaders: string | null; closing_prayer: string | null;
+      observations: string | null; sort_order: number;
     }> = [];
     if (ids.length) {
       const { data } = await supabaseAdmin
@@ -199,6 +201,7 @@ export const duplicateFieldMeetingTemplate = createServerFn({ method: "POST" })
           territory_location: it.territory_location,
           auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? null,
           closing_prayer: it.closing_prayer,
+          observations: (it as { observations?: string | null }).observations ?? null,
           sort_order: it.sort_order,
         })),
       );
@@ -244,6 +247,7 @@ export const replaceFieldMeetingTemplateItems = createServerFn({ method: "POST" 
         territory_location: it.territory_location || null,
         auxiliary_leaders: it.auxiliary_leaders || null,
         closing_prayer: it.closing_prayer || null,
+        observations: it.observations ?? null,
         sort_order: it.sort_order ?? i,
       }));
       const { error } = await supabaseAdmin.from("field_meeting_template_items").insert(rows);
@@ -314,6 +318,7 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
       territory_location: it.territory_location,
       auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? null,
       closing_prayer: it.closing_prayer,
+      observations: (it as { observations?: string | null }).observations ?? null,
       is_active: true,
     })).filter((r) => !have.has(`${r.event_date}|${r.period}`));
     const skipped = items.length - rows.length;

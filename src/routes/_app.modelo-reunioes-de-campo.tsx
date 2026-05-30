@@ -42,6 +42,7 @@ interface ItemDraft {
   territory_location: string;
   auxiliary_leaders: string;
   closing_prayer: string;
+  observations: string;
 }
 
 const MAX = 24;
@@ -74,7 +75,6 @@ function Page() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameVal, setRenameVal] = useState("");
   const [renameErr, setRenameErr] = useState<string | null>(null);
-  const [obsByTpl, setObsByTpl] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -82,10 +82,8 @@ function Page() {
     if (r.ok) {
       setTpls(r.templates as TemplateRow[]);
       const map: Record<string, ItemDraft[]> = {};
-      const obs: Record<string, string> = {};
       for (const t of r.templates) {
         map[t.id] = [];
-        obs[t.id] = ((t as TemplateRow).observations) ?? "";
       }
       for (const it of r.items) {
         map[it.template_id] = map[it.template_id] || [];
@@ -98,10 +96,10 @@ function Page() {
           territory_location: it.territory_location ?? "",
           auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? "",
           closing_prayer: it.closing_prayer ?? "",
+          observations: (it as { observations?: string | null }).observations ?? "",
         });
       }
       setItemsByTpl(map);
-      setObsByTpl(obs);
       if (!activeId && r.templates.length > 0) setActiveId(r.templates[0].id);
     }
   }, [fnList, activeId]);
@@ -176,7 +174,7 @@ function Page() {
     await load();
   };
 
-  const addItem = () => setItems([...items, { day_offset: 0, period: "Manhã", modality: "casa_em_casa", meeting_time: "", territory_number: "", territory_location: "", auxiliary_leaders: "", closing_prayer: "" }]);
+  const addItem = () => setItems([...items, { day_offset: 0, period: "Manhã", modality: "casa_em_casa", meeting_time: "", territory_number: "", territory_location: "", auxiliary_leaders: "", closing_prayer: "", observations: "" }]);
   const updateItem = (idx: number, patch: Partial<ItemDraft>) =>
     setItems(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
@@ -196,6 +194,7 @@ function Page() {
           territory_location: it.territory_location || null,
           auxiliary_leaders: it.auxiliary_leaders || null,
           closing_prayer: it.closing_prayer || null,
+          observations: it.observations || null,
           sort_order: i,
         })),
       },
@@ -290,23 +289,9 @@ function Page() {
                   {t("templates.field.hint")}
                 </p>
 
-                <div>
-                  <Label className="text-xs">{t("templates.field.observations")}</Label>
-                  <Textarea
-                    className="mt-1 text-blue-600 dark:text-blue-400"
-                    placeholder={t("templates.field.observationsPlaceholder")}
-                    value={obsByTpl[active.id] ?? ""}
-                    maxLength={4000}
-                    onChange={(e) => setObsByTpl({ ...obsByTpl, [active.id]: e.target.value })}
-                    onBlur={async (e) => {
-                      const v = e.target.value;
-                      const r = await fnUpdate({ data: { id: active.id, observations: v || null } });
-                      if (!r.ok) toast.error(r.error);
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">{t("templates.field.observationsHint")}</p>
-                </div>
               </CardContent></Card>
+
+
 
               <Card><CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -341,6 +326,16 @@ function Page() {
                           <Button size="icon" variant="ghost" onClick={() => removeItem(idx)}>
                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
+                        </div>
+                        <div>
+                          <Label className="text-xs">{t("templates.field.observations")}</Label>
+                          <Textarea
+                            className="mt-1 text-blue-600 dark:text-blue-400 min-h-[60px]"
+                            placeholder={t("templates.field.observationsPlaceholder")}
+                            value={it.observations}
+                            maxLength={4000}
+                            onChange={(e) => updateItem(idx, { observations: e.target.value })}
+                          />
                         </div>
                         <div>
                           <Label className="text-xs">{t("templates.field.modality")}</Label>

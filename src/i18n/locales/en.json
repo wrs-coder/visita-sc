@@ -558,6 +558,9 @@
       "mealNotesTitle": "Meal notes per day",
       "mealNotesHelp": "Optional text shown in red to the elders below the day title, in the Meals tab.",
       "mealNotesPlaceholder": "e.g.: Meeting from 7am to 4:30pm, don't schedule lunch",
+      "generalObservations": "General observations",
+      "generalObservationsPlaceholder": "Overall notes about the meal schedule (up to 4000 characters). Shown in red to the elders.",
+      "generalObservationsHint": "Only the circuit overseer edits; elders see this as read-only at the top of the Meals tab.",
       "duplicateTemplate": "Duplicate template",
       "duplicateTo": "Copy to",
       "duplicated": "Template duplicated successfully",
@@ -640,7 +643,10 @@
       "auxiliaryLeaders": "Auxiliary leaders",
       "closingPrayer": "Closing prayer",
       "hint": "Each shift has its own modality. When the modality is not \"House-to-house preaching\", only the \"Closing prayer\" field will be available to the congregation for that shift.",
-      "namePlaceholder": "e.g.: Central Cong."
+      "namePlaceholder": "e.g.: Central Cong.",
+      "observations": "Circuit overseer notes",
+      "observationsPlaceholder": "Notes for this day/modality (up to 4000 characters). Shown in blue to the elders.",
+      "observationsHint": "Only the circuit overseer edits; elders see this as read-only on the Field Meetings tab."
     },
     "meetingTalk": {
       "title": "Meeting & Talk Templates",

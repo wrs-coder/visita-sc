@@ -30,7 +30,7 @@ interface Snapshot {
   meals: Array<{ id: string; meal_date: string; type: string; host_name: string | null; location: string | null; meal_time: string | null; contact_phone: string | null; notes: string | null }>;
   mealDayNotes: Array<{ meal_date: string; notes: string }>;
   field: Array<{ id: string; event_date: string; period: string; meeting_point: string | null; meeting_time: string | null; acompanhante: string | null; acompanhante_for: string | null; contact_phone: string | null }>;
-  fieldMeetings: Array<{ id: string; event_date: string; period: string; modality: string; meeting_time: string | null; territory_number: string | null; territory_location: string | null; auxiliary_leaders: string | null; closing_prayer: string | null }>;
+  fieldMeetings: Array<{ id: string; event_date: string; period: string; modality: string; meeting_time: string | null; territory_number: string | null; territory_location: string | null; auxiliary_leaders: string | null; closing_prayer: string | null; observations: string | null }>;
   transport: Array<{ id: string; event_date: string | null; driver_name: string; contact_phone: string | null; description: string | null; notes: string | null }>;
   checklist: Array<{ id: string; title: string; description: string | null; status: string; link_or_notes: string | null; info_text: string | null }>;
   midweek: Array<{ id: string; chairman: string | null; service_talk_theme: string | null; closing_prayer: string | null }>;
@@ -357,6 +357,12 @@ function Page() {
                       {f.territory_location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.territory_location}</div>}
                       {f.auxiliary_leaders && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.auxLeaders")}: </span>{f.auxiliary_leaders}</div>}
                       {f.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{f.closing_prayer}</div>}
+                      {f.observations && f.observations.trim() && (
+                        <div className="rounded-md border border-blue-500/30 bg-blue-500/5 px-2 py-1.5 mt-1">
+                          <div className="text-[10px] uppercase tracking-wide font-medium text-blue-600 dark:text-blue-400 opacity-80">{t("meetingsTalks.fromTemplate.fieldObservations")}</div>
+                          <div className="text-xs whitespace-pre-wrap text-blue-600 dark:text-blue-400">{f.observations}</div>
+                        </div>
+                      )}
                     </CardContent></Card>
                   ))}
               </TabsContent>
