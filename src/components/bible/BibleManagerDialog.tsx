@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { pickFile } from "@/lib/share";
 import {
   importEpub,
   listLibraries,
@@ -20,6 +19,24 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onChanged?: () => void;
+}
+
+function pickEpubFile(): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".epub,application/epub+zip";
+    input.style.position = "fixed";
+    input.style.left = "-9999px";
+    input.style.opacity = "0";
+    input.onchange = () => {
+      const file = input.files?.[0] ?? null;
+      input.remove();
+      resolve(file);
+    };
+    document.body.appendChild(input);
+    input.click();
+  });
 }
 
 export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
@@ -39,7 +56,7 @@ export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
   }, [open]);
 
   async function handlePickFile() {
-    const file = await pickFile(".epub,application/epub+zip");
+    const file = await pickEpubFile();
     if (!file) return;
     const name = file.name.toLowerCase();
     const isEpub = name.endsWith(".epub") || file.type === "application/epub+zip";
