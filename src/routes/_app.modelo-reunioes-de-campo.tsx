@@ -74,6 +74,7 @@ function Page() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameVal, setRenameVal] = useState("");
   const [renameErr, setRenameErr] = useState<string | null>(null);
+  const [obsByTpl, setObsByTpl] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
