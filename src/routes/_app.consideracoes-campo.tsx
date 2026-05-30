@@ -177,6 +177,96 @@ function Page() {
     | null
   >(null);
 
+  // Sincronização com a nuvem
+  const [cloudOpen, setCloudOpen] = useState(false);
+  const [cloudList, setCloudList] = useState<Array<{ id: string; title: string; folder_path: string; updated_at: string }>>([]);
+  const [cloudBusy, setCloudBusy] = useState(false);
+  const fnListCloud = useServerFn(listCloudOutlines);
+  const fnPushCloud = useServerFn(pushOutlineToCloud);
+  const fnPullCloud = useServerFn(pullOutlineFromCloud);
+  const fnDeleteCloud = useServerFn(deleteCloudOutline);
+
+  async function refreshCloudList() {
+    const r = await fnListCloud();
+    if (r.ok) setCloudList(r.outlines.map((o) => ({ id: o.id, title: o.title, folder_path: o.folder_path, updated_at: o.updated_at })));
+  }
+
+  async function handleCloudOpen() {
+    setCloudOpen(true);
+    await refreshCloudList();
+  }
+
+  async function handleCloudPush() {
+    if (!draft) return;
+    setCloudBusy(true);
+    try {
+      const folderName = draft.folderId ? (folders.find((f) => f.id === draft.folderId)?.name ?? "") : "";
+      const r = await fnPushCloud({
+        data: {
+          title: (draft.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })).slice(0, 200),
+          folder_path: folderName,
+          content: {
+            prayer: draft.prayer ?? null,
+            territory: draft.territory ?? null,
+            assistants: draft.assistants ?? null,
+            description: draft.description ?? null,
+            content: draft.content ?? "",
+          },
+        },
+      });
+      if (!r.ok) { toast.error(r.error); return; }
+      toast.success(t("personalOutlines.cloud.pushed", { defaultValue: "Esboço enviado para a nuvem." }));
+      await refreshCloudList();
+    } finally {
+      setCloudBusy(false);
+    }
+  }
+
+  async function handleCloudPull(id: string) {
+    setCloudBusy(true);
+    try {
+      const r = await fnPullCloud({ data: { id } });
+      if (!r.ok) { toast.error(r.error); return; }
+      const c = (r.outline.content_json ?? {}) as Record<string, unknown>;
+      const now = Date.now();
+      const n: FieldNote = {
+        id: newNoteId(),
+        type: activeType ?? "outline",
+        folderId: selectedFolderId,
+        title: r.outline.title,
+        prayer: typeof c.prayer === "string" ? c.prayer : "",
+        territory: typeof c.territory === "string" ? c.territory : "",
+        assistants: typeof c.assistants === "string" ? c.assistants : "",
+        description: typeof c.description === "string" ? c.description : "",
+        content: typeof c.content === "string" ? c.content : "",
+        created_at: now,
+        updated_at: now,
+      };
+      await persistNote(n);
+      setNotes((all) => [n, ...all].sort((a, b) => b.updated_at - a.updated_at));
+      setDraft(n);
+      setSelectedNoteId(n.id);
+      setMode("outline");
+      toast.success(t("personalOutlines.cloud.pulled", { defaultValue: "Esboço importado da nuvem." }));
+      setCloudOpen(false);
+    } finally {
+      setCloudBusy(false);
+    }
+  }
+
+  async function handleCloudDelete(id: string) {
+    if (!confirm(t("personalOutlines.cloud.deleteConfirm", { defaultValue: "Excluir este esboço da nuvem?" }))) return;
+    setCloudBusy(true);
+    try {
+      const r = await fnDeleteCloud({ data: { id } });
+      if (!r.ok) { toast.error(r.error); return; }
+      toast.success(t("personalOutlines.cloud.deleted", { defaultValue: "Removido da nuvem." }));
+      await refreshCloudList();
+    } finally {
+      setCloudBusy(false);
+    }
+  }
+
   useEffect(() => {
     try {
       localStorage.setItem("personal-outlines.folders-collapsed", foldersCollapsed ? "1" : "0");
