@@ -91,7 +91,7 @@ const TYPE_KEYS = [
 ] as const;
 type EventType = (typeof TYPE_KEYS)[number];
 
-type Scope = "congregation" | "multi" | "all" | "personal";
+type Scope = "congregation" | "multi" | "all" | "personal" | "wife";
 
 interface Event {
   id: string;
