@@ -72,6 +72,7 @@ import {
   type ExportPayload,
 } from "@/lib/bible-notes-store";
 import { findCitations, stripHtmlForDetection, type CitationMatch } from "@/lib/bible-refs";
+import { shareJsonFile } from "@/lib/share";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
 import { RichOutlineContent } from "@/lib/rich-content";
@@ -124,16 +125,8 @@ function emptyNote(type: NoteType, folderId: string | null): FieldNote {
   };
 }
 
-function downloadJSON(filename: string, data: unknown) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+async function downloadJSON(filename: string, data: unknown) {
+  await shareJsonFile(filename, data);
 }
 
 function slugify(s: string): string {
@@ -494,7 +487,7 @@ function Page() {
   async function handleExportFolder(folder: NoteFolder) {
     try {
       const payload = await exportFolderJSON(folder.id);
-      downloadJSON(`pasta-${slugify(folder.name)}.json`, payload);
+      await downloadJSON(`pasta-${slugify(folder.name)}.json`, payload);
       toast.success(t("personalOutlines.folders.exportedFolder"));
     } catch (e) {
       toast.error(String(e instanceof Error ? e.message : e));
@@ -505,7 +498,7 @@ function Page() {
     if (!draft) return;
     try {
       const payload = await exportNoteJSON(draft.id);
-      downloadJSON(`nota-${slugify(draft.title)}.json`, payload);
+      await downloadJSON(`nota-${slugify(draft.title)}.json`, payload);
       toast.success(t("personalOutlines.folders.exportedNote"));
     } catch (e) {
       toast.error(String(e instanceof Error ? e.message : e));
