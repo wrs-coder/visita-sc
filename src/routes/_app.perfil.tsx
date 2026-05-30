@@ -52,6 +52,54 @@ function Page() {
   const refreshActiveBible = async () => setActiveBible(await getActiveLibrary());
   useEffect(() => { refreshActiveBible(); }, []);
 
+  useEffect(() => {
+    if (!user || role !== "superintendent") return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("wife_invite_code").eq("id", user.id).maybeSingle();
+      if (!cancelled) setWifeCode(((data as { wife_invite_code: string | null } | null)?.wife_invite_code) ?? "");
+    })();
+    return () => { cancelled = true; };
+  }, [user, role]);
+
+  const generateWifeCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let s = "";
+    for (let i = 0; i < 8; i++) s += chars[Math.floor(Math.random() * chars.length)];
+    setWifeCode(s);
+  };
+
+  const saveWifeCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    const value = wifeCode.trim().toUpperCase();
+    if (value && !/^[A-Z0-9]{4,12}$/.test(value)) {
+      toast.error(t("profile.wifeAccess.errorFormat"));
+      return;
+    }
+    setBusyWife(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ wife_invite_code: value || null })
+      .eq("id", user.id);
+    setBusyWife(false);
+    if (error) {
+      if (error.code === "23505") toast.error(t("profile.wifeAccess.errorTaken"));
+      else toast.error(t("profile.saveError"), { description: error.message });
+      return;
+    }
+    toast.success(value ? t("profile.wifeAccess.saved") : t("profile.wifeAccess.removed"));
+  };
+
+  const copyWifeCode = async () => {
+    if (!wifeCode) return;
+    try {
+      await navigator.clipboard.writeText(wifeCode.trim().toUpperCase());
+      toast.success(t("profile.wifeAccess.copied"));
+    } catch { /* ignore */ }
+  };
+
+
   const doExportBackup = async () => {
     setBusyBackup("export");
     const r = await fnExportBackup();
