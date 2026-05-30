@@ -317,6 +317,7 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
       territory_location: it.territory_location,
       auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? null,
       closing_prayer: it.closing_prayer,
+      observations: (it as { observations?: string | null }).observations ?? null,
       is_active: true,
     })).filter((r) => !have.has(`${r.event_date}|${r.period}`));
     const skipped = items.length - rows.length;
