@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { saveBlob } from "@/lib/share";
 import { saveSnapshot, loadSnapshot } from "@/lib/snapshot-cache";
 import { GuestOfflineDialog } from "@/components/GuestOfflineDialog";
+import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 
 export const Route = createFileRoute("/visitante/painel")({ component: Page });
 
