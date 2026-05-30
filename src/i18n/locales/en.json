@@ -1308,7 +1308,9 @@
       "noteCut": "Note cut.",
       "notePasted": "Note pasted into folder.",
       "clipboardCleared": "Cut cancelled.",
-      "cancelCut": "Cancel cut"
+      "cancelCut": "Cancel cut",
+      "renameNotePrompt": "New note title:",
+      "noteRenamed": "Note renamed."
     },
     "fields": {
       "description": "Description",
