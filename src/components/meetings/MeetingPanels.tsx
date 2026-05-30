@@ -378,23 +378,40 @@ export function PioneerPanel() {
           <Label>
             {isSuper ? t("meetingsTalks.pioneer.dateTimeSuper") : t("meetingsTalks.pioneer.dateTimeElder")}
           </Label>
-          <Input
-            type="datetime-local"
-            defaultValue={tsToLocalInput(row.meeting_at)}
-            key={row.meeting_at ?? ""}
-            onBlur={(e) => {
-              const cur = tsToLocalInput(row.meeting_at);
-              if (e.target.value !== cur) onSaveDatetime(e.target.value || null);
-            }}
-            className={`h-9 mt-0.5 ${changedByElder ? "border-destructive text-destructive focus-visible:ring-destructive bg-destructive/5" : ""}`}
-          />
-          {changedByElder && (
-            <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              {t("meetingsTalks.pioneer.changedByElder", { value: new Date(row.super_meeting_at!).toLocaleString(bcp47(i18n.language)) })}
-            </p>
+          {isSuper ? (
+            <>
+              <Input
+                type="datetime-local"
+                defaultValue={tsToLocalInput(row.meeting_at)}
+                key={row.meeting_at ?? ""}
+                onBlur={(e) => {
+                  const cur = tsToLocalInput(row.meeting_at);
+                  if (e.target.value !== cur) onSaveDatetime(e.target.value || null);
+                }}
+                className={`h-9 mt-0.5 ${changedByElder ? "border-destructive text-destructive focus-visible:ring-destructive bg-destructive/5" : ""}`}
+              />
+              {changedByElder && (
+                <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  {t("meetingsTalks.pioneer.changedByElder", { value: new Date(row.super_meeting_at!).toLocaleString(bcp47(i18n.language)) })}
+                </p>
+              )}
+            </>
+          ) : (
+            <div className="h-9 mt-0.5 px-3 py-2 rounded-md border bg-muted/30 text-sm flex items-center">
+              {(() => {
+                const iso = row.super_meeting_at ?? row.meeting_at;
+                if (!iso) return <span className="text-muted-foreground">—</span>;
+                const d = new Date(iso);
+                const locale = bcp47(i18n.language);
+                const weekday = d.toLocaleDateString(locale, { weekday: "long" });
+                const time = d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+                return `${weekday} — ${time}`;
+              })()}
+            </div>
           )}
         </div>
+
       </fieldset>
     </CardContent></Card>
   );
