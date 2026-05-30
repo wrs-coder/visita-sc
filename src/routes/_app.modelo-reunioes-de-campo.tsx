@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Trash2, Copy, Pencil, MapPin, AlertCircle, Save } from "lucide-react";
@@ -30,7 +31,7 @@ const nameSchema = z.string().trim().min(2, "Nome deve ter pelo menos 2 caracter
 export const Route = createFileRoute("/_app/modelo-reunioes-de-campo")({ component: Page });
 
 type Modality = (typeof FIELD_MODALITIES)[number];
-interface TemplateRow { id: string; name: string; congregation_id: string | null; modality: Modality; }
+interface TemplateRow { id: string; name: string; congregation_id: string | null; modality: Modality; observations?: string | null; }
 
 interface ItemDraft {
   day_offset: number;
@@ -73,6 +74,7 @@ function Page() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameVal, setRenameVal] = useState("");
   const [renameErr, setRenameErr] = useState<string | null>(null);
+  const [obsByTpl, setObsByTpl] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -80,7 +82,11 @@ function Page() {
     if (r.ok) {
       setTpls(r.templates as TemplateRow[]);
       const map: Record<string, ItemDraft[]> = {};
-      for (const t of r.templates) map[t.id] = [];
+      const obs: Record<string, string> = {};
+      for (const t of r.templates) {
+        map[t.id] = [];
+        obs[t.id] = ((t as TemplateRow).observations) ?? "";
+      }
       for (const it of r.items) {
         map[it.template_id] = map[it.template_id] || [];
         map[it.template_id].push({
@@ -95,6 +101,7 @@ function Page() {
         });
       }
       setItemsByTpl(map);
+      setObsByTpl(obs);
       if (!activeId && r.templates.length > 0) setActiveId(r.templates[0].id);
     }
   }, [fnList, activeId]);
@@ -282,6 +289,23 @@ function Page() {
                 <p className="text-xs text-muted-foreground">
                   {t("templates.field.hint")}
                 </p>
+
+                <div>
+                  <Label className="text-xs">{t("templates.field.observations")}</Label>
+                  <Textarea
+                    className="mt-1 text-blue-600 dark:text-blue-400"
+                    placeholder={t("templates.field.observationsPlaceholder")}
+                    value={obsByTpl[active.id] ?? ""}
+                    maxLength={4000}
+                    onChange={(e) => setObsByTpl({ ...obsByTpl, [active.id]: e.target.value })}
+                    onBlur={async (e) => {
+                      const v = e.target.value;
+                      const r = await fnUpdate({ data: { id: active.id, observations: v || null } });
+                      if (!r.ok) toast.error(r.error);
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{t("templates.field.observationsHint")}</p>
+                </div>
               </CardContent></Card>
 
               <Card><CardContent className="p-4 space-y-3">

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, FileStack, Save, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,7 +22,7 @@ type Kind = "study" | "meal" | "transport";
 type PayloadValue = string | number | boolean | null;
 type Payload = Record<string, PayloadValue>;
 interface ItemDraft { kind: Kind; day_offset: number; payload: Payload; sort_order: number; }
-interface TemplateRow { id: string; slot: number; name: string; meal_day_notes?: Record<string, string> | null }
+interface TemplateRow { id: string; slot: number; name: string; meal_day_notes?: Record<string, string> | null; general_observations?: string | null }
 interface TemplateItemRow { id: string; template_id: string; kind: string; day_offset: number; payload: Payload; sort_order: number; }
 
 const DAY_OPTS = [0, 1, 2, 3, 4, 5, 6];
@@ -47,6 +48,7 @@ function Page() {
   const [itemsByTpl, setItemsByTpl] = useState<Record<string, ItemDraft[]>>({});
   const [namesBySlot, setNamesBySlot] = useState<Record<number, string>>({});
   const [notesBySlot, setNotesBySlot] = useState<Record<number, Record<string, string>>>({});
+  const [genObsBySlot, setGenObsBySlot] = useState<Record<number, string>>({});
   const [activeSlot, setActiveSlot] = useState("1");
   const [busy, setBusy] = useState(false);
   const [dupSlot, setDupSlot] = useState<string | null>(null);
@@ -65,13 +67,16 @@ function Page() {
     setItemsByTpl(map);
     const names: Record<number, string> = { ...DEFAULT_NAMES };
     const notesMap: Record<number, Record<string, string>> = {};
+    const obsMap: Record<number, string> = {};
     for (const t of r.templates) {
       names[t.slot] = t.name;
       const raw = (t as TemplateRow).meal_day_notes;
       notesMap[t.slot] = (raw && typeof raw === "object" ? raw : {}) as Record<string, string>;
+      obsMap[t.slot] = ((t as TemplateRow).general_observations) ?? "";
     }
     setNamesBySlot(names);
     setNotesBySlot(notesMap);
+    setGenObsBySlot(obsMap);
   }, [fnList]);
 
   useEffect(() => { load(); }, [load]);
@@ -226,6 +231,22 @@ function Page() {
                 <div className="border rounded-lg p-3 space-y-2">
                   <h3 className="text-sm font-semibold">{t("templates.program.mealNotesTitle")}</h3>
                   <p className="text-xs text-muted-foreground">{t("templates.program.mealNotesHelp")}</p>
+                  <div>
+                    <Label className="text-xs">{t("templates.program.generalObservations")}</Label>
+                    <Textarea
+                      className="mt-1 text-red-600 dark:text-red-400"
+                      placeholder={t("templates.program.generalObservationsPlaceholder")}
+                      value={genObsBySlot[slot] ?? ""}
+                      maxLength={4000}
+                      onChange={(e) => setGenObsBySlot({ ...genObsBySlot, [slot]: e.target.value })}
+                      onBlur={async (e) => {
+                        const v = e.target.value;
+                        const r = await fnUpsert({ data: { slot, name: namesBySlot[slot] || `Modelo ${slot}`, general_observations: v || null } });
+                        if (!r.ok) toast.error(r.error);
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{t("templates.program.generalObservationsHint")}</p>
+                  </div>
                   <div className="grid grid-cols-1 gap-2">
                     {DAY_OPTS.map((d) => (
                       <div key={d} className="flex items-center gap-2">

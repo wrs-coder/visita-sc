@@ -44,7 +44,7 @@ export const listFieldMeetingTemplates = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: tpls, error } = await supabaseAdmin
       .from("field_meeting_templates")
-      .select("id,name,congregation_id,modality,created_at,updated_at")
+      .select("id,name,congregation_id,modality,observations,created_at,updated_at")
       .eq("superintendent_id", userId)
       .order("created_at");
     if (error) return { ok: false as const, error: error.message };
@@ -122,6 +122,7 @@ export const updateFieldMeetingTemplate = createServerFn({ method: "POST" })
       id: z.string().uuid(),
       name: nameSchema.optional(),
       modality: modalitySchema.optional(),
+      observations: z.string().max(4000).nullable().optional(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -129,9 +130,10 @@ export const updateFieldMeetingTemplate = createServerFn({ method: "POST" })
     const { data: own } = await supabaseAdmin.from("field_meeting_templates")
       .select("id").eq("id", data.id).eq("superintendent_id", userId).maybeSingle();
     if (!own) return { ok: false as const, error: "Não autorizado." };
-    const patch: { name?: string; modality?: (typeof FIELD_MODALITIES)[number] } = {};
+    const patch: { name?: string; modality?: (typeof FIELD_MODALITIES)[number]; observations?: string | null } = {};
     if (data.name) patch.name = data.name;
     if (data.modality) patch.modality = data.modality;
+    if (data.observations !== undefined) patch.observations = data.observations;
     if (Object.keys(patch).length === 0) return { ok: true as const };
     const { error } = await supabaseAdmin.from("field_meeting_templates").update(patch).eq("id", data.id);
     if (error) return { ok: false as const, error: error.message };
