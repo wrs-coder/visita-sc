@@ -398,6 +398,13 @@
     "exportPending": "Pending"
   },
   "meetingsTalks": {
+    "fromTemplate": {
+      "observations": "Observations (from template)",
+      "openingSong": "Opening song (from template)",
+      "closingSong": "Closing song (from template)",
+      "fieldObservations": "Superintendent's observations (from template)",
+      "hint": "Read-only information from the selected template."
+    },
     "title": "Meetings & Talks",
     "subtitle": "Unified package per visit: field meetings, midweek, weekend, pioneers and elders/servants.",
     "loading": "Loading…",
