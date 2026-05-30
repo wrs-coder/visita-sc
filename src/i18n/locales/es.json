@@ -1308,7 +1308,9 @@
       "noteCut": "Nota cortada.",
       "notePasted": "Nota pegada en la carpeta.",
       "clipboardCleared": "Corte cancelado.",
-      "cancelCut": "Cancelar corte"
+      "cancelCut": "Cancelar corte",
+      "renameNotePrompt": "Nuevo título de la nota:",
+      "noteRenamed": "Nota renombrada."
     },
     "fields": {
       "description": "Descripción",
