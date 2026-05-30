@@ -99,6 +99,7 @@ function Page() {
           territory_location: it.territory_location ?? "",
           auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? "",
           closing_prayer: it.closing_prayer ?? "",
+          observations: (it as { observations?: string | null }).observations ?? "",
         });
       }
       setItemsByTpl(map);
