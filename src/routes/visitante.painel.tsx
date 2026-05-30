@@ -37,6 +37,14 @@ interface Snapshot {
   weekend: Array<{ id: string; meeting_at: string | null; public_talk_theme: string | null; talk_theme_title: string | null }>;
   pioneer: Array<{ id: string; meeting_at: string | null; super_meeting_at: string | null; location: string | null; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
   elders: Array<{ id: string; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
+  templateExtras?: {
+    field: { observations: string | null } | null;
+    midweek: { observations: string | null } | null;
+    weekend: { opening_song: string | null; closing_song: string | null; observations: string | null } | null;
+    pioneer: { observations: string | null } | null;
+    elders: { observations: string | null } | null;
+    program: { general_observations: string | null } | null;
+  };
 }
 
 type SectionKey = "cron" | "estudos" | "campo" | "ref" | "trans" | "check";
