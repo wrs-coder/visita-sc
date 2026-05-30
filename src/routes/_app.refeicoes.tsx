@@ -14,6 +14,8 @@ import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { offlineUpdate, offlineInsert, offlineDelete, offlineUpsert } from "@/lib/offline-supabase";
+import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
+import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 
 export const Route = createFileRoute("/_app/refeicoes")({ component: Page });
 
@@ -43,6 +45,7 @@ function Page() {
   const [dayNotes, setDayNotes] = useState<Record<string, string>>({});
   const [editEnabled, setEditEnabled] = useState(false);
   const editAllowed = !isSuper || editEnabled;
+  const extras = useVisitTemplateExtras(visit?.id);
 
   useEffect(() => {
     if (!visit) return;
@@ -103,6 +106,11 @@ function Page() {
       </div>
 
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
+
+      <TemplateExtraBlock
+        label={t("meals.generalObservationsLabel")}
+        value={extras.program?.general_observations}
+      />
 
       <fieldset disabled={!editAllowed} className="space-y-5 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
         {days.map((d) => {

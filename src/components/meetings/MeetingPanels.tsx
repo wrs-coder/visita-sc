@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, AlertTriangle } from "lucide-react";
+import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
+import { TemplateExtraBlock } from "./TemplateExtraBlock";
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
@@ -62,6 +64,7 @@ export function MidweekPanel() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const isSuper = role === "superintendent";
+  const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<MidweekRow>(
     "midweek_meetings",
     "id,visit_id,meeting_at,service_talk_theme,chairman,closing_prayer",
@@ -71,6 +74,7 @@ export function MidweekPanel() {
   if (loading || !row) return <LoadingCard />;
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.midweek?.observations} />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <DayTimePicker
           value={row.meeting_at}
@@ -225,6 +229,7 @@ export function WeekendPanel() {
   const { visit } = useActiveVisit();
   const { canEdit, role } = useAuth();
   const isSuper = role === "superintendent";
+  const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<WeekendRow>(
     "weekend_meetings",
     "id,visit_id,meeting_at,talk_theme_id,talk_theme_title,public_talk_theme",
@@ -261,6 +266,9 @@ export function WeekendPanel() {
   return (
     <div className="space-y-3">
       <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+        <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.openingSong")} value={extras.weekend?.opening_song} />
+        <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.closingSong")} value={extras.weekend?.closing_song} />
+        <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.weekend?.observations} />
         <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
           <DayTimePicker
             value={row.meeting_at}
@@ -323,6 +331,7 @@ export function PioneerPanel() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const isSuper = role === "superintendent";
+  const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<PioneerRow>(
     "pioneer_meetings",
     "id,visit_id,theme,opening_prayer,closing_prayer,location,meeting_at,super_meeting_at",
@@ -347,6 +356,7 @@ export function PioneerPanel() {
 
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.pioneer?.observations} />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <div>
           <Label>{t("meetingsTalks.pioneer.theme")}</Label>
@@ -398,6 +408,7 @@ export function EldersServantsPanel() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const isSuper = role === "superintendent";
+  const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<EldersRow>(
     "elders_servants_meetings",
     "id,visit_id,theme,opening_prayer,closing_prayer",
@@ -407,6 +418,7 @@ export function EldersServantsPanel() {
   if (loading || !row) return <LoadingCard />;
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.elders?.observations} />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <div>
           <Label>{t("meetingsTalks.elders.theme")}</Label>

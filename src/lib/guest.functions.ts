@@ -19,7 +19,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
 
     const { data: visits } = await supabaseAdmin
       .from("visits")
-      .select("id,title,start_date,end_date,is_active")
+      .select("id,title,start_date,end_date,is_active,meeting_talk_template_id,field_meeting_template_id,template_id")
       .eq("congregation_id", cong.id)
       .eq("is_active", true)
       .order("start_date", { ascending: false })
@@ -57,7 +57,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
     }));
 
     if (!visit) {
-      return { ok: true as const, wifeMode, congregation: cong, visit: null, schedule: circuitAsSchedule, meals: [], mealDayNotes: [], field: [], fieldMeetings: [], transport: [], checklist: [], midweek: [], weekend: [], pioneer: [], elders: [] };
+      return { ok: true as const, wifeMode, congregation: cong, visit: null, schedule: circuitAsSchedule, meals: [], mealDayNotes: [], field: [], fieldMeetings: [], transport: [], checklist: [], midweek: [], weekend: [], pioneer: [], elders: [], templateExtras: { field: null, midweek: null, weekend: null, pioneer: null, elders: null, program: null } };
     }
 
     const [{ data: schedule }, { data: meals }, { data: mealDayNotes }, { data: field }, { data: fieldMeetings }, { data: transport }, checklistRes, { data: midweek }, { data: weekend }, { data: pioneer }, { data: elders }] = await Promise.all([
@@ -84,6 +84,52 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       return (a.start_time ?? "").localeCompare(b.start_time ?? "");
     });
 
+    // Load read-only "from template" extras (observations + weekend songs +
+    // program general observations). Elders' observations are hidden in
+    // wifeMode (spouse panel).
+    const [
+      { data: fmTpl },
+      { data: mtRoot },
+      { data: mtMid },
+      { data: mtPio },
+      { data: mtEld },
+      { data: progTpl },
+    ] = await Promise.all([
+      visit.field_meeting_template_id
+        ? supabaseAdmin.from("field_meeting_templates").select("observations").eq("id", visit.field_meeting_template_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      visit.meeting_talk_template_id
+        ? supabaseAdmin.from("meeting_talk_templates").select("weekend_opening_song,weekend_closing_song,weekend_observations").eq("id", visit.meeting_talk_template_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      visit.meeting_talk_template_id
+        ? supabaseAdmin.from("meeting_talk_template_midweek").select("observations").eq("template_id", visit.meeting_talk_template_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      visit.meeting_talk_template_id
+        ? supabaseAdmin.from("meeting_talk_template_pioneer").select("observations").eq("template_id", visit.meeting_talk_template_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      visit.meeting_talk_template_id && !wifeMode
+        ? supabaseAdmin.from("meeting_talk_template_elders").select("observations").eq("template_id", visit.meeting_talk_template_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      visit.template_id
+        ? supabaseAdmin.from("program_templates").select("general_observations").eq("id", visit.template_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    const templateExtras = {
+      field: fmTpl ? { observations: (fmTpl as { observations: string | null }).observations ?? null } : null,
+      midweek: mtMid ? { observations: (mtMid as { observations: string | null }).observations ?? null } : null,
+      weekend: mtRoot
+        ? {
+            opening_song: (mtRoot as { weekend_opening_song: string | null }).weekend_opening_song ?? null,
+            closing_song: (mtRoot as { weekend_closing_song: string | null }).weekend_closing_song ?? null,
+            observations: (mtRoot as { weekend_observations: string | null }).weekend_observations ?? null,
+          }
+        : null,
+      pioneer: mtPio ? { observations: (mtPio as { observations: string | null }).observations ?? null } : null,
+      elders: mtEld ? { observations: (mtEld as { observations: string | null }).observations ?? null } : null,
+      program: progTpl ? { general_observations: (progTpl as { general_observations: string | null }).general_observations ?? null } : null,
+    };
+
     const payload = {
       ok: true as const,
       wifeMode,
@@ -100,6 +146,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       weekend: weekend ?? [],
       pioneer: pioneer ?? [],
       elders: elders ?? [],
+      templateExtras,
     };
     return JSON.parse(JSON.stringify(payload)) as typeof payload;
   });

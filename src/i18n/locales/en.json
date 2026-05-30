@@ -304,6 +304,7 @@
     }
   },
   "meals": {
+    "generalObservationsLabel": "General observations (from template)",
     "title": "Logistics & Meals",
     "subtitleSuper": "Define the meals available per day. Elders fill in host, address and phone. Disabled items are hidden from the congregation.",
     "subtitleElder": "Edit host, address and contact phone of the available meals.",
@@ -398,6 +399,13 @@
     "exportPending": "Pending"
   },
   "meetingsTalks": {
+    "fromTemplate": {
+      "observations": "Observations (from template)",
+      "openingSong": "Opening song (from template)",
+      "closingSong": "Closing song (from template)",
+      "fieldObservations": "Superintendent's observations (from template)",
+      "hint": "Read-only information from the selected template."
+    },
     "title": "Meetings & Talks",
     "subtitle": "Unified package per visit: field meetings, midweek, weekend, pioneers and elders/servants.",
     "loading": "Loading…",

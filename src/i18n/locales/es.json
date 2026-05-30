@@ -304,6 +304,7 @@
     }
   },
   "meals": {
+    "generalObservationsLabel": "Observaciones generales (del modelo)",
     "title": "Logística y Comidas",
     "subtitleSuper": "Define las comidas disponibles por día. Los ancianos completan anfitrión, dirección y teléfono. Los elementos desactivados se ocultan a la congregación.",
     "subtitleElder": "Edita anfitrión, dirección y teléfono de contacto de las comidas disponibles.",
@@ -398,6 +399,13 @@
     "exportPending": "Pendiente"
   },
   "meetingsTalks": {
+    "fromTemplate": {
+      "observations": "Observaciones (del modelo)",
+      "openingSong": "Cántico de apertura (del modelo)",
+      "closingSong": "Cántico de cierre (del modelo)",
+      "fieldObservations": "Observaciones del superintendente (del modelo)",
+      "hint": "Información de solo lectura del modelo seleccionado."
+    },
     "title": "Reuniones y Discursos",
     "subtitle": "Paquete unificado por visita: reuniones de campo, entre semana, fin de semana, precursores y ancianos/siervos.",
     "loading": "Cargando…",

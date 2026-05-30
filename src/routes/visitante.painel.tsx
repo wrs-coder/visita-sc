@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { saveBlob } from "@/lib/share";
 import { saveSnapshot, loadSnapshot } from "@/lib/snapshot-cache";
 import { GuestOfflineDialog } from "@/components/GuestOfflineDialog";
+import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 
 export const Route = createFileRoute("/visitante/painel")({ component: Page });
 
@@ -36,6 +37,14 @@ interface Snapshot {
   weekend: Array<{ id: string; meeting_at: string | null; public_talk_theme: string | null; talk_theme_title: string | null }>;
   pioneer: Array<{ id: string; meeting_at: string | null; super_meeting_at: string | null; location: string | null; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
   elders: Array<{ id: string; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
+  templateExtras?: {
+    field: { observations: string | null } | null;
+    midweek: { observations: string | null } | null;
+    weekend: { opening_song: string | null; closing_song: string | null; observations: string | null } | null;
+    pioneer: { observations: string | null } | null;
+    elders: { observations: string | null } | null;
+    program: { general_observations: string | null } | null;
+  };
 }
 
 type SectionKey = "cron" | "estudos" | "campo" | "ref" | "trans" | "check";
@@ -331,6 +340,11 @@ function Page() {
               </TabsContent>
 
               <TabsContent value="campo" className="space-y-2 mt-4">
+                <TemplateExtraBlock
+                  label={t("meetingsTalks.fromTemplate.fieldObservations")}
+                  value={snap.templateExtras?.field?.observations}
+                  variant="blue"
+                />
                 {snap.fieldMeetings.length === 0 ? <Empty text={t("guest.empty.field")} /> :
                   snap.fieldMeetings.map((f) => (
                     <Card key={f.id}><CardContent className="p-3 space-y-1">
@@ -348,6 +362,10 @@ function Page() {
               </TabsContent>
 
               <TabsContent value="ref" className="space-y-2 mt-4">
+                <TemplateExtraBlock
+                  label={t("meals.generalObservationsLabel")}
+                  value={snap.templateExtras?.program?.general_observations}
+                />
                 {snap.meals.length === 0 && snap.mealDayNotes.length === 0 ? <Empty text={t("guest.empty.meals")} /> : (() => {
                   const noteMap = new Map(snap.mealDayNotes.map((n) => [n.meal_date, n.notes]));
                   const dates = Array.from(new Set([...snap.meals.map((m) => m.meal_date), ...snap.mealDayNotes.map((n) => n.meal_date)])).sort();
