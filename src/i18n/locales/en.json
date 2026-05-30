@@ -1231,6 +1231,7 @@
       "periodPh": "Select the shift",
       "morning": "Morning",
       "afternoon": "Afternoon",
+      "evening": "Evening",
       "prayer": "Closing prayer",
       "prayerPh": "Who will give the closing prayer",
       "territory": "Assigned territory",

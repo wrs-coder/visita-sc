@@ -1078,6 +1078,7 @@ function NoteEditor({
                 <SelectContent>
                   <SelectItem value="morning">{t("fieldConsiderations.fields.morning")}</SelectItem>
                   <SelectItem value="afternoon">{t("fieldConsiderations.fields.afternoon")}</SelectItem>
+                  <SelectItem value="evening">{t("fieldConsiderations.fields.evening")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

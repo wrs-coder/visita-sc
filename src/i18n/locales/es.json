@@ -1231,6 +1231,7 @@
       "periodPh": "Selecciona el turno",
       "morning": "Mañana",
       "afternoon": "Tarde",
+      "evening": "Noche",
       "prayer": "Oración final",
       "prayerPh": "Quién dará la oración final",
       "territory": "Territorio asignado",
