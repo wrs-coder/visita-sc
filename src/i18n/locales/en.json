@@ -352,11 +352,11 @@
     "applyAllDayHint": "On save, the driver and phone will be replicated to the other transports of the same day.",
     "allDayApplied": "Driver replicated to {{count}} other transport(s) of the day.",
     "eventType": {
-      "field_service": "Field service",
-      "meeting": "Meeting",
-      "airport": "Airport",
-      "meal": "Meal",
-      "personal": "Personal",
+      "field_service": "Field Service",
+      "congregation_meeting": "Congregation Meeting",
+      "pioneer_meeting": "Meeting – Pioneers",
+      "elders_meeting": "Meeting – Elders",
+      "home_return": "Return home",
       "other": "Other"
     },
     "direction": {
@@ -582,12 +582,13 @@
         "allDay": "All day",
         "departure": "Departure time",
         "return": "Return time",
+        "otherPlaceholder": "Describe the event type",
         "eventTypes": {
-          "field_service": "Field service",
-          "meeting": "Meeting",
-          "airport": "Airport",
-          "meal": "Meal",
-          "personal": "Personal",
+          "field_service": "Field Service",
+          "congregation_meeting": "Congregation Meeting",
+          "pioneer_meeting": "Meeting – Pioneers",
+          "elders_meeting": "Meeting – Elders",
+          "home_return": "Return home",
           "other": "Other"
         },
         "directions": {
