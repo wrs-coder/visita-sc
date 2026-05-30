@@ -44,7 +44,7 @@ export const listFieldMeetingTemplates = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: tpls, error } = await supabaseAdmin
       .from("field_meeting_templates")
-      .select("id,name,congregation_id,modality,created_at,updated_at")
+      .select("id,name,congregation_id,modality,observations,created_at,updated_at")
       .eq("superintendent_id", userId)
       .order("created_at");
     if (error) return { ok: false as const, error: error.message };
