@@ -1217,7 +1217,16 @@
       "title": "Title",
       "titlePh": "E.g.: Considerations for February visit",
       "date": "Day",
-      "datePh": "Select the date",
+      "datePh": "Select the day",
+      "weekdays": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+      },
       "period": "Shift",
       "periodPh": "Select the shift",
       "morning": "Morning",
@@ -1246,7 +1255,7 @@
     "title": "Personal Outlines",
     "subtitle": "Organize field considerations and outlines into folders, with offline Bible integration.",
     "typePicker": {
-      "label": "Choose work type",
+      "label": "Choose creation type",
       "field": "Field Consideration",
       "outline": "Outline",
       "prompt": "Select a type above to load your folders and notes."
