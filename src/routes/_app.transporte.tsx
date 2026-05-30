@@ -156,10 +156,6 @@ function Page() {
   const updateGroup = async (rows: Transport[], patch: Partial<Transport>) => {
     const ids = rows.map((r) => r.id);
     const update: Partial<Transport> = { ...patch };
-    if (patch.all_day === true) {
-      update.departure_time = null;
-      update.return_time = null;
-    }
     const { error } = await supabase.from("transport_schedule").update(update).in("id", ids);
     if (error) toast.error(error.message);
   };
