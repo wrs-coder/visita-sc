@@ -1231,6 +1231,7 @@
       "periodPh": "Select the shift",
       "morning": "Morning",
       "afternoon": "Afternoon",
+      "evening": "Evening",
       "prayer": "Closing prayer",
       "prayerPh": "Who will give the closing prayer",
       "territory": "Assigned territory",
@@ -1307,7 +1308,9 @@
       "noteCut": "Note cut.",
       "notePasted": "Note pasted into folder.",
       "clipboardCleared": "Cut cancelled.",
-      "cancelCut": "Cancel cut"
+      "cancelCut": "Cancel cut",
+      "renameNotePrompt": "New note title:",
+      "noteRenamed": "Note renamed."
     },
     "fields": {
       "description": "Description",

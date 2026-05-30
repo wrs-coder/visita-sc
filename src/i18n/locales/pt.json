@@ -1231,6 +1231,7 @@
       "periodPh": "Selecione o turno",
       "morning": "Manhã",
       "afternoon": "Tarde",
+      "evening": "Noite",
       "prayer": "Oração final",
       "prayerPh": "Quem fará a oração final",
       "territory": "Território designado",
@@ -1307,7 +1308,9 @@
       "noteCut": "Nota recortada.",
       "notePasted": "Nota colada na pasta.",
       "clipboardCleared": "Recorte cancelado.",
-      "cancelCut": "Cancelar recorte"
+      "cancelCut": "Cancelar recorte",
+      "renameNotePrompt": "Novo título da nota:",
+      "noteRenamed": "Nota renomeada."
     },
     "fields": {
       "description": "Descrição",

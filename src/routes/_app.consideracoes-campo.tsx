@@ -455,6 +455,23 @@ function Page() {
     setMoveTarget(null);
   }
 
+  async function handleRenameNote(note: FieldNote) {
+    const name = prompt(
+      t("personalOutlines.folders.renameNotePrompt", { defaultValue: "Novo título da nota:" }),
+      note.title,
+    );
+    if (!name || !name.trim()) return;
+    const updated: FieldNote = { ...note, title: name.trim(), updated_at: Date.now() };
+    await persistNote(updated);
+    setNotes((all) =>
+      all
+        .map((n) => (n.id === note.id ? updated : n))
+        .sort((a, b) => b.updated_at - a.updated_at),
+    );
+    if (draft && draft.id === note.id) setDraft(updated);
+    toast.success(t("personalOutlines.folders.noteRenamed", { defaultValue: "Nota renomeada." }));
+  }
+
   function handleCutNote(noteId: string) {
     setClipboardNoteId(noteId);
     toast.success(t("personalOutlines.folders.noteCut", { defaultValue: "Nota recortada." }));
@@ -654,16 +671,20 @@ function Page() {
               <MoreVertical className="h-3.5 w-3.5" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setMoveTarget({ kind: "note", id: note.id })}>
-              <Move className="h-4 w-4 mr-2" />
-              {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCutNote(note.id)}>
-              <Scissors className="h-4 w-4 mr-2" />
-              {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleRenameNote(note)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                {t("common.rename")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setMoveTarget({ kind: "note", id: note.id })}>
+                <Move className="h-4 w-4 mr-2" />
+                {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCutNote(note.id)}>
+                <Scissors className="h-4 w-4 mr-2" />
+                {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
         </DropdownMenu>
       </div>
     );
@@ -1057,6 +1078,7 @@ function NoteEditor({
                 <SelectContent>
                   <SelectItem value="morning">{t("fieldConsiderations.fields.morning")}</SelectItem>
                   <SelectItem value="afternoon">{t("fieldConsiderations.fields.afternoon")}</SelectItem>
+                  <SelectItem value="evening">{t("fieldConsiderations.fields.evening")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
