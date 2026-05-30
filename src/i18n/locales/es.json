@@ -643,7 +643,10 @@
       "auxiliaryLeaders": "Dirigentes auxiliares",
       "closingPrayer": "Oración final",
       "hint": "Cada turno tiene su propia modalidad. Cuando la modalidad no sea \"Predicación de casa en casa\", solo el campo \"Oración final\" estará disponible para la congregación en ese turno.",
-      "namePlaceholder": "Ej.: Cong. Centro"
+      "namePlaceholder": "Ej.: Cong. Centro",
+      "observations": "Notas del superintendente",
+      "observationsPlaceholder": "Notas para este día/modalidad (hasta 4000 caracteres). Mostradas en azul a los ancianos.",
+      "observationsHint": "Solo el superintendente edita; los ancianos lo ven en solo lectura en la pestaña Reuniones de Campo."
     },
     "meetingTalk": {
       "title": "Plantillas de Reunión y Discurso",
