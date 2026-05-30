@@ -343,7 +343,27 @@
     "noTransport": "No transport registered.",
     "noDay": "No day",
     "requireDriver": "Enter the driver's name",
-    "toggleAria": "Enable/disable"
+    "toggleAria": "Enable/disable",
+    "eventTypeLabel": "Event type",
+    "directionLabel": "Direction",
+    "departureTime": "Departure time",
+    "returnTime": "Return time",
+    "allDay": "All day",
+    "applyAllDayHint": "On save, the driver and phone will be replicated to the other transports of the same day.",
+    "allDayApplied": "Driver replicated to {{count}} other transport(s) of the day.",
+    "eventType": {
+      "field_service": "Field service",
+      "meeting": "Meeting",
+      "airport": "Airport",
+      "meal": "Meal",
+      "personal": "Personal",
+      "other": "Other"
+    },
+    "direction": {
+      "pickup": "Pickup",
+      "dropoff": "Dropoff",
+      "round_trip": "Round trip"
+    }
   },
   "checklistPage": {
     "title": "Congregation Checklist",
