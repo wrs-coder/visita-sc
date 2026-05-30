@@ -25,6 +25,8 @@ export const Route = createFileRoute("/visitante/painel")({ component: Page });
 interface Snapshot {
   wifeMode: boolean;
   congregation: { id: string; name: string };
+  availableCongregations?: Array<{ id: string; name: string }> | null;
+  selectedCongregationId?: string | null;
   visit: { id: string; title: string; start_date: string; end_date: string } | null;
   schedule: Array<{ id: string; event_date: string; start_time: string | null; end_time: string | null; title: string; location: string | null; type: string; notes: string | null }>;
   meals: Array<{ id: string; meal_date: string; type: string; host_name: string | null; location: string | null; meal_time: string | null; contact_phone: string | null; notes: string | null }>;
