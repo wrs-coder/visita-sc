@@ -140,7 +140,8 @@ export const applyAllDayDriver = createServerFn({ method: "POST" })
     if (data.event_date) q = q.eq("event_date", data.event_date);
     else if (data.weekday != null) q = q.eq("weekday", data.weekday);
     else return { ok: false as const, error: "Sem data ou dia para replicar." };
-    const { error, count } = await q.select("id", { count: "exact" });
+    const { data: rows, error } = await q.select("id");
     if (error) return { ok: false as const, error: error.message };
+    const count = rows?.length ?? 0;
     return { ok: true as const, updated: count ?? 0 };
   });
