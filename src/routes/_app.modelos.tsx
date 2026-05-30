@@ -231,6 +231,22 @@ function Page() {
                 <div className="border rounded-lg p-3 space-y-2">
                   <h3 className="text-sm font-semibold">{t("templates.program.mealNotesTitle")}</h3>
                   <p className="text-xs text-muted-foreground">{t("templates.program.mealNotesHelp")}</p>
+                  <div>
+                    <Label className="text-xs">{t("templates.program.generalObservations")}</Label>
+                    <Textarea
+                      className="mt-1 text-red-600 dark:text-red-400"
+                      placeholder={t("templates.program.generalObservationsPlaceholder")}
+                      value={genObsBySlot[slot] ?? ""}
+                      maxLength={4000}
+                      onChange={(e) => setGenObsBySlot({ ...genObsBySlot, [slot]: e.target.value })}
+                      onBlur={async (e) => {
+                        const v = e.target.value;
+                        const r = await fnUpsert({ data: { slot, name: namesBySlot[slot] || `Modelo ${slot}`, general_observations: v || null } });
+                        if (!r.ok) toast.error(r.error);
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{t("templates.program.generalObservationsHint")}</p>
+                  </div>
                   <div className="grid grid-cols-1 gap-2">
                     {DAY_OPTS.map((d) => (
                       <div key={d} className="flex items-center gap-2">
