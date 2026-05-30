@@ -1027,12 +1027,23 @@ function NoteEditor({
           <div className="grid gap-3 sm:grid-cols-2 w-full max-w-full min-w-0">
             <div className="grid gap-1.5 min-w-0">
               <Label>{t("fieldConsiderations.fields.date")}</Label>
-              <Input
-                type="date"
+              <Select
                 value={draft.event_date ?? ""}
-                onChange={(e) => onPatch("event_date", e.target.value)}
-                className="w-full max-w-full min-w-0"
-              />
+                onValueChange={(v) => onPatch("event_date", v)}
+              >
+                <SelectTrigger className="w-full max-w-full min-w-0">
+                  <SelectValue placeholder={t("fieldConsiderations.fields.datePh")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monday">{t("fieldConsiderations.fields.weekdays.monday")}</SelectItem>
+                  <SelectItem value="tuesday">{t("fieldConsiderations.fields.weekdays.tuesday")}</SelectItem>
+                  <SelectItem value="wednesday">{t("fieldConsiderations.fields.weekdays.wednesday")}</SelectItem>
+                  <SelectItem value="thursday">{t("fieldConsiderations.fields.weekdays.thursday")}</SelectItem>
+                  <SelectItem value="friday">{t("fieldConsiderations.fields.weekdays.friday")}</SelectItem>
+                  <SelectItem value="saturday">{t("fieldConsiderations.fields.weekdays.saturday")}</SelectItem>
+                  <SelectItem value="sunday">{t("fieldConsiderations.fields.weekdays.sunday")}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-1.5 min-w-0">
               <Label>{t("fieldConsiderations.fields.period")}</Label>
