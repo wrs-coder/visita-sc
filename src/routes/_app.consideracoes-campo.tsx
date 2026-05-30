@@ -654,16 +654,20 @@ function Page() {
               <MoreVertical className="h-3.5 w-3.5" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setMoveTarget({ kind: "note", id: note.id })}>
-              <Move className="h-4 w-4 mr-2" />
-              {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCutNote(note.id)}>
-              <Scissors className="h-4 w-4 mr-2" />
-              {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleRenameNote(note)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                {t("common.rename")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setMoveTarget({ kind: "note", id: note.id })}>
+                <Move className="h-4 w-4 mr-2" />
+                {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCutNote(note.id)}>
+                <Scissors className="h-4 w-4 mr-2" />
+                {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
         </DropdownMenu>
       </div>
     );
