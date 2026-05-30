@@ -100,7 +100,22 @@
     "restoredCount": "Backup restaurado ({{count}} registros).",
     "shareOpened": "Compartilhamento aberto",
     "backupDownloaded": "Backup baixado",
-    "failGeneric": "Falha"
+    "failGeneric": "Falha",
+    "wifeAccess": {
+      "title": "Acesso da esposa",
+      "description": "Crie um código exclusivo para sua esposa acessar o painel (somente leitura). Ela poderá alternar entre as congregações ativas e voltar para a semana atual a qualquer momento. O login fica salvo no dispositivo dela.",
+      "codeLabel": "Código da esposa",
+      "placeholder": "Ex: MARIA2026",
+      "generate": "Gerar",
+      "copy": "Copiar",
+      "save": "Salvar",
+      "remove": "Remover",
+      "saved": "Código salvo",
+      "removed": "Código removido",
+      "copied": "Código copiado",
+      "errorFormat": "Use 4 a 12 caracteres (apenas letras maiúsculas e números).",
+      "errorTaken": "Este código já está em uso. Escolha outro."
+    }
   },
   "sidebar": {
     "sectionPrincipal": "Principal",

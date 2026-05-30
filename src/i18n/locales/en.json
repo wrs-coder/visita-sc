@@ -100,7 +100,22 @@
     "restoredCount": "Backup restored ({{count}} records).",
     "shareOpened": "Share dialog opened",
     "backupDownloaded": "Backup downloaded",
-    "failGeneric": "Failed"
+    "failGeneric": "Failed",
+    "wifeAccess": {
+      "title": "Wife access",
+      "description": "Create a unique code so your wife can open the read-only panel. She'll be able to switch between active congregations and jump back to the current week any time. Her login stays saved on her device.",
+      "codeLabel": "Wife's code",
+      "placeholder": "e.g. MARY2026",
+      "generate": "Generate",
+      "copy": "Copy",
+      "save": "Save",
+      "remove": "Remove",
+      "saved": "Code saved",
+      "removed": "Code removed",
+      "copied": "Code copied",
+      "errorFormat": "Use 4 to 12 characters (uppercase letters and numbers only).",
+      "errorTaken": "This code is already in use. Choose another."
+    }
   },
   "sidebar": {
     "sectionPrincipal": "Main",
@@ -1019,6 +1034,8 @@
     "backToLogin": "Back to login",
     "invalidCode": "Invalid code",
     "wifeMode": "Circuit overseer's wife",
+    "currentWeek": "Current week",
+    "congregationPicker": { "label": "Congregation:" },
     "eldersMode": "Body of Elders and Service Committee",
     "readOnlyTag": "read-only",
     "share": "Share",
