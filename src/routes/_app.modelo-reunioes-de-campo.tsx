@@ -178,7 +178,7 @@ function Page() {
     await load();
   };
 
-  const addItem = () => setItems([...items, { day_offset: 0, period: "Manhã", modality: "casa_em_casa", meeting_time: "", territory_number: "", territory_location: "", auxiliary_leaders: "", closing_prayer: "" }]);
+  const addItem = () => setItems([...items, { day_offset: 0, period: "Manhã", modality: "casa_em_casa", meeting_time: "", territory_number: "", territory_location: "", auxiliary_leaders: "", closing_prayer: "", observations: "" }]);
   const updateItem = (idx: number, patch: Partial<ItemDraft>) =>
     setItems(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
