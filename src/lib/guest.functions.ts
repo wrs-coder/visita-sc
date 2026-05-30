@@ -5,16 +5,61 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const codeSchema = z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4,12}\*?$/);
 
 export const getGuestSnapshot = createServerFn({ method: "POST" })
-  .inputValidator((input) => z.object({ inviteCode: codeSchema }).parse(input))
+  .inputValidator((input) =>
+    z
+      .object({
+        inviteCode: codeSchema,
+        congregationId: z.string().uuid().optional(),
+      })
+      .parse(input),
+  )
   .handler(async ({ data }) => {
-    const wifeMode = data.inviteCode.endsWith("*");
-    const cleanCode = wifeMode ? data.inviteCode.slice(0, -1) : data.inviteCode;
+    const endsWithStar = data.inviteCode.endsWith("*");
+    const cleanCode = endsWithStar ? data.inviteCode.slice(0, -1) : data.inviteCode;
 
-    const { data: cong } = await supabaseAdmin
-      .from("congregations")
-      .select("id,name,is_active,superintendent_id")
-      .eq("invite_code", cleanCode)
-      .maybeSingle();
+    // Resolution order:
+    //   1) Legacy "código*" or elder/ESC code → congregations.invite_code
+    //   2) Super-defined wife code (no "*") → profiles.wife_invite_code
+    let cong: { id: string; name: string; is_active: boolean; superintendent_id: string } | null = null;
+    let wifeMode = endsWithStar;
+    let availableCongregations: Array<{ id: string; name: string }> | null = null;
+    let selectedCongregationId: string | null = null;
+
+    {
+      const { data: byCong } = await supabaseAdmin
+        .from("congregations")
+        .select("id,name,is_active,superintendent_id")
+        .eq("invite_code", cleanCode)
+        .maybeSingle();
+      if (byCong) cong = byCong;
+    }
+
+    if (!cong && !endsWithStar) {
+      // Try the new wife-by-super code path.
+      const { data: prof } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("wife_invite_code", cleanCode)
+        .maybeSingle();
+      if (prof) {
+        wifeMode = true;
+        const { data: congs } = await supabaseAdmin
+          .from("congregations")
+          .select("id,name,is_active,superintendent_id")
+          .eq("superintendent_id", prof.id)
+          .eq("is_active", true)
+          .order("name");
+        const list = congs ?? [];
+        if (list.length === 0) {
+          return { ok: false as const, error: "Nenhuma congregação ativa encontrada." };
+        }
+        availableCongregations = list.map((c) => ({ id: c.id, name: c.name }));
+        const requested = data.congregationId && list.find((c) => c.id === data.congregationId);
+        cong = requested ?? list[0];
+        selectedCongregationId = cong.id;
+      }
+    }
+
     if (!cong) return { ok: false as const, error: "Código inválido." };
 
     const { data: visits } = await supabaseAdmin
@@ -42,8 +87,8 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
     const { data: circuitRaw } = await circuitQuery;
 
     const circuitFiltered = (circuitRaw ?? []).filter((e) => {
-      if (e.scope === "all") return e.superintendent_id === cong.superintendent_id;
-      return Array.isArray(e.congregation_ids) && e.congregation_ids.includes(cong.id);
+      if (e.scope === "all") return e.superintendent_id === cong!.superintendent_id;
+      return Array.isArray(e.congregation_ids) && e.congregation_ids.includes(cong!.id);
     });
     const circuitAsSchedule = circuitFiltered.map((e) => ({
       id: `cse_${e.id}`,
@@ -57,7 +102,26 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
     }));
 
     if (!visit) {
-      return { ok: true as const, wifeMode, congregation: cong, visit: null, schedule: circuitAsSchedule, meals: [], mealDayNotes: [], field: [], fieldMeetings: [], transport: [], checklist: [], midweek: [], weekend: [], pioneer: [], elders: [], templateExtras: { field: null, midweek: null, weekend: null, pioneer: null, elders: null, program: null } };
+      return {
+        ok: true as const,
+        wifeMode,
+        congregation: cong,
+        availableCongregations,
+        selectedCongregationId,
+        visit: null,
+        schedule: circuitAsSchedule,
+        meals: [],
+        mealDayNotes: [],
+        field: [],
+        fieldMeetings: [],
+        transport: [],
+        checklist: [],
+        midweek: [],
+        weekend: [],
+        pioneer: [],
+        elders: [],
+        templateExtras: { field: null, midweek: null, weekend: null, pioneer: null, elders: null, program: null },
+      };
     }
 
     const [{ data: schedule }, { data: meals }, { data: mealDayNotes }, { data: field }, { data: fieldMeetings }, { data: transport }, checklistRes, { data: midweek }, { data: weekend }, { data: pioneer }, { data: elders }] = await Promise.all([
@@ -134,6 +198,8 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       ok: true as const,
       wifeMode,
       congregation: cong,
+      availableCongregations,
+      selectedCongregationId,
       visit,
       schedule: mergedSchedule,
       meals: meals ?? [],
