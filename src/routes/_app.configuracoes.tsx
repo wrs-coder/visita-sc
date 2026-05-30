@@ -294,14 +294,17 @@ function Page() {
           if (form.template_id) {
             const r = await fnApply({ data: { visitId: editId, templateId: form.template_id } });
             if (!r.ok) toast.error("Falha ao aplicar modelo: " + r.error);
+            else if ((r.skipped ?? 0) > 0) toast.info(`Modelo aplicado em modo merge: ${r.inserted} novos, ${r.skipped} ignorados (já existiam).`);
           }
           if (form.checklist_template_id) {
             const r = await fnApplyChecklist({ data: { visitId: editId, templateId: form.checklist_template_id } });
             if (!r.ok) toast.error("Falha ao aplicar modelo de checklist: " + r.error);
+            else if ((r.skipped ?? 0) > 0) toast.info(`Checklist aplicado em modo merge: ${r.applied} novos, ${r.skipped} ignorados.`);
           }
           if (form.field_template_id) {
             const r = await fnApplyField({ data: { visitId: editId, templateId: form.field_template_id } });
             if (!r.ok) toast.error("Falha ao aplicar modelo de reuniões de campo: " + r.error);
+            else if ((r.skipped ?? 0) > 0) toast.info(`Reuniões de campo aplicadas em modo merge: ${r.applied} novas, ${r.skipped} ignoradas.`);
           }
           if (form.meeting_talk_template_id) {
             const r = await fnApplyMeetingTalk({ data: { visitId: editId, templateId: form.meeting_talk_template_id } });
