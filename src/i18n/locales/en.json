@@ -348,7 +348,7 @@
     "directionLabel": "Direction",
     "departureTime": "Departure time",
     "returnTime": "Return time",
-    "allDay": "Support all events",
+    "allDay": "Support all events/times",
     "applyAllDayHint": "On save, the driver and phone will be replicated to the other transports of the same day.",
     "allDayApplied": "Driver replicated to {{count}} other transport(s) of the day.",
     "eventType": {
@@ -584,7 +584,7 @@
         "notes": "Notes",
         "eventType": "Event type",
         "direction": "Direction",
-        "allDay": "Support all events",
+        "allDay": "Support all events/times",
         "departure": "Departure time",
         "return": "Return time",
         "otherPlaceholder": "Describe the event type",
