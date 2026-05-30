@@ -498,7 +498,7 @@ function Page() {
     if (!draft) return;
     try {
       const payload = await exportNoteJSON(draft.id);
-      downloadJSON(`nota-${slugify(draft.title)}.json`, payload);
+      await downloadJSON(`nota-${slugify(draft.title)}.json`, payload);
       toast.success(t("personalOutlines.folders.exportedNote"));
     } catch (e) {
       toast.error(String(e instanceof Error ? e.message : e));
