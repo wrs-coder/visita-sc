@@ -400,10 +400,10 @@
   },
   "meetingsTalks": {
     "fromTemplate": {
-      "observations": "Observations (from template)",
-      "openingSong": "Opening song (from template)",
-      "closingSong": "Closing song (from template)",
-      "fieldObservations": "Superintendent's observations (from template)",
+      "observations": "Additional information from the superintendent",
+      "openingSong": "Opening song",
+      "closingSong": "Closing song",
+      "fieldObservations": "Superintendent's observations",
       "hint": "Read-only information from the selected template."
     },
     "title": "Meetings & Talks",

@@ -305,11 +305,14 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
 
     // Merge NÃO-DESTRUTIVO por (event_date, period).
     const { data: existing } = await supabaseAdmin
-      .from("field_meetings").select("event_date,period").eq("visit_id", data.visitId);
-    const have = new Set((existing ?? []).map((r) => `${r.event_date}|${r.period ?? ""}`));
+      .from("field_meetings")
+      .select("id,event_date,period,observations")
+      .eq("visit_id", data.visitId);
+    const existingByKey = new Map(
+      (existing ?? []).map((r) => [`${r.event_date}|${r.period ?? ""}`, r]),
+    );
 
-    const rows = items.map((it) => ({
-      visit_id: data.visitId,
+    const templateRows = items.map((it) => ({
       event_date: dateAt(it.day_offset),
       period: it.period || "Manhã",
       modality: ((it as { modality?: (typeof FIELD_MODALITIES)[number] }).modality) ?? "casa_em_casa",
@@ -319,13 +322,31 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
       auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? null,
       closing_prayer: it.closing_prayer,
       observations: (it as { observations?: string | null }).observations ?? null,
-      is_active: true,
-    })).filter((r) => !have.has(`${r.event_date}|${r.period}`));
+    }));
+
+    const rows = templateRows
+      .filter((r) => !existingByKey.has(`${r.event_date}|${r.period}`))
+      .map((r) => ({ ...r, visit_id: data.visitId, is_active: true }));
     const skipped = items.length - rows.length;
     if (rows.length) {
       const { error } = await supabaseAdmin.from("field_meetings").insert(rows);
       if (error) return { ok: false as const, error: error.message };
     }
+
+    // Backfill NÃO-DESTRUTIVO de observações em linhas já existentes:
+    // só preenche quando a linha atual está sem observações e o modelo traz texto.
+    for (const tr of templateRows) {
+      const cur = existingByKey.get(`${tr.event_date}|${tr.period}`);
+      if (!cur) continue;
+      const curObs = (cur as { observations?: string | null }).observations;
+      if (tr.observations && tr.observations.trim() && (!curObs || !curObs.trim())) {
+        await supabaseAdmin
+          .from("field_meetings")
+          .update({ observations: tr.observations })
+          .eq("id", (cur as { id: string }).id);
+      }
+    }
+
     const now = new Date().toISOString();
     await supabaseAdmin.from("visits").update({ last_applied_at: now }).eq("id", data.visitId);
     return { ok: true as const, applied: rows.length, skipped, lastAppliedAt: now };
