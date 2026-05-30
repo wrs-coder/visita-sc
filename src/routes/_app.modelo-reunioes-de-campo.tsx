@@ -31,7 +31,7 @@ const nameSchema = z.string().trim().min(2, "Nome deve ter pelo menos 2 caracter
 export const Route = createFileRoute("/_app/modelo-reunioes-de-campo")({ component: Page });
 
 type Modality = (typeof FIELD_MODALITIES)[number];
-interface TemplateRow { id: string; name: string; congregation_id: string | null; modality: Modality; }
+interface TemplateRow { id: string; name: string; congregation_id: string | null; modality: Modality; observations?: string | null; }
 
 interface ItemDraft {
   day_offset: number;
