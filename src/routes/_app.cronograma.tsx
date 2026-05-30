@@ -510,6 +510,7 @@ function EventCard({
   const { t } = useTranslation();
   const congNames = useMemo(() => {
     if (e.scope === "personal") return t("schedule.personalBadge");
+    if (e.scope === "wife") return t("schedule.scopes.wife");
     if (e.scope === "all") return t("schedule.allCongsBadge");
     const map = new Map(congregations.map((c) => [c.id, c.name]));
     return e.congregation_ids.map((id) => map.get(id) ?? "—").join(", ");
