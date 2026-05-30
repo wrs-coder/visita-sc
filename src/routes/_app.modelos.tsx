@@ -22,7 +22,7 @@ type Kind = "study" | "meal" | "transport";
 type PayloadValue = string | number | boolean | null;
 type Payload = Record<string, PayloadValue>;
 interface ItemDraft { kind: Kind; day_offset: number; payload: Payload; sort_order: number; }
-interface TemplateRow { id: string; slot: number; name: string; meal_day_notes?: Record<string, string> | null }
+interface TemplateRow { id: string; slot: number; name: string; meal_day_notes?: Record<string, string> | null; general_observations?: string | null }
 interface TemplateItemRow { id: string; template_id: string; kind: string; day_offset: number; payload: Payload; sort_order: number; }
 
 const DAY_OPTS = [0, 1, 2, 3, 4, 5, 6];
