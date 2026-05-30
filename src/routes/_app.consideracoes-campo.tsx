@@ -76,6 +76,13 @@ import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
 import { RichOutlineContent } from "@/lib/rich-content";
 import { cn } from "@/lib/utils";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  listCloudOutlines,
+  pushOutlineToCloud,
+  pullOutlineFromCloud,
+  deleteCloudOutline,
+} from "@/lib/personal-outlines.functions";
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
   beforeLoad: async () => {
