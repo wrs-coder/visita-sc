@@ -163,18 +163,38 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
         if (transpDates.has(targetDate)) { skipped++; continue; }
         const allDay = bool(p.all_day, false);
         const weekday = new Date(targetDate + "T00:00:00").getDay();
-        await supabaseAdmin.from("transport_schedule").insert({
+        const base = {
           visit_id: data.visitId, event_date: targetDate, weekday,
           driver_name: str(p.driver_name) ?? "—",
           contact_phone: str(p.contact_phone),
-          description: str(p.description), notes: str(p.notes),
-          event_type: str(p.event_type) === "other" ? (str(p.event_type_other) ?? "other") : str(p.event_type),
-          direction: str(p.direction),
+          notes: str(p.notes),
           all_day: allDay,
-          departure_time: allDay ? null : time(p.departure_time),
-          return_time: allDay ? null : time(p.return_time),
           is_active: bool(p.is_active, true),
-        });
+        };
+        // Parse events list (new format) with legacy single-event fallback.
+        let events: Array<Record<string, unknown>> = [];
+        const ej = p.events_json;
+        if (typeof ej === "string" && ej.trim()) {
+          try { const parsed = JSON.parse(ej); if (Array.isArray(parsed)) events = parsed as Array<Record<string, unknown>>; } catch { /* ignore */ }
+        }
+        if (events.length === 0 && (p.event_type || p.direction || p.departure_time || p.return_time)) {
+          events = [{
+            event_type: p.event_type, event_type_other: p.event_type_other,
+            direction: p.direction, departure_time: p.departure_time, return_time: p.return_time,
+          }];
+        }
+        if (events.length === 0) {
+          await supabaseAdmin.from("transport_schedule").insert(base);
+        } else {
+          const rows = events.map((ev) => ({
+            ...base,
+            event_type: str(ev.event_type) === "other" ? (str(ev.event_type_other) ?? "other") : str(ev.event_type),
+            direction: str(ev.direction),
+            departure_time: allDay ? null : time(ev.departure_time),
+            return_time: allDay ? null : time(ev.return_time),
+          }));
+          await supabaseAdmin.from("transport_schedule").insert(rows);
+        }
         transpDates.add(targetDate); inserted++;
       }
     }

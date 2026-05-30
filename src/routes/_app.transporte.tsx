@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Pencil, Phone, Car, Clock } from "lucide-react";
+import { Plus, Trash2, Phone, Car, Clock } from "lucide-react";
 import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
@@ -70,7 +70,8 @@ function Page() {
         .from("transport_schedule")
         .select("*")
         .eq("visit_id", visit.id)
-        .order("event_date", { nullsFirst: false });
+        .order("event_date", { nullsFirst: false })
+        .order("departure_time", { nullsFirst: false });
       setItems((data ?? []) as Transport[]);
     };
     load();
@@ -86,6 +87,18 @@ function Page() {
       supabase.removeChannel(ch);
     };
   }, [visit]);
+
+  // Group rows by event_date (null dates each get their own group keyed by id).
+  const groups = useMemo(() => {
+    const map = new Map<string, Transport[]>();
+    for (const it of items) {
+      const key = it.event_date ?? `__none__:${it.id}`;
+      const arr = map.get(key) ?? [];
+      arr.push(it);
+      map.set(key, arr);
+    }
+    return Array.from(map.entries()).map(([key, rows]) => ({ key, rows }));
+  }, [items]);
 
   if (!visit)
     return (
@@ -119,26 +132,12 @@ function Page() {
         driver_name: editing.driver_name!.trim(),
         contact_phone: editing.contact_phone || null,
         event_date: editing.event_date || null,
-        description: editing.description || null,
         notes: editing.notes || null,
       };
-      if (editing.id) {
-        const { error } = await supabase
-          .from("transport_schedule")
-          .update(payload)
-          .eq("id", editing.id);
-        if (error) {
-          toast.error(error.message);
-          return;
-        }
-      } else {
-        const { error } = await supabase
-          .from("transport_schedule")
-          .insert(payload);
-        if (error) {
-          toast.error(error.message);
-          return;
-        }
+      const { error } = await supabase.from("transport_schedule").insert(payload);
+      if (error) {
+        toast.error(error.message);
+        return;
       }
       toast.success(t("common.saved"));
       setOpen(false);
@@ -152,11 +151,16 @@ function Page() {
     const { error } = await supabase.from("transport_schedule").delete().eq("id", id);
     if (error) toast.error(error.message);
   };
-  const toggle = async (id: string, is_active: boolean) => {
-    const { error } = await supabase
-      .from("transport_schedule")
-      .update({ is_active })
-      .eq("id", id);
+
+  // Update shared fields (driver/phone/notes/all_day) across all rows of a group.
+  const updateGroup = async (rows: Transport[], patch: Partial<Transport>) => {
+    const ids = rows.map((r) => r.id);
+    const update: Partial<Transport> = { ...patch };
+    if (patch.all_day === true) {
+      update.departure_time = null;
+      update.return_time = null;
+    }
+    const { error } = await supabase.from("transport_schedule").update(update).in("id", ids);
     if (error) toast.error(error.message);
   };
 
@@ -189,9 +193,7 @@ function Page() {
             </DialogTrigger>
             <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>
-                  {editing?.id ? t("transport.editTitle") : t("transport.newTitle")}
-                </DialogTitle>
+                <DialogTitle>{t("transport.newTitle")}</DialogTitle>
               </DialogHeader>
               {editing && (
                 <div className="space-y-3">
@@ -237,15 +239,6 @@ function Page() {
                     />
                   </div>
                   <div>
-                    <Label>{t("transport.event")}</Label>
-                    <Input
-                      className="mt-1"
-                      placeholder={t("transport.eventPlaceholder")}
-                      value={editing.description ?? ""}
-                      onChange={(e) => setEditing({ ...editing, description: e.target.value })}
-                    />
-                  </div>
-                  <div>
                     <Label>{t("transport.notes")}</Label>
                     <Textarea
                       rows={2}
@@ -255,7 +248,7 @@ function Page() {
                     />
                   </div>
                   <Button className="w-full" disabled={saving} onClick={save}>
-                    {editing.id ? t("transport.saveChanges") : t("transport.save")}
+                    {t("transport.save")}
                   </Button>
                 </div>
               )}
@@ -268,82 +261,128 @@ function Page() {
 
       <fieldset
         disabled={!editAllowed}
-        className="grid gap-2 disabled:opacity-70 min-w-0 border-0 p-0 m-0"
+        className="grid gap-3 disabled:opacity-70 min-w-0 border-0 p-0 m-0"
       >
-        {items.length === 0 && (
+        {groups.length === 0 && (
           <Card>
             <CardContent className="p-4 text-sm text-muted-foreground">
               {t("transport.noTransport")}
             </CardContent>
           </Card>
         )}
-        {items.map((tr) => (
-          <Card key={tr.id} className={`shadow-card transition ${!tr.is_active ? "opacity-50" : ""}`}>
-            <CardContent className="p-4 flex items-start gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <Car className="h-5 w-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className={`font-semibold ${!tr.is_active ? "line-through" : ""}`}>
-                  {tr.driver_name}
-                </div>
-                {tr.contact_phone && (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <Phone className="h-3 w-3" />
-                    {tr.contact_phone}
+        {groups.map(({ key, rows }) => {
+          const head = rows[0];
+          const allActive = rows.every((r) => r.is_active);
+          return (
+            <Card key={key} className={`shadow-card ${!allActive ? "opacity-60" : ""}`}>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <Car className="h-5 w-5" />
                   </div>
-                )}
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {tr.event_date
-                    ? format(parseISO(tr.event_date), "EEE, d MMM", { locale: dateLocale })
-                    : t("transport.noDay")}
-                  {tr.event_type ? ` · ${eventTypeLabel(tr.event_type)}` : ""}
-                  {tr.direction ? ` · ${directionLabel(tr.direction)}` : ""}
-                </div>
-                {(tr.all_day || tr.departure_time || tr.return_time) && (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <Clock className="h-3 w-3" />
-                    {tr.all_day
-                      ? t("transport.allDay")
-                      : `${fmtTime(tr.departure_time)}${tr.return_time ? ` → ${fmtTime(tr.return_time)}` : ""}`}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-muted-foreground">
+                      {head.event_date
+                        ? format(parseISO(head.event_date), "EEE, d MMM", { locale: dateLocale })
+                        : t("transport.noDay")}
+                    </div>
                   </div>
-                )}
-                {tr.description && (
-                  <div className="text-xs mt-1">{tr.description}</div>
-                )}
-                {tr.notes && <div className="text-xs mt-1 text-muted-foreground">{tr.notes}</div>}
-              </div>
-              {canEdit && (
-                <div className="flex flex-col items-end gap-1">
                   {isSuper && (
                     <Switch
-                      checked={tr.is_active}
-                      onCheckedChange={(v) => toggle(tr.id, v)}
+                      checked={allActive}
+                      onCheckedChange={(v) => updateGroup(rows, { is_active: v })}
                       aria-label={t("transport.toggleAria")}
                     />
                   )}
-                  <div className="flex">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => {
-                        setEditing(tr);
-                        setOpen(true);
+                </div>
+
+                {/* Read-only event list */}
+                <div className="space-y-1">
+                  {rows.map((r) => (
+                    <div key={r.id} className="text-xs flex items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium truncate">
+                          {r.event_type ? eventTypeLabel(r.event_type) : t("transport.noDay")}
+                          {r.direction ? ` · ${directionLabel(r.direction)}` : ""}
+                        </div>
+                        {(r.departure_time || r.return_time) && !head.all_day && (
+                          <div className="text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Clock className="h-3 w-3" />
+                            {fmtTime(r.departure_time)}
+                            {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
+                          </div>
+                        )}
+                      </div>
+                      {isSuper && (
+                        <Button size="icon" variant="ghost" onClick={() => remove(r.id)}>
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  {head.all_day && (
+                    <div className="text-xs text-muted-foreground flex items-center gap-1 px-2">
+                      <Clock className="h-3 w-3" /> {t("transport.allDay")}
+                    </div>
+                  )}
+                </div>
+
+                {/* Editable shared fields: driver, phone, notes, all_day */}
+                <div className="space-y-2 pt-1 border-t">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Switch
+                      checked={!!head.all_day}
+                      onCheckedChange={(v) => updateGroup(rows, { all_day: v })}
+                    />
+                    {t("transport.allDay")}
+                  </label>
+                  <div>
+                    <Label className="text-xs">{t("transport.driverName")}</Label>
+                    <Input
+                      className="mt-1 h-9"
+                      defaultValue={head.driver_name}
+                      onBlur={(e) => {
+                        const v = e.target.value.trim();
+                        if (v && v !== head.driver_name) updateGroup(rows, { driver_name: v });
                       }}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    {isSuper && (
-                      <Button size="icon" variant="ghost" onClick={() => remove(tr.id)}>
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                      </Button>
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("transport.contactPhone")}</Label>
+                    <Input
+                      type="tel"
+                      className="mt-1 h-9"
+                      defaultValue={head.contact_phone ?? ""}
+                      onBlur={(e) => {
+                        const v = e.target.value;
+                        if (v !== (head.contact_phone ?? "")) updateGroup(rows, { contact_phone: v || null });
+                      }}
+                      placeholder={head.contact_phone ? "" : t("transport.contactPhone")}
+                    />
+                    {head.contact_phone && (
+                      <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                        <Phone className="h-3 w-3" />
+                        {head.contact_phone}
+                      </div>
                     )}
                   </div>
+                  <div>
+                    <Label className="text-xs">{t("transport.notes")}</Label>
+                    <Textarea
+                      rows={2}
+                      className="mt-1"
+                      defaultValue={head.notes ?? ""}
+                      onBlur={(e) => {
+                        const v = e.target.value;
+                        if (v !== (head.notes ?? "")) updateGroup(rows, { notes: v || null });
+                      }}
+                    />
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </fieldset>
     </div>
   );

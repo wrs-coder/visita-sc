@@ -575,7 +575,8 @@
       "transport": {
         "driverName": "Driver name",
         "phone": "Phone",
-        "description": "Description/event",
+        "addEvent": "Add event",
+        "eventLabel": "Event {{n}}",
         "notes": "Notes",
         "eventType": "Event type",
         "direction": "Direction",

@@ -116,7 +116,12 @@ function Page() {
     const defaults: Payload =
       kind === "study" ? { period: "Manhã", meeting_point: "", meeting_time: "", acompanhante: "", acompanhante_for: "", contact_phone: "" }
       : kind === "meal" ? { type: "lunch", host_name: "", location: "", meal_time: "", notes: "" }
-      : { event_type: "field_service", direction: "round_trip", all_day: false, departure_time: "", return_time: "", driver_name: "", contact_phone: "", description: "", notes: "" };
+      : {
+          all_day: false, driver_name: "", contact_phone: "", notes: "",
+          events_json: JSON.stringify([
+            { event_type: "field_service", event_type_other: "", direction: "round_trip", departure_time: "", return_time: "" },
+          ]),
+        };
     setItemsByTpl((m) => ({ ...m, [id]: [...(m[id] ?? []), { kind, day_offset: 0, payload: defaults, sort_order: (m[id]?.length ?? 0) }] }));
   };
 
@@ -287,58 +292,120 @@ function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Paylo
       <Input className="h-9 col-span-2" placeholder={t("templates.program.meal.location")} value={String(payload.location ?? "")} onChange={(e) => set("location", e.target.value)} />
     </div>
   );
-  const EVENT_TYPES = ["field_service", "congregation_meeting", "pioneer_meeting", "elders_meeting", "home_return", "other"] as const;
-  const DIRECTIONS = ["pickup", "dropoff", "round_trip"] as const;
+  return <TransportEditor payload={payload} onChange={onChange} />;
+}
+
+const EVENT_TYPES = ["field_service", "congregation_meeting", "pioneer_meeting", "elders_meeting", "home_return", "other"] as const;
+const DIRECTIONS = ["pickup", "dropoff", "round_trip"] as const;
+
+interface TransportEvent {
+  event_type?: string;
+  event_type_other?: string;
+  direction?: string;
+  departure_time?: string;
+  return_time?: string;
+}
+
+function parseEvents(payload: Payload): TransportEvent[] {
+  const raw = payload.events_json;
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return arr as TransportEvent[];
+    } catch { /* ignore */ }
+  }
+  // Legacy single-event fallback
+  if (payload.event_type || payload.direction || payload.departure_time || payload.return_time) {
+    return [{
+      event_type: String(payload.event_type ?? "field_service"),
+      event_type_other: String(payload.event_type_other ?? ""),
+      direction: String(payload.direction ?? "round_trip"),
+      departure_time: String(payload.departure_time ?? ""),
+      return_time: String(payload.return_time ?? ""),
+    }];
+  }
+  return [];
+}
+
+function TransportEditor({ payload, onChange }: { payload: Payload; onChange: (p: Payload) => void }) {
+  const { t } = useTranslation();
+  const set = (k: string, v: PayloadValue) => onChange({ ...payload, [k]: v });
+  const events = parseEvents(payload);
   const allDay = !!payload.all_day;
-  const eventType = String(payload.event_type ?? "field_service");
+  const updateEvents = (next: TransportEvent[]) => onChange({ ...payload, events_json: JSON.stringify(next) });
+  const updateEvent = (idx: number, patch: Partial<TransportEvent>) => updateEvents(events.map((e, i) => i === idx ? { ...e, ...patch } : e));
+  const addEvent = () => updateEvents([...events, { event_type: "field_service", direction: "round_trip", departure_time: "", return_time: "" }]);
+  const removeEvent = (idx: number) => updateEvents(events.filter((_, i) => i !== idx));
+
   return (
-    <div className="grid grid-cols-2 gap-2">
-      <div className="space-y-1">
-        <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.eventType")}</label>
-        <Select value={eventType} onValueChange={(v) => set("event_type", v)}>
-          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {EVENT_TYPES.map((k) => <SelectItem key={k} value={k}>{t(`templates.program.transport.eventTypes.${k}`)}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-1">
-        <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.direction")}</label>
-        <Select value={String(payload.direction ?? "round_trip")} onValueChange={(v) => set("direction", v)}>
-          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {DIRECTIONS.map((k) => <SelectItem key={k} value={k}>{t(`templates.program.transport.directions.${k}`)}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-      {eventType === "other" && (
-        <Input
-          className="h-9 col-span-2"
-          placeholder={t("templates.program.transport.otherPlaceholder")}
-          value={String(payload.event_type_other ?? "")}
-          onChange={(e) => set("event_type_other", e.target.value)}
-        />
-      )}
-      <label className="col-span-2 flex items-center gap-2 text-sm">
+    <div className="space-y-2">
+      <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={allDay} onChange={(e) => set("all_day", e.target.checked)} />
         {t("templates.program.transport.allDay")}
       </label>
-      {!allDay && (
-        <>
-          <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.departure")}</label>
-            <Input className="h-9" type="time" value={String(payload.departure_time ?? "")} onChange={(e) => set("departure_time", e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.return")}</label>
-            <Input className="h-9" type="time" value={String(payload.return_time ?? "")} onChange={(e) => set("return_time", e.target.value)} />
-          </div>
-        </>
-      )}
-      <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.driverName")} value={String(payload.driver_name ?? "")} onChange={(e) => set("driver_name", e.target.value)} />
-      <Input className="h-9" placeholder={t("templates.program.transport.phone")} value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
-      <Input className="h-9" placeholder={t("templates.program.transport.description")} value={String(payload.description ?? "")} onChange={(e) => set("description", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.notes")} value={String(payload.notes ?? "")} onChange={(e) => set("notes", e.target.value)} />
+
+      <div className="space-y-2">
+        {events.map((ev, idx) => {
+          const evType = String(ev.event_type ?? "field_service");
+          return (
+            <div key={idx} className="border rounded-md p-2 bg-background/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.eventLabel", { n: idx + 1, defaultValue: `Evento ${idx + 1}` })}</span>
+                {events.length > 1 && (
+                  <Button size="icon" variant="ghost" onClick={() => removeEvent(idx)}>
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.eventType")}</label>
+                  <Select value={evType} onValueChange={(v) => updateEvent(idx, { event_type: v })}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {EVENT_TYPES.map((k) => <SelectItem key={k} value={k}>{t(`templates.program.transport.eventTypes.${k}`)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.direction")}</label>
+                  <Select value={String(ev.direction ?? "round_trip")} onValueChange={(v) => updateEvent(idx, { direction: v })}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {DIRECTIONS.map((k) => <SelectItem key={k} value={k}>{t(`templates.program.transport.directions.${k}`)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {evType === "other" && (
+                  <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.otherPlaceholder")}
+                    value={String(ev.event_type_other ?? "")} onChange={(e) => updateEvent(idx, { event_type_other: e.target.value })} />
+                )}
+                {!allDay && (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.departure")}</label>
+                      <Input className="h-9" type="time" value={String(ev.departure_time ?? "")} onChange={(e) => updateEvent(idx, { departure_time: e.target.value })} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.return")}</label>
+                      <Input className="h-9" type="time" value={String(ev.return_time ?? "")} onChange={(e) => updateEvent(idx, { return_time: e.target.value })} />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        <Button size="sm" variant="outline" className="w-full" onClick={addEvent}>
+          <Plus className="h-3 w-3 mr-1" />{t("templates.program.transport.addEvent", { defaultValue: "Adicionar evento" })}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 pt-1">
+        <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.driverName")} value={String(payload.driver_name ?? "")} onChange={(e) => set("driver_name", e.target.value)} />
+        <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.phone")} value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
+        <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.notes")} value={String(payload.notes ?? "")} onChange={(e) => set("notes", e.target.value)} />
+      </div>
     </div>
   );
 }
