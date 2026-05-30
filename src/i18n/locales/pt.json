@@ -352,11 +352,11 @@
     "applyAllDayHint": "Ao salvar, o motorista e o telefone serão replicados para os demais transportes deste mesmo dia.",
     "allDayApplied": "Motorista replicado para {{count}} outro(s) transporte(s) do dia.",
     "eventType": {
-      "field_service": "Serviço de campo",
-      "meeting": "Reunião",
-      "airport": "Aeroporto",
-      "meal": "Refeição",
-      "personal": "Pessoal",
+      "field_service": "Serviço de Campo",
+      "congregation_meeting": "Reunião Congregacional",
+      "pioneer_meeting": "Reunião – Pioneiros",
+      "elders_meeting": "Reunião – Anciãos",
+      "home_return": "Retorno para casa",
       "other": "Outro"
     },
     "direction": {
