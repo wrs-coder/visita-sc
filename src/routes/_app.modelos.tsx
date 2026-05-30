@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, FileStack, Save } from "lucide-react";
+import { Plus, Trash2, FileStack, Save, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/modelos")({ component: Page });
