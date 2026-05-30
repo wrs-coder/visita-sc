@@ -331,7 +331,7 @@ function Page() {
       .sort((a, b) => b.updated_at - a.updated_at));
     if (draft && draft.id === noteId) setDraft(updated);
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
-    toast.success(t("personalOutlines.folders.moved", { defaultValue: "Movido." }));
+    toast.success(t("personalOutlines.folders.noteMoved", { defaultValue: "Nota movida." }));
   }
 
   async function moveFolderTo(folderId: string, targetParentId: string | null) {
@@ -348,7 +348,7 @@ function Page() {
     await saveFolder(updated);
     setFolders((all) => all.map((f) => (f.id === folderId ? updated : f)));
     if (targetParentId) setExpanded((s) => new Set(s).add(targetParentId));
-    toast.success(t("personalOutlines.folders.moved", { defaultValue: "Movido." }));
+    toast.success(t("personalOutlines.folders.folderMoved", { defaultValue: "Pasta movida." }));
   }
 
   async function handleConfirmMove(targetFolderId: string | null) {
@@ -363,15 +363,31 @@ function Page() {
 
   function handleCutNote(noteId: string) {
     setClipboardNoteId(noteId);
-    toast.success(t("personalOutlines.folders.clipboardHint", {
-      defaultValue: "1 nota recortada. Toque em \"Colar aqui\" na pasta de destino.",
-    }));
+    toast.success(t("personalOutlines.folders.noteCut", { defaultValue: "Nota recortada." }));
   }
 
   async function handlePasteNote(targetFolderId: string | null) {
     if (!clipboardNoteId) return;
-    await moveNoteTo(clipboardNoteId, targetFolderId);
+    const noteId = clipboardNoteId;
     setClipboardNoteId(null);
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+    if ((note.folderId ?? null) === targetFolderId) {
+      toast.info(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
+      return;
+    }
+    const updated: FieldNote = { ...note, folderId: targetFolderId, updated_at: Date.now() };
+    await persistNote(updated);
+    setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
+      .sort((a, b) => b.updated_at - a.updated_at));
+    if (draft && draft.id === noteId) setDraft(updated);
+    if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
+    toast.success(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
+  }
+
+  function handleClearClipboard() {
+    setClipboardNoteId(null);
+    toast.info(t("personalOutlines.folders.clipboardCleared", { defaultValue: "Recorte cancelado." }));
   }
 
 
