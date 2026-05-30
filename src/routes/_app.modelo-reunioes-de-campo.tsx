@@ -75,7 +75,6 @@ function Page() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameVal, setRenameVal] = useState("");
   const [renameErr, setRenameErr] = useState<string | null>(null);
-  const [obsByTpl, setObsByTpl] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -83,10 +82,8 @@ function Page() {
     if (r.ok) {
       setTpls(r.templates as TemplateRow[]);
       const map: Record<string, ItemDraft[]> = {};
-      const obs: Record<string, string> = {};
       for (const t of r.templates) {
         map[t.id] = [];
-        obs[t.id] = ((t as TemplateRow).observations) ?? "";
       }
       for (const it of r.items) {
         map[it.template_id] = map[it.template_id] || [];
@@ -103,7 +100,6 @@ function Page() {
         });
       }
       setItemsByTpl(map);
-      setObsByTpl(obs);
       if (!activeId && r.templates.length > 0) setActiveId(r.templates[0].id);
     }
   }, [fnList, activeId]);
