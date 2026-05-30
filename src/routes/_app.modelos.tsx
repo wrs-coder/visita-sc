@@ -287,14 +287,15 @@ function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Paylo
       <Input className="h-9 col-span-2" placeholder={t("templates.program.meal.location")} value={String(payload.location ?? "")} onChange={(e) => set("location", e.target.value)} />
     </div>
   );
-  const EVENT_TYPES = ["field_service", "meeting", "airport", "meal", "personal", "other"] as const;
+  const EVENT_TYPES = ["field_service", "congregation_meeting", "pioneer_meeting", "elders_meeting", "home_return", "other"] as const;
   const DIRECTIONS = ["pickup", "dropoff", "round_trip"] as const;
   const allDay = !!payload.all_day;
+  const eventType = String(payload.event_type ?? "field_service");
   return (
     <div className="grid grid-cols-2 gap-2">
       <div className="space-y-1">
         <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.eventType")}</label>
-        <Select value={String(payload.event_type ?? "field_service")} onValueChange={(v) => set("event_type", v)}>
+        <Select value={eventType} onValueChange={(v) => set("event_type", v)}>
           <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             {EVENT_TYPES.map((k) => <SelectItem key={k} value={k}>{t(`templates.program.transport.eventTypes.${k}`)}</SelectItem>)}
@@ -310,6 +311,14 @@ function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Paylo
           </SelectContent>
         </Select>
       </div>
+      {eventType === "other" && (
+        <Input
+          className="h-9 col-span-2"
+          placeholder={t("templates.program.transport.otherPlaceholder")}
+          value={String(payload.event_type_other ?? "")}
+          onChange={(e) => set("event_type_other", e.target.value)}
+        />
+      )}
       <label className="col-span-2 flex items-center gap-2 text-sm">
         <input type="checkbox" checked={allDay} onChange={(e) => set("all_day", e.target.checked)} />
         {t("templates.program.transport.allDay")}
