@@ -45,6 +45,7 @@ function Page() {
   const [dayNotes, setDayNotes] = useState<Record<string, string>>({});
   const [editEnabled, setEditEnabled] = useState(false);
   const editAllowed = !isSuper || editEnabled;
+  const extras = useVisitTemplateExtras(visit?.id);
 
   useEffect(() => {
     if (!visit) return;
