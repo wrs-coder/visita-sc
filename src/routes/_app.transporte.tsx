@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useServerFn } from "@tanstack/react-start";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -31,12 +29,6 @@ import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
-import {
-  upsertTransportSlot,
-  toggleTransportSlot,
-  deleteTransportSlot,
-  applyAllDayDriver,
-} from "@/lib/transport.functions";
 
 export const Route = createFileRoute("/_app/transporte")({ component: Page });
 
@@ -57,20 +49,12 @@ interface Transport {
   is_active: boolean;
 }
 
-const EVENT_TYPES = ["field_service", "meeting", "airport", "meal", "personal", "other"] as const;
-const DIRECTIONS = ["pickup", "dropoff", "round_trip"] as const;
-
 function Page() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const { t, i18n } = useTranslation();
   const dateLocale = getDateLocale(i18n.language);
   const isSuper = role === "superintendent";
-
-  const upsertFn = useServerFn(upsertTransportSlot);
-  const toggleFn = useServerFn(toggleTransportSlot);
-  const deleteFn = useServerFn(deleteTransportSlot);
-  const applyAllDayFn = useServerFn(applyAllDayDriver);
 
   const [items, setItems] = useState<Transport[]>([]);
   const [editing, setEditing] = useState<Partial<Transport> | null>(null);
@@ -118,7 +102,7 @@ function Page() {
   });
 
   const openNew = () => {
-    setEditing({ all_day: false, event_type: "field_service", direction: "round_trip" });
+    setEditing({});
     setOpen(true);
   };
 
@@ -130,48 +114,30 @@ function Page() {
     }
     setSaving(true);
     try {
-      const eventDate = editing.event_date || null;
-      const weekday =
-        editing.weekday != null
-          ? editing.weekday
-          : eventDate
-            ? parseISO(eventDate).getDay()
-            : null;
-      const r = await upsertFn({
-        data: {
-          id: editing.id,
-          visit_id: visit.id,
-          driver_name: editing.driver_name!.trim(),
-          contact_phone: editing.contact_phone || null,
-          weekday,
-          event_date: eventDate,
-          event_type: (editing.event_type as typeof EVENT_TYPES[number]) || null,
-          direction: (editing.direction as typeof DIRECTIONS[number]) || null,
-          all_day: !!editing.all_day,
-          departure_time: editing.all_day ? null : editing.departure_time || null,
-          return_time: editing.all_day ? null : editing.return_time || null,
-          description: editing.description || null,
-          notes: editing.notes || null,
-        },
-      });
-      if (!r.ok) {
-        toast.error(r.error);
-        return;
-      }
-      // Se "Dia inteiro" e há data/weekday, oferecer replicar para outros slots do mesmo dia.
-      if (editing.all_day && r.id && (eventDate || weekday != null)) {
-        const apply = await applyAllDayFn({
-          data: {
-            visit_id: visit.id,
-            source_id: r.id,
-            event_date: eventDate,
-            weekday,
-            driver_name: editing.driver_name!.trim(),
-            contact_phone: editing.contact_phone || null,
-          },
-        });
-        if (apply.ok && apply.updated > 0) {
-          toast.success(t("transport.allDayApplied", { count: apply.updated }));
+      const payload = {
+        visit_id: visit.id,
+        driver_name: editing.driver_name!.trim(),
+        contact_phone: editing.contact_phone || null,
+        event_date: editing.event_date || null,
+        description: editing.description || null,
+        notes: editing.notes || null,
+      };
+      if (editing.id) {
+        const { error } = await supabase
+          .from("transport_schedule")
+          .update(payload)
+          .eq("id", editing.id);
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+      } else {
+        const { error } = await supabase
+          .from("transport_schedule")
+          .insert(payload);
+        if (error) {
+          toast.error(error.message);
+          return;
         }
       }
       toast.success(t("common.saved"));
@@ -183,12 +149,15 @@ function Page() {
   };
 
   const remove = async (id: string) => {
-    const r = await deleteFn({ data: { id } });
-    if (!r.ok) toast.error(r.error);
+    const { error } = await supabase.from("transport_schedule").delete().eq("id", id);
+    if (error) toast.error(error.message);
   };
   const toggle = async (id: string, is_active: boolean) => {
-    const r = await toggleFn({ data: { id, is_active } });
-    if (!r.ok) toast.error(r.error);
+    const { error } = await supabase
+      .from("transport_schedule")
+      .update({ is_active })
+      .eq("id", id);
+    if (error) toast.error(error.message);
   };
 
   const fmtTime = (s: string | null) => (s ? s.slice(0, 5) : "");
@@ -226,19 +195,13 @@ function Page() {
               </DialogHeader>
               {editing && (
                 <div className="space-y-3">
-                  {/* 1. Dia da semana / Data */}
                   <div>
                     <Label>{t("transport.day")}</Label>
                     <Select
                       value={editing.event_date ?? "none"}
-                      onValueChange={(v) => {
-                        const ev = v === "none" ? null : v;
-                        setEditing({
-                          ...editing,
-                          event_date: ev,
-                          weekday: ev ? parseISO(ev).getDay() : editing.weekday ?? null,
-                        });
-                      }}
+                      onValueChange={(v) =>
+                        setEditing({ ...editing, event_date: v === "none" ? null : v })
+                      }
                     >
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder={t("common.select")} />
@@ -256,76 +219,6 @@ function Page() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* 2. Tipo de evento */}
-                  <div>
-                    <Label>{t("transport.eventTypeLabel")}</Label>
-                    <Select
-                      value={editing.event_type ?? "other"}
-                      onValueChange={(v) => setEditing({ ...editing, event_type: v })}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {EVENT_TYPES.map((k) => (
-                          <SelectItem key={k} value={k}>
-                            {t(`transport.eventType.${k}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* 3. Direção */}
-                  <div>
-                    <Label>{t("transport.directionLabel")}</Label>
-                    <Select
-                      value={editing.direction ?? "round_trip"}
-                      onValueChange={(v) => setEditing({ ...editing, direction: v })}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DIRECTIONS.map((k) => (
-                          <SelectItem key={k} value={k}>
-                            {t(`transport.direction.${k}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* 4. Horários */}
-                  {!editing.all_day && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label>{t("transport.departureTime")}</Label>
-                        <Input
-                          type="time"
-                          className="mt-1"
-                          value={fmtTime(editing.departure_time ?? null)}
-                          onChange={(e) =>
-                            setEditing({ ...editing, departure_time: e.target.value || null })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label>{t("transport.returnTime")}</Label>
-                        <Input
-                          type="time"
-                          className="mt-1"
-                          value={fmtTime(editing.return_time ?? null)}
-                          onChange={(e) =>
-                            setEditing({ ...editing, return_time: e.target.value || null })
-                          }
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 5. Motorista */}
                   <div>
                     <Label>{t("transport.driverName")}</Label>
                     <Input
@@ -334,8 +227,6 @@ function Page() {
                       onChange={(e) => setEditing({ ...editing, driver_name: e.target.value })}
                     />
                   </div>
-
-                  {/* 6. Telefone */}
                   <div>
                     <Label>{t("transport.contactPhone")}</Label>
                     <Input
@@ -345,24 +236,6 @@ function Page() {
                       onChange={(e) => setEditing({ ...editing, contact_phone: e.target.value })}
                     />
                   </div>
-
-                  {/* 7. Dia inteiro */}
-                  <div className="flex items-center gap-2 pt-1">
-                    <Checkbox
-                      id="all_day"
-                      checked={!!editing.all_day}
-                      onCheckedChange={(v) => setEditing({ ...editing, all_day: !!v })}
-                    />
-                    <Label htmlFor="all_day" className="cursor-pointer">
-                      {t("transport.allDay")}
-                    </Label>
-                  </div>
-                  {editing.all_day && (editing.event_date || editing.weekday != null) && (
-                    <p className="text-xs text-muted-foreground -mt-1">
-                      {t("transport.applyAllDayHint")}
-                    </p>
-                  )}
-
                   <div>
                     <Label>{t("transport.event")}</Label>
                     <Input
