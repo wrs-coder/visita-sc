@@ -117,7 +117,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isOfflineMode() && event !== "SIGNED_IN") return;
       setSession(s);
       setUser(s?.user ?? null);
-      setTimeout(() => loadUserData(s?.user?.id), 0);
+      // Em SIGNED_IN reentramos no estado "carregando" para que a UI não
+      // avalie needsOnboarding com role/congregation desatualizados — isso
+      // causava o card de onboarding piscar logo após login/cadastro.
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        setLoading(true);
+        setTimeout(() => {
+          loadUserData(s?.user?.id).finally(() => setLoading(false));
+        }, 0);
+      } else {
+        setTimeout(() => loadUserData(s?.user?.id), 0);
+      }
     });
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);

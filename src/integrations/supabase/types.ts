@@ -781,6 +781,36 @@ export type Database = {
           },
         ]
       }
+      personal_outlines: {
+        Row: {
+          content_json: Json
+          created_at: string
+          folder_path: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_json?: Json
+          created_at?: string
+          folder_path?: string
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_json?: Json
+          created_at?: string
+          folder_path?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pioneer_meetings: {
         Row: {
           closing_prayer: string | null
@@ -1085,40 +1115,58 @@ export type Database = {
       }
       transport_schedule: {
         Row: {
+          all_day: boolean
           contact_phone: string | null
           created_at: string
+          departure_time: string | null
           description: string | null
+          direction: string | null
           driver_name: string
           event_date: string | null
+          event_type: string | null
           id: string
           is_active: boolean
           notes: string | null
+          return_time: string | null
           updated_at: string
           visit_id: string
+          weekday: number | null
         }
         Insert: {
+          all_day?: boolean
           contact_phone?: string | null
           created_at?: string
+          departure_time?: string | null
           description?: string | null
+          direction?: string | null
           driver_name: string
           event_date?: string | null
+          event_type?: string | null
           id?: string
           is_active?: boolean
           notes?: string | null
+          return_time?: string | null
           updated_at?: string
           visit_id: string
+          weekday?: number | null
         }
         Update: {
+          all_day?: boolean
           contact_phone?: string | null
           created_at?: string
+          departure_time?: string | null
           description?: string | null
+          direction?: string | null
           driver_name?: string
           event_date?: string | null
+          event_type?: string | null
           id?: string
           is_active?: boolean
           notes?: string | null
+          return_time?: string | null
           updated_at?: string
           visit_id?: string
+          weekday?: number | null
         }
         Relationships: [
           {
@@ -1174,6 +1222,7 @@ export type Database = {
           field_meeting_template_id: string | null
           id: string
           is_active: boolean
+          last_applied_at: string | null
           meeting_talk_template_id: string | null
           start_date: string
           substitute_name: string | null
@@ -1189,6 +1238,7 @@ export type Database = {
           field_meeting_template_id?: string | null
           id?: string
           is_active?: boolean
+          last_applied_at?: string | null
           meeting_talk_template_id?: string | null
           start_date: string
           substitute_name?: string | null
@@ -1204,6 +1254,7 @@ export type Database = {
           field_meeting_template_id?: string | null
           id?: string
           is_active?: boolean
+          last_applied_at?: string | null
           meeting_talk_template_id?: string | null
           start_date?: string
           substitute_name?: string | null
