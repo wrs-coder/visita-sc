@@ -45,6 +45,7 @@ export function FieldMeetingsPanel() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [editEnabled, setEditEnabled] = useState(false);
   const editAllowed = !isSuper || editEnabled;
+  const extras = useVisitTemplateExtras(visit?.id);
 
   useEffect(() => {
     if (!visit) return;
