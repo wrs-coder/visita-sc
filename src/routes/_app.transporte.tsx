@@ -151,13 +151,6 @@ function Page() {
     const { error } = await supabase.from("transport_schedule").delete().eq("id", id);
     if (error) toast.error(error.message);
   };
-  const toggle = async (id: string, is_active: boolean) => {
-    const { error } = await supabase
-      .from("transport_schedule")
-      .update({ is_active })
-      .eq("id", id);
-    if (error) toast.error(error.message);
-  };
 
   // Update shared fields (driver/phone/notes/all_day) across all rows of a group.
   const updateGroup = async (rows: Transport[], patch: Partial<Transport>) => {
