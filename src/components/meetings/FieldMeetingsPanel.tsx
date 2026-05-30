@@ -32,6 +32,7 @@ interface Row {
   territory_location: string | null;
   auxiliary_leaders: string | null;
   closing_prayer: string | null;
+  observations: string | null;
   is_active: boolean;
 }
 
