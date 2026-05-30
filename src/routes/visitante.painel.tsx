@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { getGuestSnapshot } from "@/lib/guest.functions";
-import { readGuestSession, clearGuestSession } from "@/lib/guest-session";
+import { readGuestSession, clearGuestSession, setSelectedCongregation, setWeekAnchor } from "@/lib/guest-session";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
