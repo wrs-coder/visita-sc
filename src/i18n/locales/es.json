@@ -1204,6 +1204,18 @@
       "outline": "Bosquejo",
       "prompt": "Selecciona un tipo arriba para cargar tus carpetas y notas."
     },
+    "cloud": {
+      "button": "Nube",
+      "title": "Bosquejos en la nube",
+      "help": "Hasta 10 bosquejos pueden sincronizarse con la nube — útil para acceder desde otro dispositivo.",
+      "count": "Guardados: {{n}}/10",
+      "push": "Subir bosquejo actual",
+      "pushed": "Bosquejo enviado a la nube.",
+      "pulled": "Bosquejo importado desde la nube.",
+      "deleted": "Eliminado de la nube.",
+      "deleteConfirm": "¿Eliminar este bosquejo de la nube?",
+      "empty": "No hay bosquejos en la nube."
+    },
     "folders": {
       "rootLabel": "Raíz",
       "new": "Nueva carpeta",
