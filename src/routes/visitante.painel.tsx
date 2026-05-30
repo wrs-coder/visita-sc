@@ -340,6 +340,11 @@ function Page() {
               </TabsContent>
 
               <TabsContent value="campo" className="space-y-2 mt-4">
+                <TemplateExtraBlock
+                  label={t("meetingsTalks.fromTemplate.fieldObservations")}
+                  value={snap.templateExtras?.field?.observations}
+                  variant="blue"
+                />
                 {snap.fieldMeetings.length === 0 ? <Empty text={t("guest.empty.field")} /> :
                   snap.fieldMeetings.map((f) => (
                     <Card key={f.id}><CardContent className="p-3 space-y-1">
