@@ -1021,6 +1021,8 @@
     "wifeMode": "Esposa do superintendente",
     "eldersMode": "Corpo de anciãos e ESC",
     "readOnlyTag": "somente leitura",
+    "currentWeek": "Semana atual",
+    "congregationPicker": { "label": "Congregação:" },
     "share": "Partilhar",
     "shareTitle": "Partilhar programação",
     "shareDescription": "Escolha as seções e veja uma pré-visualização antes de exportar.",

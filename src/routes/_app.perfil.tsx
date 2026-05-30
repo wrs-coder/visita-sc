@@ -46,9 +46,59 @@ function Page() {
   const [busyPwd, setBusyPwd] = useState(false);
   const [bibleOpen, setBibleOpen] = useState(false);
   const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
+  const [wifeCode, setWifeCode] = useState("");
+  const [busyWife, setBusyWife] = useState(false);
 
   const refreshActiveBible = async () => setActiveBible(await getActiveLibrary());
   useEffect(() => { refreshActiveBible(); }, []);
+
+  useEffect(() => {
+    if (!user || role !== "superintendent") return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("wife_invite_code").eq("id", user.id).maybeSingle();
+      if (!cancelled) setWifeCode(((data as { wife_invite_code: string | null } | null)?.wife_invite_code) ?? "");
+    })();
+    return () => { cancelled = true; };
+  }, [user, role]);
+
+  const generateWifeCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let s = "";
+    for (let i = 0; i < 8; i++) s += chars[Math.floor(Math.random() * chars.length)];
+    setWifeCode(s);
+  };
+
+  const saveWifeCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    const value = wifeCode.trim().toUpperCase();
+    if (value && !/^[A-Z0-9]{4,12}$/.test(value)) {
+      toast.error(t("profile.wifeAccess.errorFormat"));
+      return;
+    }
+    setBusyWife(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ wife_invite_code: value || null })
+      .eq("id", user.id);
+    setBusyWife(false);
+    if (error) {
+      if (error.code === "23505") toast.error(t("profile.wifeAccess.errorTaken"));
+      else toast.error(t("profile.saveError"), { description: error.message });
+      return;
+    }
+    toast.success(value ? t("profile.wifeAccess.saved") : t("profile.wifeAccess.removed"));
+  };
+
+  const copyWifeCode = async () => {
+    if (!wifeCode) return;
+    try {
+      await navigator.clipboard.writeText(wifeCode.trim().toUpperCase());
+      toast.success(t("profile.wifeAccess.copied"));
+    } catch { /* ignore */ }
+  };
+
 
   const doExportBackup = async () => {
     setBusyBackup("export");
@@ -171,6 +221,48 @@ function Page() {
           </CardContent>
         </Card>
       )}
+
+      {role === "superintendent" && (
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <KeyRound className="h-4 w-4 text-primary" /> {t("profile.wifeAccess.title")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={saveWifeCode} className="space-y-3">
+              <p className="text-xs text-muted-foreground">{t("profile.wifeAccess.description")}</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="wifeCode">{t("profile.wifeAccess.codeLabel")}</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Input
+                    id="wifeCode"
+                    value={wifeCode}
+                    onChange={(e) => setWifeCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12))}
+                    placeholder={t("profile.wifeAccess.placeholder")}
+                    maxLength={12}
+                    className="flex-1 min-w-[160px] font-mono tracking-widest"
+                  />
+                  <Button type="button" variant="outline" onClick={generateWifeCode}>{t("profile.wifeAccess.generate")}</Button>
+                  <Button type="button" variant="outline" onClick={copyWifeCode} disabled={!wifeCode}>{t("profile.wifeAccess.copy")}</Button>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={busyWife}>{t("profile.wifeAccess.save")}</Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={busyWife || !wifeCode}
+                  onClick={() => { setWifeCode(""); }}
+                >
+                  {t("profile.wifeAccess.remove")}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card className="shadow-card">
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> {t("profile.email")}</CardTitle></CardHeader>

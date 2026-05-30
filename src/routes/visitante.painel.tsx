@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { getGuestSnapshot } from "@/lib/guest.functions";
-import { readGuestSession, clearGuestSession } from "@/lib/guest-session";
+import { readGuestSession, clearGuestSession, setSelectedCongregation, setWeekAnchor } from "@/lib/guest-session";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ export const Route = createFileRoute("/visitante/painel")({ component: Page });
 interface Snapshot {
   wifeMode: boolean;
   congregation: { id: string; name: string };
+  availableCongregations?: Array<{ id: string; name: string }> | null;
+  selectedCongregationId?: string | null;
   visit: { id: string; title: string; start_date: string; end_date: string } | null;
   schedule: Array<{ id: string; event_date: string; start_time: string | null; end_time: string | null; title: string; location: string | null; type: string; notes: string | null }>;
   meals: Array<{ id: string; meal_date: string; type: string; host_name: string | null; location: string | null; meal_time: string | null; contact_phone: string | null; notes: string | null }>;
@@ -72,9 +74,10 @@ function Page() {
     check: t("guest.sections.check"),
   }), [t]);
 
-  const load = useCallback(async (c: string) => {
+  const load = useCallback(async (c: string, congregationId?: string | null) => {
     // Hidrata imediatamente do cache local para funcionar offline.
-    const cached = loadSnapshot<Snapshot>("guest", c);
+    const cacheKey = congregationId ? `${c}:${congregationId}` : c;
+    const cached = loadSnapshot<Snapshot>("guest", cacheKey);
     if (cached) {
       setSnap(cached);
       setLoading(false);
@@ -82,7 +85,7 @@ function Page() {
       setLoading(true);
     }
     try {
-      const r = await fn({ data: { inviteCode: c } });
+      const r = await fn({ data: { inviteCode: c, congregationId: congregationId ?? undefined } });
       if (!(r as { ok: boolean }).ok) {
         // Resposta explícita do servidor: sessão inválida → desloga.
         if (!cached) { clearGuestSession(); nav({ to: "/" }); }
@@ -90,7 +93,7 @@ function Page() {
       }
       const fresh = r as unknown as Snapshot;
       setSnap(fresh);
-      saveSnapshot("guest", c, fresh);
+      saveSnapshot("guest", cacheKey, fresh);
     } catch (err) {
       // Erro de rede (offline). Mantém o cache na tela; só notifica se não houver dados.
       console.warn("[visitante] falha ao carregar — usando cache", err);
@@ -101,10 +104,10 @@ function Page() {
   }, [fn, nav, t]);
 
   useEffect(() => {
-    const c = readGuestSession();
-    if (!c) { nav({ to: "/" }); return; }
-    setCode(c);
-    load(c);
+    const session = readGuestSession();
+    if (!session) { nav({ to: "/" }); return; }
+    setCode(session.code);
+    load(session.code, session.congregationId);
   }, [load, nav]);
 
   const [offlineOpen, setOfflineOpen] = useState(false);
@@ -273,8 +276,42 @@ function Page() {
             </Button>
           </div>
         </div>
+        {snap.availableCongregations && snap.availableCongregations.length > 0 && code && (
+          <div className="border-t border-white/10 bg-primary/95">
+            <div className="max-w-3xl mx-auto flex flex-wrap items-center gap-2 px-4 py-2">
+              <Label className="text-xs opacity-80 shrink-0">{t("guest.congregationPicker.label")}</Label>
+              <select
+                className="bg-white/10 text-primary-foreground text-sm rounded px-2 py-1 border border-white/20 flex-1 min-w-[160px]"
+                value={snap.selectedCongregationId ?? snap.congregation.id}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedCongregation(id);
+                  setWeekAnchor(null);
+                  if (code) load(code, id);
+                }}
+              >
+                {snap.availableCongregations.map((c) => (
+                  <option key={c.id} value={c.id} className="text-foreground">{c.name}</option>
+                ))}
+              </select>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary-foreground hover:bg-white/10 shrink-0"
+                onClick={() => {
+                  setWeekAnchor(null);
+                  if (code) load(code, snap.selectedCongregationId ?? snap.congregation.id);
+                }}
+              >
+                <CalendarDays className="h-4 w-4 mr-1" />
+                {t("guest.currentWeek")}
+              </Button>
+            </div>
+          </div>
+        )}
       </header>
       <GuestOfflineDialog open={offlineOpen} onOpenChange={setOfflineOpen} />
+
 
       <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
         {!snap.visit ? (
@@ -435,7 +472,7 @@ function Page() {
         )}
 
         <div className="text-center pt-4">
-          <Button variant="outline" size="sm" onClick={() => code && load(code)}>{t("guest.refresh")}</Button>
+          <Button variant="outline" size="sm" onClick={() => code && load(code, snap?.selectedCongregationId ?? null)}>{t("guest.refresh")}</Button>
         </div>
       </main>
     </div>

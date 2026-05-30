@@ -943,6 +943,7 @@ export type Database = {
           id: string
           phone: string | null
           username: string | null
+          wife_invite_code: string | null
         }
         Insert: {
           circuit?: string | null
@@ -953,6 +954,7 @@ export type Database = {
           id: string
           phone?: string | null
           username?: string | null
+          wife_invite_code?: string | null
         }
         Update: {
           circuit?: string | null
@@ -963,6 +965,7 @@ export type Database = {
           id?: string
           phone?: string | null
           username?: string | null
+          wife_invite_code?: string | null
         }
         Relationships: [
           {

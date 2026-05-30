@@ -39,11 +39,12 @@ export function GuestOfflineDialog({
   const pct = progress.total > 0 ? Math.round((progress.step / progress.total) * 100) : 0;
 
   const start = async () => {
-    const code = readGuestSession();
-    if (!code) {
+    const session = readGuestSession();
+    if (!session) {
       toast.error(t("offline.requireLogin"));
       return;
     }
+    const code = session.code;
     abortRef.current = new AbortController();
     setPhase("running");
     let errors = 0;
@@ -51,7 +52,7 @@ export function GuestOfflineDialog({
       // 1) Snapshot do visitante (dados a exibir nas abas)
       setProgress({ step: 0, total: 2, label: "Dados", errors });
       try {
-        const r = await fetchSnap({ data: { inviteCode: code } });
+        const r = await fetchSnap({ data: { inviteCode: code, congregationId: session.congregationId ?? undefined } });
         if ((r as { ok: boolean }).ok) {
           saveSnapshot("guest", code, r);
         } else {

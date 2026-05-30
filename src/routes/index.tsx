@@ -13,7 +13,7 @@ function HomeRoute() {
   const [guestCode, setGuestCode] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
-    setGuestCode(readGuestSession());
+    setGuestCode(readGuestSession()?.code ?? null);
   }, []);
 
   if (loading || guestCode === undefined) return <FullLoader />;
