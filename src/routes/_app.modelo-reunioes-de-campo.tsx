@@ -42,6 +42,7 @@ interface ItemDraft {
   territory_location: string;
   auxiliary_leaders: string;
   closing_prayer: string;
+  observations: string;
 }
 
 const MAX = 24;
