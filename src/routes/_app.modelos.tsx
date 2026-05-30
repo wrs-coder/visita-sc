@@ -304,6 +304,9 @@ interface TransportEvent {
   direction?: string;
   departure_time?: string;
   return_time?: string;
+  driver_name?: string;
+  contact_phone?: string;
+  notes?: string;
 }
 
 function parseEvents(payload: Payload): TransportEvent[] {
@@ -315,13 +318,16 @@ function parseEvents(payload: Payload): TransportEvent[] {
     } catch { /* ignore */ }
   }
   // Legacy single-event fallback
-  if (payload.event_type || payload.direction || payload.departure_time || payload.return_time) {
+  if (payload.event_type || payload.direction || payload.departure_time || payload.return_time || payload.driver_name) {
     return [{
       event_type: String(payload.event_type ?? "field_service"),
       event_type_other: String(payload.event_type_other ?? ""),
       direction: String(payload.direction ?? "round_trip"),
       departure_time: String(payload.departure_time ?? ""),
       return_time: String(payload.return_time ?? ""),
+      driver_name: String(payload.driver_name ?? ""),
+      contact_phone: String(payload.contact_phone ?? ""),
+      notes: String(payload.notes ?? ""),
     }];
   }
   return [];
@@ -334,7 +340,7 @@ function TransportEditor({ payload, onChange }: { payload: Payload; onChange: (p
   const allDay = !!payload.all_day;
   const updateEvents = (next: TransportEvent[]) => onChange({ ...payload, events_json: JSON.stringify(next) });
   const updateEvent = (idx: number, patch: Partial<TransportEvent>) => updateEvents(events.map((e, i) => i === idx ? { ...e, ...patch } : e));
-  const addEvent = () => updateEvents([...events, { event_type: "field_service", direction: "round_trip", departure_time: "", return_time: "" }]);
+  const addEvent = () => updateEvents([...events, { event_type: "field_service", direction: "round_trip", departure_time: "", return_time: "", driver_name: "", contact_phone: "", notes: "" }]);
   const removeEvent = (idx: number) => updateEvents(events.filter((_, i) => i !== idx));
 
   return (
@@ -347,6 +353,7 @@ function TransportEditor({ payload, onChange }: { payload: Payload; onChange: (p
       <div className="space-y-2">
         {events.map((ev, idx) => {
           const evType = String(ev.event_type ?? "field_service");
+          const showDriver = !allDay || idx === 0;
           return (
             <div key={idx} className="border rounded-md p-2 bg-background/50 space-y-2">
               <div className="flex items-center justify-between">
@@ -392,6 +399,13 @@ function TransportEditor({ payload, onChange }: { payload: Payload; onChange: (p
                     </div>
                   </>
                 )}
+                {showDriver && (
+                  <>
+                    <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.driverName")} value={String(ev.driver_name ?? "")} onChange={(e) => updateEvent(idx, { driver_name: e.target.value })} />
+                    <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.phone")} value={String(ev.contact_phone ?? "")} onChange={(e) => updateEvent(idx, { contact_phone: e.target.value })} />
+                    <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.notes")} value={String(ev.notes ?? "")} onChange={(e) => updateEvent(idx, { notes: e.target.value })} />
+                  </>
+                )}
               </div>
             </div>
           );
@@ -399,12 +413,6 @@ function TransportEditor({ payload, onChange }: { payload: Payload; onChange: (p
         <Button size="sm" variant="outline" className="w-full" onClick={addEvent}>
           <Plus className="h-3 w-3 mr-1" />{t("templates.program.transport.addEvent", { defaultValue: "Adicionar evento" })}
         </Button>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 pt-1">
-        <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.driverName")} value={String(payload.driver_name ?? "")} onChange={(e) => set("driver_name", e.target.value)} />
-        <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.phone")} value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
-        <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.notes")} value={String(payload.notes ?? "")} onChange={(e) => set("notes", e.target.value)} />
       </div>
     </div>
   );
