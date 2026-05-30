@@ -116,7 +116,7 @@
     "transport": "Transporte",
     "checklist": "Lista de tareas",
     "privateNotes": "Notas Privadas",
-    "scheduleTemplates": "Plantillas de Programación",
+    "scheduleTemplates": "Plantillas de Programación Personal",
     "checklistTemplates": "Plantillas de Lista de tareas",
     "fieldMeetingTemplate": "Plantilla Reuniones de Campo",
     "meetingTalkTemplates": "Plantillas de Reunión y Discurso",
@@ -539,7 +539,7 @@
       "6": "Lun"
     },
     "program": {
-      "title": "Plantillas de Programación",
+      "title": "Plantillas de Programación Personal",
       "subtitle": "Crea hasta 10 plantillas reutilizables. Úsalas al crear una visita para una congregación específica.",
       "templateLabel": "Plantilla",
       "templateName": "Nombre de la plantilla",
@@ -576,10 +576,25 @@
         "driverName": "Nombre del conductor",
         "phone": "Teléfono",
         "description": "Descripción/evento",
-        "departure1": "Ida 1",
-        "departure2": "Ida 2",
-        "return1": "Vuelta 1",
-        "return2": "Vuelta 2"
+        "notes": "Observaciones",
+        "eventType": "Tipo de evento",
+        "direction": "Dirección",
+        "allDay": "Todo el día",
+        "departure": "Hora de salida",
+        "return": "Hora de regreso",
+        "eventTypes": {
+          "field_service": "Servicio del campo",
+          "meeting": "Reunión",
+          "airport": "Aeropuerto",
+          "meal": "Comida",
+          "personal": "Personal",
+          "other": "Otro"
+        },
+        "directions": {
+          "pickup": "Recoger",
+          "dropoff": "Llevar",
+          "round_trip": "Ida y vuelta"
+        }
       }
     },
     "checklist": {

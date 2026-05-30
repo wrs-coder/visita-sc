@@ -116,7 +116,7 @@
     "transport": "Transporte",
     "checklist": "Checklist",
     "privateNotes": "Notas Privadas",
-    "scheduleTemplates": "Modelos de Programação",
+    "scheduleTemplates": "Modelos de Programação Pessoal",
     "checklistTemplates": "Modelos de Checklist",
     "fieldMeetingTemplate": "Modelo Reuniões de Campo",
     "meetingTalkTemplates": "Modelos de Reunião e Discurso",
@@ -539,7 +539,7 @@
       "6": "Seg"
     },
     "program": {
-      "title": "Modelos de Programação",
+      "title": "Modelos de Programação Pessoal",
       "subtitle": "Crie até 10 modelos reutilizáveis. Use-os ao criar uma visita para uma congregação específica.",
       "templateLabel": "Modelo",
       "templateName": "Nome do modelo",
@@ -576,10 +576,25 @@
         "driverName": "Nome do motorista",
         "phone": "Telefone",
         "description": "Descrição/evento",
-        "departure1": "Ida 1",
-        "departure2": "Ida 2",
-        "return1": "Volta 1",
-        "return2": "Volta 2"
+        "notes": "Observações",
+        "eventType": "Tipo de evento",
+        "direction": "Direção",
+        "allDay": "Dia inteiro",
+        "departure": "Horário de saída",
+        "return": "Horário de retorno",
+        "eventTypes": {
+          "field_service": "Serviço de campo",
+          "meeting": "Reunião",
+          "airport": "Aeroporto",
+          "meal": "Refeição",
+          "personal": "Pessoal",
+          "other": "Outro"
+        },
+        "directions": {
+          "pickup": "Buscar",
+          "dropoff": "Levar",
+          "round_trip": "Ida e volta"
+        }
       }
     },
     "checklist": {
