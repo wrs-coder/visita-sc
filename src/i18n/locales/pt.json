@@ -643,7 +643,10 @@
       "auxiliaryLeaders": "Dirigentes auxiliares",
       "closingPrayer": "Oração final",
       "hint": "Cada turno tem sua própria modalidade. Quando a modalidade não for \"Pregação de casa em casa\", apenas o campo \"Oração final\" ficará disponível para a congregação naquele turno.",
-      "namePlaceholder": "Ex: Cong. Centro"
+      "namePlaceholder": "Ex: Cong. Centro",
+      "observations": "Observações do superintendente",
+      "observationsPlaceholder": "Notas para este dia/modalidade (até 4000 caracteres). Exibidas em azul aos anciãos.",
+      "observationsHint": "Apenas o superintendente edita; os anciãos veem como leitura na aba Reuniões de Campo."
     },
     "meetingTalk": {
       "title": "Modelos de Reunião e Discurso",
