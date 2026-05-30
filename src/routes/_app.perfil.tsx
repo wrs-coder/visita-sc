@@ -222,6 +222,48 @@ function Page() {
         </Card>
       )}
 
+      {role === "superintendent" && (
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <KeyRound className="h-4 w-4 text-primary" /> {t("profile.wifeAccess.title")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={saveWifeCode} className="space-y-3">
+              <p className="text-xs text-muted-foreground">{t("profile.wifeAccess.description")}</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="wifeCode">{t("profile.wifeAccess.codeLabel")}</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Input
+                    id="wifeCode"
+                    value={wifeCode}
+                    onChange={(e) => setWifeCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12))}
+                    placeholder={t("profile.wifeAccess.placeholder")}
+                    maxLength={12}
+                    className="flex-1 min-w-[160px] font-mono tracking-widest"
+                  />
+                  <Button type="button" variant="outline" onClick={generateWifeCode}>{t("profile.wifeAccess.generate")}</Button>
+                  <Button type="button" variant="outline" onClick={copyWifeCode} disabled={!wifeCode}>{t("profile.wifeAccess.copy")}</Button>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={busyWife}>{t("profile.wifeAccess.save")}</Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={busyWife || !wifeCode}
+                  onClick={() => { setWifeCode(""); }}
+                >
+                  {t("profile.wifeAccess.remove")}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+
       <Card className="shadow-card">
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> {t("profile.email")}</CardTitle></CardHeader>
         <CardContent>
