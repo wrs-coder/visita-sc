@@ -303,88 +303,92 @@ function Page() {
                   )}
                 </div>
 
-                {/* Read-only event list */}
-                <div className="space-y-1">
-                  {rows.map((r) => (
-                    <div key={r.id} className="text-xs flex items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium truncate">
-                          {r.event_type ? eventTypeLabel(r.event_type) : t("transport.noDay")}
-                          {r.direction ? ` · ${directionLabel(r.direction)}` : ""}
+                {/* All-day toggle (shared for the day) */}
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch
+                    checked={!!head.all_day}
+                    onCheckedChange={(v) => updateGroup(rows, { all_day: v })}
+                  />
+                  {t("transport.allDay")}
+                </label>
+
+                {/* Per-event cards */}
+                <div className="space-y-3">
+                  {rows.map((r, idx) => {
+                    const showDriver = !head.all_day || idx === 0;
+                    return (
+                      <div key={r.id} className="rounded-md border bg-muted/20 p-3 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-xs font-medium">
+                            {r.event_type ? eventTypeLabel(r.event_type) : t("transport.noDay")}
+                            {r.direction ? ` · ${directionLabel(r.direction)}` : ""}
+                          </div>
+                          {isSuper && (
+                            <Button size="icon" variant="ghost" onClick={() => remove(r.id)}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          )}
                         </div>
                         {(r.departure_time || r.return_time) && !head.all_day && (
-                          <div className="text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             {fmtTime(r.departure_time)}
                             {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
                           </div>
                         )}
+                        {showDriver && (
+                          <div className="space-y-2 pt-1">
+                            <div>
+                              <Label className="text-xs">{t("transport.driverName")}</Label>
+                              <Input
+                                className="mt-1 h-9"
+                                defaultValue={r.driver_name}
+                                onBlur={(e) => {
+                                  const v = e.target.value.trim();
+                                  if (v && v !== r.driver_name) updateRow(r.id, { driver_name: v });
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">{t("transport.contactPhone")}</Label>
+                              <Input
+                                type="tel"
+                                className="mt-1 h-9"
+                                defaultValue={r.contact_phone ?? ""}
+                                onBlur={(e) => {
+                                  const v = e.target.value;
+                                  if (v !== (r.contact_phone ?? "")) updateRow(r.id, { contact_phone: v || null });
+                                }}
+                              />
+                              {r.contact_phone && (
+                                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                  <Phone className="h-3 w-3" />
+                                  {r.contact_phone}
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <Label className="text-xs">{t("transport.notes")}</Label>
+                              <Textarea
+                                rows={2}
+                                className="mt-1"
+                                defaultValue={r.notes ?? ""}
+                                onBlur={(e) => {
+                                  const v = e.target.value;
+                                  if (v !== (r.notes ?? "")) updateRow(r.id, { notes: v || null });
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      {isSuper && (
-                        <Button size="icon" variant="ghost" onClick={() => remove(r.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                   {head.all_day && (
-                    <div className="text-xs text-muted-foreground flex items-center gap-1 px-2">
+                    <div className="text-xs text-muted-foreground flex items-center gap-1 px-1">
                       <Clock className="h-3 w-3" /> {t("transport.allDay")}
                     </div>
                   )}
-                </div>
-
-                {/* Editable shared fields: driver, phone, notes, all_day */}
-                <div className="space-y-2 pt-1 border-t">
-                  <label className="flex items-center gap-2 text-sm">
-                    <Switch
-                      checked={!!head.all_day}
-                      onCheckedChange={(v) => updateGroup(rows, { all_day: v })}
-                    />
-                    {t("transport.allDay")}
-                  </label>
-                  <div>
-                    <Label className="text-xs">{t("transport.driverName")}</Label>
-                    <Input
-                      className="mt-1 h-9"
-                      defaultValue={head.driver_name}
-                      onBlur={(e) => {
-                        const v = e.target.value.trim();
-                        if (v && v !== head.driver_name) updateGroup(rows, { driver_name: v });
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">{t("transport.contactPhone")}</Label>
-                    <Input
-                      type="tel"
-                      className="mt-1 h-9"
-                      defaultValue={head.contact_phone ?? ""}
-                      onBlur={(e) => {
-                        const v = e.target.value;
-                        if (v !== (head.contact_phone ?? "")) updateGroup(rows, { contact_phone: v || null });
-                      }}
-                      placeholder={head.contact_phone ? "" : t("transport.contactPhone")}
-                    />
-                    {head.contact_phone && (
-                      <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        <Phone className="h-3 w-3" />
-                        {head.contact_phone}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="text-xs">{t("transport.notes")}</Label>
-                    <Textarea
-                      rows={2}
-                      className="mt-1"
-                      defaultValue={head.notes ?? ""}
-                      onBlur={(e) => {
-                        const v = e.target.value;
-                        if (v !== (head.notes ?? "")) updateGroup(rows, { notes: v || null });
-                      }}
-                    />
-                  </div>
                 </div>
               </CardContent>
             </Card>
