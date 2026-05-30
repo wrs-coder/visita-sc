@@ -400,10 +400,10 @@
   },
   "meetingsTalks": {
     "fromTemplate": {
-      "observations": "Observações (do modelo)",
-      "openingSong": "Cântico de abertura (do modelo)",
-      "closingSong": "Cântico de encerramento (do modelo)",
-      "fieldObservations": "Observações do superintendente (do modelo)",
+      "observations": "Informações adicionais do superintendente",
+      "openingSong": "Cântico inicial",
+      "closingSong": "Cântico final",
+      "fieldObservations": "Observações do superintendente",
       "hint": "Informação somente leitura vinda do modelo selecionado."
     },
     "title": "Reuniões e Discursos",
