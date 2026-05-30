@@ -403,7 +403,7 @@
       "observations": "Información adicional del superintendente",
       "openingSong": "Cántico inicial",
       "closingSong": "Cántico final",
-      "fieldObservations": "Observaciones del superintendente",
+      "fieldObservations": "Información adicional del superintendente",
       "hint": "Información de solo lectura del modelo seleccionado."
     },
     "title": "Reuniones y Discursos",
