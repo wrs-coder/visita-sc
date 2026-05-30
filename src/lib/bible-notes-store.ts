@@ -20,6 +20,8 @@ export interface FieldNote {
   type?: NoteType;
   folderId?: string | null;
   title: string;
+  event_date?: string; // YYYY-MM-DD (campo)
+  period?: string;     // "morning" | "afternoon" (campo)
   prayer?: string;
   territory?: string;
   assistants?: string;

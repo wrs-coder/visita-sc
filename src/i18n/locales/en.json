@@ -1216,6 +1216,12 @@
     "fields": {
       "title": "Title",
       "titlePh": "E.g.: Considerations for February visit",
+      "date": "Day",
+      "datePh": "Select the date",
+      "period": "Shift",
+      "periodPh": "Select the shift",
+      "morning": "Morning",
+      "afternoon": "Afternoon",
       "prayer": "Closing prayer",
       "prayerPh": "Who will give the closing prayer",
       "territory": "Assigned territory",
