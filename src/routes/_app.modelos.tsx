@@ -67,13 +67,16 @@ function Page() {
     setItemsByTpl(map);
     const names: Record<number, string> = { ...DEFAULT_NAMES };
     const notesMap: Record<number, Record<string, string>> = {};
+    const obsMap: Record<number, string> = {};
     for (const t of r.templates) {
       names[t.slot] = t.name;
       const raw = (t as TemplateRow).meal_day_notes;
       notesMap[t.slot] = (raw && typeof raw === "object" ? raw : {}) as Record<string, string>;
+      obsMap[t.slot] = ((t as TemplateRow).general_observations) ?? "";
     }
     setNamesBySlot(names);
     setNotesBySlot(notesMap);
+    setGenObsBySlot(obsMap);
   }, [fnList]);
 
   useEffect(() => { load(); }, [load]);
