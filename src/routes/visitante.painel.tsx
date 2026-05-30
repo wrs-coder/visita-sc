@@ -276,8 +276,42 @@ function Page() {
             </Button>
           </div>
         </div>
+        {snap.availableCongregations && snap.availableCongregations.length > 0 && code && (
+          <div className="border-t border-white/10 bg-primary/95">
+            <div className="max-w-3xl mx-auto flex flex-wrap items-center gap-2 px-4 py-2">
+              <Label className="text-xs opacity-80 shrink-0">{t("guest.congregationPicker.label")}</Label>
+              <select
+                className="bg-white/10 text-primary-foreground text-sm rounded px-2 py-1 border border-white/20 flex-1 min-w-[160px]"
+                value={snap.selectedCongregationId ?? snap.congregation.id}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedCongregation(id);
+                  setWeekAnchor(null);
+                  if (code) load(code, id);
+                }}
+              >
+                {snap.availableCongregations.map((c) => (
+                  <option key={c.id} value={c.id} className="text-foreground">{c.name}</option>
+                ))}
+              </select>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary-foreground hover:bg-white/10 shrink-0"
+                onClick={() => {
+                  setWeekAnchor(null);
+                  if (code) load(code, snap.selectedCongregationId ?? snap.congregation.id);
+                }}
+              >
+                <CalendarDays className="h-4 w-4 mr-1" />
+                {t("guest.currentWeek")}
+              </Button>
+            </div>
+          </div>
+        )}
       </header>
       <GuestOfflineDialog open={offlineOpen} onOpenChange={setOfflineOpen} />
+
 
       <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
         {!snap.visit ? (
