@@ -582,12 +582,13 @@
         "allDay": "Todo el día",
         "departure": "Hora de salida",
         "return": "Hora de regreso",
+        "otherPlaceholder": "Describe el tipo de evento",
         "eventTypes": {
-          "field_service": "Servicio del campo",
-          "meeting": "Reunión",
-          "airport": "Aeropuerto",
-          "meal": "Comida",
-          "personal": "Personal",
+          "field_service": "Servicio del Campo",
+          "congregation_meeting": "Reunión Congregacional",
+          "pioneer_meeting": "Reunión – Precursores",
+          "elders_meeting": "Reunión – Ancianos",
+          "home_return": "Regreso a casa",
           "other": "Otro"
         },
         "directions": {
