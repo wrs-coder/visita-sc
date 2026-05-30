@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, Trash2, Check, Loader2, BookOpen } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -21,12 +21,29 @@ interface Props {
   onChanged?: () => void;
 }
 
+function pickEpubFile(): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".epub,application/epub+zip";
+    input.style.position = "fixed";
+    input.style.left = "-9999px";
+    input.style.opacity = "0";
+    input.onchange = () => {
+      const file = input.files?.[0] ?? null;
+      input.remove();
+      resolve(file);
+    };
+    document.body.appendChild(input);
+    input.click();
+  });
+}
+
 export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
   const { t } = useTranslation();
   const [libs, setLibs] = useState<BibleLibrary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   async function refresh() {
     setLibs(await listLibraries());
@@ -38,10 +55,15 @@ export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
     if (open) refresh();
   }, [open]);
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
+  async function handlePickFile() {
+    const file = await pickEpubFile();
     if (!file) return;
+    const name = file.name.toLowerCase();
+    const isEpub = name.endsWith(".epub") || file.type === "application/epub+zip";
+    if (!isEpub) {
+      toast.error(t("bibleManager.invalidFile", { defaultValue: "Selecione um arquivo EPUB da Bíblia." }));
+      return;
+    }
     setProgress(0);
     try {
       const lib = await importEpub(file, (_phase, pct) => {
@@ -95,15 +117,8 @@ export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
         <div className="space-y-4">
           {/* Import area */}
           <div className="rounded-lg border-2 border-dashed p-4 text-center space-y-3">
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".epub,application/epub+zip"
-              className="hidden"
-              onChange={handleFile}
-            />
             <Button
-              onClick={() => fileRef.current?.click()}
+              onClick={handlePickFile}
               disabled={isBusy}
               size="lg"
               className="w-full"
