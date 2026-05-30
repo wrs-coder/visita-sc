@@ -348,7 +348,7 @@
     "directionLabel": "Dirección",
     "departureTime": "Hora de salida",
     "returnTime": "Hora de regreso",
-    "allDay": "Todo el día",
+    "allDay": "Apoyar todos los eventos",
     "applyAllDayHint": "Al guardar, el conductor y el teléfono se replicarán a los demás transportes del mismo día.",
     "allDayApplied": "Conductor replicado a {{count}} otro(s) transporte(s) del día.",
     "eventType": {
@@ -550,6 +550,10 @@
       "mealNotesTitle": "Observaciones de comidas por día",
       "mealNotesHelp": "Texto opcional mostrado en rojo a los ancianos debajo del título del día, en la pestaña Comidas.",
       "mealNotesPlaceholder": "Ej.: Reunión entre 7h y 16h30, no programen almuerzo",
+      "duplicateTemplate": "Duplicar modelo",
+      "duplicateTo": "Copiar a",
+      "duplicated": "Modelo duplicado con éxito",
+      "copyPrefix": "Copia de",
       "noItems": "Sin ítems.",
       "study": {
         "morning": "Mañana",
@@ -580,7 +584,7 @@
         "notes": "Observaciones",
         "eventType": "Tipo de evento",
         "direction": "Dirección",
-        "allDay": "Todo el día",
+        "allDay": "Apoyar todos los eventos",
         "departure": "Hora de salida",
         "return": "Hora de regreso",
         "otherPlaceholder": "Describe el tipo de evento",

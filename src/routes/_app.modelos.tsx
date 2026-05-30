@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, FileStack, Save } from "lucide-react";
+import { Plus, Trash2, FileStack, Save, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/modelos")({ component: Page });
@@ -49,6 +49,7 @@ function Page() {
   const [notesBySlot, setNotesBySlot] = useState<Record<number, Record<string, string>>>({});
   const [activeSlot, setActiveSlot] = useState("1");
   const [busy, setBusy] = useState(false);
+  const [dupSlot, setDupSlot] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const r = await fnList();
@@ -101,6 +102,26 @@ function Page() {
     setBusy(false);
     if (!r.ok) toast.error(r.error);
     else { toast.success(t("templates.templateSaved")); load(); }
+  };
+
+  const duplicateSlot = async (fromSlot: number, toSlot: number) => {
+    setBusy(true);
+    const fromTpl = tpls.find((t) => t.slot === fromSlot);
+    const fromItems = fromTpl ? (itemsByTpl[fromTpl.id] ?? []) : [];
+    const fromNotes = notesBySlot[fromSlot] ?? {};
+    const fromName = namesBySlot[fromSlot] || DEFAULT_NAMES[fromSlot];
+    const copyPrefix = t("templates.program.copyPrefix", { defaultValue: "Cópia de" });
+    const toName = `${copyPrefix} ${fromName}`;
+    const r = await fnUpsert({ data: { slot: toSlot, name: toName, meal_day_notes: fromNotes } });
+    if (!r.ok) { toast.error(r.error); setBusy(false); return; }
+    const itemsCopy = fromItems.map((it, i) => ({ ...it, sort_order: i }));
+    const r2 = await fnReplace({ data: { templateId: r.id!, items: itemsCopy } });
+    setBusy(false);
+    if (!r2.ok) { toast.error(r2.error); return; }
+    toast.success(t("templates.program.duplicated", { defaultValue: "Modelo duplicado" }));
+    setDupSlot(null);
+    setActiveSlot(String(toSlot));
+    await load();
   };
 
   const updateDraft = (tplId: string, idx: number, patch: Partial<ItemDraft>) => {
@@ -157,7 +178,7 @@ function Page() {
         />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t("templates.program.templateLabel")}</Label>
         <Select value={activeSlot} onValueChange={setActiveSlot}>
           <SelectTrigger className="h-9 max-w-xs"><SelectValue /></SelectTrigger>
@@ -165,6 +186,25 @@ function Page() {
             {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || t("templates.templateNumber", { n: s })}</SelectItem>)}
           </SelectContent>
         </Select>
+        {dupSlot === null ? (
+          <Button size="sm" variant="outline" onClick={() => setDupSlot(activeSlot)}>
+            <Copy className="h-4 w-4 mr-1" /> {t("templates.program.duplicateTemplate", { defaultValue: "Duplicar modelo" })}
+          </Button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{t("templates.program.duplicateTo", { defaultValue: "Copiar para" })}</span>
+            <Select value={String(dupSlot)} onValueChange={(v) => setDupSlot(v)}>
+              <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || t("templates.templateNumber", { n: s })}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="default" onClick={() => duplicateSlot(Number(activeSlot), Number(dupSlot))} disabled={dupSlot === activeSlot || busy}>
+              <Check className="h-4 w-4 mr-1" /> {t("common.duplicate", { defaultValue: "Duplicar" })}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setDupSlot(null)}>{t("common.cancel", { defaultValue: "Cancelar" })}</Button>
+          </div>
+        )}
       </div>
 
       <Tabs value={activeSlot} onValueChange={setActiveSlot}>
