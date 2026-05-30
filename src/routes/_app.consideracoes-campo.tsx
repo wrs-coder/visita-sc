@@ -72,6 +72,7 @@ import {
   type ExportPayload,
 } from "@/lib/bible-notes-store";
 import { findCitations, stripHtmlForDetection, type CitationMatch } from "@/lib/bible-refs";
+import { shareJsonFile } from "@/lib/share";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
 import { RichOutlineContent } from "@/lib/rich-content";
