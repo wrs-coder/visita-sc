@@ -104,6 +104,26 @@ function Page() {
     else { toast.success(t("templates.templateSaved")); load(); }
   };
 
+  const duplicateSlot = async (fromSlot: number, toSlot: number) => {
+    setBusy(true);
+    const fromTpl = tpls.find((t) => t.slot === fromSlot);
+    const fromItems = fromTpl ? (itemsByTpl[fromTpl.id] ?? []) : [];
+    const fromNotes = notesBySlot[fromSlot] ?? {};
+    const fromName = namesBySlot[fromSlot] || DEFAULT_NAMES[fromSlot];
+    const copyPrefix = t("templates.program.copyPrefix", { defaultValue: "Cópia de" });
+    const toName = `${copyPrefix} ${fromName}`;
+    const r = await fnUpsert({ data: { slot: toSlot, name: toName, meal_day_notes: fromNotes } });
+    if (!r.ok) { toast.error(r.error); setBusy(false); return; }
+    const itemsCopy = fromItems.map((it, i) => ({ ...it, sort_order: i }));
+    const r2 = await fnReplace({ data: { templateId: r.id!, items: itemsCopy } });
+    setBusy(false);
+    if (!r2.ok) { toast.error(r2.error); return; }
+    toast.success(t("templates.program.duplicated", { defaultValue: "Modelo duplicado" }));
+    setDupSlot(null);
+    setActiveSlot(String(toSlot));
+    await load();
+  };
+
   const updateDraft = (tplId: string, idx: number, patch: Partial<ItemDraft>) => {
     setItemsByTpl((m) => ({
       ...m,
