@@ -1023,13 +1023,41 @@ function NoteEditor({
       </div>
 
       <div className="grid gap-3 w-full max-w-full min-w-0">
+        {isField && (
+          <div className="grid gap-3 sm:grid-cols-2 w-full max-w-full min-w-0">
+            <div className="grid gap-1.5 min-w-0">
+              <Label>{t("fieldConsiderations.fields.date")}</Label>
+              <Input
+                type="date"
+                value={draft.event_date ?? ""}
+                onChange={(e) => onPatch("event_date", e.target.value)}
+                className="w-full max-w-full min-w-0"
+              />
+            </div>
+            <div className="grid gap-1.5 min-w-0">
+              <Label>{t("fieldConsiderations.fields.period")}</Label>
+              <Select
+                value={draft.period ?? ""}
+                onValueChange={(v) => onPatch("period", v)}
+              >
+                <SelectTrigger className="w-full max-w-full min-w-0">
+                  <SelectValue placeholder={t("fieldConsiderations.fields.periodPh")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="morning">{t("fieldConsiderations.fields.morning")}</SelectItem>
+                  <SelectItem value="afternoon">{t("fieldConsiderations.fields.afternoon")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-1.5">
           <Label>{t("fieldConsiderations.fields.title")}</Label>
           <Input
             value={draft.title}
             onChange={(e) => onPatch("title", e.target.value)}
             placeholder={t("fieldConsiderations.fields.titlePh")}
-            readOnly={mode === "outline"}
             className="w-full max-w-full min-w-0"
           />
 
