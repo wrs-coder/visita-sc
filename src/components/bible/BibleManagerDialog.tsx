@@ -9,8 +9,8 @@ import {
   importEpub,
   listLibraries,
   removeLibrary,
-  getActiveLibraryId,
   setActiveLibraryId,
+  resolveActiveLibraryId,
   type BibleLibrary,
 } from "@/lib/bible-notes-store";
 import { toast } from "sonner";
@@ -30,7 +30,8 @@ export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
 
   async function refresh() {
     setLibs(await listLibraries());
-    setActiveId(getActiveLibraryId());
+    // Valida o ID ativo contra a lista real (cai p/ a 1ª lib se o ativo sumiu).
+    setActiveId(await resolveActiveLibraryId());
   }
 
   useEffect(() => {
@@ -52,9 +53,11 @@ export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
         t("bibleManager.imported", { title: lib.title }) +
           `  (${lib.bookCount} / ${lib.verseCount})`,
       );
-      if (lib.bookCount < 60 || lib.verseCount < 20000) {
+      // Aviso só quando claramente faltou conteúdo significativo (evita
+      // falso-positivo em bíblias só-NT, livros de estudo, etc.).
+      if (lib.bookCount > 0 && lib.bookCount < 27) {
         toast.warning(
-          `Importação parcial: ${lib.bookCount}/66 livros e ${lib.verseCount} versículos. Abra o console (F12) para ver quais livros faltaram.`,
+          `Importação parcial: ${lib.bookCount} livros e ${lib.verseCount} versículos detectados.`,
         );
       }
     } catch (err) {
