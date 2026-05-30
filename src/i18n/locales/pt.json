@@ -1340,6 +1340,19 @@
     "loading": "Carregando versículo…",
     "notFound": "Versículo não disponível. Importe a Bíblia em Gerenciar Bíblias.",
     "dragHandle": "Arrastar",
-    "close": "Fechar"
+    "close": "Fechar",
+    "viewSettings": "Aparência",
+    "color": "Cor",
+    "colors": {
+      "white": "Branco",
+      "black": "Preto",
+      "sepia": "Sépia",
+      "yellow": "Amarelo",
+      "night_blue": "Azul noturno"
+    },
+    "bold": "Negrito",
+    "highlight": "Grifar trecho selecionado",
+    "clearHighlights": "Limpar grifos",
+    "selectToHighlight": "Selecione um trecho do texto para grifar."
   }
 }

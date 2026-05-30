@@ -1340,6 +1340,19 @@
     "loading": "Cargando versículo…",
     "notFound": "Versículo no disponible. Importa la Biblia en Administrar Biblias.",
     "dragHandle": "Arrastrar",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "viewSettings": "Apariencia",
+    "color": "Color",
+    "colors": {
+      "white": "Blanco",
+      "black": "Negro",
+      "sepia": "Sepia",
+      "yellow": "Amarillo",
+      "night_blue": "Azul noche"
+    },
+    "bold": "Negrita",
+    "highlight": "Resaltar selección",
+    "clearHighlights": "Borrar resaltados",
+    "selectToHighlight": "Selecciona un texto para resaltar."
   }
 }
