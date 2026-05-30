@@ -245,6 +245,7 @@ export const replaceFieldMeetingTemplateItems = createServerFn({ method: "POST" 
         territory_location: it.territory_location || null,
         auxiliary_leaders: it.auxiliary_leaders || null,
         closing_prayer: it.closing_prayer || null,
+        observations: it.observations ?? null,
         sort_order: it.sort_order ?? i,
       }));
       const { error } = await supabaseAdmin.from("field_meeting_template_items").insert(rows);
