@@ -161,11 +161,18 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
         mealDates.add(targetDate); inserted++;
       } else if (it.kind === "transport") {
         if (transpDates.has(targetDate)) { skipped++; continue; }
+        const allDay = bool(p.all_day, false);
+        const weekday = new Date(targetDate + "T00:00:00").getDay();
         await supabaseAdmin.from("transport_schedule").insert({
-          visit_id: data.visitId, event_date: targetDate,
+          visit_id: data.visitId, event_date: targetDate, weekday,
           driver_name: str(p.driver_name) ?? "—",
           contact_phone: str(p.contact_phone),
           description: str(p.description), notes: str(p.notes),
+          event_type: str(p.event_type),
+          direction: str(p.direction),
+          all_day: allDay,
+          departure_time: allDay ? null : time(p.departure_time),
+          return_time: allDay ? null : time(p.return_time),
           is_active: bool(p.is_active, true),
         });
         transpDates.add(targetDate); inserted++;
