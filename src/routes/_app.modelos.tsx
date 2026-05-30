@@ -387,18 +387,14 @@ function TransportEditor({ payload, onChange }: { payload: Payload; onChange: (p
                   <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.otherPlaceholder")}
                     value={String(ev.event_type_other ?? "")} onChange={(e) => updateEvent(idx, { event_type_other: e.target.value })} />
                 )}
-                {!allDay && (
-                  <>
-                    <div className="space-y-1">
-                      <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.departure")}</label>
-                      <Input className="h-9" type="time" value={String(ev.departure_time ?? "")} onChange={(e) => updateEvent(idx, { departure_time: e.target.value })} />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.return")}</label>
-                      <Input className="h-9" type="time" value={String(ev.return_time ?? "")} onChange={(e) => updateEvent(idx, { return_time: e.target.value })} />
-                    </div>
-                  </>
-                )}
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.departure")}</label>
+                  <Input className="h-9" type="time" value={String(ev.departure_time ?? "")} onChange={(e) => updateEvent(idx, { departure_time: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("templates.program.transport.return")}</label>
+                  <Input className="h-9" type="time" value={String(ev.return_time ?? "")} onChange={(e) => updateEvent(idx, { return_time: e.target.value })} />
+                </div>
                 {showDriver && (
                   <>
                     <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.driverName")} value={String(ev.driver_name ?? "")} onChange={(e) => updateEvent(idx, { driver_name: e.target.value })} />
