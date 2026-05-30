@@ -289,6 +289,23 @@ function Page() {
                 <p className="text-xs text-muted-foreground">
                   {t("templates.field.hint")}
                 </p>
+
+                <div>
+                  <Label className="text-xs">{t("templates.field.observations")}</Label>
+                  <Textarea
+                    className="mt-1 text-blue-600 dark:text-blue-400"
+                    placeholder={t("templates.field.observationsPlaceholder")}
+                    value={obsByTpl[active.id] ?? ""}
+                    maxLength={4000}
+                    onChange={(e) => setObsByTpl({ ...obsByTpl, [active.id]: e.target.value })}
+                    onBlur={async (e) => {
+                      const v = e.target.value;
+                      const r = await fnUpdate({ data: { id: active.id, observations: v || null } });
+                      if (!r.ok) toast.error(r.error);
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{t("templates.field.observationsHint")}</p>
+                </div>
               </CardContent></Card>
 
               <Card><CardContent className="p-4 space-y-3">
