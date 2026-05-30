@@ -168,7 +168,7 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
           driver_name: str(p.driver_name) ?? "—",
           contact_phone: str(p.contact_phone),
           description: str(p.description), notes: str(p.notes),
-          event_type: str(p.event_type),
+          event_type: str(p.event_type) === "other" ? (str(p.event_type_other) ?? "other") : str(p.event_type),
           direction: str(p.direction),
           all_day: allDay,
           departure_time: allDay ? null : time(p.departure_time),
