@@ -1216,6 +1216,12 @@
     "fields": {
       "title": "Título",
       "titlePh": "Ej.: Consideraciones para la visita de febrero",
+      "date": "Día",
+      "datePh": "Selecciona la fecha",
+      "period": "Turno",
+      "periodPh": "Selecciona el turno",
+      "morning": "Mañana",
+      "afternoon": "Tarde",
       "prayer": "Oración final",
       "prayerPh": "Quién dará la oración final",
       "territory": "Territorio asignado",
