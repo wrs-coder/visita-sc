@@ -87,6 +87,11 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
     const { data: circuitRaw } = await circuitQuery;
 
     const circuitFiltered = (circuitRaw ?? []).filter((e) => {
+      if (e.scope === "wife") {
+        // "Esposa": só visível para a esposa do super (wifeMode via wife_invite_code).
+        // Nunca visível para anciãos visitantes (código*) ou ESC.
+        return wifeMode && e.superintendent_id === cong!.superintendent_id;
+      }
       if (e.scope === "all") return e.superintendent_id === cong!.superintendent_id;
       return Array.isArray(e.congregation_ids) && e.congregation_ids.includes(cong!.id);
     });

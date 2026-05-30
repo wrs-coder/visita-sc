@@ -91,7 +91,7 @@ const TYPE_KEYS = [
 ] as const;
 type EventType = (typeof TYPE_KEYS)[number];
 
-type Scope = "congregation" | "multi" | "all" | "personal";
+type Scope = "congregation" | "multi" | "all" | "personal" | "wife";
 
 interface Event {
   id: string;
@@ -257,8 +257,8 @@ function Page() {
       notes: editing.notes || null,
       companion: editing.companion || null,
       scope,
-      congregation_ids: scope === "all" || scope === "personal" ? [] : congIds,
-      visible_to_spouse: editing.visible_to_spouse ?? true,
+      congregation_ids: scope === "all" || scope === "personal" || scope === "wife" ? [] : congIds,
+      visible_to_spouse: scope === "wife" ? true : (editing.visible_to_spouse ?? true),
     };
     const res = editing.id
       ? await offlineUpdate("circuit_schedule_events", payload, { id: editing.id })
@@ -510,6 +510,7 @@ function EventCard({
   const { t } = useTranslation();
   const congNames = useMemo(() => {
     if (e.scope === "personal") return t("schedule.personalBadge");
+    if (e.scope === "wife") return t("schedule.scopes.wife");
     if (e.scope === "all") return t("schedule.allCongsBadge");
     const map = new Map(congregations.map((c) => [c.id, c.name]));
     return e.congregation_ids.map((id) => map.get(id) ?? "—").join(", ");
@@ -661,6 +662,7 @@ function EventDialog({
               <SelectItem value="multi">{t("schedule.scopes.multi")}</SelectItem>
               <SelectItem value="all">{t("schedule.scopes.all")}</SelectItem>
               <SelectItem value="personal">{t("schedule.scopes.personal")}</SelectItem>
+              <SelectItem value="wife">{t("schedule.scopes.wife")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -717,16 +719,18 @@ function EventDialog({
           />
         </div>
 
-        <div className="flex items-center justify-between rounded-md border p-3">
-          <Label htmlFor="visible-spouse" className="cursor-pointer">
-            {t("schedule.visibleToSpouse")}
-          </Label>
-          <Switch
-            id="visible-spouse"
-            checked={!(editing.visible_to_spouse ?? true)}
-            onCheckedChange={(v) => setEditing({ ...editing, visible_to_spouse: !v })}
-          />
-        </div>
+        {scope !== "wife" && (
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <Label htmlFor="visible-spouse" className="cursor-pointer">
+              {t("schedule.visibleToSpouse")}
+            </Label>
+            <Switch
+              id="visible-spouse"
+              checked={!(editing.visible_to_spouse ?? true)}
+              onCheckedChange={(v) => setEditing({ ...editing, visible_to_spouse: !v })}
+            />
+          </div>
+        )}
       </div>
       <DialogFooter>
         <Button onClick={save} disabled={saving}>

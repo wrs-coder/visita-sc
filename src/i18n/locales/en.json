@@ -272,7 +272,8 @@
       "congregation": "Single congregation",
       "multi": "Multiple congregations",
       "all": "All congregations",
-      "personal": "Personal (only me)"
+      "personal": "Personal (only me)",
+      "wife": "Wife"
     },
     "types": {
       "ca_br": "CA-br",
