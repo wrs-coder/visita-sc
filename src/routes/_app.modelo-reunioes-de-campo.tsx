@@ -198,6 +198,7 @@ function Page() {
           territory_location: it.territory_location || null,
           auxiliary_leaders: it.auxiliary_leaders || null,
           closing_prayer: it.closing_prayer || null,
+          observations: it.observations || null,
           sort_order: i,
         })),
       },
