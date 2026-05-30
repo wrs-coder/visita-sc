@@ -398,7 +398,10 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
       else await supabaseAdmin.from("elders_servants_meetings").insert(payload);
     }
 
-    return { ok: true as const, weekendThemes: themes.data?.map((t) => t.title) ?? [] };
+    const now = new Date().toISOString();
+    await supabaseAdmin.from("visits").update({ last_applied_at: now }).eq("id", data.visitId);
+
+    return { ok: true as const, weekendThemes: themes.data?.map((t) => t.title) ?? [], lastAppliedAt: now };
   });
 
 // Lê (para qualquer membro autorizado) os temas de fim de semana —

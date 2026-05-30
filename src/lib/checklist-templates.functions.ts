@@ -205,15 +205,31 @@ export const applyChecklistTemplateForVisit = createServerFn({ method: "POST" })
     const { data: items } = await supabaseAdmin
       .from("checklist_template_items").select("title,description,sort_order")
       .eq("template_id", data.templateId).order("sort_order");
-    if (!items?.length) return { ok: true as const, applied: 0 };
-    const rows = items.map((it) => ({
-      visit_id: data.visitId,
-      title: it.title,
-      description: it.description,
-      sort_order: it.sort_order,
-      status: "pending" as const,
-    }));
-    const { error } = await supabaseAdmin.from("checklist_items").insert(rows);
-    if (error) return { ok: false as const, error: error.message };
-    return { ok: true as const, applied: rows.length };
+    if (!items?.length) {
+      const now = new Date().toISOString();
+      await supabaseAdmin.from("visits").update({ last_applied_at: now }).eq("id", data.visitId);
+      return { ok: true as const, applied: 0, skipped: 0, lastAppliedAt: now };
+    }
+
+    // Merge NÃO-DESTRUTIVO: ignora títulos já presentes para esta visita.
+    const { data: existing } = await supabaseAdmin
+      .from("checklist_items").select("title").eq("visit_id", data.visitId);
+    const have = new Set((existing ?? []).map((r) => (r.title ?? "").trim().toLowerCase()));
+    const rows = items
+      .filter((it) => !have.has((it.title ?? "").trim().toLowerCase()))
+      .map((it) => ({
+        visit_id: data.visitId,
+        title: it.title,
+        description: it.description,
+        sort_order: it.sort_order,
+        status: "pending" as const,
+      }));
+    const skipped = items.length - rows.length;
+    if (rows.length) {
+      const { error } = await supabaseAdmin.from("checklist_items").insert(rows);
+      if (error) return { ok: false as const, error: error.message };
+    }
+    const now = new Date().toISOString();
+    await supabaseAdmin.from("visits").update({ last_applied_at: now }).eq("id", data.visitId);
+    return { ok: true as const, applied: rows.length, skipped, lastAppliedAt: now };
   });

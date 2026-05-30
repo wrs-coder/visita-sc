@@ -280,18 +280,28 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
         .from("field_meeting_templates").select("id").eq("congregation_id", visit.congregation_id).maybeSingle();
       templateId = tpl?.id ?? null;
     }
-    if (!templateId) return { ok: true as const, applied: 0 };
+    if (!templateId) return { ok: true as const, applied: 0, skipped: 0 };
 
     await supabaseAdmin.from("visits").update({ field_meeting_template_id: templateId }).eq("id", data.visitId);
 
     const { data: items } = await supabaseAdmin
       .from("field_meeting_template_items").select("*").eq("template_id", templateId).order("sort_order");
-    if (!items?.length) return { ok: true as const, applied: 0 };
+    if (!items?.length) {
+      const now = new Date().toISOString();
+      await supabaseAdmin.from("visits").update({ last_applied_at: now }).eq("id", data.visitId);
+      return { ok: true as const, applied: 0, skipped: 0, lastAppliedAt: now };
+    }
     const start = new Date(visit.start_date + "T00:00:00");
     const dateAt = (off: number) => {
       const d = new Date(start); d.setDate(d.getDate() + off);
       return d.toISOString().slice(0, 10);
     };
+
+    // Merge NÃO-DESTRUTIVO por (event_date, period).
+    const { data: existing } = await supabaseAdmin
+      .from("field_meetings").select("event_date,period").eq("visit_id", data.visitId);
+    const have = new Set((existing ?? []).map((r) => `${r.event_date}|${r.period ?? ""}`));
+
     const rows = items.map((it) => ({
       visit_id: data.visitId,
       event_date: dateAt(it.day_offset),
@@ -303,8 +313,13 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
       auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? null,
       closing_prayer: it.closing_prayer,
       is_active: true,
-    }));
-    const { error } = await supabaseAdmin.from("field_meetings").insert(rows);
-    if (error) return { ok: false as const, error: error.message };
-    return { ok: true as const, applied: rows.length };
+    })).filter((r) => !have.has(`${r.event_date}|${r.period}`));
+    const skipped = items.length - rows.length;
+    if (rows.length) {
+      const { error } = await supabaseAdmin.from("field_meetings").insert(rows);
+      if (error) return { ok: false as const, error: error.message };
+    }
+    const now = new Date().toISOString();
+    await supabaseAdmin.from("visits").update({ last_applied_at: now }).eq("id", data.visitId);
+    return { ok: true as const, applied: rows.length, skipped, lastAppliedAt: now };
   });

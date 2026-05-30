@@ -123,10 +123,24 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
     const time = (v: unknown): string | null => (typeof v === "string" && v.length > 0 ? v : null);
     const bool = (v: unknown, def: boolean): boolean => (typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : def);
 
+    // Pre-carrega datas já preenchidas em cada tabela para merge NÃO-DESTRUTIVO.
+    const [exField, exMeals, exTransp] = await Promise.all([
+      supabaseAdmin.from("field_assignments").select("event_date").eq("visit_id", data.visitId),
+      supabaseAdmin.from("meals").select("meal_date").eq("visit_id", data.visitId),
+      supabaseAdmin.from("transport_schedule").select("event_date").eq("visit_id", data.visitId),
+    ]);
+    const fieldDates = new Set((exField.data ?? []).map((r) => r.event_date as string));
+    const mealDates = new Set((exMeals.data ?? []).map((r) => r.meal_date as string));
+    const transpDates = new Set((exTransp.data ?? []).map((r) => r.event_date as string | null).filter(Boolean) as string[]);
+
+    let inserted = 0;
+    let skipped = 0;
+
     for (const it of items ?? []) {
       const p = (it.payload ?? {}) as Record<string, unknown>;
       const targetDate = dateAt(it.day_offset);
       if (it.kind === "study") {
+        if (fieldDates.has(targetDate)) { skipped++; continue; }
         await supabaseAdmin.from("field_assignments").insert({
           visit_id: data.visitId, event_date: targetDate,
           period: str(p.period) ?? "Manhã",
@@ -134,7 +148,9 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
           acompanhante: str(p.acompanhante), acompanhante_for: str(p.acompanhante_for),
           contact_phone: str(p.contact_phone), is_active: bool(p.is_active, true),
         });
+        fieldDates.add(targetDate); inserted++;
       } else if (it.kind === "meal") {
+        if (mealDates.has(targetDate)) { skipped++; continue; }
         await supabaseAdmin.from("meals").insert({
           visit_id: data.visitId, meal_date: targetDate,
           type: (str(p.type) ?? "lunch") as "lunch" | "dinner" | "breakfast",
@@ -142,7 +158,9 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
           location: str(p.location), meal_time: time(p.meal_time),
           notes: str(p.notes), is_active: bool(p.is_active, true),
         });
+        mealDates.add(targetDate); inserted++;
       } else if (it.kind === "transport") {
+        if (transpDates.has(targetDate)) { skipped++; continue; }
         await supabaseAdmin.from("transport_schedule").insert({
           visit_id: data.visitId, event_date: targetDate,
           driver_name: str(p.driver_name) ?? "—",
@@ -150,10 +168,11 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
           description: str(p.description), notes: str(p.notes),
           is_active: bool(p.is_active, true),
         });
+        transpDates.add(targetDate); inserted++;
       }
     }
 
-    // Apply per-day meal notes
+    // Per-day meal notes: upsert (já não-destrutivo via onConflict).
     const mealNotes = (tpl.meal_day_notes ?? {}) as Record<string, string>;
     const noteRows = Object.entries(mealNotes)
       .filter(([, v]) => typeof v === "string" && v.trim().length > 0)
@@ -166,5 +185,8 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
       await supabaseAdmin.from("meal_day_notes").upsert(noteRows, { onConflict: "visit_id,meal_date" });
     }
 
-    return { ok: true as const };
+    const now = new Date().toISOString();
+    await supabaseAdmin.from("visits").update({ last_applied_at: now }).eq("id", data.visitId);
+
+    return { ok: true as const, inserted, skipped, lastAppliedAt: now };
   });
