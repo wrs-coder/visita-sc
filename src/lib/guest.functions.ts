@@ -54,7 +54,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
           return { ok: false as const, error: "Nenhuma congregação ativa encontrada." };
         }
         availableCongregations = list.map((c) => ({ id: c.id, name: c.name }));
-        const requested = data.congregationId && list.find((c) => c.id === data.congregationId);
+        const requested = data.congregationId ? list.find((c) => c.id === data.congregationId) : undefined;
         cong = requested ?? list[0];
         selectedCongregationId = cong.id;
       }
