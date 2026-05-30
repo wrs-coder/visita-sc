@@ -408,6 +408,7 @@ export function EldersServantsPanel() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const isSuper = role === "superintendent";
+  const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<EldersRow>(
     "elders_servants_meetings",
     "id,visit_id,theme,opening_prayer,closing_prayer",
@@ -417,6 +418,7 @@ export function EldersServantsPanel() {
   if (loading || !row) return <LoadingCard />;
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.elders?.observations} />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <div>
           <Label>{t("meetingsTalks.elders.theme")}</Label>
