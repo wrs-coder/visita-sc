@@ -14,6 +14,8 @@ import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { offlineUpdate, offlineInsert, offlineDelete, offlineUpsert } from "@/lib/offline-supabase";
+import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
+import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 
 export const Route = createFileRoute("/_app/refeicoes")({ component: Page });
 
