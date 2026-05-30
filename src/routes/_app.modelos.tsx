@@ -178,7 +178,7 @@ function Page() {
         />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t("templates.program.templateLabel")}</Label>
         <Select value={activeSlot} onValueChange={setActiveSlot}>
           <SelectTrigger className="h-9 max-w-xs"><SelectValue /></SelectTrigger>
@@ -186,6 +186,25 @@ function Page() {
             {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || t("templates.templateNumber", { n: s })}</SelectItem>)}
           </SelectContent>
         </Select>
+        {dupSlot === null ? (
+          <Button size="sm" variant="outline" onClick={() => setDupSlot(activeSlot)}>
+            <Copy className="h-4 w-4 mr-1" /> {t("templates.program.duplicateTemplate", { defaultValue: "Duplicar modelo" })}
+          </Button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{t("templates.program.duplicateTo", { defaultValue: "Copiar para" })}</span>
+            <Select value={String(dupSlot)} onValueChange={(v) => setDupSlot(v)}>
+              <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || t("templates.templateNumber", { n: s })}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="default" onClick={() => duplicateSlot(Number(activeSlot), Number(dupSlot))} disabled={dupSlot === activeSlot || busy}>
+              <Check className="h-4 w-4 mr-1" /> {t("common.duplicate", { defaultValue: "Duplicar" })}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setDupSlot(null)}>{t("common.cancel", { defaultValue: "Cancelar" })}</Button>
+          </div>
+        )}
       </div>
 
       <Tabs value={activeSlot} onValueChange={setActiveSlot}>
