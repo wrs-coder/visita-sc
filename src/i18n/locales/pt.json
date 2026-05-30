@@ -348,7 +348,7 @@
     "directionLabel": "Direção",
     "departureTime": "Horário de saída",
     "returnTime": "Horário de retorno",
-    "allDay": "Dia inteiro",
+    "allDay": "Apoiar todos os eventos",
     "applyAllDayHint": "Ao salvar, o motorista e o telefone serão replicados para os demais transportes deste mesmo dia.",
     "allDayApplied": "Motorista replicado para {{count}} outro(s) transporte(s) do dia.",
     "eventType": {
@@ -580,7 +580,7 @@
         "notes": "Observações",
         "eventType": "Tipo de evento",
         "direction": "Direção",
-        "allDay": "Dia inteiro",
+        "allDay": "Apoiar todos os eventos",
         "departure": "Horário de saída",
         "return": "Horário de retorno",
         "otherPlaceholder": "Descreva o tipo de evento",
