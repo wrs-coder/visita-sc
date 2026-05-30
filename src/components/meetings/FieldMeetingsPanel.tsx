@@ -201,6 +201,14 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
             )}
           </div>
         </div>
+        {r.observations && r.observations.trim() && (
+          <div className="rounded-md border border-blue-500/30 bg-blue-500/5 px-3 py-2">
+            <div className="text-[11px] uppercase tracking-wide font-medium text-blue-600 dark:text-blue-400 opacity-80">
+              {t("meetingsTalks.fromTemplate.fieldObservations")}
+            </div>
+            <div className="text-sm whitespace-pre-wrap mt-0.5 text-blue-600 dark:text-blue-400">{r.observations}</div>
+          </div>
+        )}
         {isSuper && (
           <div>
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.modality")}</label>
