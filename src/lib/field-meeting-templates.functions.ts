@@ -35,6 +35,7 @@ const itemSchema = z.object({
   territory_location: z.string().trim().max(200).nullable().optional(),
   auxiliary_leaders: z.string().trim().max(200).nullable().optional(),
   closing_prayer: z.string().trim().max(200).nullable().optional(),
+  observations: z.string().max(4000).nullable().optional(),
   sort_order: z.number().int().min(0).max(1000).default(0),
 });
 
