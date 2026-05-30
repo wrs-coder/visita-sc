@@ -49,6 +49,7 @@ function Page() {
   const [notesBySlot, setNotesBySlot] = useState<Record<number, Record<string, string>>>({});
   const [activeSlot, setActiveSlot] = useState("1");
   const [busy, setBusy] = useState(false);
+  const [dupSlot, setDupSlot] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const r = await fnList();
