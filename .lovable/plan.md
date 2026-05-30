@@ -1,48 +1,26 @@
-# Correção: `program_templates_slot_check`
+## Reestruturação: Transporte nos Modelos de Programação Pessoal
 
-## Diagnóstico
+### 1. `src/routes/_app.modelos.tsx`
+- Expandir `PayloadEditor` para `kind === "transport"` com: `event_type` (select), `direction` (select), `all_day` (checkbox), `departure_time`, `return_time`, `driver_name`, `contact_phone`, `description`, `notes`.
+- Atualizar `addItem(..., "transport")` com defaults: `event_type: "field_service"`, `direction: "round_trip"`, `all_day: false`.
 
-O erro **não vem** do novo fluxo de transporte (Missão 6) — `transport_schedule` está OK. Vem da tela **/modelos** (modelos de programação), onde você tentou salvar um item (provavelmente do bloco "Transporte" do modelo) em um slot maior que 3.
+### 2. `src/lib/templates.functions.ts`
+- Em `applyTemplateToVisit` para `kind === "transport"`, inserir em `transport_schedule` os campos `event_type`, `direction`, `all_day`, `departure_time`, `return_time`, com `weekday` calculado a partir de `targetDate`. Quando `all_day: true`, anular os horários.
 
-Causa raiz: divergência entre UI/servidor e o banco.
+### 3. `src/routes/_app.transporte.tsx`
+- Reverter ao formato pré-Missão 6: remover `useServerFn` (upsert/toggle/delete/applyAllDayDriver), remover selects/checkboxes avançados.
+- Manter campos básicos: `event_date`, `driver_name`, `contact_phone`, `description`, `notes`.
+- Continuar exibindo registros já criados (inclusive os vindos de modelos) em modo somente leitura para os campos novos.
+- Usar `supabase.from("transport_schedule")` direto no cliente (RLS já protege por `congregation_id` via `can_edit_visit`).
 
-| Camada | Limite atual de `slot` |
-|---|---|
-| UI (`src/routes/_app.modelos.tsx`, `SLOTS`) | 1..10 |
-| Zod (`upsertTemplate` em `src/lib/templates.functions.ts:42`) | 1..10 |
-| **DB constraint `program_templates_slot_check`** | **1..3** ❌ |
+### 4. `src/lib/transport.functions.ts`
+- Remover arquivo (não mais necessário).
 
-Quando você cria/renomeia o 4º modelo (ou superior), o `INSERT` no `program_templates` viola a constraint e a falha aparece em qualquer ação subsequente daquele slot — inclusive ao adicionar um item de transporte (porque `ensureTemplate(slot)` é chamado antes de salvar o item).
+### 5. i18n (`pt.json`, `en.json`, `es.json`)
+- Renomear `templates.program.title` e `nav.scheduleTemplates` → "Modelos de Programação Pessoal" / "Personal Schedule Templates" / "Plantillas de Programación Personal".
+- Adicionar chaves para os novos campos de transporte no editor de modelos.
 
-Dados atuais já usam até slot 3 — nenhum registro precisa ser migrado.
-
-## Mudança
-
-Uma única migração, sem alterações de código (UI e Zod já estão corretos em 1..10):
-
-```sql
-ALTER TABLE public.program_templates
-  DROP CONSTRAINT program_templates_slot_check;
-
-ALTER TABLE public.program_templates
-  ADD CONSTRAINT program_templates_slot_check
-  CHECK (slot >= 1 AND slot <= 10);
-```
-
-## Por que não mexer no Zod nem na UI
-
-- A UI já oferece 10 slots (`SLOTS = [1..10]`) e a tradução `templates.templateNumber` cobre todos.
-- O Zod em `upsertTemplate` já aceita `min(1).max(10)`.
-- A constraint do DB era o único ponto fora de sincronia. Reduzir UI/Zod para 3 seria regressão (e quebraria modelos já planejados).
-
-## Verificação pós-migração
-
-1. Em `/modelos`, abrir aba "Modelo 4", renomear → sem erro.
-2. Adicionar item de tipo Transporte/Estudo/Refeição no Modelo 4 → salva.
-3. Reabrir a aba e confirmar persistência.
-
-## Observação
-
-Os dois fluxos têm nomes parecidos mas são independentes:
-- **Modelos de programação** (`program_templates` + `program_template_items` com `kind="transport"`) — afetado por este bug.
-- **Agenda de transporte da visita** (`transport_schedule`, Missão 6) — não afetado.
+### Garantias
+- **Dados preservados**: nenhuma migração destrutiva; `transport_schedule` mantém todas as linhas existentes.
+- **Segurança**: RLS atual em `transport_schedule` (`can_edit_visit`) já restringe edição por `congregation_id`.
+- **Fluxo**: aplicação do modelo grava corretamente `all_day`, `event_type` e `direction` para a visita.
