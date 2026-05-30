@@ -24,6 +24,9 @@ import {
   Move,
   Scissors,
   ClipboardPaste,
+  Cloud,
+  CloudUpload,
+  CloudDownload,
 } from "lucide-react";
 import {
   Dialog,
