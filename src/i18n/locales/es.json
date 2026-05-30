@@ -398,6 +398,13 @@
     "exportPending": "Pendiente"
   },
   "meetingsTalks": {
+    "fromTemplate": {
+      "observations": "Observaciones (del modelo)",
+      "openingSong": "Cántico de apertura (del modelo)",
+      "closingSong": "Cántico de cierre (del modelo)",
+      "fieldObservations": "Observaciones del superintendente (del modelo)",
+      "hint": "Información de solo lectura del modelo seleccionado."
+    },
     "title": "Reuniones y Discursos",
     "subtitle": "Paquete unificado por visita: reuniones de campo, entre semana, fin de semana, precursores y ancianos/siervos.",
     "loading": "Cargando…",
