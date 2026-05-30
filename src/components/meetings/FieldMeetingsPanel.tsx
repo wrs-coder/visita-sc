@@ -100,6 +100,12 @@ export function FieldMeetingsPanel() {
           : t("meetingsTalks.field.subtitleElder")}
       </p>
 
+      <TemplateExtraBlock
+        label={t("meetingsTalks.fromTemplate.fieldObservations")}
+        value={extras.field?.observations}
+        variant="blue"
+      />
+
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
 
       <fieldset disabled={!editAllowed} className="space-y-5 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
