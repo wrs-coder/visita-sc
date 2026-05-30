@@ -550,6 +550,10 @@
       "mealNotesTitle": "Observaciones de comidas por día",
       "mealNotesHelp": "Texto opcional mostrado en rojo a los ancianos debajo del título del día, en la pestaña Comidas.",
       "mealNotesPlaceholder": "Ej.: Reunión entre 7h y 16h30, no programen almuerzo",
+      "duplicateTemplate": "Duplicar modelo",
+      "duplicateTo": "Copiar a",
+      "duplicated": "Modelo duplicado con éxito",
+      "copyPrefix": "Copia de",
       "noItems": "Sin ítems.",
       "study": {
         "morning": "Mañana",
