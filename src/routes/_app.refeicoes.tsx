@@ -107,6 +107,11 @@ function Page() {
 
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
 
+      <TemplateExtraBlock
+        label={t("meals.generalObservationsLabel")}
+        value={extras.program?.general_observations}
+      />
+
       <fieldset disabled={!editAllowed} className="space-y-5 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
         {days.map((d) => {
           const key = format(d, "yyyy-MM-dd");
