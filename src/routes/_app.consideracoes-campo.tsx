@@ -24,6 +24,9 @@ import {
   Move,
   Scissors,
   ClipboardPaste,
+  Cloud,
+  CloudUpload,
+  CloudDownload,
 } from "lucide-react";
 import {
   Dialog,
@@ -73,6 +76,13 @@ import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
 import { RichOutlineContent } from "@/lib/rich-content";
 import { cn } from "@/lib/utils";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  listCloudOutlines,
+  pushOutlineToCloud,
+  pullOutlineFromCloud,
+  deleteCloudOutline,
+} from "@/lib/personal-outlines.functions";
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
   beforeLoad: async () => {
@@ -166,6 +176,96 @@ function Page() {
     | { kind: "folder"; id: string }
     | null
   >(null);
+
+  // Sincronização com a nuvem
+  const [cloudOpen, setCloudOpen] = useState(false);
+  const [cloudList, setCloudList] = useState<Array<{ id: string; title: string; folder_path: string; updated_at: string }>>([]);
+  const [cloudBusy, setCloudBusy] = useState(false);
+  const fnListCloud = useServerFn(listCloudOutlines);
+  const fnPushCloud = useServerFn(pushOutlineToCloud);
+  const fnPullCloud = useServerFn(pullOutlineFromCloud);
+  const fnDeleteCloud = useServerFn(deleteCloudOutline);
+
+  async function refreshCloudList() {
+    const r = await fnListCloud();
+    if (r.ok) setCloudList(r.outlines.map((o) => ({ id: o.id, title: o.title, folder_path: o.folder_path, updated_at: o.updated_at })));
+  }
+
+  async function handleCloudOpen() {
+    setCloudOpen(true);
+    await refreshCloudList();
+  }
+
+  async function handleCloudPush() {
+    if (!draft) return;
+    setCloudBusy(true);
+    try {
+      const folderName = draft.folderId ? (folders.find((f) => f.id === draft.folderId)?.name ?? "") : "";
+      const r = await fnPushCloud({
+        data: {
+          title: (draft.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })).slice(0, 200),
+          folder_path: folderName,
+          content: {
+            prayer: draft.prayer ?? null,
+            territory: draft.territory ?? null,
+            assistants: draft.assistants ?? null,
+            description: draft.description ?? null,
+            content: draft.content ?? "",
+          },
+        },
+      });
+      if (!r.ok) { toast.error(r.error); return; }
+      toast.success(t("personalOutlines.cloud.pushed", { defaultValue: "Esboço enviado para a nuvem." }));
+      await refreshCloudList();
+    } finally {
+      setCloudBusy(false);
+    }
+  }
+
+  async function handleCloudPull(id: string) {
+    setCloudBusy(true);
+    try {
+      const r = await fnPullCloud({ data: { id } });
+      if (!r.ok) { toast.error(r.error); return; }
+      const c = (r.outline.content_json ?? {}) as Record<string, unknown>;
+      const now = Date.now();
+      const n: FieldNote = {
+        id: newNoteId(),
+        type: activeType ?? "outline",
+        folderId: selectedFolderId,
+        title: r.outline.title,
+        prayer: typeof c.prayer === "string" ? c.prayer : "",
+        territory: typeof c.territory === "string" ? c.territory : "",
+        assistants: typeof c.assistants === "string" ? c.assistants : "",
+        description: typeof c.description === "string" ? c.description : "",
+        content: typeof c.content === "string" ? c.content : "",
+        created_at: now,
+        updated_at: now,
+      };
+      await persistNote(n);
+      setNotes((all) => [n, ...all].sort((a, b) => b.updated_at - a.updated_at));
+      setDraft(n);
+      setSelectedNoteId(n.id);
+      setMode("outline");
+      toast.success(t("personalOutlines.cloud.pulled", { defaultValue: "Esboço importado da nuvem." }));
+      setCloudOpen(false);
+    } finally {
+      setCloudBusy(false);
+    }
+  }
+
+  async function handleCloudDelete(id: string) {
+    if (!confirm(t("personalOutlines.cloud.deleteConfirm", { defaultValue: "Excluir este esboço da nuvem?" }))) return;
+    setCloudBusy(true);
+    try {
+      const r = await fnDeleteCloud({ data: { id } });
+      if (!r.ok) { toast.error(r.error); return; }
+      toast.success(t("personalOutlines.cloud.deleted", { defaultValue: "Removido da nuvem." }));
+      await refreshCloudList();
+    } finally {
+      setCloudBusy(false);
+    }
+  }
 
   useEffect(() => {
     try {
@@ -777,6 +877,7 @@ function Page() {
                     onDelete={handleDeleteNote}
                     onExport={handleExportNote}
                     onFullscreen={() => setFullscreen(true)}
+                    onCloud={handleCloudOpen}
                     dateFmt={dateFmt}
                   />
                 )}
@@ -793,6 +894,56 @@ function Page() {
           onClose={() => setFullscreen(false)}
         />
       )}
+
+      <Dialog open={cloudOpen} onOpenChange={setCloudOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("personalOutlines.cloud.title", { defaultValue: "Esboços na nuvem" })}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              {t("personalOutlines.cloud.help", { defaultValue: "Até 10 esboços podem ser sincronizados com a nuvem. Útil para acessar de outro dispositivo." })}
+            </p>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">
+                {t("personalOutlines.cloud.count", { defaultValue: "Salvos: {{n}}/10", n: cloudList.length })}
+              </span>
+              <Button size="sm" disabled={!draft || cloudBusy} onClick={handleCloudPush}>
+                <CloudUpload className="h-4 w-4 mr-1.5" />
+                {t("personalOutlines.cloud.push", { defaultValue: "Enviar esboço atual" })}
+              </Button>
+            </div>
+            <div className="max-h-80 overflow-y-auto rounded-md border divide-y">
+              {cloudList.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground text-center">
+                  {t("personalOutlines.cloud.empty", { defaultValue: "Nenhum esboço na nuvem." })}
+                </p>
+              ) : (
+                cloudList.map((o) => (
+                  <div key={o.id} className="flex items-center gap-2 p-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{o.title}</p>
+                      {o.folder_path && <p className="text-xs text-muted-foreground truncate">{o.folder_path}</p>}
+                    </div>
+                    <Button size="sm" variant="outline" disabled={cloudBusy} onClick={() => handleCloudPull(o.id)}>
+                      <CloudDownload className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-destructive" disabled={cloudBusy} onClick={() => handleCloudDelete(o.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCloudOpen(false)}>
+              {t("common.close", { defaultValue: "Fechar" })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {moveTarget && (
         <MoveToDialog
@@ -825,12 +976,13 @@ interface EditorProps {
   onDelete: () => void;
   onExport: () => void;
   onFullscreen: () => void;
+  onCloud: () => void;
   dateFmt: (ts: number) => string;
 }
 
 function NoteEditor({
   draft, mode, type, saving, activeBible, detected,
-  onPatch, onModeChange, onSave, onDelete, onExport, onFullscreen, dateFmt,
+  onPatch, onModeChange, onSave, onDelete, onExport, onFullscreen, onCloud, dateFmt,
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
@@ -993,6 +1145,9 @@ function NoteEditor({
         )}
         <Button variant="outline" size="sm" onClick={onExport}>
           <Download className="h-4 w-4 mr-1.5" /> {t("personalOutlines.folders.exportNote")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={onCloud}>
+          <Cloud className="h-4 w-4 mr-1.5" /> {t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}
         </Button>
         <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive">
           <Trash2 className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.delete")}

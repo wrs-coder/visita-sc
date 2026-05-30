@@ -1204,6 +1204,18 @@
       "outline": "Esboço",
       "prompt": "Selecione um tipo acima para carregar suas pastas e notas."
     },
+    "cloud": {
+      "button": "Nuvem",
+      "title": "Esboços na nuvem",
+      "help": "Até 10 esboços podem ser sincronizados com a nuvem. Útil para acessar de outro dispositivo.",
+      "count": "Salvos: {{n}}/10",
+      "push": "Enviar esboço atual",
+      "pushed": "Esboço enviado para a nuvem.",
+      "pulled": "Esboço importado da nuvem.",
+      "deleted": "Removido da nuvem.",
+      "deleteConfirm": "Excluir este esboço da nuvem?",
+      "empty": "Nenhum esboço na nuvem."
+    },
     "folders": {
       "rootLabel": "Raiz",
       "new": "Nova pasta",
