@@ -152,7 +152,7 @@ function Page() {
     if (error) toast.error(error.message);
   };
 
-  // Update shared fields (driver/phone/notes/all_day) across all rows of a group.
+  // Update shared fields (all_day, event_date) across all rows of a group.
   const updateGroup = async (rows: Transport[], patch: Partial<Transport>) => {
     const ids = rows.map((r) => r.id);
     const update: Partial<Transport> = { ...patch };
@@ -163,6 +163,13 @@ function Page() {
     const { error } = await supabase.from("transport_schedule").update(update).in("id", ids);
     if (error) toast.error(error.message);
   };
+
+  // Update a single row (per-event driver fields).
+  const updateRow = async (id: string, patch: Partial<Transport>) => {
+    const { error } = await supabase.from("transport_schedule").update(patch).eq("id", id);
+    if (error) toast.error(error.message);
+  };
+
 
   const fmtTime = (s: string | null) => (s ? s.slice(0, 5) : "");
   const eventTypeLabel = (k: string | null) =>
