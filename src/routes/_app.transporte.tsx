@@ -162,7 +162,7 @@ function Page() {
   // Update shared fields (driver/phone/notes/all_day) across all rows of a group.
   const updateGroup = async (rows: Transport[], patch: Partial<Transport>) => {
     const ids = rows.map((r) => r.id);
-    const update: Record<string, unknown> = { ...patch };
+    const update: Partial<Transport> = { ...patch };
     if (patch.all_day === true) {
       update.departure_time = null;
       update.return_time = null;
