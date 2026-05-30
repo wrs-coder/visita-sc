@@ -79,18 +79,29 @@ function hasIDB(): boolean {
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
+    req.onupgradeneeded = (event) => {
       const db = req.result;
+      const oldVersion = (event as IDBVersionChangeEvent).oldVersion ?? 0;
+
       if (!db.objectStoreNames.contains(STORE_NOTES)) {
         db.createObjectStore(STORE_NOTES, { keyPath: "id" });
       }
-      // Recria o store de Bíblias com o novo formato (libraryId-based).
-      if (db.objectStoreNames.contains(STORE_BIBLES)) {
-        db.deleteObjectStore(STORE_BIBLES);
+
+      // Bíblias: só recria o store quando saltamos da v<3 (formato antigo,
+      // sem keyPath libraryId-based). Em bumps futuros (v3 -> v4, v4 -> v5...),
+      // NÃO apagar os versículos já importados pelo usuário.
+      if (oldVersion < 3) {
+        if (db.objectStoreNames.contains(STORE_BIBLES)) {
+          db.deleteObjectStore(STORE_BIBLES);
+        }
+        const bibles = db.createObjectStore(STORE_BIBLES, { keyPath: "key" });
+        bibles.createIndex("by_library", "libraryId", { unique: false });
+        bibles.createIndex("by_book", ["libraryId", "bookId"], { unique: false });
+      } else if (!db.objectStoreNames.contains(STORE_BIBLES)) {
+        const bibles = db.createObjectStore(STORE_BIBLES, { keyPath: "key" });
+        bibles.createIndex("by_library", "libraryId", { unique: false });
+        bibles.createIndex("by_book", ["libraryId", "bookId"], { unique: false });
       }
-      const bibles = db.createObjectStore(STORE_BIBLES, { keyPath: "key" });
-      bibles.createIndex("by_library", "libraryId", { unique: false });
-      bibles.createIndex("by_book", ["libraryId", "bookId"], { unique: false });
 
       if (!db.objectStoreNames.contains(STORE_LIBRARIES)) {
         const libs = db.createObjectStore(STORE_LIBRARIES, { keyPath: "id" });
@@ -262,35 +273,46 @@ export async function importEpub(
   const CHUNK = 1000;
   const total = parsed.verses.length;
 
-  for (let i = 0; i < total; i += CHUNK) {
-    const slice = parsed.verses.slice(i, i + CHUNK);
-    const records: BibleVerseRecord[] = slice.map((v) => ({
-      key: verseKey(id, v.bookId, v.chapter, v.verse),
-      libraryId: id,
-      bookId: v.bookId,
-      chapter: v.chapter,
-      verse: v.verse,
-      text: v.text,
-    }));
+  try {
+    for (let i = 0; i < total; i += CHUNK) {
+      const slice = parsed.verses.slice(i, i + CHUNK);
+      const records: BibleVerseRecord[] = slice.map((v) => ({
+        key: verseKey(id, v.bookId, v.chapter, v.verse),
+        libraryId: id,
+        bookId: v.bookId,
+        chapter: v.chapter,
+        verse: v.verse,
+        text: v.text,
+      }));
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE_BIBLES, "readwrite");
+        const store = tx.objectStore(STORE_BIBLES);
+        for (const r of records) store.put(r);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+      onProgress?.("write-db", 0.9 + ((i + slice.length) / Math.max(total, 1)) * 0.1);
+      // Cede o thread principal entre chunks
+      await new Promise((r) => setTimeout(r, 0));
+    }
+
+    // Grava metadados da biblioteca (só após todos os versículos)
     await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_BIBLES, "readwrite");
-      const store = tx.objectStore(STORE_BIBLES);
-      for (const r of records) store.put(r);
+      const tx = db.transaction(STORE_LIBRARIES, "readwrite");
+      tx.objectStore(STORE_LIBRARIES).put(library);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
-    onProgress?.("write-db", 0.9 + ((i + slice.length) / Math.max(total, 1)) * 0.1);
-    // Cede o thread principal entre chunks
-    await new Promise((r) => setTimeout(r, 0));
+  } catch (err) {
+    // Importação falhou no meio: limpa versículos órfãos para não deixar lixo
+    // invisível no IndexedDB (não há registro em bible_libraries apontando p/ eles).
+    try {
+      await removeLibrary(id);
+    } catch {
+      /* best-effort cleanup */
+    }
+    throw err;
   }
-
-  // Grava metadados da biblioteca
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE_LIBRARIES, "readwrite");
-    tx.objectStore(STORE_LIBRARIES).put(library);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
 
   onProgress?.("write-db", 1);
   setActiveLibraryId(id);
@@ -351,11 +373,30 @@ export function setActiveLibraryId(id: string | null): void {
   try {
     if (id) localStorage.setItem(LS_ACTIVE_LIBRARY, id);
     else localStorage.removeItem(LS_ACTIVE_LIBRARY);
-  } catch { /* noop */ }
+  } catch { /* noop — Safari private mode bloqueia localStorage */ }
+}
+
+/**
+ * Valida o activeLibraryId contra as bibliotecas realmente existentes.
+ * Se o ID apontar para uma biblioteca removida (ou inexistente), faz fallback
+ * para a primeira disponível e atualiza o localStorage. Evita o bug "versículos
+ * não aparecem mais" depois que o usuário remove a lib ativa por outro caminho.
+ */
+export async function resolveActiveLibraryId(): Promise<string | null> {
+  const libs = await listLibraries();
+  if (libs.length === 0) {
+    setActiveLibraryId(null);
+    return null;
+  }
+  const current = getActiveLibraryId();
+  if (current && libs.some((l) => l.id === current)) return current;
+  const fallback = libs[0].id;
+  setActiveLibraryId(fallback);
+  return fallback;
 }
 
 export async function getActiveLibrary(): Promise<BibleLibrary | null> {
-  const id = getActiveLibraryId();
+  const id = await resolveActiveLibraryId();
   if (!id) return null;
   if (!hasIDB()) return null;
   const db = await openDB();
