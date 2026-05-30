@@ -367,6 +367,7 @@ export type Database = {
           id: string
           modality: Database["public"]["Enums"]["field_modality"]
           name: string
+          observations: string | null
           superintendent_id: string
           updated_at: string
         }
@@ -376,6 +377,7 @@ export type Database = {
           id?: string
           modality?: Database["public"]["Enums"]["field_modality"]
           name: string
+          observations?: string | null
           superintendent_id: string
           updated_at?: string
         }
@@ -385,6 +387,7 @@ export type Database = {
           id?: string
           modality?: Database["public"]["Enums"]["field_modality"]
           name?: string
+          observations?: string | null
           superintendent_id?: string
           updated_at?: string
         }
@@ -1006,6 +1009,7 @@ export type Database = {
       program_templates: {
         Row: {
           created_at: string
+          general_observations: string | null
           id: string
           meal_day_notes: Json
           name: string
@@ -1015,6 +1019,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          general_observations?: string | null
           id?: string
           meal_day_notes?: Json
           name: string
@@ -1024,6 +1029,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          general_observations?: string | null
           id?: string
           meal_day_notes?: Json
           name?: string
