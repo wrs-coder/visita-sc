@@ -57,7 +57,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
     }));
 
     if (!visit) {
-      return { ok: true as const, wifeMode, congregation: cong, visit: null, schedule: circuitAsSchedule, meals: [], mealDayNotes: [], field: [], fieldMeetings: [], transport: [], checklist: [], midweek: [], weekend: [], pioneer: [], elders: [] };
+      return { ok: true as const, wifeMode, congregation: cong, visit: null, schedule: circuitAsSchedule, meals: [], mealDayNotes: [], field: [], fieldMeetings: [], transport: [], checklist: [], midweek: [], weekend: [], pioneer: [], elders: [], templateExtras: { field: null, midweek: null, weekend: null, pioneer: null, elders: null, program: null } };
     }
 
     const [{ data: schedule }, { data: meals }, { data: mealDayNotes }, { data: field }, { data: fieldMeetings }, { data: transport }, checklistRes, { data: midweek }, { data: weekend }, { data: pioneer }, { data: elders }] = await Promise.all([
