@@ -200,6 +200,7 @@ export const duplicateFieldMeetingTemplate = createServerFn({ method: "POST" })
           territory_location: it.territory_location,
           auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? null,
           closing_prayer: it.closing_prayer,
+          observations: (it as { observations?: string | null }).observations ?? null,
           sort_order: it.sort_order,
         })),
       );
