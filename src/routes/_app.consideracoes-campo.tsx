@@ -693,20 +693,24 @@ function Page() {
                       />
                     </div>
                     {clipboardNoteId && (
-                      <div className="flex items-center gap-2 rounded-md border border-dashed bg-muted/40 px-2 py-1.5 text-xs">
-                        <Scissors className="h-3.5 w-3.5 text-primary" />
+                      <div className="flex items-center gap-2 rounded-md border border-dashed border-primary/40 bg-primary/5 px-2 py-1.5 text-xs">
+                        <Scissors className="h-3.5 w-3.5 text-primary shrink-0" />
                         <span className="flex-1 truncate">
                           {t("personalOutlines.folders.clipboardHint", {
                             defaultValue: "1 nota recortada. Toque em \"Colar aqui\" na pasta de destino.",
                           })}
                         </span>
-                        <button
+                        <Button
                           type="button"
-                          className="text-muted-foreground hover:text-foreground underline"
-                          onClick={() => setClipboardNoteId(null)}
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2"
+                          onClick={handleClearClipboard}
+                          title={t("personalOutlines.folders.cancelCut", { defaultValue: "Cancelar recorte" })}
                         >
-                          {t("personalOutlines.folders.clearClipboard", { defaultValue: "Cancelar" })}
-                        </button>
+                          <X className="h-3.5 w-3.5 mr-1" />
+                          {t("personalOutlines.folders.cancelCut", { defaultValue: "Cancelar recorte" })}
+                        </Button>
                       </div>
                     )}
                     <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
