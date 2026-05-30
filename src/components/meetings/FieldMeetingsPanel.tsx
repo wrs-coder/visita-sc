@@ -15,6 +15,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { FIELD_MODALITIES, FIELD_MODALITY_LABELS } from "@/lib/field-meeting-templates.functions";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
+import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
+import { TemplateExtraBlock } from "./TemplateExtraBlock";
 
 type Modality = (typeof FIELD_MODALITIES)[number];
 
