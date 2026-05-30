@@ -143,5 +143,5 @@ export const applyAllDayDriver = createServerFn({ method: "POST" })
     const { data: rows, error } = await q.select("id");
     if (error) return { ok: false as const, error: error.message };
     const count = rows?.length ?? 0;
-    return { ok: true as const, updated: count ?? 0 };
+    return { ok: true as const, updated: count };
   });
