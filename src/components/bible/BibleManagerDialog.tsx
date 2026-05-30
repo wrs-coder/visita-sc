@@ -9,7 +9,6 @@ import {
   importEpub,
   listLibraries,
   removeLibrary,
-  resolveActiveLibraryId,
   setActiveLibraryId,
   resolveActiveLibraryId,
   type BibleLibrary,
