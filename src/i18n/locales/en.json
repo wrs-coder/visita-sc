@@ -304,6 +304,7 @@
     }
   },
   "meals": {
+    "generalObservationsLabel": "General observations (from template)",
     "title": "Logistics & Meals",
     "subtitleSuper": "Define the meals available per day. Elders fill in host, address and phone. Disabled items are hidden from the congregation.",
     "subtitleElder": "Edit host, address and contact phone of the available meals.",
