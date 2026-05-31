@@ -13,6 +13,8 @@ export interface NoteFolder {
   parentId: string | null;
   type: NoteType;
   created_at: number;
+  /** Soft-delete (ms epoch). */
+  deleted_at?: number | null;
 }
 
 export interface FieldNote {
@@ -29,6 +31,14 @@ export interface FieldNote {
   content: string;
   created_at: number;
   updated_at: number;
+  /** Soft-delete (ms epoch). Purgado localmente após 30 dias. */
+  deleted_at?: number | null;
+  /** UUID na tabela personal_outlines do Supabase, se já sincronizado. */
+  cloud_id?: string | null;
+  /** True quando há mudanças locais ainda não enviadas para a nuvem. */
+  dirty?: boolean;
+  /** Última sincronização bem-sucedida (ms epoch). */
+  synced_at?: number | null;
 }
 
 
@@ -168,13 +178,37 @@ function lsWrite(all: FieldNote[]) {
   }
 }
 
+/** Lista todas as notas NÃO excluídas. Para a lixeira, use listTrashedNotes(). */
 export async function listNotes(): Promise<FieldNote[]> {
+  const all = await listAllNotesIncludingTrash();
+  return all.filter((n) => n.deleted_at == null);
+}
+
+/** Inclui itens na lixeira. Usado pela tela Lixeira e pelo sync. */
+export async function listAllNotesIncludingTrash(): Promise<FieldNote[]> {
   try {
     if (hasIDB()) return await idbAll();
   } catch {
     /* fall through */
   }
   return lsAll();
+}
+
+/** Apenas itens na lixeira (purga automática local de itens >30 dias). */
+export async function listTrashedNotes(): Promise<FieldNote[]> {
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const all = await listAllNotesIncludingTrash();
+  const trashed: FieldNote[] = [];
+  for (const n of all) {
+    if (n.deleted_at == null) continue;
+    if (n.deleted_at < cutoff) {
+      // Purga oportunista
+      try { await hardDeleteNote(n.id); } catch { /* ignore */ }
+      continue;
+    }
+    trashed.push(n);
+  }
+  return trashed.sort((a, b) => (b.deleted_at ?? 0) - (a.deleted_at ?? 0));
 }
 
 export async function saveNote(note: FieldNote): Promise<void> {
@@ -193,7 +227,26 @@ export async function saveNote(note: FieldNote): Promise<void> {
   lsWrite(all);
 }
 
+/** Soft-delete: marca a nota como excluída sem removê-la fisicamente. */
 export async function deleteNote(id: string): Promise<void> {
+  const all = await listAllNotesIncludingTrash();
+  const note = all.find((n) => n.id === id);
+  if (!note) return;
+  const updated: FieldNote = { ...note, deleted_at: Date.now(), dirty: true };
+  await saveNote(updated);
+}
+
+/** Restaura uma nota da lixeira. */
+export async function restoreNote(id: string): Promise<void> {
+  const all = await listAllNotesIncludingTrash();
+  const note = all.find((n) => n.id === id);
+  if (!note) return;
+  const updated: FieldNote = { ...note, deleted_at: null, dirty: true, updated_at: Date.now() };
+  await saveNote(updated);
+}
+
+/** Apaga DEFINITIVAMENTE do armazenamento local. */
+export async function hardDeleteNote(id: string): Promise<void> {
   try {
     if (hasIDB()) {
       await idbDelete(id);
@@ -525,15 +578,48 @@ async function idbFolderDelete(id: string): Promise<void> {
   });
 }
 
-export async function listFolders(type?: NoteType): Promise<NoteFolder[]> {
-  let all: NoteFolder[] = [];
+async function listAllFoldersIncludingTrash(): Promise<NoteFolder[]> {
   try {
-    if (hasIDB()) all = await idbFoldersAll();
-    else all = lsFoldersAll();
-  } catch {
-    all = lsFoldersAll();
-  }
+    if (hasIDB()) return await idbFoldersAll();
+  } catch { /* fallthrough */ }
+  return lsFoldersAll();
+}
+
+export async function listFolders(type?: NoteType): Promise<NoteFolder[]> {
+  const all = (await listAllFoldersIncludingTrash()).filter((f) => f.deleted_at == null);
   return type ? all.filter((f) => f.type === type) : all;
+}
+
+export async function listTrashedFolders(): Promise<NoteFolder[]> {
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const all = await listAllFoldersIncludingTrash();
+  const trashed: NoteFolder[] = [];
+  for (const f of all) {
+    if (f.deleted_at == null) continue;
+    if (f.deleted_at < cutoff) {
+      try {
+        if (hasIDB()) await idbFolderDelete(f.id);
+        else lsFoldersWrite(lsFoldersAll().filter((x) => x.id !== f.id));
+      } catch { /* ignore */ }
+      continue;
+    }
+    trashed.push(f);
+  }
+  return trashed.sort((a, b) => (b.deleted_at ?? 0) - (a.deleted_at ?? 0));
+}
+
+export async function restoreFolder(id: string): Promise<void> {
+  const all = await listAllFoldersIncludingTrash();
+  const f = all.find((x) => x.id === id);
+  if (!f) return;
+  await saveFolder({ ...f, deleted_at: null });
+}
+
+export async function hardDeleteFolder(id: string): Promise<void> {
+  try {
+    if (hasIDB()) { await idbFolderDelete(id); return; }
+  } catch { /* fallthrough */ }
+  lsFoldersWrite(lsFoldersAll().filter((f) => f.id !== id));
 }
 
 export async function saveFolder(folder: NoteFolder): Promise<void> {
@@ -549,7 +635,7 @@ export async function saveFolder(folder: NoteFolder): Promise<void> {
   lsFoldersWrite(all);
 }
 
-/** Apaga uma pasta, todas as subpastas recursivamente e todas as notas contidas. */
+/** Soft-delete em cascata: pasta + subpastas + notas filhas → Lixeira. */
 export async function deleteFolderCascade(id: string): Promise<void> {
   const folders = await listFolders();
   const notes = await listNotes();
@@ -561,20 +647,17 @@ export async function deleteFolderCascade(id: string): Promise<void> {
     toDeleteFolders.add(cur);
     for (const f of folders) if (f.parentId === cur) stack.push(f.id);
   }
-  // Apaga notas
+  // Soft-delete notas
   for (const n of notes) {
     if (n.folderId && toDeleteFolders.has(n.folderId)) {
       await deleteNote(n.id);
     }
   }
-  // Apaga pastas
+  // Soft-delete pastas
+  const now = Date.now();
   for (const fid of toDeleteFolders) {
-    try {
-      if (hasIDB()) await idbFolderDelete(fid);
-      else lsFoldersWrite(lsFoldersAll().filter((f) => f.id !== fid));
-    } catch {
-      lsFoldersWrite(lsFoldersAll().filter((f) => f.id !== fid));
-    }
+    const f = folders.find((x) => x.id === fid);
+    if (f) await saveFolder({ ...f, deleted_at: now });
   }
 }
 

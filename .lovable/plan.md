@@ -1,125 +1,175 @@
-## Objetivo
+## Visão Geral
 
-1. Remover o cartão **"Programação de hoje"** (visit-scoped, redundante com o novo "Hoje no cronograma") e substituí-lo por um **cartão misto** Esboços + Recomendados, com tabs.
-2. Adicionar a **TODOS os cartões do dashboard** (super, ancião e esposa) a funcionalidade de **minimizar/expandir** (collapse).
+Implementar **Lixeira (Ponto 02)** e **Esboços Pessoais cloud-first com cache local (Ponto 03)** seguindo as diretrizes do `instructions.md` (RLS rigoroso para Superintendente, persistência local como rascunho, padrões offline-first existentes do app).
+
+A solução prioriza: economia no Supabase (soft-delete leve + retenção curta + purga via `pg_cron`), velocidade local (IndexedDB como cache + leituras instantâneas), portabilidade (esboços viajam com o login do usuário), e zero risco de perda de dados existentes (migração one-shot dos esboços locais antes de cortar dependência).
 
 ---
 
-## Parte 1 — Cartão misto "Estudos & Notas"
+## Ponto 02 — Lixeira (Soft-Delete com retenção de 30 dias)
 
-### Escopo confirmado
+### Escopo da v1
+- ✅ `private_notes` (todas as subabas, incluindo "Recomendados", "Anciãos", etc.)
+- ✅ `personal_outlines` (esboços pessoais)
+- ✅ `note_folders` locais (com cascata — restaurar pasta restaura filhos não purgados)
+- ❌ `couple_messages` fica de fora (conversas com soft-delete confundem o destinatário)
+- ❌ Itinerário, modelos, checklist, etc. ficam de fora (são compartilhados, alto risco de UX)
 
-- **Esboços (aba 1):** união de **locais** (IndexedDB via `listNotesByType("field_consideration")` em `src/lib/bible-notes-store.ts`) **+ nuvem** (`listCloudOutlines()` → `personal_outlines`). Deduplicar por `(title normalizado, |Δupdated_at| < 5min → manter mais recente)`. Ordenar `updated_at DESC`, fatiar `.slice(0, 3)`. Cada item: badge **Local** / **Nuvem**, título, timestamp relativo. Clique → `/consideracoes-campo`.
-- **Recomendados (aba 2):** `private_notes` filtradas por `superintendent_id = auth.uid()` **AND** `congregation_id = <congregação ativa do dashboard>` **AND** `note_type = 'recomendados'`, ordem `updated_at DESC`, limite 3. Clique → `/notas`.
-- **Remoção total** do bloco `Programação de hoje` (linhas ~935-977 de `src/routes/_app.dashboard.tsx`) e do estado/efeito `todayEvents` se ficar órfão.
+### Modelo de dados (Supabase)
+Adicionar coluna `deleted_at timestamptz NULL` em:
+- `public.private_notes`
+- `public.personal_outlines`
 
-### Layout
+Índice parcial para purga eficiente: `WHERE deleted_at IS NOT NULL`.
 
-Tabs do shadcn (`src/components/ui/tabs.tsx`) dentro de um único Card — melhor responsividade em mobile e densidade visual estável em qualquer breakpoint.
+### RLS e leitura
+- **Todas as policies de SELECT atuais** continuam — mas o app filtra `deleted_at IS NULL` em leituras normais.
+- Para a aba Lixeira, query separada `WHERE deleted_at IS NOT NULL`.
+- Nenhuma policy nova exigida (Superintendente já gerencia tudo do seu escopo, conforme instruções 3 e RLS existente).
 
-```text
-┌───────────────────────────────────────────────┐
-│ 📄 Estudos & Notas   [–]        [Ver todos →] │
-├───────────────────────────────────────────────┤
-│ [ Esboços (3) ] [ Recomendados (3) ]          │
-├───────────────────────────────────────────────┤
-│ • Título do esboço      [Nuvem] · há 2 dias   │
-└───────────────────────────────────────────────┘
+### Purga automática (economia de banco)
+`pg_cron` diário às 03:00 UTC: `DELETE` físico dos registros com `deleted_at < now() - interval '30 days'`. Roda 100% em SQL, sem `pg_net`, sem custo de endpoint.
+
+### Lixeira local (IndexedDB)
+- `FieldNote` ganha campo opcional `deleted_at?: number`.
+- `NoteFolder` ganha `deleted_at?: number`.
+- Funções existentes `listNotes`/`listFolders` filtram por padrão; nova `listTrashed()`.
+- Purga local: ao abrir a tela Lixeira, descarta registros com `deleted_at < now - 30d`.
+- `deleteNote`/`deleteFolderCascade` passam a fazer soft-delete por padrão; nova função `purgeNote(id)` para deleção definitiva manual.
+
+### UX
+- Nova rota `/configuracoes/lixeira` com 3 seções (Esboços pessoais, Notas privadas, Pastas locais).
+- Cada item mostra título + dias restantes ("expira em 23 dias") + botões **Restaurar** e **Apagar agora**.
+- Botão "Esvaziar Lixeira" por seção (com `confirm`).
+- Link de atalho a partir de Configurações.
+- Toast nas exclusões já passa a ter ação **"Desfazer"** (30 s) que chama Restaurar imediato.
+
+### Compatibilidade
+- Botões de "Excluir" existentes em `consideracoes-campo`, `notas`, etc. continuam funcionando — apenas migram para soft-delete por baixo. UX visível não muda além do toast de Desfazer.
+
+---
+
+## Ponto 03 — Esboços Pessoais cloud-first com cache local
+
+### Princípios
+- **Fonte da verdade**: tabela `public.personal_outlines` na nuvem.
+- **Cache local**: IndexedDB (store `notes` existente, type `outline`) — leitura é instantânea offline.
+- **Sync transparente**: ao criar/editar online → grava local + envia para nuvem. Offline → grava local + enfileira na `offline-queue` existente.
+- **Login em outro dispositivo / reinstalação**: ao logar, baixa todos os esboços do usuário do Supabase para o IndexedDB.
+
+### Remoção do limite de 10
+- Drop da function/trigger `enforce_personal_outlines_limit` (sem substituto).
+- Custo desprezível: cada esboço é JSON pequeno (`< 50 KB` típico). Mesmo 1000 esboços/usuário × milhares de usuários ficam abaixo de 1 GB no `personal_outlines`.
+- Para evitar abuso extremo, manter limite de **tamanho por linha** via validação Zod no server-fn (`content` já capado em 100 KB) e limite soft no app de **500 esboços por usuário** (warning amigável, não erro).
+
+### Estratégia de sync (Last-Write-Wins por `updated_at`)
+1. **Read** (montar lista): UI lê IndexedDB primeiro (resposta instantânea). Em paralelo, dispara `listCloudOutlines` e faz merge:
+   - Se cloud tem item mais novo → sobrescreve local.
+   - Se local tem item mais novo → enfileira `pushOutlineToCloud`.
+   - Itens só na nuvem → baixa para local.
+   - Itens só locais SEM `cloud_id` → push (nova criação).
+   - Itens só locais COM `cloud_id` (já existiu na nuvem) → tratar como deleção remota → soft-delete local (move para Lixeira).
+2. **Write**: sempre grava local primeiro (otimista) → tenta cloud → se offline, enfileira.
+3. **Delete**: soft-delete em ambos (alimenta Ponto 02).
+
+### Schema local
+Adicionar ao `FieldNote` (somente quando `type === "outline"`):
+- `cloud_id?: string` (UUID do Supabase, para o LWW)
+- `dirty?: boolean` (precisa subir)
+- `synced_at?: number`
+
+### Migração one-shot (sem perda de dados)
+No primeiro login pós-deploy, hook `useOutlinesSync` detecta esboços locais sem `cloud_id` e os sobe automaticamente (respeitando rate, com indicador discreto). Marca `migration:outlines:v1` no `localStorage` para não repetir.
+
+### Server functions (ajustes em `src/lib/personal-outlines.functions.ts`)
+- `pushOutlineToCloud`: remove o bloqueio `>= 10`.
+- `listCloudOutlines`: já retorna tudo; manter, remover campo `remaining` ou deixar como `Infinity`.
+- Nova `bulkPushOutlines` para o sync inicial em lote (até 50 por chamada).
+- Nova `softDeleteCloudOutline` (UPDATE `deleted_at = now()`) e `restoreCloudOutline` para a Lixeira.
+- `deleteCloudOutline` existente vira purga definitiva (usada pela Lixeira "Apagar agora" e pelo cron).
+
+### Performance offline
+- Tudo continua funcionando offline (IndexedDB é fonte primária de leitura).
+- Sync ocorre em background quando volta online via listener `online` já presente em `offline-queue`.
+
+---
+
+## Ordem de execução (build mode)
+
+1. **Migração SQL** — adiciona `deleted_at`, índices parciais, remove trigger de limite, agenda `pg_cron` de purga.
+2. **`src/lib/personal-outlines.functions.ts`** — ajustes (sem limite, novas fns soft-delete/restore/bulk).
+3. **`src/lib/bible-notes-store.ts`** — soft-delete local, novos campos `cloud_id`/`dirty`/`synced_at`, helpers `listTrashed`/`purgeNote`/`restoreNote`.
+4. **`src/hooks/use-outlines-sync.ts`** (novo) — orquestra merge cloud↔local + migração one-shot.
+5. **Adaptações de UI** em `_app.consideracoes-campo.tsx` e `_app.notas.tsx` — toast "Desfazer", uso do soft-delete por baixo. Sem mudança visual relevante.
+6. **Nova rota `_app.configuracoes.lixeira.tsx`** — UI da Lixeira.
+7. **i18n** — chaves novas (PT/EN/ES).
+
+---
+
+## Detalhes técnicos
+
+### SQL (migration)
+```sql
+ALTER TABLE public.private_notes
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+CREATE INDEX IF NOT EXISTS idx_private_notes_deleted_at
+  ON public.private_notes(deleted_at) WHERE deleted_at IS NOT NULL;
+
+ALTER TABLE public.personal_outlines
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+CREATE INDEX IF NOT EXISTS idx_personal_outlines_deleted_at
+  ON public.personal_outlines(deleted_at) WHERE deleted_at IS NOT NULL;
+
+-- Remove limite artificial de 10 esboços
+DROP TRIGGER IF EXISTS enforce_personal_outlines_limit_trigger
+  ON public.personal_outlines;
+DROP FUNCTION IF EXISTS public.enforce_personal_outlines_limit();
+
+-- Purga diária
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+SELECT cron.schedule(
+  'purge-soft-deleted-30d',
+  '0 3 * * *',
+  $$
+    DELETE FROM public.private_notes
+      WHERE deleted_at IS NOT NULL
+        AND deleted_at < now() - interval '30 days';
+    DELETE FROM public.personal_outlines
+      WHERE deleted_at IS NOT NULL
+        AND deleted_at < now() - interval '30 days';
+  $$
+);
 ```
 
-Card aparece **apenas para `role === "superintendent"`**, independente de visita.
+### Tipos
+```ts
+// FieldNote ganha:
+deleted_at?: number;
+cloud_id?: string;
+dirty?: boolean;
+synced_at?: number;
+```
+
+### Sem efeitos colaterais
+- Couple messages, mensagens, itinerário, checklist, modelos: **não tocados**.
+- RLS atual: **não alterada** (continua válida; soft-delete é só app-level filter).
+- Trigger `handle_new_user`: intocado.
 
 ---
 
-## Parte 2 — Minimizar/expandir em todos os cartões do dashboard
+## Riscos & mitigação
 
-### Componente reutilizável
-
-Criar **`src/components/dashboard/CollapsibleCard.tsx`** — um wrapper fino sobre `Card` que padroniza:
-
-- Header com **ícone + título** (slot) e ação direita opcional (`headerRight` — para links "Ver todos", badges de não-lido etc.).
-- Botão de toggle (ícone `ChevronUp` / `ChevronDown` de `lucide-react`) ao lado do `headerRight`, dentro do header — clicável também ao clicar no próprio header (mesma linha, com `cursor-pointer` e `aria-expanded`).
-- Conteúdo (slot `children`) renderizado dentro de uma `<div>` com `aria-hidden` quando recolhido; usar `max-height` + `overflow-hidden` + `transition-all duration-200` para animar; ao recolher, ocultar via `hidden` após a transição para não capturar foco.
-- Acessibilidade: `role="button"` no header de toggle, `aria-controls`, `aria-expanded`, suporte a `Enter`/`Space`.
-- Props:
-  ```ts
-  type CollapsibleCardProps = {
-    id: string;                       // chave de persistência
-    title: React.ReactNode;
-    icon?: React.ReactNode;
-    headerRight?: React.ReactNode;
-    defaultCollapsed?: boolean;
-    className?: string;
-    children: React.ReactNode;
-  };
-  ```
-
-### Persistência do estado
-
-- Um **hook** `useDashboardCardCollapsed(id, defaultCollapsed)` em `src/hooks/use-dashboard-card-collapsed.ts` que lê/grava em `localStorage` na chave `visita-sc:dashboard:collapsed:v1` (objeto `Record<string, boolean>`).
-- Persistência por usuário do dispositivo (não vai ao banco). Falhas de quota são silenciosas.
-- Estado inicial vem do `localStorage`; se ausente, usa `defaultCollapsed` (padrão `false` = expandido).
-
-### Aplicação aos cartões existentes
-
-Migrar **todos** os `Card` do dashboard (super, ancião e esposa — note que esposa não usa `_app.dashboard.tsx`, então este item se aplica apenas ao painel do super/ancião que vive nesse arquivo; para a esposa, ver subitem abaixo) para usar `CollapsibleCard`:
-
-- **`src/routes/_app.dashboard.tsx`:** envolver cada bloco `<Card className="shadow-card">` em `CollapsibleCard` com `id` único (`"super-pending"`, `"super-overdue"`, `"super-active-congregation"`, `"super-today-schedule"`, `"super-couple-messages"`, `"super-study-notes"`, `"elder-…"`, `"visit-active"` etc.). Mover o header atual (ícone + título) para o slot `title`/`icon`; mover links "Ver todos" e badges para `headerRight`. Manter classes utilitárias e o conteúdo intacto.
-- **Esposa (`src/routes/visitante.painel.tsx`):** verificar se há cartões equivalentes ao "dashboard" da esposa (visão inicial / resumo). Se sim, aplicar `CollapsibleCard` aos cartões dessa tela. Confirmar com `rg "shadow-card" src/routes/visitante.painel.tsx` durante a build.
-
-### Comportamento
-
-- Estado inicial recomendado: **todos expandidos** (`defaultCollapsed: false`), exceto cartões de baixo uso já identificados (nenhum por padrão — manter tudo aberto na primeira visita).
-- Toggle individual; sem "minimizar tudo" nesta entrega.
-- Animação de altura ≤ 200ms; respeita `prefers-reduced-motion` (desabilita transição).
-- Nenhum cartão deve ser ocultado completamente — sempre o header fica visível para reabrir.
-
-### i18n
-
-Adicionar em `pt`/`en`/`es`:
-- `dashboard.collapseExpand` ("Expandir/recolher cartão") — usado em `aria-label`.
+| Risco | Mitigação |
+|---|---|
+| Conflito de edição simultânea | LWW por `updated_at` — perda mínima, registrada em log local; usuário pode restaurar versão antiga da Lixeira em até 30 d |
+| Quota IndexedDB estourada por usuários com 1000+ esboços | Soft-warn no app aos 500; cap de tamanho por esboço (100 KB) |
+| `pg_cron` indisponível em algum plano | Fallback: server route `/api/public/cron/purge-trash` chamada por scheduler externo; mesma query SQL |
+| Migração one-shot falhar | Idempotente: itens locais sem `cloud_id` ficam marcados `dirty` e tentam de novo no próximo online |
+| Usuário "apagar para sempre" por engano | Confirmação obrigatória; toast Desfazer só na exclusão normal (vai para Lixeira) |
 
 ---
 
-## Detalhes técnicos comuns
-
-### `src/routes/_app.dashboard.tsx`
-
-- Importar `CollapsibleCard` e o hook; importar `listNotesByType` de `@/lib/bible-notes-store` e `listCloudOutlines` de `@/lib/personal-outlines.functions`.
-- Estados novos: `outlinesPreview`, `recomendadosPreview`.
-- **Esboços:** `Promise.all([listNotesByType("field_consideration"), fnListCloudOutlines()])` → normaliza, dedup, ordena, `slice(0, 3)`. Recarrega no `focus` da janela.
-- **Recomendados:** `supabase.from("private_notes").select("id, title, note_date, updated_at").eq("superintendent_id", user.id).eq("congregation_id", selected).eq("note_type", "recomendados").order("updated_at", { ascending: false }).limit(3)`. Recarrega ao mudar `selected`.
-- Reordenação visual final do super: **Hoje no cronograma → Recados da esposa → Estudos & Notas → demais cartões existentes**.
-- Sem cores fora dos tokens (`text-primary`, `bg-card`, `text-muted-foreground`, `shadow-card`).
-
-### i18n (`src/i18n/locales/{pt,en,es}.json`)
-
-Novas chaves em `dashboard.*`:
-- `studyNotesTitle`, `studyNotesOutlinesTab`, `studyNotesRecomendadosTab`
-- `studyNotesSourceLocal`, `studyNotesSourceCloud`
-- `studyNotesEmptyOutlines`, `studyNotesEmptyRecomendados`
-- `collapseExpand`
-
-Remover `dashboard.todaySchedule` / `dashboard.noEventsToday` / `dashboard.fullSchedule` dos 3 locales **apenas** se a varredura `rg` confirmar que não são usados em mais lugar nenhum.
-
-### Banco de dados / RLS
-
-**Nenhuma migração necessária.** Políticas atuais já cobrem `personal_outlines` (`user_id = auth.uid()`) e `private_notes` (`superintendent_id = auth.uid() AND is_superintendent_of(...)`); o filtro `note_type = 'recomendados'` é só uma cláusula extra de leitura.
-
----
-
-## Conformidade com `instructions.md`
-
-- Mudança 100% frontend/apresentação (sem nova lógica de negócio, sem nova server function, sem migração).
-- IndexedDB lido via `listNotesByType` já existente; `listCloudOutlines()` via `useServerFn` (padrão da base).
-- Sem cores customizadas — somente design tokens em `src/styles.css`.
-- Sem edição de arquivos pré-configurados (`client.ts`, `types.ts`, `routeTree.gen.ts`, `.env`).
-
-## Validação após implementação
-
-- `bunx tsc --noEmit` limpo.
-- Preview (super logado): todos os cartões mostram botão de minimizar; estado persiste após F5; aria-expanded correto.
-- Cartão "Estudos & Notas" aparece, tabs alternam, badges Local/Nuvem corretos, dedup funcionando, links "Ver todos" navegam.
-- Trocar congregação ativa atualiza a aba "Recomendados".
-- Antigo "Programação de hoje" não aparece para nenhum papel.
-- Esposa (se aplicável) também tem cartões minimizáveis no painel.
+## Métricas de economia (estimativa)
+- 10 000 usuários × 50 esboços médios × 30 KB = **~15 GB** total no `personal_outlines` (insignificante no Supabase).
+- Soft-delete com retenção de 30 d adiciona ~5 % de overhead máximo.
+- Purga via `pg_cron` é SQL puro → custo zero de função/endpoint.
