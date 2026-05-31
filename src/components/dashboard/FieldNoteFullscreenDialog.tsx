@@ -160,6 +160,8 @@ export function FieldNoteFullscreenDialog({
 
           {/* Espaço reservado para o X de fechar do Dialog (absoluto, top-right). */}
           <div className="w-8 shrink-0" aria-hidden />
+        </div>
+
 
 
         <DialogDescription className="sr-only">
