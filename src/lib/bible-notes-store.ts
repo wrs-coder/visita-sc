@@ -13,6 +13,8 @@ export interface NoteFolder {
   parentId: string | null;
   type: NoteType;
   created_at: number;
+  /** Soft-delete (ms epoch). */
+  deleted_at?: number | null;
 }
 
 export interface FieldNote {
