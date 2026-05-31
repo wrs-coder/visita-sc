@@ -841,6 +841,7 @@ export type Database = {
         Row: {
           content_json: Json
           created_at: string
+          deleted_at: string | null
           folder_path: string
           id: string
           title: string
@@ -850,6 +851,7 @@ export type Database = {
         Insert: {
           content_json?: Json
           created_at?: string
+          deleted_at?: string | null
           folder_path?: string
           id?: string
           title: string
@@ -859,6 +861,7 @@ export type Database = {
         Update: {
           content_json?: Json
           created_at?: string
+          deleted_at?: string | null
           folder_path?: string
           id?: string
           title?: string
@@ -921,6 +924,7 @@ export type Database = {
           congregation_id: string | null
           content: string
           created_at: string
+          deleted_at: string | null
           id: string
           involved_names: string | null
           note_date: string | null
@@ -937,6 +941,7 @@ export type Database = {
           congregation_id?: string | null
           content?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           involved_names?: string | null
           note_date?: string | null
@@ -953,6 +958,7 @@ export type Database = {
           congregation_id?: string | null
           content?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           involved_names?: string | null
           note_date?: string | null
