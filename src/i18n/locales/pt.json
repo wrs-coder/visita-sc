@@ -138,6 +138,7 @@
     "myProfile": "Meu perfil",
     "baseTemplates": "Modelos de Base",
     "weekSummary": "Resumo da Semana",
+    "coupleMessages": "Comunicação do casal",
     "fieldConsiderations": "Esboços Pessoais",
     "personalOutlines": "Esboços Pessoais",
     "supportDev": "Apoie o Desenvolvedor ☕",
@@ -189,6 +190,12 @@
     "todaySchedule": "Programação de hoje",
     "fullSchedule": "Cronograma completo",
     "noEventsToday": "Nenhum compromisso registrado para hoje.",
+    "todayBlockTitle": "Hoje no cronograma",
+    "todayBlockEmpty": "Nada agendado para hoje.",
+    "coupleCardTitle": "Recados da esposa",
+    "coupleCardEmpty": "Nenhum recado ainda.",
+    "coupleCardUnread": "{{count}} não lido(s)",
+    "coupleCardOpen": "Abrir conversa",
     "meals": {
       "lunch": "Almoço",
       "dinner": "Jantar",
@@ -291,7 +298,32 @@
       "midweek_meeting": "Reunião do Meio de Semana",
       "weekend_meeting": "Reunião do Fim de Semana",
       "other": "Outro"
-    }
+    },
+    "todayBlock": "Hoje",
+    "todayBlockSubtitle": "Eventos programados para o dia atual."
+  },
+  "couple": {
+    "title": "Comunicação do casal",
+    "subtitleSuper": "Conversa privada com sua esposa. Recados aparecem aqui e no painel dela.",
+    "subtitleWife": "Conversa privada com seu esposo. Recados aparecem aqui e no painel dele.",
+    "newMessage": "Novo recado",
+    "newMessageTitle": "Novo recado",
+    "titleField": "Título",
+    "bodyField": "Mensagem",
+    "send": "Enviar",
+    "reply": "Responder",
+    "replyPlaceholder": "Escreva uma resposta…",
+    "noMessages": "Nenhum recado ainda. Comece a conversa.",
+    "unreadBadge": "{{count}} novo(s)",
+    "fromSuper": "Esposo",
+    "fromWife": "Esposa",
+    "deleteThread": "Excluir conversa",
+    "confirmDelete": "Excluir esta conversa e todas as respostas?",
+    "sent": "Recado enviado.",
+    "sendFailed": "Não foi possível enviar.",
+    "deleted": "Conversa excluída.",
+    "titleRequired": "Informe um título para o recado.",
+    "bodyRequired": "Escreva a mensagem."
   },
   "fieldStudies": {
     "title": "Estudos e Revisitas",
@@ -1056,7 +1088,8 @@
       "field": "Campo",
       "meals": "Refeições",
       "transport": "Transporte",
-      "checklist": "Checklist"
+      "checklist": "Checklist",
+      "couple": "Casal"
     },
     "sections": {
       "cron": "Cronograma",

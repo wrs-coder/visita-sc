@@ -210,6 +210,53 @@ export type Database = {
         }
         Relationships: []
       }
+      couple_messages: {
+        Row: {
+          author: string
+          body: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          read_by_super: boolean
+          read_by_wife: boolean
+          superintendent_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          author: string
+          body: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          read_by_super?: boolean
+          read_by_wife?: boolean
+          superintendent_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          body?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          read_by_super?: boolean
+          read_by_wife?: boolean
+          superintendent_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "couple_messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "couple_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       elders_servants_meetings: {
         Row: {
           closing_prayer: string | null

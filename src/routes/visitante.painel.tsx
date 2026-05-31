@@ -74,18 +74,18 @@ function Page() {
     check: t("guest.sections.check"),
   }), [t]);
 
-  const load = useCallback(async (c: string, congregationId?: string | null) => {
+  const load = useCallback(async (c: string, congregationId?: string | null, opts?: { pickCurrent?: boolean }) => {
     // Hidrata imediatamente do cache local para funcionar offline.
     const cacheKey = congregationId ? `${c}:${congregationId}` : c;
     const cached = loadSnapshot<Snapshot>("guest", cacheKey);
-    if (cached) {
+    if (cached && !opts?.pickCurrent) {
       setSnap(cached);
       setLoading(false);
     } else {
       setLoading(true);
     }
     try {
-      const r = await fn({ data: { inviteCode: c, congregationId: congregationId ?? undefined } });
+      const r = await fn({ data: { inviteCode: c, congregationId: congregationId ?? undefined, pickCurrent: opts?.pickCurrent } });
       if (!(r as { ok: boolean }).ok) {
         // Resposta explícita do servidor: sessão inválida → desloga.
         if (!cached) { clearGuestSession(); nav({ to: "/" }); }
@@ -93,7 +93,12 @@ function Page() {
       }
       const fresh = r as unknown as Snapshot;
       setSnap(fresh);
-      saveSnapshot("guest", cacheKey, fresh);
+      // Se o servidor escolheu uma congregação (pickCurrent), persiste a escolha.
+      if (opts?.pickCurrent && fresh.selectedCongregationId) {
+        setSelectedCongregation(fresh.selectedCongregationId);
+      }
+      const freshKey = fresh.selectedCongregationId ? `${c}:${fresh.selectedCongregationId}` : cacheKey;
+      saveSnapshot("guest", freshKey, fresh);
     } catch (err) {
       // Erro de rede (offline). Mantém o cache na tela; só notifica se não houver dados.
       console.warn("[visitante] falha ao carregar — usando cache", err);
@@ -300,7 +305,7 @@ function Page() {
                 className="text-primary-foreground hover:bg-white/10 shrink-0"
                 onClick={() => {
                   setWeekAnchor(null);
-                  if (code) load(code, snap.selectedCongregationId ?? snap.congregation.id);
+                  if (code) load(code, null, { pickCurrent: true });
                 }}
               >
                 <CalendarDays className="h-4 w-4 mr-1" />

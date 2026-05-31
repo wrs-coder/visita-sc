@@ -10,12 +10,14 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       .object({
         inviteCode: codeSchema,
         congregationId: z.string().uuid().optional(),
+        pickCurrent: z.boolean().optional(),
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
     const endsWithStar = data.inviteCode.endsWith("*");
     const cleanCode = endsWithStar ? data.inviteCode.slice(0, -1) : data.inviteCode;
+    const todayIso = new Date().toISOString().slice(0, 10);
 
     // Resolution order:
     //   1) Legacy "código*" or elder/ESC code → congregations.invite_code
@@ -54,8 +56,39 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
           return { ok: false as const, error: "Nenhuma congregação ativa encontrada." };
         }
         availableCongregations = list.map((c) => ({ id: c.id, name: c.name }));
-        const requested = data.congregationId ? list.find((c) => c.id === data.congregationId) : undefined;
-        cong = requested ?? list[0];
+        // Se pickCurrent: procura a congregação cuja visita ativa cobre hoje.
+        // Caso contrário, usa a congregação solicitada ou a primeira.
+        let chosen: typeof list[number] | undefined;
+        if (data.pickCurrent) {
+          const ids = list.map((c) => c.id);
+          const { data: vrows } = await supabaseAdmin
+            .from("visits")
+            .select("congregation_id,start_date,end_date")
+            .in("congregation_id", ids)
+            .eq("is_active", true)
+            .lte("start_date", todayIso)
+            .gte("end_date", todayIso)
+            .limit(1);
+          const coverId = vrows?.[0]?.congregation_id;
+          if (coverId) chosen = list.find((c) => c.id === coverId);
+          if (!chosen) {
+            // Próxima visita futura
+            const { data: future } = await supabaseAdmin
+              .from("visits")
+              .select("congregation_id,start_date")
+              .in("congregation_id", ids)
+              .eq("is_active", true)
+              .gte("start_date", todayIso)
+              .order("start_date", { ascending: true })
+              .limit(1);
+            const futId = future?.[0]?.congregation_id;
+            if (futId) chosen = list.find((c) => c.id === futId);
+          }
+        }
+        if (!chosen && data.congregationId) {
+          chosen = list.find((c) => c.id === data.congregationId);
+        }
+        cong = chosen ?? list[0];
         selectedCongregationId = cong.id;
       }
     }
@@ -74,7 +107,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
     // Circuit-level events visible to this congregation (independent of any visit).
     // The "visible_to_spouse" flag hides events ONLY from the spouse panel (wifeMode);
     // elder/ESC guest access always sees the events targeted to their congregation.
-    const todayIso = new Date().toISOString().slice(0, 10);
+    // todayIso já definido no topo
     let circuitQuery = supabaseAdmin
       .from("circuit_schedule_events")
       .select("id,event_date,start_time,end_time,title,location,event_type,notes,scope,congregation_ids,visible_to_spouse,superintendent_id,status")
