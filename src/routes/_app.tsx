@@ -37,6 +37,8 @@ import { ConnectionModeToggle } from "@/components/ConnectionModeToggle";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { Coffee } from "lucide-react";
 import { setActiveContext } from "@/lib/active-context";
+import { useOutlinesSync } from "@/hooks/use-outlines-sync";
+
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
@@ -53,6 +55,9 @@ function AppLayout() {
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+
+  useOutlinesSync();
+
 
   const openSupport = () => {
     setMobileMenuOpen(false);
