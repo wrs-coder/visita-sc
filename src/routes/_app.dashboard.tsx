@@ -200,66 +200,43 @@ function Dashboard() {
     return () => { cancelled = true; };
   }, [role, user, today]);
 
-  // Mission: cartão misto "Estudos & Notas".
+  // Mission: cartão "Esboços e Notas" — aba "Considerações de campo".
+  // Mostra apenas notas locais da pasta fixa "Considerações da Semana".
+  // Evita chamadas ao Supabase aqui (economia × milhares de usuários).
   type OutlinePreview = {
     key: string;
+    id: string;
     title: string;
     updated_at: number;
-    source: "local" | "cloud";
   };
   type RecomendadoPreview = {
     id: string;
     title: string | null;
     updated_at: string;
   };
-  const listCloudOutlinesFn = useServerFn(listCloudOutlines);
   const [outlinesPreview, setOutlinesPreview] = useState<OutlinePreview[]>([]);
   const [recomendadosPreview, setRecomendadosPreview] = useState<RecomendadoPreview[]>([]);
 
   const loadOutlines = useCallback(async () => {
     if (role !== "superintendent") return;
     try {
-      const [local, cloud] = await Promise.all([
-        listNotesByType("field_consideration").catch(() => [] as FieldNote[]),
-        listCloudOutlinesFn().catch(() => ({ ok: false as const })),
-      ]);
-      const items: OutlinePreview[] = [];
-      for (const n of local) {
-        items.push({
+      const local = await listNotesByType(
+        "field_consideration",
+        FIXED_FOLDER_WEEK_CONSIDERATIONS,
+      ).catch(() => [] as FieldNote[]);
+      const items: OutlinePreview[] = local
+        .map((n) => ({
           key: `local:${n.id}`,
+          id: n.id,
           title: n.title || "(sem título)",
           updated_at: n.updated_at ?? n.created_at ?? 0,
-          source: "local",
-        });
-      }
-      if (cloud && "ok" in cloud && cloud.ok) {
-        for (const o of cloud.outlines ?? []) {
-          items.push({
-            key: `cloud:${o.id}`,
-            title: o.title || "(sem título)",
-            updated_at: new Date(o.updated_at).getTime(),
-            source: "cloud",
-          });
-        }
-      }
-      // Dedup heurístico: mesmo título normalizado + |Δ| < 5min → mais recente.
-      const norm = (s: string) => s.trim().toLowerCase();
-      const byTitle = new Map<string, OutlinePreview>();
-      for (const it of items.sort((a, b) => b.updated_at - a.updated_at)) {
-        const k = norm(it.title);
-        const prev = byTitle.get(k);
-        if (!prev || Math.abs(prev.updated_at - it.updated_at) > 5 * 60_000) {
-          if (!prev) byTitle.set(k, it);
-        }
-      }
-      const deduped = Array.from(byTitle.values())
-        .sort((a, b) => b.updated_at - a.updated_at)
-        .slice(0, 3);
-      setOutlinesPreview(deduped);
+        }))
+        .sort((a, b) => b.updated_at - a.updated_at);
+      setOutlinesPreview(items);
     } catch (err) {
       console.warn("[dashboard] outlines load failed", err);
     }
-  }, [role, listCloudOutlinesFn]);
+  }, [role]);
 
   useEffect(() => {
     loadOutlines();
