@@ -298,7 +298,32 @@
       "midweek_meeting": "Midweek Meeting",
       "weekend_meeting": "Weekend Meeting",
       "other": "Other"
-    }
+    },
+    "todayBlock": "Today",
+    "todayBlockSubtitle": "Events scheduled for the current day."
+  },
+  "couple": {
+    "title": "Couple chat",
+    "subtitleSuper": "Private chat with your wife. Messages also appear in her panel.",
+    "subtitleWife": "Private chat with your husband. Messages also appear in his panel.",
+    "newMessage": "New message",
+    "newMessageTitle": "New message",
+    "titleField": "Title",
+    "bodyField": "Message",
+    "send": "Send",
+    "reply": "Reply",
+    "replyPlaceholder": "Write a reply…",
+    "noMessages": "No messages yet. Start the conversation.",
+    "unreadBadge": "{{count}} new",
+    "fromSuper": "Husband",
+    "fromWife": "Wife",
+    "deleteThread": "Delete conversation",
+    "confirmDelete": "Delete this conversation and all replies?",
+    "sent": "Message sent.",
+    "sendFailed": "Could not send.",
+    "deleted": "Conversation deleted.",
+    "titleRequired": "Enter a title.",
+    "bodyRequired": "Write the message."
   },
   "fieldStudies": {
     "title": "Studies & Return Visits",
