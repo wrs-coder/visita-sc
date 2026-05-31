@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -66,6 +66,8 @@ import {
   exportFolderJSON,
   exportNoteJSON,
   importJSON,
+  FIXED_FOLDER_WEEK_CONSIDERATIONS,
+  isFixedFolder,
   type FieldNote,
   type NoteFolder,
   type NoteType,
@@ -87,6 +89,14 @@ import {
 } from "@/lib/personal-outlines.functions";
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
+  validateSearch: (search: Record<string, unknown>): {
+    noteId?: string;
+    mode?: "edit" | "outline";
+  } => {
+    const noteId = typeof search.noteId === "string" ? search.noteId : undefined;
+    const mode = search.mode === "edit" || search.mode === "outline" ? search.mode : undefined;
+    return { noteId, mode };
+  },
   beforeLoad: async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -142,7 +152,12 @@ function slugify(s: string): string {
 
 function Page() {
   const { t, i18n } = useTranslation();
-  const [activeType, setActiveType] = useState<NoteType | null>(null);
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const [activeType, setActiveType] = useState<NoteType | null>(
+    // Se chegamos por link com noteId, já assume field_consideration imediatamente.
+    search.noteId ? "field_consideration" : null,
+  );
   const [folders, setFolders] = useState<NoteFolder[]>([]);
   const [notes, setNotes] = useState<FieldNote[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -290,9 +305,26 @@ function Page() {
       const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
       setFolders(fs);
       const filteredNs = ns.filter((n) => (n.type ?? "field_consideration") === activeType);
-      setNotes(filteredNs.sort((a, b) => b.updated_at - a.updated_at));
+      const sorted = filteredNs.sort((a, b) => b.updated_at - a.updated_at);
+      setNotes(sorted);
+
+      // Bootstrap por search param: abre direto a nota pedida (ex.: vindo do dashboard).
+      if (search.noteId) {
+        const target = sorted.find((n) => n.id === search.noteId);
+        if (target) {
+          setSelectedNoteId(target.id);
+          setSelectedFolderId(target.folderId ?? null);
+          if (target.folderId) {
+            setExpanded((s) => new Set(s).add(target.folderId as string));
+          }
+          setDraft(target);
+          setMode(search.mode ?? "outline");
+        }
+        // Limpa o search param para não re-disparar se o usuário navegar internamente.
+        navigate({ to: "/consideracoes-campo", search: {}, replace: true });
+      }
     })();
-  }, [activeType]);
+  }, [activeType, search.noteId, search.mode, navigate]);
 
   const detected: CitationMatch[] = useMemo(
     () => (draft && activeBible ? findCitations(activeBible.books, stripHtmlForDetection(draft.content)) : []),
@@ -562,6 +594,10 @@ function Page() {
     const childFolders = folders.filter((f) => f.parentId === folder.id);
     const childNotes = notes.filter((n) => n.folderId === folder.id && matchesQuery(n));
     const selected = selectedFolderId === folder.id;
+    const fixed = isFixedFolder(folder.id);
+    const folderName = fixed
+      ? t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" })
+      : folder.name;
     return (
       <div>
         <div
@@ -587,8 +623,15 @@ function Page() {
           >
             {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           </button>
-          {isOpen ? <FolderOpen className="h-4 w-4" /> : <Folder className="h-4 w-4" />}
-          <span className="flex-1 truncate">{folder.name}</span>
+          {isOpen
+            ? <FolderOpen className={cn("h-4 w-4", fixed && "text-primary")} />
+            : <Folder className={cn("h-4 w-4", fixed && "text-primary")} />}
+          <span className={cn("flex-1 truncate", fixed && "font-medium")}>{folderName}</span>
+          {fixed && (
+            <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
+              {t("personalOutlines.folders.fixedBadge", { defaultValue: "Fixa" })}
+            </span>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <button className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-background">
@@ -596,20 +639,26 @@ function Page() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem onClick={() => handleCreateFolder(folder.id)}>
-                <FolderPlus className="h-4 w-4 mr-2" />
-                {t("personalOutlines.folders.newSub")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleRenameFolder(folder)}>
-                <Pencil className="h-4 w-4 mr-2" />
-                {t("personalOutlines.folders.rename")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setMoveTarget({ kind: "folder", id: folder.id })}
-              >
-                <Move className="h-4 w-4 mr-2" />
-                {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
-              </DropdownMenuItem>
+              {!fixed && (
+                <DropdownMenuItem onClick={() => handleCreateFolder(folder.id)}>
+                  <FolderPlus className="h-4 w-4 mr-2" />
+                  {t("personalOutlines.folders.newSub")}
+                </DropdownMenuItem>
+              )}
+              {!fixed && (
+                <DropdownMenuItem onClick={() => handleRenameFolder(folder)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  {t("personalOutlines.folders.rename")}
+                </DropdownMenuItem>
+              )}
+              {!fixed && (
+                <DropdownMenuItem
+                  onClick={() => setMoveTarget({ kind: "folder", id: folder.id })}
+                >
+                  <Move className="h-4 w-4 mr-2" />
+                  {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
+                </DropdownMenuItem>
+              )}
               {clipboardNoteId && (
                 <DropdownMenuItem onClick={() => handlePasteNote(folder.id)}>
                   <ClipboardPaste className="h-4 w-4 mr-2" />
@@ -620,14 +669,18 @@ function Page() {
                 <Download className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.exportFolder")}
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => handleDeleteFolder(folder)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {t("personalOutlines.folders.delete")}
-              </DropdownMenuItem>
+              {!fixed && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => handleDeleteFolder(folder)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t("personalOutlines.folders.delete")}
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -1381,10 +1434,12 @@ function MoveToDialog({
       .map((f) => (
         <div key={f.id}>
           <Row
-            label={f.name}
+            label={isFixedFolder(f.id)
+              ? t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" })
+              : f.name}
             depth={depth}
             folderId={f.id}
-            icon={<Folder className="h-4 w-4 text-muted-foreground" />}
+            icon={<Folder className={cn("h-4 w-4", isFixedFolder(f.id) ? "text-primary" : "text-muted-foreground")} />}
           />
           {renderTree(f.id, depth + 1)}
         </div>

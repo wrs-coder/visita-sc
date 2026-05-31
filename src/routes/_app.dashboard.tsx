@@ -42,8 +42,8 @@ import { FinishVisitDialog } from "@/components/FinishVisitDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
 import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.functions";
-import { listCloudOutlines } from "@/lib/personal-outlines.functions";
-import { listNotesByType, type FieldNote } from "@/lib/bible-notes-store";
+
+import { listNotesByType, FIXED_FOLDER_WEEK_CONSIDERATIONS, type FieldNote } from "@/lib/bible-notes-store";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
@@ -200,66 +200,43 @@ function Dashboard() {
     return () => { cancelled = true; };
   }, [role, user, today]);
 
-  // Mission: cartão misto "Estudos & Notas".
+  // Mission: cartão "Esboços e Notas" — aba "Considerações de campo".
+  // Mostra apenas notas locais da pasta fixa "Considerações da Semana".
+  // Evita chamadas ao Supabase aqui (economia × milhares de usuários).
   type OutlinePreview = {
     key: string;
+    id: string;
     title: string;
     updated_at: number;
-    source: "local" | "cloud";
   };
   type RecomendadoPreview = {
     id: string;
     title: string | null;
     updated_at: string;
   };
-  const listCloudOutlinesFn = useServerFn(listCloudOutlines);
   const [outlinesPreview, setOutlinesPreview] = useState<OutlinePreview[]>([]);
   const [recomendadosPreview, setRecomendadosPreview] = useState<RecomendadoPreview[]>([]);
 
   const loadOutlines = useCallback(async () => {
     if (role !== "superintendent") return;
     try {
-      const [local, cloud] = await Promise.all([
-        listNotesByType("field_consideration").catch(() => [] as FieldNote[]),
-        listCloudOutlinesFn().catch(() => ({ ok: false as const })),
-      ]);
-      const items: OutlinePreview[] = [];
-      for (const n of local) {
-        items.push({
+      const local = await listNotesByType(
+        "field_consideration",
+        FIXED_FOLDER_WEEK_CONSIDERATIONS,
+      ).catch(() => [] as FieldNote[]);
+      const items: OutlinePreview[] = local
+        .map((n) => ({
           key: `local:${n.id}`,
+          id: n.id,
           title: n.title || "(sem título)",
           updated_at: n.updated_at ?? n.created_at ?? 0,
-          source: "local",
-        });
-      }
-      if (cloud && "ok" in cloud && cloud.ok) {
-        for (const o of cloud.outlines ?? []) {
-          items.push({
-            key: `cloud:${o.id}`,
-            title: o.title || "(sem título)",
-            updated_at: new Date(o.updated_at).getTime(),
-            source: "cloud",
-          });
-        }
-      }
-      // Dedup heurístico: mesmo título normalizado + |Δ| < 5min → mais recente.
-      const norm = (s: string) => s.trim().toLowerCase();
-      const byTitle = new Map<string, OutlinePreview>();
-      for (const it of items.sort((a, b) => b.updated_at - a.updated_at)) {
-        const k = norm(it.title);
-        const prev = byTitle.get(k);
-        if (!prev || Math.abs(prev.updated_at - it.updated_at) > 5 * 60_000) {
-          if (!prev) byTitle.set(k, it);
-        }
-      }
-      const deduped = Array.from(byTitle.values())
-        .sort((a, b) => b.updated_at - a.updated_at)
-        .slice(0, 3);
-      setOutlinesPreview(deduped);
+        }))
+        .sort((a, b) => b.updated_at - a.updated_at);
+      setOutlinesPreview(items);
     } catch (err) {
       console.warn("[dashboard] outlines load failed", err);
     }
-  }, [role, listCloudOutlinesFn]);
+  }, [role]);
 
   useEffect(() => {
     loadOutlines();
@@ -734,33 +711,36 @@ function Dashboard() {
               {outlinesPreview.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("dashboard.studyNotesEmptyOutlines")}</p>
               ) : (
-                <ul className="space-y-2">
-                  {outlinesPreview.map((o) => (
-                    <li key={o.key}>
-                      <Link
-                        to="/consideracoes-campo"
-                        className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors"
-                      >
-                        <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{o.title}</div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-2">
-                            <span className="inline-flex px-1.5 py-0.5 rounded bg-accent text-accent-foreground text-[10px] uppercase tracking-wide">
-                              {o.source === "cloud"
-                                ? t("dashboard.studyNotesSourceCloud")
-                                : t("dashboard.studyNotesSourceLocal")}
-                            </span>
-                            <span>
+                <div className="relative">
+                  {/* Lista vertical: ~3 itens visíveis, rola por todas. */}
+                  <ul
+                    className="space-y-2 overflow-y-auto pr-1 [scrollbar-width:thin]"
+                    style={{ maxHeight: "calc(3 * 4rem + 2 * 0.5rem)" }}
+                  >
+                    {outlinesPreview.map((o) => (
+                      <li key={o.key}>
+                        <Link
+                          to="/consideracoes-campo"
+                          search={{ noteId: o.id, mode: "outline" }}
+                          className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors h-16"
+                        >
+                          <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{o.title}</div>
+                            <div className="text-xs text-muted-foreground">
                               {o.updated_at
                                 ? formatDistanceToNow(new Date(o.updated_at), { addSuffix: true, locale: ptBR })
                                 : ""}
-                            </span>
+                            </div>
                           </div>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  {outlinesPreview.length > 3 && (
+                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-background to-transparent" />
+                  )}
+                </div>
               )}
             </TabsContent>
             <TabsContent value="recomendados" className="mt-3">

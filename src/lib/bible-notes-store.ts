@@ -7,6 +7,21 @@ import { parseEpub, type ParseProgress, type ParsedBookInfo } from "./epub-bible
 
 export type NoteType = "field_consideration" | "outline";
 
+/**
+ * Pasta fixa virtual "Considerações da Semana".
+ *
+ * - Existe apenas em memória: nunca é gravada no IndexedDB nem no Supabase.
+ *   Para milhares de usuários isso evita N linhas duplicadas no banco.
+ * - Não pode ser renomeada, excluída, restaurada nem sincronizada.
+ * - As NOTAS dentro dela são reais (FieldNote com folderId = FIXED_FOLDER_WEEK_CONSIDERATIONS)
+ *   e seguem o pipeline normal de sync/lixeira.
+ */
+export const FIXED_FOLDER_WEEK_CONSIDERATIONS = "__fixed__week-considerations";
+
+export function isFixedFolder(id: string | null | undefined): boolean {
+  return id === FIXED_FOLDER_WEEK_CONSIDERATIONS;
+}
+
 export interface NoteFolder {
   id: string;
   name: string;
@@ -587,7 +602,22 @@ async function listAllFoldersIncludingTrash(): Promise<NoteFolder[]> {
 
 export async function listFolders(type?: NoteType): Promise<NoteFolder[]> {
   const all = (await listAllFoldersIncludingTrash()).filter((f) => f.deleted_at == null);
-  return type ? all.filter((f) => f.type === type) : all;
+  const filtered = type ? all.filter((f) => f.type === type) : all;
+  // Injeta a pasta fixa virtual "Considerações da Semana" como PRIMEIRA pasta
+  // da raiz, apenas para o tipo "field_consideration". Não toca no IndexedDB.
+  if (!type || type === "field_consideration") {
+    const fixed: NoteFolder = {
+      id: FIXED_FOLDER_WEEK_CONSIDERATIONS,
+      name: "Considerações da Semana",
+      parentId: null,
+      type: "field_consideration",
+      created_at: 0,
+      deleted_at: null,
+    };
+    // Remove qualquer duplicata acidental (não deveria haver) e prepende.
+    return [fixed, ...filtered.filter((f) => f.id !== FIXED_FOLDER_WEEK_CONSIDERATIONS)];
+  }
+  return filtered;
 }
 
 export async function listTrashedFolders(): Promise<NoteFolder[]> {
@@ -609,6 +639,7 @@ export async function listTrashedFolders(): Promise<NoteFolder[]> {
 }
 
 export async function restoreFolder(id: string): Promise<void> {
+  if (isFixedFolder(id)) return; // pasta fixa nunca entra na lixeira
   const all = await listAllFoldersIncludingTrash();
   const f = all.find((x) => x.id === id);
   if (!f) return;
@@ -616,6 +647,7 @@ export async function restoreFolder(id: string): Promise<void> {
 }
 
 export async function hardDeleteFolder(id: string): Promise<void> {
+  if (isFixedFolder(id)) return; // pasta fixa nunca é apagada
   try {
     if (hasIDB()) { await idbFolderDelete(id); return; }
   } catch { /* fallthrough */ }
@@ -623,6 +655,7 @@ export async function hardDeleteFolder(id: string): Promise<void> {
 }
 
 export async function saveFolder(folder: NoteFolder): Promise<void> {
+  if (isFixedFolder(folder.id)) return; // pasta fixa não é gravada
   try {
     if (hasIDB()) {
       await idbFolderPut(folder);
@@ -637,6 +670,7 @@ export async function saveFolder(folder: NoteFolder): Promise<void> {
 
 /** Soft-delete em cascata: pasta + subpastas + notas filhas → Lixeira. */
 export async function deleteFolderCascade(id: string): Promise<void> {
+  if (isFixedFolder(id)) return; // pasta fixa não pode ser excluída
   const folders = await listFolders();
   const notes = await listNotes();
   const toDeleteFolders = new Set<string>();
