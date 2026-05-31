@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +28,7 @@ import {
   CloudOff,
   FileText,
   AlertTriangle,
+  Heart,
 } from "lucide-react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import {
@@ -39,6 +41,7 @@ import { PwaInstallButton } from "@/components/PwaInstall";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
+import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.functions";
 
 
 
