@@ -635,7 +635,7 @@ export async function saveFolder(folder: NoteFolder): Promise<void> {
   lsFoldersWrite(all);
 }
 
-/** Apaga uma pasta, todas as subpastas recursivamente e todas as notas contidas. */
+/** Soft-delete em cascata: pasta + subpastas + notas filhas → Lixeira. */
 export async function deleteFolderCascade(id: string): Promise<void> {
   const folders = await listFolders();
   const notes = await listNotes();
@@ -647,20 +647,17 @@ export async function deleteFolderCascade(id: string): Promise<void> {
     toDeleteFolders.add(cur);
     for (const f of folders) if (f.parentId === cur) stack.push(f.id);
   }
-  // Apaga notas
+  // Soft-delete notas
   for (const n of notes) {
     if (n.folderId && toDeleteFolders.has(n.folderId)) {
       await deleteNote(n.id);
     }
   }
-  // Apaga pastas
+  // Soft-delete pastas
+  const now = Date.now();
   for (const fid of toDeleteFolders) {
-    try {
-      if (hasIDB()) await idbFolderDelete(fid);
-      else lsFoldersWrite(lsFoldersAll().filter((f) => f.id !== fid));
-    } catch {
-      lsFoldersWrite(lsFoldersAll().filter((f) => f.id !== fid));
-    }
+    const f = folders.find((x) => x.id === fid);
+    if (f) await saveFolder({ ...f, deleted_at: now });
   }
 }
 
