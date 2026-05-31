@@ -204,6 +204,13 @@
     "studyNotesSourceCloud": "Cloud",
     "studyNotesEmptyOutlines": "No notes in \"Week Considerations\" yet.",
     "studyNotesEmptyRecomendados": "No recommended notes yet.",
+    "studyNotesOpenFullscreen": "Open fullscreen",
+    "studyNotesOpenOutline": "Open in outline mode",
+    "studyNotesOpenHint": "Double-click opens fullscreen",
+    "studyNotesGoToOutline": "Go to outline mode",
+    "studyNotesSavingAuto": "Saving…",
+    "studyNotesSavedAuto": "Saved",
+    "studyNotesTitlePlaceholder": "Note title",
     "meals": {
       "lunch": "Lunch",
       "dinner": "Dinner",
