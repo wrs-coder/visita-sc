@@ -630,93 +630,168 @@ function Dashboard() {
       )}
 
       {role === "superintendent" && (
-        <Card className="shadow-card">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold">{t("dashboard.todayBlockTitle")}</h3>
-              </div>
-              <Link to="/cronograma" className="text-primary text-xs font-medium inline-flex items-center hover:underline">
-                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-              </Link>
-            </div>
-            {circuitToday.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("dashboard.todayBlockEmpty")}</p>
-            ) : (
-              <ul className="space-y-2">
-                {circuitToday.map((e) => (
-                  <li key={e.id} className="flex items-start gap-3 p-2 rounded-md border bg-card">
-                    <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[58px] text-center">
-                      <Clock className="inline h-3 w-3 mr-0.5" />
-                      {e.start_time?.slice(0, 5) ?? "—"}
+        <CollapsibleCard
+          id="super-today-circuit"
+          icon={<CalendarDays className="h-4 w-4 text-primary" />}
+          title={t("dashboard.todayBlockTitle")}
+          headerRight={
+            <Link to="/cronograma" className="text-primary text-xs font-medium inline-flex items-center hover:underline">
+              {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+            </Link>
+          }
+        >
+          {circuitToday.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("dashboard.todayBlockEmpty")}</p>
+          ) : (
+            <ul className="space-y-2">
+              {circuitToday.map((e) => (
+                <li key={e.id} className="flex items-start gap-3 p-2 rounded-md border bg-card">
+                  <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[58px] text-center">
+                    <Clock className="inline h-3 w-3 mr-0.5" />
+                    {e.start_time?.slice(0, 5) ?? "—"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-primary/70 font-semibold">
+                      {t(`schedule.types.${e.event_type}`, { defaultValue: e.event_type })}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] uppercase tracking-wide text-primary/70 font-semibold">
-                        {t(`schedule.types.${e.event_type}`, { defaultValue: e.event_type })}
+                    <div className="font-medium truncate">{e.title}</div>
+                    {e.location && (
+                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {e.location}
                       </div>
-                      <div className="font-medium truncate">{e.title}</div>
-                      {e.location && (
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {e.location}
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CollapsibleCard>
       )}
 
       {role === "superintendent" && (
-        <Card className="shadow-card">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Heart className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold">{t("dashboard.coupleCardTitle")}</h3>
-                {coupleUnread > 0 && (
-                  <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-semibold">
-                    {t("dashboard.coupleCardUnread", { count: coupleUnread })}
-                  </span>
-                )}
-              </div>
-              <Link to="/comunicacao-casal" className="text-primary text-xs font-medium inline-flex items-center hover:underline">
-                {t("dashboard.coupleCardOpen")} <ChevronRight className="h-3 w-3" />
-              </Link>
-            </div>
-            {coupleThreads.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("dashboard.coupleCardEmpty")}</p>
-            ) : (
-              <ul className="space-y-2">
-                {coupleThreads.slice(0, 3).map((th) => {
-                  const last = th.replies[th.replies.length - 1] ?? th.root;
-                  const isUnread = last.author === "wife" && !last.read_by_super;
-                  return (
-                    <li key={th.root.id} className="p-2 rounded-md border bg-card">
-                      <div className="flex items-center gap-2">
-                        <div className="font-medium text-sm flex-1 min-w-0 truncate">
-                          {th.root.title}
-                        </div>
-                        {isUnread && <span className="h-2 w-2 rounded-full bg-primary shrink-0" />}
+        <CollapsibleCard
+          id="super-couple"
+          icon={<Heart className="h-4 w-4 text-primary" />}
+          title={
+            <span className="inline-flex items-center gap-2">
+              {t("dashboard.coupleCardTitle")}
+              {coupleUnread > 0 && (
+                <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-semibold">
+                  {t("dashboard.coupleCardUnread", { count: coupleUnread })}
+                </span>
+              )}
+            </span>
+          }
+          headerRight={
+            <Link to="/comunicacao-casal" className="text-primary text-xs font-medium inline-flex items-center hover:underline">
+              {t("dashboard.coupleCardOpen")} <ChevronRight className="h-3 w-3" />
+            </Link>
+          }
+        >
+          {coupleThreads.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("dashboard.coupleCardEmpty")}</p>
+          ) : (
+            <ul className="space-y-2">
+              {coupleThreads.slice(0, 3).map((th) => {
+                const last = th.replies[th.replies.length - 1] ?? th.root;
+                const isUnread = last.author === "wife" && !last.read_by_super;
+                return (
+                  <li key={th.root.id} className="p-2 rounded-md border bg-card">
+                    <div className="flex items-center gap-2">
+                      <div className="font-medium text-sm flex-1 min-w-0 truncate">
+                        {th.root.title}
                       </div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        <span className="font-medium">
-                          {last.author === "wife" ? t("couple.fromWife") : t("couple.fromSuper")}:
-                        </span>{" "}
-                        {last.body}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+                      {isUnread && <span className="h-2 w-2 rounded-full bg-primary shrink-0" />}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      <span className="font-medium">
+                        {last.author === "wife" ? t("couple.fromWife") : t("couple.fromSuper")}:
+                      </span>{" "}
+                      {last.body}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CollapsibleCard>
       )}
+
+      {role === "superintendent" && (
+        <CollapsibleCard
+          id="super-study-notes"
+          icon={<BookOpen className="h-4 w-4 text-primary" />}
+          title={t("dashboard.studyNotesTitle")}
+        >
+          <Tabs defaultValue="outlines" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="outlines">{t("dashboard.studyNotesOutlinesTab")}</TabsTrigger>
+              <TabsTrigger value="recomendados">{t("dashboard.studyNotesRecomendadosTab")}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="outlines" className="mt-3">
+              {outlinesPreview.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("dashboard.studyNotesEmptyOutlines")}</p>
+              ) : (
+                <ul className="space-y-2">
+                  {outlinesPreview.map((o) => (
+                    <li key={o.key}>
+                      <Link
+                        to="/consideracoes-campo"
+                        className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors"
+                      >
+                        <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{o.title}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-2">
+                            <span className="inline-flex px-1.5 py-0.5 rounded bg-accent text-accent-foreground text-[10px] uppercase tracking-wide">
+                              {o.source === "cloud"
+                                ? t("dashboard.studyNotesSourceCloud")
+                                : t("dashboard.studyNotesSourceLocal")}
+                            </span>
+                            <span>
+                              {o.updated_at
+                                ? formatDistanceToNow(new Date(o.updated_at), { addSuffix: true, locale: ptBR })
+                                : ""}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </TabsContent>
+            <TabsContent value="recomendados" className="mt-3">
+              {recomendadosPreview.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("dashboard.studyNotesEmptyRecomendados")}</p>
+              ) : (
+                <ul className="space-y-2">
+                  {recomendadosPreview.map((n) => (
+                    <li key={n.id}>
+                      <Link
+                        to="/notas"
+                        className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors"
+                      >
+                        <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">
+                            {n.title || "(sem título)"}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(n.updated_at), { addSuffix: true, locale: ptBR })}
+                          </div>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CollapsibleCard>
+      )}
+
 
 
       {!visit && (
