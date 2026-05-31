@@ -22,6 +22,8 @@ import {
   BookOpen,
   FileText,
   Heart,
+  Trash2,
+
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
@@ -112,6 +114,7 @@ function AppLayout() {
               { to: "/congregacoes", label: t("sidebar.congregations"), icon: Building2 },
               { to: "/consideracoes-campo", label: t("sidebar.personalOutlines"), icon: FileText },
               { to: "/notas", label: t("sidebar.privateNotes"), icon: Lock },
+              { to: "/lixeira", label: t("sidebar.trash", { defaultValue: "Lixeira" }), icon: Trash2 },
             ]
           : []),
       ],
