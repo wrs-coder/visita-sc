@@ -22,7 +22,7 @@ import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 import { wifeListCoupleMessages, wifeCreateCoupleMessage, wifeMarkCoupleMessagesRead, type CoupleThread } from "@/lib/couple-messages.functions";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog as CDialog, DialogContent as CDialogContent, DialogHeader as CDialogHeader, DialogTitle as CDialogTitle, DialogFooter as CDialogFooter, DialogTrigger as CDialogTrigger } from "@/components/ui/dialog";
+
 
 export const Route = createFileRoute("/visitante/painel")({ component: Page });
 
