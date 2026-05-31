@@ -45,6 +45,13 @@ import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.fun
 
 import { listNotesByType, FIXED_FOLDER_WEEK_CONSIDERATIONS, type FieldNote } from "@/lib/bible-notes-store";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
+import { FieldNoteFullscreenDialog } from "@/components/dashboard/FieldNoteFullscreenDialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Maximize2, PencilLine } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 
@@ -216,6 +223,22 @@ function Dashboard() {
   };
   const [outlinesPreview, setOutlinesPreview] = useState<OutlinePreview[]>([]);
   const [recomendadosPreview, setRecomendadosPreview] = useState<RecomendadoPreview[]>([]);
+
+  // Nota aberta em tela cheia no próprio Dashboard (overlay).
+  const [fullscreenNoteId, setFullscreenNoteId] = useState<string | null>(null);
+  // Lembra a última preferência ("fullscreen" | "outline") para 1-clique futuro.
+  // Persistido em localStorage — zero custo de banco.
+  const PREF_KEY = "dashboard.outline-open-pref";
+  type OpenPref = "fullscreen" | "outline";
+  const [openPref, setOpenPrefState] = useState<OpenPref>(() => {
+    if (typeof window === "undefined") return "fullscreen";
+    const v = window.localStorage.getItem(PREF_KEY);
+    return v === "outline" ? "outline" : "fullscreen";
+  });
+  const setOpenPref = (p: OpenPref) => {
+    setOpenPrefState(p);
+    try { window.localStorage.setItem(PREF_KEY, p); } catch { /* quota */ }
+  };
 
   const loadOutlines = useCallback(async () => {
     if (role !== "superintendent") return;
@@ -719,21 +742,12 @@ function Dashboard() {
                   >
                     {outlinesPreview.map((o) => (
                       <li key={o.key}>
-                        <Link
-                          to="/consideracoes-campo"
-                          search={{ noteId: o.id, mode: "outline" }}
-                          className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors h-16"
-                        >
-                          <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm truncate">{o.title}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {o.updated_at
-                                ? formatDistanceToNow(new Date(o.updated_at), { addSuffix: true, locale: ptBR })
-                                : ""}
-                            </div>
-                          </div>
-                        </Link>
+                        <OutlinePreviewRow
+                          note={o}
+                          openPref={openPref}
+                          onSetPref={setOpenPref}
+                          onOpenFullscreen={() => setFullscreenNoteId(o.id)}
+                        />
                       </li>
                     ))}
                   </ul>
@@ -1072,6 +1086,129 @@ function Dashboard() {
         </div>
       )}
 
+      <FieldNoteFullscreenDialog
+        noteId={fullscreenNoteId}
+        onOpenChange={(open) => { if (!open) setFullscreenNoteId(null); }}
+        onSaved={() => { void loadOutlines(); }}
+      />
     </div>
   );
 }
+
+// ---------------------------------------------------------------
+// OutlinePreviewRow
+// Linha de nota no cartão "Esboços e Notas" → aba "Considerações de campo".
+//
+// Comportamento:
+// - 1 clique simples: aplica a última preferência do usuário (default:
+//   tela cheia, sobreposta ao próprio Dashboard).
+// - Duplo clique: sempre abre em tela cheia (atalho rápido).
+// - Botão "⋯" (ou Enter no foco): abre popover com as duas opções e
+//   memoriza a escolha em localStorage para o próximo 1-clique.
+// - Suporta teclado (Enter / Space) com a preferência atual.
+// ---------------------------------------------------------------
+interface OutlineRowProps {
+  note: { id: string; title: string; updated_at: number };
+  openPref: "fullscreen" | "outline";
+  onSetPref: (p: "fullscreen" | "outline") => void;
+  onOpenFullscreen: () => void;
+}
+
+function OutlinePreviewRow({
+  note,
+  openPref,
+  onSetPref,
+  onOpenFullscreen,
+}: OutlineRowProps) {
+  const { t } = useTranslation();
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  const applyPref = (pref: "fullscreen" | "outline") => {
+    if (pref === "fullscreen") onOpenFullscreen();
+    // "outline" usa <Link> nativo no item do popover; aqui só fechamos.
+    setPopoverOpen(false);
+  };
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      title={t("dashboard.studyNotesOpenHint")}
+      onClick={() => applyPref(openPref)}
+      onDoubleClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onOpenFullscreen();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          applyPref(openPref);
+        }
+      }}
+      className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors h-16 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-sm truncate">{note.title}</div>
+        <div className="text-xs text-muted-foreground">
+          {note.updated_at
+            ? formatDistanceToNow(new Date(note.updated_at), { addSuffix: true, locale: ptBR })
+            : ""}
+        </div>
+      </div>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0 -mr-1"
+            aria-label={t("dashboard.studyNotesOpenFullscreen")}
+            onClick={(e) => {
+              e.stopPropagation();
+              setPopoverOpen(true);
+            }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="end"
+          className="w-56 p-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="w-full flex items-center gap-2 px-2 py-2 text-sm rounded-sm hover:bg-accent text-left"
+            onClick={() => {
+              onSetPref("fullscreen");
+              applyPref("fullscreen");
+            }}
+          >
+            <Maximize2 className="h-4 w-4 text-primary" />
+            <span className="flex-1">{t("dashboard.studyNotesOpenFullscreen")}</span>
+            {openPref === "fullscreen" && (
+              <span className="text-[10px] text-muted-foreground">★</span>
+            )}
+          </button>
+          <Link
+            to="/consideracoes-campo"
+            search={{ noteId: note.id, mode: "outline" }}
+            className="w-full flex items-center gap-2 px-2 py-2 text-sm rounded-sm hover:bg-accent text-left"
+            onClick={() => {
+              onSetPref("outline");
+              setPopoverOpen(false);
+            }}
+          >
+            <PencilLine className="h-4 w-4 text-primary" />
+            <span className="flex-1">{t("dashboard.studyNotesOpenOutline")}</span>
+            {openPref === "outline" && (
+              <span className="text-[10px] text-muted-foreground">★</span>
+            )}
+          </Link>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+

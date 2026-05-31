@@ -204,6 +204,13 @@
     "studyNotesSourceCloud": "Nuvem",
     "studyNotesEmptyOutlines": "Nenhuma nota em \"Considerações da Semana\" ainda.",
     "studyNotesEmptyRecomendados": "Nenhuma nota recomendada ainda.",
+    "studyNotesOpenFullscreen": "Abrir em tela cheia",
+    "studyNotesOpenOutline": "Abrir no modo esboço",
+    "studyNotesOpenHint": "Duplo clique abre em tela cheia",
+    "studyNotesGoToOutline": "Ir para modo esboço",
+    "studyNotesSavingAuto": "Salvando…",
+    "studyNotesSavedAuto": "Salvo",
+    "studyNotesTitlePlaceholder": "Título da nota",
     "meals": {
       "lunch": "Almoço",
       "dinner": "Jantar",
