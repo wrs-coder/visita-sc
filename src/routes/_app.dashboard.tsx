@@ -42,6 +42,11 @@ import { FinishVisitDialog } from "@/components/FinishVisitDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
 import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.functions";
+import { listCloudOutlines } from "@/lib/personal-outlines.functions";
+import { listNotesByType, type FieldNote } from "@/lib/bible-notes-store";
+import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDistanceToNow } from "date-fns";
 
 
 
