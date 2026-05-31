@@ -1347,6 +1347,8 @@
     },
     "folders": {
       "rootLabel": "Root",
+      "weekConsiderations": "Week Considerations",
+      "fixedBadge": "Pinned",
       "new": "New folder",
       "newSub": "New subfolder",
       "rename": "Rename",
