@@ -298,7 +298,32 @@
       "midweek_meeting": "Reunião do Meio de Semana",
       "weekend_meeting": "Reunião do Fim de Semana",
       "other": "Outro"
-    }
+    },
+    "todayBlock": "Hoje",
+    "todayBlockSubtitle": "Eventos programados para o dia atual."
+  },
+  "couple": {
+    "title": "Comunicação do casal",
+    "subtitleSuper": "Conversa privada com sua esposa. Recados aparecem aqui e no painel dela.",
+    "subtitleWife": "Conversa privada com seu esposo. Recados aparecem aqui e no painel dele.",
+    "newMessage": "Novo recado",
+    "newMessageTitle": "Novo recado",
+    "titleField": "Título",
+    "bodyField": "Mensagem",
+    "send": "Enviar",
+    "reply": "Responder",
+    "replyPlaceholder": "Escreva uma resposta…",
+    "noMessages": "Nenhum recado ainda. Comece a conversa.",
+    "unreadBadge": "{{count}} novo(s)",
+    "fromSuper": "Esposo",
+    "fromWife": "Esposa",
+    "deleteThread": "Excluir conversa",
+    "confirmDelete": "Excluir esta conversa e todas as respostas?",
+    "sent": "Recado enviado.",
+    "sendFailed": "Não foi possível enviar.",
+    "deleted": "Conversa excluída.",
+    "titleRequired": "Informe um título para o recado.",
+    "bodyRequired": "Escreva a mensagem."
   },
   "fieldStudies": {
     "title": "Estudos e Revisitas",
