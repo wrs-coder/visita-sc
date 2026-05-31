@@ -393,21 +393,59 @@ function Page() {
         </Button>
       </div>
 
+      {/* Mission 3: bloco fixo "Hoje" — sempre visível, oculta o dia duplicado na semana abaixo */}
+      {(() => {
+        const todayKey = format(new Date(), "yyyy-MM-dd");
+        const todayEvents = events.filter((e) => e.event_date === todayKey);
+        return (
+          <section className="rounded-xl border-2 border-primary/40 bg-primary/5 p-4 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-primary">
+                {t("schedule.todayBlock")} · {format(new Date(), "EEEE, d MMM", { locale })}
+              </h2>
+            </div>
+            <p className="text-xs text-muted-foreground">{t("schedule.todayBlockSubtitle")}</p>
+            {todayEvents.length === 0 ? (
+              <Card>
+                <CardContent className="p-3 text-sm text-muted-foreground">
+                  {t("schedule.noEvents")}
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-2">
+                {todayEvents.map((e) => (
+                  <EventCard
+                    key={e.id}
+                    e={e}
+                    canEdit={canEdit}
+                    congregations={congregations}
+                    onEdit={() => { setEditing(e); setOpen(true); }}
+                    onComplete={() => complete(e.id)}
+                    onPostpone={() => setPostponeFor(e)}
+                    onDelete={() => setDeleteFor(e)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })()}
+
       <div className="space-y-6 select-none" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
-          const dayEvents = events.filter((e) => e.event_date === key);
           const todayMark = isSameDay(day, new Date());
+          if (todayMark) return null; // oculta o dia duplicado na semana
+          const dayEvents = events.filter((e) => e.event_date === key);
           return (
             <section key={key}>
               <h2
                 className={cn(
                   "text-sm font-semibold uppercase tracking-wide mb-2",
-                  todayMark ? "text-primary" : "text-muted-foreground",
+                  "text-muted-foreground",
                 )}
               >
                 {format(day, "EEEE, d MMM", { locale })}
-                {todayMark && ` · ${t("schedule.today")}`}
               </h2>
               {dayEvents.length === 0 ? (
                 <Card>
@@ -438,6 +476,7 @@ function Page() {
           );
         })}
       </div>
+
 
       {/* Postpone dialog */}
       <Dialog open={!!postponeFor} onOpenChange={(o) => !o && setPostponeFor(null)}>
