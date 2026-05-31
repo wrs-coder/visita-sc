@@ -107,7 +107,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
     // Circuit-level events visible to this congregation (independent of any visit).
     // The "visible_to_spouse" flag hides events ONLY from the spouse panel (wifeMode);
     // elder/ESC guest access always sees the events targeted to their congregation.
-    const todayIso = new Date().toISOString().slice(0, 10);
+    // todayIso já definido no topo
     let circuitQuery = supabaseAdmin
       .from("circuit_schedule_events")
       .select("id,event_date,start_time,end_time,title,location,event_type,notes,scope,congregation_ids,visible_to_spouse,superintendent_id,status")
