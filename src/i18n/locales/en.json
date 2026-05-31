@@ -190,6 +190,12 @@
     "todaySchedule": "Today's schedule",
     "fullSchedule": "Full schedule",
     "noEventsToday": "No appointments recorded for today.",
+    "todayBlockTitle": "Today's schedule",
+    "todayBlockEmpty": "Nothing scheduled for today.",
+    "coupleCardTitle": "Wife's messages",
+    "coupleCardEmpty": "No messages yet.",
+    "coupleCardUnread": "{{count}} unread",
+    "coupleCardOpen": "Open chat",
     "meals": {
       "lunch": "Lunch",
       "dinner": "Dinner",
