@@ -176,13 +176,37 @@ function lsWrite(all: FieldNote[]) {
   }
 }
 
+/** Lista todas as notas NÃO excluídas. Para a lixeira, use listTrashedNotes(). */
 export async function listNotes(): Promise<FieldNote[]> {
+  const all = await listAllNotesIncludingTrash();
+  return all.filter((n) => n.deleted_at == null);
+}
+
+/** Inclui itens na lixeira. Usado pela tela Lixeira e pelo sync. */
+export async function listAllNotesIncludingTrash(): Promise<FieldNote[]> {
   try {
     if (hasIDB()) return await idbAll();
   } catch {
     /* fall through */
   }
   return lsAll();
+}
+
+/** Apenas itens na lixeira (purga automática local de itens >30 dias). */
+export async function listTrashedNotes(): Promise<FieldNote[]> {
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const all = await listAllNotesIncludingTrash();
+  const trashed: FieldNote[] = [];
+  for (const n of all) {
+    if (n.deleted_at == null) continue;
+    if (n.deleted_at < cutoff) {
+      // Purga oportunista
+      try { await hardDeleteNote(n.id); } catch { /* ignore */ }
+      continue;
+    }
+    trashed.push(n);
+  }
+  return trashed.sort((a, b) => (b.deleted_at ?? 0) - (a.deleted_at ?? 0));
 }
 
 export async function saveNote(note: FieldNote): Promise<void> {
@@ -201,7 +225,26 @@ export async function saveNote(note: FieldNote): Promise<void> {
   lsWrite(all);
 }
 
+/** Soft-delete: marca a nota como excluída sem removê-la fisicamente. */
 export async function deleteNote(id: string): Promise<void> {
+  const all = await listAllNotesIncludingTrash();
+  const note = all.find((n) => n.id === id);
+  if (!note) return;
+  const updated: FieldNote = { ...note, deleted_at: Date.now(), dirty: true };
+  await saveNote(updated);
+}
+
+/** Restaura uma nota da lixeira. */
+export async function restoreNote(id: string): Promise<void> {
+  const all = await listAllNotesIncludingTrash();
+  const note = all.find((n) => n.id === id);
+  if (!note) return;
+  const updated: FieldNote = { ...note, deleted_at: null, dirty: true, updated_at: Date.now() };
+  await saveNote(updated);
+}
+
+/** Apaga DEFINITIVAMENTE do armazenamento local. */
+export async function hardDeleteNote(id: string): Promise<void> {
   try {
     if (hasIDB()) {
       await idbDelete(id);
