@@ -305,7 +305,7 @@ function Page() {
                 className="text-primary-foreground hover:bg-white/10 shrink-0"
                 onClick={() => {
                   setWeekAnchor(null);
-                  if (code) load(code, snap.selectedCongregationId ?? snap.congregation.id);
+                  if (code) load(code, null, { pickCurrent: true });
                 }}
               >
                 <CalendarDays className="h-4 w-4 mr-1" />
