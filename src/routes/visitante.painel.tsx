@@ -479,6 +479,12 @@ function Page() {
                     ))}
                 </TabsContent>
               )}
+
+              {snap.wifeMode && code && (
+                <TabsContent value="couple" className="mt-4">
+                  <WifeCouplePanel code={code} />
+                </TabsContent>
+              )}
             </Tabs>
           </>
         )}
