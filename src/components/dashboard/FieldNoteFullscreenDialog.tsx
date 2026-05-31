@@ -158,17 +158,9 @@ export function FieldNoteFullscreenDialog({
             </Button>
           )}
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            title={t("personalOutlines.fullscreen.exit", {
-              defaultValue: "Sair",
-            })}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+          {/* Espaço reservado para o X de fechar do Dialog (absoluto, top-right). */}
+          <div className="w-8 shrink-0" aria-hidden />
+
 
         <DialogDescription className="sr-only">
           {t("dashboard.studyNotesOpenFullscreen", {
