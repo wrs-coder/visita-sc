@@ -578,15 +578,48 @@ async function idbFolderDelete(id: string): Promise<void> {
   });
 }
 
-export async function listFolders(type?: NoteType): Promise<NoteFolder[]> {
-  let all: NoteFolder[] = [];
+async function listAllFoldersIncludingTrash(): Promise<NoteFolder[]> {
   try {
-    if (hasIDB()) all = await idbFoldersAll();
-    else all = lsFoldersAll();
-  } catch {
-    all = lsFoldersAll();
-  }
+    if (hasIDB()) return await idbFoldersAll();
+  } catch { /* fallthrough */ }
+  return lsFoldersAll();
+}
+
+export async function listFolders(type?: NoteType): Promise<NoteFolder[]> {
+  const all = (await listAllFoldersIncludingTrash()).filter((f) => f.deleted_at == null);
   return type ? all.filter((f) => f.type === type) : all;
+}
+
+export async function listTrashedFolders(): Promise<NoteFolder[]> {
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const all = await listAllFoldersIncludingTrash();
+  const trashed: NoteFolder[] = [];
+  for (const f of all) {
+    if (f.deleted_at == null) continue;
+    if (f.deleted_at < cutoff) {
+      try {
+        if (hasIDB()) await idbFolderDelete(f.id);
+        else lsFoldersWrite(lsFoldersAll().filter((x) => x.id !== f.id));
+      } catch { /* ignore */ }
+      continue;
+    }
+    trashed.push(f);
+  }
+  return trashed.sort((a, b) => (b.deleted_at ?? 0) - (a.deleted_at ?? 0));
+}
+
+export async function restoreFolder(id: string): Promise<void> {
+  const all = await listAllFoldersIncludingTrash();
+  const f = all.find((x) => x.id === id);
+  if (!f) return;
+  await saveFolder({ ...f, deleted_at: null });
+}
+
+export async function hardDeleteFolder(id: string): Promise<void> {
+  try {
+    if (hasIDB()) { await idbFolderDelete(id); return; }
+  } catch { /* fallthrough */ }
+  lsFoldersWrite(lsFoldersAll().filter((f) => f.id !== id));
 }
 
 export async function saveFolder(folder: NoteFolder): Promise<void> {
