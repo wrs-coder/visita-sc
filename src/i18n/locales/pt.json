@@ -1348,6 +1348,8 @@
     },
     "folders": {
       "rootLabel": "Raiz",
+      "weekConsiderations": "Considerações da Semana",
+      "fixedBadge": "Fixa",
       "new": "Nova pasta",
       "newSub": "Nova subpasta",
       "rename": "Renomear",
