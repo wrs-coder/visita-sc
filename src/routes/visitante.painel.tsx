@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks, Compass, Share2, Image as ImageIcon, FileDown, MessageCircle, Sun, Mic, CloudDownload } from "lucide-react";
+import { LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks, Compass, Share2, Image as ImageIcon, FileDown, MessageCircle, Sun, Mic, CloudDownload, Heart, Send, Plus } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
@@ -19,6 +19,10 @@ import { saveBlob } from "@/lib/share";
 import { saveSnapshot, loadSnapshot } from "@/lib/snapshot-cache";
 import { GuestOfflineDialog } from "@/components/GuestOfflineDialog";
 import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
+import { wifeListCoupleMessages, wifeCreateCoupleMessage, wifeMarkCoupleMessagesRead, type CoupleThread } from "@/lib/couple-messages.functions";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog as CDialog, DialogContent as CDialogContent, DialogHeader as CDialogHeader, DialogTitle as CDialogTitle, DialogFooter as CDialogFooter, DialogTrigger as CDialogTrigger } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/visitante/painel")({ component: Page });
 
