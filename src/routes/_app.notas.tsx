@@ -115,6 +115,7 @@ function Page() {
         .from("private_notes")
         .select("*")
         .eq("congregation_id", congId)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       setNotes((data ?? []) as unknown as Note[]);
       setSelected(new Set());
@@ -170,10 +171,16 @@ function Page() {
 
   const remove = async (id: string) => {
     if (!confirm(t("notes.deleteConfirm"))) return;
-    const { error } = await offlineDelete("private_notes", { id });
+    // Soft-delete → vai para a Lixeira (retenção de 30 dias).
+    const { error } = await offlineUpdate(
+      "private_notes",
+      { deleted_at: new Date().toISOString() },
+      { id },
+    );
     if (error) toast.error(error.message); else {
       setNotes((n) => n.filter((x) => x.id !== id));
       setSelected((s) => { const next = new Set(s); next.delete(id); return next; });
+      toast.success(t("trash.movedToTrash", { defaultValue: "Movido para a Lixeira." }));
     }
   };
 

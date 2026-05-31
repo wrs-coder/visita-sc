@@ -29,6 +29,7 @@ import { Route as AppNotasRouteImport } from './routes/_app.notas'
 import { Route as AppModelosRouteImport } from './routes/_app.modelos'
 import { Route as AppModeloReunioesDiscursosRouteImport } from './routes/_app.modelo-reunioes-discursos'
 import { Route as AppModeloReunioesDeCampoRouteImport } from './routes/_app.modelo-reunioes-de-campo'
+import { Route as AppLixeiraRouteImport } from './routes/_app.lixeira'
 import { Route as AppEscalaRouteImport } from './routes/_app.escala'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCronogramaRouteImport } from './routes/_app.cronograma'
@@ -141,6 +142,11 @@ const AppModeloReunioesDeCampoRoute =
     path: '/modelo-reunioes-de-campo',
     getParentRoute: () => AppRoute,
   } as any)
+const AppLixeiraRoute = AppLixeiraRouteImport.update({
+  id: '/lixeira',
+  path: '/lixeira',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppEscalaRoute = AppEscalaRouteImport.update({
   id: '/escala',
   path: '/escala',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
+  '/lixeira': typeof AppLixeiraRoute
   '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/modelos': typeof AppModelosRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
+  '/lixeira': typeof AppLixeiraRoute
   '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/modelos': typeof AppModelosRoute
@@ -270,6 +278,7 @@ export interface FileRoutesById {
   '/_app/cronograma': typeof AppCronogramaRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/escala': typeof AppEscalaRoute
+  '/_app/lixeira': typeof AppLixeiraRoute
   '/_app/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/_app/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/_app/modelos': typeof AppModelosRoute
@@ -303,6 +312,7 @@ export interface FileRouteTypes {
     | '/cronograma'
     | '/dashboard'
     | '/escala'
+    | '/lixeira'
     | '/modelo-reunioes-de-campo'
     | '/modelo-reunioes-discursos'
     | '/modelos'
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/cronograma'
     | '/dashboard'
     | '/escala'
+    | '/lixeira'
     | '/modelo-reunioes-de-campo'
     | '/modelo-reunioes-discursos'
     | '/modelos'
@@ -365,6 +376,7 @@ export interface FileRouteTypes {
     | '/_app/cronograma'
     | '/_app/dashboard'
     | '/_app/escala'
+    | '/_app/lixeira'
     | '/_app/modelo-reunioes-de-campo'
     | '/_app/modelo-reunioes-discursos'
     | '/_app/modelos'
@@ -535,6 +547,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppModeloReunioesDeCampoRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/lixeira': {
+      id: '/_app/lixeira'
+      path: '/lixeira'
+      fullPath: '/lixeira'
+      preLoaderRoute: typeof AppLixeiraRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/escala': {
       id: '/_app/escala'
       path: '/escala'
@@ -618,6 +637,7 @@ interface AppRouteChildren {
   AppCronogramaRoute: typeof AppCronogramaRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppEscalaRoute: typeof AppEscalaRoute
+  AppLixeiraRoute: typeof AppLixeiraRoute
   AppModeloReunioesDeCampoRoute: typeof AppModeloReunioesDeCampoRoute
   AppModeloReunioesDiscursosRoute: typeof AppModeloReunioesDiscursosRoute
   AppModelosRoute: typeof AppModelosRoute
@@ -641,6 +661,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCronogramaRoute: AppCronogramaRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppEscalaRoute: AppEscalaRoute,
+  AppLixeiraRoute: AppLixeiraRoute,
   AppModeloReunioesDeCampoRoute: AppModeloReunioesDeCampoRoute,
   AppModeloReunioesDiscursosRoute: AppModeloReunioesDiscursosRoute,
   AppModelosRoute: AppModelosRoute,
