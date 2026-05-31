@@ -1434,10 +1434,12 @@ function MoveToDialog({
       .map((f) => (
         <div key={f.id}>
           <Row
-            label={f.name}
+            label={isFixedFolder(f.id)
+              ? t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" })
+              : f.name}
             depth={depth}
             folderId={f.id}
-            icon={<Folder className="h-4 w-4 text-muted-foreground" />}
+            icon={<Folder className={cn("h-4 w-4", isFixedFolder(f.id) ? "text-primary" : "text-muted-foreground")} />}
           />
           {renderTree(f.id, depth + 1)}
         </div>
