@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Maximize2, PencilLine, Loader2, Check } from "lucide-react";
+import { FileText, PencilLine, Plus, Minus, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,58 +9,88 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
+import { RichOutlineContent } from "@/lib/rich-content";
 import {
   listAllNotesIncludingTrash,
-  saveNote,
+  getActiveLibrary,
   type FieldNote,
+  type BibleLibrary,
 } from "@/lib/bible-notes-store";
 
 interface FieldNoteFullscreenDialogProps {
   noteId: string | null;
   onOpenChange: (open: boolean) => void;
-  /** Chamado após autosave bem-sucedido (para refresh do preview). */
   onSaved?: (note: FieldNote) => void;
 }
 
+const FONT_SCALE_KEY = "visita-sc:dashboard:fullscreen:font-scale";
+const FS_MIN = 0.75;
+const FS_MAX = 2;
+const FS_STEP = 0.1;
+
 /**
- * Visualização/edição em tela cheia da nota dentro do próprio Dashboard.
+ * Visualização em tela cheia da nota dentro do Dashboard.
  *
- * Princípios:
- * - 100% local-first: lê e grava em IndexedDB via bible-notes-store.
- *   A sincronização com Supabase é responsabilidade do pipeline existente
- *   (use-outlines-sync), então não geramos chamadas extras à nuvem aqui.
- *   Isso preserva o orçamento de banco × milhares de usuários.
- * - Autosave debounced (600ms) + flush ao fechar evita gravações em rajada.
- * - Reusa RichNoteEditor (mesmo autor de conteúdo do "modo esboço") para não
- *   duplicar lógica de formatação/atalhos.
+ * Espelha o comportamento do "Fullscreen" da aba "Esboços Pessoais":
+ * - Conteúdo renderizado via RichOutlineContent (somente leitura) para que
+ *   as citações bíblicas detectadas abram em popup (VerseLink).
+ * - Controles de zoom de fonte (+/-), persistidos em localStorage.
+ * - Atalho "Esc" fecha; botão dedicado abre a nota em modo esboço (edição
+ *   completa) na rota /consideracoes-campo, sem perder o estado local.
+ *
+ * 100% local-first: nenhuma chamada à nuvem aqui. A sincronização com o
+ * Supabase continua a cargo do pipeline existente (use-outlines-sync).
  */
 export function FieldNoteFullscreenDialog({
   noteId,
   onOpenChange,
-  onSaved,
+  onSaved: _onSaved,
 }: FieldNoteFullscreenDialogProps) {
   const { t } = useTranslation();
   const [note, setNote] = useState<FieldNote | null>(null);
+  const [library, setLibrary] = useState<BibleLibrary | null>(null);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dirtyRef = useRef<FieldNote | null>(null);
 
-  // Carrega a nota do IndexedDB quando o id muda.
+  const [scale, setScale] = useState<number>(() => {
+    if (typeof window === "undefined") return 1;
+    try {
+      const raw = window.localStorage.getItem(FONT_SCALE_KEY);
+      const n = raw ? Number(raw) : 1;
+      return Number.isFinite(n) && n >= FS_MIN && n <= FS_MAX ? n : 1;
+    } catch {
+      return 1;
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(FONT_SCALE_KEY, String(scale));
+    } catch {
+      /* noop */
+    }
+  }, [scale]);
+
+  // Carrega nota + biblioteca ativa quando o id muda.
   useEffect(() => {
     if (!noteId) {
       setNote(null);
+      setLibrary(null);
       return;
     }
     let cancelled = false;
     setLoading(true);
     (async () => {
       try {
-        const all = await listAllNotesIncludingTrash();
-        const found = all.find((n) => n.id === noteId && n.deleted_at == null) ?? null;
-        if (!cancelled) setNote(found);
+        const [all, lib] = await Promise.all([
+          listAllNotesIncludingTrash(),
+          getActiveLibrary(),
+        ]);
+        if (cancelled) return;
+        const found =
+          all.find((n) => n.id === noteId && n.deleted_at == null) ?? null;
+        setNote(found);
+        setLibrary(lib);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -70,128 +100,77 @@ export function FieldNoteFullscreenDialog({
     };
   }, [noteId]);
 
-  // Flush pendente ao desmontar / fechar.
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-        debounceRef.current = null;
-      }
-      const pending = dirtyRef.current;
-      if (pending) {
-        void saveNote(pending).then(() => onSaved?.(pending)).catch(() => {});
-        dirtyRef.current = null;
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function scheduleSave(next: FieldNote) {
-    dirtyRef.current = next;
-    setStatus("saving");
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      const toSave = dirtyRef.current;
-      if (!toSave) return;
-      try {
-        await saveNote(toSave);
-        dirtyRef.current = null;
-        setStatus("saved");
-        onSaved?.(toSave);
-        setTimeout(() => {
-          setStatus((s) => (s === "saved" ? "idle" : s));
-        }, 1500);
-      } catch {
-        setStatus("idle");
-      }
-    }, 600);
-  }
-
-  function patch<K extends keyof FieldNote>(key: K, value: FieldNote[K]) {
-    if (!note) return;
-    const next: FieldNote = {
-      ...note,
-      [key]: value,
-      updated_at: Date.now(),
-      dirty: true,
-    };
-    setNote(next);
-    scheduleSave(next);
-  }
-
   const open = noteId != null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="p-0 gap-0 max-w-[100vw] sm:max-w-[95vw] h-[100dvh] sm:h-[95vh] flex flex-col rounded-none sm:rounded-lg overflow-hidden"
+        className="p-0 gap-0 max-w-[100vw] sm:max-w-[100vw] w-screen h-[100dvh] sm:h-[100dvh] flex flex-col rounded-none overflow-hidden"
       >
-        <div className="flex items-center gap-2 border-b px-3 sm:px-4 py-2 shrink-0">
-          <Maximize2 className="h-4 w-4 text-primary shrink-0" />
-          <Input
-            value={note?.title ?? ""}
-            onChange={(e) => patch("title", e.target.value)}
-            placeholder={t("dashboard.studyNotesTitlePlaceholder")}
-            className="border-0 shadow-none focus-visible:ring-0 text-base font-semibold px-1 h-8 min-w-0 flex-1"
-            disabled={!note}
-          />
-          <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-            {status === "saving" && (
-              <>
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span className="hidden sm:inline">
-                  {t("dashboard.studyNotesSavingAuto")}
-                </span>
-              </>
-            )}
-            {status === "saved" && (
-              <>
-                <Check className="h-3 w-3 text-emerald-600" />
-                <span className="hidden sm:inline">
-                  {t("dashboard.studyNotesSavedAuto")}
-                </span>
-              </>
-            )}
-          </div>
+        <div className="flex items-center gap-2 border-b px-3 sm:px-4 py-2 shrink-0 min-w-0">
+          <FileText className="h-4 w-4 text-primary shrink-0" />
+          <DialogTitle className="text-sm font-semibold truncate flex-1 min-w-0 m-0">
+            {note?.title ||
+              t("fieldConsiderations.fields.title", { defaultValue: "Nota" })}
+          </DialogTitle>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              setScale((s) => Math.max(FS_MIN, +(s - FS_STEP).toFixed(2)))
+            }
+            title={t("personalOutlines.fullscreen.fontDown", {
+              defaultValue: "Diminuir fonte",
+            })}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <span className="text-xs tabular-nums w-10 text-center">
+            {Math.round(scale * 100)}%
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              setScale((s) => Math.min(FS_MAX, +(s + FS_STEP).toFixed(2)))
+            }
+            title={t("personalOutlines.fullscreen.fontUp", {
+              defaultValue: "Aumentar fonte",
+            })}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+
           {note && (
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="shrink-0 mr-8"
-              onClick={() => {
-                // Flush antes de navegar.
-                if (debounceRef.current) {
-                  clearTimeout(debounceRef.current);
-                  debounceRef.current = null;
-                }
-                const pending = dirtyRef.current;
-                if (pending) void saveNote(pending);
-              }}
-            >
+            <Button asChild variant="outline" size="sm" className="shrink-0">
               <Link
                 to="/consideracoes-campo"
                 search={{ noteId: note.id, mode: "outline" }}
               >
-                <PencilLine className="h-3.5 w-3.5 mr-1" />
+                <PencilLine className="h-3.5 w-3.5 sm:mr-1" />
                 <span className="hidden sm:inline">
-                  {t("dashboard.studyNotesGoToOutline")}
+                  {t("dashboard.studyNotesGoToOutline", {
+                    defaultValue: "Abrir no modo esboço",
+                  })}
                 </span>
-                <span className="sm:hidden">Esboço</span>
               </Link>
             </Button>
           )}
+
+          {/* Espaço reservado para o X de fechar do Dialog (absoluto, top-right). */}
+          <div className="w-8 shrink-0" aria-hidden />
         </div>
 
-        {/* a11y: títulos invisíveis exigidos pelo Radix Dialog */}
-        <DialogTitle className="sr-only">
-          {note?.title || t("dashboard.studyNotesTitlePlaceholder")}
-        </DialogTitle>
+
+
         <DialogDescription className="sr-only">
-          {t("dashboard.studyNotesOpenFullscreen")}
+          {t("dashboard.studyNotesOpenFullscreen", {
+            defaultValue: "Visualização em tela cheia",
+          })}
         </DialogDescription>
 
-        <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-6">
           {loading ? (
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -202,12 +181,24 @@ export function FieldNoteFullscreenDialog({
               —
             </div>
           ) : (
-            <RichNoteEditor
-              noteId={note.id}
-              value={note.content ?? ""}
-              onChange={(html) => patch("content", html)}
-              minHeight="60vh"
-            />
+            <div
+              className="max-w-3xl mx-auto leading-relaxed min-w-0 break-words [overflow-wrap:anywhere]"
+              style={{ fontSize: `${scale}rem` }}
+            >
+              {note.content ? (
+                <RichOutlineContent
+                  html={note.content}
+                  library={library}
+                  fontScale={scale}
+                />
+              ) : (
+                <span className="text-muted-foreground italic">
+                  {t("fieldConsiderations.contentEmpty", {
+                    defaultValue: "(Sem conteúdo)",
+                  })}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </DialogContent>
