@@ -224,6 +224,22 @@ function Dashboard() {
   const [outlinesPreview, setOutlinesPreview] = useState<OutlinePreview[]>([]);
   const [recomendadosPreview, setRecomendadosPreview] = useState<RecomendadoPreview[]>([]);
 
+  // Nota aberta em tela cheia no próprio Dashboard (overlay).
+  const [fullscreenNoteId, setFullscreenNoteId] = useState<string | null>(null);
+  // Lembra a última preferência ("fullscreen" | "outline") para 1-clique futuro.
+  // Persistido em localStorage — zero custo de banco.
+  const PREF_KEY = "dashboard.outline-open-pref";
+  type OpenPref = "fullscreen" | "outline";
+  const [openPref, setOpenPrefState] = useState<OpenPref>(() => {
+    if (typeof window === "undefined") return "fullscreen";
+    const v = window.localStorage.getItem(PREF_KEY);
+    return v === "outline" ? "outline" : "fullscreen";
+  });
+  const setOpenPref = (p: OpenPref) => {
+    setOpenPrefState(p);
+    try { window.localStorage.setItem(PREF_KEY, p); } catch { /* quota */ }
+  };
+
   const loadOutlines = useCallback(async () => {
     if (role !== "superintendent") return;
     try {
