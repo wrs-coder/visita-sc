@@ -639,6 +639,7 @@ export async function listTrashedFolders(): Promise<NoteFolder[]> {
 }
 
 export async function restoreFolder(id: string): Promise<void> {
+  if (isFixedFolder(id)) return; // pasta fixa nunca entra na lixeira
   const all = await listAllFoldersIncludingTrash();
   const f = all.find((x) => x.id === id);
   if (!f) return;
@@ -646,6 +647,7 @@ export async function restoreFolder(id: string): Promise<void> {
 }
 
 export async function hardDeleteFolder(id: string): Promise<void> {
+  if (isFixedFolder(id)) return; // pasta fixa nunca é apagada
   try {
     if (hasIDB()) { await idbFolderDelete(id); return; }
   } catch { /* fallthrough */ }
@@ -653,6 +655,7 @@ export async function hardDeleteFolder(id: string): Promise<void> {
 }
 
 export async function saveFolder(folder: NoteFolder): Promise<void> {
+  if (isFixedFolder(folder.id)) return; // pasta fixa não é gravada
   try {
     if (hasIDB()) {
       await idbFolderPut(folder);
@@ -667,6 +670,7 @@ export async function saveFolder(folder: NoteFolder): Promise<void> {
 
 /** Soft-delete em cascata: pasta + subpastas + notas filhas → Lixeira. */
 export async function deleteFolderCascade(id: string): Promise<void> {
+  if (isFixedFolder(id)) return; // pasta fixa não pode ser excluída
   const folders = await listFolders();
   const notes = await listNotes();
   const toDeleteFolders = new Set<string>();
