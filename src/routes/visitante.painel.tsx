@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks, Compass, Share2, Image as ImageIcon, FileDown, MessageCircle, Sun, Mic, CloudDownload } from "lucide-react";
+import { LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks, Compass, Share2, Image as ImageIcon, FileDown, MessageCircle, Sun, Mic, CloudDownload, Heart, Send, Plus } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
@@ -19,6 +19,10 @@ import { saveBlob } from "@/lib/share";
 import { saveSnapshot, loadSnapshot } from "@/lib/snapshot-cache";
 import { GuestOfflineDialog } from "@/components/GuestOfflineDialog";
 import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
+import { wifeListCoupleMessages, wifeCreateCoupleMessage, wifeMarkCoupleMessagesRead, type CoupleThread } from "@/lib/couple-messages.functions";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
 
 export const Route = createFileRoute("/visitante/painel")({ component: Page });
 
@@ -333,17 +337,20 @@ function Page() {
             </CardContent></Card>
 
             <Tabs defaultValue="hoje">
-              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-7"}`}>
+              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-7" : "grid-cols-7"}`}>
                 <TabsTrigger value="hoje"><Sun className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.today")}</span></TabsTrigger>
                 <TabsTrigger value="cron"><CalendarDays className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.schedule")}</span></TabsTrigger>
                 <TabsTrigger value="estudos"><Users className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.studies")}</span></TabsTrigger>
                 <TabsTrigger value="campo"><Compass className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.field")}</span></TabsTrigger>
                 <TabsTrigger value="ref"><UtensilsCrossed className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.meals")}</span></TabsTrigger>
                 <TabsTrigger value="trans"><Car className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.transport")}</span></TabsTrigger>
-                {!snap.wifeMode && (
+                {snap.wifeMode ? (
+                  <TabsTrigger value="couple"><Heart className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.couple")}</span></TabsTrigger>
+                ) : (
                   <TabsTrigger value="check"><ListChecks className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.checklist")}</span></TabsTrigger>
                 )}
               </TabsList>
+
 
               <TabsContent value="hoje" className="mt-4">
                 <TodayDashboard snap={snap} />
@@ -470,6 +477,12 @@ function Page() {
                         {c.link_or_notes && <div className="text-xs break-words">{c.link_or_notes}</div>}
                       </CardContent></Card>
                     ))}
+                </TabsContent>
+              )}
+
+              {snap.wifeMode && code && (
+                <TabsContent value="couple" className="mt-4">
+                  <WifeCouplePanel code={code} />
                 </TabsContent>
               )}
             </Tabs>
@@ -778,6 +791,134 @@ function Section({ title, empty, children }: { title: string; empty: boolean; ch
     <div>
       <div className="font-semibold text-sm border-b border-gray-300 mb-1 pb-0.5">{title}</div>
       {empty ? <div className="text-xs text-gray-400 italic">{t("guest.empty.section")}</div> : <div>{children}</div>}
+    </div>
+  );
+}
+
+function WifeCouplePanel({ code }: { code: string }) {
+  const { t, i18n } = useTranslation();
+  const dateLocale = getDateLocale(i18n.language);
+  const listFn = useServerFn(wifeListCoupleMessages);
+  const createFn = useServerFn(wifeCreateCoupleMessage);
+  const markFn = useServerFn(wifeMarkCoupleMessagesRead);
+  const [threads, setThreads] = useState<CoupleThread[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [sending, setSending] = useState(false);
+  const [replyOpen, setReplyOpen] = useState<string | null>(null);
+  const [replyBody, setReplyBody] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const r = await listFn({ data: { inviteCode: code } });
+      if (r.ok) setThreads(r.threads);
+    } catch (err) {
+      console.warn("[wife-couple] load failed", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [listFn, code]);
+
+  useEffect(() => {
+    load();
+    markFn({ data: { inviteCode: code } }).catch(() => {});
+    const id = setInterval(load, 30_000);
+    return () => clearInterval(id);
+  }, [load, markFn, code]);
+
+  const send = async () => {
+    if (!title.trim()) return toast.error(t("couple.titleRequired"));
+    if (!body.trim()) return toast.error(t("couple.bodyRequired"));
+    setSending(true);
+    try {
+      await createFn({ data: { inviteCode: code, title: title.trim(), body: body.trim() } });
+      toast.success(t("couple.sent"));
+      setTitle(""); setBody(""); setOpen(false); load();
+    } catch { toast.error(t("couple.sendFailed")); }
+    finally { setSending(false); }
+  };
+
+  const sendReply = async (parentId: string) => {
+    if (!replyBody.trim()) return;
+    setSending(true);
+    try {
+      await createFn({ data: { inviteCode: code, parentId, body: replyBody.trim() } });
+      setReplyBody(""); setReplyOpen(null); load();
+    } catch { toast.error(t("couple.sendFailed")); }
+    finally { setSending(false); }
+  };
+
+  const fmt = (iso: string) => format(parseISO(iso), "dd/MM HH:mm", { locale: dateLocale });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{t("couple.subtitleWife")}</p>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm"><Plus className="h-4 w-4 mr-1" />{t("couple.newMessage")}</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader><DialogTitle>{t("couple.newMessageTitle")}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>{t("couple.titleField")}</Label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("couple.bodyField")}</Label>
+                <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={5} maxLength={4000} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={send} disabled={sending}><Send className="h-4 w-4 mr-1" />{sending ? "…" : t("couple.send")}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {loading ? (
+        <div className="flex min-h-[20vh] items-center justify-center">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      ) : threads.length === 0 ? (
+        <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{t("couple.noMessages")}</CardContent></Card>
+      ) : threads.map((th) => (
+        <Card key={th.root.id}>
+          <CardContent className="p-3 space-y-2">
+            <div className="text-[11px] uppercase tracking-wide text-primary/70 font-semibold">
+              {th.root.author === "wife" ? t("couple.fromWife") : t("couple.fromSuper")} · {fmt(th.root.created_at)}
+            </div>
+            <div className="font-semibold break-words">{th.root.title}</div>
+            <p className="text-sm whitespace-pre-wrap break-words">{th.root.body}</p>
+            {th.replies.length > 0 && (
+              <div className="space-y-2 pl-3 border-l-2 border-primary/20">
+                {th.replies.map((rep) => (
+                  <div key={rep.id} className="text-sm">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+                      {rep.author === "wife" ? t("couple.fromWife") : t("couple.fromSuper")} · {fmt(rep.created_at)}
+                    </div>
+                    <p className="whitespace-pre-wrap break-words">{rep.body}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {replyOpen === th.root.id ? (
+              <div className="space-y-2">
+                <Textarea value={replyBody} onChange={(e) => setReplyBody(e.target.value)} placeholder={t("couple.replyPlaceholder")} rows={3} maxLength={4000} />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => { setReplyOpen(null); setReplyBody(""); }}>{t("common.cancel")}</Button>
+                  <Button size="sm" onClick={() => sendReply(th.root.id)} disabled={sending}><Send className="h-3.5 w-3.5 mr-1" />{t("couple.send")}</Button>
+                </div>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setReplyOpen(th.root.id)}>{t("couple.reply")}</Button>
+            )}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

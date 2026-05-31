@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +28,7 @@ import {
   CloudOff,
   FileText,
   AlertTriangle,
+  Heart,
 } from "lucide-react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import {
@@ -39,6 +41,7 @@ import { PwaInstallButton } from "@/components/PwaInstall";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
+import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.functions";
 
 
 
@@ -127,9 +130,6 @@ function Dashboard() {
     allowPlaceholder: role !== "superintendent",
     congregationId: role === "superintendent" ? selected : undefined,
   });
-  // Para o superintendente, só consideramos uma visita "ativa" no painel se
-  // houve auto-seleção pela semana corrente OU escolha manual no select.
-  // Sem nada selecionado → painel inicia vazio (sem fallback automático).
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -144,6 +144,57 @@ function Dashboard() {
   >([]);
   const [overdueDialogId, setOverdueDialogId] = useState<string | null>(null);
   const today = format(new Date(), "yyyy-MM-dd");
+
+  // Mission 2: eventos do circuito (circuit_schedule_events) do dia vigente.
+  const [circuitToday, setCircuitToday] = useState<Array<{
+    id: string;
+    title: string;
+    start_time: string | null;
+    location: string | null;
+    event_type: string;
+  }>>([]);
+
+  // Mission 1: recados da esposa (preview no dashboard).
+  const listCoupleFn = useServerFn(listCoupleMessages);
+  const [coupleThreads, setCoupleThreads] = useState<CoupleThread[]>([]);
+  const [coupleUnread, setCoupleUnread] = useState(0);
+
+  const loadCouple = useCallback(async () => {
+    if (role !== "superintendent") return;
+    try {
+      const r = await listCoupleFn();
+      if (r.ok) {
+        setCoupleThreads(r.threads);
+        setCoupleUnread(r.unread);
+      }
+    } catch (err) {
+      console.warn("[dashboard] couple load failed", err);
+    }
+  }, [listCoupleFn, role]);
+
+  useEffect(() => {
+    loadCouple();
+    const id = setInterval(loadCouple, 30_000);
+    return () => clearInterval(id);
+  }, [loadCouple]);
+
+  // Eventos do circuito de hoje (escopos visíveis ao super = todos os próprios).
+  useEffect(() => {
+    if (role !== "superintendent" || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("circuit_schedule_events")
+        .select("id, title, start_time, location, event_type")
+        .eq("superintendent_id", user.id)
+        .eq("event_date", today)
+        .neq("status", "completed")
+        .order("start_time");
+      if (!cancelled) setCircuitToday(data ?? []);
+    })();
+    return () => { cancelled = true; };
+  }, [role, user, today]);
+
 
   // Detecta visitas encerradas (end_date < hoje) cujos dados operacionais
   // ainda não foram limpos via "Finalizar Visita". Consulta única e leve por
@@ -483,6 +534,96 @@ function Dashboard() {
           </CardContent>
         </Card>
       )}
+
+      {role === "superintendent" && (
+        <Card className="shadow-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold">{t("dashboard.todayBlockTitle")}</h3>
+              </div>
+              <Link to="/cronograma" className="text-primary text-xs font-medium inline-flex items-center hover:underline">
+                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+              </Link>
+            </div>
+            {circuitToday.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("dashboard.todayBlockEmpty")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {circuitToday.map((e) => (
+                  <li key={e.id} className="flex items-start gap-3 p-2 rounded-md border bg-card">
+                    <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[58px] text-center">
+                      <Clock className="inline h-3 w-3 mr-0.5" />
+                      {e.start_time?.slice(0, 5) ?? "—"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] uppercase tracking-wide text-primary/70 font-semibold">
+                        {t(`schedule.types.${e.event_type}`, { defaultValue: e.event_type })}
+                      </div>
+                      <div className="font-medium truncate">{e.title}</div>
+                      {e.location && (
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {e.location}
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {role === "superintendent" && (
+        <Card className="shadow-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Heart className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold">{t("dashboard.coupleCardTitle")}</h3>
+                {coupleUnread > 0 && (
+                  <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-semibold">
+                    {t("dashboard.coupleCardUnread", { count: coupleUnread })}
+                  </span>
+                )}
+              </div>
+              <Link to="/comunicacao-casal" className="text-primary text-xs font-medium inline-flex items-center hover:underline">
+                {t("dashboard.coupleCardOpen")} <ChevronRight className="h-3 w-3" />
+              </Link>
+            </div>
+            {coupleThreads.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("dashboard.coupleCardEmpty")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {coupleThreads.slice(0, 3).map((th) => {
+                  const last = th.replies[th.replies.length - 1] ?? th.root;
+                  const isUnread = last.author === "wife" && !last.read_by_super;
+                  return (
+                    <li key={th.root.id} className="p-2 rounded-md border bg-card">
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium text-sm flex-1 min-w-0 truncate">
+                          {th.root.title}
+                        </div>
+                        {isUnread && <span className="h-2 w-2 rounded-full bg-primary shrink-0" />}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        <span className="font-medium">
+                          {last.author === "wife" ? t("couple.fromWife") : t("couple.fromSuper")}:
+                        </span>{" "}
+                        {last.body}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
 
       {!visit && (
         <Card>

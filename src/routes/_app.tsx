@@ -21,7 +21,7 @@ import {
   ClipboardList,
   BookOpen,
   FileText,
-
+  Heart,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
@@ -116,7 +116,10 @@ function AppLayout() {
       label: t("sidebar.sectionVisita"),
       items: [
         ...(role === "superintendent"
-          ? [{ to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList }]
+          ? [
+              { to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList },
+              { to: "/comunicacao-casal", label: t("sidebar.coupleMessages"), icon: Heart },
+            ]
           : []),
         { to: "/escala", label: t("sidebar.fieldStudies"), icon: Users },
         { to: "/reunioes-discursos", label: t("sidebar.meetingsTalks"), icon: MapPin },

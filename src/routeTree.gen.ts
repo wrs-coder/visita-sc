@@ -35,6 +35,7 @@ import { Route as AppCronogramaRouteImport } from './routes/_app.cronograma'
 import { Route as AppConsideracoesCampoRouteImport } from './routes/_app.consideracoes-campo'
 import { Route as AppCongregacoesRouteImport } from './routes/_app.congregacoes'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
+import { Route as AppComunicacaoCasalRouteImport } from './routes/_app.comunicacao-casal'
 import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist-modelos'
 import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
 import { Route as AppRelatorioVisitIdRouteImport } from './routes/_app.relatorio.$visitId'
@@ -170,6 +171,11 @@ const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppComunicacaoCasalRoute = AppComunicacaoCasalRouteImport.update({
+  id: '/comunicacao-casal',
+  path: '/comunicacao-casal',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppChecklistModelosRoute = AppChecklistModelosRouteImport.update({
   id: '/checklist-modelos',
   path: '/checklist-modelos',
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/visitante': typeof VisitanteRouteWithChildren
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
+  '/comunicacao-casal': typeof AppComunicacaoCasalRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/congregacoes': typeof AppCongregacoesRoute
   '/consideracoes-campo': typeof AppConsideracoesCampoRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
+  '/comunicacao-casal': typeof AppComunicacaoCasalRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/congregacoes': typeof AppCongregacoesRoute
   '/consideracoes-campo': typeof AppConsideracoesCampoRoute
@@ -255,6 +263,7 @@ export interface FileRoutesById {
   '/visitante': typeof VisitanteRouteWithChildren
   '/_app/checklist': typeof AppChecklistRoute
   '/_app/checklist-modelos': typeof AppChecklistModelosRoute
+  '/_app/comunicacao-casal': typeof AppComunicacaoCasalRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/congregacoes': typeof AppCongregacoesRoute
   '/_app/consideracoes-campo': typeof AppConsideracoesCampoRoute
@@ -287,6 +296,7 @@ export interface FileRouteTypes {
     | '/visitante'
     | '/checklist'
     | '/checklist-modelos'
+    | '/comunicacao-casal'
     | '/configuracoes'
     | '/congregacoes'
     | '/consideracoes-campo'
@@ -316,6 +326,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/checklist'
     | '/checklist-modelos'
+    | '/comunicacao-casal'
     | '/configuracoes'
     | '/congregacoes'
     | '/consideracoes-campo'
@@ -347,6 +358,7 @@ export interface FileRouteTypes {
     | '/visitante'
     | '/_app/checklist'
     | '/_app/checklist-modelos'
+    | '/_app/comunicacao-casal'
     | '/_app/configuracoes'
     | '/_app/congregacoes'
     | '/_app/consideracoes-campo'
@@ -565,6 +577,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/comunicacao-casal': {
+      id: '/_app/comunicacao-casal'
+      path: '/comunicacao-casal'
+      fullPath: '/comunicacao-casal'
+      preLoaderRoute: typeof AppComunicacaoCasalRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/checklist-modelos': {
       id: '/_app/checklist-modelos'
       path: '/checklist-modelos'
@@ -592,6 +611,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppChecklistRoute: typeof AppChecklistRoute
   AppChecklistModelosRoute: typeof AppChecklistModelosRoute
+  AppComunicacaoCasalRoute: typeof AppComunicacaoCasalRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppCongregacoesRoute: typeof AppCongregacoesRoute
   AppConsideracoesCampoRoute: typeof AppConsideracoesCampoRoute
@@ -614,6 +634,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppChecklistRoute: AppChecklistRoute,
   AppChecklistModelosRoute: AppChecklistModelosRoute,
+  AppComunicacaoCasalRoute: AppComunicacaoCasalRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppCongregacoesRoute: AppCongregacoesRoute,
   AppConsideracoesCampoRoute: AppConsideracoesCampoRoute,
