@@ -847,293 +847,75 @@ function Dashboard() {
 
       {visit && (
         <div className="grid gap-4 md:grid-cols-2">
-          <Card className="shadow-card">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <ListChecks className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">{t("dashboard.checklistTitle")}</h3>
-                </div>
-                <Link
-                  to="/checklist"
-                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-                >
-                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
-              <div className="flex items-end justify-between mb-2">
-                <div>
-                  <div className="text-3xl font-bold">{progress}%</div>
-                  <div className="text-xs text-muted-foreground">
-                    {t("dashboard.doneOf", { done: doneCount, total })}
-                  </div>
-                </div>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <UtensilsCrossed className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">{t("dashboard.mealsToday")}</h3>
-                </div>
-                <Link
-                  to="/refeicoes"
-                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-                >
-                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
-              {meals.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("dashboard.noActivityToday")}
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {meals.map((m) => (
-                    <li key={m.id} className="text-sm flex items-start gap-2">
-                      <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
-                        {m.type === "lunch" ? t("dashboard.meals.lunch") : m.type === "dinner" ? t("dashboard.meals.dinner") : t("dashboard.meals.breakfast")}
-                        {m.meal_time ? ` · ${m.meal_time.slice(0, 5)}` : ""}
-                      </span>
-                      <div className="min-w-0 flex-1 space-y-0.5">
-                        {m.host_name && (
-                          <div className="font-medium break-words whitespace-normal">
-                            {m.host_name}
-                          </div>
-                        )}
-                        {m.location && (
-                          <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
-                            <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                            <span>{m.location}</span>
-                          </div>
-                        )}
-                        {m.contact_phone && (
-                          <div className="text-xs text-muted-foreground break-words">
-                            📞 {m.contact_phone}
-                          </div>
-                        )}
-                        {m.notes && (
-                          <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
-                            {m.notes}
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {visit && (
-        <div className="grid gap-4 md:grid-cols-3 auto-rows-fr">
-          <Card className="shadow-card">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Car className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">{t("dashboard.transportToday")}</h3>
-                </div>
-                <Link
-                  to="/transporte"
-                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-                >
-                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
-              {transports.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("dashboard.noActivityToday")}
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {transports.map((t) => (
-                    <li key={t.id} className="text-sm space-y-0.5">
-                      <div className="font-medium break-words whitespace-normal">
-                        {t.driver_name}
-                      </div>
-                      {t.contact_phone && (
-                        <div className="text-xs text-muted-foreground break-words">
-                          📞 {t.contact_phone}
-                        </div>
-                      )}
-                      {t.description && (
-                        <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
-                          {t.description}
-                        </div>
-                      )}
-                      {t.notes && (
-                        <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
-                          {t.notes}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">{t("dashboard.studiesVisits")}</h3>
-                </div>
-                <Link
-                  to="/reunioes-de-campo"
-                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-                >
-                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
-              {assignments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("dashboard.noActivityToday")}
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {assignments.map((a) => (
-                    <li key={a.id} className="text-sm flex items-start gap-2">
-                      <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
-                        {a.period}
-                        {a.meeting_time ? ` · ${a.meeting_time.slice(0, 5)}` : ""}
-                      </span>
-                      <div className="min-w-0 flex-1 space-y-0.5">
-                        {a.acompanhante && (
-                          <div className="font-medium break-words whitespace-normal">
-                            {a.acompanhante}
-                            {a.acompanhante_for
-                              ? ` → ${ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for}`
-                              : ""}
-                          </div>
-                        )}
-                        {a.meeting_point && (
-                          <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
-                            <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                            <span>{a.meeting_point}</span>
-                          </div>
-                        )}
-                        {a.contact_phone && (
-                          <div className="text-xs text-muted-foreground break-words">
-                            📞 {a.contact_phone}
-                          </div>
-                        )}
-                        {a.notes && (
-                          <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
-                            {a.notes}
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">{t("dashboard.fieldMeeting")}</h3>
-                </div>
-                <Link
-                  to="/reunioes-discursos"
-                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-                >
-                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
-              {fieldMeetings.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("dashboard.noActivityToday")}
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {fieldMeetings.map((f) => (
-                    <li key={f.id} className="text-sm space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
-                          {f.period}
-                          {f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {MODALITY_LABEL[f.modality] ?? f.modality}
-                        </span>
-                      </div>
-                      {f.meeting_location && (
-                        <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
-                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                          <span>{f.meeting_location}</span>
-                        </div>
-                      )}
-                      {f.territory_number && (
-                        <div className="text-xs text-muted-foreground break-words whitespace-normal">
-                          {t("dashboard.territory")} {f.territory_number}
-                          {f.territory_location ? ` · ${f.territory_location}` : ""}
-                        </div>
-                      )}
-                      {f.auxiliary_leaders && (
-                        <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
-                          {t("dashboard.arrangements")} {f.auxiliary_leaders}
-                        </div>
-                      )}
-                      {f.closing_prayer && (
-                        <div className="text-xs text-muted-foreground break-words whitespace-normal">
-                          {t("dashboard.closingPrayer")} {f.closing_prayer}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {visit && (
-        <Card className="shadow-card">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold">{t("dashboard.todaySchedule")}</h3>
-              </div>
+          <CollapsibleCard
+            id="visit-checklist"
+            icon={<ListChecks className="h-4 w-4 text-primary" />}
+            title={t("dashboard.checklistTitle")}
+            headerRight={
               <Link
-                to="/cronograma"
+                to="/checklist"
                 className="text-primary text-xs font-medium inline-flex items-center hover:underline"
               >
-                {t("dashboard.fullSchedule")} <ChevronRight className="h-3 w-3" />
+                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
               </Link>
+            }
+          >
+            <div className="flex items-end justify-between mb-2">
+              <div>
+                <div className="text-3xl font-bold">{progress}%</div>
+                <div className="text-xs text-muted-foreground">
+                  {t("dashboard.doneOf", { done: doneCount, total })}
+                </div>
+              </div>
             </div>
-            {todayEvents.length === 0 ? (
+            <Progress value={progress} className="h-2" />
+          </CollapsibleCard>
+
+          <CollapsibleCard
+            id="visit-meals"
+            icon={<UtensilsCrossed className="h-4 w-4 text-primary" />}
+            title={t("dashboard.mealsToday")}
+            headerRight={
+              <Link
+                to="/refeicoes"
+                className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+              >
+                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+              </Link>
+            }
+          >
+            {meals.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                {t("dashboard.noEventsToday")}
+                {t("dashboard.noActivityToday")}
               </p>
             ) : (
               <ul className="space-y-3">
-                {todayEvents.map((e) => (
-                  <li key={e.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card">
-                    <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[58px] text-center">
-                      <Clock className="inline h-3 w-3 mr-0.5" />
-                      {e.start_time?.slice(0, 5) ?? "—"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{e.title}</div>
-                      {e.location && (
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {e.location}
+                {meals.map((m) => (
+                  <li key={m.id} className="text-sm flex items-start gap-2">
+                    <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
+                      {m.type === "lunch" ? t("dashboard.meals.lunch") : m.type === "dinner" ? t("dashboard.meals.dinner") : t("dashboard.meals.breakfast")}
+                      {m.meal_time ? ` · ${m.meal_time.slice(0, 5)}` : ""}
+                    </span>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      {m.host_name && (
+                        <div className="font-medium break-words whitespace-normal">
+                          {m.host_name}
+                        </div>
+                      )}
+                      {m.location && (
+                        <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span>{m.location}</span>
+                        </div>
+                      )}
+                      {m.contact_phone && (
+                        <div className="text-xs text-muted-foreground break-words">
+                          📞 {m.contact_phone}
+                        </div>
+                      )}
+                      {m.notes && (
+                        <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
+                          {m.notes}
                         </div>
                       )}
                     </div>
@@ -1141,9 +923,174 @@ function Dashboard() {
                 ))}
               </ul>
             )}
-          </CardContent>
-        </Card>
+          </CollapsibleCard>
+        </div>
       )}
+
+      {visit && (
+        <div className="grid gap-4 md:grid-cols-3 auto-rows-fr">
+          <CollapsibleCard
+            id="visit-transport"
+            icon={<Car className="h-4 w-4 text-primary" />}
+            title={t("dashboard.transportToday")}
+            headerRight={
+              <Link
+                to="/transporte"
+                className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+              >
+                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+              </Link>
+            }
+          >
+            {transports.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {t("dashboard.noActivityToday")}
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {transports.map((tr) => (
+                  <li key={tr.id} className="text-sm space-y-0.5">
+                    <div className="font-medium break-words whitespace-normal">
+                      {tr.driver_name}
+                    </div>
+                    {tr.contact_phone && (
+                      <div className="text-xs text-muted-foreground break-words">
+                        📞 {tr.contact_phone}
+                      </div>
+                    )}
+                    {tr.description && (
+                      <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
+                        {tr.description}
+                      </div>
+                    )}
+                    {tr.notes && (
+                      <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
+                        {tr.notes}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CollapsibleCard>
+
+          <CollapsibleCard
+            id="visit-studies"
+            icon={<BookOpen className="h-4 w-4 text-primary" />}
+            title={t("dashboard.studiesVisits")}
+            headerRight={
+              <Link
+                to="/reunioes-de-campo"
+                className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+              >
+                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+              </Link>
+            }
+          >
+            {assignments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {t("dashboard.noActivityToday")}
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {assignments.map((a) => (
+                  <li key={a.id} className="text-sm flex items-start gap-2">
+                    <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
+                      {a.period}
+                      {a.meeting_time ? ` · ${a.meeting_time.slice(0, 5)}` : ""}
+                    </span>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      {a.acompanhante && (
+                        <div className="font-medium break-words whitespace-normal">
+                          {a.acompanhante}
+                          {a.acompanhante_for
+                            ? ` → ${ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for}`
+                            : ""}
+                        </div>
+                      )}
+                      {a.meeting_point && (
+                        <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span>{a.meeting_point}</span>
+                        </div>
+                      )}
+                      {a.contact_phone && (
+                        <div className="text-xs text-muted-foreground break-words">
+                          📞 {a.contact_phone}
+                        </div>
+                      )}
+                      {a.notes && (
+                        <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
+                          {a.notes}
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CollapsibleCard>
+
+          <CollapsibleCard
+            id="visit-field-meeting"
+            icon={<Users className="h-4 w-4 text-primary" />}
+            title={t("dashboard.fieldMeeting")}
+            headerRight={
+              <Link
+                to="/reunioes-discursos"
+                className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+              >
+                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+              </Link>
+            }
+          >
+            {fieldMeetings.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {t("dashboard.noActivityToday")}
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {fieldMeetings.map((f) => (
+                  <li key={f.id} className="text-sm space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
+                        {f.period}
+                        {f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {MODALITY_LABEL[f.modality] ?? f.modality}
+                      </span>
+                    </div>
+                    {f.meeting_location && (
+                      <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
+                        <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                        <span>{f.meeting_location}</span>
+                      </div>
+                    )}
+                    {f.territory_number && (
+                      <div className="text-xs text-muted-foreground break-words whitespace-normal">
+                        {t("dashboard.territory")} {f.territory_number}
+                        {f.territory_location ? ` · ${f.territory_location}` : ""}
+                      </div>
+                    )}
+                    {f.auxiliary_leaders && (
+                      <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
+                        {t("dashboard.arrangements")} {f.auxiliary_leaders}
+                      </div>
+                    )}
+                    {f.closing_prayer && (
+                      <div className="text-xs text-muted-foreground break-words whitespace-normal">
+                        {t("dashboard.closingPrayer")} {f.closing_prayer}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CollapsibleCard>
+        </div>
+      )}
+
     </div>
   );
 }
