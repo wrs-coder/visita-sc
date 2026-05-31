@@ -602,7 +602,22 @@ async function listAllFoldersIncludingTrash(): Promise<NoteFolder[]> {
 
 export async function listFolders(type?: NoteType): Promise<NoteFolder[]> {
   const all = (await listAllFoldersIncludingTrash()).filter((f) => f.deleted_at == null);
-  return type ? all.filter((f) => f.type === type) : all;
+  const filtered = type ? all.filter((f) => f.type === type) : all;
+  // Injeta a pasta fixa virtual "Considerações da Semana" como PRIMEIRA pasta
+  // da raiz, apenas para o tipo "field_consideration". Não toca no IndexedDB.
+  if (!type || type === "field_consideration") {
+    const fixed: NoteFolder = {
+      id: FIXED_FOLDER_WEEK_CONSIDERATIONS,
+      name: "Considerações da Semana",
+      parentId: null,
+      type: "field_consideration",
+      created_at: 0,
+      deleted_at: null,
+    };
+    // Remove qualquer duplicata acidental (não deveria haver) e prepende.
+    return [fixed, ...filtered.filter((f) => f.id !== FIXED_FOLDER_WEEK_CONSIDERATIONS)];
+  }
+  return filtered;
 }
 
 export async function listTrashedFolders(): Promise<NoteFolder[]> {
