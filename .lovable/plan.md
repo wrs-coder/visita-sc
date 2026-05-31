@@ -1,175 +1,131 @@
-## Visão Geral
 
-Implementar **Lixeira (Ponto 02)** e **Esboços Pessoais cloud-first com cache local (Ponto 03)** seguindo as diretrizes do `instructions.md` (RLS rigoroso para Superintendente, persistência local como rascunho, padrões offline-first existentes do app).
+## Objetivo
 
-A solução prioriza: economia no Supabase (soft-delete leve + retenção curta + purga via `pg_cron`), velocidade local (IndexedDB como cache + leituras instantâneas), portabilidade (esboços viajam com o login do usuário), e zero risco de perda de dados existentes (migração one-shot dos esboços locais antes de cortar dependência).
-
----
-
-## Ponto 02 — Lixeira (Soft-Delete com retenção de 30 dias)
-
-### Escopo da v1
-- ✅ `private_notes` (todas as subabas, incluindo "Recomendados", "Anciãos", etc.)
-- ✅ `personal_outlines` (esboços pessoais)
-- ✅ `note_folders` locais (com cascata — restaurar pasta restaura filhos não purgados)
-- ❌ `couple_messages` fica de fora (conversas com soft-delete confundem o destinatário)
-- ❌ Itinerário, modelos, checklist, etc. ficam de fora (são compartilhados, alto risco de UX)
-
-### Modelo de dados (Supabase)
-Adicionar coluna `deleted_at timestamptz NULL` em:
-- `public.private_notes`
-- `public.personal_outlines`
-
-Índice parcial para purga eficiente: `WHERE deleted_at IS NOT NULL`.
-
-### RLS e leitura
-- **Todas as policies de SELECT atuais** continuam — mas o app filtra `deleted_at IS NULL` em leituras normais.
-- Para a aba Lixeira, query separada `WHERE deleted_at IS NOT NULL`.
-- Nenhuma policy nova exigida (Superintendente já gerencia tudo do seu escopo, conforme instruções 3 e RLS existente).
-
-### Purga automática (economia de banco)
-`pg_cron` diário às 03:00 UTC: `DELETE` físico dos registros com `deleted_at < now() - interval '30 days'`. Roda 100% em SQL, sem `pg_net`, sem custo de endpoint.
-
-### Lixeira local (IndexedDB)
-- `FieldNote` ganha campo opcional `deleted_at?: number`.
-- `NoteFolder` ganha `deleted_at?: number`.
-- Funções existentes `listNotes`/`listFolders` filtram por padrão; nova `listTrashed()`.
-- Purga local: ao abrir a tela Lixeira, descarta registros com `deleted_at < now - 30d`.
-- `deleteNote`/`deleteFolderCascade` passam a fazer soft-delete por padrão; nova função `purgeNote(id)` para deleção definitiva manual.
-
-### UX
-- Nova rota `/configuracoes/lixeira` com 3 seções (Esboços pessoais, Notas privadas, Pastas locais).
-- Cada item mostra título + dias restantes ("expira em 23 dias") + botões **Restaurar** e **Apagar agora**.
-- Botão "Esvaziar Lixeira" por seção (com `confirm`).
-- Link de atalho a partir de Configurações.
-- Toast nas exclusões já passa a ter ação **"Desfazer"** (30 s) que chama Restaurar imediato.
-
-### Compatibilidade
-- Botões de "Excluir" existentes em `consideracoes-campo`, `notas`, etc. continuam funcionando — apenas migram para soft-delete por baixo. UX visível não muda além do toast de Desfazer.
+Adicionar uma pasta fixa **"Considerações da Semana"** dentro da raiz da subaba **Consideração de campo** (em *Esboços Pessoais*), e atualizar o cartão do dashboard para refletir o novo fluxo, sem quebrar nada do que já funciona (offline, sync, lixeira, IndexedDB).
 
 ---
 
-## Ponto 03 — Esboços Pessoais cloud-first com cache local
+## Ajuste 1 — Pasta fixa "Considerações da Semana"
 
-### Princípios
-- **Fonte da verdade**: tabela `public.personal_outlines` na nuvem.
-- **Cache local**: IndexedDB (store `notes` existente, type `outline`) — leitura é instantânea offline.
-- **Sync transparente**: ao criar/editar online → grava local + envia para nuvem. Offline → grava local + enfileira na `offline-queue` existente.
-- **Login em outro dispositivo / reinstalação**: ao logar, baixa todos os esboços do usuário do Supabase para o IndexedDB.
+**Escopo:** apenas a subaba `field_consideration` em `/consideracoes-campo`.
 
-### Remoção do limite de 10
-- Drop da function/trigger `enforce_personal_outlines_limit` (sem substituto).
-- Custo desprezível: cada esboço é JSON pequeno (`< 50 KB` típico). Mesmo 1000 esboços/usuário × milhares de usuários ficam abaixo de 1 GB no `personal_outlines`.
-- Para evitar abuso extremo, manter limite de **tamanho por linha** via validação Zod no server-fn (`content` já capado em 100 KB) e limite soft no app de **500 esboços por usuário** (warning amigável, não erro).
+### Estratégia de armazenamento (econômica e local-first)
 
-### Estratégia de sync (Last-Write-Wins por `updated_at`)
-1. **Read** (montar lista): UI lê IndexedDB primeiro (resposta instantânea). Em paralelo, dispara `listCloudOutlines` e faz merge:
-   - Se cloud tem item mais novo → sobrescreve local.
-   - Se local tem item mais novo → enfileira `pushOutlineToCloud`.
-   - Itens só na nuvem → baixa para local.
-   - Itens só locais SEM `cloud_id` → push (nova criação).
-   - Itens só locais COM `cloud_id` (já existiu na nuvem) → tratar como deleção remota → soft-delete local (move para Lixeira).
-2. **Write**: sempre grava local primeiro (otimista) → tenta cloud → se offline, enfileira.
-3. **Delete**: soft-delete em ambos (alimenta Ponto 02).
+- A pasta é **virtual e determinística**, não gravada no IndexedDB nem no Supabase.
+  - ID reservado, constante: `FIXED_FOLDER_WEEK_CONSIDERATIONS = "__fixed__week-considerations"`.
+  - Nome exibido vem do i18n (`personalOutlines.folders.weekConsiderations`).
+- Como é virtual, **não ocupa linha no banco**, não entra na lixeira, não sincroniza, não precisa de migration. Para milhares de usuários isso evita N linhas duplicadas no Supabase.
+- As **notas dentro dela são reais** (`FieldNote` com `folderId = FIXED_FOLDER_WEEK_CONSIDERATIONS`, `type = "field_consideration"`), seguindo todo o pipeline atual (IndexedDB → fallback localStorage → sync/lixeira existentes).
 
-### Schema local
-Adicionar ao `FieldNote` (somente quando `type === "outline"`):
-- `cloud_id?: string` (UUID do Supabase, para o LWW)
-- `dirty?: boolean` (precisa subir)
-- `synced_at?: number`
+### Mudanças em `src/lib/bible-notes-store.ts`
 
-### Migração one-shot (sem perda de dados)
-No primeiro login pós-deploy, hook `useOutlinesSync` detecta esboços locais sem `cloud_id` e os sobe automaticamente (respeitando rate, com indicador discreto). Marca `migration:outlines:v1` no `localStorage` para não repetir.
+- Exportar `FIXED_FOLDER_WEEK_CONSIDERATIONS` e helper `isFixedFolder(id)`.
+- `listFolders("field_consideration")`: **injetar** a pasta virtual como **primeira** entrada (parentId=null).
+- `saveFolder`, `deleteFolderCascade`, `restoreFolder`, `hardDeleteFolder`: no-op silencioso para a pasta fixa.
 
-### Server functions (ajustes em `src/lib/personal-outlines.functions.ts`)
-- `pushOutlineToCloud`: remove o bloqueio `>= 10`.
-- `listCloudOutlines`: já retorna tudo; manter, remover campo `remaining` ou deixar como `Infinity`.
-- Nova `bulkPushOutlines` para o sync inicial em lote (até 50 por chamada).
-- Nova `softDeleteCloudOutline` (UPDATE `deleted_at = now()`) e `restoreCloudOutline` para a Lixeira.
-- `deleteCloudOutline` existente vira purga definitiva (usada pela Lixeira "Apagar agora" e pelo cron).
+### Mudanças em `src/routes/_app.consideracoes-campo.tsx`
 
-### Performance offline
-- Tudo continua funcionando offline (IndexedDB é fonte primária de leitura).
-- Sync ocorre em background quando volta online via listener `online` já presente em `offline-queue`.
+- Árvore (apenas `field_consideration`): pasta fixa sempre como primeira, ícone destacado (`FolderOpen` + `text-primary`) + badge "Fixa".
+- Esconder ações **renomear** e **excluir** no dropdown se `isFixedFolder(folder.id)`.
+- Permitido: criar nota dentro, mover notas para/dela, recortar/colar, exportar pasta.
+- Diálogo "Mover para…" lista a fixa como destino válido.
+- Não aparece na subaba `outline`.
 
----
+### i18n (`src/i18n/locales/{pt,en,es}.json`)
 
-## Ordem de execução (build mode)
-
-1. **Migração SQL** — adiciona `deleted_at`, índices parciais, remove trigger de limite, agenda `pg_cron` de purga.
-2. **`src/lib/personal-outlines.functions.ts`** — ajustes (sem limite, novas fns soft-delete/restore/bulk).
-3. **`src/lib/bible-notes-store.ts`** — soft-delete local, novos campos `cloud_id`/`dirty`/`synced_at`, helpers `listTrashed`/`purgeNote`/`restoreNote`.
-4. **`src/hooks/use-outlines-sync.ts`** (novo) — orquestra merge cloud↔local + migração one-shot.
-5. **Adaptações de UI** em `_app.consideracoes-campo.tsx` e `_app.notas.tsx` — toast "Desfazer", uso do soft-delete por baixo. Sem mudança visual relevante.
-6. **Nova rota `_app.configuracoes.lixeira.tsx`** — UI da Lixeira.
-7. **i18n** — chaves novas (PT/EN/ES).
-
----
-
-## Detalhes técnicos
-
-### SQL (migration)
-```sql
-ALTER TABLE public.private_notes
-  ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
-CREATE INDEX IF NOT EXISTS idx_private_notes_deleted_at
-  ON public.private_notes(deleted_at) WHERE deleted_at IS NOT NULL;
-
-ALTER TABLE public.personal_outlines
-  ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
-CREATE INDEX IF NOT EXISTS idx_personal_outlines_deleted_at
-  ON public.personal_outlines(deleted_at) WHERE deleted_at IS NOT NULL;
-
--- Remove limite artificial de 10 esboços
-DROP TRIGGER IF EXISTS enforce_personal_outlines_limit_trigger
-  ON public.personal_outlines;
-DROP FUNCTION IF EXISTS public.enforce_personal_outlines_limit();
-
--- Purga diária
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-SELECT cron.schedule(
-  'purge-soft-deleted-30d',
-  '0 3 * * *',
-  $$
-    DELETE FROM public.private_notes
-      WHERE deleted_at IS NOT NULL
-        AND deleted_at < now() - interval '30 days';
-    DELETE FROM public.personal_outlines
-      WHERE deleted_at IS NOT NULL
-        AND deleted_at < now() - interval '30 days';
-  $$
-);
+```
+personalOutlines.folders.weekConsiderations = "Considerações da Semana"
+personalOutlines.folders.fixedBadge = "Fixa"
 ```
 
-### Tipos
-```ts
-// FieldNote ganha:
-deleted_at?: number;
-cloud_id?: string;
-dirty?: boolean;
-synced_at?: number;
+---
+
+## Ajuste 2 — Dashboard: cartão "Esboços e Notas"
+
+### Renomes (i18n)
+
+- `dashboard.studyNotesTitle`: "Estudos & Notas" → **"Esboços e Notas"**
+- `dashboard.studyNotesOutlinesTab`: "Esboços" → **"Considerações de campo"**
+- Manter `studyNotesRecomendadosTab`.
+
+### Conteúdo da aba "Considerações de campo" (em `_app.dashboard.tsx`)
+
+Trocar a fonte de dados de `outlinesPreview`:
+
+- **Antes:** mistura local (`field_consideration` qualquer) + cloud outlines + dedup.
+- **Depois:** apenas notas locais da pasta fixa:
+  ```ts
+  listNotesByType("field_consideration", FIXED_FOLDER_WEEK_CONSIDERATIONS)
+  ```
+- Remove a chamada `listCloudOutlinesFn` desta aba → menos I/O no Supabase em toda abertura de dashboard (× milhares de usuários).
+- Ordenar por `updated_at desc`. Sem limite de 3 — todas as notas da pasta entram no scroll.
+
+### UI: 3 visíveis + **scroll vertical** por todas
+
+- Container vertical com altura fixa equivalente a **~3 itens** (ex.: `max-h-[252px]` para `h-20` por item + gaps) e `overflow-y-auto` com `scrollbar-thin` — Tailwind puro, sem libs novas.
+- Cada item ocupa **largura total** do cartão (títulos longos legíveis, consistente com o resto do dashboard).
+- Vertical evita conflito com gestos horizontais do mobile (swipe de aba/voltar) e mantém o padrão visual dos demais cartões.
+- Indicador sutil de "mais abaixo" (gradiente fade na borda inferior quando há overflow).
+- Mostra: título + `updated_at` relativo. Sem badge local/cloud (todas locais).
+
+### Abertura direta em "modo esboço"
+
+- Trocar o `<Link to="/consideracoes-campo">` por:
+  ```tsx
+  <Link to="/consideracoes-campo" search={{ noteId: n.id, mode: "outline" }} />
+  ```
+- Em `_app.consideracoes-campo.tsx`:
+  - Adicionar `validateSearch` para `{ noteId?: string; mode?: "edit" | "outline" }`.
+  - Bootstrap: se `search.noteId` existe → `setActiveType("field_consideration")`, selecionar a nota, `setMode(search.mode ?? "outline")`.
+  - Todos os recursos da página continuam disponíveis.
+
+---
+
+## Banco de dados / SQL / RLS
+
+**Nenhuma migration necessária.**
+
+- A pasta fixa é virtual no cliente → 0 linhas no Supabase × N usuários.
+- Notas dentro dela usam o pipeline `personal_outlines` existente (sync, soft-delete, lixeira, RLS por `auth.uid() = user_id`).
+- Dashboard passa a fazer **menos chamadas** ao Supabase (remove `listCloudOutlines` desta aba).
+
+---
+
+## Offline / PWA / APK
+
+- 100% client-side (IndexedDB + i18n + roteamento TanStack). Idêntico em browser, PWA e APK.
+- Pasta fixa aparece sem internet (constante hardcoded).
+- Sem novas dependências e sem alterar `sw.js`.
+
+---
+
+## Resumo técnico
+
+```text
+bible-notes-store.ts
+  + FIXED_FOLDER_WEEK_CONSIDERATIONS, isFixedFolder
+  ~ listFolders → injeta a fixa em field_consideration
+  ~ saveFolder / delete* / restore* → no-op para a fixa
+
+_app.consideracoes-campo.tsx
+  + validateSearch({ noteId?, mode? })
+  + bootstrap: seleciona nota + força modo outline
+  ~ árvore: badge "Fixa", esconde renomear/excluir na fixa
+
+_app.dashboard.tsx
+  ~ loadOutlines: listNotesByType('field_consideration', FIXED_FOLDER…)
+  ~ remove listCloudOutlinesFn nesta aba
+  ~ layout: lista vertical com max-h ≈ 3 itens, scroll-y, fade inferior
+  ~ Link com search={ noteId, mode: 'outline' }
+
+i18n/{pt,en,es}.json
+  ~ dashboard.studyNotesTitle, dashboard.studyNotesOutlinesTab
+  + personalOutlines.folders.weekConsiderations / .fixedBadge
 ```
 
-### Sem efeitos colaterais
-- Couple messages, mensagens, itinerário, checklist, modelos: **não tocados**.
-- RLS atual: **não alterada** (continua válida; soft-delete é só app-level filter).
-- Trigger `handle_new_user`: intocado.
+## O que NÃO muda
 
----
-
-## Riscos & mitigação
-
-| Risco | Mitigação |
-|---|---|
-| Conflito de edição simultânea | LWW por `updated_at` — perda mínima, registrada em log local; usuário pode restaurar versão antiga da Lixeira em até 30 d |
-| Quota IndexedDB estourada por usuários com 1000+ esboços | Soft-warn no app aos 500; cap de tamanho por esboço (100 KB) |
-| `pg_cron` indisponível em algum plano | Fallback: server route `/api/public/cron/purge-trash` chamada por scheduler externo; mesma query SQL |
-| Migração one-shot falhar | Idempotente: itens locais sem `cloud_id` ficam marcados `dirty` e tentam de novo no próximo online |
-| Usuário "apagar para sempre" por engano | Confirmação obrigatória; toast Desfazer só na exclusão normal (vai para Lixeira) |
-
----
-
-## Métricas de economia (estimativa)
-- 10 000 usuários × 50 esboços médios × 30 KB = **~15 GB** total no `personal_outlines` (insignificante no Supabase).
-- Soft-delete com retenção de 30 d adiciona ~5 % de overhead máximo.
-- Purga via `pg_cron` é SQL puro → custo zero de função/endpoint.
+- Subaba **Esboços** (outline) e o restante de `/consideracoes-campo`.
+- Sync de esboços, lixeira, RLS, migrations, schema de `personal_outlines`.
+- Aba **Recomendados** do cartão.
+- Demais cartões e rotas.
