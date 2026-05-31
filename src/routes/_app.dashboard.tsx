@@ -711,33 +711,36 @@ function Dashboard() {
               {outlinesPreview.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("dashboard.studyNotesEmptyOutlines")}</p>
               ) : (
-                <ul className="space-y-2">
-                  {outlinesPreview.map((o) => (
-                    <li key={o.key}>
-                      <Link
-                        to="/consideracoes-campo"
-                        className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors"
-                      >
-                        <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{o.title}</div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-2">
-                            <span className="inline-flex px-1.5 py-0.5 rounded bg-accent text-accent-foreground text-[10px] uppercase tracking-wide">
-                              {o.source === "cloud"
-                                ? t("dashboard.studyNotesSourceCloud")
-                                : t("dashboard.studyNotesSourceLocal")}
-                            </span>
-                            <span>
+                <div className="relative">
+                  {/* Lista vertical: ~3 itens visíveis, rola por todas. */}
+                  <ul
+                    className="space-y-2 overflow-y-auto pr-1 [scrollbar-width:thin]"
+                    style={{ maxHeight: "calc(3 * 4rem + 2 * 0.5rem)" }}
+                  >
+                    {outlinesPreview.map((o) => (
+                      <li key={o.key}>
+                        <Link
+                          to="/consideracoes-campo"
+                          search={{ noteId: o.id, mode: "outline" }}
+                          className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors h-16"
+                        >
+                          <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{o.title}</div>
+                            <div className="text-xs text-muted-foreground">
                               {o.updated_at
                                 ? formatDistanceToNow(new Date(o.updated_at), { addSuffix: true, locale: ptBR })
                                 : ""}
-                            </span>
+                            </div>
                           </div>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  {outlinesPreview.length > 3 && (
+                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-background to-transparent" />
+                  )}
+                </div>
               )}
             </TabsContent>
             <TabsContent value="recomendados" className="mt-3">
