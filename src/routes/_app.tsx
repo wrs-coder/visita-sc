@@ -22,6 +22,8 @@ import {
   BookOpen,
   FileText,
   Heart,
+  Trash2,
+
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
