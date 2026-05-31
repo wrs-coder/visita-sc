@@ -484,7 +484,7 @@ function Dashboard() {
     };
   }, [visit, today]);
 
-  const todayEvents = events.filter((e) => e.event_date === today);
+  // todayEvents removed: replaced by "Hoje no cronograma" (circuit-scoped) card.
   const doneCount = checklist.filter((c) => c.status === "done").length;
   const total = checklist.length;
   const progress = total ? Math.round((doneCount / total) * 100) : 0;
