@@ -29,6 +29,14 @@ export interface FieldNote {
   content: string;
   created_at: number;
   updated_at: number;
+  /** Soft-delete (ms epoch). Purgado localmente após 30 dias. */
+  deleted_at?: number | null;
+  /** UUID na tabela personal_outlines do Supabase, se já sincronizado. */
+  cloud_id?: string | null;
+  /** True quando há mudanças locais ainda não enviadas para a nuvem. */
+  dirty?: boolean;
+  /** Última sincronização bem-sucedida (ms epoch). */
+  synced_at?: number | null;
 }
 
 
