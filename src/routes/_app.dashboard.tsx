@@ -742,21 +742,12 @@ function Dashboard() {
                   >
                     {outlinesPreview.map((o) => (
                       <li key={o.key}>
-                        <Link
-                          to="/consideracoes-campo"
-                          search={{ noteId: o.id, mode: "outline" }}
-                          className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors h-16"
-                        >
-                          <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm truncate">{o.title}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {o.updated_at
-                                ? formatDistanceToNow(new Date(o.updated_at), { addSuffix: true, locale: ptBR })
-                                : ""}
-                            </div>
-                          </div>
-                        </Link>
+                        <OutlinePreviewRow
+                          note={o}
+                          openPref={openPref}
+                          onSetPref={setOpenPref}
+                          onOpenFullscreen={() => setFullscreenNoteId(o.id)}
+                        />
                       </li>
                     ))}
                   </ul>
