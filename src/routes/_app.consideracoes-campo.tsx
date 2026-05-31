@@ -152,7 +152,12 @@ function slugify(s: string): string {
 
 function Page() {
   const { t, i18n } = useTranslation();
-  const [activeType, setActiveType] = useState<NoteType | null>(null);
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const [activeType, setActiveType] = useState<NoteType | null>(
+    // Se chegamos por link com noteId, já assume field_consideration imediatamente.
+    search.noteId ? "field_consideration" : null,
+  );
   const [folders, setFolders] = useState<NoteFolder[]>([]);
   const [notes, setNotes] = useState<FieldNote[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
