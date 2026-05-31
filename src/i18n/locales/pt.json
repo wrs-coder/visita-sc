@@ -1088,7 +1088,8 @@
       "field": "Campo",
       "meals": "Refeições",
       "transport": "Transporte",
-      "checklist": "Checklist"
+      "checklist": "Checklist",
+      "couple": "Casal"
     },
     "sections": {
       "cron": "Cronograma",
