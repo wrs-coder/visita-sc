@@ -1322,6 +1322,8 @@
     },
     "folders": {
       "rootLabel": "Raíz",
+      "weekConsiderations": "Consideraciones de la Semana",
+      "fixedBadge": "Fija",
       "new": "Nueva carpeta",
       "newSub": "Nueva subcarpeta",
       "rename": "Renombrar",
