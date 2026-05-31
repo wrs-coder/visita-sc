@@ -7,6 +7,21 @@ import { parseEpub, type ParseProgress, type ParsedBookInfo } from "./epub-bible
 
 export type NoteType = "field_consideration" | "outline";
 
+/**
+ * Pasta fixa virtual "Considerações da Semana".
+ *
+ * - Existe apenas em memória: nunca é gravada no IndexedDB nem no Supabase.
+ *   Para milhares de usuários isso evita N linhas duplicadas no banco.
+ * - Não pode ser renomeada, excluída, restaurada nem sincronizada.
+ * - As NOTAS dentro dela são reais (FieldNote com folderId = FIXED_FOLDER_WEEK_CONSIDERATIONS)
+ *   e seguem o pipeline normal de sync/lixeira.
+ */
+export const FIXED_FOLDER_WEEK_CONSIDERATIONS = "__fixed__week-considerations";
+
+export function isFixedFolder(id: string | null | undefined): boolean {
+  return id === FIXED_FOLDER_WEEK_CONSIDERATIONS;
+}
+
 export interface NoteFolder {
   id: string;
   name: string;
