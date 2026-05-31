@@ -1086,6 +1086,129 @@ function Dashboard() {
         </div>
       )}
 
+      <FieldNoteFullscreenDialog
+        noteId={fullscreenNoteId}
+        onOpenChange={(open) => { if (!open) setFullscreenNoteId(null); }}
+        onSaved={() => { void loadOutlines(); }}
+      />
     </div>
   );
 }
+
+// ---------------------------------------------------------------
+// OutlinePreviewRow
+// Linha de nota no cartão "Esboços e Notas" → aba "Considerações de campo".
+//
+// Comportamento:
+// - 1 clique simples: aplica a última preferência do usuário (default:
+//   tela cheia, sobreposta ao próprio Dashboard).
+// - Duplo clique: sempre abre em tela cheia (atalho rápido).
+// - Botão "⋯" (ou Enter no foco): abre popover com as duas opções e
+//   memoriza a escolha em localStorage para o próximo 1-clique.
+// - Suporta teclado (Enter / Space) com a preferência atual.
+// ---------------------------------------------------------------
+interface OutlineRowProps {
+  note: { id: string; title: string; updated_at: number };
+  openPref: "fullscreen" | "outline";
+  onSetPref: (p: "fullscreen" | "outline") => void;
+  onOpenFullscreen: () => void;
+}
+
+function OutlinePreviewRow({
+  note,
+  openPref,
+  onSetPref,
+  onOpenFullscreen,
+}: OutlineRowProps) {
+  const { t } = useTranslation();
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  const applyPref = (pref: "fullscreen" | "outline") => {
+    if (pref === "fullscreen") onOpenFullscreen();
+    // "outline" usa <Link> nativo no item do popover; aqui só fechamos.
+    setPopoverOpen(false);
+  };
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      title={t("dashboard.studyNotesOpenHint")}
+      onClick={() => applyPref(openPref)}
+      onDoubleClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onOpenFullscreen();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          applyPref(openPref);
+        }
+      }}
+      className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors h-16 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-sm truncate">{note.title}</div>
+        <div className="text-xs text-muted-foreground">
+          {note.updated_at
+            ? formatDistanceToNow(new Date(note.updated_at), { addSuffix: true, locale: ptBR })
+            : ""}
+        </div>
+      </div>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0 -mr-1"
+            aria-label={t("dashboard.studyNotesOpenFullscreen")}
+            onClick={(e) => {
+              e.stopPropagation();
+              setPopoverOpen(true);
+            }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="end"
+          className="w-56 p-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="w-full flex items-center gap-2 px-2 py-2 text-sm rounded-sm hover:bg-accent text-left"
+            onClick={() => {
+              onSetPref("fullscreen");
+              applyPref("fullscreen");
+            }}
+          >
+            <Maximize2 className="h-4 w-4 text-primary" />
+            <span className="flex-1">{t("dashboard.studyNotesOpenFullscreen")}</span>
+            {openPref === "fullscreen" && (
+              <span className="text-[10px] text-muted-foreground">★</span>
+            )}
+          </button>
+          <Link
+            to="/consideracoes-campo"
+            search={{ noteId: note.id, mode: "outline" }}
+            className="w-full flex items-center gap-2 px-2 py-2 text-sm rounded-sm hover:bg-accent text-left"
+            onClick={() => {
+              onSetPref("outline");
+              setPopoverOpen(false);
+            }}
+          >
+            <PencilLine className="h-4 w-4 text-primary" />
+            <span className="flex-1">{t("dashboard.studyNotesOpenOutline")}</span>
+            {openPref === "outline" && (
+              <span className="text-[10px] text-muted-foreground">★</span>
+            )}
+          </Link>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
