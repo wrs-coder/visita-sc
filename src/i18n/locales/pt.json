@@ -189,6 +189,12 @@
     "todaySchedule": "Programação de hoje",
     "fullSchedule": "Cronograma completo",
     "noEventsToday": "Nenhum compromisso registrado para hoje.",
+    "todayBlockTitle": "Hoje no cronograma",
+    "todayBlockEmpty": "Nada agendado para hoje.",
+    "coupleCardTitle": "Recados da esposa",
+    "coupleCardEmpty": "Nenhum recado ainda.",
+    "coupleCardUnread": "{{count}} não lido(s)",
+    "coupleCardOpen": "Abrir conversa",
     "meals": {
       "lunch": "Almoço",
       "dinner": "Jantar",
