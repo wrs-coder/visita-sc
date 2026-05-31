@@ -66,6 +66,8 @@ import {
   exportFolderJSON,
   exportNoteJSON,
   importJSON,
+  FIXED_FOLDER_WEEK_CONSIDERATIONS,
+  isFixedFolder,
   type FieldNote,
   type NoteFolder,
   type NoteType,
