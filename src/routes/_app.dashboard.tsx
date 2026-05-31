@@ -130,9 +130,6 @@ function Dashboard() {
     allowPlaceholder: role !== "superintendent",
     congregationId: role === "superintendent" ? selected : undefined,
   });
-  // Para o superintendente, só consideramos uma visita "ativa" no painel se
-  // houve auto-seleção pela semana corrente OU escolha manual no select.
-  // Sem nada selecionado → painel inicia vazio (sem fallback automático).
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -147,6 +144,57 @@ function Dashboard() {
   >([]);
   const [overdueDialogId, setOverdueDialogId] = useState<string | null>(null);
   const today = format(new Date(), "yyyy-MM-dd");
+
+  // Mission 2: eventos do circuito (circuit_schedule_events) do dia vigente.
+  const [circuitToday, setCircuitToday] = useState<Array<{
+    id: string;
+    title: string;
+    start_time: string | null;
+    location: string | null;
+    event_type: string;
+  }>>([]);
+
+  // Mission 1: recados da esposa (preview no dashboard).
+  const listCoupleFn = useServerFn(listCoupleMessages);
+  const [coupleThreads, setCoupleThreads] = useState<CoupleThread[]>([]);
+  const [coupleUnread, setCoupleUnread] = useState(0);
+
+  const loadCouple = useCallback(async () => {
+    if (role !== "superintendent") return;
+    try {
+      const r = await listCoupleFn();
+      if (r.ok) {
+        setCoupleThreads(r.threads);
+        setCoupleUnread(r.unread);
+      }
+    } catch (err) {
+      console.warn("[dashboard] couple load failed", err);
+    }
+  }, [listCoupleFn, role]);
+
+  useEffect(() => {
+    loadCouple();
+    const id = setInterval(loadCouple, 30_000);
+    return () => clearInterval(id);
+  }, [loadCouple]);
+
+  // Eventos do circuito de hoje (escopos visíveis ao super = todos os próprios).
+  useEffect(() => {
+    if (role !== "superintendent" || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("circuit_schedule_events")
+        .select("id, title, start_time, location, event_type")
+        .eq("superintendent_id", user.id)
+        .eq("event_date", today)
+        .neq("status", "completed")
+        .order("start_time");
+      if (!cancelled) setCircuitToday(data ?? []);
+    })();
+    return () => { cancelled = true; };
+  }, [role, user, today]);
+
 
   // Detecta visitas encerradas (end_date < hoje) cujos dados operacionais
   // ainda não foram limpos via "Finalizar Visita". Consulta única e leve por
