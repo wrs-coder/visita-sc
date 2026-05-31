@@ -337,17 +337,20 @@ function Page() {
             </CardContent></Card>
 
             <Tabs defaultValue="hoje">
-              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-7"}`}>
+              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-7" : "grid-cols-7"}`}>
                 <TabsTrigger value="hoje"><Sun className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.today")}</span></TabsTrigger>
                 <TabsTrigger value="cron"><CalendarDays className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.schedule")}</span></TabsTrigger>
                 <TabsTrigger value="estudos"><Users className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.studies")}</span></TabsTrigger>
                 <TabsTrigger value="campo"><Compass className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.field")}</span></TabsTrigger>
                 <TabsTrigger value="ref"><UtensilsCrossed className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.meals")}</span></TabsTrigger>
                 <TabsTrigger value="trans"><Car className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.transport")}</span></TabsTrigger>
-                {!snap.wifeMode && (
+                {snap.wifeMode ? (
+                  <TabsTrigger value="couple"><Heart className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.couple")}</span></TabsTrigger>
+                ) : (
                   <TabsTrigger value="check"><ListChecks className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.checklist")}</span></TabsTrigger>
                 )}
               </TabsList>
+
 
               <TabsContent value="hoje" className="mt-4">
                 <TodayDashboard snap={snap} />
