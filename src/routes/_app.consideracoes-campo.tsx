@@ -89,6 +89,14 @@ import {
 } from "@/lib/personal-outlines.functions";
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
+  validateSearch: (search: Record<string, unknown>): {
+    noteId?: string;
+    mode?: "edit" | "outline";
+  } => {
+    const noteId = typeof search.noteId === "string" ? search.noteId : undefined;
+    const mode = search.mode === "edit" || search.mode === "outline" ? search.mode : undefined;
+    return { noteId, mode };
+  },
   beforeLoad: async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
