@@ -594,6 +594,10 @@ function Page() {
     const childFolders = folders.filter((f) => f.parentId === folder.id);
     const childNotes = notes.filter((n) => n.folderId === folder.id && matchesQuery(n));
     const selected = selectedFolderId === folder.id;
+    const fixed = isFixedFolder(folder.id);
+    const folderName = fixed
+      ? t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" })
+      : folder.name;
     return (
       <div>
         <div
@@ -619,8 +623,15 @@ function Page() {
           >
             {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           </button>
-          {isOpen ? <FolderOpen className="h-4 w-4" /> : <Folder className="h-4 w-4" />}
-          <span className="flex-1 truncate">{folder.name}</span>
+          {isOpen
+            ? <FolderOpen className={cn("h-4 w-4", fixed && "text-primary")} />
+            : <Folder className={cn("h-4 w-4", fixed && "text-primary")} />}
+          <span className={cn("flex-1 truncate", fixed && "font-medium")}>{folderName}</span>
+          {fixed && (
+            <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
+              {t("personalOutlines.folders.fixedBadge", { defaultValue: "Fixa" })}
+            </span>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <button className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-background">
@@ -628,20 +639,26 @@ function Page() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem onClick={() => handleCreateFolder(folder.id)}>
-                <FolderPlus className="h-4 w-4 mr-2" />
-                {t("personalOutlines.folders.newSub")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleRenameFolder(folder)}>
-                <Pencil className="h-4 w-4 mr-2" />
-                {t("personalOutlines.folders.rename")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setMoveTarget({ kind: "folder", id: folder.id })}
-              >
-                <Move className="h-4 w-4 mr-2" />
-                {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
-              </DropdownMenuItem>
+              {!fixed && (
+                <DropdownMenuItem onClick={() => handleCreateFolder(folder.id)}>
+                  <FolderPlus className="h-4 w-4 mr-2" />
+                  {t("personalOutlines.folders.newSub")}
+                </DropdownMenuItem>
+              )}
+              {!fixed && (
+                <DropdownMenuItem onClick={() => handleRenameFolder(folder)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  {t("personalOutlines.folders.rename")}
+                </DropdownMenuItem>
+              )}
+              {!fixed && (
+                <DropdownMenuItem
+                  onClick={() => setMoveTarget({ kind: "folder", id: folder.id })}
+                >
+                  <Move className="h-4 w-4 mr-2" />
+                  {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
+                </DropdownMenuItem>
+              )}
               {clipboardNoteId && (
                 <DropdownMenuItem onClick={() => handlePasteNote(folder.id)}>
                   <ClipboardPaste className="h-4 w-4 mr-2" />
@@ -652,14 +669,18 @@ function Page() {
                 <Download className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.exportFolder")}
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => handleDeleteFolder(folder)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {t("personalOutlines.folders.delete")}
-              </DropdownMenuItem>
+              {!fixed && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => handleDeleteFolder(folder)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t("personalOutlines.folders.delete")}
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
