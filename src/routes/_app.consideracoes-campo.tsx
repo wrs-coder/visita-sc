@@ -305,9 +305,26 @@ function Page() {
       const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
       setFolders(fs);
       const filteredNs = ns.filter((n) => (n.type ?? "field_consideration") === activeType);
-      setNotes(filteredNs.sort((a, b) => b.updated_at - a.updated_at));
+      const sorted = filteredNs.sort((a, b) => b.updated_at - a.updated_at);
+      setNotes(sorted);
+
+      // Bootstrap por search param: abre direto a nota pedida (ex.: vindo do dashboard).
+      if (search.noteId) {
+        const target = sorted.find((n) => n.id === search.noteId);
+        if (target) {
+          setSelectedNoteId(target.id);
+          setSelectedFolderId(target.folderId ?? null);
+          if (target.folderId) {
+            setExpanded((s) => new Set(s).add(target.folderId as string));
+          }
+          setDraft(target);
+          setMode(search.mode ?? "outline");
+        }
+        // Limpa o search param para não re-disparar se o usuário navegar internamente.
+        navigate({ to: "/consideracoes-campo", search: {}, replace: true });
+      }
     })();
-  }, [activeType]);
+  }, [activeType, search.noteId, search.mode, navigate]);
 
   const detected: CitationMatch[] = useMemo(
     () => (draft && activeBible ? findCitations(activeBible.books, stripHtmlForDetection(draft.content)) : []),
