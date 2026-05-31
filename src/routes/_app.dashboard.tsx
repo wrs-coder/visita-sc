@@ -45,6 +45,13 @@ import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.fun
 
 import { listNotesByType, FIXED_FOLDER_WEEK_CONSIDERATIONS, type FieldNote } from "@/lib/bible-notes-store";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
+import { FieldNoteFullscreenDialog } from "@/components/dashboard/FieldNoteFullscreenDialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Maximize2, PencilLine } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 
