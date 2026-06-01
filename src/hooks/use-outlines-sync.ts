@@ -249,10 +249,44 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
   }, [user, fnList, fnReplace]);
 
   useEffect(() => {
-    if (!auto || !user || ran.current) return;
-    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-    ran.current = true;
-    syncNow().catch((err) => console.warn("[useOutlinesSync] sync failed", err));
+    if (!auto) return;
+    const tryRun = (reason: string) => {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+      syncNow().catch((err) => console.warn(`[useOutlinesSync] sync failed (${reason})`, err));
+    };
+    // Disparo inicial quando o user ficar disponível.
+    if (user && !ran.current) {
+      ran.current = true;
+      tryRun("mount");
+    }
+    // Re-sync ao voltar a ficar online, ao retomar (Capacitor) e ao
+    // voltar a aba ficar visível. Cobre o caso APK em que a sessão
+    // demora a ser restaurada depois do login.
+    const onOnline = () => tryRun("online");
+    const onVisible = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") tryRun("visible");
+    };
+    const onResume = () => tryRun("resume");
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", onOnline);
+      document.addEventListener("visibilitychange", onVisible);
+      document.addEventListener("resume", onResume);
+    }
+    // Re-sync após SIGNED_IN.
+    const { data: authSub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        ran.current = true;
+        tryRun(event);
+      }
+    });
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("online", onOnline);
+        document.removeEventListener("visibilitychange", onVisible);
+        document.removeEventListener("resume", onResume);
+      }
+      authSub.subscription.unsubscribe();
+    };
   }, [auto, user, syncNow]);
 
   return syncNow;
