@@ -266,8 +266,15 @@ function Dashboard() {
           id: n.id,
           title: n.title || "(sem título)",
           updated_at: n.updated_at ?? n.created_at ?? 0,
+          sort_order: n.sort_order ?? Number.POSITIVE_INFINITY,
         }))
-        .sort((a, b) => b.updated_at - a.updated_at);
+        // Mesma ordem da pasta original em "Esboços pessoais":
+        // sort_order asc, com fallback updated_at desc.
+        .sort((a, b) => {
+          if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+          return b.updated_at - a.updated_at;
+        })
+        .map(({ sort_order: _s, ...rest }) => rest);
       setOutlinesPreview(toPreview(localField));
       setWeekOutlinesPreview(toPreview(localOutline));
     } catch (err) {
