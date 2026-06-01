@@ -183,17 +183,35 @@ function Page() {
   });
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Estado para mover/recortar
-  const [clipboardNoteId, setClipboardNoteId] = useState<string | null>(null);
+  // Estado para mover/recortar (multi-seleção)
+  const [clipboardNoteIds, setClipboardNoteIds] = useState<string[]>([]);
   const [moveTarget, setMoveTarget] = useState<
     | { kind: "note"; id: string }
+    | { kind: "notes"; ids: string[] }
     | { kind: "folder"; id: string }
     | null
   >(null);
 
+  // Multi-seleção
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Limpa seleção/clipboard ao trocar de subaba
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [activeType]);
+
+  // Pastas das duas subabas (para diálogo cross-subaba)
+  const [allFolders, setAllFolders] = useState<NoteFolder[]>([]);
+  async function refreshAllFolders() {
+    const [a, b] = await Promise.all([
+      listFoldersStore("outline"),
+      listFoldersStore("field_consideration"),
+    ]);
+    setAllFolders([...a, ...b]);
+  }
+
   // Sincronização com a nuvem
   const [cloudOpen, setCloudOpen] = useState(false);
-  const [cloudList, setCloudList] = useState<Array<{ id: string; title: string; folder_path: string; updated_at: string }>>([]);
+  const [cloudList, setCloudList] = useState<Array<{ id: string; title: string; folder_path: string; note_type: NoteType; updated_at: string }>>([]);
   const [cloudBusy, setCloudBusy] = useState(false);
   const fnListCloud = useServerFn(listCloudOutlines);
   const fnPushCloud = useServerFn(pushOutlineToCloud);
@@ -201,11 +219,12 @@ function Page() {
   const fnDeleteCloud = useServerFn(deleteCloudOutline);
   const syncOutlines = useOutlinesSync({ auto: false });
   const fixedOutlineCloudPath = "__fixed__week-outlines";
+  const fixedFieldCloudPath = "__fixed__week-considerations";
 
   function folderPathForCloud(folderId: string | null | undefined): string {
     if (!folderId) return "";
-    if (folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS) return "";
-    if (isFixedFolder(folderId)) return fixedOutlineCloudPath;
+    if (folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS) return fixedFieldCloudPath;
+    if (folderId === FIXED_FOLDER_WEEK_OUTLINES) return fixedOutlineCloudPath;
     const byId = new Map(folders.map((f) => [f.id, f]));
     const names: string[] = [];
     const seen = new Set<string>();
@@ -222,11 +241,14 @@ function Page() {
     if (path === fixedOutlineCloudPath) {
       return t("personalOutlines.folders.weekOutlines", { defaultValue: "Esboços da Semana" });
     }
+    if (path === fixedFieldCloudPath) {
+      return t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" });
+    }
     return path;
   }
 
   async function syncOutlinesIfOnline() {
-    if (activeType !== "outline") return null;
+    if (!activeType) return null;
     if (typeof navigator !== "undefined" && navigator.onLine === false) return null;
     const result = await syncOutlines();
     if (!result.ok) console.warn("[personal-outlines] sync skipped", result.error);
@@ -235,13 +257,21 @@ function Page() {
 
   async function refreshCloudList() {
     const r = await fnListCloud();
-    if (r.ok) setCloudList(r.outlines.map((o) => ({ id: o.id, title: o.title, folder_path: o.folder_path, updated_at: o.updated_at })));
+    if (r.ok) {
+      setCloudList(r.outlines.map((o) => {
+        const cj = (o.content_json ?? {}) as Record<string, unknown>;
+        const note_type: NoteType = cj.note_type === "field_consideration" ? "field_consideration" : "outline";
+        return { id: o.id, title: o.title, folder_path: o.folder_path, note_type, updated_at: o.updated_at };
+      }));
+    }
   }
 
   async function handleCloudOpen() {
     setCloudOpen(true);
     await refreshCloudList();
   }
+
+
 
   async function handleCloudPush() {
     if (!draft) return;
