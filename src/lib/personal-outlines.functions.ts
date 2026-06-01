@@ -22,6 +22,10 @@ const outlineContentSchema = z.object({
   description: z.string().max(4000).optional().nullable(),
   content: z.string().max(100_000).default(""),
   sort_order: z.number().int().min(-1_000_000).max(1_000_000).optional().nullable(),
+  // Específicos de "Consideração de campo" — preservados no sync para que
+  // dia e período não se percam entre dispositivos.
+  event_date: z.string().trim().max(40).optional().nullable(),
+  period: z.string().trim().max(40).optional().nullable(),
 });
 
 export type CloudOutlineContent = z.infer<typeof outlineContentSchema>;
