@@ -29,11 +29,14 @@ export type CloudOutlineContent = z.infer<typeof outlineContentSchema>;
 // Limite "soft" para evitar abuso extremo. Não enforçado no banco.
 const SOFT_LIMIT = 500;
 
+const noteTypeSchema = z.enum(["outline", "field_consideration"]).default("outline");
+
 const cloudFolderSchema = z.object({
   local_id: z.string().min(1).max(120),
   id: z.string().uuid().optional().nullable(),
   title: z.string().trim().min(1).max(200),
   folder_path: z.string().trim().max(500).default(""),
+  folder_type: noteTypeSchema.optional(),
   deleted_at: z.string().datetime().optional().nullable(),
 });
 
@@ -42,6 +45,7 @@ const cloudOutlineSchema = z.object({
   id: z.string().uuid().optional().nullable(),
   title: z.string().trim().min(1).max(200),
   folder_path: z.string().trim().max(500).default(""),
+  note_type: noteTypeSchema.optional(),
   content: outlineContentSchema,
   deleted_at: z.string().datetime().optional().nullable(),
 });
