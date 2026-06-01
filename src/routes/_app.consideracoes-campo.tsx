@@ -1059,7 +1059,40 @@ function Page() {
   }
 
 
+  function RootDropZone() {
+    const droppable = useDroppable({ id: "root" });
+    const isOver = dropHint?.kind === "root";
+    return (
+      <div
+        ref={droppable.setNodeRef}
+        className={cn(
+          "group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
+          selectedFolderId === null ? "bg-primary/10 text-primary" : "hover:bg-muted",
+          isOver && "ring-2 ring-primary/60 bg-primary/5",
+        )}
+        onClick={() => setSelectedFolderId(null)}
+      >
+        <FolderOpen className="h-4 w-4" />
+        <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
+        {clipboardNoteIds.length > 0 && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePasteNote(null);
+            }}
+            className="text-[11px] inline-flex items-center gap-1 rounded px-1.5 py-0.5 bg-primary/15 text-primary hover:bg-primary/25"
+          >
+            <ClipboardPaste className="h-3 w-3" />
+            {t("personalOutlines.folders.pasteHere", { defaultValue: "Colar aqui" })}
+          </button>
+        )}
+      </div>
+    );
+  }
+
   function FolderRow({ folder, depth }: { folder: NoteFolder; depth: number }) {
+
     const isOpen = expanded.has(folder.id);
     const childFolders = folders.filter((f) => f.parentId === folder.id);
     const childNotes = notes.filter((n) => n.folderId === folder.id && matchesQuery(n)).sort(sortInFolder);
