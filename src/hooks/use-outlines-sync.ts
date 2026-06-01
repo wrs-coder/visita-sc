@@ -193,4 +193,6 @@ export function useOutlinesSync() {
     ran.current = true;
     syncNow().catch((err) => console.warn("[useOutlinesSync] sync failed", err));
   }, [user, syncNow]);
+
+  return syncNow;
 }
