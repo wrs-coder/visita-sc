@@ -454,6 +454,51 @@ function Page() {
     toast.success(t("fieldConsiderations.deleted"));
   }
 
+  async function handleDeleteNoteById(noteId: string) {
+    if (!confirm(t("fieldConsiderations.deleteConfirm"))) return;
+    await removeNote(noteId);
+    setNotes((all) => all.filter((n) => n.id !== noteId));
+    if (draft?.id === noteId) {
+      setDraft(null);
+      setSelectedNoteId(null);
+    }
+    await syncOutlinesIfOnline();
+    toast.success(t("fieldConsiderations.deleted"));
+  }
+
+  async function handlePushNoteById(noteId: string) {
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+    setCloudBusy(true);
+    try {
+      const r = await fnPushCloud({
+        data: {
+          id: note.cloud_id ?? undefined,
+          title: (note.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })).slice(0, 200),
+          folder_path: folderPathForCloud(note.folderId),
+          content: {
+            prayer: note.prayer ?? null,
+            territory: note.territory ?? null,
+            assistants: note.assistants ?? null,
+            description: note.description ?? null,
+            content: note.content ?? "",
+            sort_order: note.sort_order ?? null,
+          },
+        },
+      });
+      if (!r.ok) { toast.error(r.error); return; }
+      if (r.id) {
+        const synced = { ...note, cloud_id: r.id, dirty: false, synced_at: Date.now() };
+        await persistNote(synced);
+        setNotes((all) => all.map((n) => (n.id === synced.id ? synced : n)));
+        if (draft?.id === synced.id) setDraft(synced);
+      }
+      toast.success(t("personalOutlines.cloud.pushed", { defaultValue: "Esboço enviado para a nuvem." }));
+    } finally {
+      setCloudBusy(false);
+    }
+  }
+
   async function handleCreateFolder(parentId: string | null) {
     if (!activeType) return;
     const name = prompt(t("personalOutlines.folders.namePrompt"));
