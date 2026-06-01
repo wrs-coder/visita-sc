@@ -335,7 +335,6 @@ export function PioneerPanel() {
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
       <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.schedule")} value={scheduleText} />
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.location")} value={extras.pioneer?.observations ? null : null} />
       <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.pioneer?.observations} />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <div>
