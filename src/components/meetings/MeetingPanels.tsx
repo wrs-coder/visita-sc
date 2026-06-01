@@ -264,12 +264,12 @@ export function WeekendPanel() {
   };
 
   return (
-    <div className="space-y-3">
-      <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+    <div className="space-y-3 min-w-0 max-w-full">
+      <Card className="max-w-full"><CardContent className="p-4 grid gap-3 max-w-xl min-w-0">
         <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.openingSong")} value={extras.weekend?.opening_song} />
         <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.closingSong")} value={extras.weekend?.closing_song} />
         <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.weekend?.observations} />
-        <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
+        <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0 min-w-0">
           <DayTimePicker
             value={row.meeting_at}
             onChange={(iso) => save({ meeting_at: iso })}
@@ -278,7 +278,7 @@ export function WeekendPanel() {
             timeLabel={t("meetingsTalks.weekend.meetingTime")}
           />
 
-          <div>
+          <div className="min-w-0">
             <Label>{t("meetingsTalks.weekend.publicTalk")}</Label>
             <FieldText
               value={row.public_talk_theme ?? ""}
@@ -286,27 +286,27 @@ export function WeekendPanel() {
               onSave={(v) => save({ public_talk_theme: v || null })}
             />
             {!isSuper && (
-              <p className="text-xs text-muted-foreground mt-1">{t("meetingsTalks.weekend.readOnlyNote")}</p>
+              <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">{t("meetingsTalks.weekend.readOnlyNote")}</p>
             )}
           </div>
-          <div>
+          <div className="min-w-0">
             <Label>{t("meetingsTalks.weekend.finalTalk")}</Label>
             {themes.length === 0 ? (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">
                 {isSuper
                   ? t("meetingsTalks.weekend.noThemesSuper")
                   : t("meetingsTalks.weekend.noThemesElder")}
               </p>
             ) : (
               <Select value={row.talk_theme_id ?? ""} onValueChange={onPickTheme}>
-                <SelectTrigger className="h-9 mt-0.5"><SelectValue placeholder={t("meetingsTalks.weekend.pickTheme")} /></SelectTrigger>
-                <SelectContent>
-                  {themes.map((th) => <SelectItem key={th.id} value={th.id}>{th.title}</SelectItem>)}
+                <SelectTrigger className="h-9 mt-0.5 w-full min-w-0"><SelectValue placeholder={t("meetingsTalks.weekend.pickTheme")} /></SelectTrigger>
+                <SelectContent className="max-w-[90vw]">
+                  {themes.map((th) => <SelectItem key={th.id} value={th.id} className="whitespace-normal break-words [overflow-wrap:anywhere]">{th.title}</SelectItem>)}
                 </SelectContent>
               </Select>
             )}
             {row.talk_theme_title && themes.length > 0 && !themes.find((th) => th.id === row.talk_theme_id) && (
-              <p className="text-xs text-muted-foreground mt-1">{t("meetingsTalks.weekend.selectedTheme", { title: row.talk_theme_title })}</p>
+              <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">{t("meetingsTalks.weekend.selectedTheme", { title: row.talk_theme_title })}</p>
             )}
           </div>
         </fieldset>
