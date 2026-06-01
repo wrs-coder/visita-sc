@@ -1142,11 +1142,36 @@ function Dashboard() {
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="whitespace-normal break-words [overflow-wrap:anywhere]">
-              {recomendadoOpen?.title || "(sem título)"}
+              {recomendadoOpen?.payload?.nome?.trim() || recomendadoOpen?.title || "(sem título)"}
             </DialogTitle>
           </DialogHeader>
-          <div className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-foreground/90">
-            {recomendadoOpen?.content || <span className="text-muted-foreground">—</span>}
+          <div className="text-sm space-y-3 text-foreground/90">
+            {(() => {
+              if (!recomendadoOpen) return null;
+              const p = recomendadoOpen.payload ?? {};
+              const fields: { label: string; value?: string | null }[] = [
+                { label: t("notes.structured.recomendados.nome", { defaultValue: "Nome" }), value: p.nome },
+                { label: t("notes.structured.recomendados.tipo", { defaultValue: "Tipo" }), value: p.tipo },
+                { label: t("notes.structured.recomendados.corpo", { defaultValue: "Recomendação do corpo de anciãos" }), value: p.corpo },
+                { label: t("notes.structured.recomendados.super", { defaultValue: "Observações do superintendente" }), value: p.super },
+              ].filter((f) => f.value && f.value.trim().length > 0);
+              if (fields.length === 0 && !recomendadoOpen.content) {
+                return <span className="text-muted-foreground">—</span>;
+              }
+              return (
+                <>
+                  {fields.map((f) => (
+                    <div key={f.label}>
+                      <div className="text-xs font-semibold text-muted-foreground">{f.label}</div>
+                      <div className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{f.value}</div>
+                    </div>
+                  ))}
+                  {recomendadoOpen.content && (
+                    <div className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{recomendadoOpen.content}</div>
+                  )}
+                </>
+              );
+            })()}
           </div>
           <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-row">
             <Button variant="ghost" onClick={() => setRecomendadoOpen(null)}>
