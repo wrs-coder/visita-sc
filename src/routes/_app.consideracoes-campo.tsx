@@ -1469,53 +1469,40 @@ function Page() {
                         </Button>
                       </div>
                     )}
-                    <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
-                      <div
-                        className={cn(
-                          "group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
-                          selectedFolderId === null ? "bg-primary/10 text-primary" : "hover:bg-muted",
-                          dropHint?.kind === "root" && "ring-2 ring-primary/60 bg-primary/5",
+                    <DndContext
+                      sensors={dndSensors}
+                      onDragStart={handleDndStart}
+                      onDragOver={handleDndOver}
+                      onDragEnd={handleDndEnd}
+                      onDragCancel={() => { setDragItem(null); setDropHint(null); }}
+                    >
+                      <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
+                        <RootDropZone />
+                        {rootFolders.length === 0 && rootNotes.length === 0 && (
+                          <p className="text-xs text-muted-foreground text-center py-4">
+                            {t("personalOutlines.folders.empty")}
+                          </p>
                         )}
-                        onClick={() => setSelectedFolderId(null)}
-                        onDragOver={(e) => {
-                          if (!dragItem) return;
-                          allowDrop(e);
-                          setDropHint({ kind: "root" });
-                        }}
-                        onDragLeave={() => {
-                          if (dropHint?.kind === "root") setDropHint(null);
-                        }}
-                        onDrop={onDropOnRoot}
-                      >
-
-                        <FolderOpen className="h-4 w-4" />
-                        <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
-                        {clipboardNoteIds.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePasteNote(null);
-                            }}
-                            className="text-[11px] inline-flex items-center gap-1 rounded px-1.5 py-0.5 bg-primary/15 text-primary hover:bg-primary/25"
-                          >
-                            <ClipboardPaste className="h-3 w-3" />
-                            {t("personalOutlines.folders.pasteHere", { defaultValue: "Colar aqui" })}
-                          </button>
-                        )}
+                        {rootFolders.map((f) => (
+                          <FolderRow key={f.id} folder={f} depth={0} />
+                        ))}
+                        {rootNotes.map((n) => (
+                          <NoteRow key={n.id} note={n} depth={0} />
+                        ))}
                       </div>
-                      {rootFolders.length === 0 && rootNotes.length === 0 && (
-                        <p className="text-xs text-muted-foreground text-center py-4">
-                          {t("personalOutlines.folders.empty")}
-                        </p>
-                      )}
-                      {rootFolders.map((f) => (
-                        <FolderRow key={f.id} folder={f} depth={0} />
-                      ))}
-                      {rootNotes.map((n) => (
-                        <NoteRow key={n.id} note={n} depth={0} />
-                      ))}
-                    </div>
+                      <DragOverlay dropAnimation={null}>
+                        {dragItem ? (
+                          <div className="rounded-md bg-primary text-primary-foreground px-2 py-1 text-xs shadow-lg">
+                            {dragItem.kind === "folder"
+                              ? t("personalOutlines.folders.label", { defaultValue: "Pasta" })
+                              : (selectedIds.has(dragItem.id) && selectedIds.size > 1
+                                  ? t("personalOutlines.folders.selectedCount", { defaultValue: "{{n}} selecionadas", n: selectedIds.size })
+                                  : (notes.find((n) => n.id === dragItem.id)?.title || t("fieldConsiderations.fields.title")))}
+                          </div>
+                        ) : null}
+                      </DragOverlay>
+                    </DndContext>
+
                   </>
                 )}
               </CardContent>
