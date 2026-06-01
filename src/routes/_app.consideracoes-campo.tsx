@@ -68,6 +68,7 @@ import {
   exportNoteJSON,
   importJSON,
   FIXED_FOLDER_WEEK_CONSIDERATIONS,
+  FIXED_FOLDER_WEEK_OUTLINES,
   isFixedFolder,
   type FieldNote,
   type NoteFolder,
@@ -1087,34 +1088,36 @@ function Page() {
       )}
 
       <Dialog open={cloudOpen} onOpenChange={setCloudOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{t("personalOutlines.cloud.title", { defaultValue: "Esboços na nuvem" })}</DialogTitle>
+            <DialogTitle className="break-words [overflow-wrap:anywhere]">
+              {t("personalOutlines.cloud.title", { defaultValue: "Esboços na nuvem" })}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              {t("personalOutlines.cloud.help", { defaultValue: "Os esboços e pastas são sincronizados com a nuvem e mantidos em cache local para uso offline." })}
+            <p className="text-xs text-muted-foreground break-words [overflow-wrap:anywhere]">
+              {t("personalOutlines.cloud.help", { defaultValue: "Os esboços e pastas são sincronizados com a nuvem e mantidos em cache local para uso offline. Ao baixar, o esboço entra na pasta selecionada." })}
             </p>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-xs text-muted-foreground">
                 {t("personalOutlines.cloud.count", { defaultValue: "Salvos: {{n}}", n: cloudList.length })}
               </span>
-              <Button size="sm" disabled={!draft || cloudBusy} onClick={handleCloudPush}>
+              <Button size="sm" className="h-auto max-w-full whitespace-normal text-left sm:text-center" disabled={!draft || cloudBusy} onClick={handleCloudPush}>
                 <CloudUpload className="h-4 w-4 mr-1.5" />
                 {t("personalOutlines.cloud.push", { defaultValue: "Enviar esboço atual" })}
               </Button>
             </div>
-            <div className="max-h-80 overflow-y-auto rounded-md border divide-y">
+            <div className="max-h-80 overflow-y-auto overflow-x-hidden rounded-md border divide-y">
               {cloudList.length === 0 ? (
                 <p className="p-4 text-sm text-muted-foreground text-center">
                   {t("personalOutlines.cloud.empty", { defaultValue: "Nenhum esboço na nuvem." })}
                 </p>
               ) : (
                 cloudList.map((o) => (
-                  <div key={o.id} className="flex items-center gap-2 p-2">
+                  <div key={o.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 p-2 max-w-full min-w-0">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{o.title}</p>
-                      {o.folder_path && <p className="text-xs text-muted-foreground truncate">{o.folder_path}</p>}
+                      <p className="text-sm font-medium whitespace-normal break-words [overflow-wrap:anywhere]">{o.title}</p>
+                      {o.folder_path && <p className="text-xs text-muted-foreground whitespace-normal break-words [overflow-wrap:anywhere]">{displayCloudPath(o.folder_path)}</p>}
                     </div>
                     <Button size="sm" variant="outline" disabled={cloudBusy} onClick={() => handleCloudPull(o.id)}>
                       <CloudDownload className="h-4 w-4" />
