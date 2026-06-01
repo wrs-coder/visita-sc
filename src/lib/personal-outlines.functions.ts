@@ -203,16 +203,11 @@ export const replaceCloudOutlineTree = createServerFn({ method: "POST" })
       deleted_at: outline.deleted_at ?? null,
       updated_at: new Date().toISOString(),
     }));
-    const { error: deleteError } = await supabaseAdmin
-      .from("personal_outlines")
-      .delete()
-      .eq("user_id", userId);
-    if (deleteError) return { ok: false as const, error: deleteError.message };
     const rows = [...folderRows, ...outlineRows];
     if (rows.length === 0) return { ok: true as const, folders: [], outlines: [] };
     const { data: inserted, error } = await supabaseAdmin
       .from("personal_outlines")
-      .insert(rows)
+      .upsert(rows)
       .select("id,title,folder_path,content_json,created_at,updated_at,deleted_at");
     if (error) return { ok: false as const, error: error.message };
     const saved = inserted ?? [];
