@@ -175,6 +175,54 @@ export const bulkPushOutlines = createServerFn({ method: "POST" })
     return { ok: true as const, outlines: inserted ?? [] };
   });
 
+export const replaceCloudOutlineTree = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      folders: z.array(cloudFolderSchema).max(500),
+      outlines: z.array(cloudOutlineSchema).max(SOFT_LIMIT),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const folderRows = data.folders.map((folder) => ({
+      id: folder.id ?? undefined,
+      user_id: userId,
+      title: folder.title,
+      folder_path: folder.folder_path,
+      content_json: { kind: "folder", local_id: folder.local_id },
+      deleted_at: folder.deleted_at ?? null,
+      updated_at: new Date().toISOString(),
+    }));
+    const outlineRows = data.outlines.map((outline) => ({
+      id: outline.id ?? undefined,
+      user_id: userId,
+      title: outline.title,
+      folder_path: outline.folder_path,
+      content_json: { ...outline.content, local_id: outline.local_id },
+      deleted_at: outline.deleted_at ?? null,
+      updated_at: new Date().toISOString(),
+    }));
+    const { error: deleteError } = await supabaseAdmin
+      .from("personal_outlines")
+      .delete()
+      .eq("user_id", userId);
+    if (deleteError) return { ok: false as const, error: deleteError.message };
+    const rows = [...folderRows, ...outlineRows];
+    if (rows.length === 0) return { ok: true as const, folders: [], outlines: [] };
+    const { data: inserted, error } = await supabaseAdmin
+      .from("personal_outlines")
+      .insert(rows)
+      .select("id,title,folder_path,content_json,created_at,updated_at,deleted_at");
+    if (error) return { ok: false as const, error: error.message };
+    const saved = inserted ?? [];
+    return {
+      ok: true as const,
+      folders: saved.filter(isFolderMarker),
+      outlines: saved.filter((row) => !isFolderMarker(row)),
+    };
+  });
+
 export const pullOutlineFromCloud = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
