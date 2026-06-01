@@ -1105,16 +1105,14 @@ function Page() {
                       >
                         <Upload className="h-4 w-4" />
                       </Button>
-                      {isOutline && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCloudOpen}
-                          title={t("personalOutlines.cloud.downloadButton", { defaultValue: "Baixar da nuvem" })}
-                        >
-                          <CloudDownload className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCloudOpen}
+                        title={t("personalOutlines.cloud.downloadButton", { defaultValue: "Baixar da nuvem" })}
+                      >
+                        <CloudDownload className="h-4 w-4" />
+                      </Button>
                       <input
                         ref={fileInputRef}
                         type="file"
