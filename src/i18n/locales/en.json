@@ -1357,7 +1357,10 @@
     "folders": {
       "rootLabel": "Root",
       "weekConsiderations": "Week Considerations",
+      "weekOutlines": "Week Outlines",
       "fixedBadge": "Pinned",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
       "new": "New folder",
       "newSub": "New subfolder",
       "rename": "Rename",

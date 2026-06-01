@@ -1332,7 +1332,10 @@
     "folders": {
       "rootLabel": "Raíz",
       "weekConsiderations": "Consideraciones de la Semana",
+      "weekOutlines": "Bosquejos de la Semana",
       "fixedBadge": "Fija",
+      "moveUp": "Mover arriba",
+      "moveDown": "Mover abajo",
       "new": "Nueva carpeta",
       "newSub": "Nueva subcarpeta",
       "rename": "Renombrar",
