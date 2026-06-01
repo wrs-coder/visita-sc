@@ -1172,15 +1172,27 @@ function Page() {
     const selected = selectedNoteId === note.id;
     const isClipped = clipboardNoteIds.includes(note.id);
     const isChecked = selectedIds.has(note.id);
+    const hint = dropHint?.kind === "note" && dropHint.id === note.id ? dropHint.pos : null;
     return (
       <div
         className={cn(
           "group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm",
           selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
           isClipped && "opacity-60 italic",
+          hint === "before" && "border-t-2 border-primary",
+          hint === "after" && "border-b-2 border-primary",
         )}
         style={{ paddingLeft: 6 + depth * 12 + 16 }}
+        draggable
+        onDragStart={(e) => onDragStartNote(e, note.id)}
+        onDragEnd={onDragEnd}
+        onDragOver={(e) => onDragOverNote(e, note.id)}
+        onDragLeave={() => {
+          if (dropHint?.kind === "note" && dropHint.id === note.id) setDropHint(null);
+        }}
+        onDrop={(e) => onDropOnNote(e, note.id)}
       >
+
         <Checkbox
           checked={isChecked}
           onCheckedChange={(c) => {
