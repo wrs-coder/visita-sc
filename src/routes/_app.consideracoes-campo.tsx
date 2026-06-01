@@ -1175,6 +1175,43 @@ function Page() {
                         </Button>
                       </div>
                     )}
+                    {selectedIds.size > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 rounded-md border bg-muted/40 px-2 py-1.5 text-xs">
+                        <span className="font-medium">
+                          {t("personalOutlines.folders.selectedCount", { defaultValue: "{{n}} selecionadas", n: selectedIds.size })}
+                        </span>
+                        <div className="flex-1" />
+                        <Button size="sm" variant="outline" className="h-7 px-2"
+                          onClick={() => setMoveTarget({ kind: "notes", ids: Array.from(selectedIds) })}>
+                          <Move className="h-3.5 w-3.5 mr-1" />
+                          {t("personalOutlines.folders.moveTo", { defaultValue: "Mover" })}
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 px-2"
+                          onClick={() => handleCutMany(Array.from(selectedIds))}>
+                          <Scissors className="h-3.5 w-3.5 mr-1" />
+                          {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 px-2"
+                          onClick={() => handleExportMany(Array.from(selectedIds))}>
+                          <Download className="h-3.5 w-3.5 mr-1" />
+                          {t("personalOutlines.folders.exportNote", { defaultValue: "Exportar" })}
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 px-2" disabled={cloudBusy}
+                          onClick={() => handlePushManyByIds(Array.from(selectedIds))}>
+                          <CloudUpload className="h-3.5 w-3.5 mr-1" />
+                          {t("personalOutlines.cloud.push", { defaultValue: "Nuvem" })}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive"
+                          onClick={() => handleDeleteMany(Array.from(selectedIds))}>
+                          <Trash2 className="h-3.5 w-3.5 mr-1" />
+                          {t("common.delete", { defaultValue: "Excluir" })}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2"
+                          onClick={() => setSelectedIds(new Set())}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
                     <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
                       <div
                         className={cn(
