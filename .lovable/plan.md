@@ -1,95 +1,46 @@
-## Objetivo
+## Plano consolidado
 
-Na aba **Esboços Pessoais**:
+Mantém todas as 4 correções já aprovadas (reordenar notas, mover em lote, sync APK, preservar event_date/period) e adiciona a 5.ª correção.
 
-1. Sincronizar automaticamente notas e pastas das duas subabas (Esboços e Consideração de Campo), preservando a pasta por subaba entre dispositivos.
-2. Permitir seleção múltipla para mover, recortar, excluir, exportar, importar e enviar para nuvem; permitir mover entre subabas; e mostrar o ícone "baixar da nuvem" também na subaba Consideração de Campo.
+### 5. Cartões completos de transporte no “Resumo do Dia”
+Hoje os cartões de transporte do Resumo do Dia mostram apenas motorista e telefone. Falta tudo o que está no card original da aba Transporte (tipo de evento, direção, horários, dia indicado, e o comportamento “Apoiar todos os eventos/horários” quando `all_day = true`).
 
----
+Aplica-se aos três acessos que compartilham `VisitSummaryView.tsx`:
+- Superintendente (`/_app.resumo-semana`)
+- Corpo de Anciãos e ESC (painel do visitante)
+- Esposa do Superintendente (painel visitante em wifeMode)
 
-## Parte 01 — Sincronização automática das duas subabas
+Mudanças:
 
-### Comportamento
+a) Backend — incluir todos os campos relevantes no payload.
+   - `src/lib/visit-summary.functions.ts`: estender o select da `transport_schedule` para `id,event_date,weekday,event_type,direction,all_day,departure_time,return_time,driver_name,contact_phone,description,notes`.
+   - `src/lib/guest.functions.ts`: mesma extensão no `supabaseAdmin.from("transport_schedule").select(...)`.
+   - Sem migração SQL, sem mudança de RLS — apenas leitura de colunas já existentes e já permitidas.
 
-- Ao **salvar** uma nota ou pasta em qualquer subaba, dispara sync automático (igual ao que já existe em Esboços).
-- A nota é gravada na nuvem **com o tipo da subaba** (`outline` ou `field_consideration`) e o **caminho da pasta** dentro daquela subaba.
-- Ao logar em outro dispositivo, a nota aparece na mesma subaba e na mesma pasta. Se a pasta não existir naquele dispositivo, ela é **criada automaticamente** na raiz daquela subaba (já é o que `ensureFolderPath` faz para outlines; vamos estender para field_consideration).
-- O botão "Enviar para nuvem" (CloudUpload) continua presente nas duas subabas como **reforço manual** para casos offline/erro.
-- A subaba Consideração de Campo ganha também o botão "Baixar da nuvem" (CloudDownload), filtrando apenas notas do tipo `field_consideration`.
+b) Tipos — atualizar a interface `transport` em `VisitSummaryView.tsx` (`Snap.transport`) para refletir os novos campos como opcionais/nullable.
 
-### Mudanças técnicas
+c) UI — agrupar e renderizar como na aba Transporte original.
+   - Helpers reutilizados localmente: `fmtTime`, `eventTypeLabel` (`transport.eventType.<key>`), `directionLabel` (`transport.direction.<key>`), `weekdayLabel` (segunda… domingo) — todos com `defaultValue` para não exigir novas chaves.
+   - Agrupar `snap.transport` por `(event_date, event_type, all_day)` da mesma forma que `_app.transporte.tsx` agrupa, para que o motorista “apoia todos os eventos” apareça uma única vez com a lista de horários do dia.
+   - Card de cada grupo exibe: data + dia da semana, tipo de evento + direção, horários (`departure_time → return_time` ou “Dia inteiro”), motorista, telefone, descrição e observações. Se `all_day` então um único bloco resume todos os horários do grupo do dia.
+   - Aplicar a mesma renderização em DOIS pontos do arquivo: o card de hoje (`todayTransport`, ~linha 736) e a aba “Trans” do painel completo (~linha 561).
 
-**Banco (`personal_outlines`)**: reaproveitar a tabela. Adicionar marcador de tipo em `content_json.note_type` (`"outline"` | `"field_consideration"`). Pastas continuam marcadas com `content_json.kind = "folder"` e ganham `content_json.folder_type` para distinguir as duas árvores. Sem migração de schema — apenas convenção dentro do JSONB existente.
+d) i18n — usar exclusivamente chaves já existentes (`transport.eventType.*`, `transport.direction.*`, `transport.allDay`, `guest.labels.driver`, `guest.today.transport`). Onde faltar, passar `defaultValue` em PT e adicionar a mesma chave em `pt/en/es.json` (ex.: `guest.transport.allDay` → "Dia inteiro" / "All day" / "Todo el día"; `guest.transport.driverSupportsAll` → "Apoia todos os eventos/horários" / "Supports all events/times" / "Apoya todos los eventos/horarios").
 
-**`src/hooks/use-outlines-sync.ts`** → renomear conceitualmente para sincronizar ambos os tipos:
-- Remover o filtro `isOutline` e processar tanto `outline` quanto `field_consideration`.
-- Em `folderPath`, separar árvore por `type` (já temos `listFolders(type)`); usar `folder_type` no payload para roteamento na volta.
-- Em `ensureFolderPath`, aceitar `type` para criar a pasta na árvore correta.
-- Manter o pipeline LWW (last-write-wins) por `updated_at` que já existe.
+### Segurança e arquitetura
+- Nenhuma nova tabela; RLS atual da `transport_schedule` já cobre os três perfis (super, anciãos, esposa) via policies existentes.
+- Toda leitura permanece em `createServerFn`/`requireSupabaseAuth` e o painel visitante continua usando `supabaseAdmin` apenas dentro do server fn (`getGuestSnapshot`), nunca no cliente.
+- Validação Zod inalterada (inputs já validados).
+- Sem mudanças no fluxo offline ou no cache de snapshots (`snapshot-cache.ts` continua armazenando o payload novo intacto).
 
-**`src/lib/personal-outlines.functions.ts`**:
-- `cloudOutlineSchema` e `cloudFolderSchema` ganham `note_type`/`folder_type` opcional (default `"outline"` para compatibilidade com dados antigos).
-- `listCloudOutlineTree` continua retornando tudo; o hook filtra/roteia por tipo.
+### Arquivos editados (somatório das 5 correções)
+- `src/lib/personal-outlines.functions.ts`
+- `src/lib/visit-summary.functions.ts`
+- `src/lib/guest.functions.ts`
+- `src/hooks/use-outlines-sync.ts`
+- `src/routes/_app.tsx`
+- `src/routes/_app.consideracoes-campo.tsx`
+- `src/components/visit-summary/VisitSummaryView.tsx`
+- `src/i18n/locales/{pt,en,es}.json`
 
-**Disparo automático ao salvar em Consideração de Campo**:
-- Em `src/routes/_app.consideracoes-campo.tsx`, a função `syncOutlinesIfOnline` hoje só dispara para `activeType === "outline"`. Remover essa restrição para que salvar/excluir em qualquer subaba dispare o sync.
-
-**Compatibilidade com dados antigos**: linhas sem `note_type` no `content_json` continuam sendo tratadas como `outline` (comportamento atual), evitando bagunçar usuários existentes.
-
----
-
-## Parte 02 — Seleção múltipla, mover entre subabas e baixar da nuvem
-
-### UI de seleção múltipla
-
-Em `src/routes/_app.consideracoes-campo.tsx`, na lista de notas dentro de cada pasta:
-
-- Adicionar estado `selectedIds: Set<string>` por subaba.
-- Cada item da lista ganha um **checkbox** à esquerda (aparece em modo seleção; o toggle entra ao primeiro long-press ou ao clicar num novo botão "Selecionar").
-- Quando há ≥1 selecionada, aparece uma **barra de ações fixa** no topo da lista com botões: Mover, Recortar, Excluir, Exportar, Enviar para nuvem. Importar permanece no header global (não depende de seleção).
-
-### Ações em lote
-
-- **Excluir**: itera `removeNote` para cada id, atualiza estado, dispara sync uma vez no final.
-- **Exportar**: gera um único JSON `ExportPayload` agregando as notas (reaproveita `exportNoteJSON` adaptado para múltiplos itens, ou empacota como um pseudo-folder export).
-- **Enviar para nuvem**: itera `handlePushNoteById` em série, com toast resumo no fim.
-- **Recortar**: guarda os ids em `clipboardNoteIds: string[]` (substitui o atual `clipboardNoteId` singular). Ao "Colar" numa pasta, move todos.
-- **Mover**: abre o diálogo de seleção de destino, que agora lista pastas das **duas** subabas (com cabeçalho por subaba). Confirmação aplica `folderId` novo e, se a subaba destino for diferente, também atualiza `type`.
-
-### Mover entre subabas
-
-- O diálogo de mover/recortar mostra duas seções: "Esboços" e "Consideração de Campo", cada uma com sua árvore de pastas + opção "Raiz".
-- Ao mover uma nota para a outra subaba:
-  - `type` é trocado para o tipo da subaba destino.
-  - `folderId` aponta para a pasta destino (ou `null` para raiz).
-  - `title` e `content` são preservados; campos extras (`prayer`, `territory`, `assistants`, `description`) **permanecem no objeto** (não são apagados — ficam invisíveis na nova subaba mas reaparecem se a nota voltar), evitando perda de dados.
-  - `dirty = true` para sincronizar.
-- Após mover, a nota some da lista atual (porque o filtro por `activeType` deixa de incluí-la) e aparece na outra subaba ao trocar.
-
-### Botão "Baixar da nuvem" na subaba Consideração de Campo
-
-- Hoje só existe em Esboços (`handleCloudOpen` + diálogo). Generalizar:
-  - Mover o diálogo para um componente compartilhado dentro do mesmo arquivo, parametrizado por `noteType`.
-  - Em `refreshCloudList`, filtrar `cloudList` por `note_type` correspondente à subaba ativa (linhas antigas sem marcador entram em Esboços por compatibilidade).
-  - Renderizar o ícone `CloudDownload` no header das duas subabas, ao lado do ícone de importar.
-
----
-
-## Riscos e mitigações
-
-- **Dados antigos sem `note_type`**: tratados como `outline` (preserva o estado atual dos usuários existentes).
-- **Sync simultâneo das duas subabas**: o hook já é idempotente (LWW por `updated_at`); só processar uma única chamada por evento de save evita corrida.
-- **Mover em lote entre subabas com pastas inexistentes**: `ensureFolderPath` cria a pasta destino se preciso; sem isso, cai na raiz da subaba destino.
-- **Botão "Enviar para nuvem" manual**: mantido como solicitado; vira redundância segura (não duplica linhas porque o push usa `cloud_id` quando existe).
-
----
-
-## Arquivos a editar
-
-- `src/lib/bible-notes-store.ts` — nenhuma mudança de schema; apenas helpers se necessário (ex.: tipar `note_type`).
-- `src/lib/personal-outlines.functions.ts` — schemas Zod aceitam `note_type`/`folder_type` opcionais.
-- `src/hooks/use-outlines-sync.ts` — processa ambos os tipos; roteia pasta por `type`.
-- `src/routes/_app.consideracoes-campo.tsx` — disparar sync em ambas as subabas; UI de seleção múltipla; barra de ações em lote; diálogo de mover entre subabas; botão CloudDownload na subaba Consideração de Campo.
-- `src/i18n/locales/{pt,en,es}.json` — chaves novas para os botões em lote e títulos do diálogo cross-subaba.
-
-Sem migração SQL e sem mudança nas RLS (continuamos em `personal_outlines` escopada por `user_id`).
+Sem migrações SQL, sem alteração de RLS.
