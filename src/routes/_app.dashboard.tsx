@@ -266,8 +266,15 @@ function Dashboard() {
           id: n.id,
           title: n.title || "(sem título)",
           updated_at: n.updated_at ?? n.created_at ?? 0,
+          sort_order: n.sort_order ?? Number.POSITIVE_INFINITY,
         }))
-        .sort((a, b) => b.updated_at - a.updated_at);
+        // Mesma ordem da pasta original em "Esboços pessoais":
+        // sort_order asc, com fallback updated_at desc.
+        .sort((a, b) => {
+          if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+          return b.updated_at - a.updated_at;
+        })
+        .map(({ sort_order: _s, ...rest }) => rest);
       setOutlinesPreview(toPreview(localField));
       setWeekOutlinesPreview(toPreview(localOutline));
     } catch (err) {
@@ -296,7 +303,7 @@ function Dashboard() {
         .eq("congregation_id", selected)
         .eq("note_type", "recomendados")
         .is("deleted_at", null)
-        .order("updated_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(3);
       if (!cancelled) setRecomendadosPreview((data ?? []) as RecomendadoPreview[]);
     })();
