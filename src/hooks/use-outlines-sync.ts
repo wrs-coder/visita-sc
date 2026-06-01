@@ -50,6 +50,8 @@ function contentOf(n: FieldNote) {
     description: n.description ?? null,
     content: n.content ?? "",
     sort_order: n.sort_order ?? null,
+    event_date: n.event_date ?? null,
+    period: n.period ?? null,
   };
 }
 
