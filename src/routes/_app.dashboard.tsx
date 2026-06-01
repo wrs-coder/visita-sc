@@ -803,9 +803,10 @@ function Dashboard() {
                 <ul className="space-y-2">
                   {recomendadosPreview.map((n) => (
                     <li key={n.id}>
-                      <Link
-                        to="/notas"
-                          className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors min-w-0"
+                      <button
+                        type="button"
+                        onClick={() => setRecomendadoOpen(n)}
+                        className="w-full text-left flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors min-w-0"
                       >
                         <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
@@ -816,7 +817,7 @@ function Dashboard() {
                             {formatDistanceToNow(new Date(n.updated_at), { addSuffix: true, locale: ptBR })}
                           </div>
                         </div>
-                      </Link>
+                      </button>
                     </li>
                   ))}
                 </ul>
