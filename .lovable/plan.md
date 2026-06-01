@@ -1,108 +1,60 @@
-## Objetivo
+# Atualizar `instructions.md` com novas diretrizes de equilíbrio
 
-Corrigir 4 lacunas entre os Modelos de Reunião e Discurso e a visualização das congregações, refletindo as mudanças no Resumo do Dia (dashboard) e nos acessos "Corpo de Anciãos/ESC" e "Esposa do Superintendente".
+Preservar integralmente as seções 1–5 já existentes e **acrescentar ao final** as novas seções abaixo, que codificam os padrões usados nas últimas correções (modelos ↔ visitas, papéis, snapshots, i18n, offline).
 
----
+## Seções a adicionar
 
-### Ajuste 01 — Cântico Final (Meio de Semana)
+### 6. Integridade Modelos ↔ Visitas (Congregações)
+- Toda coluna nova em tabela `*_template_*` deve ter par equivalente em `VisitTemplateExtras` (`src/lib/visit-template-extras.functions.ts`) e ser carregada nos snapshots da visita.
+- Os snapshots `src/lib/visit-summary.functions.ts` e `src/lib/guest.functions.ts` devem ser revisados em conjunto a cada mudança de modelo — eles alimentam Resumo do Dia, Dashboard, acesso Anciãos/ESC e acesso Esposa do Superintendente.
+- Ordem obrigatória ao alterar um modelo: migration → Zod schema do serverFn → função `upsert*` → import/export → `VisitTemplateExtras` → UI do modelo → painel da congregação → `VisitSummaryView` → Dashboard → i18n (pt/en/es).
+- Campos editáveis só pelo Superintendente seguem `readOnly={!isSuper}` e o `editorHint` de “somente leitura” deve ser ocultado quando `isSuper === true`. NUNCA exibir mensagem de bloqueio para o Superintendente.
 
-O `final_song` já é salvo em `meeting_talk_template_midweek`, mas não chega à congregação.
+### 7. Banco de Dados e Segurança Server-Side
+- Toda `CREATE TABLE` no schema `public` exige bloco `GRANT` explícito na mesma migration (authenticated/service_role; anon só com política pública), antes de `ENABLE ROW LEVEL SECURITY` e `CREATE POLICY`.
+- Escritas sensíveis sempre via `createServerFn` com `supabaseAdmin`. Proibido `supabase.from().insert/update/delete` direto no cliente para dados compartilhados entre papéis.
+- Validação `Zod` obrigatória em `.inputValidator()` de todo serverFn, com `min/max` e regex quando aplicável.
+- Proibido `CHECK` constraint com funções voláteis (`now()` etc.) — usar trigger de validação.
+- Proibido tocar nos schemas reservados: `auth`, `storage`, `realtime`, `supabase_functions`, `vault`.
+- Roles sempre em tabela separada `user_roles` consumida via função `has_role` SECURITY DEFINER. Nunca em `profiles`.
 
-- `src/lib/visit-template-extras.functions.ts`
-  - Estender o tipo `midweek` para incluir `final_song: string | null`.
-  - No SELECT de `meeting_talk_template_midweek` adicionar `final_song`.
-- `src/components/meetings/MeetingPanels.tsx` → `MidweekPanel`
-  - Renderizar `<TemplateExtraBlock label={t("meetingsTalks.fromTemplate.finalSong")} value={extras.midweek?.final_song} />` no mesmo padrão dos cânticos de fim de semana (read-only, em vermelho).
-- i18n (`pt/en/es.json`): adicionar `meetingsTalks.fromTemplate.finalSong`.
+### 8. Arquitetura TanStack Start
+- Lógica de servidor da aplicação vive em `createServerFn` (`src/lib/*.functions.ts`). NÃO criar novas Supabase Edge Functions.
+- Proibido importar `*.server.ts` no código cliente.
+- `process.env` só pode ser lido dentro de `.handler()` — nunca em escopo de módulo.
+- ServerFn protegido por `requireSupabaseAuth` nunca pode ser chamado em `loader` de rota pública; usar `useServerFn` + `useQuery`, ou colocar a rota sob `_authenticated/`.
+- Confirmar que `src/start.ts` mantém `attachSupabaseAuth` em `functionMiddleware` ao mexer em serverFns autenticados.
 
----
+### 9. Estado, Cache e Offline-first
+- Preservar a fila de sync offline (`use-outlines-sync` e similares). Todo novo campo persistido entra no mesmo padrão de cache local + sync.
+- Não introduzir `useEffect + fetch` para dados iniciais — usar `ensureQueryData` no loader + `useSuspenseQuery` no componente.
+- Após qualquer mutação que afete Resumo do Dia, Dashboard ou painéis de papéis, invalidar as queries relacionadas (`queryClient.invalidateQueries`).
+- Rascunho em localStorage continua sendo o padrão das telas complexas (regra 4); persistência real só ao clicar “Salvar dados”.
 
-### Ajuste 02 — Pioneiro: remover campos "SC", manter dia/horário do superintendente
+### 10. Internacionalização
+- Toda string nova em UI exige chave nas três locales (`src/i18n/locales/pt.json`, `en.json`, `es.json`) na mesma alteração.
+- Manter a mesma estrutura de chave (ordem e aninhamento) entre os três arquivos para facilitar diff.
+- Alteração que adiciona/remove campo de modelo deve também remover as chaves i18n obsoletas.
 
-Hoje o template tem 4 campos (weekday/meeting_time + super_meeting_weekday/super_meeting_time) e o painel da congregação ainda mostra um seletor editável de data via `pioneer_meetings.meeting_at` / `super_meeting_at`.
+### 11. Checklist Obrigatório antes de Finalizar
+Antes de encerrar qualquer mudança que toque modelos, papéis ou visitas, confirmar:
+1. Migration + `GRANT`s aplicados.
+2. Zod schema (server) e tipos TS (cliente) coerentes.
+3. `VisitTemplateExtras` + snapshots (`visit-summary`, `guest`) atualizados.
+4. UI do modelo, painel da congregação, Resumo do Dia e Dashboard refletem o campo.
+5. `isSuper` libera edição sem mensagem de “somente leitura”.
+6. i18n pt/en/es completas e simétricas.
+7. Sync offline e invalidação de queries cobertas.
+8. Build passa sem erro de tipo.
 
-**Backend**
-- Migração SQL: `ALTER TABLE public.meeting_talk_template_pioneer DROP COLUMN super_meeting_weekday, DROP COLUMN super_meeting_time;` (mantém RLS e GRANTs existentes).
-- `src/lib/meeting-talk-templates.functions.ts`
-  - Remover os campos do Zod schema (`save`/`apply`/`exportTemplate`/`importTemplate`).
-  - No `applyMeetingTalkTemplateToVisit`: gravar `pioneer_meetings.meeting_at = super_meeting_at = resolveDate(weekday, meeting_time)` (sem mais bifurcação).
-  - No SELECT do `getTemplateById` retirar referências aos campos removidos.
-- `src/lib/visit-template-extras.functions.ts`: estender `pioneer` para `{ observations, weekday: number|null, meeting_time: string|null, location, theme }` e ler esses campos.
+### 12. Anti-padrões Proibidos
+- Adicionar campo em modelo sem propagar para a visita.
+- Mostrar mensagem de “somente leitura” para o Superintendente.
+- Duplicar lógica de horário/dia entre tabelas — usar sempre o helper central `resolveDate(weekday, time)`.
+- Criar rota nova sem `errorComponent` e `notFoundComponent`.
+- Hardcode de cores/fontes fora de `src/styles.css` (usar tokens semânticos).
+- Bloquear telas do Superintendente por ausência de congregação fixa (reforço da regra 1).
 
-**UI Templates** (`src/routes/_app.modelo-reunioes-discursos.tsx`)
-- Remover labels/inputs "weekdayCO" e "timeCO" (super_meeting_*).
-- Manter `weekday`/`meeting_time` com `readOnly={!isSuper}` (Select desabilitado quando não-super).
-- Remover chaves i18n `templates.meetingTalk.pioneer.weekdayCO`, `.timeCO`, `.sameAsMain` em pt/en/es.
-
-**UI Congregação** (`src/components/meetings/MeetingPanels.tsx` → `PioneerPanel`)
-- Remover o `WeekdayTimePicker` editável e substituir por bloco read-only que exibe `"<dia da semana> — HH:MM"` derivado de `extras.pioneer.weekday` / `extras.pioneer.meeting_time`, na mesma formatação do template.
-- Os demais campos (theme, location, prayers) permanecem editáveis para `canEdit`.
-
----
-
-### Ajuste 03 — Anciãos e Servos: adicionar dia/horário (só super edita)
-
-**Migração SQL**
-```sql
-ALTER TABLE public.meeting_talk_template_elders
-  ADD COLUMN weekday smallint,
-  ADD COLUMN meeting_time time;
-```
-(RLS/GRANTs já existentes cobrem; sem alterações.)
-
-**Backend**
-- `src/lib/meeting-talk-templates.functions.ts`: adicionar `weekday`/`meeting_time` ao schema Zod `elders`, ao upsert, ao `getTemplateById`, ao `apply`/`import`/`export`. Validação: `weekday: z.number().int().min(0).max(6).nullable()`, `meeting_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).nullable()`. Escrita exclusivamente via `supabaseAdmin` dentro do `createServerFn` (padrão já em uso).
-- `src/lib/visit-template-extras.functions.ts`: estender `elders` para `{ observations, weekday, meeting_time }`.
-
-**UI Templates** (`_app.modelo-reunioes-discursos.tsx`)
-- Adicionar grid 2-col com Select de dia da semana + Input `type="time"`, ambos `readOnly={!isSuper}` / `disabled={!isSuper}`.
-- i18n: `templates.meetingTalk.elders.weekday` e `.time` em pt/en/es.
-
-**UI Congregação** (`MeetingPanels.tsx` → `EldersServantsPanel`)
-- Adicionar bloco read-only `"<dia> — HH:MM"` no topo (similar ao Pioneiro), derivado de `extras.elders`.
-
----
-
-### Ajuste 04 — Refletir em Resumo do Dia, dashboard e acessos elders/esposa
-
-- **Resumo do Dia** (`src/components/visit-summary/VisitSummaryView.tsx`)
-  - Trocar a base de filtro/exibição de Pioneiro: em vez de `meeting_at`, calcular a data efetiva da semana a partir de `extras.pioneer.weekday` + `meeting_time` (helper igual ao `isoFromWeekdayTime`); exibir dia/hora formatados.
-  - Adicionar `elders` ao "today list" usando o mesmo padrão (weekday/time do template).
-  - Adicionar o `final_song` do template ao bloco do midweek quando presente.
-- **`src/lib/visit-summary.functions.ts`** e **`src/lib/guest.functions.ts`**
-  - Carregar `meeting_talk_template_midweek.final_song` e `meeting_talk_template_elders.weekday/meeting_time`, `meeting_talk_template_pioneer.weekday/meeting_time` junto do snapshot e devolver em `snap.midweek/pioneer/elders` (ou em um campo `templateExtras`).
-- **Dashboard** (`src/routes/_app.dashboard.tsx`, linhas 511–526 do `pushUpcoming`)
-  - Para `pioneer`: usar `meeting_at` já materializado (após Ajuste 02 fica único e correto).
-  - Adicionar entrada `elders`: resolver data a partir de `meeting_talk_template_elders.weekday/meeting_time` da `visit.meeting_talk_template_id` dentro da janela `start_date..end_date`.
-- **Acesso "Corpo de Anciãos/ESC" e "Esposa do Superintendente"**: já consomem o mesmo `VisitSummaryView` / `guest.functions.ts`; nenhuma alteração extra além das acima.
-
----
-
-### Segurança / Arquitetura
-
-- Todas as escritas continuam dentro de `createServerFn` usando `supabaseAdmin` + middleware existente. Nada de `supabase.from().insert()` no cliente.
-- Schemas Zod adicionados/atualizados validam `weekday` (0–6), `meeting_time` (HH:MM[:SS]) e strings com `trim()`.
-- Migrações apenas adicionam/removem colunas; nenhuma tabela nova → políticas RLS existentes (`super manages …` / `members read linked …`) continuam válidas.
-- Persistência offline (drafts dos painéis) preservada — apenas removemos o picker do Pioneiro e o bloco do Anciãos é puramente leitura, sem novo estado mutável.
-
-### i18n
-
-Novas chaves em `pt/en/es.json`:
-- `meetingsTalks.fromTemplate.finalSong`
-- `templates.meetingTalk.elders.weekday`, `.time`
-- `meetingsTalks.pioneer.scheduledLabel` (label do bloco read-only) e `meetingsTalks.elders.scheduledLabel`
-
-Remoção das chaves obsoletas `templates.meetingTalk.pioneer.weekdayCO`, `.timeCO`, `.sameAsMain`.
-
-### Arquivos a editar
-
-- `supabase/migrations/<nova>.sql` (drop pioneer SC + add elders weekday/time)
-- `src/lib/meeting-talk-templates.functions.ts`
-- `src/lib/visit-template-extras.functions.ts`
-- `src/lib/visit-summary.functions.ts`
-- `src/lib/guest.functions.ts`
-- `src/routes/_app.modelo-reunioes-discursos.tsx`
-- `src/components/meetings/MeetingPanels.tsx`
-- `src/components/visit-summary/VisitSummaryView.tsx`
-- `src/routes/_app.dashboard.tsx`
-- `src/i18n/locales/{pt,en,es}.json`
+## Forma da edição
+- Edição puramente aditiva no final de `instructions.md`.
+- Nenhum outro arquivo é alterado.
