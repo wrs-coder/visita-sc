@@ -195,7 +195,7 @@ export const replaceCloudOutlineTree = createServerFn({ method: "POST" })
       user_id: userId,
       title: folder.title,
       folder_path: folder.folder_path,
-      content_json: { kind: "folder", local_id: folder.local_id },
+      content_json: { kind: "folder", local_id: folder.local_id, folder_type: folder.folder_type ?? "outline" },
       deleted_at: folder.deleted_at ?? null,
       updated_at: new Date().toISOString(),
     }));
@@ -204,7 +204,7 @@ export const replaceCloudOutlineTree = createServerFn({ method: "POST" })
       user_id: userId,
       title: outline.title,
       folder_path: outline.folder_path,
-      content_json: { ...outline.content, local_id: outline.local_id },
+      content_json: { ...outline.content, local_id: outline.local_id, note_type: outline.note_type ?? "outline" },
       deleted_at: outline.deleted_at ?? null,
       updated_at: new Date().toISOString(),
     }));
