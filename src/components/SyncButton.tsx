@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 const LAST_SYNC_KEY = "visita-sc:last-sync";
 
-export function SyncButton({ className, onSync }: { className?: string; onSync?: () => Promise<void> | void }) {
+export function SyncButton({ className, onSync }: { className?: string; onSync?: () => Promise<unknown> | unknown }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const mode = useConnectionMode();
