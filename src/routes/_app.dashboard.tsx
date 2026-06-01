@@ -499,6 +499,38 @@ function Dashboard() {
     };
   }, [visit, today]);
 
+  // "Reuniões de hoje" — busca leituras leves das 4 tabelas (1 linha por visita)
+  // alimentadas pela aba "Reuniões e Discursos". Filtra por dia-da-semana
+  // (meetings recorrentes usam data-âncora) ou data exata.
+  useEffect(() => {
+    if (!visit) { setMeetingsToday([]); return; }
+    let cancelled = false;
+    (async () => {
+      const todayDow = new Date().getDay();
+      const [mw, we, pi, el] = await Promise.all([
+        supabase.from("midweek_meetings").select("meeting_at, service_talk_theme").eq("visit_id", visit.id).maybeSingle(),
+        supabase.from("weekend_meetings").select("meeting_at, talk_theme_title, public_talk_theme").eq("visit_id", visit.id).maybeSingle(),
+        supabase.from("pioneer_meetings").select("meeting_at, super_meeting_at, theme, location").eq("visit_id", visit.id).maybeSingle(),
+        supabase.from("elders_servants_meetings").select("meeting_at, theme").eq("visit_id", visit.id).maybeSingle(),
+      ]);
+      const out: MeetingTodayItem[] = [];
+      const push = (kind: MeetingTodayItem["kind"], at: string | null | undefined, theme: string | null | undefined, location: string | null | undefined) => {
+        if (!at) return;
+        const d = new Date(at);
+        if (Number.isNaN(d.getTime())) return;
+        if (d.getDay() !== todayDow) return;
+        out.push({ kind, meeting_at: at, theme: theme ?? null, location: location ?? null });
+      };
+      push("midweek", mw.data?.meeting_at, mw.data?.service_talk_theme, null);
+      push("weekend", we.data?.meeting_at, we.data?.talk_theme_title ?? we.data?.public_talk_theme, null);
+      const piAt = pi.data?.super_meeting_at ?? pi.data?.meeting_at;
+      push("pioneer", piAt, pi.data?.theme, pi.data?.location);
+      push("elders", el.data?.meeting_at, el.data?.theme, null);
+      if (!cancelled) setMeetingsToday(out);
+    })();
+    return () => { cancelled = true; };
+  }, [visit, today]);
+
   // todayEvents removed: replaced by "Hoje no cronograma" (circuit-scoped) card.
   const doneCount = checklist.filter((c) => c.status === "done").length;
   const total = checklist.length;
