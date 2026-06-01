@@ -670,34 +670,40 @@ function Page() {
   }
 
   function handleCutNote(noteId: string) {
-    setClipboardNoteId(noteId);
+    setClipboardNoteIds([noteId]);
     toast.success(t("personalOutlines.folders.noteCut", { defaultValue: "Nota recortada." }));
   }
 
+  function handleCutMany(ids: string[]) {
+    if (ids.length === 0) return;
+    setClipboardNoteIds(ids);
+    toast.success(t("personalOutlines.folders.noteCut", { defaultValue: "Nota recortada." }) + ` (${ids.length})`);
+  }
+
   async function handlePasteNote(targetFolderId: string | null) {
-    if (!clipboardNoteId) return;
-    const noteId = clipboardNoteId;
-    setClipboardNoteId(null);
-    const note = notes.find((n) => n.id === noteId);
-    if (!note) return;
-    if ((note.folderId ?? null) === targetFolderId) {
-      toast.info(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
-      return;
+    if (clipboardNoteIds.length === 0) return;
+    const ids = clipboardNoteIds;
+    setClipboardNoteIds([]);
+    for (const noteId of ids) {
+      const note = notes.find((n) => n.id === noteId);
+      if (!note) continue;
+      if ((note.folderId ?? null) === targetFolderId) continue;
+      const updated: FieldNote = { ...note, folderId: targetFolderId, updated_at: Date.now(), dirty: true };
+      await persistNote(updated);
+      setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
+        .sort((a, b) => b.updated_at - a.updated_at));
+      if (draft && draft.id === noteId) setDraft(updated);
     }
-    const updated: FieldNote = { ...note, folderId: targetFolderId, updated_at: Date.now(), dirty: activeType === "outline" ? true : note.dirty };
-    await persistNote(updated);
-    setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
-      .sort((a, b) => b.updated_at - a.updated_at));
-    if (draft && draft.id === noteId) setDraft(updated);
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
     await syncOutlinesIfOnline();
     toast.success(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
   }
 
   function handleClearClipboard() {
-    setClipboardNoteId(null);
+    setClipboardNoteIds([]);
     toast.info(t("personalOutlines.folders.clipboardCleared", { defaultValue: "Recorte cancelado." }));
   }
+
 
 
   async function handleExportFolder(folder: NoteFolder) {
