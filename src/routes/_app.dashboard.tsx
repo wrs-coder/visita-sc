@@ -760,6 +760,32 @@ function Dashboard() {
                 </div>
               )}
             </TabsContent>
+            <TabsContent value="weekOutlines" className="mt-3">
+              {weekOutlinesPreview.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("dashboard.studyNotesEmptyWeekOutlines")}</p>
+              ) : (
+                <div className="relative">
+                  <ul
+                    className="space-y-2 overflow-y-auto pr-1 [scrollbar-width:thin]"
+                    style={{ maxHeight: "calc(3 * 4rem + 2 * 0.5rem)" }}
+                  >
+                    {weekOutlinesPreview.map((o) => (
+                      <li key={o.key}>
+                        <OutlinePreviewRow
+                          note={o}
+                          openPref={openPref}
+                          onSetPref={setOpenPref}
+                          onOpenFullscreen={() => setFullscreenNoteId(o.id)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                  {weekOutlinesPreview.length > 3 && (
+                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-background to-transparent" />
+                  )}
+                </div>
+              )}
+            </TabsContent>
             <TabsContent value="recomendados" className="mt-3">
               {recomendadosPreview.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("dashboard.studyNotesEmptyRecomendados")}</p>
