@@ -102,6 +102,7 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
     const localOutlines = localAll.filter(isOutline);
     const cloudFolders = cloud.folders.filter(isFolderMarker);
     const cloudOutlines = cloud.outlines.filter((row) => !isFolderMarker(row));
+    const cloudFolderIdByPath = new Map(cloudFolders.map((row) => [row.folder_path || row.title, row.id]));
 
     const foldersByCloudId = new Map<string, NoteFolder>();
     for (const folder of localFolders) {
@@ -157,6 +158,7 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
       data: {
         folders: latestFolders.map((folder) => ({
           local_id: folder.id,
+          id: cloudFolderIdByPath.get(folderPath(folder.id, latestFolders) || folder.name || "Pasta") ?? null,
           title: folder.name || "Pasta",
           folder_path: folderPath(folder.id, latestFolders) || folder.name || "Pasta",
           deleted_at: folder.deleted_at ? new Date(folder.deleted_at).toISOString() : null,
@@ -165,6 +167,7 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
           .filter((note) => (note.title?.trim()?.length ?? 0) > 0 || (note.content?.trim()?.length ?? 0) > 0)
           .map((note) => ({
             local_id: note.id,
+            id: note.cloud_id ?? null,
             title: (note.title || "Sem título").slice(0, 200),
             folder_path: folderPath(note.folderId, latestFolders),
             content: contentOf(note),
