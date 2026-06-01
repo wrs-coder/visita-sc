@@ -1296,6 +1296,8 @@ function Page() {
       {moveTarget && (
         <MoveToDialog
           folders={folders}
+          allFolders={allFolders.length > 0 ? allFolders : folders}
+          activeType={activeType}
           target={moveTarget}
           notes={notes}
           onClose={() => setMoveTarget(null)}
