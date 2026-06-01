@@ -1531,11 +1531,9 @@ function NoteEditor({
         <Button variant="outline" size="sm" onClick={onExport} title={t("personalOutlines.folders.exportNote")}>
           <Download className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.folders.exportNote")}</span>
         </Button>
-        {isOutline && (
-          <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
-            <Cloud className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}</span>
-          </Button>
-        )}
+        <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
+          <Cloud className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}</span>
+        </Button>
         <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive" title={t("fieldConsiderations.delete")}>
           <Trash2 className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.delete")}</span>
         </Button>
