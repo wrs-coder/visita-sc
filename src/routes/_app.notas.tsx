@@ -481,10 +481,16 @@ function Page() {
               <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{catEmpty(c.value)}</CardContent></Card>
             )}
             {tab === c.value && filtered.map((n) => (
-              <NoteCard
-                key={n.id} note={n} savingId={savingId} update={update} remove={remove}
-                checked={selected.has(n.id)} onToggleSelect={() => toggleSelect(n.id)}
-              />
+              <div
+                key={n.id}
+                id={`note-${n.id}`}
+                className={highlightId === n.id ? "rounded-lg ring-2 ring-primary/60 transition-shadow" : undefined}
+              >
+                <NoteCard
+                  note={n} savingId={savingId} update={update} remove={remove}
+                  checked={selected.has(n.id)} onToggleSelect={() => toggleSelect(n.id)}
+                />
+              </div>
             ))}
           </TabsContent>
         ))}
