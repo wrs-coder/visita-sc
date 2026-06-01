@@ -401,6 +401,7 @@ function Page() {
     setNotes((all) => all.filter((n) => n.id !== draft.id));
     setDraft(null);
     setSelectedNoteId(null);
+    await syncOutlinesIfOnline();
     toast.success(t("fieldConsiderations.deleted"));
   }
 
@@ -471,12 +472,14 @@ function Page() {
       ...note,
       folderId: targetFolderId,
       updated_at: Date.now(),
+      dirty: activeType === "outline" ? true : note.dirty,
     };
     await persistNote(updated);
     setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
       .sort((a, b) => b.updated_at - a.updated_at));
     if (draft && draft.id === noteId) setDraft(updated);
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
+    await syncOutlinesIfOnline();
     toast.success(t("personalOutlines.folders.noteMoved", { defaultValue: "Nota movida." }));
   }
 
@@ -494,6 +497,7 @@ function Page() {
     await saveFolder(updated);
     setFolders((all) => all.map((f) => (f.id === folderId ? updated : f)));
     if (targetParentId) setExpanded((s) => new Set(s).add(targetParentId));
+    await syncOutlinesIfOnline();
     toast.success(t("personalOutlines.folders.folderMoved", { defaultValue: "Pasta movida." }));
   }
 
@@ -513,7 +517,7 @@ function Page() {
       note.title,
     );
     if (!name || !name.trim()) return;
-    const updated: FieldNote = { ...note, title: name.trim(), updated_at: Date.now() };
+    const updated: FieldNote = { ...note, title: name.trim(), updated_at: Date.now(), dirty: activeType === "outline" ? true : note.dirty };
     await persistNote(updated);
     setNotes((all) =>
       all
@@ -521,6 +525,7 @@ function Page() {
         .sort((a, b) => b.updated_at - a.updated_at),
     );
     if (draft && draft.id === note.id) setDraft(updated);
+    await syncOutlinesIfOnline();
     toast.success(t("personalOutlines.folders.noteRenamed", { defaultValue: "Nota renomeada." }));
   }
 
@@ -539,12 +544,13 @@ function Page() {
       toast.info(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
       return;
     }
-    const updated: FieldNote = { ...note, folderId: targetFolderId, updated_at: Date.now() };
+    const updated: FieldNote = { ...note, folderId: targetFolderId, updated_at: Date.now(), dirty: activeType === "outline" ? true : note.dirty };
     await persistNote(updated);
     setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
       .sort((a, b) => b.updated_at - a.updated_at));
     if (draft && draft.id === noteId) setDraft(updated);
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
+    await syncOutlinesIfOnline();
     toast.success(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
   }
 
