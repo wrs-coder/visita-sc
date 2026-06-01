@@ -1071,30 +1071,28 @@ function Page() {
           : t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" }))
       : folder.name;
     const isDropTarget = dropHint?.kind === "folder" && dropHint.id === folder.id;
+    const draggable = useDraggable({ id: `folder:${folder.id}`, disabled: fixed });
+    const droppable = useDroppable({ id: `folder:${folder.id}` });
+    const setRefs = (el: HTMLElement | null) => {
+      draggable.setNodeRef(el);
+      droppable.setNodeRef(el);
+    };
     return (
       <div>
         <div
+          ref={setRefs}
+          {...draggable.attributes}
+          {...draggable.listeners}
           className={cn(
-            "group flex items-center gap-1 rounded-md px-1.5 py-1 text-sm cursor-pointer",
+            "group flex items-center gap-1 rounded-md px-1.5 py-1 text-sm cursor-pointer touch-none select-none",
             selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
             isDropTarget && "ring-2 ring-primary/60 bg-primary/5",
+            draggable.isDragging && "opacity-40",
           )}
           style={{ paddingLeft: 6 + depth * 12 }}
           onClick={() => setSelectedFolderId(folder.id)}
-          draggable={!fixed}
-          onDragStart={(e) => onDragStartFolder(e, folder.id)}
-          onDragEnd={onDragEnd}
-          onDragOver={(e) => {
-            if (!dragItem) return;
-            if (dragItem.kind === "folder" && dragItem.id === folder.id) return;
-            allowDrop(e);
-            setDropHint({ kind: "folder", id: folder.id });
-          }}
-          onDragLeave={() => {
-            if (dropHint?.kind === "folder" && dropHint.id === folder.id) setDropHint(null);
-          }}
-          onDrop={(e) => onDropOnFolder(e, folder.id)}
         >
+
 
           <button
             type="button"
