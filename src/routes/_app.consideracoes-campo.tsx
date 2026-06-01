@@ -869,7 +869,7 @@ function Page() {
                   {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
                 </DropdownMenuItem>
               )}
-              {clipboardNoteId && (
+              {clipboardNoteIds.length > 0 && (
                 <DropdownMenuItem onClick={() => handlePasteNote(folder.id)}>
                   <ClipboardPaste className="h-4 w-4 mr-2" />
                   {t("personalOutlines.folders.pasteHere", { defaultValue: "Colar aqui" })}
@@ -910,7 +910,7 @@ function Page() {
 
   function NoteRow({ note, depth }: { note: FieldNote; depth: number }) {
     const selected = selectedNoteId === note.id;
-    const isClipped = clipboardNoteId === note.id;
+    const isClipped = clipboardNoteIds.includes(note.id);
     return (
       <div
         className={cn(
@@ -1102,7 +1102,7 @@ function Page() {
                         className="pl-7 h-9"
                       />
                     </div>
-                    {clipboardNoteId && (
+                    {clipboardNoteIds.length > 0 && (
                       <div className="flex items-center gap-2 rounded-md border border-dashed border-primary/40 bg-primary/5 px-2 py-1.5 text-xs">
                         <Scissors className="h-3.5 w-3.5 text-primary shrink-0" />
                         <span className="flex-1 truncate">
@@ -1133,7 +1133,7 @@ function Page() {
                       >
                         <FolderOpen className="h-4 w-4" />
                         <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
-                        {clipboardNoteId && (
+                        {clipboardNoteIds.length > 0 && (
                           <button
                             type="button"
                             onClick={(e) => {
