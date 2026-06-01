@@ -1318,8 +1318,8 @@
     "cloud": {
       "button": "Nube",
       "title": "Bosquejos en la nube",
-      "help": "Hasta 10 bosquejos pueden sincronizarse con la nube — útil para acceder desde otro dispositivo.",
-      "count": "Guardados: {{n}}/10",
+      "help": "Los bosquejos y carpetas se sincronizan con la nube y permanecen en caché local para uso offline.",
+      "count": "Guardados: {{n}}",
       "push": "Subir bosquejo actual",
       "pushed": "Bosquejo enviado a la nube.",
       "pulled": "Bosquejo importado desde la nube.",

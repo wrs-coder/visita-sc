@@ -1343,8 +1343,8 @@
     "cloud": {
       "button": "Cloud",
       "title": "Cloud outlines",
-      "help": "Up to 10 outlines can be synced to the cloud — handy for accessing them from another device.",
-      "count": "Saved: {{n}}/10",
+      "help": "Outlines and folders sync to the cloud and stay cached locally for offline use.",
+      "count": "Saved: {{n}}",
       "push": "Push current outline",
       "pushed": "Outline pushed to the cloud.",
       "pulled": "Outline imported from the cloud.",
