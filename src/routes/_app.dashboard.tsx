@@ -747,7 +747,7 @@ function Dashboard() {
                   {/* Lista vertical: ~3 itens visíveis, rola por todas. */}
                   <ul
                     className="space-y-2 overflow-y-auto pr-1 [scrollbar-width:thin]"
-                    style={{ maxHeight: "calc(3 * 4rem + 2 * 0.5rem)" }}
+                    style={{ maxHeight: "min(18rem, 60vh)" }}
                   >
                     {outlinesPreview.map((o) => (
                       <li key={o.key}>
@@ -773,7 +773,7 @@ function Dashboard() {
                 <div className="relative">
                   <ul
                     className="space-y-2 overflow-y-auto pr-1 [scrollbar-width:thin]"
-                    style={{ maxHeight: "calc(3 * 4rem + 2 * 0.5rem)" }}
+                    style={{ maxHeight: "min(18rem, 60vh)" }}
                   >
                     {weekOutlinesPreview.map((o) => (
                       <li key={o.key}>
