@@ -682,10 +682,47 @@ function Page() {
     if (moveTarget.kind === "note") {
       await moveNoteTo(moveTarget.id, targetFolderId, targetType);
     } else if (moveTarget.kind === "notes") {
-      for (const id of moveTarget.ids) {
-        await moveNoteTo(id, targetFolderId, targetType);
+      // Batch atómico: persiste todas, atualiza estado uma única vez e sincroniza no fim.
+      const ids = moveTarget.ids;
+      const now = Date.now();
+      const updates: FieldNote[] = [];
+      for (const id of ids) {
+        const note = notes.find((n) => n.id === id);
+        if (!note) continue;
+        const sameType = !targetType || targetType === (note.type ?? "field_consideration");
+        if (sameType && (note.folderId ?? null) === targetFolderId) continue;
+        const updated: FieldNote = {
+          ...note,
+          type: targetType ?? note.type,
+          folderId: targetFolderId,
+          updated_at: now,
+          dirty: true,
+        };
+        await persistNote(updated);
+        updates.push(updated);
       }
+      const movedIds = new Set(updates.map((u) => u.id));
+      const crossType = !!targetType && targetType !== activeType;
+      setNotes((all) => {
+        if (crossType) return all.filter((n) => !movedIds.has(n.id));
+        const map = new Map(updates.map((u) => [u.id, u]));
+        return all
+          .map((n) => map.get(n.id) ?? n)
+          .sort((a, b) => b.updated_at - a.updated_at);
+      });
+      if (draft && movedIds.has(draft.id)) {
+        if (crossType) { setDraft(null); setSelectedNoteId(null); }
+        else {
+          const upd = updates.find((u) => u.id === draft.id);
+          if (upd) setDraft(upd);
+        }
+      }
+      if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
       setSelectedIds(new Set());
+      await syncOutlinesIfOnline();
+      if (updates.length > 0) {
+        toast.success(t("personalOutlines.folders.noteMoved", { defaultValue: "Nota movida." }) + ` (${updates.length})`);
+      }
     } else {
       await moveFolderTo(moveTarget.id, targetFolderId);
     }
