@@ -1564,7 +1564,9 @@ function MoveToDialog({
         <div key={f.id}>
           <Row
             label={isFixedFolder(f.id)
-              ? t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" })
+              ? (f.id === FIXED_FOLDER_WEEK_OUTLINES || f.type === "outline"
+                  ? t("personalOutlines.folders.weekOutlines", { defaultValue: "Esboços da Semana" })
+                  : t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" }))
               : f.name}
             depth={depth}
             folderId={f.id}
