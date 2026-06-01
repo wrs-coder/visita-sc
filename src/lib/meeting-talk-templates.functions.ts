@@ -266,8 +266,6 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
       template_id: data.templateId,
       weekday: p.pioneer.weekday ?? null,
       meeting_time: p.pioneer.meeting_time || null,
-      super_meeting_weekday: p.pioneer.super_meeting_weekday ?? null,
-      super_meeting_time: p.pioneer.super_meeting_time || null,
       location: p.pioneer.location ?? null,
       theme: p.pioneer.theme ?? null,
       opening_prayer: p.pioneer.opening_prayer ?? null,
@@ -277,6 +275,8 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
     // Upsert elders
     await supabaseAdmin.from("meeting_talk_template_elders").upsert({
       template_id: data.templateId,
+      weekday: p.elders.weekday ?? null,
+      meeting_time: p.elders.meeting_time || null,
       theme: p.elders.theme ?? null,
       opening_prayer: p.elders.opening_prayer ?? null,
       closing_prayer: p.elders.closing_prayer ?? null,
