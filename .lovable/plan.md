@@ -1,46 +1,108 @@
-## Plano consolidado
+## Objetivo
 
-Mantém todas as 4 correções já aprovadas (reordenar notas, mover em lote, sync APK, preservar event_date/period) e adiciona a 5.ª correção.
+Corrigir 4 lacunas entre os Modelos de Reunião e Discurso e a visualização das congregações, refletindo as mudanças no Resumo do Dia (dashboard) e nos acessos "Corpo de Anciãos/ESC" e "Esposa do Superintendente".
 
-### 5. Cartões completos de transporte no “Resumo do Dia”
-Hoje os cartões de transporte do Resumo do Dia mostram apenas motorista e telefone. Falta tudo o que está no card original da aba Transporte (tipo de evento, direção, horários, dia indicado, e o comportamento “Apoiar todos os eventos/horários” quando `all_day = true`).
+---
 
-Aplica-se aos três acessos que compartilham `VisitSummaryView.tsx`:
-- Superintendente (`/_app.resumo-semana`)
-- Corpo de Anciãos e ESC (painel do visitante)
-- Esposa do Superintendente (painel visitante em wifeMode)
+### Ajuste 01 — Cântico Final (Meio de Semana)
 
-Mudanças:
+O `final_song` já é salvo em `meeting_talk_template_midweek`, mas não chega à congregação.
 
-a) Backend — incluir todos os campos relevantes no payload.
-   - `src/lib/visit-summary.functions.ts`: estender o select da `transport_schedule` para `id,event_date,weekday,event_type,direction,all_day,departure_time,return_time,driver_name,contact_phone,description,notes`.
-   - `src/lib/guest.functions.ts`: mesma extensão no `supabaseAdmin.from("transport_schedule").select(...)`.
-   - Sem migração SQL, sem mudança de RLS — apenas leitura de colunas já existentes e já permitidas.
+- `src/lib/visit-template-extras.functions.ts`
+  - Estender o tipo `midweek` para incluir `final_song: string | null`.
+  - No SELECT de `meeting_talk_template_midweek` adicionar `final_song`.
+- `src/components/meetings/MeetingPanels.tsx` → `MidweekPanel`
+  - Renderizar `<TemplateExtraBlock label={t("meetingsTalks.fromTemplate.finalSong")} value={extras.midweek?.final_song} />` no mesmo padrão dos cânticos de fim de semana (read-only, em vermelho).
+- i18n (`pt/en/es.json`): adicionar `meetingsTalks.fromTemplate.finalSong`.
 
-b) Tipos — atualizar a interface `transport` em `VisitSummaryView.tsx` (`Snap.transport`) para refletir os novos campos como opcionais/nullable.
+---
 
-c) UI — agrupar e renderizar como na aba Transporte original.
-   - Helpers reutilizados localmente: `fmtTime`, `eventTypeLabel` (`transport.eventType.<key>`), `directionLabel` (`transport.direction.<key>`), `weekdayLabel` (segunda… domingo) — todos com `defaultValue` para não exigir novas chaves.
-   - Agrupar `snap.transport` por `(event_date, event_type, all_day)` da mesma forma que `_app.transporte.tsx` agrupa, para que o motorista “apoia todos os eventos” apareça uma única vez com a lista de horários do dia.
-   - Card de cada grupo exibe: data + dia da semana, tipo de evento + direção, horários (`departure_time → return_time` ou “Dia inteiro”), motorista, telefone, descrição e observações. Se `all_day` então um único bloco resume todos os horários do grupo do dia.
-   - Aplicar a mesma renderização em DOIS pontos do arquivo: o card de hoje (`todayTransport`, ~linha 736) e a aba “Trans” do painel completo (~linha 561).
+### Ajuste 02 — Pioneiro: remover campos "SC", manter dia/horário do superintendente
 
-d) i18n — usar exclusivamente chaves já existentes (`transport.eventType.*`, `transport.direction.*`, `transport.allDay`, `guest.labels.driver`, `guest.today.transport`). Onde faltar, passar `defaultValue` em PT e adicionar a mesma chave em `pt/en/es.json` (ex.: `guest.transport.allDay` → "Dia inteiro" / "All day" / "Todo el día"; `guest.transport.driverSupportsAll` → "Apoia todos os eventos/horários" / "Supports all events/times" / "Apoya todos los eventos/horarios").
+Hoje o template tem 4 campos (weekday/meeting_time + super_meeting_weekday/super_meeting_time) e o painel da congregação ainda mostra um seletor editável de data via `pioneer_meetings.meeting_at` / `super_meeting_at`.
 
-### Segurança e arquitetura
-- Nenhuma nova tabela; RLS atual da `transport_schedule` já cobre os três perfis (super, anciãos, esposa) via policies existentes.
-- Toda leitura permanece em `createServerFn`/`requireSupabaseAuth` e o painel visitante continua usando `supabaseAdmin` apenas dentro do server fn (`getGuestSnapshot`), nunca no cliente.
-- Validação Zod inalterada (inputs já validados).
-- Sem mudanças no fluxo offline ou no cache de snapshots (`snapshot-cache.ts` continua armazenando o payload novo intacto).
+**Backend**
+- Migração SQL: `ALTER TABLE public.meeting_talk_template_pioneer DROP COLUMN super_meeting_weekday, DROP COLUMN super_meeting_time;` (mantém RLS e GRANTs existentes).
+- `src/lib/meeting-talk-templates.functions.ts`
+  - Remover os campos do Zod schema (`save`/`apply`/`exportTemplate`/`importTemplate`).
+  - No `applyMeetingTalkTemplateToVisit`: gravar `pioneer_meetings.meeting_at = super_meeting_at = resolveDate(weekday, meeting_time)` (sem mais bifurcação).
+  - No SELECT do `getTemplateById` retirar referências aos campos removidos.
+- `src/lib/visit-template-extras.functions.ts`: estender `pioneer` para `{ observations, weekday: number|null, meeting_time: string|null, location, theme }` e ler esses campos.
 
-### Arquivos editados (somatório das 5 correções)
-- `src/lib/personal-outlines.functions.ts`
+**UI Templates** (`src/routes/_app.modelo-reunioes-discursos.tsx`)
+- Remover labels/inputs "weekdayCO" e "timeCO" (super_meeting_*).
+- Manter `weekday`/`meeting_time` com `readOnly={!isSuper}` (Select desabilitado quando não-super).
+- Remover chaves i18n `templates.meetingTalk.pioneer.weekdayCO`, `.timeCO`, `.sameAsMain` em pt/en/es.
+
+**UI Congregação** (`src/components/meetings/MeetingPanels.tsx` → `PioneerPanel`)
+- Remover o `WeekdayTimePicker` editável e substituir por bloco read-only que exibe `"<dia da semana> — HH:MM"` derivado de `extras.pioneer.weekday` / `extras.pioneer.meeting_time`, na mesma formatação do template.
+- Os demais campos (theme, location, prayers) permanecem editáveis para `canEdit`.
+
+---
+
+### Ajuste 03 — Anciãos e Servos: adicionar dia/horário (só super edita)
+
+**Migração SQL**
+```sql
+ALTER TABLE public.meeting_talk_template_elders
+  ADD COLUMN weekday smallint,
+  ADD COLUMN meeting_time time;
+```
+(RLS/GRANTs já existentes cobrem; sem alterações.)
+
+**Backend**
+- `src/lib/meeting-talk-templates.functions.ts`: adicionar `weekday`/`meeting_time` ao schema Zod `elders`, ao upsert, ao `getTemplateById`, ao `apply`/`import`/`export`. Validação: `weekday: z.number().int().min(0).max(6).nullable()`, `meeting_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).nullable()`. Escrita exclusivamente via `supabaseAdmin` dentro do `createServerFn` (padrão já em uso).
+- `src/lib/visit-template-extras.functions.ts`: estender `elders` para `{ observations, weekday, meeting_time }`.
+
+**UI Templates** (`_app.modelo-reunioes-discursos.tsx`)
+- Adicionar grid 2-col com Select de dia da semana + Input `type="time"`, ambos `readOnly={!isSuper}` / `disabled={!isSuper}`.
+- i18n: `templates.meetingTalk.elders.weekday` e `.time` em pt/en/es.
+
+**UI Congregação** (`MeetingPanels.tsx` → `EldersServantsPanel`)
+- Adicionar bloco read-only `"<dia> — HH:MM"` no topo (similar ao Pioneiro), derivado de `extras.elders`.
+
+---
+
+### Ajuste 04 — Refletir em Resumo do Dia, dashboard e acessos elders/esposa
+
+- **Resumo do Dia** (`src/components/visit-summary/VisitSummaryView.tsx`)
+  - Trocar a base de filtro/exibição de Pioneiro: em vez de `meeting_at`, calcular a data efetiva da semana a partir de `extras.pioneer.weekday` + `meeting_time` (helper igual ao `isoFromWeekdayTime`); exibir dia/hora formatados.
+  - Adicionar `elders` ao "today list" usando o mesmo padrão (weekday/time do template).
+  - Adicionar o `final_song` do template ao bloco do midweek quando presente.
+- **`src/lib/visit-summary.functions.ts`** e **`src/lib/guest.functions.ts`**
+  - Carregar `meeting_talk_template_midweek.final_song` e `meeting_talk_template_elders.weekday/meeting_time`, `meeting_talk_template_pioneer.weekday/meeting_time` junto do snapshot e devolver em `snap.midweek/pioneer/elders` (ou em um campo `templateExtras`).
+- **Dashboard** (`src/routes/_app.dashboard.tsx`, linhas 511–526 do `pushUpcoming`)
+  - Para `pioneer`: usar `meeting_at` já materializado (após Ajuste 02 fica único e correto).
+  - Adicionar entrada `elders`: resolver data a partir de `meeting_talk_template_elders.weekday/meeting_time` da `visit.meeting_talk_template_id` dentro da janela `start_date..end_date`.
+- **Acesso "Corpo de Anciãos/ESC" e "Esposa do Superintendente"**: já consomem o mesmo `VisitSummaryView` / `guest.functions.ts`; nenhuma alteração extra além das acima.
+
+---
+
+### Segurança / Arquitetura
+
+- Todas as escritas continuam dentro de `createServerFn` usando `supabaseAdmin` + middleware existente. Nada de `supabase.from().insert()` no cliente.
+- Schemas Zod adicionados/atualizados validam `weekday` (0–6), `meeting_time` (HH:MM[:SS]) e strings com `trim()`.
+- Migrações apenas adicionam/removem colunas; nenhuma tabela nova → políticas RLS existentes (`super manages …` / `members read linked …`) continuam válidas.
+- Persistência offline (drafts dos painéis) preservada — apenas removemos o picker do Pioneiro e o bloco do Anciãos é puramente leitura, sem novo estado mutável.
+
+### i18n
+
+Novas chaves em `pt/en/es.json`:
+- `meetingsTalks.fromTemplate.finalSong`
+- `templates.meetingTalk.elders.weekday`, `.time`
+- `meetingsTalks.pioneer.scheduledLabel` (label do bloco read-only) e `meetingsTalks.elders.scheduledLabel`
+
+Remoção das chaves obsoletas `templates.meetingTalk.pioneer.weekdayCO`, `.timeCO`, `.sameAsMain`.
+
+### Arquivos a editar
+
+- `supabase/migrations/<nova>.sql` (drop pioneer SC + add elders weekday/time)
+- `src/lib/meeting-talk-templates.functions.ts`
+- `src/lib/visit-template-extras.functions.ts`
 - `src/lib/visit-summary.functions.ts`
 - `src/lib/guest.functions.ts`
-- `src/hooks/use-outlines-sync.ts`
-- `src/routes/_app.tsx`
-- `src/routes/_app.consideracoes-campo.tsx`
+- `src/routes/_app.modelo-reunioes-discursos.tsx`
+- `src/components/meetings/MeetingPanels.tsx`
 - `src/components/visit-summary/VisitSummaryView.tsx`
+- `src/routes/_app.dashboard.tsx`
 - `src/i18n/locales/{pt,en,es}.json`
-
-Sem migrações SQL, sem alteração de RLS.
