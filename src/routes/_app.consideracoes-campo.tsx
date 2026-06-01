@@ -525,7 +525,7 @@ function Page() {
     setNotes((all) => all.filter((n) => n.id !== draft.id));
     setDraft(null);
     setSelectedNoteId(null);
-    await syncOutlinesIfOnline();
+    // Offline-first: a exclusão fica local; sincroniza só no próximo Salvar/Sincronizar.
     toast.success(t("fieldConsiderations.deleted"));
   }
 
@@ -537,7 +537,7 @@ function Page() {
       setDraft(null);
       setSelectedNoteId(null);
     }
-    await syncOutlinesIfOnline();
+    // Offline-first: a exclusão fica local; sincroniza só no próximo Salvar/Sincronizar.
     toast.success(t("fieldConsiderations.deleted"));
   }
 
@@ -590,7 +590,7 @@ function Page() {
     setNotes((all) => all.filter((n) => !ids.includes(n.id)));
     if (draft && ids.includes(draft.id)) { setDraft(null); setSelectedNoteId(null); }
     setSelectedIds(new Set());
-    await syncOutlinesIfOnline();
+    // Offline-first: exclusão em lote fica local; sincroniza só sob demanda.
     toast.success(t("fieldConsiderations.deleted"));
   }
 
@@ -622,7 +622,7 @@ function Page() {
     await saveFolder(f);
     setFolders((all) => [...all, f]);
     if (parentId) setExpanded((s) => new Set(s).add(parentId));
-    await syncOutlinesIfOnline();
+    // Offline-first: criação de pasta fica local; sincroniza só sob demanda.
   }
 
   async function handleRenameFolder(folder: NoteFolder) {
@@ -631,7 +631,7 @@ function Page() {
     const updated = { ...folder, name: name.trim() };
     await saveFolder(updated);
     setFolders((all) => all.map((f) => (f.id === folder.id ? updated : f)));
-    await syncOutlinesIfOnline();
+    // Offline-first: renomear pasta fica local; sincroniza só sob demanda.
   }
 
   async function handleDeleteFolder(folder: NoteFolder) {
@@ -647,7 +647,7 @@ function Page() {
       setDraft(null);
       setSelectedNoteId(null);
     }
-    await syncOutlinesIfOnline();
+    // Offline-first: exclusão de pasta fica local; sincroniza só sob demanda.
   }
 
   // ---------- Mover / Recortar / Colar ----------
@@ -690,7 +690,7 @@ function Page() {
     }
     if (draft && draft.id === noteId && sameType) setDraft(updated);
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
-    await syncOutlinesIfOnline();
+    // Offline-first: mover nota fica local; sincroniza só sob demanda.
     toast.success(t("personalOutlines.folders.noteMoved", { defaultValue: "Nota movida." }));
   }
 
@@ -708,7 +708,7 @@ function Page() {
     await saveFolder(updated);
     setFolders((all) => all.map((f) => (f.id === folderId ? updated : f)));
     if (targetParentId) setExpanded((s) => new Set(s).add(targetParentId));
-    await syncOutlinesIfOnline();
+    // Offline-first: mover pasta fica local; sincroniza só sob demanda.
     toast.success(t("personalOutlines.folders.folderMoved", { defaultValue: "Pasta movida." }));
   }
 
@@ -754,7 +754,7 @@ function Page() {
       }
       if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
       setSelectedIds(new Set());
-      await syncOutlinesIfOnline();
+      // Offline-first: mover em lote fica local; sincroniza só sob demanda.
       if (updates.length > 0) {
         toast.success(t("personalOutlines.folders.noteMoved", { defaultValue: "Nota movida." }) + ` (${updates.length})`);
       }
@@ -779,7 +779,7 @@ function Page() {
         .sort((a, b) => b.updated_at - a.updated_at),
     );
     if (draft && draft.id === note.id) setDraft(updated);
-    await syncOutlinesIfOnline();
+    // Offline-first: renomear nota fica local; sincroniza só sob demanda.
     toast.success(t("personalOutlines.folders.noteRenamed", { defaultValue: "Nota renomeada." }));
   }
 
@@ -809,7 +809,7 @@ function Page() {
       if (draft && draft.id === noteId) setDraft(updated);
     }
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
-    await syncOutlinesIfOnline();
+    // Offline-first: colar nota fica local; sincroniza só sob demanda.
     toast.success(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
   }
 
@@ -907,7 +907,8 @@ function Page() {
       const map = new Map(updates.map((u) => [u.id, u]));
       return all.map((n) => map.get(n.id) ?? n);
     });
-    void syncOutlinesIfOnline();
+    // Offline-first: reordenar fica local; a ordem do aparelho só vai para
+    // a nuvem quando você clicar em Salvar ou Sincronizar agora.
     void now;
   }
 
@@ -949,7 +950,7 @@ function Page() {
       if (upd) setDraft(upd);
     }
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
-    void syncOutlinesIfOnline();
+    // Offline-first: drag & drop fica local; sincroniza só sob demanda.
   }
 
   // ---------- Drag & Drop handlers ----------
