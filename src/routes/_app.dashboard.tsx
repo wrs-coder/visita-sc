@@ -112,6 +112,12 @@ interface FieldMeetingToday {
   auxiliary_leaders: string | null;
   closing_prayer: string | null;
 }
+interface MeetingTodayItem {
+  kind: "midweek" | "weekend" | "pioneer" | "elders";
+  meeting_at: string;
+  theme: string | null;
+  location: string | null;
+}
 
 const MODALITY_LABEL: Record<string, string> = {
   casa_em_casa: "Casa em Casa",
