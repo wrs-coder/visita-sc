@@ -205,25 +205,12 @@ function DayTimePicker({
   );
 }
 
-function tsToLocalInput(ts: string | null) {
-  if (!ts) return "";
-  const d = new Date(ts);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-function localInputToIso(s: string): string | null {
-  if (!s) return null;
-  const d = new Date(s);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
-}
-
-
 function bcp47(lang: string) {
   if (lang?.startsWith("pt")) return "pt-BR";
   if (lang?.startsWith("es")) return "es-ES";
   return "en-US";
 }
+
 
 export function WeekendPanel() {
   const { t, i18n } = useTranslation();
