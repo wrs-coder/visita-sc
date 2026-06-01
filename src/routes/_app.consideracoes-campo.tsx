@@ -296,6 +296,8 @@ function Page() {
             description: draft.description ?? null,
             content: draft.content ?? "",
             sort_order: draft.sort_order ?? null,
+            event_date: draft.event_date ?? null,
+            period: draft.period ?? null,
           },
         },
       });
