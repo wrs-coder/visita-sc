@@ -1,131 +1,95 @@
-
 ## Objetivo
 
-Adicionar uma pasta fixa **"Considerações da Semana"** dentro da raiz da subaba **Consideração de campo** (em *Esboços Pessoais*), e atualizar o cartão do dashboard para refletir o novo fluxo, sem quebrar nada do que já funciona (offline, sync, lixeira, IndexedDB).
+Na aba **Esboços Pessoais**:
+
+1. Sincronizar automaticamente notas e pastas das duas subabas (Esboços e Consideração de Campo), preservando a pasta por subaba entre dispositivos.
+2. Permitir seleção múltipla para mover, recortar, excluir, exportar, importar e enviar para nuvem; permitir mover entre subabas; e mostrar o ícone "baixar da nuvem" também na subaba Consideração de Campo.
 
 ---
 
-## Ajuste 1 — Pasta fixa "Considerações da Semana"
+## Parte 01 — Sincronização automática das duas subabas
 
-**Escopo:** apenas a subaba `field_consideration` em `/consideracoes-campo`.
+### Comportamento
 
-### Estratégia de armazenamento (econômica e local-first)
+- Ao **salvar** uma nota ou pasta em qualquer subaba, dispara sync automático (igual ao que já existe em Esboços).
+- A nota é gravada na nuvem **com o tipo da subaba** (`outline` ou `field_consideration`) e o **caminho da pasta** dentro daquela subaba.
+- Ao logar em outro dispositivo, a nota aparece na mesma subaba e na mesma pasta. Se a pasta não existir naquele dispositivo, ela é **criada automaticamente** na raiz daquela subaba (já é o que `ensureFolderPath` faz para outlines; vamos estender para field_consideration).
+- O botão "Enviar para nuvem" (CloudUpload) continua presente nas duas subabas como **reforço manual** para casos offline/erro.
+- A subaba Consideração de Campo ganha também o botão "Baixar da nuvem" (CloudDownload), filtrando apenas notas do tipo `field_consideration`.
 
-- A pasta é **virtual e determinística**, não gravada no IndexedDB nem no Supabase.
-  - ID reservado, constante: `FIXED_FOLDER_WEEK_CONSIDERATIONS = "__fixed__week-considerations"`.
-  - Nome exibido vem do i18n (`personalOutlines.folders.weekConsiderations`).
-- Como é virtual, **não ocupa linha no banco**, não entra na lixeira, não sincroniza, não precisa de migration. Para milhares de usuários isso evita N linhas duplicadas no Supabase.
-- As **notas dentro dela são reais** (`FieldNote` com `folderId = FIXED_FOLDER_WEEK_CONSIDERATIONS`, `type = "field_consideration"`), seguindo todo o pipeline atual (IndexedDB → fallback localStorage → sync/lixeira existentes).
+### Mudanças técnicas
 
-### Mudanças em `src/lib/bible-notes-store.ts`
+**Banco (`personal_outlines`)**: reaproveitar a tabela. Adicionar marcador de tipo em `content_json.note_type` (`"outline"` | `"field_consideration"`). Pastas continuam marcadas com `content_json.kind = "folder"` e ganham `content_json.folder_type` para distinguir as duas árvores. Sem migração de schema — apenas convenção dentro do JSONB existente.
 
-- Exportar `FIXED_FOLDER_WEEK_CONSIDERATIONS` e helper `isFixedFolder(id)`.
-- `listFolders("field_consideration")`: **injetar** a pasta virtual como **primeira** entrada (parentId=null).
-- `saveFolder`, `deleteFolderCascade`, `restoreFolder`, `hardDeleteFolder`: no-op silencioso para a pasta fixa.
+**`src/hooks/use-outlines-sync.ts`** → renomear conceitualmente para sincronizar ambos os tipos:
+- Remover o filtro `isOutline` e processar tanto `outline` quanto `field_consideration`.
+- Em `folderPath`, separar árvore por `type` (já temos `listFolders(type)`); usar `folder_type` no payload para roteamento na volta.
+- Em `ensureFolderPath`, aceitar `type` para criar a pasta na árvore correta.
+- Manter o pipeline LWW (last-write-wins) por `updated_at` que já existe.
 
-### Mudanças em `src/routes/_app.consideracoes-campo.tsx`
+**`src/lib/personal-outlines.functions.ts`**:
+- `cloudOutlineSchema` e `cloudFolderSchema` ganham `note_type`/`folder_type` opcional (default `"outline"` para compatibilidade com dados antigos).
+- `listCloudOutlineTree` continua retornando tudo; o hook filtra/roteia por tipo.
 
-- Árvore (apenas `field_consideration`): pasta fixa sempre como primeira, ícone destacado (`FolderOpen` + `text-primary`) + badge "Fixa".
-- Esconder ações **renomear** e **excluir** no dropdown se `isFixedFolder(folder.id)`.
-- Permitido: criar nota dentro, mover notas para/dela, recortar/colar, exportar pasta.
-- Diálogo "Mover para…" lista a fixa como destino válido.
-- Não aparece na subaba `outline`.
+**Disparo automático ao salvar em Consideração de Campo**:
+- Em `src/routes/_app.consideracoes-campo.tsx`, a função `syncOutlinesIfOnline` hoje só dispara para `activeType === "outline"`. Remover essa restrição para que salvar/excluir em qualquer subaba dispare o sync.
 
-### i18n (`src/i18n/locales/{pt,en,es}.json`)
-
-```
-personalOutlines.folders.weekConsiderations = "Considerações da Semana"
-personalOutlines.folders.fixedBadge = "Fixa"
-```
+**Compatibilidade com dados antigos**: linhas sem `note_type` no `content_json` continuam sendo tratadas como `outline` (comportamento atual), evitando bagunçar usuários existentes.
 
 ---
 
-## Ajuste 2 — Dashboard: cartão "Esboços e Notas"
+## Parte 02 — Seleção múltipla, mover entre subabas e baixar da nuvem
 
-### Renomes (i18n)
+### UI de seleção múltipla
 
-- `dashboard.studyNotesTitle`: "Estudos & Notas" → **"Esboços e Notas"**
-- `dashboard.studyNotesOutlinesTab`: "Esboços" → **"Considerações de campo"**
-- Manter `studyNotesRecomendadosTab`.
+Em `src/routes/_app.consideracoes-campo.tsx`, na lista de notas dentro de cada pasta:
 
-### Conteúdo da aba "Considerações de campo" (em `_app.dashboard.tsx`)
+- Adicionar estado `selectedIds: Set<string>` por subaba.
+- Cada item da lista ganha um **checkbox** à esquerda (aparece em modo seleção; o toggle entra ao primeiro long-press ou ao clicar num novo botão "Selecionar").
+- Quando há ≥1 selecionada, aparece uma **barra de ações fixa** no topo da lista com botões: Mover, Recortar, Excluir, Exportar, Enviar para nuvem. Importar permanece no header global (não depende de seleção).
 
-Trocar a fonte de dados de `outlinesPreview`:
+### Ações em lote
 
-- **Antes:** mistura local (`field_consideration` qualquer) + cloud outlines + dedup.
-- **Depois:** apenas notas locais da pasta fixa:
-  ```ts
-  listNotesByType("field_consideration", FIXED_FOLDER_WEEK_CONSIDERATIONS)
-  ```
-- Remove a chamada `listCloudOutlinesFn` desta aba → menos I/O no Supabase em toda abertura de dashboard (× milhares de usuários).
-- Ordenar por `updated_at desc`. Sem limite de 3 — todas as notas da pasta entram no scroll.
+- **Excluir**: itera `removeNote` para cada id, atualiza estado, dispara sync uma vez no final.
+- **Exportar**: gera um único JSON `ExportPayload` agregando as notas (reaproveita `exportNoteJSON` adaptado para múltiplos itens, ou empacota como um pseudo-folder export).
+- **Enviar para nuvem**: itera `handlePushNoteById` em série, com toast resumo no fim.
+- **Recortar**: guarda os ids em `clipboardNoteIds: string[]` (substitui o atual `clipboardNoteId` singular). Ao "Colar" numa pasta, move todos.
+- **Mover**: abre o diálogo de seleção de destino, que agora lista pastas das **duas** subabas (com cabeçalho por subaba). Confirmação aplica `folderId` novo e, se a subaba destino for diferente, também atualiza `type`.
 
-### UI: 3 visíveis + **scroll vertical** por todas
+### Mover entre subabas
 
-- Container vertical com altura fixa equivalente a **~3 itens** (ex.: `max-h-[252px]` para `h-20` por item + gaps) e `overflow-y-auto` com `scrollbar-thin` — Tailwind puro, sem libs novas.
-- Cada item ocupa **largura total** do cartão (títulos longos legíveis, consistente com o resto do dashboard).
-- Vertical evita conflito com gestos horizontais do mobile (swipe de aba/voltar) e mantém o padrão visual dos demais cartões.
-- Indicador sutil de "mais abaixo" (gradiente fade na borda inferior quando há overflow).
-- Mostra: título + `updated_at` relativo. Sem badge local/cloud (todas locais).
+- O diálogo de mover/recortar mostra duas seções: "Esboços" e "Consideração de Campo", cada uma com sua árvore de pastas + opção "Raiz".
+- Ao mover uma nota para a outra subaba:
+  - `type` é trocado para o tipo da subaba destino.
+  - `folderId` aponta para a pasta destino (ou `null` para raiz).
+  - `title` e `content` são preservados; campos extras (`prayer`, `territory`, `assistants`, `description`) **permanecem no objeto** (não são apagados — ficam invisíveis na nova subaba mas reaparecem se a nota voltar), evitando perda de dados.
+  - `dirty = true` para sincronizar.
+- Após mover, a nota some da lista atual (porque o filtro por `activeType` deixa de incluí-la) e aparece na outra subaba ao trocar.
 
-### Abertura direta em "modo esboço"
+### Botão "Baixar da nuvem" na subaba Consideração de Campo
 
-- Trocar o `<Link to="/consideracoes-campo">` por:
-  ```tsx
-  <Link to="/consideracoes-campo" search={{ noteId: n.id, mode: "outline" }} />
-  ```
-- Em `_app.consideracoes-campo.tsx`:
-  - Adicionar `validateSearch` para `{ noteId?: string; mode?: "edit" | "outline" }`.
-  - Bootstrap: se `search.noteId` existe → `setActiveType("field_consideration")`, selecionar a nota, `setMode(search.mode ?? "outline")`.
-  - Todos os recursos da página continuam disponíveis.
+- Hoje só existe em Esboços (`handleCloudOpen` + diálogo). Generalizar:
+  - Mover o diálogo para um componente compartilhado dentro do mesmo arquivo, parametrizado por `noteType`.
+  - Em `refreshCloudList`, filtrar `cloudList` por `note_type` correspondente à subaba ativa (linhas antigas sem marcador entram em Esboços por compatibilidade).
+  - Renderizar o ícone `CloudDownload` no header das duas subabas, ao lado do ícone de importar.
 
 ---
 
-## Banco de dados / SQL / RLS
+## Riscos e mitigações
 
-**Nenhuma migration necessária.**
-
-- A pasta fixa é virtual no cliente → 0 linhas no Supabase × N usuários.
-- Notas dentro dela usam o pipeline `personal_outlines` existente (sync, soft-delete, lixeira, RLS por `auth.uid() = user_id`).
-- Dashboard passa a fazer **menos chamadas** ao Supabase (remove `listCloudOutlines` desta aba).
-
----
-
-## Offline / PWA / APK
-
-- 100% client-side (IndexedDB + i18n + roteamento TanStack). Idêntico em browser, PWA e APK.
-- Pasta fixa aparece sem internet (constante hardcoded).
-- Sem novas dependências e sem alterar `sw.js`.
+- **Dados antigos sem `note_type`**: tratados como `outline` (preserva o estado atual dos usuários existentes).
+- **Sync simultâneo das duas subabas**: o hook já é idempotente (LWW por `updated_at`); só processar uma única chamada por evento de save evita corrida.
+- **Mover em lote entre subabas com pastas inexistentes**: `ensureFolderPath` cria a pasta destino se preciso; sem isso, cai na raiz da subaba destino.
+- **Botão "Enviar para nuvem" manual**: mantido como solicitado; vira redundância segura (não duplica linhas porque o push usa `cloud_id` quando existe).
 
 ---
 
-## Resumo técnico
+## Arquivos a editar
 
-```text
-bible-notes-store.ts
-  + FIXED_FOLDER_WEEK_CONSIDERATIONS, isFixedFolder
-  ~ listFolders → injeta a fixa em field_consideration
-  ~ saveFolder / delete* / restore* → no-op para a fixa
+- `src/lib/bible-notes-store.ts` — nenhuma mudança de schema; apenas helpers se necessário (ex.: tipar `note_type`).
+- `src/lib/personal-outlines.functions.ts` — schemas Zod aceitam `note_type`/`folder_type` opcionais.
+- `src/hooks/use-outlines-sync.ts` — processa ambos os tipos; roteia pasta por `type`.
+- `src/routes/_app.consideracoes-campo.tsx` — disparar sync em ambas as subabas; UI de seleção múltipla; barra de ações em lote; diálogo de mover entre subabas; botão CloudDownload na subaba Consideração de Campo.
+- `src/i18n/locales/{pt,en,es}.json` — chaves novas para os botões em lote e títulos do diálogo cross-subaba.
 
-_app.consideracoes-campo.tsx
-  + validateSearch({ noteId?, mode? })
-  + bootstrap: seleciona nota + força modo outline
-  ~ árvore: badge "Fixa", esconde renomear/excluir na fixa
-
-_app.dashboard.tsx
-  ~ loadOutlines: listNotesByType('field_consideration', FIXED_FOLDER…)
-  ~ remove listCloudOutlinesFn nesta aba
-  ~ layout: lista vertical com max-h ≈ 3 itens, scroll-y, fade inferior
-  ~ Link com search={ noteId, mode: 'outline' }
-
-i18n/{pt,en,es}.json
-  ~ dashboard.studyNotesTitle, dashboard.studyNotesOutlinesTab
-  + personalOutlines.folders.weekConsiderations / .fixedBadge
-```
-
-## O que NÃO muda
-
-- Subaba **Esboços** (outline) e o restante de `/consideracoes-campo`.
-- Sync de esboços, lixeira, RLS, migrations, schema de `personal_outlines`.
-- Aba **Recomendados** do cartão.
-- Demais cartões e rotas.
+Sem migração SQL e sem mudança nas RLS (continuamos em `personal_outlines` escopada por `user_id`).
