@@ -61,7 +61,25 @@ export const listCloudOutlines = createServerFn({ method: "POST" })
       .is("deleted_at", null)
       .order("updated_at", { ascending: false });
     if (error) return { ok: false as const, error: error.message };
-    return { ok: true as const, outlines: data ?? [] };
+    return { ok: true as const, outlines: (data ?? []).filter((row) => !isFolderMarker(row)) };
+  });
+
+export const listCloudOutlineTree = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    const { data, error } = await supabaseAdmin
+      .from("personal_outlines")
+      .select("id,title,folder_path,content_json,created_at,updated_at,deleted_at")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false });
+    if (error) return { ok: false as const, error: error.message };
+    const rows = data ?? [];
+    return {
+      ok: true as const,
+      folders: rows.filter(isFolderMarker),
+      outlines: rows.filter((row) => !isFolderMarker(row)),
+    };
   });
 
 export const listTrashedOutlines = createServerFn({ method: "POST" })
