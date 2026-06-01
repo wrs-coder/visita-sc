@@ -58,7 +58,11 @@ function AppLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
 
-  const syncOutlines = useOutlinesSync();
+  // auto:false → o sync de Esboços Pessoais só roda sob demanda (botão de
+  // sincronização, Salvar de uma nota ou diálogo de Nuvem). Edições locais
+  // (criar, mover, reordenar, excluir) ficam apenas no aparelho até o
+  // utilizador pedir para sincronizar.
+  const syncOutlines = useOutlinesSync({ auto: false });
 
 
   const openSupport = () => {
