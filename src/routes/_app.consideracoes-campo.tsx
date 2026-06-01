@@ -56,6 +56,7 @@ import { SavingIndicator } from "@/components/SavingIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listNotes,
+  listFolders as listFoldersStore,
   saveNote as persistNote,
   deleteNote as removeNote,
   newNoteId,
@@ -76,6 +77,7 @@ import {
   type BibleLibrary,
   type ExportPayload,
 } from "@/lib/bible-notes-store";
+import { Checkbox } from "@/components/ui/checkbox";
 import { findCitations, stripHtmlForDetection, type CitationMatch } from "@/lib/bible-refs";
 import { shareJsonFile } from "@/lib/share";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
@@ -181,17 +183,35 @@ function Page() {
   });
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Estado para mover/recortar
-  const [clipboardNoteId, setClipboardNoteId] = useState<string | null>(null);
+  // Estado para mover/recortar (multi-seleção)
+  const [clipboardNoteIds, setClipboardNoteIds] = useState<string[]>([]);
   const [moveTarget, setMoveTarget] = useState<
     | { kind: "note"; id: string }
+    | { kind: "notes"; ids: string[] }
     | { kind: "folder"; id: string }
     | null
   >(null);
 
+  // Multi-seleção
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Limpa seleção/clipboard ao trocar de subaba
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [activeType]);
+
+  // Pastas das duas subabas (para diálogo cross-subaba)
+  const [allFolders, setAllFolders] = useState<NoteFolder[]>([]);
+  async function refreshAllFolders() {
+    const [a, b] = await Promise.all([
+      listFoldersStore("outline"),
+      listFoldersStore("field_consideration"),
+    ]);
+    setAllFolders([...a, ...b]);
+  }
+
   // Sincronização com a nuvem
   const [cloudOpen, setCloudOpen] = useState(false);
-  const [cloudList, setCloudList] = useState<Array<{ id: string; title: string; folder_path: string; updated_at: string }>>([]);
+  const [cloudList, setCloudList] = useState<Array<{ id: string; title: string; folder_path: string; note_type: NoteType; updated_at: string }>>([]);
   const [cloudBusy, setCloudBusy] = useState(false);
   const fnListCloud = useServerFn(listCloudOutlines);
   const fnPushCloud = useServerFn(pushOutlineToCloud);
@@ -199,11 +219,12 @@ function Page() {
   const fnDeleteCloud = useServerFn(deleteCloudOutline);
   const syncOutlines = useOutlinesSync({ auto: false });
   const fixedOutlineCloudPath = "__fixed__week-outlines";
+  const fixedFieldCloudPath = "__fixed__week-considerations";
 
   function folderPathForCloud(folderId: string | null | undefined): string {
     if (!folderId) return "";
-    if (folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS) return "";
-    if (isFixedFolder(folderId)) return fixedOutlineCloudPath;
+    if (folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS) return fixedFieldCloudPath;
+    if (folderId === FIXED_FOLDER_WEEK_OUTLINES) return fixedOutlineCloudPath;
     const byId = new Map(folders.map((f) => [f.id, f]));
     const names: string[] = [];
     const seen = new Set<string>();
@@ -220,11 +241,14 @@ function Page() {
     if (path === fixedOutlineCloudPath) {
       return t("personalOutlines.folders.weekOutlines", { defaultValue: "Esboços da Semana" });
     }
+    if (path === fixedFieldCloudPath) {
+      return t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" });
+    }
     return path;
   }
 
   async function syncOutlinesIfOnline() {
-    if (activeType !== "outline") return null;
+    if (!activeType) return null;
     if (typeof navigator !== "undefined" && navigator.onLine === false) return null;
     const result = await syncOutlines();
     if (!result.ok) console.warn("[personal-outlines] sync skipped", result.error);
@@ -233,13 +257,21 @@ function Page() {
 
   async function refreshCloudList() {
     const r = await fnListCloud();
-    if (r.ok) setCloudList(r.outlines.map((o) => ({ id: o.id, title: o.title, folder_path: o.folder_path, updated_at: o.updated_at })));
+    if (r.ok) {
+      setCloudList(r.outlines.map((o) => {
+        const cj = (o.content_json ?? {}) as Record<string, unknown>;
+        const note_type: NoteType = cj.note_type === "field_consideration" ? "field_consideration" : "outline";
+        return { id: o.id, title: o.title, folder_path: o.folder_path, note_type, updated_at: o.updated_at };
+      }));
+    }
   }
 
   async function handleCloudOpen() {
     setCloudOpen(true);
     await refreshCloudList();
   }
+
+
 
   async function handleCloudPush() {
     if (!draft) return;
@@ -558,20 +590,28 @@ function Page() {
     return out;
   }
 
-  async function moveNoteTo(noteId: string, targetFolderId: string | null) {
+  async function moveNoteTo(noteId: string, targetFolderId: string | null, targetType?: NoteType) {
     const note = notes.find((n) => n.id === noteId);
     if (!note) return;
-    if ((note.folderId ?? null) === targetFolderId) return;
+    const sameType = !targetType || targetType === (note.type ?? "field_consideration");
+    if (sameType && (note.folderId ?? null) === targetFolderId) return;
     const updated: FieldNote = {
       ...note,
+      type: targetType ?? note.type,
       folderId: targetFolderId,
       updated_at: Date.now(),
-      dirty: activeType === "outline" ? true : note.dirty,
+      dirty: true,
     };
     await persistNote(updated);
-    setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
-      .sort((a, b) => b.updated_at - a.updated_at));
-    if (draft && draft.id === noteId) setDraft(updated);
+    if (sameType) {
+      setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
+        .sort((a, b) => b.updated_at - a.updated_at));
+    } else {
+      // Tipo mudou: nota sai da lista atual (subaba diferente).
+      setNotes((all) => all.filter((n) => n.id !== noteId));
+      if (draft?.id === noteId) { setDraft(null); setSelectedNoteId(null); }
+    }
+    if (draft && draft.id === noteId && sameType) setDraft(updated);
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
     await syncOutlinesIfOnline();
     toast.success(t("personalOutlines.folders.noteMoved", { defaultValue: "Nota movida." }));
@@ -595,15 +635,21 @@ function Page() {
     toast.success(t("personalOutlines.folders.folderMoved", { defaultValue: "Pasta movida." }));
   }
 
-  async function handleConfirmMove(targetFolderId: string | null) {
+  async function handleConfirmMove(targetFolderId: string | null, targetType?: NoteType) {
     if (!moveTarget) return;
     if (moveTarget.kind === "note") {
-      await moveNoteTo(moveTarget.id, targetFolderId);
+      await moveNoteTo(moveTarget.id, targetFolderId, targetType);
+    } else if (moveTarget.kind === "notes") {
+      for (const id of moveTarget.ids) {
+        await moveNoteTo(id, targetFolderId, targetType);
+      }
+      setSelectedIds(new Set());
     } else {
       await moveFolderTo(moveTarget.id, targetFolderId);
     }
     setMoveTarget(null);
   }
+
 
   async function handleRenameNote(note: FieldNote) {
     const name = prompt(
@@ -624,34 +670,40 @@ function Page() {
   }
 
   function handleCutNote(noteId: string) {
-    setClipboardNoteId(noteId);
+    setClipboardNoteIds([noteId]);
     toast.success(t("personalOutlines.folders.noteCut", { defaultValue: "Nota recortada." }));
   }
 
+  function handleCutMany(ids: string[]) {
+    if (ids.length === 0) return;
+    setClipboardNoteIds(ids);
+    toast.success(t("personalOutlines.folders.noteCut", { defaultValue: "Nota recortada." }) + ` (${ids.length})`);
+  }
+
   async function handlePasteNote(targetFolderId: string | null) {
-    if (!clipboardNoteId) return;
-    const noteId = clipboardNoteId;
-    setClipboardNoteId(null);
-    const note = notes.find((n) => n.id === noteId);
-    if (!note) return;
-    if ((note.folderId ?? null) === targetFolderId) {
-      toast.info(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
-      return;
+    if (clipboardNoteIds.length === 0) return;
+    const ids = clipboardNoteIds;
+    setClipboardNoteIds([]);
+    for (const noteId of ids) {
+      const note = notes.find((n) => n.id === noteId);
+      if (!note) continue;
+      if ((note.folderId ?? null) === targetFolderId) continue;
+      const updated: FieldNote = { ...note, folderId: targetFolderId, updated_at: Date.now(), dirty: true };
+      await persistNote(updated);
+      setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
+        .sort((a, b) => b.updated_at - a.updated_at));
+      if (draft && draft.id === noteId) setDraft(updated);
     }
-    const updated: FieldNote = { ...note, folderId: targetFolderId, updated_at: Date.now(), dirty: activeType === "outline" ? true : note.dirty };
-    await persistNote(updated);
-    setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
-      .sort((a, b) => b.updated_at - a.updated_at));
-    if (draft && draft.id === noteId) setDraft(updated);
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
     await syncOutlinesIfOnline();
     toast.success(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
   }
 
   function handleClearClipboard() {
-    setClipboardNoteId(null);
+    setClipboardNoteIds([]);
     toast.info(t("personalOutlines.folders.clipboardCleared", { defaultValue: "Recorte cancelado." }));
   }
+
 
 
   async function handleExportFolder(folder: NoteFolder) {
@@ -817,7 +869,7 @@ function Page() {
                   {t("personalOutlines.folders.moveTo", { defaultValue: "Mover para…" })}
                 </DropdownMenuItem>
               )}
-              {clipboardNoteId && (
+              {clipboardNoteIds.length > 0 && (
                 <DropdownMenuItem onClick={() => handlePasteNote(folder.id)}>
                   <ClipboardPaste className="h-4 w-4 mr-2" />
                   {t("personalOutlines.folders.pasteHere", { defaultValue: "Colar aqui" })}
@@ -858,7 +910,7 @@ function Page() {
 
   function NoteRow({ note, depth }: { note: FieldNote; depth: number }) {
     const selected = selectedNoteId === note.id;
-    const isClipped = clipboardNoteId === note.id;
+    const isClipped = clipboardNoteIds.includes(note.id);
     return (
       <div
         className={cn(
@@ -1050,7 +1102,7 @@ function Page() {
                         className="pl-7 h-9"
                       />
                     </div>
-                    {clipboardNoteId && (
+                    {clipboardNoteIds.length > 0 && (
                       <div className="flex items-center gap-2 rounded-md border border-dashed border-primary/40 bg-primary/5 px-2 py-1.5 text-xs">
                         <Scissors className="h-3.5 w-3.5 text-primary shrink-0" />
                         <span className="flex-1 truncate">
@@ -1081,7 +1133,7 @@ function Page() {
                       >
                         <FolderOpen className="h-4 w-4" />
                         <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
-                        {clipboardNoteId && (
+                        {clipboardNoteIds.length > 0 && (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -1566,23 +1618,30 @@ function MoveToDialog({
   onClose,
   onConfirm,
   getDescendantFolderIds,
+  allFolders,
+  activeType,
 }: {
   folders: NoteFolder[];
   notes: FieldNote[];
-  target: { kind: "note"; id: string } | { kind: "folder"; id: string };
+  target: { kind: "note"; id: string } | { kind: "notes"; ids: string[] } | { kind: "folder"; id: string };
   onClose: () => void;
-  onConfirm: (targetFolderId: string | null) => Promise<void> | void;
+  onConfirm: (targetFolderId: string | null, targetType?: NoteType) => Promise<void> | void;
   getDescendantFolderIds: (rootId: string) => Set<string>;
+  allFolders?: NoteFolder[];
+  activeType?: NoteType | null;
 }) {
   const { t } = useTranslation();
+  const isNoteMove = target.kind === "note" || target.kind === "notes";
+  const treeFolders = isNoteMove && allFolders ? allFolders : folders;
 
-  // Pasta atual do item (origem) — para mostrar "aqui".
+  // Pasta atual do item (origem) — para mostrar "aqui" (só faz sentido p/ kind=note).
   const currentParentId: string | null =
     target.kind === "note"
       ? (notes.find((n) => n.id === target.id)?.folderId ?? null)
-      : (folders.find((f) => f.id === target.id)?.parentId ?? null);
+      : target.kind === "folder"
+        ? (folders.find((f) => f.id === target.id)?.parentId ?? null)
+        : null;
 
-  // Pastas inválidas como destino: a si mesma e descendentes (apenas para folder).
   const forbidden: Set<string> = target.kind === "folder"
     ? getDescendantFolderIds(target.id)
     : new Set();
@@ -1592,20 +1651,22 @@ function MoveToDialog({
     depth,
     folderId,
     icon,
+    targetType,
   }: {
     label: string;
     depth: number;
     folderId: string | null;
     icon: React.ReactNode;
+    targetType?: NoteType;
   }) {
-    const isCurrent = (folderId ?? null) === (currentParentId ?? null);
+    const isCurrent = (folderId ?? null) === (currentParentId ?? null) && (!targetType || targetType === activeType);
     const isForbidden = folderId !== null && forbidden.has(folderId);
     const disabled = isCurrent || isForbidden;
     return (
       <button
         type="button"
         disabled={disabled}
-        onClick={() => onConfirm(folderId)}
+        onClick={() => onConfirm(folderId, targetType)}
         className={cn(
           "w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm",
           disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-muted",
@@ -1623,9 +1684,9 @@ function MoveToDialog({
     );
   }
 
-  function renderTree(parentId: string | null, depth: number): React.ReactNode {
-    return folders
-      .filter((f) => (f.parentId ?? null) === parentId)
+  function renderTree(parentId: string | null, depth: number, type?: NoteType): React.ReactNode {
+    return treeFolders
+      .filter((f) => (f.parentId ?? null) === parentId && (!type || f.type === type))
       .map((f) => (
         <div key={f.id}>
           <Row
@@ -1637,8 +1698,9 @@ function MoveToDialog({
             depth={depth}
             folderId={f.id}
             icon={<Folder className={cn("h-4 w-4", isFixedFolder(f.id) ? "text-primary" : "text-muted-foreground")} />}
+            targetType={type ?? f.type}
           />
-          {renderTree(f.id, depth + 1)}
+          {renderTree(f.id, depth + 1, type)}
         </div>
       ));
   }
@@ -1652,13 +1714,42 @@ function MoveToDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto -mx-2 px-2 space-y-0.5">
-          <Row
-            label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
-            depth={0}
-            folderId={null}
-            icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
-          />
-          {renderTree(null, 0)}
+          {isNoteMove && allFolders ? (
+            <>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-2 pt-1">
+                {t("personalOutlines.typePicker.outline", { defaultValue: "Esboços" })}
+              </div>
+              <Row
+                label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
+                depth={0}
+                folderId={null}
+                icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
+                targetType="outline"
+              />
+              {renderTree(null, 0, "outline")}
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-2 pt-3">
+                {t("personalOutlines.typePicker.field", { defaultValue: "Consideração de Campo" })}
+              </div>
+              <Row
+                label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
+                depth={0}
+                folderId={null}
+                icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
+                targetType="field_consideration"
+              />
+              {renderTree(null, 0, "field_consideration")}
+            </>
+          ) : (
+            <>
+              <Row
+                label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
+                depth={0}
+                folderId={null}
+                icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
+              />
+              {renderTree(null, 0)}
+            </>
+          )}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
@@ -1669,4 +1760,5 @@ function MoveToDialog({
     </Dialog>
   );
 }
+
 

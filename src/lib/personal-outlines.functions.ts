@@ -29,11 +29,14 @@ export type CloudOutlineContent = z.infer<typeof outlineContentSchema>;
 // Limite "soft" para evitar abuso extremo. Não enforçado no banco.
 const SOFT_LIMIT = 500;
 
+const noteTypeSchema = z.enum(["outline", "field_consideration"]).default("outline");
+
 const cloudFolderSchema = z.object({
   local_id: z.string().min(1).max(120),
   id: z.string().uuid().optional().nullable(),
   title: z.string().trim().min(1).max(200),
   folder_path: z.string().trim().max(500).default(""),
+  folder_type: noteTypeSchema.optional(),
   deleted_at: z.string().datetime().optional().nullable(),
 });
 
@@ -42,6 +45,7 @@ const cloudOutlineSchema = z.object({
   id: z.string().uuid().optional().nullable(),
   title: z.string().trim().min(1).max(200),
   folder_path: z.string().trim().max(500).default(""),
+  note_type: noteTypeSchema.optional(),
   content: outlineContentSchema,
   deleted_at: z.string().datetime().optional().nullable(),
 });
@@ -104,11 +108,13 @@ export const pushOutlineToCloud = createServerFn({ method: "POST" })
       id: z.string().uuid().optional(),
       title: z.string().trim().min(1).max(200),
       folder_path: z.string().trim().max(500).default(""),
+      note_type: noteTypeSchema.optional(),
       content: outlineContentSchema,
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const contentWithType = { ...data.content, note_type: data.note_type ?? "outline" };
     if (data.id) {
       const { data: own } = await supabaseAdmin
         .from("personal_outlines")
@@ -119,7 +125,7 @@ export const pushOutlineToCloud = createServerFn({ method: "POST" })
         .update({
           title: data.title,
           folder_path: data.folder_path,
-          content_json: data.content,
+          content_json: contentWithType,
           deleted_at: null,
           updated_at: new Date().toISOString(),
         })
@@ -142,12 +148,13 @@ export const pushOutlineToCloud = createServerFn({ method: "POST" })
         user_id: userId,
         title: data.title,
         folder_path: data.folder_path,
-        content_json: data.content,
+        content_json: contentWithType,
       })
       .select("id").single();
     if (error || !row) return { ok: false as const, error: error?.message ?? "Falha ao salvar." };
     return { ok: true as const, id: row.id };
   });
+
 
 export const bulkPushOutlines = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -191,7 +198,7 @@ export const replaceCloudOutlineTree = createServerFn({ method: "POST" })
       user_id: userId,
       title: folder.title,
       folder_path: folder.folder_path,
-      content_json: { kind: "folder", local_id: folder.local_id },
+      content_json: { kind: "folder", local_id: folder.local_id, folder_type: folder.folder_type ?? "outline" },
       deleted_at: folder.deleted_at ?? null,
       updated_at: new Date().toISOString(),
     }));
@@ -200,7 +207,7 @@ export const replaceCloudOutlineTree = createServerFn({ method: "POST" })
       user_id: userId,
       title: outline.title,
       folder_path: outline.folder_path,
-      content_json: { ...outline.content, local_id: outline.local_id },
+      content_json: { ...outline.content, local_id: outline.local_id, note_type: outline.note_type ?? "outline" },
       deleted_at: outline.deleted_at ?? null,
       updated_at: new Date().toISOString(),
     }));
