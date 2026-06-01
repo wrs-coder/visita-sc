@@ -87,6 +87,7 @@ import {
   pullOutlineFromCloud,
   deleteCloudOutline,
 } from "@/lib/personal-outlines.functions";
+import { useOutlinesSync } from "@/hooks/use-outlines-sync";
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
   validateSearch: (search: Record<string, unknown>): {
@@ -194,6 +195,13 @@ function Page() {
   const fnPushCloud = useServerFn(pushOutlineToCloud);
   const fnPullCloud = useServerFn(pullOutlineFromCloud);
   const fnDeleteCloud = useServerFn(deleteCloudOutline);
+  const syncOutlines = useOutlinesSync({ auto: false });
+
+  async function syncOutlinesIfOnline() {
+    if (activeType !== "outline") return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+    await syncOutlines();
+  }
 
   async function refreshCloudList() {
     const r = await fnListCloud();
@@ -212,6 +220,7 @@ function Page() {
       const folderName = draft.folderId ? (folders.find((f) => f.id === draft.folderId)?.name ?? "") : "";
       const r = await fnPushCloud({
         data: {
+          id: draft.cloud_id ?? undefined,
           title: (draft.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })).slice(0, 200),
           folder_path: folderName,
           content: {
@@ -224,6 +233,12 @@ function Page() {
         },
       });
       if (!r.ok) { toast.error(r.error); return; }
+      if (r.id) {
+        const synced = { ...draft, cloud_id: r.id, dirty: false, synced_at: Date.now() };
+        await persistNote(synced);
+        setDraft(synced);
+        setNotes((all) => all.map((n) => (n.id === synced.id ? synced : n)));
+      }
       toast.success(t("personalOutlines.cloud.pushed", { defaultValue: "Esboço enviado para a nuvem." }));
       await refreshCloudList();
     } finally {
