@@ -201,13 +201,19 @@ function Page() {
 
   // Pastas das duas subabas (para diálogo cross-subaba)
   const [allFolders, setAllFolders] = useState<NoteFolder[]>([]);
-  async function refreshAllFolders() {
+  const refreshAllFolders = React.useCallback(async () => {
     const [a, b] = await Promise.all([
       listFoldersStore("outline"),
       listFoldersStore("field_consideration"),
     ]);
     setAllFolders([...a, ...b]);
-  }
+  }, []);
+  // Carrega pastas das duas subabas quando o diálogo de mover for aberto para notas
+  useEffect(() => {
+    if (moveTarget && (moveTarget.kind === "note" || moveTarget.kind === "notes")) {
+      void refreshAllFolders();
+    }
+  }, [moveTarget, refreshAllFolders]);
 
   // Sincronização com a nuvem
   const [cloudOpen, setCloudOpen] = useState(false);
@@ -282,6 +288,7 @@ function Page() {
           id: draft.cloud_id ?? undefined,
           title: (draft.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })).slice(0, 200),
           folder_path: folderPathForCloud(draft.folderId),
+          note_type: (draft.type ?? activeType ?? "outline"),
           content: {
             prayer: draft.prayer ?? null,
             territory: draft.territory ?? null,
@@ -312,13 +319,14 @@ function Page() {
       const r = await fnPullCloud({ data: { id } });
       if (!r.ok) { toast.error(r.error); return; }
       const c = (r.outline.content_json ?? {}) as Record<string, unknown>;
+      const pulledType: NoteType = c.note_type === "field_consideration" ? "field_consideration" : "outline";
       const now = Date.now();
       const existing = notes.find((note) => note.cloud_id === r.outline.id);
       const n: FieldNote = {
         ...(existing ?? {}),
         id: existing?.id ?? newNoteId(),
-        type: "outline",
-        folderId: selectedFolderId,
+        type: pulledType,
+        folderId: pulledType === activeType ? selectedFolderId : (existing?.folderId ?? null),
         title: r.outline.title,
         prayer: typeof c.prayer === "string" ? c.prayer : "",
         territory: typeof c.territory === "string" ? c.territory : "",
@@ -333,15 +341,17 @@ function Page() {
         synced_at: now,
       };
       await persistNote(n);
-      setNotes((all) => {
-        const idx = all.findIndex((note) => note.id === n.id || note.cloud_id === n.cloud_id);
-        const next = idx >= 0 ? [...all] : [n, ...all];
-        if (idx >= 0) next[idx] = n;
-        return next.sort((a, b) => b.updated_at - a.updated_at);
-      });
-      setDraft(n);
-      setSelectedNoteId(n.id);
-      setMode("outline");
+      if (pulledType === activeType) {
+        setNotes((all) => {
+          const idx = all.findIndex((note) => note.id === n.id || note.cloud_id === n.cloud_id);
+          const next = idx >= 0 ? [...all] : [n, ...all];
+          if (idx >= 0) next[idx] = n;
+          return next.sort((a, b) => b.updated_at - a.updated_at);
+        });
+        setDraft(n);
+        setSelectedNoteId(n.id);
+        setMode("outline");
+      }
       toast.success(t("personalOutlines.cloud.pulled", { defaultValue: "Esboço importado da nuvem." }));
       setCloudOpen(false);
     } finally {
@@ -444,7 +454,7 @@ function Page() {
       type: draft.type ?? activeType,
       folderId: draft.folderId ?? null,
       updated_at: Date.now(),
-      dirty: activeType === "outline" ? true : draft.dirty,
+      dirty: true,
     };
     try {
       await persistNote(updated);
@@ -508,6 +518,7 @@ function Page() {
           id: note.cloud_id ?? undefined,
           title: (note.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })).slice(0, 200),
           folder_path: folderPathForCloud(note.folderId),
+          note_type: (note.type ?? activeType ?? "outline"),
           content: {
             prayer: note.prayer ?? null,
             territory: note.territory ?? null,
@@ -530,6 +541,37 @@ function Page() {
       setCloudBusy(false);
     }
   }
+
+  async function handlePushManyByIds(ids: string[]) {
+    for (const id of ids) await handlePushNoteById(id);
+  }
+
+  async function handleDeleteMany(ids: string[]) {
+    if (ids.length === 0) return;
+    if (!confirm(t("fieldConsiderations.deleteConfirm"))) return;
+    for (const id of ids) {
+      await removeNote(id);
+    }
+    setNotes((all) => all.filter((n) => !ids.includes(n.id)));
+    if (draft && ids.includes(draft.id)) { setDraft(null); setSelectedNoteId(null); }
+    setSelectedIds(new Set());
+    await syncOutlinesIfOnline();
+    toast.success(t("fieldConsiderations.deleted"));
+  }
+
+  async function handleExportMany(ids: string[]) {
+    for (const id of ids) {
+      const note = notes.find((n) => n.id === id);
+      if (!note) continue;
+      try {
+        const payload = await exportNoteJSON(id);
+        await downloadJSON(`nota-${slugify(note.title)}.json`, payload);
+      } catch (e) {
+        toast.error(String(e instanceof Error ? e.message : e));
+      }
+    }
+  }
+
 
   async function handleCreateFolder(parentId: string | null) {
     if (!activeType) return;
@@ -657,7 +699,7 @@ function Page() {
       note.title,
     );
     if (!name || !name.trim()) return;
-    const updated: FieldNote = { ...note, title: name.trim(), updated_at: Date.now(), dirty: activeType === "outline" ? true : note.dirty };
+    const updated: FieldNote = { ...note, title: name.trim(), updated_at: Date.now(), dirty: true };
     await persistNote(updated);
     setNotes((all) =>
       all
@@ -786,7 +828,7 @@ function Page() {
       ...n,
       sort_order: i,
       // Não bumpa updated_at (evita "subir" a nota em listas globais), mas marca dirty.
-      dirty: activeType === "outline" ? true : n.dirty,
+      dirty: true,
     }));
     for (const u of updates) await persistNote(u);
     setNotes((all) => {
@@ -911,6 +953,7 @@ function Page() {
   function NoteRow({ note, depth }: { note: FieldNote; depth: number }) {
     const selected = selectedNoteId === note.id;
     const isClipped = clipboardNoteIds.includes(note.id);
+    const isChecked = selectedIds.has(note.id);
     return (
       <div
         className={cn(
@@ -920,6 +963,19 @@ function Page() {
         )}
         style={{ paddingLeft: 6 + depth * 12 + 16 }}
       >
+        <Checkbox
+          checked={isChecked}
+          onCheckedChange={(c) => {
+            setSelectedIds((s) => {
+              const next = new Set(s);
+              if (c) next.add(note.id); else next.delete(note.id);
+              return next;
+            });
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="h-3.5 w-3.5 shrink-0"
+          aria-label={t("common.select", { defaultValue: "Selecionar" })}
+        />
         <button
           type="button"
           onClick={() => selectNote(note)}
@@ -955,12 +1011,10 @@ function Page() {
                 <Scissors className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
               </DropdownMenuItem>
-              {isOutline && (
-                <DropdownMenuItem onClick={() => handlePushNoteById(note.id)} disabled={cloudBusy}>
-                  <CloudUpload className="h-4 w-4 mr-2" />
-                  {t("personalOutlines.cloud.push", { defaultValue: "Enviar para nuvem" })}
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem onClick={() => handlePushNoteById(note.id)} disabled={cloudBusy}>
+                <CloudUpload className="h-4 w-4 mr-2" />
+                {t("personalOutlines.cloud.push", { defaultValue: "Enviar para nuvem" })}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
@@ -1071,16 +1125,14 @@ function Page() {
                       >
                         <Upload className="h-4 w-4" />
                       </Button>
-                      {isOutline && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCloudOpen}
-                          title={t("personalOutlines.cloud.downloadButton", { defaultValue: "Baixar da nuvem" })}
-                        >
-                          <CloudDownload className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCloudOpen}
+                        title={t("personalOutlines.cloud.downloadButton", { defaultValue: "Baixar da nuvem" })}
+                      >
+                        <CloudDownload className="h-4 w-4" />
+                      </Button>
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -1120,6 +1172,43 @@ function Page() {
                         >
                           <X className="h-3.5 w-3.5 mr-1" />
                           {t("personalOutlines.folders.cancelCut", { defaultValue: "Cancelar recorte" })}
+                        </Button>
+                      </div>
+                    )}
+                    {selectedIds.size > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 rounded-md border bg-muted/40 px-2 py-1.5 text-xs">
+                        <span className="font-medium">
+                          {t("personalOutlines.folders.selectedCount", { defaultValue: "{{n}} selecionadas", n: selectedIds.size })}
+                        </span>
+                        <div className="flex-1" />
+                        <Button size="sm" variant="outline" className="h-7 px-2"
+                          onClick={() => setMoveTarget({ kind: "notes", ids: Array.from(selectedIds) })}>
+                          <Move className="h-3.5 w-3.5 mr-1" />
+                          {t("personalOutlines.folders.moveTo", { defaultValue: "Mover" })}
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 px-2"
+                          onClick={() => handleCutMany(Array.from(selectedIds))}>
+                          <Scissors className="h-3.5 w-3.5 mr-1" />
+                          {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 px-2"
+                          onClick={() => handleExportMany(Array.from(selectedIds))}>
+                          <Download className="h-3.5 w-3.5 mr-1" />
+                          {t("personalOutlines.folders.exportNote", { defaultValue: "Exportar" })}
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 px-2" disabled={cloudBusy}
+                          onClick={() => handlePushManyByIds(Array.from(selectedIds))}>
+                          <CloudUpload className="h-3.5 w-3.5 mr-1" />
+                          {t("personalOutlines.cloud.push", { defaultValue: "Nuvem" })}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive"
+                          onClick={() => handleDeleteMany(Array.from(selectedIds))}>
+                          <Trash2 className="h-3.5 w-3.5 mr-1" />
+                          {t("common.delete", { defaultValue: "Excluir" })}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2"
+                          onClick={() => setSelectedIds(new Set())}>
+                          <X className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     )}
@@ -1226,12 +1315,16 @@ function Page() {
               </Button>
             </div>
             <div className="max-h-80 overflow-y-auto overflow-x-hidden rounded-md border divide-y">
-              {cloudList.length === 0 ? (
-                <p className="p-4 text-sm text-muted-foreground text-center">
-                  {t("personalOutlines.cloud.empty", { defaultValue: "Nenhum esboço na nuvem." })}
-                </p>
-              ) : (
-                cloudList.map((o) => (
+              {(() => {
+                const filtered = cloudList.filter((o) => (o.note_type ?? "outline") === (activeType ?? "outline"));
+                if (filtered.length === 0) {
+                  return (
+                    <p className="p-4 text-sm text-muted-foreground text-center">
+                      {t("personalOutlines.cloud.empty", { defaultValue: "Nenhum esboço na nuvem." })}
+                    </p>
+                  );
+                }
+                return filtered.map((o) => (
                   <div key={o.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 p-2 max-w-full min-w-0">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium whitespace-normal break-words [overflow-wrap:anywhere]">{o.title}</p>
@@ -1244,8 +1337,8 @@ function Page() {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                ))
-              )}
+                ));
+              })()}
             </div>
           </div>
           <DialogFooter>
@@ -1260,6 +1353,8 @@ function Page() {
       {moveTarget && (
         <MoveToDialog
           folders={folders}
+          allFolders={allFolders.length > 0 ? allFolders : folders}
+          activeType={activeType}
           target={moveTarget}
           notes={notes}
           onClose={() => setMoveTarget(null)}
@@ -1298,7 +1393,6 @@ function NoteEditor({
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
-  const isOutline = type === "outline";
 
   return (
     <div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words pb-24">
@@ -1499,11 +1593,9 @@ function NoteEditor({
         <Button variant="outline" size="sm" onClick={onExport} title={t("personalOutlines.folders.exportNote")}>
           <Download className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.folders.exportNote")}</span>
         </Button>
-        {isOutline && (
-          <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
-            <Cloud className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}</span>
-          </Button>
-        )}
+        <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
+          <Cloud className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}</span>
+        </Button>
         <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive" title={t("fieldConsiderations.delete")}>
           <Trash2 className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.delete")}</span>
         </Button>
