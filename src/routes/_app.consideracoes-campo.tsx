@@ -313,13 +313,14 @@ function Page() {
       const r = await fnPullCloud({ data: { id } });
       if (!r.ok) { toast.error(r.error); return; }
       const c = (r.outline.content_json ?? {}) as Record<string, unknown>;
+      const pulledType: NoteType = c.note_type === "field_consideration" ? "field_consideration" : "outline";
       const now = Date.now();
       const existing = notes.find((note) => note.cloud_id === r.outline.id);
       const n: FieldNote = {
         ...(existing ?? {}),
         id: existing?.id ?? newNoteId(),
-        type: "outline",
-        folderId: selectedFolderId,
+        type: pulledType,
+        folderId: pulledType === activeType ? selectedFolderId : (existing?.folderId ?? null),
         title: r.outline.title,
         prayer: typeof c.prayer === "string" ? c.prayer : "",
         territory: typeof c.territory === "string" ? c.territory : "",
@@ -334,15 +335,17 @@ function Page() {
         synced_at: now,
       };
       await persistNote(n);
-      setNotes((all) => {
-        const idx = all.findIndex((note) => note.id === n.id || note.cloud_id === n.cloud_id);
-        const next = idx >= 0 ? [...all] : [n, ...all];
-        if (idx >= 0) next[idx] = n;
-        return next.sort((a, b) => b.updated_at - a.updated_at);
-      });
-      setDraft(n);
-      setSelectedNoteId(n.id);
-      setMode("outline");
+      if (pulledType === activeType) {
+        setNotes((all) => {
+          const idx = all.findIndex((note) => note.id === n.id || note.cloud_id === n.cloud_id);
+          const next = idx >= 0 ? [...all] : [n, ...all];
+          if (idx >= 0) next[idx] = n;
+          return next.sort((a, b) => b.updated_at - a.updated_at);
+        });
+        setDraft(n);
+        setSelectedNoteId(n.id);
+        setMode("outline");
+      }
       toast.success(t("personalOutlines.cloud.pulled", { defaultValue: "Esboço importado da nuvem." }));
       setCloudOpen(false);
     } finally {
