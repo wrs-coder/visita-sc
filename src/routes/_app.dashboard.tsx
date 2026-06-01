@@ -221,6 +221,7 @@ function Dashboard() {
     id: string;
     title: string | null;
     content: string | null;
+    payload: Record<string, string> | null;
     updated_at: string;
     congregation_id: string;
   };
