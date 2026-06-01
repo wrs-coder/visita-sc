@@ -58,7 +58,7 @@ function AppLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
 
-  useOutlinesSync();
+  const syncOutlines = useOutlinesSync();
 
 
   const openSupport = () => {
@@ -287,7 +287,7 @@ function AppLayout() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <SyncButton />
+            <SyncButton onSync={syncOutlines} />
             <button
               onClick={() => {
                 signOut().then(() => nav({ to: "/" }));
@@ -320,7 +320,7 @@ function AppLayout() {
           </div>
           <div className="p-3 border-t border-sidebar-border space-y-2">
             <div className="px-1">
-              <SyncButton className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60 px-3 py-2 rounded-md" />
+              <SyncButton onSync={syncOutlines} className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60 px-3 py-2 rounded-md" />
             </div>
             <Button
               variant="ghost"
