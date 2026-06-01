@@ -567,6 +567,7 @@ function Page() {
   }
 
 
+  async function handleCreateFolder(parentId: string | null) {
     if (!activeType) return;
     const name = prompt(t("personalOutlines.folders.namePrompt"));
     if (!name || !name.trim()) return;
