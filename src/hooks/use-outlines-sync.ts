@@ -1,7 +1,8 @@
-// Hook de sincronização cloud↔local para esboços pessoais.
-// - Baixa esboços da nuvem ao logar (overwrite por LWW).
-// - Empurra esboços locais sem cloud_id (migração one-shot).
-// - Reconcilia exclusões: itens com cloud_id que sumiram da nuvem → soft-delete local.
+// Hook de sincronização cloud↔local para esboços pessoais E considerações de campo.
+// Estratégia: a tabela personal_outlines no Supabase guarda ambos os tipos.
+// - Notas: content_json.note_type ∈ {"outline", "field_consideration"} (default "outline" p/ legado).
+// - Pastas: content_json = { kind: "folder", folder_type, local_id } — folder_type idem (default "outline").
+// LWW por updated_at.
 
 import { useCallback, useEffect, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -15,8 +16,10 @@ import {
   newFolderId,
   isFixedFolder,
   FIXED_FOLDER_WEEK_OUTLINES,
+  FIXED_FOLDER_WEEK_CONSIDERATIONS,
   type NoteFolder,
   type FieldNote,
+  type NoteType,
 } from "@/lib/bible-notes-store";
 import {
   listCloudOutlineTree,
@@ -24,13 +27,19 @@ import {
 } from "@/lib/personal-outlines.functions";
 
 const FIXED_OUTLINE_SENTINEL = "__fixed__week-outlines";
-
+const FIXED_FIELD_SENTINEL = "__fixed__week-considerations";
 
 const LAST_SYNC_KEY = "visita-sc:outlines-last-sync";
 const PATH_SEPARATOR = " / ";
 
-function isOutline(n: FieldNote): boolean {
-  return (n.type ?? "field_consideration") === "outline";
+function typeOfNote(n: FieldNote): NoteType {
+  return (n.type ?? "field_consideration") as NoteType;
+}
+
+function typeFromRow(row: { content_json: unknown }, key: "note_type" | "folder_type"): NoteType {
+  const cj = row.content_json as Record<string, unknown> | null | undefined;
+  const v = cj?.[key];
+  return v === "field_consideration" ? "field_consideration" : "outline";
 }
 
 function contentOf(n: FieldNote) {
@@ -52,6 +61,7 @@ function isFolderMarker(row: { content_json: unknown }): boolean {
 function folderPath(folderId: string | null | undefined, folders: NoteFolder[]): string {
   if (!folderId) return "";
   if (folderId === FIXED_FOLDER_WEEK_OUTLINES) return FIXED_OUTLINE_SENTINEL;
+  if (folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS) return FIXED_FIELD_SENTINEL;
   const byId = new Map(folders.map((f) => [f.id, f]));
   const names: string[] = [];
   const seen = new Set<string>();
@@ -68,7 +78,12 @@ function splitPath(path: string): string[] {
   return path.split(PATH_SEPARATOR).map((p) => p.trim()).filter(Boolean);
 }
 
-async function ensureFolderPath(path: string, folders: NoteFolder[], preferredId?: string | null): Promise<string | null> {
+async function ensureFolderPath(
+  path: string,
+  folders: NoteFolder[],
+  type: NoteType,
+  preferredId?: string | null,
+): Promise<string | null> {
   const parts = splitPath(path);
   if (parts.length === 0) return null;
   let parentId: string | null = null;
@@ -76,14 +91,14 @@ async function ensureFolderPath(path: string, folders: NoteFolder[], preferredId
   const mutable = folders;
   for (let i = 0; i < parts.length; i++) {
     const name = parts[i];
-    const existing = mutable.find((f) => f.type === "outline" && (f.parentId ?? null) === parentId && f.name === name);
+    const existing = mutable.find((f) => f.type === type && (f.parentId ?? null) === parentId && f.name === name);
     if (existing) {
       currentId = existing.id;
       parentId = existing.id;
       continue;
     }
     const id = i === parts.length - 1 && preferredId ? preferredId : newFolderId();
-    const folder: NoteFolder = { id, name, parentId, type: "outline", created_at: Date.now(), deleted_at: null };
+    const folder: NoteFolder = { id, name, parentId, type, created_at: Date.now(), deleted_at: null };
     await saveFolder(folder);
     mutable.push(folder);
     currentId = id;
@@ -105,42 +120,53 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
     const cloud = await fnList();
     if (!cloud.ok) return cloud;
 
-    const [localFolders, localAll] = await Promise.all([listFolders("outline"), listAllNotesIncludingTrash()]);
-    const localOutlines = localAll.filter(isOutline);
+    const [localFoldersAll, localAll] = await Promise.all([
+      Promise.all([listFolders("outline"), listFolders("field_consideration")]).then(([a, b]) => [...a, ...b]),
+      listAllNotesIncludingTrash(),
+    ]);
     const cloudFolders = cloud.folders.filter(isFolderMarker);
     const cloudOutlines = cloud.outlines.filter((row) => !isFolderMarker(row));
-    const cloudFolderIdByPath = new Map(cloudFolders.map((row) => [row.folder_path || row.title, row.id]));
+    const cloudFolderIdByKey = new Map(
+      cloudFolders.map((row) => [`${typeFromRow(row, "folder_type")}::${row.folder_path || row.title}`, row.id]),
+    );
 
+    // Mapeia pastas locais -> cloudId existentes por (type, path).
     const foldersByCloudId = new Map<string, NoteFolder>();
-    for (const folder of localFolders) {
-      const match = cloudFolders.find((row) => row.folder_path === folderPath(folder.id, localFolders));
+    for (const folder of localFoldersAll) {
+      const fp = folderPath(folder.id, localFoldersAll);
+      const match = cloudFolders.find(
+        (row) => row.folder_path === fp && typeFromRow(row, "folder_type") === folder.type,
+      );
       if (match) foldersByCloudId.set(match.id, folder);
     }
 
-    const mutableFolders = [...localFolders];
+    const mutableFolders = [...localFoldersAll];
     for (const folderRow of cloudFolders) {
+      const type = typeFromRow(folderRow, "folder_type");
       const deleted = folderRow.deleted_at ? new Date(folderRow.deleted_at).getTime() : null;
       const existing = foldersByCloudId.get(folderRow.id);
       if (existing) {
         await saveFolder({ ...existing, name: folderRow.title, deleted_at: deleted });
         continue;
       }
-      await ensureFolderPath(folderRow.folder_path || folderRow.title, mutableFolders);
+      await ensureFolderPath(folderRow.folder_path || folderRow.title, mutableFolders, type);
     }
 
     const byCloudId = new Map<string, FieldNote>();
-    for (const note of localOutlines) if (note.cloud_id) byCloudId.set(note.cloud_id, note);
+    for (const note of localAll) if (note.cloud_id) byCloudId.set(note.cloud_id, note);
 
     for (const row of cloudOutlines) {
       const cTime = new Date(row.updated_at).getTime();
       const cj = (row.content_json ?? {}) as Record<string, unknown>;
-      const folderId = row.folder_path === FIXED_OUTLINE_SENTINEL
-        ? FIXED_FOLDER_WEEK_OUTLINES
-        : await ensureFolderPath(row.folder_path, mutableFolders);
+      const noteType = typeFromRow(row, "note_type");
+      let folderId: string | null = null;
+      if (row.folder_path === FIXED_OUTLINE_SENTINEL) folderId = FIXED_FOLDER_WEEK_OUTLINES;
+      else if (row.folder_path === FIXED_FIELD_SENTINEL) folderId = FIXED_FOLDER_WEEK_CONSIDERATIONS;
+      else folderId = await ensureFolderPath(row.folder_path, mutableFolders, noteType);
       const existing = byCloudId.get(row.id);
       const deletedAt = row.deleted_at ? new Date(row.deleted_at).getTime() : null;
       const base = {
-        type: "outline" as const,
+        type: noteType,
         folderId,
         title: row.title,
         prayer: typeof cj.prayer === "string" ? cj.prayer : "",
@@ -162,26 +188,31 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
       }
     }
 
-    const latestFolders = await listFolders("outline");
-    const latestOutlines = (await listAllNotesIncludingTrash()).filter(isOutline);
-    // Pastas fixas virtuais NUNCA vão para o Supabase — economiza linhas e evita conflitos.
+    const latestFolders = [
+      ...(await listFolders("outline")),
+      ...(await listFolders("field_consideration")),
+    ];
+    const latestNotes = await listAllNotesIncludingTrash();
+    // Pastas fixas virtuais NUNCA vão para o Supabase.
     const syncableFolders = latestFolders.filter((f) => !isFixedFolder(f.id));
     const pushed = await fnReplace({
       data: {
         folders: syncableFolders.map((folder) => ({
           local_id: folder.id,
-          id: cloudFolderIdByPath.get(folderPath(folder.id, latestFolders) || folder.name || "Pasta") ?? null,
+          id: cloudFolderIdByKey.get(`${folder.type}::${folderPath(folder.id, latestFolders) || folder.name || "Pasta"}`) ?? null,
           title: folder.name || "Pasta",
           folder_path: folderPath(folder.id, latestFolders) || folder.name || "Pasta",
+          folder_type: folder.type,
           deleted_at: folder.deleted_at ? new Date(folder.deleted_at).toISOString() : null,
         })),
-        outlines: latestOutlines
+        outlines: latestNotes
           .filter((note) => (note.title?.trim()?.length ?? 0) > 0 || (note.content?.trim()?.length ?? 0) > 0)
           .map((note) => ({
             local_id: note.id,
             id: note.cloud_id ?? null,
             title: (note.title || "Sem título").slice(0, 200),
             folder_path: folderPath(note.folderId, latestFolders),
+            note_type: typeOfNote(note),
             content: contentOf(note),
             deleted_at: note.deleted_at ? new Date(note.deleted_at).toISOString() : null,
           })),
@@ -194,7 +225,7 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
       const content = (row.content_json ?? {}) as Record<string, unknown>;
       if (typeof content.local_id === "string") remoteByLocalId.set(content.local_id, row.id);
     }
-    for (const note of latestOutlines) {
+    for (const note of latestNotes) {
       const cloudId = remoteByLocalId.get(note.id);
       if (cloudId) await saveNote({ ...note, cloud_id: cloudId, dirty: false, synced_at: Date.now() });
     }
