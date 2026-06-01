@@ -192,6 +192,19 @@ function Page() {
     | null
   >(null);
 
+  // Drag & drop (desktop): arrastar notas/pastas para reorganizar / mover entre pastas
+  const [dragItem, setDragItem] = useState<
+    | { kind: "note"; id: string }
+    | { kind: "folder"; id: string }
+    | null
+  >(null);
+  const [dropHint, setDropHint] = useState<
+    | { kind: "folder"; id: string }
+    | { kind: "root" }
+    | { kind: "note"; id: string; pos: "before" | "after" }
+    | null
+  >(null);
+
   // Multi-seleção
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   // Limpa seleção/clipboard ao trocar de subaba
