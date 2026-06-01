@@ -282,7 +282,7 @@ function Dashboard() {
     (async () => {
       const { data } = await supabase
         .from("private_notes")
-        .select("id, title, updated_at")
+        .select("id, title, content, updated_at, congregation_id")
         .eq("superintendent_id", user.id)
         .eq("congregation_id", selected)
         .eq("note_type", "recomendados")
