@@ -33,7 +33,16 @@ function makeUuid(): string {
   });
 }
 
-export const Route = createFileRoute("/_app/notas")({ component: Page });
+export const Route = createFileRoute("/_app/notas")({
+  validateSearch: (search: Record<string, unknown>): { tab?: NoteType; noteId?: string; congId?: string } => {
+    const allowed: NoteType[] = ["free", "pastoral", "s303", "oradores", "recomendados", "peticoes"];
+    const tab = typeof search.tab === "string" && (allowed as string[]).includes(search.tab) ? (search.tab as NoteType) : undefined;
+    const noteId = typeof search.noteId === "string" ? search.noteId : undefined;
+    const congId = typeof search.congId === "string" ? search.congId : undefined;
+    return { tab, noteId, congId };
+  },
+  component: Page,
+});
 
 type NoteType = "free" | "pastoral" | "s303" | "oradores" | "recomendados" | "peticoes";
 
