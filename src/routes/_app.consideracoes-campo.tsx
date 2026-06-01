@@ -416,7 +416,17 @@ function Page() {
       });
       setDraft(updated);
       setMode("outline");
-      await syncOutlinesIfOnline();
+      const syncResult = await syncOutlinesIfOnline();
+      if (activeType === "outline" && syncResult?.ok) {
+        const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
+        const syncedNotes = ns
+          .filter((n) => (n.type ?? "field_consideration") === activeType)
+          .sort((a, b) => b.updated_at - a.updated_at);
+        setFolders(fs);
+        setNotes(syncedNotes);
+        const syncedDraft = syncedNotes.find((n) => n.id === updated.id);
+        if (syncedDraft) setDraft(syncedDraft);
+      }
       toast.success(t("fieldConsiderations.saved"));
     } catch {
       toast.error(t("common.errorGeneric", { defaultValue: "Erro" }));
@@ -942,6 +952,16 @@ function Page() {
                       >
                         <Upload className="h-4 w-4" />
                       </Button>
+                      {isOutline && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCloudOpen}
+                          title={t("personalOutlines.cloud.downloadButton", { defaultValue: "Baixar da nuvem" })}
+                        >
+                          <CloudDownload className="h-4 w-4" />
+                        </Button>
+                      )}
                       <input
                         ref={fileInputRef}
                         type="file"
