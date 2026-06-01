@@ -43,7 +43,7 @@ import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
 import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.functions";
 
-import { listNotesByType, FIXED_FOLDER_WEEK_CONSIDERATIONS, type FieldNote } from "@/lib/bible-notes-store";
+import { listNotesByType, FIXED_FOLDER_WEEK_CONSIDERATIONS, FIXED_FOLDER_WEEK_OUTLINES, type FieldNote } from "@/lib/bible-notes-store";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
 import { FieldNoteFullscreenDialog } from "@/components/dashboard/FieldNoteFullscreenDialog";
 import {
@@ -222,6 +222,7 @@ function Dashboard() {
     updated_at: string;
   };
   const [outlinesPreview, setOutlinesPreview] = useState<OutlinePreview[]>([]);
+  const [weekOutlinesPreview, setWeekOutlinesPreview] = useState<OutlinePreview[]>([]);
   const [recomendadosPreview, setRecomendadosPreview] = useState<RecomendadoPreview[]>([]);
 
   // Nota aberta em tela cheia no próprio Dashboard (overlay).
@@ -243,11 +244,11 @@ function Dashboard() {
   const loadOutlines = useCallback(async () => {
     if (role !== "superintendent") return;
     try {
-      const local = await listNotesByType(
-        "field_consideration",
-        FIXED_FOLDER_WEEK_CONSIDERATIONS,
-      ).catch(() => [] as FieldNote[]);
-      const items: OutlinePreview[] = local
+      const [localField, localOutline] = await Promise.all([
+        listNotesByType("field_consideration", FIXED_FOLDER_WEEK_CONSIDERATIONS).catch(() => [] as FieldNote[]),
+        listNotesByType("outline", FIXED_FOLDER_WEEK_OUTLINES).catch(() => [] as FieldNote[]),
+      ]);
+      const toPreview = (arr: FieldNote[]): OutlinePreview[] => arr
         .map((n) => ({
           key: `local:${n.id}`,
           id: n.id,
@@ -255,7 +256,8 @@ function Dashboard() {
           updated_at: n.updated_at ?? n.created_at ?? 0,
         }))
         .sort((a, b) => b.updated_at - a.updated_at);
-      setOutlinesPreview(items);
+      setOutlinesPreview(toPreview(localField));
+      setWeekOutlinesPreview(toPreview(localOutline));
     } catch (err) {
       console.warn("[dashboard] outlines load failed", err);
     }
@@ -726,8 +728,9 @@ function Dashboard() {
           title={t("dashboard.studyNotesTitle")}
         >
           <Tabs defaultValue="outlines" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="outlines">{t("dashboard.studyNotesOutlinesTab")}</TabsTrigger>
+              <TabsTrigger value="weekOutlines">{t("dashboard.studyNotesWeekOutlinesTab")}</TabsTrigger>
               <TabsTrigger value="recomendados">{t("dashboard.studyNotesRecomendadosTab")}</TabsTrigger>
             </TabsList>
             <TabsContent value="outlines" className="mt-3">
