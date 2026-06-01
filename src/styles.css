@@ -123,12 +123,19 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html, body { height: 100%; }
+  html, body { height: 100%; max-width: 100%; overflow-x: hidden; }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  /* Guarantee no descendant breaks horizontal containment on mobile */
+  #root, main { max-width: 100%; }
+  /* Long unbreakable strings (URLs, names) should wrap instead of forcing scroll */
+  p, span, h1, h2, h3, h4, h5, h6, li, td, th, label, button, a {
+    overflow-wrap: anywhere;
   }
   h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; }
 }
