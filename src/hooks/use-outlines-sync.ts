@@ -117,7 +117,16 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
   const ran = useRef(false);
 
   const syncNow = useCallback(async () => {
-    if (!user) return { ok: false as const, error: "not-authenticated" };
+    // Fallback: se o React ainda não hidratou `user` (comum em WebView/APK
+    // logo após login), valida diretamente a sessão antes de abortar.
+    if (!user) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data?.session?.user) return { ok: false as const, error: "not-authenticated" };
+      } catch {
+        return { ok: false as const, error: "not-authenticated" };
+      }
+    }
     if (typeof navigator !== "undefined" && navigator.onLine === false) return { ok: false as const, error: "offline" };
 
     const cloud = await fnList();
