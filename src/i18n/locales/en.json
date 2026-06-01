@@ -1345,7 +1345,8 @@
     "cloud": {
       "button": "Cloud",
       "title": "Cloud outlines",
-      "help": "Outlines and folders sync to the cloud and stay cached locally for offline use.",
+      "help": "Outlines and folders sync to the cloud and stay cached locally for offline use. Downloaded outlines go into the selected folder.",
+      "downloadButton": "Download from cloud",
       "count": "Saved: {{n}}",
       "push": "Push current outline",
       "pushed": "Outline pushed to the cloud.",

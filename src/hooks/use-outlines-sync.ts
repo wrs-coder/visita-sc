@@ -157,7 +157,7 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
       };
       if (!existing) {
         await saveNote({ ...base, id: newNoteId(), created_at: new Date(row.created_at).getTime() });
-      } else if (!existing.dirty && cTime > existing.updated_at) {
+      } else if (cTime > existing.updated_at) {
         await saveNote({ ...existing, ...base });
       }
     }

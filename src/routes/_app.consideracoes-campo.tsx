@@ -68,6 +68,7 @@ import {
   exportNoteJSON,
   importJSON,
   FIXED_FOLDER_WEEK_CONSIDERATIONS,
+  FIXED_FOLDER_WEEK_OUTLINES,
   isFixedFolder,
   type FieldNote,
   type NoteFolder,
@@ -197,11 +198,37 @@ function Page() {
   const fnPullCloud = useServerFn(pullOutlineFromCloud);
   const fnDeleteCloud = useServerFn(deleteCloudOutline);
   const syncOutlines = useOutlinesSync({ auto: false });
+  const fixedOutlineCloudPath = "__fixed__week-outlines";
+
+  function folderPathForCloud(folderId: string | null | undefined): string {
+    if (!folderId) return "";
+    if (folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS) return "";
+    if (isFixedFolder(folderId)) return fixedOutlineCloudPath;
+    const byId = new Map(folders.map((f) => [f.id, f]));
+    const names: string[] = [];
+    const seen = new Set<string>();
+    let cur = byId.get(folderId);
+    while (cur && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      names.unshift(cur.name.trim());
+      cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+    }
+    return names.filter(Boolean).join(" / ").slice(0, 500);
+  }
+
+  function displayCloudPath(path: string): string {
+    if (path === fixedOutlineCloudPath) {
+      return t("personalOutlines.folders.weekOutlines", { defaultValue: "Esboços da Semana" });
+    }
+    return path;
+  }
 
   async function syncOutlinesIfOnline() {
-    if (activeType !== "outline") return;
-    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-    await syncOutlines();
+    if (activeType !== "outline") return null;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return null;
+    const result = await syncOutlines();
+    if (!result.ok) console.warn("[personal-outlines] sync skipped", result.error);
+    return result;
   }
 
   async function refreshCloudList() {
@@ -218,18 +245,18 @@ function Page() {
     if (!draft) return;
     setCloudBusy(true);
     try {
-      const folderName = draft.folderId ? (folders.find((f) => f.id === draft.folderId)?.name ?? "") : "";
       const r = await fnPushCloud({
         data: {
           id: draft.cloud_id ?? undefined,
           title: (draft.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })).slice(0, 200),
-          folder_path: folderName,
+          folder_path: folderPathForCloud(draft.folderId),
           content: {
             prayer: draft.prayer ?? null,
             territory: draft.territory ?? null,
             assistants: draft.assistants ?? null,
             description: draft.description ?? null,
             content: draft.content ?? "",
+            sort_order: draft.sort_order ?? null,
           },
         },
       });
@@ -254,9 +281,11 @@ function Page() {
       if (!r.ok) { toast.error(r.error); return; }
       const c = (r.outline.content_json ?? {}) as Record<string, unknown>;
       const now = Date.now();
+      const existing = notes.find((note) => note.cloud_id === r.outline.id);
       const n: FieldNote = {
-        id: newNoteId(),
-        type: activeType ?? "outline",
+        ...(existing ?? {}),
+        id: existing?.id ?? newNoteId(),
+        type: "outline",
         folderId: selectedFolderId,
         title: r.outline.title,
         prayer: typeof c.prayer === "string" ? c.prayer : "",
@@ -264,11 +293,20 @@ function Page() {
         assistants: typeof c.assistants === "string" ? c.assistants : "",
         description: typeof c.description === "string" ? c.description : "",
         content: typeof c.content === "string" ? c.content : "",
-        created_at: now,
+        sort_order: typeof c.sort_order === "number" ? c.sort_order : null,
+        created_at: existing?.created_at ?? now,
         updated_at: now,
+        cloud_id: r.outline.id,
+        dirty: false,
+        synced_at: now,
       };
       await persistNote(n);
-      setNotes((all) => [n, ...all].sort((a, b) => b.updated_at - a.updated_at));
+      setNotes((all) => {
+        const idx = all.findIndex((note) => note.id === n.id || note.cloud_id === n.cloud_id);
+        const next = idx >= 0 ? [...all] : [n, ...all];
+        if (idx >= 0) next[idx] = n;
+        return next.sort((a, b) => b.updated_at - a.updated_at);
+      });
       setDraft(n);
       setSelectedNoteId(n.id);
       setMode("outline");
@@ -386,7 +424,17 @@ function Page() {
       });
       setDraft(updated);
       setMode("outline");
-      await syncOutlinesIfOnline();
+      const syncResult = await syncOutlinesIfOnline();
+      if (activeType === "outline" && syncResult?.ok) {
+        const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
+        const syncedNotes = ns
+          .filter((n) => (n.type ?? "field_consideration") === activeType)
+          .sort((a, b) => b.updated_at - a.updated_at);
+        setFolders(fs);
+        setNotes(syncedNotes);
+        const syncedDraft = syncedNotes.find((n) => n.id === updated.id);
+        if (syncedDraft) setDraft(syncedDraft);
+      }
       toast.success(t("fieldConsiderations.saved"));
     } catch {
       toast.error(t("common.errorGeneric", { defaultValue: "Erro" }));
@@ -912,6 +960,16 @@ function Page() {
                       >
                         <Upload className="h-4 w-4" />
                       </Button>
+                      {isOutline && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCloudOpen}
+                          title={t("personalOutlines.cloud.downloadButton", { defaultValue: "Baixar da nuvem" })}
+                        >
+                          <CloudDownload className="h-4 w-4" />
+                        </Button>
+                      )}
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -1037,34 +1095,36 @@ function Page() {
       )}
 
       <Dialog open={cloudOpen} onOpenChange={setCloudOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{t("personalOutlines.cloud.title", { defaultValue: "Esboços na nuvem" })}</DialogTitle>
+            <DialogTitle className="break-words [overflow-wrap:anywhere]">
+              {t("personalOutlines.cloud.title", { defaultValue: "Esboços na nuvem" })}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              {t("personalOutlines.cloud.help", { defaultValue: "Os esboços e pastas são sincronizados com a nuvem e mantidos em cache local para uso offline." })}
+            <p className="text-xs text-muted-foreground break-words [overflow-wrap:anywhere]">
+              {t("personalOutlines.cloud.help", { defaultValue: "Os esboços e pastas são sincronizados com a nuvem e mantidos em cache local para uso offline. Ao baixar, o esboço entra na pasta selecionada." })}
             </p>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-xs text-muted-foreground">
                 {t("personalOutlines.cloud.count", { defaultValue: "Salvos: {{n}}", n: cloudList.length })}
               </span>
-              <Button size="sm" disabled={!draft || cloudBusy} onClick={handleCloudPush}>
+              <Button size="sm" className="h-auto max-w-full whitespace-normal text-left sm:text-center" disabled={!draft || cloudBusy} onClick={handleCloudPush}>
                 <CloudUpload className="h-4 w-4 mr-1.5" />
                 {t("personalOutlines.cloud.push", { defaultValue: "Enviar esboço atual" })}
               </Button>
             </div>
-            <div className="max-h-80 overflow-y-auto rounded-md border divide-y">
+            <div className="max-h-80 overflow-y-auto overflow-x-hidden rounded-md border divide-y">
               {cloudList.length === 0 ? (
                 <p className="p-4 text-sm text-muted-foreground text-center">
                   {t("personalOutlines.cloud.empty", { defaultValue: "Nenhum esboço na nuvem." })}
                 </p>
               ) : (
                 cloudList.map((o) => (
-                  <div key={o.id} className="flex items-center gap-2 p-2">
+                  <div key={o.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 p-2 max-w-full min-w-0">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{o.title}</p>
-                      {o.folder_path && <p className="text-xs text-muted-foreground truncate">{o.folder_path}</p>}
+                      <p className="text-sm font-medium whitespace-normal break-words [overflow-wrap:anywhere]">{o.title}</p>
+                      {o.folder_path && <p className="text-xs text-muted-foreground whitespace-normal break-words [overflow-wrap:anywhere]">{displayCloudPath(o.folder_path)}</p>}
                     </div>
                     <Button size="sm" variant="outline" disabled={cloudBusy} onClick={() => handleCloudPull(o.id)}>
                       <CloudDownload className="h-4 w-4" />
@@ -1127,6 +1187,7 @@ function NoteEditor({
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
+  const isOutline = type === "outline";
 
   return (
     <div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words pb-24">
@@ -1327,9 +1388,11 @@ function NoteEditor({
         <Button variant="outline" size="sm" onClick={onExport} title={t("personalOutlines.folders.exportNote")}>
           <Download className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.folders.exportNote")}</span>
         </Button>
-        <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
-          <Cloud className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}</span>
-        </Button>
+        {isOutline && (
+          <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
+            <Cloud className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}</span>
+          </Button>
+        )}
         <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive" title={t("fieldConsiderations.delete")}>
           <Trash2 className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.delete")}</span>
         </Button>
@@ -1508,7 +1571,9 @@ function MoveToDialog({
         <div key={f.id}>
           <Row
             label={isFixedFolder(f.id)
-              ? t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" })
+              ? (f.id === FIXED_FOLDER_WEEK_OUTLINES || f.type === "outline"
+                  ? t("personalOutlines.folders.weekOutlines", { defaultValue: "Esboços da Semana" })
+                  : t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" }))
               : f.name}
             depth={depth}
             folderId={f.id}
