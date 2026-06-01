@@ -374,8 +374,17 @@ export function EldersServantsPanel() {
   );
   if (!visit) return <NoVisit />;
   if (loading || !row) return <LoadingCard />;
+  const wd = extras.elders?.weekday;
+  const mt = extras.elders?.meeting_time;
+  const scheduleText = (() => {
+    if (wd == null && !mt) return null;
+    const dayLabel = wd != null ? t(`templates.weekdays.${wd}`) : "—";
+    const timeLabel = mt ? mt.slice(0, 5) : "—";
+    return `${dayLabel} — ${timeLabel}`;
+  })();
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.schedule")} value={scheduleText} />
       <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.elders?.observations} />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <div>
