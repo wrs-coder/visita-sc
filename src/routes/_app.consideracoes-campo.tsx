@@ -536,7 +536,37 @@ function Page() {
     }
   }
 
-  async function handleCreateFolder(parentId: string | null) {
+  async function handlePushManyByIds(ids: string[]) {
+    for (const id of ids) await handlePushNoteById(id);
+  }
+
+  async function handleDeleteMany(ids: string[]) {
+    if (ids.length === 0) return;
+    if (!confirm(t("fieldConsiderations.deleteConfirm"))) return;
+    for (const id of ids) {
+      await removeNote(id);
+    }
+    setNotes((all) => all.filter((n) => !ids.includes(n.id)));
+    if (draft && ids.includes(draft.id)) { setDraft(null); setSelectedNoteId(null); }
+    setSelectedIds(new Set());
+    await syncOutlinesIfOnline();
+    toast.success(t("fieldConsiderations.deleted"));
+  }
+
+  async function handleExportMany(ids: string[]) {
+    for (const id of ids) {
+      const note = notes.find((n) => n.id === id);
+      if (!note) continue;
+      try {
+        const payload = await exportNoteJSON(id);
+        await downloadJSON(`nota-${slugify(note.title)}.json`, payload);
+      } catch (e) {
+        toast.error(String(e instanceof Error ? e.message : e));
+      }
+    }
+  }
+
+
     if (!activeType) return;
     const name = prompt(t("personalOutlines.folders.namePrompt"));
     if (!name || !name.trim()) return;
