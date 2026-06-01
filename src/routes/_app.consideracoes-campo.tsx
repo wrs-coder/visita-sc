@@ -87,6 +87,7 @@ import {
   pullOutlineFromCloud,
   deleteCloudOutline,
 } from "@/lib/personal-outlines.functions";
+import { useOutlinesSync } from "@/hooks/use-outlines-sync";
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
   validateSearch: (search: Record<string, unknown>): {
@@ -194,6 +195,13 @@ function Page() {
   const fnPushCloud = useServerFn(pushOutlineToCloud);
   const fnPullCloud = useServerFn(pullOutlineFromCloud);
   const fnDeleteCloud = useServerFn(deleteCloudOutline);
+  const syncOutlines = useOutlinesSync({ auto: false });
+
+  async function syncOutlinesIfOnline() {
+    if (activeType !== "outline") return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+    await syncOutlines();
+  }
 
   async function refreshCloudList() {
     const r = await fnListCloud();
@@ -212,6 +220,7 @@ function Page() {
       const folderName = draft.folderId ? (folders.find((f) => f.id === draft.folderId)?.name ?? "") : "";
       const r = await fnPushCloud({
         data: {
+          id: draft.cloud_id ?? undefined,
           title: (draft.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })).slice(0, 200),
           folder_path: folderName,
           content: {
@@ -224,6 +233,12 @@ function Page() {
         },
       });
       if (!r.ok) { toast.error(r.error); return; }
+      if (r.id) {
+        const synced = { ...draft, cloud_id: r.id, dirty: false, synced_at: Date.now() };
+        await persistNote(synced);
+        setDraft(synced);
+        setNotes((all) => all.map((n) => (n.id === synced.id ? synced : n)));
+      }
       toast.success(t("personalOutlines.cloud.pushed", { defaultValue: "Esboço enviado para a nuvem." }));
       await refreshCloudList();
     } finally {
@@ -358,6 +373,7 @@ function Page() {
       type: draft.type ?? activeType,
       folderId: draft.folderId ?? null,
       updated_at: Date.now(),
+      dirty: activeType === "outline" ? true : draft.dirty,
     };
     try {
       await persistNote(updated);
@@ -369,6 +385,7 @@ function Page() {
       });
       setDraft(updated);
       setMode("outline");
+      await syncOutlinesIfOnline();
       toast.success(t("fieldConsiderations.saved"));
     } catch {
       toast.error(t("common.errorGeneric", { defaultValue: "Erro" }));
@@ -384,6 +401,7 @@ function Page() {
     setNotes((all) => all.filter((n) => n.id !== draft.id));
     setDraft(null);
     setSelectedNoteId(null);
+    await syncOutlinesIfOnline();
     toast.success(t("fieldConsiderations.deleted"));
   }
 
@@ -401,6 +419,7 @@ function Page() {
     await saveFolder(f);
     setFolders((all) => [...all, f]);
     if (parentId) setExpanded((s) => new Set(s).add(parentId));
+    await syncOutlinesIfOnline();
   }
 
   async function handleRenameFolder(folder: NoteFolder) {
@@ -409,6 +428,7 @@ function Page() {
     const updated = { ...folder, name: name.trim() };
     await saveFolder(updated);
     setFolders((all) => all.map((f) => (f.id === folder.id ? updated : f)));
+    await syncOutlinesIfOnline();
   }
 
   async function handleDeleteFolder(folder: NoteFolder) {
@@ -424,6 +444,7 @@ function Page() {
       setDraft(null);
       setSelectedNoteId(null);
     }
+    await syncOutlinesIfOnline();
   }
 
   // ---------- Mover / Recortar / Colar ----------
@@ -451,12 +472,14 @@ function Page() {
       ...note,
       folderId: targetFolderId,
       updated_at: Date.now(),
+      dirty: activeType === "outline" ? true : note.dirty,
     };
     await persistNote(updated);
     setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
       .sort((a, b) => b.updated_at - a.updated_at));
     if (draft && draft.id === noteId) setDraft(updated);
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
+    await syncOutlinesIfOnline();
     toast.success(t("personalOutlines.folders.noteMoved", { defaultValue: "Nota movida." }));
   }
 
@@ -474,6 +497,7 @@ function Page() {
     await saveFolder(updated);
     setFolders((all) => all.map((f) => (f.id === folderId ? updated : f)));
     if (targetParentId) setExpanded((s) => new Set(s).add(targetParentId));
+    await syncOutlinesIfOnline();
     toast.success(t("personalOutlines.folders.folderMoved", { defaultValue: "Pasta movida." }));
   }
 
@@ -493,7 +517,7 @@ function Page() {
       note.title,
     );
     if (!name || !name.trim()) return;
-    const updated: FieldNote = { ...note, title: name.trim(), updated_at: Date.now() };
+    const updated: FieldNote = { ...note, title: name.trim(), updated_at: Date.now(), dirty: activeType === "outline" ? true : note.dirty };
     await persistNote(updated);
     setNotes((all) =>
       all
@@ -501,6 +525,7 @@ function Page() {
         .sort((a, b) => b.updated_at - a.updated_at),
     );
     if (draft && draft.id === note.id) setDraft(updated);
+    await syncOutlinesIfOnline();
     toast.success(t("personalOutlines.folders.noteRenamed", { defaultValue: "Nota renomeada." }));
   }
 
@@ -519,12 +544,13 @@ function Page() {
       toast.info(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
       return;
     }
-    const updated: FieldNote = { ...note, folderId: targetFolderId, updated_at: Date.now() };
+    const updated: FieldNote = { ...note, folderId: targetFolderId, updated_at: Date.now(), dirty: activeType === "outline" ? true : note.dirty };
     await persistNote(updated);
     setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
       .sort((a, b) => b.updated_at - a.updated_at));
     if (draft && draft.id === noteId) setDraft(updated);
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
+    await syncOutlinesIfOnline();
     toast.success(t("personalOutlines.folders.notePasted", { defaultValue: "Nota colada na pasta." }));
   }
 
@@ -970,11 +996,11 @@ function Page() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              {t("personalOutlines.cloud.help", { defaultValue: "Até 10 esboços podem ser sincronizados com a nuvem. Útil para acessar de outro dispositivo." })}
+              {t("personalOutlines.cloud.help", { defaultValue: "Os esboços e pastas são sincronizados com a nuvem e mantidos em cache local para uso offline." })}
             </p>
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-muted-foreground">
-                {t("personalOutlines.cloud.count", { defaultValue: "Salvos: {{n}}/10", n: cloudList.length })}
+                {t("personalOutlines.cloud.count", { defaultValue: "Salvos: {{n}}", n: cloudList.length })}
               </span>
               <Button size="sm" disabled={!draft || cloudBusy} onClick={handleCloudPush}>
                 <CloudUpload className="h-4 w-4 mr-1.5" />

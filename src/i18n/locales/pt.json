@@ -1344,8 +1344,8 @@
     "cloud": {
       "button": "Nuvem",
       "title": "Esboços na nuvem",
-      "help": "Até 10 esboços podem ser sincronizados com a nuvem. Útil para acessar de outro dispositivo.",
-      "count": "Salvos: {{n}}/10",
+      "help": "Os esboços e pastas são sincronizados com a nuvem e mantidos em cache local para uso offline.",
+      "count": "Salvos: {{n}}",
       "push": "Enviar esboço atual",
       "pushed": "Esboço enviado para a nuvem.",
       "pulled": "Esboço importado da nuvem.",

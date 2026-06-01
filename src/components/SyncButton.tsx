@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 const LAST_SYNC_KEY = "visita-sc:last-sync";
 
-export function SyncButton({ className }: { className?: string }) {
+export function SyncButton({ className, onSync }: { className?: string; onSync?: () => Promise<unknown> | unknown }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const mode = useConnectionMode();
@@ -60,6 +60,7 @@ export function SyncButton({ className }: { className?: string }) {
     setSyncing(true);
     try {
       const res = await flushQueue();
+      await onSync?.();
       // Em modo Online, ao sincronizar também atualizamos o cache local
       // com dados frescos do servidor (em background).
       if (user?.id) {

@@ -593,7 +593,7 @@ async function idbFolderDelete(id: string): Promise<void> {
   });
 }
 
-async function listAllFoldersIncludingTrash(): Promise<NoteFolder[]> {
+export async function listAllFoldersIncludingTrash(): Promise<NoteFolder[]> {
   try {
     if (hasIDB()) return await idbFoldersAll();
   } catch { /* fallthrough */ }

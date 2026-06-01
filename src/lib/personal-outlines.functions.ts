@@ -28,6 +28,28 @@ export type CloudOutlineContent = z.infer<typeof outlineContentSchema>;
 // Limite "soft" para evitar abuso extremo. Não enforçado no banco.
 const SOFT_LIMIT = 500;
 
+const cloudFolderSchema = z.object({
+  local_id: z.string().min(1).max(120),
+  id: z.string().uuid().optional().nullable(),
+  title: z.string().trim().min(1).max(200),
+  folder_path: z.string().trim().max(500).default(""),
+  deleted_at: z.string().datetime().optional().nullable(),
+});
+
+const cloudOutlineSchema = z.object({
+  local_id: z.string().min(1).max(120),
+  id: z.string().uuid().optional().nullable(),
+  title: z.string().trim().min(1).max(200),
+  folder_path: z.string().trim().max(500).default(""),
+  content: outlineContentSchema,
+  deleted_at: z.string().datetime().optional().nullable(),
+});
+
+function isFolderMarker(row: { content_json: unknown }): boolean {
+  const content = row.content_json;
+  return !!content && typeof content === "object" && (content as Record<string, unknown>).kind === "folder";
+}
+
 export const listCloudOutlines = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -39,7 +61,25 @@ export const listCloudOutlines = createServerFn({ method: "POST" })
       .is("deleted_at", null)
       .order("updated_at", { ascending: false });
     if (error) return { ok: false as const, error: error.message };
-    return { ok: true as const, outlines: data ?? [] };
+    return { ok: true as const, outlines: (data ?? []).filter((row) => !isFolderMarker(row)) };
+  });
+
+export const listCloudOutlineTree = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    const { data, error } = await supabaseAdmin
+      .from("personal_outlines")
+      .select("id,title,folder_path,content_json,created_at,updated_at,deleted_at")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false });
+    if (error) return { ok: false as const, error: error.message };
+    const rows = data ?? [];
+    return {
+      ok: true as const,
+      folders: rows.filter(isFolderMarker),
+      outlines: rows.filter((row) => !isFolderMarker(row)),
+    };
   });
 
 export const listTrashedOutlines = createServerFn({ method: "POST" })
@@ -133,6 +173,49 @@ export const bulkPushOutlines = createServerFn({ method: "POST" })
       .select("id,title,folder_path,content_json,created_at,updated_at");
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const, outlines: inserted ?? [] };
+  });
+
+export const replaceCloudOutlineTree = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      folders: z.array(cloudFolderSchema).max(500),
+      outlines: z.array(cloudOutlineSchema).max(SOFT_LIMIT),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const folderRows = data.folders.map((folder) => ({
+      id: folder.id ?? undefined,
+      user_id: userId,
+      title: folder.title,
+      folder_path: folder.folder_path,
+      content_json: { kind: "folder", local_id: folder.local_id },
+      deleted_at: folder.deleted_at ?? null,
+      updated_at: new Date().toISOString(),
+    }));
+    const outlineRows = data.outlines.map((outline) => ({
+      id: outline.id ?? undefined,
+      user_id: userId,
+      title: outline.title,
+      folder_path: outline.folder_path,
+      content_json: { ...outline.content, local_id: outline.local_id },
+      deleted_at: outline.deleted_at ?? null,
+      updated_at: new Date().toISOString(),
+    }));
+    const rows = [...folderRows, ...outlineRows];
+    if (rows.length === 0) return { ok: true as const, folders: [], outlines: [] };
+    const { data: inserted, error } = await supabaseAdmin
+      .from("personal_outlines")
+      .upsert(rows)
+      .select("id,title,folder_path,content_json,created_at,updated_at,deleted_at");
+    if (error) return { ok: false as const, error: error.message };
+    const saved = inserted ?? [];
+    return {
+      ok: true as const,
+      folders: saved.filter(isFolderMarker),
+      outlines: saved.filter((row) => !isFolderMarker(row)),
+    };
   });
 
 export const pullOutlineFromCloud = createServerFn({ method: "POST" })
