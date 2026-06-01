@@ -468,6 +468,9 @@
       "observations": "Informações adicionais do superintendente",
       "openingSong": "Cântico inicial",
       "closingSong": "Cântico final",
+      "finalSong": "Cântico Final",
+      "schedule": "Dia e Horário (definido pelo Superintendente)",
+      "location": "Local",
       "fieldObservations": "Informações adicionais do superintendente",
       "hint": "Informação somente leitura vinda do modelo selecionado."
     },
