@@ -767,10 +767,13 @@
       },
       "elders": {
         "theme": "Tema:",
+        "weekday": "Dia da semana",
+        "time": "Horário",
         "openingPrayer": "Oração Inicial",
         "closingPrayer": "Oração Final",
         "observations": "Observações"
       }
+
     },
     "copySuffix": "(cópia)",
     "templateNumber": "Modelo {{n}}",
