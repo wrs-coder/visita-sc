@@ -219,11 +219,14 @@ function Dashboard() {
   type RecomendadoPreview = {
     id: string;
     title: string | null;
+    content: string | null;
     updated_at: string;
+    congregation_id: string;
   };
   const [outlinesPreview, setOutlinesPreview] = useState<OutlinePreview[]>([]);
   const [weekOutlinesPreview, setWeekOutlinesPreview] = useState<OutlinePreview[]>([]);
   const [recomendadosPreview, setRecomendadosPreview] = useState<RecomendadoPreview[]>([]);
+  const [recomendadoOpen, setRecomendadoOpen] = useState<RecomendadoPreview | null>(null);
 
   // Nota aberta em tela cheia no próprio Dashboard (overlay).
   const [fullscreenNoteId, setFullscreenNoteId] = useState<string | null>(null);
