@@ -1447,9 +1447,20 @@ function Page() {
                         className={cn(
                           "group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
                           selectedFolderId === null ? "bg-primary/10 text-primary" : "hover:bg-muted",
+                          dropHint?.kind === "root" && "ring-2 ring-primary/60 bg-primary/5",
                         )}
                         onClick={() => setSelectedFolderId(null)}
+                        onDragOver={(e) => {
+                          if (!dragItem) return;
+                          allowDrop(e);
+                          setDropHint({ kind: "root" });
+                        }}
+                        onDragLeave={() => {
+                          if (dropHint?.kind === "root") setDropHint(null);
+                        }}
+                        onDrop={onDropOnRoot}
                       >
+
                         <FolderOpen className="h-4 w-4" />
                         <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
                         {clipboardNoteIds.length > 0 && (
