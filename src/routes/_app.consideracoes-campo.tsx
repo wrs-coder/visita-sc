@@ -281,8 +281,10 @@ function Page() {
       if (!r.ok) { toast.error(r.error); return; }
       const c = (r.outline.content_json ?? {}) as Record<string, unknown>;
       const now = Date.now();
+      const existing = notes.find((note) => note.cloud_id === r.outline.id);
       const n: FieldNote = {
-        id: newNoteId(),
+        ...(existing ?? {}),
+        id: existing?.id ?? newNoteId(),
         type: "outline",
         folderId: selectedFolderId,
         title: r.outline.title,
@@ -292,14 +294,19 @@ function Page() {
         description: typeof c.description === "string" ? c.description : "",
         content: typeof c.content === "string" ? c.content : "",
         sort_order: typeof c.sort_order === "number" ? c.sort_order : null,
-        created_at: now,
+        created_at: existing?.created_at ?? now,
         updated_at: now,
         cloud_id: r.outline.id,
         dirty: false,
         synced_at: now,
       };
       await persistNote(n);
-      setNotes((all) => [n, ...all].sort((a, b) => b.updated_at - a.updated_at));
+      setNotes((all) => {
+        const idx = all.findIndex((note) => note.id === n.id || note.cloud_id === n.cloud_id);
+        const next = idx >= 0 ? [...all] : [n, ...all];
+        if (idx >= 0) next[idx] = n;
+        return next.sort((a, b) => b.updated_at - a.updated_at);
+      });
       setDraft(n);
       setSelectedNoteId(n.id);
       setMode("outline");
