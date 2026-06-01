@@ -368,7 +368,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
         return null;
       };
       const meetingAt = resolveDate(pioneer.data?.weekday ?? null, pioneer.data?.meeting_time ?? null);
-      const superMeetingAt = resolveDate(pioneer.data?.super_meeting_weekday ?? null, pioneer.data?.super_meeting_time ?? null) ?? meetingAt;
+      const superMeetingAt = meetingAt;
       const { data: existing } = await supabaseAdmin
         .from("pioneer_meetings").select("id").eq("visit_id", data.visitId).maybeSingle();
       const payload = {
