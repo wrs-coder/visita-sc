@@ -1346,7 +1346,8 @@
     "cloud": {
       "button": "Nuvem",
       "title": "Esboços na nuvem",
-      "help": "Os esboços e pastas são sincronizados com a nuvem e mantidos em cache local para uso offline.",
+      "help": "Os esboços e pastas são sincronizados com a nuvem e mantidos em cache local para uso offline. Ao baixar, o esboço entra na pasta selecionada.",
+      "downloadButton": "Baixar da nuvem",
       "count": "Salvos: {{n}}",
       "push": "Enviar esboço atual",
       "pushed": "Esboço enviado para a nuvem.",
