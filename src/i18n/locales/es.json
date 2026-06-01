@@ -742,10 +742,13 @@
       },
       "elders": {
         "theme": "Tema:",
+        "weekday": "Día de la semana",
+        "time": "Horario",
         "openingPrayer": "Oración Inicial",
         "closingPrayer": "Oración Final",
         "observations": "Observaciones"
       }
+
     },
     "copySuffix": "(copia)",
     "templateNumber": "Plantilla {{n}}",
