@@ -155,6 +155,7 @@ function Dashboard() {
   const [transports, setTransports] = useState<Transport[]>([]);
   const [assignments, setAssignments] = useState<FieldAssignment[]>([]);
   const [fieldMeetings, setFieldMeetings] = useState<FieldMeetingToday[]>([]);
+  const [meetingsToday, setMeetingsToday] = useState<MeetingTodayItem[]>([]);
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [pendingCount, setPendingCount] = useState(0);
   useEffect(() => subscribeQueue(setPendingCount), []);
