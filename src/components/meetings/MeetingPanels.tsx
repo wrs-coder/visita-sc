@@ -208,7 +208,7 @@ function DayTimePicker({
 
 
 export function WeekendPanel() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { visit } = useActiveVisit();
   const { canEdit, role } = useAuth();
   const isSuper = role === "superintendent";
