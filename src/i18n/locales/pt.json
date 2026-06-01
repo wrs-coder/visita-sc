@@ -1444,7 +1444,16 @@
         "delTable": "Excluir tabela",
         "color": "Cor do texto",
         "highlight": "Marca-texto",
-        "reset": "Remover formatação"
+        "reset": "Remover formatação",
+        "subscript": "Subscrito",
+        "superscript": "Sobrescrito",
+        "fontFamily": "Fonte",
+        "blockquote": "Citação",
+        "code": "Código embutido",
+        "codeBlock": "Bloco de código",
+        "hr": "Linha divisória",
+        "indent": "Aumentar recuo",
+        "outdent": "Diminuir recuo"
       }
     }
   },
