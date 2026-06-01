@@ -51,7 +51,7 @@ export interface VisitSnapshot {
   mealDayNotes: Array<{ meal_date: string; notes: string }>;
   field: Array<{ id: string; event_date: string; period: string; meeting_point: string | null; meeting_time: string | null; acompanhante: string | null; acompanhante_for: string | null; contact_phone: string | null }>;
   fieldMeetings: Array<{ id: string; event_date: string; period: string; modality: string; meeting_time: string | null; territory_number: string | null; territory_location: string | null; auxiliary_leaders: string | null; closing_prayer: string | null }>;
-  transport: Array<{ id: string; event_date: string | null; driver_name: string; contact_phone: string | null; description: string | null; notes: string | null }>;
+  transport: Array<{ id: string; event_date: string | null; driver_name: string; contact_phone: string | null; description: string | null; notes: string | null; weekday?: number | null; event_type?: string | null; direction?: string | null; all_day?: boolean | null; departure_time?: string | null; return_time?: string | null }>;
   checklist: Array<{ id: string; title: string; description: string | null; status: string; link_or_notes: string | null; info_text: string | null }>;
   midweek: Array<{ id: string; chairman: string | null; service_talk_theme: string | null; closing_prayer: string | null }>;
   weekend: Array<{ id: string; meeting_at: string | null; public_talk_theme: string | null; talk_theme_title: string | null }>;
@@ -61,8 +61,22 @@ export interface VisitSnapshot {
 
 type SectionKey = "cron" | "estudos" | "campo" | "ref" | "trans" | "check";
 
-function fmtTime(t: string | null) {
+function fmtTime(t: string | null | undefined) {
   return t ? t.slice(0, 5) : "—";
+}
+
+type TransportRow = VisitSnapshot["transport"][number];
+
+/** Agrupa transportes por `event_date` (mesmo padrão da aba Transporte). */
+function groupTransport(rows: TransportRow[]): Array<{ key: string; rows: TransportRow[] }> {
+  const map = new Map<string, TransportRow[]>();
+  for (const it of rows) {
+    const key = it.event_date ?? `__none__:${it.id}`;
+    const arr = map.get(key) ?? [];
+    arr.push(it);
+    map.set(key, arr);
+  }
+  return Array.from(map.entries()).map(([key, rs]) => ({ key, rows: rs }));
 }
 
 export function VisitSummaryView({
@@ -562,35 +576,73 @@ export function VisitSummaryView({
               {snap.transport.length === 0 ? (
                 <Empty text={t("guest.empty.transport")} />
               ) : (
-                snap.transport.map((tp) => (
-                  <Card key={tp.id}>
-                    <CardContent className="p-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium text-sm">
-                          {tp.event_date ? fmtDate(tp.event_date) : t("guest.labels.noDate")}
+                groupTransport(snap.transport).map((g) => {
+                  const head = g.rows[0];
+                  return (
+                    <Card key={g.key}>
+                      <CardContent className="p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Car className="h-4 w-4 text-primary" />
+                          <div className="font-medium text-sm">
+                            {head.event_date ? fmtDate(head.event_date) : t("guest.labels.noDate")}
+                          </div>
+                          {head.all_day && (
+                            <span className="ml-auto text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
+                              {t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}
+                            </span>
+                          )}
                         </div>
-                      </div>
-                      <div className="text-xs">
-                        <span className="text-muted-foreground">{t("guest.labels.driver")}: </span>
-                        {tp.driver_name}
-                      </div>
-                      {tp.contact_phone && (
-                        <div className="text-xs flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {tp.contact_phone}
+                        <div className="space-y-2">
+                          {g.rows.map((r, idx) => {
+                            const showDriver = !head.all_day || idx === 0;
+                            const typeLbl = r.event_type ? t(`transport.eventType.${r.event_type}`, { defaultValue: r.event_type }) : null;
+                            const dirLbl = r.direction ? t(`transport.direction.${r.direction}`, { defaultValue: r.direction }) : null;
+                            return (
+                              <div key={r.id} className="rounded-md border bg-muted/20 p-2 space-y-1">
+                                {(typeLbl || dirLbl) && (
+                                  <div className="text-xs font-medium">
+                                    {typeLbl ?? t("transport.noDay")}
+                                    {dirLbl ? ` · ${dirLbl}` : ""}
+                                  </div>
+                                )}
+                                {(r.departure_time || r.return_time) && (
+                                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {fmtTime(r.departure_time)}
+                                    {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
+                                  </div>
+                                )}
+                                {showDriver && (
+                                  <>
+                                    <div className="text-xs">
+                                      <span className="text-muted-foreground">{t("guest.labels.driver")}: </span>
+                                      {r.driver_name}
+                                    </div>
+                                    {r.contact_phone && (
+                                      <div className="text-xs flex items-center gap-1">
+                                        <Phone className="h-3 w-3" />
+                                        {r.contact_phone}
+                                      </div>
+                                    )}
+                                    {r.description && (
+                                      <div className="text-xs text-muted-foreground">{r.description}</div>
+                                    )}
+                                    {r.notes && (
+                                      <div className="text-xs text-muted-foreground">{r.notes}</div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                      )}
-                      {tp.description && (
-                        <div className="text-xs text-muted-foreground">{tp.description}</div>
-                      )}
-                      {tp.notes && (
-                        <div className="text-xs text-muted-foreground">{tp.notes}</div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))
+                      </CardContent>
+                    </Card>
+                  );
+                })
               )}
             </TabsContent>
+
 
             {!snap.wifeMode && (
               <TabsContent value="check" className="space-y-2 mt-4">
@@ -741,21 +793,55 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
           {todayTransport.length === 0 ? (
             <div className="text-xs text-muted-foreground">{t("guest.today.noTransport")}</div>
           ) : (
-            todayTransport.map((tp) => (
-              <div key={tp.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
-                <div className="font-medium">{tp.driver_name}</div>
-                {tp.contact_phone && (
-                  <div className="text-xs flex items-center gap-1">
-                    <Phone className="h-3 w-3" />
-                    {tp.contact_phone}
-                  </div>
-                )}
-                {tp.description && (
-                  <div className="text-xs text-muted-foreground">{tp.description}</div>
-                )}
-                {tp.notes && <div className="text-xs text-muted-foreground">{tp.notes}</div>}
-              </div>
-            ))
+            groupTransport(todayTransport).map((g) => {
+              const head = g.rows[0];
+              return (
+                <div key={g.key} className="text-sm border-l-2 border-primary/30 pl-2 py-1 space-y-2">
+                  {head.all_day && (
+                    <div className="text-[10px] uppercase tracking-wide inline-block rounded px-1.5 py-0.5 bg-primary/15 text-primary">
+                      {t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}
+                    </div>
+                  )}
+                  {g.rows.map((r, idx) => {
+                    const showDriver = !head.all_day || idx === 0;
+                    const typeLbl = r.event_type ? t(`transport.eventType.${r.event_type}`, { defaultValue: r.event_type }) : null;
+                    const dirLbl = r.direction ? t(`transport.direction.${r.direction}`, { defaultValue: r.direction }) : null;
+                    return (
+                      <div key={r.id} className="space-y-0.5">
+                        {(typeLbl || dirLbl) && (
+                          <div className="text-xs font-medium">
+                            {typeLbl ?? t("transport.noDay")}
+                            {dirLbl ? ` · ${dirLbl}` : ""}
+                          </div>
+                        )}
+                        {(r.departure_time || r.return_time) && (
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {fmtTime(r.departure_time)}
+                            {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
+                          </div>
+                        )}
+                        {showDriver && (
+                          <>
+                            <div className="font-medium">{r.driver_name}</div>
+                            {r.contact_phone && (
+                              <div className="text-xs flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {r.contact_phone}
+                              </div>
+                            )}
+                            {r.description && (
+                              <div className="text-xs text-muted-foreground">{r.description}</div>
+                            )}
+                            {r.notes && <div className="text-xs text-muted-foreground">{r.notes}</div>}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })
           )}
         </CardContent>
       </Card>

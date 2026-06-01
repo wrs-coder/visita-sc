@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import {
   listFolders,
   listAllNotesIncludingTrash,
@@ -50,6 +51,8 @@ function contentOf(n: FieldNote) {
     description: n.description ?? null,
     content: n.content ?? "",
     sort_order: n.sort_order ?? null,
+    event_date: n.event_date ?? null,
+    period: n.period ?? null,
   };
 }
 
@@ -114,7 +117,16 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
   const ran = useRef(false);
 
   const syncNow = useCallback(async () => {
-    if (!user) return { ok: false as const, error: "not-authenticated" };
+    // Fallback: se o React ainda não hidratou `user` (comum em WebView/APK
+    // logo após login), valida diretamente a sessão antes de abortar.
+    if (!user) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data?.session?.user) return { ok: false as const, error: "not-authenticated" };
+      } catch {
+        return { ok: false as const, error: "not-authenticated" };
+      }
+    }
     if (typeof navigator !== "undefined" && navigator.onLine === false) return { ok: false as const, error: "offline" };
 
     const cloud = await fnList();
@@ -175,6 +187,8 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
         description: typeof cj.description === "string" ? cj.description : "",
         content: typeof cj.content === "string" ? cj.content : "",
         sort_order: typeof cj.sort_order === "number" ? cj.sort_order : null,
+        event_date: typeof cj.event_date === "string" ? cj.event_date : undefined,
+        period: typeof cj.period === "string" ? cj.period : undefined,
         updated_at: cTime,
         cloud_id: row.id,
         synced_at: Date.now(),
@@ -235,10 +249,44 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
   }, [user, fnList, fnReplace]);
 
   useEffect(() => {
-    if (!auto || !user || ran.current) return;
-    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-    ran.current = true;
-    syncNow().catch((err) => console.warn("[useOutlinesSync] sync failed", err));
+    if (!auto) return;
+    const tryRun = (reason: string) => {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+      syncNow().catch((err) => console.warn(`[useOutlinesSync] sync failed (${reason})`, err));
+    };
+    // Disparo inicial quando o user ficar disponível.
+    if (user && !ran.current) {
+      ran.current = true;
+      tryRun("mount");
+    }
+    // Re-sync ao voltar a ficar online, ao retomar (Capacitor) e ao
+    // voltar a aba ficar visível. Cobre o caso APK em que a sessão
+    // demora a ser restaurada depois do login.
+    const onOnline = () => tryRun("online");
+    const onVisible = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") tryRun("visible");
+    };
+    const onResume = () => tryRun("resume");
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", onOnline);
+      document.addEventListener("visibilitychange", onVisible);
+      document.addEventListener("resume", onResume);
+    }
+    // Re-sync após SIGNED_IN.
+    const { data: authSub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        ran.current = true;
+        tryRun(event);
+      }
+    });
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("online", onOnline);
+        document.removeEventListener("visibilitychange", onVisible);
+        document.removeEventListener("resume", onResume);
+      }
+      authSub.subscription.unsubscribe();
+    };
   }, [auto, user, syncNow]);
 
   return syncNow;

@@ -296,6 +296,8 @@ function Page() {
             description: draft.description ?? null,
             content: draft.content ?? "",
             sort_order: draft.sort_order ?? null,
+            event_date: draft.event_date ?? null,
+            period: draft.period ?? null,
           },
         },
       });
@@ -334,6 +336,8 @@ function Page() {
         description: typeof c.description === "string" ? c.description : "",
         content: typeof c.content === "string" ? c.content : "",
         sort_order: typeof c.sort_order === "number" ? c.sort_order : null,
+        event_date: typeof c.event_date === "string" ? c.event_date : undefined,
+        period: typeof c.period === "string" ? c.period : undefined,
         created_at: existing?.created_at ?? now,
         updated_at: now,
         cloud_id: r.outline.id,
@@ -421,6 +425,22 @@ function Page() {
       }
     })();
   }, [activeType, search.noteId, search.mode, navigate]);
+
+  // Recarrega pastas/notas quando o sync global termina (cobre APK pós-login,
+  // resume e online novamente — disparado por useOutlinesSync).
+  useEffect(() => {
+    if (!activeType) return;
+    const handler = async () => {
+      const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
+      setFolders(fs);
+      setNotes(
+        ns.filter((n) => (n.type ?? "field_consideration") === activeType)
+          .sort((a, b) => b.updated_at - a.updated_at),
+      );
+    };
+    window.addEventListener("visita-sc:outlines-synced", handler);
+    return () => window.removeEventListener("visita-sc:outlines-synced", handler);
+  }, [activeType]);
 
   const detected: CitationMatch[] = useMemo(
     () => (draft && activeBible ? findCitations(activeBible.books, stripHtmlForDetection(draft.content)) : []),
@@ -526,6 +546,8 @@ function Page() {
             description: note.description ?? null,
             content: note.content ?? "",
             sort_order: note.sort_order ?? null,
+            event_date: note.event_date ?? null,
+            period: note.period ?? null,
           },
         },
       });
@@ -682,10 +704,47 @@ function Page() {
     if (moveTarget.kind === "note") {
       await moveNoteTo(moveTarget.id, targetFolderId, targetType);
     } else if (moveTarget.kind === "notes") {
-      for (const id of moveTarget.ids) {
-        await moveNoteTo(id, targetFolderId, targetType);
+      // Batch atómico: persiste todas, atualiza estado uma única vez e sincroniza no fim.
+      const ids = moveTarget.ids;
+      const now = Date.now();
+      const updates: FieldNote[] = [];
+      for (const id of ids) {
+        const note = notes.find((n) => n.id === id);
+        if (!note) continue;
+        const sameType = !targetType || targetType === (note.type ?? "field_consideration");
+        if (sameType && (note.folderId ?? null) === targetFolderId) continue;
+        const updated: FieldNote = {
+          ...note,
+          type: targetType ?? note.type,
+          folderId: targetFolderId,
+          updated_at: now,
+          dirty: true,
+        };
+        await persistNote(updated);
+        updates.push(updated);
       }
+      const movedIds = new Set(updates.map((u) => u.id));
+      const crossType = !!targetType && targetType !== activeType;
+      setNotes((all) => {
+        if (crossType) return all.filter((n) => !movedIds.has(n.id));
+        const map = new Map(updates.map((u) => [u.id, u]));
+        return all
+          .map((n) => map.get(n.id) ?? n)
+          .sort((a, b) => b.updated_at - a.updated_at);
+      });
+      if (draft && movedIds.has(draft.id)) {
+        if (crossType) { setDraft(null); setSelectedNoteId(null); }
+        else {
+          const upd = updates.find((u) => u.id === draft.id);
+          if (upd) setDraft(upd);
+        }
+      }
+      if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
       setSelectedIds(new Set());
+      await syncOutlinesIfOnline();
+      if (updates.length > 0) {
+        toast.success(t("personalOutlines.folders.noteMoved", { defaultValue: "Nota movida." }) + ` (${updates.length})`);
+      }
     } else {
       await moveFolderTo(moveTarget.id, targetFolderId);
     }
@@ -986,7 +1045,7 @@ function Page() {
         </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded hover:bg-background">
+            <button className="opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 p-1 rounded hover:bg-background">
               <MoreVertical className="h-3.5 w-3.5" />
             </button>
           </DropdownMenuTrigger>
