@@ -336,6 +336,8 @@ function Page() {
         description: typeof c.description === "string" ? c.description : "",
         content: typeof c.content === "string" ? c.content : "",
         sort_order: typeof c.sort_order === "number" ? c.sort_order : null,
+        event_date: typeof c.event_date === "string" ? c.event_date : undefined,
+        period: typeof c.period === "string" ? c.period : undefined,
         created_at: existing?.created_at ?? now,
         updated_at: now,
         cloud_id: r.outline.id,
@@ -528,6 +530,8 @@ function Page() {
             description: note.description ?? null,
             content: note.content ?? "",
             sort_order: note.sort_order ?? null,
+            event_date: note.event_date ?? null,
+            period: note.period ?? null,
           },
         },
       });
