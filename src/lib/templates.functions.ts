@@ -134,11 +134,14 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
 
     // Pre-carrega datas já preenchidas em cada tabela para merge NÃO-DESTRUTIVO.
     const [exField, exMeals, exTransp] = await Promise.all([
-      supabaseAdmin.from("field_assignments").select("event_date").eq("visit_id", data.visitId),
+      supabaseAdmin.from("field_assignments").select("event_date,period").eq("visit_id", data.visitId),
       supabaseAdmin.from("meals").select("meal_date").eq("visit_id", data.visitId),
       supabaseAdmin.from("transport_schedule").select("event_date").eq("visit_id", data.visitId),
     ]);
-    const fieldDates = new Set((exField.data ?? []).map((r) => r.event_date as string));
+    const fieldKey = (date: string, period: string | null | undefined) => `${date}|${period ?? "Manhã"}`;
+    const fieldDates = new Set(
+      (exField.data ?? []).map((r) => fieldKey(r.event_date as string, (r as { period?: string | null }).period ?? null)),
+    );
     const mealDates = new Set((exMeals.data ?? []).map((r) => r.meal_date as string));
     const transpDates = new Set((exTransp.data ?? []).map((r) => r.event_date as string | null).filter(Boolean) as string[]);
 
