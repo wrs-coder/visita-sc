@@ -33,21 +33,21 @@ export function CollapsibleCard({
   return (
     <Card className={cn("shadow-card", className)}>
       <CardContent className="p-5">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-start justify-between gap-2 min-w-0">
           <button
             type="button"
             onClick={toggle}
             aria-expanded={!collapsed}
             aria-controls={contentId}
             aria-label={t("dashboard.collapseExpand", { defaultValue: "Expandir/recolher cartão" })}
-            className="flex items-center gap-2 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+            className="flex items-start gap-2 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
           >
             {icon}
-            <h3 className="font-semibold truncate">{title}</h3>
+            <h3 className="font-semibold leading-snug whitespace-normal break-words [overflow-wrap:anywhere] min-w-0">{title}</h3>
             {collapsed ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
             ) : (
-              <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+              <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
             )}
           </button>
           {headerRight && !collapsed && (
