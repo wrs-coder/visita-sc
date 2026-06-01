@@ -1188,26 +1188,37 @@ function Page() {
     const selected = selectedNoteId === note.id;
     const isClipped = clipboardNoteIds.includes(note.id);
     const isChecked = selectedIds.has(note.id);
-    const hint = dropHint?.kind === "note" && dropHint.id === note.id ? dropHint.pos : null;
+    const hint = dropHint?.kind === "note" && dropHint.id === note.id ? "before" : null;
+    const draggable = useDraggable({ id: `note:${note.id}` });
+    const droppable = useDroppable({ id: `note:${note.id}` });
+    const setRefs = (el: HTMLElement | null) => {
+      draggable.setNodeRef(el);
+      droppable.setNodeRef(el);
+    };
+    const multiBadge =
+      draggable.isDragging && selectedIds.has(note.id) && selectedIds.size > 1
+        ? selectedIds.size
+        : null;
     return (
       <div
+        ref={setRefs}
+        {...draggable.attributes}
+        {...draggable.listeners}
         className={cn(
-          "group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm",
+          "group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm touch-none select-none",
           selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
           isClipped && "opacity-60 italic",
           hint === "before" && "border-t-2 border-primary",
-          hint === "after" && "border-b-2 border-primary",
+          draggable.isDragging && "opacity-40",
         )}
         style={{ paddingLeft: 6 + depth * 12 + 16 }}
-        draggable
-        onDragStart={(e) => onDragStartNote(e, note.id)}
-        onDragEnd={onDragEnd}
-        onDragOver={(e) => onDragOverNote(e, note.id)}
-        onDragLeave={() => {
-          if (dropHint?.kind === "note" && dropHint.id === note.id) setDropHint(null);
-        }}
-        onDrop={(e) => onDropOnNote(e, note.id)}
       >
+        {multiBadge !== null && (
+          <span className="text-[10px] rounded bg-primary text-primary-foreground px-1">
+            {multiBadge}
+          </span>
+        )}
+
 
         <Checkbox
           checked={isChecked}
