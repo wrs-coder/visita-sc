@@ -108,11 +108,13 @@ export const pushOutlineToCloud = createServerFn({ method: "POST" })
       id: z.string().uuid().optional(),
       title: z.string().trim().min(1).max(200),
       folder_path: z.string().trim().max(500).default(""),
+      note_type: noteTypeSchema.optional(),
       content: outlineContentSchema,
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const contentWithType = { ...data.content, note_type: data.note_type ?? "outline" };
     if (data.id) {
       const { data: own } = await supabaseAdmin
         .from("personal_outlines")
@@ -123,7 +125,7 @@ export const pushOutlineToCloud = createServerFn({ method: "POST" })
         .update({
           title: data.title,
           folder_path: data.folder_path,
-          content_json: data.content,
+          content_json: contentWithType,
           deleted_at: null,
           updated_at: new Date().toISOString(),
         })
@@ -146,12 +148,13 @@ export const pushOutlineToCloud = createServerFn({ method: "POST" })
         user_id: userId,
         title: data.title,
         folder_path: data.folder_path,
-        content_json: data.content,
+        content_json: contentWithType,
       })
       .select("id").single();
     if (error || !row) return { ok: false as const, error: error?.message ?? "Falha ao salvar." };
     return { ok: true as const, id: row.id };
   });
+
 
 export const bulkPushOutlines = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
