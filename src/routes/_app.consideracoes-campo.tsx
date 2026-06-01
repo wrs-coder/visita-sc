@@ -1618,23 +1618,30 @@ function MoveToDialog({
   onClose,
   onConfirm,
   getDescendantFolderIds,
+  allFolders,
+  activeType,
 }: {
   folders: NoteFolder[];
   notes: FieldNote[];
-  target: { kind: "note"; id: string } | { kind: "folder"; id: string };
+  target: { kind: "note"; id: string } | { kind: "notes"; ids: string[] } | { kind: "folder"; id: string };
   onClose: () => void;
-  onConfirm: (targetFolderId: string | null) => Promise<void> | void;
+  onConfirm: (targetFolderId: string | null, targetType?: NoteType) => Promise<void> | void;
   getDescendantFolderIds: (rootId: string) => Set<string>;
+  allFolders?: NoteFolder[];
+  activeType?: NoteType | null;
 }) {
   const { t } = useTranslation();
+  const isNoteMove = target.kind === "note" || target.kind === "notes";
+  const treeFolders = isNoteMove && allFolders ? allFolders : folders;
 
-  // Pasta atual do item (origem) — para mostrar "aqui".
+  // Pasta atual do item (origem) — para mostrar "aqui" (só faz sentido p/ kind=note).
   const currentParentId: string | null =
     target.kind === "note"
       ? (notes.find((n) => n.id === target.id)?.folderId ?? null)
-      : (folders.find((f) => f.id === target.id)?.parentId ?? null);
+      : target.kind === "folder"
+        ? (folders.find((f) => f.id === target.id)?.parentId ?? null)
+        : null;
 
-  // Pastas inválidas como destino: a si mesma e descendentes (apenas para folder).
   const forbidden: Set<string> = target.kind === "folder"
     ? getDescendantFolderIds(target.id)
     : new Set();
@@ -1644,20 +1651,22 @@ function MoveToDialog({
     depth,
     folderId,
     icon,
+    targetType,
   }: {
     label: string;
     depth: number;
     folderId: string | null;
     icon: React.ReactNode;
+    targetType?: NoteType;
   }) {
-    const isCurrent = (folderId ?? null) === (currentParentId ?? null);
+    const isCurrent = (folderId ?? null) === (currentParentId ?? null) && (!targetType || targetType === activeType);
     const isForbidden = folderId !== null && forbidden.has(folderId);
     const disabled = isCurrent || isForbidden;
     return (
       <button
         type="button"
         disabled={disabled}
-        onClick={() => onConfirm(folderId)}
+        onClick={() => onConfirm(folderId, targetType)}
         className={cn(
           "w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm",
           disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-muted",
@@ -1675,9 +1684,9 @@ function MoveToDialog({
     );
   }
 
-  function renderTree(parentId: string | null, depth: number): React.ReactNode {
-    return folders
-      .filter((f) => (f.parentId ?? null) === parentId)
+  function renderTree(parentId: string | null, depth: number, type?: NoteType): React.ReactNode {
+    return treeFolders
+      .filter((f) => (f.parentId ?? null) === parentId && (!type || f.type === type))
       .map((f) => (
         <div key={f.id}>
           <Row
@@ -1689,8 +1698,9 @@ function MoveToDialog({
             depth={depth}
             folderId={f.id}
             icon={<Folder className={cn("h-4 w-4", isFixedFolder(f.id) ? "text-primary" : "text-muted-foreground")} />}
+            targetType={type ?? f.type}
           />
-          {renderTree(f.id, depth + 1)}
+          {renderTree(f.id, depth + 1, type)}
         </div>
       ));
   }
@@ -1704,13 +1714,42 @@ function MoveToDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto -mx-2 px-2 space-y-0.5">
-          <Row
-            label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
-            depth={0}
-            folderId={null}
-            icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
-          />
-          {renderTree(null, 0)}
+          {isNoteMove && allFolders ? (
+            <>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-2 pt-1">
+                {t("personalOutlines.typePicker.outline", { defaultValue: "Esboços" })}
+              </div>
+              <Row
+                label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
+                depth={0}
+                folderId={null}
+                icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
+                targetType="outline"
+              />
+              {renderTree(null, 0, "outline")}
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-2 pt-3">
+                {t("personalOutlines.typePicker.field", { defaultValue: "Consideração de Campo" })}
+              </div>
+              <Row
+                label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
+                depth={0}
+                folderId={null}
+                icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
+                targetType="field_consideration"
+              />
+              {renderTree(null, 0, "field_consideration")}
+            </>
+          ) : (
+            <>
+              <Row
+                label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
+                depth={0}
+                folderId={null}
+                icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
+              />
+              {renderTree(null, 0)}
+            </>
+          )}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
@@ -1721,4 +1760,5 @@ function MoveToDialog({
     </Dialog>
   );
 }
+
 
