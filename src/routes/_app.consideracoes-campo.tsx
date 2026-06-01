@@ -786,7 +786,7 @@ function Page() {
       ...n,
       sort_order: i,
       // Não bumpa updated_at (evita "subir" a nota em listas globais), mas marca dirty.
-      dirty: activeType === "outline" ? true : n.dirty,
+      dirty: true,
     }));
     for (const u of updates) await persistNote(u);
     setNotes((all) => {
