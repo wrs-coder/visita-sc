@@ -1131,6 +1131,36 @@ function Dashboard() {
         onOpenChange={(open) => { if (!open) setFullscreenNoteId(null); }}
         onSaved={() => { void loadOutlines(); }}
       />
+
+      <Dialog open={!!recomendadoOpen} onOpenChange={(o) => { if (!o) setRecomendadoOpen(null); }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+          <DialogHeader>
+            <DialogTitle className="whitespace-normal break-words [overflow-wrap:anywhere]">
+              {recomendadoOpen?.title || "(sem título)"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-foreground/90">
+            {recomendadoOpen?.content || <span className="text-muted-foreground">—</span>}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-row">
+            <Button variant="ghost" onClick={() => setRecomendadoOpen(null)}>
+              {t("common.close", { defaultValue: "Fechar" })}
+            </Button>
+            {recomendadoOpen && (
+              <Button asChild>
+                <Link
+                  to="/notas"
+                  search={{ tab: "recomendados", noteId: recomendadoOpen.id, congId: recomendadoOpen.congregation_id }}
+                  onClick={() => setRecomendadoOpen(null)}
+                >
+                  <PencilLine className="h-4 w-4 mr-2" />
+                  {t("common.edit", { defaultValue: "Editar" })}
+                </Link>
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
