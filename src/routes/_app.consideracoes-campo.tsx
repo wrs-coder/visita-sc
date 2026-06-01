@@ -192,6 +192,19 @@ function Page() {
     | null
   >(null);
 
+  // Drag & drop (desktop): arrastar notas/pastas para reorganizar / mover entre pastas
+  const [dragItem, setDragItem] = useState<
+    | { kind: "note"; id: string }
+    | { kind: "folder"; id: string }
+    | null
+  >(null);
+  const [dropHint, setDropHint] = useState<
+    | { kind: "folder"; id: string }
+    | { kind: "root" }
+    | { kind: "note"; id: string; pos: "before" | "after" }
+    | null
+  >(null);
+
   // Multi-seleção
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   // Limpa seleção/clipboard ao trocar de subaba
@@ -898,6 +911,136 @@ function Page() {
     void now;
   }
 
+  // Move uma nota para `targetFolderId`, inserindo-a antes de `beforeNoteId`
+  // (ou no fim se `beforeNoteId` for null). Renumera sort_order dos irmãos.
+  async function placeNoteIn(
+    noteId: string,
+    targetFolderId: string | null,
+    beforeNoteId: string | null,
+  ) {
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+    if (beforeNoteId === noteId) return;
+    const siblings = notes
+      .filter((n) => (n.folderId ?? null) === targetFolderId && n.id !== noteId)
+      .sort(sortInFolder);
+    let insertIdx = beforeNoteId
+      ? siblings.findIndex((n) => n.id === beforeNoteId)
+      : siblings.length;
+    if (insertIdx < 0) insertIdx = siblings.length;
+    const movedNote: FieldNote = { ...note, folderId: targetFolderId, dirty: true };
+    const reordered = [...siblings];
+    reordered.splice(insertIdx, 0, movedNote);
+    const now = Date.now();
+    const updates: FieldNote[] = reordered.map((n, i) => ({
+      ...n,
+      folderId: targetFolderId,
+      sort_order: i,
+      dirty: true,
+      updated_at: n.id === noteId ? now : n.updated_at,
+    }));
+    for (const u of updates) await persistNote(u);
+    setNotes((all) => {
+      const map = new Map(updates.map((u) => [u.id, u]));
+      return all.map((n) => map.get(n.id) ?? n);
+    });
+    if (draft && draft.id === noteId) {
+      const upd = updates.find((u) => u.id === noteId);
+      if (upd) setDraft(upd);
+    }
+    if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
+    void syncOutlinesIfOnline();
+  }
+
+  // ---------- Drag & Drop handlers ----------
+  function onDragStartNote(e: React.DragEvent, noteId: string) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("application/x-outline-note", noteId);
+    setDragItem({ kind: "note", id: noteId });
+  }
+  function onDragStartFolder(e: React.DragEvent, folderId: string) {
+    if (isFixedFolder(folderId)) return;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("application/x-outline-folder", folderId);
+    setDragItem({ kind: "folder", id: folderId });
+  }
+  function onDragEnd() {
+    setDragItem(null);
+    setDropHint(null);
+  }
+  function allowDrop(e: React.DragEvent) {
+    if (!dragItem) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
+  async function onDropOnFolder(e: React.DragEvent, folderId: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    const item = dragItem;
+    setDropHint(null);
+    setDragItem(null);
+    if (!item) return;
+    if (item.kind === "note") {
+      await placeNoteIn(item.id, folderId, null);
+    } else {
+      if (item.id === folderId) return;
+      if (getDescendantFolderIds(item.id).has(folderId)) {
+        toast.error(
+          t("personalOutlines.folders.cannotMoveIntoSelf", {
+            defaultValue: "Não é possível mover uma pasta para dentro dela mesma.",
+          }),
+        );
+        return;
+      }
+      await moveFolderTo(item.id, folderId);
+    }
+  }
+  async function onDropOnRoot(e: React.DragEvent) {
+    e.preventDefault();
+    const item = dragItem;
+    setDropHint(null);
+    setDragItem(null);
+    if (!item) return;
+    if (item.kind === "note") {
+      await placeNoteIn(item.id, null, null);
+    } else {
+      await moveFolderTo(item.id, null);
+    }
+  }
+  async function onDropOnNote(e: React.DragEvent, targetNoteId: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    const item = dragItem;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const pos: "before" | "after" =
+      e.clientY - rect.top < rect.height / 2 ? "before" : "after";
+    setDropHint(null);
+    setDragItem(null);
+    if (!item || item.kind !== "note" || item.id === targetNoteId) return;
+    const target = notes.find((n) => n.id === targetNoteId);
+    if (!target) return;
+    const targetFolder = target.folderId ?? null;
+    const siblings = notes
+      .filter((n) => (n.folderId ?? null) === targetFolder && n.id !== item.id)
+      .sort(sortInFolder);
+    const targetIdx = siblings.findIndex((n) => n.id === targetNoteId);
+    const beforeId =
+      pos === "before"
+        ? targetNoteId
+        : siblings[targetIdx + 1]?.id ?? null;
+    await placeNoteIn(item.id, targetFolder, beforeId);
+  }
+  function onDragOverNote(e: React.DragEvent, noteId: string) {
+    if (!dragItem || dragItem.kind !== "note") return;
+    if (dragItem.id === noteId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const pos: "before" | "after" =
+      e.clientY - rect.top < rect.height / 2 ? "before" : "after";
+    setDropHint({ kind: "note", id: noteId, pos });
+  }
+
   function FolderRow({ folder, depth }: { folder: NoteFolder; depth: number }) {
     const isOpen = expanded.has(folder.id);
     const childFolders = folders.filter((f) => f.parentId === folder.id);
@@ -909,16 +1052,32 @@ function Page() {
           ? t("personalOutlines.folders.weekOutlines", { defaultValue: "Esboços da Semana" })
           : t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" }))
       : folder.name;
+    const isDropTarget = dropHint?.kind === "folder" && dropHint.id === folder.id;
     return (
       <div>
         <div
           className={cn(
             "group flex items-center gap-1 rounded-md px-1.5 py-1 text-sm cursor-pointer",
             selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
+            isDropTarget && "ring-2 ring-primary/60 bg-primary/5",
           )}
           style={{ paddingLeft: 6 + depth * 12 }}
           onClick={() => setSelectedFolderId(folder.id)}
+          draggable={!fixed}
+          onDragStart={(e) => onDragStartFolder(e, folder.id)}
+          onDragEnd={onDragEnd}
+          onDragOver={(e) => {
+            if (!dragItem) return;
+            if (dragItem.kind === "folder" && dragItem.id === folder.id) return;
+            allowDrop(e);
+            setDropHint({ kind: "folder", id: folder.id });
+          }}
+          onDragLeave={() => {
+            if (dropHint?.kind === "folder" && dropHint.id === folder.id) setDropHint(null);
+          }}
+          onDrop={(e) => onDropOnFolder(e, folder.id)}
         >
+
           <button
             type="button"
             onClick={(e) => {
@@ -1013,15 +1172,27 @@ function Page() {
     const selected = selectedNoteId === note.id;
     const isClipped = clipboardNoteIds.includes(note.id);
     const isChecked = selectedIds.has(note.id);
+    const hint = dropHint?.kind === "note" && dropHint.id === note.id ? dropHint.pos : null;
     return (
       <div
         className={cn(
           "group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm",
           selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
           isClipped && "opacity-60 italic",
+          hint === "before" && "border-t-2 border-primary",
+          hint === "after" && "border-b-2 border-primary",
         )}
         style={{ paddingLeft: 6 + depth * 12 + 16 }}
+        draggable
+        onDragStart={(e) => onDragStartNote(e, note.id)}
+        onDragEnd={onDragEnd}
+        onDragOver={(e) => onDragOverNote(e, note.id)}
+        onDragLeave={() => {
+          if (dropHint?.kind === "note" && dropHint.id === note.id) setDropHint(null);
+        }}
+        onDrop={(e) => onDropOnNote(e, note.id)}
       >
+
         <Checkbox
           checked={isChecked}
           onCheckedChange={(c) => {
@@ -1276,9 +1447,20 @@ function Page() {
                         className={cn(
                           "group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
                           selectedFolderId === null ? "bg-primary/10 text-primary" : "hover:bg-muted",
+                          dropHint?.kind === "root" && "ring-2 ring-primary/60 bg-primary/5",
                         )}
                         onClick={() => setSelectedFolderId(null)}
+                        onDragOver={(e) => {
+                          if (!dragItem) return;
+                          allowDrop(e);
+                          setDropHint({ kind: "root" });
+                        }}
+                        onDragLeave={() => {
+                          if (dropHint?.kind === "root") setDropHint(null);
+                        }}
+                        onDrop={onDropOnRoot}
                       >
+
                         <FolderOpen className="h-4 w-4" />
                         <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
                         {clipboardNoteIds.length > 0 && (
