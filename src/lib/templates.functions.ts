@@ -134,11 +134,14 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
 
     // Pre-carrega datas já preenchidas em cada tabela para merge NÃO-DESTRUTIVO.
     const [exField, exMeals, exTransp] = await Promise.all([
-      supabaseAdmin.from("field_assignments").select("event_date").eq("visit_id", data.visitId),
+      supabaseAdmin.from("field_assignments").select("event_date,period").eq("visit_id", data.visitId),
       supabaseAdmin.from("meals").select("meal_date").eq("visit_id", data.visitId),
       supabaseAdmin.from("transport_schedule").select("event_date").eq("visit_id", data.visitId),
     ]);
-    const fieldDates = new Set((exField.data ?? []).map((r) => r.event_date as string));
+    const fieldKey = (date: string, period: string | null | undefined) => `${date}|${period ?? "Manhã"}`;
+    const fieldDates = new Set(
+      (exField.data ?? []).map((r) => fieldKey(r.event_date as string, (r as { period?: string | null }).period ?? null)),
+    );
     const mealDates = new Set((exMeals.data ?? []).map((r) => r.meal_date as string));
     const transpDates = new Set((exTransp.data ?? []).map((r) => r.event_date as string | null).filter(Boolean) as string[]);
 
@@ -149,15 +152,18 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
       const p = (it.payload ?? {}) as Record<string, unknown>;
       const targetDate = dateAt(it.day_offset);
       if (it.kind === "study") {
-        if (fieldDates.has(targetDate)) { skipped++; continue; }
-        await supabaseAdmin.from("field_assignments").insert({
+        const periodVal = str(p.period) ?? "Manhã";
+        const key = fieldKey(targetDate, periodVal);
+        if (fieldDates.has(key)) { skipped++; continue; }
+        const { error: insErr } = await supabaseAdmin.from("field_assignments").insert({
           visit_id: data.visitId, event_date: targetDate,
-          period: str(p.period) ?? "Manhã",
+          period: periodVal,
           meeting_point: str(p.meeting_point), meeting_time: time(p.meeting_time),
           acompanhante: str(p.acompanhante), acompanhante_for: str(p.acompanhante_for),
           contact_phone: str(p.contact_phone), is_active: bool(p.is_active, true),
         });
-        fieldDates.add(targetDate); inserted++;
+        if (insErr) return { ok: false as const, error: insErr.message };
+        fieldDates.add(key); inserted++;
       } else if (it.kind === "meal") {
         if (mealDates.has(targetDate)) { skipped++; continue; }
         await supabaseAdmin.from("meals").insert({
