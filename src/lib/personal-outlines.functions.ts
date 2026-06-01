@@ -28,6 +28,28 @@ export type CloudOutlineContent = z.infer<typeof outlineContentSchema>;
 // Limite "soft" para evitar abuso extremo. Não enforçado no banco.
 const SOFT_LIMIT = 500;
 
+const cloudFolderSchema = z.object({
+  local_id: z.string().min(1).max(120),
+  id: z.string().uuid().optional().nullable(),
+  title: z.string().trim().min(1).max(200),
+  folder_path: z.string().trim().max(500).default(""),
+  deleted_at: z.string().datetime().optional().nullable(),
+});
+
+const cloudOutlineSchema = z.object({
+  local_id: z.string().min(1).max(120),
+  id: z.string().uuid().optional().nullable(),
+  title: z.string().trim().min(1).max(200),
+  folder_path: z.string().trim().max(500).default(""),
+  content: outlineContentSchema,
+  deleted_at: z.string().datetime().optional().nullable(),
+});
+
+function isFolderMarker(row: { content_json: unknown }): boolean {
+  const content = row.content_json;
+  return !!content && typeof content === "object" && (content as Record<string, unknown>).kind === "folder";
+}
+
 export const listCloudOutlines = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
