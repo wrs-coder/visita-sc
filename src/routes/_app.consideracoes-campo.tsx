@@ -197,11 +197,37 @@ function Page() {
   const fnPullCloud = useServerFn(pullOutlineFromCloud);
   const fnDeleteCloud = useServerFn(deleteCloudOutline);
   const syncOutlines = useOutlinesSync({ auto: false });
+  const fixedOutlineCloudPath = "__fixed__week-outlines";
+
+  function folderPathForCloud(folderId: string | null | undefined): string {
+    if (!folderId) return "";
+    if (folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS) return "";
+    if (isFixedFolder(folderId)) return fixedOutlineCloudPath;
+    const byId = new Map(folders.map((f) => [f.id, f]));
+    const names: string[] = [];
+    const seen = new Set<string>();
+    let cur = byId.get(folderId);
+    while (cur && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      names.unshift(cur.name.trim());
+      cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+    }
+    return names.filter(Boolean).join(" / ").slice(0, 500);
+  }
+
+  function displayCloudPath(path: string): string {
+    if (path === fixedOutlineCloudPath) {
+      return t("personalOutlines.folders.weekOutlines", { defaultValue: "Esboços da Semana" });
+    }
+    return path;
+  }
 
   async function syncOutlinesIfOnline() {
-    if (activeType !== "outline") return;
-    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-    await syncOutlines();
+    if (activeType !== "outline") return null;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return null;
+    const result = await syncOutlines();
+    if (!result.ok) console.warn("[personal-outlines] sync skipped", result.error);
+    return result;
   }
 
   async function refreshCloudList() {
@@ -218,18 +244,18 @@ function Page() {
     if (!draft) return;
     setCloudBusy(true);
     try {
-      const folderName = draft.folderId ? (folders.find((f) => f.id === draft.folderId)?.name ?? "") : "";
       const r = await fnPushCloud({
         data: {
           id: draft.cloud_id ?? undefined,
           title: (draft.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })).slice(0, 200),
-          folder_path: folderName,
+          folder_path: folderPathForCloud(draft.folderId),
           content: {
             prayer: draft.prayer ?? null,
             territory: draft.territory ?? null,
             assistants: draft.assistants ?? null,
             description: draft.description ?? null,
             content: draft.content ?? "",
+            sort_order: draft.sort_order ?? null,
           },
         },
       });
@@ -256,7 +282,7 @@ function Page() {
       const now = Date.now();
       const n: FieldNote = {
         id: newNoteId(),
-        type: activeType ?? "outline",
+        type: "outline",
         folderId: selectedFolderId,
         title: r.outline.title,
         prayer: typeof c.prayer === "string" ? c.prayer : "",
@@ -264,8 +290,12 @@ function Page() {
         assistants: typeof c.assistants === "string" ? c.assistants : "",
         description: typeof c.description === "string" ? c.description : "",
         content: typeof c.content === "string" ? c.content : "",
+        sort_order: typeof c.sort_order === "number" ? c.sort_order : null,
         created_at: now,
         updated_at: now,
+        cloud_id: r.outline.id,
+        dirty: false,
+        synced_at: now,
       };
       await persistNote(n);
       setNotes((all) => [n, ...all].sort((a, b) => b.updated_at - a.updated_at));
