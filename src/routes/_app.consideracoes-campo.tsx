@@ -15,6 +15,7 @@ import {
   FolderOpen,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
   MoreVertical,
   Download,
   Upload,
@@ -612,17 +613,55 @@ function Page() {
   // Árvore: pastas filhas de um parentId, filtradas por busca
   const matchesQuery = (n: FieldNote) =>
     !query.trim() || (n.title || "").toLowerCase().includes(query.trim().toLowerCase());
+  // Ordena dentro da pasta por sort_order asc, fallback updated_at desc.
+  const sortInFolder = (a: FieldNote, b: FieldNote) => {
+    const ao = a.sort_order ?? Number.POSITIVE_INFINITY;
+    const bo = b.sort_order ?? Number.POSITIVE_INFINITY;
+    if (ao !== bo) return ao - bo;
+    return b.updated_at - a.updated_at;
+  };
   const rootFolders = folders.filter((f) => f.parentId === null);
-  const rootNotes = notes.filter((n) => !n.folderId && matchesQuery(n));
+  const rootNotes = notes.filter((n) => !n.folderId && matchesQuery(n)).sort(sortInFolder);
+
+  async function reorderNote(noteId: string, direction: -1 | 1) {
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+    const siblings = notes
+      .filter((n) => (n.folderId ?? null) === (note.folderId ?? null) && matchesQuery(n))
+      .sort(sortInFolder);
+    const idx = siblings.findIndex((n) => n.id === noteId);
+    const swapIdx = idx + direction;
+    if (idx < 0 || swapIdx < 0 || swapIdx >= siblings.length) return;
+    // Normaliza sort_order de todos os irmãos a partir do índice (estável e barato).
+    const reordered = [...siblings];
+    const [moved] = reordered.splice(idx, 1);
+    reordered.splice(swapIdx, 0, moved);
+    const now = Date.now();
+    const updates: FieldNote[] = reordered.map((n, i) => ({
+      ...n,
+      sort_order: i,
+      // Não bumpa updated_at (evita "subir" a nota em listas globais), mas marca dirty.
+      dirty: activeType === "outline" ? true : n.dirty,
+    }));
+    for (const u of updates) await persistNote(u);
+    setNotes((all) => {
+      const map = new Map(updates.map((u) => [u.id, u]));
+      return all.map((n) => map.get(n.id) ?? n);
+    });
+    void syncOutlinesIfOnline();
+    void now;
+  }
 
   function FolderRow({ folder, depth }: { folder: NoteFolder; depth: number }) {
     const isOpen = expanded.has(folder.id);
     const childFolders = folders.filter((f) => f.parentId === folder.id);
-    const childNotes = notes.filter((n) => n.folderId === folder.id && matchesQuery(n));
+    const childNotes = notes.filter((n) => n.folderId === folder.id && matchesQuery(n)).sort(sortInFolder);
     const selected = selectedFolderId === folder.id;
     const fixed = isFixedFolder(folder.id);
     const folderName = fixed
-      ? t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" })
+      ? (folder.type === "outline"
+          ? t("personalOutlines.folders.weekOutlines", { defaultValue: "Esboços da Semana" })
+          : t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" }))
       : folder.name;
     return (
       <div>
@@ -754,6 +793,14 @@ function Page() {
               <DropdownMenuItem onClick={() => handleRenameNote(note)}>
                 <Pencil className="h-4 w-4 mr-2" />
                 {t("common.rename")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => reorderNote(note.id, -1)}>
+                <ChevronUp className="h-4 w-4 mr-2" />
+                {t("personalOutlines.folders.moveUp", { defaultValue: "Mover para cima" })}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => reorderNote(note.id, 1)}>
+                <ChevronDown className="h-4 w-4 mr-2" />
+                {t("personalOutlines.folders.moveDown", { defaultValue: "Mover para baixo" })}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setMoveTarget({ kind: "note", id: note.id })}>
                 <Move className="h-4 w-4 mr-2" />
@@ -990,7 +1037,7 @@ function Page() {
       )}
 
       <Dialog open={cloudOpen} onOpenChange={setCloudOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{t("personalOutlines.cloud.title", { defaultValue: "Esboços na nuvem" })}</DialogTitle>
           </DialogHeader>
@@ -1271,24 +1318,24 @@ function NoteEditor({
       </div>
 
       {/* Sticky action bar — sempre visível no rodapé do editor */}
-      <div className="sticky bottom-0 left-0 right-0 z-30 -mx-5 px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-center gap-2 w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
+      <div className="sticky bottom-0 left-0 right-0 z-30 -mx-5 px-3 sm:px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
         {mode === "outline" && (
-          <Button variant="outline" size="sm" onClick={() => onModeChange("edit")}>
-            <Pencil className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.edit")}
+          <Button variant="outline" size="sm" onClick={() => onModeChange("edit")} title={t("fieldConsiderations.edit")}>
+            <Pencil className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.edit")}</span>
           </Button>
         )}
-        <Button variant="outline" size="sm" onClick={onExport}>
-          <Download className="h-4 w-4 mr-1.5" /> {t("personalOutlines.folders.exportNote")}
+        <Button variant="outline" size="sm" onClick={onExport} title={t("personalOutlines.folders.exportNote")}>
+          <Download className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.folders.exportNote")}</span>
         </Button>
-        <Button variant="outline" size="sm" onClick={onCloud}>
-          <Cloud className="h-4 w-4 mr-1.5" /> {t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}
+        <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
+          <Cloud className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}</span>
         </Button>
-        <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive">
-          <Trash2 className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.delete")}
+        <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive" title={t("fieldConsiderations.delete")}>
+          <Trash2 className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.delete")}</span>
         </Button>
         {mode === "edit" && (
-          <Button size="sm" onClick={onSave} disabled={saving}>
-            <Save className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.save")}
+          <Button size="sm" onClick={onSave} disabled={saving} title={t("fieldConsiderations.save")}>
+            <Save className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.save")}</span>
           </Button>
         )}
       </div>
