@@ -565,8 +565,6 @@ export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
         template_id: newId,
         weekday: f.pioneer.weekday ?? null,
         meeting_time: f.pioneer.meeting_time || null,
-        super_meeting_weekday: f.pioneer.super_meeting_weekday ?? null,
-        super_meeting_time: f.pioneer.super_meeting_time || null,
         location: f.pioneer.location ?? null,
         theme: f.pioneer.theme ?? null,
         opening_prayer: f.pioneer.opening_prayer ?? null,
@@ -576,6 +574,8 @@ export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
     if (f.elders) {
       await supabaseAdmin.from("meeting_talk_template_elders").insert({
         template_id: newId,
+        weekday: f.elders.weekday ?? null,
+        meeting_time: f.elders.meeting_time || null,
         theme: f.elders.theme ?? null,
         opening_prayer: f.elders.opening_prayer ?? null,
         closing_prayer: f.elders.closing_prayer ?? null,
