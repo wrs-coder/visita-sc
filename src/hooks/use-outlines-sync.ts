@@ -3,23 +3,26 @@
 // - Empurra esboços locais sem cloud_id (migração one-shot).
 // - Reconcilia exclusões: itens com cloud_id que sumiram da nuvem → soft-delete local.
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import {
+  listFolders,
   listAllNotesIncludingTrash,
+  saveFolder,
   saveNote,
   newNoteId,
+  newFolderId,
+  type NoteFolder,
   type FieldNote,
 } from "@/lib/bible-notes-store";
 import {
-  listCloudOutlines,
-  bulkPushOutlines,
-  pushOutlineToCloud,
+  listCloudOutlineTree,
+  replaceCloudOutlineTree,
 } from "@/lib/personal-outlines.functions";
 
-const MIGRATION_KEY = "visita-sc:outlines-migration:v1";
 const LAST_SYNC_KEY = "visita-sc:outlines-last-sync";
+const PATH_SEPARATOR = " / ";
 
 function isOutline(n: FieldNote): boolean {
   return (n.type ?? "field_consideration") === "outline";
@@ -33,6 +36,53 @@ function contentOf(n: FieldNote) {
     description: n.description ?? null,
     content: n.content ?? "",
   };
+}
+
+function isFolderMarker(row: { content_json: unknown }): boolean {
+  const content = row.content_json;
+  return !!content && typeof content === "object" && (content as Record<string, unknown>).kind === "folder";
+}
+
+function folderPath(folderId: string | null | undefined, folders: NoteFolder[]): string {
+  if (!folderId) return "";
+  const byId = new Map(folders.map((f) => [f.id, f]));
+  const names: string[] = [];
+  const seen = new Set<string>();
+  let cur = byId.get(folderId);
+  while (cur && !seen.has(cur.id)) {
+    seen.add(cur.id);
+    names.unshift(cur.name.trim());
+    cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+  }
+  return names.filter(Boolean).join(PATH_SEPARATOR).slice(0, 500);
+}
+
+function splitPath(path: string): string[] {
+  return path.split(PATH_SEPARATOR).map((p) => p.trim()).filter(Boolean);
+}
+
+async function ensureFolderPath(path: string, folders: NoteFolder[], preferredId?: string | null): Promise<string | null> {
+  const parts = splitPath(path);
+  if (parts.length === 0) return null;
+  let parentId: string | null = null;
+  let currentId: string | null = null;
+  const mutable = folders;
+  for (let i = 0; i < parts.length; i++) {
+    const name = parts[i];
+    const existing = mutable.find((f) => f.type === "outline" && (f.parentId ?? null) === parentId && f.name === name);
+    if (existing) {
+      currentId = existing.id;
+      parentId = existing.id;
+      continue;
+    }
+    const id = i === parts.length - 1 && preferredId ? preferredId : newFolderId();
+    const folder: NoteFolder = { id, name, parentId, type: "outline", created_at: Date.now(), deleted_at: null };
+    await saveFolder(folder);
+    mutable.push(folder);
+    currentId = id;
+    parentId = id;
+  }
+  return currentId;
 }
 
 export function useOutlinesSync() {
