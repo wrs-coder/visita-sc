@@ -303,7 +303,7 @@ function Dashboard() {
         .eq("congregation_id", selected)
         .eq("note_type", "recomendados")
         .is("deleted_at", null)
-        .order("updated_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(3);
       if (!cancelled) setRecomendadosPreview((data ?? []) as RecomendadoPreview[]);
     })();
