@@ -444,7 +444,7 @@ function Page() {
       type: draft.type ?? activeType,
       folderId: draft.folderId ?? null,
       updated_at: Date.now(),
-      dirty: activeType === "outline" ? true : draft.dirty,
+      dirty: true,
     };
     try {
       await persistNote(updated);
