@@ -499,26 +499,6 @@ function Page() {
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, meeting_time: e.target.value } })} />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label>{t("templates.meetingTalk.pioneer.weekdayCO")}</Label>
-                        <Select
-                          value={payload.pioneer.super_meeting_weekday === null ? "" : String(payload.pioneer.super_meeting_weekday)}
-                          disabled={!isSuper}
-                          onValueChange={(v) => setPayload({ ...payload, pioneer: { ...payload.pioneer, super_meeting_weekday: v ? Number(v) : null } })}
-                        >
-                          <SelectTrigger className="mt-1"><SelectValue placeholder={t("templates.meetingTalk.pioneer.sameAsMain")} /></SelectTrigger>
-                          <SelectContent>
-                            {Object.keys(WEEKDAY_LABELS).map((k) => <SelectItem key={k} value={k}>{weekdayLabel(Number(k))}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>{t("templates.meetingTalk.pioneer.timeCO")}</Label>
-                        <Input type="time" className="mt-1" value={payload.pioneer.super_meeting_time} readOnly={!isSuper}
-                          onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, super_meeting_time: e.target.value } })} />
-                      </div>
-                    </div>
                     <div>
                       <Label>{t("templates.meetingTalk.pioneer.location")}</Label>
                       <Input className="mt-1" value={payload.pioneer.location} readOnly={!isSuper}
