@@ -13,6 +13,8 @@ import {
   saveNote,
   newNoteId,
   newFolderId,
+  isFixedFolder,
+  FIXED_FOLDER_WEEK_OUTLINES,
   type NoteFolder,
   type FieldNote,
 } from "@/lib/bible-notes-store";
@@ -20,6 +22,9 @@ import {
   listCloudOutlineTree,
   replaceCloudOutlineTree,
 } from "@/lib/personal-outlines.functions";
+
+const FIXED_OUTLINE_SENTINEL = "__fixed__week-outlines";
+
 
 const LAST_SYNC_KEY = "visita-sc:outlines-last-sync";
 const PATH_SEPARATOR = " / ";
@@ -35,6 +40,7 @@ function contentOf(n: FieldNote) {
     assistants: n.assistants ?? null,
     description: n.description ?? null,
     content: n.content ?? "",
+    sort_order: n.sort_order ?? null,
   };
 }
 
@@ -45,6 +51,7 @@ function isFolderMarker(row: { content_json: unknown }): boolean {
 
 function folderPath(folderId: string | null | undefined, folders: NoteFolder[]): string {
   if (!folderId) return "";
+  if (folderId === FIXED_FOLDER_WEEK_OUTLINES) return FIXED_OUTLINE_SENTINEL;
   const byId = new Map(folders.map((f) => [f.id, f]));
   const names: string[] = [];
   const seen = new Set<string>();
