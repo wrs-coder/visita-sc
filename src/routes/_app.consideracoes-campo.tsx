@@ -1258,12 +1258,16 @@ function Page() {
               </Button>
             </div>
             <div className="max-h-80 overflow-y-auto overflow-x-hidden rounded-md border divide-y">
-              {cloudList.length === 0 ? (
-                <p className="p-4 text-sm text-muted-foreground text-center">
-                  {t("personalOutlines.cloud.empty", { defaultValue: "Nenhum esboço na nuvem." })}
-                </p>
-              ) : (
-                cloudList.map((o) => (
+              {(() => {
+                const filtered = cloudList.filter((o) => (o.note_type ?? "outline") === (activeType ?? "outline"));
+                if (filtered.length === 0) {
+                  return (
+                    <p className="p-4 text-sm text-muted-foreground text-center">
+                      {t("personalOutlines.cloud.empty", { defaultValue: "Nenhum esboço na nuvem." })}
+                    </p>
+                  );
+                }
+                return filtered.map((o) => (
                   <div key={o.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 p-2 max-w-full min-w-0">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium whitespace-normal break-words [overflow-wrap:anywhere]">{o.title}</p>
@@ -1276,8 +1280,8 @@ function Page() {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                ))
-              )}
+                ));
+              })()}
             </div>
           </div>
           <DialogFooter>
