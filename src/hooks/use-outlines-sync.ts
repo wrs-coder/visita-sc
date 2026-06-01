@@ -177,6 +177,8 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
         description: typeof cj.description === "string" ? cj.description : "",
         content: typeof cj.content === "string" ? cj.content : "",
         sort_order: typeof cj.sort_order === "number" ? cj.sort_order : null,
+        event_date: typeof cj.event_date === "string" ? cj.event_date : undefined,
+        period: typeof cj.period === "string" ? cj.period : undefined,
         updated_at: cTime,
         cloud_id: row.id,
         synced_at: Date.now(),
