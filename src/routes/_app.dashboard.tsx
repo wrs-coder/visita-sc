@@ -507,11 +507,10 @@ function Dashboard() {
     let cancelled = false;
     (async () => {
       const todayDow = new Date().getDay();
-      const [mw, we, pi, el] = await Promise.all([
+      const [mw, we, pi] = await Promise.all([
         supabase.from("midweek_meetings").select("meeting_at, service_talk_theme").eq("visit_id", visit.id).maybeSingle(),
         supabase.from("weekend_meetings").select("meeting_at, talk_theme_title, public_talk_theme").eq("visit_id", visit.id).maybeSingle(),
         supabase.from("pioneer_meetings").select("meeting_at, super_meeting_at, theme, location").eq("visit_id", visit.id).maybeSingle(),
-        supabase.from("elders_servants_meetings").select("meeting_at, theme").eq("visit_id", visit.id).maybeSingle(),
       ]);
       const out: MeetingTodayItem[] = [];
       const push = (kind: MeetingTodayItem["kind"], at: string | null | undefined, theme: string | null | undefined, location: string | null | undefined) => {
@@ -525,7 +524,6 @@ function Dashboard() {
       push("weekend", we.data?.meeting_at, we.data?.talk_theme_title ?? we.data?.public_talk_theme, null);
       const piAt = pi.data?.super_meeting_at ?? pi.data?.meeting_at;
       push("pioneer", piAt, pi.data?.theme, pi.data?.location);
-      push("elders", el.data?.meeting_at, el.data?.theme, null);
       if (!cancelled) setMeetingsToday(out);
     })();
     return () => { cancelled = true; };
