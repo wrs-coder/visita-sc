@@ -17,9 +17,10 @@ export type NoteType = "field_consideration" | "outline";
  *   e seguem o pipeline normal de sync/lixeira.
  */
 export const FIXED_FOLDER_WEEK_CONSIDERATIONS = "__fixed__week-considerations";
+export const FIXED_FOLDER_WEEK_OUTLINES = "__fixed__week-outlines";
 
 export function isFixedFolder(id: string | null | undefined): boolean {
-  return id === FIXED_FOLDER_WEEK_CONSIDERATIONS;
+  return id === FIXED_FOLDER_WEEK_CONSIDERATIONS || id === FIXED_FOLDER_WEEK_OUTLINES;
 }
 
 export interface NoteFolder {
@@ -54,7 +55,10 @@ export interface FieldNote {
   dirty?: boolean;
   /** Última sincronização bem-sucedida (ms epoch). */
   synced_at?: number | null;
+  /** Ordem manual dentro da pasta (menor = primeiro). Sincronizado via content_json. */
+  sort_order?: number | null;
 }
+
 
 
 // =============================================================
@@ -603,21 +607,31 @@ export async function listAllFoldersIncludingTrash(): Promise<NoteFolder[]> {
 export async function listFolders(type?: NoteType): Promise<NoteFolder[]> {
   const all = (await listAllFoldersIncludingTrash()).filter((f) => f.deleted_at == null);
   const filtered = type ? all.filter((f) => f.type === type) : all;
-  // Injeta a pasta fixa virtual "Considerações da Semana" como PRIMEIRA pasta
-  // da raiz, apenas para o tipo "field_consideration". Não toca no IndexedDB.
+  const prepend: NoteFolder[] = [];
+  // Pastas fixas virtuais (não persistidas, não sincronizadas como pasta).
   if (!type || type === "field_consideration") {
-    const fixed: NoteFolder = {
+    prepend.push({
       id: FIXED_FOLDER_WEEK_CONSIDERATIONS,
       name: "Considerações da Semana",
       parentId: null,
       type: "field_consideration",
       created_at: 0,
       deleted_at: null,
-    };
-    // Remove qualquer duplicata acidental (não deveria haver) e prepende.
-    return [fixed, ...filtered.filter((f) => f.id !== FIXED_FOLDER_WEEK_CONSIDERATIONS)];
+    });
   }
-  return filtered;
+  if (!type || type === "outline") {
+    prepend.push({
+      id: FIXED_FOLDER_WEEK_OUTLINES,
+      name: "Esboços da Semana",
+      parentId: null,
+      type: "outline",
+      created_at: 0,
+      deleted_at: null,
+    });
+  }
+  if (prepend.length === 0) return filtered;
+  const fixedIds = new Set(prepend.map((f) => f.id));
+  return [...prepend, ...filtered.filter((f) => !fixedIds.has(f.id))];
 }
 
 export async function listTrashedFolders(): Promise<NoteFolder[]> {
