@@ -187,6 +187,7 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
       if (cloudId) await saveNote({ ...note, cloud_id: cloudId, dirty: false, synced_at: Date.now() });
     }
     try { localStorage.setItem(LAST_SYNC_KEY, String(Date.now())); } catch { /* noop */ }
+    try { window.dispatchEvent(new CustomEvent("visita-sc:outlines-synced")); } catch { /* noop */ }
     return { ok: true as const };
   }, [user, fnList, fnReplace]);
 
