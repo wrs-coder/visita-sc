@@ -622,7 +622,9 @@ function Page() {
     const selected = selectedFolderId === folder.id;
     const fixed = isFixedFolder(folder.id);
     const folderName = fixed
-      ? t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" })
+      ? (folder.type === "outline"
+          ? t("personalOutlines.folders.weekOutlines", { defaultValue: "Esboços da Semana" })
+          : t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" }))
       : folder.name;
     return (
       <div>
