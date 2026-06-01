@@ -46,15 +46,20 @@ type Payload = {
   pioneer: {
     weekday: number | null;
     meeting_time: string;
-    super_meeting_weekday: number | null;
-    super_meeting_time: string;
     location: string;
     theme: string;
     opening_prayer: string;
     closing_prayer: string;
     observations: string;
   };
-  elders: { theme: string; opening_prayer: string; closing_prayer: string; observations: string };
+  elders: {
+    weekday: number | null;
+    meeting_time: string;
+    theme: string;
+    opening_prayer: string;
+    closing_prayer: string;
+    observations: string;
+  };
 };
 
 const emptyPayload = (): Payload => ({
@@ -64,8 +69,8 @@ const emptyPayload = (): Payload => ({
   weekend_closing_song: "",
   weekend_observations: "",
   weekend_themes: [],
-  pioneer: { weekday: null, meeting_time: "", super_meeting_weekday: null, super_meeting_time: "", location: "", theme: "", opening_prayer: "", closing_prayer: "", observations: "" },
-  elders: { theme: "", opening_prayer: "", closing_prayer: "", observations: "" },
+  pioneer: { weekday: null, meeting_time: "", location: "", theme: "", opening_prayer: "", closing_prayer: "", observations: "" },
+  elders: { weekday: null, meeting_time: "", theme: "", opening_prayer: "", closing_prayer: "", observations: "" },
 });
 
 const MAX = 24;
@@ -119,8 +124,6 @@ function Page() {
       pioneer: {
         weekday: r.pioneer?.weekday ?? null,
         meeting_time: r.pioneer?.meeting_time ?? "",
-        super_meeting_weekday: r.pioneer?.super_meeting_weekday ?? null,
-        super_meeting_time: r.pioneer?.super_meeting_time ?? "",
         location: r.pioneer?.location ?? "",
         theme: r.pioneer?.theme ?? "",
         opening_prayer: r.pioneer?.opening_prayer ?? "",
@@ -128,6 +131,8 @@ function Page() {
         observations: r.pioneer?.observations ?? "",
       },
       elders: {
+        weekday: r.elders?.weekday ?? null,
+        meeting_time: r.elders?.meeting_time ?? "",
         theme: r.elders?.theme ?? "",
         opening_prayer: r.elders?.opening_prayer ?? "",
         closing_prayer: r.elders?.closing_prayer ?? "",
@@ -221,8 +226,6 @@ function Page() {
           pioneer: {
             weekday: payload.pioneer.weekday,
             meeting_time: payload.pioneer.meeting_time || null,
-            super_meeting_weekday: payload.pioneer.super_meeting_weekday,
-            super_meeting_time: payload.pioneer.super_meeting_time || null,
             location: payload.pioneer.location || null,
             theme: payload.pioneer.theme || null,
             opening_prayer: payload.pioneer.opening_prayer || null,
@@ -230,6 +233,8 @@ function Page() {
             observations: payload.pioneer.observations || null,
           },
           elders: {
+            weekday: payload.elders.weekday,
+            meeting_time: payload.elders.meeting_time || null,
             theme: payload.elders.theme || null,
             opening_prayer: payload.elders.opening_prayer || null,
             closing_prayer: payload.elders.closing_prayer || null,
@@ -494,26 +499,6 @@ function Page() {
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, meeting_time: e.target.value } })} />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label>{t("templates.meetingTalk.pioneer.weekdayCO")}</Label>
-                        <Select
-                          value={payload.pioneer.super_meeting_weekday === null ? "" : String(payload.pioneer.super_meeting_weekday)}
-                          disabled={!isSuper}
-                          onValueChange={(v) => setPayload({ ...payload, pioneer: { ...payload.pioneer, super_meeting_weekday: v ? Number(v) : null } })}
-                        >
-                          <SelectTrigger className="mt-1"><SelectValue placeholder={t("templates.meetingTalk.pioneer.sameAsMain")} /></SelectTrigger>
-                          <SelectContent>
-                            {Object.keys(WEEKDAY_LABELS).map((k) => <SelectItem key={k} value={k}>{weekdayLabel(Number(k))}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>{t("templates.meetingTalk.pioneer.timeCO")}</Label>
-                        <Input type="time" className="mt-1" value={payload.pioneer.super_meeting_time} readOnly={!isSuper}
-                          onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, super_meeting_time: e.target.value } })} />
-                      </div>
-                    </div>
                     <div>
                       <Label>{t("templates.meetingTalk.pioneer.location")}</Label>
                       <Input className="mt-1" value={payload.pioneer.location} readOnly={!isSuper}
@@ -548,6 +533,26 @@ function Page() {
 
                 <TabsContent value="anc" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>{t("templates.meetingTalk.elders.weekday")}</Label>
+                        <Select
+                          value={payload.elders.weekday === null ? "" : String(payload.elders.weekday)}
+                          disabled={!isSuper}
+                          onValueChange={(v) => setPayload({ ...payload, elders: { ...payload.elders, weekday: v ? Number(v) : null } })}
+                        >
+                          <SelectTrigger className="mt-1"><SelectValue placeholder={t("common.select")} /></SelectTrigger>
+                          <SelectContent>
+                            {Object.keys(WEEKDAY_LABELS).map((k) => <SelectItem key={k} value={k}>{weekdayLabel(Number(k))}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>{t("templates.meetingTalk.elders.time")}</Label>
+                        <Input type="time" className="mt-1" value={payload.elders.meeting_time} readOnly={!isSuper}
+                          onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, meeting_time: e.target.value } })} />
+                      </div>
+                    </div>
                     <div>
                       <Label>{t("templates.meetingTalk.elders.observations")}</Label>
                       <CharCounterTextarea

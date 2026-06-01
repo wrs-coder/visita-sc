@@ -38,8 +38,6 @@ const itemsPayloadSchema = z.object({
   pioneer: z.object({
     weekday: weekdaySchema,
     meeting_time: timeSchema,
-    super_meeting_weekday: weekdaySchema,
-    super_meeting_time: timeSchema,
     location: textOpt,
     theme: textOpt,
     opening_prayer: textOpt,
@@ -47,6 +45,8 @@ const itemsPayloadSchema = z.object({
     observations: longTextOpt,
   }),
   elders: z.object({
+    weekday: weekdaySchema,
+    meeting_time: timeSchema,
     theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
@@ -266,8 +266,6 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
       template_id: data.templateId,
       weekday: p.pioneer.weekday ?? null,
       meeting_time: p.pioneer.meeting_time || null,
-      super_meeting_weekday: p.pioneer.super_meeting_weekday ?? null,
-      super_meeting_time: p.pioneer.super_meeting_time || null,
       location: p.pioneer.location ?? null,
       theme: p.pioneer.theme ?? null,
       opening_prayer: p.pioneer.opening_prayer ?? null,
@@ -277,6 +275,8 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
     // Upsert elders
     await supabaseAdmin.from("meeting_talk_template_elders").upsert({
       template_id: data.templateId,
+      weekday: p.elders.weekday ?? null,
+      meeting_time: p.elders.meeting_time || null,
       theme: p.elders.theme ?? null,
       opening_prayer: p.elders.opening_prayer ?? null,
       closing_prayer: p.elders.closing_prayer ?? null,
@@ -368,7 +368,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
         return null;
       };
       const meetingAt = resolveDate(pioneer.data?.weekday ?? null, pioneer.data?.meeting_time ?? null);
-      const superMeetingAt = resolveDate(pioneer.data?.super_meeting_weekday ?? null, pioneer.data?.super_meeting_time ?? null) ?? meetingAt;
+      const superMeetingAt = meetingAt;
       const { data: existing } = await supabaseAdmin
         .from("pioneer_meetings").select("id").eq("visit_id", data.visitId).maybeSingle();
       const payload = {
@@ -482,14 +482,14 @@ const meetingTalkFileSchema = z.object({
   pioneer: z.object({
     weekday: weekdaySchema,
     meeting_time: timeSchema,
-    super_meeting_weekday: weekdaySchema,
-    super_meeting_time: timeSchema,
     location: textOpt,
     theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
   }).nullable().optional(),
   elders: z.object({
+    weekday: weekdaySchema,
+    meeting_time: timeSchema,
     theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
@@ -509,8 +509,8 @@ export const exportMeetingTalkTemplate = createServerFn({ method: "POST" })
     const [mid, themes, pioneer, elders] = await Promise.all([
       supabaseAdmin.from("meeting_talk_template_midweek").select("service_talk_theme,chairman,closing_prayer").eq("template_id", data.id).maybeSingle(),
       supabaseAdmin.from("meeting_talk_template_weekend_themes").select("title,sort_order").eq("template_id", data.id).order("sort_order"),
-      supabaseAdmin.from("meeting_talk_template_pioneer").select("weekday,meeting_time,super_meeting_weekday,super_meeting_time,location,theme,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
-      supabaseAdmin.from("meeting_talk_template_elders").select("theme,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
+      supabaseAdmin.from("meeting_talk_template_pioneer").select("weekday,meeting_time,location,theme,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
+      supabaseAdmin.from("meeting_talk_template_elders").select("weekday,meeting_time,theme,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
     ]);
     return {
       ok: true as const,
@@ -565,8 +565,6 @@ export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
         template_id: newId,
         weekday: f.pioneer.weekday ?? null,
         meeting_time: f.pioneer.meeting_time || null,
-        super_meeting_weekday: f.pioneer.super_meeting_weekday ?? null,
-        super_meeting_time: f.pioneer.super_meeting_time || null,
         location: f.pioneer.location ?? null,
         theme: f.pioneer.theme ?? null,
         opening_prayer: f.pioneer.opening_prayer ?? null,
@@ -576,6 +574,8 @@ export const importMeetingTalkTemplate = createServerFn({ method: "POST" })
     if (f.elders) {
       await supabaseAdmin.from("meeting_talk_template_elders").insert({
         template_id: newId,
+        weekday: f.elders.weekday ?? null,
+        meeting_time: f.elders.meeting_time || null,
         theme: f.elders.theme ?? null,
         opening_prayer: f.elders.opening_prayer ?? null,
         closing_prayer: f.elders.closing_prayer ?? null,

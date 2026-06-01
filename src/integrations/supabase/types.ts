@@ -597,29 +597,35 @@ export type Database = {
         Row: {
           closing_prayer: string | null
           created_at: string
+          meeting_time: string | null
           observations: string | null
           opening_prayer: string | null
           template_id: string
           theme: string | null
           updated_at: string
+          weekday: number | null
         }
         Insert: {
           closing_prayer?: string | null
           created_at?: string
+          meeting_time?: string | null
           observations?: string | null
           opening_prayer?: string | null
           template_id: string
           theme?: string | null
           updated_at?: string
+          weekday?: number | null
         }
         Update: {
           closing_prayer?: string | null
           created_at?: string
+          meeting_time?: string | null
           observations?: string | null
           opening_prayer?: string | null
           template_id?: string
           theme?: string | null
           updated_at?: string
+          weekday?: number | null
         }
         Relationships: [
           {
@@ -680,8 +686,6 @@ export type Database = {
           meeting_time: string | null
           observations: string | null
           opening_prayer: string | null
-          super_meeting_time: string | null
-          super_meeting_weekday: number | null
           template_id: string
           theme: string | null
           updated_at: string
@@ -694,8 +698,6 @@ export type Database = {
           meeting_time?: string | null
           observations?: string | null
           opening_prayer?: string | null
-          super_meeting_time?: string | null
-          super_meeting_weekday?: number | null
           template_id: string
           theme?: string | null
           updated_at?: string
@@ -708,8 +710,6 @@ export type Database = {
           meeting_time?: string | null
           observations?: string | null
           opening_prayer?: string | null
-          super_meeting_time?: string | null
-          super_meeting_weekday?: number | null
           template_id?: string
           theme?: string | null
           updated_at?: string
