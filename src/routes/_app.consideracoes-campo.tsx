@@ -996,11 +996,11 @@ function Page() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              {t("personalOutlines.cloud.help", { defaultValue: "Até 10 esboços podem ser sincronizados com a nuvem. Útil para acessar de outro dispositivo." })}
+              {t("personalOutlines.cloud.help", { defaultValue: "Os esboços e pastas são sincronizados com a nuvem e mantidos em cache local para uso offline." })}
             </p>
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-muted-foreground">
-                {t("personalOutlines.cloud.count", { defaultValue: "Salvos: {{n}}/10", n: cloudList.length })}
+                {t("personalOutlines.cloud.count", { defaultValue: "Salvos: {{n}}", n: cloudList.length })}
               </span>
               <Button size="sm" disabled={!draft || cloudBusy} onClick={handleCloudPush}>
                 <CloudUpload className="h-4 w-4 mr-1.5" />
