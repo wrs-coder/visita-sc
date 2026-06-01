@@ -15,6 +15,7 @@ import {
   FolderOpen,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
   MoreVertical,
   Download,
   Upload,
@@ -654,7 +655,7 @@ function Page() {
   function FolderRow({ folder, depth }: { folder: NoteFolder; depth: number }) {
     const isOpen = expanded.has(folder.id);
     const childFolders = folders.filter((f) => f.parentId === folder.id);
-    const childNotes = notes.filter((n) => n.folderId === folder.id && matchesQuery(n));
+    const childNotes = notes.filter((n) => n.folderId === folder.id && matchesQuery(n)).sort(sortInFolder);
     const selected = selectedFolderId === folder.id;
     const fixed = isFixedFolder(folder.id);
     const folderName = fixed
@@ -792,6 +793,14 @@ function Page() {
               <DropdownMenuItem onClick={() => handleRenameNote(note)}>
                 <Pencil className="h-4 w-4 mr-2" />
                 {t("common.rename")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => reorderNote(note.id, -1)}>
+                <ChevronUp className="h-4 w-4 mr-2" />
+                {t("personalOutlines.folders.moveUp", { defaultValue: "Mover para cima" })}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => reorderNote(note.id, 1)}>
+                <ChevronDown className="h-4 w-4 mr-2" />
+                {t("personalOutlines.folders.moveDown", { defaultValue: "Mover para baixo" })}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setMoveTarget({ kind: "note", id: note.id })}>
                 <Move className="h-4 w-4 mr-2" />
@@ -1028,7 +1037,7 @@ function Page() {
       )}
 
       <Dialog open={cloudOpen} onOpenChange={setCloudOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{t("personalOutlines.cloud.title", { defaultValue: "Esboços na nuvem" })}</DialogTitle>
           </DialogHeader>
