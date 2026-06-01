@@ -218,12 +218,13 @@ export function RichNoteEditor({
   return (
     <div
       className={cn(
-        // Sem overflow interno: a barra acompanha a rolagem da página/diálogo
-        // (sticky resolve contra o ancestral rolável mais próximo).
-        "rounded-md border bg-background relative",
+        // Container do editor com rolagem interna própria — funciona como
+        // "congelar linha superior" (Excel): a barra fica sticky no topo
+        // desta caixa e o conteúdo rola por baixo dela.
+        "rounded-md border bg-background relative overflow-y-auto overflow-x-hidden",
         className,
       )}
-      style={{ minHeight }}
+      style={{ minHeight, maxHeight: "70vh" }}
       onClick={() => editor?.chain().focus().run()}
     >
       <RichNoteToolbar editor={editor} visible={toolbarVisible} />
