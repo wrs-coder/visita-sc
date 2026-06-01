@@ -75,18 +75,18 @@ export const getVisitTemplateExtras = createServerFn({ method: "POST" })
           .from("meeting_talk_templates")
           .select("weekend_opening_song,weekend_closing_song,weekend_observations")
           .eq("id", tplId).maybeSingle(),
-        supabaseAdmin.from("meeting_talk_template_midweek").select("observations").eq("template_id", tplId).maybeSingle(),
-        supabaseAdmin.from("meeting_talk_template_pioneer").select("observations").eq("template_id", tplId).maybeSingle(),
-        supabaseAdmin.from("meeting_talk_template_elders").select("observations").eq("template_id", tplId).maybeSingle(),
+        supabaseAdmin.from("meeting_talk_template_midweek").select("observations,final_song").eq("template_id", tplId).maybeSingle(),
+        supabaseAdmin.from("meeting_talk_template_pioneer").select("observations,weekday,meeting_time").eq("template_id", tplId).maybeSingle(),
+        supabaseAdmin.from("meeting_talk_template_elders").select("observations,weekday,meeting_time").eq("template_id", tplId).maybeSingle(),
       ]);
       extras.weekend = {
         opening_song: root?.weekend_opening_song ?? null,
         closing_song: root?.weekend_closing_song ?? null,
         observations: root?.weekend_observations ?? null,
       };
-      extras.midweek = { observations: mid?.observations ?? null };
-      extras.pioneer = { observations: pio?.observations ?? null };
-      extras.elders = { observations: eld?.observations ?? null };
+      extras.midweek = { observations: mid?.observations ?? null, final_song: (mid as { final_song?: string | null } | null)?.final_song ?? null };
+      extras.pioneer = { observations: pio?.observations ?? null, weekday: (pio as { weekday?: number | null } | null)?.weekday ?? null, meeting_time: (pio as { meeting_time?: string | null } | null)?.meeting_time ?? null };
+      extras.elders = { observations: eld?.observations ?? null, weekday: (eld as { weekday?: number | null } | null)?.weekday ?? null, meeting_time: (eld as { meeting_time?: string | null } | null)?.meeting_time ?? null };
     }
 
     if (visit.template_id) {
