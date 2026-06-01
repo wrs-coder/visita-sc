@@ -509,8 +509,8 @@ export const exportMeetingTalkTemplate = createServerFn({ method: "POST" })
     const [mid, themes, pioneer, elders] = await Promise.all([
       supabaseAdmin.from("meeting_talk_template_midweek").select("service_talk_theme,chairman,closing_prayer").eq("template_id", data.id).maybeSingle(),
       supabaseAdmin.from("meeting_talk_template_weekend_themes").select("title,sort_order").eq("template_id", data.id).order("sort_order"),
-      supabaseAdmin.from("meeting_talk_template_pioneer").select("weekday,meeting_time,super_meeting_weekday,super_meeting_time,location,theme,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
-      supabaseAdmin.from("meeting_talk_template_elders").select("theme,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
+      supabaseAdmin.from("meeting_talk_template_pioneer").select("weekday,meeting_time,location,theme,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
+      supabaseAdmin.from("meeting_talk_template_elders").select("weekday,meeting_time,theme,opening_prayer,closing_prayer").eq("template_id", data.id).maybeSingle(),
     ]);
     return {
       ok: true as const,
