@@ -134,7 +134,9 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
     for (const row of cloudOutlines) {
       const cTime = new Date(row.updated_at).getTime();
       const cj = (row.content_json ?? {}) as Record<string, unknown>;
-      const folderId = await ensureFolderPath(row.folder_path, mutableFolders);
+      const folderId = row.folder_path === FIXED_OUTLINE_SENTINEL
+        ? FIXED_FOLDER_WEEK_OUTLINES
+        : await ensureFolderPath(row.folder_path, mutableFolders);
       const existing = byCloudId.get(row.id);
       const deletedAt = row.deleted_at ? new Date(row.deleted_at).getTime() : null;
       const base = {
@@ -146,6 +148,7 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
         assistants: typeof cj.assistants === "string" ? cj.assistants : "",
         description: typeof cj.description === "string" ? cj.description : "",
         content: typeof cj.content === "string" ? cj.content : "",
+        sort_order: typeof cj.sort_order === "number" ? cj.sort_order : null,
         updated_at: cTime,
         cloud_id: row.id,
         synced_at: Date.now(),
@@ -161,9 +164,11 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
 
     const latestFolders = await listFolders("outline");
     const latestOutlines = (await listAllNotesIncludingTrash()).filter(isOutline);
+    // Pastas fixas virtuais NUNCA vão para o Supabase — economiza linhas e evita conflitos.
+    const syncableFolders = latestFolders.filter((f) => !isFixedFolder(f.id));
     const pushed = await fnReplace({
       data: {
-        folders: latestFolders.map((folder) => ({
+        folders: syncableFolders.map((folder) => ({
           local_id: folder.id,
           id: cloudFolderIdByPath.get(folderPath(folder.id, latestFolders) || folder.name || "Pasta") ?? null,
           title: folder.name || "Pasta",
