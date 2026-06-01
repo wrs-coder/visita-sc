@@ -991,12 +991,10 @@ function Page() {
                 <Scissors className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
               </DropdownMenuItem>
-              {isOutline && (
-                <DropdownMenuItem onClick={() => handlePushNoteById(note.id)} disabled={cloudBusy}>
-                  <CloudUpload className="h-4 w-4 mr-2" />
-                  {t("personalOutlines.cloud.push", { defaultValue: "Enviar para nuvem" })}
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem onClick={() => handlePushNoteById(note.id)} disabled={cloudBusy}>
+                <CloudUpload className="h-4 w-4 mr-2" />
+                {t("personalOutlines.cloud.push", { defaultValue: "Enviar para nuvem" })}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
