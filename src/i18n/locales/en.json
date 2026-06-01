@@ -1443,7 +1443,16 @@
         "delTable": "Delete table",
         "color": "Text color",
         "highlight": "Highlighter",
-        "reset": "Clear formatting"
+        "reset": "Clear formatting",
+        "subscript": "Subscript",
+        "superscript": "Superscript",
+        "fontFamily": "Font",
+        "blockquote": "Quote",
+        "code": "Inline code",
+        "codeBlock": "Code block",
+        "hr": "Horizontal rule",
+        "indent": "Increase indent",
+        "outdent": "Decrease indent"
       }
     }
   },

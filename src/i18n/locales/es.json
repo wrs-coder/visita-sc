@@ -1418,7 +1418,16 @@
         "delTable": "Eliminar tabla",
         "color": "Color del texto",
         "highlight": "Resaltador",
-        "reset": "Quitar formato"
+        "reset": "Quitar formato",
+        "subscript": "Subíndice",
+        "superscript": "Superíndice",
+        "fontFamily": "Fuente",
+        "blockquote": "Cita",
+        "code": "Código en línea",
+        "codeBlock": "Bloque de código",
+        "hr": "Línea divisoria",
+        "indent": "Aumentar sangría",
+        "outdent": "Reducir sangría"
       }
     }
   },

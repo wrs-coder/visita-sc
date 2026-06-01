@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useEditor, EditorContent } from "@tiptap/react";
+import { Extension } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
@@ -15,6 +16,9 @@ import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TaskList } from "@tiptap/extension-task-list";
 import { TaskItem } from "@tiptap/extension-task-item";
+import { Subscript } from "@tiptap/extension-subscript";
+import { Superscript } from "@tiptap/extension-superscript";
+import { FontFamily } from "@tiptap/extension-font-family";
 import { RichNoteToolbar } from "./RichNoteToolbar";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
 import { cn } from "@/lib/utils";
@@ -27,6 +31,93 @@ interface RichNoteEditorProps {
   className?: string;
   minHeight?: string;
 }
+
+// Extensão de recuo (indent) — preserva margens vindas do Word e permite
+// aumentar/diminuir o recuo de parágrafos e títulos. Salva como atributo
+// `indent` (0–8) no nó e renderiza como margin-left em múltiplos de 32px.
+const IndentExtension = Extension.create({
+  name: "indent",
+  addOptions() {
+    return {
+      types: ["paragraph", "heading"],
+      minLevel: 0,
+      maxLevel: 8,
+      step: 32,
+    };
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          indent: {
+            default: 0,
+            parseHTML: (element) => {
+              const el = element as HTMLElement;
+              const style = el.getAttribute("style") || "";
+              const ml =
+                parseFloat(el.style.marginLeft) ||
+                parseFloat(el.style.paddingLeft) ||
+                0;
+              const ti = parseFloat(el.style.textIndent) || 0;
+              // Word costuma usar "mso-list" e margens em pt — converte ~ a px.
+              const total = Math.max(ml, ti);
+              if (!total) {
+                // tenta extrair "margin-left:NNpt" de string composta
+                const m = /margin-left:\s*([\d.]+)pt/i.exec(style);
+                if (m) {
+                  const pt = parseFloat(m[1]);
+                  const px = pt * 1.3333;
+                  return Math.min(8, Math.max(0, Math.round(px / 32)));
+                }
+                return 0;
+              }
+              return Math.min(8, Math.max(0, Math.round(total / 32)));
+            },
+            renderHTML: (attrs) => {
+              const lvl = Number(attrs.indent) || 0;
+              if (!lvl) return {};
+              return { style: `margin-left: ${lvl * 32}px` };
+            },
+          },
+        },
+      },
+    ];
+  },
+  addCommands() {
+    const change = (delta: number) => () => {
+      return ({
+        state,
+        dispatch,
+      }: {
+        state: import("@tiptap/pm/state").EditorState;
+        dispatch?: (tr: import("@tiptap/pm/state").Transaction) => void;
+      }) => {
+        const { from, to } = state.selection;
+        const tr = state.tr;
+        let changed = false;
+        state.doc.nodesBetween(from, to, (node, pos) => {
+          if (!this.options.types.includes(node.type.name)) return;
+          const cur = (node.attrs.indent as number) || 0;
+          const next = Math.min(
+            this.options.maxLevel,
+            Math.max(this.options.minLevel, cur + delta),
+          );
+          if (next !== cur) {
+            tr.setNodeMarkup(pos, undefined, { ...node.attrs, indent: next });
+            changed = true;
+          }
+        });
+        if (changed && dispatch) dispatch(tr);
+        return changed;
+      };
+    };
+    return {
+      indentBlock: change(1),
+      outdentBlock: change(-1),
+    } as never;
+  },
+});
 
 export function RichNoteEditor({
   value,
@@ -49,8 +140,11 @@ export function RichNoteEditor({
         }),
         TextStyle,
         Color,
+        FontFamily.configure({ types: ["textStyle"] }),
         Highlight.configure({ multicolor: true }),
         Underline,
+        Subscript,
+        Superscript,
         Link.configure({
           openOnClick: false,
           autolink: true,
@@ -59,6 +153,7 @@ export function RichNoteEditor({
         TextAlign.configure({
           types: ["heading", "paragraph"],
         }),
+        IndentExtension,
         Table.configure({ resizable: false }),
         TableRow,
         TableHeader,
@@ -86,6 +181,11 @@ export function RichNoteEditor({
             "[&_ul[data-type=taskList]]:list-none [&_ul[data-type=taskList]]:pl-2",
             "[&_ul[data-type=taskList]_li]:flex [&_ul[data-type=taskList]_li]:gap-2 [&_ul[data-type=taskList]_li]:items-start",
             "[&_ul[data-type=taskList]_li>label]:mt-1",
+            "[&_blockquote]:border-l-4 [&_blockquote]:border-primary/40 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-muted-foreground [&_blockquote]:my-2",
+            "[&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[0.9em] [&_code]:font-mono",
+            "[&_pre]:bg-muted [&_pre]:rounded-md [&_pre]:p-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre_code]:bg-transparent [&_pre_code]:p-0",
+            "[&_hr]:my-3 [&_hr]:border-t [&_hr]:border-border",
+            "[&_sub]:text-[0.75em] [&_sup]:text-[0.75em]",
           ),
         },
       },
@@ -118,7 +218,9 @@ export function RichNoteEditor({
   return (
     <div
       className={cn(
-        "rounded-md border bg-background overflow-y-auto relative",
+        // Sem overflow interno: a barra acompanha a rolagem da página/diálogo
+        // (sticky resolve contra o ancestral rolável mais próximo).
+        "rounded-md border bg-background relative",
         className,
       )}
       style={{ minHeight }}

@@ -24,6 +24,15 @@ import {
   Plus,
   Minus,
   Trash2,
+  Subscript as SubIcon,
+  Superscript as SupIcon,
+  Quote,
+  Code,
+  Code2,
+  Minus as Divider,
+  IndentIncrease,
+  IndentDecrease,
+  Type,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +52,17 @@ const HIGHLIGHT_COLORS = [
   "#ddd6fe", "#fbcfe8", "#fed7aa", "#e5e7eb",
 ];
 
+const FONT_FAMILIES: { label: string; value: string }[] = [
+  { label: "Padrão", value: "" },
+  { label: "Sans", value: "ui-sans-serif, system-ui, sans-serif" },
+  { label: "Serif", value: "Georgia, 'Times New Roman', serif" },
+  { label: "Mono", value: "ui-monospace, SFMono-Regular, Menlo, monospace" },
+  { label: "Arial", value: "Arial, sans-serif" },
+  { label: "Georgia", value: "Georgia, serif" },
+  { label: "Times", value: "'Times New Roman', Times, serif" },
+  { label: "Courier", value: "'Courier New', Courier, monospace" },
+];
+
 interface ToolbarProps {
   editor: Editor | null;
   visible?: boolean;
@@ -53,6 +73,7 @@ export function RichNoteToolbar({ editor, visible = true }: ToolbarProps) {
   const [colorOpen, setColorOpen] = useState(false);
   const [hlOpen, setHlOpen] = useState(false);
   const [tableOpen, setTableOpen] = useState(false);
+  const [fontOpen, setFontOpen] = useState(false);
 
   if (!editor) return null;
 
@@ -128,6 +149,46 @@ export function RichNoteToolbar({ editor, visible = true }: ToolbarProps) {
         <Heading3 className="h-4 w-4" />
       </Button>
 
+      {/* Fonte */}
+      <Popover open={fontOpen} onOpenChange={setFontOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={btn(false)}
+            title={t("personalOutlines.editor.toolbar.fontFamily")}
+            onMouseDown={(e) => e.preventDefault()}
+          >
+            <Type className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-48 p-1 z-[120]" align="start">
+          {FONT_FAMILIES.map((f) => (
+            <Button
+              key={f.label}
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start h-8 text-xs"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                if (f.value) {
+                  editor.chain().focus().setFontFamily(f.value).run();
+                } else {
+                  editor.chain().focus().unsetFontFamily().run();
+                }
+                setFontOpen(false);
+              }}
+            >
+              <span style={{ fontFamily: f.value || undefined }}>
+                {f.label}
+              </span>
+            </Button>
+          ))}
+        </PopoverContent>
+      </Popover>
+
       {sep}
 
       {/* Formatação inline */}
@@ -163,6 +224,28 @@ export function RichNoteToolbar({ editor, visible = true }: ToolbarProps) {
         onClick={() => editor.chain().focus().toggleUnderline().run()}
       >
         <UnderlineIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={btn(isActive("subscript"))}
+        title={t("personalOutlines.editor.toolbar.subscript")}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => editor.chain().focus().toggleSubscript().run()}
+      >
+        <SubIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={btn(isActive("superscript"))}
+        title={t("personalOutlines.editor.toolbar.superscript")}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => editor.chain().focus().toggleSuperscript().run()}
+      >
+        <SupIcon className="h-4 w-4" />
       </Button>
 
       {sep}
@@ -200,6 +283,43 @@ export function RichNoteToolbar({ editor, visible = true }: ToolbarProps) {
         onClick={() => editor.chain().focus().toggleTaskList().run()}
       >
         <ListChecks className="h-4 w-4" />
+      </Button>
+
+      {sep}
+
+      {/* Recuo / tabulação */}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={btn(false)}
+        title={t("personalOutlines.editor.toolbar.outdent")}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => {
+          const chain = editor.chain().focus();
+          // Se estiver em lista, prefere liftListItem (Tab nativo).
+          if (isActive("listItem")) chain.liftListItem("listItem").run();
+          else if (isActive("taskItem")) chain.liftListItem("taskItem").run();
+          else (chain as unknown as { outdentBlock: () => typeof chain }).outdentBlock().run();
+        }}
+      >
+        <IndentDecrease className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={btn(false)}
+        title={t("personalOutlines.editor.toolbar.indent")}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => {
+          const chain = editor.chain().focus();
+          if (isActive("listItem")) chain.sinkListItem("listItem").run();
+          else if (isActive("taskItem")) chain.sinkListItem("taskItem").run();
+          else (chain as unknown as { indentBlock: () => typeof chain }).indentBlock().run();
+        }}
+      >
+        <IndentIncrease className="h-4 w-4" />
       </Button>
 
       {sep}
@@ -248,6 +368,54 @@ export function RichNoteToolbar({ editor, visible = true }: ToolbarProps) {
         onClick={() => editor.chain().focus().setTextAlign("justify").run()}
       >
         <AlignJustify className="h-4 w-4" />
+      </Button>
+
+      {sep}
+
+      {/* Citação / código / divisor */}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={btn(isActive("blockquote"))}
+        title={t("personalOutlines.editor.toolbar.blockquote")}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+      >
+        <Quote className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={btn(isActive("code"))}
+        title={t("personalOutlines.editor.toolbar.code")}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => editor.chain().focus().toggleCode().run()}
+      >
+        <Code className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={btn(isActive("codeBlock"))}
+        title={t("personalOutlines.editor.toolbar.codeBlock")}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+      >
+        <Code2 className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={btn(false)}
+        title={t("personalOutlines.editor.toolbar.hr")}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+      >
+        <Divider className="h-4 w-4" />
       </Button>
 
       {sep}
