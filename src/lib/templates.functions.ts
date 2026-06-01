@@ -152,15 +152,18 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
       const p = (it.payload ?? {}) as Record<string, unknown>;
       const targetDate = dateAt(it.day_offset);
       if (it.kind === "study") {
-        if (fieldDates.has(targetDate)) { skipped++; continue; }
-        await supabaseAdmin.from("field_assignments").insert({
+        const periodVal = str(p.period) ?? "Manhã";
+        const key = fieldKey(targetDate, periodVal);
+        if (fieldDates.has(key)) { skipped++; continue; }
+        const { error: insErr } = await supabaseAdmin.from("field_assignments").insert({
           visit_id: data.visitId, event_date: targetDate,
-          period: str(p.period) ?? "Manhã",
+          period: periodVal,
           meeting_point: str(p.meeting_point), meeting_time: time(p.meeting_time),
           acompanhante: str(p.acompanhante), acompanhante_for: str(p.acompanhante_for),
           contact_phone: str(p.contact_phone), is_active: bool(p.is_active, true),
         });
-        fieldDates.add(targetDate); inserted++;
+        if (insErr) return { ok: false as const, error: insErr.message };
+        fieldDates.add(key); inserted++;
       } else if (it.kind === "meal") {
         if (mealDates.has(targetDate)) { skipped++; continue; }
         await supabaseAdmin.from("meals").insert({
