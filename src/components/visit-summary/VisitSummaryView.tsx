@@ -61,8 +61,22 @@ export interface VisitSnapshot {
 
 type SectionKey = "cron" | "estudos" | "campo" | "ref" | "trans" | "check";
 
-function fmtTime(t: string | null) {
+function fmtTime(t: string | null | undefined) {
   return t ? t.slice(0, 5) : "—";
+}
+
+type TransportRow = VisitSnapshot["transport"][number];
+
+/** Agrupa transportes por `event_date` (mesmo padrão da aba Transporte). */
+function groupTransport(rows: TransportRow[]): Array<{ key: string; rows: TransportRow[] }> {
+  const map = new Map<string, TransportRow[]>();
+  for (const it of rows) {
+    const key = it.event_date ?? `__none__:${it.id}`;
+    const arr = map.get(key) ?? [];
+    arr.push(it);
+    map.set(key, arr);
+  }
+  return Array.from(map.entries()).map(([key, rs]) => ({ key, rows: rs }));
 }
 
 export function VisitSummaryView({
