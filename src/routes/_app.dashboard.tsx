@@ -46,6 +46,7 @@ import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.fun
 import { listNotesByType, FIXED_FOLDER_WEEK_CONSIDERATIONS, FIXED_FOLDER_WEEK_OUTLINES, type FieldNote } from "@/lib/bible-notes-store";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
 import { FieldNoteFullscreenDialog } from "@/components/dashboard/FieldNoteFullscreenDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -219,11 +220,14 @@ function Dashboard() {
   type RecomendadoPreview = {
     id: string;
     title: string | null;
+    content: string | null;
     updated_at: string;
+    congregation_id: string;
   };
   const [outlinesPreview, setOutlinesPreview] = useState<OutlinePreview[]>([]);
   const [weekOutlinesPreview, setWeekOutlinesPreview] = useState<OutlinePreview[]>([]);
   const [recomendadosPreview, setRecomendadosPreview] = useState<RecomendadoPreview[]>([]);
+  const [recomendadoOpen, setRecomendadoOpen] = useState<RecomendadoPreview | null>(null);
 
   // Nota aberta em tela cheia no próprio Dashboard (overlay).
   const [fullscreenNoteId, setFullscreenNoteId] = useState<string | null>(null);
@@ -279,7 +283,7 @@ function Dashboard() {
     (async () => {
       const { data } = await supabase
         .from("private_notes")
-        .select("id, title, updated_at")
+        .select("id, title, content, updated_at, congregation_id")
         .eq("superintendent_id", user.id)
         .eq("congregation_id", selected)
         .eq("note_type", "recomendados")
@@ -799,9 +803,10 @@ function Dashboard() {
                 <ul className="space-y-2">
                   {recomendadosPreview.map((n) => (
                     <li key={n.id}>
-                      <Link
-                        to="/notas"
-                          className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors min-w-0"
+                      <button
+                        type="button"
+                        onClick={() => setRecomendadoOpen(n)}
+                        className="w-full text-left flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors min-w-0"
                       >
                         <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
@@ -812,7 +817,7 @@ function Dashboard() {
                             {formatDistanceToNow(new Date(n.updated_at), { addSuffix: true, locale: ptBR })}
                           </div>
                         </div>
-                      </Link>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -1126,6 +1131,36 @@ function Dashboard() {
         onOpenChange={(open) => { if (!open) setFullscreenNoteId(null); }}
         onSaved={() => { void loadOutlines(); }}
       />
+
+      <Dialog open={!!recomendadoOpen} onOpenChange={(o) => { if (!o) setRecomendadoOpen(null); }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+          <DialogHeader>
+            <DialogTitle className="whitespace-normal break-words [overflow-wrap:anywhere]">
+              {recomendadoOpen?.title || "(sem título)"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-foreground/90">
+            {recomendadoOpen?.content || <span className="text-muted-foreground">—</span>}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-row">
+            <Button variant="ghost" onClick={() => setRecomendadoOpen(null)}>
+              {t("common.close", { defaultValue: "Fechar" })}
+            </Button>
+            {recomendadoOpen && (
+              <Button asChild>
+                <Link
+                  to="/notas"
+                  search={{ tab: "recomendados", noteId: recomendadoOpen.id, congId: recomendadoOpen.congregation_id }}
+                  onClick={() => setRecomendadoOpen(null)}
+                >
+                  <PencilLine className="h-4 w-4 mr-2" />
+                  {t("common.edit", { defaultValue: "Editar" })}
+                </Link>
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

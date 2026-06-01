@@ -33,7 +33,16 @@ function makeUuid(): string {
   });
 }
 
-export const Route = createFileRoute("/_app/notas")({ component: Page });
+export const Route = createFileRoute("/_app/notas")({
+  validateSearch: (search: Record<string, unknown>): { tab?: NoteType; noteId?: string; congId?: string } => {
+    const allowed: NoteType[] = ["free", "pastoral", "s303", "oradores", "recomendados", "peticoes"];
+    const tab = typeof search.tab === "string" && (allowed as string[]).includes(search.tab) ? (search.tab as NoteType) : undefined;
+    const noteId = typeof search.noteId === "string" ? search.noteId : undefined;
+    const congId = typeof search.congId === "string" ? search.congId : undefined;
+    return { tab, noteId, congId };
+  },
+  component: Page,
+});
 
 type NoteType = "free" | "pastoral" | "s303" | "oradores" | "recomendados" | "peticoes";
 
@@ -70,17 +79,38 @@ function Page() {
     if (typeof window === "undefined") return null;
     return localStorage.getItem(NOTAS_CONG_KEY);
   });
+  const search = Route.useSearch();
   const [notes, setNotes] = useState<Note[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [tab, setTab] = useState<NoteType>("free");
+  const [tab, setTab] = useState<NoteType>(search.tab ?? "free");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [highlightId, setHighlightId] = useState<string | null>(search.noteId ?? null);
 
   const catLabel = (v: NoteType) => t(`notes.categories.${v}.label`);
   const catAdd = (v: NoteType) => t(`notes.categories.${v}.add`);
   const catEmpty = (v: NoteType) => t(`notes.categories.${v}.empty`);
+
+  // Aplica deep-link da Dashboard: troca tab e direciona congregação se informada.
+  useEffect(() => {
+    if (search.tab && search.tab !== tab) setTab(search.tab);
+    if (search.congId && search.congId !== congId) setCongId(search.congId);
+    if (search.noteId) setHighlightId(search.noteId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.tab, search.noteId, search.congId]);
+
+  // Faz scroll suave e destaca a nota alvo quando disponível na lista filtrada.
+  useEffect(() => {
+    if (!highlightId) return;
+    const el = document.getElementById(`note-${highlightId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const t1 = window.setTimeout(() => setHighlightId(null), 2400);
+      return () => window.clearTimeout(t1);
+    }
+  }, [highlightId, notes, tab]);
 
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
@@ -451,10 +481,16 @@ function Page() {
               <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{catEmpty(c.value)}</CardContent></Card>
             )}
             {tab === c.value && filtered.map((n) => (
-              <NoteCard
-                key={n.id} note={n} savingId={savingId} update={update} remove={remove}
-                checked={selected.has(n.id)} onToggleSelect={() => toggleSelect(n.id)}
-              />
+              <div
+                key={n.id}
+                id={`note-${n.id}`}
+                className={highlightId === n.id ? "rounded-lg ring-2 ring-primary/60 transition-shadow" : undefined}
+              >
+                <NoteCard
+                  note={n} savingId={savingId} update={update} remove={remove}
+                  checked={selected.has(n.id)} onToggleSelect={() => toggleSelect(n.id)}
+                />
+              </div>
             ))}
           </TabsContent>
         ))}
