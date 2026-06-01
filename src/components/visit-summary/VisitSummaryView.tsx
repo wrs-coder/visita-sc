@@ -576,35 +576,73 @@ export function VisitSummaryView({
               {snap.transport.length === 0 ? (
                 <Empty text={t("guest.empty.transport")} />
               ) : (
-                snap.transport.map((tp) => (
-                  <Card key={tp.id}>
-                    <CardContent className="p-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium text-sm">
-                          {tp.event_date ? fmtDate(tp.event_date) : t("guest.labels.noDate")}
+                groupTransport(snap.transport).map((g) => {
+                  const head = g.rows[0];
+                  return (
+                    <Card key={g.key}>
+                      <CardContent className="p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Car className="h-4 w-4 text-primary" />
+                          <div className="font-medium text-sm">
+                            {head.event_date ? fmtDate(head.event_date) : t("guest.labels.noDate")}
+                          </div>
+                          {head.all_day && (
+                            <span className="ml-auto text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
+                              {t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}
+                            </span>
+                          )}
                         </div>
-                      </div>
-                      <div className="text-xs">
-                        <span className="text-muted-foreground">{t("guest.labels.driver")}: </span>
-                        {tp.driver_name}
-                      </div>
-                      {tp.contact_phone && (
-                        <div className="text-xs flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {tp.contact_phone}
+                        <div className="space-y-2">
+                          {g.rows.map((r, idx) => {
+                            const showDriver = !head.all_day || idx === 0;
+                            const typeLbl = r.event_type ? t(`transport.eventType.${r.event_type}`, { defaultValue: r.event_type }) : null;
+                            const dirLbl = r.direction ? t(`transport.direction.${r.direction}`, { defaultValue: r.direction }) : null;
+                            return (
+                              <div key={r.id} className="rounded-md border bg-muted/20 p-2 space-y-1">
+                                {(typeLbl || dirLbl) && (
+                                  <div className="text-xs font-medium">
+                                    {typeLbl ?? t("transport.noDay")}
+                                    {dirLbl ? ` · ${dirLbl}` : ""}
+                                  </div>
+                                )}
+                                {(r.departure_time || r.return_time) && (
+                                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {fmtTime(r.departure_time)}
+                                    {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
+                                  </div>
+                                )}
+                                {showDriver && (
+                                  <>
+                                    <div className="text-xs">
+                                      <span className="text-muted-foreground">{t("guest.labels.driver")}: </span>
+                                      {r.driver_name}
+                                    </div>
+                                    {r.contact_phone && (
+                                      <div className="text-xs flex items-center gap-1">
+                                        <Phone className="h-3 w-3" />
+                                        {r.contact_phone}
+                                      </div>
+                                    )}
+                                    {r.description && (
+                                      <div className="text-xs text-muted-foreground">{r.description}</div>
+                                    )}
+                                    {r.notes && (
+                                      <div className="text-xs text-muted-foreground">{r.notes}</div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                      )}
-                      {tp.description && (
-                        <div className="text-xs text-muted-foreground">{tp.description}</div>
-                      )}
-                      {tp.notes && (
-                        <div className="text-xs text-muted-foreground">{tp.notes}</div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))
+                      </CardContent>
+                    </Card>
+                  );
+                })
               )}
             </TabsContent>
+
 
             {!snap.wifeMode && (
               <TabsContent value="check" className="space-y-2 mt-4">
