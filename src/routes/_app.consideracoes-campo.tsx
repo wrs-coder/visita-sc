@@ -953,6 +953,7 @@ function Page() {
   function NoteRow({ note, depth }: { note: FieldNote; depth: number }) {
     const selected = selectedNoteId === note.id;
     const isClipped = clipboardNoteIds.includes(note.id);
+    const isChecked = selectedIds.has(note.id);
     return (
       <div
         className={cn(
@@ -962,6 +963,19 @@ function Page() {
         )}
         style={{ paddingLeft: 6 + depth * 12 + 16 }}
       >
+        <Checkbox
+          checked={isChecked}
+          onCheckedChange={(c) => {
+            setSelectedIds((s) => {
+              const next = new Set(s);
+              if (c) next.add(note.id); else next.delete(note.id);
+              return next;
+            });
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="h-3.5 w-3.5 shrink-0"
+          aria-label={t("common.select", { defaultValue: "Selecionar" })}
+        />
         <button
           type="button"
           onClick={() => selectNote(note)}
