@@ -124,8 +124,6 @@ function Page() {
       pioneer: {
         weekday: r.pioneer?.weekday ?? null,
         meeting_time: r.pioneer?.meeting_time ?? "",
-        super_meeting_weekday: r.pioneer?.super_meeting_weekday ?? null,
-        super_meeting_time: r.pioneer?.super_meeting_time ?? "",
         location: r.pioneer?.location ?? "",
         theme: r.pioneer?.theme ?? "",
         opening_prayer: r.pioneer?.opening_prayer ?? "",
@@ -133,6 +131,8 @@ function Page() {
         observations: r.pioneer?.observations ?? "",
       },
       elders: {
+        weekday: r.elders?.weekday ?? null,
+        meeting_time: r.elders?.meeting_time ?? "",
         theme: r.elders?.theme ?? "",
         opening_prayer: r.elders?.opening_prayer ?? "",
         closing_prayer: r.elders?.closing_prayer ?? "",
