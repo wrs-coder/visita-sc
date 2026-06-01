@@ -1318,24 +1318,24 @@ function NoteEditor({
       </div>
 
       {/* Sticky action bar — sempre visível no rodapé do editor */}
-      <div className="sticky bottom-0 left-0 right-0 z-30 -mx-5 px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-center gap-2 w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
+      <div className="sticky bottom-0 left-0 right-0 z-30 -mx-5 px-3 sm:px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
         {mode === "outline" && (
-          <Button variant="outline" size="sm" onClick={() => onModeChange("edit")}>
-            <Pencil className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.edit")}
+          <Button variant="outline" size="sm" onClick={() => onModeChange("edit")} title={t("fieldConsiderations.edit")}>
+            <Pencil className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.edit")}</span>
           </Button>
         )}
-        <Button variant="outline" size="sm" onClick={onExport}>
-          <Download className="h-4 w-4 mr-1.5" /> {t("personalOutlines.folders.exportNote")}
+        <Button variant="outline" size="sm" onClick={onExport} title={t("personalOutlines.folders.exportNote")}>
+          <Download className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.folders.exportNote")}</span>
         </Button>
-        <Button variant="outline" size="sm" onClick={onCloud}>
-          <Cloud className="h-4 w-4 mr-1.5" /> {t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}
+        <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
+          <Cloud className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}</span>
         </Button>
-        <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive">
-          <Trash2 className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.delete")}
+        <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive" title={t("fieldConsiderations.delete")}>
+          <Trash2 className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.delete")}</span>
         </Button>
         {mode === "edit" && (
-          <Button size="sm" onClick={onSave} disabled={saving}>
-            <Save className="h-4 w-4 mr-1.5" /> {t("fieldConsiderations.save")}
+          <Button size="sm" onClick={onSave} disabled={saving} title={t("fieldConsiderations.save")}>
+            <Save className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.save")}</span>
           </Button>
         )}
       </div>
