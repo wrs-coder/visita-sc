@@ -590,20 +590,28 @@ function Page() {
     return out;
   }
 
-  async function moveNoteTo(noteId: string, targetFolderId: string | null) {
+  async function moveNoteTo(noteId: string, targetFolderId: string | null, targetType?: NoteType) {
     const note = notes.find((n) => n.id === noteId);
     if (!note) return;
-    if ((note.folderId ?? null) === targetFolderId) return;
+    const sameType = !targetType || targetType === (note.type ?? "field_consideration");
+    if (sameType && (note.folderId ?? null) === targetFolderId) return;
     const updated: FieldNote = {
       ...note,
+      type: targetType ?? note.type,
       folderId: targetFolderId,
       updated_at: Date.now(),
-      dirty: activeType === "outline" ? true : note.dirty,
+      dirty: true,
     };
     await persistNote(updated);
-    setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
-      .sort((a, b) => b.updated_at - a.updated_at));
-    if (draft && draft.id === noteId) setDraft(updated);
+    if (sameType) {
+      setNotes((all) => all.map((n) => (n.id === noteId ? updated : n))
+        .sort((a, b) => b.updated_at - a.updated_at));
+    } else {
+      // Tipo mudou: nota sai da lista atual (subaba diferente).
+      setNotes((all) => all.filter((n) => n.id !== noteId));
+      if (draft?.id === noteId) { setDraft(null); setSelectedNoteId(null); }
+    }
+    if (draft && draft.id === noteId && sameType) setDraft(updated);
     if (targetFolderId) setExpanded((s) => new Set(s).add(targetFolderId));
     await syncOutlinesIfOnline();
     toast.success(t("personalOutlines.folders.noteMoved", { defaultValue: "Nota movida." }));
@@ -627,15 +635,21 @@ function Page() {
     toast.success(t("personalOutlines.folders.folderMoved", { defaultValue: "Pasta movida." }));
   }
 
-  async function handleConfirmMove(targetFolderId: string | null) {
+  async function handleConfirmMove(targetFolderId: string | null, targetType?: NoteType) {
     if (!moveTarget) return;
     if (moveTarget.kind === "note") {
-      await moveNoteTo(moveTarget.id, targetFolderId);
+      await moveNoteTo(moveTarget.id, targetFolderId, targetType);
+    } else if (moveTarget.kind === "notes") {
+      for (const id of moveTarget.ids) {
+        await moveNoteTo(id, targetFolderId, targetType);
+      }
+      setSelectedIds(new Set());
     } else {
       await moveFolderTo(moveTarget.id, targetFolderId);
     }
     setMoveTarget(null);
   }
+
 
   async function handleRenameNote(note: FieldNote) {
     const name = prompt(
