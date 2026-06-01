@@ -201,13 +201,19 @@ function Page() {
 
   // Pastas das duas subabas (para diálogo cross-subaba)
   const [allFolders, setAllFolders] = useState<NoteFolder[]>([]);
-  async function refreshAllFolders() {
+  const refreshAllFolders = React.useCallback(async () => {
     const [a, b] = await Promise.all([
       listFoldersStore("outline"),
       listFoldersStore("field_consideration"),
     ]);
     setAllFolders([...a, ...b]);
-  }
+  }, []);
+  // Carrega pastas das duas subabas quando o diálogo de mover for aberto para notas
+  useEffect(() => {
+    if (moveTarget && (moveTarget.kind === "note" || moveTarget.kind === "notes")) {
+      void refreshAllFolders();
+    }
+  }, [moveTarget, refreshAllFolders]);
 
   // Sincronização com a nuvem
   const [cloudOpen, setCloudOpen] = useState(false);
