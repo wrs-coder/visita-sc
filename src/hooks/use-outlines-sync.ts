@@ -85,7 +85,7 @@ async function ensureFolderPath(path: string, folders: NoteFolder[], preferredId
   return currentId;
 }
 
-export function useOutlinesSync() {
+export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
   const { user } = useAuth();
   const fnList = useServerFn(listCloudOutlineTree);
   const fnReplace = useServerFn(replaceCloudOutlineTree);
@@ -188,11 +188,11 @@ export function useOutlinesSync() {
   }, [user, fnList, fnReplace]);
 
   useEffect(() => {
-    if (!user || ran.current) return;
+    if (!auto || !user || ran.current) return;
     if (typeof navigator !== "undefined" && navigator.onLine === false) return;
     ran.current = true;
     syncNow().catch((err) => console.warn("[useOutlinesSync] sync failed", err));
-  }, [user, syncNow]);
+  }, [auto, user, syncNow]);
 
   return syncNow;
 }
