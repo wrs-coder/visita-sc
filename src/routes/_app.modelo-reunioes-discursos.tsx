@@ -419,9 +419,11 @@ function Page() {
                         placeholder={t("templates.meetingTalk.weekend.publicTalkPlaceholder")}
                         onChange={(e) => setPayload({ ...payload, weekend_public_talk_theme: e.target.value })}
                       />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {isSuper ? t("templates.meetingTalk.weekend.editorHint") : t("templates.meetingTalk.weekend.readOnly")}
-                      </p>
+                      {!isSuper && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {t("templates.meetingTalk.weekend.readOnly")}
+                        </p>
+                      )}
                     </div>
                     <div className="border-t pt-3">
                       <div className="flex items-center justify-between">

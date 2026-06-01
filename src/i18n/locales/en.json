@@ -468,6 +468,9 @@
       "observations": "Additional information from the superintendent",
       "openingSong": "Opening song",
       "closingSong": "Closing song",
+      "finalSong": "Closing Song",
+      "schedule": "Day & Time (set by the Superintendent)",
+      "location": "Location",
       "fieldObservations": "Additional information from the superintendent",
       "hint": "Read-only information from the selected template."
     },
