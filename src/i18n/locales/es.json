@@ -1320,7 +1320,8 @@
     "cloud": {
       "button": "Nube",
       "title": "Bosquejos en la nube",
-      "help": "Los bosquejos y carpetas se sincronizan con la nube y permanecen en caché local para uso offline.",
+      "help": "Los bosquejos y carpetas se sincronizan con la nube y permanecen en caché local para uso offline. Al descargar, el bosquejo entra en la carpeta seleccionada.",
+      "downloadButton": "Descargar de la nube",
       "count": "Guardados: {{n}}",
       "push": "Subir bosquejo actual",
       "pushed": "Bosquejo enviado a la nube.",
