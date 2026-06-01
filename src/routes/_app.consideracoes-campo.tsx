@@ -512,6 +512,7 @@ function Page() {
           id: note.cloud_id ?? undefined,
           title: (note.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })).slice(0, 200),
           folder_path: folderPathForCloud(note.folderId),
+          note_type: (note.type ?? activeType ?? "outline"),
           content: {
             prayer: note.prayer ?? null,
             territory: note.territory ?? null,
