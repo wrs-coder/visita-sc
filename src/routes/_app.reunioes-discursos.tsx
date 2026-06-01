@@ -301,15 +301,13 @@ function TabsGuarded({
       {isSuper && <SuperCongregationSelector />}
 
       <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
-        <div className="-mx-1 overflow-x-auto scrollbar-none">
-          <TabsList className="flex flex-nowrap w-max h-auto gap-1 bg-transparent p-0">
-            <TabsTrigger value="campo" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabCampo")}</TabsTrigger>
-            <TabsTrigger value="meio" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabMeio")}</TabsTrigger>
-            <TabsTrigger value="fim" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabFim")}</TabsTrigger>
-            <TabsTrigger value="pioneiros" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabPioneiros")}</TabsTrigger>
-            <TabsTrigger value="ancios" className="shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabAncios")}</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="flex flex-wrap h-auto w-full gap-1 bg-transparent p-0">
+          <TabsTrigger value="campo" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabCampo")}</TabsTrigger>
+          <TabsTrigger value="meio" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabMeio")}</TabsTrigger>
+          <TabsTrigger value="fim" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabFim")}</TabsTrigger>
+          <TabsTrigger value="pioneiros" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabPioneiros")}</TabsTrigger>
+          <TabsTrigger value="ancios" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabAncios")}</TabsTrigger>
+        </TabsList>
         {panelsReady ? (
           <>
             <TabsContent value="campo" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><FieldMeetingsPanel /></Suspense></TabsContent>
