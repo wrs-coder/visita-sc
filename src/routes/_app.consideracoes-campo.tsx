@@ -1330,7 +1330,6 @@ function NoteEditor({
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
-  const isOutline = type === "outline";
 
   return (
     <div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words pb-24">
