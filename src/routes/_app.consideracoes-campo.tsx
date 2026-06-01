@@ -612,8 +612,44 @@ function Page() {
   // Árvore: pastas filhas de um parentId, filtradas por busca
   const matchesQuery = (n: FieldNote) =>
     !query.trim() || (n.title || "").toLowerCase().includes(query.trim().toLowerCase());
+  // Ordena dentro da pasta por sort_order asc, fallback updated_at desc.
+  const sortInFolder = (a: FieldNote, b: FieldNote) => {
+    const ao = a.sort_order ?? Number.POSITIVE_INFINITY;
+    const bo = b.sort_order ?? Number.POSITIVE_INFINITY;
+    if (ao !== bo) return ao - bo;
+    return b.updated_at - a.updated_at;
+  };
   const rootFolders = folders.filter((f) => f.parentId === null);
-  const rootNotes = notes.filter((n) => !n.folderId && matchesQuery(n));
+  const rootNotes = notes.filter((n) => !n.folderId && matchesQuery(n)).sort(sortInFolder);
+
+  async function reorderNote(noteId: string, direction: -1 | 1) {
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+    const siblings = notes
+      .filter((n) => (n.folderId ?? null) === (note.folderId ?? null) && matchesQuery(n))
+      .sort(sortInFolder);
+    const idx = siblings.findIndex((n) => n.id === noteId);
+    const swapIdx = idx + direction;
+    if (idx < 0 || swapIdx < 0 || swapIdx >= siblings.length) return;
+    // Normaliza sort_order de todos os irmãos a partir do índice (estável e barato).
+    const reordered = [...siblings];
+    const [moved] = reordered.splice(idx, 1);
+    reordered.splice(swapIdx, 0, moved);
+    const now = Date.now();
+    const updates: FieldNote[] = reordered.map((n, i) => ({
+      ...n,
+      sort_order: i,
+      // Não bumpa updated_at (evita "subir" a nota em listas globais), mas marca dirty.
+      dirty: activeType === "outline" ? true : n.dirty,
+    }));
+    for (const u of updates) await persistNote(u);
+    setNotes((all) => {
+      const map = new Map(updates.map((u) => [u.id, u]));
+      return all.map((n) => map.get(n.id) ?? n);
+    });
+    void syncOutlinesIfOnline();
+    void now;
+  }
 
   function FolderRow({ folder, depth }: { folder: NoteFolder; depth: number }) {
     const isOpen = expanded.has(folder.id);
