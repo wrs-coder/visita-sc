@@ -533,6 +533,26 @@ function Page() {
 
                 <TabsContent value="anc" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>{t("templates.meetingTalk.elders.weekday")}</Label>
+                        <Select
+                          value={payload.elders.weekday === null ? "" : String(payload.elders.weekday)}
+                          disabled={!isSuper}
+                          onValueChange={(v) => setPayload({ ...payload, elders: { ...payload.elders, weekday: v ? Number(v) : null } })}
+                        >
+                          <SelectTrigger className="mt-1"><SelectValue placeholder={t("common.select")} /></SelectTrigger>
+                          <SelectContent>
+                            {Object.keys(WEEKDAY_LABELS).map((k) => <SelectItem key={k} value={k}>{weekdayLabel(Number(k))}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>{t("templates.meetingTalk.elders.time")}</Label>
+                        <Input type="time" className="mt-1" value={payload.elders.meeting_time} readOnly={!isSuper}
+                          onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, meeting_time: e.target.value } })} />
+                      </div>
+                    </div>
                     <div>
                       <Label>{t("templates.meetingTalk.elders.observations")}</Label>
                       <CharCounterTextarea
