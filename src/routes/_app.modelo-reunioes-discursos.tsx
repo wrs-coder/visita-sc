@@ -46,15 +46,20 @@ type Payload = {
   pioneer: {
     weekday: number | null;
     meeting_time: string;
-    super_meeting_weekday: number | null;
-    super_meeting_time: string;
     location: string;
     theme: string;
     opening_prayer: string;
     closing_prayer: string;
     observations: string;
   };
-  elders: { theme: string; opening_prayer: string; closing_prayer: string; observations: string };
+  elders: {
+    weekday: number | null;
+    meeting_time: string;
+    theme: string;
+    opening_prayer: string;
+    closing_prayer: string;
+    observations: string;
+  };
 };
 
 const emptyPayload = (): Payload => ({
@@ -64,8 +69,8 @@ const emptyPayload = (): Payload => ({
   weekend_closing_song: "",
   weekend_observations: "",
   weekend_themes: [],
-  pioneer: { weekday: null, meeting_time: "", super_meeting_weekday: null, super_meeting_time: "", location: "", theme: "", opening_prayer: "", closing_prayer: "", observations: "" },
-  elders: { theme: "", opening_prayer: "", closing_prayer: "", observations: "" },
+  pioneer: { weekday: null, meeting_time: "", location: "", theme: "", opening_prayer: "", closing_prayer: "", observations: "" },
+  elders: { weekday: null, meeting_time: "", theme: "", opening_prayer: "", closing_prayer: "", observations: "" },
 });
 
 const MAX = 24;
