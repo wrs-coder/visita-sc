@@ -128,7 +128,7 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
         .order("period"),
       supabase
         .from("transport_schedule")
-        .select("id,event_date,driver_name,contact_phone,description,notes")
+        .select("id,event_date,weekday,event_type,direction,all_day,departure_time,return_time,driver_name,contact_phone,description,notes")
         .eq("visit_id", visit.id)
         .eq("is_active", true)
         .order("event_date"),
