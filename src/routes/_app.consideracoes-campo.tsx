@@ -426,6 +426,22 @@ function Page() {
     })();
   }, [activeType, search.noteId, search.mode, navigate]);
 
+  // Recarrega pastas/notas quando o sync global termina (cobre APK pós-login,
+  // resume e online novamente — disparado por useOutlinesSync).
+  useEffect(() => {
+    if (!activeType) return;
+    const handler = async () => {
+      const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
+      setFolders(fs);
+      setNotes(
+        ns.filter((n) => (n.type ?? "field_consideration") === activeType)
+          .sort((a, b) => b.updated_at - a.updated_at),
+      );
+    };
+    window.addEventListener("visita-sc:outlines-synced", handler);
+    return () => window.removeEventListener("visita-sc:outlines-synced", handler);
+  }, [activeType]);
+
   const detected: CitationMatch[] = useMemo(
     () => (draft && activeBible ? findCitations(activeBible.books, stripHtmlForDetection(draft.content)) : []),
     [draft, activeBible],
