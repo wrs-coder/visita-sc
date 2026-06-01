@@ -226,8 +226,6 @@ function Page() {
           pioneer: {
             weekday: payload.pioneer.weekday,
             meeting_time: payload.pioneer.meeting_time || null,
-            super_meeting_weekday: payload.pioneer.super_meeting_weekday,
-            super_meeting_time: payload.pioneer.super_meeting_time || null,
             location: payload.pioneer.location || null,
             theme: payload.pioneer.theme || null,
             opening_prayer: payload.pioneer.opening_prayer || null,
@@ -235,6 +233,8 @@ function Page() {
             observations: payload.pioneer.observations || null,
           },
           elders: {
+            weekday: payload.elders.weekday,
+            meeting_time: payload.elders.meeting_time || null,
             theme: payload.elders.theme || null,
             opening_prayer: payload.elders.opening_prayer || null,
             closing_prayer: payload.elders.closing_prayer || null,
