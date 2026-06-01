@@ -482,14 +482,14 @@ const meetingTalkFileSchema = z.object({
   pioneer: z.object({
     weekday: weekdaySchema,
     meeting_time: timeSchema,
-    super_meeting_weekday: weekdaySchema,
-    super_meeting_time: timeSchema,
     location: textOpt,
     theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
   }).nullable().optional(),
   elders: z.object({
+    weekday: weekdaySchema,
+    meeting_time: timeSchema,
     theme: textOpt,
     opening_prayer: textOpt,
     closing_prayer: textOpt,
