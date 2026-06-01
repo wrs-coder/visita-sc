@@ -168,7 +168,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       supabaseAdmin.from("meal_day_notes").select("meal_date,notes").eq("visit_id", visit.id),
       supabaseAdmin.from("field_assignments").select("id,event_date,period,meeting_point,meeting_time,acompanhante,acompanhante_for,contact_phone").eq("visit_id", visit.id).eq("is_active", true).order("event_date"),
       supabaseAdmin.from("field_meetings").select("id,event_date,period,modality,meeting_time,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations").eq("visit_id", visit.id).eq("is_active", true).order("event_date").order("period"),
-      supabaseAdmin.from("transport_schedule").select("id,event_date,driver_name,contact_phone,description,notes").eq("visit_id", visit.id).eq("is_active", true).order("event_date"),
+      supabaseAdmin.from("transport_schedule").select("id,event_date,weekday,event_type,direction,all_day,departure_time,return_time,driver_name,contact_phone,description,notes").eq("visit_id", visit.id).eq("is_active", true).order("event_date"),
       wifeMode
         ? Promise.resolve({ data: [] as Array<{ id: string; title: string; description: string | null; status: string; link_or_notes: string | null; info_text: string | null }> })
         : supabaseAdmin.from("checklist_items").select("id,title,status,description,link_or_notes,info_text").eq("visit_id", visit.id).order("sort_order").order("created_at"),
