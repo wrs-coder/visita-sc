@@ -92,6 +92,20 @@ import {
   deleteCloudOutline,
 } from "@/lib/personal-outlines.functions";
 import { useOutlinesSync } from "@/hooks/use-outlines-sync";
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  DragOverlay,
+  type DragStartEvent,
+  type DragEndEvent,
+  type DragOverEvent,
+} from "@dnd-kit/core";
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
   validateSearch: (search: Record<string, unknown>): {
@@ -953,39 +967,71 @@ function Page() {
     // Offline-first: drag & drop fica local; sincroniza só sob demanda.
   }
 
-  // ---------- Drag & Drop handlers ----------
-  function onDragStartNote(e: React.DragEvent, noteId: string) {
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("application/x-outline-note", noteId);
-    setDragItem({ kind: "note", id: noteId });
+  // Move várias notas para `targetFolderId`, antes de `beforeNoteId`, preservando ordem.
+  async function placeNotesIn(
+    noteIds: string[],
+    targetFolderId: string | null,
+    beforeNoteId: string | null,
+  ) {
+    // Ordena os ids selecionados pela ordem atual (estável) antes de mover.
+    const ordered = noteIds
+      .map((id) => notes.find((n) => n.id === id))
+      .filter((n): n is FieldNote => !!n)
+      .sort(sortInFolder)
+      .map((n) => n.id);
+    for (const id of ordered) {
+      if (id === beforeNoteId) continue;
+      // eslint-disable-next-line no-await-in-loop
+      await placeNoteIn(id, targetFolderId, beforeNoteId);
+    }
   }
-  function onDragStartFolder(e: React.DragEvent, folderId: string) {
-    if (isFixedFolder(folderId)) return;
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("application/x-outline-folder", folderId);
-    setDragItem({ kind: "folder", id: folderId });
+
+  // ---------- Drag & Drop (dnd-kit, touch + mouse + keyboard) ----------
+  const dndSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }),
+    useSensor(KeyboardSensor),
+  );
+
+  function parseDndId(raw: string | number | null | undefined):
+    | { kind: "note"; id: string }
+    | { kind: "folder"; id: string }
+    | { kind: "root" }
+    | null {
+    if (raw == null) return null;
+    const s = String(raw);
+    if (s === "root") return { kind: "root" };
+    if (s.startsWith("note:")) return { kind: "note", id: s.slice(5) };
+    if (s.startsWith("folder:")) return { kind: "folder", id: s.slice(7) };
+    return null;
   }
-  function onDragEnd() {
+
+  function handleDndStart(ev: DragStartEvent) {
+    const p = parseDndId(ev.active.id);
+    if (!p || p.kind === "root") return;
+    setDragItem({ kind: p.kind, id: p.id });
+  }
+
+  function handleDndOver(ev: DragOverEvent) {
+    const p = parseDndId(ev.over?.id);
+    if (!p) { setDropHint(null); return; }
+    if (p.kind === "root") setDropHint({ kind: "root" });
+    else if (p.kind === "folder") setDropHint({ kind: "folder", id: p.id });
+    else setDropHint({ kind: "note", id: p.id, pos: "before" });
+  }
+
+  async function handleDndEnd(ev: DragEndEvent) {
+    const active = parseDndId(ev.active.id);
+    const over = parseDndId(ev.over?.id);
     setDragItem(null);
     setDropHint(null);
-  }
-  function allowDrop(e: React.DragEvent) {
-    if (!dragItem) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }
-  async function onDropOnFolder(e: React.DragEvent, folderId: string) {
-    e.preventDefault();
-    e.stopPropagation();
-    const item = dragItem;
-    setDropHint(null);
-    setDragItem(null);
-    if (!item) return;
-    if (item.kind === "note") {
-      await placeNoteIn(item.id, folderId, null);
-    } else {
-      if (item.id === folderId) return;
-      if (getDescendantFolderIds(item.id).has(folderId)) {
+    if (!active || active.kind === "root" || !over) return;
+
+    // Move pasta
+    if (active.kind === "folder") {
+      const targetFolderId = over.kind === "folder" ? over.id : null;
+      if (targetFolderId === active.id) return;
+      if (targetFolderId && getDescendantFolderIds(active.id).has(targetFolderId)) {
         toast.error(
           t("personalOutlines.folders.cannotMoveIntoSelf", {
             defaultValue: "Não é possível mover uma pasta para dentro dela mesma.",
@@ -993,56 +1039,60 @@ function Page() {
         );
         return;
       }
-      await moveFolderTo(item.id, folderId);
+      await moveFolderTo(active.id, targetFolderId);
+      return;
     }
-  }
-  async function onDropOnRoot(e: React.DragEvent) {
-    e.preventDefault();
-    const item = dragItem;
-    setDropHint(null);
-    setDragItem(null);
-    if (!item) return;
-    if (item.kind === "note") {
-      await placeNoteIn(item.id, null, null);
+
+    // Move nota (single ou multi-seleção)
+    const isMulti = selectedIds.has(active.id) && selectedIds.size > 1;
+    const ids = isMulti ? Array.from(selectedIds) : [active.id];
+
+    if (over.kind === "note") {
+      const target = notes.find((n) => n.id === over.id);
+      if (!target || ids.includes(over.id)) return;
+      await placeNotesIn(ids, target.folderId ?? null, over.id);
+    } else if (over.kind === "folder") {
+      await placeNotesIn(ids, over.id, null);
     } else {
-      await moveFolderTo(item.id, null);
+      await placeNotesIn(ids, null, null);
     }
   }
-  async function onDropOnNote(e: React.DragEvent, targetNoteId: string) {
-    e.preventDefault();
-    e.stopPropagation();
-    const item = dragItem;
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const pos: "before" | "after" =
-      e.clientY - rect.top < rect.height / 2 ? "before" : "after";
-    setDropHint(null);
-    setDragItem(null);
-    if (!item || item.kind !== "note" || item.id === targetNoteId) return;
-    const target = notes.find((n) => n.id === targetNoteId);
-    if (!target) return;
-    const targetFolder = target.folderId ?? null;
-    const siblings = notes
-      .filter((n) => (n.folderId ?? null) === targetFolder && n.id !== item.id)
-      .sort(sortInFolder);
-    const targetIdx = siblings.findIndex((n) => n.id === targetNoteId);
-    const beforeId =
-      pos === "before"
-        ? targetNoteId
-        : siblings[targetIdx + 1]?.id ?? null;
-    await placeNoteIn(item.id, targetFolder, beforeId);
-  }
-  function onDragOverNote(e: React.DragEvent, noteId: string) {
-    if (!dragItem || dragItem.kind !== "note") return;
-    if (dragItem.id === noteId) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const pos: "before" | "after" =
-      e.clientY - rect.top < rect.height / 2 ? "before" : "after";
-    setDropHint({ kind: "note", id: noteId, pos });
+
+
+  function RootDropZone() {
+    const droppable = useDroppable({ id: "root" });
+    const isOver = dropHint?.kind === "root";
+    return (
+      <div
+        ref={droppable.setNodeRef}
+        className={cn(
+          "group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
+          selectedFolderId === null ? "bg-primary/10 text-primary" : "hover:bg-muted",
+          isOver && "ring-2 ring-primary/60 bg-primary/5",
+        )}
+        onClick={() => setSelectedFolderId(null)}
+      >
+        <FolderOpen className="h-4 w-4" />
+        <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
+        {clipboardNoteIds.length > 0 && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePasteNote(null);
+            }}
+            className="text-[11px] inline-flex items-center gap-1 rounded px-1.5 py-0.5 bg-primary/15 text-primary hover:bg-primary/25"
+          >
+            <ClipboardPaste className="h-3 w-3" />
+            {t("personalOutlines.folders.pasteHere", { defaultValue: "Colar aqui" })}
+          </button>
+        )}
+      </div>
+    );
   }
 
   function FolderRow({ folder, depth }: { folder: NoteFolder; depth: number }) {
+
     const isOpen = expanded.has(folder.id);
     const childFolders = folders.filter((f) => f.parentId === folder.id);
     const childNotes = notes.filter((n) => n.folderId === folder.id && matchesQuery(n)).sort(sortInFolder);
@@ -1054,30 +1104,28 @@ function Page() {
           : t("personalOutlines.folders.weekConsiderations", { defaultValue: "Considerações da Semana" }))
       : folder.name;
     const isDropTarget = dropHint?.kind === "folder" && dropHint.id === folder.id;
+    const draggable = useDraggable({ id: `folder:${folder.id}`, disabled: fixed });
+    const droppable = useDroppable({ id: `folder:${folder.id}` });
+    const setRefs = (el: HTMLElement | null) => {
+      draggable.setNodeRef(el);
+      droppable.setNodeRef(el);
+    };
     return (
       <div>
         <div
+          ref={setRefs}
+          {...draggable.attributes}
+          {...draggable.listeners}
           className={cn(
-            "group flex items-center gap-1 rounded-md px-1.5 py-1 text-sm cursor-pointer",
+            "group flex items-center gap-1 rounded-md px-1.5 py-1 text-sm cursor-pointer touch-none select-none",
             selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
             isDropTarget && "ring-2 ring-primary/60 bg-primary/5",
+            draggable.isDragging && "opacity-40",
           )}
           style={{ paddingLeft: 6 + depth * 12 }}
           onClick={() => setSelectedFolderId(folder.id)}
-          draggable={!fixed}
-          onDragStart={(e) => onDragStartFolder(e, folder.id)}
-          onDragEnd={onDragEnd}
-          onDragOver={(e) => {
-            if (!dragItem) return;
-            if (dragItem.kind === "folder" && dragItem.id === folder.id) return;
-            allowDrop(e);
-            setDropHint({ kind: "folder", id: folder.id });
-          }}
-          onDragLeave={() => {
-            if (dropHint?.kind === "folder" && dropHint.id === folder.id) setDropHint(null);
-          }}
-          onDrop={(e) => onDropOnFolder(e, folder.id)}
         >
+
 
           <button
             type="button"
@@ -1173,26 +1221,37 @@ function Page() {
     const selected = selectedNoteId === note.id;
     const isClipped = clipboardNoteIds.includes(note.id);
     const isChecked = selectedIds.has(note.id);
-    const hint = dropHint?.kind === "note" && dropHint.id === note.id ? dropHint.pos : null;
+    const hint = dropHint?.kind === "note" && dropHint.id === note.id ? "before" : null;
+    const draggable = useDraggable({ id: `note:${note.id}` });
+    const droppable = useDroppable({ id: `note:${note.id}` });
+    const setRefs = (el: HTMLElement | null) => {
+      draggable.setNodeRef(el);
+      droppable.setNodeRef(el);
+    };
+    const multiBadge =
+      draggable.isDragging && selectedIds.has(note.id) && selectedIds.size > 1
+        ? selectedIds.size
+        : null;
     return (
       <div
+        ref={setRefs}
+        {...draggable.attributes}
+        {...draggable.listeners}
         className={cn(
-          "group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm",
+          "group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm touch-none select-none",
           selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
           isClipped && "opacity-60 italic",
           hint === "before" && "border-t-2 border-primary",
-          hint === "after" && "border-b-2 border-primary",
+          draggable.isDragging && "opacity-40",
         )}
         style={{ paddingLeft: 6 + depth * 12 + 16 }}
-        draggable
-        onDragStart={(e) => onDragStartNote(e, note.id)}
-        onDragEnd={onDragEnd}
-        onDragOver={(e) => onDragOverNote(e, note.id)}
-        onDragLeave={() => {
-          if (dropHint?.kind === "note" && dropHint.id === note.id) setDropHint(null);
-        }}
-        onDrop={(e) => onDropOnNote(e, note.id)}
       >
+        {multiBadge !== null && (
+          <span className="text-[10px] rounded bg-primary text-primary-foreground px-1">
+            {multiBadge}
+          </span>
+        )}
+
 
         <Checkbox
           checked={isChecked}
@@ -1443,53 +1502,40 @@ function Page() {
                         </Button>
                       </div>
                     )}
-                    <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
-                      <div
-                        className={cn(
-                          "group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm cursor-pointer",
-                          selectedFolderId === null ? "bg-primary/10 text-primary" : "hover:bg-muted",
-                          dropHint?.kind === "root" && "ring-2 ring-primary/60 bg-primary/5",
+                    <DndContext
+                      sensors={dndSensors}
+                      onDragStart={handleDndStart}
+                      onDragOver={handleDndOver}
+                      onDragEnd={handleDndEnd}
+                      onDragCancel={() => { setDragItem(null); setDropHint(null); }}
+                    >
+                      <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
+                        <RootDropZone />
+                        {rootFolders.length === 0 && rootNotes.length === 0 && (
+                          <p className="text-xs text-muted-foreground text-center py-4">
+                            {t("personalOutlines.folders.empty")}
+                          </p>
                         )}
-                        onClick={() => setSelectedFolderId(null)}
-                        onDragOver={(e) => {
-                          if (!dragItem) return;
-                          allowDrop(e);
-                          setDropHint({ kind: "root" });
-                        }}
-                        onDragLeave={() => {
-                          if (dropHint?.kind === "root") setDropHint(null);
-                        }}
-                        onDrop={onDropOnRoot}
-                      >
-
-                        <FolderOpen className="h-4 w-4" />
-                        <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
-                        {clipboardNoteIds.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePasteNote(null);
-                            }}
-                            className="text-[11px] inline-flex items-center gap-1 rounded px-1.5 py-0.5 bg-primary/15 text-primary hover:bg-primary/25"
-                          >
-                            <ClipboardPaste className="h-3 w-3" />
-                            {t("personalOutlines.folders.pasteHere", { defaultValue: "Colar aqui" })}
-                          </button>
-                        )}
+                        {rootFolders.map((f) => (
+                          <FolderRow key={f.id} folder={f} depth={0} />
+                        ))}
+                        {rootNotes.map((n) => (
+                          <NoteRow key={n.id} note={n} depth={0} />
+                        ))}
                       </div>
-                      {rootFolders.length === 0 && rootNotes.length === 0 && (
-                        <p className="text-xs text-muted-foreground text-center py-4">
-                          {t("personalOutlines.folders.empty")}
-                        </p>
-                      )}
-                      {rootFolders.map((f) => (
-                        <FolderRow key={f.id} folder={f} depth={0} />
-                      ))}
-                      {rootNotes.map((n) => (
-                        <NoteRow key={n.id} note={n} depth={0} />
-                      ))}
-                    </div>
+                      <DragOverlay dropAnimation={null}>
+                        {dragItem ? (
+                          <div className="rounded-md bg-primary text-primary-foreground px-2 py-1 text-xs shadow-lg">
+                            {dragItem.kind === "folder"
+                              ? t("personalOutlines.folders.label", { defaultValue: "Pasta" })
+                              : (selectedIds.has(dragItem.id) && selectedIds.size > 1
+                                  ? t("personalOutlines.folders.selectedCount", { defaultValue: "{{n}} selecionadas", n: selectedIds.size })
+                                  : (notes.find((n) => n.id === dragItem.id)?.title || t("fieldConsiderations.fields.title")))}
+                          </div>
+                        ) : null}
+                      </DragOverlay>
+                    </DndContext>
+
                   </>
                 )}
               </CardContent>
