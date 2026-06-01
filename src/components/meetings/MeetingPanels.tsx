@@ -328,7 +328,7 @@ interface PioneerRow {
 }
 
 export function PioneerPanel() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const isSuper = role === "superintendent";
@@ -341,22 +341,19 @@ export function PioneerPanel() {
   if (!visit) return <NoVisit />;
   if (loading || !row) return <LoadingCard />;
 
-  const changedByElder =
-    !!row.super_meeting_at && !!row.meeting_at && row.super_meeting_at !== row.meeting_at;
-
-  const onSaveDatetime = async (v: string | null) => {
-    const iso = v ? localInputToIso(v) : null;
-    if (isSuper) {
-      await save({ meeting_at: iso, super_meeting_at: iso });
-    } else {
-      const patch: Partial<PioneerRow> = { meeting_at: iso };
-      if (!row.super_meeting_at && iso) patch.super_meeting_at = iso;
-      await save(patch);
-    }
-  };
+  const wd = extras.pioneer?.weekday;
+  const mt = extras.pioneer?.meeting_time;
+  const scheduleText = (() => {
+    if (wd == null && !mt) return null;
+    const dayLabel = wd != null ? t(`templates.weekdays.${wd}`) : "—";
+    const timeLabel = mt ? mt.slice(0, 5) : "—";
+    return `${dayLabel} — ${timeLabel}`;
+  })();
 
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
+      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.schedule")} value={scheduleText} />
+      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.location")} value={extras.pioneer?.observations ? null : null} />
       <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.pioneer?.observations} />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <div>
@@ -375,44 +372,6 @@ export function PioneerPanel() {
           <Label>{t("meetingsTalks.pioneer.location")}</Label>
           <FieldText value={row.location} onSave={(v) => save({ location: v })} />
         </div>
-        <div>
-          <Label>
-            {isSuper ? t("meetingsTalks.pioneer.dateTimeSuper") : t("meetingsTalks.pioneer.dateTimeElder")}
-          </Label>
-          {isSuper ? (
-            <>
-              <Input
-                type="datetime-local"
-                defaultValue={tsToLocalInput(row.meeting_at)}
-                key={row.meeting_at ?? ""}
-                onBlur={(e) => {
-                  const cur = tsToLocalInput(row.meeting_at);
-                  if (e.target.value !== cur) onSaveDatetime(e.target.value || null);
-                }}
-                className={`h-9 mt-0.5 ${changedByElder ? "border-destructive text-destructive focus-visible:ring-destructive bg-destructive/5" : ""}`}
-              />
-              {changedByElder && (
-                <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  {t("meetingsTalks.pioneer.changedByElder", { value: new Date(row.super_meeting_at!).toLocaleString(bcp47(i18n.language)) })}
-                </p>
-              )}
-            </>
-          ) : (
-            <div className="h-9 mt-0.5 px-3 py-2 rounded-md border bg-muted/30 text-sm flex items-center">
-              {(() => {
-                const iso = row.super_meeting_at ?? row.meeting_at;
-                if (!iso) return <span className="text-muted-foreground">—</span>;
-                const d = new Date(iso);
-                const locale = bcp47(i18n.language);
-                const weekday = d.toLocaleDateString(locale, { weekday: "long" });
-                const time = d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-                return `${weekday} — ${time}`;
-              })()}
-            </div>
-          )}
-        </div>
-
       </fieldset>
     </CardContent></Card>
   );
