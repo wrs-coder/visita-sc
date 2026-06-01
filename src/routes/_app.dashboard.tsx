@@ -812,8 +812,13 @@ function Dashboard() {
                         <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm whitespace-normal break-words [overflow-wrap:anywhere]">
-                            {n.title || "(sem título)"}
+                            {(n.payload?.nome?.trim() || n.title || "(sem título)")}
                           </div>
+                          {n.payload?.tipo && (
+                            <div className="text-xs text-muted-foreground whitespace-normal break-words">
+                              {n.payload.tipo}
+                            </div>
+                          )}
                           <div className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(n.updated_at), { addSuffix: true, locale: ptBR })}
                           </div>
