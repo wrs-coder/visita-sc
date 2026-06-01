@@ -205,11 +205,6 @@ function DayTimePicker({
   );
 }
 
-function bcp47(lang: string) {
-  if (lang?.startsWith("pt")) return "pt-BR";
-  if (lang?.startsWith("es")) return "es-ES";
-  return "en-US";
-}
 
 
 export function WeekendPanel() {
