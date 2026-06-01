@@ -986,7 +986,7 @@ function Page() {
         </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded hover:bg-background">
+            <button className="opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 p-1 rounded hover:bg-background">
               <MoreVertical className="h-3.5 w-3.5" />
             </button>
           </DropdownMenuTrigger>
