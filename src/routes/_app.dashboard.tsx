@@ -727,11 +727,17 @@ function Dashboard() {
           icon={<BookOpen className="h-4 w-4 text-primary" />}
           title={t("dashboard.studyNotesTitle")}
         >
-          <Tabs defaultValue="outlines" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="outlines">{t("dashboard.studyNotesOutlinesTab")}</TabsTrigger>
-              <TabsTrigger value="weekOutlines">{t("dashboard.studyNotesWeekOutlinesTab")}</TabsTrigger>
-              <TabsTrigger value="recomendados">{t("dashboard.studyNotesRecomendadosTab")}</TabsTrigger>
+          <Tabs defaultValue="outlines" className="w-full min-w-0 overflow-hidden">
+            <TabsList className="grid h-auto w-full grid-cols-3 items-stretch gap-1">
+              <TabsTrigger value="outlines" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
+                {t("dashboard.studyNotesOutlinesTab")}
+              </TabsTrigger>
+              <TabsTrigger value="weekOutlines" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
+                {t("dashboard.studyNotesWeekOutlinesTab")}
+              </TabsTrigger>
+              <TabsTrigger value="recomendados" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
+                {t("dashboard.studyNotesRecomendadosTab")}
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="outlines" className="mt-3">
               {outlinesPreview.length === 0 ? (
@@ -795,11 +801,11 @@ function Dashboard() {
                     <li key={n.id}>
                       <Link
                         to="/notas"
-                        className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors"
+                          className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors min-w-0"
                       >
                         <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">
+                          <div className="font-medium text-sm whitespace-normal break-words [overflow-wrap:anywhere]">
                             {n.title || "(sem título)"}
                           </div>
                           <div className="text-xs text-muted-foreground">
