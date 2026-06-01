@@ -903,6 +903,20 @@ function Page() {
                 <Scissors className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
               </DropdownMenuItem>
+              {isOutline && (
+                <DropdownMenuItem onClick={() => handlePushNoteById(note.id)} disabled={cloudBusy}>
+                  <CloudUpload className="h-4 w-4 mr-2" />
+                  {t("personalOutlines.cloud.push", { defaultValue: "Enviar para nuvem" })}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => handleDeleteNoteById(note.id)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {t("common.delete", { defaultValue: "Excluir" })}
+              </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
       </div>
