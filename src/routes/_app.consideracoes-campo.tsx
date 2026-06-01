@@ -657,7 +657,7 @@ function Page() {
       note.title,
     );
     if (!name || !name.trim()) return;
-    const updated: FieldNote = { ...note, title: name.trim(), updated_at: Date.now(), dirty: activeType === "outline" ? true : note.dirty };
+    const updated: FieldNote = { ...note, title: name.trim(), updated_at: Date.now(), dirty: true };
     await persistNote(updated);
     setNotes((all) =>
       all
