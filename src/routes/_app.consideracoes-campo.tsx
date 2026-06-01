@@ -373,6 +373,7 @@ function Page() {
       type: draft.type ?? activeType,
       folderId: draft.folderId ?? null,
       updated_at: Date.now(),
+      dirty: activeType === "outline" ? true : draft.dirty,
     };
     try {
       await persistNote(updated);
@@ -384,6 +385,7 @@ function Page() {
       });
       setDraft(updated);
       setMode("outline");
+      await syncOutlinesIfOnline();
       toast.success(t("fieldConsiderations.saved"));
     } catch {
       toast.error(t("common.errorGeneric", { defaultValue: "Erro" }));
@@ -416,6 +418,7 @@ function Page() {
     await saveFolder(f);
     setFolders((all) => [...all, f]);
     if (parentId) setExpanded((s) => new Set(s).add(parentId));
+    await syncOutlinesIfOnline();
   }
 
   async function handleRenameFolder(folder: NoteFolder) {
@@ -424,6 +427,7 @@ function Page() {
     const updated = { ...folder, name: name.trim() };
     await saveFolder(updated);
     setFolders((all) => all.map((f) => (f.id === folder.id ? updated : f)));
+    await syncOutlinesIfOnline();
   }
 
   async function handleDeleteFolder(folder: NoteFolder) {
@@ -439,6 +443,7 @@ function Page() {
       setDraft(null);
       setSelectedNoteId(null);
     }
+    await syncOutlinesIfOnline();
   }
 
   // ---------- Mover / Recortar / Colar ----------
