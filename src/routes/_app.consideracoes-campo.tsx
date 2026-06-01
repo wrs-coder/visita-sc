@@ -56,6 +56,7 @@ import { SavingIndicator } from "@/components/SavingIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listNotes,
+  listFolders as listFoldersStore,
   saveNote as persistNote,
   deleteNote as removeNote,
   newNoteId,
@@ -76,6 +77,7 @@ import {
   type BibleLibrary,
   type ExportPayload,
 } from "@/lib/bible-notes-store";
+import { Checkbox } from "@/components/ui/checkbox";
 import { findCitations, stripHtmlForDetection, type CitationMatch } from "@/lib/bible-refs";
 import { shareJsonFile } from "@/lib/share";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
