@@ -36,11 +36,13 @@ import {
   Sun,
   Mic,
   Pencil,
+  Eye,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { saveBlob } from "@/lib/share";
+import { DayDetailsDialog } from "@/components/dashboard/DayDetailsDialog";
 
 export interface VisitSnapshot {
   wifeMode: boolean;
@@ -94,6 +96,8 @@ export function VisitSummaryView({
 }) {
   const { t, i18n } = useTranslation();
   const dateLocale = getDateLocale(i18n.language);
+
+  const [openTransKey, setOpenTransKey] = useState<string | null>(null);
 
   const fmtDate = useCallback(
     (d: string) => format(parseISO(d), "EEE, d MMM", { locale: dateLocale }),
@@ -587,10 +591,19 @@ export function VisitSummaryView({
                             {head.event_date ? fmtDate(head.event_date) : t("guest.labels.noDate")}
                           </div>
                           {head.all_day && (
-                            <span className="ml-auto text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
+                            <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
                               {t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}
                             </span>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => setOpenTransKey(g.key)}
+                            aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                            title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                            className="ml-auto text-muted-foreground hover:text-primary"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
                         </div>
                         <div className="space-y-2">
                           {g.rows.map((r, idx) => {
@@ -641,6 +654,71 @@ export function VisitSummaryView({
                   );
                 })
               )}
+
+              {(() => {
+                const groups = groupTransport(snap.transport);
+                const g = groups.find((x) => x.key === openTransKey);
+                if (!g) return null;
+                const head = g.rows[0];
+                const dateLabel = head.event_date ? fmtDate(head.event_date) : t("guest.labels.noDate");
+                return (
+                  <DayDetailsDialog
+                    open={!!openTransKey}
+                    onOpenChange={(o) => !o && setOpenTransKey(null)}
+                    title={`${t("guest.sections.trans", { defaultValue: "Transporte" })} · ${dateLabel}`}
+                  >
+                    {head.all_day && (
+                      <div className="text-[10px] uppercase tracking-wide inline-block rounded px-1.5 py-0.5 bg-primary/15 text-primary">
+                        {t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}
+                      </div>
+                    )}
+                    <ul className="space-y-4">
+                      {g.rows.map((r, idx) => {
+                        const showDriver = !head.all_day || idx === 0;
+                        const typeLbl = r.event_type ? t(`transport.eventType.${r.event_type}`, { defaultValue: r.event_type }) : null;
+                        const dirLbl = r.direction ? t(`transport.direction.${r.direction}`, { defaultValue: r.direction }) : null;
+                        return (
+                          <li key={r.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                            {(typeLbl || dirLbl) && (
+                              <div className="text-xs font-medium">
+                                {typeLbl ?? t("transport.noDay")}
+                                {dirLbl ? ` · ${dirLbl}` : ""}
+                              </div>
+                            )}
+                            {(r.departure_time || r.return_time) && (
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {fmtTime(r.departure_time)}
+                                {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
+                              </div>
+                            )}
+                            {showDriver && (
+                              <>
+                                <div className="text-xs">
+                                  <span className="text-muted-foreground">{t("guest.labels.driver")}: </span>
+                                  {r.driver_name}
+                                </div>
+                                {r.contact_phone && (
+                                  <div className="text-xs flex items-center gap-1">
+                                    <Phone className="h-3 w-3" />
+                                    {r.contact_phone}
+                                  </div>
+                                )}
+                                {r.description && (
+                                  <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{r.description}</div>
+                                )}
+                                {r.notes && (
+                                  <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{r.notes}</div>
+                                )}
+                              </>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </DayDetailsDialog>
+                );
+              })()}
             </TabsContent>
 
 
@@ -731,14 +809,29 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
 
   const fmtAt = (iso: string | null) => (iso ? format(parseISO(iso), "HH:mm") : "—");
 
+  const [openTodayDetails, setOpenTodayDetails] = useState(false);
+
   return (
     <div className="space-y-3">
       <Card>
         <CardContent className="p-4">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">
-            {t("guest.today.summary")}
+          <div className="flex items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                {t("guest.today.summary")}
+              </div>
+              <div className="font-semibold capitalize">{todayLabel}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpenTodayDetails(true)}
+              aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+              title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+              className="text-muted-foreground hover:text-primary shrink-0"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
           </div>
-          <div className="font-semibold capitalize">{todayLabel}</div>
         </CardContent>
       </Card>
 
@@ -1031,6 +1124,170 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
       <div className="text-center pt-2 text-xs text-muted-foreground">
         {t("guest.openSchedule")} <span className="font-medium">{t("guest.scheduleTab")}</span>.
       </div>
+
+      <DayDetailsDialog
+        open={openTodayDetails}
+        onOpenChange={setOpenTodayDetails}
+        title={t("guest.today.summary")}
+        subtitle={<span className="capitalize">{todayLabel}</span>}
+      >
+        {/* Refeições */}
+        <section className="space-y-1">
+          <div className="flex items-center gap-2 font-semibold">
+            <UtensilsCrossed className="h-4 w-4" /> {t("guest.today.meals")}
+          </div>
+          {todayNote && (
+            <div className="text-sm font-medium text-destructive whitespace-pre-wrap break-words">{todayNote.notes}</div>
+          )}
+          {todayMeals.length === 0 && !todayNote ? (
+            <div className="text-xs text-muted-foreground">{t("guest.today.noMeals")}</div>
+          ) : (
+            <ul className="space-y-2">
+              {todayMeals.map((m) => (
+                <li key={m.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
+                  <div className="font-medium">{mealLabel(m.type)} • {fmtTime(m.meal_time)}</div>
+                  {m.host_name && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.host")}: </span>{m.host_name}</div>}
+                  {m.location && <div className="text-xs text-muted-foreground flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span className="whitespace-pre-wrap break-words">{m.location}</span></div>}
+                  {m.contact_phone && <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{m.contact_phone}</div>}
+                  {m.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{m.notes}</div>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Transporte */}
+        <section className="space-y-1">
+          <div className="flex items-center gap-2 font-semibold">
+            <Car className="h-4 w-4" /> {t("guest.today.transport")}
+          </div>
+          {todayTransport.length === 0 ? (
+            <div className="text-xs text-muted-foreground">{t("guest.today.noTransport")}</div>
+          ) : (
+            groupTransport(todayTransport).map((g) => {
+              const head = g.rows[0];
+              return (
+                <div key={g.key} className="border-l-2 border-primary/30 pl-3 space-y-2">
+                  {head.all_day && (
+                    <div className="text-[10px] uppercase tracking-wide inline-block rounded px-1.5 py-0.5 bg-primary/15 text-primary">
+                      {t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}
+                    </div>
+                  )}
+                  {g.rows.map((r, idx) => {
+                    const showDriver = !head.all_day || idx === 0;
+                    const typeLbl = r.event_type ? t(`transport.eventType.${r.event_type}`, { defaultValue: r.event_type }) : null;
+                    const dirLbl = r.direction ? t(`transport.direction.${r.direction}`, { defaultValue: r.direction }) : null;
+                    return (
+                      <div key={r.id} className="space-y-0.5">
+                        {(typeLbl || dirLbl) && <div className="text-xs font-medium">{typeLbl ?? t("transport.noDay")}{dirLbl ? ` · ${dirLbl}` : ""}</div>}
+                        {(r.departure_time || r.return_time) && (
+                          <div className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" />{fmtTime(r.departure_time)}{r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}</div>
+                        )}
+                        {showDriver && (
+                          <>
+                            <div className="font-medium">{r.driver_name}</div>
+                            {r.contact_phone && <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{r.contact_phone}</div>}
+                            {r.description && <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{r.description}</div>}
+                            {r.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{r.notes}</div>}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })
+          )}
+        </section>
+
+        {/* Estudos / Campo */}
+        {(todayField.length > 0 || todayFieldMeetings.length > 0) && (
+          <section className="space-y-1">
+            <div className="flex items-center gap-2 font-semibold">
+              <Users className="h-4 w-4" /> {t("guest.today.studiesField")}
+            </div>
+            <ul className="space-y-2">
+              {todayField.map((f) => (
+                <li key={f.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
+                  <div className="font-medium">{f.period} • {fmtTime(f.meeting_time)}</div>
+                  {f.meeting_point && <div className="text-xs text-muted-foreground flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span className="whitespace-pre-wrap break-words">{f.meeting_point}</span></div>}
+                  {f.acompanhante && <div className="text-xs">{t("guest.labels.companion")}: {f.acompanhante}</div>}
+                </li>
+              ))}
+              {todayFieldMeetings.map((f) => (
+                <li key={f.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
+                  <div className="font-medium">{f.period} • {fmtTime(f.meeting_time)} • {f.modality}</div>
+                  {f.territory_location && <div className="text-xs text-muted-foreground flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span className="whitespace-pre-wrap break-words">{f.territory_location}</span></div>}
+                  {f.auxiliary_leaders && <div className="text-xs whitespace-pre-wrap break-words">{t("guest.labels.leaders")}: {f.auxiliary_leaders}</div>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Reuniões */}
+        <section className="space-y-1">
+          <div className="flex items-center gap-2 font-semibold">
+            <Mic className="h-4 w-4" /> {t("guest.today.meetings")}
+          </div>
+          {!hasMeetings ? (
+            <div className="text-xs text-muted-foreground">{t("guest.today.noMeetings")}</div>
+          ) : (
+            <div className="space-y-2">
+              {showMidweek && snap.midweek.map((m) => (
+                <div key={m.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
+                  <div className="font-medium">{t("guest.today.midweek")}</div>
+                  {m.chairman && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.chairman")}: </span>{m.chairman}</div>}
+                  {m.service_talk_theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.serviceTalk")}: </span>{m.service_talk_theme}</div>}
+                  {m.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{m.closing_prayer}</div>}
+                </div>
+              ))}
+              {todayWeekend.map((w) => (
+                <div key={w.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
+                  <div className="font-medium">{t("guest.today.weekend")} • {fmtAt(w.meeting_at)}</div>
+                  {w.public_talk_theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.publicTalk")}: </span>{w.public_talk_theme}</div>}
+                  {w.talk_theme_title && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.finalTalk")}: </span>{w.talk_theme_title}</div>}
+                </div>
+              ))}
+              {todayPioneer.map((p) => (
+                <div key={p.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
+                  <div className="font-medium">{t("guest.today.pioneer")} • {fmtAt(p.meeting_at)}</div>
+                  {p.location && <div className="text-xs text-muted-foreground flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span className="whitespace-pre-wrap break-words">{p.location}</span></div>}
+                  {p.theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.theme")}: </span>{p.theme}</div>}
+                  {p.opening_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.openingPrayer")}: </span>{p.opening_prayer}</div>}
+                  {p.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{p.closing_prayer}</div>}
+                </div>
+              ))}
+              {showElders && snap.elders.map((e) => (
+                <div key={e.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
+                  <div className="font-medium">{t("guest.today.elders")}</div>
+                  {e.theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.theme")}: </span>{e.theme}</div>}
+                  {e.opening_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.openingPrayer")}: </span>{e.opening_prayer}</div>}
+                  {e.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{e.closing_prayer}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Outros eventos do dia */}
+        {todaySchedule.length > 0 && (
+          <section className="space-y-1">
+            <div className="flex items-center gap-2 font-semibold">
+              <CalendarDays className="h-4 w-4" /> {t("guest.today.otherEvents")}
+            </div>
+            <ul className="space-y-2">
+              {todaySchedule.map((e) => (
+                <li key={e.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
+                  <div className="font-medium">{fmtTime(e.start_time)} — {e.title}</div>
+                  {e.location && <div className="text-xs text-muted-foreground flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span className="whitespace-pre-wrap break-words">{e.location}</span></div>}
+                  {e.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{e.notes}</div>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </DayDetailsDialog>
     </div>
   );
 }

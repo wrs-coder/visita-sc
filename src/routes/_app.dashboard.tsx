@@ -29,6 +29,7 @@ import {
   FileText,
   AlertTriangle,
   Heart,
+  Eye,
 } from "lucide-react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import {
@@ -45,6 +46,7 @@ import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.fun
 
 import { listNotesByType, FIXED_FOLDER_WEEK_CONSIDERATIONS, FIXED_FOLDER_WEEK_OUTLINES, type FieldNote } from "@/lib/bible-notes-store";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
+import { DayDetailsDialog } from "@/components/dashboard/DayDetailsDialog";
 import { FieldNoteFullscreenDialog } from "@/components/dashboard/FieldNoteFullscreenDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -73,6 +75,11 @@ interface ScheduleEvent {
 interface ChecklistItem {
   id: string;
   status: string;
+  title: string | null;
+  description: string | null;
+  link_or_notes: string | null;
+  info_text: string | null;
+  sort_order: number | null;
 }
 interface Meal {
   id: string;
@@ -158,6 +165,8 @@ function Dashboard() {
   const [meetingsToday, setMeetingsToday] = useState<MeetingTodayItem[]>([]);
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [pendingCount, setPendingCount] = useState(0);
+  type DetailsKey = "field" | "studies" | "meals" | "meetings" | "transport" | "checklist";
+  const [openDetails, setOpenDetails] = useState<DetailsKey | null>(null);
   useEffect(() => subscribeQueue(setPendingCount), []);
   const [overdueVisits, setOverdueVisits] = useState<
     Array<{ id: string; title: string; end_date: string; congregation_id: string }>
@@ -407,7 +416,12 @@ function Dashboard() {
             .eq("visit_id", visit.id)
             .order("event_date")
             .order("start_time"),
-          supabase.from("checklist_items").select("id, status").eq("visit_id", visit.id),
+          supabase
+            .from("checklist_items")
+            .select("id, status, title, description, link_or_notes, info_text, sort_order")
+            .eq("visit_id", visit.id)
+            .order("sort_order")
+            .order("created_at"),
           supabase
             .from("meals")
             .select("id, meal_date, meal_time, type, host_name, location, contact_phone, notes")
@@ -441,7 +455,7 @@ function Dashboard() {
             .order("period"),
         ]);
       setEvents(e ?? []);
-      setChecklist(c ?? []);
+      setChecklist((c ?? []) as ChecklistItem[]);
       setMeals((m ?? []) as Meal[]);
       setTransports((t ?? []) as Transport[]);
       setAssignments((a ?? []) as FieldAssignment[]);
@@ -937,12 +951,23 @@ function Dashboard() {
             icon={<ListChecks className="h-4 w-4 text-primary" />}
             title={t("dashboard.checklistTitle")}
             headerRight={
-              <Link
-                to="/checklist"
-                className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-              >
-                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setOpenDetails("checklist")}
+                  aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <Link
+                  to="/checklist"
+                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+                >
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+                </Link>
+              </div>
             }
           >
             <div className="flex items-end justify-between mb-2">
@@ -966,12 +991,23 @@ function Dashboard() {
             icon={<Users className="h-4 w-4 text-primary" />}
             title={t("dashboard.fieldMeeting")}
             headerRight={
-              <Link
-                to="/reunioes-discursos"
-                className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-              >
-                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setOpenDetails("field")}
+                  aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <Link
+                  to="/reunioes-discursos"
+                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+                >
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+                </Link>
+              </div>
             }
           >
             {fieldMeetings.length === 0 ? (
@@ -1025,12 +1061,23 @@ function Dashboard() {
             icon={<BookOpen className="h-4 w-4 text-primary" />}
             title={t("dashboard.studiesVisits")}
             headerRight={
-              <Link
-                to="/reunioes-de-campo"
-                className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-              >
-                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setOpenDetails("studies")}
+                  aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <Link
+                  to="/reunioes-de-campo"
+                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+                >
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+                </Link>
+              </div>
             }
           >
             {assignments.length === 0 ? (
@@ -1083,12 +1130,23 @@ function Dashboard() {
             icon={<UtensilsCrossed className="h-4 w-4 text-primary" />}
             title={t("dashboard.mealsToday")}
             headerRight={
-              <Link
-                to="/refeicoes"
-                className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-              >
-                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setOpenDetails("meals")}
+                  aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <Link
+                  to="/refeicoes"
+                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+                >
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+                </Link>
+              </div>
             }
           >
             {meals.length === 0 ? (
@@ -1138,12 +1196,23 @@ function Dashboard() {
             icon={<CalendarDays className="h-4 w-4 text-primary" />}
             title={t("dashboard.meetingsToday", { defaultValue: "Reuniões de hoje" })}
             headerRight={
-              <Link
-                to="/reunioes-discursos"
-                className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-              >
-                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setOpenDetails("meetings")}
+                  aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <Link
+                  to="/reunioes-discursos"
+                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+                >
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+                </Link>
+              </div>
             }
           >
             {meetingsToday.length === 0 ? (
@@ -1197,12 +1266,23 @@ function Dashboard() {
             icon={<Car className="h-4 w-4 text-primary" />}
             title={t("dashboard.transportToday")}
             headerRight={
-              <Link
-                to="/transporte"
-                className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-              >
-                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setOpenDetails("transport")}
+                  aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <Link
+                  to="/transporte"
+                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+                >
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+                </Link>
+              </div>
             }
           >
             {transports.length === 0 ? (
@@ -1238,6 +1318,252 @@ function Dashboard() {
           </CollapsibleCard>
         </div>
       )}
+
+      {/* Popups "Ver detalhes do dia" — somente leitura, reaproveitam os dados já carregados. */}
+      {(() => {
+        const dayLabel = format(new Date(), "dd/MM/yyyy");
+        const closeDetails = () => setOpenDetails(null);
+        return (
+          <>
+            <DayDetailsDialog
+              open={openDetails === "field"}
+              onOpenChange={(o) => !o && closeDetails()}
+              title={`${t("dashboard.fieldMeeting")} · ${dayLabel}`}
+            >
+              {fieldMeetings.length === 0 ? (
+                <p className="text-muted-foreground">{t("dashboard.noActivityToday")}</p>
+              ) : (
+                <ul className="space-y-4">
+                  {fieldMeetings.map((f) => (
+                    <li key={f.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                      <div className="font-medium">
+                        {f.period}
+                        {f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""}
+                        {" · "}
+                        <span className="text-xs text-muted-foreground">
+                          {MODALITY_LABEL[f.modality] ?? f.modality}
+                        </span>
+                      </div>
+                      {f.meeting_location && (
+                        <div className="text-xs text-muted-foreground flex items-start gap-1">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span className="whitespace-pre-wrap break-words">{f.meeting_location}</span>
+                        </div>
+                      )}
+                      {f.territory_number && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{t("dashboard.territory")} </span>
+                          {f.territory_number}
+                          {f.territory_location ? ` · ${f.territory_location}` : ""}
+                        </div>
+                      )}
+                      {f.auxiliary_leaders && (
+                        <div className="text-xs whitespace-pre-wrap break-words">
+                          <span className="text-muted-foreground">{t("dashboard.arrangements")} </span>
+                          {f.auxiliary_leaders}
+                        </div>
+                      )}
+                      {f.closing_prayer && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{t("dashboard.closingPrayer")} </span>
+                          {f.closing_prayer}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </DayDetailsDialog>
+
+            <DayDetailsDialog
+              open={openDetails === "studies"}
+              onOpenChange={(o) => !o && closeDetails()}
+              title={`${t("dashboard.studiesVisits")} · ${dayLabel}`}
+            >
+              {assignments.length === 0 ? (
+                <p className="text-muted-foreground">{t("dashboard.noActivityToday")}</p>
+              ) : (
+                <ul className="space-y-4">
+                  {assignments.map((a) => (
+                    <li key={a.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                      <div className="font-medium">
+                        {a.period}
+                        {a.meeting_time ? ` · ${a.meeting_time.slice(0, 5)}` : ""}
+                      </div>
+                      {a.acompanhante && (
+                        <div>
+                          {a.acompanhante}
+                          {a.acompanhante_for
+                            ? ` → ${ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for}`
+                            : ""}
+                        </div>
+                      )}
+                      {a.meeting_point && (
+                        <div className="text-xs text-muted-foreground flex items-start gap-1">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span className="whitespace-pre-wrap break-words">{a.meeting_point}</span>
+                        </div>
+                      )}
+                      {a.contact_phone && (
+                        <div className="text-xs">📞 {a.contact_phone}</div>
+                      )}
+                      {a.notes && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{a.notes}</div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </DayDetailsDialog>
+
+            <DayDetailsDialog
+              open={openDetails === "meals"}
+              onOpenChange={(o) => !o && closeDetails()}
+              title={`${t("dashboard.mealsToday")} · ${dayLabel}`}
+            >
+              {meals.length === 0 ? (
+                <p className="text-muted-foreground">{t("dashboard.noActivityToday")}</p>
+              ) : (
+                <ul className="space-y-4">
+                  {meals.map((m) => (
+                    <li key={m.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                      <div className="font-medium">
+                        {m.type === "lunch"
+                          ? t("dashboard.meals.lunch")
+                          : m.type === "dinner"
+                            ? t("dashboard.meals.dinner")
+                            : t("dashboard.meals.breakfast")}
+                        {m.meal_time ? ` · ${m.meal_time.slice(0, 5)}` : ""}
+                      </div>
+                      {m.host_name && <div>{m.host_name}</div>}
+                      {m.location && (
+                        <div className="text-xs text-muted-foreground flex items-start gap-1">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span className="whitespace-pre-wrap break-words">{m.location}</span>
+                        </div>
+                      )}
+                      {m.contact_phone && (
+                        <div className="text-xs">📞 {m.contact_phone}</div>
+                      )}
+                      {m.notes && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{m.notes}</div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </DayDetailsDialog>
+
+            <DayDetailsDialog
+              open={openDetails === "meetings"}
+              onOpenChange={(o) => !o && closeDetails()}
+              title={`${t("dashboard.meetingsToday", { defaultValue: "Reuniões de hoje" })} · ${dayLabel}`}
+            >
+              {meetingsToday.length === 0 ? (
+                <p className="text-muted-foreground">{t("dashboard.noActivityToday")}</p>
+              ) : (
+                <ul className="space-y-4">
+                  {meetingsToday.map((mt) => {
+                    const labels: Record<MeetingTodayItem["kind"], string> = {
+                      midweek: t("meetingsTalks.tabMeio", { defaultValue: "Meio de Semana" }),
+                      weekend: t("meetingsTalks.tabFim", { defaultValue: "Fim de Semana" }),
+                      pioneer: t("meetingsTalks.tabPioneiros", { defaultValue: "Pioneiros" }),
+                      elders: t("meetingsTalks.tabAncios", { defaultValue: "Anciãos e Servos" }),
+                    };
+                    const time = (() => {
+                      try {
+                        const d = new Date(mt.meeting_at);
+                        return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+                      } catch { return ""; }
+                    })();
+                    return (
+                      <li key={mt.kind} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                        <div className="font-medium">
+                          {labels[mt.kind]}
+                          {time ? ` · ${time}` : ""}
+                        </div>
+                        {mt.theme && (
+                          <div className="whitespace-pre-wrap break-words">{mt.theme}</div>
+                        )}
+                        {mt.location && (
+                          <div className="text-xs text-muted-foreground flex items-start gap-1">
+                            <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                            <span className="whitespace-pre-wrap break-words">{mt.location}</span>
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </DayDetailsDialog>
+
+            <DayDetailsDialog
+              open={openDetails === "transport"}
+              onOpenChange={(o) => !o && closeDetails()}
+              title={`${t("dashboard.transportToday")} · ${dayLabel}`}
+            >
+              {transports.length === 0 ? (
+                <p className="text-muted-foreground">{t("dashboard.noActivityToday")}</p>
+              ) : (
+                <ul className="space-y-4">
+                  {transports.map((tr) => (
+                    <li key={tr.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                      <div className="font-medium">{tr.driver_name}</div>
+                      {tr.contact_phone && (
+                        <div className="text-xs">📞 {tr.contact_phone}</div>
+                      )}
+                      {tr.description && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{tr.description}</div>
+                      )}
+                      {tr.notes && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{tr.notes}</div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </DayDetailsDialog>
+
+            <DayDetailsDialog
+              open={openDetails === "checklist"}
+              onOpenChange={(o) => !o && closeDetails()}
+              title={t("dashboard.checklistTitle")}
+              subtitle={t("dashboard.doneOf", { done: doneCount, total })}
+            >
+              {checklist.length === 0 ? (
+                <p className="text-muted-foreground">{t("dashboard.noActivityToday")}</p>
+              ) : (
+                <ul className="space-y-3">
+                  {checklist.map((c) => (
+                    <li key={c.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-medium whitespace-pre-wrap break-words flex-1">
+                          {c.title || "—"}
+                        </div>
+                        <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-muted text-muted-foreground shrink-0">
+                          {c.status}
+                        </span>
+                      </div>
+                      {c.description && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{c.description}</div>
+                      )}
+                      {c.info_text && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{c.info_text}</div>
+                      )}
+                      {c.link_or_notes && (
+                        <div className="text-xs text-primary whitespace-pre-wrap break-all">{c.link_or_notes}</div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </DayDetailsDialog>
+          </>
+        );
+      })()}
+
+
 
       <FieldNoteFullscreenDialog
         noteId={fullscreenNoteId}

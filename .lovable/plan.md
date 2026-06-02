@@ -1,59 +1,85 @@
 ## Objetivo
 
-Hoje a aba **Esboços pessoais** (rota `/_app/consideracoes-campo`, com as subabas *Esboços* e *Considerações de campo*) já guarda tudo localmente, mas dispara sincronização com a nuvem em quase toda ação (criar, editar, mover, reordenar, excluir, abrir o app). Isso faz com que:
+Adicionar a função "ver detalhes em popup" em três lugares, mantendo um padrão visual único (ícone `Eye` no canto do cartão → `Dialog` somente-leitura com todos os dados do dia):
 
-- a ordem manual das notas seja sobrescrita pela ordem vinda da nuvem;
-- exclusões e reorganizações no celular pareçam "voltar"; e
-- o smartphone fique amarrado à conexão para qualquer ajuste local.
+1. **Dashboard** — nos cartões Reunião de Campo, Estudos e Revisitas, Refeições de hoje, Reuniões de hoje, Transporte do dia e Checklist da Congregação. **Não** mexer no cartão "Esboços e Notas".
+2. **Resumo do Dia → subaba "Hoje"** (em `VisitSummaryView`) — um botão no topo da aba que abre um popup com tudo o que está sendo mostrado para o dia (refeições, designações, reuniões de campo, transporte, programação, reuniões do dia).
+3. **Resumo da Semana → subaba "Transporte"** (mesmo `VisitSummaryView`) — em cada cartão de dia agrupado, um botão que abre um popup com todos os detalhes daquele dia de transporte (motorista, telefone, tipo, direção, horários, descrição, observações de cada linha).
 
-A proposta é deixar a área **100% local por padrão** e só conversar com a nuvem quando você clicar em **Salvar** (em uma nota específica) ou nos botões de **Enviar para a nuvem / Importar da nuvem / Sincronizar agora**.
+Como `VisitSummaryView` é o componente compartilhado usado tanto em `_app.resumo-semana.tsx` (acesso atual de anciãos / esposa do superintendente) quanto em `visitante.painel.tsx` (acesso antigo via visitante), uma única alteração contempla os dois fluxos.
 
-A aba **"Notas Privadas"** (`_app/notas.tsx`), o resto do app (reuniões, escala, checklist, perfil, etc.) e o backup geral **não são afetados** — só mexemos no hook de sincronização dos esboços e em onde ele é chamado.
+## Comportamento (idêntico nas 3 telas)
 
-## Mudanças
+- Ícone `Eye` (lucide-react), 16px, cor `text-muted-foreground hover:text-primary`, `aria-label="Ver detalhes do dia"`.
+- Ao clicar, abre `Dialog` (shadcn), `max-h-[85vh] overflow-y-auto`, com:
+  - Título: contexto + data (ex.: "Transporte · Qua, 03/06/2026").
+  - Conteúdo: mesmos dados já exibidos, sem `truncate`/`line-clamp`, com rótulos legíveis.
+  - Botão "Fechar" no rodapé. Somente leitura.
+- Não altera nenhum comportamento existente (expandir/recolher, "Ver tudo", agrupamentos, contagens, sincronização, RLS).
+- Nenhuma chamada nova à rede; usa os dados já presentes no snapshot/estado — **exceto** o cartão Checklist do dashboard, cuja query precisa de mais colunas (`title, description, link_or_notes, info_text, sort_order`).
 
-### 1. Desligar a sincronização automática dos esboços
-- Em `src/routes/_app.tsx`, parar de chamar `useOutlinesSync()` no carregamento do app. O hook continua existindo, mas só roda quando alguém pedir explicitamente.
-- Em `src/hooks/use-outlines-sync.ts`, remover os gatilhos automáticos internos (`online`, `visibilitychange`, `resume`, `onAuthStateChange`) — o hook passa a expor apenas a função `syncNow()` chamada sob demanda.
+## Implementação técnica
 
-### 2. Remover o auto-sync após cada ação local
-Em `src/routes/_app.consideracoes-campo.tsx`, remover as chamadas de `syncOutlinesIfOnline()` que hoje rodam após:
-- criar/editar pasta, mover pasta, excluir pasta;
-- criar nota, mover nota (uma ou várias), recortar/colar, excluir nota;
-- **reordenar via arrastar-e-soltar** (essa é a causa direta da ordem "voltar" para a da nuvem);
-- alternar entre subabas.
+### 1. Componente novo, reutilizável
 
-Essas operações continuam funcionando 100% offline e gravando no armazenamento local imediatamente — só não disparam mais upload silencioso.
+`src/components/dashboard/DayDetailsDialog.tsx`
+- Wrapper genérico baseado em `Dialog`.
+- Props: `open`, `onOpenChange`, `title`, `subtitle?`, `children`.
+- Estilos: `max-h-[85vh] overflow-y-auto`, rodapé com botão Fechar.
+- Usado pelos três pontos (dashboard, VisitSummaryView Hoje, VisitSummaryView Transporte).
 
-### 3. Manter (e tornar explícito) o caminho da nuvem
-A sincronização continua disponível, mas só roda quando você decidir:
-- **Botão "Salvar"** dentro de uma nota → grava local e, se estiver online, faz `syncNow()` daquela alteração (igual hoje). Se estiver offline, fica como rascunho local e sincroniza na próxima vez que você mandar.
-- **Diálogo "Nuvem"** (botões já existentes *Enviar para a nuvem* / *Importar da nuvem* / *Excluir da nuvem*) — sem mudanças.
-- **Novo botão "Sincronizar agora"** ao lado do botão "Nuvem", para quando você quiser forçar um envio/recebimento em lote (ex.: trocar de aparelho).
+### 2. Dashboard — `src/routes/_app.dashboard.tsx`
 
-### 4. Preservar a ordem manual
-Hoje a reordenação local grava `sort_order` corretamente, mas o sync seguinte reescreve a lista a partir da nuvem. Com as mudanças acima:
-- a ordem que você definir no celular fica intacta enquanto não pedir sync;
-- quando você pedir sync (Salvar ou Sincronizar agora), o `sort_order` local é enviado para a nuvem, então a ordem do celular vira a ordem "oficial".
+- Importar `Eye` e `DayDetailsDialog`.
+- Estado `const [openDetails, setOpenDetails] = useState<null | "field" | "studies" | "meals" | "meetings" | "transport" | "checklist">(null);`
+- Em cada um dos 6 cartões, o `headerRight` passa a ter o ícone `Eye` (botão) **antes** do link "Ver tudo":
+  ```tsx
+  <div className="flex items-center gap-2 shrink-0">
+    <button type="button" onClick={() => setOpenDetails("meals")} aria-label="..."><Eye className="h-4 w-4" /></button>
+    <Link to="/refeicoes">{t("common.viewAll")} <ChevronRight className="h-3 w-3" /></Link>
+  </div>
+  ```
+- Renderizar 6 `DayDetailsDialog` no fim do componente, reaproveitando o JSX dos cartões sem truncamento.
+- Ampliar o `select` de `checklist_items` em `loadVisitData` e o tipo `ChecklistItem` para incluir `title, description, link_or_notes, info_text, sort_order`. Cartão continua usando só `status` para o progresso.
+- **Não** alterar o cartão "Esboços e Notas".
 
-## O que **não** muda
+### 3. Resumo do Dia — subaba "Hoje" em `VisitSummaryView`
 
-- Estrutura do banco (`personal_outlines`), RLS, server functions e tabela `private_notes` permanecem iguais.
-- "Notas Privadas", "Reuniões", "Escala", "Checklist", "Perfil", backup automático e qualquer outra aba **não** são tocados.
-- O editor `RichNoteEditor` e a barra de ferramentas continuam exatamente como ficaram nas últimas alterações.
-- Lixeira continua funcionando (soft-delete local; sobe pra nuvem quando você sincronizar).
+- Localizar a aba `value="hoje"` (renderiza `<TodayPanel snap={snap} />` no arquivo `src/components/visit-summary/VisitSummaryView.tsx`).
+- No topo do painel "Hoje", ao lado do rótulo da data, adicionar um botão `Eye` que abre um `DayDetailsDialog` único.
+- Conteúdo do dialog: concatena as seções já renderizadas para hoje — Refeições, Designações de campo, Reuniões de campo, Reuniões do dia (meio/fim/pioneiros/anciãos), Programação, Transporte do dia — todas filtradas por `todayIso` (variáveis já existentes no componente: `todayMeals`, `todayField`, `todayFieldMeetings`, `todaySchedule`, `todayTransport`, `todayWeekend`, `todayPioneer`, etc.).
+- Esconde seções vazias. Respeita `snap.wifeMode` (não mostrar Checklist, mesma regra que já existe).
 
-## Riscos e como ficam controlados
+### 4. Resumo da Semana — subaba "Transporte" em `VisitSummaryView`
 
-- **Dois aparelhos editando a mesma nota** → quem sincronizar por último ganha (LWW por `updated_at`), igual hoje. Diferença: agora isso só acontece quando alguém aperta Salvar/Sincronizar, não em segundo plano.
-- **Esquecer de sincronizar** → adicionamos um indicador discreto "alterações locais não enviadas" no cabeçalho da aba, usando a flag `dirty` que já existe em cada nota.
-- **Reinstalar o app sem ter sincronizado** → as notas locais não enviadas se perdem (mesmo risco de qualquer app offline-first). O indicador acima ajuda a lembrar.
+- Na aba `value="trans"`, dentro do `groupTransport(snap.transport).map((g) => …)`, adicionar no cabeçalho de cada `Card` (linha com `Car` + data) um botão `Eye` à direita.
+- Estado local na aba: `const [openTransKey, setOpenTransKey] = useState<string | null>(null);`
+- Ao clicar, abre `DayDetailsDialog` com:
+  - Título: data formatada do grupo (`fmtDate(head.event_date)`).
+  - Conteúdo: lista completa das linhas `g.rows` daquele dia, mostrando para cada uma: tipo, direção, horários ida/volta, motorista, telefone, descrição, observações e flag "apoiar todos os eventos" quando aplicável — sem truncar.
 
-## Resumo técnico (para referência)
+### 5. i18n
 
-Arquivos tocados:
-- `src/hooks/use-outlines-sync.ts` — remover listeners automáticos; manter `syncNow`.
-- `src/routes/_app.tsx` — remover chamada `useOutlinesSync()`.
-- `src/routes/_app.consideracoes-campo.tsx` — remover todos os `syncOutlinesIfOnline()` exceto o do botão **Salvar**; adicionar botão **Sincronizar agora** e badge "alterações locais não enviadas".
+`src/i18n/locales/{pt,en,es}.json`:
+- `common.viewDayDetails` — "Ver detalhes do dia" / "View day details" / "Ver detalles del día"
+- `common.close` (se ainda não existir)
+- `guest.today.detailsTitle` — "Resumo do dia" / "Day summary" / "Resumen del día"
+- `guest.transport.dayDetailsTitle` — "Detalhes do transporte" / "Transport details" / "Detalles del transporte"
 
-Nenhuma migração de banco, nenhuma alteração em outras abas.
+## Arquivos afetados
+
+- `src/components/dashboard/DayDetailsDialog.tsx` (novo)
+- `src/routes/_app.dashboard.tsx` (botões + 6 dialogs + ampliar select do checklist)
+- `src/components/visit-summary/VisitSummaryView.tsx` (botão + 1 dialog no painel "Hoje"; botão por dia + 1 dialog na aba "Transporte")
+- `src/i18n/locales/pt.json`, `en.json`, `es.json` (novas chaves)
+
+## Cobertura por tipo de acesso
+
+- **Dashboard**: superintendente, esposa em modo dashboard e anciãos (já compartilham a mesma rota).
+- **Resumo do Dia "Hoje"** e **Resumo da Semana "Transporte"**: como `VisitSummaryView` é importado por `_app.resumo-semana.tsx` (acesso atual de anciãos/esposa logada) e por `visitante.painel.tsx` (acesso antigo via visitante), a alteração cobre automaticamente **todos** esses perfis sem código duplicado.
+
+## Fora do escopo
+
+- Cartão "Esboços e Notas" — não é tocado.
+- Funções atuais (expandir/recolher, "Ver tudo", contagens, progresso, sincronização, RLS, edição) — preservadas.
+- Demais subabas do Resumo da Semana (Cronograma, Estudos, Campo, Refeições, Checklist) — não recebem o popup nesta entrega; podem ser adicionadas depois usando o mesmo `DayDetailsDialog`.
