@@ -384,8 +384,9 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
       else await supabaseAdmin.from("pioneer_meetings").insert(payload);
     }
 
-    // Elders: upsert
+    // Elders: upsert (resolve weekday → meeting_at, mesmo padrão dos pioneiros)
     {
+      const eldersMeetingAt = resolveDate(elders.data?.weekday ?? null, elders.data?.meeting_time ?? null);
       const { data: existing } = await supabaseAdmin
         .from("elders_servants_meetings").select("id").eq("visit_id", data.visitId).maybeSingle();
       const payload = {
@@ -393,6 +394,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
         theme: elders.data?.theme ?? null,
         opening_prayer: elders.data?.opening_prayer ?? null,
         closing_prayer: elders.data?.closing_prayer ?? null,
+        meeting_at: eldersMeetingAt,
       };
       if (existing) await supabaseAdmin.from("elders_servants_meetings").update(payload).eq("id", existing.id);
       else await supabaseAdmin.from("elders_servants_meetings").insert(payload);
