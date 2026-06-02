@@ -253,18 +253,60 @@ function EventCard({
             <FieldRow label="Dia/Horário">
               <Select
                 value={ev.slot_label ?? "__none__"}
-                onValueChange={(v) => onChange({ slot_label: v === "__none__" ? null : v })}
+                onValueChange={(v) => {
+                  const next = v === "__none__" ? null : v;
+                  if (next && next !== ev.slot_label && usedSlots.has(next)) {
+                    setPendingSlot(next);
+                    return;
+                  }
+                  setHideUsed(false);
+                  onChange({ slot_label: next });
+                }}
                 disabled={readOnly}
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  className={cn(slotConflict && "border-destructive text-destructive focus:ring-destructive")}
+                >
                   <SelectValue placeholder={slots.length ? "Selecione um slot" : "Superintendente ainda não definiu slots"} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">—</SelectItem>
-                  {slots.map((s, i) => <SelectItem key={i} value={s}>{s}</SelectItem>)}
+                  {visibleSlots.map((s, i) => <SelectItem key={i} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
+              {slotConflict && (
+                <p className="mt-1 text-[11px] text-destructive">
+                  Este horário já está em uso por outro evento.
+                </p>
+              )}
             </FieldRow>
+            <AlertDialog open={pendingSlot !== null} onOpenChange={(o) => { if (!o) setPendingSlot(null); }}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Conflito de horário</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O horário “{pendingSlot}” já está atribuído a outra visita de pastoreio. Deseja confirmar mesmo assim?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    onClick={() => { setHideUsed(true); setPendingSlot(null); }}
+                  >
+                    Não, escolher outro
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      const v = pendingSlot;
+                      setPendingSlot(null);
+                      setHideUsed(false);
+                      if (v) onChange({ slot_label: v });
+                    }}
+                  >
+                    Sim, confirmar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <DebouncedText label="Ancião/S.M acompanhante" value={ev.companion} onSave={(v) => onChange({ companion: v })} readOnly={readOnly} />
             <DebouncedText label="Família/Irmão(ã)" value={ev.family_name} onSave={(v) => onChange({ family_name: v })} readOnly={readOnly} />
             <DebouncedText label="Endereço" value={ev.address} onSave={(v) => onChange({ address: v })} readOnly={readOnly} />
