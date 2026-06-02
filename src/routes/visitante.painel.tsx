@@ -370,7 +370,7 @@ function Page() {
               </p>
             </CardContent></Card>
 
-            <Tabs defaultValue="hoje">
+            <Tabs value={currentTab} onValueChange={setCurrentTab}>
               <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-7" : "grid-cols-7"}`}>
                 <TabsTrigger value="hoje"><Sun className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.today")}</span></TabsTrigger>
                 <TabsTrigger value="cron"><CalendarDays className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.schedule")}</span></TabsTrigger>
