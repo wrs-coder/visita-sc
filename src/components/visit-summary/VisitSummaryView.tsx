@@ -97,6 +97,8 @@ export function VisitSummaryView({
   const { t, i18n } = useTranslation();
   const dateLocale = getDateLocale(i18n.language);
 
+  const [openTransKey, setOpenTransKey] = useState<string | null>(null);
+
   const fmtDate = useCallback(
     (d: string) => format(parseISO(d), "EEE, d MMM", { locale: dateLocale }),
     [dateLocale],
