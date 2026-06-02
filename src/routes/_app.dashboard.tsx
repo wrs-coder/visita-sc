@@ -48,6 +48,7 @@ import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.fun
 import { listNotesByType, FIXED_FOLDER_WEEK_CONSIDERATIONS, FIXED_FOLDER_WEEK_OUTLINES, type FieldNote } from "@/lib/bible-notes-store";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
 import { DayDetailsDialog } from "@/components/dashboard/DayDetailsDialog";
+import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { FieldNoteFullscreenDialog } from "@/components/dashboard/FieldNoteFullscreenDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
