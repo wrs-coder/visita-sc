@@ -82,9 +82,37 @@ export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
           `Importação parcial: ${lib.bookCount} livros e ${lib.verseCount} versículos detectados.`,
         );
       }
+      // Sanity-check pós-refresh: se mesmo após sucesso a lista ficou vazia,
+      // o WebView descartou o storage. Avisa o usuário em vez de deixar
+      // "Bíblia importada" com lista vazia (sintoma reportado no Android).
+      const after = await listLibraries();
+      if (after.length === 0) {
+        toast.error(
+          "A Bíblia foi importada, mas o Android descartou o armazenamento. Vá em Configurações do celular > Apps > Visita SC > Armazenamento, libere espaço e tente novamente.",
+          { duration: 10000 },
+        );
+      }
     } catch (err) {
-      console.error(err);
-      toast.error(t("bibleManager.importError"));
+      const e = err as Error;
+      let estimate: StorageEstimate | undefined;
+      try { estimate = await navigator.storage?.estimate?.(); } catch { /* noop */ }
+      console.error("[bible-import] erro:", {
+        name: e?.name,
+        message: e?.message,
+        userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "n/a",
+        estimate,
+      });
+      const msg = e?.message ?? "";
+      if (msg.startsWith("PERSIST_FAILED")) {
+        toast.error(
+          "O Android descartou o armazenamento do app. Vá em Configurações > Apps > Visita SC > Armazenamento, marque como 'não otimizar' (ou libere espaço) e tente novamente.",
+          { duration: 10000 },
+        );
+      } else if (msg === "QUOTA_LOW") {
+        toast.error("Espaço insuficiente no dispositivo para importar essa Bíblia. Libere espaço e tente novamente.");
+      } else {
+        toast.error(t("bibleManager.importError"));
+      }
     } finally {
       setProgress(null);
     }

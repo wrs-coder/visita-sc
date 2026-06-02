@@ -1,67 +1,84 @@
-## Objetivo
+# Importação da Bíblia some no Android — correção defensiva
 
-Dois ajustes no Dashboard (`src/routes/_app.dashboard.tsx`), sem mexer em backend nem alterar lógicas existentes.
+## Diagnóstico
 
----
+Toast "Bíblia importada" aparece mas a lista em "Gerenciar Bíblia" fica vazia. Isso indica que a gravação no IndexedDB **aparentou** sucesso mas o registro não está lá quando `listLibraries()` lê de volta. Causa mais provável no Android WebView (APK usando `server.url` remoto):
 
-### Ajuste 01 — Popups completos nos cartões
+1. **Storage não persistido**: o Android pode descartar IndexedDB/localStorage do WebView sem aviso quando o app não chama `navigator.storage.persist()`. Afeta poucos usuários (depende de pressão de armazenamento / configurações). Explica perfeitamente "importou e sumiu".
+2. **Quota/transação abortada silenciosamente** em chunks intermediários em WebViews antigos.
+3. (Menos provável) localStorage bloqueado — afetaria só o "ativo", a lib continuaria aparecendo na lista.
 
-Hoje os popups de "Reunião de Campo", "Estudos e Revisitas" e "Refeições" já trazem boa parte das informações, mas faltam campos. "Reuniões de hoje" e "Transporte" estão bem incompletos. O cartão "Checklist da Congregação" não é alterado.
+A estratégia abaixo cobre os 3 cenários sem mexer no parser EPUB, no schema do IndexedDB nem no fluxo de quem já usa.
 
-**Reunião de Campo (`field_meetings`)** — ampliar select para incluir `observations` e exibir esse campo no popup (cartão compacto permanece igual).
+## Mudanças (apenas 2 arquivos)
 
-**Estudos e Revisitas (`field_assignments`)** — popup atual já cobre todos os campos da tabela. Nada a adicionar.
+### 1. `src/lib/bible-notes-store.ts` — robustez na importação
 
-**Refeições de hoje (`meals`)** — popup atual já cobre todos os campos. Nada a adicionar.
+Dentro de `importEpub` (após `openDB()`, antes do loop de chunks):
 
-**Reuniões de hoje** — ampliar a busca em `useEffect` (linhas 526-551) e o popup:
-- `midweek_meetings`: adicionar `chairman`, `closing_prayer`.
-- `weekend_meetings`: já busca `talk_theme_title` e `public_talk_theme`; exibir ambos.
-- `pioneer_meetings`: adicionar `opening_prayer`, `closing_prayer`.
-- `elders_servants_meetings` não tem data/hora própria, então fica fora do filtro por dia (documentado em comentário).
-- Expandir o tipo `MeetingTodayItem` para incluir os campos opcionais (`chairman`, `opening_prayer`, `closing_prayer`, `public_talk_theme`) e renderizar todos no `DayDetailsDialog` correspondente. Rótulos via `t()` reaproveitando `dashboard.closingPrayer` e novas chaves `dashboard.openingPrayer`, `dashboard.chairman` com `defaultValue`.
+- **Pedir persistência ao SO** (best-effort, silencioso):
+  ```ts
+  try {
+    if (navigator.storage?.persist) await navigator.storage.persist();
+  } catch { /* noop */ }
+  ```
+  Isso sinaliza ao Android WebView que o store **não** deve ser descartado.
 
-**Transporte de hoje (`transport_schedule`)** — ampliar select (linhas 432-437) para incluir `event_type, direction, departure_time, return_time, all_day`. Expandir `interface Transport` e o conteúdo do `DayDetailsDialog` de transporte para mostrar tipo, direção, horários ida/volta, flag "dia inteiro" e os campos já presentes (motorista, telefone, descrição, observações). O cartão compacto permanece igual; só o popup expande.
+- **Checar quota** antes de começar a escrever (best-effort):
+  ```ts
+  try {
+    const est = await navigator.storage?.estimate?.();
+    if (est?.quota && est?.usage && est.quota - est.usage < 30 * 1024 * 1024) {
+      throw new Error("QUOTA_LOW");
+    }
+  } catch (e) { if ((e as Error).message === "QUOTA_LOW") throw e; }
+  ```
 
----
+Depois do bloco que grava metadados (linha ~377), **adicionar verificação read-back**:
 
-### Ajuste 02 — Botão "Ver dia seguinte"
+```ts
+// Confirma que o registro realmente persistiu (Android WebView às vezes
+// aborta silenciosamente). Se sumiu, lança erro para o catch existente
+// disparar removeLibrary() e a UI mostrar erro real ao usuário.
+const persisted = await new Promise<BibleLibrary | undefined>((resolve, reject) => {
+  const tx = db.transaction(STORE_LIBRARIES, "readonly");
+  const req = tx.objectStore(STORE_LIBRARIES).get(id);
+  req.onsuccess = () => resolve(req.result as BibleLibrary | undefined);
+  req.onerror = () => reject(req.error);
+});
+if (!persisted) {
+  throw new Error("PERSIST_FAILED: gravação não confirmada após escrita.");
+}
+```
 
-Adicionar um controle de data no Dashboard que alterna entre **hoje** e **amanhã**, atualizando 6 cartões:
+Substituir o catch genérico para preservar a mensagem original (em vez de só relançar) e logar detalhes via `console.warn` para o DevTools dos próximos relatos.
 
-- "Hoje no cronograma" (super, `circuitToday`)
-- "Reunião de Campo" (`fieldMeetings`)
-- "Estudos e Revisitas" (`assignments`)
-- "Refeições" (`meals`)
-- "Reuniões de hoje" (`meetingsToday` — recalculada pelo dia-da-semana da data selecionada)
-- **"Transporte" (`transports`)** — também troca para a data selecionada
+### 2. `src/components/bible/BibleManagerDialog.tsx` — mensagem clara + diagnóstico
 
-Os demais (Checklist, Esboços e Notas, Recados da esposa, alerta de visitas vencidas) **não** mudam — continuam atrelados a hoje / estado global.
+No `handlePickFile`, no `catch (err)` (linhas 85-90):
 
-**UI:**
-- Botão pequeno ao lado da data no header, tipo `Button` outline com ícones `ChevronLeft`/`ChevronRight`.
-- Estado: `const [dayOffset, setDayOffset] = useState<0 | 1>(0)`.
-- Exibe rótulo: "Hoje" ou "Amanhã · 03/06/2026".
-- Botão de voltar aparece somente quando `dayOffset === 1`.
-- Quando offset = 1, os 6 cartões mostram um chip discreto "Amanhã" ao lado do título para evitar confusão; popups usam a data efetiva no título.
+- Diferenciar mensagens por causa:
+  - `PERSIST_FAILED` → "O Android descartou o armazenamento. Vá em Configurações > Apps > Visita SC > Armazenamento e marque como 'não otimizar', depois tente novamente."
+  - `QUOTA_LOW` → "Espaço insuficiente no dispositivo para importar essa Bíblia."
+  - outros → mensagem atual.
+- `console.error` com `err.message`, `err.name`, `navigator.userAgent`, e resultado de `navigator.storage.estimate()` — assim, se outro usuário reportar, conseguimos ler nos logs do remote inspector.
 
-**Comportamento dos dados:**
-- Derivar `viewedDate = addDays(new Date(), dayOffset)` e `viewedIso = format(viewedDate, "yyyy-MM-dd")`.
-- Substituir `today` por `viewedIso` nas queries dos 6 cartões (`circuit_schedule_events`, `meals`, `transport_schedule`, `field_assignments`, `field_meetings`) e nos canais realtime correspondentes.
-- Para `meetingsToday`, usar `viewedDate.getDay()` em vez de `new Date().getDay()`.
-- Manter `today` separadamente para o restante (visitas vencidas, label do cabeçalho, etc.).
-- Incluir `viewedIso` na dependência dos `useEffect` para refetch automático ao alternar.
+Depois de `await refresh()`, **se `libs.length === 0` mesmo após sucesso**, mostrar toast de alerta pedindo para reabrir a tela (cenário raro de race).
 
-**Out of scope:** sincronização, RLS, edição, lógica de seleção de congregação, esposa-mode. O modo offline continua funcionando normalmente porque usa as mesmas queries interceptadas.
+## Fora do escopo (intencional)
 
----
+- Parser EPUB (`epub-bible-parser.ts`) — sem mudanças. Os 2 usuários receberam toast de sucesso, então o parser funcionou.
+- Schema do IndexedDB, `STORE_BIBLES`, `STORE_LIBRARIES`, `LS_ACTIVE_LIBRARY` — sem mudanças. Quem já tem Bíblia importada continua funcionando.
+- UI/UX dos outros usuários — sem mudança visível para 99% dos casos.
+- Capacitor / `server.url` / migração para bundle offline — não toca.
 
-### Arquivos afetados
+## Validação
 
-- `src/routes/_app.dashboard.tsx` (única alteração)
-- `src/i18n/locales/pt.json`, `en.json`, `es.json` — chaves novas com `defaultValue` inline (`dashboard.viewNextDay`, `dashboard.viewToday`, `dashboard.viewingTomorrow`, `dashboard.openingPrayer`, `dashboard.chairman`, `dashboard.transportType`, `dashboard.transportDirection`, `dashboard.transportDeparture`, `dashboard.transportReturn`, `dashboard.transportAllDay`).
+- Build passa sem erro de tipos.
+- Fluxo feliz (web e Android com storage saudável): importa, mostra toast, aparece em "Gerenciar Bíblia", igual hoje.
+- Cenário de falha simulado (DevTools → Application → IndexedDB → Clear durante import): toast de erro com mensagem acionável em vez do antigo falso-positivo.
+- Próximo relato vai trazer `console.error` com a causa raiz exata via `userAgent` + `storage.estimate()`.
 
-### Fora do escopo
-- Cartão "Esboços e Notas" e "Checklist" — não tocados.
-- `VisitSummaryView` — não alterado nesta entrega.
-- Sem mudanças em migrações, RLS, server functions ou edge functions.
+## Riscos
+
+Baixos. As chamadas a `navigator.storage.persist/estimate` são opcionais (encapsuladas em try/catch). A verificação read-back custa 1 transação readonly extra (~ms). Nenhuma migração de dados.
