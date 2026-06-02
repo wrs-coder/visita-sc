@@ -211,6 +211,7 @@ function Page() {
       checklist_template_id: "",
       field_template_id: "",
       meeting_talk_template_id: "",
+      elder_program_template_id: "",
       substitute_name: "",
       substitute_phone: "",
     });
@@ -260,6 +261,7 @@ function Page() {
       checklist_template_id: "",
       field_template_id: "",
       meeting_talk_template_id: "",
+      elder_program_template_id: "",
       substitute_name: v.substitute_name ?? "",
       substitute_phone: v.substitute_phone ?? "",
     });
