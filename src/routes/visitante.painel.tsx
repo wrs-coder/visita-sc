@@ -387,7 +387,7 @@ function Page() {
 
 
               <TabsContent value="hoje" className="mt-4">
-                <TodayDashboard snap={snap} dayOffset={dayOffset} setDayOffset={setDayOffset} code={code} />
+                <TodayDashboard snap={snap} dayOffset={dayOffset} setDayOffset={setDayOffset} code={code} onOpenCouple={() => setCurrentTab("couple")} />
               </TabsContent>
 
               <TabsContent value="cron" className="space-y-2 mt-4">
