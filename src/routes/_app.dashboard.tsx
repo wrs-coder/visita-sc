@@ -48,6 +48,7 @@ import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.fun
 import { listNotesByType, FIXED_FOLDER_WEEK_CONSIDERATIONS, FIXED_FOLDER_WEEK_OUTLINES, type FieldNote } from "@/lib/bible-notes-store";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
 import { DayDetailsDialog } from "@/components/dashboard/DayDetailsDialog";
+import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { FieldNoteFullscreenDialog } from "@/components/dashboard/FieldNoteFullscreenDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -174,6 +175,7 @@ function Dashboard() {
   const [assignments, setAssignments] = useState<FieldAssignment[]>([]);
   const [fieldMeetings, setFieldMeetings] = useState<FieldMeetingToday[]>([]);
   const [meetingsToday, setMeetingsToday] = useState<MeetingTodayItem[]>([]);
+  const meetingExtras = useVisitTemplateExtras(visit?.id);
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [pendingCount, setPendingCount] = useState(0);
   type DetailsKey = "field" | "studies" | "meals" | "meetings" | "transport" | "checklist";
@@ -1583,6 +1585,56 @@ function Dashboard() {
                             <span className="whitespace-pre-wrap break-words">{mt.location}</span>
                           </div>
                         )}
+                        {(() => {
+                          const songLabel = t("meetingsTalks.fromTemplate.openingSong", { defaultValue: "Cântico inicial" });
+                          const closeSongLabel = t("meetingsTalks.fromTemplate.closingSong", { defaultValue: "Cântico final" });
+                          const finalSongLabel = t("meetingsTalks.fromTemplate.finalSong", { defaultValue: "Cântico Final" });
+                          const obsLabel = t("meetingsTalks.fromTemplate.observations", { defaultValue: "Informações adicionais do superintendente" });
+                          let openingSong: string | null = null;
+                          let closingSong: string | null = null;
+                          let finalSong: string | null = null;
+                          let observations: string | null = null;
+                          if (mt.kind === "midweek") {
+                            finalSong = meetingExtras.midweek?.final_song ?? null;
+                            observations = meetingExtras.midweek?.observations ?? null;
+                          } else if (mt.kind === "weekend") {
+                            openingSong = meetingExtras.weekend?.opening_song ?? null;
+                            closingSong = meetingExtras.weekend?.closing_song ?? null;
+                            observations = meetingExtras.weekend?.observations ?? null;
+                          } else if (mt.kind === "pioneer") {
+                            observations = meetingExtras.pioneer?.observations ?? null;
+                          } else if (mt.kind === "elders") {
+                            observations = meetingExtras.elders?.observations ?? null;
+                          }
+                          return (
+                            <>
+                              {openingSong && (
+                                <div className="text-xs">
+                                  <span className="text-muted-foreground">{songLabel}: </span>
+                                  {openingSong}
+                                </div>
+                              )}
+                              {closingSong && (
+                                <div className="text-xs">
+                                  <span className="text-muted-foreground">{closeSongLabel}: </span>
+                                  {closingSong}
+                                </div>
+                              )}
+                              {finalSong && (
+                                <div className="text-xs">
+                                  <span className="text-muted-foreground">{finalSongLabel}: </span>
+                                  {finalSong}
+                                </div>
+                              )}
+                              {observations && (
+                                <div className="text-xs">
+                                  <div className="text-muted-foreground">{obsLabel}:</div>
+                                  <div className="whitespace-pre-wrap break-words">{observations}</div>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </li>
                     );
                   })}
