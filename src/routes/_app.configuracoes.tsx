@@ -372,6 +372,10 @@ function Page() {
         const r = await fnApplyMeetingTalk({ data: { visitId: data.id, templateId: form.meeting_talk_template_id } });
         if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
       }
+      if (form.elder_program_template_id) {
+        const r = await fnApplyElderProgram({ data: { visitId: data.id, templateId: form.elder_program_template_id } });
+        if (!r.ok) toast.error("Falha ao aplicar modelo de programação dos anciãos: " + r.error);
+      }
       toast.success("Visita criada");
       setOpen(false);
     } catch (err) {
