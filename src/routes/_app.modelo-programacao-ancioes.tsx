@@ -14,7 +14,7 @@ import {
   type ElderSection,
   type ElderProgramEventDTO,
 } from "@/lib/elder-program-templates.functions";
-import { listMyCongregations } from "@/lib/congregations.functions";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -91,7 +91,7 @@ function Page() {
   const fnDup = useServerFn(duplicateElderProgramTemplate);
   const fnDel = useServerFn(deleteElderProgramTemplate);
   const fnSave = useServerFn(saveElderProgramTemplate);
-  const fnCongs = useServerFn(listMyCongregations);
+  
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -103,7 +103,7 @@ function Page() {
   const [newName, setNewName] = useState("");
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameVal, setRenameVal] = useState("");
-  const [congs, setCongs] = useState<{ id: string; name: string }[]>([]);
+  
   const [busy, setBusy] = useState(false);
 
   const loadList = useCallback(async () => {
@@ -120,7 +120,7 @@ function Page() {
   }, [fnGet]);
 
   useEffect(() => { loadList(); }, [loadList]);
-  useEffect(() => { (async () => { const r = await fnCongs(); if (r.ok) setCongs(r.data as { id: string; name: string }[]); })(); }, [fnCongs]);
+  
   useEffect(() => {
     if (activeId) loadActive(activeId);
     else { setSections(emptySections()); setPastoralSlots([]); setEvents([]); }
@@ -158,15 +158,6 @@ function Page() {
     await loadList();
   };
 
-  const handleSetCongregation = async (congregationId: string | null) => {
-    if (!active) return;
-    setBusy(true);
-    const r = await fnUpdate({ data: { id: active.id, congregationId } });
-    setBusy(false);
-    if (!r.ok) { toast.error(r.error); return; }
-    await loadList();
-    toast.success("Vínculo atualizado");
-  };
 
   const handleDuplicate = async () => {
     if (!active) return;
@@ -272,13 +263,6 @@ function Page() {
               <Card><CardContent className="p-4 flex items-center justify-between gap-2 flex-wrap">
                 <div className="font-semibold truncate">{active.name}</div>
                 <div className="flex gap-2 flex-wrap items-center">
-                  <Select value={active.congregation_id ?? "__none__"} onValueChange={(v) => handleSetCongregation(v === "__none__" ? null : v)}>
-                    <SelectTrigger className="w-[180px] h-9 text-xs"><SelectValue placeholder="Vincular congregação" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">— Sem vínculo —</SelectItem>
-                      {congs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
                   <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
                     <Pencil className="h-3.5 w-3.5 mr-1" />Renomear
                   </Button>
