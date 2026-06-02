@@ -151,6 +151,7 @@ function Page() {
 
   // Mission 3: alternador "Hoje / Próximo dia" para o cartão do dia.
   const [dayOffset, setDayOffset] = useState<0 | 1>(0);
+  const [currentTab, setCurrentTab] = useState("hoje");
 
   const [offlineOpen, setOfflineOpen] = useState(false);
 
