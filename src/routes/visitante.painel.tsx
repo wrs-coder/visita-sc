@@ -573,6 +573,12 @@ function Page() {
               </TabsContent>
 
               {!snap.wifeMode && (
+                <TabsContent value="pastoreios" className="space-y-3 mt-4">
+                  <ElderProgramReadOnly data={snap.elderProgram ?? null} />
+                </TabsContent>
+              )}
+
+              {!snap.wifeMode && (
                 <TabsContent value="check" className="space-y-2 mt-4">
                   {snap.checklist.length === 0 ? <Empty text={t("guest.empty.checklist")} /> :
                     snap.checklist.map((c) => (
