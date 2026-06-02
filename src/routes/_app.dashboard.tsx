@@ -36,6 +36,7 @@ import { useActiveVisit } from "@/hooks/use-active-visit";
 import {
   useActiveCongregation,
   setActiveCongregationOverride,
+  getActiveCongregationOverride,
 } from "@/hooks/use-active-congregation";
 import { format, parseISO, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -369,11 +370,9 @@ function Dashboard() {
       });
   }, [role, user]);
 
-  // Auto-seleção pela SEMANA VIGENTE (segunda a domingo, com base no
-  // relógio do dispositivo): sempre que o superintendente entra no Início,
-  // a seleção reflete a visita que toca a semana atual. A escolha manual
-  // continua disponível, mas a próxima entrada volta a refletir a semana
-  // corrente. Sem visita na semana → seleção mostra "Sem visita".
+  // Auto-seleção pela SEMANA VIGENTE (segunda a domingo). Roda ao montar o
+  // Dashboard e quando o dia muda. NÃO depende de `dayOffset`/`viewedIso` —
+  // o botão "Ver dia seguinte" não interfere na congregação ativa.
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
     const now = new Date();
@@ -381,9 +380,9 @@ function Dashboard() {
     const weekEnd = format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
     let cancelled = false;
     (async () => {
-      // Visita que se sobrepõe à semana atual:
-      //   visit.start_date <= weekEnd AND visit.end_date >= weekStart
-      // Prioriza a que cobre o dia de hoje; depois a mais próxima do início.
+      // Visitas que se sobrepõem à semana vigente. Garante que já na
+      // segunda-feira o seletor mostre a congregação cuja visita só começa
+      // mais tarde na semana (ex.: terça).
       const { data } = await supabase
         .from("visits")
         .select("congregation_id, start_date, end_date")
@@ -393,12 +392,20 @@ function Dashboard() {
         .order("start_date", { ascending: true });
       if (cancelled) return;
       const list = data ?? [];
-      const covering = list.find(
-        (v) => v.start_date <= today && v.end_date >= today,
-      );
-      const match = (covering ?? list[0])?.congregation_id ?? null;
-      setSelected(match);
-      setActiveCongregationOverride(match);
+      // 1º) visita que cobre HOJE; 2º) próxima a começar na semana.
+      const covering = list.find((v) => v.start_date <= today && v.end_date >= today);
+      const upcoming = list.find((v) => v.start_date >= today) ?? list[0];
+      const match = (covering ?? upcoming)?.congregation_id ?? null;
+      if (match) {
+        setSelected(match);
+        setActiveCongregationOverride(match);
+      } else {
+        // Sem visita na semana: NÃO limpa o override global — preserva a
+        // "Congregação ativa" anterior para que outras telas continuem
+        // funcionando. Localmente reflete o que houver no override.
+        const existing = getActiveCongregationOverride();
+        setSelected(existing);
+      }
     })();
     return () => {
       cancelled = true;
