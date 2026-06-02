@@ -232,13 +232,13 @@ function Dashboard() {
         .from("circuit_schedule_events")
         .select("id, title, start_time, location, event_type")
         .eq("superintendent_id", user.id)
-        .eq("event_date", today)
+        .eq("event_date", viewedIso)
         .neq("status", "completed")
         .order("start_time");
       if (!cancelled) setCircuitToday(data ?? []);
     })();
     return () => { cancelled = true; };
-  }, [role, user, today]);
+  }, [role, user, viewedIso]);
 
   // Mission: cartão "Esboços e Notas" — aba "Considerações de campo".
   // Mostra apenas notas locais da pasta fixa "Considerações da Semana".
