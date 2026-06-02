@@ -170,17 +170,27 @@ function Page() {
                     </p>
                   ) : (
                     <div className="space-y-3">
-                      {events.map((ev) => (
-                        <EventCard
-                          key={ev.id}
-                          ev={ev}
-                          slots={slots}
-                          readOnly={!canEdit}
-                          canDelete={canEdit && (ev.section === "recommendations" || isSuper)}
-                          onChange={(patch) => saveField(ev, patch)}
-                          onDelete={() => deleteEvent(ev)}
-                        />
-                      ))}
+                      {events.map((ev) => {
+                        const usedSlots = section === "pastoral"
+                          ? new Set(
+                              pastoral
+                                .filter((p) => p.id !== ev.id && p.slot_label)
+                                .map((p) => p.slot_label as string),
+                            )
+                          : new Set<string>();
+                        return (
+                          <EventCard
+                            key={ev.id}
+                            ev={ev}
+                            slots={slots}
+                            usedSlots={usedSlots}
+                            readOnly={!canEdit}
+                            canDelete={canEdit && (ev.section === "recommendations" || isSuper)}
+                            onChange={(patch) => saveField(ev, patch)}
+                            onDelete={() => deleteEvent(ev)}
+                          />
+                        );
+                      })}
                     </div>
                   )}
 
