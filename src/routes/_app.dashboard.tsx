@@ -175,6 +175,7 @@ function Dashboard() {
   const [assignments, setAssignments] = useState<FieldAssignment[]>([]);
   const [fieldMeetings, setFieldMeetings] = useState<FieldMeetingToday[]>([]);
   const [meetingsToday, setMeetingsToday] = useState<MeetingTodayItem[]>([]);
+  const meetingExtras = useVisitTemplateExtras(visit?.id);
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [pendingCount, setPendingCount] = useState(0);
   type DetailsKey = "field" | "studies" | "meals" | "meetings" | "transport" | "checklist";
