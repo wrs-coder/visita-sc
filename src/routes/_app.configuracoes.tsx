@@ -144,7 +144,15 @@ function Page() {
           name: t.name,
         })),
       );
-  }, [isSuper, fnList, fnTpls, fnListChecklist, fnListField, fnListMeetingTalk]);
+    const er = await fnListElderProgram();
+    if (er.ok)
+      setElderProgramTpls(
+        ((er as { templates?: { id: string; name: string }[] }).templates ?? []).map((t) => ({
+          id: t.id,
+          name: t.name,
+        })),
+      );
+  }, [isSuper, fnList, fnTpls, fnListChecklist, fnListField, fnListMeetingTalk, fnListElderProgram]);
 
   useEffect(() => {
     loadCongs();
