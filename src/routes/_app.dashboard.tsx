@@ -36,6 +36,7 @@ import { useActiveVisit } from "@/hooks/use-active-visit";
 import {
   useActiveCongregation,
   setActiveCongregationOverride,
+  getActiveCongregationOverride,
 } from "@/hooks/use-active-congregation";
 import { format, parseISO, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
