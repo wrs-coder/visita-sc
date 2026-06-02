@@ -29,6 +29,7 @@ import { Route as AppNotasRouteImport } from './routes/_app.notas'
 import { Route as AppModelosRouteImport } from './routes/_app.modelos'
 import { Route as AppModeloReunioesDiscursosRouteImport } from './routes/_app.modelo-reunioes-discursos'
 import { Route as AppModeloReunioesDeCampoRouteImport } from './routes/_app.modelo-reunioes-de-campo'
+import { Route as AppModeloProgramacaoAncioesRouteImport } from './routes/_app.modelo-programacao-ancioes'
 import { Route as AppLixeiraRouteImport } from './routes/_app.lixeira'
 import { Route as AppEscalaRouteImport } from './routes/_app.escala'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
@@ -142,6 +143,12 @@ const AppModeloReunioesDeCampoRoute =
     path: '/modelo-reunioes-de-campo',
     getParentRoute: () => AppRoute,
   } as any)
+const AppModeloProgramacaoAncioesRoute =
+  AppModeloProgramacaoAncioesRouteImport.update({
+    id: '/modelo-programacao-ancioes',
+    path: '/modelo-programacao-ancioes',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppLixeiraRoute = AppLixeiraRouteImport.update({
   id: '/lixeira',
   path: '/lixeira',
@@ -214,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
   '/lixeira': typeof AppLixeiraRoute
+  '/modelo-programacao-ancioes': typeof AppModeloProgramacaoAncioesRoute
   '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/modelos': typeof AppModelosRoute
@@ -245,6 +253,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
   '/lixeira': typeof AppLixeiraRoute
+  '/modelo-programacao-ancioes': typeof AppModeloProgramacaoAncioesRoute
   '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/modelos': typeof AppModelosRoute
@@ -279,6 +288,7 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/escala': typeof AppEscalaRoute
   '/_app/lixeira': typeof AppLixeiraRoute
+  '/_app/modelo-programacao-ancioes': typeof AppModeloProgramacaoAncioesRoute
   '/_app/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/_app/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/_app/modelos': typeof AppModelosRoute
@@ -313,6 +323,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/escala'
     | '/lixeira'
+    | '/modelo-programacao-ancioes'
     | '/modelo-reunioes-de-campo'
     | '/modelo-reunioes-discursos'
     | '/modelos'
@@ -344,6 +355,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/escala'
     | '/lixeira'
+    | '/modelo-programacao-ancioes'
     | '/modelo-reunioes-de-campo'
     | '/modelo-reunioes-discursos'
     | '/modelos'
@@ -377,6 +389,7 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/escala'
     | '/_app/lixeira'
+    | '/_app/modelo-programacao-ancioes'
     | '/_app/modelo-reunioes-de-campo'
     | '/_app/modelo-reunioes-discursos'
     | '/_app/modelos'
@@ -547,6 +560,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppModeloReunioesDeCampoRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/modelo-programacao-ancioes': {
+      id: '/_app/modelo-programacao-ancioes'
+      path: '/modelo-programacao-ancioes'
+      fullPath: '/modelo-programacao-ancioes'
+      preLoaderRoute: typeof AppModeloProgramacaoAncioesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/lixeira': {
       id: '/_app/lixeira'
       path: '/lixeira'
@@ -638,6 +658,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppEscalaRoute: typeof AppEscalaRoute
   AppLixeiraRoute: typeof AppLixeiraRoute
+  AppModeloProgramacaoAncioesRoute: typeof AppModeloProgramacaoAncioesRoute
   AppModeloReunioesDeCampoRoute: typeof AppModeloReunioesDeCampoRoute
   AppModeloReunioesDiscursosRoute: typeof AppModeloReunioesDiscursosRoute
   AppModelosRoute: typeof AppModelosRoute
@@ -662,6 +683,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppEscalaRoute: AppEscalaRoute,
   AppLixeiraRoute: AppLixeiraRoute,
+  AppModeloProgramacaoAncioesRoute: AppModeloProgramacaoAncioesRoute,
   AppModeloReunioesDeCampoRoute: AppModeloReunioesDeCampoRoute,
   AppModeloReunioesDiscursosRoute: AppModeloReunioesDiscursosRoute,
   AppModelosRoute: AppModelosRoute,
