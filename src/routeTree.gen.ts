@@ -24,6 +24,7 @@ import { Route as AppReunioesDiscursosRouteImport } from './routes/_app.reunioes
 import { Route as AppReunioesDeCampoRouteImport } from './routes/_app.reunioes-de-campo'
 import { Route as AppResumoSemanaRouteImport } from './routes/_app.resumo-semana'
 import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
+import { Route as AppProgramaAncioesRouteImport } from './routes/_app.programa-ancioes'
 import { Route as AppPerfilRouteImport } from './routes/_app.perfil'
 import { Route as AppNotasRouteImport } from './routes/_app.notas'
 import { Route as AppModelosRouteImport } from './routes/_app.modelos'
@@ -114,6 +115,11 @@ const AppResumoSemanaRoute = AppResumoSemanaRouteImport.update({
 const AppRefeicoesRoute = AppRefeicoesRouteImport.update({
   id: '/refeicoes',
   path: '/refeicoes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProgramaAncioesRoute = AppProgramaAncioesRouteImport.update({
+  id: '/programa-ancioes',
+  path: '/programa-ancioes',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPerfilRoute = AppPerfilRouteImport.update({
@@ -227,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
   '/perfil': typeof AppPerfilRoute
+  '/programa-ancioes': typeof AppProgramaAncioesRoute
   '/refeicoes': typeof AppRefeicoesRoute
   '/resumo-semana': typeof AppResumoSemanaRoute
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
@@ -259,6 +266,7 @@ export interface FileRoutesByTo {
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
   '/perfil': typeof AppPerfilRoute
+  '/programa-ancioes': typeof AppProgramaAncioesRoute
   '/refeicoes': typeof AppRefeicoesRoute
   '/resumo-semana': typeof AppResumoSemanaRoute
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
@@ -294,6 +302,7 @@ export interface FileRoutesById {
   '/_app/modelos': typeof AppModelosRoute
   '/_app/notas': typeof AppNotasRoute
   '/_app/perfil': typeof AppPerfilRoute
+  '/_app/programa-ancioes': typeof AppProgramaAncioesRoute
   '/_app/refeicoes': typeof AppRefeicoesRoute
   '/_app/resumo-semana': typeof AppResumoSemanaRoute
   '/_app/reunioes-de-campo': typeof AppReunioesDeCampoRoute
@@ -329,6 +338,7 @@ export interface FileRouteTypes {
     | '/modelos'
     | '/notas'
     | '/perfil'
+    | '/programa-ancioes'
     | '/refeicoes'
     | '/resumo-semana'
     | '/reunioes-de-campo'
@@ -361,6 +371,7 @@ export interface FileRouteTypes {
     | '/modelos'
     | '/notas'
     | '/perfil'
+    | '/programa-ancioes'
     | '/refeicoes'
     | '/resumo-semana'
     | '/reunioes-de-campo'
@@ -395,6 +406,7 @@ export interface FileRouteTypes {
     | '/_app/modelos'
     | '/_app/notas'
     | '/_app/perfil'
+    | '/_app/programa-ancioes'
     | '/_app/refeicoes'
     | '/_app/resumo-semana'
     | '/_app/reunioes-de-campo'
@@ -523,6 +535,13 @@ declare module '@tanstack/react-router' {
       path: '/refeicoes'
       fullPath: '/refeicoes'
       preLoaderRoute: typeof AppRefeicoesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/programa-ancioes': {
+      id: '/_app/programa-ancioes'
+      path: '/programa-ancioes'
+      fullPath: '/programa-ancioes'
+      preLoaderRoute: typeof AppProgramaAncioesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/perfil': {
@@ -664,6 +683,7 @@ interface AppRouteChildren {
   AppModelosRoute: typeof AppModelosRoute
   AppNotasRoute: typeof AppNotasRoute
   AppPerfilRoute: typeof AppPerfilRoute
+  AppProgramaAncioesRoute: typeof AppProgramaAncioesRoute
   AppRefeicoesRoute: typeof AppRefeicoesRoute
   AppResumoSemanaRoute: typeof AppResumoSemanaRoute
   AppReunioesDeCampoRoute: typeof AppReunioesDeCampoRoute
@@ -689,6 +709,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppModelosRoute: AppModelosRoute,
   AppNotasRoute: AppNotasRoute,
   AppPerfilRoute: AppPerfilRoute,
+  AppProgramaAncioesRoute: AppProgramaAncioesRoute,
   AppRefeicoesRoute: AppRefeicoesRoute,
   AppResumoSemanaRoute: AppResumoSemanaRoute,
   AppReunioesDeCampoRoute: AppReunioesDeCampoRoute,

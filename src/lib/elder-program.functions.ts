@@ -12,6 +12,7 @@ const longTextOpt = z.string().max(4000).nullable().optional();
 export type ElderVisitEventDTO = {
   id: string;
   visit_id: string;
+  section: SectionT;
   source: "template" | "manual";
   template_event_id: string | null;
   sort_order: number;
