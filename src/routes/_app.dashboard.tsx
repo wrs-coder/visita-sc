@@ -442,14 +442,14 @@ function Dashboard() {
             .from("meals")
             .select("id, meal_date, meal_time, type, host_name, location, contact_phone, notes")
             .eq("visit_id", visit.id)
-            .eq("meal_date", today)
+            .eq("meal_date", viewedIso)
             .eq("is_active", true)
             .order("meal_time"),
           supabase
             .from("transport_schedule")
-            .select("id, driver_name, contact_phone, description, notes")
+            .select("id, driver_name, contact_phone, description, notes, event_type, direction, departure_time, return_time, all_day")
             .eq("visit_id", visit.id)
-            .eq("event_date", today)
+            .eq("event_date", viewedIso)
             .eq("is_active", true),
           supabase
             .from("field_assignments")
@@ -457,16 +457,16 @@ function Dashboard() {
               "id, period, meeting_point, meeting_time, acompanhante, acompanhante_for, contact_phone, notes",
             )
             .eq("visit_id", visit.id)
-            .eq("event_date", today)
+            .eq("event_date", viewedIso)
             .eq("is_active", true)
             .order("period"),
           supabase
             .from("field_meetings")
             .select(
-              "id, period, modality, meeting_time, meeting_location, territory_number, territory_location, auxiliary_leaders, closing_prayer",
+              "id, period, modality, meeting_time, meeting_location, territory_number, territory_location, auxiliary_leaders, closing_prayer, observations",
             )
             .eq("visit_id", visit.id)
-            .eq("event_date", today)
+            .eq("event_date", viewedIso)
             .eq("is_active", true)
             .order("period"),
         ]);
