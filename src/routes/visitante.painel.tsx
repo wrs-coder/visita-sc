@@ -867,7 +867,7 @@ function TodayDashboard({
 }
 
 /** Cartão de resumo "Casal" no painel da esposa: contador de não-lidas + atalho. */
-function WifeCoupleSummaryCard({ code }: { code: string }) {
+function WifeCoupleSummaryCard({ code, onOpen }: { code: string; onOpen: () => void }) {
   const { t } = useTranslation();
   const listFn = useServerFn(wifeListCoupleMessages);
   const [unread, setUnread] = useState(0);
@@ -889,12 +889,6 @@ function WifeCoupleSummaryCard({ code }: { code: string }) {
     const id = setInterval(load, 30_000);
     return () => { cancelled = true; clearInterval(id); };
   }, [listFn, code]);
-
-  const goToCouple = () => {
-    const trigger = document.querySelector<HTMLButtonElement>('[role="tab"][value="couple"]')
-      ?? document.querySelector<HTMLButtonElement>('button[data-state][value="couple"]');
-    trigger?.click();
-  };
 
   return (
     <Card className="border-primary/30">
