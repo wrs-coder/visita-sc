@@ -133,6 +133,7 @@ function AppLayout() {
               { to: "/comunicacao-casal", label: t("sidebar.coupleMessages"), icon: Heart },
             ]
           : []),
+        { to: "/programa-ancioes", label: t("sidebar.elderProgram", { defaultValue: "Pastoreios, Recomendações e outros" }), icon: BookOpen },
         { to: "/escala", label: t("sidebar.fieldStudies"), icon: Users },
         { to: "/reunioes-discursos", label: t("sidebar.meetingsTalks"), icon: MapPin },
         { to: "/refeicoes", label: t("sidebar.meals"), icon: UtensilsCrossed },
@@ -152,6 +153,7 @@ function AppLayout() {
               { to: "/checklist-modelos", label: t("sidebar.checklistTemplates"), icon: ListChecks },
               { to: "/modelo-reunioes-de-campo", label: t("sidebar.fieldMeetingTemplate"), icon: MapPin },
               { to: "/modelo-reunioes-discursos", label: t("sidebar.meetingTalkTemplates"), icon: Layers },
+              { to: "/modelo-programacao-ancioes", label: t("sidebar.elderProgramTemplate", { defaultValue: "Modelo Programação Anciãos" }), icon: BookOpen },
             ]
           : []),
         { to: "/perfil", label: t("sidebar.myProfile"), icon: UserCircle },

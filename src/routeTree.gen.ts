@@ -24,11 +24,13 @@ import { Route as AppReunioesDiscursosRouteImport } from './routes/_app.reunioes
 import { Route as AppReunioesDeCampoRouteImport } from './routes/_app.reunioes-de-campo'
 import { Route as AppResumoSemanaRouteImport } from './routes/_app.resumo-semana'
 import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
+import { Route as AppProgramaAncioesRouteImport } from './routes/_app.programa-ancioes'
 import { Route as AppPerfilRouteImport } from './routes/_app.perfil'
 import { Route as AppNotasRouteImport } from './routes/_app.notas'
 import { Route as AppModelosRouteImport } from './routes/_app.modelos'
 import { Route as AppModeloReunioesDiscursosRouteImport } from './routes/_app.modelo-reunioes-discursos'
 import { Route as AppModeloReunioesDeCampoRouteImport } from './routes/_app.modelo-reunioes-de-campo'
+import { Route as AppModeloProgramacaoAncioesRouteImport } from './routes/_app.modelo-programacao-ancioes'
 import { Route as AppLixeiraRouteImport } from './routes/_app.lixeira'
 import { Route as AppEscalaRouteImport } from './routes/_app.escala'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
@@ -115,6 +117,11 @@ const AppRefeicoesRoute = AppRefeicoesRouteImport.update({
   path: '/refeicoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProgramaAncioesRoute = AppProgramaAncioesRouteImport.update({
+  id: '/programa-ancioes',
+  path: '/programa-ancioes',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPerfilRoute = AppPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -140,6 +147,12 @@ const AppModeloReunioesDeCampoRoute =
   AppModeloReunioesDeCampoRouteImport.update({
     id: '/modelo-reunioes-de-campo',
     path: '/modelo-reunioes-de-campo',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppModeloProgramacaoAncioesRoute =
+  AppModeloProgramacaoAncioesRouteImport.update({
+    id: '/modelo-programacao-ancioes',
+    path: '/modelo-programacao-ancioes',
     getParentRoute: () => AppRoute,
   } as any)
 const AppLixeiraRoute = AppLixeiraRouteImport.update({
@@ -214,11 +227,13 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
   '/lixeira': typeof AppLixeiraRoute
+  '/modelo-programacao-ancioes': typeof AppModeloProgramacaoAncioesRoute
   '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
   '/perfil': typeof AppPerfilRoute
+  '/programa-ancioes': typeof AppProgramaAncioesRoute
   '/refeicoes': typeof AppRefeicoesRoute
   '/resumo-semana': typeof AppResumoSemanaRoute
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
@@ -245,11 +260,13 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
   '/lixeira': typeof AppLixeiraRoute
+  '/modelo-programacao-ancioes': typeof AppModeloProgramacaoAncioesRoute
   '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
   '/perfil': typeof AppPerfilRoute
+  '/programa-ancioes': typeof AppProgramaAncioesRoute
   '/refeicoes': typeof AppRefeicoesRoute
   '/resumo-semana': typeof AppResumoSemanaRoute
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
@@ -279,11 +296,13 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/escala': typeof AppEscalaRoute
   '/_app/lixeira': typeof AppLixeiraRoute
+  '/_app/modelo-programacao-ancioes': typeof AppModeloProgramacaoAncioesRoute
   '/_app/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
   '/_app/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/_app/modelos': typeof AppModelosRoute
   '/_app/notas': typeof AppNotasRoute
   '/_app/perfil': typeof AppPerfilRoute
+  '/_app/programa-ancioes': typeof AppProgramaAncioesRoute
   '/_app/refeicoes': typeof AppRefeicoesRoute
   '/_app/resumo-semana': typeof AppResumoSemanaRoute
   '/_app/reunioes-de-campo': typeof AppReunioesDeCampoRoute
@@ -313,11 +332,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/escala'
     | '/lixeira'
+    | '/modelo-programacao-ancioes'
     | '/modelo-reunioes-de-campo'
     | '/modelo-reunioes-discursos'
     | '/modelos'
     | '/notas'
     | '/perfil'
+    | '/programa-ancioes'
     | '/refeicoes'
     | '/resumo-semana'
     | '/reunioes-de-campo'
@@ -344,11 +365,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/escala'
     | '/lixeira'
+    | '/modelo-programacao-ancioes'
     | '/modelo-reunioes-de-campo'
     | '/modelo-reunioes-discursos'
     | '/modelos'
     | '/notas'
     | '/perfil'
+    | '/programa-ancioes'
     | '/refeicoes'
     | '/resumo-semana'
     | '/reunioes-de-campo'
@@ -377,11 +400,13 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/escala'
     | '/_app/lixeira'
+    | '/_app/modelo-programacao-ancioes'
     | '/_app/modelo-reunioes-de-campo'
     | '/_app/modelo-reunioes-discursos'
     | '/_app/modelos'
     | '/_app/notas'
     | '/_app/perfil'
+    | '/_app/programa-ancioes'
     | '/_app/refeicoes'
     | '/_app/resumo-semana'
     | '/_app/reunioes-de-campo'
@@ -512,6 +537,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRefeicoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/programa-ancioes': {
+      id: '/_app/programa-ancioes'
+      path: '/programa-ancioes'
+      fullPath: '/programa-ancioes'
+      preLoaderRoute: typeof AppProgramaAncioesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/perfil': {
       id: '/_app/perfil'
       path: '/perfil'
@@ -545,6 +577,13 @@ declare module '@tanstack/react-router' {
       path: '/modelo-reunioes-de-campo'
       fullPath: '/modelo-reunioes-de-campo'
       preLoaderRoute: typeof AppModeloReunioesDeCampoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/modelo-programacao-ancioes': {
+      id: '/_app/modelo-programacao-ancioes'
+      path: '/modelo-programacao-ancioes'
+      fullPath: '/modelo-programacao-ancioes'
+      preLoaderRoute: typeof AppModeloProgramacaoAncioesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/lixeira': {
@@ -638,11 +677,13 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppEscalaRoute: typeof AppEscalaRoute
   AppLixeiraRoute: typeof AppLixeiraRoute
+  AppModeloProgramacaoAncioesRoute: typeof AppModeloProgramacaoAncioesRoute
   AppModeloReunioesDeCampoRoute: typeof AppModeloReunioesDeCampoRoute
   AppModeloReunioesDiscursosRoute: typeof AppModeloReunioesDiscursosRoute
   AppModelosRoute: typeof AppModelosRoute
   AppNotasRoute: typeof AppNotasRoute
   AppPerfilRoute: typeof AppPerfilRoute
+  AppProgramaAncioesRoute: typeof AppProgramaAncioesRoute
   AppRefeicoesRoute: typeof AppRefeicoesRoute
   AppResumoSemanaRoute: typeof AppResumoSemanaRoute
   AppReunioesDeCampoRoute: typeof AppReunioesDeCampoRoute
@@ -662,11 +703,13 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppEscalaRoute: AppEscalaRoute,
   AppLixeiraRoute: AppLixeiraRoute,
+  AppModeloProgramacaoAncioesRoute: AppModeloProgramacaoAncioesRoute,
   AppModeloReunioesDeCampoRoute: AppModeloReunioesDeCampoRoute,
   AppModeloReunioesDiscursosRoute: AppModeloReunioesDiscursosRoute,
   AppModelosRoute: AppModelosRoute,
   AppNotasRoute: AppNotasRoute,
   AppPerfilRoute: AppPerfilRoute,
+  AppProgramaAncioesRoute: AppProgramaAncioesRoute,
   AppRefeicoesRoute: AppRefeicoesRoute,
   AppResumoSemanaRoute: AppResumoSemanaRoute,
   AppReunioesDeCampoRoute: AppReunioesDeCampoRoute,
@@ -704,13 +747,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
