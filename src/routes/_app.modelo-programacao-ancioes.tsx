@@ -120,7 +120,7 @@ function Page() {
   }, [fnGet]);
 
   useEffect(() => { loadList(); }, [loadList]);
-  useEffect(() => { (async () => { const r = await fnCongs(); if (r.ok) setCongs(r.data as { id: string; name: string }[]); })(); }, [fnCongs]);
+  
   useEffect(() => {
     if (activeId) loadActive(activeId);
     else { setSections(emptySections()); setPastoralSlots([]); setEvents([]); }
