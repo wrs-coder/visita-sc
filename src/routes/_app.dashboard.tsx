@@ -19,6 +19,7 @@ import {
   MapPin,
   Clock,
   ChevronRight,
+  ChevronLeft,
   UtensilsCrossed,
   Building2,
   Car,
@@ -36,7 +37,7 @@ import {
   useActiveCongregation,
   setActiveCongregationOverride,
 } from "@/hooks/use-active-congregation";
-import { format, parseISO, startOfWeek, endOfWeek } from "date-fns";
+import { format, parseISO, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
@@ -97,6 +98,11 @@ interface Transport {
   contact_phone: string | null;
   description: string | null;
   notes: string | null;
+  event_type: string | null;
+  direction: string | null;
+  departure_time: string | null;
+  return_time: string | null;
+  all_day: boolean | null;
 }
 interface FieldAssignment {
   id: string;
@@ -118,12 +124,17 @@ interface FieldMeetingToday {
   territory_location: string | null;
   auxiliary_leaders: string | null;
   closing_prayer: string | null;
+  observations: string | null;
 }
 interface MeetingTodayItem {
   kind: "midweek" | "weekend" | "pioneer" | "elders";
   meeting_at: string;
   theme: string | null;
   location: string | null;
+  chairman?: string | null;
+  opening_prayer?: string | null;
+  closing_prayer?: string | null;
+  public_talk_theme?: string | null;
 }
 
 const MODALITY_LABEL: Record<string, string> = {
@@ -173,6 +184,11 @@ function Dashboard() {
   >([]);
   const [overdueDialogId, setOverdueDialogId] = useState<string | null>(null);
   const today = format(new Date(), "yyyy-MM-dd");
+  // Ajuste 02: alterna entre hoje (0) e amanhã (1) para os 6 cartões diários.
+  const [dayOffset, setDayOffset] = useState<0 | 1>(0);
+  const viewedDate = addDays(new Date(), dayOffset);
+  const viewedIso = format(viewedDate, "yyyy-MM-dd");
+  const isTomorrow = dayOffset === 1;
 
   // Mission 2: eventos do circuito (circuit_schedule_events) do dia vigente.
   const [circuitToday, setCircuitToday] = useState<Array<{
@@ -216,13 +232,13 @@ function Dashboard() {
         .from("circuit_schedule_events")
         .select("id, title, start_time, location, event_type")
         .eq("superintendent_id", user.id)
-        .eq("event_date", today)
+        .eq("event_date", viewedIso)
         .neq("status", "completed")
         .order("start_time");
       if (!cancelled) setCircuitToday(data ?? []);
     })();
     return () => { cancelled = true; };
-  }, [role, user, today]);
+  }, [role, user, viewedIso]);
 
   // Mission: cartão "Esboços e Notas" — aba "Considerações de campo".
   // Mostra apenas notas locais da pasta fixa "Considerações da Semana".
@@ -426,14 +442,14 @@ function Dashboard() {
             .from("meals")
             .select("id, meal_date, meal_time, type, host_name, location, contact_phone, notes")
             .eq("visit_id", visit.id)
-            .eq("meal_date", today)
+            .eq("meal_date", viewedIso)
             .eq("is_active", true)
             .order("meal_time"),
           supabase
             .from("transport_schedule")
-            .select("id, driver_name, contact_phone, description, notes")
+            .select("id, driver_name, contact_phone, description, notes, event_type, direction, departure_time, return_time, all_day")
             .eq("visit_id", visit.id)
-            .eq("event_date", today)
+            .eq("event_date", viewedIso)
             .eq("is_active", true),
           supabase
             .from("field_assignments")
@@ -441,16 +457,16 @@ function Dashboard() {
               "id, period, meeting_point, meeting_time, acompanhante, acompanhante_for, contact_phone, notes",
             )
             .eq("visit_id", visit.id)
-            .eq("event_date", today)
+            .eq("event_date", viewedIso)
             .eq("is_active", true)
             .order("period"),
           supabase
             .from("field_meetings")
             .select(
-              "id, period, modality, meeting_time, meeting_location, territory_number, territory_location, auxiliary_leaders, closing_prayer",
+              "id, period, modality, meeting_time, meeting_location, territory_number, territory_location, auxiliary_leaders, closing_prayer, observations",
             )
             .eq("visit_id", visit.id)
-            .eq("event_date", today)
+            .eq("event_date", viewedIso)
             .eq("is_active", true)
             .order("period"),
         ]);
@@ -518,7 +534,7 @@ function Dashboard() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [visit, today]);
+  }, [visit, viewedIso]);
 
   // "Reuniões de hoje" — busca leituras leves das 4 tabelas (1 linha por visita)
   // alimentadas pela aba "Reuniões e Discursos". Filtra por dia-da-semana
@@ -527,28 +543,44 @@ function Dashboard() {
     if (!visit) { setMeetingsToday([]); return; }
     let cancelled = false;
     (async () => {
-      const todayDow = new Date().getDay();
+      const viewedDow = viewedDate.getDay();
       const [mw, we, pi] = await Promise.all([
-        supabase.from("midweek_meetings").select("meeting_at, service_talk_theme").eq("visit_id", visit.id).maybeSingle(),
+        supabase.from("midweek_meetings").select("meeting_at, service_talk_theme, chairman, closing_prayer").eq("visit_id", visit.id).maybeSingle(),
         supabase.from("weekend_meetings").select("meeting_at, talk_theme_title, public_talk_theme").eq("visit_id", visit.id).maybeSingle(),
-        supabase.from("pioneer_meetings").select("meeting_at, super_meeting_at, theme, location").eq("visit_id", visit.id).maybeSingle(),
+        supabase.from("pioneer_meetings").select("meeting_at, super_meeting_at, theme, location, opening_prayer, closing_prayer").eq("visit_id", visit.id).maybeSingle(),
       ]);
       const out: MeetingTodayItem[] = [];
-      const push = (kind: MeetingTodayItem["kind"], at: string | null | undefined, theme: string | null | undefined, location: string | null | undefined) => {
+      const push = (
+        kind: MeetingTodayItem["kind"],
+        at: string | null | undefined,
+        theme: string | null | undefined,
+        location: string | null | undefined,
+        extra: Partial<MeetingTodayItem> = {},
+      ) => {
         if (!at) return;
         const d = new Date(at);
         if (Number.isNaN(d.getTime())) return;
-        if (d.getDay() !== todayDow) return;
-        out.push({ kind, meeting_at: at, theme: theme ?? null, location: location ?? null });
+        if (d.getDay() !== viewedDow) return;
+        out.push({ kind, meeting_at: at, theme: theme ?? null, location: location ?? null, ...extra });
       };
-      push("midweek", mw.data?.meeting_at, mw.data?.service_talk_theme, null);
-      push("weekend", we.data?.meeting_at, we.data?.talk_theme_title ?? we.data?.public_talk_theme, null);
+      push("midweek", mw.data?.meeting_at, mw.data?.service_talk_theme, null, {
+        chairman: mw.data?.chairman ?? null,
+        closing_prayer: mw.data?.closing_prayer ?? null,
+      });
+      push("weekend", we.data?.meeting_at, we.data?.talk_theme_title ?? we.data?.public_talk_theme, null, {
+        public_talk_theme: we.data?.public_talk_theme ?? null,
+      });
       const piAt = pi.data?.super_meeting_at ?? pi.data?.meeting_at;
-      push("pioneer", piAt, pi.data?.theme, pi.data?.location);
+      push("pioneer", piAt, pi.data?.theme, pi.data?.location, {
+        opening_prayer: pi.data?.opening_prayer ?? null,
+        closing_prayer: pi.data?.closing_prayer ?? null,
+      });
+      // elders_servants_meetings não tem data/hora; fica fora deste filtro.
       if (!cancelled) setMeetingsToday(out);
     })();
     return () => { cancelled = true; };
-  }, [visit, today]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visit, viewedIso]);
 
   // todayEvents removed: replaced by "Hoje no cronograma" (circuit-scoped) card.
   const doneCount = checklist.filter((c) => c.status === "done").length;
@@ -570,6 +602,37 @@ function Dashboard() {
           {visit ? ` · ${t("dashboard.visitLabel", { title: visit.title })}` : ` · ${t("dashboard.noActiveVisit")}`}
         </p>
       </header>
+
+      {/* Ajuste 02: alternador "Hoje / Amanhã" — atualiza apenas os 6 cartões diários. */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {isTomorrow ? (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDayOffset(0)}
+              className="h-8"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              {t("dashboard.viewToday", { defaultValue: "Voltar para hoje" })}
+            </Button>
+            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
+              {t("dashboard.viewingTomorrow", { defaultValue: "Vendo: amanhã" })} · {format(viewedDate, "EEE, dd/MM", { locale: ptBR })}
+            </span>
+          </>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setDayOffset(1)}
+            className="h-8"
+          >
+            {t("dashboard.viewNextDay", { defaultValue: "Ver dia seguinte" })}
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        )}
+      </div>
+
 
       {pendingCount > 0 && (
         <div className="flex items-center gap-2 rounded-md border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 px-3 py-2 text-xs">
@@ -1321,7 +1384,7 @@ function Dashboard() {
 
       {/* Popups "Ver detalhes do dia" — somente leitura, reaproveitam os dados já carregados. */}
       {(() => {
-        const dayLabel = format(new Date(), "dd/MM/yyyy");
+        const dayLabel = format(viewedDate, "dd/MM/yyyy");
         const closeDetails = () => setOpenDetails(null);
         return (
           <>
@@ -1367,6 +1430,11 @@ function Dashboard() {
                         <div className="text-xs">
                           <span className="text-muted-foreground">{t("dashboard.closingPrayer")} </span>
                           {f.closing_prayer}
+                        </div>
+                      )}
+                      {f.observations && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">
+                          {f.observations}
                         </div>
                       )}
                     </li>
@@ -1485,6 +1553,30 @@ function Dashboard() {
                         {mt.theme && (
                           <div className="whitespace-pre-wrap break-words">{mt.theme}</div>
                         )}
+                        {mt.public_talk_theme && mt.public_talk_theme !== mt.theme && (
+                          <div className="text-xs whitespace-pre-wrap break-words">
+                            <span className="text-muted-foreground">{t("dashboard.publicTalk", { defaultValue: "Discurso público:" })} </span>
+                            {mt.public_talk_theme}
+                          </div>
+                        )}
+                        {mt.chairman && (
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">{t("dashboard.chairman", { defaultValue: "Presidência:" })} </span>
+                            {mt.chairman}
+                          </div>
+                        )}
+                        {mt.opening_prayer && (
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">{t("dashboard.openingPrayer", { defaultValue: "Oração inicial:" })} </span>
+                            {mt.opening_prayer}
+                          </div>
+                        )}
+                        {mt.closing_prayer && (
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">{t("dashboard.closingPrayer")} </span>
+                            {mt.closing_prayer}
+                          </div>
+                        )}
                         {mt.location && (
                           <div className="text-xs text-muted-foreground flex items-start gap-1">
                             <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
@@ -1510,6 +1602,35 @@ function Dashboard() {
                   {transports.map((tr) => (
                     <li key={tr.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
                       <div className="font-medium">{tr.driver_name}</div>
+                      {tr.event_type && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{t("dashboard.transportType", { defaultValue: "Tipo:" })} </span>
+                          {tr.event_type}
+                        </div>
+                      )}
+                      {tr.direction && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{t("dashboard.transportDirection", { defaultValue: "Direção:" })} </span>
+                          {tr.direction}
+                        </div>
+                      )}
+                      {tr.all_day && (
+                        <div className="text-xs text-primary font-medium">
+                          {t("dashboard.transportAllDay", { defaultValue: "Apoia todos os eventos do dia" })}
+                        </div>
+                      )}
+                      {tr.departure_time && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{t("dashboard.transportDeparture", { defaultValue: "Ida:" })} </span>
+                          {tr.departure_time.slice(0, 5)}
+                        </div>
+                      )}
+                      {tr.return_time && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{t("dashboard.transportReturn", { defaultValue: "Volta:" })} </span>
+                          {tr.return_time.slice(0, 5)}
+                        </div>
+                      )}
                       {tr.contact_phone && (
                         <div className="text-xs">📞 {tr.contact_phone}</div>
                       )}
