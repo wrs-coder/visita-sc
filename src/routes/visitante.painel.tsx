@@ -75,27 +75,6 @@ interface Snapshot {
   };
 }
 
-interface ElderProgramEvent {
-  id: string;
-  source: "manual" | "template" | null;
-  slot_label: string | null;
-  companion: string | null;
-  family_name: string | null;
-  address: string | null;
-  family_members: string | null;
-  spiritual_info: string | null;
-  category: "inactive" | "sick" | "special_privileges" | null;
-  person_name: string | null;
-  contact: string | null;
-  health_info: string | null;
-  purpose: "ministerial_servant" | "elder" | "redesignation" | "removal" | "cca_change" | null;
-  full_name: string | null;
-  field_group: string | null;
-  info: string | null;
-  suggested_by: string | null;
-  subject: string | null;
-  sources: string | null;
-}
 
 type TransportRow = Snapshot["transport"][number];
 
