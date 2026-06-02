@@ -37,7 +37,7 @@ import {
   useActiveCongregation,
   setActiveCongregationOverride,
 } from "@/hooks/use-active-congregation";
-import { format, parseISO, startOfWeek, endOfWeek } from "date-fns";
+import { format, parseISO, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
