@@ -656,7 +656,7 @@ function TodayDashboard({
         </CardContent>
       </Card>
 
-      {snap.wifeMode && code && <WifeCoupleSummaryCard code={code} />}
+      {snap.wifeMode && code && <WifeCoupleSummaryCard code={code} onOpen={onOpenCouple} />}
 
       <Card>
         <CardContent className="p-4 space-y-2">
