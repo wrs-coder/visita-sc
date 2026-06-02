@@ -218,15 +218,20 @@ function LoadingPanel() {
 }
 
 function EventCard({
-  ev, slots, readOnly, canDelete, onChange, onDelete,
+  ev, slots, usedSlots, readOnly, canDelete, onChange, onDelete,
 }: {
   ev: ElderVisitEventDTO;
   slots: string[];
+  usedSlots: Set<string>;
   readOnly: boolean;
   canDelete: boolean;
   onChange: (patch: Partial<ElderVisitEventDTO>) => void;
   onDelete: () => void;
 }) {
+  const [pendingSlot, setPendingSlot] = useState<string | null>(null);
+  const [hideUsed, setHideUsed] = useState(false);
+  const slotConflict = ev.section === "pastoral" && !!ev.slot_label && usedSlots.has(ev.slot_label);
+  const visibleSlots = hideUsed ? slots.filter((s) => !usedSlots.has(s) || s === ev.slot_label) : slots;
   return (
     <Card className="border-dashed">
       <CardContent className="p-3 space-y-2">
