@@ -341,6 +341,25 @@ export async function importEpub(
     throw new Error("IndexedDB indisponível: a importação requer armazenamento local.");
   }
 
+  // Best-effort: pede ao SO para não descartar o storage do WebView (Android).
+  try {
+    if (typeof navigator !== "undefined" && navigator.storage?.persist) {
+      await navigator.storage.persist();
+    }
+  } catch { /* noop */ }
+
+  // Best-effort: verifica se há espaço razoável antes de começar (evita
+  // gravar metade dos versículos e a transação abortar silenciosamente).
+  try {
+    const est = await navigator.storage?.estimate?.();
+    if (est?.quota && est?.usage != null && est.quota - est.usage < 30 * 1024 * 1024) {
+      throw new Error("QUOTA_LOW");
+    }
+  } catch (e) {
+    if ((e as Error)?.message === "QUOTA_LOW") throw e;
+    /* outros erros do estimate são ignorados */
+  }
+
   const db = await openDB();
   const CHUNK = 1000;
   const total = parsed.verses.length;
@@ -362,6 +381,7 @@ export async function importEpub(
         for (const r of records) store.put(r);
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error ?? new Error("PERSIST_FAILED: transação abortada ao gravar versículos."));
       });
       onProgress?.("write-db", 0.9 + ((i + slice.length) / Math.max(total, 1)) * 0.1);
       // Cede o thread principal entre chunks
@@ -374,10 +394,26 @@ export async function importEpub(
       tx.objectStore(STORE_LIBRARIES).put(library);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error ?? new Error("PERSIST_FAILED: transação abortada ao gravar metadados."));
     });
+
+    // Read-back: confirma que o registro realmente persistiu. Em alguns
+    // WebViews Android a transação aparenta sucesso mas o store é descartado
+    // logo em seguida (storage não-persistido). Sem essa checagem o usuário
+    // vê "Bíblia importada" e depois nada em "Gerenciar Bíblia".
+    const persisted = await new Promise<BibleLibrary | undefined>((resolve, reject) => {
+      const tx = db.transaction(STORE_LIBRARIES, "readonly");
+      const req = tx.objectStore(STORE_LIBRARIES).get(id);
+      req.onsuccess = () => resolve(req.result as BibleLibrary | undefined);
+      req.onerror = () => reject(req.error);
+    });
+    if (!persisted) {
+      throw new Error("PERSIST_FAILED: gravação não confirmada após escrita.");
+    }
   } catch (err) {
     // Importação falhou no meio: limpa versículos órfãos para não deixar lixo
     // invisível no IndexedDB (não há registro em bible_libraries apontando p/ eles).
+    console.warn("[bible-import] falha:", (err as Error)?.name, (err as Error)?.message);
     try {
       await removeLibrary(id);
     } catch {
