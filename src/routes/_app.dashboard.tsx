@@ -1602,6 +1602,35 @@ function Dashboard() {
                   {transports.map((tr) => (
                     <li key={tr.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
                       <div className="font-medium">{tr.driver_name}</div>
+                      {tr.event_type && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{t("dashboard.transportType", { defaultValue: "Tipo:" })} </span>
+                          {tr.event_type}
+                        </div>
+                      )}
+                      {tr.direction && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{t("dashboard.transportDirection", { defaultValue: "Direção:" })} </span>
+                          {tr.direction}
+                        </div>
+                      )}
+                      {tr.all_day && (
+                        <div className="text-xs text-primary font-medium">
+                          {t("dashboard.transportAllDay", { defaultValue: "Apoia todos os eventos do dia" })}
+                        </div>
+                      )}
+                      {tr.departure_time && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{t("dashboard.transportDeparture", { defaultValue: "Ida:" })} </span>
+                          {tr.departure_time.slice(0, 5)}
+                        </div>
+                      )}
+                      {tr.return_time && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{t("dashboard.transportReturn", { defaultValue: "Volta:" })} </span>
+                          {tr.return_time.slice(0, 5)}
+                        </div>
+                      )}
                       {tr.contact_phone && (
                         <div className="text-xs">📞 {tr.contact_phone}</div>
                       )}
