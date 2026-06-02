@@ -49,6 +49,55 @@ const savePayloadSchema = z.object({
   events: z.array(eventSchema).max(500),
 });
 
+export type ElderProgramEventDTO = {
+  id: string;
+  section: ElderSection;
+  sort_order: number;
+  slot_label: string | null;
+  companion: string | null;
+  family_name: string | null;
+  address: string | null;
+  family_members: string | null;
+  spiritual_info: string | null;
+  category: "inactive" | "sick" | "special_privileges" | null;
+  person_name: string | null;
+  contact: string | null;
+  health_info: string | null;
+  purpose: "ministerial_servant" | "elder" | "redesignation" | "removal" | "cca_change" | null;
+  full_name: string | null;
+  field_group: string | null;
+  info: string | null;
+  suggested_by: string | null;
+  subject: string | null;
+  sources: string | null;
+};
+
+function toEventDTO(r: Record<string, unknown>): ElderProgramEventDTO {
+  const g = (k: string) => (r[k] ?? null) as string | null;
+  return {
+    id: r.id as string,
+    section: r.section as ElderSection,
+    sort_order: (r.sort_order as number | null) ?? 0,
+    slot_label: g("slot_label"),
+    companion: g("companion"),
+    family_name: g("family_name"),
+    address: g("address"),
+    family_members: g("family_members"),
+    spiritual_info: g("spiritual_info"),
+    category: (r.category as ElderProgramEventDTO["category"] | null) ?? null,
+    person_name: g("person_name"),
+    contact: g("contact"),
+    health_info: g("health_info"),
+    purpose: (r.purpose as ElderProgramEventDTO["purpose"] | null) ?? null,
+    full_name: g("full_name"),
+    field_group: g("field_group"),
+    info: g("info"),
+    suggested_by: g("suggested_by"),
+    subject: g("subject"),
+    sources: g("sources"),
+  };
+}
+
 async function getViewer(userId: string) {
   const { data: roles } = await supabaseAdmin
     .from("user_roles")
@@ -95,7 +144,16 @@ export const getElderProgramTemplate = createServerFn({ method: "POST" })
       !!tpl &&
       (tpl.superintendent_id === userId ||
         (!!viewer.elderCongregationId && tpl.congregation_id === viewer.elderCongregationId));
-    if (!canView) return { ok: false as const, error: "Não autorizado." };
+    if (!tpl || !canView) {
+      return {
+        ok: false as const,
+        error: "Não autorizado.",
+        template: null,
+        sections: { pastoral: "", encouragement: "", recommendations: "", local: "" },
+        slots: [] as Array<{ id: string; label: string; sort_order: number }>,
+        events: [] as ElderProgramEventDTO[],
+      };
+    }
     const [secs, slots, events] = await Promise.all([
       supabaseAdmin.from("elder_program_template_sections").select("section,additional_info").eq("template_id", data.id),
       supabaseAdmin.from("elder_program_template_slots").select("id,label,sort_order").eq("template_id", data.id).order("sort_order"),
@@ -109,10 +167,13 @@ export const getElderProgramTemplate = createServerFn({ method: "POST" })
     });
     return {
       ok: true as const,
+      error: null,
       template: { id: tpl.id, name: tpl.name, congregation_id: tpl.congregation_id },
       sections,
-      slots: (slots.data ?? []) as Array<{ id: string; label: string; sort_order: number }>,
-      events: (events.data ?? []) as Array<Record<string, unknown> & { id: string; section: ElderSection; sort_order: number }>,
+      slots: ((slots.data ?? []) as Array<{ id: string; label: string; sort_order: number }>).map((s) => ({
+        id: s.id, label: s.label, sort_order: s.sort_order,
+      })),
+      events: ((events.data ?? []) as Array<Record<string, unknown>>).map(toEventDTO),
     };
   });
 
@@ -131,14 +192,14 @@ export const createElderProgramTemplate = createServerFn({ method: "POST" })
       .select("id", { count: "exact", head: true })
       .eq("superintendent_id", userId);
     if ((count ?? 0) >= MAX_TEMPLATES) {
-      return { ok: false as const, error: `Limite de ${MAX_TEMPLATES} modelos atingido.` };
+      return { ok: false as const, error: `Limite de ${MAX_TEMPLATES} modelos atingido.`, id: null };
     }
     const { data: row, error } = await supabaseAdmin
       .from("elder_program_templates")
       .insert({ superintendent_id: userId, name: data.name, congregation_id: data.congregationId ?? null })
       .select("id").single();
-    if (error || !row) return { ok: false as const, error: error?.message ?? "Falha." };
-    return { ok: true as const, id: row.id };
+    if (error || !row) return { ok: false as const, error: error?.message ?? "Falha.", id: null };
+    return { ok: true as const, error: null, id: row.id };
   });
 
 export const updateElderProgramTemplate = createServerFn({ method: "POST" })
@@ -159,10 +220,10 @@ export const updateElderProgramTemplate = createServerFn({ method: "POST" })
     const patch: { name?: string; congregation_id?: string | null } = {};
     if (data.name) patch.name = data.name;
     if (data.congregationId !== undefined) patch.congregation_id = data.congregationId;
-    if (Object.keys(patch).length === 0) return { ok: true as const };
+    if (Object.keys(patch).length === 0) return { ok: true as const, error: null };
     const { error } = await supabaseAdmin.from("elder_program_templates").update(patch).eq("id", data.id);
     if (error) return { ok: false as const, error: error.message };
-    return { ok: true as const };
+    return { ok: true as const, error: null };
   });
 
 export const deleteElderProgramTemplate = createServerFn({ method: "POST" })
@@ -176,7 +237,7 @@ export const deleteElderProgramTemplate = createServerFn({ method: "POST" })
     if (!own) return { ok: false as const, error: "Não autorizado." };
     const { error } = await supabaseAdmin.from("elder_program_templates").delete().eq("id", data.id);
     if (error) return { ok: false as const, error: error.message };
-    return { ok: true as const };
+    return { ok: true as const, error: null };
   });
 
 export const duplicateElderProgramTemplate = createServerFn({ method: "POST" })
@@ -187,19 +248,19 @@ export const duplicateElderProgramTemplate = createServerFn({ method: "POST" })
     const { data: src } = await supabaseAdmin
       .from("elder_program_templates")
       .select("id,superintendent_id").eq("id", data.id).maybeSingle();
-    if (!src || src.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
+    if (!src || src.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado.", id: null };
     const { count } = await supabaseAdmin
       .from("elder_program_templates")
       .select("id", { count: "exact", head: true })
       .eq("superintendent_id", userId);
     if ((count ?? 0) >= MAX_TEMPLATES) {
-      return { ok: false as const, error: `Limite de ${MAX_TEMPLATES} modelos atingido.` };
+      return { ok: false as const, error: `Limite de ${MAX_TEMPLATES} modelos atingido.`, id: null };
     }
     const { data: row, error } = await supabaseAdmin
       .from("elder_program_templates")
       .insert({ superintendent_id: userId, name: data.name, congregation_id: null })
       .select("id").single();
-    if (error || !row) return { ok: false as const, error: error?.message ?? "Falha." };
+    if (error || !row) return { ok: false as const, error: error?.message ?? "Falha.", id: null };
     const newId = row.id;
     const [secs, slots, events] = await Promise.all([
       supabaseAdmin.from("elder_program_template_sections").select("section,additional_info").eq("template_id", data.id),
@@ -208,22 +269,43 @@ export const duplicateElderProgramTemplate = createServerFn({ method: "POST" })
     ]);
     if (secs.data?.length) {
       await supabaseAdmin.from("elder_program_template_sections").insert(
-        secs.data.map((r) => ({ template_id: newId, section: r.section, additional_info: r.additional_info })),
+        secs.data.map((r) => ({ template_id: newId, section: r.section, additional_info: r.additional_info ?? "" })),
       );
     }
     if (slots.data?.length) {
       await supabaseAdmin.from("elder_program_template_slots").insert(
-        slots.data.map((r) => ({ template_id: newId, label: r.label, sort_order: r.sort_order })),
+        slots.data.map((r) => ({ template_id: newId, label: r.label, sort_order: r.sort_order ?? 0 })),
       );
     }
     if (events.data?.length) {
       const rows = events.data.map((r) => {
-        const { id: _id, template_id: _tid, created_at: _c, updated_at: _u, ...rest } = r as Record<string, unknown> & { id: string; template_id: string; created_at: string; updated_at: string };
-        return { ...rest, template_id: newId };
+        const dto = toEventDTO(r as Record<string, unknown>);
+        return {
+          template_id: newId,
+          section: dto.section,
+          sort_order: dto.sort_order,
+          slot_label: dto.slot_label,
+          companion: dto.companion,
+          family_name: dto.family_name,
+          address: dto.address,
+          family_members: dto.family_members,
+          spiritual_info: dto.spiritual_info,
+          category: dto.category,
+          person_name: dto.person_name,
+          contact: dto.contact,
+          health_info: dto.health_info,
+          purpose: dto.purpose,
+          full_name: dto.full_name,
+          field_group: dto.field_group,
+          info: dto.info,
+          suggested_by: dto.suggested_by,
+          subject: dto.subject,
+          sources: dto.sources,
+        };
       });
       await supabaseAdmin.from("elder_program_template_events").insert(rows);
     }
-    return { ok: true as const, id: newId };
+    return { ok: true as const, error: null, id: newId };
   });
 
 export const saveElderProgramTemplate = createServerFn({ method: "POST" })
@@ -236,7 +318,6 @@ export const saveElderProgramTemplate = createServerFn({ method: "POST" })
       .select("id").eq("id", data.templateId).eq("superintendent_id", userId).maybeSingle();
     if (!own) return { ok: false as const, error: "Não autorizado." };
 
-    // Sections: upsert by (template_id, section)
     const sectionRows = SECTIONS.map((s) => ({
       template_id: data.templateId,
       section: s,
@@ -244,7 +325,6 @@ export const saveElderProgramTemplate = createServerFn({ method: "POST" })
     }));
     await supabaseAdmin.from("elder_program_template_sections").upsert(sectionRows, { onConflict: "template_id,section" });
 
-    // Slots: replace
     await supabaseAdmin.from("elder_program_template_slots").delete().eq("template_id", data.templateId);
     if (data.pastoralSlots.length) {
       await supabaseAdmin.from("elder_program_template_slots").insert(
@@ -252,7 +332,6 @@ export const saveElderProgramTemplate = createServerFn({ method: "POST" })
       );
     }
 
-    // Events: replace
     await supabaseAdmin.from("elder_program_template_events").delete().eq("template_id", data.templateId);
     if (data.events.length) {
       const rows = data.events.map((e, i) => ({
@@ -280,53 +359,70 @@ export const saveElderProgramTemplate = createServerFn({ method: "POST" })
       await supabaseAdmin.from("elder_program_template_events").insert(rows);
     }
 
-    return { ok: true as const };
+    return { ok: true as const, error: null };
   });
 
-const sectionToTable: Record<ElderSection, string> = {
-  pastoral: "elder_pastoral_visits",
-  encouragement: "elder_encouragements",
-  recommendations: "elder_recommendations",
-  local: "elder_local_matters",
-};
+// --- Apply template to visit (snapshot) ---
 
-function pickEventFields(section: ElderSection, src: Record<string, unknown>) {
+async function findExistingByTemplateEvent(visitId: string, section: ElderSection, templateEventId: string) {
   if (section === "pastoral") {
-    return {
-      slot_label: src.slot_label ?? null,
-      companion: src.companion ?? null,
-      family_name: src.family_name ?? null,
-      address: src.address ?? null,
-      family_members: src.family_members ?? null,
-      spiritual_info: src.spiritual_info ?? null,
-    };
+    return supabaseAdmin.from("elder_pastoral_visits").select("id").eq("visit_id", visitId).eq("template_event_id", templateEventId).maybeSingle();
   }
   if (section === "encouragement") {
-    return {
-      category: src.category ?? null,
-      person_name: src.person_name ?? null,
-      address: src.address ?? null,
-      contact: src.contact ?? null,
-      health_info: src.health_info ?? null,
-      spiritual_info: src.spiritual_info ?? null,
-    };
+    return supabaseAdmin.from("elder_encouragements").select("id").eq("visit_id", visitId).eq("template_event_id", templateEventId).maybeSingle();
   }
   if (section === "recommendations") {
-    return {
-      purpose: src.purpose ?? null,
-      full_name: src.full_name ?? null,
-      family_members: src.family_members ?? null,
-      field_group: src.field_group ?? null,
-      info: src.info ?? null,
-    };
+    return supabaseAdmin.from("elder_recommendations").select("id").eq("visit_id", visitId).eq("template_event_id", templateEventId).maybeSingle();
   }
-  // local
-  return {
-    suggested_by: src.suggested_by ?? null,
-    subject: src.subject ?? null,
-    sources: src.sources ?? null,
-    info: src.info ?? null,
+  return supabaseAdmin.from("elder_local_matters").select("id").eq("visit_id", visitId).eq("template_event_id", templateEventId).maybeSingle();
+}
+
+async function insertSnapshotEvent(visitId: string, dto: ElderProgramEventDTO, templateEventId: string) {
+  const base = {
+    visit_id: visitId,
+    source: "template" as const,
+    template_event_id: templateEventId,
+    sort_order: dto.sort_order,
   };
+  if (dto.section === "pastoral") {
+    return supabaseAdmin.from("elder_pastoral_visits").insert({
+      ...base,
+      slot_label: dto.slot_label,
+      companion: dto.companion,
+      family_name: dto.family_name,
+      address: dto.address,
+      family_members: dto.family_members,
+      spiritual_info: dto.spiritual_info,
+    });
+  }
+  if (dto.section === "encouragement") {
+    return supabaseAdmin.from("elder_encouragements").insert({
+      ...base,
+      category: dto.category,
+      person_name: dto.person_name,
+      address: dto.address,
+      contact: dto.contact,
+      health_info: dto.health_info,
+      spiritual_info: dto.spiritual_info,
+    });
+  }
+  if (dto.section === "recommendations") {
+    return supabaseAdmin.from("elder_recommendations").insert({
+      ...base,
+      purpose: dto.purpose,
+      full_name: dto.full_name,
+      family_members: dto.family_members,
+      field_group: dto.field_group,
+      info: dto.info,
+    });
+  }
+  return supabaseAdmin.from("elder_local_matters").insert({
+    ...base,
+    suggested_by: dto.suggested_by,
+    subject: dto.subject,
+    sources: dto.sources,
+    info: dto.info,
+  });
 }
 
 export const applyElderProgramTemplateToVisit = createServerFn({ method: "POST" })
@@ -340,18 +436,20 @@ export const applyElderProgramTemplateToVisit = createServerFn({ method: "POST" 
       .from("visits")
       .select("id,congregation_id,elder_program_template_id")
       .eq("id", data.visitId).maybeSingle();
-    if (!visit) return { ok: false as const, error: "Visita não encontrada." };
+    if (!visit) return { ok: false as const, error: "Visita não encontrada.", inserted: 0, skipped: 0 };
     const { data: cong } = await supabaseAdmin
       .from("congregations").select("superintendent_id").eq("id", visit.congregation_id).maybeSingle();
-    if (!cong || cong.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
+    if (!cong || cong.superintendent_id !== userId) {
+      return { ok: false as const, error: "Não autorizado.", inserted: 0, skipped: 0 };
+    }
 
-    const templateId = data.templateId ?? (visit as { elder_program_template_id: string | null }).elder_program_template_id ?? null;
-    if (!templateId) return { ok: false as const, error: "Nenhum modelo selecionado." };
+    const templateId = data.templateId ?? visit.elder_program_template_id ?? null;
+    if (!templateId) return { ok: false as const, error: "Nenhum modelo selecionado.", inserted: 0, skipped: 0 };
     const { data: tpl } = await supabaseAdmin
       .from("elder_program_templates").select("id").eq("id", templateId).eq("superintendent_id", userId).maybeSingle();
-    if (!tpl) return { ok: false as const, error: "Modelo não encontrado." };
+    if (!tpl) return { ok: false as const, error: "Modelo não encontrado.", inserted: 0, skipped: 0 };
 
-    if ((visit as { elder_program_template_id: string | null }).elder_program_template_id !== templateId) {
+    if (visit.elder_program_template_id !== templateId) {
       await supabaseAdmin.from("visits").update({ elder_program_template_id: templateId }).eq("id", data.visitId);
     }
 
@@ -361,14 +459,12 @@ export const applyElderProgramTemplateToVisit = createServerFn({ method: "POST" 
       supabaseAdmin.from("elder_program_template_events").select("*").eq("template_id", templateId).order("section").order("sort_order"),
     ]);
 
-    // Sections (snapshot por seção)
     const sectionRows = SECTIONS.map((s) => {
       const found = (secs.data ?? []).find((r) => r.section === s);
       return { visit_id: data.visitId, section: s, additional_info: found?.additional_info ?? "" };
     });
     await supabaseAdmin.from("elder_program_visit_sections").upsert(sectionRows, { onConflict: "visit_id,section" });
 
-    // Slots: substitui completamente (não mexe em eventos manuais)
     await supabaseAdmin.from("elder_program_visit_slots").delete().eq("visit_id", data.visitId);
     if (slots.data?.length) {
       await supabaseAdmin.from("elder_program_visit_slots").insert(
@@ -376,26 +472,15 @@ export const applyElderProgramTemplateToVisit = createServerFn({ method: "POST" 
       );
     }
 
-    // Eventos: insere os do template que ainda não existem na visita (por template_event_id).
     let inserted = 0;
     let skipped = 0;
     for (const ev of events.data ?? []) {
-      const section = (ev as { section: ElderSection }).section;
-      const table = sectionToTable[section];
-      const templateEventId = (ev as { id: string }).id;
-      const { data: existing } = await supabaseAdmin
-        .from(table).select("id").eq("visit_id", data.visitId).eq("template_event_id", templateEventId).maybeSingle();
-      if (existing) { skipped++; continue; }
-      const fields = pickEventFields(section, ev as Record<string, unknown>);
-      const { error: insErr } = await supabaseAdmin.from(table).insert({
-        visit_id: data.visitId,
-        source: "template",
-        template_event_id: templateEventId,
-        sort_order: (ev as { sort_order: number }).sort_order ?? 0,
-        ...fields,
-      });
-      if (insErr) return { ok: false as const, error: insErr.message };
+      const dto = toEventDTO(ev as Record<string, unknown>);
+      const existing = await findExistingByTemplateEvent(data.visitId, dto.section, dto.id);
+      if (existing.data) { skipped++; continue; }
+      const ins = await insertSnapshotEvent(data.visitId, dto, dto.id);
+      if (ins.error) return { ok: false as const, error: ins.error.message, inserted, skipped };
       inserted++;
     }
-    return { ok: true as const, inserted, skipped };
+    return { ok: true as const, error: null, inserted, skipped };
   });
