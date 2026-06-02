@@ -272,13 +272,6 @@ function Page() {
               <Card><CardContent className="p-4 flex items-center justify-between gap-2 flex-wrap">
                 <div className="font-semibold truncate">{active.name}</div>
                 <div className="flex gap-2 flex-wrap items-center">
-                  <Select value={active.congregation_id ?? "__none__"} onValueChange={(v) => handleSetCongregation(v === "__none__" ? null : v)}>
-                    <SelectTrigger className="w-[180px] h-9 text-xs"><SelectValue placeholder="Vincular congregação" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">— Sem vínculo —</SelectItem>
-                      {congs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
                   <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
                     <Pencil className="h-3.5 w-3.5 mr-1" />Renomear
                   </Button>
