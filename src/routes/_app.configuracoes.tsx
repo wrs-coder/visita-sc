@@ -17,6 +17,10 @@ import {
   listMeetingTalkTemplates,
   applyMeetingTalkTemplateForVisit,
 } from "@/lib/meeting-talk-templates.functions";
+import {
+  listElderProgramTemplates,
+  applyElderProgramTemplateToVisit,
+} from "@/lib/elder-program-templates.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
