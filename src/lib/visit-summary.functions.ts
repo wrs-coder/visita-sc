@@ -83,6 +83,7 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
         weekend: [],
         pioneer: [],
         elders: [],
+        elderProgram: null,
       };
     }
 
