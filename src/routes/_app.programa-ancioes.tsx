@@ -342,7 +342,7 @@ function EventCard({
 
         {ev.section === "recommendations" && (
           <>
-            <FieldRow label="Finalidade">
+            <FieldRow label="Recomendação para:">
               <Select
                 value={ev.purpose ?? "__none__"}
                 onValueChange={(v) => onChange({ purpose: v === "__none__" ? null : v as ElderVisitEventDTO["purpose"] })}
