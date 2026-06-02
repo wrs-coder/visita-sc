@@ -158,15 +158,6 @@ function Page() {
     await loadList();
   };
 
-  const handleSetCongregation = async (congregationId: string | null) => {
-    if (!active) return;
-    setBusy(true);
-    const r = await fnUpdate({ data: { id: active.id, congregationId } });
-    setBusy(false);
-    if (!r.ok) { toast.error(r.error); return; }
-    await loadList();
-    toast.success("Vínculo atualizado");
-  };
 
   const handleDuplicate = async () => {
     if (!active) return;
