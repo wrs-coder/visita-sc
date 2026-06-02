@@ -29,6 +29,7 @@ import {
   FileText,
   AlertTriangle,
   Heart,
+  Eye,
 } from "lucide-react";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import {
