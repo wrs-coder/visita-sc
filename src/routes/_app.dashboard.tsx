@@ -534,7 +534,7 @@ function Dashboard() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [visit, today]);
+  }, [visit, viewedIso]);
 
   // "Reuniões de hoje" — busca leituras leves das 4 tabelas (1 linha por visita)
   // alimentadas pela aba "Reuniões e Discursos". Filtra por dia-da-semana
