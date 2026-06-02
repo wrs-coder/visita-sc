@@ -262,6 +262,8 @@ export type Database = {
           closing_prayer: string | null
           created_at: string
           id: string
+          location: string | null
+          meeting_at: string | null
           opening_prayer: string | null
           theme: string | null
           updated_at: string
@@ -271,6 +273,8 @@ export type Database = {
           closing_prayer?: string | null
           created_at?: string
           id?: string
+          location?: string | null
+          meeting_at?: string | null
           opening_prayer?: string | null
           theme?: string | null
           updated_at?: string
@@ -280,6 +284,8 @@ export type Database = {
           closing_prayer?: string | null
           created_at?: string
           id?: string
+          location?: string | null
+          meeting_at?: string | null
           opening_prayer?: string | null
           theme?: string | null
           updated_at?: string
