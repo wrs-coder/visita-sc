@@ -143,8 +143,14 @@ function Page() {
     const session = readGuestSession();
     if (!session) { nav({ to: "/" }); return; }
     setCode(session.code);
-    load(session.code, session.congregationId);
+    // Carrega o cache e, em paralelo, pede ao servidor para escolher a
+    // congregação cuja visita ativa cobre a semana atual (apenas na primeira
+    // sessão sem congregação salva — preserva escolha manual posterior).
+    load(session.code, session.congregationId, { pickCurrent: !session.congregationId });
   }, [load, nav]);
+
+  // Mission 3: alternador "Hoje / Próximo dia" para o cartão do dia.
+  const [dayOffset, setDayOffset] = useState<0 | 1>(0);
 
   const [offlineOpen, setOfflineOpen] = useState(false);
 
