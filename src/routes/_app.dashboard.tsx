@@ -543,28 +543,44 @@ function Dashboard() {
     if (!visit) { setMeetingsToday([]); return; }
     let cancelled = false;
     (async () => {
-      const todayDow = new Date().getDay();
+      const viewedDow = viewedDate.getDay();
       const [mw, we, pi] = await Promise.all([
-        supabase.from("midweek_meetings").select("meeting_at, service_talk_theme").eq("visit_id", visit.id).maybeSingle(),
+        supabase.from("midweek_meetings").select("meeting_at, service_talk_theme, chairman, closing_prayer").eq("visit_id", visit.id).maybeSingle(),
         supabase.from("weekend_meetings").select("meeting_at, talk_theme_title, public_talk_theme").eq("visit_id", visit.id).maybeSingle(),
-        supabase.from("pioneer_meetings").select("meeting_at, super_meeting_at, theme, location").eq("visit_id", visit.id).maybeSingle(),
+        supabase.from("pioneer_meetings").select("meeting_at, super_meeting_at, theme, location, opening_prayer, closing_prayer").eq("visit_id", visit.id).maybeSingle(),
       ]);
       const out: MeetingTodayItem[] = [];
-      const push = (kind: MeetingTodayItem["kind"], at: string | null | undefined, theme: string | null | undefined, location: string | null | undefined) => {
+      const push = (
+        kind: MeetingTodayItem["kind"],
+        at: string | null | undefined,
+        theme: string | null | undefined,
+        location: string | null | undefined,
+        extra: Partial<MeetingTodayItem> = {},
+      ) => {
         if (!at) return;
         const d = new Date(at);
         if (Number.isNaN(d.getTime())) return;
-        if (d.getDay() !== todayDow) return;
-        out.push({ kind, meeting_at: at, theme: theme ?? null, location: location ?? null });
+        if (d.getDay() !== viewedDow) return;
+        out.push({ kind, meeting_at: at, theme: theme ?? null, location: location ?? null, ...extra });
       };
-      push("midweek", mw.data?.meeting_at, mw.data?.service_talk_theme, null);
-      push("weekend", we.data?.meeting_at, we.data?.talk_theme_title ?? we.data?.public_talk_theme, null);
+      push("midweek", mw.data?.meeting_at, mw.data?.service_talk_theme, null, {
+        chairman: mw.data?.chairman ?? null,
+        closing_prayer: mw.data?.closing_prayer ?? null,
+      });
+      push("weekend", we.data?.meeting_at, we.data?.talk_theme_title ?? we.data?.public_talk_theme, null, {
+        public_talk_theme: we.data?.public_talk_theme ?? null,
+      });
       const piAt = pi.data?.super_meeting_at ?? pi.data?.meeting_at;
-      push("pioneer", piAt, pi.data?.theme, pi.data?.location);
+      push("pioneer", piAt, pi.data?.theme, pi.data?.location, {
+        opening_prayer: pi.data?.opening_prayer ?? null,
+        closing_prayer: pi.data?.closing_prayer ?? null,
+      });
+      // elders_servants_meetings não tem data/hora; fica fora deste filtro.
       if (!cancelled) setMeetingsToday(out);
     })();
     return () => { cancelled = true; };
-  }, [visit, today]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visit, viewedIso]);
 
   // todayEvents removed: replaced by "Hoje no cronograma" (circuit-scoped) card.
   const doneCount = checklist.filter((c) => c.status === "done").length;
