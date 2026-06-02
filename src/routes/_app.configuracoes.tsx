@@ -679,6 +679,29 @@ function Page() {
                     </p>
                   )}
                 </div>
+                <div>
+                  <Label>Modelo Programação Anciãos</Label>
+                  <Select
+                    value={form.elder_program_template_id || ""}
+                    onValueChange={(v) => setForm({ ...form, elder_program_template_id: v })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecione… (opcional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {elderProgramTpls.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {elderProgramTpls.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Crie um modelo em "Modelo Programação Anciãos" para aplicá-lo aqui.
+                    </p>
+                  )}
+                </div>
                 </>
                 )}
                 {editId ? (
