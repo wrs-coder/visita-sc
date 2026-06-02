@@ -172,12 +172,12 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       wifeMode
         ? Promise.resolve({ data: [] as Array<{ id: string; title: string; description: string | null; status: string; link_or_notes: string | null; info_text: string | null }> })
         : supabaseAdmin.from("checklist_items").select("id,title,status,description,link_or_notes,info_text").eq("visit_id", visit.id).order("sort_order").order("created_at"),
-      supabaseAdmin.from("midweek_meetings").select("id,chairman,service_talk_theme,closing_prayer").eq("visit_id", visit.id),
+      supabaseAdmin.from("midweek_meetings").select("id,meeting_at,chairman,service_talk_theme,closing_prayer").eq("visit_id", visit.id),
       supabaseAdmin.from("weekend_meetings").select("id,meeting_at,public_talk_theme,talk_theme_title").eq("visit_id", visit.id).order("meeting_at"),
       supabaseAdmin.from("pioneer_meetings").select("id,meeting_at,super_meeting_at,location,theme,opening_prayer,closing_prayer").eq("visit_id", visit.id).order("meeting_at"),
       wifeMode
-        ? Promise.resolve({ data: [] as Array<{ id: string; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }> })
-        : supabaseAdmin.from("elders_servants_meetings").select("id,theme,opening_prayer,closing_prayer").eq("visit_id", visit.id),
+        ? Promise.resolve({ data: [] as Array<{ id: string; meeting_at: string | null; location: string | null; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }> })
+        : supabaseAdmin.from("elders_servants_meetings").select("id,meeting_at,location,theme,opening_prayer,closing_prayer").eq("visit_id", visit.id),
     ]);
 
     const mergedSchedule = [...(schedule ?? []), ...circuitAsSchedule].sort((a, b) => {

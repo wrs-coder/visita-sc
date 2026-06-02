@@ -359,7 +359,15 @@ export function PioneerPanel() {
 }
 
 /* ============ ANCIÃOS E SERVOS ============ */
-interface EldersRow { id: string; visit_id: string; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }
+interface EldersRow {
+  id: string;
+  visit_id: string;
+  theme: string | null;
+  opening_prayer: string | null;
+  closing_prayer: string | null;
+  location: string | null;
+  meeting_at: string | null;
+}
 
 export function EldersServantsPanel() {
   const { t } = useTranslation();
@@ -369,7 +377,7 @@ export function EldersServantsPanel() {
   const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<EldersRow>(
     "elders_servants_meetings",
-    "id,visit_id,theme,opening_prayer,closing_prayer",
+    "id,visit_id,theme,opening_prayer,closing_prayer,location,meeting_at",
     visit,
   );
   if (!visit) return <NoVisit />;
@@ -398,6 +406,10 @@ export function EldersServantsPanel() {
         <div>
           <Label>{t("meetingsTalks.elders.closingPrayer")}</Label>
           <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
+        </div>
+        <div>
+          <Label>{t("meetingsTalks.elders.location", { defaultValue: t("meetingsTalks.pioneer.location") })}</Label>
+          <FieldText value={row.location} onSave={(v) => save({ location: v })} />
         </div>
       </fieldset>
     </CardContent></Card>
