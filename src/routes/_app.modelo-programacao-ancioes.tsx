@@ -14,7 +14,7 @@ import {
   type ElderSection,
   type ElderProgramEventDTO,
 } from "@/lib/elder-program-templates.functions";
-import { listMyCongregations } from "@/lib/congregations.functions";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
