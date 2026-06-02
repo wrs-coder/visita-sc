@@ -1432,6 +1432,11 @@ function Dashboard() {
                           {f.closing_prayer}
                         </div>
                       )}
+                      {f.observations && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">
+                          {f.observations}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
