@@ -73,6 +73,11 @@ interface ScheduleEvent {
 interface ChecklistItem {
   id: string;
   status: string;
+  title: string | null;
+  description: string | null;
+  link_or_notes: string | null;
+  info_text: string | null;
+  sort_order: number | null;
 }
 interface Meal {
   id: string;
