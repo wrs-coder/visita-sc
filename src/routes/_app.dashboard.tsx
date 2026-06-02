@@ -451,7 +451,7 @@ function Dashboard() {
             .order("period"),
         ]);
       setEvents(e ?? []);
-      setChecklist(c ?? []);
+      setChecklist((c ?? []) as ChecklistItem[]);
       setMeals((m ?? []) as Meal[]);
       setTransports((t ?? []) as Transport[]);
       setAssignments((a ?? []) as FieldAssignment[]);
