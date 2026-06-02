@@ -158,14 +158,6 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
         weekend: [],
         pioneer: [],
         elders: [],
-        elderProgram: {
-          sections: { pastoral: "", encouragement: "", recommendations: "", local: "" },
-          slots: [] as Array<{ id: string; label: string; sort_order: number }>,
-          pastoral: [] as Array<Record<string, unknown>>,
-          encouragement: [] as Array<Record<string, unknown>>,
-          recommendations: [] as Array<Record<string, unknown>>,
-          local: [] as Array<Record<string, unknown>>,
-        },
         templateExtras: { field: null, midweek: null, weekend: null, pioneer: null, elders: null, program: null },
       };
     }
