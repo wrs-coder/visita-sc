@@ -91,7 +91,7 @@ function Page() {
   const fnDup = useServerFn(duplicateElderProgramTemplate);
   const fnDel = useServerFn(deleteElderProgramTemplate);
   const fnSave = useServerFn(saveElderProgramTemplate);
-  const fnCongs = useServerFn(listMyCongregations);
+  
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
