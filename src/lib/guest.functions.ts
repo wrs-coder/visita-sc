@@ -2,6 +2,38 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+type ElderEventRow = {
+  id: string;
+  source: "manual" | "template" | null;
+  sort_order: number | null;
+  slot_label: string | null;
+  companion: string | null;
+  family_name: string | null;
+  address: string | null;
+  family_members: string | null;
+  spiritual_info: string | null;
+  category: "inactive" | "sick" | "special_privileges" | null;
+  person_name: string | null;
+  contact: string | null;
+  health_info: string | null;
+  purpose: "ministerial_servant" | "elder" | "redesignation" | "removal" | "cca_change" | null;
+  full_name: string | null;
+  field_group: string | null;
+  info: string | null;
+  suggested_by: string | null;
+  subject: string | null;
+  sources: string | null;
+};
+
+export type ElderProgramPayload = {
+  sections: { pastoral: string; encouragement: string; recommendations: string; local: string };
+  slots: Array<{ id: string; label: string }>;
+  pastoral: ElderEventRow[];
+  encouragement: ElderEventRow[];
+  recommendations: ElderEventRow[];
+  local: ElderEventRow[];
+};
+
 const codeSchema = z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4,12}\*?$/);
 
 export const getGuestSnapshot = createServerFn({ method: "POST" })
