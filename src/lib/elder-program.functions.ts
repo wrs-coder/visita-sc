@@ -225,7 +225,7 @@ export const createElderRecommendation = createServerFn({ method: "POST" })
       .insert({ visit_id: data.visitId, source: "manual", sort_order: next })
       .select("*").single();
     if (error || !row) return { ok: false as const, error: error?.message ?? "Falha.", row: null };
-    return { ok: true as const, error: null, row: toDTO(row as Record<string, unknown>) };
+    return { ok: true as const, error: null, row: toDTO(row as Record<string, unknown>, "recommendations") };
   });
 
 export const deleteElderProgramEvent = createServerFn({ method: "POST" })
