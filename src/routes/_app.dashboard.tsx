@@ -1130,12 +1130,23 @@ function Dashboard() {
             icon={<UtensilsCrossed className="h-4 w-4 text-primary" />}
             title={t("dashboard.mealsToday")}
             headerRight={
-              <Link
-                to="/refeicoes"
-                className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-              >
-                {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setOpenDetails("meals")}
+                  aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <Link
+                  to="/refeicoes"
+                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+                >
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+                </Link>
+              </div>
             }
           >
             {meals.length === 0 ? (
