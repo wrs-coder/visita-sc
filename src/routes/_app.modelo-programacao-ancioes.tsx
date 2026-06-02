@@ -103,7 +103,7 @@ function Page() {
   const [newName, setNewName] = useState("");
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameVal, setRenameVal] = useState("");
-  const [congs, setCongs] = useState<{ id: string; name: string }[]>([]);
+  
   const [busy, setBusy] = useState(false);
 
   const loadList = useCallback(async () => {
