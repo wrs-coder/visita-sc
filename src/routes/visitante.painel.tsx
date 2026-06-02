@@ -1008,14 +1008,38 @@ function SharePreview({ snap, selected, fmtDate, mealLabel }: { snap: Snapshot; 
 
       {selected.trans && (
         <Section title={t("guest.sections.trans")} empty={snap.transport.length === 0}>
-          {snap.transport.map((tp) => (
-            <div key={tp.id} className="py-1 border-b border-gray-100 last:border-0">
-              <div className="font-medium">{tp.event_date ? fmtDate(tp.event_date) : t("guest.labels.noDate")} — {tp.driver_name}</div>
-              {tp.contact_phone && <div className="text-xs">📞 {tp.contact_phone}</div>}
-              {tp.description && <div className="text-xs text-gray-600">{tp.description}</div>}
-              {tp.notes && <div className="text-xs text-gray-600">{tp.notes}</div>}
-            </div>
-          ))}
+          {groupTransport(snap.transport).map((g) => {
+            const head = g.rows[0];
+            return (
+              <div key={g.key} className="py-1 border-b border-gray-100 last:border-0">
+                <div className="font-medium">
+                  {head.event_date ? fmtDate(head.event_date) : t("guest.labels.noDate")}
+                  {head.all_day ? ` — ${t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}` : ""}
+                </div>
+                {g.rows.map((r, idx) => {
+                  const showDriver = !head.all_day || idx === 0;
+                  const typeLbl = r.event_type ? t(`transport.eventType.${r.event_type}`, { defaultValue: r.event_type }) : null;
+                  const dirLbl = r.direction ? t(`transport.direction.${r.direction}`, { defaultValue: r.direction }) : null;
+                  return (
+                    <div key={r.id} className="text-xs ml-2">
+                      {(typeLbl || dirLbl) && <div>{typeLbl ?? ""}{dirLbl ? ` · ${dirLbl}` : ""}</div>}
+                      {(r.departure_time || r.return_time) && (
+                        <div>🕒 {fmtTime(r.departure_time ?? null)}{r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}</div>
+                      )}
+                      {showDriver && (
+                        <>
+                          <div>{t("guest.labels.driver")}: {r.driver_name}</div>
+                          {r.contact_phone && <div>📞 {r.contact_phone}</div>}
+                          {r.description && <div className="text-gray-600">{r.description}</div>}
+                          {r.notes && <div className="text-gray-600">{r.notes}</div>}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
         </Section>
       )}
 
