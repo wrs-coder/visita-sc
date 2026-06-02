@@ -42,6 +42,7 @@ import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { saveBlob } from "@/lib/share";
+import { DayDetailsDialog } from "@/components/dashboard/DayDetailsDialog";
 
 export interface VisitSnapshot {
   wifeMode: boolean;
