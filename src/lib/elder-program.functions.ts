@@ -122,10 +122,10 @@ export const listElderProgramForVisit = createServerFn({ method: "POST" })
       slots: ((slots.data ?? []) as Array<{ id: string; label: string; sort_order: number }>).map((s) => ({
         id: s.id, label: s.label, sort_order: s.sort_order,
       })),
-      pastoral: ((pastoral.data ?? []) as Array<Record<string, unknown>>).map(toDTO),
-      encouragement: ((enc.data ?? []) as Array<Record<string, unknown>>).map(toDTO),
-      recommendations: ((rec.data ?? []) as Array<Record<string, unknown>>).map(toDTO),
-      local: ((loc.data ?? []) as Array<Record<string, unknown>>).map(toDTO),
+      pastoral: ((pastoral.data ?? []) as Array<Record<string, unknown>>).map((r) => toDTO(r, "pastoral")),
+      encouragement: ((enc.data ?? []) as Array<Record<string, unknown>>).map((r) => toDTO(r, "encouragement")),
+      recommendations: ((rec.data ?? []) as Array<Record<string, unknown>>).map((r) => toDTO(r, "recommendations")),
+      local: ((loc.data ?? []) as Array<Record<string, unknown>>).map((r) => toDTO(r, "local")),
     };
   });
 
