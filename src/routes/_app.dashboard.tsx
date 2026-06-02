@@ -98,6 +98,11 @@ interface Transport {
   contact_phone: string | null;
   description: string | null;
   notes: string | null;
+  event_type: string | null;
+  direction: string | null;
+  departure_time: string | null;
+  return_time: string | null;
+  all_day: boolean | null;
 }
 interface FieldAssignment {
   id: string;
@@ -119,12 +124,17 @@ interface FieldMeetingToday {
   territory_location: string | null;
   auxiliary_leaders: string | null;
   closing_prayer: string | null;
+  observations: string | null;
 }
 interface MeetingTodayItem {
   kind: "midweek" | "weekend" | "pioneer" | "elders";
   meeting_at: string;
   theme: string | null;
   location: string | null;
+  chairman?: string | null;
+  opening_prayer?: string | null;
+  closing_prayer?: string | null;
+  public_talk_theme?: string | null;
 }
 
 const MODALITY_LABEL: Record<string, string> = {
