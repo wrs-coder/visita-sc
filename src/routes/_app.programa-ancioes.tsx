@@ -18,6 +18,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BookOpen, Plus, Trash2, Loader2 } from "lucide-react";
 import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/programa-ancioes")({ component: Page });
@@ -159,17 +170,27 @@ function Page() {
                     </p>
                   ) : (
                     <div className="space-y-3">
-                      {events.map((ev) => (
-                        <EventCard
-                          key={ev.id}
-                          ev={ev}
-                          slots={slots}
-                          readOnly={!canEdit}
-                          canDelete={canEdit && (ev.section === "recommendations" || isSuper)}
-                          onChange={(patch) => saveField(ev, patch)}
-                          onDelete={() => deleteEvent(ev)}
-                        />
-                      ))}
+                      {events.map((ev) => {
+                        const usedSlots = section === "pastoral"
+                          ? new Set(
+                              pastoral
+                                .filter((p) => p.id !== ev.id && p.slot_label)
+                                .map((p) => p.slot_label as string),
+                            )
+                          : new Set<string>();
+                        return (
+                          <EventCard
+                            key={ev.id}
+                            ev={ev}
+                            slots={slots}
+                            usedSlots={usedSlots}
+                            readOnly={!canEdit}
+                            canDelete={canEdit && (ev.section === "recommendations" || isSuper)}
+                            onChange={(patch) => saveField(ev, patch)}
+                            onDelete={() => deleteEvent(ev)}
+                          />
+                        );
+                      })}
                     </div>
                   )}
 
@@ -197,15 +218,20 @@ function LoadingPanel() {
 }
 
 function EventCard({
-  ev, slots, readOnly, canDelete, onChange, onDelete,
+  ev, slots, usedSlots, readOnly, canDelete, onChange, onDelete,
 }: {
   ev: ElderVisitEventDTO;
   slots: string[];
+  usedSlots: Set<string>;
   readOnly: boolean;
   canDelete: boolean;
   onChange: (patch: Partial<ElderVisitEventDTO>) => void;
   onDelete: () => void;
 }) {
+  const [pendingSlot, setPendingSlot] = useState<string | null>(null);
+  const [hideUsed, setHideUsed] = useState(false);
+  const slotConflict = ev.section === "pastoral" && !!ev.slot_label && usedSlots.has(ev.slot_label);
+  const visibleSlots = hideUsed ? slots.filter((s) => !usedSlots.has(s) || s === ev.slot_label) : slots;
   return (
     <Card className="border-dashed">
       <CardContent className="p-3 space-y-2">
@@ -227,18 +253,60 @@ function EventCard({
             <FieldRow label="Dia/Horário">
               <Select
                 value={ev.slot_label ?? "__none__"}
-                onValueChange={(v) => onChange({ slot_label: v === "__none__" ? null : v })}
+                onValueChange={(v) => {
+                  const next = v === "__none__" ? null : v;
+                  if (next && next !== ev.slot_label && usedSlots.has(next)) {
+                    setPendingSlot(next);
+                    return;
+                  }
+                  setHideUsed(false);
+                  onChange({ slot_label: next });
+                }}
                 disabled={readOnly}
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  className={cn(slotConflict && "border-destructive text-destructive focus:ring-destructive")}
+                >
                   <SelectValue placeholder={slots.length ? "Selecione um slot" : "Superintendente ainda não definiu slots"} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">—</SelectItem>
-                  {slots.map((s, i) => <SelectItem key={i} value={s}>{s}</SelectItem>)}
+                  {visibleSlots.map((s, i) => <SelectItem key={i} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
+              {slotConflict && (
+                <p className="mt-1 text-[11px] text-destructive">
+                  Este horário já está em uso por outro evento.
+                </p>
+              )}
             </FieldRow>
+            <AlertDialog open={pendingSlot !== null} onOpenChange={(o) => { if (!o) setPendingSlot(null); }}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Conflito de horário</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O horário “{pendingSlot}” já está atribuído a outra visita de pastoreio. Deseja confirmar mesmo assim?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    onClick={() => { setHideUsed(true); setPendingSlot(null); }}
+                  >
+                    Não, escolher outro
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      const v = pendingSlot;
+                      setPendingSlot(null);
+                      setHideUsed(false);
+                      if (v) onChange({ slot_label: v });
+                    }}
+                  >
+                    Sim, confirmar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <DebouncedText label="Ancião/S.M acompanhante" value={ev.companion} onSave={(v) => onChange({ companion: v })} readOnly={readOnly} />
             <DebouncedText label="Família/Irmão(ã)" value={ev.family_name} onSave={(v) => onChange({ family_name: v })} readOnly={readOnly} />
             <DebouncedText label="Endereço" value={ev.address} onSave={(v) => onChange({ address: v })} readOnly={readOnly} />
@@ -274,7 +342,7 @@ function EventCard({
 
         {ev.section === "recommendations" && (
           <>
-            <FieldRow label="Finalidade">
+            <FieldRow label="Recomendação para:">
               <Select
                 value={ev.purpose ?? "__none__"}
                 onValueChange={(v) => onChange({ purpose: v === "__none__" ? null : v as ElderVisitEventDTO["purpose"] })}
