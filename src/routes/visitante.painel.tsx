@@ -913,7 +913,7 @@ function WifeCoupleSummaryCard({ code, onOpen }: { code: string; onOpen: () => v
                 : t("couple.noMessages")}
           </div>
         </div>
-        <Button size="sm" variant="outline" onClick={goToCouple}>
+        <Button size="sm" variant="outline" onClick={onOpen}>
           {t("couple.open", { defaultValue: "Abrir" })}
         </Button>
       </CardContent>
