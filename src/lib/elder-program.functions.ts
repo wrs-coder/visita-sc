@@ -35,11 +35,12 @@ export type ElderVisitEventDTO = {
   sources: string | null;
 };
 
-function toDTO(r: Record<string, unknown>): ElderVisitEventDTO {
+function toDTO(r: Record<string, unknown>, section: SectionT): ElderVisitEventDTO {
   const g = (k: string) => (r[k] ?? null) as string | null;
   return {
     id: r.id as string,
     visit_id: r.visit_id as string,
+    section,
     source: (r.source as "template" | "manual") ?? "manual",
     template_event_id: (r.template_event_id as string | null) ?? null,
     sort_order: (r.sort_order as number | null) ?? 0,
