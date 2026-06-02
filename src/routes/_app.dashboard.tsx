@@ -1553,6 +1553,30 @@ function Dashboard() {
                         {mt.theme && (
                           <div className="whitespace-pre-wrap break-words">{mt.theme}</div>
                         )}
+                        {mt.public_talk_theme && mt.public_talk_theme !== mt.theme && (
+                          <div className="text-xs whitespace-pre-wrap break-words">
+                            <span className="text-muted-foreground">{t("dashboard.publicTalk", { defaultValue: "Discurso público:" })} </span>
+                            {mt.public_talk_theme}
+                          </div>
+                        )}
+                        {mt.chairman && (
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">{t("dashboard.chairman", { defaultValue: "Presidência:" })} </span>
+                            {mt.chairman}
+                          </div>
+                        )}
+                        {mt.opening_prayer && (
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">{t("dashboard.openingPrayer", { defaultValue: "Oração inicial:" })} </span>
+                            {mt.opening_prayer}
+                          </div>
+                        )}
+                        {mt.closing_prayer && (
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">{t("dashboard.closingPrayer")} </span>
+                            {mt.closing_prayer}
+                          </div>
+                        )}
                         {mt.location && (
                           <div className="text-xs text-muted-foreground flex items-start gap-1">
                             <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
