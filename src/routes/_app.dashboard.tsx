@@ -412,7 +412,12 @@ function Dashboard() {
             .eq("visit_id", visit.id)
             .order("event_date")
             .order("start_time"),
-          supabase.from("checklist_items").select("id, status").eq("visit_id", visit.id),
+          supabase
+            .from("checklist_items")
+            .select("id, status, title, description, link_or_notes, info_text, sort_order")
+            .eq("visit_id", visit.id)
+            .order("sort_order")
+            .order("created_at"),
           supabase
             .from("meals")
             .select("id, meal_date, meal_time, type, host_name, location, contact_phone, notes")
