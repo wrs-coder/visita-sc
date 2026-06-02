@@ -1605,13 +1605,13 @@ function Dashboard() {
                       {tr.event_type && (
                         <div className="text-xs">
                           <span className="text-muted-foreground">{t("dashboard.transportType", { defaultValue: "Tipo:" })} </span>
-                          {tr.event_type}
+                          {t(`transport.eventType.${tr.event_type}`, { defaultValue: tr.event_type })}
                         </div>
                       )}
                       {tr.direction && (
                         <div className="text-xs">
                           <span className="text-muted-foreground">{t("dashboard.transportDirection", { defaultValue: "Direção:" })} </span>
-                          {tr.direction}
+                          {t(`transport.direction.${tr.direction}`, { defaultValue: tr.direction })}
                         </div>
                       )}
                       {tr.all_day && (
