@@ -37,12 +37,14 @@ import {
   Mic,
   Pencil,
   Eye,
+  BookOpen,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { saveBlob } from "@/lib/share";
 import { DayDetailsDialog } from "@/components/dashboard/DayDetailsDialog";
+import { ElderProgramReadOnly, type ElderProgramData } from "@/components/visit-summary/ElderProgramReadOnly";
 
 export interface VisitSnapshot {
   wifeMode: boolean;
