@@ -165,6 +165,8 @@ function Dashboard() {
   const [meetingsToday, setMeetingsToday] = useState<MeetingTodayItem[]>([]);
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [pendingCount, setPendingCount] = useState(0);
+  type DetailsKey = "field" | "studies" | "meals" | "meetings" | "transport" | "checklist";
+  const [openDetails, setOpenDetails] = useState<DetailsKey | null>(null);
   useEffect(() => subscribeQueue(setPendingCount), []);
   const [overdueVisits, setOverdueVisits] = useState<
     Array<{ id: string; title: string; end_date: string; congregation_id: string }>
