@@ -654,6 +654,71 @@ export function VisitSummaryView({
                   );
                 })
               )}
+
+              {(() => {
+                const groups = groupTransport(snap.transport);
+                const g = groups.find((x) => x.key === openTransKey);
+                if (!g) return null;
+                const head = g.rows[0];
+                const dateLabel = head.event_date ? fmtDate(head.event_date) : t("guest.labels.noDate");
+                return (
+                  <DayDetailsDialog
+                    open={!!openTransKey}
+                    onOpenChange={(o) => !o && setOpenTransKey(null)}
+                    title={`${t("guest.sections.trans", { defaultValue: "Transporte" })} · ${dateLabel}`}
+                  >
+                    {head.all_day && (
+                      <div className="text-[10px] uppercase tracking-wide inline-block rounded px-1.5 py-0.5 bg-primary/15 text-primary">
+                        {t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}
+                      </div>
+                    )}
+                    <ul className="space-y-4">
+                      {g.rows.map((r, idx) => {
+                        const showDriver = !head.all_day || idx === 0;
+                        const typeLbl = r.event_type ? t(`transport.eventType.${r.event_type}`, { defaultValue: r.event_type }) : null;
+                        const dirLbl = r.direction ? t(`transport.direction.${r.direction}`, { defaultValue: r.direction }) : null;
+                        return (
+                          <li key={r.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                            {(typeLbl || dirLbl) && (
+                              <div className="text-xs font-medium">
+                                {typeLbl ?? t("transport.noDay")}
+                                {dirLbl ? ` · ${dirLbl}` : ""}
+                              </div>
+                            )}
+                            {(r.departure_time || r.return_time) && (
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {fmtTime(r.departure_time)}
+                                {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
+                              </div>
+                            )}
+                            {showDriver && (
+                              <>
+                                <div className="text-xs">
+                                  <span className="text-muted-foreground">{t("guest.labels.driver")}: </span>
+                                  {r.driver_name}
+                                </div>
+                                {r.contact_phone && (
+                                  <div className="text-xs flex items-center gap-1">
+                                    <Phone className="h-3 w-3" />
+                                    {r.contact_phone}
+                                  </div>
+                                )}
+                                {r.description && (
+                                  <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{r.description}</div>
+                                )}
+                                {r.notes && (
+                                  <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{r.notes}</div>
+                                )}
+                              </>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </DayDetailsDialog>
+                );
+              })()}
             </TabsContent>
 
 
