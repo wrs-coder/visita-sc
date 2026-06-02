@@ -809,14 +809,29 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
 
   const fmtAt = (iso: string | null) => (iso ? format(parseISO(iso), "HH:mm") : "—");
 
+  const [openTodayDetails, setOpenTodayDetails] = useState(false);
+
   return (
     <div className="space-y-3">
       <Card>
         <CardContent className="p-4">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">
-            {t("guest.today.summary")}
+          <div className="flex items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                {t("guest.today.summary")}
+              </div>
+              <div className="font-semibold capitalize">{todayLabel}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpenTodayDetails(true)}
+              aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+              title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+              className="text-muted-foreground hover:text-primary shrink-0"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
           </div>
-          <div className="font-semibold capitalize">{todayLabel}</div>
         </CardContent>
       </Card>
 
