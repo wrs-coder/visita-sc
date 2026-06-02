@@ -87,12 +87,15 @@ function Page() {
   const fnListChecklist = useServerFn(listChecklistTemplates);
   const fnListMeetingTalk = useServerFn(listMeetingTalkTemplates);
   const fnApplyMeetingTalk = useServerFn(applyMeetingTalkTemplateForVisit);
+  const fnListElderProgram = useServerFn(listElderProgramTemplates);
+  const fnApplyElderProgram = useServerFn(applyElderProgramTemplateToVisit);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [congs, setCongs] = useState<Cong[]>([]);
   const [tpls, setTpls] = useState<{ id: string; slot: number; name: string }[]>([]);
   const [checklistTpls, setChecklistTpls] = useState<{ id: string; name: string }[]>([]);
   const [fieldTpls, setFieldTpls] = useState<{ id: string; name: string }[]>([]);
   const [meetingTalkTpls, setMeetingTalkTpls] = useState<{ id: string; name: string }[]>([]);
+  const [elderProgramTpls, setElderProgramTpls] = useState<{ id: string; name: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -105,6 +108,7 @@ function Page() {
     checklist_template_id: "",
     field_template_id: "",
     meeting_talk_template_id: "",
+    elder_program_template_id: "",
     substitute_name: "",
     substitute_phone: "",
   });
