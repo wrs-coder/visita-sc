@@ -1,85 +1,67 @@
 ## Objetivo
 
-Adicionar a função "ver detalhes em popup" em três lugares, mantendo um padrão visual único (ícone `Eye` no canto do cartão → `Dialog` somente-leitura com todos os dados do dia):
+Dois ajustes no Dashboard (`src/routes/_app.dashboard.tsx`), sem mexer em backend nem alterar lógicas existentes.
 
-1. **Dashboard** — nos cartões Reunião de Campo, Estudos e Revisitas, Refeições de hoje, Reuniões de hoje, Transporte do dia e Checklist da Congregação. **Não** mexer no cartão "Esboços e Notas".
-2. **Resumo do Dia → subaba "Hoje"** (em `VisitSummaryView`) — um botão no topo da aba que abre um popup com tudo o que está sendo mostrado para o dia (refeições, designações, reuniões de campo, transporte, programação, reuniões do dia).
-3. **Resumo da Semana → subaba "Transporte"** (mesmo `VisitSummaryView`) — em cada cartão de dia agrupado, um botão que abre um popup com todos os detalhes daquele dia de transporte (motorista, telefone, tipo, direção, horários, descrição, observações de cada linha).
+---
 
-Como `VisitSummaryView` é o componente compartilhado usado tanto em `_app.resumo-semana.tsx` (acesso atual de anciãos / esposa do superintendente) quanto em `visitante.painel.tsx` (acesso antigo via visitante), uma única alteração contempla os dois fluxos.
+### Ajuste 01 — Popups completos nos cartões
 
-## Comportamento (idêntico nas 3 telas)
+Hoje os popups de "Reunião de Campo", "Estudos e Revisitas" e "Refeições" já trazem boa parte das informações, mas faltam campos. "Reuniões de hoje" e "Transporte" estão bem incompletos. O cartão "Checklist da Congregação" não é alterado.
 
-- Ícone `Eye` (lucide-react), 16px, cor `text-muted-foreground hover:text-primary`, `aria-label="Ver detalhes do dia"`.
-- Ao clicar, abre `Dialog` (shadcn), `max-h-[85vh] overflow-y-auto`, com:
-  - Título: contexto + data (ex.: "Transporte · Qua, 03/06/2026").
-  - Conteúdo: mesmos dados já exibidos, sem `truncate`/`line-clamp`, com rótulos legíveis.
-  - Botão "Fechar" no rodapé. Somente leitura.
-- Não altera nenhum comportamento existente (expandir/recolher, "Ver tudo", agrupamentos, contagens, sincronização, RLS).
-- Nenhuma chamada nova à rede; usa os dados já presentes no snapshot/estado — **exceto** o cartão Checklist do dashboard, cuja query precisa de mais colunas (`title, description, link_or_notes, info_text, sort_order`).
+**Reunião de Campo (`field_meetings`)** — ampliar select para incluir `observations` e exibir esse campo no popup (cartão compacto permanece igual).
 
-## Implementação técnica
+**Estudos e Revisitas (`field_assignments`)** — popup atual já cobre todos os campos da tabela. Nada a adicionar.
 
-### 1. Componente novo, reutilizável
+**Refeições de hoje (`meals`)** — popup atual já cobre todos os campos. Nada a adicionar.
 
-`src/components/dashboard/DayDetailsDialog.tsx`
-- Wrapper genérico baseado em `Dialog`.
-- Props: `open`, `onOpenChange`, `title`, `subtitle?`, `children`.
-- Estilos: `max-h-[85vh] overflow-y-auto`, rodapé com botão Fechar.
-- Usado pelos três pontos (dashboard, VisitSummaryView Hoje, VisitSummaryView Transporte).
+**Reuniões de hoje** — ampliar a busca em `useEffect` (linhas 526-551) e o popup:
+- `midweek_meetings`: adicionar `chairman`, `closing_prayer`.
+- `weekend_meetings`: já busca `talk_theme_title` e `public_talk_theme`; exibir ambos.
+- `pioneer_meetings`: adicionar `opening_prayer`, `closing_prayer`.
+- `elders_servants_meetings` não tem data/hora própria, então fica fora do filtro por dia (documentado em comentário).
+- Expandir o tipo `MeetingTodayItem` para incluir os campos opcionais (`chairman`, `opening_prayer`, `closing_prayer`, `public_talk_theme`) e renderizar todos no `DayDetailsDialog` correspondente. Rótulos via `t()` reaproveitando `dashboard.closingPrayer` e novas chaves `dashboard.openingPrayer`, `dashboard.chairman` com `defaultValue`.
 
-### 2. Dashboard — `src/routes/_app.dashboard.tsx`
+**Transporte de hoje (`transport_schedule`)** — ampliar select (linhas 432-437) para incluir `event_type, direction, departure_time, return_time, all_day`. Expandir `interface Transport` e o conteúdo do `DayDetailsDialog` de transporte para mostrar tipo, direção, horários ida/volta, flag "dia inteiro" e os campos já presentes (motorista, telefone, descrição, observações). O cartão compacto permanece igual; só o popup expande.
 
-- Importar `Eye` e `DayDetailsDialog`.
-- Estado `const [openDetails, setOpenDetails] = useState<null | "field" | "studies" | "meals" | "meetings" | "transport" | "checklist">(null);`
-- Em cada um dos 6 cartões, o `headerRight` passa a ter o ícone `Eye` (botão) **antes** do link "Ver tudo":
-  ```tsx
-  <div className="flex items-center gap-2 shrink-0">
-    <button type="button" onClick={() => setOpenDetails("meals")} aria-label="..."><Eye className="h-4 w-4" /></button>
-    <Link to="/refeicoes">{t("common.viewAll")} <ChevronRight className="h-3 w-3" /></Link>
-  </div>
-  ```
-- Renderizar 6 `DayDetailsDialog` no fim do componente, reaproveitando o JSX dos cartões sem truncamento.
-- Ampliar o `select` de `checklist_items` em `loadVisitData` e o tipo `ChecklistItem` para incluir `title, description, link_or_notes, info_text, sort_order`. Cartão continua usando só `status` para o progresso.
-- **Não** alterar o cartão "Esboços e Notas".
+---
 
-### 3. Resumo do Dia — subaba "Hoje" em `VisitSummaryView`
+### Ajuste 02 — Botão "Ver dia seguinte"
 
-- Localizar a aba `value="hoje"` (renderiza `<TodayPanel snap={snap} />` no arquivo `src/components/visit-summary/VisitSummaryView.tsx`).
-- No topo do painel "Hoje", ao lado do rótulo da data, adicionar um botão `Eye` que abre um `DayDetailsDialog` único.
-- Conteúdo do dialog: concatena as seções já renderizadas para hoje — Refeições, Designações de campo, Reuniões de campo, Reuniões do dia (meio/fim/pioneiros/anciãos), Programação, Transporte do dia — todas filtradas por `todayIso` (variáveis já existentes no componente: `todayMeals`, `todayField`, `todayFieldMeetings`, `todaySchedule`, `todayTransport`, `todayWeekend`, `todayPioneer`, etc.).
-- Esconde seções vazias. Respeita `snap.wifeMode` (não mostrar Checklist, mesma regra que já existe).
+Adicionar um controle de data no Dashboard que alterna entre **hoje** e **amanhã**, atualizando 6 cartões:
 
-### 4. Resumo da Semana — subaba "Transporte" em `VisitSummaryView`
+- "Hoje no cronograma" (super, `circuitToday`)
+- "Reunião de Campo" (`fieldMeetings`)
+- "Estudos e Revisitas" (`assignments`)
+- "Refeições" (`meals`)
+- "Reuniões de hoje" (`meetingsToday` — recalculada pelo dia-da-semana da data selecionada)
+- **"Transporte" (`transports`)** — também troca para a data selecionada
 
-- Na aba `value="trans"`, dentro do `groupTransport(snap.transport).map((g) => …)`, adicionar no cabeçalho de cada `Card` (linha com `Car` + data) um botão `Eye` à direita.
-- Estado local na aba: `const [openTransKey, setOpenTransKey] = useState<string | null>(null);`
-- Ao clicar, abre `DayDetailsDialog` com:
-  - Título: data formatada do grupo (`fmtDate(head.event_date)`).
-  - Conteúdo: lista completa das linhas `g.rows` daquele dia, mostrando para cada uma: tipo, direção, horários ida/volta, motorista, telefone, descrição, observações e flag "apoiar todos os eventos" quando aplicável — sem truncar.
+Os demais (Checklist, Esboços e Notas, Recados da esposa, alerta de visitas vencidas) **não** mudam — continuam atrelados a hoje / estado global.
 
-### 5. i18n
+**UI:**
+- Botão pequeno ao lado da data no header, tipo `Button` outline com ícones `ChevronLeft`/`ChevronRight`.
+- Estado: `const [dayOffset, setDayOffset] = useState<0 | 1>(0)`.
+- Exibe rótulo: "Hoje" ou "Amanhã · 03/06/2026".
+- Botão de voltar aparece somente quando `dayOffset === 1`.
+- Quando offset = 1, os 6 cartões mostram um chip discreto "Amanhã" ao lado do título para evitar confusão; popups usam a data efetiva no título.
 
-`src/i18n/locales/{pt,en,es}.json`:
-- `common.viewDayDetails` — "Ver detalhes do dia" / "View day details" / "Ver detalles del día"
-- `common.close` (se ainda não existir)
-- `guest.today.detailsTitle` — "Resumo do dia" / "Day summary" / "Resumen del día"
-- `guest.transport.dayDetailsTitle` — "Detalhes do transporte" / "Transport details" / "Detalles del transporte"
+**Comportamento dos dados:**
+- Derivar `viewedDate = addDays(new Date(), dayOffset)` e `viewedIso = format(viewedDate, "yyyy-MM-dd")`.
+- Substituir `today` por `viewedIso` nas queries dos 6 cartões (`circuit_schedule_events`, `meals`, `transport_schedule`, `field_assignments`, `field_meetings`) e nos canais realtime correspondentes.
+- Para `meetingsToday`, usar `viewedDate.getDay()` em vez de `new Date().getDay()`.
+- Manter `today` separadamente para o restante (visitas vencidas, label do cabeçalho, etc.).
+- Incluir `viewedIso` na dependência dos `useEffect` para refetch automático ao alternar.
 
-## Arquivos afetados
+**Out of scope:** sincronização, RLS, edição, lógica de seleção de congregação, esposa-mode. O modo offline continua funcionando normalmente porque usa as mesmas queries interceptadas.
 
-- `src/components/dashboard/DayDetailsDialog.tsx` (novo)
-- `src/routes/_app.dashboard.tsx` (botões + 6 dialogs + ampliar select do checklist)
-- `src/components/visit-summary/VisitSummaryView.tsx` (botão + 1 dialog no painel "Hoje"; botão por dia + 1 dialog na aba "Transporte")
-- `src/i18n/locales/pt.json`, `en.json`, `es.json` (novas chaves)
+---
 
-## Cobertura por tipo de acesso
+### Arquivos afetados
 
-- **Dashboard**: superintendente, esposa em modo dashboard e anciãos (já compartilham a mesma rota).
-- **Resumo do Dia "Hoje"** e **Resumo da Semana "Transporte"**: como `VisitSummaryView` é importado por `_app.resumo-semana.tsx` (acesso atual de anciãos/esposa logada) e por `visitante.painel.tsx` (acesso antigo via visitante), a alteração cobre automaticamente **todos** esses perfis sem código duplicado.
+- `src/routes/_app.dashboard.tsx` (única alteração)
+- `src/i18n/locales/pt.json`, `en.json`, `es.json` — chaves novas com `defaultValue` inline (`dashboard.viewNextDay`, `dashboard.viewToday`, `dashboard.viewingTomorrow`, `dashboard.openingPrayer`, `dashboard.chairman`, `dashboard.transportType`, `dashboard.transportDirection`, `dashboard.transportDeparture`, `dashboard.transportReturn`, `dashboard.transportAllDay`).
 
-## Fora do escopo
-
-- Cartão "Esboços e Notas" — não é tocado.
-- Funções atuais (expandir/recolher, "Ver tudo", contagens, progresso, sincronização, RLS, edição) — preservadas.
-- Demais subabas do Resumo da Semana (Cronograma, Estudos, Campo, Refeições, Checklist) — não recebem o popup nesta entrega; podem ser adicionadas depois usando o mesmo `DayDetailsDialog`.
+### Fora do escopo
+- Cartão "Esboços e Notas" e "Checklist" — não tocados.
+- `VisitSummaryView` — não alterado nesta entrega.
+- Sem mudanças em migrações, RLS, server functions ou edge functions.
