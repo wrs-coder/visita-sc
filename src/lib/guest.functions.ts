@@ -158,6 +158,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
         weekend: [],
         pioneer: [],
         elders: [],
+        elderProgram: null as ElderProgramPayload | null,
         templateExtras: { field: null, midweek: null, weekend: null, pioneer: null, elders: null, program: null },
       };
     }
