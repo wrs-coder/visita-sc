@@ -1319,6 +1319,252 @@ function Dashboard() {
         </div>
       )}
 
+      {/* Popups "Ver detalhes do dia" — somente leitura, reaproveitam os dados já carregados. */}
+      {(() => {
+        const dayLabel = format(new Date(), "dd/MM/yyyy");
+        const closeDetails = () => setOpenDetails(null);
+        return (
+          <>
+            <DayDetailsDialog
+              open={openDetails === "field"}
+              onOpenChange={(o) => !o && closeDetails()}
+              title={`${t("dashboard.fieldMeeting")} · ${dayLabel}`}
+            >
+              {fieldMeetings.length === 0 ? (
+                <p className="text-muted-foreground">{t("dashboard.noActivityToday")}</p>
+              ) : (
+                <ul className="space-y-4">
+                  {fieldMeetings.map((f) => (
+                    <li key={f.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                      <div className="font-medium">
+                        {f.period}
+                        {f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""}
+                        {" · "}
+                        <span className="text-xs text-muted-foreground">
+                          {MODALITY_LABEL[f.modality] ?? f.modality}
+                        </span>
+                      </div>
+                      {f.meeting_location && (
+                        <div className="text-xs text-muted-foreground flex items-start gap-1">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span className="whitespace-pre-wrap break-words">{f.meeting_location}</span>
+                        </div>
+                      )}
+                      {f.territory_number && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{t("dashboard.territory")} </span>
+                          {f.territory_number}
+                          {f.territory_location ? ` · ${f.territory_location}` : ""}
+                        </div>
+                      )}
+                      {f.auxiliary_leaders && (
+                        <div className="text-xs whitespace-pre-wrap break-words">
+                          <span className="text-muted-foreground">{t("dashboard.arrangements")} </span>
+                          {f.auxiliary_leaders}
+                        </div>
+                      )}
+                      {f.closing_prayer && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{t("dashboard.closingPrayer")} </span>
+                          {f.closing_prayer}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </DayDetailsDialog>
+
+            <DayDetailsDialog
+              open={openDetails === "studies"}
+              onOpenChange={(o) => !o && closeDetails()}
+              title={`${t("dashboard.studiesVisits")} · ${dayLabel}`}
+            >
+              {assignments.length === 0 ? (
+                <p className="text-muted-foreground">{t("dashboard.noActivityToday")}</p>
+              ) : (
+                <ul className="space-y-4">
+                  {assignments.map((a) => (
+                    <li key={a.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                      <div className="font-medium">
+                        {a.period}
+                        {a.meeting_time ? ` · ${a.meeting_time.slice(0, 5)}` : ""}
+                      </div>
+                      {a.acompanhante && (
+                        <div>
+                          {a.acompanhante}
+                          {a.acompanhante_for
+                            ? ` → ${ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for}`
+                            : ""}
+                        </div>
+                      )}
+                      {a.meeting_point && (
+                        <div className="text-xs text-muted-foreground flex items-start gap-1">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span className="whitespace-pre-wrap break-words">{a.meeting_point}</span>
+                        </div>
+                      )}
+                      {a.contact_phone && (
+                        <div className="text-xs">📞 {a.contact_phone}</div>
+                      )}
+                      {a.notes && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{a.notes}</div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </DayDetailsDialog>
+
+            <DayDetailsDialog
+              open={openDetails === "meals"}
+              onOpenChange={(o) => !o && closeDetails()}
+              title={`${t("dashboard.mealsToday")} · ${dayLabel}`}
+            >
+              {meals.length === 0 ? (
+                <p className="text-muted-foreground">{t("dashboard.noActivityToday")}</p>
+              ) : (
+                <ul className="space-y-4">
+                  {meals.map((m) => (
+                    <li key={m.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                      <div className="font-medium">
+                        {m.type === "lunch"
+                          ? t("dashboard.meals.lunch")
+                          : m.type === "dinner"
+                            ? t("dashboard.meals.dinner")
+                            : t("dashboard.meals.breakfast")}
+                        {m.meal_time ? ` · ${m.meal_time.slice(0, 5)}` : ""}
+                      </div>
+                      {m.host_name && <div>{m.host_name}</div>}
+                      {m.location && (
+                        <div className="text-xs text-muted-foreground flex items-start gap-1">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span className="whitespace-pre-wrap break-words">{m.location}</span>
+                        </div>
+                      )}
+                      {m.contact_phone && (
+                        <div className="text-xs">📞 {m.contact_phone}</div>
+                      )}
+                      {m.notes && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{m.notes}</div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </DayDetailsDialog>
+
+            <DayDetailsDialog
+              open={openDetails === "meetings"}
+              onOpenChange={(o) => !o && closeDetails()}
+              title={`${t("dashboard.meetingsToday", { defaultValue: "Reuniões de hoje" })} · ${dayLabel}`}
+            >
+              {meetingsToday.length === 0 ? (
+                <p className="text-muted-foreground">{t("dashboard.noActivityToday")}</p>
+              ) : (
+                <ul className="space-y-4">
+                  {meetingsToday.map((mt) => {
+                    const labels: Record<MeetingTodayItem["kind"], string> = {
+                      midweek: t("meetingsTalks.tabMeio", { defaultValue: "Meio de Semana" }),
+                      weekend: t("meetingsTalks.tabFim", { defaultValue: "Fim de Semana" }),
+                      pioneer: t("meetingsTalks.tabPioneiros", { defaultValue: "Pioneiros" }),
+                      elders: t("meetingsTalks.tabAncios", { defaultValue: "Anciãos e Servos" }),
+                    };
+                    const time = (() => {
+                      try {
+                        const d = new Date(mt.meeting_at);
+                        return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+                      } catch { return ""; }
+                    })();
+                    return (
+                      <li key={mt.kind} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                        <div className="font-medium">
+                          {labels[mt.kind]}
+                          {time ? ` · ${time}` : ""}
+                        </div>
+                        {mt.theme && (
+                          <div className="whitespace-pre-wrap break-words">{mt.theme}</div>
+                        )}
+                        {mt.location && (
+                          <div className="text-xs text-muted-foreground flex items-start gap-1">
+                            <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                            <span className="whitespace-pre-wrap break-words">{mt.location}</span>
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </DayDetailsDialog>
+
+            <DayDetailsDialog
+              open={openDetails === "transport"}
+              onOpenChange={(o) => !o && closeDetails()}
+              title={`${t("dashboard.transportToday")} · ${dayLabel}`}
+            >
+              {transports.length === 0 ? (
+                <p className="text-muted-foreground">{t("dashboard.noActivityToday")}</p>
+              ) : (
+                <ul className="space-y-4">
+                  {transports.map((tr) => (
+                    <li key={tr.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                      <div className="font-medium">{tr.driver_name}</div>
+                      {tr.contact_phone && (
+                        <div className="text-xs">📞 {tr.contact_phone}</div>
+                      )}
+                      {tr.description && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{tr.description}</div>
+                      )}
+                      {tr.notes && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{tr.notes}</div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </DayDetailsDialog>
+
+            <DayDetailsDialog
+              open={openDetails === "checklist"}
+              onOpenChange={(o) => !o && closeDetails()}
+              title={t("dashboard.checklistTitle")}
+              subtitle={t("dashboard.doneOf", { done: doneCount, total })}
+            >
+              {checklist.length === 0 ? (
+                <p className="text-muted-foreground">{t("dashboard.noActivityToday")}</p>
+              ) : (
+                <ul className="space-y-3">
+                  {checklist.map((c) => (
+                    <li key={c.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-medium whitespace-pre-wrap break-words flex-1">
+                          {c.title || "—"}
+                        </div>
+                        <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-muted text-muted-foreground shrink-0">
+                          {c.status}
+                        </span>
+                      </div>
+                      {c.description && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{c.description}</div>
+                      )}
+                      {c.info_text && (
+                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{c.info_text}</div>
+                      )}
+                      {c.link_or_notes && (
+                        <div className="text-xs text-primary whitespace-pre-wrap break-all">{c.link_or_notes}</div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </DayDetailsDialog>
+          </>
+        );
+      })()}
+
+
+
       <FieldNoteFullscreenDialog
         noteId={fullscreenNoteId}
         onOpenChange={(open) => { if (!open) setFullscreenNoteId(null); }}
