@@ -56,6 +56,14 @@ interface Snapshot {
   weekend: Array<{ id: string; meeting_at: string | null; public_talk_theme: string | null; talk_theme_title: string | null }>;
   pioneer: Array<{ id: string; meeting_at: string | null; super_meeting_at: string | null; location: string | null; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
   elders: Array<{ id: string; meeting_at?: string | null; location?: string | null; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
+  elderProgram?: {
+    sections: { pastoral: string; encouragement: string; recommendations: string; local: string };
+    slots: Array<{ id: string; label: string }>;
+    pastoral: ElderProgramEvent[];
+    encouragement: ElderProgramEvent[];
+    recommendations: ElderProgramEvent[];
+    local: ElderProgramEvent[];
+  } | null;
   templateExtras?: {
     field: { observations: string | null } | null;
     midweek: { observations: string | null } | null;
@@ -64,6 +72,28 @@ interface Snapshot {
     elders: { observations: string | null } | null;
     program: { general_observations: string | null } | null;
   };
+}
+
+interface ElderProgramEvent {
+  id: string;
+  source: "manual" | "template" | null;
+  slot_label: string | null;
+  companion: string | null;
+  family_name: string | null;
+  address: string | null;
+  family_members: string | null;
+  spiritual_info: string | null;
+  category: "inactive" | "sick" | "special_privileges" | null;
+  person_name: string | null;
+  contact: string | null;
+  health_info: string | null;
+  purpose: "ministerial_servant" | "elder" | "redesignation" | "removal" | "cca_change" | null;
+  full_name: string | null;
+  field_group: string | null;
+  info: string | null;
+  suggested_by: string | null;
+  subject: string | null;
+  sources: string | null;
 }
 
 type TransportRow = Snapshot["transport"][number];
