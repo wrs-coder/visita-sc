@@ -341,7 +341,7 @@ export function VisitSummaryView({
 
           <Tabs defaultValue="hoje">
             <TabsList
-              className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-7"}`}
+              className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-8"}`}
             >
               <TabsTrigger value="hoje">
                 <Sun className="h-4 w-4 md:mr-1" />
@@ -367,6 +367,12 @@ export function VisitSummaryView({
                 <Car className="h-4 w-4 md:mr-1" />
                 <span className="hidden md:inline">{t("guest.tabs.transport")}</span>
               </TabsTrigger>
+              {!snap.wifeMode && (
+                <TabsTrigger value="pastoreios">
+                  <BookOpen className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">Pastoreios</span>
+                </TabsTrigger>
+              )}
               {!snap.wifeMode && (
                 <TabsTrigger value="check">
                   <ListChecks className="h-4 w-4 md:mr-1" />
