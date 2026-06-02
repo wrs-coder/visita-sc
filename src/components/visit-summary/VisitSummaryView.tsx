@@ -591,10 +591,19 @@ export function VisitSummaryView({
                             {head.event_date ? fmtDate(head.event_date) : t("guest.labels.noDate")}
                           </div>
                           {head.all_day && (
-                            <span className="ml-auto text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
+                            <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
                               {t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}
                             </span>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => setOpenTransKey(g.key)}
+                            aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                            title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
+                            className="ml-auto text-muted-foreground hover:text-primary"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
                         </div>
                         <div className="space-y-2">
                           {g.rows.map((r, idx) => {
