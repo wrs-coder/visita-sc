@@ -603,6 +603,37 @@ function Dashboard() {
         </p>
       </header>
 
+      {/* Ajuste 02: alternador "Hoje / Amanhã" — atualiza apenas os 6 cartões diários. */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {isTomorrow ? (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDayOffset(0)}
+              className="h-8"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              {t("dashboard.viewToday", { defaultValue: "Voltar para hoje" })}
+            </Button>
+            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
+              {t("dashboard.viewingTomorrow", { defaultValue: "Vendo: amanhã" })} · {format(viewedDate, "EEE, dd/MM", { locale: ptBR })}
+            </span>
+          </>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setDayOffset(1)}
+            className="h-8"
+          >
+            {t("dashboard.viewNextDay", { defaultValue: "Ver dia seguinte" })}
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        )}
+      </div>
+
+
       {pendingCount > 0 && (
         <div className="flex items-center gap-2 rounded-md border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 px-3 py-2 text-xs">
           <CloudOff className="h-4 w-4 shrink-0" />
