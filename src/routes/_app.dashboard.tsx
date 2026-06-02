@@ -1384,7 +1384,7 @@ function Dashboard() {
 
       {/* Popups "Ver detalhes do dia" — somente leitura, reaproveitam os dados já carregados. */}
       {(() => {
-        const dayLabel = format(new Date(), "dd/MM/yyyy");
+        const dayLabel = format(viewedDate, "dd/MM/yyyy");
         const closeDetails = () => setOpenDetails(null);
         return (
           <>
