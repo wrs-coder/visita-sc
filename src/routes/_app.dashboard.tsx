@@ -184,6 +184,11 @@ function Dashboard() {
   >([]);
   const [overdueDialogId, setOverdueDialogId] = useState<string | null>(null);
   const today = format(new Date(), "yyyy-MM-dd");
+  // Ajuste 02: alterna entre hoje (0) e amanhã (1) para os 6 cartões diários.
+  const [dayOffset, setDayOffset] = useState<0 | 1>(0);
+  const viewedDate = addDays(new Date(), dayOffset);
+  const viewedIso = format(viewedDate, "yyyy-MM-dd");
+  const isTomorrow = dayOffset === 1;
 
   // Mission 2: eventos do circuito (circuit_schedule_events) do dia vigente.
   const [circuitToday, setCircuitToday] = useState<Array<{
