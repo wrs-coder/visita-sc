@@ -578,11 +578,13 @@ function TodayDashboard({
   dayOffset,
   setDayOffset,
   code,
+  onOpenCouple,
 }: {
   snap: Snapshot;
   dayOffset: 0 | 1;
   setDayOffset: (v: 0 | 1) => void;
   code: string | null;
+  onOpenCouple: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const dateLocale = getDateLocale(i18n.language);
