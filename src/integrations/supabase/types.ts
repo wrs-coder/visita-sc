@@ -257,6 +257,444 @@ export type Database = {
           },
         ]
       }
+      elder_encouragements: {
+        Row: {
+          address: string | null
+          category:
+            | Database["public"]["Enums"]["elder_encouragement_category"]
+            | null
+          contact: string | null
+          created_at: string
+          health_info: string | null
+          id: string
+          person_name: string | null
+          sort_order: number
+          source: Database["public"]["Enums"]["elder_event_source"]
+          spiritual_info: string | null
+          template_event_id: string | null
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          address?: string | null
+          category?:
+            | Database["public"]["Enums"]["elder_encouragement_category"]
+            | null
+          contact?: string | null
+          created_at?: string
+          health_info?: string | null
+          id?: string
+          person_name?: string | null
+          sort_order?: number
+          source?: Database["public"]["Enums"]["elder_event_source"]
+          spiritual_info?: string | null
+          template_event_id?: string | null
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          address?: string | null
+          category?:
+            | Database["public"]["Enums"]["elder_encouragement_category"]
+            | null
+          contact?: string | null
+          created_at?: string
+          health_info?: string | null
+          id?: string
+          person_name?: string | null
+          sort_order?: number
+          source?: Database["public"]["Enums"]["elder_event_source"]
+          spiritual_info?: string | null
+          template_event_id?: string | null
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: []
+      }
+      elder_local_matters: {
+        Row: {
+          created_at: string
+          id: string
+          info: string | null
+          sort_order: number
+          source: Database["public"]["Enums"]["elder_event_source"]
+          sources: string | null
+          subject: string | null
+          suggested_by: string | null
+          template_event_id: string | null
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          info?: string | null
+          sort_order?: number
+          source?: Database["public"]["Enums"]["elder_event_source"]
+          sources?: string | null
+          subject?: string | null
+          suggested_by?: string | null
+          template_event_id?: string | null
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          info?: string | null
+          sort_order?: number
+          source?: Database["public"]["Enums"]["elder_event_source"]
+          sources?: string | null
+          subject?: string | null
+          suggested_by?: string | null
+          template_event_id?: string | null
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: []
+      }
+      elder_pastoral_visits: {
+        Row: {
+          address: string | null
+          companion: string | null
+          created_at: string
+          family_members: string | null
+          family_name: string | null
+          id: string
+          slot_label: string | null
+          sort_order: number
+          source: Database["public"]["Enums"]["elder_event_source"]
+          spiritual_info: string | null
+          template_event_id: string | null
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          address?: string | null
+          companion?: string | null
+          created_at?: string
+          family_members?: string | null
+          family_name?: string | null
+          id?: string
+          slot_label?: string | null
+          sort_order?: number
+          source?: Database["public"]["Enums"]["elder_event_source"]
+          spiritual_info?: string | null
+          template_event_id?: string | null
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          address?: string | null
+          companion?: string | null
+          created_at?: string
+          family_members?: string | null
+          family_name?: string | null
+          id?: string
+          slot_label?: string | null
+          sort_order?: number
+          source?: Database["public"]["Enums"]["elder_event_source"]
+          spiritual_info?: string | null
+          template_event_id?: string | null
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: []
+      }
+      elder_program_template_events: {
+        Row: {
+          address: string | null
+          category:
+            | Database["public"]["Enums"]["elder_encouragement_category"]
+            | null
+          companion: string | null
+          contact: string | null
+          created_at: string
+          family_members: string | null
+          family_name: string | null
+          field_group: string | null
+          full_name: string | null
+          health_info: string | null
+          id: string
+          info: string | null
+          person_name: string | null
+          purpose:
+            | Database["public"]["Enums"]["elder_recommendation_purpose"]
+            | null
+          section: Database["public"]["Enums"]["elder_program_section"]
+          slot_label: string | null
+          sort_order: number
+          sources: string | null
+          spiritual_info: string | null
+          subject: string | null
+          suggested_by: string | null
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          category?:
+            | Database["public"]["Enums"]["elder_encouragement_category"]
+            | null
+          companion?: string | null
+          contact?: string | null
+          created_at?: string
+          family_members?: string | null
+          family_name?: string | null
+          field_group?: string | null
+          full_name?: string | null
+          health_info?: string | null
+          id?: string
+          info?: string | null
+          person_name?: string | null
+          purpose?:
+            | Database["public"]["Enums"]["elder_recommendation_purpose"]
+            | null
+          section: Database["public"]["Enums"]["elder_program_section"]
+          slot_label?: string | null
+          sort_order?: number
+          sources?: string | null
+          spiritual_info?: string | null
+          subject?: string | null
+          suggested_by?: string | null
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          category?:
+            | Database["public"]["Enums"]["elder_encouragement_category"]
+            | null
+          companion?: string | null
+          contact?: string | null
+          created_at?: string
+          family_members?: string | null
+          family_name?: string | null
+          field_group?: string | null
+          full_name?: string | null
+          health_info?: string | null
+          id?: string
+          info?: string | null
+          person_name?: string | null
+          purpose?:
+            | Database["public"]["Enums"]["elder_recommendation_purpose"]
+            | null
+          section?: Database["public"]["Enums"]["elder_program_section"]
+          slot_label?: string | null
+          sort_order?: number
+          sources?: string | null
+          spiritual_info?: string | null
+          subject?: string | null
+          suggested_by?: string | null
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "elder_program_template_events_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "elder_program_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      elder_program_template_sections: {
+        Row: {
+          additional_info: string
+          created_at: string
+          id: string
+          section: Database["public"]["Enums"]["elder_program_section"]
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          additional_info?: string
+          created_at?: string
+          id?: string
+          section: Database["public"]["Enums"]["elder_program_section"]
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          additional_info?: string
+          created_at?: string
+          id?: string
+          section?: Database["public"]["Enums"]["elder_program_section"]
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "elder_program_template_sections_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "elder_program_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      elder_program_template_slots: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          sort_order: number
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          sort_order?: number
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          sort_order?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "elder_program_template_slots_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "elder_program_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      elder_program_templates: {
+        Row: {
+          congregation_id: string | null
+          created_at: string
+          id: string
+          name: string
+          superintendent_id: string
+          updated_at: string
+        }
+        Insert: {
+          congregation_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          superintendent_id: string
+          updated_at?: string
+        }
+        Update: {
+          congregation_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          superintendent_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      elder_program_visit_sections: {
+        Row: {
+          additional_info: string
+          created_at: string
+          id: string
+          section: Database["public"]["Enums"]["elder_program_section"]
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          additional_info?: string
+          created_at?: string
+          id?: string
+          section: Database["public"]["Enums"]["elder_program_section"]
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          additional_info?: string
+          created_at?: string
+          id?: string
+          section?: Database["public"]["Enums"]["elder_program_section"]
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: []
+      }
+      elder_program_visit_slots: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          sort_order: number
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          sort_order?: number
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          sort_order?: number
+          visit_id?: string
+        }
+        Relationships: []
+      }
+      elder_recommendations: {
+        Row: {
+          created_at: string
+          family_members: string | null
+          field_group: string | null
+          full_name: string | null
+          id: string
+          info: string | null
+          purpose:
+            | Database["public"]["Enums"]["elder_recommendation_purpose"]
+            | null
+          sort_order: number
+          source: Database["public"]["Enums"]["elder_event_source"]
+          template_event_id: string | null
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          family_members?: string | null
+          field_group?: string | null
+          full_name?: string | null
+          id?: string
+          info?: string | null
+          purpose?:
+            | Database["public"]["Enums"]["elder_recommendation_purpose"]
+            | null
+          sort_order?: number
+          source?: Database["public"]["Enums"]["elder_event_source"]
+          template_event_id?: string | null
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          family_members?: string | null
+          field_group?: string | null
+          full_name?: string | null
+          id?: string
+          info?: string | null
+          purpose?:
+            | Database["public"]["Enums"]["elder_recommendation_purpose"]
+            | null
+          sort_order?: number
+          source?: Database["public"]["Enums"]["elder_event_source"]
+          template_event_id?: string | null
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: []
+      }
       elders_servants_meetings: {
         Row: {
           closing_prayer: string | null
@@ -1292,6 +1730,7 @@ export type Database = {
           checklist_template_id: string | null
           congregation_id: string
           created_at: string
+          elder_program_template_id: string | null
           end_date: string
           field_meeting_template_id: string | null
           id: string
@@ -1308,6 +1747,7 @@ export type Database = {
           checklist_template_id?: string | null
           congregation_id: string
           created_at?: string
+          elder_program_template_id?: string | null
           end_date: string
           field_meeting_template_id?: string | null
           id?: string
@@ -1324,6 +1764,7 @@ export type Database = {
           checklist_template_id?: string | null
           congregation_id?: string
           created_at?: string
+          elder_program_template_id?: string | null
           end_date?: string
           field_meeting_template_id?: string | null
           id?: string
@@ -1418,7 +1859,20 @@ export type Database = {
     Enums: {
       app_role: "superintendent" | "elder"
       checklist_status: "pending" | "done"
+      elder_encouragement_category: "inactive" | "sick" | "special_privileges"
+      elder_event_source: "template" | "manual"
       elder_position: "coordenador" | "secretario" | "sup_servico" | "corpo"
+      elder_program_section:
+        | "pastoral"
+        | "encouragement"
+        | "recommendations"
+        | "local"
+      elder_recommendation_purpose:
+        | "ministerial_servant"
+        | "elder"
+        | "redesignation"
+        | "removal"
+        | "cca_change"
       event_type:
         | "field_morning"
         | "field_afternoon"
@@ -1564,7 +2018,22 @@ export const Constants = {
     Enums: {
       app_role: ["superintendent", "elder"],
       checklist_status: ["pending", "done"],
+      elder_encouragement_category: ["inactive", "sick", "special_privileges"],
+      elder_event_source: ["template", "manual"],
       elder_position: ["coordenador", "secretario", "sup_servico", "corpo"],
+      elder_program_section: [
+        "pastoral",
+        "encouragement",
+        "recommendations",
+        "local",
+      ],
+      elder_recommendation_purpose: [
+        "ministerial_servant",
+        "elder",
+        "redesignation",
+        "removal",
+        "cca_change",
+      ],
       event_type: [
         "field_morning",
         "field_afternoon",
