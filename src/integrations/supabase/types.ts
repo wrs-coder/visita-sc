@@ -186,6 +186,7 @@ export type Database = {
       congregations: {
         Row: {
           created_at: string
+          elder_tab_password_hash: string | null
           id: string
           invite_code: string
           is_active: boolean
@@ -194,6 +195,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          elder_tab_password_hash?: string | null
           id?: string
           invite_code: string
           is_active?: boolean
@@ -202,6 +204,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          elder_tab_password_hash?: string | null
           id?: string
           invite_code?: string
           is_active?: boolean
@@ -1855,6 +1858,18 @@ export type Database = {
     }
     Functions: {
       delete_expired_circuit_events: { Args: never; Returns: undefined }
+      elder_tab_password_is_set: {
+        Args: { _congregation_id: string }
+        Returns: boolean
+      }
+      set_elder_tab_password: {
+        Args: { _congregation_id: string; _new_password: string }
+        Returns: undefined
+      }
+      verify_elder_tab_password: {
+        Args: { _congregation_id: string; _password: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "superintendent" | "elder"
