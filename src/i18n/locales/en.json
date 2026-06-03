@@ -1342,7 +1342,14 @@
     "edit": "Edit note",
     "detected": "Detected verses",
     "detectedEmpty": "Type a citation (e.g. John 3:16) to preview.",
-    "contentEmpty": "No content."
+    "contentEmpty": "No content.",
+    "syncFromField": {
+      "button": "Sync with Meetings & Talks → Field",
+      "success": "Fields synced from the field meeting.",
+      "empty": "No field meeting found for that day and shift.",
+      "offline": "Available online only",
+      "lastSync": "Last sync"
+    }
   },
   "personalOutlines": {
     "title": "Personal Outlines",
