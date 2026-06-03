@@ -17,7 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, Plus, Trash2, Loader2 } from "lucide-react";
+import { BookOpen, Plus, Trash2, Loader2, FileDown } from "lucide-react";
+import { ElderExecutiveReportDialog } from "@/components/elder-program/ElderExecutiveReportDialog";
 import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 import {
   AlertDialog,
@@ -82,6 +83,7 @@ function Page() {
   const [encouragement, setEncouragement] = useState<ElderVisitEventDTO[]>([]);
   const [recommendations, setRecommendations] = useState<ElderVisitEventDTO[]>([]);
   const [local, setLocal] = useState<ElderVisitEventDTO[]>([]);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const reload = useCallback(async () => {
     if (!visit) return;
@@ -157,6 +159,11 @@ function Page() {
         <p className="text-sm text-muted-foreground mt-1">
           Semana da Visita — {visit.title}
         </p>
+        <div className="mt-3">
+          <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
+            <FileDown className="h-4 w-4 mr-1" /> Relatório executivo
+          </Button>
+        </div>
       </div>
 
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
