@@ -370,7 +370,7 @@ export function VisitSummaryView({
               {!snap.wifeMode && (
                 <TabsTrigger value="pastoreios">
                   <BookOpen className="h-4 w-4 md:mr-1" />
-                  <span className="hidden md:inline">Pastoreios</span>
+                  <span className="hidden md:inline">Anciãos</span>
                 </TabsTrigger>
               )}
               {!snap.wifeMode && (
