@@ -62,6 +62,7 @@ const REC_PURPOSE_OPTIONS: Array<{ value: NonNullable<ElderVisitEventDTO["purpos
 ];
 
 function Page() {
+  const { t } = useTranslation();
   const { canEdit: canEditAuth, role } = useAuth();
   const isSuper = role === "superintendent";
   const [editEnabled, setEditEnabled] = useState(false);
