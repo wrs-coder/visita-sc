@@ -358,7 +358,7 @@ export const importElderProgramTemplate = createServerFn({ method: "POST" })
       const rows = data.file.sections.map((s) => ({
         template_id: templateId,
         section: s.section,
-        additional_info: s.additional_info ?? null,
+        additional_info: s.additional_info ?? undefined,
       }));
       const ins = await supabaseAdmin.from("elder_program_template_sections").insert(rows);
       if (ins.error) return { ok: false as const, error: ins.error.message };
