@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveVisit } from "@/hooks/use-active-visit";
@@ -61,6 +62,7 @@ const REC_PURPOSE_OPTIONS: Array<{ value: NonNullable<ElderVisitEventDTO["purpos
 ];
 
 function Page() {
+  const { t } = useTranslation();
   const { canEdit: canEditAuth, role } = useAuth();
   const isSuper = role === "superintendent";
   const [editEnabled, setEditEnabled] = useState(false);
@@ -149,6 +151,9 @@ function Page() {
         <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
           <BookOpen className="h-6 w-6" /> Pastoreios, Recomendações e outros
         </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {isSuper ? t("elderProgram.subtitleSuper") : t("elderProgram.subtitleElder")}
+        </p>
         <p className="text-sm text-muted-foreground mt-1">
           Semana da Visita — {visit.title}
         </p>
