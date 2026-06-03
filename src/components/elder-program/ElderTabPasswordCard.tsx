@@ -3,8 +3,10 @@
 //
 // - Apenas o COORDENADOR do corpo de anciãos define / atualiza / remove.
 // - Os demais anciãos cadastrados (secretário, sup. de serviço)
-//   visualizam a senha atual em texto puro.
+//   visualizam a senha atual em texto puro e podem copiá-la.
 // - O superintendente NÃO vê nem gerencia este cartão.
+// - Mudanças feitas pelo coordenador aparecem em tempo real para os
+//   demais anciãos via Supabase Realtime na tabela `congregations`.
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -12,11 +14,12 @@ import {
   getElderTabPasswordForElder,
   setElderTabPassword,
 } from "@/lib/elder-tab-password.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Lock, LockOpen, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Lock, LockOpen, Loader2, Copy, Check } from "lucide-react";
 
 export function ElderTabPasswordCard({ congregationId }: { congregationId: string }) {
   const fnLoad = useServerFn(getElderTabPasswordForElder);
@@ -31,9 +34,9 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
   const [showPw, setShowPw] = useState(false);
   const [showCurrent, setShowCurrent] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const r = await fnLoad({ data: { congregationId } });
       if (r.ok) {
@@ -47,8 +50,31 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
   }, [congregationId, fnLoad]);
 
   useEffect(() => {
+    setLoading(true);
     load();
   }, [load]);
+
+  // Realtime: recarrega quando a senha mudar na tabela `congregations`.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`elder-tab-pw:${congregationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "congregations",
+          filter: `id=eq.${congregationId}`,
+        },
+        () => {
+          load();
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [congregationId, load]);
 
   const handleSave = async () => {
     if (password.length < 4) {
@@ -93,6 +119,18 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
     }
   };
 
+  const handleCopy = async () => {
+    if (!currentPassword) return;
+    try {
+      await navigator.clipboard.writeText(currentPassword);
+      setCopied(true);
+      toast.success("Senha copiada.");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Não foi possível copiar a senha.");
+    }
+  };
+
   return (
     <Card>
       <CardContent className="p-4 space-y-3">
@@ -131,21 +169,33 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
             {isSet && (
               <div className="space-y-1">
                 <Label className="text-xs">Senha atual</Label>
-                <div className="relative">
-                  <Input
-                    readOnly
-                    type={showCurrent ? "text" : "password"}
-                    value={currentPassword}
-                    className="pr-9"
-                  />
-                  <button
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      readOnly
+                      type={showCurrent ? "text" : "password"}
+                      value={currentPassword}
+                      className="pr-9"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrent((v) => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label={showCurrent ? "Ocultar senha" : "Mostrar senha"}
+                    >
+                      {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <Button
                     type="button"
-                    onClick={() => setShowCurrent((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showCurrent ? "Ocultar senha" : "Mostrar senha"}
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopy}
+                    aria-label="Copiar senha"
+                    title="Copiar senha"
                   >
-                    {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                    {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                  </Button>
                 </div>
               </div>
             )}
