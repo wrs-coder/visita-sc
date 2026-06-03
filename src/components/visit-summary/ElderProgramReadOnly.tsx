@@ -73,8 +73,8 @@ export function ElderProgramReadOnly({ data }: { data: ElderProgramData | null }
   const sectionsOrder: ElderSectionKey[] = ["pastoral", "encouragement", "recommendations", "local"];
 
   return (
-    <>
-      <div className="text-xs text-muted-foreground italic px-1">
+    <div className="space-y-3 md:space-y-4">
+      <div className="text-xs text-muted-foreground italic px-1 break-words">
         Pastoreios, Recomendações e outros — visualização somente leitura.
       </div>
       {sectionsOrder.map((section) => {
@@ -83,24 +83,24 @@ export function ElderProgramReadOnly({ data }: { data: ElderProgramData | null }
         const hasExtra = !!extra && extra.trim().length > 0;
         return (
           <Card key={section}>
-            <CardContent className="p-4 space-y-3">
-              <h2 className="font-bold text-xs uppercase tracking-wide text-primary">
+            <CardContent className="p-3 sm:p-4 space-y-3">
+              <h2 className="font-bold text-[11px] sm:text-xs uppercase tracking-wide text-primary leading-snug break-words">
                 {ELDER_SECTION_TITLES[section]}
               </h2>
 
               {hasExtra && (
                 <div className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2">
-                  <div className="text-[11px] uppercase tracking-wide font-medium text-red-600 dark:text-red-400 opacity-80">
+                  <div className="text-[11px] uppercase tracking-wide font-medium text-red-600 dark:text-red-400 opacity-80 break-words">
                     Informações adicionais do superintendente
                   </div>
-                  <div className="text-sm whitespace-pre-wrap text-red-600 dark:text-red-400 mt-0.5">{extra}</div>
+                  <div className="text-sm whitespace-pre-wrap break-words text-red-600 dark:text-red-400 mt-0.5">{extra}</div>
                 </div>
               )}
 
               {events.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">Nenhum evento.</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {events.map((ev) => (
                     <ElderEventCardReadOnly key={ev.id} ev={ev} section={section} />
                   ))}
@@ -110,7 +110,7 @@ export function ElderProgramReadOnly({ data }: { data: ElderProgramData | null }
           </Card>
         );
       })}
-    </>
+    </div>
   );
 }
 
@@ -179,9 +179,9 @@ function ElderEventCardReadOnly({
 
 function ReadField({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) {
   return (
-    <div>
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">{label}</div>
-      <div className={`text-sm ${multiline ? "whitespace-pre-wrap" : ""}`}>{value}</div>
+    <div className="min-w-0">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium break-words">{label}</div>
+      <div className={`text-sm break-words ${multiline ? "whitespace-pre-wrap" : ""}`}>{value}</div>
     </div>
   );
 }

@@ -392,7 +392,7 @@ function Page() {
                   <TabsTrigger value="couple"><Heart className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.couple")}</span></TabsTrigger>
                 ) : (
                   <>
-                    <TabsTrigger value="pastoreios"><BookOpen className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Pastoreios</span></TabsTrigger>
+                    <TabsTrigger value="pastoreios"><BookOpen className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Anciãos</span></TabsTrigger>
                     <TabsTrigger value="check"><ListChecks className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.checklist")}</span></TabsTrigger>
                   </>
                 )}
