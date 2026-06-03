@@ -369,7 +369,7 @@
     }
   },
   "meals": {
-    "generalObservationsLabel": "Observações gerais (do modelo)",
+    "generalObservationsLabel": "Informações adicionais do superintendente",
     "title": "Logística e Refeições",
     "subtitleSuper": "Defina as refeições disponíveis por dia. Anciãos preenchem anfitrião, endereço e telefone. Itens desativados ficam ocultos para a congregação.",
     "subtitleElder": "Edite anfitrião, endereço e telefone de contato das refeições disponíveis.",
