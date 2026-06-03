@@ -290,3 +290,113 @@ export const importProgramTemplate = createServerFn({ method: "POST" })
     }
     return { ok: true as const, id: templateId };
   });
+
+// ---------- ELDER PROGRAM TEMPLATE ----------
+
+const ELDER_EVENT_COLUMNS = [
+  "section","sort_order","slot_label","companion","family_name","address",
+  "family_members","spiritual_info","category","person_name","contact",
+  "health_info","purpose","full_name","field_group","info",
+  "suggested_by","subject","sources",
+] as const;
+
+export const exportElderProgramTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: tpl } = await supabaseAdmin
+      .from("elder_program_templates")
+      .select("id,name,superintendent_id")
+      .eq("id", data.id).maybeSingle();
+    if (!tpl || tpl.superintendent_id !== userId) {
+      return { ok: false as const, error: "Não autorizado." };
+    }
+    const [secs, slots, events] = await Promise.all([
+      supabaseAdmin.from("elder_program_template_sections")
+        .select("section,additional_info").eq("template_id", data.id),
+      supabaseAdmin.from("elder_program_template_slots")
+        .select("label,sort_order").eq("template_id", data.id).order("sort_order"),
+      supabaseAdmin.from("elder_program_template_events")
+        .select(ELDER_EVENT_COLUMNS.join(",")).eq("template_id", data.id)
+        .order("section").order("sort_order"),
+    ]);
+    return {
+      ok: true as const,
+      file: {
+        type: "elder_program_template" as const,
+        version: 1 as const,
+        exportedAt: new Date().toISOString(),
+        name: tpl.name,
+        sections: secs.data ?? [],
+        slots: slots.data ?? [],
+        events: events.data ?? [],
+      },
+    };
+  });
+
+export const importElderProgramTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ file: elderFileSchema }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { count } = await supabaseAdmin
+      .from("elder_program_templates")
+      .select("id", { count: "exact", head: true })
+      .eq("superintendent_id", userId);
+    if ((count ?? 0) >= 50) {
+      return { ok: false as const, error: "Limite de 50 modelos atingido." };
+    }
+    const { data: row, error } = await supabaseAdmin
+      .from("elder_program_templates")
+      .insert({ superintendent_id: userId, name: data.file.name, congregation_id: null })
+      .select("id").single();
+    if (error || !row) return { ok: false as const, error: error?.message ?? "Falha ao criar." };
+    const templateId = row.id;
+
+    if (data.file.sections.length) {
+      const rows = data.file.sections.map((s) => ({
+        template_id: templateId,
+        section: s.section,
+        additional_info: s.additional_info ?? null,
+      }));
+      const ins = await supabaseAdmin.from("elder_program_template_sections").insert(rows);
+      if (ins.error) return { ok: false as const, error: ins.error.message };
+    }
+    if (data.file.slots.length) {
+      const rows = data.file.slots.map((s, i) => ({
+        template_id: templateId,
+        label: s.label,
+        sort_order: s.sort_order ?? i,
+      }));
+      const ins = await supabaseAdmin.from("elder_program_template_slots").insert(rows);
+      if (ins.error) return { ok: false as const, error: ins.error.message };
+    }
+    if (data.file.events.length) {
+      const rows = data.file.events.map((e, i) => ({
+        template_id: templateId,
+        section: e.section,
+        sort_order: e.sort_order ?? i,
+        slot_label: e.slot_label ?? null,
+        companion: e.companion ?? null,
+        family_name: e.family_name ?? null,
+        address: e.address ?? null,
+        family_members: e.family_members ?? null,
+        spiritual_info: e.spiritual_info ?? null,
+        category: e.category ?? null,
+        person_name: e.person_name ?? null,
+        contact: e.contact ?? null,
+        health_info: e.health_info ?? null,
+        purpose: e.purpose ?? null,
+        full_name: e.full_name ?? null,
+        field_group: e.field_group ?? null,
+        info: e.info ?? null,
+        suggested_by: e.suggested_by ?? null,
+        subject: e.subject ?? null,
+        sources: e.sources ?? null,
+      }));
+      const ins = await supabaseAdmin.from("elder_program_template_events").insert(rows);
+      if (ins.error) return { ok: false as const, error: ins.error.message };
+    }
+    return { ok: true as const, id: templateId };
+  });
