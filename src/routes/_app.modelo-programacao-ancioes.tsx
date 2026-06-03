@@ -14,6 +14,8 @@ import {
   type ElderSection,
   type ElderProgramEventDTO,
 } from "@/lib/elder-program-templates.functions";
+import { exportElderProgramTemplate, importElderProgramTemplate } from "@/lib/template-io.functions";
+import { TemplateIOButtons } from "@/components/TemplateIOButtons";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +93,8 @@ function Page() {
   const fnDup = useServerFn(duplicateElderProgramTemplate);
   const fnDel = useServerFn(deleteElderProgramTemplate);
   const fnSave = useServerFn(saveElderProgramTemplate);
+  const fnExport = useServerFn(exportElderProgramTemplate);
+  const fnImport = useServerFn(importElderProgramTemplate);
   
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
@@ -275,6 +279,19 @@ function Page() {
                   <Button size="sm" onClick={handleSave} disabled={busy}>
                     <Save className="h-3.5 w-3.5 mr-1" />Salvar
                   </Button>
+                  <TemplateIOButtons
+                    filenameBase={active.name || "programacao-ancioes"}
+                    onExport={() => fnExport({ data: { id: active.id } })}
+                    onImport={async (file) => {
+                      const r = await fnImport({ data: { file: file as never } });
+                      if (r.ok && r.id) {
+                        await loadList();
+                        setActiveId(r.id);
+                      }
+                      return r;
+                    }}
+                    disabled={busy}
+                  />
                 </div>
               </CardContent></Card>
 

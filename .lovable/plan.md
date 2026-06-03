@@ -1,42 +1,51 @@
 ## Plano
 
-### 1) Estudos e Revisitas — eventos omitidos quando coincide dia + hora
+### 1) Exportar/Importar JSON na aba "Modelo Programação Anciãos"
 
-**Causa raiz (encontrada):** em `src/lib/templates.functions.ts`, a função `applyTemplateToVisit` deduplica itens de `kind: "study"` usando a chave `event_date|period` (Manhã/Tarde). Como `period` só tem 2 valores, dois eventos no **mesmo dia e mesmo período** colidem — o segundo cai no ramo `skipped++` e nunca é inserido em `field_assignments`. Para os anciãos, isso parece "omitido" mesmo após editar o modelo, porque o merge não-destrutivo continua ignorando o segundo item enquanto já existe uma linha do primeiro naquele dia/período.
+Reaproveitar o mesmo padrão de `TemplateIOButtons` + `template-io.functions.ts` já usado em Checklist, Reuniões de Campo e Programação. A escolha de pasta já é nativa: `src/lib/share.ts` usa `showSaveFilePicker` quando o navegador suporta (Chrome/Edge/Opera desktop e Android) e cai para download/`Web Share` quando não — comportamento idêntico aos outros modelos, sem trabalho adicional.
 
-Linhas relevantes (templates.functions.ts):
-```text
-141  const fieldKey = (date, period) => `${date}|${period ?? "Manhã"}`;
-154  if (it.kind === "study") {
-155    const periodVal = str(p.period) ?? "Manhã";
-156    const key = fieldKey(targetDate, periodVal);
-157    if (fieldDates.has(key)) { skipped++; continue; }   // <-- segundo evento é descartado
-```
+**Backend** — em `src/lib/template-io.functions.ts`:
+- `exportElderProgramTemplate({ id })` — server fn protegida; lê `elder_program_templates` (verifica `superintendent_id = userId`), `elder_program_template_sections`, `elder_program_template_slots`, `elder_program_template_events`. Devolve `{ ok, file: { type: "elder_program_template", version: 1, exportedAt, name, sections: [{section, additional_info}], slots: [{label, sort_order}], events: [...todos os campos…] } }`.
+- `importElderProgramTemplate({ file })` — valida com `elderFileSchema` (zod com enums `pastoral|encouragement|recommendations|local`, `category`, `purpose`); cria novo `elder_program_templates` com `congregation_id: null`, depois insere sections/slots/events em lote. Aplica `assertUnderLimit` (limite ≤ MAX=50, igual ao usado na página).
 
-**Correção:** trocar a chave de dedupe por uma assinatura de conteúdo (mesmo padrão usado em `applyElderProgramTemplateToVisit`):
+**Frontend** — em `src/routes/_app.modelo-programacao-ancioes.tsx`:
+- Importar `TemplateIOButtons` e as duas novas server fns.
+- Renderizar `<TemplateIOButtons filenameBase={tpl?.name ?? "programacao-ancioes"} onExport={...} onImport={...} disabled={!tpl}/>` na barra de ações do modelo selecionado (ao lado de Duplicar/Salvar), espelhando `_app.modelo-reunioes-de-campo.tsx`.
+- Após importar com sucesso, recarregar lista de templates e selecionar o novo id.
 
-- Nova `fieldKey = date|period|meeting_time|meeting_point|acompanhante|acompanhante_for`.
-- Pré-carregar essas colunas em `exField` (`select("event_date,period,meeting_time,meeting_point,acompanhante,acompanhante_for")`).
-- Só pula (`skipped++`) quando existir linha com **mesma assinatura completa**; caso contrário, insere normalmente.
-- Não altera o comportamento de "não sobrescrever dados manuais" — apenas deixa de bloquear segundo evento no mesmo dia/período.
+Sem migração de banco. Sem mudanças de RLS (server fn usa `supabaseAdmin` com checagem de propriedade).
 
-Também adicionar `router.invalidate()` / `queryClient.invalidateQueries(["field_assignments"])` no chamador do `applyTemplateToVisit` para garantir refresh imediato na aba dos anciãos (já feito hoje, só validar).
+### 2) "Relatório executivo" em PDF na aba "Pastoreios, Recomendações e outros"
 
-Sem migração de banco. Os 2 usuários afetados precisarão **reaplicar o modelo** (ou criar o evento manualmente uma vez) — itens que já foram descartados no passado não voltam sozinhos.
+Botão novo no topo de `src/routes/_app.programa-ancioes.tsx` que abre um **Dialog de seleção de seções** e, ao confirmar, gera um PDF com layout de relatório executivo. Pasta de destino: usa `saveBlob` de `src/lib/share.ts`, que já chama `showSaveFilePicker` — o usuário escolhe a pasta nativamente.
 
-### 2) Dashboard — cartão "Reunião de Campo": exibir tudo
+**UI** — novo componente `src/components/elder-program/ElderExecutiveReportDialog.tsx`:
+- Checkboxes:
+  - Cabeçalho da visita (título + semana) — sempre incluído
+  - Informações adicionais do superintendente (por seção)
+  - Visitas de Pastoreio
+  - Encorajamento (Inativos, Doentes, Privilégios Especiais)
+  - Recomendações
+  - Assuntos locais
+- Botão "Gerar PDF". Sem renderização HTML intermediária: usa **jsPDF puro** (texto + auto-quebra), evitando o `html-to-image` do `VisitSummaryView` (que captura DOM e fica pesado para listas longas). Padrão A4, margens 12mm, fonte Helvetica, títulos de seção em destaque com filete inferior, eventos como blocos com labels (Dia/Horário, Acompanhante, Família, Endereço, etc.). Lida com quebra de página via `pdf.splitTextToSize` + controle de `cursorY`.
+- Nome do arquivo: `relatorio-executivo-ancioes-{slug(visit.title)}-{YYYY-MM-DD}.pdf`.
+- Chama `saveBlob(blob, { filename, mimeType: "application/pdf", pickerTypes: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }] })` — abre o seletor de pasta quando suportado.
+- Toasts de sucesso/falha (reaproveita chaves i18n `guest.export.pdf` / `pdfFail`).
 
-Hoje, em `src/routes/_app.dashboard.tsx` (linhas 1085–1128), o cartão já renderiza `meeting_location`, `territory_number`, `territory_location`, `auxiliary_leaders` e `closing_prayer`, **mas todos condicionados a valor truthy** e **`observations` não é exibido** (é apenas carregado).
+**Integração** — em `src/routes/_app.programa-ancioes.tsx`:
+- Estado `reportOpen`. Botão `<Button variant="outline" onClick={() => setReportOpen(true)}><FileDown/> Relatório executivo</Button>` no header da página, abaixo do subtítulo.
+- Passa para o dialog: `visit`, `sections`, `pastoral`, `encouragement`, `recommendations`, `local` (já carregados pela página).
+- Disponível para ambos: superintendente e anciãos (somente leitura nada impede gerar relatório).
 
-**Mudanças:**
-- Adicionar bloco de **observações** (`f.observations`) ao cartão, com `whitespace-pre-wrap`.
-- Garantir que `territory_number`, `territory_location` e `auxiliary_leaders` sigam aparecendo (já aparecem; manter rótulos `i18n` consistentes).
-- Replicar exatamente o mesmo conjunto de campos no `DayDetailsDialog` ("Ver detalhes do dia"), linhas 1419–1438, para incluir `observations` lá também.
-- Sem alteração nos selects do Supabase (todas as colunas já vêm na query da linha 475).
+**i18n** — adicionar chaves em `pt/en/es`:
+- `elderProgram.report.button`, `report.title`, `report.selectSections`, `report.sectionPastoral|encouragement|recommendations|local|info|header`, `report.generate`.
 
 ### Arquivos afetados
 
-- `src/lib/templates.functions.ts` — nova chave de dedupe para `study`.
-- `src/routes/_app.dashboard.tsx` — adicionar `observations` no cartão "Reunião de Campo" e no diálogo de detalhes.
+- `src/lib/template-io.functions.ts` — novo `exportElderProgramTemplate` + `importElderProgramTemplate` + schema.
+- `src/routes/_app.modelo-programacao-ancioes.tsx` — botões IO no header do modelo.
+- `src/components/elder-program/ElderExecutiveReportDialog.tsx` — novo dialog + gerador PDF.
+- `src/routes/_app.programa-ancioes.tsx` — botão "Relatório executivo" + dialog.
+- `src/i18n/locales/{pt,en,es}.json` — novas chaves.
 
-Sem mudanças de banco, sem mudanças em RLS, sem novos endpoints.
+Sem mudanças de banco, sem novas dependências (`jspdf` já está no projeto).
