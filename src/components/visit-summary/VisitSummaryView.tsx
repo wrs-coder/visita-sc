@@ -37,12 +37,14 @@ import {
   Mic,
   Pencil,
   Eye,
+  BookOpen,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { saveBlob } from "@/lib/share";
 import { DayDetailsDialog } from "@/components/dashboard/DayDetailsDialog";
+import { ElderProgramReadOnly, type ElderProgramData } from "@/components/visit-summary/ElderProgramReadOnly";
 
 export interface VisitSnapshot {
   wifeMode: boolean;
@@ -59,6 +61,7 @@ export interface VisitSnapshot {
   weekend: Array<{ id: string; meeting_at: string | null; public_talk_theme: string | null; talk_theme_title: string | null }>;
   pioneer: Array<{ id: string; meeting_at: string | null; super_meeting_at: string | null; location: string | null; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
   elders: Array<{ id: string; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
+  elderProgram?: ElderProgramData | null;
 }
 
 type SectionKey = "cron" | "estudos" | "campo" | "ref" | "trans" | "check";
@@ -338,7 +341,7 @@ export function VisitSummaryView({
 
           <Tabs defaultValue="hoje">
             <TabsList
-              className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-7"}`}
+              className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-8"}`}
             >
               <TabsTrigger value="hoje">
                 <Sun className="h-4 w-4 md:mr-1" />
@@ -364,6 +367,12 @@ export function VisitSummaryView({
                 <Car className="h-4 w-4 md:mr-1" />
                 <span className="hidden md:inline">{t("guest.tabs.transport")}</span>
               </TabsTrigger>
+              {!snap.wifeMode && (
+                <TabsTrigger value="pastoreios">
+                  <BookOpen className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">Pastoreios</span>
+                </TabsTrigger>
+              )}
               {!snap.wifeMode && (
                 <TabsTrigger value="check">
                   <ListChecks className="h-4 w-4 md:mr-1" />
@@ -721,6 +730,12 @@ export function VisitSummaryView({
               })()}
             </TabsContent>
 
+
+            {!snap.wifeMode && (
+              <TabsContent value="pastoreios" className="space-y-3 mt-4">
+                <ElderProgramReadOnly data={snap.elderProgram ?? null} />
+              </TabsContent>
+            )}
 
             {!snap.wifeMode && (
               <TabsContent value="check" className="space-y-2 mt-4">
