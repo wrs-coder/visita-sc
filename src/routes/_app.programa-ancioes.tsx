@@ -152,6 +152,9 @@ function Page() {
           <BookOpen className="h-6 w-6" /> Pastoreios, Recomendações e outros
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
+          {isSuper ? t("elderProgram.subtitleSuper") : t("elderProgram.subtitleElder")}
+        </p>
+        <p className="text-sm text-muted-foreground mt-1">
           Semana da Visita — {visit.title}
         </p>
       </div>
