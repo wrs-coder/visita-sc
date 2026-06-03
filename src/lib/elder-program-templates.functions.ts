@@ -362,19 +362,73 @@ export const saveElderProgramTemplate = createServerFn({ method: "POST" })
     return { ok: true as const, error: null };
   });
 
-// --- Apply template to visit (snapshot) ---
+// --- Apply template to visit (idempotent merge) ---
 
-async function findExistingByTemplateEvent(visitId: string, section: ElderSection, templateEventId: string) {
-  if (section === "pastoral") {
-    return supabaseAdmin.from("elder_pastoral_visits").select("id").eq("visit_id", visitId).eq("template_event_id", templateEventId).maybeSingle();
+type SectionTable = "elder_pastoral_visits" | "elder_encouragements" | "elder_recommendations" | "elder_local_matters";
+
+function tableFor(section: ElderSection): SectionTable {
+  if (section === "pastoral") return "elder_pastoral_visits";
+  if (section === "encouragement") return "elder_encouragements";
+  if (section === "recommendations") return "elder_recommendations";
+  return "elder_local_matters";
+}
+
+function norm(v: string | null | undefined): string {
+  return (v ?? "").trim().toLowerCase();
+}
+
+/** Content signature so we can re-link rows whose template_event_id changed on resave. */
+function signatureOfDTO(dto: ElderProgramEventDTO): string {
+  switch (dto.section) {
+    case "pastoral":
+      return `p|${norm(dto.slot_label)}|${norm(dto.family_name)}|${norm(dto.address)}`;
+    case "encouragement":
+      return `e|${norm(dto.category)}|${norm(dto.person_name)}|${norm(dto.address)}`;
+    case "recommendations":
+      return `r|${norm(dto.purpose)}|${norm(dto.full_name)}|${norm(dto.field_group)}`;
+    case "local":
+      return `l|${norm(dto.subject)}|${norm(dto.suggested_by)}`;
   }
-  if (section === "encouragement") {
-    return supabaseAdmin.from("elder_encouragements").select("id").eq("visit_id", visitId).eq("template_event_id", templateEventId).maybeSingle();
+}
+
+function signatureOfRow(section: ElderSection, r: Record<string, unknown>): string {
+  const g = (k: string) => (r[k] as string | null) ?? null;
+  switch (section) {
+    case "pastoral":
+      return `p|${norm(g("slot_label"))}|${norm(g("family_name"))}|${norm(g("address"))}`;
+    case "encouragement":
+      return `e|${norm(g("category"))}|${norm(g("person_name"))}|${norm(g("address"))}`;
+    case "recommendations":
+      return `r|${norm(g("purpose"))}|${norm(g("full_name"))}|${norm(g("field_group"))}`;
+    case "local":
+      return `l|${norm(g("subject"))}|${norm(g("suggested_by"))}`;
   }
-  if (section === "recommendations") {
-    return supabaseAdmin.from("elder_recommendations").select("id").eq("visit_id", visitId).eq("template_event_id", templateEventId).maybeSingle();
+}
+
+/** Non-destructive patch: only fills NULL/empty fields. Preserves manual edits. */
+function nonDestructivePatch(
+  section: ElderSection,
+  dto: ElderProgramEventDTO,
+  existing: Record<string, unknown>,
+  templateEventId: string,
+): Record<string, unknown> {
+  const isEmpty = (v: unknown) => v === null || v === undefined || (typeof v === "string" && v.trim() === "");
+  const patch: Record<string, unknown> = {};
+  const fields: Record<ElderSection, Array<keyof ElderProgramEventDTO>> = {
+    pastoral: ["slot_label", "companion", "family_name", "address", "family_members", "spiritual_info"],
+    encouragement: ["category", "person_name", "address", "contact", "health_info", "spiritual_info"],
+    recommendations: ["purpose", "full_name", "family_members", "field_group", "info"],
+    local: ["suggested_by", "subject", "sources", "info"],
+  };
+  for (const f of fields[section]) {
+    const cur = existing[f as string];
+    const next = dto[f];
+    if (isEmpty(cur) && !isEmpty(next)) patch[f as string] = next;
   }
-  return supabaseAdmin.from("elder_local_matters").select("id").eq("visit_id", visitId).eq("template_event_id", templateEventId).maybeSingle();
+  // Always re-link so future applies match by ID.
+  patch.template_event_id = templateEventId;
+  patch.source = "template";
+  return patch;
 }
 
 async function insertSnapshotEvent(visitId: string, dto: ElderProgramEventDTO, templateEventId: string) {
@@ -436,18 +490,18 @@ export const applyElderProgramTemplateToVisit = createServerFn({ method: "POST" 
       .from("visits")
       .select("id,congregation_id,elder_program_template_id")
       .eq("id", data.visitId).maybeSingle();
-    if (!visit) return { ok: false as const, error: "Visita não encontrada.", inserted: 0, skipped: 0 };
+    if (!visit) return { ok: false as const, error: "Visita não encontrada.", inserted: 0, updated: 0, skipped: 0 };
     const { data: cong } = await supabaseAdmin
       .from("congregations").select("superintendent_id").eq("id", visit.congregation_id).maybeSingle();
     if (!cong || cong.superintendent_id !== userId) {
-      return { ok: false as const, error: "Não autorizado.", inserted: 0, skipped: 0 };
+      return { ok: false as const, error: "Não autorizado.", inserted: 0, updated: 0, skipped: 0 };
     }
 
     const templateId = data.templateId ?? visit.elder_program_template_id ?? null;
-    if (!templateId) return { ok: false as const, error: "Nenhum modelo selecionado.", inserted: 0, skipped: 0 };
+    if (!templateId) return { ok: false as const, error: "Nenhum modelo selecionado.", inserted: 0, updated: 0, skipped: 0 };
     const { data: tpl } = await supabaseAdmin
       .from("elder_program_templates").select("id").eq("id", templateId).eq("superintendent_id", userId).maybeSingle();
-    if (!tpl) return { ok: false as const, error: "Modelo não encontrado.", inserted: 0, skipped: 0 };
+    if (!tpl) return { ok: false as const, error: "Modelo não encontrado.", inserted: 0, updated: 0, skipped: 0 };
 
     if (visit.elder_program_template_id !== templateId) {
       await supabaseAdmin.from("visits").update({ elder_program_template_id: templateId }).eq("id", data.visitId);
@@ -472,15 +526,52 @@ export const applyElderProgramTemplateToVisit = createServerFn({ method: "POST" 
       );
     }
 
+    // Pre-load existing visit rows per section for ID + signature matching.
+    const byTplId: Record<ElderSection, Map<string, Record<string, unknown>>> = {
+      pastoral: new Map(), encouragement: new Map(), recommendations: new Map(), local: new Map(),
+    };
+    const bySig: Record<ElderSection, Map<string, Record<string, unknown>>> = {
+      pastoral: new Map(), encouragement: new Map(), recommendations: new Map(), local: new Map(),
+    };
+    for (const section of SECTIONS) {
+      const { data: rows } = await supabaseAdmin
+        .from(tableFor(section)).select("*").eq("visit_id", data.visitId);
+      for (const row of (rows ?? []) as Array<Record<string, unknown>>) {
+        const tplId = row.template_event_id as string | null;
+        if (tplId) byTplId[section].set(tplId, row);
+        const sig = signatureOfRow(section, row);
+        if (sig && !bySig[section].has(sig)) bySig[section].set(sig, row);
+      }
+    }
+    const usedRowIds = new Set<string>();
+
     let inserted = 0;
+    let updated = 0;
     let skipped = 0;
     for (const ev of events.data ?? []) {
       const dto = toEventDTO(ev as Record<string, unknown>);
-      const existing = await findExistingByTemplateEvent(data.visitId, dto.section, dto.id);
-      if (existing.data) { skipped++; continue; }
-      const ins = await insertSnapshotEvent(data.visitId, dto, dto.id);
-      if (ins.error) return { ok: false as const, error: ins.error.message, inserted, skipped };
-      inserted++;
+      const section = dto.section;
+      // 1) match by template_event_id
+      let match = byTplId[section].get(dto.id) ?? null;
+      // 2) fallback: match by content signature
+      if (!match) {
+        const sig = signatureOfDTO(dto);
+        const candidate = bySig[section].get(sig);
+        if (candidate && !usedRowIds.has(candidate.id as string)) match = candidate;
+      }
+      if (match) {
+        const rowId = match.id as string;
+        if (usedRowIds.has(rowId)) { skipped++; continue; }
+        usedRowIds.add(rowId);
+        const patch = nonDestructivePatch(section, dto, match, dto.id);
+        const { error } = await supabaseAdmin.from(tableFor(section)).update(patch).eq("id", rowId);
+        if (error) return { ok: false as const, error: error.message, inserted, updated, skipped };
+        updated++;
+      } else {
+        const ins = await insertSnapshotEvent(data.visitId, dto, dto.id);
+        if (ins.error) return { ok: false as const, error: ins.error.message, inserted, updated, skipped };
+        inserted++;
+      }
     }
-    return { ok: true as const, error: null, inserted, skipped };
+    return { ok: true as const, error: null, inserted, updated, skipped };
   });
