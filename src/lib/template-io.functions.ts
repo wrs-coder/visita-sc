@@ -59,7 +59,53 @@ const programFileSchema = z.object({
   ).max(200),
 });
 
+const elderSectionEnum = z.enum(["pastoral", "encouragement", "recommendations", "local"]);
+const elderTextOpt = z.string().max(4000).nullable().optional();
+const elderShortOpt = z.string().max(1000).nullable().optional();
+
+const elderFileSchema = z.object({
+  type: z.literal("elder_program_template"),
+  version: z.literal(1),
+  name: z.string().trim().min(1).max(120),
+  sections: z.array(
+    z.object({
+      section: elderSectionEnum,
+      additional_info: elderTextOpt,
+    }),
+  ).max(20),
+  slots: z.array(
+    z.object({
+      label: z.string().trim().min(1).max(120),
+      sort_order: z.number().int().min(0).max(10000).optional(),
+    }),
+  ).max(50),
+  events: z.array(
+    z.object({
+      section: elderSectionEnum,
+      sort_order: z.number().int().min(0).max(10000).optional(),
+      slot_label: elderShortOpt,
+      companion: elderShortOpt,
+      family_name: elderShortOpt,
+      address: elderShortOpt,
+      family_members: elderTextOpt,
+      spiritual_info: elderTextOpt,
+      category: z.enum(["inactive", "sick", "special_privileges"]).nullable().optional(),
+      person_name: elderShortOpt,
+      contact: elderShortOpt,
+      health_info: elderTextOpt,
+      purpose: z.enum(["ministerial_servant", "elder", "redesignation", "removal", "cca_change"]).nullable().optional(),
+      full_name: elderShortOpt,
+      field_group: elderShortOpt,
+      info: elderTextOpt,
+      suggested_by: elderShortOpt,
+      subject: elderShortOpt,
+      sources: elderTextOpt,
+    }),
+  ).max(500),
+});
+
 // ---------- EXPORT ----------
+
 
 export const exportChecklistTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
