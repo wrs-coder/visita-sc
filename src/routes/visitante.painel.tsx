@@ -555,7 +555,7 @@ function Page() {
 
               {!snap.wifeMode && (
                 <TabsContent value="pastoreios" className="space-y-3 mt-4">
-                  <ElderProgramReadOnly data={snap.elderProgram ?? null} />
+                  <ElderTabGate congregationId={snap.congregation.id} data={snap.elderProgram ?? null} />
                 </TabsContent>
               )}
 
