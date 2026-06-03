@@ -279,6 +279,19 @@ function Page() {
                   <Button size="sm" onClick={handleSave} disabled={busy}>
                     <Save className="h-3.5 w-3.5 mr-1" />Salvar
                   </Button>
+                  <TemplateIOButtons
+                    filenameBase={active.name || "programacao-ancioes"}
+                    onExport={() => fnExport({ data: { id: active.id } })}
+                    onImport={async (file) => {
+                      const r = await fnImport({ data: { file: file as never } });
+                      if (r.ok && r.id) {
+                        await loadList();
+                        setActiveId(r.id);
+                      }
+                      return r;
+                    }}
+                    disabled={busy}
+                  />
                 </div>
               </CardContent></Card>
 
