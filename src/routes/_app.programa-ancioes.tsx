@@ -154,6 +154,8 @@ function Page() {
         </p>
       </div>
 
+      {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
+
       {loading ? <LoadingPanel /> : (
         <>
           {!isSuper && (
