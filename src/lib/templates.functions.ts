@@ -134,13 +134,22 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
 
     // Pre-carrega datas já preenchidas em cada tabela para merge NÃO-DESTRUTIVO.
     const [exField, exMeals, exTransp] = await Promise.all([
-      supabaseAdmin.from("field_assignments").select("event_date,period").eq("visit_id", data.visitId),
+      supabaseAdmin.from("field_assignments").select("event_date,period,meeting_time,meeting_point,acompanhante,acompanhante_for").eq("visit_id", data.visitId),
       supabaseAdmin.from("meals").select("meal_date").eq("visit_id", data.visitId),
       supabaseAdmin.from("transport_schedule").select("event_date").eq("visit_id", data.visitId),
     ]);
-    const fieldKey = (date: string, period: string | null | undefined) => `${date}|${period ?? "Manhã"}`;
-    const fieldDates = new Set(
-      (exField.data ?? []).map((r) => fieldKey(r.event_date as string, (r as { period?: string | null }).period ?? null)),
+    const norm = (v: unknown) => (typeof v === "string" ? v.trim().toLowerCase() : "");
+    const fieldSig = (date: string, period: string | null | undefined, mt: string | null | undefined, point: string | null | undefined, comp: string | null | undefined, compFor: string | null | undefined) =>
+      `${date}|${period ?? "Manhã"}|${norm(mt).slice(0, 5)}|${norm(point)}|${norm(comp)}|${norm(compFor)}`;
+    const fieldSigs = new Set(
+      (exField.data ?? []).map((r) => fieldSig(
+        r.event_date as string,
+        (r as { period?: string | null }).period ?? null,
+        (r as { meeting_time?: string | null }).meeting_time ?? null,
+        (r as { meeting_point?: string | null }).meeting_point ?? null,
+        (r as { acompanhante?: string | null }).acompanhante ?? null,
+        (r as { acompanhante_for?: string | null }).acompanhante_for ?? null,
+      )),
     );
     const mealDates = new Set((exMeals.data ?? []).map((r) => r.meal_date as string));
     const transpDates = new Set((exTransp.data ?? []).map((r) => r.event_date as string | null).filter(Boolean) as string[]);
@@ -153,8 +162,8 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
       const targetDate = dateAt(it.day_offset);
       if (it.kind === "study") {
         const periodVal = str(p.period) ?? "Manhã";
-        const key = fieldKey(targetDate, periodVal);
-        if (fieldDates.has(key)) { skipped++; continue; }
+        const sig = fieldSig(targetDate, periodVal, time(p.meeting_time), str(p.meeting_point), str(p.acompanhante), str(p.acompanhante_for));
+        if (fieldSigs.has(sig)) { skipped++; continue; }
         const { error: insErr } = await supabaseAdmin.from("field_assignments").insert({
           visit_id: data.visitId, event_date: targetDate,
           period: periodVal,
@@ -163,7 +172,7 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
           contact_phone: str(p.contact_phone), is_active: bool(p.is_active, true),
         });
         if (insErr) return { ok: false as const, error: insErr.message };
-        fieldDates.add(key); inserted++;
+        fieldSigs.add(sig); inserted++;
       } else if (it.kind === "meal") {
         if (mealDates.has(targetDate)) { skipped++; continue; }
         await supabaseAdmin.from("meals").insert({
