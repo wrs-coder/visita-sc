@@ -1,14 +1,15 @@
-// Cartão para o superintendente definir / remover a senha que protege a
-// aba "Anciãos" no acesso de visitantes (Corpo de Anciãos / ESC).
+// Cartão que gerencia a senha que protege a aba "Anciãos" no acesso de
+// visitantes (Corpo de Anciãos / ESC).
 //
-// Quando a senha é definida, os visitantes precisam digitá-la (uma vez
-// por sessão) ao abrir a aba "Anciãos" em /visitante/painel. O super
-// continua tendo acesso direto via /resumo-semana e /programa-ancioes.
+// - Apenas o COORDENADOR do corpo de anciãos define / atualiza / remove.
+// - Os demais anciãos cadastrados (secretário, sup. de serviço)
+//   visualizam a senha atual em texto puro.
+// - O superintendente NÃO vê nem gerencia este cartão.
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
-  getElderTabPasswordStatus,
+  getElderTabPasswordForElder,
   setElderTabPassword,
 } from "@/lib/elder-tab-password.functions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,29 +19,36 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Lock, LockOpen, Loader2 } from "lucide-react";
 
 export function ElderTabPasswordCard({ congregationId }: { congregationId: string }) {
-  const fnStatus = useServerFn(getElderTabPasswordStatus);
+  const fnLoad = useServerFn(getElderTabPasswordForElder);
   const fnSet = useServerFn(setElderTabPassword);
 
   const [loading, setLoading] = useState(true);
   const [isSet, setIsSet] = useState(false);
+  const [isCoordinator, setIsCoordinator] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const loadStatus = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fnStatus({ data: { congregationId } });
-      if (r.ok) setIsSet(r.isSet);
+      const r = await fnLoad({ data: { congregationId } });
+      if (r.ok) {
+        setIsSet(r.isSet);
+        setIsCoordinator(r.isCoordinator);
+        setCurrentPassword(r.password);
+      }
     } finally {
       setLoading(false);
     }
-  }, [congregationId, fnStatus]);
+  }, [congregationId, fnLoad]);
 
   useEffect(() => {
-    loadStatus();
-  }, [loadStatus]);
+    load();
+  }, [load]);
 
   const handleSave = async () => {
     if (password.length < 4) {
@@ -61,7 +69,7 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
       toast.success("Senha definida com sucesso.");
       setPassword("");
       setConfirm("");
-      setIsSet(true);
+      await load();
     } finally {
       setSaving(false);
     }
@@ -79,7 +87,7 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
       toast.success("Senha removida.");
       setPassword("");
       setConfirm("");
-      setIsSet(false);
+      await load();
     } finally {
       setSaving(false);
     }
@@ -100,9 +108,9 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Defina uma senha para proteger esta aba no acesso de visitantes (Corpo de
-          Anciãos / ESC). Você e o acesso de superintendente não precisam digitá-la.
-          Deixe em branco para liberar a aba para todos os visitantes.
+          {isCoordinator
+            ? "Como coordenador do corpo de anciãos, você define a senha que os visitantes (Corpo de Anciãos / ESC) precisam digitar para abrir esta aba. A senha fica visível para os demais anciãos cadastrados. Deixe em branco para liberar a aba para todos."
+            : "Senha definida pelo coordenador do corpo de anciãos. Os visitantes (Corpo de Anciãos / ESC) precisam digitá-la para abrir esta aba."}
         </p>
 
         {loading ? (
@@ -120,58 +128,85 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
               )}
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            {isSet && (
               <div className="space-y-1">
-                <Label htmlFor="elder-pw" className="text-xs">
-                  {isSet ? "Nova senha" : "Senha"}
-                </Label>
+                <Label className="text-xs">Senha atual</Label>
                 <div className="relative">
                   <Input
-                    id="elder-pw"
-                    type={showPw ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    maxLength={128}
-                    placeholder="Mín. 4 caracteres"
-                    autoComplete="new-password"
+                    readOnly
+                    type={showCurrent ? "text" : "password"}
+                    value={currentPassword}
+                    className="pr-9"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPw((v) => !v)}
+                    onClick={() => setShowCurrent((v) => !v)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showPw ? "Ocultar senha" : "Mostrar senha"}
+                    aria-label={showCurrent ? "Ocultar senha" : "Mostrar senha"}
                   >
-                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="elder-pw-confirm" className="text-xs">
-                  Confirmar senha
-                </Label>
-                <Input
-                  id="elder-pw-confirm"
-                  type={showPw ? "text" : "password"}
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  maxLength={128}
-                  placeholder="Repita a senha"
-                  autoComplete="new-password"
-                />
-              </div>
-            </div>
+            )}
 
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Button onClick={handleSave} disabled={saving || password.length === 0}>
-                {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                {isSet ? "Atualizar senha" : "Definir senha"}
-              </Button>
-              {isSet && (
-                <Button variant="outline" onClick={handleRemove} disabled={saving}>
-                  Remover senha
-                </Button>
-              )}
-            </div>
+            {isCoordinator && (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="elder-pw" className="text-xs">
+                      {isSet ? "Nova senha" : "Senha"}
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="elder-pw"
+                        type={showPw ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        maxLength={128}
+                        placeholder="Mín. 4 caracteres"
+                        autoComplete="new-password"
+                        className="pr-9"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPw((v) => !v)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={showPw ? "Ocultar senha" : "Mostrar senha"}
+                      >
+                        {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="elder-pw-confirm" className="text-xs">
+                      Confirmar senha
+                    </Label>
+                    <Input
+                      id="elder-pw-confirm"
+                      type={showPw ? "text" : "password"}
+                      value={confirm}
+                      onChange={(e) => setConfirm(e.target.value)}
+                      maxLength={128}
+                      placeholder="Repita a senha"
+                      autoComplete="new-password"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button onClick={handleSave} disabled={saving || password.length === 0}>
+                    {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                    {isSet ? "Atualizar senha" : "Definir senha"}
+                  </Button>
+                  {isSet && (
+                    <Button variant="outline" onClick={handleRemove} disabled={saving}>
+                      Remover senha
+                    </Button>
+                  )}
+                </div>
+              </>
+            )}
           </>
         )}
       </CardContent>
