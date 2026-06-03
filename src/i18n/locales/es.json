@@ -536,6 +536,11 @@
       "closingPrayer": "Oración Final"
     }
   },
+  "elderProgram": {
+    "title": "Pastoreos, Recomendaciones y otros",
+    "subtitleSuper": "Defina los eventos de pastoreo, estímulo, recomendaciones y asuntos locales para la visita.",
+    "subtitleElder": "Edite los datos de pastoreo, estímulo, recomendaciones y asuntos locales definidos por el superintendente."
+  },
   "support": {
     "title": "Apoya al Desarrollador ☕",
     "body": "Visita SC está hecho de hermano para hermano, 100% gratis y sin anuncios, con el objetivo de simplificar la rutina de la visita del superintendente. Si este proyecto ha sido útil en el circuito y deseas expresar tu gratitud, siéntete libre de enviar un apoyo voluntario como regalo. Es un gesto espontáneo de cariño que valora la dedicación invertida en esta app.",
