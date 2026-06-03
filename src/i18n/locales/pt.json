@@ -561,6 +561,11 @@
       "closingPrayer": "Oração Final"
     }
   },
+  "elderProgram": {
+    "title": "Pastoreios, Recomendações e outros",
+    "subtitleSuper": "Defina os eventos de pastoreio, encorajamento, recomendações e assuntos locais para a visita.",
+    "subtitleElder": "Edite os dados de pastoreio, encorajamento, recomendações e assuntos locais definidos pelo superintendente."
+  },
   "support": {
     "title": "Apoie o Desenvolvedor ☕",
     "body": "O Visita SC é feito de irmão para irmão, 100% gratuito e sem anúncios, com o objetivo de simplificar a rotina da visita do superintendente. Se este projeto tem sido útil no circuito e você deseja expressar sua gratidão, sinta-se à vontade para enviar um apoio voluntário em forma de presente. É um gesto espontâneo de carinho que valoriza a dedicação investida neste app.",
