@@ -22,7 +22,7 @@ import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 import { wifeListCoupleMessages, wifeCreateCoupleMessage, wifeMarkCoupleMessagesRead, type CoupleThread } from "@/lib/couple-messages.functions";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ElderProgramReadOnly, type ElderProgramEvent } from "@/components/visit-summary/ElderProgramReadOnly";
+import { type ElderProgramEvent } from "@/components/visit-summary/ElderProgramReadOnly";
 import { ElderTabGate } from "@/components/visit-summary/ElderTabGate";
 
 
