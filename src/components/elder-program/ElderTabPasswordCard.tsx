@@ -68,7 +68,7 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
   };
 
   const handleRemove = async () => {
-    if (!confirm.length && !window.confirm("Remover a senha? A aba ficará livre para todos os visitantes.")) return;
+    if (!window.confirm("Remover a senha? A aba ficará livre para todos os visitantes.")) return;
     setSaving(true);
     try {
       const r = await fnSet({ data: { congregationId, newPassword: "" } });
