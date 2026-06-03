@@ -226,6 +226,16 @@ function Page() {
           })}
         </>
       )}
+      <ElderExecutiveReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        visitTitle={visit.title}
+        sections={sections}
+        pastoral={pastoral}
+        encouragement={encouragement}
+        recommendations={recommendations}
+        local={local}
+      />
     </div>
   );
 }
