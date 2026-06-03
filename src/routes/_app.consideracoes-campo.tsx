@@ -28,7 +28,11 @@ import {
   Cloud,
   CloudUpload,
   CloudDownload,
+  RefreshCw,
 } from "lucide-react";
+import { eachDayOfInterval, format, parseISO } from "date-fns";
+import { useActiveVisit } from "@/hooks/use-active-visit";
+import { isOfflineMode } from "@/lib/connection-mode";
 import {
   Dialog,
   DialogContent,
