@@ -153,7 +153,9 @@ function Page() {
 
       {loading ? <LoadingPanel /> : (
         <>
-          <ElderTabPasswordCard congregationId={visit.congregation_id} />
+          {!isSuper && (
+            <ElderTabPasswordCard congregationId={visit.congregation_id} />
+          )}
           {SECTIONS.map((section) => {
             const events = listFor(section);
             const canAddManual = section === "recommendations" && canEdit;
