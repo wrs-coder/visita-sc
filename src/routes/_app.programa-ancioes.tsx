@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ElderTabPasswordCard } from "@/components/elder-program/ElderTabPasswordCard";
+import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
 export const Route = createFileRoute("/_app/programa-ancioes")({ component: Page });
 
