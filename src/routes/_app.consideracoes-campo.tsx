@@ -28,7 +28,11 @@ import {
   Cloud,
   CloudUpload,
   CloudDownload,
+  RefreshCw,
 } from "lucide-react";
+import { eachDayOfInterval, format, parseISO } from "date-fns";
+import { useActiveVisit } from "@/hooks/use-active-visit";
+import { isOfflineMode } from "@/lib/connection-mode";
 import {
   Dialog,
   DialogContent,
@@ -1681,6 +1685,75 @@ function NoteEditor({
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
+  const { visit } = useActiveVisit();
+  const [syncing, setSyncing] = useState(false);
+  const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
+
+  const isWeekConsiderations = draft.folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS;
+  const canSync = isField && isWeekConsiderations && !!draft.event_date && !!draft.period && !!visit;
+  const offline = isOfflineMode();
+
+  const handleSyncFromField = async () => {
+    if (!canSync || !visit) return;
+    setSyncing(true);
+    try {
+      const weekdayMap: Record<string, number> = {
+        sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+      };
+      const dow = weekdayMap[String(draft.event_date)];
+      if (dow === undefined) {
+        toast.info(t("fieldConsiderations.syncFromField.empty"));
+        return;
+      }
+      const days = eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) });
+      const day = days.find((d) => d.getDay() === dow);
+      if (!day) {
+        toast.info(t("fieldConsiderations.syncFromField.empty"));
+        return;
+      }
+      const dateKey = format(day, "yyyy-MM-dd");
+      const periodLabelMap: Record<string, string> = {
+        morning: t("meetingsTalks.field.morning"),
+        afternoon: t("meetingsTalks.field.afternoon"),
+        evening: t("meetingsTalks.field.evening", { defaultValue: "Noite" }),
+      };
+      const periodLabel = periodLabelMap[String(draft.period)] ?? String(draft.period);
+      const { data, error } = await supabase
+        .from("field_meetings")
+        .select("territory_number,territory_location,auxiliary_leaders,closing_prayer")
+        .eq("visit_id", visit.id)
+        .eq("event_date", dateKey)
+        .eq("period", periodLabel)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      if (!data) {
+        toast.info(t("fieldConsiderations.syncFromField.empty"));
+        return;
+      }
+      const parts: string[] = [];
+      if (data.territory_number && String(data.territory_number).trim()) {
+        parts.push(`S-13 nº ${String(data.territory_number).trim()}`);
+      }
+      if (data.territory_location && String(data.territory_location).trim()) {
+        parts.push(String(data.territory_location).trim());
+      }
+      const territoryValue = parts.join(" — ");
+      onPatch("territory", territoryValue);
+      onPatch("assistants", data.auxiliary_leaders ?? "");
+      onPatch("prayer", data.closing_prayer ?? "");
+      setLastSyncAt(Date.now());
+      toast.success(t("fieldConsiderations.syncFromField.success"));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
 
   return (
     <div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words pb-24">
@@ -1778,7 +1851,28 @@ function NoteEditor({
 
         {isField ? (
           <>
+            {canSync && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSyncFromField}
+                  disabled={syncing || offline}
+                  title={offline ? t("fieldConsiderations.syncFromField.offline") : undefined}
+                >
+                  <RefreshCw className={cn("h-4 w-4 mr-1.5", syncing && "animate-spin")} />
+                  {t("fieldConsiderations.syncFromField.button")}
+                </Button>
+                {lastSyncAt && (
+                  <span className="text-[11px] text-muted-foreground">
+                    {t("fieldConsiderations.syncFromField.lastSync")}: {new Date(lastSyncAt).toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+            )}
             <div className="grid gap-3 md:grid-cols-2 w-full max-w-full min-w-0">
+
               <div className="grid gap-1.5 min-w-0">
                 <Label>{t("fieldConsiderations.fields.prayer")}</Label>
                 <Input
