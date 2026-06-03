@@ -17,6 +17,10 @@ import {
   listMeetingTalkTemplates,
   applyMeetingTalkTemplateForVisit,
 } from "@/lib/meeting-talk-templates.functions";
+import {
+  listElderProgramTemplates,
+  applyElderProgramTemplateToVisit,
+} from "@/lib/elder-program-templates.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,12 +87,15 @@ function Page() {
   const fnListChecklist = useServerFn(listChecklistTemplates);
   const fnListMeetingTalk = useServerFn(listMeetingTalkTemplates);
   const fnApplyMeetingTalk = useServerFn(applyMeetingTalkTemplateForVisit);
+  const fnListElderProgram = useServerFn(listElderProgramTemplates);
+  const fnApplyElderProgram = useServerFn(applyElderProgramTemplateToVisit);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [congs, setCongs] = useState<Cong[]>([]);
   const [tpls, setTpls] = useState<{ id: string; slot: number; name: string }[]>([]);
   const [checklistTpls, setChecklistTpls] = useState<{ id: string; name: string }[]>([]);
   const [fieldTpls, setFieldTpls] = useState<{ id: string; name: string }[]>([]);
   const [meetingTalkTpls, setMeetingTalkTpls] = useState<{ id: string; name: string }[]>([]);
+  const [elderProgramTpls, setElderProgramTpls] = useState<{ id: string; name: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -101,6 +108,7 @@ function Page() {
     checklist_template_id: "",
     field_template_id: "",
     meeting_talk_template_id: "",
+    elder_program_template_id: "",
     substitute_name: "",
     substitute_phone: "",
   });
@@ -136,7 +144,15 @@ function Page() {
           name: t.name,
         })),
       );
-  }, [isSuper, fnList, fnTpls, fnListChecklist, fnListField, fnListMeetingTalk]);
+    const er = await fnListElderProgram();
+    if (er.ok)
+      setElderProgramTpls(
+        ((er as { templates?: { id: string; name: string }[] }).templates ?? []).map((t) => ({
+          id: t.id,
+          name: t.name,
+        })),
+      );
+  }, [isSuper, fnList, fnTpls, fnListChecklist, fnListField, fnListMeetingTalk, fnListElderProgram]);
 
   useEffect(() => {
     loadCongs();
@@ -203,6 +219,7 @@ function Page() {
       checklist_template_id: "",
       field_template_id: "",
       meeting_talk_template_id: "",
+      elder_program_template_id: "",
       substitute_name: "",
       substitute_phone: "",
     });
@@ -252,6 +269,7 @@ function Page() {
       checklist_template_id: "",
       field_template_id: "",
       meeting_talk_template_id: "",
+      elder_program_template_id: "",
       substitute_name: v.substitute_name ?? "",
       substitute_phone: v.substitute_phone ?? "",
     });
@@ -310,6 +328,10 @@ function Page() {
             const r = await fnApplyMeetingTalk({ data: { visitId: editId, templateId: form.meeting_talk_template_id } });
             if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
           }
+          if (form.elder_program_template_id) {
+            const r = await fnApplyElderProgram({ data: { visitId: editId, templateId: form.elder_program_template_id } });
+            if (!r.ok) toast.error("Falha ao aplicar modelo de programação dos anciãos: " + r.error);
+          }
           toast.success("Visita atualizada");
         }
         setOpen(false);
@@ -349,6 +371,10 @@ function Page() {
       if (form.meeting_talk_template_id) {
         const r = await fnApplyMeetingTalk({ data: { visitId: data.id, templateId: form.meeting_talk_template_id } });
         if (!r.ok) toast.error("Falha ao aplicar modelo de reunião e discurso: " + r.error);
+      }
+      if (form.elder_program_template_id) {
+        const r = await fnApplyElderProgram({ data: { visitId: data.id, templateId: form.elder_program_template_id } });
+        if (!r.ok) toast.error("Falha ao aplicar modelo de programação dos anciãos: " + r.error);
       }
       toast.success("Visita criada");
       setOpen(false);
@@ -650,6 +676,29 @@ function Page() {
                   {meetingTalkTpls.length === 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Crie um modelo em "Modelos de Reunião e Discurso" para aplicá-lo aqui.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label>Modelo Programação Anciãos</Label>
+                  <Select
+                    value={form.elder_program_template_id || ""}
+                    onValueChange={(v) => setForm({ ...form, elder_program_template_id: v })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecione… (opcional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {elderProgramTpls.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {elderProgramTpls.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Crie um modelo em "Modelo Programação Anciãos" para aplicá-lo aqui.
                     </p>
                   )}
                 </div>

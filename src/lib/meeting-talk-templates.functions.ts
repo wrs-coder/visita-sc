@@ -349,24 +349,26 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
       else await supabaseAdmin.from("weekend_meetings").insert(payload);
     }
 
+    // Resolução compartilhada de weekday → datetime ISO (dentro da janela da visita)
+    const startD = new Date(visit.start_date + "T00:00:00");
+    const endD = new Date(visit.end_date + "T00:00:00");
+    // 0 = segunda...6 = domingo (convenção do app); getDay(): 0=Domingo..6=Sábado
+    const toAppWeekday = (d: Date) => (d.getDay() + 6) % 7;
+    const resolveDate = (weekday: number | null | undefined, time: string | null | undefined): string | null => {
+      if (weekday === null || weekday === undefined || !time) return null;
+      for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+        if (toAppWeekday(d) === weekday) {
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          return new Date(`${yyyy}-${mm}-${dd}T${time}`).toISOString();
+        }
+      }
+      return null;
+    };
+
     // Pioneer: resolve weekday → data dentro da visita
     {
-      const startD = new Date(visit.start_date + "T00:00:00");
-      const endD = new Date(visit.end_date + "T00:00:00");
-      // 0 = segunda...6 = domingo (convenção do app); getDay(): 0=Domingo..6=Sábado
-      const toAppWeekday = (d: Date) => (d.getDay() + 6) % 7;
-      const resolveDate = (weekday: number | null | undefined, time: string | null | undefined): string | null => {
-        if (weekday === null || weekday === undefined || !time) return null;
-        for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
-          if (toAppWeekday(d) === weekday) {
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, "0");
-            const dd = String(d.getDate()).padStart(2, "0");
-            return new Date(`${yyyy}-${mm}-${dd}T${time}`).toISOString();
-          }
-        }
-        return null;
-      };
       const meetingAt = resolveDate(pioneer.data?.weekday ?? null, pioneer.data?.meeting_time ?? null);
       const superMeetingAt = meetingAt;
       const { data: existing } = await supabaseAdmin
@@ -384,8 +386,9 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
       else await supabaseAdmin.from("pioneer_meetings").insert(payload);
     }
 
-    // Elders: upsert
+    // Elders: upsert (resolve weekday → meeting_at, mesmo padrão dos pioneiros)
     {
+      const eldersMeetingAt = resolveDate(elders.data?.weekday ?? null, elders.data?.meeting_time ?? null);
       const { data: existing } = await supabaseAdmin
         .from("elders_servants_meetings").select("id").eq("visit_id", data.visitId).maybeSingle();
       const payload = {
@@ -393,6 +396,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
         theme: elders.data?.theme ?? null,
         opening_prayer: elders.data?.opening_prayer ?? null,
         closing_prayer: elders.data?.closing_prayer ?? null,
+        meeting_at: eldersMeetingAt,
       };
       if (existing) await supabaseAdmin.from("elders_servants_meetings").update(payload).eq("id", existing.id);
       else await supabaseAdmin.from("elders_servants_meetings").insert(payload);
