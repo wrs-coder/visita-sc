@@ -165,6 +165,77 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
       return (a.start_time ?? "").localeCompare(b.start_time ?? "");
     });
 
+    // Programa de Anciãos (Pastoreios / Encorajamento / Recomendações / Assuntos locais).
+    const elderCols =
+      "id,source,sort_order,slot_label,companion,family_name,address,family_members,spiritual_info,category,person_name,contact,health_info,purpose,full_name,field_group,info,suggested_by,subject,sources";
+    const [epSecs, epSlots, epPas, epEnc, epRec, epLoc] = await Promise.all([
+      supabase.from("elder_program_visit_sections").select("section,additional_info").eq("visit_id", visit.id),
+      supabase.from("elder_program_visit_slots").select("id,label,sort_order").eq("visit_id", visit.id).order("sort_order"),
+      supabase.from("elder_pastoral_visits").select(elderCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
+      supabase.from("elder_encouragements").select(elderCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
+      supabase.from("elder_recommendations").select(elderCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
+      supabase.from("elder_local_matters").select(elderCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
+    ]);
+    type ElderEventRow = {
+      id: string;
+      source: "manual" | "template" | null;
+      sort_order: number;
+      slot_label: string | null;
+      companion: string | null;
+      family_name: string | null;
+      address: string | null;
+      family_members: string | null;
+      spiritual_info: string | null;
+      category: "inactive" | "sick" | "special_privileges" | null;
+      person_name: string | null;
+      contact: string | null;
+      health_info: string | null;
+      purpose: "ministerial_servant" | "elder" | "redesignation" | "removal" | "cca_change" | null;
+      full_name: string | null;
+      field_group: string | null;
+      info: string | null;
+      suggested_by: string | null;
+      subject: string | null;
+      sources: string | null;
+    };
+    const epSections = { pastoral: "", encouragement: "", recommendations: "", local: "" };
+    ((epSecs.data ?? []) as Array<{ section: string; additional_info: string | null }>).forEach((r) => {
+      if (r.section === "pastoral" || r.section === "encouragement" || r.section === "recommendations" || r.section === "local") {
+        epSections[r.section as keyof typeof epSections] = r.additional_info ?? "";
+      }
+    });
+    const mapRows = (rows: unknown): ElderEventRow[] =>
+      ((rows ?? []) as Array<Partial<ElderEventRow>>).map((r) => ({
+        id: r.id as string,
+        source: (r.source as ElderEventRow["source"]) ?? "manual",
+        sort_order: r.sort_order ?? 0,
+        slot_label: r.slot_label ?? null,
+        companion: r.companion ?? null,
+        family_name: r.family_name ?? null,
+        address: r.address ?? null,
+        family_members: r.family_members ?? null,
+        spiritual_info: r.spiritual_info ?? null,
+        category: r.category ?? null,
+        person_name: r.person_name ?? null,
+        contact: r.contact ?? null,
+        health_info: r.health_info ?? null,
+        purpose: r.purpose ?? null,
+        full_name: r.full_name ?? null,
+        field_group: r.field_group ?? null,
+        info: r.info ?? null,
+        suggested_by: r.suggested_by ?? null,
+        subject: r.subject ?? null,
+        sources: r.sources ?? null,
+      }));
+    const elderProgram = {
+      sections: epSections,
+      slots: ((epSlots.data ?? []) as Array<{ id: string; label: string }>).map((s) => ({ id: s.id, label: s.label })),
+      pastoral: mapRows(epPas.data),
+      encouragement: mapRows(epEnc.data),
+      recommendations: mapRows(epRec.data),
+      local: mapRows(epLoc.data),
+    };
+
     const payload = {
       ok: true as const,
       wifeMode: false,
@@ -181,6 +252,7 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
       weekend: weekend ?? [],
       pioneer: pioneer ?? [],
       elders: elders ?? [],
+      elderProgram,
     };
     return JSON.parse(JSON.stringify(payload)) as typeof payload;
   });
