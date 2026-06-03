@@ -61,6 +61,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const contentRef = useRef<HTMLDivElement | null>(null);
   const textRef = useRef<HTMLDivElement | null>(null);
+  const lastTapRef = useRef<number>(0);
   const dragRef = useRef<{
     startX: number;
     startY: number;
@@ -68,6 +69,20 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
     baseY: number;
     pointerId: number;
   } | null>(null);
+
+  const handleDoubleTapClose = useCallback(() => {
+    setOpen(false);
+  }, []);
+
+  const handleTextTouchEnd = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 350) {
+      setOpen(false);
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  }, []);
 
   useEffect(() => {
     if (!open) setOffset({ x: 0, y: 0 });
@@ -274,6 +289,10 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
         align="start"
         style={{ marginLeft: offset.x, marginTop: offset.y }}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         {/* Alça de arrasto + fechar */}
         <div
@@ -364,6 +383,8 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
               ref={textRef}
               className={textContainerClass}
               style={fontScale !== 1 ? { fontSize: `${fontScale}rem` } : undefined}
+              onDoubleClick={handleDoubleTapClose}
+              onTouchEnd={handleTextTouchEnd}
             >
               {isRange || isList ? (
                 <p>

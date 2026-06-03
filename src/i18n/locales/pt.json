@@ -1343,7 +1343,14 @@
     "edit": "Editar nota",
     "detected": "Versículos detectados",
     "detectedEmpty": "Digite uma citação (ex.: João 3:16) para visualizar.",
-    "contentEmpty": "Sem conteúdo."
+    "contentEmpty": "Sem conteúdo.",
+    "syncFromField": {
+      "button": "Sincronizar com Reuniões e Discursos → Campo",
+      "success": "Campos sincronizados com a reunião de campo.",
+      "empty": "Nenhuma reunião de campo encontrada para esse dia e turno.",
+      "offline": "Disponível apenas online",
+      "lastSync": "Última sincronização"
+    }
   },
   "personalOutlines": {
     "title": "Esboços Pessoais",

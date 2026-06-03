@@ -1317,7 +1317,14 @@
     "edit": "Editar nota",
     "detected": "Versículos detectados",
     "detectedEmpty": "Escribe una cita (ej. Juan 3:16) para previsualizar.",
-    "contentEmpty": "Sin contenido."
+    "contentEmpty": "Sin contenido.",
+    "syncFromField": {
+      "button": "Sincronizar con Reuniones y Discursos → Campo",
+      "success": "Campos sincronizados con la reunión de campo.",
+      "empty": "No se encontró reunión de campo para ese día y turno.",
+      "offline": "Disponible solo en línea",
+      "lastSync": "Última sincronización"
+    }
   },
   "personalOutlines": {
     "title": "Bosquejos Personales",
