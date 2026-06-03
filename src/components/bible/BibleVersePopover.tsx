@@ -383,6 +383,8 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
               ref={textRef}
               className={textContainerClass}
               style={fontScale !== 1 ? { fontSize: `${fontScale}rem` } : undefined}
+              onDoubleClick={handleDoubleTapClose}
+              onTouchEnd={handleTextTouchEnd}
             >
               {isRange || isList ? (
                 <p>
