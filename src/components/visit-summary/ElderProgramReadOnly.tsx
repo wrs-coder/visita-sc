@@ -179,9 +179,9 @@ function ElderEventCardReadOnly({
 
 function ReadField({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) {
   return (
-    <div>
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">{label}</div>
-      <div className={`text-sm ${multiline ? "whitespace-pre-wrap" : ""}`}>{value}</div>
+    <div className="min-w-0">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium break-words">{label}</div>
+      <div className={`text-sm break-words ${multiline ? "whitespace-pre-wrap" : ""}`}>{value}</div>
     </div>
   );
 }
