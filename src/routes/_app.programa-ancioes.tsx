@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ElderTabPasswordCard } from "@/components/elder-program/ElderTabPasswordCard";
+import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
 export const Route = createFileRoute("/_app/programa-ancioes")({ component: Page });
 
@@ -60,8 +61,10 @@ const REC_PURPOSE_OPTIONS: Array<{ value: NonNullable<ElderVisitEventDTO["purpos
 ];
 
 function Page() {
-  const { canEdit, role } = useAuth();
+  const { canEdit: canEditAuth, role } = useAuth();
   const isSuper = role === "superintendent";
+  const [editEnabled, setEditEnabled] = useState(false);
+  const canEdit = isSuper ? editEnabled : canEditAuth;
   const { visit, loading: visitLoading } = useActiveVisit();
   const fnLoad = useServerFn(listElderProgramForVisit);
   const fnUpdate = useServerFn(updateElderProgramEvent);
@@ -150,6 +153,8 @@ function Page() {
           Semana da Visita — {visit.title}
         </p>
       </div>
+
+      {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
 
       {loading ? <LoadingPanel /> : (
         <>
