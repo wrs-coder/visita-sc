@@ -274,6 +274,10 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
         align="start"
         style={{ marginLeft: offset.x, marginTop: offset.y }}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         {/* Alça de arrasto + fechar */}
         <div
