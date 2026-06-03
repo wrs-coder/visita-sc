@@ -1851,7 +1851,28 @@ function NoteEditor({
 
         {isField ? (
           <>
+            {canSync && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSyncFromField}
+                  disabled={syncing || offline}
+                  title={offline ? t("fieldConsiderations.syncFromField.offline") : undefined}
+                >
+                  <RefreshCw className={cn("h-4 w-4 mr-1.5", syncing && "animate-spin")} />
+                  {t("fieldConsiderations.syncFromField.button")}
+                </Button>
+                {lastSyncAt && (
+                  <span className="text-[11px] text-muted-foreground">
+                    {t("fieldConsiderations.syncFromField.lastSync")}: {new Date(lastSyncAt).toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+            )}
             <div className="grid gap-3 md:grid-cols-2 w-full max-w-full min-w-0">
+
               <div className="grid gap-1.5 min-w-0">
                 <Label>{t("fieldConsiderations.fields.prayer")}</Label>
                 <Input
