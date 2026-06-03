@@ -14,6 +14,8 @@ import {
   type ElderSection,
   type ElderProgramEventDTO,
 } from "@/lib/elder-program-templates.functions";
+import { exportElderProgramTemplate, importElderProgramTemplate } from "@/lib/template-io.functions";
+import { TemplateIOButtons } from "@/components/TemplateIOButtons";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +93,8 @@ function Page() {
   const fnDup = useServerFn(duplicateElderProgramTemplate);
   const fnDel = useServerFn(deleteElderProgramTemplate);
   const fnSave = useServerFn(saveElderProgramTemplate);
+  const fnExport = useServerFn(exportElderProgramTemplate);
+  const fnImport = useServerFn(importElderProgramTemplate);
   
 
   const [tpls, setTpls] = useState<TemplateRow[]>([]);
