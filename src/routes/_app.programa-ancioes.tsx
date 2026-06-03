@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveVisit } from "@/hooks/use-active-visit";
@@ -31,6 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ElderTabPasswordCard } from "@/components/elder-program/ElderTabPasswordCard";
+import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
 export const Route = createFileRoute("/_app/programa-ancioes")({ component: Page });
 
@@ -60,8 +62,11 @@ const REC_PURPOSE_OPTIONS: Array<{ value: NonNullable<ElderVisitEventDTO["purpos
 ];
 
 function Page() {
-  const { canEdit, role } = useAuth();
+  const { t } = useTranslation();
+  const { canEdit: canEditAuth, role } = useAuth();
   const isSuper = role === "superintendent";
+  const [editEnabled, setEditEnabled] = useState(false);
+  const canEdit = isSuper ? editEnabled : canEditAuth;
   const { visit, loading: visitLoading } = useActiveVisit();
   const fnLoad = useServerFn(listElderProgramForVisit);
   const fnUpdate = useServerFn(updateElderProgramEvent);
@@ -147,9 +152,14 @@ function Page() {
           <BookOpen className="h-6 w-6" /> Pastoreios, Recomendações e outros
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
+          {isSuper ? t("elderProgram.subtitleSuper") : t("elderProgram.subtitleElder")}
+        </p>
+        <p className="text-sm text-muted-foreground mt-1">
           Semana da Visita — {visit.title}
         </p>
       </div>
+
+      {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
 
       {loading ? <LoadingPanel /> : (
         <>

@@ -561,6 +561,11 @@
       "closingPrayer": "Closing Prayer"
     }
   },
+  "elderProgram": {
+    "title": "Shepherding, Recommendations & Others",
+    "subtitleSuper": "Set up shepherding, encouragement, recommendations and local matters events for the visit.",
+    "subtitleElder": "Edit shepherding, encouragement, recommendations and local matters data set by the superintendent."
+  },
   "support": {
     "title": "Support the Developer ☕",
     "body": "Visita SC is made from brother to brother, 100% free and ad-free, aiming to simplify the circuit overseer's visit routine. If this project has been useful in the circuit and you'd like to express your gratitude, feel free to send voluntary support as a gift. It's a spontaneous gesture of kindness that values the dedication invested in this app.",
