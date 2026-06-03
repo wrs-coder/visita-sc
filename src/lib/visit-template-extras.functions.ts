@@ -2,38 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  EMPTY_VISIT_TEMPLATE_EXTRAS,
+  type VisitTemplateExtras,
+} from "./visit-template-extras.shared";
 
-export interface VisitTemplateExtras {
-  field: { observations: string | null } | null;
-  midweek: { observations: string | null; final_song: string | null } | null;
-  weekend: {
-    opening_song: string | null;
-    closing_song: string | null;
-    observations: string | null;
-  } | null;
-  pioneer: { observations: string | null; weekday: number | null; meeting_time: string | null } | null;
-  elders: { observations: string | null; weekday: number | null; meeting_time: string | null } | null;
-  program: { general_observations: string | null } | null;
-}
-
-const EMPTY: VisitTemplateExtras = {
-  field: null,
-  midweek: null,
-  weekend: null,
-  pioneer: null,
-  elders: null,
-  program: null,
-};
+export type { VisitTemplateExtras } from "./visit-template-extras.shared";
 
 /**
- * Returns read-only "from template" extras for the visit's linked templates:
- *  - field_meeting_templates.observations
- *  - meeting_talk_template_midweek/pioneer/elders.observations
- *  - meeting_talk_templates weekend songs + observations
- *  - program_templates.general_observations
- *
- * Authorized for: the visit's superintendent OR a member of the visit's
- * congregation. Returns null fields when no template is linked.
+ * Returns read-only "from template" extras for the visit's linked templates.
+ * Authorized for: the visit's superintendent OR a member of the visit's congregation.
  */
 export const getVisitTemplateExtras = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -45,9 +23,8 @@ export const getVisitTemplateExtras = createServerFn({ method: "POST" })
       .select("id,congregation_id,meeting_talk_template_id,field_meeting_template_id,template_id")
       .eq("id", data.visitId)
       .maybeSingle();
-    if (!visit) return { ok: false as const, error: "Visita não encontrada.", extras: EMPTY };
+    if (!visit) return { ok: false as const, error: "Visita não encontrada.", extras: EMPTY_VISIT_TEMPLATE_EXTRAS };
 
-    // Authorization: user belongs to visit's congregation (profile) or is its super.
     const [{ data: cong }, { data: prof }] = await Promise.all([
       supabaseAdmin.from("congregations").select("superintendent_id").eq("id", visit.congregation_id).maybeSingle(),
       supabaseAdmin.from("profiles").select("congregation_id").eq("id", userId).maybeSingle(),
@@ -55,9 +32,9 @@ export const getVisitTemplateExtras = createServerFn({ method: "POST" })
     const allowed =
       (cong && cong.superintendent_id === userId) ||
       (prof && prof.congregation_id === visit.congregation_id);
-    if (!allowed) return { ok: false as const, error: "Não autorizado.", extras: EMPTY };
+    if (!allowed) return { ok: false as const, error: "Não autorizado.", extras: EMPTY_VISIT_TEMPLATE_EXTRAS };
 
-    const extras: VisitTemplateExtras = { ...EMPTY };
+    const extras: VisitTemplateExtras = { ...EMPTY_VISIT_TEMPLATE_EXTRAS };
 
     if (visit.field_meeting_template_id) {
       const { data: fm } = await supabaseAdmin
