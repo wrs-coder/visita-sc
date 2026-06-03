@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ElderTabPasswordCard } from "@/components/elder-program/ElderTabPasswordCard";
 
 export const Route = createFileRoute("/_app/programa-ancioes")({ component: Page });
 
