@@ -564,7 +564,9 @@ export const applyElderProgramTemplateToVisit = createServerFn({ method: "POST" 
         if (usedRowIds.has(rowId)) { skipped++; continue; }
         usedRowIds.add(rowId);
         const patch = nonDestructivePatch(section, dto, match, dto.id);
-        const { error } = await supabaseAdmin.from(tableFor(section)).update(patch).eq("id", rowId);
+        const { error } = await (supabaseAdmin.from(tableFor(section)) as unknown as {
+          update: (p: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> };
+        }).update(patch).eq("id", rowId);
         if (error) return { ok: false as const, error: error.message, inserted, updated, skipped };
         updated++;
       } else {
