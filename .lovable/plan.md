@@ -1,51 +1,54 @@
-## Plano
+## Confirmações iniciais
 
-### 1) Exportar/Importar JSON na aba "Modelo Programação Anciãos"
+1. **Diálogo de conflito de modelo:** opção padrão = **"Manter preenchimento dos anciãos"**. Sobrescrever exige clique consciente do SC.
+2. **Retenção do PDF de backup:** disponível até o **início da visita (terça-feira da semana, 00:00 no fuso da congregação)**. Depois disso uma rotina de limpeza remove o snapshot.
 
-Reaproveitar o mesmo padrão de `TemplateIOButtons` + `template-io.functions.ts` já usado em Checklist, Reuniões de Campo e Programação. A escolha de pasta já é nativa: `src/lib/share.ts` usa `showSaveFilePicker` quando o navegador suporta (Chrome/Edge/Opera desktop e Android) e cai para download/`Web Share` quando não — comportamento idêntico aos outros modelos, sem trabalho adicional.
+## Item 3 — Botão "Relatório executivo" em todas as abas de Semana da Visita
 
-**Backend** — em `src/lib/template-io.functions.ts`:
-- `exportElderProgramTemplate({ id })` — server fn protegida; lê `elder_program_templates` (verifica `superintendent_id = userId`), `elder_program_template_sections`, `elder_program_template_slots`, `elder_program_template_events`. Devolve `{ ok, file: { type: "elder_program_template", version: 1, exportedAt, name, sections: [{section, additional_info}], slots: [{label, sort_order}], events: [...todos os campos…] } }`.
-- `importElderProgramTemplate({ file })` — valida com `elderFileSchema` (zod com enums `pastoral|encouragement|recommendations|local`, `category`, `purpose`); cria novo `elder_program_templates` com `congregation_id: null`, depois insere sections/slots/events em lote. Aplica `assertUnderLimit` (limite ≤ MAX=50, igual ao usado na página).
+Replicar o padrão de `/programa-ancioes` (componente `ElderExecutiveReportDialog`): botão `<FileDown /> Relatório executivo` no cabeçalho da página, diálogo com checkboxes de seções, geração via `jspdf` e download via `saveBlob` (já cobre Web Share / File System Access / Capacitor).
 
-**Frontend** — em `src/routes/_app.modelo-programacao-ancioes.tsx`:
-- Importar `TemplateIOButtons` e as duas novas server fns.
-- Renderizar `<TemplateIOButtons filenameBase={tpl?.name ?? "programacao-ancioes"} onExport={...} onImport={...} disabled={!tpl}/>` na barra de ações do modelo selecionado (ao lado de Duplicar/Salvar), espelhando `_app.modelo-reunioes-de-campo.tsx`.
-- Após importar com sucesso, recarregar lista de templates e selecionar o novo id.
+Abas que recebem o botão (cada uma com seu próprio `<Tab>ExecutiveReportDialog.tsx`, pois o conteúdo difere):
 
-Sem migração de banco. Sem mudanças de RLS (server fn usa `supabaseAdmin` com checagem de propriedade).
+| Rota | Seções selecionáveis no PDF |
+|---|---|
+| `/resumo-semana` | Eventos por dia, observações gerais |
+| `/comunicacao-casal` | Mensagens do casal por dia + observações |
+| `/escala` (Estudos de Campo) | Estudos por dia, anfitriões, observações |
+| `/reunioes-discursos` | Cada subaba como seção + observações + "Informações adicionais do superintendente" |
+| `/reunioes-de-campo` | Reuniões por dia/turno + observações + "Informações adicionais do superintendente" |
+| `/refeicoes` | Refeições por dia + observações por dia + gerais |
+| `/transporte` | Itens por dia + observações |
+| `/checklist` | Itens agrupados com status |
 
-### 2) "Relatório executivo" em PDF na aba "Pastoreios, Recomendações e outros"
+Padrão idêntico ao existente: `variant="outline" size="sm"` logo abaixo do título, checkboxes por seção, opção "Incluir Informações adicionais do superintendente", A4 retrato Helvetica, barra de título azul por seção, paginação, arquivo `relatorio-executivo-<aba>-<slug-visita>-<data>.pdf`, toasts `sonner`. Sem mudar lógica de negócio das abas; sem migrations.
 
-Botão novo no topo de `src/routes/_app.programa-ancioes.tsx` que abre um **Dialog de seleção de seções** e, ao confirmar, gera um PDF com layout de relatório executivo. Pasta de destino: usa `saveBlob` de `src/lib/share.ts`, que já chama `showSaveFilePicker` — o usuário escolhe a pasta nativamente.
+Reuso: extrair helpers de PDF (`writeText`, `ensure`, `slugify`, header, paginação) para `src/components/visit-week/pdf-utils.ts`. Componentes novos em `src/components/visit-week/`. O `ElderExecutiveReportDialog` existente fica intacto.
 
-**UI** — novo componente `src/components/elder-program/ElderExecutiveReportDialog.tsx`:
-- Checkboxes:
-  - Cabeçalho da visita (título + semana) — sempre incluído
-  - Informações adicionais do superintendente (por seção)
-  - Visitas de Pastoreio
-  - Encorajamento (Inativos, Doentes, Privilégios Especiais)
-  - Recomendações
-  - Assuntos locais
-- Botão "Gerar PDF". Sem renderização HTML intermediária: usa **jsPDF puro** (texto + auto-quebra), evitando o `html-to-image` do `VisitSummaryView` (que captura DOM e fica pesado para listas longas). Padrão A4, margens 12mm, fonte Helvetica, títulos de seção em destaque com filete inferior, eventos como blocos com labels (Dia/Horário, Acompanhante, Família, Endereço, etc.). Lida com quebra de página via `pdf.splitTextToSize` + controle de `cursorY`.
-- Nome do arquivo: `relatorio-executivo-ancioes-{slug(visit.title)}-{YYYY-MM-DD}.pdf`.
-- Chama `saveBlob(blob, { filename, mimeType: "application/pdf", pickerTypes: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }] })` — abre o seletor de pasta quando suportado.
-- Toasts de sucesso/falha (reaproveita chaves i18n `guest.export.pdf` / `pdfFail`).
+## Item 4 (novo) — Aviso ao excluir visita com preenchimento dos anciãos
 
-**Integração** — em `src/routes/_app.programa-ancioes.tsx`:
-- Estado `reportOpen`. Botão `<Button variant="outline" onClick={() => setReportOpen(true)}><FileDown/> Relatório executivo</Button>` no header da página, abaixo do subtítulo.
-- Passa para o dialog: `visit`, `sections`, `pastoral`, `encouragement`, `recommendations`, `local` (já carregados pela página).
-- Disponível para ambos: superintendente e anciãos (somente leitura nada impede gerar relatório).
+Hoje a exclusão usa `FinishVisitDialog` (e há também exclusão direta no itinerário). Adicionar verificação prévia + alerta amigável.
 
-**i18n** — adicionar chaves em `pt/en/es`:
-- `elderProgram.report.button`, `report.title`, `report.selectSections`, `report.sectionPastoral|encouragement|recommendations|local|info|header`, `report.generate`.
+### Comportamento
+- Quando o SC aciona "Excluir visita" no itinerário/cronograma:
+  - Antes de abrir o diálogo destrutivo, consultar quais tabelas-filhas da visita já têm conteúdo preenchido pelos anciãos.
+  - Se houver preenchimento → mostrar **card/diálogo amigável** com:
+    - Mensagem: "Os anciãos desta congregação já começaram a preencher a visita **{título}**."
+    - Lista resumida do que já foi preenchido (ex.: "3 refeições", "2 reuniões e discursos", "1 designação de campo", "Observações do casal preenchidas").
+    - Quem preencheu (nome do ancião) e quando (última edição), quando essa informação existir em `updated_by`/`updated_at`.
+    - Botão **"Manter visita agendada"** (padrão, destacado) e botão secundário **"Excluir mesmo assim"** (variante destructive). "Excluir mesmo assim" abre o fluxo de exclusão atual (S-303 etc.).
+  - Se não houver preenchimento → segue direto para o `FinishVisitDialog` atual, sem fricção adicional.
 
-### Arquivos afetados
+### Detalhes técnicos
+- Novo `createServerFn` em `src/lib/visit-deletion.functions.ts`:
+  - `getVisitFillSummary({ visitId })` com `requireSupabaseAuth`.
+  - Faz `count` em cada tabela-filha já listada em `CHILD_TABLES` (`meals`, `meal_day_notes`, `transport_schedule`, `field_assignments`, `field_meetings`, `schedule_events`, `checklist_items`, `midweek_meetings`, `weekend_meetings`, `pioneer_meetings`, `elders_servants_meetings`) considerando apenas linhas com conteúdo (campos texto/JSON não vazios) — não conta placeholders criados automaticamente.
+  - Retorna `{ hasContent: boolean, items: Array<{ label, count, lastEditor?, lastEditedAt? }> }`.
+- Novo componente `src/components/VisitDeletionGuardDialog.tsx` que envolve o gatilho de exclusão: chama a server fn, decide entre mostrar aviso ou abrir `FinishVisitDialog` direto.
+- Substituir os call-sites atuais do `FinishVisitDialog` (itinerário/cronograma) pelo wrapper.
+- Sem migrations; sem alterar regras de RLS (a contagem usa o cliente autenticado do SC, que já tem permissão de leitura nessas tabelas).
 
-- `src/lib/template-io.functions.ts` — novo `exportElderProgramTemplate` + `importElderProgramTemplate` + schema.
-- `src/routes/_app.modelo-programacao-ancioes.tsx` — botões IO no header do modelo.
-- `src/components/elder-program/ElderExecutiveReportDialog.tsx` — novo dialog + gerador PDF.
-- `src/routes/_app.programa-ancioes.tsx` — botão "Relatório executivo" + dialog.
-- `src/i18n/locales/{pt,en,es}.json` — novas chaves.
+## Fora de escopo desta entrega
+- Auto-aplicação dos modelos do SC nas visitas agendadas, diálogo de conflito por visita, snapshot/PDF de backup automático, notificação aos anciãos — esses pontos ficam apenas **confirmados** aqui (itens 1 e 2). Serão planejados em rodada separada, pois envolvem migrations (tabela de snapshots, job de limpeza por congregação), gatilho ao salvar modelo, e UI de notificação.
 
-Sem mudanças de banco, sem novas dependências (`jspdf` já está no projeto).
+## Pergunta antes de implementar
+- Posso entregar agora apenas os itens 3 (Relatório executivo em todas as abas) e 4 (aviso amigável antes de excluir visita), e abrir um plano separado para a auto-aplicação de modelos + PDF de backup + notificação? Mantém PRs pequenos e testáveis. Se preferir tudo junto, sinalize e eu expando este plano.
