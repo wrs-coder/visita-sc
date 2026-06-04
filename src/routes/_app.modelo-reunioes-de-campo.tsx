@@ -296,6 +296,24 @@ function Page() {
                   {t("templates.field.hint")}
                 </p>
 
+                <div>
+                  <Label>Informações adicionais do superintendente</Label>
+                  <CharCounterTextarea
+                    className="mt-1 min-h-[80px]"
+                    value={genObsByTpl[active.id] ?? ""}
+                    max={4000}
+                    onValueChange={(v) => setGenObsByTpl((m) => ({ ...m, [active.id]: v }))}
+                    onBlur={async () => {
+                      const val = genObsByTpl[active.id] ?? "";
+                      const original = (active as { observations?: string | null }).observations ?? "";
+                      if (val === original) return;
+                      const r = await fnUpdate({ data: { id: active.id, observations: val || null } });
+                      if (!r.ok) { toast.error(r.error); return; }
+                      setTpls((prev) => prev.map((tp) => tp.id === active.id ? { ...tp, observations: val } : tp));
+                    }}
+                  />
+                </div>
+
               </CardContent></Card>
 
 
