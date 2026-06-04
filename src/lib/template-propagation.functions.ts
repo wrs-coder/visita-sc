@@ -128,13 +128,14 @@ export const countPendingUpdatesForCongregation = createServerFn({ method: "POST
     z.object({ congregationId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data }) => {
+    const supabaseAdmin = await getAdmin();
     const today = new Date().toISOString().slice(0, 10);
     const { data: visits } = await supabaseAdmin
       .from("visits")
       .select("id")
       .eq("congregation_id", data.congregationId)
       .gt("start_date", today);
-    const ids = (visits ?? []).map((v) => v.id);
+    const ids = (visits ?? []).map((v: { id: string }) => v.id);
     if (!ids.length) return { ok: true as const, count: 0 };
     const { count } = await supabaseAdmin
       .from("visit_pending_updates")
