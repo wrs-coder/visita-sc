@@ -1,60 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  getAdmin,
+  groupThreads,
+  resolveWifeSuperId,
+  type CoupleMessage,
+} from "./couple-messages.server";
+
+export type { CoupleMessage, CoupleThread } from "./couple-messages.server";
 
 const codeSchema = z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4,12}$/);
-
-export type CoupleMessage = {
-  id: string;
-  superintendent_id: string;
-  parent_id: string | null;
-  author: "super" | "wife";
-  title: string | null;
-  body: string;
-  read_by_super: boolean;
-  read_by_wife: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-export type CoupleThread = {
-  root: CoupleMessage;
-  replies: CoupleMessage[];
-};
-
-function groupThreads(rows: CoupleMessage[]): CoupleThread[] {
-  const roots = rows.filter((r) => !r.parent_id);
-  const byParent = new Map<string, CoupleMessage[]>();
-  for (const r of rows) {
-    if (r.parent_id) {
-      const arr = byParent.get(r.parent_id) ?? [];
-      arr.push(r);
-      byParent.set(r.parent_id, arr);
-    }
-  }
-  return roots
-    .map((root) => ({
-      root,
-      replies: (byParent.get(root.id) ?? []).sort((a, b) =>
-        a.created_at.localeCompare(b.created_at),
-      ),
-    }))
-    .sort((a, b) => {
-      const al = a.replies[a.replies.length - 1]?.created_at ?? a.root.created_at;
-      const bl = b.replies[b.replies.length - 1]?.created_at ?? b.root.created_at;
-      return bl.localeCompare(al);
-    });
-}
-
-async function resolveWifeSuperId(inviteCode: string): Promise<string | null> {
-  const { data: prof } = await supabaseAdmin
-    .from("profiles")
-    .select("id")
-    .eq("wife_invite_code", inviteCode)
-    .maybeSingle();
-  return prof?.id ?? null;
-}
 
 // ===== Superintendente (autenticado) =====
 
@@ -136,6 +92,7 @@ export const wifeListCoupleMessages = createServerFn({ method: "POST" })
     z.object({ inviteCode: codeSchema }).parse(input),
   )
   .handler(async ({ data }) => {
+    const supabaseAdmin = getAdmin();
     const superId = await resolveWifeSuperId(data.inviteCode);
     if (!superId) return { ok: false as const, error: "Código inválido." };
     const { data: rows, error } = await supabaseAdmin
@@ -162,6 +119,7 @@ export const wifeCreateCoupleMessage = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
+    const supabaseAdmin = getAdmin();
     const superId = await resolveWifeSuperId(data.inviteCode);
     if (!superId) return { ok: false as const, error: "Código inválido." };
     const isReply = !!data.parentId;
@@ -183,6 +141,7 @@ export const wifeMarkCoupleMessagesRead = createServerFn({ method: "POST" })
     z.object({ inviteCode: codeSchema }).parse(input),
   )
   .handler(async ({ data }) => {
+    const supabaseAdmin = getAdmin();
     const superId = await resolveWifeSuperId(data.inviteCode);
     if (!superId) return { ok: false as const };
     await supabaseAdmin
