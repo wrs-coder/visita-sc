@@ -51,18 +51,17 @@ export async function recordTemplateChanged(
 ): Promise<void> {
   try {
     const table = TEMPLATE_TABLE[templateType];
-    // Tabelas dinâmicas — fora do mapa de tipos gerado do Supabase.
     const adminAny = supabaseAdmin as unknown as {
       from: (t: string) => {
         select: (cols: string) => {
-          eq: (c: string, v: unknown) => { maybeSingle: () => Promise<{ data: { id: string; congregation_id: string | null } | null }> };
+          eq: (c: string, v: unknown) => { maybeSingle: () => Promise<{ data: { id: string; congregation_id: string | null; name: string | null } | null }> };
           in: (c: string, v: string[]) => Promise<{ data: Array<{ id: string; name: string | null }> | null }>;
         };
       };
     };
     const { data: tpl } = await adminAny
       .from(table)
-      .select("id,congregation_id")
+      .select("id,congregation_id,name")
       .eq("id", templateId)
       .maybeSingle();
     if (!tpl?.congregation_id) return; // modelo "livre" — sem congregação vinculada
@@ -76,8 +75,17 @@ export async function recordTemplateChanged(
 
     if (!visits?.length) return;
 
-    // Limpa pendências NÃO resolvidas anteriores deste mesmo modelo para
-    // essas visitas (evita duplicatas e poluição) e insere as novas.
+    // Gera UM backup PDF por alteração e reaproveita o mesmo path em todas
+    // as pendências (econômico em storage e CPU).
+    const { generateTemplateBackupPdf } = await import("./template-backup.server");
+    const backupPath = await generateTemplateBackupPdf({
+      table,
+      templateType,
+      templateId,
+      congregationId: tpl.congregation_id,
+      templateName: tpl.name,
+    });
+
     const visitIds = visits.map((v) => v.id);
     await supabaseAdmin
       .from("visit_pending_updates")
@@ -92,6 +100,7 @@ export async function recordTemplateChanged(
       template_type: templateType,
       template_id: templateId,
       diff: { changed_at: new Date().toISOString() },
+      backup_pdf_path: backupPath,
     }));
     await supabaseAdmin.from("visit_pending_updates").insert(rows);
   } catch (err) {
@@ -137,6 +146,7 @@ export interface PendingUpdateRow {
   template_id: string;
   template_name: string | null;
   changed_at: string;
+  backup_pdf_path: string | null;
 }
 
 /**
@@ -161,7 +171,7 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
     const visitIds = visits.map((v) => v.id);
     const { data: rows, error } = await supabaseAdmin
       .from("visit_pending_updates")
-      .select("id,visit_id,template_type,template_id,diff,created_at")
+      .select("id,visit_id,template_type,template_id,diff,created_at,backup_pdf_path")
       .in("visit_id", visitIds)
       .is("resolved_at", null)
       .order("created_at", { ascending: false });
@@ -208,6 +218,7 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
           template_id: r.template_id,
           template_name: nameMap[`${t}:${r.template_id}`] ?? null,
           changed_at: diff.changed_at ?? r.created_at,
+          backup_pdf_path: (r as { backup_pdf_path: string | null }).backup_pdf_path ?? null,
         };
       }),
     };
@@ -244,4 +255,19 @@ export const dismissAllPendingUpdatesForVisit = createServerFn({ method: "POST" 
       .is("resolved_at", null);
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const };
+  });
+
+/**
+ * Retorna uma URL assinada (curta) para baixar o PDF de backup do bucket
+ * privado `visit-backups`. Acessível apenas a usuários autenticados.
+ */
+export const getBackupSignedUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ path: z.string().min(1).max(500) }).parse(input))
+  .handler(async ({ data }) => {
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from("visit-backups")
+      .createSignedUrl(data.path, 60 * 5); // 5 min
+    if (error || !signed) return { ok: false as const, error: error?.message ?? "Falha ao gerar URL" };
+    return { ok: true as const, url: signed.signedUrl };
   });

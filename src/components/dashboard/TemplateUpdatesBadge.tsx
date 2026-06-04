@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Bell, BellRing, Loader2, X } from "lucide-react";
+import { Bell, BellRing, Download, Loader2, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
   listPendingUpdatesForCongregation,
   dismissPendingUpdate,
   dismissAllPendingUpdatesForVisit,
+  getBackupSignedUrl,
   type PendingUpdateRow,
 } from "@/lib/template-propagation.functions";
 
@@ -38,6 +39,7 @@ export function TemplateUpdatesBadge({ congregationId }: Props) {
   const listFn = useServerFn(listPendingUpdatesForCongregation);
   const dismissFn = useServerFn(dismissPendingUpdate);
   const dismissAllFn = useServerFn(dismissAllPendingUpdatesForVisit);
+  const signFn = useServerFn(getBackupSignedUrl);
 
   const [count, setCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -103,6 +105,19 @@ export function TemplateUpdatesBadge({ congregationId }: Props) {
       }
     } catch (err) {
       toast.error("Falha ao dispensar", { description: (err as Error).message });
+    }
+  };
+
+  const handleDownloadBackup = async (path: string) => {
+    try {
+      const r = await signFn({ data: { path } });
+      if (r.ok) {
+        window.open(r.url, "_blank", "noopener,noreferrer");
+      } else {
+        toast.error("Falha ao baixar backup", { description: r.error });
+      }
+    } catch (err) {
+      toast.error("Falha ao baixar backup", { description: (err as Error).message });
     }
   };
 
@@ -199,15 +214,29 @@ export function TemplateUpdatesBadge({ congregationId }: Props) {
                             })}
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => handleDismiss(r.id)}
-                          aria-label="Dispensar"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          {r.backup_pdf_path && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => handleDownloadBackup(r.backup_pdf_path!)}
+                              aria-label="Baixar backup PDF"
+                              title="Baixar backup PDF do modelo antes da alteração"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleDismiss(r.id)}
+                            aria-label="Dispensar"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </li>
                     ))}
                   </ul>
