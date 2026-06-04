@@ -367,6 +367,7 @@ function Dashboard() {
       }
     })();
     return () => { cancelled = true; };
+  }, [role, visit?.id, fnLoadElder]);
 
 
 
