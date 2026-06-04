@@ -301,6 +301,7 @@ function LoadingPanel() {
 
 function EventCard({
   ev, slots, usedSlots, readOnly, canDelete, onChange, onDelete,
+  onScheduleInCronograma, onSaveToPrivateNotes,
 }: {
   ev: ElderVisitEventDTO;
   slots: string[];
@@ -309,6 +310,8 @@ function EventCard({
   canDelete: boolean;
   onChange: (patch: Partial<ElderVisitEventDTO>) => void;
   onDelete: () => void;
+  onScheduleInCronograma?: () => void;
+  onSaveToPrivateNotes?: () => void;
 }) {
   const [pendingSlot, setPendingSlot] = useState<string | null>(null);
   const [hideUsed, setHideUsed] = useState(false);
