@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { recordTemplateChanged } from "./template-propagation.functions";
 
 const MAX_TEMPLATES = 24;
 
@@ -253,6 +254,7 @@ export const replaceFieldMeetingTemplateItems = createServerFn({ method: "POST" 
       const { error } = await supabaseAdmin.from("field_meeting_template_items").insert(rows);
       if (error) return { ok: false as const, error: error.message };
     }
+    void recordTemplateChanged("field_meeting", data.templateId);
     return { ok: true as const };
   });
 
