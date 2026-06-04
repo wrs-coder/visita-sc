@@ -168,6 +168,8 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
     z.object({ congregationId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data }): Promise<{ ok: true; items: PendingUpdateRow[] } | { ok: false; error: string }> => {
+    const supabaseAdmin = await getAdmin();
+    type VisitRow = { id: string; title: string | null; start_date: string };
     const today = new Date().toISOString().slice(0, 10);
     const { data: visits, error: vErr } = await supabaseAdmin
       .from("visits")
@@ -177,7 +179,8 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
     if (vErr) return { ok: false, error: vErr.message };
     if (!visits?.length) return { ok: true, items: [] };
 
-    const visitIds = visits.map((v) => v.id);
+    const visitsTyped = visits as unknown as VisitRow[];
+    const visitIds = visitsTyped.map((v) => v.id);
     const { data: rows, error } = await supabaseAdmin
       .from("visit_pending_updates")
       .select("id,visit_id,template_type,template_id,diff,created_at,backup_pdf_path")
@@ -210,7 +213,7 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
       for (const tpl of tpls ?? []) nameMap[`${t}:${tpl.id}`] = tpl.name;
     }
 
-    const visitMap = new Map(visits.map((v) => [v.id, v]));
+    const visitMap = new Map(visitsTyped.map((v) => [v.id, v]));
     return {
       ok: true,
       items: rows.map((r) => {
