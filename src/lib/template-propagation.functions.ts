@@ -9,14 +9,8 @@ import {
   getAdmin,
   TEMPLATE_TABLE,
   TEMPLATE_TYPE_LABELS,
-  TEMPLATE_TYPES,
   type TemplateType,
 } from "./template-propagation.server";
-
-export { TEMPLATE_TYPES };
-export type { TemplateType };
-// Re-export do helper para os 4 *.templates.functions.ts existentes.
-export { recordTemplateChanged } from "./template-propagation.server";
 
 export const countPendingUpdatesForCongregation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
