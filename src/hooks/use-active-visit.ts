@@ -92,8 +92,12 @@ export function useActiveVisit(options: UseActiveVisitOptions = {}) {
 
   useEffect(() => {
     if (!enabled || !congId) return;
+    // Nome único por instância evita "cannot add postgres_changes callbacks
+    // after subscribe()" quando múltiplos componentes usam o hook em paralelo
+    // (ex.: rota Reuniões/Discursos + FieldMeetingsPanel).
+    const uniq = Math.random().toString(36).slice(2, 10);
     const ch = supabase
-      .channel(`visits-${congId}`)
+      .channel(`visits-${congId}-${uniq}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "visits", filter: `congregation_id=eq.${congId}` },
