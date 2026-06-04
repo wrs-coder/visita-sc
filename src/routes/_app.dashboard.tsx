@@ -1051,7 +1051,7 @@ function Dashboard() {
       {role === "superintendent" && visit && (
         <CollapsibleCard
           id="super-elder-program"
-          icon={<ShepherdIcon className="h-4 w-4 text-primary" />}
+          icon={<CuteSheepIcon className="h-4 w-4 text-primary" />}
           title="Pastoreiem o Rebanho de Deus"
           headerRight={
             <Link
