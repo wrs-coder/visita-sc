@@ -51,18 +51,17 @@ export async function recordTemplateChanged(
 ): Promise<void> {
   try {
     const table = TEMPLATE_TABLE[templateType];
-    // Tabelas dinâmicas — fora do mapa de tipos gerado do Supabase.
     const adminAny = supabaseAdmin as unknown as {
       from: (t: string) => {
         select: (cols: string) => {
-          eq: (c: string, v: unknown) => { maybeSingle: () => Promise<{ data: { id: string; congregation_id: string | null } | null }> };
+          eq: (c: string, v: unknown) => { maybeSingle: () => Promise<{ data: { id: string; congregation_id: string | null; name: string | null } | null }> };
           in: (c: string, v: string[]) => Promise<{ data: Array<{ id: string; name: string | null }> | null }>;
         };
       };
     };
     const { data: tpl } = await adminAny
       .from(table)
-      .select("id,congregation_id")
+      .select("id,congregation_id,name")
       .eq("id", templateId)
       .maybeSingle();
     if (!tpl?.congregation_id) return; // modelo "livre" — sem congregação vinculada
@@ -76,8 +75,17 @@ export async function recordTemplateChanged(
 
     if (!visits?.length) return;
 
-    // Limpa pendências NÃO resolvidas anteriores deste mesmo modelo para
-    // essas visitas (evita duplicatas e poluição) e insere as novas.
+    // Gera UM backup PDF por alteração e reaproveita o mesmo path em todas
+    // as pendências (econômico em storage e CPU).
+    const { generateTemplateBackupPdf } = await import("./template-backup.server");
+    const backupPath = await generateTemplateBackupPdf({
+      table,
+      templateType,
+      templateId,
+      congregationId: tpl.congregation_id,
+      templateName: tpl.name,
+    });
+
     const visitIds = visits.map((v) => v.id);
     await supabaseAdmin
       .from("visit_pending_updates")
@@ -92,6 +100,7 @@ export async function recordTemplateChanged(
       template_type: templateType,
       template_id: templateId,
       diff: { changed_at: new Date().toISOString() },
+      backup_pdf_path: backupPath,
     }));
     await supabaseAdmin.from("visit_pending_updates").insert(rows);
   } catch (err) {
