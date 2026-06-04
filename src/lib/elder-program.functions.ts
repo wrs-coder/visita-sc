@@ -1,7 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+// Carrega o admin client APENAS no servidor (dentro dos handlers / helpers
+// server-only). Module-scope `import` de client.server quebra o code-splitter
+// do TanStack quando o arquivo é alcançável a partir de rotas no client.
+async function getAdmin() {
+  const m = await import("@/integrations/supabase/client.server");
+  return m.supabaseAdmin;
+}
 
 const sectionEnum = z.enum(["pastoral", "encouragement", "recommendations", "local"]);
 type SectionT = z.infer<typeof sectionEnum>;
@@ -64,7 +71,9 @@ function toDTO(r: Record<string, unknown>, section: SectionT): ElderVisitEventDT
   };
 }
 
-async function ensureCanEdit(userId: string, visitId: string) {
+type AdminClient = Awaited<ReturnType<typeof getAdmin>>;
+
+async function ensureCanEdit(supabaseAdmin: AdminClient, userId: string, visitId: string) {
   const { data: v } = await supabaseAdmin
     .from("visits").select("id,congregation_id").eq("id", visitId).maybeSingle();
   if (!v) return { ok: false as const, error: "Visita não encontrada.", isSuper: false };
@@ -84,6 +93,7 @@ export const listElderProgramForVisit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
+    const supabaseAdmin = await getAdmin();
     const { userId } = context;
     const { data: v } = await supabaseAdmin
       .from("visits").select("id,congregation_id").eq("id", data.visitId).maybeSingle();
@@ -156,7 +166,7 @@ const updateInputSchema = z.object({
 });
 
 // Cada update precisa ser explícito por tabela para preservar os tipos do Supabase.
-async function applyUpdate(section: SectionT, id: string, visitId: string, patch: Record<string, unknown>) {
+async function applyUpdate(supabaseAdmin: AdminClient, section: SectionT, id: string, visitId: string, patch: Record<string, unknown>) {
   if (section === "pastoral") {
     return supabaseAdmin.from("elder_pastoral_visits").update({
       sort_order: patch.sort_order as number | undefined,
@@ -202,10 +212,11 @@ export const updateElderProgramEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => updateInputSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const supabaseAdmin = await getAdmin();
     const { userId } = context;
-    const auth = await ensureCanEdit(userId, data.visitId);
+    const auth = await ensureCanEdit(supabaseAdmin, userId, data.visitId);
     if (!auth.ok) return { ok: false as const, error: auth.error };
-    const res = await applyUpdate(data.section, data.id, data.visitId, data.patch as Record<string, unknown>);
+    const res = await applyUpdate(supabaseAdmin, data.section, data.id, data.visitId, data.patch as Record<string, unknown>);
     if (res.error) return { ok: false as const, error: res.error.message };
     return { ok: true as const, error: null };
   });
@@ -214,8 +225,9 @@ export const createElderRecommendation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
+    const supabaseAdmin = await getAdmin();
     const { userId } = context;
-    const auth = await ensureCanEdit(userId, data.visitId);
+    const auth = await ensureCanEdit(supabaseAdmin, userId, data.visitId);
     if (!auth.ok) return { ok: false as const, error: auth.error, row: null };
     const { data: rows } = await supabaseAdmin
       .from("elder_recommendations").select("sort_order").eq("visit_id", data.visitId).order("sort_order", { ascending: false }).limit(1);
@@ -234,8 +246,9 @@ export const deleteElderProgramEvent = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), visitId: z.string().uuid(), section: sectionEnum }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    const supabaseAdmin = await getAdmin();
     const { userId } = context;
-    const auth = await ensureCanEdit(userId, data.visitId);
+    const auth = await ensureCanEdit(supabaseAdmin, userId, data.visitId);
     if (!auth.ok) return { ok: false as const, error: auth.error };
     if (data.section !== "recommendations" && !auth.isSuper) {
       return { ok: false as const, error: "Apenas o superintendente pode excluir este card." };
