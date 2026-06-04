@@ -174,6 +174,16 @@ function Page() {
     if (!r.ok) toast.error(r.error);
   };
 
+  const saveStudyNote = async (slot: number, dayOffsetKey: string, value: string) => {
+    const current = studyNotesBySlot[slot] ?? {};
+    const next = { ...current };
+    if (value.trim()) next[dayOffsetKey] = value;
+    else delete next[dayOffsetKey];
+    setStudyNotesBySlot({ ...studyNotesBySlot, [slot]: next });
+    const r = await fnUpsert({ data: { slot, name: namesBySlot[slot] || `Modelo ${slot}`, study_day_notes: next } });
+    if (!r.ok) toast.error(r.error);
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-2 flex-wrap">
