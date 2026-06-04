@@ -1,54 +1,100 @@
-## Confirmações iniciais
 
-1. **Diálogo de conflito de modelo:** opção padrão = **"Manter preenchimento dos anciãos"**. Sobrescrever exige clique consciente do SC.
-2. **Retenção do PDF de backup:** disponível até o **início da visita (terça-feira da semana, 00:00 no fuso da congregação)**. Depois disso uma rotina de limpeza remove o snapshot.
+# Pontos 1 e 2 — Aplicação automática de modelos + PDF de backup + notificações
 
-## Item 3 — Botão "Relatório executivo" em todas as abas de Semana da Visita
+## Objetivo
 
-Replicar o padrão de `/programa-ancioes` (componente `ElderExecutiveReportDialog`): botão `<FileDown /> Relatório executivo` no cabeçalho da página, diálogo com checkboxes de seções, geração via `jspdf` e download via `saveBlob` (já cobre Web Share / File System Access / Capacitor).
+Sempre que o superintendente alterar um modelo (reuniões/discursos, reuniões de campo, refeições, transporte, checklist, programa anciãos), a mudança é propagada automaticamente para todas as visitas futuras que usam aquele modelo. Os anciãos veem um aviso amigável, podem baixar um PDF de backup (idêntico ao Relatório Executivo) e decidem como resolver conflitos campo a campo.
 
-Abas que recebem o botão (cada uma com seu próprio `<Tab>ExecutiveReportDialog.tsx`, pois o conteúdo difere):
+## 1. Detecção de mudança em modelo
 
-| Rota | Seções selecionáveis no PDF |
-|---|---|
-| `/resumo-semana` | Eventos por dia, observações gerais |
-| `/comunicacao-casal` | Mensagens do casal por dia + observações |
-| `/escala` (Estudos de Campo) | Estudos por dia, anfitriões, observações |
-| `/reunioes-discursos` | Cada subaba como seção + observações + "Informações adicionais do superintendente" |
-| `/reunioes-de-campo` | Reuniões por dia/turno + observações + "Informações adicionais do superintendente" |
-| `/refeicoes` | Refeições por dia + observações por dia + gerais |
-| `/transporte` | Itens por dia + observações |
-| `/checklist` | Itens agrupados com status |
+Para cada tabela de modelo (`field_meeting_templates`, `meeting_talk_templates`, `checklist_templates`, `elder_program_templates`, e suas tabelas filhas) adicionar uma server function `applyTemplateUpdate` chamada após qualquer save do superintendente. Essa fn:
 
-Padrão idêntico ao existente: `variant="outline" size="sm"` logo abaixo do título, checkboxes por seção, opção "Incluir Informações adicionais do superintendente", A4 retrato Helvetica, barra de título azul por seção, paginação, arquivo `relatorio-executivo-<aba>-<slug-visita>-<data>.pdf`, toasts `sonner`. Sem mudar lógica de negócio das abas; sem migrations.
+1. Localiza todas as `visits` futuras (start_date >= hoje) da congregação do modelo.
+2. Para cada visita, lê o snapshot atual dos campos derivados do modelo e o novo conteúdo do modelo.
+3. Compara campo a campo, classificando cada um como:
+   - `unchanged` — sem diferença
+   - `template_only` — só o modelo mudou, ancião não tocou → aplica automaticamente, sem perguntar
+   - `conflict` — ancião já preencheu valor diferente do snapshot anterior → registra como pendência
 
-Reuso: extrair helpers de PDF (`writeText`, `ensure`, `slugify`, header, paginação) para `src/components/visit-week/pdf-utils.ts`. Componentes novos em `src/components/visit-week/`. O `ElderExecutiveReportDialog` existente fica intacto.
+4. Insere uma linha em nova tabela `visit_pending_updates` por visita afetada, com o JSON de diffs e timestamp.
 
-## Item 4 (novo) — Aviso ao excluir visita com preenchimento dos anciãos
+## 2. Snapshot por visita
 
-Hoje a exclusão usa `FinishVisitDialog` (e há também exclusão direta no itinerário). Adicionar verificação prévia + alerta amigável.
+Nova coluna `template_snapshot jsonb` em `visits` (ou tabela `visit_template_snapshots` 1:1) com o conteúdo do modelo no momento em que a visita foi criada/aplicada. Necessário para distinguir "ancião editou" de "modelo mudou".
 
-### Comportamento
-- Quando o SC aciona "Excluir visita" no itinerário/cronograma:
-  - Antes de abrir o diálogo destrutivo, consultar quais tabelas-filhas da visita já têm conteúdo preenchido pelos anciãos.
-  - Se houver preenchimento → mostrar **card/diálogo amigável** com:
-    - Mensagem: "Os anciãos desta congregação já começaram a preencher a visita **{título}**."
-    - Lista resumida do que já foi preenchido (ex.: "3 refeições", "2 reuniões e discursos", "1 designação de campo", "Observações do casal preenchidas").
-    - Quem preencheu (nome do ancião) e quando (última edição), quando essa informação existir em `updated_by`/`updated_at`.
-    - Botão **"Manter visita agendada"** (padrão, destacado) e botão secundário **"Excluir mesmo assim"** (variante destructive). "Excluir mesmo assim" abre o fluxo de exclusão atual (S-303 etc.).
-  - Se não houver preenchimento → segue direto para o `FinishVisitDialog` atual, sem fricção adicional.
+Atualizado em: criação de visita, aplicação de modelo, e quando o ancião confirma uma atualização.
 
-### Detalhes técnicos
-- Novo `createServerFn` em `src/lib/visit-deletion.functions.ts`:
-  - `getVisitFillSummary({ visitId })` com `requireSupabaseAuth`.
-  - Faz `count` em cada tabela-filha já listada em `CHILD_TABLES` (`meals`, `meal_day_notes`, `transport_schedule`, `field_assignments`, `field_meetings`, `schedule_events`, `checklist_items`, `midweek_meetings`, `weekend_meetings`, `pioneer_meetings`, `elders_servants_meetings`) considerando apenas linhas com conteúdo (campos texto/JSON não vazios) — não conta placeholders criados automaticamente.
-  - Retorna `{ hasContent: boolean, items: Array<{ label, count, lastEditor?, lastEditedAt? }> }`.
-- Novo componente `src/components/VisitDeletionGuardDialog.tsx` que envolve o gatilho de exclusão: chama a server fn, decide entre mostrar aviso ou abrir `FinishVisitDialog` direto.
-- Substituir os call-sites atuais do `FinishVisitDialog` (itinerário/cronograma) pelo wrapper.
-- Sem migrations; sem alterar regras de RLS (a contagem usa o cliente autenticado do SC, que já tem permissão de leitura nessas tabelas).
+## 3. Tabela `visit_pending_updates`
 
-## Fora de escopo desta entrega
-- Auto-aplicação dos modelos do SC nas visitas agendadas, diálogo de conflito por visita, snapshot/PDF de backup automático, notificação aos anciãos — esses pontos ficam apenas **confirmados** aqui (itens 1 e 2). Serão planejados em rodada separada, pois envolvem migrations (tabela de snapshots, job de limpeza por congregação), gatilho ao salvar modelo, e UI de notificação.
+```
+id, visit_id, template_type, template_id,
+diff jsonb,           -- { autoApplied: [...], conflicts: [{field, oldTemplate, newTemplate, elderValue, label}] }
+backup_pdf_url text,  -- gerado em Storage privado
+created_at, resolved_at, resolved_by
+```
 
-## Pergunta antes de implementar
-- Posso entregar agora apenas os itens 3 (Relatório executivo em todas as abas) e 4 (aviso amigável antes de excluir visita), e abrir um plano separado para a auto-aplicação de modelos + PDF de backup + notificação? Mantém PRs pequenos e testáveis. Se preferir tudo junto, sinalize e eu expando este plano.
+RLS: anciãos da congregação leem/atualizam; superintendente lê tudo da sua congregação.
+
+## 4. PDF de backup
+
+Logo após inserir `visit_pending_updates`, gerar PDF idêntico ao Relatório Executivo do dashboard (reaproveitar `VisitWeekReportDialog` + `pdf-utils`) num server fn que:
+- monta o jsPDF no servidor (jspdf roda em Worker)
+- salva em bucket `visit-backups` (privado) com path `{visit_id}/{timestamp}.pdf`
+- grava URL assinada de 7 dias em `backup_pdf_url`
+
+Cron `pg_cron` diário às 04:00 deleta PDFs e linhas `visit_pending_updates` resolvidas/expiradas quando `visits.start_date <= CURRENT_DATE` (visita iniciou na terça).
+
+## 5. UI — Diálogo de conflito para os anciãos
+
+Novo `TemplateUpdateAlertDialog` exibido no `_app/dashboard` quando houver `visit_pending_updates` não resolvidos para a congregação:
+
+- Card amigável: "O superintendente atualizou o modelo desta visita."
+- Lista os campos afetados, destacando os que os anciãos **já preencheram** (com badge "Você editou").
+- Para cada conflito, dois radios:
+  - **Manter preenchimento dos anciãos** (padrão)
+  - Aplicar valor novo do modelo
+- Botão grande "Baixar PDF de backup" (download direto).
+- "Confirmar atualização" aplica as escolhas, regrava snapshot, marca `resolved_at`.
+
+Campos sem conflito (auto-aplicados) aparecem em seção colapsada "Atualizado automaticamente".
+
+## 6. Notificação aos anciãos cadastrados
+
+- Toast persistente no dashboard quando `visit_pending_updates` pendente existir.
+- Badge vermelho no item de menu da semana da visita.
+- Opcional: enviar email via `couple_messages`-like channel — fora deste escopo.
+
+## 7. Hooks no fluxo do superintendente
+
+Após salvar qualquer modelo (`field_meeting_templates` etc.) chamar a nova fn `propagateTemplateUpdate({ templateId, templateType })`. Mudanças em tabelas filhas disparam pela tabela mãe (debounce 2s no client para evitar uma chamada por linha).
+
+## 8. Migrações necessárias
+
+1. `visits.template_snapshot jsonb` (ou tabela dedicada)
+2. `visit_pending_updates` + GRANT + RLS + trigger updated_at
+3. Bucket `visit-backups` (privado) + policies
+4. pg_cron job de limpeza diária
+
+## Detalhes técnicos
+
+- Server fns ficam em `src/lib/template-propagation.functions.ts` e `src/lib/visit-backups.functions.ts`.
+- Componentes: `src/components/TemplateUpdateAlertDialog.tsx`, `src/components/PendingUpdatesBadge.tsx`.
+- jsPDF no servidor: importar dinamicamente dentro do `.handler()` para evitar bundle no client.
+- Diff helper: `src/lib/template-diff.ts` com funções por tipo de modelo.
+- Sem alteração nos PDFs do Relatório Executivo já entregues — apenas reaproveitamos a montagem.
+
+## Riscos e mitigação
+
+- **Volume de PDFs**: limpeza diária + Storage privado.
+- **Propagação em massa**: processa visitas em batch (10 por vez) dentro da server fn; modelos com muitas congregações não travam UI.
+- **Conflito de escrita simultânea**: snapshot por visita evita sobrescrita acidental; diff sempre comparado contra snapshot, não contra valor anterior do ancião.
+- **Visitas em andamento (terça em diante)**: não recebem propagação automática (filtro `start_date > hoje`).
+
+## Entrega faseada
+
+Se preferir PRs menores, podemos dividir em:
+- **Fase A**: migrações + snapshot + propagação automática (sem PDF, sem diálogo) — campos sem conflito atualizam sozinhos.
+- **Fase B**: diálogo de conflito + badge de notificação.
+- **Fase C**: PDF de backup + cron de limpeza.
+
+Aprovação para tudo de uma vez, ou prefere começar pela Fase A?
