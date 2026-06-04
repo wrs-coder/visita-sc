@@ -261,6 +261,7 @@ export const dismissAllPendingUpdatesForVisit = createServerFn({ method: "POST" 
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
+    const supabaseAdmin = await getAdmin();
     const { error } = await supabaseAdmin
       .from("visit_pending_updates")
       .update({ resolved_at: new Date().toISOString(), resolved_by: context.userId })
