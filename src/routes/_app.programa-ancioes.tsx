@@ -533,29 +533,54 @@ function EventCard({
             {onScheduleInCronograma && (
               <Button
                 type="button"
-                variant="outline"
+                variant={alreadyScheduled ? "secondary" : "outline"}
                 size="sm"
                 onClick={onScheduleInCronograma}
-                disabled={!ev.family_name}
-                title={!ev.family_name ? "Preencha 'Família/Irmão(ã)' antes de agendar" : undefined}
+                disabled={!ev.family_name || alreadyScheduled}
+                title={
+                  alreadyScheduled
+                    ? "Já enviado ao Cronograma nesta sessão"
+                    : !ev.family_name
+                      ? "Preencha 'Família/Irmão(ã)' antes de agendar"
+                      : undefined
+                }
               >
-                <CalendarPlus className="h-3.5 w-3.5 mr-1" /> Agendar no Cronograma
+                {alreadyScheduled ? (
+                  <Check className="h-3.5 w-3.5 mr-1 text-green-600" />
+                ) : (
+                  <CalendarPlus className="h-3.5 w-3.5 mr-1" />
+                )}
+                {alreadyScheduled ? "Agendado no Cronograma" : "Agendar no Cronograma"}
               </Button>
             )}
             {onSaveToPrivateNotes && (
               <Button
                 type="button"
-                variant="outline"
+                variant={alreadySavedToNotes ? "secondary" : "outline"}
                 size="sm"
                 onClick={onSaveToPrivateNotes}
-                disabled={!ev.full_name}
-                title={!ev.full_name ? "Preencha 'Nome Completo' antes de salvar" : undefined}
+                disabled={!ev.full_name || alreadySavedToNotes || !isSuperintendent}
+                title={
+                  !isSuperintendent
+                    ? "Restrito ao superintendente"
+                    : alreadySavedToNotes
+                      ? "Já salvo em Notas Privadas nesta sessão"
+                      : !ev.full_name
+                        ? "Preencha 'Nome Completo' antes de salvar"
+                        : undefined
+                }
               >
-                <StickyNote className="h-3.5 w-3.5 mr-1" /> Salvar em Notas Privadas
+                {alreadySavedToNotes ? (
+                  <Check className="h-3.5 w-3.5 mr-1 text-green-600" />
+                ) : (
+                  <StickyNote className="h-3.5 w-3.5 mr-1" />
+                )}
+                {alreadySavedToNotes ? "Salvo em Notas Privadas" : "Salvar em Notas Privadas"}
               </Button>
             )}
           </div>
         )}
+
       </CardContent>
     </Card>
   );
