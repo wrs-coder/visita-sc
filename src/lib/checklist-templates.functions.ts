@@ -179,6 +179,7 @@ export const replaceChecklistTemplateItems = createServerFn({ method: "POST" })
       if (error) return { ok: false as const, error: error.message };
     }
     await supabaseAdmin.from("checklist_templates").update({ updated_at: new Date().toISOString() }).eq("id", data.templateId);
+    void recordTemplateChanged("checklist", data.templateId);
     return { ok: true as const };
   });
 
