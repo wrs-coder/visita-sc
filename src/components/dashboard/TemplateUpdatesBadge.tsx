@@ -36,6 +36,7 @@ interface Props {
 }
 
 export function TemplateUpdatesBadge({ congregationId }: Props) {
+  const { session } = useAuth();
   const countFn = useServerFn(countPendingUpdatesForCongregation);
   const listFn = useServerFn(listPendingUpdatesForCongregation);
   const dismissFn = useServerFn(dismissPendingUpdate);
@@ -48,7 +49,7 @@ export function TemplateUpdatesBadge({ congregationId }: Props) {
   const [loading, setLoading] = useState(false);
 
   const refreshCount = useCallback(async () => {
-    if (!congregationId) {
+    if (!congregationId || !session) {
       setCount(0);
       return;
     }
@@ -58,7 +59,7 @@ export function TemplateUpdatesBadge({ congregationId }: Props) {
     } catch {
       // silencioso — feature secundária
     }
-  }, [congregationId, countFn]);
+  }, [congregationId, countFn, session]);
 
   useEffect(() => {
     void refreshCount();
