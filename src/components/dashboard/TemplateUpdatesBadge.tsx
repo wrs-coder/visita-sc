@@ -214,15 +214,29 @@ export function TemplateUpdatesBadge({ congregationId }: Props) {
                             })}
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => handleDismiss(r.id)}
-                          aria-label="Dispensar"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          {r.backup_pdf_path && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => handleDownloadBackup(r.backup_pdf_path!)}
+                              aria-label="Baixar backup PDF"
+                              title="Baixar backup PDF do modelo antes da alteração"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleDismiss(r.id)}
+                            aria-label="Dispensar"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </li>
                     ))}
                   </ul>
