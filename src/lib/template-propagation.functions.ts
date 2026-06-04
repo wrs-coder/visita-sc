@@ -51,7 +51,16 @@ export async function recordTemplateChanged(
 ): Promise<void> {
   try {
     const table = TEMPLATE_TABLE[templateType];
-    const { data: tpl } = await supabaseAdmin
+    // Tabelas dinâmicas — fora do mapa de tipos gerado do Supabase.
+    const adminAny = supabaseAdmin as unknown as {
+      from: (t: string) => {
+        select: (cols: string) => {
+          eq: (c: string, v: unknown) => { maybeSingle: () => Promise<{ data: { id: string; congregation_id: string | null } | null }> };
+          in: (c: string, v: string[]) => Promise<{ data: Array<{ id: string; name: string | null }> | null }>;
+        };
+      };
+    };
+    const { data: tpl } = await adminAny
       .from(table)
       .select("id,congregation_id")
       .eq("id", templateId)
