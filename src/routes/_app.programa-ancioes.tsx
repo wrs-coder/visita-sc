@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, Plus, Trash2, Loader2, FileDown, CalendarPlus, StickyNote } from "lucide-react";
+import { BookOpen, Plus, Trash2, Loader2, FileDown, CalendarPlus, StickyNote, Check } from "lucide-react";
 import { ElderExecutiveReportDialog } from "@/components/elder-program/ElderExecutiveReportDialog";
 import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 import {
