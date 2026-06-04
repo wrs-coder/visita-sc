@@ -15,8 +15,15 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+// Carrega o admin client APENAS no servidor (dentro dos handlers / helpers
+// server-only). Module-scope `import` de client.server quebra o code-splitter
+// do TanStack quando o arquivo é alcançável a partir de rotas no client.
+async function getAdmin() {
+  const m = await import("@/integrations/supabase/client.server");
+  return m.supabaseAdmin;
+}
 
 export const TEMPLATE_TYPES = [
   "field_meeting",
@@ -50,6 +57,7 @@ export async function recordTemplateChanged(
   templateId: string,
 ): Promise<void> {
   try {
+    const supabaseAdmin = await getAdmin();
     const table = TEMPLATE_TABLE[templateType];
     const adminAny = supabaseAdmin as unknown as {
       from: (t: string) => {
@@ -86,7 +94,7 @@ export async function recordTemplateChanged(
       templateName: tpl.name,
     });
 
-    const visitIds = visits.map((v) => v.id);
+    const visitIds = visits.map((v: { id: string }) => v.id);
     await supabaseAdmin
       .from("visit_pending_updates")
       .delete()
@@ -95,7 +103,7 @@ export async function recordTemplateChanged(
       .eq("template_id", templateId)
       .is("resolved_at", null);
 
-    const rows = visitIds.map((vid) => ({
+    const rows = visitIds.map((vid: string) => ({
       visit_id: vid,
       template_type: templateType,
       template_id: templateId,
@@ -120,13 +128,14 @@ export const countPendingUpdatesForCongregation = createServerFn({ method: "POST
     z.object({ congregationId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data }) => {
+    const supabaseAdmin = await getAdmin();
     const today = new Date().toISOString().slice(0, 10);
     const { data: visits } = await supabaseAdmin
       .from("visits")
       .select("id")
       .eq("congregation_id", data.congregationId)
       .gt("start_date", today);
-    const ids = (visits ?? []).map((v) => v.id);
+    const ids = (visits ?? []).map((v: { id: string }) => v.id);
     if (!ids.length) return { ok: true as const, count: 0 };
     const { count } = await supabaseAdmin
       .from("visit_pending_updates")
@@ -159,6 +168,8 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
     z.object({ congregationId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data }): Promise<{ ok: true; items: PendingUpdateRow[] } | { ok: false; error: string }> => {
+    const supabaseAdmin = await getAdmin();
+    type VisitRow = { id: string; title: string | null; start_date: string };
     const today = new Date().toISOString().slice(0, 10);
     const { data: visits, error: vErr } = await supabaseAdmin
       .from("visits")
@@ -168,7 +179,8 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
     if (vErr) return { ok: false, error: vErr.message };
     if (!visits?.length) return { ok: true, items: [] };
 
-    const visitIds = visits.map((v) => v.id);
+    const visitsTyped = visits as unknown as VisitRow[];
+    const visitIds = visitsTyped.map((v) => v.id);
     const { data: rows, error } = await supabaseAdmin
       .from("visit_pending_updates")
       .select("id,visit_id,template_type,template_id,diff,created_at,backup_pdf_path")
@@ -201,7 +213,7 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
       for (const tpl of tpls ?? []) nameMap[`${t}:${tpl.id}`] = tpl.name;
     }
 
-    const visitMap = new Map(visits.map((v) => [v.id, v]));
+    const visitMap = new Map(visitsTyped.map((v) => [v.id, v]));
     return {
       ok: true,
       items: rows.map((r) => {
@@ -233,6 +245,7 @@ export const dismissPendingUpdate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
+    const supabaseAdmin = await getAdmin();
     const { error } = await supabaseAdmin
       .from("visit_pending_updates")
       .update({ resolved_at: new Date().toISOString(), resolved_by: context.userId })
@@ -248,6 +261,7 @@ export const dismissAllPendingUpdatesForVisit = createServerFn({ method: "POST" 
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
+    const supabaseAdmin = await getAdmin();
     const { error } = await supabaseAdmin
       .from("visit_pending_updates")
       .update({ resolved_at: new Date().toISOString(), resolved_by: context.userId })
@@ -265,6 +279,7 @@ export const getBackupSignedUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ path: z.string().min(1).max(500) }).parse(input))
   .handler(async ({ data }) => {
+    const supabaseAdmin = await getAdmin();
     const { data: signed, error } = await supabaseAdmin.storage
       .from("visit-backups")
       .createSignedUrl(data.path, 60 * 5); // 5 min
