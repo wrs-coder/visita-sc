@@ -1230,7 +1230,7 @@
     "invalidFile": "Arquivo inválido"
   },
   "pwa": {
-    "install": "Instalar no Telemóvel",
+    "install": "Instale agora",
     "installTitle": "Instalar no telemóvel",
     "iosIntro": "Para instalar no iPhone/iPad, siga estes passos no Safari:",
     "genericIntro": "Para instalar, abra esta página no navegador do seu telemóvel e use o menu para adicionar ao ecrã principal.",
