@@ -340,6 +340,34 @@ function Dashboard() {
     return () => { cancelled = true; };
   }, [role, user, selected]);
 
+  // Mission 2: "Pastoreiem o Rebanho de Deus" — carrega as 4 seções da
+  // aba "Pastoreios, Recomendações e outros" para a visita ativa.
+  const fnLoadElder = useServerFn(listElderProgramForVisit);
+  const [elderPastoral, setElderPastoral] = useState<ElderVisitEventDTO[]>([]);
+  const [elderEncouragement, setElderEncouragement] = useState<ElderVisitEventDTO[]>([]);
+  const [elderRecommendations, setElderRecommendations] = useState<ElderVisitEventDTO[]>([]);
+  const [elderLocal, setElderLocal] = useState<ElderVisitEventDTO[]>([]);
+  useEffect(() => {
+    if (role !== "superintendent" || !visit?.id) {
+      setElderPastoral([]); setElderEncouragement([]);
+      setElderRecommendations([]); setElderLocal([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fnLoadElder({ data: { visitId: visit.id } });
+        if (cancelled || !r.ok) return;
+        setElderPastoral(r.pastoral);
+        setElderEncouragement(r.encouragement);
+        setElderRecommendations(r.recommendations);
+        setElderLocal(r.local);
+      } catch (err) {
+        console.warn("[dashboard] elder program load failed", err);
+      }
+    })();
+    return () => { cancelled = true; };
+
 
 
   // Detecta visitas encerradas (end_date < hoje) cujos dados operacionais
