@@ -33,33 +33,46 @@ import {
   Eye,
 } from "lucide-react";
 
-// Ícone customizado: silhueta de pastor com cajado ao lado de uma ovelha.
-function ShepherdIcon({ className }: { className?: string }) {
+// Ícone customizado: ovelhinha fofinha.
+function CuteSheepIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="1.6"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      {/* Pastor: cabeça, corpo, pernas */}
-      <circle cx="7" cy="4.5" r="1.6" />
-      <path d="M7 6.2 V13" />
-      <path d="M7 9 L4.8 11.5" />
-      <path d="M7 13 L5.5 19" />
-      <path d="M7 13 L8.5 19" />
-      {/* Cajado */}
-      <path d="M10 3 V14" />
-      <path d="M10 3 c1.4 0 1.4 2 0 2" />
-      {/* Ovelha: corpo, cabeça, patas */}
-      <circle cx="16.5" cy="14" r="3.2" />
-      <circle cx="19.6" cy="12.6" r="1.1" />
-      <path d="M14.8 17 V19" />
-      <path d="M18 17 V19" />
+      {/* Corpinho fofo */}
+      <ellipse cx="12" cy="14.2" rx="5.2" ry="4.2" />
+      {/* Detalhes de lãzinha no corpo */}
+      <path d="M7.5 12.5 q-0.6 -0.5 -0.4 -1.2" />
+      <path d="M16.5 12.5 q0.6 -0.5 0.4 -1.2" />
+      <path d="M7.2 15.2 q-0.6 0.5 -0.2 1.2" />
+      <path d="M16.8 15.2 q0.6 0.5 0.2 1.2" />
+      {/* Cabecinha redonda */}
+      <circle cx="12" cy="8.8" r="2.9" />
+      {/* Orelhinhas */}
+      <ellipse cx="9.3" cy="7.6" rx="1.1" ry="1.8" transform="rotate(-30 9.3 7.6)" />
+      <ellipse cx="14.7" cy="7.6" rx="1.1" ry="1.8" transform="rotate(30 14.7 7.6)" />
+      {/* Olhinhos */}
+      <circle cx="10.8" cy="8.5" r="0.35" fill="currentColor" />
+      <circle cx="13.2" cy="8.5" r="0.35" fill="currentColor" />
+      {/* Bochechas rosadinhas — só o contorno sutil */}
+      <path d="M9.8 9.6 q0.3 0.3 0.6 0" />
+      <path d="M13.6 9.6 q0.3 0.3 0.6 0" />
+      {/* Focinho */}
+      <ellipse cx="12" cy="10.1" rx="0.9" ry="0.55" />
+      {/* Perninhas */}
+      <path d="M9.5 17.8 v2.2" />
+      <path d="M10.8 17.8 v2.2" />
+      <path d="M13.2 17.8 v2.2" />
+      <path d="M14.5 17.8 v2.2" />
+      {/* Rabinho */}
+      <path d="M17 13.5 q1.2 -0.3 1.5 0.6" />
     </svg>
   );
 }
@@ -1038,7 +1051,7 @@ function Dashboard() {
       {role === "superintendent" && visit && (
         <CollapsibleCard
           id="super-elder-program"
-          icon={<ShepherdIcon className="h-4 w-4 text-primary" />}
+          icon={<CuteSheepIcon className="h-4 w-4 text-primary" />}
           title="Pastoreiem o Rebanho de Deus"
           headerRight={
             <Link
