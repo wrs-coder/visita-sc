@@ -279,6 +279,7 @@ export const getBackupSignedUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ path: z.string().min(1).max(500) }).parse(input))
   .handler(async ({ data }) => {
+    const supabaseAdmin = await getAdmin();
     const { data: signed, error } = await supabaseAdmin.storage
       .from("visit-backups")
       .createSignedUrl(data.path, 60 * 5); // 5 min
