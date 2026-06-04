@@ -41,38 +41,25 @@ function CuteSheepIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.6"
+      strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      {/* Corpinho fofo */}
-      <ellipse cx="12" cy="14.2" rx="5.2" ry="4.2" />
-      {/* Detalhes de lãzinha no corpo */}
-      <path d="M7.5 12.5 q-0.6 -0.5 -0.4 -1.2" />
-      <path d="M16.5 12.5 q0.6 -0.5 0.4 -1.2" />
-      <path d="M7.2 15.2 q-0.6 0.5 -0.2 1.2" />
-      <path d="M16.8 15.2 q0.6 0.5 0.2 1.2" />
-      {/* Cabecinha redonda */}
-      <circle cx="12" cy="8.8" r="2.9" />
+      {/* Corpinho fofo com nuvenzinhas de lã */}
+      <path d="M4 15a3 3 0 0 1 2.2-2.9 3 3 0 0 1 2.6-3.2 3 3 0 0 1 6.4 0 3 3 0 0 1 2.6 3.2A3 3 0 0 1 20 15a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3z" />
+      {/* Cabecinha */}
+      <ellipse cx="12" cy="9" rx="2.6" ry="2.4" />
       {/* Orelhinhas */}
-      <ellipse cx="9.3" cy="7.6" rx="1.1" ry="1.8" transform="rotate(-30 9.3 7.6)" />
-      <ellipse cx="14.7" cy="7.6" rx="1.1" ry="1.8" transform="rotate(30 14.7 7.6)" />
+      <path d="M9.6 8.4c-1 0-1.6.6-1.6 1.4" />
+      <path d="M14.4 8.4c1 0 1.6.6 1.6 1.4" />
       {/* Olhinhos */}
-      <circle cx="10.8" cy="8.5" r="0.35" fill="currentColor" />
-      <circle cx="13.2" cy="8.5" r="0.35" fill="currentColor" />
-      {/* Bochechas rosadinhas — só o contorno sutil */}
-      <path d="M9.8 9.6 q0.3 0.3 0.6 0" />
-      <path d="M13.6 9.6 q0.3 0.3 0.6 0" />
-      {/* Focinho */}
-      <ellipse cx="12" cy="10.1" rx="0.9" ry="0.55" />
+      <circle cx="11" cy="8.8" r="0.5" fill="currentColor" stroke="none" />
+      <circle cx="13" cy="8.8" r="0.5" fill="currentColor" stroke="none" />
       {/* Perninhas */}
-      <path d="M9.5 17.8 v2.2" />
-      <path d="M10.8 17.8 v2.2" />
-      <path d="M13.2 17.8 v2.2" />
-      <path d="M14.5 17.8 v2.2" />
-      {/* Rabinho */}
-      <path d="M17 13.5 q1.2 -0.3 1.5 0.6" />
+      <path d="M9 18v2.5" />
+      <path d="M15 18v2.5" />
+
     </svg>
   );
 }
