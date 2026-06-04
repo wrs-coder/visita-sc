@@ -146,8 +146,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // tentativas manuais quanto qualquer caminho que chame signOut.
     if (isOfflineMode()) {
       try {
-        const { toast } = await import("sonner");
-        const { default: i18n } = await import("@/i18n");
         toast.warning(i18n.t("connection.cannotLogoutOffline"));
       } catch { /* noop */ }
       return;
