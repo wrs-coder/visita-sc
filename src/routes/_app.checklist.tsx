@@ -165,6 +165,13 @@ function Page() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ChecklistReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        visitId={visit.id}
+        visitTitle={visit.title}
+      />
     </div>
   );
 }
