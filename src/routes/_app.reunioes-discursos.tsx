@@ -293,7 +293,8 @@ function TabsGuarded({
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <VisitWeekReportButton onClick={() => setReportOpen(true)} />
             <DiscardDraftButton />
             <SaveDraftButton />
           </div>
@@ -325,6 +326,15 @@ function TabsGuarded({
           <PanelFallback />
         )}
       </Tabs>
+
+      {visit && (
+        <MeetingsTalksReportDialog
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          visitId={visit.id}
+          visitTitle={visit.title}
+        />
+      )}
     </div>
   );
 }
