@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, Plus, Trash2, Loader2, FileDown } from "lucide-react";
+import { BookOpen, Plus, Trash2, Loader2, FileDown, CalendarPlus, StickyNote } from "lucide-react";
 import { ElderExecutiveReportDialog } from "@/components/elder-program/ElderExecutiveReportDialog";
 import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 import {
@@ -73,6 +73,55 @@ function Page() {
   const fnUpdate = useServerFn(updateElderProgramEvent);
   const fnCreateRec = useServerFn(createElderRecommendation);
   const fnDelete = useServerFn(deleteElderProgramEvent);
+  const navigate = useNavigate();
+
+  const PURPOSE_TO_TIPO: Record<string, string> = {
+    ministerial_servant: "Servo ministerial",
+    elder: "Ancião",
+    cca_change: "CCA",
+    // redesignation e removal: tipo vazio (escolha manual)
+  };
+
+  const goToCronograma = (ev: ElderVisitEventDTO) => {
+    if (!visit) return;
+    const titleParts = ["Visita de Pastoreio"];
+    if (ev.family_name) titleParts.push(ev.family_name);
+    const noteLines: string[] = [];
+    if (ev.slot_label) noteLines.push(`Slot: ${ev.slot_label}`);
+    if (ev.family_members) noteLines.push(`Família: ${ev.family_members}`);
+    if (ev.spiritual_info) noteLines.push(`Info: ${ev.spiritual_info}`);
+    navigate({
+      to: "/cronograma",
+      search: {
+        action: "new",
+        title: titleParts.join(" — "),
+        location: ev.address ?? undefined,
+        companion: ev.companion ?? undefined,
+        notes: noteLines.join("\n") || undefined,
+        congId: visit.congregation_id,
+      } as never,
+    });
+  };
+
+  const goToNotas = (ev: ElderVisitEventDTO) => {
+    if (!visit) return;
+    const corpoLines: string[] = [];
+    if (ev.family_members) corpoLines.push(`Membros da Família: ${ev.family_members}`);
+    if (ev.field_group) corpoLines.push(`Grupo de campo: ${ev.field_group}`);
+    if (ev.info) corpoLines.push(`Informações: ${ev.info}`);
+    navigate({
+      to: "/notas",
+      search: {
+        tab: "recomendados",
+        newNote: "recomendados",
+        congId: visit.congregation_id,
+        nome: ev.full_name ?? undefined,
+        tipo: ev.purpose ? PURPOSE_TO_TIPO[ev.purpose] ?? undefined : undefined,
+        corpo: corpoLines.join("\n") || undefined,
+      } as never,
+    });
+  };
+
 
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState<Record<Section, string>>({
@@ -209,6 +258,8 @@ function Page() {
                             canDelete={canEdit && (ev.section === "recommendations" || isSuper)}
                             onChange={(patch) => saveField(ev, patch)}
                             onDelete={() => deleteEvent(ev)}
+                            onScheduleInCronograma={ev.section === "pastoral" ? () => goToCronograma(ev) : undefined}
+                            onSaveToPrivateNotes={ev.section === "recommendations" && isSuper ? () => goToNotas(ev) : undefined}
                           />
                         );
                       })}
@@ -250,6 +301,7 @@ function LoadingPanel() {
 
 function EventCard({
   ev, slots, usedSlots, readOnly, canDelete, onChange, onDelete,
+  onScheduleInCronograma, onSaveToPrivateNotes,
 }: {
   ev: ElderVisitEventDTO;
   slots: string[];
@@ -258,6 +310,8 @@ function EventCard({
   canDelete: boolean;
   onChange: (patch: Partial<ElderVisitEventDTO>) => void;
   onDelete: () => void;
+  onScheduleInCronograma?: () => void;
+  onSaveToPrivateNotes?: () => void;
 }) {
   const [pendingSlot, setPendingSlot] = useState<string | null>(null);
   const [hideUsed, setHideUsed] = useState(false);
@@ -400,6 +454,35 @@ function EventCard({
             <DebouncedArea label="Fontes de matéria já pesquisadas" value={ev.sources} onSave={(v) => onChange({ sources: v })} readOnly={readOnly} minH={60} />
             <DebouncedArea label="Informações sobre o assunto" value={ev.info} onSave={(v) => onChange({ info: v })} readOnly={readOnly} minH={100} />
           </>
+        )}
+
+        {(onScheduleInCronograma || onSaveToPrivateNotes) && (
+          <div className="flex flex-wrap gap-2 pt-2 border-t mt-2">
+            {onScheduleInCronograma && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onScheduleInCronograma}
+                disabled={!ev.family_name}
+                title={!ev.family_name ? "Preencha 'Família/Irmão(ã)' antes de agendar" : undefined}
+              >
+                <CalendarPlus className="h-3.5 w-3.5 mr-1" /> Agendar no Cronograma
+              </Button>
+            )}
+            {onSaveToPrivateNotes && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onSaveToPrivateNotes}
+                disabled={!ev.full_name}
+                title={!ev.full_name ? "Preencha 'Nome Completo' antes de salvar" : undefined}
+              >
+                <StickyNote className="h-3.5 w-3.5 mr-1" /> Salvar em Notas Privadas
+              </Button>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,12 +34,17 @@ function makeUuid(): string {
 }
 
 export const Route = createFileRoute("/_app/notas")({
-  validateSearch: (search: Record<string, unknown>): { tab?: NoteType; noteId?: string; congId?: string } => {
+  validateSearch: (search: Record<string, unknown>): {
+    tab?: NoteType; noteId?: string; congId?: string;
+    newNote?: NoteType; nome?: string; tipo?: string; corpo?: string;
+  } => {
     const allowed: NoteType[] = ["free", "pastoral", "s303", "oradores", "recomendados", "peticoes"];
     const tab = typeof search.tab === "string" && (allowed as string[]).includes(search.tab) ? (search.tab as NoteType) : undefined;
     const noteId = typeof search.noteId === "string" ? search.noteId : undefined;
     const congId = typeof search.congId === "string" ? search.congId : undefined;
-    return { tab, noteId, congId };
+    const newNote = typeof search.newNote === "string" && (allowed as string[]).includes(search.newNote) ? (search.newNote as NoteType) : undefined;
+    const s = (k: string) => (typeof search[k] === "string" ? (search[k] as string) : undefined);
+    return { tab, noteId, congId, newNote, nome: s("nome"), tipo: s("tipo"), corpo: s("corpo") };
   },
   component: Page,
 });
@@ -80,6 +85,8 @@ function Page() {
     return localStorage.getItem(NOTAS_CONG_KEY);
   });
   const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const handledNewNoteRef = useRef(false);
   const [notes, setNotes] = useState<Note[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [tab, setTab] = useState<NoteType>(search.tab ?? "free");
@@ -152,6 +159,52 @@ function Page() {
     };
     load();
   }, [congId]);
+
+  // Deep-link: ?newNote=recomendados&nome=...&tipo=...&corpo=... cria nota pré-preenchida.
+  useEffect(() => {
+    if (handledNewNoteRef.current) return;
+    if (!search.newNote || role !== "superintendent" || !user || !congId) return;
+    if (search.congId && search.congId !== congId) return; // espera congId sincronizar
+    handledNewNoteRef.current = true;
+    const note_type = search.newNote;
+    setTab(note_type);
+    const id = makeUuid();
+    const now = new Date().toISOString();
+    const payload: Record<string, string> = {};
+    if (search.nome) payload.nome = search.nome;
+    if (search.tipo) payload.tipo = search.tipo;
+    if (search.corpo) payload.corpo = search.corpo;
+    const defaultTitle = search.nome || t(`notes.categories.${note_type}.default`, { defaultValue: catLabel(note_type) });
+    const optimistic: Note = {
+      id, visit_id: null, congregation_id: congId, superintendent_id: user.id,
+      title: defaultTitle, content: "", note_type,
+      companion: null, involved_names: null, additional_info: null,
+      note_date: null, payload, updated_at: now,
+    };
+    setNotes((n) => [optimistic, ...n]);
+    setHighlightId(id);
+    offlineInsert("private_notes", {
+      id, congregation_id: congId, superintendent_id: user.id, note_type,
+      title: defaultTitle, content: "", payload,
+    } as Record<string, unknown>).then(({ error, queued }) => {
+      if (error) {
+        setNotes((n) => n.filter((x) => x.id !== id));
+        toast.error(error.message);
+      } else {
+        toast.success(queued ? t("notes.createdOffline") : t("common.saved"));
+      }
+    });
+    navigate({
+      search: {
+        tab: note_type, noteId: id, congId: undefined,
+        newNote: undefined, nome: undefined, tipo: undefined, corpo: undefined,
+      } as never,
+      replace: true,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.newNote, congId, role, user]);
+
+
 
   const add = async (note_type: NoteType) => {
     if (!user || !congId) return;
