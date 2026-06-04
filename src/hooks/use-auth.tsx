@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { isOfflineMode } from "@/lib/connection-mode";
+import i18n from "@/i18n";
 
 export type AppRole = "superintendent" | "elder";
 export type ElderPosition = "coordenador" | "secretario" | "sup_servico" | "corpo";
