@@ -256,3 +256,18 @@ export const dismissAllPendingUpdatesForVisit = createServerFn({ method: "POST" 
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const };
   });
+
+/**
+ * Retorna uma URL assinada (curta) para baixar o PDF de backup do bucket
+ * privado `visit-backups`. Acessível apenas a usuários autenticados.
+ */
+export const getBackupSignedUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ path: z.string().min(1).max(500) }).parse(input))
+  .handler(async ({ data }) => {
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from("visit-backups")
+      .createSignedUrl(data.path, 60 * 5); // 5 min
+    if (error || !signed) return { ok: false as const, error: error?.message ?? "Falha ao gerar URL" };
+    return { ok: true as const, url: signed.signedUrl };
+  });
