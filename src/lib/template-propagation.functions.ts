@@ -57,6 +57,7 @@ export async function recordTemplateChanged(
   templateId: string,
 ): Promise<void> {
   try {
+    const supabaseAdmin = await getAdmin();
     const table = TEMPLATE_TABLE[templateType];
     const adminAny = supabaseAdmin as unknown as {
       from: (t: string) => {
@@ -93,7 +94,7 @@ export async function recordTemplateChanged(
       templateName: tpl.name,
     });
 
-    const visitIds = visits.map((v) => v.id);
+    const visitIds = visits.map((v: { id: string }) => v.id);
     await supabaseAdmin
       .from("visit_pending_updates")
       .delete()
@@ -102,7 +103,7 @@ export async function recordTemplateChanged(
       .eq("template_id", templateId)
       .is("resolved_at", null);
 
-    const rows = visitIds.map((vid) => ({
+    const rows = visitIds.map((vid: string) => ({
       visit_id: vid,
       template_type: templateType,
       template_id: templateId,
