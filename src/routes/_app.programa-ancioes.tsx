@@ -369,6 +369,7 @@ function LoadingPanel() {
 function EventCard({
   ev, slots, usedSlots, readOnly, canDelete, onChange, onDelete,
   onScheduleInCronograma, onSaveToPrivateNotes,
+  isSuperintendent = true, alreadyScheduled = false, alreadySavedToNotes = false,
 }: {
   ev: ElderVisitEventDTO;
   slots: string[];
@@ -379,7 +380,11 @@ function EventCard({
   onDelete: () => void;
   onScheduleInCronograma?: () => void;
   onSaveToPrivateNotes?: () => void;
+  isSuperintendent?: boolean;
+  alreadyScheduled?: boolean;
+  alreadySavedToNotes?: boolean;
 }) {
+
   const [pendingSlot, setPendingSlot] = useState<string | null>(null);
   const [hideUsed, setHideUsed] = useState(false);
   const slotConflict = ev.section === "pastoral" && !!ev.slot_label && usedSlots.has(ev.slot_label);
