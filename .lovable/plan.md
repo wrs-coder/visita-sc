@@ -1,48 +1,48 @@
-# Plano — Missões 1 e 2
+## Plano de Implementação — Missões 1 e 2
 
-## Missão 1 — Território no cartão "Reunião de Campo"
+### Missão 1 — Botão "Agendar no Cronograma" (seção VISITAS DE PASTOREIO)
 
-**Diagnóstico.** O dashboard (`src/routes/_app.dashboard.tsx`, ~L1096–1142) já busca e renderiza `territory_number` / `territory_location`, mas só são exibidos quando `territory_number` é truthy. A raiz do problema está no `FieldMeetingsPanel.tsx` (`showTerritory = r.modality === "casa_em_casa"`): os campos de território só aparecem para edição quando a modalidade é "Casa em Casa". Em modalidades como Cartas, Telefone, Testemunho Público, Revisitas ou Estudos, o ancião não consegue preencher S-13 nem localização, então não há valor para o dashboard mostrar. Quando o modelo (template) é propagado com outra modalidade, os campos do território vêm vazios da visita.
+**Local:** `src/routes/_app.programa-ancioes.tsx` (componente `EventCard`, branch `ev.section === "pastoral"`).
 
-**Ações.**
+**Comportamento:**
+- Adicionar botão "Agendar no Cronograma" em cada card de pastoreio.
+- Visível para todos os papéis que veem a aba (ancião e superintendente); habilitado quando houver pelo menos o nome da família/irmão.
+- Ao clicar, navega para `/cronograma` com search params contendo os dados do card:
+  - `action=new`
+  - `title` = "Visita de Pastoreio — {family_name}"
+  - `family_name`, `address`, `companion`, `family_members`, `spiritual_info`, `slot_label` (passados como contexto/descrição)
+  - `congregationId` = visita ativa
+- A página `_app.cronograma.tsx` será ajustada para detectar `action=new` + esses params no `useEffect` inicial e abrir o dialog de criação de evento com os campos pré-preenchidos. Data fica vazia (o `slot_label` é texto livre tipo "Quinta 19h30", então vai no campo de observações/descrição para preenchimento manual da data real).
 
-1. Em `src/components/meetings/FieldMeetingsPanel.tsx`:
-   - Remover a condicional `showTerritory`. Os campos "Nº do território (S-13)" e "Localização do território" passam a aparecer sempre (independente da modalidade), inclusive em modo somente-leitura para o ancião quando aplicável.
-   - "Designações auxiliares" continua sob a mesma seção visual.
-2. Em `src/routes/_app.dashboard.tsx` (cartão "Reunião de Campo", ~L1119 e o popup de detalhes em ~L1441):
-   - Exibir a linha de território quando **`territory_number` OU `territory_location`** for preenchido (hoje só verifica `territory_number`). Texto: `Território {nº ou "—"} · {localização}` quando ambos existirem, ou apenas o que existir.
-3. Sem mudanças de schema/migração: a coluna já existe e o template já propaga.
+### Missão 2 — Botão "Salvar em Notas Privadas" (seção RECOMENDAÇÕES)
 
-## Missão 2 — Novo cartão "Pastoreiem o Rebanho de Deus"
+**Local:** `src/routes/_app.programa-ancioes.tsx` (componente `EventCard`, branch `ev.section === "recommendations"`).
 
-Replicar a anatomia do cartão **"Esboços e Notas"** (`CollapsibleCard` com `Tabs` lado a lado e rolagem vertical de ~18rem), trazendo as 4 seções de `programa-ancioes`:
+**Comportamento:**
+- Adicionar botão "Salvar em Notas Privadas" em cada card de recomendação.
+- **Restrito a `role === "superintendent"`** (apenas o supervisor mantém notas privadas da congregação visitada).
+- Ao clicar, navega para `/notas?tab=recomendados&action=new` com search params:
+  - `nome` = `full_name`
+  - `informacoes` = concatenação de `family_members` + `field_group` + `info` (com rótulos)
+  - `tipo` = mapeado de `purpose`:
+    - `ministerial_servant` → "Servo ministerial"
+    - `elder` → "Ancião"
+    - `cca_change` → "CCA"
+    - `redesignation` → **vazio** (escolha manual)
+    - `removal` → **vazio** (escolha manual)
+  - `congregationId` = visita ativa
+- `_app.notas.tsx` será ajustada para, ao detectar esses params, abrir a subaba "Recomendados", abrir o formulário de nova nota e pré-preencher os campos. Os params são limpos da URL após consumo.
 
-- VISITAS DE PASTOREIO
-- ENCORAJAMENTO
-- RECOMENDAÇÕES
-- ASSUNTOS LOCAIS
+### Detalhes técnicos
 
-**Ações.**
+- Usar `useNavigate()` do `@tanstack/react-router` com `search` tipado.
+- Validação dos search params no `validateSearch` das rotas `_app.cronograma.tsx` e `_app.notas.tsx` (campos opcionais).
+- Snapshot one-way: nenhuma alteração futura no card de pastoreio/recomendação atualiza o evento/nota já criado (decisão técnica já alinhada).
+- Sem migrations, sem novas dependências, sem alterações no schema.
+- Manter design tokens existentes; botões usam variantes `outline` + ícones `Calendar` (Missão 1) e `StickyNote`/`FileText` (Missão 2).
 
-1. **Backend (reaproveitar).** Usar `listElderProgramForVisit` (já existe em `src/lib/elder-program.functions.ts`) chamado via `useServerFn` na entrada do dashboard quando `visit?.id` existir e `role === "superintendent"`. Carregamento único + reload em mudança de visita. Sem novas queries diretas (RLS já cobre).
-2. **UI (`src/routes/_app.dashboard.tsx`).** Novo `CollapsibleCard` (id `super-elder-program`) com ícone `Heart` (já importado) e:
-   - `Tabs` com 4 `TabsTrigger` (Pastoreio, Encorajamento, Recomendações, Locais) em `grid grid-cols-4` (mesma estética do card de Esboços, com `whitespace-normal break-words text-[11px] sm:text-sm`).
-   - Cada `TabsContent` mostra um `<ul>` com `overflow-y-auto pr-1` e `maxHeight: "min(18rem, 60vh)"`, com gradiente inferior quando há mais de 3 itens.
-   - Cada item é um botão somente-leitura mostrando o campo mais relevante por seção (ex.: `family_name`/`slot_label` em pastoral, `person_name`+categoria em encorajamento, `full_name`+propósito em recomendações, `subject`/`suggested_by` em locais) + linha secundária com 1 detalhe (endereço/contato/info).
-   - Cabeçalho do cartão (`headerRight`) com link "Ver tudo" → `/programa-ancioes`.
-   - Estado vazio por aba: `"Nenhum item registrado."`.
-3. **Posicionamento.** Inserir logo após o cartão "Esboços e Notas" (mantém agrupamento de cartões de superintendente).
-4. **Visibilidade.** Renderizar apenas para `role === "superintendent"` com `visit` ativa, igual aos demais cartões do bloco.
+### Arquivos a alterar
 
-## Detalhes técnicos
-
-- Sem alterações de banco; nenhuma migração.
-- Sem novos pacotes.
-- Reaproveita componentes já no bundle (`CollapsibleCard`, `Tabs`, `Heart`, `ChevronRight`, `Link`).
-- O carregamento de elder-program só ocorre para superintendente com visita ativa (custo zero para anciãos e fora de visita).
-- Compatível com PWA/Browser/APK: usa o cliente Supabase existente; nenhuma API nova.
-
-## Arquivos editados
-
-- `src/components/meetings/FieldMeetingsPanel.tsx` — sempre exibir os 2 campos de território.
-- `src/routes/_app.dashboard.tsx` — render condicional ampliada do território + novo `CollapsibleCard` "Pastoreiem o Rebanho de Deus".
+1. `src/routes/_app.programa-ancioes.tsx` — adicionar 2 botões em `EventCard` + handlers.
+2. `src/routes/_app.cronograma.tsx` — `validateSearch` + `useEffect` que abre o dialog pré-preenchido.
+3. `src/routes/_app.notas.tsx` — `validateSearch` + `useEffect` que abre subaba "Recomendados" e o form pré-preenchido.
