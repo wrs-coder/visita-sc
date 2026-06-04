@@ -263,6 +263,7 @@ function Page() {
             </DialogContent>
           </Dialog>
         )}
+        </div>
       </div>
 
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
