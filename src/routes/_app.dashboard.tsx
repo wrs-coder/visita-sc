@@ -1565,7 +1565,7 @@ function Dashboard() {
                       )}
                       {(f.territory_number || f.territory_location) && (
                         <div className="text-xs">
-                          <span className="text-muted-foreground">{t("dashboard.territory")} </span>
+                          <span className="text-muted-foreground font-medium">{t("dashboard.territory")} S-13: </span>
                           {f.territory_number || "—"}
                           {f.territory_location ? ` · ${f.territory_location}` : ""}
                         </div>
