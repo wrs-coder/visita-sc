@@ -34,12 +34,17 @@ function makeUuid(): string {
 }
 
 export const Route = createFileRoute("/_app/notas")({
-  validateSearch: (search: Record<string, unknown>): { tab?: NoteType; noteId?: string; congId?: string } => {
+  validateSearch: (search: Record<string, unknown>): {
+    tab?: NoteType; noteId?: string; congId?: string;
+    newNote?: NoteType; nome?: string; tipo?: string; corpo?: string;
+  } => {
     const allowed: NoteType[] = ["free", "pastoral", "s303", "oradores", "recomendados", "peticoes"];
     const tab = typeof search.tab === "string" && (allowed as string[]).includes(search.tab) ? (search.tab as NoteType) : undefined;
     const noteId = typeof search.noteId === "string" ? search.noteId : undefined;
     const congId = typeof search.congId === "string" ? search.congId : undefined;
-    return { tab, noteId, congId };
+    const newNote = typeof search.newNote === "string" && (allowed as string[]).includes(search.newNote) ? (search.newNote as NoteType) : undefined;
+    const s = (k: string) => (typeof search[k] === "string" ? (search[k] as string) : undefined);
+    return { tab, noteId, congId, newNote, nome: s("nome"), tipo: s("tipo"), corpo: s("corpo") };
   },
   component: Page,
 });
