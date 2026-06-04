@@ -217,6 +217,44 @@ function Page() {
     navigate({ search: { event: undefined } as never, replace: true });
   }, [search.event, events, canEdit, navigate, t]);
 
+  // Deep-link: ?action=new&title=...&location=... pré-preenche o dialog de novo evento.
+  const handledNewRef = useRef(false);
+  useEffect(() => {
+    if (search.action !== "new" || !canEdit) return;
+    if (handledNewRef.current) return;
+    handledNewRef.current = true;
+    const matchedCong = search.congId && congregations.some((c) => c.id === search.congId)
+      ? search.congId
+      : null;
+    setEditing({
+      event_date: format(new Date(), "yyyy-MM-dd"),
+      event_type: "shepherding",
+      scope: matchedCong ? "congregation" : "personal",
+      congregation_ids: matchedCong ? [matchedCong] : [],
+      visible_to_spouse: true,
+      title: search.title ?? "",
+      location: search.location ?? "",
+      notes: search.notes ?? "",
+      companion: search.companion ?? "",
+    });
+    setOpen(true);
+    navigate({
+      search: {
+        event: undefined,
+        action: undefined,
+        title: undefined,
+        location: undefined,
+        notes: undefined,
+        companion: undefined,
+        congId: undefined,
+      } as never,
+      replace: true,
+    });
+  }, [search.action, search.title, search.location, search.notes, search.companion, search.congId, canEdit, congregations, navigate]);
+
+
+
+
 
 
   // Swipe
