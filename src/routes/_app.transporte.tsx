@@ -29,6 +29,8 @@ import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
+import { TransportReportDialog } from "@/components/visit-week/TransportReportDialog";
+import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
 
 export const Route = createFileRoute("/_app/transporte")({ component: Page });
 
@@ -62,6 +64,7 @@ function Page() {
   const [editEnabled, setEditEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
   const editAllowed = !isSuper || editEnabled;
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     if (!visit) return;
@@ -175,12 +178,14 @@ function Page() {
 
   return (
     <div className="space-y-5">
-      <div className="flex justify-between items-start gap-3">
+      <div className="flex justify-between items-start gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">{t("transport.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t("transport.subtitle")}</p>
         </div>
-        {canEdit && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <VisitWeekReportButton onClick={() => setReportOpen(true)} />
+          {canEdit && (
           <Dialog
             open={open}
             onOpenChange={(o) => {
