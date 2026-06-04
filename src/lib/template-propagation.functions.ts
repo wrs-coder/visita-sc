@@ -146,6 +146,7 @@ export interface PendingUpdateRow {
   template_id: string;
   template_name: string | null;
   changed_at: string;
+  backup_pdf_path: string | null;
 }
 
 /**
