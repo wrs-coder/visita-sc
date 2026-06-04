@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { isOfflineMode } from "@/lib/connection-mode";
+import i18n from "@/i18n";
 
 export type AppRole = "superintendent" | "elder";
 export type ElderPosition = "coordenador" | "secretario" | "sup_servico" | "corpo";
@@ -144,8 +146,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // tentativas manuais quanto qualquer caminho que chame signOut.
     if (isOfflineMode()) {
       try {
-        const { toast } = await import("sonner");
-        const { default: i18n } = await import("@/i18n");
         toast.warning(i18n.t("connection.cannotLogoutOffline"));
       } catch { /* noop */ }
       return;
