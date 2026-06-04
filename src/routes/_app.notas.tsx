@@ -294,7 +294,19 @@ function Page() {
   }, [notes, tab, query, dateFrom, dateTo]);
   const selectedNotes = useMemo(() => notes.filter((n) => selected.has(n.id)), [notes, selected]);
 
-  if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">{t("notes.restricted")}</CardContent></Card>;
+  if (role !== "superintendent") return (
+    <Card>
+      <CardContent className="p-6 space-y-2">
+        <div className="flex items-center gap-2 text-destructive">
+          <Lock className="h-5 w-5" />
+          <h2 className="font-semibold">Acesso restrito</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {t("notes.restricted")} Esta seção é privada e visível apenas para o superintendente.
+        </p>
+      </CardContent>
+    </Card>
+  );
   if (congs.length === 0) return <Card><CardContent className="p-6 text-sm text-muted-foreground">{t("notes.noCongregations")}</CardContent></Card>;
 
   const exportPdf = async () => {
