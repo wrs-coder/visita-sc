@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
 import { saveBlob } from "@/lib/share";
+import { ChecklistReportDialog } from "@/components/visit-week/ChecklistReportDialog";
+import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
 
 export const Route = createFileRoute("/_app/checklist")({ component: Page });
 
@@ -35,6 +37,7 @@ function Page() {
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [editEnabled, setEditEnabled] = useState(false);
   const editAllowed = !canManage || editEnabled;
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     if (!visit) return;
@@ -81,6 +84,7 @@ function Page() {
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div><h1 className="text-2xl md:text-3xl font-bold">{t("checklistPage.title")}</h1><p className="text-sm text-muted-foreground mt-1">{t("checklistPage.subtitle")}</p></div>
         <div className="flex gap-2 flex-wrap">
+          <VisitWeekReportButton onClick={() => setReportOpen(true)} />
           {canManage && (
             <Button variant="outline" onClick={() => exportCsv(items, visit.title, t)}>
               <Download className="h-4 w-4 mr-1" />{t("checklistPage.exportSheet")}
@@ -161,6 +165,13 @@ function Page() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ChecklistReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        visitId={visit.id}
+        visitTitle={visit.title}
+      />
     </div>
   );
 }

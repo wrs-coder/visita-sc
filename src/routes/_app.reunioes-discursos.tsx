@@ -32,6 +32,9 @@ import {
   MeetingsDraftProvider,
   useMeetingsDraft,
 } from "@/components/meetings/MeetingsDraftContext";
+import { MeetingsTalksReportDialog } from "@/components/visit-week/MeetingsTalksReportDialog";
+import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
+import { useActiveVisit } from "@/hooks/use-active-visit";
 
 // Lazy: cada painel só carrega quando o utilizador entra na respectiva aba.
 const FieldMeetingsPanel = lazy(() =>
@@ -270,6 +273,8 @@ function TabsGuarded({
 }) {
   const { t } = useTranslation();
   const draft = useMeetingsDraft();
+  const { visit } = useActiveVisit();
+  const [reportOpen, setReportOpen] = useState(false);
   const handleTabChange = (v: string) => {
     if (draft?.dirty) {
       const ok = window.confirm(t("meetingsTalks.unsavedConfirm"));
@@ -288,7 +293,8 @@ function TabsGuarded({
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <VisitWeekReportButton onClick={() => setReportOpen(true)} />
             <DiscardDraftButton />
             <SaveDraftButton />
           </div>
@@ -320,6 +326,15 @@ function TabsGuarded({
           <PanelFallback />
         )}
       </Tabs>
+
+      {visit && (
+        <MeetingsTalksReportDialog
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          visitId={visit.id}
+          visitTitle={visit.title}
+        />
+      )}
     </div>
   );
 }
