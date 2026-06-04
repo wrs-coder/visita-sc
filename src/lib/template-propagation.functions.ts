@@ -15,8 +15,15 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+// Carrega o admin client APENAS no servidor (dentro dos handlers / helpers
+// server-only). Module-scope `import` de client.server quebra o code-splitter
+// do TanStack quando o arquivo é alcançável a partir de rotas no client.
+async function getAdmin() {
+  const m = await import("@/integrations/supabase/client.server");
+  return m.supabaseAdmin;
+}
 
 export const TEMPLATE_TYPES = [
   "field_meeting",
