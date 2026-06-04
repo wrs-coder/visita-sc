@@ -21,6 +21,8 @@ import { deactivateScheduleEvent } from "@/lib/schedule-cleanup.functions";
 import { VisitSummaryView, type VisitSnapshot } from "@/components/visit-summary/VisitSummaryView";
 import { getHiddenEventIds, hideEventId } from "@/lib/hidden-events";
 import { loadSnapshot, saveSnapshot } from "@/lib/snapshot-cache";
+import { WeekSummaryReportDialog } from "@/components/visit-week/WeekSummaryReportDialog";
+import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
 
 export const Route = createFileRoute("/_app/resumo-semana")({ component: Page });
 
@@ -44,6 +46,7 @@ function Page() {
   const [corruptId, setCorruptId] = useState<string | null>(null);
   // Bump força reaplicação do filtro de IDs ocultos sem refetch.
   const [hiddenBump, setHiddenBump] = useState(0);
+  const [reportOpen, setReportOpen] = useState(false);
 
   // Redireciona se não for superintendente — esta tela é exclusiva do super.
   useEffect(() => {
@@ -190,11 +193,14 @@ function Page() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold">{t("sidebar.weekSummary")}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {filteredSnap.congregation.name} • {t("weekSummary.subtitle")}
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">{t("sidebar.weekSummary")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {filteredSnap.congregation.name} • {t("weekSummary.subtitle")}
+          </p>
+        </div>
+        {filteredSnap.visit && <VisitWeekReportButton onClick={() => setReportOpen(true)} />}
       </div>
       <VisitSummaryView
         snap={filteredSnap}
@@ -216,6 +222,16 @@ function Page() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {filteredSnap.visit && (
+        <WeekSummaryReportDialog
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          visitId={filteredSnap.visit.id}
+          visitTitle={filteredSnap.visit.title}
+          congregationName={filteredSnap.congregation.name}
+        />
+      )}
     </div>
   );
 }
