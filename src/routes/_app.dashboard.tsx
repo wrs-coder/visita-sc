@@ -32,6 +32,37 @@ import {
   Heart,
   Eye,
 } from "lucide-react";
+
+// Ícone customizado: silhueta de pastor com cajado ao lado de uma ovelha.
+function ShepherdIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* Pastor: cabeça, corpo, pernas */}
+      <circle cx="7" cy="4.5" r="1.6" />
+      <path d="M7 6.2 V13" />
+      <path d="M7 9 L4.8 11.5" />
+      <path d="M7 13 L5.5 19" />
+      <path d="M7 13 L8.5 19" />
+      {/* Cajado */}
+      <path d="M10 3 V14" />
+      <path d="M10 3 c1.4 0 1.4 2 0 2" />
+      {/* Ovelha: corpo, cabeça, patas */}
+      <circle cx="16.5" cy="14" r="3.2" />
+      <circle cx="19.6" cy="12.6" r="1.1" />
+      <path d="M14.8 17 V19" />
+      <path d="M18 17 V19" />
+    </svg>
+  );
+}
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import {
   useActiveCongregation,
@@ -1007,7 +1038,7 @@ function Dashboard() {
       {role === "superintendent" && visit && (
         <CollapsibleCard
           id="super-elder-program"
-          icon={<Heart className="h-4 w-4 text-primary" />}
+          icon={<ShepherdIcon className="h-4 w-4 text-primary" />}
           title="Pastoreiem o Rebanho de Deus"
           headerRight={
             <Link
@@ -1019,7 +1050,7 @@ function Dashboard() {
           }
         >
           <Tabs defaultValue="pastoral" className="w-full min-w-0 overflow-hidden">
-            <TabsList className="grid h-auto w-full grid-cols-4 items-stretch gap-1">
+            <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-4 items-stretch gap-1">
               <TabsTrigger value="pastoral" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
                 Pastoreio
               </TabsTrigger>
@@ -1030,7 +1061,7 @@ function Dashboard() {
                 Recomendações
               </TabsTrigger>
               <TabsTrigger value="local" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
-                Locais
+                Assuntos Locais
               </TabsTrigger>
             </TabsList>
             {([
