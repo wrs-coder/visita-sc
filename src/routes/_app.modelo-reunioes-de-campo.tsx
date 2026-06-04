@@ -77,6 +77,7 @@ function Page() {
   const [renameVal, setRenameVal] = useState("");
   const [renameErr, setRenameErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [genObsByTpl, setGenObsByTpl] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     const r = await fnList();
