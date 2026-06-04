@@ -73,6 +73,55 @@ function Page() {
   const fnUpdate = useServerFn(updateElderProgramEvent);
   const fnCreateRec = useServerFn(createElderRecommendation);
   const fnDelete = useServerFn(deleteElderProgramEvent);
+  const navigate = useNavigate();
+
+  const PURPOSE_TO_TIPO: Record<string, string> = {
+    ministerial_servant: "Servo ministerial",
+    elder: "Ancião",
+    cca_change: "CCA",
+    // redesignation e removal: tipo vazio (escolha manual)
+  };
+
+  const goToCronograma = (ev: ElderVisitEventDTO) => {
+    if (!visit) return;
+    const titleParts = ["Visita de Pastoreio"];
+    if (ev.family_name) titleParts.push(ev.family_name);
+    const noteLines: string[] = [];
+    if (ev.slot_label) noteLines.push(`Slot: ${ev.slot_label}`);
+    if (ev.family_members) noteLines.push(`Família: ${ev.family_members}`);
+    if (ev.spiritual_info) noteLines.push(`Info: ${ev.spiritual_info}`);
+    navigate({
+      to: "/cronograma",
+      search: {
+        action: "new",
+        title: titleParts.join(" — "),
+        location: ev.address ?? undefined,
+        companion: ev.companion ?? undefined,
+        notes: noteLines.join("\n") || undefined,
+        congId: visit.congregation_id,
+      } as never,
+    });
+  };
+
+  const goToNotas = (ev: ElderVisitEventDTO) => {
+    if (!visit) return;
+    const corpoLines: string[] = [];
+    if (ev.family_members) corpoLines.push(`Membros da Família: ${ev.family_members}`);
+    if (ev.field_group) corpoLines.push(`Grupo de campo: ${ev.field_group}`);
+    if (ev.info) corpoLines.push(`Informações: ${ev.info}`);
+    navigate({
+      to: "/notas",
+      search: {
+        tab: "recomendados",
+        newNote: "recomendados",
+        congId: visit.congregation_id,
+        nome: ev.full_name ?? undefined,
+        tipo: ev.purpose ? PURPOSE_TO_TIPO[ev.purpose] ?? undefined : undefined,
+        corpo: corpoLines.join("\n") || undefined,
+      } as never,
+    });
+  };
+
 
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState<Record<Section, string>>({
