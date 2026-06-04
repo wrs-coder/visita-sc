@@ -171,7 +171,7 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
     const visitIds = visits.map((v) => v.id);
     const { data: rows, error } = await supabaseAdmin
       .from("visit_pending_updates")
-      .select("id,visit_id,template_type,template_id,diff,created_at")
+      .select("id,visit_id,template_type,template_id,diff,created_at,backup_pdf_path")
       .in("visit_id", visitIds)
       .is("resolved_at", null)
       .order("created_at", { ascending: false });
@@ -218,6 +218,7 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
           template_id: r.template_id,
           template_name: nameMap[`${t}:${r.template_id}`] ?? null,
           changed_at: diff.changed_at ?? r.created_at,
+          backup_pdf_path: (r as { backup_pdf_path: string | null }).backup_pdf_path ?? null,
         };
       }),
     };
