@@ -39,6 +39,7 @@ export function TemplateUpdatesBadge({ congregationId }: Props) {
   const listFn = useServerFn(listPendingUpdatesForCongregation);
   const dismissFn = useServerFn(dismissPendingUpdate);
   const dismissAllFn = useServerFn(dismissAllPendingUpdatesForVisit);
+  const signFn = useServerFn(getBackupSignedUrl);
 
   const [count, setCount] = useState(0);
   const [open, setOpen] = useState(false);
