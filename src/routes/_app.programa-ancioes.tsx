@@ -301,9 +301,13 @@ function Page() {
                             canDelete={canEdit && (ev.section === "recommendations" || isSuper)}
                             onChange={(patch) => saveField(ev, patch)}
                             onDelete={() => deleteEvent(ev)}
-                            onScheduleInCronograma={ev.section === "pastoral" ? () => goToCronograma(ev) : undefined}
-                            onSaveToPrivateNotes={ev.section === "recommendations" && isSuper ? () => goToNotas(ev) : undefined}
+                            onScheduleInCronograma={ev.section === "pastoral" ? () => setPendingAction({ kind: "cronograma", ev }) : undefined}
+                            onSaveToPrivateNotes={ev.section === "recommendations" ? () => setPendingAction({ kind: "notas", ev }) : undefined}
+                            isSuperintendent={isSuper}
+                            alreadyScheduled={dispatchedIds.has(`cron:${ev.id}`)}
+                            alreadySavedToNotes={dispatchedIds.has(`notas:${ev.id}`)}
                           />
+
                         );
                       })}
                     </div>
