@@ -108,6 +108,19 @@ export function TemplateUpdatesBadge({ congregationId }: Props) {
     }
   };
 
+  const handleDownloadBackup = async (path: string) => {
+    try {
+      const r = await signFn({ data: { path } });
+      if (r.ok) {
+        window.open(r.url, "_blank", "noopener,noreferrer");
+      } else {
+        toast.error("Falha ao baixar backup", { description: r.error });
+      }
+    } catch (err) {
+      toast.error("Falha ao baixar backup", { description: (err as Error).message });
+    }
+  };
+
   if (!congregationId || count === 0) return null;
 
   // Agrupa por visita para exibição mais limpa.
