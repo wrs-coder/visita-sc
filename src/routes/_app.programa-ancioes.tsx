@@ -82,45 +82,88 @@ function Page() {
     // redesignation e removal: tipo vazio (escolha manual)
   };
 
+  // Estado para confirmação + bloqueio de duplo-clique
+  const [pendingAction, setPendingAction] = useState<
+    | { kind: "cronograma" | "notas"; ev: ElderVisitEventDTO }
+    | null
+  >(null);
+  const [dispatchedIds, setDispatchedIds] = useState<Set<string>>(new Set());
+  const markDispatched = (key: string) => setDispatchedIds((s) => new Set(s).add(key));
+
   const goToCronograma = (ev: ElderVisitEventDTO) => {
     if (!visit) return;
-    const titleParts = ["Visita de Pastoreio"];
-    if (ev.family_name) titleParts.push(ev.family_name);
-    const noteLines: string[] = [];
-    if (ev.slot_label) noteLines.push(`Slot: ${ev.slot_label}`);
-    if (ev.family_members) noteLines.push(`Família: ${ev.family_members}`);
-    if (ev.spiritual_info) noteLines.push(`Info: ${ev.spiritual_info}`);
-    navigate({
-      to: "/cronograma",
-      search: {
-        action: "new",
-        title: titleParts.join(" — "),
-        location: ev.address ?? undefined,
-        companion: ev.companion ?? undefined,
-        notes: noteLines.join("\n") || undefined,
-        congId: visit.congregation_id,
-      } as never,
-    });
+    const key = `cron:${ev.id}`;
+    if (dispatchedIds.has(key)) {
+      toast.info("Este pastoreio já foi enviado ao Cronograma nesta sessão.");
+      return;
+    }
+    try {
+      const titleParts = ["Visita de Pastoreio"];
+      if (ev.family_name) titleParts.push(ev.family_name);
+      const noteLines: string[] = [];
+      if (ev.slot_label) noteLines.push(`Slot: ${ev.slot_label}`);
+      if (ev.family_members) noteLines.push(`Família: ${ev.family_members}`);
+      if (ev.spiritual_info) noteLines.push(`Info: ${ev.spiritual_info}`);
+      navigate({
+        to: "/cronograma",
+        search: {
+          action: "new",
+          title: titleParts.join(" — "),
+          location: ev.address ?? undefined,
+          companion: ev.companion ?? undefined,
+          notes: noteLines.join("\n") || undefined,
+          congId: visit.congregation_id,
+        } as never,
+      });
+      markDispatched(key);
+      toast.success("Abrindo no Cronograma — confirme e salve o evento.");
+    } catch (err) {
+      toast.error(`Erro ao abrir o Cronograma: ${(err as Error).message}`);
+    }
   };
 
   const goToNotas = (ev: ElderVisitEventDTO) => {
     if (!visit) return;
-    const corpoLines: string[] = [];
-    if (ev.family_members) corpoLines.push(`Membros da Família: ${ev.family_members}`);
-    if (ev.field_group) corpoLines.push(`Grupo de campo: ${ev.field_group}`);
-    if (ev.info) corpoLines.push(`Informações: ${ev.info}`);
-    navigate({
-      to: "/notas",
-      search: {
-        tab: "recomendados",
-        newNote: "recomendados",
-        congId: visit.congregation_id,
-        nome: ev.full_name ?? undefined,
-        tipo: ev.purpose ? PURPOSE_TO_TIPO[ev.purpose] ?? undefined : undefined,
-        corpo: corpoLines.join("\n") || undefined,
-      } as never,
-    });
+    if (!isSuper) {
+      toast.error("Acesso restrito: apenas o superintendente pode salvar em Notas Privadas.");
+      return;
+    }
+    const key = `notas:${ev.id}`;
+    if (dispatchedIds.has(key)) {
+      toast.info("Esta recomendação já foi salva em Notas Privadas nesta sessão.");
+      return;
+    }
+    try {
+      const corpoLines: string[] = [];
+      if (ev.family_members) corpoLines.push(`Membros da Família: ${ev.family_members}`);
+      if (ev.field_group) corpoLines.push(`Grupo de campo: ${ev.field_group}`);
+      if (ev.info) corpoLines.push(`Informações: ${ev.info}`);
+      navigate({
+        to: "/notas",
+        search: {
+          tab: "recomendados",
+          newNote: "recomendados",
+          congId: visit.congregation_id,
+          nome: ev.full_name ?? undefined,
+          tipo: ev.purpose ? PURPOSE_TO_TIPO[ev.purpose] ?? undefined : undefined,
+          corpo: corpoLines.join("\n") || undefined,
+        } as never,
+      });
+      markDispatched(key);
+      toast.success("Salvando em Notas Privadas…");
+    } catch (err) {
+      toast.error(`Erro ao salvar em Notas Privadas: ${(err as Error).message}`);
+    }
   };
+
+  const confirmPending = () => {
+    if (!pendingAction) return;
+    const { kind, ev } = pendingAction;
+    setPendingAction(null);
+    if (kind === "cronograma") goToCronograma(ev);
+    else goToNotas(ev);
+  };
+
 
 
   const [loading, setLoading] = useState(true);
