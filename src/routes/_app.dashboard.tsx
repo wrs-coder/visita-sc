@@ -1116,9 +1116,9 @@ function Dashboard() {
                         <span>{f.meeting_location}</span>
                       </div>
                     )}
-                    {f.territory_number && (
+                    {(f.territory_number || f.territory_location) && (
                       <div className="text-xs text-muted-foreground break-words whitespace-normal">
-                        {t("dashboard.territory")} {f.territory_number}
+                        {t("dashboard.territory")} {f.territory_number || "—"}
                         {f.territory_location ? ` · ${f.territory_location}` : ""}
                       </div>
                     )}
