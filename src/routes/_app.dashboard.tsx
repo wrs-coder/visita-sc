@@ -41,7 +41,6 @@ import {
 import { format, parseISO, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
-import { FinishVisitDialog } from "@/components/FinishVisitDialog";
 import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
