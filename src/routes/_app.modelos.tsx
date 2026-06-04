@@ -49,6 +49,8 @@ function Page() {
   const [namesBySlot, setNamesBySlot] = useState<Record<number, string>>({});
   const [notesBySlot, setNotesBySlot] = useState<Record<number, Record<string, string>>>({});
   const [genObsBySlot, setGenObsBySlot] = useState<Record<number, string>>({});
+  const [studyNotesBySlot, setStudyNotesBySlot] = useState<Record<number, Record<string, string>>>({});
+  const [studyGenObsBySlot, setStudyGenObsBySlot] = useState<Record<number, string>>({});
   const [activeSlot, setActiveSlot] = useState("1");
   const [busy, setBusy] = useState(false);
   const [dupSlot, setDupSlot] = useState<string | null>(null);
