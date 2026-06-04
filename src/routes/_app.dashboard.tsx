@@ -45,6 +45,7 @@ import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog"
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
 import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.functions";
+import { listElderProgramForVisit, type ElderVisitEventDTO } from "@/lib/elder-program.functions";
 
 import { listNotesByType, FIXED_FOLDER_WEEK_CONSIDERATIONS, FIXED_FOLDER_WEEK_OUTLINES, type FieldNote } from "@/lib/bible-notes-store";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
