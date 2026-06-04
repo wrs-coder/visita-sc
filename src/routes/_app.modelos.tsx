@@ -123,10 +123,13 @@ function Page() {
     const fromTpl = tpls.find((t) => t.slot === fromSlot);
     const fromItems = fromTpl ? (itemsByTpl[fromTpl.id] ?? []) : [];
     const fromNotes = notesBySlot[fromSlot] ?? {};
+    const fromStudyNotes = studyNotesBySlot[fromSlot] ?? {};
+    const fromGenObs = genObsBySlot[fromSlot] ?? "";
+    const fromStudyGenObs = studyGenObsBySlot[fromSlot] ?? "";
     const fromName = namesBySlot[fromSlot] || DEFAULT_NAMES[fromSlot];
     const copyPrefix = t("templates.program.copyPrefix", { defaultValue: "Cópia de" });
     const toName = `${copyPrefix} ${fromName}`;
-    const r = await fnUpsert({ data: { slot: toSlot, name: toName, meal_day_notes: fromNotes } });
+    const r = await fnUpsert({ data: { slot: toSlot, name: toName, meal_day_notes: fromNotes, study_day_notes: fromStudyNotes, general_observations: fromGenObs || null, study_general_observations: fromStudyGenObs || null } });
     if (!r.ok) { toast.error(r.error); setBusy(false); return; }
     const itemsCopy = fromItems.map((it, i) => ({ ...it, sort_order: i }));
     const r2 = await fnReplace({ data: { templateId: r.id!, items: itemsCopy } });
