@@ -85,6 +85,8 @@ function Page() {
     return localStorage.getItem(NOTAS_CONG_KEY);
   });
   const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const handledNewNoteRef = useRef(false);
   const [notes, setNotes] = useState<Note[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [tab, setTab] = useState<NoteType>(search.tab ?? "free");
