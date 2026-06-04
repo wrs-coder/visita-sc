@@ -160,6 +160,52 @@ function Page() {
     load();
   }, [congId]);
 
+  // Deep-link: ?newNote=recomendados&nome=...&tipo=...&corpo=... cria nota pré-preenchida.
+  useEffect(() => {
+    if (handledNewNoteRef.current) return;
+    if (!search.newNote || role !== "superintendent" || !user || !congId) return;
+    if (search.congId && search.congId !== congId) return; // espera congId sincronizar
+    handledNewNoteRef.current = true;
+    const note_type = search.newNote;
+    setTab(note_type);
+    const id = makeUuid();
+    const now = new Date().toISOString();
+    const payload: Record<string, string> = {};
+    if (search.nome) payload.nome = search.nome;
+    if (search.tipo) payload.tipo = search.tipo;
+    if (search.corpo) payload.corpo = search.corpo;
+    const defaultTitle = search.nome || t(`notes.categories.${note_type}.default`, { defaultValue: catLabel(note_type) });
+    const optimistic: Note = {
+      id, visit_id: null, congregation_id: congId, superintendent_id: user.id,
+      title: defaultTitle, content: "", note_type,
+      companion: null, involved_names: null, additional_info: null,
+      note_date: null, payload, updated_at: now,
+    };
+    setNotes((n) => [optimistic, ...n]);
+    setHighlightId(id);
+    offlineInsert("private_notes", {
+      id, congregation_id: congId, superintendent_id: user.id, note_type,
+      title: defaultTitle, content: "", payload,
+    } as Record<string, unknown>).then(({ error, queued }) => {
+      if (error) {
+        setNotes((n) => n.filter((x) => x.id !== id));
+        toast.error(error.message);
+      } else {
+        toast.success(queued ? t("notes.createdOffline") : t("common.saved"));
+      }
+    });
+    navigate({
+      search: {
+        tab: note_type, noteId: id, congId: undefined,
+        newNote: undefined, nome: undefined, tipo: undefined, corpo: undefined,
+      } as never,
+      replace: true,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.newNote, congId, role, user]);
+
+
+
   const add = async (note_type: NoteType) => {
     if (!user || !congId) return;
     const defaultTitle = t(`notes.categories.${note_type}.default`, { defaultValue: catLabel(note_type) });
