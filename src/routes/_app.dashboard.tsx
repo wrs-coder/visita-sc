@@ -48,6 +48,7 @@ import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.fun
 
 import { listNotesByType, FIXED_FOLDER_WEEK_CONSIDERATIONS, FIXED_FOLDER_WEEK_OUTLINES, type FieldNote } from "@/lib/bible-notes-store";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
+import { TemplateUpdatesBadge } from "@/components/dashboard/TemplateUpdatesBadge";
 import { DayDetailsDialog } from "@/components/dashboard/DayDetailsDialog";
 import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { FieldNoteFullscreenDialog } from "@/components/dashboard/FieldNoteFullscreenDialog";
@@ -610,7 +611,17 @@ function Dashboard() {
           {role === "superintendent" ? t("dashboard.panelSuper") : t("dashboard.panelElder")}
           {visit ? ` · ${t("dashboard.visitLabel", { title: visit.title })}` : ` · ${t("dashboard.noActiveVisit")}`}
         </p>
+        <div className="mt-3">
+          <TemplateUpdatesBadge
+            congregationId={
+              role === "superintendent"
+                ? (selected ?? visit?.congregation_id ?? null)
+                : (profile?.congregation_id ?? null)
+            }
+          />
+        </div>
       </header>
+
 
       {/* Ajuste 02: alternador "Hoje / Amanhã" — atualiza apenas os 6 cartões diários. */}
       <div className="flex items-center gap-2 flex-wrap">
