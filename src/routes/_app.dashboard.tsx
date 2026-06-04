@@ -1007,7 +1007,7 @@ function Dashboard() {
       {role === "superintendent" && visit && (
         <CollapsibleCard
           id="super-elder-program"
-          icon={<Heart className="h-4 w-4 text-primary" />}
+          icon={<ShepherdIcon className="h-4 w-4 text-primary" />}
           title="Pastoreiem o Rebanho de Deus"
           headerRight={
             <Link
@@ -1019,7 +1019,7 @@ function Dashboard() {
           }
         >
           <Tabs defaultValue="pastoral" className="w-full min-w-0 overflow-hidden">
-            <TabsList className="grid h-auto w-full grid-cols-4 items-stretch gap-1">
+            <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-4 items-stretch gap-1">
               <TabsTrigger value="pastoral" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
                 Pastoreio
               </TabsTrigger>
@@ -1030,7 +1030,7 @@ function Dashboard() {
                 Recomendações
               </TabsTrigger>
               <TabsTrigger value="local" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
-                Locais
+                Assuntos Locais
               </TabsTrigger>
             </TabsList>
             {([
