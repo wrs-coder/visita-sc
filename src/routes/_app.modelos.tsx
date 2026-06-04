@@ -70,15 +70,22 @@ function Page() {
     const names: Record<number, string> = { ...DEFAULT_NAMES };
     const notesMap: Record<number, Record<string, string>> = {};
     const obsMap: Record<number, string> = {};
+    const studyNotesMap: Record<number, Record<string, string>> = {};
+    const studyObsMap: Record<number, string> = {};
     for (const t of r.templates) {
       names[t.slot] = t.name;
       const raw = (t as TemplateRow).meal_day_notes;
       notesMap[t.slot] = (raw && typeof raw === "object" ? raw : {}) as Record<string, string>;
       obsMap[t.slot] = ((t as TemplateRow).general_observations) ?? "";
+      const rawStudy = (t as TemplateRow).study_day_notes;
+      studyNotesMap[t.slot] = (rawStudy && typeof rawStudy === "object" ? rawStudy : {}) as Record<string, string>;
+      studyObsMap[t.slot] = ((t as TemplateRow).study_general_observations) ?? "";
     }
     setNamesBySlot(names);
     setNotesBySlot(notesMap);
     setGenObsBySlot(obsMap);
+    setStudyNotesBySlot(studyNotesMap);
+    setStudyGenObsBySlot(studyObsMap);
   }, [fnList]);
 
   useEffect(() => { load(); }, [load]);
