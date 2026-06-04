@@ -455,6 +455,35 @@ function EventCard({
             <DebouncedArea label="Informações sobre o assunto" value={ev.info} onSave={(v) => onChange({ info: v })} readOnly={readOnly} minH={100} />
           </>
         )}
+
+        {(onScheduleInCronograma || onSaveToPrivateNotes) && (
+          <div className="flex flex-wrap gap-2 pt-2 border-t mt-2">
+            {onScheduleInCronograma && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onScheduleInCronograma}
+                disabled={!ev.family_name}
+                title={!ev.family_name ? "Preencha 'Família/Irmão(ã)' antes de agendar" : undefined}
+              >
+                <CalendarPlus className="h-3.5 w-3.5 mr-1" /> Agendar no Cronograma
+              </Button>
+            )}
+            {onSaveToPrivateNotes && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onSaveToPrivateNotes}
+                disabled={!ev.full_name}
+                title={!ev.full_name ? "Preencha 'Nome Completo' antes de salvar" : undefined}
+              >
+                <StickyNote className="h-3.5 w-3.5 mr-1" /> Salvar em Notas Privadas
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
