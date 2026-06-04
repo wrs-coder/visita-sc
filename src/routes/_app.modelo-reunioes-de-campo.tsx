@@ -83,6 +83,11 @@ function Page() {
     const r = await fnList();
     if (r.ok) {
       setTpls(r.templates as TemplateRow[]);
+      const obsMap: Record<string, string> = {};
+      for (const t of r.templates) {
+        obsMap[t.id] = (t as { observations?: string | null }).observations ?? "";
+      }
+      setGenObsByTpl(obsMap);
       const map: Record<string, ItemDraft[]> = {};
       for (const t of r.templates) {
         map[t.id] = [];
