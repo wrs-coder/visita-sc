@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Bell, BellRing, Download, Loader2, X } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ interface Props {
 }
 
 export function TemplateUpdatesBadge({ congregationId }: Props) {
+  const { session } = useAuth();
   const countFn = useServerFn(countPendingUpdatesForCongregation);
   const listFn = useServerFn(listPendingUpdatesForCongregation);
   const dismissFn = useServerFn(dismissPendingUpdate);
@@ -47,7 +49,7 @@ export function TemplateUpdatesBadge({ congregationId }: Props) {
   const [loading, setLoading] = useState(false);
 
   const refreshCount = useCallback(async () => {
-    if (!congregationId) {
+    if (!congregationId || !session) {
       setCount(0);
       return;
     }
@@ -57,7 +59,7 @@ export function TemplateUpdatesBadge({ congregationId }: Props) {
     } catch {
       // silencioso — feature secundária
     }
-  }, [congregationId, countFn]);
+  }, [congregationId, countFn, session]);
 
   useEffect(() => {
     void refreshCount();
