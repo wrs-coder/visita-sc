@@ -176,8 +176,15 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
       byType.get(t)!.add(r.template_id);
     }
     const nameMap: Record<string, string | null> = {};
+    const adminAny2 = supabaseAdmin as unknown as {
+      from: (t: string) => {
+        select: (cols: string) => {
+          in: (c: string, v: string[]) => Promise<{ data: Array<{ id: string; name: string | null }> | null }>;
+        };
+      };
+    };
     for (const [t, ids] of byType) {
-      const { data: tpls } = await supabaseAdmin
+      const { data: tpls } = await adminAny2
         .from(TEMPLATE_TABLE[t])
         .select("id,name")
         .in("id", Array.from(ids));
