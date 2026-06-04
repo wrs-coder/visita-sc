@@ -23,7 +23,7 @@ export const listTemplates = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data: tpls } = await supabaseAdmin
-      .from("program_templates").select("id,slot,name,meal_day_notes,general_observations,created_at,updated_at")
+      .from("program_templates").select("id,slot,name,meal_day_notes,general_observations,study_day_notes,study_general_observations,created_at,updated_at")
       .eq("superintendent_id", userId).order("slot");
     const ids = (tpls ?? []).map((t) => t.id);
     let items: Array<{ id: string; template_id: string; kind: string; day_offset: number; payload: Payload; sort_order: number }> = [];
@@ -43,13 +43,17 @@ export const upsertTemplate = createServerFn({ method: "POST" })
       name: z.string().trim().min(1).max(120),
       meal_day_notes: z.record(z.string(), z.string().max(2000)).optional(),
       general_observations: z.string().max(4000).nullable().optional(),
+      study_day_notes: z.record(z.string(), z.string().max(2000)).optional(),
+      study_general_observations: z.string().max(4000).nullable().optional(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const updatePatch: { name: string; meal_day_notes?: Record<string, string>; general_observations?: string | null } = { name: data.name };
+    const updatePatch: { name: string; meal_day_notes?: Record<string, string>; general_observations?: string | null; study_day_notes?: Record<string, string>; study_general_observations?: string | null } = { name: data.name };
     if (data.meal_day_notes) updatePatch.meal_day_notes = data.meal_day_notes;
     if (data.general_observations !== undefined) updatePatch.general_observations = data.general_observations;
+    if (data.study_day_notes) updatePatch.study_day_notes = data.study_day_notes;
+    if (data.study_general_observations !== undefined) updatePatch.study_general_observations = data.study_general_observations;
     const { data: existing } = await supabaseAdmin.from("program_templates")
       .select("id").eq("superintendent_id", userId).eq("slot", data.slot).maybeSingle();
     if (existing) {
@@ -57,13 +61,15 @@ export const upsertTemplate = createServerFn({ method: "POST" })
       if (error) return { ok: false as const, error: error.message };
       return { ok: true as const, id: existing.id };
     }
-    const insertRow: { superintendent_id: string; slot: number; name: string; meal_day_notes: Record<string, string>; general_observations?: string | null } = {
+    const insertRow: { superintendent_id: string; slot: number; name: string; meal_day_notes: Record<string, string>; general_observations?: string | null; study_day_notes: Record<string, string>; study_general_observations?: string | null } = {
       superintendent_id: userId,
       slot: data.slot,
       name: data.name,
       meal_day_notes: data.meal_day_notes ?? {},
+      study_day_notes: data.study_day_notes ?? {},
     };
     if (data.general_observations !== undefined) insertRow.general_observations = data.general_observations;
+    if (data.study_general_observations !== undefined) insertRow.study_general_observations = data.study_general_observations;
     const { data: row, error } = await supabaseAdmin.from("program_templates")
       .insert(insertRow).select("id").single();
     if (error || !row) return { ok: false as const, error: error?.message ?? "Falha" };

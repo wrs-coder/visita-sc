@@ -1526,6 +1526,8 @@ export type Database = {
           meal_day_notes: Json
           name: string
           slot: number
+          study_day_notes: Json
+          study_general_observations: string | null
           superintendent_id: string
           updated_at: string
         }
@@ -1536,6 +1538,8 @@ export type Database = {
           meal_day_notes?: Json
           name: string
           slot: number
+          study_day_notes?: Json
+          study_general_observations?: string | null
           superintendent_id: string
           updated_at?: string
         }
@@ -1546,6 +1550,8 @@ export type Database = {
           meal_day_notes?: Json
           name?: string
           slot?: number
+          study_day_notes?: Json
+          study_general_observations?: string | null
           superintendent_id?: string
           updated_at?: string
         }
