@@ -397,6 +397,13 @@ function Page() {
           );
         })}
       </fieldset>
+
+      <TransportReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        visitId={visit.id}
+        visitTitle={visit.title}
+      />
     </div>
   );
 }
