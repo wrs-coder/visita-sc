@@ -334,9 +334,29 @@ function Page() {
         recommendations={recommendations}
         local={local}
       />
+
+      <AlertDialog open={pendingAction !== null} onOpenChange={(o) => { if (!o) setPendingAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingAction?.kind === "cronograma" ? "Agendar no Cronograma?" : "Salvar em Notas Privadas?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingAction?.kind === "cronograma"
+                ? "Um novo evento será aberto no Cronograma com os dados deste pastoreio. Para evitar duplicidade, confirme apenas uma vez."
+                : "Uma nova nota privada será criada na subaba “Recomendados” com os dados desta recomendação. Para evitar duplicidade, confirme apenas uma vez."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPending}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
 
 function LoadingPanel() {
   return (
