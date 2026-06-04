@@ -1,134 +1,30 @@
-// Propagação leve de alterações de modelos para visitas futuras.
-//
-// Filosofia (sustentável + segura + não-invasiva):
-//  - Quando um modelo é salvo, registramos UMA pendência por visita futura
-//    da congregação vinculada (start_date > hoje). Operação fire-and-forget:
-//    se falhar, o salvamento do modelo NÃO é interrompido.
-//  - A pendência é apenas um "aviso": não muda dados da visita. O usuário
-//    decide se quer reaplicar o modelo (usando o botão "Aplicar modelo"
-//    que já existe em cada aba) ou dispensar o aviso.
-//  - A limpeza automática (pg_cron diário 04:00) remove pendências de
-//    visitas que já começaram.
-//
-// O ganho real: anciãos sabem que o superintendente atualizou o modelo,
-// sem que o app reescreva dados que eles já preencheram.
+// Pendências leves de propagação de modelos.
+// Helpers ficam em template-propagation.server.ts para evitar a remoção
+// de siblings feita pelo splitter de server-fns do TanStack.
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  getAdmin,
+  TEMPLATE_TABLE,
+  TEMPLATE_TYPE_LABELS,
+  TEMPLATE_TYPES,
+  type TemplateType,
+} from "./template-propagation.server";
 
-// Carrega o admin client APENAS no servidor (dentro dos handlers / helpers
-// server-only). Module-scope `import` de client.server quebra o code-splitter
-// do TanStack quando o arquivo é alcançável a partir de rotas no client.
-async function getAdmin() {
-  const m = await import("@/integrations/supabase/client.server");
-  return m.supabaseAdmin;
-}
+export { TEMPLATE_TYPES };
+export type { TemplateType };
+// Re-export do helper para os 4 *.templates.functions.ts existentes.
+export { recordTemplateChanged } from "./template-propagation.server";
 
-export const TEMPLATE_TYPES = [
-  "field_meeting",
-  "meeting_talk",
-  "checklist",
-  "elder_program",
-] as const;
-export type TemplateType = (typeof TEMPLATE_TYPES)[number];
-
-const TEMPLATE_TYPE_LABELS: Record<TemplateType, string> = {
-  field_meeting: "Reuniões para serviço de campo",
-  meeting_talk: "Reuniões e discursos",
-  checklist: "Checklist",
-  elder_program: "Programação com anciãos",
-};
-
-const TEMPLATE_TABLE: Record<TemplateType, string> = {
-  field_meeting: "field_meeting_templates",
-  meeting_talk: "meeting_talk_templates",
-  checklist: "checklist_templates",
-  elder_program: "elder_program_templates",
-};
-
-/**
- * Helper interno chamado pelos *.functions.ts dos 4 tipos de modelo após
- * um salvamento bem-sucedido. Nunca lança — apenas registra log em caso de
- * erro. Sustentabilidade: 1 SELECT + 1 UPSERT em lote, sem laços por visita.
- */
-export async function recordTemplateChanged(
-  templateType: TemplateType,
-  templateId: string,
-): Promise<void> {
-  try {
-    const supabaseAdmin = await getAdmin();
-    const table = TEMPLATE_TABLE[templateType];
-    const adminAny = supabaseAdmin as unknown as {
-      from: (t: string) => {
-        select: (cols: string) => {
-          eq: (c: string, v: unknown) => { maybeSingle: () => Promise<{ data: { id: string; congregation_id: string | null; name: string | null } | null }> };
-          in: (c: string, v: string[]) => Promise<{ data: Array<{ id: string; name: string | null }> | null }>;
-        };
-      };
-    };
-    const { data: tpl } = await adminAny
-      .from(table)
-      .select("id,congregation_id,name")
-      .eq("id", templateId)
-      .maybeSingle();
-    if (!tpl?.congregation_id) return; // modelo "livre" — sem congregação vinculada
-
-    const today = new Date().toISOString().slice(0, 10);
-    const { data: visits } = await supabaseAdmin
-      .from("visits")
-      .select("id")
-      .eq("congregation_id", tpl.congregation_id)
-      .gt("start_date", today);
-
-    if (!visits?.length) return;
-
-    // Gera UM backup PDF por alteração e reaproveita o mesmo path em todas
-    // as pendências (econômico em storage e CPU).
-    const { generateTemplateBackupPdf } = await import("./template-backup.server");
-    const backupPath = await generateTemplateBackupPdf({
-      table,
-      templateType,
-      templateId,
-      congregationId: tpl.congregation_id,
-      templateName: tpl.name,
-    });
-
-    const visitIds = visits.map((v: { id: string }) => v.id);
-    await supabaseAdmin
-      .from("visit_pending_updates")
-      .delete()
-      .in("visit_id", visitIds)
-      .eq("template_type", templateType)
-      .eq("template_id", templateId)
-      .is("resolved_at", null);
-
-    const rows = visitIds.map((vid: string) => ({
-      visit_id: vid,
-      template_type: templateType,
-      template_id: templateId,
-      diff: { changed_at: new Date().toISOString() },
-      backup_pdf_path: backupPath,
-    }));
-    await supabaseAdmin.from("visit_pending_updates").insert(rows);
-  } catch (err) {
-    // Fire-and-forget: log só no servidor.
-    // eslint-disable-next-line no-console
-    console.warn("[template-propagation] recordTemplateChanged failed:", err);
-  }
-}
-
-/**
- * Server fn para listar pendências de uma congregação (para o badge no
- * dashboard). Apenas conta — não retorna conteúdo sensível.
- */
 export const countPendingUpdatesForCongregation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z.object({ congregationId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data }) => {
-    const supabaseAdmin = await getAdmin();
+    const supabaseAdmin = getAdmin();
     const today = new Date().toISOString().slice(0, 10);
     const { data: visits } = await supabaseAdmin
       .from("visits")
@@ -158,17 +54,13 @@ export interface PendingUpdateRow {
   backup_pdf_path: string | null;
 }
 
-/**
- * Lista pendências (não resolvidas) com título de visita e nome do modelo
- * resolvidos para exibição no diálogo.
- */
 export const listPendingUpdatesForCongregation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z.object({ congregationId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data }): Promise<{ ok: true; items: PendingUpdateRow[] } | { ok: false; error: string }> => {
-    const supabaseAdmin = await getAdmin();
+    const supabaseAdmin = getAdmin();
     type VisitRow = { id: string; title: string | null; start_date: string };
     const today = new Date().toISOString().slice(0, 10);
     const { data: visits, error: vErr } = await supabaseAdmin
@@ -190,7 +82,6 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
     if (error) return { ok: false, error: error.message };
     if (!rows?.length) return { ok: true, items: [] };
 
-    // Resolve nomes de modelos em lote.
     const byType = new Map<TemplateType, Set<string>>();
     for (const r of rows) {
       const t = r.template_type as TemplateType;
@@ -236,16 +127,11 @@ export const listPendingUpdatesForCongregation = createServerFn({ method: "POST"
     };
   });
 
-/**
- * Marca uma pendência como resolvida (dispensada). O conteúdo da visita
- * não é alterado — para reaplicar o modelo o usuário usa o botão
- * "Aplicar modelo" existente em cada aba.
- */
 export const dismissPendingUpdate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await getAdmin();
+    const supabaseAdmin = getAdmin();
     const { error } = await supabaseAdmin
       .from("visit_pending_updates")
       .update({ resolved_at: new Date().toISOString(), resolved_by: context.userId })
@@ -254,14 +140,11 @@ export const dismissPendingUpdate = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-/**
- * Dispensa todas as pendências de uma visita (atalho para o dashboard).
- */
 export const dismissAllPendingUpdatesForVisit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await getAdmin();
+    const supabaseAdmin = getAdmin();
     const { error } = await supabaseAdmin
       .from("visit_pending_updates")
       .update({ resolved_at: new Date().toISOString(), resolved_by: context.userId })
@@ -271,18 +154,14 @@ export const dismissAllPendingUpdatesForVisit = createServerFn({ method: "POST" 
     return { ok: true as const };
   });
 
-/**
- * Retorna uma URL assinada (curta) para baixar o PDF de backup do bucket
- * privado `visit-backups`. Acessível apenas a usuários autenticados.
- */
 export const getBackupSignedUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ path: z.string().min(1).max(500) }).parse(input))
   .handler(async ({ data }) => {
-    const supabaseAdmin = await getAdmin();
+    const supabaseAdmin = getAdmin();
     const { data: signed, error } = await supabaseAdmin.storage
       .from("visit-backups")
-      .createSignedUrl(data.path, 60 * 5); // 5 min
+      .createSignedUrl(data.path, 60 * 5);
     if (error || !signed) return { ok: false as const, error: error?.message ?? "Falha ao gerar URL" };
     return { ok: true as const, url: signed.signedUrl };
   });
