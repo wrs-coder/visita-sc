@@ -69,9 +69,18 @@ import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supab
 import { getHiddenEventIds } from "@/lib/hidden-events";
 
 export const Route = createFileRoute("/_app/cronograma")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    event: typeof search.event === "string" ? search.event : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const s = (k: string) => (typeof search[k] === "string" ? (search[k] as string) : undefined);
+    return {
+      event: s("event"),
+      action: search.action === "new" ? ("new" as const) : undefined,
+      title: s("title"),
+      location: s("location"),
+      notes: s("notes"),
+      companion: s("companion"),
+      congId: s("congId"),
+    };
+  },
   component: Page,
 });
 
