@@ -23,7 +23,7 @@ export const listTemplates = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data: tpls } = await supabaseAdmin
-      .from("program_templates").select("id,slot,name,meal_day_notes,general_observations,created_at,updated_at")
+      .from("program_templates").select("id,slot,name,meal_day_notes,general_observations,study_day_notes,study_general_observations,created_at,updated_at")
       .eq("superintendent_id", userId).order("slot");
     const ids = (tpls ?? []).map((t) => t.id);
     let items: Array<{ id: string; template_id: string; kind: string; day_offset: number; payload: Payload; sort_order: number }> = [];
