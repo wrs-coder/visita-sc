@@ -283,6 +283,7 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
       closing_prayer: p.elders.closing_prayer ?? null,
       observations: p.elders.observations ?? null,
     });
+    void recordTemplateChanged("meeting_talk", data.templateId);
     return { ok: true as const };
   });
 
