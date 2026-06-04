@@ -1438,10 +1438,10 @@ function Dashboard() {
                           <span className="whitespace-pre-wrap break-words">{f.meeting_location}</span>
                         </div>
                       )}
-                      {f.territory_number && (
+                      {(f.territory_number || f.territory_location) && (
                         <div className="text-xs">
                           <span className="text-muted-foreground">{t("dashboard.territory")} </span>
-                          {f.territory_number}
+                          {f.territory_number || "—"}
                           {f.territory_location ? ` · ${f.territory_location}` : ""}
                         </div>
                       )}
