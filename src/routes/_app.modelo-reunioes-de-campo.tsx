@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { CharCounterTextarea } from "@/components/ui/char-counter-textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Trash2, Copy, Pencil, MapPin, AlertCircle, Save } from "lucide-react";
@@ -76,11 +77,17 @@ function Page() {
   const [renameVal, setRenameVal] = useState("");
   const [renameErr, setRenameErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [genObsByTpl, setGenObsByTpl] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     const r = await fnList();
     if (r.ok) {
       setTpls(r.templates as TemplateRow[]);
+      const obsMap: Record<string, string> = {};
+      for (const t of r.templates) {
+        obsMap[t.id] = (t as { observations?: string | null }).observations ?? "";
+      }
+      setGenObsByTpl(obsMap);
       const map: Record<string, ItemDraft[]> = {};
       for (const t of r.templates) {
         map[t.id] = [];
@@ -288,6 +295,24 @@ function Page() {
                 <p className="text-xs text-muted-foreground">
                   {t("templates.field.hint")}
                 </p>
+
+                <div>
+                  <Label>Informações adicionais do superintendente</Label>
+                  <CharCounterTextarea
+                    className="mt-1 min-h-[80px]"
+                    value={genObsByTpl[active.id] ?? ""}
+                    max={4000}
+                    onValueChange={(v) => setGenObsByTpl((m) => ({ ...m, [active.id]: v }))}
+                    onBlur={async () => {
+                      const val = genObsByTpl[active.id] ?? "";
+                      const original = (active as { observations?: string | null }).observations ?? "";
+                      if (val === original) return;
+                      const r = await fnUpdate({ data: { id: active.id, observations: val || null } });
+                      if (!r.ok) { toast.error(r.error); return; }
+                      setTpls((prev) => prev.map((tp) => tp.id === active.id ? { ...tp, observations: val } : tp));
+                    }}
+                  />
+                </div>
 
               </CardContent></Card>
 

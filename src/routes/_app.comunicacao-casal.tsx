@@ -37,6 +37,9 @@ import {
   deleteCoupleThread,
   type CoupleThread,
 } from "@/lib/couple-messages.functions";
+import { CoupleMessagesReportDialog } from "@/components/visit-week/CoupleMessagesReportDialog";
+import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
+import { useActiveVisit } from "@/hooks/use-active-visit";
 
 export const Route = createFileRoute("/_app/comunicacao-casal")({ component: Page });
 
@@ -59,6 +62,8 @@ function Page() {
   const [replyOpen, setReplyOpen] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState("");
   const [delFor, setDelFor] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const { visit } = useActiveVisit();
 
   useEffect(() => {
     if (role && role !== "superintendent") nav({ to: "/dashboard" });
@@ -136,6 +141,8 @@ function Page() {
           <h1 className="text-2xl md:text-3xl font-bold">{t("couple.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t("couple.subtitleSuper")}</p>
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <VisitWeekReportButton onClick={() => setReportOpen(true)} />
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -165,6 +172,7 @@ function Page() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {loading ? (
@@ -263,6 +271,12 @@ function Page() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CoupleMessagesReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        visitTitle={visit?.title ?? t("couple.title")}
+      />
     </div>
   );
 }

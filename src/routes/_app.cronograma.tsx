@@ -69,9 +69,18 @@ import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supab
 import { getHiddenEventIds } from "@/lib/hidden-events";
 
 export const Route = createFileRoute("/_app/cronograma")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    event: typeof search.event === "string" ? search.event : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const s = (k: string) => (typeof search[k] === "string" ? (search[k] as string) : undefined);
+    return {
+      event: s("event"),
+      action: search.action === "new" ? ("new" as const) : undefined,
+      title: s("title"),
+      location: s("location"),
+      notes: s("notes"),
+      companion: s("companion"),
+      congId: s("congId"),
+    };
+  },
   component: Page,
 });
 
@@ -207,6 +216,44 @@ function Page() {
     }
     navigate({ search: { event: undefined } as never, replace: true });
   }, [search.event, events, canEdit, navigate, t]);
+
+  // Deep-link: ?action=new&title=...&location=... pré-preenche o dialog de novo evento.
+  const handledNewRef = useRef(false);
+  useEffect(() => {
+    if (search.action !== "new" || !canEdit) return;
+    if (handledNewRef.current) return;
+    handledNewRef.current = true;
+    const matchedCong = search.congId && congregations.some((c) => c.id === search.congId)
+      ? search.congId
+      : null;
+    setEditing({
+      event_date: format(new Date(), "yyyy-MM-dd"),
+      event_type: "shepherding",
+      scope: matchedCong ? "congregation" : "personal",
+      congregation_ids: matchedCong ? [matchedCong] : [],
+      visible_to_spouse: true,
+      title: search.title ?? "",
+      location: search.location ?? "",
+      notes: search.notes ?? "",
+      companion: search.companion ?? "",
+    });
+    setOpen(true);
+    navigate({
+      search: {
+        event: undefined,
+        action: undefined,
+        title: undefined,
+        location: undefined,
+        notes: undefined,
+        companion: undefined,
+        congId: undefined,
+      } as never,
+      replace: true,
+    });
+  }, [search.action, search.title, search.location, search.notes, search.companion, search.congId, canEdit, congregations, navigate]);
+
+
+
 
 
 

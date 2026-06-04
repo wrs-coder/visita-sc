@@ -16,6 +16,8 @@ import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { offlineUpdate, offlineInsert, offlineDelete, offlineUpsert } from "@/lib/offline-supabase";
 import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
+import { MealsReportDialog } from "@/components/visit-week/MealsReportDialog";
+import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
 
 export const Route = createFileRoute("/_app/refeicoes")({ component: Page });
 
@@ -46,6 +48,7 @@ function Page() {
   const [editEnabled, setEditEnabled] = useState(false);
   const editAllowed = !isSuper || editEnabled;
   const extras = useVisitTemplateExtras(visit?.id);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     if (!visit) return;
@@ -98,11 +101,14 @@ function Page() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold">{t("meals.title")}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {isSuper ? t("meals.subtitleSuper") : t("meals.subtitleElder")}
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">{t("meals.title")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isSuper ? t("meals.subtitleSuper") : t("meals.subtitleElder")}
+          </p>
+        </div>
+        <VisitWeekReportButton onClick={() => setReportOpen(true)} />
       </div>
 
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
@@ -141,6 +147,13 @@ function Page() {
           );
         })}
       </fieldset>
+
+      <MealsReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        visitId={visit.id}
+        visitTitle={visit.title}
+      />
     </div>
   );
 }

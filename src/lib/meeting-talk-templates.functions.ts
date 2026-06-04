@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { recordTemplateChanged } from "./template-propagation.functions";
 
 const MAX_TEMPLATES = 24;
 
@@ -282,6 +283,7 @@ export const saveMeetingTalkTemplateItems = createServerFn({ method: "POST" })
       closing_prayer: p.elders.closing_prayer ?? null,
       observations: p.elders.observations ?? null,
     });
+    void recordTemplateChanged("meeting_talk", data.templateId);
     return { ok: true as const };
   });
 

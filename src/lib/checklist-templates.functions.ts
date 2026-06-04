@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { recordTemplateChanged } from "./template-propagation.functions";
 
 const MAX_TEMPLATES = 24;
 
@@ -178,6 +179,7 @@ export const replaceChecklistTemplateItems = createServerFn({ method: "POST" })
       if (error) return { ok: false as const, error: error.message };
     }
     await supabaseAdmin.from("checklist_templates").update({ updated_at: new Date().toISOString() }).eq("id", data.templateId);
+    void recordTemplateChanged("checklist", data.templateId);
     return { ok: true as const };
   });
 

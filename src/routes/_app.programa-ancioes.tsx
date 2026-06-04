@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, Plus, Trash2, Loader2, FileDown } from "lucide-react";
+import { BookOpen, Plus, Trash2, Loader2, FileDown, CalendarPlus, StickyNote, Check } from "lucide-react";
 import { ElderExecutiveReportDialog } from "@/components/elder-program/ElderExecutiveReportDialog";
 import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 import {
@@ -73,6 +73,98 @@ function Page() {
   const fnUpdate = useServerFn(updateElderProgramEvent);
   const fnCreateRec = useServerFn(createElderRecommendation);
   const fnDelete = useServerFn(deleteElderProgramEvent);
+  const navigate = useNavigate();
+
+  const PURPOSE_TO_TIPO: Record<string, string> = {
+    ministerial_servant: "Servo ministerial",
+    elder: "Ancião",
+    cca_change: "CCA",
+    // redesignation e removal: tipo vazio (escolha manual)
+  };
+
+  // Estado para confirmação + bloqueio de duplo-clique
+  const [pendingAction, setPendingAction] = useState<
+    | { kind: "cronograma" | "notas"; ev: ElderVisitEventDTO }
+    | null
+  >(null);
+  const [dispatchedIds, setDispatchedIds] = useState<Set<string>>(new Set());
+  const markDispatched = (key: string) => setDispatchedIds((s) => new Set(s).add(key));
+
+  const goToCronograma = (ev: ElderVisitEventDTO) => {
+    if (!visit) return;
+    const key = `cron:${ev.id}`;
+    if (dispatchedIds.has(key)) {
+      toast.info("Este pastoreio já foi enviado ao Cronograma nesta sessão.");
+      return;
+    }
+    try {
+      const titleParts = ["Visita de Pastoreio"];
+      if (ev.family_name) titleParts.push(ev.family_name);
+      const noteLines: string[] = [];
+      if (ev.slot_label) noteLines.push(`Slot: ${ev.slot_label}`);
+      if (ev.family_members) noteLines.push(`Família: ${ev.family_members}`);
+      if (ev.spiritual_info) noteLines.push(`Info: ${ev.spiritual_info}`);
+      navigate({
+        to: "/cronograma",
+        search: {
+          action: "new",
+          title: titleParts.join(" — "),
+          location: ev.address ?? undefined,
+          companion: ev.companion ?? undefined,
+          notes: noteLines.join("\n") || undefined,
+          congId: visit.congregation_id,
+        } as never,
+      });
+      markDispatched(key);
+      toast.success("Abrindo no Cronograma — confirme e salve o evento.");
+    } catch (err) {
+      toast.error(`Erro ao abrir o Cronograma: ${(err as Error).message}`);
+    }
+  };
+
+  const goToNotas = (ev: ElderVisitEventDTO) => {
+    if (!visit) return;
+    if (!isSuper) {
+      toast.error("Acesso restrito: apenas o superintendente pode salvar em Notas Privadas.");
+      return;
+    }
+    const key = `notas:${ev.id}`;
+    if (dispatchedIds.has(key)) {
+      toast.info("Esta recomendação já foi salva em Notas Privadas nesta sessão.");
+      return;
+    }
+    try {
+      const corpoLines: string[] = [];
+      if (ev.family_members) corpoLines.push(`Membros da Família: ${ev.family_members}`);
+      if (ev.field_group) corpoLines.push(`Grupo de campo: ${ev.field_group}`);
+      if (ev.info) corpoLines.push(`Informações: ${ev.info}`);
+      navigate({
+        to: "/notas",
+        search: {
+          tab: "recomendados",
+          newNote: "recomendados",
+          congId: visit.congregation_id,
+          nome: ev.full_name ?? undefined,
+          tipo: ev.purpose ? PURPOSE_TO_TIPO[ev.purpose] ?? undefined : undefined,
+          corpo: corpoLines.join("\n") || undefined,
+        } as never,
+      });
+      markDispatched(key);
+      toast.success("Salvando em Notas Privadas…");
+    } catch (err) {
+      toast.error(`Erro ao salvar em Notas Privadas: ${(err as Error).message}`);
+    }
+  };
+
+  const confirmPending = () => {
+    if (!pendingAction) return;
+    const { kind, ev } = pendingAction;
+    setPendingAction(null);
+    if (kind === "cronograma") goToCronograma(ev);
+    else goToNotas(ev);
+  };
+
+
 
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState<Record<Section, string>>({
@@ -209,7 +301,13 @@ function Page() {
                             canDelete={canEdit && (ev.section === "recommendations" || isSuper)}
                             onChange={(patch) => saveField(ev, patch)}
                             onDelete={() => deleteEvent(ev)}
+                            onScheduleInCronograma={ev.section === "pastoral" ? () => setPendingAction({ kind: "cronograma", ev }) : undefined}
+                            onSaveToPrivateNotes={ev.section === "recommendations" ? () => setPendingAction({ kind: "notas", ev }) : undefined}
+                            isSuperintendent={isSuper}
+                            alreadyScheduled={dispatchedIds.has(`cron:${ev.id}`)}
+                            alreadySavedToNotes={dispatchedIds.has(`notas:${ev.id}`)}
                           />
+
                         );
                       })}
                     </div>
@@ -236,9 +334,29 @@ function Page() {
         recommendations={recommendations}
         local={local}
       />
+
+      <AlertDialog open={pendingAction !== null} onOpenChange={(o) => { if (!o) setPendingAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingAction?.kind === "cronograma" ? "Agendar no Cronograma?" : "Salvar em Notas Privadas?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingAction?.kind === "cronograma"
+                ? "Um novo evento será aberto no Cronograma com os dados deste pastoreio. Para evitar duplicidade, confirme apenas uma vez."
+                : "Uma nova nota privada será criada na subaba “Recomendados” com os dados desta recomendação. Para evitar duplicidade, confirme apenas uma vez."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPending}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
 
 function LoadingPanel() {
   return (
@@ -250,6 +368,8 @@ function LoadingPanel() {
 
 function EventCard({
   ev, slots, usedSlots, readOnly, canDelete, onChange, onDelete,
+  onScheduleInCronograma, onSaveToPrivateNotes,
+  isSuperintendent = true, alreadyScheduled = false, alreadySavedToNotes = false,
 }: {
   ev: ElderVisitEventDTO;
   slots: string[];
@@ -258,7 +378,13 @@ function EventCard({
   canDelete: boolean;
   onChange: (patch: Partial<ElderVisitEventDTO>) => void;
   onDelete: () => void;
+  onScheduleInCronograma?: () => void;
+  onSaveToPrivateNotes?: () => void;
+  isSuperintendent?: boolean;
+  alreadyScheduled?: boolean;
+  alreadySavedToNotes?: boolean;
 }) {
+
   const [pendingSlot, setPendingSlot] = useState<string | null>(null);
   const [hideUsed, setHideUsed] = useState(false);
   const slotConflict = ev.section === "pastoral" && !!ev.slot_label && usedSlots.has(ev.slot_label);
@@ -401,6 +527,60 @@ function EventCard({
             <DebouncedArea label="Informações sobre o assunto" value={ev.info} onSave={(v) => onChange({ info: v })} readOnly={readOnly} minH={100} />
           </>
         )}
+
+        {(onScheduleInCronograma || onSaveToPrivateNotes) && (
+          <div className="flex flex-wrap gap-2 pt-2 border-t mt-2">
+            {onScheduleInCronograma && (
+              <Button
+                type="button"
+                variant={alreadyScheduled ? "secondary" : "outline"}
+                size="sm"
+                onClick={onScheduleInCronograma}
+                disabled={!ev.family_name || alreadyScheduled}
+                title={
+                  alreadyScheduled
+                    ? "Já enviado ao Cronograma nesta sessão"
+                    : !ev.family_name
+                      ? "Preencha 'Família/Irmão(ã)' antes de agendar"
+                      : undefined
+                }
+              >
+                {alreadyScheduled ? (
+                  <Check className="h-3.5 w-3.5 mr-1 text-green-600" />
+                ) : (
+                  <CalendarPlus className="h-3.5 w-3.5 mr-1" />
+                )}
+                {alreadyScheduled ? "Agendado no Cronograma" : "Agendar no Cronograma"}
+              </Button>
+            )}
+            {onSaveToPrivateNotes && (
+              <Button
+                type="button"
+                variant={alreadySavedToNotes ? "secondary" : "outline"}
+                size="sm"
+                onClick={onSaveToPrivateNotes}
+                disabled={!ev.full_name || alreadySavedToNotes || !isSuperintendent}
+                title={
+                  !isSuperintendent
+                    ? "Restrito ao superintendente"
+                    : alreadySavedToNotes
+                      ? "Já salvo em Notas Privadas nesta sessão"
+                      : !ev.full_name
+                        ? "Preencha 'Nome Completo' antes de salvar"
+                        : undefined
+                }
+              >
+                {alreadySavedToNotes ? (
+                  <Check className="h-3.5 w-3.5 mr-1 text-green-600" />
+                ) : (
+                  <StickyNote className="h-3.5 w-3.5 mr-1" />
+                )}
+                {alreadySavedToNotes ? "Salvo em Notas Privadas" : "Salvar em Notas Privadas"}
+              </Button>
+            )}
+          </div>
+        )}
+
       </CardContent>
     </Card>
   );

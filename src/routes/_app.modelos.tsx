@@ -22,7 +22,7 @@ type Kind = "study" | "meal" | "transport";
 type PayloadValue = string | number | boolean | null;
 type Payload = Record<string, PayloadValue>;
 interface ItemDraft { kind: Kind; day_offset: number; payload: Payload; sort_order: number; }
-interface TemplateRow { id: string; slot: number; name: string; meal_day_notes?: Record<string, string> | null; general_observations?: string | null }
+interface TemplateRow { id: string; slot: number; name: string; meal_day_notes?: Record<string, string> | null; general_observations?: string | null; study_day_notes?: Record<string, string> | null; study_general_observations?: string | null }
 interface TemplateItemRow { id: string; template_id: string; kind: string; day_offset: number; payload: Payload; sort_order: number; }
 
 const DAY_OPTS = [0, 1, 2, 3, 4, 5, 6];
@@ -49,6 +49,8 @@ function Page() {
   const [namesBySlot, setNamesBySlot] = useState<Record<number, string>>({});
   const [notesBySlot, setNotesBySlot] = useState<Record<number, Record<string, string>>>({});
   const [genObsBySlot, setGenObsBySlot] = useState<Record<number, string>>({});
+  const [studyNotesBySlot, setStudyNotesBySlot] = useState<Record<number, Record<string, string>>>({});
+  const [studyGenObsBySlot, setStudyGenObsBySlot] = useState<Record<number, string>>({});
   const [activeSlot, setActiveSlot] = useState("1");
   const [busy, setBusy] = useState(false);
   const [dupSlot, setDupSlot] = useState<string | null>(null);
@@ -68,15 +70,22 @@ function Page() {
     const names: Record<number, string> = { ...DEFAULT_NAMES };
     const notesMap: Record<number, Record<string, string>> = {};
     const obsMap: Record<number, string> = {};
+    const studyNotesMap: Record<number, Record<string, string>> = {};
+    const studyObsMap: Record<number, string> = {};
     for (const t of r.templates) {
       names[t.slot] = t.name;
       const raw = (t as TemplateRow).meal_day_notes;
       notesMap[t.slot] = (raw && typeof raw === "object" ? raw : {}) as Record<string, string>;
       obsMap[t.slot] = ((t as TemplateRow).general_observations) ?? "";
+      const rawStudy = (t as TemplateRow).study_day_notes;
+      studyNotesMap[t.slot] = (rawStudy && typeof rawStudy === "object" ? rawStudy : {}) as Record<string, string>;
+      studyObsMap[t.slot] = ((t as TemplateRow).study_general_observations) ?? "";
     }
     setNamesBySlot(names);
     setNotesBySlot(notesMap);
     setGenObsBySlot(obsMap);
+    setStudyNotesBySlot(studyNotesMap);
+    setStudyGenObsBySlot(studyObsMap);
   }, [fnList]);
 
   useEffect(() => { load(); }, [load]);
@@ -114,10 +123,13 @@ function Page() {
     const fromTpl = tpls.find((t) => t.slot === fromSlot);
     const fromItems = fromTpl ? (itemsByTpl[fromTpl.id] ?? []) : [];
     const fromNotes = notesBySlot[fromSlot] ?? {};
+    const fromStudyNotes = studyNotesBySlot[fromSlot] ?? {};
+    const fromGenObs = genObsBySlot[fromSlot] ?? "";
+    const fromStudyGenObs = studyGenObsBySlot[fromSlot] ?? "";
     const fromName = namesBySlot[fromSlot] || DEFAULT_NAMES[fromSlot];
     const copyPrefix = t("templates.program.copyPrefix", { defaultValue: "Cópia de" });
     const toName = `${copyPrefix} ${fromName}`;
-    const r = await fnUpsert({ data: { slot: toSlot, name: toName, meal_day_notes: fromNotes } });
+    const r = await fnUpsert({ data: { slot: toSlot, name: toName, meal_day_notes: fromNotes, study_day_notes: fromStudyNotes, general_observations: fromGenObs || null, study_general_observations: fromStudyGenObs || null } });
     if (!r.ok) { toast.error(r.error); setBusy(false); return; }
     const itemsCopy = fromItems.map((it, i) => ({ ...it, sort_order: i }));
     const r2 = await fnReplace({ data: { templateId: r.id!, items: itemsCopy } });
@@ -162,6 +174,16 @@ function Page() {
     else delete next[dayOffsetKey];
     setNotesBySlot({ ...notesBySlot, [slot]: next });
     const r = await fnUpsert({ data: { slot, name: namesBySlot[slot] || `Modelo ${slot}`, meal_day_notes: next } });
+    if (!r.ok) toast.error(r.error);
+  };
+
+  const saveStudyNote = async (slot: number, dayOffsetKey: string, value: string) => {
+    const current = studyNotesBySlot[slot] ?? {};
+    const next = { ...current };
+    if (value.trim()) next[dayOffsetKey] = value;
+    else delete next[dayOffsetKey];
+    setStudyNotesBySlot({ ...studyNotesBySlot, [slot]: next });
+    const r = await fnUpsert({ data: { slot, name: namesBySlot[slot] || `Modelo ${slot}`, study_day_notes: next } });
     if (!r.ok) toast.error(r.error);
   };
 
@@ -226,6 +248,42 @@ function Page() {
                 </div>
 
                 <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
+
+                <div className="border rounded-lg p-3 space-y-2">
+                  <h3 className="text-sm font-semibold">Informações adicionais do superintendente — Estudos e Revisitas por dia</h3>
+                  <p className="text-xs text-muted-foreground">Observações exibidas aos anciãos junto da programação de Estudos e Revisitas.</p>
+                  <div>
+                    <Label className="text-xs">Informações adicionais do superintendente (gerais)</Label>
+                    <Textarea
+                      className="mt-1 text-red-600 dark:text-red-400"
+                      placeholder="Observações gerais sobre Estudos e Revisitas"
+                      value={studyGenObsBySlot[slot] ?? ""}
+                      maxLength={4000}
+                      onChange={(e) => setStudyGenObsBySlot({ ...studyGenObsBySlot, [slot]: e.target.value })}
+                      onBlur={async (e) => {
+                        const v = e.target.value;
+                        const r = await fnUpsert({ data: { slot, name: namesBySlot[slot] || `Modelo ${slot}`, study_general_observations: v || null } });
+                        if (!r.ok) toast.error(r.error);
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Aparecem em vermelho no topo da aba Estudos e Revisitas dos anciãos.</p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {DAY_OPTS.map((d) => (
+                      <div key={d} className="flex items-center gap-2">
+                        <div className="text-xs font-medium w-24 shrink-0 text-muted-foreground">{DAY_LABEL[d]}</div>
+                        <Input
+                          className="h-9 flex-1"
+                          placeholder="Informações adicionais do superintendente"
+                          value={(studyNotesBySlot[slot] ?? {})[String(d)] ?? ""}
+                          onChange={(e) => setStudyNotesBySlot({ ...studyNotesBySlot, [slot]: { ...(studyNotesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
+                          onBlur={(e) => saveStudyNote(slot, String(d), e.target.value)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
 
                 <div className="border rounded-lg p-3 space-y-2">

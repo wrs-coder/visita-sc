@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
+import { FieldStudiesReportDialog } from "@/components/visit-week/FieldStudiesReportDialog";
+import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
 
 export const Route = createFileRoute("/_app/escala")({ component: Page });
 
@@ -41,6 +43,7 @@ function Page() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [editEnabled, setEditEnabled] = useState(false);
   const editAllowed = !isSuper || editEnabled;
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     if (!visit) return;
@@ -89,11 +92,14 @@ function Page() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold">{t("fieldStudies.title")}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {isSuper ? t("fieldStudies.subtitleSuper") : t("fieldStudies.subtitleElder")}
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">{t("fieldStudies.title")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isSuper ? t("fieldStudies.subtitleSuper") : t("fieldStudies.subtitleElder")}
+          </p>
+        </div>
+        <VisitWeekReportButton onClick={() => setReportOpen(true)} />
       </div>
 
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
@@ -124,6 +130,13 @@ function Page() {
           );
         })}
       </fieldset>
+
+      <FieldStudiesReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        visitId={visit.id}
+        visitTitle={visit.title}
+      />
     </div>
   );
 }

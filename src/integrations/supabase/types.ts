@@ -1526,6 +1526,8 @@ export type Database = {
           meal_day_notes: Json
           name: string
           slot: number
+          study_day_notes: Json
+          study_general_observations: string | null
           superintendent_id: string
           updated_at: string
         }
@@ -1536,6 +1538,8 @@ export type Database = {
           meal_day_notes?: Json
           name: string
           slot: number
+          study_day_notes?: Json
+          study_general_observations?: string | null
           superintendent_id: string
           updated_at?: string
         }
@@ -1546,6 +1550,8 @@ export type Database = {
           meal_day_notes?: Json
           name?: string
           slot?: number
+          study_day_notes?: Json
+          study_general_observations?: string | null
           superintendent_id?: string
           updated_at?: string
         }
@@ -1731,6 +1737,53 @@ export type Database = {
           },
         ]
       }
+      visit_pending_updates: {
+        Row: {
+          backup_pdf_path: string | null
+          created_at: string
+          diff: Json
+          id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          template_id: string
+          template_type: string
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          backup_pdf_path?: string | null
+          created_at?: string
+          diff?: Json
+          id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          template_id: string
+          template_type: string
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          backup_pdf_path?: string | null
+          created_at?: string
+          diff?: Json
+          id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          template_id?: string
+          template_type?: string
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visit_pending_updates_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visits: {
         Row: {
           checklist_template_id: string | null
@@ -1747,6 +1800,7 @@ export type Database = {
           substitute_name: string | null
           substitute_phone: string | null
           template_id: string | null
+          template_snapshot: Json
           title: string
         }
         Insert: {
@@ -1764,6 +1818,7 @@ export type Database = {
           substitute_name?: string | null
           substitute_phone?: string | null
           template_id?: string | null
+          template_snapshot?: Json
           title: string
         }
         Update: {
@@ -1781,6 +1836,7 @@ export type Database = {
           substitute_name?: string | null
           substitute_phone?: string | null
           template_id?: string | null
+          template_snapshot?: Json
           title?: string
         }
         Relationships: [
@@ -1860,6 +1916,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_visit_pending_updates: { Args: never; Returns: undefined }
       delete_expired_circuit_events: { Args: never; Returns: undefined }
       elder_tab_password_is_set: {
         Args: { _congregation_id: string }

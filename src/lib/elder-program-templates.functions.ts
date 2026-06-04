@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { recordTemplateChanged } from "./template-propagation.functions";
 
 const MAX_TEMPLATES = 50;
 
@@ -359,6 +360,7 @@ export const saveElderProgramTemplate = createServerFn({ method: "POST" })
       await supabaseAdmin.from("elder_program_template_events").insert(rows);
     }
 
+    void recordTemplateChanged("elder_program", data.templateId);
     return { ok: true as const, error: null };
   });
 

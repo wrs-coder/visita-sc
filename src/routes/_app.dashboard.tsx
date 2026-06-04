@@ -41,13 +41,15 @@ import {
 import { format, parseISO, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
-import { FinishVisitDialog } from "@/components/FinishVisitDialog";
+import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
 import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.functions";
+import { listElderProgramForVisit, type ElderVisitEventDTO } from "@/lib/elder-program.functions";
 
 import { listNotesByType, FIXED_FOLDER_WEEK_CONSIDERATIONS, FIXED_FOLDER_WEEK_OUTLINES, type FieldNote } from "@/lib/bible-notes-store";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
+import { TemplateUpdatesBadge } from "@/components/dashboard/TemplateUpdatesBadge";
 import { DayDetailsDialog } from "@/components/dashboard/DayDetailsDialog";
 import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { FieldNoteFullscreenDialog } from "@/components/dashboard/FieldNoteFullscreenDialog";
@@ -338,6 +340,35 @@ function Dashboard() {
     return () => { cancelled = true; };
   }, [role, user, selected]);
 
+  // Mission 2: "Pastoreiem o Rebanho de Deus" — carrega as 4 seções da
+  // aba "Pastoreios, Recomendações e outros" para a visita ativa.
+  const fnLoadElder = useServerFn(listElderProgramForVisit);
+  const [elderPastoral, setElderPastoral] = useState<ElderVisitEventDTO[]>([]);
+  const [elderEncouragement, setElderEncouragement] = useState<ElderVisitEventDTO[]>([]);
+  const [elderRecommendations, setElderRecommendations] = useState<ElderVisitEventDTO[]>([]);
+  const [elderLocal, setElderLocal] = useState<ElderVisitEventDTO[]>([]);
+  useEffect(() => {
+    if (role !== "superintendent" || !visit?.id) {
+      setElderPastoral([]); setElderEncouragement([]);
+      setElderRecommendations([]); setElderLocal([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fnLoadElder({ data: { visitId: visit.id } });
+        if (cancelled || !r.ok) return;
+        setElderPastoral(r.pastoral);
+        setElderEncouragement(r.encouragement);
+        setElderRecommendations(r.recommendations);
+        setElderLocal(r.local);
+      } catch (err) {
+        console.warn("[dashboard] elder program load failed", err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [role, visit?.id, fnLoadElder]);
+
 
 
   // Detecta visitas encerradas (end_date < hoje) cujos dados operacionais
@@ -610,7 +641,17 @@ function Dashboard() {
           {role === "superintendent" ? t("dashboard.panelSuper") : t("dashboard.panelElder")}
           {visit ? ` · ${t("dashboard.visitLabel", { title: visit.title })}` : ` · ${t("dashboard.noActiveVisit")}`}
         </p>
+        <div className="mt-3">
+          <TemplateUpdatesBadge
+            congregationId={
+              role === "superintendent"
+                ? (selected ?? visit?.congregation_id ?? null)
+                : (profile?.congregation_id ?? null)
+            }
+          />
+        </div>
       </header>
+
 
       {/* Ajuste 02: alternador "Hoje / Amanhã" — atualiza apenas os 6 cartões diários. */}
       <div className="flex items-center gap-2 flex-wrap">
@@ -695,7 +736,7 @@ function Dashboard() {
             </div>
           </div>
           {overdueVisits.map((v) => (
-            <FinishVisitDialog
+            <VisitDeletionGuardDialog
               key={`dlg-${v.id}`}
               visitId={v.id}
               visitTitle={v.title}
@@ -725,7 +766,7 @@ function Dashboard() {
             </Link>
           </Button>
           {role === "superintendent" && (
-            <FinishVisitDialog
+            <VisitDeletionGuardDialog
               visitId={visit.id}
               visitTitle={visit.title}
               onFinished={() => {
@@ -963,6 +1004,100 @@ function Dashboard() {
         </CollapsibleCard>
       )}
 
+      {role === "superintendent" && visit && (
+        <CollapsibleCard
+          id="super-elder-program"
+          icon={<Heart className="h-4 w-4 text-primary" />}
+          title="Pastoreiem o Rebanho de Deus"
+          headerRight={
+            <Link
+              to="/programa-ancioes"
+              className="text-primary text-xs font-medium inline-flex items-center hover:underline shrink-0"
+            >
+              {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+            </Link>
+          }
+        >
+          <Tabs defaultValue="pastoral" className="w-full min-w-0 overflow-hidden">
+            <TabsList className="grid h-auto w-full grid-cols-4 items-stretch gap-1">
+              <TabsTrigger value="pastoral" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
+                Pastoreio
+              </TabsTrigger>
+              <TabsTrigger value="encouragement" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
+                Encorajamento
+              </TabsTrigger>
+              <TabsTrigger value="recommendations" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
+                Recomendações
+              </TabsTrigger>
+              <TabsTrigger value="local" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
+                Locais
+              </TabsTrigger>
+            </TabsList>
+            {([
+              { key: "pastoral", items: elderPastoral },
+              { key: "encouragement", items: elderEncouragement },
+              { key: "recommendations", items: elderRecommendations },
+              { key: "local", items: elderLocal },
+            ] as const).map(({ key, items }) => (
+              <TabsContent key={key} value={key} className="mt-3">
+                {items.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum item registrado.</p>
+                ) : (
+                  <div className="relative">
+                    <ul
+                      className="space-y-2 overflow-y-auto pr-1 [scrollbar-width:thin]"
+                      style={{ maxHeight: "min(18rem, 60vh)" }}
+                    >
+                      {items.map((ev) => {
+                        const primary =
+                          ev.section === "pastoral"
+                            ? (ev.family_name || ev.slot_label || "Família")
+                            : ev.section === "encouragement"
+                            ? (ev.person_name || "—")
+                            : ev.section === "recommendations"
+                            ? (ev.full_name || "—")
+                            : (ev.subject || "—");
+                        const secondary =
+                          ev.section === "pastoral"
+                            ? [ev.slot_label, ev.address].filter(Boolean).join(" · ")
+                            : ev.section === "encouragement"
+                            ? [ev.category, ev.contact].filter(Boolean).join(" · ")
+                            : ev.section === "recommendations"
+                            ? [ev.purpose, ev.field_group, ev.info].filter(Boolean).join(" · ")
+                            : [ev.suggested_by, ev.info].filter(Boolean).join(" · ");
+                        return (
+                          <li
+                            key={ev.id}
+                            className="flex items-start gap-2 p-2 rounded-md border bg-card min-w-0"
+                          >
+                            <Heart className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm whitespace-normal break-words [overflow-wrap:anywhere]">
+                                {primary}
+                              </div>
+                              {secondary && (
+                                <div className="text-xs text-muted-foreground whitespace-normal break-words">
+                                  {secondary}
+                                </div>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {items.length > 3 && (
+                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-background to-transparent" />
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </CollapsibleCard>
+      )}
+
+
+
 
 
       {!visit && (
@@ -1105,9 +1240,10 @@ function Dashboard() {
                         <span>{f.meeting_location}</span>
                       </div>
                     )}
-                    {f.territory_number && (
+                    {(f.territory_number || f.territory_location) && (
                       <div className="text-xs text-muted-foreground break-words whitespace-normal">
-                        {t("dashboard.territory")} {f.territory_number}
+                        <span className="font-medium">{t("dashboard.territory")} S-13:</span>{" "}
+                        {f.territory_number || "—"}
                         {f.territory_location ? ` · ${f.territory_location}` : ""}
                       </div>
                     )}
@@ -1427,10 +1563,10 @@ function Dashboard() {
                           <span className="whitespace-pre-wrap break-words">{f.meeting_location}</span>
                         </div>
                       )}
-                      {f.territory_number && (
+                      {(f.territory_number || f.territory_location) && (
                         <div className="text-xs">
-                          <span className="text-muted-foreground">{t("dashboard.territory")} </span>
-                          {f.territory_number}
+                          <span className="text-muted-foreground font-medium">{t("dashboard.territory")} S-13: </span>
+                          {f.territory_number || "—"}
                           {f.territory_location ? ` · ${f.territory_location}` : ""}
                         </div>
                       )}
