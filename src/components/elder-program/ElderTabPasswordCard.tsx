@@ -146,9 +146,10 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
         </div>
 
         <p className="text-xs text-muted-foreground">
-          {isCoordinator
-            ? "Como coordenador do corpo de anciãos, você define a senha que os visitantes (Corpo de Anciãos / ESC) precisam digitar para abrir esta aba. A senha fica visível para os demais anciãos cadastrados. Deixe em branco para liberar a aba para todos."
-            : "Senha definida pelo coordenador do corpo de anciãos. Os visitantes (Corpo de Anciãos / ESC) precisam digitá-la para abrir esta aba."}
+          Defina a senha que os visitantes (Corpo de Anciãos / ESC) precisam digitar
+          para abrir esta aba. Qualquer ancião cadastrado (coordenador, secretário ou
+          sup. de serviço) pode definir, atualizar ou remover a senha. Deixe em branco
+          para liberar a aba para todos.
         </p>
 
         {loading ? (
