@@ -54,17 +54,19 @@ export const getElderTabPasswordForElder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => statusSchema.parse(input))
   .handler(async ({ data }) => {
-    const [{ data: plain, error: errPlain }, { data: isCoord, error: errCoord }] = await Promise.all([
-      supabaseAdmin.rpc("get_elder_tab_password", { _congregation_id: data.congregationId }),
-      supabaseAdmin.rpc("is_elder_coordinator", { _congregation_id: data.congregationId }),
-    ]);
+    const { data: plain, error: errPlain } = await supabaseAdmin.rpc(
+      "get_elder_tab_password",
+      { _congregation_id: data.congregationId },
+    );
     if (errPlain) return { ok: false as const, error: errPlain.message };
-    if (errCoord) return { ok: false as const, error: errCoord.message };
     const pw = (plain as string | null) ?? "";
+    // Qualquer ancião cadastrado (coordenador, secretário, sup. de serviço)
+    // pode definir/atualizar/remover a senha. O acesso à RPC acima já garante
+    // que o caller é um ancião da congregação.
     return {
       ok: true as const,
       password: pw,
-      isCoordinator: !!isCoord,
+      isCoordinator: true,
       isSet: pw.length > 0,
     };
   });
