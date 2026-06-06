@@ -56,8 +56,7 @@ export const getElderTabPasswordStatus = createServerFn({ method: "POST" })
     return { ok: true as const, isSet: !!isSet };
   });
 
-// Retorna a senha em texto puro para anciãos cadastrados da congregação,
-// além de indicar se o caller é o coordenador (e portanto pode editar).
+// Retorna a senha em texto puro para anciãos cadastrados da congregação.
 export const getElderTabPasswordForElder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => statusSchema.parse(input))
