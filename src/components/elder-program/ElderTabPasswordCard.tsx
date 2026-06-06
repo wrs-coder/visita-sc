@@ -1,9 +1,8 @@
 // Cartão que gerencia a senha que protege a aba "Anciãos" no acesso de
 // visitantes (Corpo de Anciãos / ESC).
 //
-// - Apenas o COORDENADOR do corpo de anciãos define / atualiza / remove.
-// - Os demais anciãos cadastrados (secretário, sup. de serviço)
-//   visualizam a senha atual em texto puro e podem copiá-la.
+// - Qualquer ancião cadastrado define / atualiza / remove.
+// - Anciãos cadastrados visualizam a senha atual em texto puro e podem copiá-la.
 // - O superintendente NÃO vê nem gerencia este cartão.
 // - Mudanças feitas pelo coordenador aparecem em tempo real para os
 //   demais anciãos via Supabase Realtime na tabela `congregations`.
@@ -27,7 +26,6 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
 
   const [loading, setLoading] = useState(true);
   const [isSet, setIsSet] = useState(false);
-  const [isCoordinator, setIsCoordinator] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -41,7 +39,6 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
       const r = await fnLoad({ data: { congregationId } });
       if (r.ok) {
         setIsSet(r.isSet);
-        setIsCoordinator(r.isCoordinator);
         setCurrentPassword(r.password);
       }
     } finally {
@@ -201,63 +198,59 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
               </div>
             )}
 
-            {isCoordinator && (
-              <>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="elder-pw" className="text-xs">
-                      {isSet ? "Nova senha" : "Senha"}
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="elder-pw"
-                        type={showPw ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        maxLength={128}
-                        placeholder="Mín. 4 caracteres"
-                        autoComplete="new-password"
-                        className="pr-9"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPw((v) => !v)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        aria-label={showPw ? "Ocultar senha" : "Mostrar senha"}
-                      >
-                        {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="elder-pw-confirm" className="text-xs">
-                      Confirmar senha
-                    </Label>
-                    <Input
-                      id="elder-pw-confirm"
-                      type={showPw ? "text" : "password"}
-                      value={confirm}
-                      onChange={(e) => setConfirm(e.target.value)}
-                      maxLength={128}
-                      placeholder="Repita a senha"
-                      autoComplete="new-password"
-                    />
-                  </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="elder-pw" className="text-xs">
+                  {isSet ? "Nova senha" : "Senha"}
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="elder-pw"
+                    type={showPw ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    maxLength={128}
+                    placeholder="Mín. 4 caracteres"
+                    autoComplete="new-password"
+                    className="pr-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showPw ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="elder-pw-confirm" className="text-xs">
+                  Confirmar senha
+                </Label>
+                <Input
+                  id="elder-pw-confirm"
+                  type={showPw ? "text" : "password"}
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  maxLength={128}
+                  placeholder="Repita a senha"
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
 
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <Button onClick={handleSave} disabled={saving || password.length === 0}>
-                    {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                    {isSet ? "Atualizar senha" : "Definir senha"}
-                  </Button>
-                  {isSet && (
-                    <Button variant="outline" onClick={handleRemove} disabled={saving}>
-                      Remover senha
-                    </Button>
-                  )}
-                </div>
-              </>
-            )}
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button onClick={handleSave} disabled={saving || password.length === 0}>
+                {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                {isSet ? "Atualizar senha" : "Definir senha"}
+              </Button>
+              {isSet && (
+                <Button variant="outline" onClick={handleRemove} disabled={saving}>
+                  Remover senha
+                </Button>
+              )}
+            </div>
           </>
         )}
       </CardContent>
