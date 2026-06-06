@@ -144,9 +144,9 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
 
         <p className="text-xs text-muted-foreground">
           Defina a senha que os visitantes (Corpo de Anciãos / ESC) precisam digitar
-          para abrir esta aba. Qualquer ancião cadastrado (coordenador, secretário ou
-          sup. de serviço) pode definir, atualizar ou remover a senha. Deixe em branco
-          para liberar a aba para todos.
+          para abrir esta aba. Qualquer ancião cadastrado nesta congregação pode
+          definir, atualizar ou remover a senha. Deixe em branco para liberar a aba
+          para todos.
         </p>
 
         {loading ? (
