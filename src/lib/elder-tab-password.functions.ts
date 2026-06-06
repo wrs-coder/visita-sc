@@ -96,6 +96,7 @@ const verifySchema = z.object({
 export const verifyElderTabPassword = createServerFn({ method: "POST" })
   .inputValidator((input) => verifySchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: ok, error } = await supabaseAdmin.rpc("verify_elder_tab_password", {
       _congregation_id: data.congregationId,
       _password: data.password,
