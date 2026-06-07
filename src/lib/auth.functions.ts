@@ -3,10 +3,11 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-// Código de cadastro de superintendente. Lido do env (secret) em runtime;
-// mantém fallback ao valor histórico para não quebrar cadastros caso o
-// secret ainda não esteja configurado.
-const getSuperCode = () => process.env.SUPER_REGISTRATION_CODE || "152832";
+// Código de cadastro de superintendente — lido APENAS do secret em runtime.
+// Sem fallback hardcoded: se o secret não estiver configurado, o cadastro
+// recusa todas as tentativas (fail-closed) em vez de aceitar um valor
+// público conhecido no histórico do repositório.
+const getSuperCode = () => process.env.SUPER_REGISTRATION_CODE ?? "";
 
 export function elderEmailFromPhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
