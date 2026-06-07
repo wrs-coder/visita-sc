@@ -1260,7 +1260,32 @@
     "lastSync": "Last offline update",
     "chunkErrorTitle": "No connection to load this screen",
     "chunkErrorDesc": "We could not load this module. Check your connection and try again.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "step": {
+      "profile": "Profile",
+      "roles": "Permissions",
+      "congregations": "Congregations",
+      "visits": "Visits",
+      "schedule": "Schedule",
+      "meals": "Meals",
+      "field": "Studies & return visits",
+      "transport": "Transport",
+      "checklist": "Checklist",
+      "meetings": "Meetings & talks",
+      "circuit": "Circuit events",
+      "templatesProgram": "Program templates",
+      "templatesChecklist": "Checklist templates",
+      "templatesFieldMeeting": "Field meeting templates",
+      "templatesTalk": "Meeting & talk templates",
+      "talkThemes": "Talk themes",
+      "notes": "Private notes",
+      "personalOutlines": "Personal outlines",
+      "coupleMessages": "Couple chat",
+      "elderVisitData": "Elder content per visit",
+      "elderProgramTemplates": "Elder program templates",
+      "shells": "App screens",
+      "starting": "Starting…"
+    }
   },
   "connection": {
     "modeOnline": "Online Mode",

@@ -1261,7 +1261,32 @@
     "lastSync": "Última atualização offline",
     "chunkErrorTitle": "Sem conexão para carregar esta tela",
     "chunkErrorDesc": "Não conseguimos carregar este módulo. Verifique sua conexão e tente novamente.",
-    "retry": "Tentar novamente"
+    "retry": "Tentar novamente",
+    "step": {
+      "profile": "Perfil",
+      "roles": "Permissões",
+      "congregations": "Congregações",
+      "visits": "Visitas",
+      "schedule": "Cronograma",
+      "meals": "Refeições",
+      "field": "Estudos e revisitas",
+      "transport": "Transporte",
+      "checklist": "Checklist",
+      "meetings": "Reuniões e discursos",
+      "circuit": "Eventos do circuito",
+      "templatesProgram": "Modelos de programação",
+      "templatesChecklist": "Modelos de checklist",
+      "templatesFieldMeeting": "Modelos de reuniões de campo",
+      "templatesTalk": "Modelos de reunião e discursos",
+      "talkThemes": "Temas de discurso",
+      "notes": "Notas privadas",
+      "personalOutlines": "Esboços pessoais",
+      "coupleMessages": "Comunicação do casal",
+      "elderVisitData": "Conteúdo dos anciãos por visita",
+      "elderProgramTemplates": "Modelos da programação dos anciãos",
+      "shells": "Telas do aplicativo",
+      "starting": "Iniciando…"
+    }
   },
   "connection": {
     "modeOnline": "Modo Online",
