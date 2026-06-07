@@ -90,7 +90,13 @@
     "autoBackupNone": "Copia automática local: aún no generada.",
     "generateBackup": "Generar archivo de respaldo",
     "restoreBackup": "Restaurar respaldo",
-    "backupIncludes": "El respaldo general incluye congregaciones, visitas, cronogramas, asignaciones, comidas, transporte, listas de verificación y plantillas. La restauración sobrescribe los registros existentes con el mismo identificador.",
+    "backupIncludes": "El respaldo completo (.zip) incluye TODO: congregaciones, visitas, cronogramas, asignaciones, comidas, transporte, listas, plantillas, bosquejos personales, mensajes de la pareja, programa de ancianos, Biblia importada, notas y configuraciones. Restaurar no afecta las actualizaciones de la app — solo reemplaza tus datos.",
+    "backup": {
+      "phaseServer": "Sincronizando datos de la nube…",
+      "phaseClient": "Recopilando Biblia, notas y configuraciones locales…",
+      "phasePackage": "Empaquetando respaldo (.zip)…",
+      "restoredFull": "Respaldo restaurado · {{server}} registros, {{notes}} notas, {{libraries}} biblia(s)."
+    },
     "confirmRestoreTitle": "Confirmar restauración",
     "confirmRestoreDesc": "Esta acción sobrescribirá los datos actuales con el contenido del archivo seleccionado. Esta operación no se puede deshacer. ¿Continuar?",
     "restoring": "Restaurando…",

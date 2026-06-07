@@ -90,7 +90,13 @@
     "autoBackupNone": "Backup automático local: ainda não gerado.",
     "generateBackup": "Gerar arquivo de backup",
     "restoreBackup": "Restaurar backup",
-    "backupIncludes": "O backup geral inclui congregações, visitas, cronogramas, escalas, refeições, transporte, checklists e modelos. A restauração sobrescreve registros existentes que tenham o mesmo identificador.",
+    "backupIncludes": "O backup completo (.zip) inclui TUDO: congregações, visitas, cronogramas, escalas, refeições, transporte, checklists, modelos, esboços pessoais, mensagens do casal, programação dos anciãos, Bíblia importada, notas e configurações. Restaurar não interfere em atualizações do app — apenas repõe seus dados.",
+    "backup": {
+      "phaseServer": "Sincronizando dados da nuvem…",
+      "phaseClient": "Coletando Bíblia, notas e configurações locais…",
+      "phasePackage": "Empacotando backup (.zip)…",
+      "restoredFull": "Backup restaurado · {{server}} registros, {{notes}} notas, {{libraries}} bíblia(s)."
+    },
     "confirmRestoreTitle": "Confirmar restauração",
     "confirmRestoreDesc": "Esta ação irá sobrescrever os dados atuais com o conteúdo do arquivo selecionado. Esta operação não pode ser desfeita. Deseja continuar?",
     "restoring": "Restaurando…",
