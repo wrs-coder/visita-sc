@@ -238,6 +238,76 @@ function Page() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">{t("transport.eventTypeLabel")}</Label>
+                      <Select
+                        value={(editing.event_type as string) ?? "field_service"}
+                        onValueChange={(v) => setEditing({ ...editing, event_type: v })}
+                      >
+                        <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {(["field_service","congregation_meeting","pioneer_meeting","elders_meeting","home_return","other"] as const).map(k => (
+                            <SelectItem key={k} value={k}>{t(`transport.eventType.${k}`)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">{t("transport.directionLabel")}</Label>
+                      <Select
+                        value={(editing.direction as string) ?? "round_trip"}
+                        onValueChange={(v) => setEditing({ ...editing, direction: v })}
+                      >
+                        <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {(["pickup","dropoff","round_trip"] as const).map(k => (
+                            <SelectItem key={k} value={k}>{t(`transport.direction.${k}`)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {editing.event_type === "other" && (
+                    <div>
+                      <Label className="text-xs">{t("transport.event")}</Label>
+                      <Input
+                        className="mt-1 h-9"
+                        placeholder={t("transport.eventPlaceholder")}
+                        value={((editing as Record<string, unknown>).event_type_other as string) ?? ""}
+                        onChange={(e) => setEditing({ ...editing, event_type_other: e.target.value } as typeof editing)}
+                      />
+                    </div>
+                  )}
+                  <label className="flex items-center gap-2 text-sm pt-1">
+                    <Switch
+                      checked={!!editing.all_day}
+                      onCheckedChange={(v) => setEditing({ ...editing, all_day: v })}
+                    />
+                    {t("transport.allDay")}
+                  </label>
+                  {!editing.all_day && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">{t("transport.departureTime")}</Label>
+                        <Input
+                          type="time"
+                          className="mt-1 h-9"
+                          value={(editing.departure_time as string) ?? ""}
+                          onChange={(e) => setEditing({ ...editing, departure_time: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">{t("transport.returnTime")}</Label>
+                        <Input
+                          type="time"
+                          className="mt-1 h-9"
+                          value={(editing.return_time as string) ?? ""}
+                          onChange={(e) => setEditing({ ...editing, return_time: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <Label>{t("transport.driverName")}</Label>
                     <Input
@@ -246,6 +316,7 @@ function Page() {
                       onChange={(e) => setEditing({ ...editing, driver_name: e.target.value })}
                     />
                   </div>
+
                   <div>
                     <Label>{t("transport.contactPhone")}</Label>
                     <Input
