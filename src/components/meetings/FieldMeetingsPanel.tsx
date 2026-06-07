@@ -166,7 +166,7 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
     closing_prayer !== (r.closing_prayer ?? "");
 
   const everSaved = !!(r.meeting_time || r.meeting_location || r.territory_number || r.territory_location || r.auxiliary_leaders || r.closing_prayer);
-  const showTerritory = true;
+  const showTerritory = r.modality === "casa_em_casa" || r.modality === "grupo_de_campo";
   const locationMissing = !meeting_location.trim();
 
   const handleSave = () => {
