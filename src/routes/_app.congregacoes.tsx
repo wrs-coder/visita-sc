@@ -34,9 +34,51 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Building2, Trash2, Pencil, KeyRound, Copy, Users, UserCog } from "lucide-react";
+import { Plus, Building2, Trash2, Pencil, KeyRound, Copy, Users, UserCog, Eye, EyeOff, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+
+// Pequeno cartão para o superintendente visualizar/copiar a senha que um ancião
+// cadastrado criou para a aba "Anciãos" (Missão 1).
+function ElderTabPasswordReveal({ password }: { password: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-dashed bg-muted/30 px-2 py-1.5">
+      <Lock className="h-3.5 w-3.5 text-primary shrink-0" />
+      <span className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+        Senha Anciãos
+      </span>
+      <code className="text-xs font-mono flex-1 truncate">
+        {show ? password : "•".repeat(Math.min(password.length, 10))}
+      </code>
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-6 w-6"
+        title={show ? "Ocultar" : "Mostrar"}
+        onClick={() => setShow((v) => !v)}
+      >
+        {show ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+      </Button>
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-6 w-6"
+        title="Copiar"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(password);
+            toast.success("Senha copiada.");
+          } catch {
+            toast.error("Não foi possível copiar.");
+          }
+        }}
+      >
+        <Copy className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
 
 interface Elder {
   user_id: string;
@@ -45,6 +87,8 @@ interface Elder {
   congregation_id: string | null;
   congregation_name: string;
   elder_position: string | null;
+  elder_tab_password_is_creator?: boolean;
+  elder_tab_password?: string | null;
 }
 
 const POSITION_LABELS: Record<string, string> = {
@@ -344,61 +388,66 @@ function Page() {
                       {group.map((e) => (
                         <div
                           key={e.user_id}
-                          className="flex items-center gap-3 p-2 rounded-lg border bg-card"
+                          className="flex flex-col gap-2 p-2 rounded-lg border bg-card"
                         >
-                          <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                            <UserCog className="h-4 w-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{e.full_name}</div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {POSITION_LABELS[e.elder_position ?? ""] ?? e.elder_position ?? "—"}
-                              {e.phone && <> · {e.phone}</>}
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                              <UserCog className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{e.full_name}</div>
+                              <div className="text-xs text-muted-foreground truncate">
+                                {POSITION_LABELS[e.elder_position ?? ""] ?? e.elder_position ?? "—"}
+                                {e.phone && <> · {e.phone}</>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                title="Redefinir senha"
+                                onClick={() => {
+                                  setPwdElder(e);
+                                  setNewPwd("");
+                                }}
+                              >
+                                <KeyRound className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                title="Editar"
+                                onClick={() => setEditingElder({ ...e })}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                title="Excluir"
+                                onClick={async () => {
+                                  if (
+                                    !confirm(
+                                      `Excluir o ancião "${e.full_name}"? Esta ação é permanente.`,
+                                    )
+                                  )
+                                    return;
+                                  const r = await fnDeleteElder({ data: { elderUserId: e.user_id } });
+                                  if (!r.ok) {
+                                    toast.error(r.error);
+                                    return;
+                                  }
+                                  toast.success("Ancião excluído");
+                                  load();
+                                }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              title="Redefinir senha"
-                              onClick={() => {
-                                setPwdElder(e);
-                                setNewPwd("");
-                              }}
-                            >
-                              <KeyRound className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              title="Editar"
-                              onClick={() => setEditingElder({ ...e })}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              title="Excluir"
-                              onClick={async () => {
-                                if (
-                                  !confirm(
-                                    `Excluir o ancião "${e.full_name}"? Esta ação é permanente.`,
-                                  )
-                                )
-                                  return;
-                                const r = await fnDeleteElder({ data: { elderUserId: e.user_id } });
-                                if (!r.ok) {
-                                  toast.error(r.error);
-                                  return;
-                                }
-                                toast.success("Ancião excluído");
-                                load();
-                              }}
-                            >
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
-                          </div>
+                          {e.elder_tab_password_is_creator && e.elder_tab_password && (
+                            <ElderTabPasswordReveal password={e.elder_tab_password} />
+                          )}
                         </div>
                       ))}
                     </div>

@@ -178,7 +178,10 @@ export const listMyElders = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
-    const { data: congs } = await supabaseAdmin.from("congregations").select("id,name").eq("superintendent_id", userId);
+    const { data: congs } = await supabaseAdmin
+      .from("congregations")
+      .select("id,name,elder_tab_password_plain,elder_tab_password_created_by")
+      .eq("superintendent_id", userId);
     if (!congs || congs.length === 0) return { ok: true as const, data: [] };
     const congIds = congs.map((c) => c.id);
     const { data: roles } = await supabaseAdmin
@@ -188,19 +191,25 @@ export const listMyElders = createServerFn({ method: "POST" })
     const userIds = roles.map((r) => r.user_id);
     const { data: profiles } = await supabaseAdmin
       .from("profiles").select("id,full_name,phone").in("id", userIds);
-    const congMap = new Map(congs.map((c) => [c.id, c.name]));
+    const congMap = new Map(congs.map((c) => [c.id, c]));
     const profMap = new Map((profiles ?? []).map((p) => [p.id, p]));
     return {
       ok: true as const,
       data: roles.map((r) => {
         const p = profMap.get(r.user_id);
+        const c = r.congregation_id ? congMap.get(r.congregation_id) : null;
+        const isCreator = !!c && c.elder_tab_password_created_by === r.user_id;
         return {
           user_id: r.user_id,
           full_name: p?.full_name ?? "—",
           phone: p?.phone ?? "",
           congregation_id: r.congregation_id,
-          congregation_name: r.congregation_id ? congMap.get(r.congregation_id) ?? "—" : "—",
+          congregation_name: c?.name ?? "—",
           elder_position: r.elder_position,
+          // Senha da aba "Anciãos" criada por este ancião (somente o superintendente
+          // recebe esses dados — ele é o único caller autorizado de listMyElders).
+          elder_tab_password_is_creator: isCreator,
+          elder_tab_password: isCreator ? c?.elder_tab_password_plain ?? null : null,
         };
       }),
     };
