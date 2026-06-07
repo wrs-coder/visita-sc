@@ -186,8 +186,10 @@ export type Database = {
       congregations: {
         Row: {
           created_at: string
+          elder_tab_password_created_by: string | null
           elder_tab_password_hash: string | null
           elder_tab_password_plain: string | null
+          elder_tab_password_updated_at: string | null
           id: string
           invite_code: string
           is_active: boolean
@@ -196,8 +198,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          elder_tab_password_created_by?: string | null
           elder_tab_password_hash?: string | null
           elder_tab_password_plain?: string | null
+          elder_tab_password_updated_at?: string | null
           id?: string
           invite_code: string
           is_active?: boolean
@@ -206,8 +210,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          elder_tab_password_created_by?: string | null
           elder_tab_password_hash?: string | null
           elder_tab_password_plain?: string | null
+          elder_tab_password_updated_at?: string | null
           id?: string
           invite_code?: string
           is_active?: boolean
@@ -700,6 +706,41 @@ export type Database = {
           visit_id?: string
         }
         Relationships: []
+      }
+      elder_tab_password_audit: {
+        Row: {
+          action: string
+          actor_user_id: string
+          congregation_id: string
+          created_at: string
+          id: string
+          note: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          congregation_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          congregation_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "elder_tab_password_audit_congregation_id_fkey"
+            columns: ["congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       elders_servants_meetings: {
         Row: {
@@ -1930,10 +1971,19 @@ export type Database = {
         Args: { _congregation_id: string }
         Returns: boolean
       }
-      set_elder_tab_password: {
-        Args: { _congregation_id: string; _new_password: string }
-        Returns: undefined
-      }
+      set_elder_tab_password:
+        | {
+            Args: { _congregation_id: string; _new_password: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _actor_user_id?: string
+              _congregation_id: string
+              _new_password: string
+            }
+            Returns: undefined
+          }
       verify_elder_tab_password: {
         Args: { _congregation_id: string; _password: string }
         Returns: boolean
