@@ -61,6 +61,7 @@ export async function prefetchAllForOffline(opts: PrefetchOpts): Promise<{
     checklist: [] as string[],
     fieldMeeting: [] as string[],
     talk: [] as string[],
+    elderProgram: [] as string[],
   };
 
   const steps: Step[] = [
@@ -267,6 +268,73 @@ export async function prefetchAllForOffline(opts: PrefetchOpts): Promise<{
           q.select("*").eq("superintendent_id", userId),
         );
         set(["offline", "private_notes", userId], data);
+      },
+    },
+    {
+      label: tr("offline.step.personalOutlines", "Esboços pessoais"),
+      run: async () => {
+        const data = await fetchTable("personal_outlines", (q) =>
+          q.select("*").eq("user_id", userId),
+        );
+        set(["offline", "personal_outlines", userId], data);
+      },
+    },
+    {
+      label: tr("offline.step.coupleMessages", "Comunicação do casal"),
+      run: async () => {
+        if (role !== "superintendent") return;
+        const data = await fetchTable("couple_messages", (q) =>
+          q.select("*").eq("superintendent_id", userId),
+        );
+        set(["offline", "couple_messages", userId], data);
+      },
+    },
+    {
+      label: tr("offline.step.elderVisitData", "Conteúdo dos anciãos por visita"),
+      run: async () => {
+        if (visitIds.length === 0) return;
+        const [enc, local, pastoral, recs, pending, sections, slots] = await Promise.all([
+          fetchTable("elder_encouragements", (q) => q.select("*").in("visit_id", visitIds)),
+          fetchTable("elder_local_matters", (q) => q.select("*").in("visit_id", visitIds)),
+          fetchTable("elder_pastoral_visits", (q) => q.select("*").in("visit_id", visitIds)),
+          fetchTable("elder_recommendations", (q) => q.select("*").in("visit_id", visitIds)),
+          fetchTable("visit_pending_updates", (q) => q.select("*").in("visit_id", visitIds)),
+          fetchTable("elder_program_visit_sections", (q) => q.select("*").in("visit_id", visitIds)),
+          fetchTable("elder_program_visit_slots", (q) => q.select("*").in("visit_id", visitIds)),
+        ]);
+        set(["offline", "elder_encouragements", userId], enc);
+        set(["offline", "elder_local_matters", userId], local);
+        set(["offline", "elder_pastoral_visits", userId], pastoral);
+        set(["offline", "elder_recommendations", userId], recs);
+        set(["offline", "visit_pending_updates", userId], pending);
+        set(["offline", "elder_program_visit_sections", userId], sections);
+        set(["offline", "elder_program_visit_slots", userId], slots);
+      },
+    },
+    {
+      label: tr("offline.step.elderProgramTemplates", "Modelos da programação dos anciãos"),
+      run: async () => {
+        const tpls = await fetchTable<{ id: string }>("elder_program_templates", (q) =>
+          q.select("*"),
+        );
+        templateIds.elderProgram.push(...tpls.map((x) => x.id));
+        set(["offline", "elder_program_templates", userId], tpls);
+        if (templateIds.elderProgram.length) {
+          const [sections, slots, events] = await Promise.all([
+            fetchTable("elder_program_template_sections", (q) =>
+              q.select("*").in("template_id", templateIds.elderProgram),
+            ),
+            fetchTable("elder_program_template_slots", (q) =>
+              q.select("*").in("template_id", templateIds.elderProgram),
+            ),
+            fetchTable("elder_program_template_events", (q) =>
+              q.select("*").in("template_id", templateIds.elderProgram),
+            ),
+          ]);
+          set(["offline", "elder_program_template_sections", userId], sections);
+          set(["offline", "elder_program_template_slots", userId], slots);
+          set(["offline", "elder_program_template_events", userId], events);
+        }
       },
     },
     {
