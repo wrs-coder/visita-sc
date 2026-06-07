@@ -61,6 +61,7 @@ export async function prefetchAllForOffline(opts: PrefetchOpts): Promise<{
     checklist: [] as string[],
     fieldMeeting: [] as string[],
     talk: [] as string[],
+    elderProgram: [] as string[],
   };
 
   const steps: Step[] = [
