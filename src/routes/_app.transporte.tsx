@@ -130,11 +130,19 @@ function Page() {
     }
     setSaving(true);
     try {
+      const evType = (editing.event_type as string | null) || null;
+      const otherDesc = ((editing as Record<string, unknown>).event_type_other as string | undefined)?.trim();
       const payload = {
         visit_id: visit.id,
         driver_name: editing.driver_name!.trim(),
         contact_phone: editing.contact_phone || null,
         event_date: editing.event_date || null,
+        event_type: evType,
+        direction: editing.direction || null,
+        all_day: !!editing.all_day,
+        departure_time: editing.all_day ? null : (editing.departure_time || null),
+        return_time: editing.all_day ? null : (editing.return_time || null),
+        description: evType === "other" && otherDesc ? otherDesc : null,
         notes: editing.notes || null,
       };
       const { error } = await supabase.from("transport_schedule").insert(payload);
@@ -149,6 +157,7 @@ function Page() {
       setSaving(false);
     }
   };
+
 
   const remove = async (id: string) => {
     const { error } = await supabase.from("transport_schedule").delete().eq("id", id);
