@@ -45,6 +45,7 @@ import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supab
 import { useTranslation } from "react-i18next";
 import { maskPhone } from "@/lib/masks";
 import { SavingIndicator } from "@/components/SavingIndicator";
+import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
@@ -98,6 +99,8 @@ function Page() {
   const [elderProgramTpls, setElderProgramTpls] = useState<{ id: string; name: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [guardForId, setGuardForId] = useState<string | null>(null);
+  const [guardFromEdit, setGuardFromEdit] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: "Visita" as string,
