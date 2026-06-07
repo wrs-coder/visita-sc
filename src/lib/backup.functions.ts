@@ -232,7 +232,7 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
 
     const errors: string[] = [];
     let counted = 0;
-    const skipped = d.visits.length - allowedVisits.length;
+    const skipped = (d.visits.length - allowedVisits.length) + skippedCongregations;
     for (const [table, rows] of steps) {
       const err = await upsert(table, rows);
       if (err) errors.push(`${table}: ${err}`);
