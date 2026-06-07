@@ -7,13 +7,65 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
 type Row = { [k: string]: Json };
 
+// Tabelas escopadas por visit_id
+const VISIT_TABLES = [
+  "checklist_items",
+  "field_meetings",
+  "field_assignments",
+  "schedule_events",
+  "meals",
+  "meal_day_notes",
+  "transport_schedule",
+  "private_notes",
+  "midweek_meetings",
+  "weekend_meetings",
+  "pioneer_meetings",
+  "elders_servants_meetings",
+  "elder_encouragements",
+  "elder_local_matters",
+  "elder_pastoral_visits",
+  "elder_recommendations",
+  "elder_program_visit_sections",
+  "elder_program_visit_slots",
+  "visit_pending_updates",
+] as const;
+
+// Tabelas escopadas por superintendent_id (modelos / dados pessoais)
+const SUPT_TABLES = [
+  "circuit_schedule_events",
+  "couple_messages",
+  "talk_themes",
+] as const;
+
+// Modelos com filhos por template_id
+const TEMPLATE_FAMILIES: Array<{ parent: string; children: string[] }> = [
+  { parent: "checklist_templates", children: ["checklist_template_items"] },
+  { parent: "field_meeting_templates", children: ["field_meeting_template_items"] },
+  { parent: "program_templates", children: ["program_template_items"] },
+  {
+    parent: "meeting_talk_templates",
+    children: [
+      "meeting_talk_template_elders",
+      "meeting_talk_template_midweek",
+      "meeting_talk_template_pioneer",
+      "meeting_talk_template_weekend_themes",
+    ],
+  },
+  {
+    parent: "elder_program_templates",
+    children: [
+      "elder_program_template_sections",
+      "elder_program_template_slots",
+      "elder_program_template_events",
+    ],
+  },
+];
 
 export const exportFullBackup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
 
-    // Confirm role
     const { data: role } = await supabaseAdmin.from("user_roles")
       .select("id").eq("user_id", userId).eq("role", "superintendent").maybeSingle();
     if (!role) return { ok: false as const, error: "Apenas superintendentes." };
@@ -27,53 +79,45 @@ export const exportFullBackup = createServerFn({ method: "POST" })
       : { data: [] };
     const visitIds = (visits ?? []).map((v) => v.id);
 
-    const fetchByVisit = async (table: string) => {
-      if (!visitIds.length) return [] as Row[];
+    const fetchIn = async (table: string, col: string, ids: string[]) => {
+      if (!ids.length) return [] as Row[];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res = await (supabaseAdmin.from(table as any) as any).select("*").in("visit_id", visitIds);
+      const res = await (supabaseAdmin.from(table as any) as any).select("*").in(col, ids);
+      return (res.data ?? []) as Row[];
+    };
+    const fetchByVisit = (t: string) => fetchIn(t, "visit_id", visitIds);
+    const fetchBySupt = async (t: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res = await (supabaseAdmin.from(t as any) as any).select("*").eq("superintendent_id", userId);
       return (res.data ?? []) as Row[];
     };
 
-    const [
-      checklist_items,
-      field_meetings,
-      field_assignments,
-      schedule_events,
-      meals,
-      meal_day_notes,
-      transport_schedule,
-      private_notes,
-    ] = await Promise.all([
-      fetchByVisit("checklist_items"),
-      fetchByVisit("field_meetings"),
-      fetchByVisit("field_assignments"),
-      fetchByVisit("schedule_events"),
-      fetchByVisit("meals"),
-      fetchByVisit("meal_day_notes"),
-      fetchByVisit("transport_schedule"),
-      fetchByVisit("private_notes"),
-    ]);
+    // Visit-scoped
+    const visitData: Record<string, Row[]> = {};
+    await Promise.all(
+      VISIT_TABLES.map(async (t) => { visitData[t] = await fetchByVisit(t); }),
+    );
 
-    const { data: checklist_templates = [] } = await supabaseAdmin
-      .from("checklist_templates").select("*").eq("superintendent_id", userId);
-    const checklistTplIds = (checklist_templates ?? []).map((t) => t.id);
-    const { data: checklist_template_items = [] } = checklistTplIds.length
-      ? await supabaseAdmin.from("checklist_template_items").select("*").in("template_id", checklistTplIds)
-      : { data: [] };
+    // Esboços pessoais — user_id
+    const { data: personal_outlines = [] } = await supabaseAdmin
+      .from("personal_outlines").select("*").eq("user_id", userId);
 
-    const { data: field_meeting_templates = [] } = await supabaseAdmin
-      .from("field_meeting_templates").select("*").eq("superintendent_id", userId);
-    const fmTplIds = (field_meeting_templates ?? []).map((t) => t.id);
-    const { data: field_meeting_template_items = [] } = fmTplIds.length
-      ? await supabaseAdmin.from("field_meeting_template_items").select("*").in("template_id", fmTplIds)
-      : { data: [] };
+    // Supt-scoped pequenos
+    const suptData: Record<string, Row[]> = {};
+    await Promise.all(
+      SUPT_TABLES.map(async (t) => { suptData[t] = await fetchBySupt(t); }),
+    );
 
-    const { data: program_templates = [] } = await supabaseAdmin
-      .from("program_templates").select("*").eq("superintendent_id", userId);
-    const pgTplIds = (program_templates ?? []).map((t) => t.id);
-    const { data: program_template_items = [] } = pgTplIds.length
-      ? await supabaseAdmin.from("program_template_items").select("*").in("template_id", pgTplIds)
-      : { data: [] };
+    // Famílias de modelos
+    const templates: Record<string, Row[]> = {};
+    for (const fam of TEMPLATE_FAMILIES) {
+      const parentRows = await fetchBySupt(fam.parent);
+      templates[fam.parent] = parentRows;
+      const parentIds = parentRows.map((r) => r.id as string).filter((v) => typeof v === "string");
+      for (const child of fam.children) {
+        templates[child] = await fetchIn(child, "template_id", parentIds);
+      }
+    }
 
     const { data: user_roles = [] } = congIds.length
       ? await supabaseAdmin.from("user_roles").select("*").in("congregation_id", congIds)
@@ -83,52 +127,77 @@ export const exportFullBackup = createServerFn({ method: "POST" })
       ok: true as const,
       file: {
         type: "visita_sc_backup" as const,
-        version: 1 as const,
+        version: 2 as const,
         exportedAt: new Date().toISOString(),
         superintendentId: userId,
         data: {
           congregations: congregations ?? [],
           visits: visits ?? [],
-          checklist_items, field_meetings, field_assignments, schedule_events, meals,
-          meal_day_notes,
-          transport_schedule, private_notes,
-          checklist_templates: checklist_templates ?? [],
-          checklist_template_items: checklist_template_items ?? [],
-          field_meeting_templates: field_meeting_templates ?? [],
-          field_meeting_template_items: field_meeting_template_items ?? [],
-          program_templates: program_templates ?? [],
-          program_template_items: program_template_items ?? [],
           user_roles: user_roles ?? [],
-        },
+          personal_outlines: (personal_outlines ?? []) as Row[],
+          ...visitData,
+          ...suptData,
+          ...templates,
+        } as Record<string, Row[]>,
       },
     };
   });
 
 const recordArray = z.array(z.record(z.string(), z.unknown())).transform((arr) => arr as unknown as Row[]);
+const optArr = recordArray.optional().default([]);
 
+// Aceita v1 (antigo) ou v2 (novo); todos os campos extras são opcionais.
 const backupFileSchema = z.object({
   type: z.literal("visita_sc_backup"),
-  version: z.literal(1),
+  version: z.union([z.literal(1), z.literal(2)]),
   exportedAt: z.string(),
   superintendentId: z.string().uuid().optional(),
   data: z.object({
     congregations: recordArray,
     visits: recordArray,
-    checklist_items: recordArray,
-    field_meetings: recordArray,
-    field_assignments: recordArray,
-    schedule_events: recordArray,
-    meals: recordArray,
-    meal_day_notes: recordArray.optional().default([]),
-    transport_schedule: recordArray,
-    private_notes: recordArray,
-    checklist_templates: recordArray,
-    checklist_template_items: recordArray,
-    field_meeting_templates: recordArray,
-    field_meeting_template_items: recordArray,
-    program_templates: recordArray,
-    program_template_items: recordArray,
-    user_roles: recordArray,
+    user_roles: optArr,
+    // Visit-scoped (v1 + v2)
+    checklist_items: optArr,
+    field_meetings: optArr,
+    field_assignments: optArr,
+    schedule_events: optArr,
+    meals: optArr,
+    meal_day_notes: optArr,
+    transport_schedule: optArr,
+    private_notes: optArr,
+    // Visit-scoped (v2)
+    midweek_meetings: optArr,
+    weekend_meetings: optArr,
+    pioneer_meetings: optArr,
+    elders_servants_meetings: optArr,
+    elder_encouragements: optArr,
+    elder_local_matters: optArr,
+    elder_pastoral_visits: optArr,
+    elder_recommendations: optArr,
+    elder_program_visit_sections: optArr,
+    elder_program_visit_slots: optArr,
+    visit_pending_updates: optArr,
+    // Supt-scoped (v2)
+    circuit_schedule_events: optArr,
+    couple_messages: optArr,
+    talk_themes: optArr,
+    personal_outlines: optArr,
+    // Templates
+    checklist_templates: optArr,
+    checklist_template_items: optArr,
+    field_meeting_templates: optArr,
+    field_meeting_template_items: optArr,
+    program_templates: optArr,
+    program_template_items: optArr,
+    meeting_talk_templates: optArr,
+    meeting_talk_template_elders: optArr,
+    meeting_talk_template_midweek: optArr,
+    meeting_talk_template_pioneer: optArr,
+    meeting_talk_template_weekend_themes: optArr,
+    elder_program_templates: optArr,
+    elder_program_template_sections: optArr,
+    elder_program_template_slots: optArr,
+    elder_program_template_events: optArr,
   }),
 });
 
@@ -144,21 +213,11 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
 
     const d = data.file.data;
 
-    // SECURITY: prevent IDOR / takeover —
-    // 1) Congregações só podem ser sobrescritas se já forem de propriedade
-    //    do usuário (caso contrário um SC poderia forjar a UUID alheia e
-    //    roubar a congregação via upsert com superintendent_id forçado).
-    // 2) Templates importados são forçados ao userId atual; itens de
-    //    template só são restaurados se referenciarem templates que
-    //    chegaram no mesmo backup (impede injetar itens em templates
-    //    alheios cuja UUID o atacante adivinhe).
+    // ---- Segurança (mesmas travas da v1) ----
     const { data: ownedCongs } = await supabaseAdmin
       .from("congregations").select("id").eq("superintendent_id", userId);
     const ownedCongIds = new Set((ownedCongs ?? []).map((c) => c.id as string));
 
-    // Apenas congregações já possuídas pelo usuário são elegíveis para
-    // upsert. Linhas com UUID desconhecida são descartadas em silêncio
-    // (não tentamos criar novas via restore — usar fluxo normal).
     const allowedCongregationRows = d.congregations.filter((r) => {
       const id = (r as Record<string, unknown>).id;
       return typeof id === "string" && ownedCongIds.has(id);
@@ -167,21 +226,23 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
     const allowedCongIds = ownedCongIds;
 
     const congregations = allowedCongregationRows.map((r) => ({ ...r, superintendent_id: userId }));
-    const checklist_templates = d.checklist_templates.map((r) => ({ ...r, superintendent_id: userId }));
-    const field_meeting_templates = d.field_meeting_templates.map((r) => ({ ...r, superintendent_id: userId }));
-    const program_templates = d.program_templates.map((r) => ({ ...r, superintendent_id: userId }));
 
-    // Conjuntos de IDs de templates que o usuário acabou de "reivindicar"
-    // como seus neste restore. Itens só podem referenciar esses IDs.
-    const ownedChecklistTplIds = new Set(
-      checklist_templates.map((t) => (t as Record<string, unknown>).id).filter((v): v is string => typeof v === "string"),
-    );
-    const ownedFieldTplIds = new Set(
-      field_meeting_templates.map((t) => (t as Record<string, unknown>).id).filter((v): v is string => typeof v === "string"),
-    );
-    const ownedProgramTplIds = new Set(
-      program_templates.map((t) => (t as Record<string, unknown>).id).filter((v): v is string => typeof v === "string"),
-    );
+    // Força superintendent_id no usuário atual para todos os modelos e
+    // dados pessoais; filhos restauráveis só quando seu parent foi aceito.
+    const reownSupt = (rows: Row[]) => rows.map((r) => ({ ...r, superintendent_id: userId }));
+    const reownUser = (rows: Row[]) => rows.map((r) => ({ ...r, user_id: userId }));
+
+    const templates: Record<string, Row[]> = {};
+    const ownedTplIds: Record<string, Set<string>> = {};
+    for (const fam of TEMPLATE_FAMILIES) {
+      const parentKey = fam.parent as keyof typeof d;
+      const parentRows = reownSupt((d[parentKey] as Row[]) ?? []);
+      templates[fam.parent] = parentRows;
+      ownedTplIds[fam.parent] = new Set(
+        parentRows.map((r) => (r as Record<string, unknown>).id)
+          .filter((v): v is string => typeof v === "string"),
+      );
+    }
     const filterByTemplate = (rows: Row[], owned: Set<string>) =>
       rows.filter((r) => {
         const tid = (r as Record<string, unknown>).template_id;
@@ -197,7 +258,6 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
         .map((v) => (v as Record<string, unknown>).id)
         .filter((v): v is string => typeof v === "string"),
     );
-
     const filterByVisit = (rows: Row[]) =>
       rows.filter((r) => {
         const vId = (r as Record<string, unknown>).visit_id;
@@ -214,21 +274,29 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
     const steps: Array<[string, Row[]]> = [
       ["congregations", congregations],
       ["visits", allowedVisits],
-      ["checklist_templates", checklist_templates],
-      ["checklist_template_items", filterByTemplate(d.checklist_template_items, ownedChecklistTplIds)],
-      ["field_meeting_templates", field_meeting_templates],
-      ["field_meeting_template_items", filterByTemplate(d.field_meeting_template_items, ownedFieldTplIds)],
-      ["program_templates", program_templates],
-      ["program_template_items", filterByTemplate(d.program_template_items, ownedProgramTplIds)],
-      ["checklist_items", filterByVisit(d.checklist_items)],
-      ["field_meetings", filterByVisit(d.field_meetings)],
-      ["field_assignments", filterByVisit(d.field_assignments)],
-      ["schedule_events", filterByVisit(d.schedule_events)],
-      ["meals", filterByVisit(d.meals)],
-      ["meal_day_notes", filterByVisit(d.meal_day_notes ?? [])],
-      ["transport_schedule", filterByVisit(d.transport_schedule)],
-      ["private_notes", filterByVisit(d.private_notes).map((r) => ({ ...r, superintendent_id: userId }))],
     ];
+    // Modelos: parent depois children
+    for (const fam of TEMPLATE_FAMILIES) {
+      steps.push([fam.parent, templates[fam.parent]]);
+      for (const child of fam.children) {
+        steps.push([child, filterByTemplate((d[child as keyof typeof d] as Row[]) ?? [], ownedTplIds[fam.parent])]);
+      }
+    }
+    // Supt-scoped pequenos
+    for (const t of SUPT_TABLES) {
+      steps.push([t, reownSupt((d[t as keyof typeof d] as Row[]) ?? [])]);
+    }
+    // Esboços pessoais — user_id
+    steps.push(["personal_outlines", reownUser(d.personal_outlines ?? [])]);
+    // Visit-scoped
+    for (const t of VISIT_TABLES) {
+      const rows = filterByVisit((d[t as keyof typeof d] as Row[]) ?? []);
+      if (t === "private_notes") {
+        steps.push([t, rows.map((r) => ({ ...r, superintendent_id: userId }))]);
+      } else {
+        steps.push([t, rows]);
+      }
+    }
 
     const errors: string[] = [];
     let counted = 0;

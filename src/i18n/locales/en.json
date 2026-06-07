@@ -90,7 +90,13 @@
     "autoBackupNone": "Local automatic backup: not generated yet.",
     "generateBackup": "Generate backup file",
     "restoreBackup": "Restore backup",
-    "backupIncludes": "The full backup includes congregations, visits, schedules, assignments, meals, transport, checklists and templates. Restoring overwrites existing records that share the same identifier.",
+    "backupIncludes": "The full backup (.zip) includes EVERYTHING: congregations, visits, schedules, assignments, meals, transport, checklists, templates, personal outlines, couple messages, elder program, imported Bible, notes and settings. Restoring does not affect app updates — it only replaces your data.",
+    "backup": {
+      "phaseServer": "Syncing cloud data…",
+      "phaseClient": "Collecting Bible, notes and local settings…",
+      "phasePackage": "Packaging backup (.zip)…",
+      "restoredFull": "Backup restored · {{server}} records, {{notes}} notes, {{libraries}} bible(s)."
+    },
     "confirmRestoreTitle": "Confirm restore",
     "confirmRestoreDesc": "This action will overwrite the current data with the contents of the selected file. This operation cannot be undone. Continue?",
     "restoring": "Restoring…",
