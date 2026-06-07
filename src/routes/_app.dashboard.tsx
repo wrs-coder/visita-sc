@@ -72,7 +72,7 @@ import {
 import { format, parseISO, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
-import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog";
+import { FinishVisitDialog } from "@/components/FinishVisitDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
 import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.functions";
@@ -767,7 +767,7 @@ function Dashboard() {
             </div>
           </div>
           {overdueVisits.map((v) => (
-            <VisitDeletionGuardDialog
+            <FinishVisitDialog
               key={`dlg-${v.id}`}
               visitId={v.id}
               visitTitle={v.title}
@@ -797,7 +797,7 @@ function Dashboard() {
             </Link>
           </Button>
           {role === "superintendent" && (
-            <VisitDeletionGuardDialog
+            <FinishVisitDialog
               visitId={visit.id}
               visitTitle={visit.title}
               onFinished={() => {

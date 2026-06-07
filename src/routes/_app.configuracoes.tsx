@@ -45,6 +45,7 @@ import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supab
 import { useTranslation } from "react-i18next";
 import { maskPhone } from "@/lib/masks";
 import { SavingIndicator } from "@/components/SavingIndicator";
+import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
@@ -98,6 +99,8 @@ function Page() {
   const [elderProgramTpls, setElderProgramTpls] = useState<{ id: string; name: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [guardForId, setGuardForId] = useState<string | null>(null);
+  const [guardFromEdit, setGuardFromEdit] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: "Visita" as string,
@@ -709,31 +712,17 @@ function Page() {
                     <Button className="w-full" onClick={submit} disabled={submitting}>
                       {submitting ? "Atualizando..." : "Atualizar"}
                     </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" className="w-full">
-                          <Trash2 className="h-4 w-4 mr-1" /> Excluir esta visita
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir visita?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta ação removerá a visita e todos os dados relacionados
-                            (refeições, transportes, escalas, reuniões). Não é possível desfazer.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            onClick={() => editId && removeById(editId)}
-                          >
-                            Sim, excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => {
+                        if (!editId) return;
+                        setGuardFromEdit(true);
+                        setGuardForId(editId);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" /> Excluir esta visita
+                    </Button>
                     <Button variant="ghost" className="w-full" onClick={() => setOpen(false)}>
                       Cancelar
                     </Button>
@@ -842,30 +831,16 @@ function Page() {
                             <Button size="icon" variant="ghost" onClick={() => openEdit(v)}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="icon" variant="ghost">
-                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Excluir visita?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Esta ação removerá a visita e todos os dados relacionados. Não é possível desfazer.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={() => removeById(v.id)}
-                                  >
-                                    Sim, excluir
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => {
+                                setGuardFromEdit(false);
+                                setGuardForId(v.id);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
                           </div>
                         )}
                       </CardContent>
@@ -878,6 +853,25 @@ function Page() {
         })()}
       </div>
 
+      {guardForId && (
+        <VisitDeletionGuardDialog
+          visitId={guardForId}
+          visitTitle={visits.find((v) => v.id === guardForId)?.title ?? "esta visita"}
+          hideTrigger
+          open={!!guardForId}
+          onOpenChange={(o) => {
+            if (!o) {
+              setGuardForId(null);
+              setGuardFromEdit(false);
+            }
+          }}
+          onFinished={() => {
+            if (guardFromEdit) setOpen(false);
+            setGuardForId(null);
+            setGuardFromEdit(false);
+          }}
+        />
+      )}
     </div>
   );
 }
