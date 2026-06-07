@@ -853,6 +853,25 @@ function Page() {
         })()}
       </div>
 
+      {guardForId && (
+        <VisitDeletionGuardDialog
+          visitId={guardForId}
+          visitTitle={visits.find((v) => v.id === guardForId)?.title ?? "esta visita"}
+          hideTrigger
+          open={!!guardForId}
+          onOpenChange={(o) => {
+            if (!o) {
+              setGuardForId(null);
+              setGuardFromEdit(false);
+            }
+          }}
+          onFinished={() => {
+            if (guardFromEdit) setOpen(false);
+            setGuardForId(null);
+            setGuardFromEdit(false);
+          }}
+        />
+      )}
     </div>
   );
 }
