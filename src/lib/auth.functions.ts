@@ -3,7 +3,10 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const SUPER_CODE = "152832";
+// Código de cadastro de superintendente. Lido do env (secret) em runtime;
+// mantém fallback ao valor histórico para não quebrar cadastros caso o
+// secret ainda não esteja configurado.
+const getSuperCode = () => process.env.SUPER_REGISTRATION_CODE || "152832";
 
 export function elderEmailFromPhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -28,7 +31,7 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data }) => {
-    if (data.code !== SUPER_CODE) {
+    if (data.code !== getSuperCode()) {
       return { ok: false as const, error: "Código de superintendente inválido." };
     }
     const { data: created, error: signErr } = await supabaseAdmin.auth.admin.createUser({
@@ -294,7 +297,7 @@ export const linkAccount = createServerFn({ method: "POST" })
     const email = (claims.claims.email as string | undefined) ?? null;
 
     if (data.mode === "superintendent") {
-      if (data.code !== SUPER_CODE) return { ok: false as const, error: "Código de superintendente inválido." };
+      if (data.code !== getSuperCode()) return { ok: false as const, error: "Código de superintendente inválido." };
       await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: data.fullName ?? undefined, email }, { onConflict: "id" });
       const { data: existing } = await supabaseAdmin
         .from("user_roles").select("id").eq("user_id", userId).eq("role", "superintendent").maybeSingle();

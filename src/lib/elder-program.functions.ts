@@ -36,12 +36,13 @@ export const listElderProgramForVisit = createServerFn({ method: "POST" })
     if (!v) return { ok: false as const, error: "Visita não encontrada.", ...empty };
     const { data: roles } = await supabaseAdmin
       .from("user_roles").select("role,congregation_id").eq("user_id", userId);
-    const isSuper = (roles ?? []).some((r) => r.role === "superintendent");
     const elderCong = (roles ?? []).find((r) => r.role === "elder")?.congregation_id ?? null;
-    if (!isSuper && elderCong !== v.congregation_id) {
-      const { data: cong } = await supabaseAdmin
-        .from("congregations").select("superintendent_id").eq("id", v.congregation_id).maybeSingle();
-      if (cong?.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado.", ...empty };
+    const { data: cong } = await supabaseAdmin
+      .from("congregations").select("superintendent_id").eq("id", v.congregation_id).maybeSingle();
+    const isSuperOfThisCong = cong?.superintendent_id === userId;
+    const isElderOfThisCong = elderCong === v.congregation_id;
+    if (!isSuperOfThisCong && !isElderOfThisCong) {
+      return { ok: false as const, error: "Não autorizado.", ...empty };
     }
     const [secs, slots, pastoral, enc, rec, loc] = await Promise.all([
       supabaseAdmin.from("elder_program_visit_sections").select("section,additional_info").eq("visit_id", data.visitId),
