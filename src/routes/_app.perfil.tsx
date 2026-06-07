@@ -5,7 +5,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAutoBackup } from "@/hooks/use-auto-backup";
 import { supabase } from "@/integrations/supabase/client";
 import { exportFullBackup, restoreFullBackup } from "@/lib/backup.functions";
-import { shareJsonFile, readJsonFile, pickFile } from "@/lib/share";
+import { dumpClientBackup, restoreClientBackup } from "@/lib/backup-client";
+import { packBackupZip, unpackBackupZip, looksLikeZip } from "@/lib/backup-package";
+import { saveBlob, readJsonFile, pickFile } from "@/lib/share";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,8 +35,13 @@ function Page() {
   const fnExportBackup = useServerFn(exportFullBackup);
   const fnRestoreBackup = useServerFn(restoreFullBackup);
   
-  const [pendingRestore, setPendingRestore] = useState<unknown | null>(null);
+  const [pendingRestore, setPendingRestore] = useState<
+    | { kind: "v1"; payload: unknown }
+    | { kind: "v2"; full: Awaited<ReturnType<typeof unpackBackupZip>> }
+    | null
+  >(null);
   const [busyBackup, setBusyBackup] = useState<null | "export" | "restore">(null);
+  const [backupPhase, setBackupPhase] = useState<string>("");
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [circuit, setCircuit] = useState(profile?.circuit ?? "");
   const [email, setEmail] = useState(user?.email ?? profile?.email ?? "");
@@ -102,18 +109,49 @@ function Page() {
 
   const doExportBackup = async () => {
     setBusyBackup("export");
-    const r = await fnExportBackup();
-    setBusyBackup(null);
-    if (!r.ok || !r.file) { toast.error(r.error ?? t("profile.failGeneric")); return; }
-    const fname = `visita-sc-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    const res = await shareJsonFile(fname, r.file);
-    toast.success(res === "shared" ? t("profile.shareOpened") : t("profile.backupDownloaded"));
+    setBackupPhase(t("profile.backup.phaseServer"));
+    try {
+      const r = await fnExportBackup();
+      if (!r.ok || !r.file) { toast.error(r.error ?? t("profile.failGeneric")); return; }
+
+      setBackupPhase(t("profile.backup.phaseClient"));
+      const client = await dumpClientBackup();
+
+      setBackupPhase(t("profile.backup.phasePackage"));
+      const blob = await packBackupZip({
+        manifest: {
+          type: "visita_sc_backup_zip",
+          version: 2,
+          exportedAt: new Date().toISOString(),
+          app: "visita-sc",
+        },
+        server: r.file,
+        client,
+      });
+      const fname = `visita-sc-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+      const res = await saveBlob(blob, {
+        filename: fname,
+        mimeType: "application/zip",
+        pickerTypes: [{ description: "Backup .zip", accept: { "application/zip": [".zip"] } }],
+      });
+      toast.success(res === "shared" ? t("profile.shareOpened") : t("profile.backupDownloaded"));
+    } catch (e) {
+      toast.error(t("profile.failGeneric"), { description: (e as Error).message });
+    } finally {
+      setBackupPhase("");
+      setBusyBackup(null);
+    }
   };
 
   const pickRestoreFile = async (file: File) => {
     try {
-      const json = await readJsonFile(file);
-      setPendingRestore(json);
+      if (looksLikeZip(file)) {
+        const full = await unpackBackupZip(file);
+        setPendingRestore({ kind: "v2", full });
+      } else {
+        const json = await readJsonFile(file);
+        setPendingRestore({ kind: "v1", payload: json });
+      }
     } catch (e) {
       toast.error(t("profile.invalidFile"), { description: (e as Error).message });
     }
@@ -122,11 +160,28 @@ function Page() {
   const confirmRestore = async () => {
     if (!pendingRestore) return;
     setBusyBackup("restore");
-    const r = await fnRestoreBackup({ data: { file: pendingRestore as never } });
-    setBusyBackup(null);
-    setPendingRestore(null);
-    if (!r.ok) { toast.error(t("profile.restoreFail"), { description: r.error }); return; }
-    toast.success(t("profile.restoredCount", { count: r.restored }));
+    try {
+      if (pendingRestore.kind === "v2") {
+        setBackupPhase(t("profile.backup.phaseServer"));
+        const r = await fnRestoreBackup({ data: { file: pendingRestore.full.server as never } });
+        if (!r.ok) { toast.error(t("profile.restoreFail"), { description: r.error }); return; }
+        setBackupPhase(t("profile.backup.phaseClient"));
+        const c = await restoreClientBackup(pendingRestore.full.client);
+        toast.success(t("profile.backup.restoredFull", {
+          server: r.restored, notes: c.notes, libraries: c.libraries,
+        }));
+      } else {
+        const r = await fnRestoreBackup({ data: { file: pendingRestore.payload as never } });
+        if (!r.ok) { toast.error(t("profile.restoreFail"), { description: r.error }); return; }
+        toast.success(t("profile.restoredCount", { count: r.restored }));
+      }
+    } catch (e) {
+      toast.error(t("profile.restoreFail"), { description: (e as Error).message });
+    } finally {
+      setPendingRestore(null);
+      setBackupPhase("");
+      setBusyBackup(null);
+    }
   };
 
   const saveName = async (e: React.FormEvent) => {
