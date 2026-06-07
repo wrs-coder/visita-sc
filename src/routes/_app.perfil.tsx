@@ -400,7 +400,7 @@ function Page() {
               <Button
                 variant="outline"
                 onClick={async () => {
-                  const f = await pickFile("application/json,.json");
+                  const f = await pickFile("application/zip,application/json,.zip,.json");
                   if (f) pickRestoreFile(f);
                 }}
                 disabled={busyBackup !== null}
@@ -408,7 +408,11 @@ function Page() {
                 <Upload className="h-4 w-4 mr-1" />{t("profile.restoreBackup")}
               </Button>
             </div>
+            {backupPhase && (
+              <p className="text-xs text-primary">{backupPhase}</p>
+            )}
             <p className="text-xs text-muted-foreground">{t("profile.backupIncludes")}</p>
+
           </CardContent>
         </Card>
       )}
