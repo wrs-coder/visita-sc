@@ -144,26 +144,49 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
 
     const d = data.file.data;
 
-    // SECURITY: prevent IDOR — só restaurar dados de congregações que o
-    // usuário possui ou que serão criadas em nome dele. Backups feitos por
-    // outros SCs ou adulterados não podem injetar/sobrescrever dados
-    // alheios.
+    // SECURITY: prevent IDOR / takeover —
+    // 1) Congregações só podem ser sobrescritas se já forem de propriedade
+    //    do usuário (caso contrário um SC poderia forjar a UUID alheia e
+    //    roubar a congregação via upsert com superintendent_id forçado).
+    // 2) Templates importados são forçados ao userId atual; itens de
+    //    template só são restaurados se referenciarem templates que
+    //    chegaram no mesmo backup (impede injetar itens em templates
+    //    alheios cuja UUID o atacante adivinhe).
     const { data: ownedCongs } = await supabaseAdmin
       .from("congregations").select("id").eq("superintendent_id", userId);
     const ownedCongIds = new Set((ownedCongs ?? []).map((c) => c.id as string));
 
-    const incomingCongIds = new Set(
-      d.congregations
-        .map((r) => (r as Record<string, unknown>).id)
-        .filter((v): v is string => typeof v === "string"),
-    );
-    const allowedCongIds = new Set<string>([...ownedCongIds, ...incomingCongIds]);
+    // Apenas congregações já possuídas pelo usuário são elegíveis para
+    // upsert. Linhas com UUID desconhecida são descartadas em silêncio
+    // (não tentamos criar novas via restore — usar fluxo normal).
+    const allowedCongregationRows = d.congregations.filter((r) => {
+      const id = (r as Record<string, unknown>).id;
+      return typeof id === "string" && ownedCongIds.has(id);
+    });
+    const skippedCongregations = d.congregations.length - allowedCongregationRows.length;
+    const allowedCongIds = ownedCongIds;
 
-    // Force ownership of congregations and templates to the current user
-    const congregations = d.congregations.map((r) => ({ ...r, superintendent_id: userId }));
+    const congregations = allowedCongregationRows.map((r) => ({ ...r, superintendent_id: userId }));
     const checklist_templates = d.checklist_templates.map((r) => ({ ...r, superintendent_id: userId }));
     const field_meeting_templates = d.field_meeting_templates.map((r) => ({ ...r, superintendent_id: userId }));
     const program_templates = d.program_templates.map((r) => ({ ...r, superintendent_id: userId }));
+
+    // Conjuntos de IDs de templates que o usuário acabou de "reivindicar"
+    // como seus neste restore. Itens só podem referenciar esses IDs.
+    const ownedChecklistTplIds = new Set(
+      checklist_templates.map((t) => (t as Record<string, unknown>).id).filter((v): v is string => typeof v === "string"),
+    );
+    const ownedFieldTplIds = new Set(
+      field_meeting_templates.map((t) => (t as Record<string, unknown>).id).filter((v): v is string => typeof v === "string"),
+    );
+    const ownedProgramTplIds = new Set(
+      program_templates.map((t) => (t as Record<string, unknown>).id).filter((v): v is string => typeof v === "string"),
+    );
+    const filterByTemplate = (rows: Row[], owned: Set<string>) =>
+      rows.filter((r) => {
+        const tid = (r as Record<string, unknown>).template_id;
+        return typeof tid === "string" && owned.has(tid);
+      });
 
     const allowedVisits = d.visits.filter((v) => {
       const congId = (v as Record<string, unknown>).congregation_id;
@@ -192,11 +215,11 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
       ["congregations", congregations],
       ["visits", allowedVisits],
       ["checklist_templates", checklist_templates],
-      ["checklist_template_items", d.checklist_template_items],
+      ["checklist_template_items", filterByTemplate(d.checklist_template_items, ownedChecklistTplIds)],
       ["field_meeting_templates", field_meeting_templates],
-      ["field_meeting_template_items", d.field_meeting_template_items],
+      ["field_meeting_template_items", filterByTemplate(d.field_meeting_template_items, ownedFieldTplIds)],
       ["program_templates", program_templates],
-      ["program_template_items", d.program_template_items],
+      ["program_template_items", filterByTemplate(d.program_template_items, ownedProgramTplIds)],
       ["checklist_items", filterByVisit(d.checklist_items)],
       ["field_meetings", filterByVisit(d.field_meetings)],
       ["field_assignments", filterByVisit(d.field_assignments)],
@@ -209,7 +232,7 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
 
     const errors: string[] = [];
     let counted = 0;
-    const skipped = d.visits.length - allowedVisits.length;
+    const skipped = (d.visits.length - allowedVisits.length) + skippedCongregations;
     for (const [table, rows] of steps) {
       const err = await upsert(table, rows);
       if (err) errors.push(`${table}: ${err}`);
