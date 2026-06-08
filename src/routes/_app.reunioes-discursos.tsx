@@ -250,12 +250,14 @@ function Page() {
 
   return (
     <MeetingsDraftProvider scopeKey={scopeKey}>
-      <TabsGuarded
-        currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
-        isSuper={isSuper}
-        panelsReady={panelsReady}
-      />
+      <MeetingsEditModeProvider isSuper={isSuper}>
+        <TabsGuarded
+          currentTab={currentTab}
+          setCurrentTab={setCurrentTab}
+          isSuper={isSuper}
+          panelsReady={panelsReady}
+        />
+      </MeetingsEditModeProvider>
     </MeetingsDraftProvider>
   );
 }
