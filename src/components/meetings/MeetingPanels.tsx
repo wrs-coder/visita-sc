@@ -74,8 +74,22 @@ export function MidweekPanel() {
   if (loading || !row) return <LoadingCard />;
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.finalSong")} value={extras.midweek?.final_song} />
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.midweek?.observations} />
+      <TemplateExtraEditable
+        label={t("meetingsTalks.fromTemplate.finalSong")}
+        value={extras.midweek?.final_song}
+        templateValue={extras.templateExtras.midweek?.final_song}
+        visitId={visit.id} field="midweek_final_song"
+        editable={isSuper && canEdit}
+        onSaved={extras.reload}
+      />
+      <TemplateExtraEditable
+        label={t("meetingsTalks.fromTemplate.observations")}
+        value={extras.midweek?.observations}
+        templateValue={extras.templateExtras.midweek?.observations}
+        visitId={visit.id} field="midweek_observations"
+        editable={isSuper && canEdit} type="textarea"
+        onSaved={extras.reload}
+      />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <DayTimePicker
           value={row.meeting_at}
