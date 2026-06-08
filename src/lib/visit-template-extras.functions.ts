@@ -131,7 +131,7 @@ export const getVisitTemplateExtras = createServerFn({ method: "POST" })
       program: { general_observations: pick(o.program_general_observations as string | null, base.program?.general_observations ?? null) },
     };
 
-    return { ok: true as const, extras };
+    return { ok: true as const, extras, templateExtras: base };
   });
 
 const patchSchema = z.object({
