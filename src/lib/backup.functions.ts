@@ -28,6 +28,7 @@ const VISIT_TABLES = [
   "elder_program_visit_sections",
   "elder_program_visit_slots",
   "visit_pending_updates",
+  "visit_template_overrides",
 ] as const;
 
 // Tabelas escopadas por superintendent_id (modelos / dados pessoais)
