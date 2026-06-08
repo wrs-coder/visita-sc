@@ -6,24 +6,34 @@ const EMPTY: VisitTemplateExtras = {
   field: null, midweek: null, weekend: null, pioneer: null, elders: null, program: null,
 };
 
+export type VisitTemplateExtrasState = VisitTemplateExtras & {
+  templateExtras: VisitTemplateExtras;
+  reload: () => void;
+};
+
 /**
- * Lê uma única vez por visita os "extras" vindos do modelo vinculado
- * (observações + cânticos do fim de semana + observações gerais de refeições).
- * Não bloqueia o render; devolve EMPTY até estar disponível.
+ * Lê os "extras" da visita (modelo + override) e expõe também os valores
+ * brutos do modelo para placeholders/restauração. Não bloqueia o render.
+ * Retorna no formato de `VisitTemplateExtras` (consumido por todos os
+ * painéis/snapshots) com `templateExtras`/`reload` adicionais.
  */
-export function useVisitTemplateExtras(visitId: string | null | undefined): VisitTemplateExtras {
+export function useVisitTemplateExtras(visitId: string | null | undefined): VisitTemplateExtrasState {
   const fn = useServerFn(getVisitTemplateExtras);
   const [extras, setExtras] = useState<VisitTemplateExtras>(EMPTY);
+  const [templateExtras, setTemplateExtras] = useState<VisitTemplateExtras>(EMPTY);
+  const [tick, setTick] = useState(0);
   useEffect(() => {
-    if (!visitId) { setExtras(EMPTY); return; }
+    if (!visitId) { setExtras(EMPTY); setTemplateExtras(EMPTY); return; }
     let cancelled = false;
     (async () => {
       try {
         const res = await fn({ data: { visitId } });
-        if (!cancelled && res?.ok) setExtras(res.extras);
-      } catch { /* silencioso: bloco apenas decorativo */ }
+        if (cancelled || !res?.ok) return;
+        setExtras(res.extras);
+        setTemplateExtras((res as { templateExtras?: VisitTemplateExtras }).templateExtras ?? res.extras);
+      } catch { /* silencioso */ }
     })();
     return () => { cancelled = true; };
-  }, [visitId, fn]);
-  return extras;
+  }, [visitId, fn, tick]);
+  return { ...extras, templateExtras, reload: () => setTick((n) => n + 1) };
 }

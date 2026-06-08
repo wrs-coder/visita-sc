@@ -28,6 +28,7 @@ const VISIT_TABLES = [
   "elder_program_visit_sections",
   "elder_program_visit_slots",
   "visit_pending_updates",
+  "visit_template_overrides",
 ] as const;
 
 // Tabelas escopadas por superintendent_id (modelos / dados pessoais)
@@ -177,6 +178,7 @@ const backupFileSchema = z.object({
     elder_program_visit_sections: optArr,
     elder_program_visit_slots: optArr,
     visit_pending_updates: optArr,
+    visit_template_overrides: optArr,
     // Supt-scoped (v2)
     circuit_schedule_events: optArr,
     couple_messages: optArr,

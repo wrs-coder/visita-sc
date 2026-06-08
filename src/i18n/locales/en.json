@@ -478,7 +478,10 @@
       "schedule": "Day & Time (set by the Superintendent)",
       "location": "Location",
       "fieldObservations": "Additional information from the superintendent",
-      "hint": "Read-only information from the selected template."
+      "fieldObservationsPlaceholder": "Add notes for this congregation…",
+      "hint": "Read-only information from the selected template.",
+      "restoreFromTemplate": "Restore from template",
+      "overrideHint": "Edited for this visit"
     },
     "title": "Meetings & Talks",
     "subtitle": "Unified package per visit: field meetings, midweek, weekend, pioneers and elders/servants.",

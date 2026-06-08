@@ -1825,6 +1825,71 @@ export type Database = {
           },
         ]
       }
+      visit_template_overrides: {
+        Row: {
+          created_at: string
+          elders_meeting_time: string | null
+          elders_observations: string | null
+          elders_weekday: number | null
+          field_observations: string | null
+          midweek_final_song: string | null
+          midweek_observations: string | null
+          pioneer_meeting_time: string | null
+          pioneer_observations: string | null
+          pioneer_weekday: number | null
+          program_general_observations: string | null
+          updated_at: string
+          visit_id: string
+          weekend_closing_song: string | null
+          weekend_observations: string | null
+          weekend_opening_song: string | null
+        }
+        Insert: {
+          created_at?: string
+          elders_meeting_time?: string | null
+          elders_observations?: string | null
+          elders_weekday?: number | null
+          field_observations?: string | null
+          midweek_final_song?: string | null
+          midweek_observations?: string | null
+          pioneer_meeting_time?: string | null
+          pioneer_observations?: string | null
+          pioneer_weekday?: number | null
+          program_general_observations?: string | null
+          updated_at?: string
+          visit_id: string
+          weekend_closing_song?: string | null
+          weekend_observations?: string | null
+          weekend_opening_song?: string | null
+        }
+        Update: {
+          created_at?: string
+          elders_meeting_time?: string | null
+          elders_observations?: string | null
+          elders_weekday?: number | null
+          field_observations?: string | null
+          midweek_final_song?: string | null
+          midweek_observations?: string | null
+          pioneer_meeting_time?: string | null
+          pioneer_observations?: string | null
+          pioneer_weekday?: number | null
+          program_general_observations?: string | null
+          updated_at?: string
+          visit_id?: string
+          weekend_closing_song?: string | null
+          weekend_observations?: string | null
+          weekend_opening_song?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visit_template_overrides_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: true
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visits: {
         Row: {
           checklist_template_id: string | null

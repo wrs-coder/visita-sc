@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useServerFn } from "@tanstack/react-start";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { getVisitWeekendThemes } from "@/lib/meeting-talk-templates.functions";
+import { setVisitTemplateOverride } from "@/lib/visit-template-extras.functions";
 import { useSingleRow } from "./SingleRowPanel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Undo2 } from "lucide-react";
 import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
-import { TemplateExtraBlock } from "./TemplateExtraBlock";
+import { TemplateExtraBlock, TemplateExtraEditable } from "./TemplateExtraBlock";
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
@@ -74,8 +77,22 @@ export function MidweekPanel() {
   if (loading || !row) return <LoadingCard />;
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.finalSong")} value={extras.midweek?.final_song} />
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.midweek?.observations} />
+      <TemplateExtraEditable
+        label={t("meetingsTalks.fromTemplate.finalSong")}
+        value={extras.midweek?.final_song}
+        templateValue={extras.templateExtras.midweek?.final_song}
+        visitId={visit.id} field="midweek_final_song"
+        editable={isSuper && canEdit}
+        onSaved={extras.reload}
+      />
+      <TemplateExtraEditable
+        label={t("meetingsTalks.fromTemplate.observations")}
+        value={extras.midweek?.observations}
+        templateValue={extras.templateExtras.midweek?.observations}
+        visitId={visit.id} field="midweek_observations"
+        editable={isSuper && canEdit} type="textarea"
+        onSaved={extras.reload}
+      />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <DayTimePicker
           value={row.meeting_at}
@@ -205,6 +222,89 @@ function DayTimePicker({
   );
 }
 
+/**
+ * Editor de "Dia + Hora" sobreposto ao modelo (apenas Super).
+ * Quando não editável, exibe o `TemplateExtraBlock` original.
+ */
+function ScheduleOverride({
+  visitId, label, weekday, time, templateWeekday, templateTime, weekdayField, timeField, editable, onSaved,
+}: {
+  visitId: string;
+  label: string;
+  weekday: number | null | undefined;
+  time: string | null | undefined;
+  templateWeekday: number | null | undefined;
+  templateTime: string | null | undefined;
+  weekdayField: "pioneer_weekday" | "elders_weekday";
+  timeField: "pioneer_meeting_time" | "elders_meeting_time";
+  editable: boolean;
+  onSaved?: () => void;
+}) {
+  const { t } = useTranslation();
+  const save = useServerFn(setVisitTemplateOverride);
+  const scheduleText = (() => {
+    if (weekday == null && !time) return null;
+    const dayLabel = weekday != null ? t(`templates.weekdays.${weekday}`) : "—";
+    const timeLabel = time ? time.slice(0, 5) : "—";
+    return `${dayLabel} — ${timeLabel}`;
+  })();
+  if (!editable) return <TemplateExtraBlock label={label} value={scheduleText} />;
+
+  const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+  const timeValue = time ? time.slice(0, 5) : "";
+  const hasOverride = (templateWeekday ?? null) !== (weekday ?? null) || (templateTime ?? "") !== (time ?? "");
+
+  return (
+    <div className="rounded-md border px-3 py-2 text-red-600 dark:text-red-400 border-red-500/30 bg-red-500/5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[11px] uppercase tracking-wide font-medium opacity-80">{label}</div>
+        {hasOverride && (
+          <Button
+            type="button" size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
+            onClick={async () => {
+              await save({ data: { visitId, patch: { [weekdayField]: null, [timeField]: null } as Record<string, number | string | null> } });
+              onSaved?.();
+            }}
+          >
+            <Undo2 className="h-3 w-3 mr-1" />{t("meetingsTalks.fromTemplate.restoreFromTemplate")}
+          </Button>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-2 mt-1">
+        <Select
+          value={weekday != null ? String(weekday) : ""}
+          onValueChange={async (v) => {
+            await save({ data: { visitId, patch: { [weekdayField]: v === "" ? null : Number(v) } as Record<string, number | string | null> } });
+            onSaved?.();
+          }}
+        >
+          <SelectTrigger className="h-9 bg-background/60"><SelectValue placeholder="—" /></SelectTrigger>
+          <SelectContent>
+            {dayKeys.map((k, idx) => (
+              <SelectItem key={k} value={String(idx)}>{t(`meetingsTalks.weekdays.${k}`)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          type="time"
+          defaultValue={timeValue}
+          key={timeValue}
+          className="h-9 bg-background/60"
+          onBlur={async (e) => {
+            const next = e.target.value;
+            if (next === timeValue) return;
+            await save({ data: { visitId, patch: { [timeField]: next || null } as Record<string, number | string | null> } });
+            onSaved?.();
+          }}
+        />
+      </div>
+      {hasOverride && (
+        <div className="text-[10px] mt-1 opacity-70">{t("meetingsTalks.fromTemplate.overrideHint")}</div>
+      )}
+    </div>
+  );
+}
+
 
 
 export function WeekendPanel() {
@@ -249,9 +349,30 @@ export function WeekendPanel() {
   return (
     <div className="space-y-3 min-w-0 max-w-full">
       <Card className="max-w-full"><CardContent className="p-4 grid gap-3 max-w-xl min-w-0">
-        <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.openingSong")} value={extras.weekend?.opening_song} />
-        <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.closingSong")} value={extras.weekend?.closing_song} />
-        <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.weekend?.observations} />
+        <TemplateExtraEditable
+          label={t("meetingsTalks.fromTemplate.openingSong")}
+          value={extras.weekend?.opening_song}
+          templateValue={extras.templateExtras.weekend?.opening_song}
+          visitId={visit.id} field="weekend_opening_song"
+          editable={isSuper && canEdit}
+          onSaved={extras.reload}
+        />
+        <TemplateExtraEditable
+          label={t("meetingsTalks.fromTemplate.closingSong")}
+          value={extras.weekend?.closing_song}
+          templateValue={extras.templateExtras.weekend?.closing_song}
+          visitId={visit.id} field="weekend_closing_song"
+          editable={isSuper && canEdit}
+          onSaved={extras.reload}
+        />
+        <TemplateExtraEditable
+          label={t("meetingsTalks.fromTemplate.observations")}
+          value={extras.weekend?.observations}
+          templateValue={extras.templateExtras.weekend?.observations}
+          visitId={visit.id} field="weekend_observations"
+          editable={isSuper && canEdit} type="textarea"
+          onSaved={extras.reload}
+        />
         <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0 min-w-0">
           <DayTimePicker
             value={row.meeting_at}
@@ -323,19 +444,28 @@ export function PioneerPanel() {
   if (!visit) return <NoVisit />;
   if (loading || !row) return <LoadingCard />;
 
-  const wd = extras.pioneer?.weekday;
-  const mt = extras.pioneer?.meeting_time;
-  const scheduleText = (() => {
-    if (wd == null && !mt) return null;
-    const dayLabel = wd != null ? t(`templates.weekdays.${wd}`) : "—";
-    const timeLabel = mt ? mt.slice(0, 5) : "—";
-    return `${dayLabel} — ${timeLabel}`;
-  })();
-
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.schedule")} value={scheduleText} />
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.pioneer?.observations} />
+      <ScheduleOverride
+        visitId={visit.id}
+        label={t("meetingsTalks.fromTemplate.schedule")}
+        weekday={extras.pioneer?.weekday}
+        time={extras.pioneer?.meeting_time}
+        templateWeekday={extras.templateExtras.pioneer?.weekday}
+        templateTime={extras.templateExtras.pioneer?.meeting_time}
+        weekdayField="pioneer_weekday"
+        timeField="pioneer_meeting_time"
+        editable={isSuper && canEdit}
+        onSaved={extras.reload}
+      />
+      <TemplateExtraEditable
+        label={t("meetingsTalks.fromTemplate.observations")}
+        value={extras.pioneer?.observations}
+        templateValue={extras.templateExtras.pioneer?.observations}
+        visitId={visit.id} field="pioneer_observations"
+        editable={isSuper && canEdit} type="textarea"
+        onSaved={extras.reload}
+      />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <div>
           <Label>{t("meetingsTalks.pioneer.theme")}</Label>
@@ -382,18 +512,28 @@ export function EldersServantsPanel() {
   );
   if (!visit) return <NoVisit />;
   if (loading || !row) return <LoadingCard />;
-  const wd = extras.elders?.weekday;
-  const mt = extras.elders?.meeting_time;
-  const scheduleText = (() => {
-    if (wd == null && !mt) return null;
-    const dayLabel = wd != null ? t(`templates.weekdays.${wd}`) : "—";
-    const timeLabel = mt ? mt.slice(0, 5) : "—";
-    return `${dayLabel} — ${timeLabel}`;
-  })();
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.schedule")} value={scheduleText} />
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.elders?.observations} />
+      <ScheduleOverride
+        visitId={visit.id}
+        label={t("meetingsTalks.fromTemplate.schedule")}
+        weekday={extras.elders?.weekday}
+        time={extras.elders?.meeting_time}
+        templateWeekday={extras.templateExtras.elders?.weekday}
+        templateTime={extras.templateExtras.elders?.meeting_time}
+        weekdayField="elders_weekday"
+        timeField="elders_meeting_time"
+        editable={isSuper && canEdit}
+        onSaved={extras.reload}
+      />
+      <TemplateExtraEditable
+        label={t("meetingsTalks.fromTemplate.observations")}
+        value={extras.elders?.observations}
+        templateValue={extras.templateExtras.elders?.observations}
+        visitId={visit.id} field="elders_observations"
+        editable={isSuper && canEdit} type="textarea"
+        onSaved={extras.reload}
+      />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <div>
           <Label>{t("meetingsTalks.elders.theme")}</Label>

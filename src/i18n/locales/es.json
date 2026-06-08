@@ -453,7 +453,10 @@
       "schedule": "Día y Horario (definido por el Superintendente)",
       "location": "Lugar",
       "fieldObservations": "Información adicional del superintendente",
-      "hint": "Información de solo lectura del modelo seleccionado."
+      "fieldObservationsPlaceholder": "Agregue notas para esta congregación…",
+      "hint": "Información de solo lectura del modelo seleccionado.",
+      "restoreFromTemplate": "Restaurar del modelo",
+      "overrideHint": "Editado para esta visita"
     },
     "title": "Reuniones y Discursos",
     "subtitle": "Paquete unificado por visita: reuniones de campo, entre semana, fin de semana, precursores y ancianos/siervos.",
