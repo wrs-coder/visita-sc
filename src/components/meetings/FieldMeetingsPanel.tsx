@@ -206,13 +206,31 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
             )}
           </div>
         </div>
-        {r.observations && r.observations.trim() && (
+        {isSuper ? (
           <div className="rounded-md border border-blue-500/30 bg-blue-500/5 px-3 py-2">
             <div className="text-[11px] uppercase tracking-wide font-medium text-blue-600 dark:text-blue-400 opacity-80">
               {t("meetingsTalks.fromTemplate.fieldObservations")}
             </div>
-            <div className="text-sm whitespace-pre-wrap mt-0.5 text-blue-600 dark:text-blue-400">{r.observations}</div>
+            <Textarea
+              rows={2}
+              defaultValue={r.observations ?? ""}
+              placeholder={t("meetingsTalks.fromTemplate.fieldObservationsPlaceholder")}
+              className="mt-1 bg-background/60"
+              onBlur={(e) => {
+                const v = e.target.value;
+                if (v !== (r.observations ?? "")) update(r.id, { observations: v || null });
+              }}
+            />
           </div>
+        ) : (
+          r.observations && r.observations.trim() && (
+            <div className="rounded-md border border-blue-500/30 bg-blue-500/5 px-3 py-2">
+              <div className="text-[11px] uppercase tracking-wide font-medium text-blue-600 dark:text-blue-400 opacity-80">
+                {t("meetingsTalks.fromTemplate.fieldObservations")}
+              </div>
+              <div className="text-sm whitespace-pre-wrap mt-0.5 text-blue-600 dark:text-blue-400">{r.observations}</div>
+            </div>
+          )
         )}
         {isSuper && (
           <div>
