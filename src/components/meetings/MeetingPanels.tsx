@@ -14,6 +14,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Undo2 } from "lucide-react";
 import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { TemplateExtraBlock, TemplateExtraEditable } from "./TemplateExtraBlock";
+import { useMeetingsEditMode, ReadOnlyValue } from "./meetings-edit-mode";
+
+function formatScheduleText(t: (k: string) => string, weekday: number | null | undefined, time: string | null | undefined): string | null {
+  if (weekday == null && !time) return null;
+  const dayLabel = weekday != null ? t(`templates.weekdays.${weekday}`) : "—";
+  const timeLabel = time ? time.slice(0, 5) : "—";
+  return `${dayLabel} — ${timeLabel}`;
+}
+
+function formatDayTime(t: (k: string) => string, iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+  const dayLabel = t(`meetingsTalks.weekdays.${dayKeys[d.getDay()]}`);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${dayLabel} — ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
