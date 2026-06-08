@@ -263,9 +263,30 @@ export function WeekendPanel() {
   return (
     <div className="space-y-3 min-w-0 max-w-full">
       <Card className="max-w-full"><CardContent className="p-4 grid gap-3 max-w-xl min-w-0">
-        <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.openingSong")} value={extras.weekend?.opening_song} />
-        <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.closingSong")} value={extras.weekend?.closing_song} />
-        <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.weekend?.observations} />
+        <TemplateExtraEditable
+          label={t("meetingsTalks.fromTemplate.openingSong")}
+          value={extras.weekend?.opening_song}
+          templateValue={extras.templateExtras.weekend?.opening_song}
+          visitId={visit.id} field="weekend_opening_song"
+          editable={isSuper && canEdit}
+          onSaved={extras.reload}
+        />
+        <TemplateExtraEditable
+          label={t("meetingsTalks.fromTemplate.closingSong")}
+          value={extras.weekend?.closing_song}
+          templateValue={extras.templateExtras.weekend?.closing_song}
+          visitId={visit.id} field="weekend_closing_song"
+          editable={isSuper && canEdit}
+          onSaved={extras.reload}
+        />
+        <TemplateExtraEditable
+          label={t("meetingsTalks.fromTemplate.observations")}
+          value={extras.weekend?.observations}
+          templateValue={extras.templateExtras.weekend?.observations}
+          visitId={visit.id} field="weekend_observations"
+          editable={isSuper && canEdit} type="textarea"
+          onSaved={extras.reload}
+        />
         <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0 min-w-0">
           <DayTimePicker
             value={row.meeting_at}
