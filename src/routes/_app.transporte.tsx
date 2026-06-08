@@ -411,12 +411,43 @@ function Page() {
                             </Button>
                           )}
                         </div>
-                        {(r.departure_time || r.return_time) && (
-                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {fmtTime(r.departure_time)}
-                            {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
+                        {isSuper ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">{t("transport.departureTime")}</Label>
+                              <Input
+                                type="time"
+                                className="mt-1 h-9"
+                                defaultValue={r.departure_time ?? ""}
+                                key={`dep-${r.id}-${r.departure_time ?? ""}`}
+                                onBlur={(e) => {
+                                  const v = e.target.value;
+                                  if (v !== (r.departure_time ?? "")) updateRow(r.id, { departure_time: v || null });
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">{t("transport.returnTime")}</Label>
+                              <Input
+                                type="time"
+                                className="mt-1 h-9"
+                                defaultValue={r.return_time ?? ""}
+                                key={`ret-${r.id}-${r.return_time ?? ""}`}
+                                onBlur={(e) => {
+                                  const v = e.target.value;
+                                  if (v !== (r.return_time ?? "")) updateRow(r.id, { return_time: v || null });
+                                }}
+                              />
+                            </div>
                           </div>
+                        ) : (
+                          (r.departure_time || r.return_time) && (
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {fmtTime(r.departure_time)}
+                              {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
+                            </div>
+                          )
                         )}
                         {showDriver && (
                           <div className="space-y-2 pt-1">
