@@ -102,10 +102,14 @@ export function FieldMeetingsPanel() {
           : t("meetingsTalks.field.subtitleElder")}
       </p>
 
-      <TemplateExtraBlock
+      <TemplateExtraEditable
         label={t("meetingsTalks.fromTemplate.fieldObservations")}
         value={extras.field?.observations}
+        templateValue={extras.templateExtras.field?.observations}
+        visitId={visit.id} field="field_observations"
+        editable={isSuper && editAllowed} type="textarea"
         variant="blue"
+        onSaved={extras.reload}
       />
 
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
