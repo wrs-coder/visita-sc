@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
-import { TemplateExtraBlock } from "./TemplateExtraBlock";
+import { TemplateExtraBlock, TemplateExtraEditable } from "./TemplateExtraBlock";
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
