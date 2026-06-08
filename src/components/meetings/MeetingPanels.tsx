@@ -222,6 +222,89 @@ function DayTimePicker({
   );
 }
 
+/**
+ * Editor de "Dia + Hora" sobreposto ao modelo (apenas Super).
+ * Quando não editável, exibe o `TemplateExtraBlock` original.
+ */
+function ScheduleOverride({
+  visitId, label, weekday, time, templateWeekday, templateTime, weekdayField, timeField, editable, onSaved,
+}: {
+  visitId: string;
+  label: string;
+  weekday: number | null | undefined;
+  time: string | null | undefined;
+  templateWeekday: number | null | undefined;
+  templateTime: string | null | undefined;
+  weekdayField: "pioneer_weekday" | "elders_weekday";
+  timeField: "pioneer_meeting_time" | "elders_meeting_time";
+  editable: boolean;
+  onSaved?: () => void;
+}) {
+  const { t } = useTranslation();
+  const save = useServerFn(setVisitTemplateOverride);
+  const scheduleText = (() => {
+    if (weekday == null && !time) return null;
+    const dayLabel = weekday != null ? t(`templates.weekdays.${weekday}`) : "—";
+    const timeLabel = time ? time.slice(0, 5) : "—";
+    return `${dayLabel} — ${timeLabel}`;
+  })();
+  if (!editable) return <TemplateExtraBlock label={label} value={scheduleText} />;
+
+  const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+  const timeValue = time ? time.slice(0, 5) : "";
+  const hasOverride = (templateWeekday ?? null) !== (weekday ?? null) || (templateTime ?? "") !== (time ?? "");
+
+  return (
+    <div className="rounded-md border px-3 py-2 text-red-600 dark:text-red-400 border-red-500/30 bg-red-500/5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[11px] uppercase tracking-wide font-medium opacity-80">{label}</div>
+        {hasOverride && (
+          <Button
+            type="button" size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
+            onClick={async () => {
+              await save({ data: { visitId, patch: { [weekdayField]: null, [timeField]: null } as Record<string, number | string | null> } });
+              onSaved?.();
+            }}
+          >
+            <Undo2 className="h-3 w-3 mr-1" />{t("meetingsTalks.fromTemplate.restoreFromTemplate")}
+          </Button>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-2 mt-1">
+        <Select
+          value={weekday != null ? String(weekday) : ""}
+          onValueChange={async (v) => {
+            await save({ data: { visitId, patch: { [weekdayField]: v === "" ? null : Number(v) } as Record<string, number | string | null> } });
+            onSaved?.();
+          }}
+        >
+          <SelectTrigger className="h-9 bg-background/60"><SelectValue placeholder="—" /></SelectTrigger>
+          <SelectContent>
+            {dayKeys.map((k, idx) => (
+              <SelectItem key={k} value={String(idx)}>{t(`meetingsTalks.weekdays.${k}`)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          type="time"
+          defaultValue={timeValue}
+          key={timeValue}
+          className="h-9 bg-background/60"
+          onBlur={async (e) => {
+            const next = e.target.value;
+            if (next === timeValue) return;
+            await save({ data: { visitId, patch: { [timeField]: next || null } as Record<string, number | string | null> } });
+            onSaved?.();
+          }}
+        />
+      </div>
+      {hasOverride && (
+        <div className="text-[10px] mt-1 opacity-70">{t("meetingsTalks.fromTemplate.overrideHint")}</div>
+      )}
+    </div>
+  );
+}
+
 
 
 export function WeekendPanel() {
