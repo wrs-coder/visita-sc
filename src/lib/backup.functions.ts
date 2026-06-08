@@ -178,6 +178,7 @@ const backupFileSchema = z.object({
     elder_program_visit_sections: optArr,
     elder_program_visit_slots: optArr,
     visit_pending_updates: optArr,
+    visit_template_overrides: optArr,
     // Supt-scoped (v2)
     circuit_schedule_events: optArr,
     couple_messages: optArr,
