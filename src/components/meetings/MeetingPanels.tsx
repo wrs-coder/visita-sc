@@ -444,19 +444,28 @@ export function PioneerPanel() {
   if (!visit) return <NoVisit />;
   if (loading || !row) return <LoadingCard />;
 
-  const wd = extras.pioneer?.weekday;
-  const mt = extras.pioneer?.meeting_time;
-  const scheduleText = (() => {
-    if (wd == null && !mt) return null;
-    const dayLabel = wd != null ? t(`templates.weekdays.${wd}`) : "—";
-    const timeLabel = mt ? mt.slice(0, 5) : "—";
-    return `${dayLabel} — ${timeLabel}`;
-  })();
-
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.schedule")} value={scheduleText} />
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.pioneer?.observations} />
+      <ScheduleOverride
+        visitId={visit.id}
+        label={t("meetingsTalks.fromTemplate.schedule")}
+        weekday={extras.pioneer?.weekday}
+        time={extras.pioneer?.meeting_time}
+        templateWeekday={extras.templateExtras.pioneer?.weekday}
+        templateTime={extras.templateExtras.pioneer?.meeting_time}
+        weekdayField="pioneer_weekday"
+        timeField="pioneer_meeting_time"
+        editable={isSuper && canEdit}
+        onSaved={extras.reload}
+      />
+      <TemplateExtraEditable
+        label={t("meetingsTalks.fromTemplate.observations")}
+        value={extras.pioneer?.observations}
+        templateValue={extras.templateExtras.pioneer?.observations}
+        visitId={visit.id} field="pioneer_observations"
+        editable={isSuper && canEdit} type="textarea"
+        onSaved={extras.reload}
+      />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <div>
           <Label>{t("meetingsTalks.pioneer.theme")}</Label>
