@@ -35,6 +35,8 @@ import {
 import { MeetingsTalksReportDialog } from "@/components/visit-week/MeetingsTalksReportDialog";
 import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
 import { useActiveVisit } from "@/hooks/use-active-visit";
+import { MeetingsEditModeProvider, useMeetingsEditMode } from "@/components/meetings/meetings-edit-mode";
+import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
 // Lazy: cada painel só carrega quando o utilizador entra na respectiva aba.
 const FieldMeetingsPanel = lazy(() =>
@@ -239,6 +241,11 @@ function SyncStatusLine() {
   );
 }
 
+function SupervisorEditModeBar() {
+  const { editEnabled, setEditEnabled } = useMeetingsEditMode();
+  return <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />;
+}
+
 function Page() {
   const { role, user } = useAuth();
   const isSuper = role === "superintendent";
@@ -250,12 +257,14 @@ function Page() {
 
   return (
     <MeetingsDraftProvider scopeKey={scopeKey}>
-      <TabsGuarded
-        currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
-        isSuper={isSuper}
-        panelsReady={panelsReady}
-      />
+      <MeetingsEditModeProvider isSuper={isSuper}>
+        <TabsGuarded
+          currentTab={currentTab}
+          setCurrentTab={setCurrentTab}
+          isSuper={isSuper}
+          panelsReady={panelsReady}
+        />
+      </MeetingsEditModeProvider>
     </MeetingsDraftProvider>
   );
 }
@@ -305,6 +314,7 @@ function TabsGuarded({
       <SaveProgressBar />
 
       {isSuper && <SuperCongregationSelector />}
+      {isSuper && <SupervisorEditModeBar />}
 
       <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="flex flex-wrap h-auto w-full gap-1 bg-transparent p-0">

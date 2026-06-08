@@ -14,6 +14,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Undo2 } from "lucide-react";
 import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { TemplateExtraBlock, TemplateExtraEditable } from "./TemplateExtraBlock";
+import { useMeetingsEditMode, ReadOnlyValue } from "./meetings-edit-mode";
+
+function formatScheduleText(t: (k: string) => string, weekday: number | null | undefined, time: string | null | undefined): string | null {
+  if (weekday == null && !time) return null;
+  const dayLabel = weekday != null ? t(`templates.weekdays.${weekday}`) : "—";
+  const timeLabel = time ? time.slice(0, 5) : "—";
+  return `${dayLabel} — ${timeLabel}`;
+}
+
+function formatDayTime(t: (k: string) => string, iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+  const dayLabel = t(`meetingsTalks.weekdays.${dayKeys[d.getDay()]}`);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${dayLabel} — ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
@@ -67,6 +85,9 @@ export function MidweekPanel() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const isSuper = role === "superintendent";
+  const { editEnabled } = useMeetingsEditMode();
+  const editAllowed = !isSuper || editEnabled;
+  const showInputs = canEdit && editAllowed;
   const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<MidweekRow>(
     "midweek_meetings",
@@ -82,7 +103,7 @@ export function MidweekPanel() {
         value={extras.midweek?.final_song}
         templateValue={extras.templateExtras.midweek?.final_song}
         visitId={visit.id} field="midweek_final_song"
-        editable={isSuper && canEdit}
+        editable={isSuper && editAllowed}
         onSaved={extras.reload}
       />
       <TemplateExtraEditable
@@ -90,30 +111,38 @@ export function MidweekPanel() {
         value={extras.midweek?.observations}
         templateValue={extras.templateExtras.midweek?.observations}
         visitId={visit.id} field="midweek_observations"
-        editable={isSuper && canEdit} type="textarea"
+        editable={isSuper && editAllowed} type="textarea"
         onSaved={extras.reload}
       />
-      <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
-        <DayTimePicker
-          value={row.meeting_at}
-          onChange={(iso) => save({ meeting_at: iso })}
-          disabled={!canEdit}
-          dayLabel={t("meetingsTalks.midweek.meetingDay")}
-          timeLabel={t("meetingsTalks.midweek.meetingTime")}
-        />
-        <div>
-          <Label>{t("meetingsTalks.midweek.serviceTalk")}</Label>
-          <FieldText value={row.service_talk_theme} onSave={(v) => save({ service_talk_theme: v })} readOnly={!isSuper} />
+      {showInputs ? (
+        <fieldset className="grid gap-3 border-0 p-0 m-0">
+          <DayTimePicker
+            value={row.meeting_at}
+            onChange={(iso) => save({ meeting_at: iso })}
+            dayLabel={t("meetingsTalks.midweek.meetingDay")}
+            timeLabel={t("meetingsTalks.midweek.meetingTime")}
+          />
+          <div>
+            <Label>{t("meetingsTalks.midweek.serviceTalk")}</Label>
+            <FieldText value={row.service_talk_theme} onSave={(v) => save({ service_talk_theme: v })} readOnly={!isSuper} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.midweek.chairman")}</Label>
+            <FieldText value={row.chairman} onSave={(v) => save({ chairman: v })} placeholder={t("meetingsTalks.midweek.chairmanPlaceholder")} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.midweek.closingPrayer")}</Label>
+            <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} placeholder={t("meetingsTalks.midweek.closingPrayerPlaceholder")} />
+          </div>
+        </fieldset>
+      ) : (
+        <div className="grid gap-3">
+          <ReadOnlyValue label={`${t("meetingsTalks.midweek.meetingDay")} / ${t("meetingsTalks.midweek.meetingTime")}`} value={formatDayTime(t, row.meeting_at)} />
+          <ReadOnlyValue label={t("meetingsTalks.midweek.serviceTalk")} value={row.service_talk_theme} />
+          <ReadOnlyValue label={t("meetingsTalks.midweek.chairman")} value={row.chairman} />
+          <ReadOnlyValue label={t("meetingsTalks.midweek.closingPrayer")} value={row.closing_prayer} />
         </div>
-        <div>
-          <Label>{t("meetingsTalks.midweek.chairman")}</Label>
-          <FieldText value={row.chairman} onSave={(v) => save({ chairman: v })} placeholder={t("meetingsTalks.midweek.chairmanPlaceholder")} />
-        </div>
-        <div>
-          <Label>{t("meetingsTalks.midweek.closingPrayer")}</Label>
-          <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} placeholder={t("meetingsTalks.midweek.closingPrayerPlaceholder")} />
-        </div>
-      </fieldset>
+      )}
       {!canEdit && <p className="text-xs text-muted-foreground">{t("meetingsTalks.midweek.elderEditNote")}</p>}
     </CardContent></Card>
   );
@@ -312,6 +341,9 @@ export function WeekendPanel() {
   const { visit } = useActiveVisit();
   const { canEdit, role } = useAuth();
   const isSuper = role === "superintendent";
+  const { editEnabled } = useMeetingsEditMode();
+  const editAllowed = !isSuper || editEnabled;
+  const showInputs = canEdit && editAllowed;
   const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<WeekendRow>(
     "weekend_meetings",
@@ -354,7 +386,7 @@ export function WeekendPanel() {
           value={extras.weekend?.opening_song}
           templateValue={extras.templateExtras.weekend?.opening_song}
           visitId={visit.id} field="weekend_opening_song"
-          editable={isSuper && canEdit}
+          editable={isSuper && editAllowed}
           onSaved={extras.reload}
         />
         <TemplateExtraEditable
@@ -362,7 +394,7 @@ export function WeekendPanel() {
           value={extras.weekend?.closing_song}
           templateValue={extras.templateExtras.weekend?.closing_song}
           visitId={visit.id} field="weekend_closing_song"
-          editable={isSuper && canEdit}
+          editable={isSuper && editAllowed}
           onSaved={extras.reload}
         />
         <TemplateExtraEditable
@@ -370,50 +402,57 @@ export function WeekendPanel() {
           value={extras.weekend?.observations}
           templateValue={extras.templateExtras.weekend?.observations}
           visitId={visit.id} field="weekend_observations"
-          editable={isSuper && canEdit} type="textarea"
+          editable={isSuper && editAllowed} type="textarea"
           onSaved={extras.reload}
         />
-        <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0 min-w-0">
-          <DayTimePicker
-            value={row.meeting_at}
-            onChange={(iso) => save({ meeting_at: iso })}
-            disabled={!canEdit}
-            dayLabel={t("meetingsTalks.weekend.meetingDay")}
-            timeLabel={t("meetingsTalks.weekend.meetingTime")}
-          />
-
-          <div className="min-w-0">
-            <Label>{t("meetingsTalks.weekend.publicTalk")}</Label>
-            <FieldText
-              value={row.public_talk_theme ?? ""}
-              readOnly={!isSuper}
-              onSave={(v) => save({ public_talk_theme: v || null })}
+        {showInputs ? (
+          <fieldset className="grid gap-3 border-0 p-0 m-0 min-w-0">
+            <DayTimePicker
+              value={row.meeting_at}
+              onChange={(iso) => save({ meeting_at: iso })}
+              dayLabel={t("meetingsTalks.weekend.meetingDay")}
+              timeLabel={t("meetingsTalks.weekend.meetingTime")}
             />
-            {!isSuper && (
-              <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">{t("meetingsTalks.weekend.readOnlyNote")}</p>
-            )}
+
+            <div className="min-w-0">
+              <Label>{t("meetingsTalks.weekend.publicTalk")}</Label>
+              <FieldText
+                value={row.public_talk_theme ?? ""}
+                readOnly={!isSuper}
+                onSave={(v) => save({ public_talk_theme: v || null })}
+              />
+              {!isSuper && (
+                <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">{t("meetingsTalks.weekend.readOnlyNote")}</p>
+              )}
+            </div>
+            <div className="min-w-0">
+              <Label>{t("meetingsTalks.weekend.finalTalk")}</Label>
+              {themes.length === 0 ? (
+                <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">
+                  {isSuper
+                    ? t("meetingsTalks.weekend.noThemesSuper")
+                    : t("meetingsTalks.weekend.noThemesElder")}
+                </p>
+              ) : (
+                <Select value={row.talk_theme_id ?? ""} onValueChange={onPickTheme}>
+                  <SelectTrigger className="h-9 mt-0.5 w-full min-w-0"><SelectValue placeholder={t("meetingsTalks.weekend.pickTheme")} /></SelectTrigger>
+                  <SelectContent className="max-w-[90vw]">
+                    {themes.map((th) => <SelectItem key={th.id} value={th.id} className="whitespace-normal break-words [overflow-wrap:anywhere]">{th.title}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+              {row.talk_theme_title && themes.length > 0 && !themes.find((th) => th.id === row.talk_theme_id) && (
+                <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">{t("meetingsTalks.weekend.selectedTheme", { title: row.talk_theme_title })}</p>
+              )}
+            </div>
+          </fieldset>
+        ) : (
+          <div className="grid gap-3">
+            <ReadOnlyValue label={`${t("meetingsTalks.weekend.meetingDay")} / ${t("meetingsTalks.weekend.meetingTime")}`} value={formatDayTime(t, row.meeting_at)} />
+            <ReadOnlyValue label={t("meetingsTalks.weekend.publicTalk")} value={row.public_talk_theme} />
+            <ReadOnlyValue label={t("meetingsTalks.weekend.finalTalk")} value={row.talk_theme_title} />
           </div>
-          <div className="min-w-0">
-            <Label>{t("meetingsTalks.weekend.finalTalk")}</Label>
-            {themes.length === 0 ? (
-              <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">
-                {isSuper
-                  ? t("meetingsTalks.weekend.noThemesSuper")
-                  : t("meetingsTalks.weekend.noThemesElder")}
-              </p>
-            ) : (
-              <Select value={row.talk_theme_id ?? ""} onValueChange={onPickTheme}>
-                <SelectTrigger className="h-9 mt-0.5 w-full min-w-0"><SelectValue placeholder={t("meetingsTalks.weekend.pickTheme")} /></SelectTrigger>
-                <SelectContent className="max-w-[90vw]">
-                  {themes.map((th) => <SelectItem key={th.id} value={th.id} className="whitespace-normal break-words [overflow-wrap:anywhere]">{th.title}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
-            {row.talk_theme_title && themes.length > 0 && !themes.find((th) => th.id === row.talk_theme_id) && (
-              <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">{t("meetingsTalks.weekend.selectedTheme", { title: row.talk_theme_title })}</p>
-            )}
-          </div>
-        </fieldset>
+        )}
       </CardContent></Card>
     </div>
   );
@@ -435,6 +474,9 @@ export function PioneerPanel() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const isSuper = role === "superintendent";
+  const { editEnabled } = useMeetingsEditMode();
+  const editAllowed = !isSuper || editEnabled;
+  const showInputs = canEdit && editAllowed;
   const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<PioneerRow>(
     "pioneer_meetings",
@@ -455,7 +497,7 @@ export function PioneerPanel() {
         templateTime={extras.templateExtras.pioneer?.meeting_time}
         weekdayField="pioneer_weekday"
         timeField="pioneer_meeting_time"
-        editable={isSuper && canEdit}
+        editable={isSuper && editAllowed}
         onSaved={extras.reload}
       />
       <TemplateExtraEditable
@@ -463,27 +505,36 @@ export function PioneerPanel() {
         value={extras.pioneer?.observations}
         templateValue={extras.templateExtras.pioneer?.observations}
         visitId={visit.id} field="pioneer_observations"
-        editable={isSuper && canEdit} type="textarea"
+        editable={isSuper && editAllowed} type="textarea"
         onSaved={extras.reload}
       />
-      <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
-        <div>
-          <Label>{t("meetingsTalks.pioneer.theme")}</Label>
-          <FieldText value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
+      {showInputs ? (
+        <fieldset className="grid gap-3 border-0 p-0 m-0">
+          <div>
+            <Label>{t("meetingsTalks.pioneer.theme")}</Label>
+            <FieldText value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.pioneer.openingPrayer")}</Label>
+            <FieldText value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.pioneer.closingPrayer")}</Label>
+            <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.pioneer.location")}</Label>
+            <FieldText value={row.location} onSave={(v) => save({ location: v })} />
+          </div>
+        </fieldset>
+      ) : (
+        <div className="grid gap-3">
+          <ReadOnlyValue label={t("meetingsTalks.pioneer.theme")} value={row.theme} />
+          <ReadOnlyValue label={t("meetingsTalks.pioneer.openingPrayer")} value={row.opening_prayer} />
+          <ReadOnlyValue label={t("meetingsTalks.pioneer.closingPrayer")} value={row.closing_prayer} />
+          <ReadOnlyValue label={t("meetingsTalks.pioneer.location")} value={row.location} />
         </div>
-        <div>
-          <Label>{t("meetingsTalks.pioneer.openingPrayer")}</Label>
-          <FieldText value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
-        </div>
-        <div>
-          <Label>{t("meetingsTalks.pioneer.closingPrayer")}</Label>
-          <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
-        </div>
-        <div>
-          <Label>{t("meetingsTalks.pioneer.location")}</Label>
-          <FieldText value={row.location} onSave={(v) => save({ location: v })} />
-        </div>
-      </fieldset>
+      )}
     </CardContent></Card>
   );
 }
@@ -504,6 +555,9 @@ export function EldersServantsPanel() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const isSuper = role === "superintendent";
+  const { editEnabled } = useMeetingsEditMode();
+  const editAllowed = !isSuper || editEnabled;
+  const showInputs = canEdit && editAllowed;
   const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<EldersRow>(
     "elders_servants_meetings",
@@ -523,7 +577,7 @@ export function EldersServantsPanel() {
         templateTime={extras.templateExtras.elders?.meeting_time}
         weekdayField="elders_weekday"
         timeField="elders_meeting_time"
-        editable={isSuper && canEdit}
+        editable={isSuper && editAllowed}
         onSaved={extras.reload}
       />
       <TemplateExtraEditable
@@ -531,27 +585,36 @@ export function EldersServantsPanel() {
         value={extras.elders?.observations}
         templateValue={extras.templateExtras.elders?.observations}
         visitId={visit.id} field="elders_observations"
-        editable={isSuper && canEdit} type="textarea"
+        editable={isSuper && editAllowed} type="textarea"
         onSaved={extras.reload}
       />
-      <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
-        <div>
-          <Label>{t("meetingsTalks.elders.theme")}</Label>
-          <FieldText value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
+      {showInputs ? (
+        <fieldset className="grid gap-3 border-0 p-0 m-0">
+          <div>
+            <Label>{t("meetingsTalks.elders.theme")}</Label>
+            <FieldText value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.elders.openingPrayer")}</Label>
+            <FieldText value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.elders.closingPrayer")}</Label>
+            <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.elders.location", { defaultValue: t("meetingsTalks.pioneer.location") })}</Label>
+            <FieldText value={row.location} onSave={(v) => save({ location: v })} />
+          </div>
+        </fieldset>
+      ) : (
+        <div className="grid gap-3">
+          <ReadOnlyValue label={t("meetingsTalks.elders.theme")} value={row.theme} />
+          <ReadOnlyValue label={t("meetingsTalks.elders.openingPrayer")} value={row.opening_prayer} />
+          <ReadOnlyValue label={t("meetingsTalks.elders.closingPrayer")} value={row.closing_prayer} />
+          <ReadOnlyValue label={t("meetingsTalks.elders.location", { defaultValue: t("meetingsTalks.pioneer.location") })} value={row.location} />
         </div>
-        <div>
-          <Label>{t("meetingsTalks.elders.openingPrayer")}</Label>
-          <FieldText value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
-        </div>
-        <div>
-          <Label>{t("meetingsTalks.elders.closingPrayer")}</Label>
-          <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
-        </div>
-        <div>
-          <Label>{t("meetingsTalks.elders.location", { defaultValue: t("meetingsTalks.pioneer.location") })}</Label>
-          <FieldText value={row.location} onSave={(v) => save({ location: v })} />
-        </div>
-      </fieldset>
+      )}
     </CardContent></Card>
   );
 }
