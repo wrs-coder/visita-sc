@@ -512,18 +512,28 @@ export function EldersServantsPanel() {
   );
   if (!visit) return <NoVisit />;
   if (loading || !row) return <LoadingCard />;
-  const wd = extras.elders?.weekday;
-  const mt = extras.elders?.meeting_time;
-  const scheduleText = (() => {
-    if (wd == null && !mt) return null;
-    const dayLabel = wd != null ? t(`templates.weekdays.${wd}`) : "—";
-    const timeLabel = mt ? mt.slice(0, 5) : "—";
-    return `${dayLabel} — ${timeLabel}`;
-  })();
   return (
     <Card><CardContent className="p-4 grid gap-3 max-w-xl">
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.schedule")} value={scheduleText} />
-      <TemplateExtraBlock label={t("meetingsTalks.fromTemplate.observations")} value={extras.elders?.observations} />
+      <ScheduleOverride
+        visitId={visit.id}
+        label={t("meetingsTalks.fromTemplate.schedule")}
+        weekday={extras.elders?.weekday}
+        time={extras.elders?.meeting_time}
+        templateWeekday={extras.templateExtras.elders?.weekday}
+        templateTime={extras.templateExtras.elders?.meeting_time}
+        weekdayField="elders_weekday"
+        timeField="elders_meeting_time"
+        editable={isSuper && canEdit}
+        onSaved={extras.reload}
+      />
+      <TemplateExtraEditable
+        label={t("meetingsTalks.fromTemplate.observations")}
+        value={extras.elders?.observations}
+        templateValue={extras.templateExtras.elders?.observations}
+        visitId={visit.id} field="elders_observations"
+        editable={isSuper && canEdit} type="textarea"
+        onSaved={extras.reload}
+      />
       <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
         <div>
           <Label>{t("meetingsTalks.elders.theme")}</Label>
