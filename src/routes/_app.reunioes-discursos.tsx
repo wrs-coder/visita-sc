@@ -309,6 +309,7 @@ function TabsGuarded({
       <SaveProgressBar />
 
       {isSuper && <SuperCongregationSelector />}
+      {isSuper && <SupervisorEditModeBar />}
 
       <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="flex flex-wrap h-auto w-full gap-1 bg-transparent p-0">
