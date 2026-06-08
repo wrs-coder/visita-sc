@@ -474,6 +474,9 @@ export function PioneerPanel() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const isSuper = role === "superintendent";
+  const { editEnabled } = useMeetingsEditMode();
+  const editAllowed = !isSuper || editEnabled;
+  const showInputs = canEdit && editAllowed;
   const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<PioneerRow>(
     "pioneer_meetings",
@@ -494,7 +497,7 @@ export function PioneerPanel() {
         templateTime={extras.templateExtras.pioneer?.meeting_time}
         weekdayField="pioneer_weekday"
         timeField="pioneer_meeting_time"
-        editable={isSuper && canEdit}
+        editable={isSuper && editAllowed}
         onSaved={extras.reload}
       />
       <TemplateExtraEditable
@@ -502,27 +505,36 @@ export function PioneerPanel() {
         value={extras.pioneer?.observations}
         templateValue={extras.templateExtras.pioneer?.observations}
         visitId={visit.id} field="pioneer_observations"
-        editable={isSuper && canEdit} type="textarea"
+        editable={isSuper && editAllowed} type="textarea"
         onSaved={extras.reload}
       />
-      <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
-        <div>
-          <Label>{t("meetingsTalks.pioneer.theme")}</Label>
-          <FieldText value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
+      {showInputs ? (
+        <fieldset className="grid gap-3 border-0 p-0 m-0">
+          <div>
+            <Label>{t("meetingsTalks.pioneer.theme")}</Label>
+            <FieldText value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.pioneer.openingPrayer")}</Label>
+            <FieldText value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.pioneer.closingPrayer")}</Label>
+            <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.pioneer.location")}</Label>
+            <FieldText value={row.location} onSave={(v) => save({ location: v })} />
+          </div>
+        </fieldset>
+      ) : (
+        <div className="grid gap-3">
+          <ReadOnlyValue label={t("meetingsTalks.pioneer.theme")} value={row.theme} />
+          <ReadOnlyValue label={t("meetingsTalks.pioneer.openingPrayer")} value={row.opening_prayer} />
+          <ReadOnlyValue label={t("meetingsTalks.pioneer.closingPrayer")} value={row.closing_prayer} />
+          <ReadOnlyValue label={t("meetingsTalks.pioneer.location")} value={row.location} />
         </div>
-        <div>
-          <Label>{t("meetingsTalks.pioneer.openingPrayer")}</Label>
-          <FieldText value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
-        </div>
-        <div>
-          <Label>{t("meetingsTalks.pioneer.closingPrayer")}</Label>
-          <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
-        </div>
-        <div>
-          <Label>{t("meetingsTalks.pioneer.location")}</Label>
-          <FieldText value={row.location} onSave={(v) => save({ location: v })} />
-        </div>
-      </fieldset>
+      )}
     </CardContent></Card>
   );
 }
