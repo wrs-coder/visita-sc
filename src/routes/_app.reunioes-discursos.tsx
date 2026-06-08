@@ -241,6 +241,11 @@ function SyncStatusLine() {
   );
 }
 
+function SupervisorEditModeBar() {
+  const { editEnabled, setEditEnabled } = useMeetingsEditMode();
+  return <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />;
+}
+
 function Page() {
   const { role, user } = useAuth();
   const isSuper = role === "superintendent";
