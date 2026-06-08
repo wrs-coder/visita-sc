@@ -6,8 +6,7 @@ const EMPTY: VisitTemplateExtras = {
   field: null, midweek: null, weekend: null, pioneer: null, elders: null, program: null,
 };
 
-export type VisitTemplateExtrasState = {
-  extras: VisitTemplateExtras;
+export type VisitTemplateExtrasState = VisitTemplateExtras & {
   templateExtras: VisitTemplateExtras;
   reload: () => void;
 };
@@ -15,6 +14,8 @@ export type VisitTemplateExtrasState = {
 /**
  * Lê os "extras" da visita (modelo + override) e expõe também os valores
  * brutos do modelo para placeholders/restauração. Não bloqueia o render.
+ * Retorna no formato de `VisitTemplateExtras` (consumido por todos os
+ * painéis/snapshots) com `templateExtras`/`reload` adicionais.
  */
 export function useVisitTemplateExtras(visitId: string | null | undefined): VisitTemplateExtrasState {
   const fn = useServerFn(getVisitTemplateExtras);
@@ -34,5 +35,5 @@ export function useVisitTemplateExtras(visitId: string | null | undefined): Visi
     })();
     return () => { cancelled = true; };
   }, [visitId, fn, tick]);
-  return { extras, templateExtras, reload: () => setTick((n) => n + 1) };
+  return { ...extras, templateExtras, reload: () => setTick((n) => n + 1) };
 }
