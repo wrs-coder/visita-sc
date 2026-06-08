@@ -341,6 +341,9 @@ export function WeekendPanel() {
   const { visit } = useActiveVisit();
   const { canEdit, role } = useAuth();
   const isSuper = role === "superintendent";
+  const { editEnabled } = useMeetingsEditMode();
+  const editAllowed = !isSuper || editEnabled;
+  const showInputs = canEdit && editAllowed;
   const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<WeekendRow>(
     "weekend_meetings",
@@ -383,7 +386,7 @@ export function WeekendPanel() {
           value={extras.weekend?.opening_song}
           templateValue={extras.templateExtras.weekend?.opening_song}
           visitId={visit.id} field="weekend_opening_song"
-          editable={isSuper && canEdit}
+          editable={isSuper && editAllowed}
           onSaved={extras.reload}
         />
         <TemplateExtraEditable
@@ -391,7 +394,7 @@ export function WeekendPanel() {
           value={extras.weekend?.closing_song}
           templateValue={extras.templateExtras.weekend?.closing_song}
           visitId={visit.id} field="weekend_closing_song"
-          editable={isSuper && canEdit}
+          editable={isSuper && editAllowed}
           onSaved={extras.reload}
         />
         <TemplateExtraEditable
@@ -399,50 +402,57 @@ export function WeekendPanel() {
           value={extras.weekend?.observations}
           templateValue={extras.templateExtras.weekend?.observations}
           visitId={visit.id} field="weekend_observations"
-          editable={isSuper && canEdit} type="textarea"
+          editable={isSuper && editAllowed} type="textarea"
           onSaved={extras.reload}
         />
-        <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0 min-w-0">
-          <DayTimePicker
-            value={row.meeting_at}
-            onChange={(iso) => save({ meeting_at: iso })}
-            disabled={!canEdit}
-            dayLabel={t("meetingsTalks.weekend.meetingDay")}
-            timeLabel={t("meetingsTalks.weekend.meetingTime")}
-          />
-
-          <div className="min-w-0">
-            <Label>{t("meetingsTalks.weekend.publicTalk")}</Label>
-            <FieldText
-              value={row.public_talk_theme ?? ""}
-              readOnly={!isSuper}
-              onSave={(v) => save({ public_talk_theme: v || null })}
+        {showInputs ? (
+          <fieldset className="grid gap-3 border-0 p-0 m-0 min-w-0">
+            <DayTimePicker
+              value={row.meeting_at}
+              onChange={(iso) => save({ meeting_at: iso })}
+              dayLabel={t("meetingsTalks.weekend.meetingDay")}
+              timeLabel={t("meetingsTalks.weekend.meetingTime")}
             />
-            {!isSuper && (
-              <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">{t("meetingsTalks.weekend.readOnlyNote")}</p>
-            )}
+
+            <div className="min-w-0">
+              <Label>{t("meetingsTalks.weekend.publicTalk")}</Label>
+              <FieldText
+                value={row.public_talk_theme ?? ""}
+                readOnly={!isSuper}
+                onSave={(v) => save({ public_talk_theme: v || null })}
+              />
+              {!isSuper && (
+                <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">{t("meetingsTalks.weekend.readOnlyNote")}</p>
+              )}
+            </div>
+            <div className="min-w-0">
+              <Label>{t("meetingsTalks.weekend.finalTalk")}</Label>
+              {themes.length === 0 ? (
+                <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">
+                  {isSuper
+                    ? t("meetingsTalks.weekend.noThemesSuper")
+                    : t("meetingsTalks.weekend.noThemesElder")}
+                </p>
+              ) : (
+                <Select value={row.talk_theme_id ?? ""} onValueChange={onPickTheme}>
+                  <SelectTrigger className="h-9 mt-0.5 w-full min-w-0"><SelectValue placeholder={t("meetingsTalks.weekend.pickTheme")} /></SelectTrigger>
+                  <SelectContent className="max-w-[90vw]">
+                    {themes.map((th) => <SelectItem key={th.id} value={th.id} className="whitespace-normal break-words [overflow-wrap:anywhere]">{th.title}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+              {row.talk_theme_title && themes.length > 0 && !themes.find((th) => th.id === row.talk_theme_id) && (
+                <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">{t("meetingsTalks.weekend.selectedTheme", { title: row.talk_theme_title })}</p>
+              )}
+            </div>
+          </fieldset>
+        ) : (
+          <div className="grid gap-3">
+            <ReadOnlyValue label={`${t("meetingsTalks.weekend.meetingDay")} / ${t("meetingsTalks.weekend.meetingTime")}`} value={formatDayTime(t, row.meeting_at)} />
+            <ReadOnlyValue label={t("meetingsTalks.weekend.publicTalk")} value={row.public_talk_theme} />
+            <ReadOnlyValue label={t("meetingsTalks.weekend.finalTalk")} value={row.talk_theme_title} />
           </div>
-          <div className="min-w-0">
-            <Label>{t("meetingsTalks.weekend.finalTalk")}</Label>
-            {themes.length === 0 ? (
-              <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">
-                {isSuper
-                  ? t("meetingsTalks.weekend.noThemesSuper")
-                  : t("meetingsTalks.weekend.noThemesElder")}
-              </p>
-            ) : (
-              <Select value={row.talk_theme_id ?? ""} onValueChange={onPickTheme}>
-                <SelectTrigger className="h-9 mt-0.5 w-full min-w-0"><SelectValue placeholder={t("meetingsTalks.weekend.pickTheme")} /></SelectTrigger>
-                <SelectContent className="max-w-[90vw]">
-                  {themes.map((th) => <SelectItem key={th.id} value={th.id} className="whitespace-normal break-words [overflow-wrap:anywhere]">{th.title}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
-            {row.talk_theme_title && themes.length > 0 && !themes.find((th) => th.id === row.talk_theme_id) && (
-              <p className="text-xs text-muted-foreground mt-1 break-words whitespace-normal [overflow-wrap:anywhere]">{t("meetingsTalks.weekend.selectedTheme", { title: row.talk_theme_title })}</p>
-            )}
-          </div>
-        </fieldset>
+        )}
       </CardContent></Card>
     </div>
   );
