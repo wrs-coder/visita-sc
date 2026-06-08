@@ -85,6 +85,9 @@ export function MidweekPanel() {
   const { visit } = useActiveVisit();
   const { role, canEdit } = useAuth();
   const isSuper = role === "superintendent";
+  const { editEnabled } = useMeetingsEditMode();
+  const editAllowed = !isSuper || editEnabled;
+  const showInputs = canEdit && editAllowed;
   const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save } = useSingleRow<MidweekRow>(
     "midweek_meetings",
@@ -100,7 +103,7 @@ export function MidweekPanel() {
         value={extras.midweek?.final_song}
         templateValue={extras.templateExtras.midweek?.final_song}
         visitId={visit.id} field="midweek_final_song"
-        editable={isSuper && canEdit}
+        editable={isSuper && editAllowed}
         onSaved={extras.reload}
       />
       <TemplateExtraEditable
@@ -108,30 +111,38 @@ export function MidweekPanel() {
         value={extras.midweek?.observations}
         templateValue={extras.templateExtras.midweek?.observations}
         visitId={visit.id} field="midweek_observations"
-        editable={isSuper && canEdit} type="textarea"
+        editable={isSuper && editAllowed} type="textarea"
         onSaved={extras.reload}
       />
-      <fieldset disabled={!canEdit} className="grid gap-3 disabled:opacity-70 border-0 p-0 m-0">
-        <DayTimePicker
-          value={row.meeting_at}
-          onChange={(iso) => save({ meeting_at: iso })}
-          disabled={!canEdit}
-          dayLabel={t("meetingsTalks.midweek.meetingDay")}
-          timeLabel={t("meetingsTalks.midweek.meetingTime")}
-        />
-        <div>
-          <Label>{t("meetingsTalks.midweek.serviceTalk")}</Label>
-          <FieldText value={row.service_talk_theme} onSave={(v) => save({ service_talk_theme: v })} readOnly={!isSuper} />
+      {showInputs ? (
+        <fieldset className="grid gap-3 border-0 p-0 m-0">
+          <DayTimePicker
+            value={row.meeting_at}
+            onChange={(iso) => save({ meeting_at: iso })}
+            dayLabel={t("meetingsTalks.midweek.meetingDay")}
+            timeLabel={t("meetingsTalks.midweek.meetingTime")}
+          />
+          <div>
+            <Label>{t("meetingsTalks.midweek.serviceTalk")}</Label>
+            <FieldText value={row.service_talk_theme} onSave={(v) => save({ service_talk_theme: v })} readOnly={!isSuper} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.midweek.chairman")}</Label>
+            <FieldText value={row.chairman} onSave={(v) => save({ chairman: v })} placeholder={t("meetingsTalks.midweek.chairmanPlaceholder")} />
+          </div>
+          <div>
+            <Label>{t("meetingsTalks.midweek.closingPrayer")}</Label>
+            <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} placeholder={t("meetingsTalks.midweek.closingPrayerPlaceholder")} />
+          </div>
+        </fieldset>
+      ) : (
+        <div className="grid gap-3">
+          <ReadOnlyValue label={`${t("meetingsTalks.midweek.meetingDay")} / ${t("meetingsTalks.midweek.meetingTime")}`} value={formatDayTime(t, row.meeting_at)} />
+          <ReadOnlyValue label={t("meetingsTalks.midweek.serviceTalk")} value={row.service_talk_theme} />
+          <ReadOnlyValue label={t("meetingsTalks.midweek.chairman")} value={row.chairman} />
+          <ReadOnlyValue label={t("meetingsTalks.midweek.closingPrayer")} value={row.closing_prayer} />
         </div>
-        <div>
-          <Label>{t("meetingsTalks.midweek.chairman")}</Label>
-          <FieldText value={row.chairman} onSave={(v) => save({ chairman: v })} placeholder={t("meetingsTalks.midweek.chairmanPlaceholder")} />
-        </div>
-        <div>
-          <Label>{t("meetingsTalks.midweek.closingPrayer")}</Label>
-          <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} placeholder={t("meetingsTalks.midweek.closingPrayerPlaceholder")} />
-        </div>
-      </fieldset>
+      )}
       {!canEdit && <p className="text-xs text-muted-foreground">{t("meetingsTalks.midweek.elderEditNote")}</p>}
     </CardContent></Card>
   );
