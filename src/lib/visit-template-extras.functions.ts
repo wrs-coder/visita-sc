@@ -25,7 +25,21 @@ const OVERRIDE_COLUMNS = [
   "program_general_observations",
 ] as const;
 
-type OverrideRow = Partial<Record<(typeof OVERRIDE_COLUMNS)[number], string | number | null>>;
+type OverrideRow = {
+  field_observations?: string | null;
+  midweek_observations?: string | null;
+  midweek_final_song?: string | null;
+  weekend_opening_song?: string | null;
+  weekend_closing_song?: string | null;
+  weekend_observations?: string | null;
+  pioneer_observations?: string | null;
+  pioneer_weekday?: number | null;
+  pioneer_meeting_time?: string | null;
+  elders_observations?: string | null;
+  elders_weekday?: number | null;
+  elders_meeting_time?: string | null;
+  program_general_observations?: string | null;
+};
 
 function pick<T>(override: T | null | undefined, fallback: T | null | undefined): T | null {
   if (override !== null && override !== undefined && override !== "") return override as T;
