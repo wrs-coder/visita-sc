@@ -178,9 +178,9 @@ export const setVisitTemplateOverride = createServerFn({ method: "POST" })
       else cleaned[k] = v as string | number | null;
     }
 
-    const payload = { visit_id: data.visitId, ...cleaned } as unknown as Record<string, never>;
-    const { error } = await supabaseAdmin
-      .from("visit_template_overrides")
+    const payload: Record<string, string | number | null> = { visit_id: data.visitId, ...cleaned };
+    const { error } = await (supabaseAdmin
+      .from("visit_template_overrides") as unknown as { upsert: (p: unknown, o: { onConflict: string }) => Promise<{ error: { message: string } | null }> })
       .upsert(payload, { onConflict: "visit_id" });
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const };
