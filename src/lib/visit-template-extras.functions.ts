@@ -185,7 +185,7 @@ export const setVisitTemplateOverride = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Não autorizado." };
     }
 
-    const cleaned: OverrideRow = {};
+    const cleaned: Record<string, string | number | null> = {};
     for (const k of OVERRIDE_COLUMNS) {
       if (!(k in data.patch)) continue;
       const v = (data.patch as Record<string, unknown>)[k];
