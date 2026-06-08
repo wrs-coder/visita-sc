@@ -35,6 +35,8 @@ import {
 import { MeetingsTalksReportDialog } from "@/components/visit-week/MeetingsTalksReportDialog";
 import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
 import { useActiveVisit } from "@/hooks/use-active-visit";
+import { MeetingsEditModeProvider, useMeetingsEditMode } from "@/components/meetings/meetings-edit-mode";
+import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
 // Lazy: cada painel só carrega quando o utilizador entra na respectiva aba.
 const FieldMeetingsPanel = lazy(() =>
