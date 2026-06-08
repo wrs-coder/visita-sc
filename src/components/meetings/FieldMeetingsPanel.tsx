@@ -45,8 +45,9 @@ export function FieldMeetingsPanel() {
   const isSuper = role === "superintendent";
   const [rows, setRows] = useState<Row[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [editEnabled, setEditEnabled] = useState(false);
+  const { editEnabled } = useMeetingsEditMode();
   const editAllowed = !isSuper || editEnabled;
+  const superEditing = isSuper && editAllowed;
   const extras = useVisitTemplateExtras(visit?.id);
 
   useEffect(() => {
