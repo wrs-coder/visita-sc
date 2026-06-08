@@ -113,34 +113,53 @@ export function FieldMeetingsPanel() {
         onSaved={extras.reload}
       />
 
-      {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
-
-      <fieldset disabled={!editAllowed} className="space-y-5 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
-        {days.map((d) => {
-          const key = format(d, "yyyy-MM-dd");
-          const dayRows = rows.filter((r) => r.event_date === key);
-          return (
-            <section key={key}>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>
-                {isSuper && (
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="outline" onClick={() => add(key, morning)}><Plus className="h-3 w-3 mr-1" />{morning}</Button>
-                    <Button size="sm" variant="outline" onClick={() => add(key, afternoon)}><Plus className="h-3 w-3 mr-1" />{afternoon}</Button>
-                  </div>
+      {superEditing || !isSuper ? (
+        <div className="space-y-5 min-w-0">
+          {days.map((d) => {
+            const key = format(d, "yyyy-MM-dd");
+            const dayRows = rows.filter((r) => r.event_date === key);
+            return (
+              <section key={key}>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>
+                  {superEditing && (
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" onClick={() => add(key, morning)}><Plus className="h-3 w-3 mr-1" />{morning}</Button>
+                      <Button size="sm" variant="outline" onClick={() => add(key, afternoon)}><Plus className="h-3 w-3 mr-1" />{afternoon}</Button>
+                    </div>
+                  )}
+                </div>
+                {dayRows.length === 0 ? (
+                  <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("meetingsTalks.field.noShifts")}</CardContent></Card>
+                ) : (
+                  dayRows.map((r) => (
+                    <RowCard key={r.id} row={r} isSuper={superEditing} saving={savingId === r.id} update={update} remove={remove} />
+                  ))
                 )}
-              </div>
-              {dayRows.length === 0 ? (
-                <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("meetingsTalks.field.noShifts")}</CardContent></Card>
-              ) : (
-                dayRows.map((r) => (
-                  <RowCard key={r.id} row={r} isSuper={isSuper} saving={savingId === r.id} update={update} remove={remove} />
-                ))
-              )}
-            </section>
-          );
-        })}
-      </fieldset>
+              </section>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="space-y-5 min-w-0">
+          {days.map((d) => {
+            const key = format(d, "yyyy-MM-dd");
+            const dayRows = rows.filter((r) => r.event_date === key);
+            return (
+              <section key={key}>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>
+                {dayRows.length === 0 ? (
+                  <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("meetingsTalks.field.noShifts")}</CardContent></Card>
+                ) : (
+                  dayRows.map((r) => (
+                    <RowCard key={r.id} row={r} isSuper={false} saving={false} update={update} remove={remove} />
+                  ))
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
