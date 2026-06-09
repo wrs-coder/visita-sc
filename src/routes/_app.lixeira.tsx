@@ -235,7 +235,7 @@ function Page() {
             ))}
           </TabsContent>
 
-          <TabsContent value="local" className="mt-4 space-y-2">
+          <TabsContent value="local" className="mt-4 space-y-2 list-optimized-sm">
             {localFolders.map((f) => (
               <Card key={f.id}>
                 <CardContent className="p-3 flex items-center justify-between gap-2">
