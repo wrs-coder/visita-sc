@@ -346,7 +346,7 @@ function AppLayout() {
           </div>
         </aside>
 
-        <main className="flex-1 md:ml-72 min-w-0 max-w-full overflow-x-hidden">
+        <main id="main-content" tabIndex={-1} className="flex-1 md:ml-72 min-w-0 max-w-full overflow-x-hidden focus:outline-none">
           <div className="max-w-5xl mx-auto p-4 md:p-8 pb-24 min-w-0">
 
             {blocked ? (
