@@ -43,6 +43,8 @@ import { setActiveContext } from "@/lib/active-context";
 import { useOutlinesSync } from "@/hooks/use-outlines-sync";
 import { accentForPath, accentStyle } from "@/lib/route-accent";
 import { RouteTransition } from "@/components/RouteTransition";
+import { useOfflineWarmup } from "@/hooks/use-offline-warmup";
+import { OfflineReadyBadge } from "@/components/OfflineReadyBadge";
 
 
 export const Route = createFileRoute("/_app")({
@@ -66,6 +68,9 @@ function AppLayout() {
   // (criar, mover, reordenar, excluir) ficam apenas no aparelho até o
   // utilizador pedir para sincronizar.
   const syncOutlines = useOutlinesSync({ auto: false });
+
+  // Onda 7.4 — Warm-up offline silencioso após o login (idle, 1x/6h por aba).
+  useOfflineWarmup();
 
 
   const openSupport = () => {
