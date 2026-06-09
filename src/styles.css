@@ -260,3 +260,78 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+   Onda 6.2 — Microinterações CSS-only (zero JS)
+   ============================================================ */
+
+/* Tap feedback — leve scale ao pressionar. Aplicado globalmente
+   em botões e elementos com role=button. Mouse usa hover shadow;
+   toque usa o scale para resposta tátil. */
+@layer base {
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  a.btn:active {
+    transform: scale(0.97);
+    transition: transform 80ms ease-out;
+  }
+  /* Hover suave em botões ghost / links de ação */
+  button, [role="button"], a.btn {
+    transition: transform 120ms ease, background-color 160ms ease,
+                color 160ms ease, box-shadow 180ms ease, border-color 160ms ease;
+  }
+}
+
+/* Shimmer para skeletons — gradiente animado, sem JS, GPU-friendly. */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    color-mix(in oklab, var(--muted) 60%, var(--background)) 50%,
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* Indicador animado da aba ativa — fade + slide-up sutil.
+   Aplica-se a TabsTrigger (Radix) e a qualquer elemento com
+   data-state="active". */
+@keyframes tab-indicator-in {
+  from { transform: translateY(1px) scale(0.98); opacity: 0.85; }
+  to   { transform: translateY(0)   scale(1);    opacity: 1; }
+}
+[data-state="active"][role="tab"] {
+  animation: tab-indicator-in 180ms ease-out;
+}
+
+/* Toasts coloridos por estado (Sonner). Mantém fundo neutro mas
+   colore o ícone e a barra lateral esquerda para reconhecimento
+   instantâneo. */
+[data-sonner-toaster] [data-sonner-toast] {
+  position: relative;
+  overflow: hidden;
+}
+[data-sonner-toaster] [data-sonner-toast]::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--muted-foreground);
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="success"]::before { background: var(--success); }
+[data-sonner-toaster] [data-sonner-toast][data-type="error"]::before   { background: var(--destructive); }
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"]::before { background: var(--warning); }
+[data-sonner-toaster] [data-sonner-toast][data-type="info"]::before    { background: var(--primary); }
+
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] [data-icon] { color: var(--success); }
+[data-sonner-toaster] [data-sonner-toast][data-type="error"]   [data-icon] { color: var(--destructive); }
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] [data-icon] { color: var(--warning); }
+[data-sonner-toaster] [data-sonner-toast][data-type="info"]    [data-icon] { color: var(--primary); }
