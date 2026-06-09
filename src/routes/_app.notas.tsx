@@ -540,7 +540,7 @@ function Page() {
         </Card>
 
         {CATEGORY_DEFS.map((c) => (
-          <TabsContent key={c.value} value={c.value} className="space-y-3 mt-3">
+          <TabsContent key={c.value} value={c.value} className="space-y-3 mt-3 list-optimized">
             <Button onClick={() => add(c.value)} variant="outline" className="w-full"><Plus className="h-4 w-4 mr-1" />{catAdd(c.value)}</Button>
             {filtered.length === 0 && tab === c.value && (
               <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{catEmpty(c.value)}</CardContent></Card>
