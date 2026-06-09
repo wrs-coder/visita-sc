@@ -75,30 +75,6 @@ export function CommandPalette() {
     { to: "/modelo-programacao-ancioes", label: t("sidebar.elderProgramTemplate", { defaultValue: "Modelo Programação Anciãos" }), icon: BookOpen, group: "modelos" as const, superOnly: true },
     { to: "/perfil", label: t("sidebar.myProfile"), icon: UserCircle, group: "modelos" as const },
   ] satisfies Entry[]).filter((e) => !e.superOnly || isSuper), [t, isSuper]);
-    { to: "/dashboard", label: t("sidebar.home"), icon: LayoutDashboard, group: "principal" },
-    { to: "/cronograma", label: t("sidebar.schedule"), icon: CalendarDays, group: "principal" },
-    { to: "/configuracoes", label: t("sidebar.itinerary"), icon: Plane, group: "principal" },
-    { to: "/congregacoes", label: t("sidebar.congregations"), icon: Building2, group: "principal", superOnly: true },
-    { to: "/consideracoes-campo", label: t("sidebar.personalOutlines"), icon: FileText, group: "principal", superOnly: true },
-    { to: "/notas", label: t("sidebar.privateNotes"), icon: Lock, group: "principal", superOnly: true },
-    { to: "/lixeira", label: t("sidebar.trash", { defaultValue: "Lixeira" }), icon: Trash2, group: "principal", superOnly: true },
-
-    { to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList, group: "visita", superOnly: true },
-    { to: "/comunicacao-casal", label: t("sidebar.coupleMessages"), icon: Heart, group: "visita", superOnly: true },
-    { to: "/programa-ancioes", label: t("sidebar.elderProgram", { defaultValue: "Pastoreios, Recomendações e outros" }), icon: BookOpen, group: "visita" },
-    { to: "/escala", label: t("sidebar.fieldStudies"), icon: Users, group: "visita" },
-    { to: "/reunioes-discursos", label: t("sidebar.meetingsTalks"), icon: MapPin, group: "visita" },
-    { to: "/refeicoes", label: t("sidebar.meals"), icon: UtensilsCrossed, group: "visita" },
-    { to: "/transporte", label: t("sidebar.transport"), icon: Car, group: "visita" },
-    { to: "/checklist", label: t("sidebar.checklist"), icon: ListChecks, group: "visita" },
-
-    { to: "/modelos", label: t("sidebar.scheduleTemplates"), icon: FileStack, group: "modelos", superOnly: true },
-    { to: "/checklist-modelos", label: t("sidebar.checklistTemplates"), icon: ListChecks, group: "modelos", superOnly: true },
-    { to: "/modelo-reunioes-de-campo", label: t("sidebar.fieldMeetingTemplate"), icon: MapPin, group: "modelos", superOnly: true },
-    { to: "/modelo-reunioes-discursos", label: t("sidebar.meetingTalkTemplates"), icon: Layers, group: "modelos", superOnly: true },
-    { to: "/modelo-programacao-ancioes", label: t("sidebar.elderProgramTemplate", { defaultValue: "Modelo Programação Anciãos" }), icon: BookOpen, group: "modelos", superOnly: true },
-    { to: "/perfil", label: t("sidebar.myProfile"), icon: UserCircle, group: "modelos" },
-  ].filter((e) => !e.superOnly || isSuper), [t, isSuper]);
 
   if (loading || !user) return null;
 
