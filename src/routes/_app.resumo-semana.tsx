@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -184,11 +185,7 @@ function Page() {
   }
 
   if (loading || !filteredSnap) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
+    return <WeekSummarySkeleton />;
   }
 
   return (
@@ -232,6 +229,32 @@ function Page() {
           congregationName={filteredSnap.congregation.name}
         />
       )}
+    </div>
+  );
+}
+
+// Onda 7.1 — Skeleton fiel ao layout do Resumo da Semana.
+// Herda --section-color da rota (accent visit) via .section-accent nos cards.
+function WeekSummarySkeleton() {
+  return (
+    <div className="space-y-4" aria-busy="true" aria-live="polite">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        <Skeleton className="h-9 w-32" />
+      </div>
+      {[0, 1, 2, 3].map((i) => (
+        <Card key={i}>
+          <CardContent className="p-5 space-y-3">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-2/3" />
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

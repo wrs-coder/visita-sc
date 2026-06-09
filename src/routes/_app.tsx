@@ -42,6 +42,7 @@ import { Coffee } from "lucide-react";
 import { setActiveContext } from "@/lib/active-context";
 import { useOutlinesSync } from "@/hooks/use-outlines-sync";
 import { accentForPath, accentStyle } from "@/lib/route-accent";
+import { RouteTransition } from "@/components/RouteTransition";
 
 
 export const Route = createFileRoute("/_app")({
@@ -371,7 +372,9 @@ function AppLayout() {
               </div>
             ) : (
               <ChunkErrorBoundary>
-                <Outlet />
+                <RouteTransition pathname={location.pathname}>
+                  <Outlet />
+                </RouteTransition>
               </ChunkErrorBoundary>
             )}
           </div>
