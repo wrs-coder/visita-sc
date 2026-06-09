@@ -134,8 +134,9 @@ function RootComponent() {
       }
     };
     window.addEventListener("unhandledrejection", onUnhandled);
-    // Tenta flush no boot
+    // Tenta flush no boot e arma o auto-retry com backoff exponencial (Onda 4).
     flushQueue().catch((e) => console.warn("[boot] flush", e));
+    startOfflineQueueAutoRetry();
     return () => {
       subscription.unsubscribe();
       window.removeEventListener("online", onOnline);
