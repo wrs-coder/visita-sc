@@ -177,7 +177,7 @@ function Page() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="outlines" className="mt-4 space-y-2">
+          <TabsContent value="outlines" className="mt-4 space-y-2 list-optimized-sm">
             {outlines.length === 0 ? (
               <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("trash.empty")}</CardContent></Card>
             ) : outlines.map((o) => (
@@ -202,7 +202,7 @@ function Page() {
             ))}
           </TabsContent>
 
-          <TabsContent value="notes" className="mt-4 space-y-2">
+          <TabsContent value="notes" className="mt-4 space-y-2 list-optimized-sm">
             {notes.length > 0 && (
               <div className="flex justify-end">
                 <Button size="sm" variant="outline" onClick={emptyAllNotes}>
@@ -235,7 +235,7 @@ function Page() {
             ))}
           </TabsContent>
 
-          <TabsContent value="local" className="mt-4 space-y-2">
+          <TabsContent value="local" className="mt-4 space-y-2 list-optimized-sm">
             {localFolders.map((f) => (
               <Card key={f.id}>
                 <CardContent className="p-3 flex items-center justify-between gap-2">

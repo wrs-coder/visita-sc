@@ -373,3 +373,23 @@
   .visit-week-tab-hint { font-size: 0.72rem; }
 }
 
+
+/* ============================================================
+   Onda 6.5 — Listas otimizadas (CSS-only, zero JS)
+   ============================================================
+   Estratégia: `content-visibility: auto` permite ao browser pular
+   layout/paint dos filhos fora da viewport (efeito equivalente à
+   virtualização para listas longas), preservando rolagem nativa,
+   foco, find-in-page, screen-readers e altura variável dos cards.
+   `contain-intrinsic-size` reserva espaço estimado para evitar
+   "saltos" no scrollbar. Aplicar via classe `.list-optimized` no
+   container e/ou `.list-item-optimized` nos itens.
+*/
+.list-optimized > * { content-visibility: auto; contain-intrinsic-size: 0 160px; }
+.list-item-optimized { content-visibility: auto; contain-intrinsic-size: 0 160px; }
+/* Variantes por densidade — ajuste do tamanho intrínseco reduz reflow ao rolar */
+.list-optimized-sm > * { content-visibility: auto; contain-intrinsic-size: 0 88px; }
+.list-optimized-lg > * { content-visibility: auto; contain-intrinsic-size: 0 240px; }
+
+/* Em telas com `prefers-reduced-motion` mantemos o comportamento — não há
+   animação envolvida; apenas pintura sob demanda. */
