@@ -28,6 +28,11 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
+    // Onda 1 — prefetch automático ao passar o mouse / focar um link.
+    // Abre rotas internas instantaneamente sem custo extra de banco
+    // (loader reaproveita o cache do React Query, staleTime de 12h).
+    defaultPreload: "intent",
+    defaultPreloadDelay: 80,
   });
 
   return router;
