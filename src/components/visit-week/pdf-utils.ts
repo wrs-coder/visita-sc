@@ -1,12 +1,16 @@
 // Helpers compartilhados para geração de PDFs "Relatório executivo" nas
-// abas da seção Semana da Visita. O layout segue o padrão já validado em
-// `ElderExecutiveReportDialog` (A4 retrato, Helvetica, barra azul-claro
-// por seção, numeração de páginas no rodapé).
+// abas da seção Semana da Visita. Layout: A4 retrato, Helvetica, barra
+// azul-clara por seção, numeração de páginas no rodapé.
 //
-// Nada aqui depende de React; tudo é puro para que cada aba apenas monte
-// suas seções (texto plano por linha) e chame `generateVisitWeekPdf`.
+// Onda 7.6: migrado de `jspdf` para `pdf-lib` via `pdf-engine`. API
+// pública preservada (`generateVisitWeekPdf`, `slugify`, `kv`,
+// `ReportSection`, `VisitWeekPdfInput`) — todos os callers das abas
+// continuam funcionando sem alteração.
 
-import type jsPDF from "jspdf";
+import {
+  createJsPdfCompat,
+  slugify as engineSlugify,
+} from "@/lib/pdf/pdf-engine";
 
 export interface ReportSection {
   id: string;
@@ -40,25 +44,14 @@ export interface VisitWeekPdfInput {
   includeAdditionalInfo: boolean;
 }
 
-export function slugify(input: string): string {
-  return (
-    input
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\p{L}\p{N}]+/gu, "-")
-      .replace(/^-+|-+$/g, "")
-      .toLowerCase()
-      .slice(0, 60) || "relatorio"
-  );
-}
+export const slugify = engineSlugify;
 
 export async function generateVisitWeekPdf(
   input: VisitWeekPdfInput,
 ): Promise<Blob> {
-  const { jsPDF: JsPDF } = await import("jspdf");
-  const pdf: jsPDF = new JsPDF({ orientation: "p", unit: "mm", format: "a4" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
+  const pdf = await createJsPdfCompat({ unit: "mm", orientation: "p" });
+  const pageW = pdf.pageW;
+  const pageH = pdf.pageH;
   const margin = 12;
   const maxW = pageW - margin * 2;
   let y = margin;
@@ -75,13 +68,13 @@ export async function generateVisitWeekPdf(
     size: number,
     opts?: { bold?: boolean; color?: [number, number, number]; indent?: number },
   ) => {
-    pdf.setFont("helvetica", opts?.bold ? "bold" : "normal");
+    pdf.setFont(opts?.bold ?? false);
     pdf.setFontSize(size);
     const [r, g, b] = opts?.color ?? [20, 20, 20];
     pdf.setTextColor(r, g, b);
     const indent = opts?.indent ?? 0;
     const wrapWidth = maxW - indent;
-    const lines = pdf.splitTextToSize(text, wrapWidth) as string[];
+    const lines = pdf.splitTextToSize(text, wrapWidth);
     const lh = size * 0.45;
     for (const ln of lines) {
       ensure(lh);
@@ -108,27 +101,38 @@ export async function generateVisitWeekPdf(
     ensure(10);
     pdf.setFillColor(235, 240, 250);
     pdf.rect(margin, y, maxW, 7, "F");
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont(true);
     pdf.setFontSize(10);
     pdf.setTextColor(30, 50, 100);
     pdf.text(section.title, margin + 2, y + 5);
     y += 9;
 
-    if (input.includeAdditionalInfo && section.additionalInfo && section.additionalInfo.trim()) {
-      writeText("Informações adicionais do superintendente:", 9, { bold: true, color: [60, 60, 60] });
+    if (
+      input.includeAdditionalInfo &&
+      section.additionalInfo &&
+      section.additionalInfo.trim()
+    ) {
+      writeText("Informações adicionais do superintendente:", 9, {
+        bold: true,
+        color: [60, 60, 60],
+      });
       writeText(section.additionalInfo.trim(), 9);
       y += 1;
     }
 
     if (!section.blocks.length) {
-      writeText(section.emptyMessage ?? "— Sem registros —", 9, { color: [140, 140, 140] });
+      writeText(section.emptyMessage ?? "— Sem registros —", 9, {
+        color: [140, 140, 140],
+      });
       continue;
     }
 
     section.blocks.forEach((block, idx) => {
       y += 2;
       ensure(6);
-      const headLine = block.heading ? `${idx + 1}. ${block.heading}` : `${idx + 1}.`;
+      const headLine = block.heading
+        ? `${idx + 1}. ${block.heading}`
+        : `${idx + 1}.`;
       writeText(headLine, 9, { bold: true, color: [30, 50, 100] });
       for (const ln of block.lines) {
         if (!ln) continue;
@@ -140,7 +144,7 @@ export async function generateVisitWeekPdf(
   const total = pdf.getNumberOfPages();
   for (let i = 1; i <= total; i++) {
     pdf.setPage(i);
-    pdf.setFont("helvetica", "normal");
+    pdf.setFont(false);
     pdf.setFontSize(8);
     pdf.setTextColor(150, 150, 150);
     pdf.text(`${i} / ${total}`, pageW - margin, pageH - 5, { align: "right" });
