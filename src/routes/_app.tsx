@@ -255,14 +255,21 @@ function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Onda 6.6 — Skip-to-content (WCAG 2.4.1). */}
+      <a href="#main-content" className="skip-to-content">
+        {t("a11y.skipToContent", { defaultValue: "Pular para o conteúdo" })}
+      </a>
       {/* Mobile top bar */}
       <header className="md:hidden sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm">
         <div className="flex items-center justify-between px-3 h-14">
           <div className="flex items-center gap-2">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <button className="p-2 -ml-2 rounded-md hover:bg-white/10">
-                  <Menu className="h-5 w-5" />
+                <button
+                  className="p-2 -ml-2 rounded-md hover:bg-white/10"
+                  aria-label={t("a11y.openMenu", { defaultValue: "Abrir menu de navegação" })}
+                >
+                  <Menu className="h-5 w-5" aria-hidden="true" />
                 </button>
               </SheetTrigger>
               <SheetContent
