@@ -161,14 +161,22 @@ export function MeetingsDraftProvider({
         done += 1;
         setProgress(Math.round((done / entries.length) * 100));
       }
-      // Invalida caches das tabelas com sucesso (recarrega painéis).
+      // Invalidations cirúrgicas (Onda 3): apenas as chaves realmente
+      // afetadas. Antes havia um `invalidateQueries()` global no fim que
+      // derrubava caches caros (modelos/bíblia/visita ativa) sem motivo —
+      // forçando re-fetch em todas as abas a cada "Salvar".
       if (touched.size) {
+        const keysToInvalidate: unknown[][] = Array.from(touched).map((t) => [t]);
+        // Overrides → recarrega o hook de extras da visita (chave composta
+        // por visitId), que não casa só pelo nome da tabela.
+        if (touched.has("visit_template_overrides")) {
+          keysToInvalidate.push(["visit-template-extras"]);
+        }
         await Promise.all(
-          Array.from(touched).map((t) =>
-            queryClient.invalidateQueries({ queryKey: [t] }),
+          keysToInvalidate.map((queryKey) =>
+            queryClient.invalidateQueries({ queryKey }),
           ),
         );
-        await queryClient.invalidateQueries();
       }
       if (failedKeys.length === 0) {
         toast.success("Dados salvos");
