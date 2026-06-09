@@ -1,68 +1,77 @@
-## Objetivo
 
-Dar ao Superintendente total liberdade para editar, dentro da "Semana da Visita", todos os campos hoje exibidos como "vindos do modelo" (somente leitura) — observações, cânticos, horários/dia das reuniões de Anciãos e Servos, dos Pioneiros, observações de campo, observações gerais do programa — além de permitir editar horários de partida/retorno de eventos de transporte já criados. Essas mudanças aplicam-se apenas à congregação ativa (visita selecionada) e nunca alteram os Modelos de Base nem a visualização/edição dos anciãos.
+# Melhorias propostas para o Visita SC
 
-## Estratégia (per-visit override, sem tocar nos modelos)
+Foco: ganhos perceptíveis de usabilidade, fluidez e desempenho **sem aumentar o tamanho do app nem o custo de banco**. Tudo respeita as diretrizes do `instructions.md` (modelos neutros, RLS do Superintendente, offline-first, i18n nas três línguas, snapshots da visita, etc.).
 
-Hoje `getVisitTemplateExtras` lê direto das tabelas `*_templates`. Para preservar a regra "edição não muda o modelo", criamos uma camada de **overrides por visita**. A leitura passa a ser: **override por visita → valor do modelo → null**. Os modelos permanecem intactos.
+Antes de implementar, gostaria de confirmar quais blocos abaixo entram no escopo — posso entregar em ondas pequenas para evitar regressões.
 
-### 1. Migration: nova tabela `visit_template_overrides`
-Uma linha por visita, com colunas espelhando exatamente os campos hoje em `VisitTemplateExtras`:
+---
 
-- `visit_id uuid PK references visits(id) on delete cascade`
-- `field_observations text`
-- `midweek_observations text`, `midweek_final_song text`
-- `weekend_opening_song text`, `weekend_closing_song text`, `weekend_observations text`
-- `pioneer_observations text`, `pioneer_weekday smallint`, `pioneer_meeting_time time`
-- `elders_observations text`, `elders_weekday smallint`, `elders_meeting_time time`
-- `program_general_observations text`
-- `created_at`, `updated_at` + trigger `touch_updated_at`
+## 1. Fluidez percebida (frontend, custo zero no banco)
 
-GRANTs: `authenticated` (SELECT/INSERT/UPDATE/DELETE) e `service_role` (ALL). RLS:
-- SELECT: superintendente da congregação da visita **ou** membro daquela congregação (mesma lógica do `getVisitTemplateExtras`, para que anciãos vejam o ajuste do superintendente).
-- INSERT/UPDATE/DELETE: **somente o superintendente** da congregação da visita. Anciãos jamais escrevem aqui — preserva a regra "não afeta o modo dos anciãos".
+- **Skeletons + Suspense nas abas pesadas** (Semana da Visita, Dashboard, Programa Anciãos): substituir spinners por skeletons já no formato dos cards. Sensação de carregamento cai pela metade.
+- **Transições otimistas** (`useMutation` com `onMutate`) nas edições do Superintendente que já são triviais (observações, horários, tempos). O usuário vê o valor mudar instantaneamente; rollback só em caso de erro.
+- **Debounce + autosave silencioso** nos textareas de observações (já há padrão de rascunho — estender para os novos campos do `visit_template_overrides`). Remove cliques em "Salvar".
+- **Virtualização** das listas longas (Bíblia, Notas, Itinerário anual) usando `@tanstack/react-virtual` — drástica queda de DOM (regra de performance) sem novo asset pesado.
+- **Memoização cirúrgica** dos painéis de reunião (`React.memo` + chaves estáveis) — hoje re-renderizam em cascata quando um campo muda.
 
-### 2. Server functions (`src/lib/visit-template-extras.functions.ts`)
-- Estender `getVisitTemplateExtras`: após ler o modelo, ler o override da visita e fazer merge campo-a-campo (override vence quando não-nulo). Retorno do `VisitTemplateExtras` permanece com o mesmo shape — nenhum componente que só lê precisa mudar.
-- Nova `setVisitTemplateOverride` (POST, `requireSupabaseAuth`, validação Zod):
-  - Input: `{ visitId, patch: Partial<OverrideRow> }` com whitelist estrita dos campos acima.
-  - Verifica que `userId === congregation.superintendent_id`; caso contrário 403.
-  - `upsert` em `visit_template_overrides` com `onConflict: visit_id`.
+## 2. Navegação e descoberta
 
-### 3. Componente editável (`src/components/meetings/TemplateExtraBlock.tsx`)
-Adicionar `TemplateExtraEditable` reutilizável que recebe `{ label, templateValue, overrideValue, onSave, type: "text" | "textarea" }`. Comportamento:
-- Quando `canEdit && isSuper`: renderiza `Input`/`Textarea` editável; placeholder = valor do modelo; salva no blur via `setVisitTemplateOverride`. Pequeno botão "↩ Restaurar do modelo" quando há override (envia `null`).
-- Caso contrário: mantém o atual `TemplateExtraBlock` (vermelho/azul, somente leitura).
+- **Command Palette (⌘K / botão flutuante)** com busca global: visitas, congregações, notas, versículos, modelos. Uma única tela acessa tudo — reduz cliques no menu lateral.
+- **Breadcrumbs contextuais** no topo das telas internas (Itinerário → Congregação → Visita → Aba) — hoje é fácil "se perder" entre abas.
+- **Atalhos de teclado** nas abas da Semana da Visita (1–7 troca de aba, `E` alterna modo edição, `Esc` sai). Custo: zero.
+- **Botão "Próxima visita"** persistente no dashboard, levando direto ao Resumo do Dia.
 
-### 4. Painéis em `src/components/meetings/MeetingPanels.tsx`
-Para cada painel (Midweek, Weekend, Pioneer, Elders) e para `FieldMeetingsPanel` / programa:
-- Trocar os `TemplateExtraBlock` por `TemplateExtraEditable` ligados aos campos correspondentes do override.
-- **Pioneer/Elders schedule**: hoje é texto somente leitura calculado de `weekday + meeting_time` do modelo. Substituir, quando `isSuper && canEdit`, por um `DayTimePicker` (já existente) que persiste `pioneer_weekday`/`pioneer_meeting_time` (ou `elders_*`) no override. A exibição read-only continua igual para os anciãos.
-- Remover as mensagens "somente leitura" (`meetingsTalks.weekend.readOnlyNote` etc.) quando `isSuper === true` (regra 6 do `instructions.md`).
+## 3. Eficiência de banco (menos round-trips, mesmo schema)
 
-### 5. Observações por linha de "Reunião de Campo"
-Em `FieldMeetingsPanel.tsx`, o bloco azul com `r.observations` (vindo do modelo no momento da criação da linha) passa a ser editável pelo super: trocar o `div` por `Textarea` controlada que chama o `update(r.id, { observations: v })` existente em `field_meetings`. Para anciãos: continua read-only.
+- **Consolidar leituras da Semana da Visita** em uma única RPC (`get_visit_week_bundle`) que devolve modelos + overrides + linhas em um JSON. Hoje são ~6–8 selects por aba aberta.
+- **`ensureQueryData` no loader** das rotas autenticadas (regra 9) para tudo que ainda usa `useEffect + fetch` — elimina o "flash" e reaproveita cache entre navegações.
+- **`staleTime` agressivo** (5–10 min) para modelos e bíblia (mudam raramente). Reduz refetch em foco de janela.
+- **Invalidations cirúrgicas** com `queryKey` por `visit_id` em vez de invalidar a árvore inteira após salvar override.
+- **Prefetch ao passar o mouse** nos cards do Itinerário (`Link preload="intent"`) — abre instantâneo.
 
-### 6. Horários dos eventos de Transporte
-Em `src/routes/_app.transporte.tsx`, no card de cada `r` (já dentro do `fieldset` `editAllowed`), trocar a linha "📅 fmtTime(departure) → fmtTime(return)" por dois `Input type="time"` (Partida / Retorno) que chamam `updateRow(r.id, { departure_time | return_time })` no blur. Visível somente para o super; anciãos continuam vendo o texto.
+## 4. Offline e backup (sem ampliar payload)
 
-### 7. i18n (pt, en, es) — chaves simétricas
-Adicionar:
-- `meetingsTalks.fromTemplate.restoreFromTemplate` — "Restaurar do modelo" / "Restore from template" / "Restaurar del modelo"
-- `meetingsTalks.fromTemplate.overrideHint` — pequena legenda "Editado para esta visita" / "Edited for this visit" / "Editado para esta visita"
-- `transport.departureTime`, `transport.returnTime` (se faltarem)
-- Remover usos remanescentes de `meetingsTalks.weekend.readOnlyNote` quando exibidos para super (apenas no render).
+- **Pré-cache da próxima visita** (semana atual + próxima do itinerário) — usuário entra em casa sem internet e já tem tudo.
+- **Indicador discreto de "salvo na nuvem / na fila"** por campo (ícone pequeno) — reduz ansiedade do offline.
+- **Compressão do .zip de backup** com nível 9 só nos JSONs grandes (bíblias) e nível 6 no restante — arquivo final menor, sem mais leituras.
 
-### 8. Checklist final (regra 11 do `instructions.md`)
-1. Migration + GRANT + RLS por papel aplicados.
-2. Zod no novo `setVisitTemplateOverride` com whitelist.
-3. `VisitTemplateExtras` continua com o mesmo shape — snapshots (`visit-summary`, `guest`) seguem funcionando sem mudança; valores agora já chegam mesclados.
-4. UI dos painéis, Reuniões de Campo e Transporte refletem override.
-5. `isSuper` libera edição sem mensagem "somente leitura"; anciãos sem alteração visual.
-6. pt/en/es completas e simétricas.
-7. Invalidar `["visits","ensured", ...]` / queries de extras após save (`queryClient.invalidateQueries`).
-8. Build limpo.
+## 5. Acessibilidade e mobile
 
-## Fora do escopo
-- Nenhuma alteração nas tabelas `*_template*`, no editor de "Modelos de Base", no painel/visualização dos anciãos, nem nos fluxos de propagação modelo→visita já existentes.
-- Sem alteração no backup `.zip` (a nova tabela é coberta pelo export server-side automaticamente ao ser adicionada ao mapa de tabelas exportadas — incluiremos `visit_template_overrides` em `backup.functions.ts`).
+- **Áreas de toque ≥ 44 px** em todos os botões de ação das abas (vários hoje têm 32 px).
+- **Foco visível** consistente (atalho de Tab funciona, mas o anel some em alguns componentes).
+- **Modo compacto** opcional para listas longas (toggle em Configurações) — útil em tablets.
+- **Safe-area-inset** no rodapé das telas com FAB (já há para teclado virtual; faltam áreas com bottom nav).
+
+## 6. Microinterações e polimento (sem framer pesado)
+
+- Animações **CSS-only** de 150 ms ao alternar "Modo edição" da Semana da Visita.
+- **Toast unificado** com ação "Desfazer" nas exclusões (esboços, notas, eventos de transporte) — reduz medo de errar.
+- **Empty states ilustrados leves** (SVG inline, <2 kb) substituindo os "Nada por aqui" atuais.
+
+## 7. Confiabilidade
+
+- **Boundary de erro por aba** da Semana da Visita — uma aba quebrada não derruba a tela inteira.
+- **Captura silenciosa** de falhas de sync offline com retry exponencial (já há fila; falta o retry).
+- **Smoke tests** rápidos (Vitest) das funções `visit-summary` e `visit-template-extras` para travar regressões dos snapshots.
+
+---
+
+## Sugestão de ondas (para aprovar uma por vez)
+
+1. **Onda 1 — Ganho imediato e barato**: skeletons, otimismo nas edições, atalhos de teclado, prefetch nos links do itinerário, `staleTime` em modelos/bíblia. (Sem migration, sem novo pacote pesado.)
+2. **Onda 2 — Navegação**: Command Palette + breadcrumbs + boundary por aba.
+3. **Onda 3 — Banco**: RPC consolidada da Semana da Visita + invalidations cirúrgicas + `ensureQueryData` nas rotas restantes.
+4. **Onda 4 — Offline/backup**: pré-cache da próxima visita, indicador por campo, retry da fila, compressão diferenciada.
+5. **Onda 5 — Acessibilidade e polimento**: tamanhos de toque, foco, microinterações, empty states.
+
+---
+
+## Detalhes técnicos (resumo para referência)
+
+- Sem novas tabelas. Apenas 1 RPC opcional (`get_visit_week_bundle`) na Onda 3, SECURITY DEFINER, lendo de tabelas já permitidas pelo RLS — sem custo adicional de armazenamento.
+- Pacotes novos no máximo: `@tanstack/react-virtual` (~6 kb gz) e `cmdk` para o Command Palette (~10 kb gz). Nada de framer-motion adicional.
+- i18n: cada string nova entra em `pt/en/es` (regra 10).
+- Todas as edições do Superintendente continuam respeitando o `useMeetingsEditMode` recém-criado.
+
+Me diga quais ondas (ou itens específicos) quer que eu implemente primeiro.
