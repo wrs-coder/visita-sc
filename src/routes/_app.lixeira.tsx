@@ -185,9 +185,9 @@ function Page() {
                 <CardContent className="p-3 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{o.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <span className="status-badge mt-1" data-tone={daysLeft(o.deleted_at) <= 7 ? "attention" : "pending"}>
                       {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(o.deleted_at) })}
-                    </p>
+                    </span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Button size="sm" variant="outline" onClick={() => restoreOutlineCloud(o.id)}>
@@ -218,9 +218,12 @@ function Page() {
                 <CardContent className="p-3 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{n.title || t("notes.untitled", { defaultValue: "Sem título" })}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {n.note_type} · {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(n.deleted_at) })}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="text-xs text-muted-foreground">{n.note_type}</span>
+                      <span className="status-badge" data-tone={daysLeft(n.deleted_at) <= 7 ? "attention" : "pending"}>
+                        {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(n.deleted_at) })}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Button size="sm" variant="outline" onClick={() => restoreNoteCloud(n.id)}>
@@ -241,9 +244,9 @@ function Page() {
                 <CardContent className="p-3 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">📁 {f.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <span className="status-badge mt-1" data-tone={daysLeft(f.deleted_at ?? null) <= 7 ? "attention" : "pending"}>
                       {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(f.deleted_at ?? null) })}
-                    </p>
+                    </span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Button size="sm" variant="outline" onClick={() => restoreLocalFolderFn(f.id)}>
@@ -261,9 +264,9 @@ function Page() {
                 <CardContent className="p-3 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{n.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <span className="status-badge mt-1" data-tone={daysLeft(n.deleted_at ?? null) <= 7 ? "attention" : "pending"}>
                       {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(n.deleted_at ?? null) })}
-                    </p>
+                    </span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Button size="sm" variant="outline" onClick={() => restoreLocal(n.id)}>

@@ -271,6 +271,7 @@
     "noElders": "No elders registered in your congregations yet."
   },
   "schedule": {
+    "status": { "confirmed": "Confirmed", "pending": "Postponed" },
     "title": "Weekly Schedule",
     "newEvent": "New",
     "editEvent": "Edit appointment",

@@ -420,3 +420,74 @@
 
 /* Em telas com `prefers-reduced-motion` mantemos o comportamento — não há
    animação envolvida; apenas pintura sob demanda. */
+
+
+/* ============================================================
+   Onda 6.7 — Indicadores visuais por cores
+   ============================================================
+   Borda lateral por dia da semana + badges suaves de status.
+   Tokens vivem no :root e .dark para garantir contraste AA. */
+
+:root {
+  /* Cores por dia da semana — usadas APENAS na borda lateral (3 px).
+     Saturação moderada; luminosidade ~0.55–0.65 para destacar
+     sobre o card claro sem competir com o conteúdo. */
+  --weekday-mon: oklch(0.58 0.14 264); /* navy */
+  --weekday-tue: oklch(0.62 0.12 200); /* teal */
+  --weekday-wed: oklch(0.58 0.16 305); /* violet */
+  --weekday-thu: oklch(0.70 0.15 75);  /* amber */
+  --weekday-fri: oklch(0.62 0.18 25);  /* rose */
+  --weekday-sat: oklch(0.62 0.14 155); /* emerald */
+  --weekday-sun: oklch(0.62 0.13 235); /* sky */
+
+  /* Badges soft — fundo derivado por color-mix; foreground escuro p/ AA. */
+  --status-confirmed-bg: color-mix(in oklab, var(--success) 18%, var(--background));
+  --status-confirmed-fg: oklch(0.32 0.12 155);
+  --status-pending-bg:   color-mix(in oklab, var(--warning) 22%, var(--background));
+  --status-pending-fg:   oklch(0.38 0.13 75);
+  --status-attention-bg: color-mix(in oklab, var(--destructive) 18%, var(--background));
+  --status-attention-fg: oklch(0.42 0.18 27);
+}
+
+.dark {
+  /* Tons mais claros no escuro para visibilidade sobre fundos profundos. */
+  --weekday-mon: oklch(0.74 0.12 264);
+  --weekday-tue: oklch(0.76 0.11 200);
+  --weekday-wed: oklch(0.74 0.13 305);
+  --weekday-thu: oklch(0.80 0.13 75);
+  --weekday-fri: oklch(0.74 0.16 25);
+  --weekday-sat: oklch(0.74 0.13 155);
+  --weekday-sun: oklch(0.76 0.12 235);
+
+  /* No dark, foreground claro + fundo mais saturado (color-mix com --card). */
+  --status-confirmed-bg: color-mix(in oklab, var(--success) 28%, var(--card));
+  --status-confirmed-fg: oklch(0.92 0.10 155);
+  --status-pending-bg:   color-mix(in oklab, var(--warning) 30%, var(--card));
+  --status-pending-fg:   oklch(0.94 0.11 80);
+  --status-attention-bg: color-mix(in oklab, var(--destructive) 28%, var(--card));
+  --status-attention-fg: oklch(0.92 0.10 27);
+}
+
+/* Borda lateral colorida — variável `--day-color` definida via style inline. */
+.day-accent {
+  border-left: 3px solid var(--day-color, var(--border));
+}
+
+/* Badge soft arredondada — tom controlado pelo atributo data-tone. */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  background: var(--badge-bg, var(--muted));
+  color: var(--badge-fg, var(--muted-foreground));
+  border: 1px solid color-mix(in oklab, var(--badge-fg, var(--muted-foreground)) 25%, transparent);
+  white-space: nowrap;
+}
+.status-badge[data-tone="confirmed"] { --badge-bg: var(--status-confirmed-bg); --badge-fg: var(--status-confirmed-fg); }
+.status-badge[data-tone="pending"]   { --badge-bg: var(--status-pending-bg);   --badge-fg: var(--status-pending-fg); }
+.status-badge[data-tone="attention"] { --badge-bg: var(--status-attention-bg); --badge-fg: var(--status-attention-fg); }

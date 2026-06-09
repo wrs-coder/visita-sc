@@ -67,6 +67,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
 import { getHiddenEventIds } from "@/lib/hidden-events";
+import { dayAccentStyle } from "@/lib/day-accent";
 
 export const Route = createFileRoute("/_app/cronograma")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -602,16 +603,23 @@ function EventCard({
     return e.congregation_ids.map((id) => map.get(id) ?? "—").join(", ");
   }, [e, congregations, t]);
 
+  const isPending = e.status === "postponed";
+  const statusTone = isPending ? "pending" : "confirmed";
+  const statusLabel = isPending ? t("schedule.status.pending") : t("schedule.status.confirmed");
+
   return (
-    <Card className="shadow-card transition">
+    <Card className="shadow-card transition day-accent" style={dayAccentStyle(parseISO(e.event_date))}>
       <CardContent className="p-4 flex items-start gap-3">
         <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[64px] text-center">
           <Clock className="inline h-3 w-3 mr-0.5" />
           {e.start_time?.slice(0, 5) ?? "—"}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-medium uppercase tracking-wide text-primary/70">
-            {t(`schedule.types.${e.event_type}`)}
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-primary/70">
+              {t(`schedule.types.${e.event_type}`)}
+            </div>
+            <span className="status-badge" data-tone={statusTone}>{statusLabel}</span>
           </div>
           <div className="font-semibold">{e.title}</div>
           <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
