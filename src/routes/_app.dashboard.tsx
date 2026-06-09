@@ -848,6 +848,7 @@ function Dashboard() {
       {role === "superintendent" && (
         <CollapsibleCard
           id="super-today-circuit"
+          accent="visit"
           icon={<CalendarDays className="h-4 w-4 text-primary" />}
           title={t("dashboard.todayBlockTitle")}
           headerRight={
@@ -888,6 +889,7 @@ function Dashboard() {
       {role === "superintendent" && (
         <CollapsibleCard
           id="super-couple"
+          accent="couple"
           icon={<Heart className="h-4 w-4 text-primary" />}
           title={
             <span className="inline-flex items-center gap-2">
@@ -937,6 +939,7 @@ function Dashboard() {
       {role === "superintendent" && (
         <CollapsibleCard
           id="super-study-notes"
+          accent="notes"
           icon={<BookOpen className="h-4 w-4 text-primary" />}
           title={t("dashboard.studyNotesTitle")}
         >
@@ -1044,6 +1047,7 @@ function Dashboard() {
       {role === "superintendent" && visit && (
         <CollapsibleCard
           id="super-elder-program"
+          accent="elder"
           icon={<CuteSheepIcon className="h-4 w-4 text-primary" />}
           title="Pastoreiem o Rebanho de Deus"
           headerRight={
@@ -1192,6 +1196,7 @@ function Dashboard() {
         <div className="grid gap-4 md:grid-cols-2">
           <CollapsibleCard
             id="visit-checklist"
+          accent="checklist"
             icon={<ListChecks className="h-4 w-4 text-primary" />}
             title={t("dashboard.checklistTitle")}
             headerRight={
@@ -1232,6 +1237,7 @@ function Dashboard() {
           {/* 1 — Reunião de campo */}
           <CollapsibleCard
             id="visit-field-meeting"
+          accent="meetings"
             icon={<Users className="h-4 w-4 text-primary" />}
             title={t("dashboard.fieldMeeting")}
             headerRight={
@@ -1308,6 +1314,7 @@ function Dashboard() {
           {/* 2 — Estudos e revisitas */}
           <CollapsibleCard
             id="visit-studies"
+          accent="elder"
             icon={<BookOpen className="h-4 w-4 text-primary" />}
             title={t("dashboard.studiesVisits")}
             headerRight={
@@ -1377,6 +1384,7 @@ function Dashboard() {
           {/* 3 — Refeições de hoje */}
           <CollapsibleCard
             id="visit-meals"
+          accent="meals"
             icon={<UtensilsCrossed className="h-4 w-4 text-primary" />}
             title={t("dashboard.mealsToday")}
             headerRight={
@@ -1443,6 +1451,7 @@ function Dashboard() {
           {/* 4 — Reuniões de hoje (dados de "Reuniões e Discursos") */}
           <CollapsibleCard
             id="visit-meetings-today"
+          accent="meetings"
             icon={<CalendarDays className="h-4 w-4 text-primary" />}
             title={t("dashboard.meetingsToday", { defaultValue: "Reuniões de hoje" })}
             headerRight={
@@ -1513,6 +1522,7 @@ function Dashboard() {
           {/* 5 — Transporte de hoje */}
           <CollapsibleCard
             id="visit-transport"
+          accent="checklist"
             icon={<Car className="h-4 w-4 text-primary" />}
             title={t("dashboard.transportToday")}
             headerRight={
