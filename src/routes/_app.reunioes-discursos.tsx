@@ -37,6 +37,7 @@ import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDi
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { MeetingsEditModeProvider, useMeetingsEditMode } from "@/components/meetings/meetings-edit-mode";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
+import { TabErrorBoundary } from "@/components/TabErrorBoundary";
 
 // Lazy: cada painel só carrega quando o utilizador entra na respectiva aba.
 const FieldMeetingsPanel = lazy(() =>
@@ -362,11 +363,11 @@ function TabsGuarded({
         </TabsList>
         {panelsReady ? (
           <>
-            <TabsContent value="campo" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><FieldMeetingsPanel /></Suspense></TabsContent>
-            <TabsContent value="meio" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><MidweekPanel /></Suspense></TabsContent>
-            <TabsContent value="fim" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><WeekendPanel /></Suspense></TabsContent>
-            <TabsContent value="pioneiros" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><PioneerPanel /></Suspense></TabsContent>
-            <TabsContent value="ancios" className="mt-4 tab-fade-in"><Suspense fallback={<PanelFallback />}><EldersServantsPanel /></Suspense></TabsContent>
+            <TabsContent value="campo" className="mt-4 tab-fade-in"><TabErrorBoundary label={t("meetingsTalks.tabCampo")}><Suspense fallback={<PanelFallback />}><FieldMeetingsPanel /></Suspense></TabErrorBoundary></TabsContent>
+            <TabsContent value="meio" className="mt-4 tab-fade-in"><TabErrorBoundary label={t("meetingsTalks.tabMeio")}><Suspense fallback={<PanelFallback />}><MidweekPanel /></Suspense></TabErrorBoundary></TabsContent>
+            <TabsContent value="fim" className="mt-4 tab-fade-in"><TabErrorBoundary label={t("meetingsTalks.tabFim")}><Suspense fallback={<PanelFallback />}><WeekendPanel /></Suspense></TabErrorBoundary></TabsContent>
+            <TabsContent value="pioneiros" className="mt-4 tab-fade-in"><TabErrorBoundary label={t("meetingsTalks.tabPioneiros")}><Suspense fallback={<PanelFallback />}><PioneerPanel /></Suspense></TabErrorBoundary></TabsContent>
+            <TabsContent value="ancios" className="mt-4 tab-fade-in"><TabErrorBoundary label={t("meetingsTalks.tabAncios")}><Suspense fallback={<PanelFallback />}><EldersServantsPanel /></Suspense></TabErrorBoundary></TabsContent>
           </>
         ) : (
           <PanelFallback />

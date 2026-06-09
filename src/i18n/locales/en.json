@@ -123,6 +123,11 @@
       "errorTaken": "This code is already in use. Choose another."
     }
   },
+  "commandPalette": {
+    "open": "Open quick search",
+    "placeholder": "Search screens… (Ctrl/⌘ K)",
+    "empty": "No results."
+  },
   "sidebar": {
     "sectionPrincipal": "Main",
     "sectionVisita": "Visit Week",

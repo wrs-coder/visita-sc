@@ -37,6 +37,7 @@ import { SyncButton } from "@/components/SyncButton";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 import { ConnectionModeToggle } from "@/components/ConnectionModeToggle";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
+import { CommandPalette } from "@/components/CommandPalette";
 import { Coffee } from "lucide-react";
 import { setActiveContext } from "@/lib/active-context";
 import { useOutlinesSync } from "@/hooks/use-outlines-sync";
@@ -364,6 +365,7 @@ function AppLayout() {
         </main>
       </div>
       <SupportDeveloperDialog open={supportOpen} onOpenChange={setSupportOpen} />
+      <CommandPalette />
     </div>
   );
 }
