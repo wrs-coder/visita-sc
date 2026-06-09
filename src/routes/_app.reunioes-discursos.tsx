@@ -283,6 +283,7 @@ function TabsGuarded({
   const { t } = useTranslation();
   const draft = useMeetingsDraft();
   const { visit } = useActiveVisit();
+  const { editEnabled, setEditEnabled } = useMeetingsEditMode();
   const [reportOpen, setReportOpen] = useState(false);
   const handleTabChange = (v: string) => {
     if (draft?.dirty) {
@@ -291,6 +292,29 @@ function TabsGuarded({
     }
     setCurrentTab(v);
   };
+
+  // Atalhos de teclado: 1–5 troca de aba; "E" alterna modo edição (apenas SC).
+  // Ignora quando o foco está em campo de texto para não atrapalhar digitação.
+  useEffect(() => {
+    const TAB_KEYS: Record<string, string> = {
+      "1": "campo", "2": "meio", "3": "fim", "4": "pioneiros", "5": "ancios",
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const tgt = e.target as HTMLElement | null;
+      const tag = tgt?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tgt?.isContentEditable) return;
+      const tab = TAB_KEYS[e.key];
+      if (tab) { e.preventDefault(); handleTabChange(tab); return; }
+      if (isSuper && (e.key === "e" || e.key === "E")) {
+        e.preventDefault();
+        setEditEnabled(!editEnabled);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuper, editEnabled, draft?.dirty]);
 
   return (
     <div className="space-y-5">
