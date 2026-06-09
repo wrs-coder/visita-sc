@@ -485,6 +485,11 @@
     "tabFim": "Fin de Semana",
     "tabPioneiros": "Precursores",
     "tabAncios": "Ancianos y Siervos",
+    "tabHintCampo": "Turnos, modalidad y lugar de campo.",
+    "tabHintMeio": "Programa de entre semana y asignaciones.",
+    "tabHintFim": "Programa de fin de semana y discurso público.",
+    "tabHintPioneiros": "Reuniones con precursores regulares y auxiliares.",
+    "tabHintAncios": "Reunión con ancianos y siervos ministeriales.",
     "field": {
       "subtitleSuper": "Define los turnos y la modalidad. El Lugar de la Reunión de Campo es obligatorio y lo completan los ancianos.",
       "subtitleElder": "Completa los datos de cada turno. El campo Lugar de la Reunión de Campo es obligatorio.",
