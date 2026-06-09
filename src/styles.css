@@ -228,6 +228,8 @@
     outline: 2px solid var(--ring);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
+    /* Onda 6.6 — halo suave para reforçar visibilidade em fundos escuros. */
+    box-shadow: var(--shadow-focus);
   }
   /* Em dispositivos de toque, qualquer botão/link em barra de ações
      deve ter pelo menos 44×44 px de área tocável (WCAG 2.5.5). */
@@ -240,6 +242,30 @@
       min-width: 44px;
     }
   }
+}
+
+/* Onda 6.6 — Skip-to-content link (WCAG 2.4.1).
+   Oculto até receber foco via Tab; salta direto ao <main id="main-content">. */
+.skip-to-content {
+  position: absolute;
+  left: 0.5rem;
+  top: -100px;
+  z-index: 100;
+  padding: 0.625rem 1rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: var(--shadow-elevated);
+  transition: top 160ms ease;
+}
+.skip-to-content:focus,
+.skip-to-content:focus-visible {
+  top: 0.5rem;
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 /* Safe area inset para rodapés flutuantes em telas com FAB / bottom nav. */
