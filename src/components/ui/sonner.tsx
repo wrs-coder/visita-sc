@@ -6,6 +6,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       className="toaster group"
+      // Onda 6.2 — habilita variantes coloridas por tipo (success/error/warning/info).
+      // O CSS em src/styles.css usa [data-type] para colorir ícone + barra lateral.
+      richColors
+      closeButton
       toastOptions={{
         classNames: {
           toast:
