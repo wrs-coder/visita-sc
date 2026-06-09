@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getVisitTemplateExtras, type VisitTemplateExtras } from "@/lib/visit-template-extras.functions";
 
@@ -12,28 +13,32 @@ export type VisitTemplateExtrasState = VisitTemplateExtras & {
 };
 
 /**
- * Lê os "extras" da visita (modelo + override) e expõe também os valores
- * brutos do modelo para placeholders/restauração. Não bloqueia o render.
- * Retorna no formato de `VisitTemplateExtras` (consumido por todos os
- * painéis/snapshots) com `templateExtras`/`reload` adicionais.
+ * Lê os "extras" da visita (modelo + override) com cache compartilhado pelo
+ * React Query — alternar entre abas da Semana da Visita não re-busca.
+ * Mantém a assinatura legada (`reload`, `templateExtras` + campos achatados).
  */
 export function useVisitTemplateExtras(visitId: string | null | undefined): VisitTemplateExtrasState {
   const fn = useServerFn(getVisitTemplateExtras);
-  const [extras, setExtras] = useState<VisitTemplateExtras>(EMPTY);
-  const [templateExtras, setTemplateExtras] = useState<VisitTemplateExtras>(EMPTY);
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    if (!visitId) { setExtras(EMPTY); setTemplateExtras(EMPTY); return; }
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fn({ data: { visitId } });
-        if (cancelled || !res?.ok) return;
-        setExtras(res.extras);
-        setTemplateExtras((res as { templateExtras?: VisitTemplateExtras }).templateExtras ?? res.extras);
-      } catch { /* silencioso */ }
-    })();
-    return () => { cancelled = true; };
-  }, [visitId, fn, tick]);
-  return { ...extras, templateExtras, reload: () => setTick((n) => n + 1) };
+  const qc = useQueryClient();
+  const key = ["visit-template-extras", visitId ?? "none"] as const;
+
+  const { data } = useQuery({
+    queryKey: key,
+    enabled: !!visitId,
+    queryFn: async () => {
+      const res = await fn({ data: { visitId: visitId! } });
+      if (!res?.ok) return { extras: EMPTY, templateExtras: EMPTY };
+      const templateExtras =
+        (res as { templateExtras?: VisitTemplateExtras }).templateExtras ?? res.extras;
+      return { extras: res.extras, templateExtras };
+    },
+  });
+
+  const extras = data?.extras ?? EMPTY;
+  const templateExtras = data?.templateExtras ?? EMPTY;
+  const reload = useCallback(() => {
+    if (visitId) qc.invalidateQueries({ queryKey: key });
+  }, [qc, visitId]);
+
+  return { ...extras, templateExtras, reload };
 }
