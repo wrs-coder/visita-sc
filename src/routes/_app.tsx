@@ -308,6 +308,7 @@ function AppLayout() {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <OfflineReadyBadge />
             <SyncButton onSync={syncOutlines} />
             <button
               onClick={() => {
@@ -340,8 +341,9 @@ function AppLayout() {
             <Nav />
           </div>
           <div className="p-3 border-t border-sidebar-border space-y-2">
-            <div className="px-1">
-              <SyncButton onSync={syncOutlines} className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60 px-3 py-2 rounded-md" />
+            <div className="px-1 flex items-center justify-between">
+              <SyncButton onSync={syncOutlines} className="flex-1 justify-start text-sidebar-foreground hover:bg-sidebar-accent/60 px-3 py-2 rounded-md" />
+              <OfflineReadyBadge className="text-sidebar-foreground/80" />
             </div>
             <Button
               variant="ghost"
