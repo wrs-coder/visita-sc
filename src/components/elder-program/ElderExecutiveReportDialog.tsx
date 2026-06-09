@@ -100,10 +100,10 @@ export function ElderExecutiveReportDialog({
   const handleGenerate = async () => {
     setBusy(true);
     try {
-      const { jsPDF } = await import("jspdf");
-      const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
+      const { createJsPdfCompat } = await import("@/lib/pdf/pdf-engine");
+      const pdf = await createJsPdfCompat({ orientation: "p", unit: "mm" });
+      const pageW = pdf.pageW;
+      const pageH = pdf.pageH;
       const margin = 12;
       const maxW = pageW - margin * 2;
       let y = margin;
@@ -114,12 +114,16 @@ export function ElderExecutiveReportDialog({
           y = margin;
         }
       };
-      const writeText = (text: string, size: number, opts?: { bold?: boolean; color?: [number, number, number] }) => {
-        pdf.setFont("helvetica", opts?.bold ? "bold" : "normal");
+      const writeText = (
+        text: string,
+        size: number,
+        opts?: { bold?: boolean; color?: [number, number, number] },
+      ) => {
+        pdf.setFont(opts?.bold ?? false);
         pdf.setFontSize(size);
         const [r, g, b] = opts?.color ?? [20, 20, 20];
         pdf.setTextColor(r, g, b);
-        const lines = pdf.splitTextToSize(text, maxW) as string[];
+        const lines = pdf.splitTextToSize(text, maxW);
         const lh = size * 0.45;
         for (const ln of lines) {
           ensure(lh);
@@ -142,7 +146,7 @@ export function ElderExecutiveReportDialog({
         // section title bar
         pdf.setFillColor(235, 240, 250);
         pdf.rect(margin, y, maxW, 7, "F");
-        pdf.setFont("helvetica", "bold");
+        pdf.setFont(true);
         pdf.setFontSize(10);
         pdf.setTextColor(30, 50, 100);
         pdf.text(SECTION_TITLES[s], margin + 2, y + 5);
@@ -174,13 +178,13 @@ export function ElderExecutiveReportDialog({
       const total = pdf.getNumberOfPages();
       for (let i = 1; i <= total; i++) {
         pdf.setPage(i);
-        pdf.setFont("helvetica", "normal");
+        pdf.setFont(false);
         pdf.setFontSize(8);
         pdf.setTextColor(150, 150, 150);
         pdf.text(`${i} / ${total}`, pageW - margin, pageH - 5, { align: "right" });
       }
 
-      const blob = pdf.output("blob");
+      const blob = await pdf.output("blob");
       const filename = `relatorio-executivo-ancioes-${slugify(visitTitle)}-${new Date().toISOString().slice(0, 10)}.pdf`;
       await saveBlob(blob, {
         filename,
