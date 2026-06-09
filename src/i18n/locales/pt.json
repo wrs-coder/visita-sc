@@ -28,6 +28,11 @@
     "somethingWrong": "Algo deu errado",
     "tryAgain": "Tentar novamente"
   },
+  "a11y": {
+    "skipToContent": "Pular para o conteúdo",
+    "openMenu": "Abrir menu de navegação",
+    "closeMenu": "Fechar menu"
+  },
   "languages": {
     "pt": "Português",
     "en": "Inglês",
