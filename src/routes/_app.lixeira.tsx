@@ -177,7 +177,7 @@ function Page() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="outlines" className="mt-4 space-y-2">
+          <TabsContent value="outlines" className="mt-4 space-y-2 list-optimized-sm">
             {outlines.length === 0 ? (
               <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("trash.empty")}</CardContent></Card>
             ) : outlines.map((o) => (
