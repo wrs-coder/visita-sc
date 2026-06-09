@@ -41,6 +41,7 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { Coffee } from "lucide-react";
 import { setActiveContext } from "@/lib/active-context";
 import { useOutlinesSync } from "@/hooks/use-outlines-sync";
+import { accentForPath, accentStyle } from "@/lib/route-accent";
 
 
 export const Route = createFileRoute("/_app")({
@@ -346,7 +347,12 @@ function AppLayout() {
           </div>
         </aside>
 
-        <main id="main-content" tabIndex={-1} className="flex-1 md:ml-72 min-w-0 max-w-full overflow-x-hidden focus:outline-none">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 md:ml-72 min-w-0 max-w-full overflow-x-hidden focus:outline-none"
+          style={accentStyle(accentForPath(location.pathname))}
+        >
           <div className="max-w-5xl mx-auto p-4 md:p-8 pb-24 min-w-0">
 
             {blocked ? (
