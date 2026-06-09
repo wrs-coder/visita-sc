@@ -3,13 +3,16 @@
 // pré-carregada (via Modo Offline), além de cache CacheFirst para assets
 // versionados (/assets/*) que nunca mudam para um mesmo build.
 
-const VERSION = "v3";
+const VERSION = "v4";
 const STATIC_CACHE = `static-${VERSION}`;
 const HTML_CACHE = `html-${VERSION}`;
 const API_CACHE = `api-${VERSION}`;
+// Onda 7.4 — cache dedicado para imagens (CacheFirst, 30 dias).
+const IMAGES_CACHE = `images-v1`;
+const IMAGES_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Exportado também via nome estável para o cliente (offline-shells.ts).
-self.__CACHE_NAMES = { STATIC_CACHE, HTML_CACHE, API_CACHE };
+self.__CACHE_NAMES = { STATIC_CACHE, HTML_CACHE, API_CACHE, IMAGES_CACHE };
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -26,7 +29,7 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
       await Promise.all(
         keys
-          .filter((k) => ![STATIC_CACHE, HTML_CACHE, API_CACHE].includes(k))
+          .filter((k) => ![STATIC_CACHE, HTML_CACHE, API_CACHE, IMAGES_CACHE].includes(k))
           .map((k) => caches.delete(k)),
       );
       await self.clients.claim();
@@ -49,6 +52,33 @@ function isSupabaseRequest(url) {
 function isHashedAsset(url) {
   // Vite emite arquivos versionados em /assets/<name>-<hash>.<ext>
   return url.pathname.startsWith("/assets/");
+}
+
+function isImageRequest(req, url) {
+  if (req.destination === "image") return true;
+  return /\.(png|jpe?g|webp|avif|gif|svg|ico)$/i.test(url.pathname);
+}
+
+function imageIsStale(response) {
+  try {
+    const ts = response.headers.get("x-sw-cached-at");
+    if (!ts) return false;
+    return Date.now() - Number(ts) > IMAGES_MAX_AGE_MS;
+  } catch {
+    return false;
+  }
+}
+
+async function putImageWithTimestamp(cache, req, res) {
+  try {
+    const headers = new Headers(res.headers);
+    headers.set("x-sw-cached-at", String(Date.now()));
+    const body = await res.clone().arrayBuffer();
+    const stamped = new Response(body, { status: res.status, statusText: res.statusText, headers });
+    await cache.put(req, stamped);
+  } catch {
+    /* quota / opaque */
+  }
 }
 
 self.addEventListener("fetch", (event) => {
@@ -121,6 +151,29 @@ self.addEventListener("fetch", (event) => {
           const cached = await cache.match(req);
           if (cached) return cached;
           throw new Error("offline-no-cache");
+        }
+      })(),
+    );
+    return;
+  }
+
+  // Imagens → CacheFirst com TTL de 30 dias (Onda 7.4).
+  // Funciona mesmo cross-origin (gracioso se opaque).
+  if (isImageRequest(req, url)) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(IMAGES_CACHE);
+        const cached = await cache.match(req);
+        if (cached && !imageIsStale(cached)) return cached;
+        try {
+          const fresh = await fetch(req);
+          if (fresh && (fresh.status === 200 || fresh.type === "opaque")) {
+            await putImageWithTimestamp(cache, req, fresh);
+          }
+          return fresh;
+        } catch {
+          if (cached) return cached;
+          return new Response("Offline", { status: 503 });
         }
       })(),
     );
