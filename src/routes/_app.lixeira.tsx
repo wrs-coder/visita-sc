@@ -202,7 +202,7 @@ function Page() {
             ))}
           </TabsContent>
 
-          <TabsContent value="notes" className="mt-4 space-y-2">
+          <TabsContent value="notes" className="mt-4 space-y-2 list-optimized-sm">
             {notes.length > 0 && (
               <div className="flex justify-end">
                 <Button size="sm" variant="outline" onClick={emptyAllNotes}>
