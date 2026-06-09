@@ -1,6 +1,12 @@
 // Fila offline de escritas para o Supabase.
 // As mutações são salvas em localStorage e enviadas em lote quando o
 // dispositivo voltar a ficar online, ou quando o usuário tocar em "Sincronizar".
+//
+// Onda 4 — retry exponencial:
+// Cada item carrega `attempts` (n. de tentativas falhas) e `nextAttemptAt`
+// (timestamp em ms). No flush, itens que ainda não atingiram `nextAttemptAt`
+// são preservados sem ser enviados, evitando martelar o servidor após
+// falhas seguidas. Backoff: 5s, 15s, 1min, 5min, 15min (teto).
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,10 +19,21 @@ export type QueuedMutation = {
   payload?: Record<string, unknown> | Record<string, unknown>[];
   match?: Record<string, unknown>;
   createdAt: string;
+  attempts?: number;
+  nextAttemptAt?: number;
+  lastError?: string;
 };
 
 type Listener = (size: number) => void;
 const listeners = new Set<Listener>();
+
+// Backoff exponencial em ms. Após o último, repete o teto.
+const BACKOFF_STEPS_MS = [5_000, 15_000, 60_000, 5 * 60_000, 15 * 60_000];
+
+function backoffFor(attempts: number): number {
+  const idx = Math.min(attempts - 1, BACKOFF_STEPS_MS.length - 1);
+  return BACKOFF_STEPS_MS[Math.max(0, idx)];
+}
 
 function read(): QueuedMutation[] {
   if (typeof window === "undefined") return [];
@@ -53,7 +70,13 @@ export function subscribe(fn: Listener): () => void {
 }
 
 export function enqueue(m: Omit<QueuedMutation, "id" | "createdAt">): QueuedMutation {
-  const item: QueuedMutation = { ...m, id: uid(), createdAt: new Date().toISOString() };
+  const item: QueuedMutation = {
+    ...m,
+    id: uid(),
+    createdAt: new Date().toISOString(),
+    attempts: 0,
+    nextAttemptAt: Date.now(),
+  };
   const q = read();
   q.push(item);
   write(q);
@@ -70,7 +93,7 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-export async function flushQueue(): Promise<{ sent: number; failed: number; remaining: number; aborted?: boolean }> {
+export async function flushQueue(): Promise<{ sent: number; failed: number; remaining: number; aborted?: boolean; deferred?: number }> {
   if (flushing) return { sent: 0, failed: 0, remaining: queueSize() };
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     return { sent: 0, failed: 0, remaining: queueSize(), aborted: true };
@@ -78,10 +101,19 @@ export async function flushQueue(): Promise<{ sent: number; failed: number; rema
   flushing = true;
   let sent = 0;
   let failed = 0;
+  let deferred = 0;
   try {
     const queue = read();
+    const now = Date.now();
     const remaining: QueuedMutation[] = [];
     for (const m of queue) {
+      // Respeita backoff: itens cujo `nextAttemptAt` ainda está no futuro
+      // são mantidos sem tentativa de envio.
+      if (m.nextAttemptAt && m.nextAttemptAt > now) {
+        deferred++;
+        remaining.push(m);
+        continue;
+      }
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const ref: any = supabase.from(m.table as never);
@@ -102,15 +134,22 @@ export async function flushQueue(): Promise<{ sent: number; failed: number; rema
         if ((res as any)?.error) throw (res as any).error;
         sent++;
       } catch (err) {
-        // Erro de rede/timeout → mantém para retry. Erro de validação → também
-        // mantém para que o usuário veja na próxima sync.
-        console.warn("[offline-queue] falha ao enviar", m, err);
+        // Erro de rede/timeout/validação → mantém para retry com backoff.
+        const attempts = (m.attempts ?? 0) + 1;
+        const wait = backoffFor(attempts);
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn(`[offline-queue] falha (tentativa ${attempts}, retry em ${wait}ms)`, m, err);
         failed++;
-        remaining.push(m);
+        remaining.push({
+          ...m,
+          attempts,
+          nextAttemptAt: Date.now() + wait,
+          lastError: message.slice(0, 240),
+        });
       }
     }
     write(remaining);
-    return { sent, failed, remaining: remaining.length };
+    return { sent, failed, remaining: remaining.length, deferred };
   } catch (err) {
     // Falha catastrófica do flush — preserva fila intacta e devolve estado.
     console.warn("[offline-queue] flush abortado", err);
@@ -122,4 +161,36 @@ export async function flushQueue(): Promise<{ sent: number; failed: number; rema
 
 export function clearQueue() {
   write([]);
+}
+
+// Onda 4 — auto-retry em background.
+// Reagenda um flush quando voltar a conexão e quando o próximo item
+// elegível estiver "maduro" segundo o backoff. Idempotente: chame
+// `startOfflineQueueAutoRetry()` uma vez no bootstrap do app.
+let autoStarted = false;
+let scheduled: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleNextDue() {
+  if (typeof window === "undefined") return;
+  if (scheduled) { clearTimeout(scheduled); scheduled = null; }
+  const q = read();
+  if (q.length === 0) return;
+  const now = Date.now();
+  const due = q
+    .map((m) => m.nextAttemptAt ?? now)
+    .reduce((acc, t) => Math.min(acc, t), Infinity);
+  const delay = Math.max(1_000, Math.min(15 * 60_000, due - now));
+  scheduled = setTimeout(() => {
+    flushQueue().finally(() => scheduleNextDue());
+  }, delay);
+}
+
+export function startOfflineQueueAutoRetry() {
+  if (autoStarted || typeof window === "undefined") return;
+  autoStarted = true;
+  window.addEventListener("online", () => {
+    flushQueue().finally(() => scheduleNextDue());
+  });
+  subscribe(() => scheduleNextDue());
+  scheduleNextDue();
 }

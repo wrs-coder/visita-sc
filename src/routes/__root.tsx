@@ -16,7 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PwaRegister } from "@/components/PwaRegister";
 import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-persister";
-import { flushQueue } from "@/lib/offline-queue";
+import { flushQueue, startOfflineQueueAutoRetry } from "@/lib/offline-queue";
 import { isOfflineMode } from "@/lib/connection-mode";
 import "@/i18n";
 
@@ -134,8 +134,9 @@ function RootComponent() {
       }
     };
     window.addEventListener("unhandledrejection", onUnhandled);
-    // Tenta flush no boot
+    // Tenta flush no boot e arma o auto-retry com backoff exponencial (Onda 4).
     flushQueue().catch((e) => console.warn("[boot] flush", e));
+    startOfflineQueueAutoRetry();
     return () => {
       subscription.unsubscribe();
       window.removeEventListener("online", onOnline);
