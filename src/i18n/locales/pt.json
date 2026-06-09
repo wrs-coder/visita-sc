@@ -792,7 +792,6 @@
         "closingPrayer": "Oração Final",
         "observations": "Observações"
       }
-
     },
     "copySuffix": "(cópia)",
     "templateNumber": "Modelo {{n}}",
@@ -1112,7 +1111,9 @@
     "eldersMode": "Corpo de anciãos e ESC",
     "readOnlyTag": "somente leitura",
     "currentWeek": "Semana atual",
-    "congregationPicker": { "label": "Congregação:" },
+    "congregationPicker": {
+      "label": "Congregação:"
+    },
     "share": "Partilhar",
     "shareTitle": "Partilhar programação",
     "shareDescription": "Escolha as seções e veja uma pré-visualização antes de exportar.",
@@ -1547,5 +1548,10 @@
     "highlight": "Grifar trecho selecionado",
     "clearHighlights": "Limpar grifos",
     "selectToHighlight": "Selecione um trecho do texto para grifar."
+  },
+  "theme": {
+    "light": "Modo claro",
+    "dark": "Modo escuro",
+    "toggle": "Alternar modo escuro"
   }
 }
