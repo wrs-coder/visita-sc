@@ -335,3 +335,41 @@
 [data-sonner-toaster] [data-sonner-toast][data-type="error"]   [data-icon] { color: var(--destructive); }
 [data-sonner-toaster] [data-sonner-toast][data-type="warning"] [data-icon] { color: var(--warning); }
 [data-sonner-toaster] [data-sonner-toast][data-type="info"]    [data-icon] { color: var(--primary); }
+
+/* ============================================================
+   Onda 6.4 — Semana da Visita: sticky tabs + compact mode
+   ============================================================ */
+
+/* Wrapper sticky para o TabsList — mantém as abas visíveis ao rolar
+   conteúdos longos (painéis com muitos campos). Backdrop blur sutil
+   para legibilidade quando o conteúdo escorrega por baixo. */
+.visit-week-tabs-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin-inline: calc(var(--spacing, 0.25rem) * -2);
+  padding: 0.5rem calc(var(--spacing, 0.25rem) * 2);
+  background: color-mix(in oklab, var(--background) 86%, transparent);
+  backdrop-filter: saturate(140%) blur(10px);
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+}
+
+/* Hint contextual por aba — pequeno texto auxiliar abaixo das abas. */
+.visit-week-tab-hint {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+  padding-inline: 0.125rem;
+}
+
+/* Compact mode <380px: abas mais densas, texto menor, padding reduzido. */
+@media (max-width: 380px) {
+  .visit-week-tabs-sticky [role="tab"] {
+    font-size: 0.78rem;
+    padding: 0.3rem 0.6rem;
+    min-height: 2rem;
+  }
+  .visit-week-tab-hint { font-size: 0.72rem; }
+}
+
