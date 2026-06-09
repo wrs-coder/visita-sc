@@ -162,11 +162,10 @@
   h1 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.125rem); font-weight: 700; }
   h2 { font-size: clamp(1.25rem, 1.05rem + 1vw, 1.75rem); font-weight: 700; }
   h3 { font-size: clamp(1.125rem, 1rem + 0.6vw, 1.375rem); font-weight: 600; }
-  /* Transição global suave entre claro/escuro — sem custo e sem mudar layout. */
-  body, .bg-card, .bg-background, .bg-popover, .bg-muted, .bg-secondary,
-  .border, [class*="border-"], [class*="bg-"] {
-    transition: background-color 200ms ease, border-color 200ms ease,
-                color 200ms ease;
+  /* Transição suave entre claro/escuro só no body — evita interferir
+     com hovers/animations específicos dos componentes. */
+  body {
+    transition: background-color 200ms ease, color 200ms ease;
   }
 }
 
