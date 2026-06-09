@@ -53,6 +53,10 @@
   --shadow-hover: 0 2px 4px 0 oklch(0.2 0.05 264 / 0.06), 0 10px 24px -6px oklch(0.2 0.05 264 / 0.14);
   --shadow-elevated: 0 8px 24px -8px oklch(0.2 0.05 264 / 0.18);
   --shadow-focus: 0 0 0 3px oklch(0.32 0.13 264 / 0.18);
+
+  /* Onda 7.1 — tokens de transição (fluidez visual base) */
+  --transition-fast: 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --transition-base: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 :root {
