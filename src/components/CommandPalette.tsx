@@ -87,7 +87,7 @@ export function CommandPalette() {
   const go = (to: string) => {
     setOpen(false);
     // pequena espera para o overlay fechar antes da navegação evitar flicker
-    setTimeout(() => navigate({ to }), 30);
+    setTimeout(() => navigate({ to: to as never }), 30);
   };
 
   return (
