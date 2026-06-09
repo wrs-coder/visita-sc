@@ -16,7 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PwaRegister } from "@/components/PwaRegister";
 import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-persister";
-import { flushQueue } from "@/lib/offline-queue";
+import { flushQueue, startOfflineQueueAutoRetry } from "@/lib/offline-queue";
 import { isOfflineMode } from "@/lib/connection-mode";
 import "@/i18n";
 
