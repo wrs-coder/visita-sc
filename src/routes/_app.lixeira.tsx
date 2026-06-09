@@ -218,9 +218,12 @@ function Page() {
                 <CardContent className="p-3 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{n.title || t("notes.untitled", { defaultValue: "Sem título" })}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {n.note_type} · {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(n.deleted_at) })}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="text-xs text-muted-foreground">{n.note_type}</span>
+                      <span className="status-badge" data-tone={daysLeft(n.deleted_at) <= 7 ? "attention" : "pending"}>
+                        {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(n.deleted_at) })}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Button size="sm" variant="outline" onClick={() => restoreNoteCloud(n.id)}>
