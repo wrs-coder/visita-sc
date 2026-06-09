@@ -662,13 +662,13 @@ function Dashboard() {
   return (
     <div className="space-y-6">
       <PwaInstallButton />
-      <header>
+      <header className="space-y-2">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
             </p>
-            <h1 className="text-2xl md:text-3xl font-bold mt-1">
+            <h1 className="mt-1 font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
               {t("dashboard.greeting", { name: profile?.full_name?.split(" ")[0] ?? t("dashboard.brother") })}
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
@@ -678,7 +678,7 @@ function Dashboard() {
           </div>
           <ThemeToggle className="shrink-0 mt-1" />
         </div>
-        <div className="mt-3">
+        <div>
           <TemplateUpdatesBadge
             congregationId={
               role === "superintendent"
