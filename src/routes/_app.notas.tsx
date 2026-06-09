@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
-import type jsPDFType from "jspdf";
+import type { JsPdfCompat } from "@/lib/pdf/pdf-engine";
 import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
 import { saveBlob } from "@/lib/share";
 
@@ -311,10 +311,10 @@ function Page() {
 
   const exportPdf = async () => {
     if (selectedNotes.length === 0) { toast.error(t("notes.selectAtLeastOne")); return; }
-    const { default: jsPDF } = await import("jspdf");
-    const doc: jsPDFType = new jsPDF({ unit: "pt", format: "a4" });
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
+    const { createJsPdfCompat } = await import("@/lib/pdf/pdf-engine");
+    const doc: JsPdfCompat = await createJsPdfCompat({ unit: "pt" });
+    const pageW = doc.pageW;
+    const pageH = doc.pageH;
     const margin = 48;
     const headerH = 56;
     const footerH = 28;
@@ -326,11 +326,11 @@ function Page() {
     let totalPages = 1;
 
     const drawHeader = () => {
-      doc.setFont("helvetica", "bold");
+      doc.setFont(true);
       doc.setFontSize(13);
       doc.setTextColor(20);
       doc.text(t("notes.pdf.header"), margin, margin + 4);
-      doc.setFont("helvetica", "normal");
+      doc.setFont(false);
       doc.setFontSize(9);
       doc.setTextColor(90);
       doc.text(`${congregation?.name ?? ""}`, margin, margin + 20);
@@ -341,7 +341,7 @@ function Page() {
       doc.setTextColor(0);
     };
     const drawFooter = () => {
-      doc.setFont("helvetica", "normal");
+      doc.setFont(false);
       doc.setFontSize(8);
       doc.setTextColor(120);
       doc.setDrawColor(220);
@@ -359,7 +359,7 @@ function Page() {
     };
     const ensure = (needed: number) => { if (y + needed > contentBottom) newPage(); };
     const writeLine = (text: string, size = 10, bold = false, color = 0) => {
-      doc.setFont("helvetica", bold ? "bold" : "normal");
+      doc.setFont(bold);
       doc.setFontSize(size);
       doc.setTextColor(color);
       const lh = size * 1.35;
@@ -402,7 +402,7 @@ function Page() {
 
     const filename = `${t("notes.pdf.fileName")}-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`.replace(/\s+/g, "_");
     try {
-      const blob = doc.output("blob");
+      const blob = await doc.output("blob");
       await saveBlob(blob, {
         filename,
         mimeType: "application/pdf",
