@@ -491,3 +491,108 @@
 .status-badge[data-tone="confirmed"] { --badge-bg: var(--status-confirmed-bg); --badge-fg: var(--status-confirmed-fg); }
 .status-badge[data-tone="pending"]   { --badge-bg: var(--status-pending-bg);   --badge-fg: var(--status-pending-fg); }
 .status-badge[data-tone="attention"] { --badge-bg: var(--status-attention-bg); --badge-fg: var(--status-attention-fg); }
+
+
+/* ============================================================
+   Onda 6.8 — Sistema de cores premium em todo o app
+   ============================================================
+   Hierarquia de superfícies em 3 camadas + accents por domínio.
+   `--section-color` é injetado em <main> pelo route-accent e
+   cascateia para cards, abas, subabas e bordas filhas. Tudo
+   derivado por color-mix sobre --card/--background para herdar
+   automaticamente claro/escuro e manter contraste AA. */
+
+:root {
+  /* Superfícies em camadas (premium, sutis) */
+  --surface-1: color-mix(in oklab, var(--background) 96%, var(--foreground));
+  --surface-2: var(--card);
+  --surface-3: color-mix(in oklab, var(--card) 92%, var(--foreground));
+  --surface-elevated: var(--popover);
+
+  /* Accents por domínio — borda lateral 3px + tinte de hover/header */
+  --accent-visit:     oklch(0.50 0.14 264); /* navy */
+  --accent-meetings:  oklch(0.52 0.16 305); /* violet */
+  --accent-couple:    oklch(0.56 0.18 25);  /* rose */
+  --accent-checklist: oklch(0.55 0.14 155); /* emerald */
+  --accent-meals:     oklch(0.65 0.15 75);  /* amber */
+  --accent-elder:     oklch(0.55 0.12 200); /* teal */
+  --accent-notes:     oklch(0.56 0.13 235); /* sky */
+  --accent-admin:     oklch(0.55 0.02 257); /* neutral slate */
+
+  --accent-visit-bg:     color-mix(in oklab, var(--accent-visit)     8%, var(--card));
+  --accent-meetings-bg:  color-mix(in oklab, var(--accent-meetings)  8%, var(--card));
+  --accent-couple-bg:    color-mix(in oklab, var(--accent-couple)    8%, var(--card));
+  --accent-checklist-bg: color-mix(in oklab, var(--accent-checklist) 8%, var(--card));
+  --accent-meals-bg:     color-mix(in oklab, var(--accent-meals)     10%, var(--card));
+  --accent-elder-bg:     color-mix(in oklab, var(--accent-elder)     8%, var(--card));
+  --accent-notes-bg:     color-mix(in oklab, var(--accent-notes)     8%, var(--card));
+  --accent-admin-bg:     color-mix(in oklab, var(--accent-admin)     6%, var(--card));
+}
+
+.dark {
+  /* Superfícies — no escuro, surface-3 fica MAIS clara que card */
+  --surface-1: color-mix(in oklab, var(--background) 92%, var(--foreground) 4%);
+  --surface-2: var(--card);
+  --surface-3: color-mix(in oklab, var(--card) 88%, var(--foreground) 8%);
+
+  /* Accents — mais luminosos no dark para destacar sobre card escuro */
+  --accent-visit:     oklch(0.72 0.13 264);
+  --accent-meetings:  oklch(0.74 0.13 305);
+  --accent-couple:    oklch(0.72 0.16 25);
+  --accent-checklist: oklch(0.72 0.13 155);
+  --accent-meals:     oklch(0.78 0.13 75);
+  --accent-elder:     oklch(0.74 0.11 200);
+  --accent-notes:     oklch(0.74 0.12 235);
+  --accent-admin:     oklch(0.70 0.02 257);
+
+  --accent-visit-bg:     color-mix(in oklab, var(--accent-visit)     14%, var(--card));
+  --accent-meetings-bg:  color-mix(in oklab, var(--accent-meetings)  14%, var(--card));
+  --accent-couple-bg:    color-mix(in oklab, var(--accent-couple)    14%, var(--card));
+  --accent-checklist-bg: color-mix(in oklab, var(--accent-checklist) 14%, var(--card));
+  --accent-meals-bg:     color-mix(in oklab, var(--accent-meals)     16%, var(--card));
+  --accent-elder-bg:     color-mix(in oklab, var(--accent-elder)     14%, var(--card));
+  --accent-notes-bg:     color-mix(in oklab, var(--accent-notes)     14%, var(--card));
+  --accent-admin-bg:     color-mix(in oklab, var(--accent-admin)     12%, var(--card));
+}
+
+/* Borda lateral colorida — usa --section-color (definido por rota)
+   ou --accent-color (override por componente). */
+.section-accent {
+  border-left: 3px solid var(--accent-color, var(--section-color, var(--border)));
+}
+
+/* Card aninhado — 3ª camada, para listas/itens dentro de CollapsibleCard. */
+.card-nested {
+  background: var(--surface-3);
+  border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  border-radius: var(--radius-md);
+}
+
+/* ---- Abas premium ---------------------------------------------------
+   Aplicado AUTOMATICAMENTE em todo TabsList dentro de <main>, sem
+   precisar editar cada rota. O fundo herda --surface-1 e a aba ativa
+   ganha cor de accent contextual via --section-color (cascata do main). */
+main [role="tablist"] {
+  background: var(--surface-1);
+  border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+}
+main [role="tab"][data-state="active"] {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow:
+    var(--shadow-card),
+    inset 0 -2px 0 0 color-mix(in oklab, var(--section-color, var(--primary)) 80%, transparent);
+}
+main [role="tab"]:not([data-state="active"]):hover {
+  background: color-mix(in oklab, var(--section-color, var(--primary)) 6%, transparent);
+  color: var(--foreground);
+}
+
+/* ---- Subabas (TabsList aninhado dentro de TabsContent) -------------- */
+main [role="tabpanel"] [role="tablist"] {
+  background: color-mix(in oklab, var(--muted) 60%, var(--card));
+}
+main [role="tabpanel"] [role="tab"][data-state="active"] {
+  background: var(--section-bg, var(--accent-visit-bg));
+  color: var(--foreground);
+}
