@@ -157,6 +157,29 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Imagens → CacheFirst com TTL de 30 dias (Onda 7.4).
+  // Funciona mesmo cross-origin (gracioso se opaque).
+  if (isImageRequest(req, url)) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(IMAGES_CACHE);
+        const cached = await cache.match(req);
+        if (cached && !imageIsStale(cached)) return cached;
+        try {
+          const fresh = await fetch(req);
+          if (fresh && (fresh.status === 200 || fresh.type === "opaque")) {
+            await putImageWithTimestamp(cache, req, fresh);
+          }
+          return fresh;
+        } catch {
+          if (cached) return cached;
+          return new Response("Offline", { status: 503 });
+        }
+      })(),
+    );
+    return;
+  }
+
   if (!sameOrigin) return;
 
   // /assets/* hashed → CacheFirst (build-imutável)
