@@ -3,13 +3,16 @@
 // pré-carregada (via Modo Offline), além de cache CacheFirst para assets
 // versionados (/assets/*) que nunca mudam para um mesmo build.
 
-const VERSION = "v3";
+const VERSION = "v4";
 const STATIC_CACHE = `static-${VERSION}`;
 const HTML_CACHE = `html-${VERSION}`;
 const API_CACHE = `api-${VERSION}`;
+// Onda 7.4 — cache dedicado para imagens (CacheFirst, 30 dias).
+const IMAGES_CACHE = `images-v1`;
+const IMAGES_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Exportado também via nome estável para o cliente (offline-shells.ts).
-self.__CACHE_NAMES = { STATIC_CACHE, HTML_CACHE, API_CACHE };
+self.__CACHE_NAMES = { STATIC_CACHE, HTML_CACHE, API_CACHE, IMAGES_CACHE };
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -26,7 +29,7 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
       await Promise.all(
         keys
-          .filter((k) => ![STATIC_CACHE, HTML_CACHE, API_CACHE].includes(k))
+          .filter((k) => ![STATIC_CACHE, HTML_CACHE, API_CACHE, IMAGES_CACHE].includes(k))
           .map((k) => caches.delete(k)),
       );
       await self.clients.claim();
