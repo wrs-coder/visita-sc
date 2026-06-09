@@ -58,10 +58,22 @@ const EldersServantsPanel = lazy(() =>
 export const Route = createFileRoute("/_app/reunioes-discursos")({ component: Page });
 
 function PanelFallback() {
-  const { t } = useTranslation();
+  // Skeleton no formato dos cards — sensação de carregamento bem mais leve
+  // que um spinner centralizado. Custo: zero (CSS-only).
   return (
-    <div className="flex items-center justify-center py-10 text-muted-foreground">
-      <Loader2 className="h-4 w-4 animate-spin mr-2" /> {t("meetingsTalks.loading")}
+    <div className="space-y-3 mt-2" aria-busy="true" aria-live="polite">
+      <div className="h-9 w-2/3 rounded-md bg-muted/60 animate-pulse" />
+      <div className="rounded-lg border border-border/60 p-4 space-y-3">
+        <div className="h-4 w-1/3 rounded bg-muted/60 animate-pulse" />
+        <div className="h-10 w-full rounded bg-muted/50 animate-pulse" />
+        <div className="h-10 w-5/6 rounded bg-muted/50 animate-pulse" />
+        <div className="h-24 w-full rounded bg-muted/40 animate-pulse" />
+      </div>
+      <div className="rounded-lg border border-border/60 p-4 space-y-3">
+        <div className="h-4 w-1/4 rounded bg-muted/60 animate-pulse" />
+        <div className="h-10 w-full rounded bg-muted/50 animate-pulse" />
+        <div className="h-10 w-4/6 rounded bg-muted/50 animate-pulse" />
+      </div>
     </div>
   );
 }
