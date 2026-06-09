@@ -354,13 +354,18 @@ function TabsGuarded({
       {isSuper && <SupervisorEditModeBar />}
 
       <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="flex flex-wrap h-auto w-full gap-1 bg-transparent p-0">
-          <TabsTrigger value="campo" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabCampo")}</TabsTrigger>
-          <TabsTrigger value="meio" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabMeio")}</TabsTrigger>
-          <TabsTrigger value="fim" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabFim")}</TabsTrigger>
-          <TabsTrigger value="pioneiros" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabPioneiros")}</TabsTrigger>
-          <TabsTrigger value="ancios" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabAncios")}</TabsTrigger>
-        </TabsList>
+        <div className="visit-week-tabs-sticky space-y-2">
+          <TabsList className="flex flex-wrap h-auto w-full gap-1 bg-transparent p-0">
+            <TabsTrigger value="campo" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabCampo")}</TabsTrigger>
+            <TabsTrigger value="meio" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabMeio")}</TabsTrigger>
+            <TabsTrigger value="fim" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabFim")}</TabsTrigger>
+            <TabsTrigger value="pioneiros" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabPioneiros")}</TabsTrigger>
+            <TabsTrigger value="ancios" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border/60">{t("meetingsTalks.tabAncios")}</TabsTrigger>
+          </TabsList>
+          <p className="visit-week-tab-hint" aria-live="polite">
+            {t(`meetingsTalks.tabHint${currentTab.charAt(0).toUpperCase()}${currentTab.slice(1)}`)}
+          </p>
+        </div>
         {panelsReady ? (
           <>
             <TabsContent value="campo" className="mt-4 tab-fade-in"><TabErrorBoundary label={t("meetingsTalks.tabCampo")}><Suspense fallback={<PanelFallback />}><FieldMeetingsPanel /></Suspense></TabErrorBoundary></TabsContent>
