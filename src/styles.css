@@ -76,7 +76,8 @@
   --secondary-foreground: oklch(0.22 0.05 264);
 
   --muted: oklch(0.96 0.008 247);
-  --muted-foreground: oklch(0.5 0.03 257);
+  /* Onda 6.6 — escurecido de 0.5 para 0.45 para garantir ≥ 4.5:1 (WCAG AA). */
+  --muted-foreground: oklch(0.45 0.03 257);
 
   --accent: oklch(0.93 0.05 260);
   --accent-foreground: oklch(0.25 0.09 264);
