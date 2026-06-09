@@ -365,6 +365,7 @@ function AppLayout() {
         </main>
       </div>
       <SupportDeveloperDialog open={supportOpen} onOpenChange={setSupportOpen} />
+      <CommandPalette />
     </div>
   );
 }
