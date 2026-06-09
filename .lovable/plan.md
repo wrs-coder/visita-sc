@@ -62,7 +62,7 @@ Antes de implementar, gostaria de confirmar quais blocos abaixo entram no escopo
 1. **Onda 1 — Ganho imediato e barato**: skeletons, otimismo nas edições, atalhos de teclado, prefetch nos links do itinerário, `staleTime` em modelos/bíblia. (Sem migration, sem novo pacote pesado.)
 2. **Onda 2 — Navegação**: Command Palette + breadcrumbs + boundary por aba.
 3. **Onda 3 — Banco**: ✅ invalidations cirúrgicas (removido `invalidateQueries()` global no flush do rascunho; só as chaves tocadas + `visit-template-extras` quando há override). ⏸️ RPC `get_visit_week_bundle` e `ensureQueryData` nas rotas: requerem migrar os painéis (hoje usam supabase direto sem react-query) — recomendado tratar em onda própria para evitar regressão ampla.
-4. **Onda 4 — Offline/backup**: pré-cache da próxima visita, indicador por campo, retry da fila, compressão diferenciada.
+4. **Onda 4 — Offline/backup**: ✅ retry exponencial da fila offline (backoff 5s→15s→1min→5min→15min, auto-flush ao voltar online + timer agendado para o próximo item maduro). ✅ compressão diferenciada do `.zip` de backup (nível 9 nos JSONs de bíblia, nível 6 no restante). ⏸️ pré-cache automático da próxima visita já é coberto pelo "Modo offline" existente (que pré-carrega todas as visitas); um warmup automático seria redundante até a Onda 3 migrar os painéis para React Query. ⏸️ indicador por campo ("salvo/na fila"): exigiria tocar dezenas de inputs — o `SyncButton` global já mostra pendências; deixar para onda de polimento.
 5. **Onda 5 — Acessibilidade e polimento**: tamanhos de toque, foco, microinterações, empty states.
 
 ---
