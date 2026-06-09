@@ -67,6 +67,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
 import { getHiddenEventIds } from "@/lib/hidden-events";
+import { dayAccentStyle } from "@/lib/day-accent";
 
 export const Route = createFileRoute("/_app/cronograma")({
   validateSearch: (search: Record<string, unknown>) => {
