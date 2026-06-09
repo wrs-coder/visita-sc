@@ -61,7 +61,7 @@ Antes de implementar, gostaria de confirmar quais blocos abaixo entram no escopo
 
 1. **Onda 1 — Ganho imediato e barato**: skeletons, otimismo nas edições, atalhos de teclado, prefetch nos links do itinerário, `staleTime` em modelos/bíblia. (Sem migration, sem novo pacote pesado.)
 2. **Onda 2 — Navegação**: Command Palette + breadcrumbs + boundary por aba.
-3. **Onda 3 — Banco**: RPC consolidada da Semana da Visita + invalidations cirúrgicas + `ensureQueryData` nas rotas restantes.
+3. **Onda 3 — Banco**: ✅ invalidations cirúrgicas (removido `invalidateQueries()` global no flush do rascunho; só as chaves tocadas + `visit-template-extras` quando há override). ⏸️ RPC `get_visit_week_bundle` e `ensureQueryData` nas rotas: requerem migrar os painéis (hoje usam supabase direto sem react-query) — recomendado tratar em onda própria para evitar regressão ampla.
 4. **Onda 4 — Offline/backup**: pré-cache da próxima visita, indicador por campo, retry da fila, compressão diferenciada.
 5. **Onda 5 — Acessibilidade e polimento**: tamanhos de toque, foco, microinterações, empty states.
 
