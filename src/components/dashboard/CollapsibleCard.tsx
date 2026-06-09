@@ -4,6 +4,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useDashboardCardCollapsed } from "@/hooks/use-dashboard-card-collapsed";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import type { CSSProperties } from "react";
+
+// Onda 6.8 — accent opcional por card (override do --section-color da rota).
+export type CardAccent =
+  | "visit"
+  | "meetings"
+  | "couple"
+  | "checklist"
+  | "meals"
+  | "elder"
+  | "notes"
+  | "admin";
+
+const ACCENT_VAR: Record<CardAccent, string> = {
+  visit: "var(--accent-visit)",
+  meetings: "var(--accent-meetings)",
+  couple: "var(--accent-couple)",
+  checklist: "var(--accent-checklist)",
+  meals: "var(--accent-meals)",
+  elder: "var(--accent-elder)",
+  notes: "var(--accent-notes)",
+  admin: "var(--accent-admin)",
+};
 
 interface CollapsibleCardProps {
   id: string;
@@ -13,6 +36,8 @@ interface CollapsibleCardProps {
   defaultCollapsed?: boolean;
   className?: string;
   contentClassName?: string;
+  /** Cor de borda lateral; default herda --section-color da rota. */
+  accent?: CardAccent;
   children: ReactNode;
 }
 
@@ -24,18 +49,26 @@ export function CollapsibleCard({
   defaultCollapsed = false,
   className,
   contentClassName,
+  accent,
   children,
 }: CollapsibleCardProps) {
   const [collapsed, toggle] = useDashboardCardCollapsed(id, defaultCollapsed);
   const { t } = useTranslation();
   const contentId = `cc-${id}`;
 
+  const accentStyle: CSSProperties | undefined = accent
+    ? ({ ["--accent-color" as never]: ACCENT_VAR[accent] } as CSSProperties)
+    : undefined;
+
   return (
     <Card
+      style={accentStyle}
       className={cn(
         // Onda 6.3 — sombra refinada + lift discreto no hover (180ms).
         "border-border/60 transition-shadow duration-200 hover:[box-shadow:var(--shadow-hover)]",
         "[box-shadow:var(--shadow-soft)]",
+        // Onda 6.8 — borda lateral colorida por contexto (cascade ou override).
+        "section-accent",
         className,
       )}
     >
@@ -53,12 +86,15 @@ export function CollapsibleCard({
               <span
                 aria-hidden="true"
                 className={cn(
-                  // Chip colorido para o ícone — visual premium uniforme.
+                  // Chip do ícone — usa o accent do card quando presente, senão primary.
                   "shrink-0 inline-flex items-center justify-center",
                   "h-8 w-8 rounded-[var(--radius-sm)]",
-                  "bg-primary/10 text-primary",
                   "[&>svg]:h-4 [&>svg]:w-4",
                 )}
+                style={{
+                  background: "color-mix(in oklab, var(--accent-color, var(--section-color, var(--primary))) 14%, transparent)",
+                  color: "var(--accent-color, var(--section-color, var(--primary)))",
+                }}
               >
                 {icon}
               </span>

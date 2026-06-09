@@ -1,76 +1,76 @@
-## Onda 6.7 — Indicadores visuais por cores (cronograma + listas)
+## Onda 6.8 — Sistema de cores premium em todas as telas
 
-Aplicar pistas visuais sutis no Cronograma e em listas longas para reconhecimento instantâneo, respeitando o contraste auditado nos modos claro/escuro.
+Estender os indicadores visuais da 6.7 para o app inteiro: cards, abas, subabas e blocos de evento devem ter diferenciação cromática **sutil e premium** — sem virar arco-íris. Tudo via tokens em `src/styles.css` (zero hex inline, AA garantido em claro/escuro).
 
-### 1) Tokens semânticos (src/styles.css)
+### 1. Novos tokens semânticos (`src/styles.css`)
 
-Adicionar tokens em `:root` e `.dark` — todos via `oklch`, com saturação contida para parecerem "suaves" e mantendo ≥ 4.5:1 do texto sobre o fundo do badge.
+**Superfícies em camadas** (substituem o `bg-card` único):
+- `--surface-1` (fundo base de seção, ~96% do background)
+- `--surface-2` (card padrão, atual `--card`)
+- `--surface-3` (card aninhado / destaque, +2% luminosidade no claro, +3% no escuro)
+- `--surface-elevated` (modais/popovers, atual `--popover`)
 
-- **Cores por dia da semana** (apenas para a borda lateral, 3 px):
-  - `--weekday-mon` ... `--weekday-sun` — paleta navy/teal/violet/amber/rose/emerald/sky calibrada (mais clara no `.dark` para visibilidade sobre fundo escuro).
-- **Status soft** (badge = fundo + texto):
-  - `--status-confirmed-bg` / `--status-confirmed-fg` (verde suave, derivado de `--success`).
-  - `--status-pending-bg`   / `--status-pending-fg`   (âmbar suave, derivado de `--warning`).
-  - `--status-attention-bg` / `--status-attention-fg` (rosa/destrutivo suave, derivado de `--destructive`).
-  - No `.dark`, usar `color-mix(in oklab, var(--success) 25%, var(--background))` para fundo e a cor base para foreground, garantindo contraste AA.
+**Accents por domínio** (borda lateral 3px + ícone tonal), reaproveitando paleta da 6.7:
+- `--accent-visit` (navy) — Semana da Visita, Cronograma
+- `--accent-meetings` (violet) — Reuniões & Discursos, Reuniões de Campo
+- `--accent-couple` (rose) — Comunicação do Casal
+- `--accent-checklist` (emerald) — Checklist, Transporte
+- `--accent-meals` (amber) — Refeições
+- `--accent-elder` (teal) — Programa de Anciãos
+- `--accent-notes` (sky) — Notas, Esboços
+- `--accent-admin` (muted) — Configurações, Lixeira, Modelos
 
-### 2) Utilitários CSS (src/styles.css)
+Cada accent expõe `--accent-{x}-bg` (color-mix 8% no claro, 14% no escuro com `--card`) para hover/header sutil.
 
-```css
-.day-accent { border-left: 3px solid var(--day-color, var(--border)); }
-.status-badge {
-  display:inline-flex; align-items:center; gap:0.25rem;
-  padding:0.125rem 0.5rem; border-radius:9999px;
-  font-size:0.72rem; font-weight:600; line-height:1.2;
-  background: var(--badge-bg); color: var(--badge-fg);
-  border:1px solid color-mix(in oklab, var(--badge-fg) 25%, transparent);
-}
-.status-badge[data-tone="confirmed"] { --badge-bg:var(--status-confirmed-bg); --badge-fg:var(--status-confirmed-fg); }
-.status-badge[data-tone="pending"]   { --badge-bg:var(--status-pending-bg);   --badge-fg:var(--status-pending-fg); }
-.status-badge[data-tone="attention"] { --badge-bg:var(--status-attention-bg); --badge-fg:var(--status-attention-fg); }
-```
+**Abas/subabas**:
+- `--tab-bg` (igual `--surface-1`)
+- `--tab-active-bg` (`--card` + sombra suave)
+- `--subtab-bg` (color-mix 50% entre `--muted` e `--card`)
+- `--subtab-active-bg` (`--accent-{contexto}-bg`)
 
-Helper para mapear dia → variável: `dayAccentStyle(date)` em `src/lib/day-accent.ts` retornando `{ ['--day-color' as any]: 'var(--weekday-mon)' }` conforme `getDay()`.
+### 2. Utilitários CSS (`src/styles.css`)
 
-### 3) Cronograma (src/routes/_app.cronograma.tsx)
+- `.section-accent` — `border-left: 3px solid var(--section-color, var(--border))` (variável setada por wrapper de rota)
+- `.card-nested` — usa `--surface-3` + borda mais clara, para cards dentro de cards (ex.: itens dentro de `CollapsibleCard`)
+- `.tabs-premium` — estilo unificado para `TabsList` (fundo `--tab-bg`, trigger ativo com sombra `--shadow-card` + cor de accent contextual)
+- `.subtabs-premium` — variante mais densa para subabas internas
 
-- Aplicar `className="... day-accent"` + `style={dayAccentStyle(parseISO(e.event_date))}` no `<Card>` do `EventCard` (linha 606). A borda esquerda fica colorida pelo dia da semana — instantâneo ao escanear a lista.
-- Render do badge de status no card, baseado em `e.status`:
-  - `status === "postponed"` → `pending` ("Adiado")
-  - `status === "completed"` → não entra na UI (já filtrado)
-  - default → `confirmed` ("Confirmado")
-- Strings i18n novas em `pt/en/es`: `schedule.status.confirmed`, `schedule.status.pending`.
+### 3. Mapeamento por rota (`src/lib/route-accent.ts` — novo, ~25 linhas)
 
-### 4) Listas longas — badges de status
+Função `useRouteAccent()` que lê o pathname e retorna `{ color, bg, label }` do accent correspondente. Aplicado em `_app.tsx` via `style={{ "--section-color": ... }}` no `<main>`, propagando para cards/abas filhos.
 
-Aplicar `.status-badge` nos pontos onde já existe um estado textual hoje (sem mudar regras de negócio):
+### 4. Aplicação por tela (apenas presentational, zero lógica)
 
-- **Lixeira** (`src/routes/_app.lixeira.tsx`) — itens excluídos recebem badge `attention` ("Na lixeira"); restauráveis recebem `pending`.
-- **Resumo da Semana** (`src/routes/_app.resumo-semana.tsx`) — eventos confirmados/adiados ganham o mesmo par `confirmed`/`pending` usado no cronograma.
+- **Cronograma** já tem accent por dia (6.7) — manter.
+- **Dashboard** (`_app.dashboard.tsx`): `CollapsibleCard` ganha `.section-accent` com cor do domínio do card (Reuniões=violet, Refeições=amber, etc.).
+- **Semana da Visita** (`_app.reunioes-discursos.tsx`, `_app.refeicoes.tsx`, `_app.transporte.tsx`, `_app.checklist.tsx`, `_app.comunicacao-casal.tsx`, `_app.reunioes-de-campo.tsx`, `_app.consideracoes-campo.tsx`): cada rota seta seu accent; `TabsList` recebe `.tabs-premium`.
+- **Programa de Anciãos** (`_app.programa-ancioes.tsx`): accent teal.
+- **Notas / Esboços** (`_app.notas.tsx`): accent sky.
+- **Configurações / Lixeira / Modelos**: accent admin (neutro).
+- **Resumo da Semana**, **Relatório**, **Escala**, **Congregações**: accent visit (continuam contexto da visita).
 
-(Sem novos campos no banco; deriva-se do `status` existente.)
+Cards aninhados (ex.: itens de lista dentro de `CollapsibleCard`) recebem `.card-nested` para criar a 3ª camada visual.
 
-### 5) Contraste e dark mode
+### 5. Contraste & validação
 
-- Validar manualmente cada par bg/fg dos badges em ambos temas com `color-mix` apoiado nos tokens `--success/--warning/--destructive` já auditados na Onda 6.6.
-- Bordas de dia: cor com luminosidade ≥ 0.55 no `.dark` para destacar do `--card` escuro.
-- Nenhuma cor crua (hex/rgb) nos componentes — só tokens.
-
-### 6) Plano e build
-
-- Atualizar `.lovable/plan.md` marcando 6.7.
-- Sem novas dependências. Apenas CSS + JSX.
+- Cada par bg/fg validado manualmente para ≥ 4.5:1 (texto) e ≥ 3:1 (borda decorativa) nos dois temas.
+- `color-mix` sempre com `--card`/`--background` para herdar tema.
+- Nada de cores raw em componentes — só classes utilitárias e tokens.
+- `bunx tsc --noEmit` deve continuar limpo.
 
 ### Arquivos a tocar
-- `src/styles.css` (tokens + utilitários)
-- `src/lib/day-accent.ts` (novo, ~15 linhas)
-- `src/routes/_app.cronograma.tsx` (EventCard: classe + style + badge)
-- `src/routes/_app.lixeira.tsx` (badges nos itens)
-- `src/routes/_app.resumo-semana.tsx` (badges de status)
-- `src/i18n/locales/{pt,en,es}.json` (chaves `schedule.status.*`, `common.status.*`)
-- `.lovable/plan.md`
 
-### Critérios de aceite
-- Borda esquerda colorida por dia visível no Cronograma, sem alterar layout/altura dos cards.
-- Badges arredondados com tom suave, legíveis em claro e escuro (AA).
-- Build limpo, sem novos pacotes, sem regressão de a11y (focus ring intacto).
+- `src/styles.css` (tokens + utilitários `.section-accent`, `.card-nested`, `.tabs-premium`, `.subtabs-premium`)
+- `src/lib/route-accent.ts` (novo)
+- `src/routes/_app.tsx` (aplica `--section-color` no `<main>` via hook)
+- `src/components/dashboard/CollapsibleCard.tsx` (aceita prop `accent?: AccentKey`)
+- Rotas listadas acima: adicionar `className="tabs-premium"` no `TabsList` e usar `CollapsibleCard accent="..."` onde aplicável
+- `.lovable/plan.md` (registrar 6.8)
+
+Sem dependências novas. Sem mudança de regra de negócio. Build limpo.
+## ✅ Onda 6.8 — Sistema de cores premium (concluída)
+- Tokens: --surface-1/2/3, --accent-{visit,meetings,couple,checklist,meals,elder,notes,admin} + bg em :root e .dark.
+- Utilitários: .section-accent, .card-nested + estilos automáticos para TabsList/TabsTrigger dentro de <main>.
+- Hook src/lib/route-accent.ts injeta --section-color/--section-bg no <main> conforme rota.
+- CollapsibleCard ganhou prop accent + borda lateral via .section-accent; chip do ícone usa accent.
+- Dashboard: 10 cards mapeados (visita, casal, notas, anciãos, checklist, reuniões, refeições, transporte).
