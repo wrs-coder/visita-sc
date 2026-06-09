@@ -123,6 +123,11 @@
       "errorTaken": "Este código já está em uso. Escolha outro."
     }
   },
+  "commandPalette": {
+    "open": "Abrir busca rápida",
+    "placeholder": "Buscar telas… (Ctrl/⌘ K)",
+    "empty": "Nada encontrado."
+  },
   "sidebar": {
     "sectionPrincipal": "Principal",
     "sectionVisita": "Semana da Visita",
