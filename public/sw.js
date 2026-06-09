@@ -54,6 +54,33 @@ function isHashedAsset(url) {
   return url.pathname.startsWith("/assets/");
 }
 
+function isImageRequest(req, url) {
+  if (req.destination === "image") return true;
+  return /\.(png|jpe?g|webp|avif|gif|svg|ico)$/i.test(url.pathname);
+}
+
+function imageIsStale(response) {
+  try {
+    const ts = response.headers.get("x-sw-cached-at");
+    if (!ts) return false;
+    return Date.now() - Number(ts) > IMAGES_MAX_AGE_MS;
+  } catch {
+    return false;
+  }
+}
+
+async function putImageWithTimestamp(cache, req, res) {
+  try {
+    const headers = new Headers(res.headers);
+    headers.set("x-sw-cached-at", String(Date.now()));
+    const body = await res.clone().arrayBuffer();
+    const stamped = new Response(body, { status: res.status, statusText: res.statusText, headers });
+    await cache.put(req, stamped);
+  } catch {
+    /* quota / opaque */
+  }
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
