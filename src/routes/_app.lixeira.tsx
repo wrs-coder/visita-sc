@@ -185,9 +185,9 @@ function Page() {
                 <CardContent className="p-3 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{o.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <span className="status-badge mt-1" data-tone={daysLeft(o.deleted_at) <= 7 ? "attention" : "pending"}>
                       {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(o.deleted_at) })}
-                    </p>
+                    </span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Button size="sm" variant="outline" onClick={() => restoreOutlineCloud(o.id)}>
