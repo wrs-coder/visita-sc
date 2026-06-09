@@ -117,7 +117,7 @@ function Page() {
       ) : (
         <Accordion type="multiple" className="space-y-2">
           {items.map((it) => (
-            <AccordionItem key={it.id} value={it.id} className="bg-card border rounded-lg shadow-card px-4 data-[state=open]:shadow-elevated">
+            <AccordionItem key={it.id} value={it.id} className="bg-card border rounded-lg shadow-card px-4 data-[state=open]:shadow-elevated section-accent">
               <div className="flex items-center gap-3">
                 <button
                   disabled={!canEdit}

@@ -6,7 +6,10 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("rounded-xl border bg-card text-card-foreground shadow", className)}
+      // Onda 6.8 — .section-accent dá borda lateral colorida pelo contexto
+      // (cascata de --section-color em <main>). Cards fora de <main> caem
+      // no fallback `var(--border)`, então não há regressão visual.
+      className={cn("rounded-xl border bg-card text-card-foreground shadow section-accent", className)}
       {...props}
     />
   ),
