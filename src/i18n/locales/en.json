@@ -510,6 +510,11 @@
     "tabFim": "Weekend",
     "tabPioneiros": "Pioneers",
     "tabAncios": "Elders & Servants",
+    "tabHintCampo": "Field shifts, modality and meeting place.",
+    "tabHintMeio": "Midweek meeting program and assignments.",
+    "tabHintFim": "Weekend program and public talk.",
+    "tabHintPioneiros": "Meetings with regular and auxiliary pioneers.",
+    "tabHintAncios": "Meeting with elders and ministerial servants.",
     "field": {
       "subtitleSuper": "Define the shifts and modality. The Field Meeting Location is required and filled in by the elders.",
       "subtitleElder": "Fill in the data of each shift. The Field Meeting Location field is required.",
