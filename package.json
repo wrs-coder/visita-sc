@@ -65,6 +65,7 @@
     "@tanstack/react-query-persist-client": "^5.100.10",
     "@tanstack/react-router": "^1.168.25",
     "@tanstack/react-start": "^1.167.50",
+    "@tanstack/react-virtual": "^3.14.2",
     "@tanstack/router-plugin": "^1.167.28",
     "@tiptap/extension-color": "^3.23.6",
     "@tiptap/extension-font-family": "^3.24.0",
