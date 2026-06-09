@@ -68,3 +68,9 @@ Cards aninhados (ex.: itens de lista dentro de `CollapsibleCard`) recebem `.card
 - `.lovable/plan.md` (registrar 6.8)
 
 Sem dependências novas. Sem mudança de regra de negócio. Build limpo.
+## ✅ Onda 6.8 — Sistema de cores premium (concluída)
+- Tokens: --surface-1/2/3, --accent-{visit,meetings,couple,checklist,meals,elder,notes,admin} + bg em :root e .dark.
+- Utilitários: .section-accent, .card-nested + estilos automáticos para TabsList/TabsTrigger dentro de <main>.
+- Hook src/lib/route-accent.ts injeta --section-color/--section-bg no <main> conforme rota.
+- CollapsibleCard ganhou prop accent + borda lateral via .section-accent; chip do ícone usa accent.
+- Dashboard: 10 cards mapeados (visita, casal, notas, anciãos, checklist, reuniões, refeições, transporte).
