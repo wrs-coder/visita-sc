@@ -576,12 +576,34 @@ main [role="tablist"] {
   background: var(--surface-1);
   border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
 }
+main [role="tab"] {
+  position: relative;
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+/* Onda 7.1 — indicador inferior animado da aba ativa (scaleX 0→1). */
+main [role="tab"]::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--section-color, var(--primary));
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--transition-base);
+  pointer-events: none;
+}
 main [role="tab"][data-state="active"] {
   background: var(--card);
   color: var(--foreground);
-  box-shadow:
-    var(--shadow-card),
-    inset 0 -2px 0 0 color-mix(in oklab, var(--section-color, var(--primary)) 80%, transparent);
+  box-shadow: var(--shadow-card);
+}
+main [role="tab"][data-state="active"]::after {
+  transform: scaleX(1);
 }
 main [role="tab"]:not([data-state="active"]):hover {
   background: color-mix(in oklab, var(--section-color, var(--primary)) 6%, transparent);
@@ -595,4 +617,12 @@ main [role="tabpanel"] [role="tablist"] {
 main [role="tabpanel"] [role="tab"][data-state="active"] {
   background: var(--section-bg, var(--accent-visit-bg));
   color: var(--foreground);
+}
+
+/* ---- Onda 7.1 — respeito a prefers-reduced-motion ------------------ */
+@media (prefers-reduced-motion: reduce) {
+  main [role="tab"],
+  main [role="tab"]::after {
+    transition: none !important;
+  }
 }
