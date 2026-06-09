@@ -315,7 +315,7 @@ function Page() {
         </Card>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-2 list-optimized-sm">
         {list.map((c) => {
           const isActive = c.is_active !== false;
           return (

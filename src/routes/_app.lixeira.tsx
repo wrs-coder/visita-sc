@@ -8,6 +8,7 @@ import { Trash2, RotateCcw, ArrowLeft, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { VirtualList } from "@/components/VirtualList";
 
 import {
   listTrashedOutlines,
@@ -177,29 +178,38 @@ function Page() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="outlines" className="mt-4 space-y-2 list-optimized-sm">
+          <TabsContent value="outlines" className="mt-4 list-optimized-sm">
             {outlines.length === 0 ? (
               <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("trash.empty")}</CardContent></Card>
-            ) : outlines.map((o) => (
-              <Card key={o.id}>
-                <CardContent className="p-3 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{o.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })}</p>
-                    <span className="status-badge mt-1" data-tone={daysLeft(o.deleted_at) <= 7 ? "attention" : "pending"}>
-                      {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(o.deleted_at) })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button size="sm" variant="outline" onClick={() => restoreOutlineCloud(o.id)}>
-                      <RotateCcw className="h-4 w-4 mr-1" />{t("trash.restore", { defaultValue: "Restaurar" })}
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => purgeOutlineCloud(o.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            ) : (
+              <VirtualList
+                items={outlines}
+                estimateSize={88}
+                getKey={(o) => o.id}
+                gap={8}
+              >
+                {(o) => (
+                  <Card>
+                    <CardContent className="p-3 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{o.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })}</p>
+                        <span className="status-badge mt-1" data-tone={daysLeft(o.deleted_at) <= 7 ? "attention" : "pending"}>
+                          {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(o.deleted_at) })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="sm" variant="outline" onClick={() => restoreOutlineCloud(o.id)}>
+                          <RotateCcw className="h-4 w-4 mr-1" />{t("trash.restore", { defaultValue: "Restaurar" })}
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => purgeOutlineCloud(o.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </VirtualList>
+            )}
           </TabsContent>
 
           <TabsContent value="notes" className="mt-4 space-y-2 list-optimized-sm">
@@ -213,74 +223,95 @@ function Page() {
             )}
             {notes.length === 0 ? (
               <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("trash.empty")}</CardContent></Card>
-            ) : notes.map((n) => (
-              <Card key={n.id}>
-                <CardContent className="p-3 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{n.title || t("notes.untitled", { defaultValue: "Sem título" })}</p>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className="text-xs text-muted-foreground">{n.note_type}</span>
-                      <span className="status-badge" data-tone={daysLeft(n.deleted_at) <= 7 ? "attention" : "pending"}>
-                        {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(n.deleted_at) })}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button size="sm" variant="outline" onClick={() => restoreNoteCloud(n.id)}>
-                      <RotateCcw className="h-4 w-4 mr-1" />{t("trash.restore", { defaultValue: "Restaurar" })}
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => purgeNoteCloud(n.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            ) : (
+              <VirtualList
+                items={notes}
+                estimateSize={96}
+                getKey={(n) => n.id}
+                gap={8}
+              >
+                {(n) => (
+                  <Card>
+                    <CardContent className="p-3 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{n.title || t("notes.untitled", { defaultValue: "Sem título" })}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-xs text-muted-foreground">{n.note_type}</span>
+                          <span className="status-badge" data-tone={daysLeft(n.deleted_at) <= 7 ? "attention" : "pending"}>
+                            {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(n.deleted_at) })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="sm" variant="outline" onClick={() => restoreNoteCloud(n.id)}>
+                          <RotateCcw className="h-4 w-4 mr-1" />{t("trash.restore", { defaultValue: "Restaurar" })}
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => purgeNoteCloud(n.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </VirtualList>
+            )}
           </TabsContent>
 
-          <TabsContent value="local" className="mt-4 space-y-2 list-optimized-sm">
-            {localFolders.map((f) => (
-              <Card key={f.id}>
-                <CardContent className="p-3 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">📁 {f.name}</p>
-                    <span className="status-badge mt-1" data-tone={daysLeft(f.deleted_at ?? null) <= 7 ? "attention" : "pending"}>
-                      {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(f.deleted_at ?? null) })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button size="sm" variant="outline" onClick={() => restoreLocalFolderFn(f.id)}>
-                      <RotateCcw className="h-4 w-4 mr-1" />{t("trash.restore", { defaultValue: "Restaurar" })}
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => purgeLocalFolderFn(f.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            {localNotes.map((n) => (
-              <Card key={n.id}>
-                <CardContent className="p-3 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{n.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })}</p>
-                    <span className="status-badge mt-1" data-tone={daysLeft(n.deleted_at ?? null) <= 7 ? "attention" : "pending"}>
-                      {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(n.deleted_at ?? null) })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button size="sm" variant="outline" onClick={() => restoreLocal(n.id)}>
-                      <RotateCcw className="h-4 w-4 mr-1" />{t("trash.restore", { defaultValue: "Restaurar" })}
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => purgeLocal(n.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            {localNotes.length === 0 && localFolders.length === 0 && (
+          <TabsContent value="local" className="mt-4 list-optimized-sm">
+            {localFolders.length === 0 && localNotes.length === 0 ? (
               <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("trash.empty")}</CardContent></Card>
+            ) : (
+              <VirtualList
+                items={[
+                  ...localFolders.map((f) => ({ kind: "folder" as const, item: f })),
+                  ...localNotes.map((n) => ({ kind: "note" as const, item: n })),
+                ]}
+                estimateSize={88}
+                getKey={(x) => `${x.kind}-${x.item.id}`}
+                gap={8}
+              >
+                {(x) =>
+                  x.kind === "folder" ? (
+                    <Card>
+                      <CardContent className="p-3 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">📁 {x.item.name}</p>
+                          <span className="status-badge mt-1" data-tone={daysLeft(x.item.deleted_at ?? null) <= 7 ? "attention" : "pending"}>
+                            {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(x.item.deleted_at ?? null) })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button size="sm" variant="outline" onClick={() => restoreLocalFolderFn(x.item.id)}>
+                            <RotateCcw className="h-4 w-4 mr-1" />{t("trash.restore", { defaultValue: "Restaurar" })}
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => purgeLocalFolderFn(x.item.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card>
+                      <CardContent className="p-3 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{x.item.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })}</p>
+                          <span className="status-badge mt-1" data-tone={daysLeft(x.item.deleted_at ?? null) <= 7 ? "attention" : "pending"}>
+                            {t("trash.daysLeft", { defaultValue: "Expira em {{n}} dias", n: daysLeft(x.item.deleted_at ?? null) })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button size="sm" variant="outline" onClick={() => restoreLocal(x.item.id)}>
+                            <RotateCcw className="h-4 w-4 mr-1" />{t("trash.restore", { defaultValue: "Restaurar" })}
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => purgeLocal(x.item.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                }
+              </VirtualList>
             )}
           </TabsContent>
         </Tabs>
