@@ -1,76 +1,64 @@
-## Onda 6.8 — Sistema de cores premium em todas as telas
+## Onda 7 — atualização e Subonda 1 (fluidez visual base)
 
-Estender os indicadores visuais da 6.7 para o app inteiro: cards, abas, subabas e blocos de evento devem ter diferenciação cromática **sutil e premium** — sem virar arco-íris. Tudo via tokens em `src/styles.css` (zero hex inline, AA garantido em claro/escuro).
+### Vetos e regras permanentes (registradas)
+- **7.5 (Bíblia embutida) REMOVIDO** definitivamente. Não empacotar nenhuma tradução pública. A única Bíblia do app continua sendo a **Tradução do Novo Mundo via parser EPUB privado** já existente (`src/lib/epub-bible-parser.ts`, `BibleManagerDialog`, `BibleVersePopover`). Salvar como constraint em `mem://` para sessões futuras nunca reproporem.
+- Resto do plano da Onda 7 permanece aprovado, mas será entregue subonda por subonda, com aprovação entre elas.
 
-### 1. Novos tokens semânticos (`src/styles.css`)
+---
 
-**Superfícies em camadas** (substituem o `bg-card` único):
-- `--surface-1` (fundo base de seção, ~96% do background)
-- `--surface-2` (card padrão, atual `--card`)
-- `--surface-3` (card aninhado / destaque, +2% luminosidade no claro, +3% no escuro)
-- `--surface-elevated` (modais/popovers, atual `--popover`)
+### Subonda 1 — Fluidez visual base (escopo desta entrega)
 
-**Accents por domínio** (borda lateral 3px + ícone tonal), reaproveitando paleta da 6.7:
-- `--accent-visit` (navy) — Semana da Visita, Cronograma
-- `--accent-meetings` (violet) — Reuniões & Discursos, Reuniões de Campo
-- `--accent-couple` (rose) — Comunicação do Casal
-- `--accent-checklist` (emerald) — Checklist, Transporte
-- `--accent-meals` (amber) — Refeições
-- `--accent-elder` (teal) — Programa de Anciãos
-- `--accent-notes` (sky) — Notas, Esboços
-- `--accent-admin` (muted) — Configurações, Lixeira, Modelos
+Apenas três frentes, estritamente presentational, sem tocar em lógica de dados/auth/RLS/SW.
 
-Cada accent expõe `--accent-{x}-bg` (color-mix 8% no claro, 14% no escuro com `--card`) para hover/header sutil.
+#### 1.1 Animações de rota
+- `bun add framer-motion`.
+- Em `src/routes/_app.tsx`, envolver o `<Outlet/>` em:
+  - `<LazyMotion features={domAnimation} strict>` (subset leve, ~5KB gz).
+  - `<AnimatePresence mode="wait" initial={false}>` com um `<m.div key={pathname}>` chaveado pelo `useRouterState({ select: s => s.location.pathname })`.
+- Transição: `opacity 0→1` + `translateY 4px→0`, duração **120ms**, easing `[0.2, 0.8, 0.2, 1]`.
+- Respeito a `prefers-reduced-motion`: hook `useReducedMotion()` zera duração/translate quando ativo.
+- Gate SSR: o wrapper de animação só monta após hidratação (`useEffect` flag) para evitar mismatch.
 
-**Abas/subabas**:
-- `--tab-bg` (igual `--surface-1`)
-- `--tab-active-bg` (`--card` + sombra suave)
-- `--subtab-bg` (color-mix 50% entre `--muted` e `--card`)
-- `--subtab-active-bg` (`--accent-{contexto}-bg`)
+#### 1.2 Transições de abas (CSS-only, sem JS extra)
+- Em `src/styles.css`, no bloco já existente de `main [role="tablist"]` / `[role="tab"]`:
+  - Adicionar `transition: color var(--transition-fast), background-color var(--transition-fast)` nos triggers.
+  - Indicador inferior do tab ativo via pseudo-elemento `::after` animado (`transform: scaleX`) com a `--section-color` herdada da Onda 6.8.
+  - Novos tokens: `--transition-fast: 120ms cubic-bezier(.2,.8,.2,1)` e `--transition-base: 220ms cubic-bezier(.2,.8,.2,1)` em `:root` e `.dark`.
+  - `@media (prefers-reduced-motion: reduce)` desativa as transitions.
+- **Sem** alterar `src/components/ui/tabs.tsx` (componente Radix base).
 
-### 2. Utilitários CSS (`src/styles.css`)
+#### 1.3 Skeletons fiéis
+Substituir spinners full-screen por skeletons que espelham o layout real, usando o `<Skeleton/>` já existente. Escopo desta subonda (5 rotas de maior peso visual):
+- `src/routes/_app.dashboard.tsx` — grid de `CollapsibleCard` skeletons (cabeçalho + 3 linhas).
+- `src/routes/_app.cronograma.tsx` — lista de dias (7 blocos com borda lateral colorida + 2-3 eventos cada).
+- `src/routes/_app.resumo-semana.tsx` — cards de seção.
+- `src/routes/_app.refeicoes.tsx` — tabela com linhas skeleton.
+- `src/routes/_app.reunioes-discursos.tsx` — abas + painéis.
 
-- `.section-accent` — `border-left: 3px solid var(--section-color, var(--border))` (variável setada por wrapper de rota)
-- `.card-nested` — usa `--surface-3` + borda mais clara, para cards dentro de cards (ex.: itens dentro de `CollapsibleCard`)
-- `.tabs-premium` — estilo unificado para `TabsList` (fundo `--tab-bg`, trigger ativo com sombra `--shadow-card` + cor de accent contextual)
-- `.subtabs-premium` — variante mais densa para subabas internas
+Padrões:
+- Cada rota exporta um pequeno componente local `RouteSkeleton` (ou inline) e o usa em `pendingComponent` da rota, **ou** como fallback enquanto `useQuery` retorna `isPending` na primeira carga (sem dados em cache).
+- Skeletons herdam `.section-accent` para já mostrarem a cor do domínio.
+- Sem mexer em queries, mutations ou loaders.
 
-### 3. Mapeamento por rota (`src/lib/route-accent.ts` — novo, ~25 linhas)
+#### 1.4 Verificação obrigatória
+- `bunx tsc --noEmit` limpo.
+- Build limpo (harness automático).
+- Smoke manual: navegar entre 4 rotas → confirmar fade+slide de 120ms; ativar `prefers-reduced-motion` no DevTools → confirmar transições instantâneas; abrir uma rota sem cache → confirmar skeleton fiel antes do conteúdo.
 
-Função `useRouteAccent()` que lê o pathname e retorna `{ color, bg, label }` do accent correspondente. Aplicado em `_app.tsx` via `style={{ "--section-color": ... }}` no `<main>`, propagando para cards/abas filhos.
+#### Arquivos tocados (Subonda 1)
+- `package.json` (nova dep `framer-motion`).
+- `src/routes/_app.tsx` (LazyMotion + AnimatePresence).
+- `src/styles.css` (tokens `--transition-fast/base`, transitions em tabs, indicador `::after`, media query reduce-motion).
+- 5 rotas listadas em 1.3 (apenas adição de skeleton fiel).
+- `.lovable/plan.md` (registro da Subonda 1 concluída e do veto ao 7.5).
+- `mem://index.md` + `mem://constraints/biblia-tnm-apenas.md` (constraint permanente).
 
-### 4. Aplicação por tela (apenas presentational, zero lógica)
+#### Fora do escopo desta subonda (entrarão em subondas seguintes)
+- Virtualização de listas (7.2).
+- Warm-up offline e badges (7.3/7.4).
+- Command Palette expandida (7.7).
+- PDF local com `pdf-lib` (7.6).
+- Editor de notas premium (7.8).
+- Auditoria de acessibilidade ampla (7.9).
 
-- **Cronograma** já tem accent por dia (6.7) — manter.
-- **Dashboard** (`_app.dashboard.tsx`): `CollapsibleCard` ganha `.section-accent` com cor do domínio do card (Reuniões=violet, Refeições=amber, etc.).
-- **Semana da Visita** (`_app.reunioes-discursos.tsx`, `_app.refeicoes.tsx`, `_app.transporte.tsx`, `_app.checklist.tsx`, `_app.comunicacao-casal.tsx`, `_app.reunioes-de-campo.tsx`, `_app.consideracoes-campo.tsx`): cada rota seta seu accent; `TabsList` recebe `.tabs-premium`.
-- **Programa de Anciãos** (`_app.programa-ancioes.tsx`): accent teal.
-- **Notas / Esboços** (`_app.notas.tsx`): accent sky.
-- **Configurações / Lixeira / Modelos**: accent admin (neutro).
-- **Resumo da Semana**, **Relatório**, **Escala**, **Congregações**: accent visit (continuam contexto da visita).
-
-Cards aninhados (ex.: itens de lista dentro de `CollapsibleCard`) recebem `.card-nested` para criar a 3ª camada visual.
-
-### 5. Contraste & validação
-
-- Cada par bg/fg validado manualmente para ≥ 4.5:1 (texto) e ≥ 3:1 (borda decorativa) nos dois temas.
-- `color-mix` sempre com `--card`/`--background` para herdar tema.
-- Nada de cores raw em componentes — só classes utilitárias e tokens.
-- `bunx tsc --noEmit` deve continuar limpo.
-
-### Arquivos a tocar
-
-- `src/styles.css` (tokens + utilitários `.section-accent`, `.card-nested`, `.tabs-premium`, `.subtabs-premium`)
-- `src/lib/route-accent.ts` (novo)
-- `src/routes/_app.tsx` (aplica `--section-color` no `<main>` via hook)
-- `src/components/dashboard/CollapsibleCard.tsx` (aceita prop `accent?: AccentKey`)
-- Rotas listadas acima: adicionar `className="tabs-premium"` no `TabsList` e usar `CollapsibleCard accent="..."` onde aplicável
-- `.lovable/plan.md` (registrar 6.8)
-
-Sem dependências novas. Sem mudança de regra de negócio. Build limpo.
-## ✅ Onda 6.8 — Sistema de cores premium (concluída)
-- Tokens: --surface-1/2/3, --accent-{visit,meetings,couple,checklist,meals,elder,notes,admin} + bg em :root e .dark.
-- Utilitários: .section-accent, .card-nested + estilos automáticos para TabsList/TabsTrigger dentro de <main>.
-- Hook src/lib/route-accent.ts injeta --section-color/--section-bg no <main> conforme rota.
-- CollapsibleCard ganhou prop accent + borda lateral via .section-accent; chip do ícone usa accent.
-- Dashboard: 10 cards mapeados (visita, casal, notas, anciãos, checklist, reuniões, refeições, transporte).
+Cada uma dessas voltará como subonda própria, com plano e aprovação separados.
