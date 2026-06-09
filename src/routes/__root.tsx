@@ -19,6 +19,7 @@ import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-per
 import { flushQueue, startOfflineQueueAutoRetry } from "@/lib/offline-queue";
 import { isOfflineMode } from "@/lib/connection-mode";
 import "@/i18n";
+import "@/lib/theme";
 
 function NotFoundComponent() {
   const { t } = useTranslation();

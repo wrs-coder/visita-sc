@@ -767,7 +767,6 @@
         "closingPrayer": "Oración Final",
         "observations": "Observaciones"
       }
-
     },
     "copySuffix": "(copia)",
     "templateNumber": "Plantilla {{n}}",
@@ -1085,7 +1084,9 @@
     "invalidCode": "Código inválido",
     "wifeMode": "Esposa del superintendente",
     "currentWeek": "Semana actual",
-    "congregationPicker": { "label": "Congregación:" },
+    "congregationPicker": {
+      "label": "Congregación:"
+    },
     "eldersMode": "Cuerpo de ancianos y Comité de Servicio",
     "readOnlyTag": "solo lectura",
     "share": "Compartir",
@@ -1521,5 +1522,10 @@
     "highlight": "Resaltar selección",
     "clearHighlights": "Borrar resaltados",
     "selectToHighlight": "Selecciona un texto para resaltar."
+  },
+  "theme": {
+    "light": "Modo claro",
+    "dark": "Modo oscuro",
+    "toggle": "Alternar modo oscuro"
   }
 }
