@@ -271,6 +271,7 @@
     "noElders": "Nenhum ancião cadastrado nas suas congregações ainda."
   },
   "schedule": {
+    "status": { "confirmed": "Confirmado", "pending": "Adiado" },
     "title": "Cronograma Semanal",
     "newEvent": "Novo",
     "editEvent": "Editar compromisso",
