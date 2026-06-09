@@ -72,6 +72,7 @@ import {
 import { format, parseISO, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
@@ -662,16 +663,21 @@ function Dashboard() {
     <div className="space-y-6">
       <PwaInstallButton />
       <header>
-        <p className="text-sm text-muted-foreground">
-          {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
-        </p>
-        <h1 className="text-2xl md:text-3xl font-bold mt-1">
-          {t("dashboard.greeting", { name: profile?.full_name?.split(" ")[0] ?? t("dashboard.brother") })}
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          {role === "superintendent" ? t("dashboard.panelSuper") : t("dashboard.panelElder")}
-          {visit ? ` · ${t("dashboard.visitLabel", { title: visit.title })}` : ` · ${t("dashboard.noActiveVisit")}`}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-muted-foreground">
+              {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
+            </p>
+            <h1 className="text-2xl md:text-3xl font-bold mt-1">
+              {t("dashboard.greeting", { name: profile?.full_name?.split(" ")[0] ?? t("dashboard.brother") })}
+            </h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {role === "superintendent" ? t("dashboard.panelSuper") : t("dashboard.panelElder")}
+              {visit ? ` · ${t("dashboard.visitLabel", { title: visit.title })}` : ` · ${t("dashboard.noActiveVisit")}`}
+            </p>
+          </div>
+          <ThemeToggle className="shrink-0 mt-1" />
+        </div>
         <div className="mt-3">
           <TemplateUpdatesBadge
             congregationId={
