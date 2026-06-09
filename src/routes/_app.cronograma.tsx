@@ -478,7 +478,7 @@ function Page() {
         );
       })()}
 
-      <div className="space-y-6 select-none" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="space-y-6 select-none list-optimized-lg" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
           const todayMark = isSameDay(day, new Date());
