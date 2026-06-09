@@ -31,7 +31,14 @@ export function CollapsibleCard({
   const contentId = `cc-${id}`;
 
   return (
-    <Card className={cn("shadow-card", className)}>
+    <Card
+      className={cn(
+        // Onda 6.3 — sombra refinada + lift discreto no hover (180ms).
+        "border-border/60 transition-shadow duration-200 hover:[box-shadow:var(--shadow-hover)]",
+        "[box-shadow:var(--shadow-soft)]",
+        className,
+      )}
+    >
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-2 min-w-0">
           <button
@@ -40,14 +47,29 @@ export function CollapsibleCard({
             aria-expanded={!collapsed}
             aria-controls={contentId}
             aria-label={t("dashboard.collapseExpand", { defaultValue: "Expandir/recolher cartão" })}
-            className="flex items-start gap-2 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+            className="flex items-start gap-2.5 flex-1 min-w-0 text-left hover:opacity-90 transition-opacity"
           >
-            {icon}
-            <h3 className="font-semibold leading-snug whitespace-normal break-words [overflow-wrap:anywhere] min-w-0">{title}</h3>
+            {icon && (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  // Chip colorido para o ícone — visual premium uniforme.
+                  "shrink-0 inline-flex items-center justify-center",
+                  "h-8 w-8 rounded-[var(--radius-sm)]",
+                  "bg-primary/10 text-primary",
+                  "[&>svg]:h-4 [&>svg]:w-4",
+                )}
+              >
+                {icon}
+              </span>
+            )}
+            <h3 className="font-semibold leading-snug whitespace-normal break-words [overflow-wrap:anywhere] min-w-0 self-center">
+              {title}
+            </h3>
             {collapsed ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 mt-2.5 transition-transform" />
             ) : (
-              <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+              <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0 mt-2.5 transition-transform" />
             )}
           </button>
           {headerRight && !collapsed && (
