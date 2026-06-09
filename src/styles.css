@@ -187,3 +187,47 @@
   background-color: rgba(250, 204, 21, 0.35);
 }
 
+
+/* ============================================================
+   Onda 5 — Acessibilidade e polimento
+   ============================================================ */
+
+/* Foco visível consistente (sem matar o foco em mouse). */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+  /* Em dispositivos de toque, qualquer botão/link em barra de ações
+     deve ter pelo menos 44×44 px de área tocável (WCAG 2.5.5). */
+  @media (pointer: coarse) {
+    button, [role="button"], a.btn, .touch-target {
+      min-height: 44px;
+    }
+    /* Ícones pequenos: garante a área mínima sem inflar o visual. */
+    button[aria-label]:not(.no-touch-min) {
+      min-width: 44px;
+    }
+  }
+}
+
+/* Safe area inset para rodapés flutuantes em telas com FAB / bottom nav. */
+.pb-safe { padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem); }
+.pt-safe { padding-top: max(env(safe-area-inset-top, 0px), 0.5rem); }
+
+/* Transição CSS-only de 150 ms para o toggle de "Modo edição". */
+.edit-mode-transition {
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease,
+              box-shadow 150ms ease;
+}
+
+/* Reduce motion: respeita preferência do sistema. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
