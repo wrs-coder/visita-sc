@@ -19,6 +19,9 @@ import { TaskItem } from "@tiptap/extension-task-item";
 import { Subscript } from "@tiptap/extension-subscript";
 import { Superscript } from "@tiptap/extension-superscript";
 import { FontFamily } from "@tiptap/extension-font-family";
+import { Typography } from "@tiptap/extension-typography";
+import { CharacterCount } from "@tiptap/extension-character-count";
+import { Focus as TiptapFocus } from "@tiptap/extension-focus";
 import { RichNoteToolbar } from "./RichNoteToolbar";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
 import { cn } from "@/lib/utils";
@@ -129,8 +132,11 @@ export function RichNoteEditor({
 }: RichNoteEditorProps) {
   const { t } = useTranslation();
   const [focused, setFocused] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   const kbVisible = useVirtualKeyboardVisible();
   const lastEmittedRef = useRef<string>("");
+  // Tick para forçar leitura do CharacterCount após updates de conteúdo.
+  const [, setTick] = useState(0);
 
   const editor = useEditor(
     {
@@ -145,6 +151,14 @@ export function RichNoteEditor({
         Underline,
         Subscript,
         Superscript,
+        // Onda 7.8 — Tipografia premium: aspas curvas, travessões,
+        // reticências e setas convertidos automaticamente enquanto digita.
+        Typography,
+        // Contagem viva de palavras e caracteres (sem custo perceptível;
+        // o storage é exposto pelo editor.storage.characterCount).
+        CharacterCount.configure({}),
+        // Marca o bloco com `.has-focus` para o modo foco dimar os demais.
+        TiptapFocus.configure({ className: "has-focus", mode: "all" }),
         Link.configure({
           openOnClick: false,
           autolink: true,
@@ -193,6 +207,7 @@ export function RichNoteEditor({
         const html = editor.isEmpty ? "" : editor.getHTML();
         lastEmittedRef.current = html;
         onChange(html);
+        setTick((n) => (n + 1) % 1_000_000);
       },
       onFocus: () => setFocused(true),
       onBlur: () => setFocused(false),
@@ -215,6 +230,14 @@ export function RichNoteEditor({
   // Esconde toolbar quando o teclado recolhe e o editor não tem foco (mobile).
   const toolbarVisible = focused || !kbVisible;
 
+  // Stats vivas (CharacterCount). Reading time ≈ 200 palavras/min.
+  type CharCountStorage = { words: () => number; characters: () => number };
+  const cc = editor?.storage.characterCount as CharCountStorage | undefined;
+  const words = cc?.words?.() ?? 0;
+  const chars = cc?.characters?.() ?? 0;
+  const readingMin = Math.max(1, Math.round(words / 200));
+  const showFooter = focused || words > 0;
+
   return (
     <div
       className={cn(
@@ -222,13 +245,51 @@ export function RichNoteEditor({
         // "congelar linha superior" (Excel): a barra fica sticky no topo
         // desta caixa e o conteúdo rola por baixo dela.
         "rounded-md border bg-background relative overflow-y-auto overflow-x-hidden",
+        // Onda 7.8 — modo foco: dim em parágrafos fora do bloco ativo
+        // (apenas visual; o conteúdo continua editável).
+        focusMode && [
+          "[&_.ProseMirror>*]:opacity-40 [&_.ProseMirror>*]:transition-opacity",
+          "[&_.ProseMirror>.has-focus]:opacity-100",
+        ],
         className,
       )}
       style={{ minHeight, maxHeight: "70vh" }}
       onClick={() => editor?.chain().focus().run()}
     >
-      <RichNoteToolbar editor={editor} visible={toolbarVisible} />
+      <RichNoteToolbar
+        editor={editor}
+        visible={toolbarVisible}
+        focusMode={focusMode}
+        onToggleFocusMode={() => setFocusMode((v) => !v)}
+      />
       <EditorContent editor={editor} />
+      {showFooter && (
+        <div
+          className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/90 px-3 py-1 text-[11px] text-muted-foreground backdrop-blur"
+          aria-live="polite"
+        >
+          <span>
+            {t("personalOutlines.editor.stats.words", {
+              defaultValue: "{{count}} palavras",
+              count: words,
+            })}
+          </span>
+          <span aria-hidden>·</span>
+          <span>
+            {t("personalOutlines.editor.stats.chars", {
+              defaultValue: "{{count}} caracteres",
+              count: chars,
+            })}
+          </span>
+          <span aria-hidden>·</span>
+          <span>
+            {t("personalOutlines.editor.stats.reading", {
+              defaultValue: "~{{min}} min de leitura",
+              min: readingMin,
+            })}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

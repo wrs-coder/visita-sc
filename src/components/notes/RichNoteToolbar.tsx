@@ -33,6 +33,7 @@ import {
   IndentIncrease,
   IndentDecrease,
   Type,
+  Focus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,9 +67,16 @@ const FONT_FAMILIES: { label: string; value: string }[] = [
 interface ToolbarProps {
   editor: Editor | null;
   visible?: boolean;
+  focusMode?: boolean;
+  onToggleFocusMode?: () => void;
 }
 
-export function RichNoteToolbar({ editor, visible = true }: ToolbarProps) {
+export function RichNoteToolbar({
+  editor,
+  visible = true,
+  focusMode = false,
+  onToggleFocusMode,
+}: ToolbarProps) {
   const { t } = useTranslation();
   const [colorOpen, setColorOpen] = useState(false);
   const [hlOpen, setHlOpen] = useState(false);
@@ -644,6 +652,26 @@ export function RichNoteToolbar({ editor, visible = true }: ToolbarProps) {
           </Button>
         </PopoverContent>
       </Popover>
+
+      {onToggleFocusMode && (
+        <>
+          {sep}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={btn(focusMode)}
+            title={t("personalOutlines.editor.toolbar.focusMode", {
+              defaultValue: "Modo foco",
+            })}
+            aria-pressed={focusMode}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onToggleFocusMode}
+          >
+            <Focus className="h-4 w-4" />
+          </Button>
+        </>
+      )}
     </div>
   );
 }

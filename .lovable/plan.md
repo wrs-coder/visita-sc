@@ -1,13 +1,16 @@
-# Onda 7.7 — Command Palette expandida ✅ entregue
+# Onda 7.8 — Editor de notas premium ✅ entregue
 
-`src/components/CommandPalette.tsx` ganhou:
-- **Recentes**: últimas 5 rotas visitadas (localStorage `visita-sc:cmdk-recents`).
-- **Ações rápidas**: Sincronizar agora, Tema claro/escuro, trocar idioma (pt/en/es),
-  Apoiar o desenvolvedor, Sair (respeita guard de Modo Offline do `useAuth.signOut`).
-- Navegação completa por seção (Principal / Visita / Modelos) mantida.
-- Shortcut hint ⌘S no item de sincronização.
+`src/components/notes/RichNoteEditor.tsx` ganhou três extensões Tiptap e um rodapé vivo:
+- `@tiptap/extension-typography` — aspas curvas, travessões, reticências e setas
+  convertidos enquanto digita.
+- `@tiptap/extension-character-count` — base para o rodapé com contagem viva.
+- `@tiptap/extension-focus` (Focus) — marca o bloco ativo com `has-focus`,
+  habilitando o **Modo foco** (dim 40% nos demais parágrafos).
 
-i18n: chaves novas em `commandPalette.sectionRecent`, `sectionActions` e `actions.*` (pt/en/es).
-Continua 100% client-side, sem consulta ao banco.
+`src/components/notes/RichNoteToolbar.tsx` ganhou um botão **Modo foco** (ícone
+`Focus`, `aria-pressed`, props opcionais `focusMode` / `onToggleFocusMode`).
+
+Rodapé sticky no fundo do editor mostra `palavras · caracteres · ~min de leitura`
+(visível quando o editor está focado ou já tem conteúdo, `aria-live="polite"`).
 
 `bunx tsc --noEmit` limpo.
