@@ -1,13 +1,13 @@
-# Onda 7.6 — PDF local com `pdf-lib` ✅ entregue
+# Onda 7.7 — Command Palette expandida ✅ entregue
 
-Engine compartilhada em `src/lib/pdf/pdf-engine.ts` (API jsPDF-like sobre pdf-lib).
-Migrados:
-- `src/components/visit-week/pdf-utils.ts` (API pública preservada)
-- `src/components/elder-program/ElderExecutiveReportDialog.tsx`
-- `src/routes/_app.notas.tsx`
+`src/components/CommandPalette.tsx` ganhou:
+- **Recentes**: últimas 5 rotas visitadas (localStorage `visita-sc:cmdk-recents`).
+- **Ações rápidas**: Sincronizar agora, Tema claro/escuro, trocar idioma (pt/en/es),
+  Apoiar o desenvolvedor, Sair (respeita guard de Modo Offline do `useAuth.signOut`).
+- Navegação completa por seção (Principal / Visita / Modelos) mantida.
+- Shortcut hint ⌘S no item de sincronização.
 
-Mantidos em jsPDF (rasterizam HTML via html-to-image — migração entra como 7.6b):
-- `src/components/visit-summary/VisitSummaryView.tsx`
-- `src/routes/visitante.painel.tsx`
+i18n: chaves novas em `commandPalette.sectionRecent`, `sectionActions` e `actions.*` (pt/en/es).
+Continua 100% client-side, sem consulta ao banco.
 
 `bunx tsc --noEmit` limpo.
