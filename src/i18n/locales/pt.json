@@ -130,8 +130,21 @@
   },
   "commandPalette": {
     "open": "Abrir busca rápida",
-    "placeholder": "Buscar telas… (Ctrl/⌘ K)",
-    "empty": "Nada encontrado."
+    "placeholder": "Buscar telas e ações… (Ctrl/⌘ K)",
+    "empty": "Nada encontrado.",
+    "sectionRecent": "Recentes",
+    "sectionActions": "Ações rápidas",
+    "actions": {
+      "sync": "Sincronizar agora",
+      "themeLight": "Tema: claro",
+      "themeDark": "Tema: escuro",
+      "themeSystem": "Tema: sistema",
+      "langPt": "Idioma: Português",
+      "langEn": "Idioma: Inglês",
+      "langEs": "Idioma: Espanhol",
+      "support": "Apoiar o desenvolvedor",
+      "logout": "Sair da conta"
+    }
   },
   "sidebar": {
     "sectionPrincipal": "Principal",

@@ -130,8 +130,21 @@
   },
   "commandPalette": {
     "open": "Open quick search",
-    "placeholder": "Search screens… (Ctrl/⌘ K)",
-    "empty": "No results."
+    "placeholder": "Search screens and actions… (Ctrl/⌘ K)",
+    "empty": "No results.",
+    "sectionRecent": "Recent",
+    "sectionActions": "Quick actions",
+    "actions": {
+      "sync": "Sync now",
+      "themeLight": "Theme: light",
+      "themeDark": "Theme: dark",
+      "themeSystem": "Theme: system",
+      "langPt": "Language: Portuguese",
+      "langEn": "Language: English",
+      "langEs": "Language: Spanish",
+      "support": "Support the developer",
+      "logout": "Sign out"
+    }
   },
   "sidebar": {
     "sectionPrincipal": "Main",
