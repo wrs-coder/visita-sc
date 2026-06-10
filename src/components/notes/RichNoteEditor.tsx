@@ -21,6 +21,7 @@ import { Superscript } from "@tiptap/extension-superscript";
 import { FontFamily } from "@tiptap/extension-font-family";
 import { Typography } from "@tiptap/extension-typography";
 import { CharacterCount } from "@tiptap/extension-character-count";
+import { FocusClasses as TiptapFocus } from "@tiptap/extension-focus";
 import { RichNoteToolbar } from "./RichNoteToolbar";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
 import { cn } from "@/lib/utils";
@@ -156,6 +157,8 @@ export function RichNoteEditor({
         // Contagem viva de palavras e caracteres (sem custo perceptível;
         // o storage é exposto pelo editor.storage.characterCount).
         CharacterCount.configure({}),
+        // Marca o bloco com `.has-focus` para o modo foco dimar os demais.
+        TiptapFocus.configure({ className: "has-focus", mode: "all" }),
         Link.configure({
           openOnClick: false,
           autolink: true,
