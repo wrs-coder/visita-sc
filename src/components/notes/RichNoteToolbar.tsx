@@ -652,6 +652,26 @@ export function RichNoteToolbar({
           </Button>
         </PopoverContent>
       </Popover>
+
+      {onToggleFocusMode && (
+        <>
+          {sep}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={btn(focusMode)}
+            title={t("personalOutlines.editor.toolbar.focusMode", {
+              defaultValue: "Modo foco",
+            })}
+            aria-pressed={focusMode}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onToggleFocusMode}
+          >
+            <Focus className="h-4 w-4" />
+          </Button>
+        </>
+      )}
     </div>
   );
 }
