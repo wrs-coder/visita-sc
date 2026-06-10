@@ -19,6 +19,8 @@ import { TaskItem } from "@tiptap/extension-task-item";
 import { Subscript } from "@tiptap/extension-subscript";
 import { Superscript } from "@tiptap/extension-superscript";
 import { FontFamily } from "@tiptap/extension-font-family";
+import { Typography } from "@tiptap/extension-typography";
+import { CharacterCount } from "@tiptap/extension-character-count";
 import { RichNoteToolbar } from "./RichNoteToolbar";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
 import { cn } from "@/lib/utils";
@@ -145,6 +147,12 @@ export function RichNoteEditor({
         Underline,
         Subscript,
         Superscript,
+        // Onda 7.8 — Tipografia premium: aspas curvas, travessões,
+        // reticências e setas convertidos automaticamente enquanto digita.
+        Typography,
+        // Contagem viva de palavras e caracteres (sem custo perceptível;
+        // o storage é exposto pelo editor.storage.characterCount).
+        CharacterCount.configure({}),
         Link.configure({
           openOnClick: false,
           autolink: true,
