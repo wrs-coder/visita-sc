@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   CommandDialog,
   CommandEmpty,
@@ -9,15 +10,24 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
+  CommandShortcut,
 } from "@/components/ui/command";
 import {
   LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock,
   Building2, Car, FileStack, MapPin, UserCircle, Plane, ClipboardList,
-  BookOpen, FileText, Heart, Trash2, Layers, Search,
+  BookOpen, FileText, Heart, Trash2, Layers, Search, RefreshCw, Sun, Moon,
+  Languages, LogOut, Coffee, Clock,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/hooks/use-theme";
+import { useActiveCongregation } from "@/hooks/use-active-congregation";
+import { useOutlinesSync } from "@/hooks/use-outlines-sync";
+import { prefetchAllForOffline } from "@/lib/offline-prefetch";
+import { changeLanguage, type SupportedLanguage } from "@/i18n";
+import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
+import { toast } from "sonner";
 
-type Entry = {
+type NavEntry = {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -25,20 +35,61 @@ type Entry = {
   superOnly?: boolean;
 };
 
+const RECENT_KEY = "visita-sc:cmdk-recents";
+const RECENT_MAX = 5;
+
+function loadRecents(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(RECENT_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw) as unknown;
+    return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function pushRecent(path: string) {
+  if (typeof window === "undefined") return;
+  // Ignora rotas fora de /_app e a própria home pública.
+  if (!path || path === "/" || path.startsWith("/visitante") || path.startsWith("/onboarding")) return;
+  try {
+    const cur = loadRecents().filter((p) => p !== path);
+    cur.unshift(path);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(cur.slice(0, RECENT_MAX)));
+  } catch {
+    /* quota */
+  }
+}
+
 /**
- * Command Palette global (⌘K / Ctrl+K). Reúne todas as rotas internas em uma
- * busca única — atalho perfeito em telas grandes, sem inflar o app
- * (cmdk já é dependência usada pelos componentes shadcn).
+ * Command Palette global (⌘K / Ctrl+K).
  *
- * Não consulta o banco: só atalhos de navegação.
+ * Onda 7.7 — expandida:
+ *  - Recentes (últimas rotas visitadas, persistidas em localStorage).
+ *  - Ações rápidas: sincronizar, alternar tema, trocar idioma, apoiar,
+ *    sair (com proteção em Modo Offline via signOut do AuthProvider).
+ *  - Navegação completa por seção (igual à sidebar) — sem consultar o banco.
+ *  - Shortcut hints à direita para ações principais.
  */
 export function CommandPalette() {
-  const { t } = useTranslation();
-  const { role, user, loading } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { role, user, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const qc = useQueryClient();
+  const [, setTheme] = useTheme();
+  const activeCong = useActiveCongregation();
+  const syncOutlines = useOutlinesSync({ auto: false });
+
   const [open, setOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [recents, setRecents] = useState<string[]>(() => loadRecents());
+
   const isSuper = role === "superintendent";
 
+  // Hotkey ⌘K / Ctrl+K
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
@@ -50,7 +101,13 @@ export function CommandPalette() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const entries: Entry[] = useMemo(() => ([
+  // Recents: registra navegações do utilizador.
+  useEffect(() => {
+    pushRecent(location.pathname);
+    setRecents(loadRecents());
+  }, [location.pathname]);
+
+  const entries: NavEntry[] = useMemo(() => ([
     { to: "/dashboard", label: t("sidebar.home"), icon: LayoutDashboard, group: "principal" as const },
     { to: "/cronograma", label: t("sidebar.schedule"), icon: CalendarDays, group: "principal" as const },
     { to: "/configuracoes", label: t("sidebar.itinerary"), icon: Plane, group: "principal" as const },
@@ -74,21 +131,53 @@ export function CommandPalette() {
     { to: "/modelo-reunioes-discursos", label: t("sidebar.meetingTalkTemplates"), icon: Layers, group: "modelos" as const, superOnly: true },
     { to: "/modelo-programacao-ancioes", label: t("sidebar.elderProgramTemplate", { defaultValue: "Modelo Programação Anciãos" }), icon: BookOpen, group: "modelos" as const, superOnly: true },
     { to: "/perfil", label: t("sidebar.myProfile"), icon: UserCircle, group: "modelos" as const },
-  ] satisfies Entry[]).filter((e) => !e.superOnly || isSuper), [t, isSuper]);
+  ] satisfies NavEntry[]).filter((e) => !e.superOnly || isSuper), [t, isSuper]);
+
+  const entryByPath = useMemo(() => {
+    const m = new Map<string, NavEntry>();
+    for (const e of entries) m.set(e.to, e);
+    return m;
+  }, [entries]);
 
   if (loading || !user) return null;
 
-  const groups: Array<{ id: Entry["group"]; label: string }> = [
+  const groups: Array<{ id: NavEntry["group"]; label: string }> = [
     { id: "principal", label: t("sidebar.sectionPrincipal") },
     { id: "visita", label: t("sidebar.sectionVisita") },
     { id: "modelos", label: t("sidebar.sectionModelos") },
   ];
 
-  const go = (to: string) => {
-    setOpen(false);
-    // pequena espera para o overlay fechar antes da navegação evitar flicker
-    setTimeout(() => navigate({ to: to as never }), 30);
+  const close = () => setOpen(false);
+  const run = (fn: () => void | Promise<void>) => {
+    close();
+    // pequena espera para o overlay fechar antes de executar a ação (evita flicker/focus)
+    setTimeout(() => { void fn(); }, 30);
   };
+  const go = (to: string) => run(() => navigate({ to: to as never }));
+
+  const syncNow = async () => {
+    try {
+      await syncOutlines();
+      if (user?.id) {
+        await prefetchAllForOffline({
+          queryClient: qc,
+          userId: user.id,
+          congregationId: activeCong?.id ?? null,
+          role: role ?? null,
+          t: (k) => t(k),
+        });
+      }
+      toast.success(t("sync.done", { defaultValue: "Sincronizado" }));
+    } catch {
+      toast.error(t("sync.error", { defaultValue: "Falha ao sincronizar" }));
+    }
+  };
+
+  const recentEntries = recents
+    .map((p) => entryByPath.get(p))
+    .filter((x): x is NavEntry => !!x)
+    .filter((e) => e.to !== location.pathname)
+    .slice(0, RECENT_MAX);
 
   return (
     <>
@@ -106,12 +195,87 @@ export function CommandPalette() {
         <CommandInput placeholder={t("commandPalette.placeholder")} />
         <CommandList>
           <CommandEmpty>{t("commandPalette.empty")}</CommandEmpty>
-          {groups.map((g, idx) => {
+
+          {recentEntries.length > 0 && (
+            <>
+              <CommandGroup heading={t("commandPalette.sectionRecent")}>
+                {recentEntries.map((e) => {
+                  const Icon = e.icon;
+                  return (
+                    <CommandItem
+                      key={`recent-${e.to}`}
+                      value={`recent ${e.label} ${e.to}`}
+                      onSelect={() => go(e.to)}
+                    >
+                      <Clock className="mr-2 h-4 w-4 opacity-60" />
+                      <span>{e.label}</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+              <CommandSeparator />
+            </>
+          )}
+
+          <CommandGroup heading={t("commandPalette.sectionActions")}>
+            <CommandItem value="sync sincronizar" onSelect={() => run(syncNow)}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              <span>{t("commandPalette.actions.sync")}</span>
+              <CommandShortcut>⌘S</CommandShortcut>
+            </CommandItem>
+            <CommandItem value="theme light claro" onSelect={() => run(() => setTheme("light"))}>
+              <Sun className="mr-2 h-4 w-4" />
+              <span>{t("commandPalette.actions.themeLight")}</span>
+            </CommandItem>
+            <CommandItem value="theme dark escuro oscuro" onSelect={() => run(() => setTheme("dark"))}>
+              <Moon className="mr-2 h-4 w-4" />
+              <span>{t("commandPalette.actions.themeDark")}</span>
+            </CommandItem>
+            {(["pt", "en", "es"] as SupportedLanguage[])
+              .filter((l) => l !== i18n.language)
+              .map((l) => (
+                <CommandItem
+                  key={`lang-${l}`}
+                  value={`language idioma ${l}`}
+                  onSelect={() => run(() => { void changeLanguage(l); })}
+                >
+                  <Languages className="mr-2 h-4 w-4" />
+                  <span>
+                    {t(
+                      l === "pt"
+                        ? "commandPalette.actions.langPt"
+                        : l === "en"
+                          ? "commandPalette.actions.langEn"
+                          : "commandPalette.actions.langEs",
+                    )}
+                  </span>
+                </CommandItem>
+              ))}
+            <CommandItem
+              value="support coffee apoiar desenvolvedor"
+              onSelect={() => run(() => setSupportOpen(true))}
+            >
+              <Coffee className="mr-2 h-4 w-4" />
+              <span>{t("commandPalette.actions.support")}</span>
+            </CommandItem>
+            <CommandItem
+              value="logout sair"
+              onSelect={() => run(async () => {
+                await signOut();
+                navigate({ to: "/" });
+              })}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>{t("commandPalette.actions.logout")}</span>
+            </CommandItem>
+          </CommandGroup>
+
+          {groups.map((g) => {
             const items = entries.filter((e) => e.group === g.id);
             if (items.length === 0) return null;
             return (
               <div key={g.id}>
-                {idx > 0 && <CommandSeparator />}
+                <CommandSeparator />
                 <CommandGroup heading={g.label}>
                   {items.map((e) => {
                     const Icon = e.icon;
@@ -132,6 +296,8 @@ export function CommandPalette() {
           })}
         </CommandList>
       </CommandDialog>
+
+      <SupportDeveloperDialog open={supportOpen} onOpenChange={setSupportOpen} />
     </>
   );
 }
