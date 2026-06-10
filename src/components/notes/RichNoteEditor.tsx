@@ -21,7 +21,7 @@ import { Superscript } from "@tiptap/extension-superscript";
 import { FontFamily } from "@tiptap/extension-font-family";
 import { Typography } from "@tiptap/extension-typography";
 import { CharacterCount } from "@tiptap/extension-character-count";
-import { FocusClasses as TiptapFocus } from "@tiptap/extension-focus";
+import { Focus as TiptapFocus } from "@tiptap/extension-focus";
 import { RichNoteToolbar } from "./RichNoteToolbar";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
 import { cn } from "@/lib/utils";
