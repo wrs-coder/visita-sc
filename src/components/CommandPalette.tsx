@@ -16,7 +16,7 @@ import {
   LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock,
   Building2, Car, FileStack, MapPin, UserCircle, Plane, ClipboardList,
   BookOpen, FileText, Heart, Trash2, Layers, Search, RefreshCw, Sun, Moon,
-  Laptop, Languages, LogOut, Coffee, Clock,
+  Languages, LogOut, Coffee, Clock,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
@@ -231,17 +231,13 @@ export function CommandPalette() {
               <Moon className="mr-2 h-4 w-4" />
               <span>{t("commandPalette.actions.themeDark")}</span>
             </CommandItem>
-            <CommandItem value="theme system sistema" onSelect={() => run(() => setTheme("system"))}>
-              <Laptop className="mr-2 h-4 w-4" />
-              <span>{t("commandPalette.actions.themeSystem")}</span>
-            </CommandItem>
             {(["pt", "en", "es"] as SupportedLanguage[])
               .filter((l) => l !== i18n.language)
               .map((l) => (
                 <CommandItem
                   key={`lang-${l}`}
                   value={`language idioma ${l}`}
-                  onSelect={() => run(() => changeLanguage(l))}
+                  onSelect={() => run(() => { void changeLanguage(l); })}
                 >
                   <Languages className="mr-2 h-4 w-4" />
                   <span>
