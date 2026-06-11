@@ -107,6 +107,20 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const { i18n } = useTranslation();
+
+  // Onda 7.9 — Sincroniza <html lang> com o idioma ativo (a11y / SR).
+  useEffect(() => {
+    const apply = (lng: string) => {
+      const norm = (lng || "pt").toLowerCase();
+      const map: Record<string, string> = { pt: "pt-BR", en: "en", es: "es" };
+      document.documentElement.lang = map[norm.split("-")[0]] ?? norm;
+    };
+    apply(i18n.language);
+    i18n.on("languageChanged", apply);
+    return () => { i18n.off("languageChanged", apply); };
+  }, [i18n]);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       // Em Modo Offline, ignoramos eventos do supabase auth para evitar
