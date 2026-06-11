@@ -31,7 +31,8 @@
   "a11y": {
     "skipToContent": "Saltar al contenido",
     "openMenu": "Abrir menú de navegación",
-    "closeMenu": "Cerrar menú"
+    "closeMenu": "Cerrar menú",
+    "pageAnnounce": "{{name}} cargado"
   },
   "languages": {
     "pt": "Portugués",
