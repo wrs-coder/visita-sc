@@ -31,6 +31,9 @@ export function OfflineReadyBadge({ className }: { className?: string }) {
     <span
       title={label}
       aria-label={label}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
       className={cn(
         "inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[11px] font-medium",
         state.done ? "text-success" : "text-primary-foreground/85",
