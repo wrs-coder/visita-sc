@@ -267,6 +267,8 @@ function AppLayout() {
       <a href="#main-content" className="skip-to-content">
         {t("a11y.skipToContent", { defaultValue: "Pular para o conteúdo" })}
       </a>
+      {/* Onda 7.9 — Anunciador SR-only de mudança de rota. */}
+      <RouteAnnouncer pathname={location.pathname} />
       {/* Mobile top bar */}
       <header className="md:hidden sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm">
         <div className="flex items-center justify-between px-3 h-14">
