@@ -87,48 +87,71 @@ function getSupabaseHost(): string {
 }
 
 let originalFetch: typeof fetch | null = null;
+function urlOf(input: RequestInfo | URL): string {
+  try {
+    return typeof input === "string"
+      ? input
+      : input instanceof URL
+        ? input.href
+        : input.url;
+  } catch {
+    return "";
+  }
+}
+
+async function serveFromCache(url: string, init?: RequestInit): Promise<Response | null> {
+  try {
+    if (typeof caches === "undefined") return null;
+    const method = (init?.method ?? "GET").toUpperCase();
+    if (method !== "GET") return null;
+    const req = new Request(url, { method });
+    const hit = await caches.match(req, { ignoreVary: true, ignoreSearch: false });
+    return hit ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function applyFetchInterceptor() {
   if (typeof window === "undefined") return;
   if (!originalFetch) originalFetch = window.fetch.bind(window);
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = urlOf(input);
+    const host = getSupabaseHost();
+    const isSupabase = !!host && url.includes(host);
+
     if (current === "offline") {
-      let url = "";
-      try {
-        url =
-          typeof input === "string"
-            ? input
-            : input instanceof URL
-              ? input.href
-              : input.url;
-      } catch {
-        /* deixa passar */
-      }
-      const host = getSupabaseHost();
-      const isSupabase = !!host && url.includes(host);
       if (isSupabase) {
-        // Em Modo Offline, NÃO derrubamos a chamada imediatamente: primeiro
-        // tentamos servir do Cache Storage (gravado pelo Service Worker em
-        // navegações anteriores) — é exatamente isso que mantém as telas
-        // populadas sem internet. Só quando não há nada em cache devolvemos
-        // um erro de rede sintético para que os fallbacks (snapshot-cache,
-        // React Query persistido) entrem em ação.
-        try {
-          if (typeof caches !== "undefined") {
-            const req = new Request(url, {
-              method: (init?.method ?? "GET").toUpperCase(),
-            });
-            if (req.method === "GET") {
-              const hit = await caches.match(req, { ignoreVary: true, ignoreSearch: false });
-              if (hit) return hit;
-            }
-          }
-        } catch {
-          /* segue para o erro abaixo */
-        }
+        // Modo Offline manual: tenta Cache Storage primeiro; se nada,
+        // devolve erro de rede sintético para os fallbacks (snapshot-cache,
+        // React Query persistido) entrarem em ação.
+        const cached = await serveFromCache(url, init);
+        if (cached) return cached;
         throw new TypeError("Failed to fetch (offline mode)");
       }
+      return originalFetch!(input as RequestInfo, init);
     }
-    return originalFetch!(input as RequestInfo, init);
+
+    // Onda 7.4b — Modo Online com rede instável: se a chamada ao Supabase
+    // falhar por rede (ou voltar 5xx), servimos do Cache Storage como
+    // contingência. O botão "Modo Off-line" continua sendo a ação principal
+    // recomendada quando o usuário sabe que vai ficar sem rede; isto é só
+    // uma rede de proteção para quedas abruptas / esquecimentos.
+    if (!isSupabase) {
+      return originalFetch!(input as RequestInfo, init);
+    }
+    try {
+      const res = await originalFetch!(input as RequestInfo, init);
+      if (!res.ok && res.status >= 500) {
+        const cached = await serveFromCache(url, init);
+        if (cached) return cached;
+      }
+      return res;
+    } catch (err) {
+      const cached = await serveFromCache(url, init);
+      if (cached) return cached;
+      throw err;
+    }
   };
 }
 
