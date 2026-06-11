@@ -45,6 +45,7 @@ import { accentForPath, accentStyle } from "@/lib/route-accent";
 import { RouteTransition } from "@/components/RouteTransition";
 import { useOfflineWarmup } from "@/hooks/use-offline-warmup";
 import { OfflineReadyBadge } from "@/components/OfflineReadyBadge";
+import { RouteAnnouncer } from "@/components/RouteAnnouncer";
 
 
 export const Route = createFileRoute("/_app")({
