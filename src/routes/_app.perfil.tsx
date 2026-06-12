@@ -121,7 +121,7 @@ function Page() {
       const blob = await packBackupZip({
         manifest: {
           type: "visita_sc_backup_zip",
-          version: 2,
+          version: 3,
           exportedAt: new Date().toISOString(),
           app: "visita-sc",
         },

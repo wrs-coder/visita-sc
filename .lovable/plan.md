@@ -1,61 +1,66 @@
-# Onda 7.11 — Missão 05B (Warm-up incremental) ✅ entregue
+# Onda 7.11 — Missão 01 (Backup com cobertura total) ✅ entregue
 
-Acaba com o download redundante do servidor a cada login/reinicialização.
-O app agora confia no cache e só baixa o que mudou de fato.
+Backup agora captura **tudo** o que o app guarda localmente, sem
+depender de listas hardcoded de stores ou de chaves.
 
-## Como funciona
+## O que mudou
 
-### Gate exterior (24h + congregação)
-`src/hooks/use-offline-warmup.ts`
-- Antes de qualquer sondagem, lê `localStorage["visita-sc:last-warmup"]`.
-- Se o último warm-up foi há menos de **24h** E a congregação ativa não
-  mudou → marca `done: true` e **encerra** sem nenhuma requisição.
-- Em logout deliberado, `__root.tsx` agora limpa
-  `visita-sc:last-warmup` e `visita-sc:warmup-session` (junto com
-  `queryClient.clear()`).
+### `src/lib/backup-client.ts` — dump genérico
+- **IndexedDB**: itera `db.objectStoreNames` da base `visita-sc-field` e
+  faz `getAll()` em cada store. Novos stores (ex.: futuras "Anotações"
+  da subaba 02) entram no backup automaticamente, sem reescrever código.
+- **localStorage**: scan total. Exclui apenas chaves específicas do
+  dispositivo/sessão (`sb-*` do Supabase, `visita-sc:logout-intent`,
+  `visita-sc:warmup-session`, `visita-sc:last-warmup`,
+  `visita-sc:offline-ready`, `visita-sc-rq-cache`, prefixo
+  `visita-sc:rq:`). Tudo o mais é incluído — bíblia ativa,
+  marca-textos, configurações de leitura, rascunhos de reuniões
+  (`meetings-draft:*`), perfil cacheado, preferências do dashboard,
+  pasta de notas colapsadas, sessão de visitante, eventos ocultos.
+- Espelha campos legacy (`notes/folders/libraries/bibles`) a partir do
+  mapa genérico, mantendo retro-compat na leitura.
 
-### Sondagem por passo
-`src/lib/offline-prefetch.ts`
-- Cada passo declara `tables: string[]`. Antes de baixar:
-  1. Faz `select("updated_at").order(desc).limit(1)` em paralelo nas
-     tabelas do passo (~1 linha cada, custo desprezível).
-  2. Compara cada `max(updated_at)` com o baseline em
-     `last-warmup.tables[<tabela>]`.
-  3. **Se todas batem** → passo é pulado por completo. Cache do React
-     Query (persistido em IndexedDB) supre a tela.
-  4. **Se alguma mudou** → re-fetch do passo inteiro (evita merges
-     complexos com `.in('visit_id', visitIds)`).
-- Ao final, grava `{ at, congId, userId, tables: {...} }` em
-  `localStorage["visita-sc:last-warmup"]`. Troca de usuário ou de
-  congregação descarta o baseline antigo automaticamente.
-- Novo parâmetro `force?: boolean` em `prefetchAllForOffline` permite
-  refetch obrigatório (não usado por padrão — sondagem já garante
-  correção).
-- Log final: `[offline-prefetch] warm-up concluído — baixados: X •
-  pulados (cache fresco): Y • erros: Z` (visível no console para
-  diagnose).
+### `src/lib/backup-package.ts` — manifest v3
+- Layout `client/indexeddb/<store>.json` para cada store; bíblia
+  continua dividida por library (`client/indexeddb/bibles/<libId>.json`)
+  com compressão nível 9.
+- `unpackBackupZip` aceita v2 e v3 transparentemente.
 
-## Comportamento esperado
+### `src/routes/_app.perfil.tsx`
+- Manifest gerado agora declara `version: 3`.
 
-| Cenário | Resultado |
-|---|---|
-| Login na mesma aba, <6h | Skip total (sessão) |
-| Novo login, <24h, mesma cong | Skip total (gate 24h) — zero requests |
-| Novo login, >24h, nada mudou no servidor | ~25 sondas de 1 linha; zero refetch |
-| Novo login, 2 tabelas mudaram | ~25 sondas; refetch só desses 2 passos |
-| Troca de congregação | Baseline descartado → warm-up completo |
-| Logout deliberado | `last-warmup` removido; novo login = warm-up completo |
+### Restauração genérica
+- `restoreClientBackup` reabre o IDB, lê o mapa `indexedDB` (ou o
+  reconstrói a partir dos campos legacy v2) e faz `put` em chunks de
+  1000 em cada store conhecido. Stores desconhecidos do dump
+  (versão futura) são ignorados em silêncio.
+- LocalStorage é reescrito, exceto chaves de sessão (não sobrescreve
+  o `sb-*-auth-token` do dispositivo que está restaurando).
+- Retorno expandido: `{ notes, folders, libraries, verses, stores, lsKeys }`.
+
+## Cobertura confirmada
+
+| Dado | Onde mora | Coberto? |
+|---|---|---|
+| Esboços pessoais (rascunho local) | IDB `notes` | ✅ |
+| Esboços pessoais (nuvem) | tabela `personal_outlines` | ✅ (já estava) |
+| Notas/considerações de campo | IDB `notes` | ✅ |
+| Pastas e subpastas | IDB `note_folders` | ✅ |
+| Bíblia importada (versículos) | IDB `bibles` | ✅ |
+| Metadados da biblioteca | IDB `bible_libraries` | ✅ |
+| Biblioteca ativa | LS `visita-sc-bible-active` | ✅ |
+| Marca-textos | LS `bible:highlights:v1` | ✅ |
+| Configurações de leitura | LS `bible:view-settings` | ✅ |
+| Rascunhos de reuniões | LS `meetings-draft:*` | ✅ |
+| Considerações privadas — congregação fixada | LS `notas_privadas_congregation_id` | ✅ |
+| Fila offline | LS `visita-sc:offline-queue` | ✅ |
+| Eventos do circuito ocultos | LS `visita-sc:hidden-circuit-events` | ✅ |
+| Tema/idioma | LS `visita-sc:theme:v1`, i18n | ✅ |
 
 ## Verificação
 - `bunx tsc --noEmit` 100% limpo.
-- Console mostra contadores `baixados / pulados / erros` ao final.
-
-## Missões anteriores
-- 05A — Persistência de login blindada ✅
-- 7.4b — Cache de contingência em modo online ✅
 
 ## Próximas missões
-- 01 — Backup com cobertura total (IDB + LS genéricos).
 - 02 — Subaba "Anotações" em Esboços Pessoais.
 - 03 — Popup bíblico persistente em Tela Cheia.
 - 04 — Olho expandido no cartão "Pastoreiem".
