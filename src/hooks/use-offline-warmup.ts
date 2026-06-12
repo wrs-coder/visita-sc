@@ -6,12 +6,33 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
-import { prefetchAllForOffline, type ProgressEvent } from "@/lib/offline-prefetch";
+import {
+  prefetchAllForOffline,
+  getLastWarmupAt,
+  LAST_WARMUP_KEY,
+  type ProgressEvent,
+} from "@/lib/offline-prefetch";
 import { prefetchRouteShells } from "@/lib/offline-shells";
 import { isOfflineMode } from "@/lib/connection-mode";
 
 const WARMUP_SESSION_KEY = "visita-sc:warmup-session";
 const WARMUP_TTL_MS = 6 * 60 * 60 * 1000; // 6h: re-warm em sessões longas
+// Onda 7.11 — Missão 05B: enquanto o último warm-up tiver menos de 24h e
+// a congregação ativa não tiver mudado, pulamos toda a sondagem.
+const WARMUP_FRESH_TTL_MS = 24 * 60 * 60 * 1000;
+
+function warmupFresh(congId: string | null): boolean {
+  try {
+    const raw = localStorage.getItem(LAST_WARMUP_KEY);
+    if (!raw) return false;
+    const s = JSON.parse(raw) as { at?: number; congId?: string | null };
+    if ((s.congId ?? null) !== congId) return false;
+    return Date.now() - (s.at ?? 0) < WARMUP_FRESH_TTL_MS;
+  } catch {
+    return false;
+  }
+}
+void getLastWarmupAt;
 
 type WarmupState = {
   running: boolean;
@@ -69,6 +90,14 @@ export function useOfflineWarmup() {
     if (isOfflineMode()) return;
     if (alreadyWarmed(user.id)) {
       state = { ...state, done: true };
+      emit();
+      return;
+    }
+
+    if (warmupFresh(activeCong?.id ?? null)) {
+      // Última pré-carga <24h e mesma congregação: nada para baixar.
+      markWarmed(user.id);
+      state = { ...state, running: false, done: true };
       emit();
       return;
     }

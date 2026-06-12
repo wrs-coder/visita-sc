@@ -139,6 +139,9 @@ function RootComponent() {
       // dados entre usuários.
       if (event === "SIGNED_OUT" || event === "SIGNED_IN") {
         queryClient.clear();
+        // Missão 05B: warm-up incremental fica preso ao user/cong anteriores.
+        try { localStorage.removeItem("visita-sc:last-warmup"); } catch { /* noop */ }
+        try { sessionStorage.removeItem("visita-sc:warmup-session"); } catch { /* noop */ }
       }
     });
     const onOnline = () => { flushQueue().catch((e) => console.warn("[boot] flush", e)); };
