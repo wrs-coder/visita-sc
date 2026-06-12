@@ -46,6 +46,8 @@ import {
 import { useTimerSize } from "@/lib/timer-size";
 import { TIMER_THEMES, useTimerTheme } from "@/lib/timer-theme";
 
+import { TIMER_THEMES, useTimerTheme } from "@/lib/timer-theme";
+
 interface OutlineTimerProps {
   outlineId: string;
   variant: "toolbar" | "fullscreen";
