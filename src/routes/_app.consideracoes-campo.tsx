@@ -1995,10 +1995,10 @@ function NoteEditor({
 
         <div className="grid gap-1.5 w-full max-w-full min-w-0">
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="sticky top-0 z-[40] -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <Label>{t("fieldConsiderations.fields.content")}</Label>
             {!isTalk && (
-              <div className="w-full sm:w-auto rounded-md border bg-muted/40 px-1.5 overflow-x-auto">
+              <div className="w-full sm:w-auto overflow-x-auto">
                 <OutlineTimer outlineId={draft.id} variant="toolbar" />
               </div>
             )}

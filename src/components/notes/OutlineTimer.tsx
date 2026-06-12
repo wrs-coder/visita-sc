@@ -1,5 +1,5 @@
 /**
- * OutlineTimer (Onda 7.12 / Missão 06).
+ * OutlineTimer (Onda 7.12 / Missão 06 + 06.1).
  *
  * Apresenta o cronômetro de esboço em duas variantes:
  *  - "toolbar":     compacto, embutido na barra de ferramentas do editor.
@@ -7,6 +7,7 @@
  *
  * Estado é vinculado ao outlineId via useOutlineTimer (persistido em
  * localStorage + sincronizado entre superfícies via BroadcastChannel).
+ * Tema visual configurável (semafórico ou alto contraste) via useTimerTheme.
  */
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -18,12 +19,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
   formatMMSS,
   useOutlineTimer,
   type AlertLevel,
 } from "@/hooks/use-outline-timer";
+import { TIMER_THEMES, useTimerTheme } from "@/lib/timer-theme";
 
 interface OutlineTimerProps {
   outlineId: string;
@@ -42,6 +45,7 @@ function alertColorClass(level: AlertLevel): string {
 export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProps) {
   const { t } = useTranslation();
   const timer = useOutlineTimer(outlineId);
+  const { themeId, preset, setThemeId } = useTimerTheme();
   const [targetOpen, setTargetOpen] = useState(false);
   const [customMin, setCustomMin] = useState<string>(
     String(Math.round(timer.targetSec / 60)),
@@ -51,12 +55,11 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   const displaySec =
     timer.mode === "countdown" ? timer.remainingSec : timer.elapsedSec;
   const display = formatMMSS(displaySec);
-  const colorClass = alertColorClass(timer.alertLevel);
   const isFullscreen = variant === "fullscreen";
+  const isAuto = themeId === "auto";
 
   const handleDisplayTap = () => {
     const now = Date.now();
-    // Single tap → toggleMode. (Double-tap não é necessário aqui.)
     if (now - lastTapRef.current < 60) return;
     lastTapRef.current = now;
     timer.toggleMode();
@@ -70,22 +73,25 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   };
 
   const wrapClass = cn(
-    "flex items-center gap-1.5 select-none",
+    "flex items-center gap-1.5 select-none rounded-md border",
     isFullscreen
       ? "fixed top-0 inset-x-0 z-[105] border-b bg-background/85 backdrop-blur px-3 py-1.5 justify-center"
-      : "min-h-7 flex-wrap",
+      : "min-h-7 flex-wrap px-1.5",
+    isAuto && !isFullscreen && "bg-muted/40",
+    !isAuto && preset.chipBg,
     className,
   );
 
   const iconBtnSize = isFullscreen ? "h-4 w-4" : "h-3.5 w-3.5";
   const iconBtnClass = cn(
-    "p-0 rounded-md hover:bg-muted transition-colors shrink-0",
+    "p-0 rounded-md transition-colors shrink-0",
     isFullscreen ? "h-8 w-8" : "h-7 w-7",
+    isAuto ? "hover:bg-muted" : preset.iconColor,
   );
   const displayClass = cn(
     "tabular-nums font-semibold cursor-pointer select-none px-1",
     isFullscreen ? "text-lg" : "text-xs",
-    colorClass,
+    isAuto ? alertColorClass(timer.alertLevel) : preset.chipText,
   );
 
   return (
@@ -103,11 +109,12 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
             className={iconBtnClass}
             title={t("personalOutlines.timer.setTarget", { defaultValue: "Definir tempo alvo" })}
             onMouseDown={(e) => e.preventDefault()}
+            aria-label={t("personalOutlines.timer.setTarget", { defaultValue: "Definir tempo alvo" })}
           >
             <TimerIcon className={iconBtnSize} />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-56 p-2 z-[140]" align="center">
+        <PopoverContent className="w-64 p-2 z-[140]" align="center">
           <div className="text-xs font-semibold mb-2 text-muted-foreground">
             {t("personalOutlines.timer.setTarget", { defaultValue: "Definir tempo alvo" })}
           </div>
@@ -147,6 +154,57 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
               {t("personalOutlines.timer.apply", { defaultValue: "OK" })}
             </Button>
           </div>
+
+          <Separator className="my-3" />
+
+          <div className="text-xs font-semibold mb-2 text-muted-foreground">
+            {t("personalOutlines.timer.accessibility", {
+              defaultValue: "Acessibilidade / Cores",
+            })}
+          </div>
+          <div
+            className="grid grid-cols-2 gap-1.5"
+            role="radiogroup"
+            aria-label={t("personalOutlines.timer.accessibility", {
+              defaultValue: "Acessibilidade / Cores",
+            })}
+          >
+            {TIMER_THEMES.map((p) => {
+              const active = themeId === p.id;
+              const label = t(p.labelKey, { defaultValue: p.id });
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => {
+                    setThemeId(p.id);
+                    setTargetOpen(false);
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md border p-1.5 text-left text-[11px] transition",
+                    active
+                      ? "border-primary ring-1 ring-primary"
+                      : "border-border hover:bg-muted",
+                  )}
+                  title={label}
+                >
+                  <span
+                    className={cn(
+                      "inline-flex items-center justify-center w-9 h-6 rounded text-[10px] font-bold tabular-nums border",
+                      p.swatchBg,
+                      p.swatchText,
+                    )}
+                    aria-hidden="true"
+                  >
+                    12
+                  </span>
+                  <span className="truncate flex-1">{label}</span>
+                </button>
+              );
+            })}
+          </div>
         </PopoverContent>
       </Popover>
 
@@ -173,6 +231,11 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
             ? t("personalOutlines.timer.pause", { defaultValue: "Pausar" })
             : t("personalOutlines.timer.play", { defaultValue: "Iniciar" })
         }
+        aria-label={
+          timer.isRunning
+            ? t("personalOutlines.timer.pause", { defaultValue: "Pausar" })
+            : t("personalOutlines.timer.play", { defaultValue: "Iniciar" })
+        }
       >
         {timer.isRunning ? (
           <Pause className={iconBtnSize} />
@@ -188,6 +251,7 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => timer.reset()}
         title={t("personalOutlines.timer.reset", { defaultValue: "Reiniciar" })}
+        aria-label={t("personalOutlines.timer.reset", { defaultValue: "Reiniciar" })}
       >
         <RotateCcw className={iconBtnSize} />
       </Button>

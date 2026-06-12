@@ -1493,6 +1493,24 @@
       "fontUp": "Increase font",
       "fontDown": "Decrease font"
     },
+    "timer": {
+      "label": "Outline timer",
+      "setTarget": "Set target time",
+      "minShort": "min",
+      "custom": "Custom",
+      "apply": "OK",
+      "play": "Start",
+      "pause": "Pause",
+      "reset": "Reset",
+      "toggleMode": "Toggle countdown/countup",
+      "accessibility": "Accessibility / Colors",
+      "themeAuto": "Automatic colors",
+      "themeYellowOnBlack": "Neon yellow on black",
+      "themeBlackOnYellow": "Black on yellow",
+      "themeRedVivid": "Vivid red",
+      "themeWhiteOnBlack": "White on black",
+      "themeGreenNeon": "Neon green"
+    },
     "editor": {
       "collapseMeta": "Collapse header",
       "expandMeta": "Expand header",
