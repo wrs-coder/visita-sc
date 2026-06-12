@@ -2011,6 +2011,7 @@ function NoteEditor({
             placeholder={t("fieldConsiderations.fields.contentPh")}
             noteId={draft.id}
             minHeight="0"
+            maxHeight="none"
             className="flex-1 min-h-0"
             outlineId={isTalk ? undefined : draft.id}
           />
