@@ -1511,11 +1511,13 @@ function Page() {
                           <Download className="h-3.5 w-3.5 mr-1" />
                           {t("personalOutlines.folders.exportNote", { defaultValue: "Exportar" })}
                         </Button>
-                        <Button size="sm" variant="outline" className="h-7 px-2" disabled={cloudBusy}
-                          onClick={() => handlePushManyByIds(Array.from(selectedIds))}>
-                          <CloudUpload className="h-3.5 w-3.5 mr-1" />
-                          {t("personalOutlines.cloud.push", { defaultValue: "Nuvem" })}
-                        </Button>
+                        {activeType !== "talk_notes" && (
+                          <Button size="sm" variant="outline" className="h-7 px-2" disabled={cloudBusy}
+                            onClick={() => handlePushManyByIds(Array.from(selectedIds))}>
+                            <CloudUpload className="h-3.5 w-3.5 mr-1" />
+                            {t("personalOutlines.cloud.push", { defaultValue: "Nuvem" })}
+                          </Button>
+                        )}
                         <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive"
                           onClick={() => handleDeleteMany(Array.from(selectedIds))}>
                           <Trash2 className="h-3.5 w-3.5 mr-1" />
