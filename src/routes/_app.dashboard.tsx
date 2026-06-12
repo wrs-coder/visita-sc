@@ -1943,6 +1943,83 @@ function Dashboard() {
                 </ul>
               )}
             </DayDetailsDialog>
+
+            {/* Pastoreiem o Rebanho de Deus — 4 subabas */}
+            {([
+              { key: "elder-pastoral" as const, items: elderPastoral, title: "Pastoreio" },
+              { key: "elder-encouragement" as const, items: elderEncouragement, title: "Encorajamento" },
+              { key: "elder-recommendations" as const, items: elderRecommendations, title: "Recomendações" },
+              { key: "elder-local" as const, items: elderLocal, title: "Assuntos Locais" },
+            ]).map(({ key, items, title }) => (
+              <DayDetailsDialog
+                key={key}
+                open={openDetails === key}
+                onOpenChange={(o) => !o && closeDetails()}
+                title={`Pastoreiem o Rebanho · ${title}`}
+                subtitle={`${items.length} item(ns)`}
+              >
+                {items.length === 0 ? (
+                  <p className="text-muted-foreground">Nenhum item registrado.</p>
+                ) : (
+                  <ul className="space-y-4">
+                    {items.map((ev) => {
+                      const heading =
+                        ev.section === "pastoral"
+                          ? (ev.family_name || ev.slot_label || "Família")
+                          : ev.section === "encouragement"
+                          ? (ev.person_name || "—")
+                          : ev.section === "recommendations"
+                          ? (ev.full_name || "—")
+                          : (ev.subject || "—");
+                      const rows: Array<[string, string | null]> =
+                        ev.section === "pastoral"
+                          ? [
+                              ["Slot", ev.slot_label],
+                              ["Acompanhante", ev.companion],
+                              ["Endereço", ev.address],
+                              ["Membros da família", ev.family_members],
+                              ["Informações espirituais", ev.spiritual_info],
+                            ]
+                          : ev.section === "encouragement"
+                          ? [
+                              ["Categoria", ev.category],
+                              ["Contato", ev.contact],
+                              ["Saúde", ev.health_info],
+                              ["Endereço", ev.address],
+                              ["Informações", ev.info],
+                            ]
+                          : ev.section === "recommendations"
+                          ? [
+                              ["Propósito", ev.purpose],
+                              ["Grupo de campo", ev.field_group],
+                              ["Informações", ev.info],
+                              ["Sugerido por", ev.suggested_by],
+                            ]
+                          : [
+                              ["Sugerido por", ev.suggested_by],
+                              ["Informações", ev.info],
+                              ["Fontes", ev.sources],
+                            ];
+                      return (
+                        <li key={ev.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                          <div className="font-medium whitespace-normal break-words [overflow-wrap:anywhere]">
+                            {heading}
+                          </div>
+                          {rows
+                            .filter(([, v]) => v && String(v).trim().length > 0)
+                            .map(([label, v]) => (
+                              <div key={label} className="text-xs whitespace-pre-wrap break-words">
+                                <span className="text-muted-foreground font-medium">{label}: </span>
+                                {v}
+                              </div>
+                            ))}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </DayDetailsDialog>
+            ))}
           </>
         );
       })()}
