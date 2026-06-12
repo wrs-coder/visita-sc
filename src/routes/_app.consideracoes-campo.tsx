@@ -1991,13 +1991,14 @@ function NoteEditor({
             )}
           </div>
         )}
+        </>)}
 
         <div className="grid gap-1.5 w-full max-w-full min-w-0">
 
-          <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <Label>{t("fieldConsiderations.fields.content")}</Label>
             {!isTalk && (
-              <div className="rounded-md border bg-muted/40 px-1.5">
+              <div className="w-full sm:w-auto rounded-md border bg-muted/40 px-1.5 overflow-x-auto">
                 <OutlineTimer outlineId={draft.id} variant="toolbar" />
               </div>
             )}
