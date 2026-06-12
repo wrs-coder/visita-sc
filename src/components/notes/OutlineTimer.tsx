@@ -64,7 +64,9 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   const { t } = useTranslation();
   const timer = useOutlineTimer(outlineId);
   const { themeId, preset, setThemeId } = useTimerTheme();
+  const size = useTimerSize();
   const [targetOpen, setTargetOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   const [customMin, setCustomMin] = useState<string>(
     String(Math.round(timer.targetSec / 60)),
   );
