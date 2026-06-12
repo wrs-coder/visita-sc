@@ -94,6 +94,14 @@ export function useOfflineWarmup() {
       return;
     }
 
+    if (warmupFresh(activeCong?.id ?? null)) {
+      // Última pré-carga <24h e mesma congregação: nada para baixar.
+      markWarmed(user.id);
+      state = { ...state, running: false, done: true };
+      emit();
+      return;
+    }
+
     let cancelled = false;
     const controller = new AbortController();
 
