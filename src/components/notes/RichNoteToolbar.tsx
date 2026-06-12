@@ -680,6 +680,14 @@ export function RichNoteToolbar({
           </Button>
         </>
       )}
+
+      {outlineId && (
+        <>
+          <div className="flex-1" aria-hidden />
+          {sep}
+          <OutlineTimer outlineId={outlineId} variant="toolbar" />
+        </>
+      )}
     </div>
   );
 }

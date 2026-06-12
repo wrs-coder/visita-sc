@@ -33,6 +33,8 @@ interface RichNoteEditorProps {
   noteId?: string;
   className?: string;
   minHeight?: string;
+  /** ID do esboço — quando presente, exibe o cronômetro (Missão 06). */
+  outlineId?: string;
 }
 
 // Extensão de recuo (indent) — preserva margens vindas do Word e permite
