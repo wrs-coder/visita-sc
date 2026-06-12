@@ -1793,7 +1793,7 @@ function NoteEditor({
 
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words pb-24">
+    <div className="w-full max-w-full overflow-x-clip box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words pb-24">
       <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0">
 
         <div className="flex items-center gap-2 flex-wrap">
