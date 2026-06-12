@@ -1,41 +1,63 @@
-# Onda 7.11 — Missões 03 + 04 ✅ entregues
+# Onda 7.12 — Missão 06 ✅ entregue
 
-## Missão 03 — Popup bíblico persistente
+## Timer de Esboço (cronômetro nativo)
 
-`src/components/bible/BibleVersePopover.tsx`:
-- Política nova de fechamento: o popover **nunca fecha sozinho**.
-- `allowCloseRef` gate em `onOpenChange`: só permite `false` quando o
-  usuário acionou deliberadamente o botão **X** ou deu **double-tap**
-  no conteúdo (`< 350 ms` entre toques).
-- Qualquer outro pedido de fechar é descartado: Escape, clique fora,
-  blur, focus outside, toggle no trigger, perda de foco em Tela Cheia.
-- Mantidos os bloqueios já existentes (`onEscapeKeyDown`,
-  `onPointerDownOutside`, `onInteractOutside`, `onFocusOutside`).
-- `handleDoubleTapClose` e `handleTextTouchEnd` agora usam
-  `explicitClose()` que sinaliza o gate.
+### Novos arquivos
+- `src/lib/wake-lock.ts` — wrapper do Web Wake Lock API com contagem
+  de referências, reanexa no `visibilitychange`. Funciona no WebView
+  do Capacitor; falhas silenciosas.
+- `src/hooks/use-outline-timer.ts` — `useOutlineTimer(outlineId)`:
+  - Estado por nota em `localStorage` (`visita-sc:outline-timer:<id>`).
+  - **Drift recovery**: ao montar, se `isRunning`, soma
+    `Date.now() - lastTickAt` ao `elapsedSec` — sobrevive a reload,
+    fechamento acidental, navegação dashboard ↔ esboço.
+  - Tick 1 s só quando rodando. Countdown pausa sozinho ao bater no alvo.
+  - **Sync cross-surface**: `BroadcastChannel("visita-sc:outline-timer")`
+    + listener `storage` (multi-aba). Inline, fullscreen e dashboard
+    espelham o mesmo timer da mesma nota.
+  - Wakelock acoplado a `isRunning` (acquire/release com refcount).
+  - Alertas: < 80 % verde, 80–95 % âmbar, ≥ 95 % vermelho.
+- `src/components/notes/OutlineTimer.tsx` — variantes `toolbar`
+  (embutido na barra) e `fullscreen` (banner `fixed top-0 z-[105]
+  backdrop-blur`). Mostrador `MM:SS` com `tabular-nums`, tap alterna
+  countdown/countup, Play/Pause, Reset, popover com presets
+  5/10/15/30/45 min + custom 1–120 min. Tokens semânticos.
 
-## Missão 04 — Olho expandido no cartão "Pastoreiem"
+### Integrações
+- `src/components/notes/RichNoteToolbar.tsx` — prop nova `outlineId?`;
+  quando presente, renderiza `<OutlineTimer variant="toolbar" />` no fim
+  da barra com divisor.
+- `src/components/notes/RichNoteEditor.tsx` — prop nova `outlineId?`,
+  repassa ao toolbar.
+- `src/routes/_app.consideracoes-campo.tsx`:
+  - Passa `outlineId={draft.id}` ao editor **exceto** quando
+    `isTalk` (subaba Anotações fica intocada, conforme Missão 02).
+  - `FullscreenOutline` monta o banner do timer no topo + `pt-12` no
+    cabeçalho para evitar sobreposição. Cobre Consideração de Campo e
+    Esboço.
+- `src/components/dashboard/FieldNoteFullscreenDialog.tsx` — banner
+  do timer no topo do dialog + `pt-12` no cabeçalho. Atende
+  automaticamente os atalhos do Dashboard (Consideração de Campo e
+  Esboço da Semana) — ambos usam este dialog com o `noteId` correto.
 
-`src/routes/_app.dashboard.tsx`:
-- `DetailsKey` ganha 4 chaves novas: `elder-pastoral`,
-  `elder-encouragement`, `elder-recommendations`, `elder-local`.
-- Cada `TabsContent` do cartão "Pastoreiem" recebe um cabeçalho com
-  o nome da subaba + botão **Eye** (`Ver detalhes`). Mesmo padrão
-  visual dos demais cartões (Checklist, Reunião de campo, etc.).
-- Adicionados 4 `DayDetailsDialog` (reaproveita componente
-  somente-leitura existente) com a versão expandida de cada subaba:
-  - **Pastoreio**: Slot, Acompanhante, Endereço, Membros, Espiritual.
-  - **Encorajamento**: Categoria, Contato, Saúde, Endereço, Info.
-  - **Recomendações**: Propósito, Grupo de campo, Info, Sugerido por.
-  - **Assuntos Locais**: Sugerido por, Info, Fontes.
-- Linhas vazias são filtradas (`v && v.trim().length > 0`).
-- Reusa os mesmos dados já carregados em `elderPastoral` /
-  `elderEncouragement` / `elderRecommendations` / `elderLocal` — zero
-  rede adicional.
+### Cobertura
+| Superfície | Inline | Banner fullscreen |
+|---|---|---|
+| `/consideracoes-campo` · Consideração de Campo | ✅ | ✅ |
+| `/consideracoes-campo` · Esboço | ✅ | ✅ |
+| `/consideracoes-campo` · Anotações | ❌ | ❌ |
+| Dashboard · Consideração de Campo (FieldNoteFullscreenDialog) | — | ✅ |
+| Dashboard · Esboço da Semana (FieldNoteFullscreenDialog) | — | ✅ |
 
-## Verificação
-- `bunx tsc --noEmit` 100% limpo.
+### Restrições atendidas
+- Zero chamadas a Supabase / serverFn — somente `localStorage` e
+  eventos in-browser.
+- Apenas tokens semânticos de cor (Onda 6.8).
+- Popover bíblico (Missão 03, `z-[110]`) continua acima do banner
+  (`z-[105]`).
+
+### Verificação
+- `bunx tsc --noEmit` 100 % limpo.
 
 ## Próximas missões
-- Nenhuma pendente do bloco original — Missões 01, 02, 03, 04, 05A e
-  05B entregues. Aguardando próxima onda.
+- Nenhuma pendente.
