@@ -213,7 +213,9 @@ function Dashboard() {
   const meetingExtras = useVisitTemplateExtras(visit?.id);
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [pendingCount, setPendingCount] = useState(0);
-  type DetailsKey = "field" | "studies" | "meals" | "meetings" | "transport" | "checklist";
+  type DetailsKey =
+    | "field" | "studies" | "meals" | "meetings" | "transport" | "checklist"
+    | "elder-pastoral" | "elder-encouragement" | "elder-recommendations" | "elder-local";
   const [openDetails, setOpenDetails] = useState<DetailsKey | null>(null);
   useEffect(() => subscribeQueue(setPendingCount), []);
   const [overdueVisits, setOverdueVisits] = useState<
@@ -1075,12 +1077,26 @@ function Dashboard() {
               </TabsTrigger>
             </TabsList>
             {([
-              { key: "pastoral", items: elderPastoral },
-              { key: "encouragement", items: elderEncouragement },
-              { key: "recommendations", items: elderRecommendations },
-              { key: "local", items: elderLocal },
-            ] as const).map(({ key, items }) => (
+              { key: "pastoral", items: elderPastoral, detailsKey: "elder-pastoral" as const, label: "Pastoreio" },
+              { key: "encouragement", items: elderEncouragement, detailsKey: "elder-encouragement" as const, label: "Encorajamento" },
+              { key: "recommendations", items: elderRecommendations, detailsKey: "elder-recommendations" as const, label: "Recomendações" },
+              { key: "local", items: elderLocal, detailsKey: "elder-local" as const, label: "Assuntos Locais" },
+            ] as const).map(({ key, items, detailsKey, label }) => (
               <TabsContent key={key} value={key} className="mt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    {label}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setOpenDetails(detailsKey)}
+                    aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes" })}
+                    title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes" })}
+                    className="text-muted-foreground hover:text-primary"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                </div>
                 {items.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhum item registrado.</p>
                 ) : (
@@ -1927,6 +1943,83 @@ function Dashboard() {
                 </ul>
               )}
             </DayDetailsDialog>
+
+            {/* Pastoreiem o Rebanho de Deus — 4 subabas */}
+            {([
+              { key: "elder-pastoral" as const, items: elderPastoral, title: "Pastoreio" },
+              { key: "elder-encouragement" as const, items: elderEncouragement, title: "Encorajamento" },
+              { key: "elder-recommendations" as const, items: elderRecommendations, title: "Recomendações" },
+              { key: "elder-local" as const, items: elderLocal, title: "Assuntos Locais" },
+            ]).map(({ key, items, title }) => (
+              <DayDetailsDialog
+                key={key}
+                open={openDetails === key}
+                onOpenChange={(o) => !o && closeDetails()}
+                title={`Pastoreiem o Rebanho · ${title}`}
+                subtitle={`${items.length} item(ns)`}
+              >
+                {items.length === 0 ? (
+                  <p className="text-muted-foreground">Nenhum item registrado.</p>
+                ) : (
+                  <ul className="space-y-4">
+                    {items.map((ev) => {
+                      const heading =
+                        ev.section === "pastoral"
+                          ? (ev.family_name || ev.slot_label || "Família")
+                          : ev.section === "encouragement"
+                          ? (ev.person_name || "—")
+                          : ev.section === "recommendations"
+                          ? (ev.full_name || "—")
+                          : (ev.subject || "—");
+                      const rows: Array<[string, string | null]> =
+                        ev.section === "pastoral"
+                          ? [
+                              ["Slot", ev.slot_label],
+                              ["Acompanhante", ev.companion],
+                              ["Endereço", ev.address],
+                              ["Membros da família", ev.family_members],
+                              ["Informações espirituais", ev.spiritual_info],
+                            ]
+                          : ev.section === "encouragement"
+                          ? [
+                              ["Categoria", ev.category],
+                              ["Contato", ev.contact],
+                              ["Saúde", ev.health_info],
+                              ["Endereço", ev.address],
+                              ["Informações", ev.info],
+                            ]
+                          : ev.section === "recommendations"
+                          ? [
+                              ["Propósito", ev.purpose],
+                              ["Grupo de campo", ev.field_group],
+                              ["Informações", ev.info],
+                              ["Sugerido por", ev.suggested_by],
+                            ]
+                          : [
+                              ["Sugerido por", ev.suggested_by],
+                              ["Informações", ev.info],
+                              ["Fontes", ev.sources],
+                            ];
+                      return (
+                        <li key={ev.id} className="space-y-1 border-l-2 border-primary/30 pl-3">
+                          <div className="font-medium whitespace-normal break-words [overflow-wrap:anywhere]">
+                            {heading}
+                          </div>
+                          {rows
+                            .filter(([, v]) => v && String(v).trim().length > 0)
+                            .map(([label, v]) => (
+                              <div key={label} className="text-xs whitespace-pre-wrap break-words">
+                                <span className="text-muted-foreground font-medium">{label}: </span>
+                                {v}
+                              </div>
+                            ))}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </DayDetailsDialog>
+            ))}
           </>
         );
       })()}
