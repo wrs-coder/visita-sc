@@ -1,63 +1,59 @@
-# Onda 7.12 — Missão 06 ✅ entregue
+# Plano — Mobile fixes Esboços Pessoais
 
-## Timer de Esboço (cronômetro nativo)
+Escopo 100% UI no arquivo `src/routes/_app.consideracoes-campo.tsx` (+ pequeno ajuste no `OutlineTimer.tsx` e i18n). Sem mexer em backend, lógica de salvamento ou sync.
 
-### Novos arquivos
-- `src/lib/wake-lock.ts` — wrapper do Web Wake Lock API com contagem
-  de referências, reanexa no `visibilitychange`. Funciona no WebView
-  do Capacitor; falhas silenciosas.
-- `src/hooks/use-outline-timer.ts` — `useOutlineTimer(outlineId)`:
-  - Estado por nota em `localStorage` (`visita-sc:outline-timer:<id>`).
-  - **Drift recovery**: ao montar, se `isRunning`, soma
-    `Date.now() - lastTickAt` ao `elapsedSec` — sobrevive a reload,
-    fechamento acidental, navegação dashboard ↔ esboço.
-  - Tick 1 s só quando rodando. Countdown pausa sozinho ao bater no alvo.
-  - **Sync cross-surface**: `BroadcastChannel("visita-sc:outline-timer")`
-    + listener `storage` (multi-aba). Inline, fullscreen e dashboard
-    espelham o mesmo timer da mesma nota.
-  - Wakelock acoplado a `isRunning` (acquire/release com refcount).
-  - Alertas: < 80 % verde, 80–95 % âmbar, ≥ 95 % vermelho.
-- `src/components/notes/OutlineTimer.tsx` — variantes `toolbar`
-  (embutido na barra) e `fullscreen` (banner `fixed top-0 z-[105]
-  backdrop-blur`). Mostrador `MM:SS` com `tabular-nums`, tap alterna
-  countdown/countup, Play/Pause, Reset, popover com presets
-  5/10/15/30/45 min + custom 1–120 min. Tokens semânticos.
+## 1. Timer (chip da toolbar) cortado no mobile
 
-### Integrações
-- `src/components/notes/RichNoteToolbar.tsx` — prop nova `outlineId?`;
-  quando presente, renderiza `<OutlineTimer variant="toolbar" />` no fim
-  da barra com divisor.
-- `src/components/notes/RichNoteEditor.tsx` — prop nova `outlineId?`,
-  repassa ao toolbar.
-- `src/routes/_app.consideracoes-campo.tsx`:
-  - Passa `outlineId={draft.id}` ao editor **exceto** quando
-    `isTalk` (subaba Anotações fica intocada, conforme Missão 02).
-  - `FullscreenOutline` monta o banner do timer no topo + `pt-12` no
-    cabeçalho para evitar sobreposição. Cobre Consideração de Campo e
-    Esboço.
-- `src/components/dashboard/FieldNoteFullscreenDialog.tsx` — banner
-  do timer no topo do dialog + `pt-12` no cabeçalho. Atende
-  automaticamente os atalhos do Dashboard (Consideração de Campo e
-  Esboço da Semana) — ambos usam este dialog com o `noteId` correto.
+Sintoma: no chip ao lado do label "Conteúdo", o display MM:SS aparece mas os botões Play/Pause/Reset somem por overflow horizontal.
 
-### Cobertura
-| Superfície | Inline | Banner fullscreen |
-|---|---|---|
-| `/consideracoes-campo` · Consideração de Campo | ✅ | ✅ |
-| `/consideracoes-campo` · Esboço | ✅ | ✅ |
-| `/consideracoes-campo` · Anotações | ❌ | ❌ |
-| Dashboard · Consideração de Campo (FieldNoteFullscreenDialog) | — | ✅ |
-| Dashboard · Esboço da Semana (FieldNoteFullscreenDialog) | — | ✅ |
+Causa: o wrapper `flex items-center justify-between gap-2 flex-wrap` permite quebra, mas o chip `rounded-md border bg-muted/40 px-1.5` envolvendo o `OutlineTimer variant="toolbar"` tem largura natural maior que o espaço restante na mesma linha; como ele não pode quebrar internamente, vaza além do `min-w-0`.
 
-### Restrições atendidas
-- Zero chamadas a Supabase / serverFn — somente `localStorage` e
-  eventos in-browser.
-- Apenas tokens semânticos de cor (Onda 6.8).
-- Popover bíblico (Missão 03, `z-[110]`) continua acima do banner
-  (`z-[105]`).
+Correção:
+- Substituir o wrapper por uma estrutura que, no mobile, coloca o timer em linha própria ocupando 100% da largura — algo como `flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between`.
+- No chip do timer, adicionar `w-full sm:w-auto overflow-x-auto` e `flex-wrap` interno para permitir que os ícones acomodem.
+- No próprio `OutlineTimer.tsx`, na variante `toolbar`, trocar `h-7` fixo por `min-h-7 flex-wrap` e garantir `shrink-0` nos botões e display (já têm) — sem isto, o chip continua estourando quando o usuário aumenta o fonte do sistema.
 
-### Verificação
-- `bunx tsc --noEmit` 100 % limpo.
+Resultado: em 390px de largura, o timer ocupa uma linha inteira abaixo do label "Conteúdo", com Play/Pause/Reset todos visíveis.
 
-## Próximas missões
-- Nenhuma pendente.
+## 2. Seletor "Consideração de Campo / Esboço / Anotações" desalinhado
+
+Sintoma: no mobile, os 3 botões do segmented control quebram em duas linhas com larguras diferentes — visual "não premium".
+
+Correção (linhas 1359–1398):
+- `CardContent` muda para `p-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3`.
+- O `<div className="inline-flex rounded-md border …">` vira `flex w-full sm:w-auto rounded-md border bg-background p-0.5` e cada `<button>` recebe `flex-1 sm:flex-none justify-center inline-flex items-center gap-1 whitespace-nowrap text-[11px] sm:text-xs px-2`.
+- Mantém os mesmos rótulos (sem trocar i18n) — apenas a tipografia/altura/espaçamento melhoram. Em mobile vira uma barra cheia de 3 colunas iguais; em ≥640px, volta ao layout original compacto.
+
+## 3. Minimizar cabeçalho do esboço (destaque para Conteúdo + Timer)
+
+Comportamento pedido: ocultar/exibir os metadados do esboço para deixar apenas "Conteúdo" + timer em foco.
+- Field consideration: oculta de `Dia` até `Dirigentes` (campos `event_date`, `period`, `title`, bloco `syncFromField`, `prayer`, `territory`, `assistants`).
+- Outline / Talk notes: oculta de `Título` até `Descrição` (campos `title` e `description`).
+- Sempre mantém visível: bloco "Conteúdo" (label + chip do timer + editor/preview) e a sticky bar inferior. Também mantém visível o cabeçalho do editor (breadcrumb / SavingIndicator / botão Tela cheia).
+
+Implementação:
+- Novo state local no `OutlineEditor`: `const [metaCollapsed, setMetaCollapsed] = useState(false)`, persistido em `localStorage` (`visita-sc:outline-meta-collapsed`) para sobreviver a navegação.
+- Botão de toggle adicionado na barra superior do editor (logo ao lado do `SavingIndicator` / "Tela cheia"), usando `ChevronsUpDown` / `ChevronsDownUp` (lucide), variant `ghost` size `sm`, com `title` traduzido.
+- Envolver o bloco `{isField && (…date+period)}` + `<Label>Title</Label>` + `{isField ? prayer/territory/assistants : description}` em `{!metaCollapsed && (…)}`. O bloco "Versículos detectados" (linhas 1953–1971) também entra no colapso, pois só faz sentido quando o cabeçalho/título está visível.
+- O bloco "Conteúdo" (linhas 1973–2003) permanece fora do colapso.
+
+## 4. i18n
+
+Adicionar em `personalOutlines.editor` (pt/en/es):
+- `collapseMeta` = "Minimizar cabeçalho" / "Collapse header" / "Minimizar encabezado"
+- `expandMeta` = "Expandir cabeçalho" / "Expand header" / "Expandir encabezado"
+
+## Arquivos editados
+
+- `src/routes/_app.consideracoes-campo.tsx`
+- `src/components/notes/OutlineTimer.tsx`
+- `src/i18n/locales/pt.json`
+- `src/i18n/locales/en.json`
+- `src/i18n/locales/es.json`
+- `.lovable/plan.md`
+
+## Garantias
+
+- Zero alteração em chamadas Supabase, store local, ou lógica do timer.
+- Tokens semânticos (Onda 6.8) preservados — apenas classes utilitárias de layout.
+- `bunx tsc --noEmit` deve fechar 100% limpo.

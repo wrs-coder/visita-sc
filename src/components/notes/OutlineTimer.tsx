@@ -73,7 +73,7 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
     "flex items-center gap-1.5 select-none",
     isFullscreen
       ? "fixed top-0 inset-x-0 z-[105] border-b bg-background/85 backdrop-blur px-3 py-1.5 justify-center"
-      : "h-7",
+      : "min-h-7 flex-wrap",
     className,
   );
 

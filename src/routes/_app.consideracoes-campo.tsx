@@ -30,6 +30,8 @@ import {
   CloudDownload,
   RefreshCw,
   NotebookPen,
+  ChevronsDownUp,
+  ChevronsUpDown,
 } from "lucide-react";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
@@ -1357,16 +1359,16 @@ function Page() {
 
         {/* Seletor de tipo (obrigatório) */}
         <Card>
-          <CardContent className="p-3 flex flex-wrap items-center gap-3">
+          <CardContent className="p-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <span className="text-xs font-semibold text-muted-foreground">
               {t("personalOutlines.typePicker.label")}:
             </span>
-            <div className="inline-flex rounded-md border bg-background p-0.5">
+            <div className="flex w-full sm:w-auto rounded-md border bg-background p-0.5">
               <button
                 type="button"
                 onClick={() => setActiveType("field_consideration")}
                 className={cn(
-                  "px-3 py-1.5 text-xs rounded-sm transition",
+                  "flex-1 sm:flex-none inline-flex items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs rounded-sm transition",
                   isField ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                 )}
               >
@@ -1376,7 +1378,7 @@ function Page() {
                 type="button"
                 onClick={() => setActiveType("outline")}
                 className={cn(
-                  "px-3 py-1.5 text-xs rounded-sm transition",
+                  "flex-1 sm:flex-none inline-flex items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs rounded-sm transition",
                   isOutline ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                 )}
               >
@@ -1386,11 +1388,11 @@ function Page() {
                 type="button"
                 onClick={() => setActiveType("talk_notes")}
                 className={cn(
-                  "px-3 py-1.5 text-xs rounded-sm transition inline-flex items-center gap-1",
+                  "flex-1 sm:flex-none inline-flex items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs rounded-sm transition",
                   isTalkNotes ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                 )}
               >
-                <NotebookPen className="h-3.5 w-3.5" />
+                <NotebookPen className="h-3.5 w-3.5 shrink-0" />
                 {t("personalOutlines.typePicker.talkNotes")}
               </button>
             </div>
@@ -1716,6 +1718,13 @@ function NoteEditor({
   const { visit } = useActiveVisit();
   const [syncing, setSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
+  const META_COLLAPSED_KEY = "visita-sc:outline-meta-collapsed";
+  const [metaCollapsed, setMetaCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem(META_COLLAPSED_KEY) === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(META_COLLAPSED_KEY, metaCollapsed ? "1" : "0"); } catch { /* noop */ }
+  }, [metaCollapsed]);
 
   const isWeekConsiderations = draft.folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS;
   const canSync = isField && isWeekConsiderations && !!draft.event_date && !!draft.period && !!visit;
@@ -1818,6 +1827,16 @@ function NoteEditor({
         </div>
         <div className="flex items-center gap-2">
           <SavingIndicator saving={saving} />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMetaCollapsed((v) => !v)}
+            title={metaCollapsed
+              ? t("personalOutlines.editor.expandMeta", { defaultValue: "Expandir cabeçalho" })
+              : t("personalOutlines.editor.collapseMeta", { defaultValue: "Minimizar cabeçalho" })}
+          >
+            {metaCollapsed ? <ChevronsUpDown className="h-4 w-4" /> : <ChevronsDownUp className="h-4 w-4" />}
+          </Button>
           {mode === "outline" && !isTalk && (
             <Button variant="outline" size="sm" onClick={onFullscreen}>
               <Maximize2 className="h-4 w-4 mr-1.5" /> {t("personalOutlines.fullscreen.enter")}
@@ -1826,7 +1845,10 @@ function NoteEditor({
         </div>
       </div>
 
+
+
       <div className="grid gap-3 w-full max-w-full min-w-0">
+        {!metaCollapsed && (<>
         {isField && (
           <div className="grid gap-3 sm:grid-cols-2 w-full max-w-full min-w-0">
             <div className="grid gap-1.5 min-w-0">
@@ -1969,13 +1991,14 @@ function NoteEditor({
             )}
           </div>
         )}
+        </>)}
 
         <div className="grid gap-1.5 w-full max-w-full min-w-0">
 
-          <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <Label>{t("fieldConsiderations.fields.content")}</Label>
             {!isTalk && (
-              <div className="rounded-md border bg-muted/40 px-1.5">
+              <div className="w-full sm:w-auto rounded-md border bg-muted/40 px-1.5 overflow-x-auto">
                 <OutlineTimer outlineId={draft.id} variant="toolbar" />
               </div>
             )}

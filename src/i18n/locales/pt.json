@@ -1495,6 +1495,8 @@
       "fontDown": "Diminuir fonte"
     },
     "editor": {
+      "collapseMeta": "Minimizar cabeçalho",
+      "expandMeta": "Expandir cabeçalho",
       "placeholder": "Escreva sua nota aqui…",
       "toolbar": {
         "normal": "Texto normal",
