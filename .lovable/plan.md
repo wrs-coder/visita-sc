@@ -1,66 +1,55 @@
-# Onda 7.11 — Missão 01 (Backup com cobertura total) ✅ entregue
+# Onda 7.11 — Missão 02 (Subaba "Anotações") ✅ entregue
 
-Backup agora captura **tudo** o que o app guarda localmente, sem
-depender de listas hardcoded de stores ou de chaves.
+Nova subaba 100 % local em **Esboços Pessoais**, ao lado de
+"Consideração de Campo" e "Esboço".
 
 ## O que mudou
 
-### `src/lib/backup-client.ts` — dump genérico
-- **IndexedDB**: itera `db.objectStoreNames` da base `visita-sc-field` e
-  faz `getAll()` em cada store. Novos stores (ex.: futuras "Anotações"
-  da subaba 02) entram no backup automaticamente, sem reescrever código.
-- **localStorage**: scan total. Exclui apenas chaves específicas do
-  dispositivo/sessão (`sb-*` do Supabase, `visita-sc:logout-intent`,
-  `visita-sc:warmup-session`, `visita-sc:last-warmup`,
-  `visita-sc:offline-ready`, `visita-sc-rq-cache`, prefixo
-  `visita-sc:rq:`). Tudo o mais é incluído — bíblia ativa,
-  marca-textos, configurações de leitura, rascunhos de reuniões
-  (`meetings-draft:*`), perfil cacheado, preferências do dashboard,
-  pasta de notas colapsadas, sessão de visitante, eventos ocultos.
-- Espelha campos legacy (`notes/folders/libraries/bibles`) a partir do
-  mapa genérico, mantendo retro-compat na leitura.
+### Tipo novo de nota
+- `src/lib/bible-notes-store.ts`: união `NoteType` agora inclui
+  `"talk_notes"`. As anotações entram no mesmo `STORE_NOTES`
+  (IndexedDB) — backup genérico da M1 cobre automaticamente, sem
+  novo store nem nova chave.
 
-### `src/lib/backup-package.ts` — manifest v3
-- Layout `client/indexeddb/<store>.json` para cada store; bíblia
-  continua dividida por library (`client/indexeddb/bibles/<libId>.json`)
-  com compressão nível 9.
-- `unpackBackupZip` aceita v2 e v3 transparentemente.
+### `src/routes/_app.consideracoes-campo.tsx`
+- **Terceira aba** no seletor, com ícone `NotebookPen` e rótulo
+  `personalOutlines.typePicker.talkNotes`.
+- **Sem nuvem**: a subaba é puramente local.
+  - `syncOutlinesIfOnline` retorna `null` quando `activeType ===
+    "talk_notes"`.
+  - `handleCloudPush` / `handlePushNoteById` viram no-op para notas
+    `talk_notes` (defesa em profundidade).
+  - Botões removidos visualmente: `CloudDownload` na barra lateral,
+    `CloudUpload` no menu de cada nota, `CloudUpload` na barra de
+    seleção múltipla e botão "Nuvem" no rodapé do editor.
+- **Sem Tela Cheia / Modo Esboço**: o editor abre direto em modo
+  `edit`.
+  - `selectNote` força `setMode("edit")` para anotações.
+  - `useEffect` em `activeType` força `setMode("edit")` ao entrar na
+    subaba.
+  - `handleSave` mantém o modo `edit` no salvar (não cai para
+    "outline").
+  - Toggle "Editar / Esboço" e botão "Tela Cheia" não renderizam
+    quando `type === "talk_notes"`.
+- **Mantido**: detecção de citações bíblicas + `VerseLink` /
+  `BibleVersePopover`, exatamente o mesmo do modo `edit` das outras
+  subabas. Visão simultânea editor + popover continua igual.
 
-### `src/routes/_app.perfil.tsx`
-- Manifest gerado agora declara `version: 3`.
+### i18n
+- `personalOutlines.typePicker.talkNotes` adicionado em pt/en/es:
+  - pt: "Anotações"
+  - en: "Notes"
+  - es: "Apuntes"
 
-### Restauração genérica
-- `restoreClientBackup` reabre o IDB, lê o mapa `indexedDB` (ou o
-  reconstrói a partir dos campos legacy v2) e faz `put` em chunks de
-  1000 em cada store conhecido. Stores desconhecidos do dump
-  (versão futura) são ignorados em silêncio.
-- LocalStorage é reescrito, exceto chaves de sessão (não sobrescreve
-  o `sb-*-auth-token` do dispositivo que está restaurando).
-- Retorno expandido: `{ notes, folders, libraries, verses, stores, lsKeys }`.
-
-## Cobertura confirmada
-
-| Dado | Onde mora | Coberto? |
-|---|---|---|
-| Esboços pessoais (rascunho local) | IDB `notes` | ✅ |
-| Esboços pessoais (nuvem) | tabela `personal_outlines` | ✅ (já estava) |
-| Notas/considerações de campo | IDB `notes` | ✅ |
-| Pastas e subpastas | IDB `note_folders` | ✅ |
-| Bíblia importada (versículos) | IDB `bibles` | ✅ |
-| Metadados da biblioteca | IDB `bible_libraries` | ✅ |
-| Biblioteca ativa | LS `visita-sc-bible-active` | ✅ |
-| Marca-textos | LS `bible:highlights:v1` | ✅ |
-| Configurações de leitura | LS `bible:view-settings` | ✅ |
-| Rascunhos de reuniões | LS `meetings-draft:*` | ✅ |
-| Considerações privadas — congregação fixada | LS `notas_privadas_congregation_id` | ✅ |
-| Fila offline | LS `visita-sc:offline-queue` | ✅ |
-| Eventos do circuito ocultos | LS `visita-sc:hidden-circuit-events` | ✅ |
-| Tema/idioma | LS `visita-sc:theme:v1`, i18n | ✅ |
+## Cobertura automática
+- Backup `.zip` v3 (M1) varre `db.objectStoreNames`, então as
+  anotações já entram em `client/indexeddb/notes.json` sem nenhuma
+  mudança em `backup-client.ts`.
+- Não há rota nova, não há tabela nova, não há policy nova.
 
 ## Verificação
 - `bunx tsc --noEmit` 100% limpo.
 
 ## Próximas missões
-- 02 — Subaba "Anotações" em Esboços Pessoais.
 - 03 — Popup bíblico persistente em Tela Cheia.
 - 04 — Olho expandido no cartão "Pastoreiem".

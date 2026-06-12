@@ -1424,6 +1424,7 @@
       "label": "Escolha o tipo de criação",
       "field": "Consideração de Campo",
       "outline": "Esboço",
+      "talkNotes": "Anotações",
       "prompt": "Selecione um tipo acima para carregar suas pastas e notas."
     },
     "cloud": {

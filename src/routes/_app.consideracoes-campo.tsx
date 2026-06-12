@@ -29,6 +29,7 @@ import {
   CloudUpload,
   CloudDownload,
   RefreshCw,
+  NotebookPen,
 } from "lucide-react";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
@@ -228,6 +229,8 @@ function Page() {
   // Limpa seleção/clipboard ao trocar de subaba
   useEffect(() => {
     setSelectedIds(new Set());
+    // "Anotações" é só edição — força modo edit ao entrar na subaba.
+    if (activeType === "talk_notes") setMode("edit");
   }, [activeType]);
 
   // Pastas das duas subabas (para diálogo cross-subaba)
@@ -286,6 +289,8 @@ function Page() {
 
   async function syncOutlinesIfOnline() {
     if (!activeType) return null;
+    // Anotações são 100% locais — não vão para a nuvem.
+    if (activeType === "talk_notes") return null;
     if (typeof navigator !== "undefined" && navigator.onLine === false) return null;
     const result = await syncOutlines();
     if (!result.ok) console.warn("[personal-outlines] sync skipped", result.error);
@@ -312,6 +317,7 @@ function Page() {
 
   async function handleCloudPush() {
     if (!draft) return;
+    if ((draft.type ?? activeType) === "talk_notes") return;
     setCloudBusy(true);
     try {
       const r = await fnPushCloud({
@@ -486,7 +492,8 @@ function Page() {
     setSelectedNoteId(n.id);
     setSelectedFolderId(n.folderId ?? null);
     setDraft(n);
-    setMode("outline");
+    // "Anotações" não tem modo Esboço — sempre abre direto no editor.
+    setMode((n.type ?? activeType) === "talk_notes" ? "edit" : "outline");
   }
 
   function handleNewNote() {
@@ -516,7 +523,7 @@ function Page() {
         return next.sort((a, b) => b.updated_at - a.updated_at);
       });
       setDraft(updated);
-      setMode("outline");
+      if (activeType !== "talk_notes") setMode("outline");
       const syncResult = await syncOutlinesIfOnline();
       if (activeType === "outline" && syncResult?.ok) {
         const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
@@ -562,6 +569,7 @@ function Page() {
   async function handlePushNoteById(noteId: string) {
     const note = notes.find((n) => n.id === noteId);
     if (!note) return;
+    if ((note.type ?? activeType) === "talk_notes") return;
     setCloudBusy(true);
     try {
       const r = await fnPushCloud({
@@ -1305,10 +1313,12 @@ function Page() {
                 <Scissors className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handlePushNoteById(note.id)} disabled={cloudBusy}>
-                <CloudUpload className="h-4 w-4 mr-2" />
-                {t("personalOutlines.cloud.push", { defaultValue: "Enviar para nuvem" })}
-              </DropdownMenuItem>
+              {activeType !== "talk_notes" && (
+                <DropdownMenuItem onClick={() => handlePushNoteById(note.id)} disabled={cloudBusy}>
+                  <CloudUpload className="h-4 w-4 mr-2" />
+                  {t("personalOutlines.cloud.push", { defaultValue: "Enviar para nuvem" })}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
@@ -1326,6 +1336,7 @@ function Page() {
 
   const isField = activeType === "field_consideration";
   const isOutline = activeType === "outline";
+  const isTalkNotes = activeType === "talk_notes";
 
   return (
     <>
@@ -1369,6 +1380,17 @@ function Page() {
                 )}
               >
                 {t("personalOutlines.typePicker.outline")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveType("talk_notes")}
+                className={cn(
+                  "px-3 py-1.5 text-xs rounded-sm transition inline-flex items-center gap-1",
+                  isTalkNotes ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                <NotebookPen className="h-3.5 w-3.5" />
+                {t("personalOutlines.typePicker.talkNotes")}
               </button>
             </div>
           </CardContent>
@@ -1419,14 +1441,16 @@ function Page() {
                       >
                         <Upload className="h-4 w-4" />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleCloudOpen}
-                        title={t("personalOutlines.cloud.downloadButton", { defaultValue: "Baixar da nuvem" })}
-                      >
-                        <CloudDownload className="h-4 w-4" />
-                      </Button>
+                      {!isTalkNotes && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCloudOpen}
+                          title={t("personalOutlines.cloud.downloadButton", { defaultValue: "Baixar da nuvem" })}
+                        >
+                          <CloudDownload className="h-4 w-4" />
+                        </Button>
+                      )}
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -1490,11 +1514,13 @@ function Page() {
                           <Download className="h-3.5 w-3.5 mr-1" />
                           {t("personalOutlines.folders.exportNote", { defaultValue: "Exportar" })}
                         </Button>
-                        <Button size="sm" variant="outline" className="h-7 px-2" disabled={cloudBusy}
-                          onClick={() => handlePushManyByIds(Array.from(selectedIds))}>
-                          <CloudUpload className="h-3.5 w-3.5 mr-1" />
-                          {t("personalOutlines.cloud.push", { defaultValue: "Nuvem" })}
-                        </Button>
+                        {activeType !== "talk_notes" && (
+                          <Button size="sm" variant="outline" className="h-7 px-2" disabled={cloudBusy}
+                            onClick={() => handlePushManyByIds(Array.from(selectedIds))}>
+                            <CloudUpload className="h-3.5 w-3.5 mr-1" />
+                            {t("personalOutlines.cloud.push", { defaultValue: "Nuvem" })}
+                          </Button>
+                        )}
                         <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive"
                           onClick={() => handleDeleteMany(Array.from(selectedIds))}>
                           <Trash2 className="h-3.5 w-3.5 mr-1" />
@@ -1685,6 +1711,7 @@ function NoteEditor({
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
+  const isTalk = type === "talk_notes";
   const { visit } = useActiveVisit();
   const [syncing, setSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
@@ -1760,35 +1787,37 @@ function NoteEditor({
       <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0">
 
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="inline-flex rounded-md border bg-background p-0.5">
-            <button
-              type="button"
-              onClick={() => onModeChange("edit")}
-              className={cn(
-                "px-3 py-1 text-xs rounded-sm transition",
-                mode === "edit" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >
-              {t("fieldConsiderations.editMode")}
-            </button>
-            <button
-              type="button"
-              onClick={() => onModeChange("outline")}
-              className={cn(
-                "px-3 py-1 text-xs rounded-sm transition",
-                mode === "outline" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >
-              {t("fieldConsiderations.outlineMode")}
-            </button>
-          </div>
+          {!isTalk && (
+            <div className="inline-flex rounded-md border bg-background p-0.5">
+              <button
+                type="button"
+                onClick={() => onModeChange("edit")}
+                className={cn(
+                  "px-3 py-1 text-xs rounded-sm transition",
+                  mode === "edit" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                {t("fieldConsiderations.editMode")}
+              </button>
+              <button
+                type="button"
+                onClick={() => onModeChange("outline")}
+                className={cn(
+                  "px-3 py-1 text-xs rounded-sm transition",
+                  mode === "outline" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                {t("fieldConsiderations.outlineMode")}
+              </button>
+            </div>
+          )}
           <span className="text-[11px] text-muted-foreground">
             {t("fieldConsiderations.updatedAt")}: {dateFmt(draft.updated_at)}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <SavingIndicator saving={saving} />
-          {mode === "outline" && (
+          {mode === "outline" && !isTalk && (
             <Button variant="outline" size="sm" onClick={onFullscreen}>
               <Maximize2 className="h-4 w-4 mr-1.5" /> {t("personalOutlines.fullscreen.enter")}
             </Button>
@@ -1975,9 +2004,11 @@ function NoteEditor({
         <Button variant="outline" size="sm" onClick={onExport} title={t("personalOutlines.folders.exportNote")}>
           <Download className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.folders.exportNote")}</span>
         </Button>
-        <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
-          <Cloud className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}</span>
-        </Button>
+        {!isTalk && (
+          <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
+            <Cloud className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}</span>
+          </Button>
+        )}
         <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive" title={t("fieldConsiderations.delete")}>
           <Trash2 className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.delete")}</span>
         </Button>
