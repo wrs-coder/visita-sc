@@ -229,6 +229,8 @@ function Page() {
   // Limpa seleção/clipboard ao trocar de subaba
   useEffect(() => {
     setSelectedIds(new Set());
+    // "Anotações" é só edição — força modo edit ao entrar na subaba.
+    if (activeType === "talk_notes") setMode("edit");
   }, [activeType]);
 
   // Pastas das duas subabas (para diálogo cross-subaba)
