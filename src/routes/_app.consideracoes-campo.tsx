@@ -1847,7 +1847,7 @@ function NoteEditor({
 
 
 
-      <div className="grid gap-3 w-full max-w-full min-w-0">
+      <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden">
         {!metaCollapsed && (<>
         {isField && (
           <div className="grid gap-3 sm:grid-cols-2 w-full max-w-full min-w-0">
