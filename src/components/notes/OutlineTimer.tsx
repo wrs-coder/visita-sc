@@ -11,13 +11,30 @@
  */
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pause, Play, RotateCcw, Timer as TimerIcon } from "lucide-react";
+import {
+  Pause,
+  Play,
+  RotateCcw,
+  Timer as TimerIcon,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -26,6 +43,7 @@ import {
   useOutlineTimer,
   type AlertLevel,
 } from "@/hooks/use-outline-timer";
+import { useTimerSize } from "@/lib/timer-size";
 import { TIMER_THEMES, useTimerTheme } from "@/lib/timer-theme";
 
 interface OutlineTimerProps {
