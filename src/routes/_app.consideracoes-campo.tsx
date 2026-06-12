@@ -1372,6 +1372,17 @@ function Page() {
               >
                 {t("personalOutlines.typePicker.outline")}
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveType("talk_notes")}
+                className={cn(
+                  "px-3 py-1.5 text-xs rounded-sm transition inline-flex items-center gap-1",
+                  isTalkNotes ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                <NotebookPen className="h-3.5 w-3.5" />
+                {t("personalOutlines.typePicker.talkNotes")}
+              </button>
             </div>
           </CardContent>
         </Card>
