@@ -1343,7 +1343,7 @@ function Page() {
 
   return (
     <>
-      <div className="space-y-4 w-full max-w-full overflow-x-hidden overflow-y-auto box-border min-w-0">
+      <div className="space-y-4 w-full max-w-full overflow-x-clip box-border min-w-0">
         <header className="flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-2 text-primary">
             <FileText className="h-5 w-5" />
@@ -1793,7 +1793,7 @@ function NoteEditor({
 
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words pb-24">
+    <div className="w-full max-w-full overflow-x-clip box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words pb-24">
       <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0">
 
         <div className="flex items-center gap-2 flex-wrap">
