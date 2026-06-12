@@ -5,7 +5,7 @@
 import type { BibleLang, BookId } from "./bible-refs";
 import { parseEpub, type ParseProgress, type ParsedBookInfo } from "./epub-bible-parser";
 
-export type NoteType = "field_consideration" | "outline";
+export type NoteType = "field_consideration" | "outline" | "talk_notes";
 
 /**
  * Pasta fixa virtual "Considerações da Semana".
