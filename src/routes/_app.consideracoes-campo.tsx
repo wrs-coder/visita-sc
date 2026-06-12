@@ -1718,6 +1718,13 @@ function NoteEditor({
   const { visit } = useActiveVisit();
   const [syncing, setSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
+  const META_COLLAPSED_KEY = "visita-sc:outline-meta-collapsed";
+  const [metaCollapsed, setMetaCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem(META_COLLAPSED_KEY) === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(META_COLLAPSED_KEY, metaCollapsed ? "1" : "0"); } catch { /* noop */ }
+  }, [metaCollapsed]);
 
   const isWeekConsiderations = draft.folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS;
   const canSync = isField && isWeekConsiderations && !!draft.event_date && !!draft.period && !!visit;
