@@ -42,6 +42,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { OutlineTimer } from "./OutlineTimer";
 
 const TEXT_COLORS = [
   "#0f172a", "#dc2626", "#ea580c", "#ca8a04",
@@ -69,6 +70,12 @@ interface ToolbarProps {
   visible?: boolean;
   focusMode?: boolean;
   onToggleFocusMode?: () => void;
+  /**
+   * Quando presente, renderiza o cronômetro de esboço (Missão 06)
+   * embutido na barra de ferramentas. Omitir em contextos que não são
+   * esboços (ex.: subaba "Anotações").
+   */
+  outlineId?: string;
 }
 
 export function RichNoteToolbar({
@@ -76,6 +83,7 @@ export function RichNoteToolbar({
   visible = true,
   focusMode = false,
   onToggleFocusMode,
+  outlineId,
 }: ToolbarProps) {
   const { t } = useTranslation();
   const [colorOpen, setColorOpen] = useState(false);
