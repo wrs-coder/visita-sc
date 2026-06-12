@@ -315,6 +315,7 @@ function Page() {
 
   async function handleCloudPush() {
     if (!draft) return;
+    if ((draft.type ?? activeType) === "talk_notes") return;
     setCloudBusy(true);
     try {
       const r = await fnPushCloud({
