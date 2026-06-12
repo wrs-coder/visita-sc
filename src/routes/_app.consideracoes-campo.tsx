@@ -523,7 +523,7 @@ function Page() {
         return next.sort((a, b) => b.updated_at - a.updated_at);
       });
       setDraft(updated);
-      setMode("outline");
+      if (activeType !== "talk_notes") setMode("outline");
       const syncResult = await syncOutlinesIfOnline();
       if (activeType === "outline" && syncResult?.ok) {
         const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
