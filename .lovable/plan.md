@@ -1,37 +1,56 @@
-## Objetivo
-Na aba "Esboço Pessoais" (rota `/consideracoes-campo`), no editor de esboço, fazer com que **somente o campo "Conteúdo" tenha rolagem própria**. Todo o cabeçalho (modo edição/esboço, data, período, título, oração, território, dirigentes/descrição, versículos detectados) fica **fixo no topo**, podendo apenas ser **minimizado/expandido** pelo botão já existente (`metaCollapsed`). A barra de ações inferior continua fixa no rodapé.
+# Missão 06.2 — Zoom do visor + Reset seguro no OutlineTimer
 
-## Comportamento esperado
-- Ao rolar dentro do esboço, **só o conteúdo rola**; cabeçalho e rodapé permanecem visíveis.
-- O cronômetro (label "Conteúdo" + `OutlineTimer toolbar`) fica colado **no topo da área de conteúdo** (não some).
-- Botão de minimizar continua reduzindo o bloco de metadados — quando minimizado, sobra ainda mais espaço para o conteúdo.
-- Modo tela cheia permanece inalterado.
-- Sem mudanças visuais nos tokens de cor; apenas layout (flex + alturas).
+Escopo 100% cliente. Sem Supabase. Sem hex inline. Build `bunx tsc --noEmit` limpo.
 
-## Mudanças técnicas (apenas frontend)
-Arquivo: `src/routes/_app.consideracoes-campo.tsx`
+## 1. Zoom do visor (Normal / Grande / Gigante)
 
-1. **Container raiz do editor** (linha ~1796) deixa de ser fluxo vertical comum e vira **coluna flex de altura limitada**:
-   - Substituir `space-y-4 pb-24` por `flex flex-col h-[calc(100dvh-var(--app-header-h,8rem))] min-h-0`.
-   - Remover `pb-24` (o rodapé não é mais sticky-na-página, e sim parte do flex).
-   
-2. **Header bar** (linhas 1797–1846, toggle modo/Saving/Minimizar/Fullscreen): envolver em `<div className="shrink-0">` para nunca encolher nem rolar.
+**Novo módulo:** `src/lib/timer-size.ts`
+- Tipo `TimerSizeId = "normal" | "large" | "huge"`.
+- Hook `useTimerSize()` análogo a `useTimerTheme`: estado + `localStorage` (`visita-sc:outline-timer-size`) + sincronização via `StorageEvent` sintético.
+- Preset por tamanho expõe classes Tailwind para as duas variantes:
+  - `toolbar`: `text-xs` (normal) · `text-sm` (large) · `text-base` (huge), com `px` proporcional.
+  - `fullscreen`: `text-lg` (normal) · `text-2xl` (large) · `text-4xl` (huge), com `py` proporcional para o banner respirar.
+- Ciclos: helpers `nextSize(id)` / `prevSize(id)` para os botões +/−.
 
-3. **Bloco de metadados** (linhas 1850–1994, `grid gap-3 ...`): envolver em `<div className="shrink-0">`. O `Collapsible` lógico atual (`!metaCollapsed && ...`) continua igual — minimizar/expandir já funciona.
+**`src/components/notes/OutlineTimer.tsx`:**
+- Consumir `useTimerSize()`; remover `text-lg`/`text-xs` hard-coded de `displayClass` e usar a classe do preset (ambas as variantes).
+- Adicionar dois `Button` ghost ao lado do reset, usando `ZoomIn` / `ZoomOut` do `lucide-react`:
+  - `onClick` chama `setSize(next/prev)`.
+  - `disabled` no extremo (já no maior/menor).
+  - `aria-label` + `title` traduzíveis (`personalOutlines.timer.zoomIn` / `zoomOut`).
+  - Mesma `iconBtnClass`/`iconBtnSize` dos demais para coerência visual e tema.
+- Ordem na barra: `[timer-alvo] [MM:SS] [play/pause] [reset] [zoom-out] [zoom-in]`.
 
-4. **Área de Conteúdo** (linhas 1996–2026): vira o **único filho que cresce e rola**:
-   - Wrapper: `flex-1 min-h-0 flex flex-col`.
-   - O header sticky interno (label "Conteúdo" + Timer, linha 1998) passa de `sticky top-0` (que dependia do scroll da página) para `shrink-0` simples — ele já está no topo do contêiner rolável.
-   - O `RichNoteEditor` / preview ganha `flex-1 min-h-0 overflow-y-auto` e perde `min-h-[240px]` / `maxHeight` interno conflitante. Para o modo `edit`, passar `minHeight="100%"` e `className="flex-1 min-h-0"`; o `RichNoteEditor` já é `overflow-y-auto` internamente — basta deixar ele crescer.
+## 2. Reset com confirmação (AlertDialog)
 
-5. **Action bar inferior** (linha 2031): deixa de ser `sticky bottom-0` e vira `shrink-0 border-t -mx-5 px-3 sm:px-5 py-3 bg-background/95 ...` (último filho do flex coluna). Continua sempre visível porque o pai tem altura fixa.
+**`src/components/notes/OutlineTimer.tsx`:**
+- Importar `AlertDialog*` de `@/components/ui/alert-dialog` (já existe).
+- Estado local `resetOpen: boolean`.
+- Botão reset deixa de chamar `timer.reset()` direto: apenas abre `setResetOpen(true)`.
+- `<AlertDialog>` renderizado dentro do componente com:
+  - Title: `personalOutlines.timer.resetConfirmTitle` ("Deseja reiniciar o cronômetro?")
+  - Description: `personalOutlines.timer.resetConfirmDesc` ("O tempo decorrido voltará a 00:00.")
+  - Cancel: `common.cancel` (fallback "Cancelar") — fecha sem efeito.
+  - Action: `personalOutlines.timer.resetConfirm` ("Confirmar") — chama `timer.reset()` e fecha.
+- O estado de execução (`isRunning`) **não** é tocado pelo cancelamento — a lógica atual de `reset()` já preserva pausa; só roda quando confirmado.
+- `z-index` do conteúdo do dialog mantém o padrão shadcn (acima do banner fullscreen `z-[105]`); se necessário, `className="z-[150]"` no `AlertDialogContent` para garantir sobreposição em fullscreen.
 
-6. **Ancestrais** (linhas 1346 e contêiner de aba): verificar que não há `overflow` extra bloqueando `100dvh`. Se necessário, ajustar o wrapper de aba para `flex-1 min-h-0` para que a altura do editor resolva corretamente em mobile (390px atual do usuário).
+## 3. i18n
 
-## Validação
+Adicionar em `src/i18n/locales/{pt,en,es}.json` sob `personalOutlines.timer`:
+- `zoomIn`, `zoomOut`
+- `resetConfirmTitle`, `resetConfirmDesc`, `resetConfirm`
+
+(Reaproveitar `common.cancel` se já existir; caso contrário, adicionar.)
+
+## 4. Validação
+
 - `bunx tsc --noEmit` limpo.
-- Em mobile (390×845): rolar dentro do conteúdo mantém timer, título e botões visíveis.
-- Botão "Minimizar cabeçalho" continua escondendo data/período/título/oração/etc.
-- Modo `outline` (leitura) e `edit` (RichNoteEditor) ambos rolam internamente.
-- Tela cheia (`isFullscreen`) inalterada.
-- Sem novos tokens, sem hex inline, sem mudanças de Supabase.
+- Smoke manual no preview: alternar tamanho na toolbar reflete imediatamente no banner fullscreen; reload mantém preferência; clicar reset abre dialog; "Cancelar" preserva contagem; "Confirmar" zera.
+
+## Arquivos tocados
+
+- **novo:** `src/lib/timer-size.ts`
+- editado: `src/components/notes/OutlineTimer.tsx`
+- editado: `src/i18n/locales/pt.json`, `en.json`, `es.json`
+- editado: `.lovable/plan.md` (registro da subonda)
