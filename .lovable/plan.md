@@ -1,36 +1,49 @@
-# Onda 7.9 — Acessibilidade premium ✅ entregue
+# Onda 7.11 — Missão 05A (Blindagem da persistência de login) ✅ entregue
 
-Ganhos incrementais sobre a base já criada nas Ondas 5/6.6:
+Garante que o usuário **nunca** seja deslogado automaticamente. A sessão só
+termina com clique deliberado em "Sair".
 
-- `src/routes/__root.tsx` — `<html lang>` agora é mantido em sincronia com o
-  idioma ativo do i18n (`pt → pt-BR`, `en`, `es`), reagindo a `languageChanged`.
-  Leitores de tela passam a usar a voz e a pronúncia correta após o usuário
-  trocar de idioma no app.
-- `src/components/RouteAnnouncer.tsx` (novo) — região `role="status"
-  aria-live="polite" aria-atomic="true"` SR-only que anuncia o nome da rota
-  ativa 180 ms após a navegação, traduzido pelo i18n. Soluciona a perda de
-  contexto típica de SPAs (o `<title>` não muda audivelmente em SPA puro).
-- `src/routes/_app.tsx` — monta o `RouteAnnouncer` logo após o skip-link,
-  alimentado por `location.pathname`.
-- `src/components/OfflineReadyBadge.tsx` — ganha `role="status"`,
-  `aria-live="polite"` e `aria-atomic="true"` para anunciar progresso e
-  estado "Pronto para offline" sem precisar de hover/título.
-- `src/i18n/locales/{pt,en,es}.json` — nova chave `a11y.pageAnnounce`
-  (`"{{name}} carregado/loaded/cargado"`).
+## Mudanças
 
-Já existia (mantido):
-- Skip-to-content (`.skip-to-content`), foco visível com halo, mínimos
-  44×44 px em `pointer:coarse`, `prefers-reduced-motion` global,
-  `SavingIndicator` com `role="status" aria-live="polite"`,
-  `aria-label` em todos os botões icon-only do shell (`Menu`, `LogOut`,
-  `SyncButton`, abre Command Palette).
+### `src/hooks/use-auth.tsx`
+- `onAuthStateChange` agora:
+  - Ignora `TOKEN_REFRESHED` e `INITIAL_SESSION` (eventos ruidosos que
+    disparam a cada ~1h e em todo foco de aba, sem trocar identidade).
+  - Em `SIGNED_OUT`, só processa se a flag `sessionStorage["visita-sc:logout-intent"]`
+    estiver setada. Sem ela, o evento é tratado como espúrio (refresh-token
+    recusado por flutuação de rede, 401 transiente) e a sessão local é
+    **preservada** — log de aviso para diagnose.
+  - `USER_UPDATED` continua recarregando perfil, mas sem entrar em loading.
+- `signOut()` marca a flag `logout-intent` antes de chamar
+  `supabase.auth.signOut()`, sinalizando que o evento subsequente é
+  deliberado. Modo Offline continua bloqueando logout (sem rede não há
+  como voltar a entrar).
 
-# Onda 7.10 — Verificação ✅ entregue
+### `src/routes/__root.tsx`
+- Mesma blindagem no listener global:
+  - Ignora `TOKEN_REFRESHED`, `INITIAL_SESSION`, `USER_UPDATED`.
+  - `SIGNED_OUT` sem `logout-intent` = no-op (não invalida router, não
+    limpa cache, não dispara refetch).
+  - `queryClient.clear()` só roda em troca real de identidade.
 
+## Onda 7.4b (mantido)
+- `src/lib/connection-mode.ts` em Modo Online: se `fetch` ao Supabase
+  falhar por rede ou 5xx, serve do `Cache Storage` como contingência.
+  Botão "Modo Off-line" continua sendo a ação principal recomendada.
+
+## Verificação
 - `bunx tsc --noEmit` 100% limpo.
-- Smoke manual coberto pela arquitetura existente: skip-link continua focável
-  via Tab; mudança de rota dispara fade+slide de 120 ms (Onda 7.1) e em
-  seguida o announcer SR-only anuncia o nome traduzido da página; warm-up
-  offline mostra progresso silencioso no header com o badge agora live.
+- Comportamento esperado:
+  - Token expira após 1h → `TOKEN_REFRESHED` chega → ignorado pelo listener,
+    Supabase JS renova silenciosamente, usuário continua logado.
+  - Rede cai durante refresh → `SIGNED_OUT` chega sem `logout-intent` → log
+    `[auth] SIGNED_OUT não deliberado ignorado` → sessão e cache preservados.
+  - Clique em "Sair" → flag setada → `signOut()` → `SIGNED_OUT` processado
+    normalmente → cache limpo, navegação para `/`.
 
-Sem mudanças de schema, RLS, mutations, fila offline ou tokens da Onda 6.8.
+## Próximas missões (em ordem)
+- 05B — Warm-up incremental (fim do download redundante).
+- 01 — Backup com cobertura total (IDB + LS genéricos).
+- 02 — Subaba "Anotações" em Esboços Pessoais.
+- 03 — Popup bíblico persistente em Tela Cheia.
+- 04 — Olho expandido no cartão "Pastoreiem".

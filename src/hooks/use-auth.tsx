@@ -113,21 +113,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
-      // Em Modo Offline, ignoramos qualquer evento que possa derrubar a
-      // sessão (TOKEN_REFRESHED falho, SIGNED_OUT por token expirado).
-      // Só SIGNED_IN é processado (login manual).
+      // Missão 05A — Persistência absoluta de sessão.
+      // Em Modo Offline: ignora qualquer evento que não seja SIGNED_IN.
       if (isOfflineMode() && event !== "SIGNED_IN") return;
+
+      // Ignora eventos "ruidosos" que não mudam identidade do usuário —
+      // TOKEN_REFRESHED ocorre a cada ~1h e no foco da aba; INITIAL_SESSION
+      // dispara a cada montagem do listener. A sessão já está estável.
+      if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") return;
+
+      // SIGNED_OUT que NÃO veio do botão "Sair" (refresh-token recusado por
+      // flutuação de rede, 401 de uma chamada qualquer): NUNCA derruba a
+      // sessão local. Preserva o estado atual e loga para diagnose.
+      if (event === "SIGNED_OUT") {
+        const deliberate = sessionStorage.getItem("visita-sc:logout-intent") === "1";
+        if (!deliberate) {
+          console.warn("[auth] SIGNED_OUT não deliberado ignorado — sessão preservada");
+          return;
+        }
+        sessionStorage.removeItem("visita-sc:logout-intent");
+      }
+
       setSession(s);
       setUser(s?.user ?? null);
-      // Em SIGNED_IN reentramos no estado "carregando" para que a UI não
-      // avalie needsOnboarding com role/congregation desatualizados — isso
-      // causava o card de onboarding piscar logo após login/cadastro.
-      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+      if (event === "SIGNED_IN") {
         setLoading(true);
         setTimeout(() => {
           loadUserData(s?.user?.id).finally(() => setLoading(false));
         }, 0);
-      } else {
+      } else if (event === "USER_UPDATED") {
         setTimeout(() => loadUserData(s?.user?.id), 0);
       }
     });
@@ -142,14 +156,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = async () => { await loadUserData(user?.id); };
   const signOut = async () => {
     // Em Modo Offline, NUNCA executar logout — sem internet, o usuário não
-    // conseguirá voltar a entrar (primeiro login exige rede). Bloqueia tanto
-    // tentativas manuais quanto qualquer caminho que chame signOut.
+    // conseguirá voltar a entrar (primeiro login exige rede).
     if (isOfflineMode()) {
       try {
         toast.warning(i18n.t("connection.cannotLogoutOffline"));
       } catch { /* noop */ }
       return;
     }
+    // Marca intenção deliberada — o listener acima usa esta flag para
+    // distinguir um logout real do botão "Sair" de um SIGNED_OUT espúrio
+    // disparado por refresh-token vencido.
+    try { sessionStorage.setItem("visita-sc:logout-intent", "1"); } catch { /* noop */ }
     await supabase.auth.signOut();
   };
 
