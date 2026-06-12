@@ -1708,6 +1708,7 @@ function NoteEditor({
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
+  const isTalk = type === "talk_notes";
   const { visit } = useActiveVisit();
   const [syncing, setSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
