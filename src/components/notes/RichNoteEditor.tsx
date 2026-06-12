@@ -264,6 +264,7 @@ export function RichNoteEditor({
         visible={toolbarVisible}
         focusMode={focusMode}
         onToggleFocusMode={() => setFocusMode((v) => !v)}
+        outlineId={outlineId}
       />
       <EditorContent editor={editor} />
       {showFooter && (
