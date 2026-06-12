@@ -1784,35 +1784,37 @@ function NoteEditor({
       <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0">
 
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="inline-flex rounded-md border bg-background p-0.5">
-            <button
-              type="button"
-              onClick={() => onModeChange("edit")}
-              className={cn(
-                "px-3 py-1 text-xs rounded-sm transition",
-                mode === "edit" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >
-              {t("fieldConsiderations.editMode")}
-            </button>
-            <button
-              type="button"
-              onClick={() => onModeChange("outline")}
-              className={cn(
-                "px-3 py-1 text-xs rounded-sm transition",
-                mode === "outline" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >
-              {t("fieldConsiderations.outlineMode")}
-            </button>
-          </div>
+          {!isTalk && (
+            <div className="inline-flex rounded-md border bg-background p-0.5">
+              <button
+                type="button"
+                onClick={() => onModeChange("edit")}
+                className={cn(
+                  "px-3 py-1 text-xs rounded-sm transition",
+                  mode === "edit" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                {t("fieldConsiderations.editMode")}
+              </button>
+              <button
+                type="button"
+                onClick={() => onModeChange("outline")}
+                className={cn(
+                  "px-3 py-1 text-xs rounded-sm transition",
+                  mode === "outline" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                {t("fieldConsiderations.outlineMode")}
+              </button>
+            </div>
+          )}
           <span className="text-[11px] text-muted-foreground">
             {t("fieldConsiderations.updatedAt")}: {dateFmt(draft.updated_at)}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <SavingIndicator saving={saving} />
-          {mode === "outline" && (
+          {mode === "outline" && !isTalk && (
             <Button variant="outline" size="sm" onClick={onFullscreen}>
               <Maximize2 className="h-4 w-4 mr-1.5" /> {t("personalOutlines.fullscreen.enter")}
             </Button>
