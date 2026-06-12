@@ -30,6 +30,8 @@ import {
   CloudDownload,
   RefreshCw,
   NotebookPen,
+  ChevronsDownUp,
+  ChevronsUpDown,
 } from "lucide-react";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
