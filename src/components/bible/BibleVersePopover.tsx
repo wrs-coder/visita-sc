@@ -295,7 +295,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -338,7 +338,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setOpen(false);
+              explicitClose();
             }}
             className="p-1 rounded hover:bg-background text-muted-foreground"
             aria-label={t("bibleVerse.close", { defaultValue: "Fechar" })}
@@ -346,6 +346,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
+
 
         {/* Barra de aparência (cor, negrito, grifar) */}
         <div className="flex items-center gap-1.5 px-2 py-1.5 border-b bg-muted/30" aria-label={t("bibleVerse.viewSettings")}>
