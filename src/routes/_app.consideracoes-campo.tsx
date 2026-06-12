@@ -2070,9 +2070,17 @@ function FullscreenOutline({
     };
   }, []);
 
+  const showTimer = (note.type ?? "field_consideration") !== "talk_notes";
+
   return (
     <div className="fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none">
-      <div className="flex items-center gap-2 border-b px-4 py-2 min-w-0">
+      {showTimer && <OutlineTimer outlineId={note.id} variant="fullscreen" />}
+      <div
+        className={cn(
+          "flex items-center gap-2 border-b px-4 py-2 min-w-0",
+          showTimer && "pt-12",
+        )}
+      >
         <FileText className="h-4 w-4 text-primary shrink-0" />
         <h2 className="text-sm font-semibold truncate flex-1 min-w-0">
           {note.title || t("fieldConsiderations.fields.title")}
