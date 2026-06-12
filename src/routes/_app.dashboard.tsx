@@ -213,7 +213,9 @@ function Dashboard() {
   const meetingExtras = useVisitTemplateExtras(visit?.id);
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [pendingCount, setPendingCount] = useState(0);
-  type DetailsKey = "field" | "studies" | "meals" | "meetings" | "transport" | "checklist";
+  type DetailsKey =
+    | "field" | "studies" | "meals" | "meetings" | "transport" | "checklist"
+    | "elder-pastoral" | "elder-encouragement" | "elder-recommendations" | "elder-local";
   const [openDetails, setOpenDetails] = useState<DetailsKey | null>(null);
   useEffect(() => subscribeQueue(setPendingCount), []);
   const [overdueVisits, setOverdueVisits] = useState<
