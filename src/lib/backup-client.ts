@@ -80,7 +80,7 @@ async function putAllInStore(db: IDBDatabase, store: string, items: unknown[]): 
       const tx = db.transaction(store, "readwrite");
       const s = tx.objectStore(store);
       for (const it of slice) {
-        try { s.put(it as IDBValidKey extends never ? never : never); } catch { /* skip bad row */ }
+        try { s.put(it as unknown as Parameters<IDBObjectStore["put"]>[0]); } catch { /* skip bad row */ }
       }
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
