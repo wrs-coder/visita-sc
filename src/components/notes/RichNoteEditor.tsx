@@ -131,6 +131,7 @@ export function RichNoteEditor({
   noteId,
   className,
   minHeight = "240px",
+  outlineId,
 }: RichNoteEditorProps) {
   const { t } = useTranslation();
   const [focused, setFocused] = useState(false);
