@@ -1327,6 +1327,7 @@ function Page() {
 
   const isField = activeType === "field_consideration";
   const isOutline = activeType === "outline";
+  const isTalkNotes = activeType === "talk_notes";
 
   return (
     <>
