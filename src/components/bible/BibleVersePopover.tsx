@@ -70,19 +70,44 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
     pointerId: number;
   } | null>(null);
 
-  const handleDoubleTapClose = useCallback(() => {
+  // Política de fechamento (Missão 03): o popup NUNCA fecha sozinho.
+  // Só fecha quando o usuário aciona deliberadamente o botão "X" ou
+  // dá dois toques no conteúdo. `allowCloseRef` libera o próximo
+  // `false` recebido em `onOpenChange`; qualquer outro pedido de
+  // fechar é ignorado (Escape, click fora, blur, focus outside,
+  // toggle do trigger etc.), inclusive em Tela Cheia.
+  const allowCloseRef = useRef(false);
+
+  const explicitClose = useCallback(() => {
+    allowCloseRef.current = true;
     setOpen(false);
   }, []);
+
+  const handleOpenChange = useCallback((next: boolean) => {
+    if (next) {
+      setOpen(true);
+      return;
+    }
+    if (allowCloseRef.current) {
+      allowCloseRef.current = false;
+      setOpen(false);
+    }
+    // senão: ignora — mantém o popup aberto.
+  }, []);
+
+  const handleDoubleTapClose = useCallback(() => {
+    explicitClose();
+  }, [explicitClose]);
 
   const handleTextTouchEnd = useCallback(() => {
     const now = Date.now();
     if (now - lastTapRef.current < 350) {
-      setOpen(false);
+      explicitClose();
       lastTapRef.current = 0;
     } else {
       lastTapRef.current = now;
     }
-  }, []);
+  }, [explicitClose]);
 
   useEffect(() => {
     if (!open) setOffset({ x: 0, y: 0 });
