@@ -1494,6 +1494,24 @@
       "fontUp": "Aumentar fonte",
       "fontDown": "Diminuir fonte"
     },
+    "timer": {
+      "label": "Cronômetro do esboço",
+      "setTarget": "Definir tempo alvo",
+      "minShort": "min",
+      "custom": "Personalizado",
+      "apply": "OK",
+      "play": "Iniciar",
+      "pause": "Pausar",
+      "reset": "Reiniciar",
+      "toggleMode": "Alternar contagem regressiva/crescente",
+      "accessibility": "Acessibilidade / Cores",
+      "themeAuto": "Cores automáticas",
+      "themeYellowOnBlack": "Amarelo neon sobre preto",
+      "themeBlackOnYellow": "Preto sobre amarelo",
+      "themeRedVivid": "Vermelho vivo",
+      "themeWhiteOnBlack": "Branco sobre preto",
+      "themeGreenNeon": "Verde neon"
+    },
     "editor": {
       "collapseMeta": "Minimizar cabeçalho",
       "expandMeta": "Expandir cabeçalho",
