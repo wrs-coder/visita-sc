@@ -259,7 +259,7 @@ export function RichNoteEditor({
         ],
         className,
       )}
-      style={{ minHeight, maxHeight: "70vh" }}
+      style={{ minHeight, maxHeight: maxHeight === "none" ? undefined : maxHeight }}
       onClick={() => editor?.chain().focus().run()}
     >
       <RichNoteToolbar
