@@ -109,8 +109,8 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
     isAuto ? "hover:bg-muted" : preset.iconColor,
   );
   const displayClass = cn(
-    "tabular-nums font-semibold cursor-pointer select-none px-1",
-    isFullscreen ? "text-lg" : "text-xs",
+    "tabular-nums font-semibold cursor-pointer select-none",
+    isFullscreen ? size.preset.fullscreenText : size.preset.toolbarText,
     isAuto ? alertColorClass(timer.alertLevel) : preset.chipText,
   );
 
