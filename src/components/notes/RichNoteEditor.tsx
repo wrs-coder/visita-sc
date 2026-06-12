@@ -33,6 +33,8 @@ interface RichNoteEditorProps {
   noteId?: string;
   className?: string;
   minHeight?: string;
+  /** Altura máxima do contêiner. Default "70vh". Use "none" para desativar. */
+  maxHeight?: string;
   /** ID do esboço — quando presente, exibe o cronômetro (Missão 06). */
   outlineId?: string;
 }
