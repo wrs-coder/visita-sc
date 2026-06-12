@@ -1509,7 +1509,12 @@
       "themeBlackOnYellow": "Black on yellow",
       "themeRedVivid": "Vivid red",
       "themeWhiteOnBlack": "White on black",
-      "themeGreenNeon": "Neon green"
+      "themeGreenNeon": "Neon green",
+      "zoomIn": "Increase display size",
+      "zoomOut": "Decrease display size",
+      "resetConfirmTitle": "Reset the timer?",
+      "resetConfirmDesc": "The elapsed time will go back to 00:00.",
+      "resetConfirm": "Confirm"
     },
     "editor": {
       "collapseMeta": "Collapse header",

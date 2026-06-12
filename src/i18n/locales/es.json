@@ -1484,7 +1484,12 @@
       "themeBlackOnYellow": "Negro sobre amarillo",
       "themeRedVivid": "Rojo vivo",
       "themeWhiteOnBlack": "Blanco sobre negro",
-      "themeGreenNeon": "Verde neón"
+      "themeGreenNeon": "Verde neón",
+      "zoomIn": "Aumentar tamaño del visor",
+      "zoomOut": "Disminuir tamaño del visor",
+      "resetConfirmTitle": "¿Reiniciar el cronómetro?",
+      "resetConfirmDesc": "El tiempo transcurrido volverá a 00:00.",
+      "resetConfirm": "Confirmar"
     },
     "editor": {
       "collapseMeta": "Minimizar encabezado",
