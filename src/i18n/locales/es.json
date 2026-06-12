@@ -1398,6 +1398,7 @@
       "label": "Elige el tipo de creación",
       "field": "Consideración de Campo",
       "outline": "Bosquejo",
+      "talkNotes": "Apuntes",
       "prompt": "Selecciona un tipo arriba para cargar tus carpetas y notas."
     },
     "cloud": {
