@@ -1979,6 +1979,7 @@ function NoteEditor({
               placeholder={t("fieldConsiderations.fields.contentPh")}
               noteId={draft.id}
               minHeight="240px"
+              outlineId={isTalk ? undefined : draft.id}
             />
           ) : (
             <div className="rounded-md border bg-background px-3 py-2 min-h-[240px] text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
