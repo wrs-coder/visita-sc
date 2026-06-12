@@ -123,15 +123,20 @@ function RootComponent() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      // Em Modo Offline, ignoramos eventos do supabase auth para evitar
-      // logout automático causado por refresh-token vencido / falha de rede.
-      // Só processamos SIGNED_IN (que vem do login manual) e SIGNED_OUT
-      // explícito quando o app está em Modo Online.
+      // Missão 05A — Persistência absoluta.
+      // Offline: só processa SIGNED_IN.
       if (isOfflineMode() && event !== "SIGNED_IN") return;
+      // Ignora eventos ruidosos que não trocam usuário.
+      if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION" || event === "USER_UPDATED") return;
+      // SIGNED_OUT espúrio (refresh-token recusado): preserva tudo.
+      if (event === "SIGNED_OUT") {
+        const deliberate = sessionStorage.getItem("visita-sc:logout-intent") === "1";
+        if (!deliberate) return;
+      }
       router.invalidate();
       queryClient.invalidateQueries();
-      // Limpa cache persistido em troca de sessão para evitar vazar dados
-      // do usuário anterior.
+      // Troca real de identidade: limpa cache persistido para não vazar
+      // dados entre usuários.
       if (event === "SIGNED_OUT" || event === "SIGNED_IN") {
         queryClient.clear();
       }
