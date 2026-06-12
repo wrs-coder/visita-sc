@@ -1793,8 +1793,8 @@ function NoteEditor({
 
 
   return (
-    <div className="w-full max-w-full overflow-x-clip box-border min-w-0 space-y-4 [overflow-wrap:anywhere] break-words pb-24">
-      <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0">
+    <div className="w-full max-w-full overflow-x-clip box-border min-w-0 [overflow-wrap:anywhere] break-words flex flex-col h-[calc(100dvh-8rem)] min-h-[480px]">
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0 mb-3">
 
         <div className="flex items-center gap-2 flex-wrap">
           {!isTalk && (
@@ -1847,7 +1847,7 @@ function NoteEditor({
 
 
 
-      <div className="grid gap-3 w-full max-w-full min-w-0">
+      <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden">
         {!metaCollapsed && (<>
         {isField && (
           <div className="grid gap-3 sm:grid-cols-2 w-full max-w-full min-w-0">
@@ -1992,43 +1992,45 @@ function NoteEditor({
           </div>
         )}
         </>)}
+      </div>
 
-        <div className="grid gap-1.5 w-full max-w-full min-w-0">
+      <div className="flex-1 min-h-0 flex flex-col gap-1.5 w-full max-w-full min-w-0">
 
-          <div className="sticky top-0 z-[40] -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <Label>{t("fieldConsiderations.fields.content")}</Label>
-            {!isTalk && (
-              <div className="w-full sm:w-auto overflow-x-auto">
-                <OutlineTimer outlineId={draft.id} variant="toolbar" />
-              </div>
-            )}
-          </div>
-          {mode === "edit" ? (
-            <RichNoteEditor
-              value={draft.content}
-              onChange={(html) => onPatch("content", html)}
-              placeholder={t("fieldConsiderations.fields.contentPh")}
-              noteId={draft.id}
-              minHeight="240px"
-              outlineId={isTalk ? undefined : draft.id}
-            />
-          ) : (
-            <div className="rounded-md border bg-background px-3 py-2 min-h-[240px] text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
-              {draft.content ? (
-                <RichOutlineContent html={draft.content} library={activeBible} />
-              ) : (
-                <span className="text-muted-foreground italic">
-                  {t("fieldConsiderations.contentEmpty")}
-                </span>
-              )}
+        <div className="shrink-0 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <Label>{t("fieldConsiderations.fields.content")}</Label>
+          {!isTalk && (
+            <div className="w-full sm:w-auto overflow-x-auto">
+              <OutlineTimer outlineId={draft.id} variant="toolbar" />
             </div>
           )}
         </div>
+        {mode === "edit" ? (
+          <RichNoteEditor
+            value={draft.content}
+            onChange={(html) => onPatch("content", html)}
+            placeholder={t("fieldConsiderations.fields.contentPh")}
+            noteId={draft.id}
+            minHeight="0"
+            maxHeight="none"
+            className="flex-1 min-h-0"
+            outlineId={isTalk ? undefined : draft.id}
+          />
+        ) : (
+          <div className="flex-1 min-h-0 overflow-y-auto rounded-md border bg-background px-3 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
+            {draft.content ? (
+              <RichOutlineContent html={draft.content} library={activeBible} />
+            ) : (
+              <span className="text-muted-foreground italic">
+                {t("fieldConsiderations.contentEmpty")}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
 
-      {/* Sticky action bar — sempre visível no rodapé do editor */}
-      <div className="sticky bottom-0 left-0 right-0 z-30 -mx-5 px-3 sm:px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
+      {/* Action bar — sempre visível no rodapé do editor (flex item, não sticky) */}
+      <div className="shrink-0 mt-3 -mx-5 px-3 sm:px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
         {mode === "outline" && (
           <Button variant="outline" size="sm" onClick={() => onModeChange("edit")} title={t("fieldConsiderations.edit")}>
             <Pencil className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.edit")}</span>

@@ -1,119 +1,37 @@
-# Plano — Missão 06.1: Sticky Timer + Tema de Acessibilidade
+## Objetivo
+Na aba "Esboço Pessoais" (rota `/consideracoes-campo`), no editor de esboço, fazer com que **somente o campo "Conteúdo" tenha rolagem própria**. Todo o cabeçalho (modo edição/esboço, data, período, título, oração, território, dirigentes/descrição, versículos detectados) fica **fixo no topo**, podendo apenas ser **minimizado/expandido** pelo botão já existente (`metaCollapsed`). A barra de ações inferior continua fixa no rodapé.
 
-Escopo: dois ajustes UI/persistência sobre o `OutlineTimer` existente, sem
-mexer em lógica de tempo, drift, BroadcastChannel ou Supabase.
+## Comportamento esperado
+- Ao rolar dentro do esboço, **só o conteúdo rola**; cabeçalho e rodapé permanecem visíveis.
+- O cronômetro (label "Conteúdo" + `OutlineTimer toolbar`) fica colado **no topo da área de conteúdo** (não some).
+- Botão de minimizar continua reduzindo o bloco de metadados — quando minimizado, sobra ainda mais espaço para o conteúdo.
+- Modo tela cheia permanece inalterado.
+- Sem mudanças visuais nos tokens de cor; apenas layout (flex + alturas).
 
-## 1. Sticky no topo durante o scroll (apenas visualização normal)
+## Mudanças técnicas (apenas frontend)
+Arquivo: `src/routes/_app.consideracoes-campo.tsx`
 
-Onde: linha que envolve `<OutlineTimer variant="toolbar"/>` em
-`src/routes/_app.consideracoes-campo.tsx` (~linha 1997, dentro do `NoteEditor`),
-e o mesmo padrão na toolbar do `RichNoteEditor` quando recebe `outlineId`.
+1. **Container raiz do editor** (linha ~1796) deixa de ser fluxo vertical comum e vira **coluna flex de altura limitada**:
+   - Substituir `space-y-4 pb-24` por `flex flex-col h-[calc(100dvh-var(--app-header-h,8rem))] min-h-0`.
+   - Remover `pb-24` (o rodapé não é mais sticky-na-página, e sim parte do flex).
+   
+2. **Header bar** (linhas 1797–1846, toggle modo/Saving/Minimizar/Fullscreen): envolver em `<div className="shrink-0">` para nunca encolher nem rolar.
 
-Mudança:
-- O contêiner do label "Conteúdo" + chip do timer recebe
-  `sticky top-0 z-[40] -mx-3 px-3 sm:-mx-0 sm:px-0 bg-background/95
-  backdrop-blur supports-[backdrop-filter]:bg-background/70`.
-- Mantém o layout `flex-col sm:flex-row` já implementado, então no mobile
-  o chip continua em linha própria; o sticky cola toda a faixa
-  (label + chip) ao topo do scroller.
-- Variante `fullscreen` não muda — já é `fixed top-0`.
-- `RichNoteEditor.tsx`: a barra de ferramentas que hoje hospeda o
-  `<OutlineTimer variant="toolbar"/>` ganha as mesmas classes sticky
-  para o modo edição.
+3. **Bloco de metadados** (linhas 1850–1994, `grid gap-3 ...`): envolver em `<div className="shrink-0">`. O `Collapsible` lógico atual (`!metaCollapsed && ...`) continua igual — minimizar/expandir já funciona.
 
-Observação: o scroller efetivo é o `<main>` da rota, que rola normalmente
-em mobile; `sticky` cola ao primeiro ancestral com overflow, então
-funciona sem ajustes adicionais.
+4. **Área de Conteúdo** (linhas 1996–2026): vira o **único filho que cresce e rola**:
+   - Wrapper: `flex-1 min-h-0 flex flex-col`.
+   - O header sticky interno (label "Conteúdo" + Timer, linha 1998) passa de `sticky top-0` (que dependia do scroll da página) para `shrink-0` simples — ele já está no topo do contêiner rolável.
+   - O `RichNoteEditor` / preview ganha `flex-1 min-h-0 overflow-y-auto` e perde `min-h-[240px]` / `maxHeight` interno conflitante. Para o modo `edit`, passar `minHeight="100%"` e `className="flex-1 min-h-0"`; o `RichNoteEditor` já é `overflow-y-auto` internamente — basta deixar ele crescer.
 
-## 2. Tema de cor / Acessibilidade do timer
+5. **Action bar inferior** (linha 2031): deixa de ser `sticky bottom-0` e vira `shrink-0 border-t -mx-5 px-3 sm:px-5 py-3 bg-background/95 ...` (último filho do flex coluna). Continua sempre visível porque o pai tem altura fixa.
 
-Modelo de dados (novo módulo `src/lib/timer-theme.ts`):
+6. **Ancestrais** (linhas 1346 e contêiner de aba): verificar que não há `overflow` extra bloqueando `100dvh`. Se necessário, ajustar o wrapper de aba para `flex-1 min-h-0` para que a altura do editor resolva corretamente em mobile (390px atual do usuário).
 
-```ts
-export type TimerThemeId =
-  | "auto"           // semafórico (verde→âmbar→vermelho) — default
-  | "yellow-on-black"
-  | "black-on-yellow"
-  | "red-vivid"
-  | "white-on-black"
-  | "green-neon";
-
-export interface TimerThemePreset {
-  id: TimerThemeId;
-  label: string;          // i18n key resolvida no componente
-  chipBg: string;         // classes Tailwind
-  chipText: string;
-  iconColor: string;      // classes para os botões Play/Pause/Reset/TimerIcon
-}
-```
-
-Storage: chave única global `visita-sc:outline-timer-theme` (string).
-Hook `useTimerTheme()` retorna `{ themeId, setThemeId, preset }` com
-sincronização via evento `storage` para refletir entre abas/superfícies.
-
-Aplicação no `OutlineTimer.tsx`:
-- Quando `themeId === "auto"`: comportamento atual (verde/âmbar/vermelho
-  por `alertLevel`).
-- Caso contrário: aplica `preset.chipBg`/`preset.chipText` ao wrapper e
-  ao display (sobrescrevendo `alertColorClass`); ícones usam
-  `preset.iconColor`. Sem qualquer hex inline — só classes utilitárias
-  Tailwind (ex.: `bg-black`, `text-yellow-300`, `text-red-500`,
-  `bg-yellow-300`, `text-emerald-400`).
-
-Popover (já tem presets de minutos + custom): após o input de custom,
-adiciona um `Separator` e a seção:
-
-```
-[Acessibilidade]
-( ) Cores automáticas (semafórico)
-( ) Amarelo neon sobre preto
-( ) Preto sobre amarelo
-( ) Vermelho vivo
-( ) Branco sobre preto
-( ) Verde neon
-```
-
-Implementado como grade `grid-cols-2 gap-1.5` de botões de preview
-mostrando "MM" no estilo do tema (mini swatch + label). Tap aplica
-imediatamente e fecha o popover só se for um preset.
-
-Persistência: `localStorage.setItem` no `setThemeId`; leitura inicial
-no hook (SSR-safe, `typeof window !== "undefined"`); broadcast via
-evento `storage` nativo já cobre múltiplas abas.
-
-## 3. i18n
-
-Adicionar em `personalOutlines.timer` (pt/en/es):
-- `accessibility` = "Acessibilidade / Cores" / "Accessibility / Colors" /
-  "Accesibilidad / Colores"
-- `themeAuto` = "Cores automáticas" / "Automatic colors" /
-  "Colores automáticos"
-- `themeYellowOnBlack` = "Amarelo neon sobre preto" / "Neon yellow on
-  black" / "Amarillo neón sobre negro"
-- `themeBlackOnYellow` = "Preto sobre amarelo" / "Black on yellow" /
-  "Negro sobre amarillo"
-- `themeRedVivid` = "Vermelho vivo" / "Vivid red" / "Rojo vivo"
-- `themeWhiteOnBlack` = "Branco sobre preto" / "White on black" /
-  "Blanco sobre negro"
-- `themeGreenNeon` = "Verde neon" / "Neon green" / "Verde neón"
-
-## Arquivos editados / criados
-
-- (novo) `src/lib/timer-theme.ts`
-- `src/components/notes/OutlineTimer.tsx`
-- `src/components/notes/RichNoteToolbar.tsx`
-- `src/routes/_app.consideracoes-campo.tsx`
-- `src/i18n/locales/pt.json`
-- `src/i18n/locales/en.json`
-- `src/i18n/locales/es.json`
-- `.lovable/plan.md`
-
-## Garantias
-
-- Zero alteração no `useOutlineTimer` (lógica de tempo intacta).
-- Zero chamadas Supabase. Tudo localStorage.
-- Sem hex inline; só classes utilitárias Tailwind v4 (compatíveis com
-  os tokens da Onda 6.8 — as cores neon usadas para o tema custom são
-  classes padrão Tailwind, não tokens semânticos do tema, o que é
-  aceitável pois são opção explícita de "alto contraste" do usuário).
-- `bunx tsc --noEmit` deve fechar 100% limpo.
+## Validação
+- `bunx tsc --noEmit` limpo.
+- Em mobile (390×845): rolar dentro do conteúdo mantém timer, título e botões visíveis.
+- Botão "Minimizar cabeçalho" continua escondendo data/período/título/oração/etc.
+- Modo `outline` (leitura) e `edit` (RichNoteEditor) ambos rolam internamente.
+- Tela cheia (`isFullscreen`) inalterada.
+- Sem novos tokens, sem hex inline, sem mudanças de Supabase.
