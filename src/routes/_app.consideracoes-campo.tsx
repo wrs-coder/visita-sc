@@ -87,6 +87,7 @@ import { findCitations, stripHtmlForDetection, type CitationMatch } from "@/lib/
 import { shareJsonFile } from "@/lib/share";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
+import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { RichOutlineContent } from "@/lib/rich-content";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
