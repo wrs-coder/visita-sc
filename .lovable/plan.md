@@ -1,52 +1,108 @@
-# Plano — Mobile fixes Esboços Pessoais
+# Plano — Missão 06.1: Sticky Timer + Tema de Acessibilidade
 
-Escopo 100% UI no arquivo `src/routes/_app.consideracoes-campo.tsx` (+ pequeno ajuste no `OutlineTimer.tsx` e i18n). Sem mexer em backend, lógica de salvamento ou sync.
+Escopo: dois ajustes UI/persistência sobre o `OutlineTimer` existente, sem
+mexer em lógica de tempo, drift, BroadcastChannel ou Supabase.
 
-## 1. Timer (chip da toolbar) cortado no mobile
+## 1. Sticky no topo durante o scroll (apenas visualização normal)
 
-Sintoma: no chip ao lado do label "Conteúdo", o display MM:SS aparece mas os botões Play/Pause/Reset somem por overflow horizontal.
+Onde: linha que envolve `<OutlineTimer variant="toolbar"/>` em
+`src/routes/_app.consideracoes-campo.tsx` (~linha 1997, dentro do `NoteEditor`),
+e o mesmo padrão na toolbar do `RichNoteEditor` quando recebe `outlineId`.
 
-Causa: o wrapper `flex items-center justify-between gap-2 flex-wrap` permite quebra, mas o chip `rounded-md border bg-muted/40 px-1.5` envolvendo o `OutlineTimer variant="toolbar"` tem largura natural maior que o espaço restante na mesma linha; como ele não pode quebrar internamente, vaza além do `min-w-0`.
+Mudança:
+- O contêiner do label "Conteúdo" + chip do timer recebe
+  `sticky top-0 z-[40] -mx-3 px-3 sm:-mx-0 sm:px-0 bg-background/95
+  backdrop-blur supports-[backdrop-filter]:bg-background/70`.
+- Mantém o layout `flex-col sm:flex-row` já implementado, então no mobile
+  o chip continua em linha própria; o sticky cola toda a faixa
+  (label + chip) ao topo do scroller.
+- Variante `fullscreen` não muda — já é `fixed top-0`.
+- `RichNoteEditor.tsx`: a barra de ferramentas que hoje hospeda o
+  `<OutlineTimer variant="toolbar"/>` ganha as mesmas classes sticky
+  para o modo edição.
 
-Correção:
-- Substituir o wrapper por uma estrutura que, no mobile, coloca o timer em linha própria ocupando 100% da largura — algo como `flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between`.
-- No chip do timer, adicionar `w-full sm:w-auto overflow-x-auto` e `flex-wrap` interno para permitir que os ícones acomodem.
-- No próprio `OutlineTimer.tsx`, na variante `toolbar`, trocar `h-7` fixo por `min-h-7 flex-wrap` e garantir `shrink-0` nos botões e display (já têm) — sem isto, o chip continua estourando quando o usuário aumenta o fonte do sistema.
+Observação: o scroller efetivo é o `<main>` da rota, que rola normalmente
+em mobile; `sticky` cola ao primeiro ancestral com overflow, então
+funciona sem ajustes adicionais.
 
-Resultado: em 390px de largura, o timer ocupa uma linha inteira abaixo do label "Conteúdo", com Play/Pause/Reset todos visíveis.
+## 2. Tema de cor / Acessibilidade do timer
 
-## 2. Seletor "Consideração de Campo / Esboço / Anotações" desalinhado
+Modelo de dados (novo módulo `src/lib/timer-theme.ts`):
 
-Sintoma: no mobile, os 3 botões do segmented control quebram em duas linhas com larguras diferentes — visual "não premium".
+```ts
+export type TimerThemeId =
+  | "auto"           // semafórico (verde→âmbar→vermelho) — default
+  | "yellow-on-black"
+  | "black-on-yellow"
+  | "red-vivid"
+  | "white-on-black"
+  | "green-neon";
 
-Correção (linhas 1359–1398):
-- `CardContent` muda para `p-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3`.
-- O `<div className="inline-flex rounded-md border …">` vira `flex w-full sm:w-auto rounded-md border bg-background p-0.5` e cada `<button>` recebe `flex-1 sm:flex-none justify-center inline-flex items-center gap-1 whitespace-nowrap text-[11px] sm:text-xs px-2`.
-- Mantém os mesmos rótulos (sem trocar i18n) — apenas a tipografia/altura/espaçamento melhoram. Em mobile vira uma barra cheia de 3 colunas iguais; em ≥640px, volta ao layout original compacto.
+export interface TimerThemePreset {
+  id: TimerThemeId;
+  label: string;          // i18n key resolvida no componente
+  chipBg: string;         // classes Tailwind
+  chipText: string;
+  iconColor: string;      // classes para os botões Play/Pause/Reset/TimerIcon
+}
+```
 
-## 3. Minimizar cabeçalho do esboço (destaque para Conteúdo + Timer)
+Storage: chave única global `visita-sc:outline-timer-theme` (string).
+Hook `useTimerTheme()` retorna `{ themeId, setThemeId, preset }` com
+sincronização via evento `storage` para refletir entre abas/superfícies.
 
-Comportamento pedido: ocultar/exibir os metadados do esboço para deixar apenas "Conteúdo" + timer em foco.
-- Field consideration: oculta de `Dia` até `Dirigentes` (campos `event_date`, `period`, `title`, bloco `syncFromField`, `prayer`, `territory`, `assistants`).
-- Outline / Talk notes: oculta de `Título` até `Descrição` (campos `title` e `description`).
-- Sempre mantém visível: bloco "Conteúdo" (label + chip do timer + editor/preview) e a sticky bar inferior. Também mantém visível o cabeçalho do editor (breadcrumb / SavingIndicator / botão Tela cheia).
+Aplicação no `OutlineTimer.tsx`:
+- Quando `themeId === "auto"`: comportamento atual (verde/âmbar/vermelho
+  por `alertLevel`).
+- Caso contrário: aplica `preset.chipBg`/`preset.chipText` ao wrapper e
+  ao display (sobrescrevendo `alertColorClass`); ícones usam
+  `preset.iconColor`. Sem qualquer hex inline — só classes utilitárias
+  Tailwind (ex.: `bg-black`, `text-yellow-300`, `text-red-500`,
+  `bg-yellow-300`, `text-emerald-400`).
 
-Implementação:
-- Novo state local no `OutlineEditor`: `const [metaCollapsed, setMetaCollapsed] = useState(false)`, persistido em `localStorage` (`visita-sc:outline-meta-collapsed`) para sobreviver a navegação.
-- Botão de toggle adicionado na barra superior do editor (logo ao lado do `SavingIndicator` / "Tela cheia"), usando `ChevronsUpDown` / `ChevronsDownUp` (lucide), variant `ghost` size `sm`, com `title` traduzido.
-- Envolver o bloco `{isField && (…date+period)}` + `<Label>Title</Label>` + `{isField ? prayer/territory/assistants : description}` em `{!metaCollapsed && (…)}`. O bloco "Versículos detectados" (linhas 1953–1971) também entra no colapso, pois só faz sentido quando o cabeçalho/título está visível.
-- O bloco "Conteúdo" (linhas 1973–2003) permanece fora do colapso.
+Popover (já tem presets de minutos + custom): após o input de custom,
+adiciona um `Separator` e a seção:
 
-## 4. i18n
+```
+[Acessibilidade]
+( ) Cores automáticas (semafórico)
+( ) Amarelo neon sobre preto
+( ) Preto sobre amarelo
+( ) Vermelho vivo
+( ) Branco sobre preto
+( ) Verde neon
+```
 
-Adicionar em `personalOutlines.editor` (pt/en/es):
-- `collapseMeta` = "Minimizar cabeçalho" / "Collapse header" / "Minimizar encabezado"
-- `expandMeta` = "Expandir cabeçalho" / "Expand header" / "Expandir encabezado"
+Implementado como grade `grid-cols-2 gap-1.5` de botões de preview
+mostrando "MM" no estilo do tema (mini swatch + label). Tap aplica
+imediatamente e fecha o popover só se for um preset.
 
-## Arquivos editados
+Persistência: `localStorage.setItem` no `setThemeId`; leitura inicial
+no hook (SSR-safe, `typeof window !== "undefined"`); broadcast via
+evento `storage` nativo já cobre múltiplas abas.
 
-- `src/routes/_app.consideracoes-campo.tsx`
+## 3. i18n
+
+Adicionar em `personalOutlines.timer` (pt/en/es):
+- `accessibility` = "Acessibilidade / Cores" / "Accessibility / Colors" /
+  "Accesibilidad / Colores"
+- `themeAuto` = "Cores automáticas" / "Automatic colors" /
+  "Colores automáticos"
+- `themeYellowOnBlack` = "Amarelo neon sobre preto" / "Neon yellow on
+  black" / "Amarillo neón sobre negro"
+- `themeBlackOnYellow` = "Preto sobre amarelo" / "Black on yellow" /
+  "Negro sobre amarillo"
+- `themeRedVivid` = "Vermelho vivo" / "Vivid red" / "Rojo vivo"
+- `themeWhiteOnBlack` = "Branco sobre preto" / "White on black" /
+  "Blanco sobre negro"
+- `themeGreenNeon` = "Verde neon" / "Neon green" / "Verde neón"
+
+## Arquivos editados / criados
+
+- (novo) `src/lib/timer-theme.ts`
 - `src/components/notes/OutlineTimer.tsx`
+- `src/components/notes/RichNoteToolbar.tsx`
+- `src/routes/_app.consideracoes-campo.tsx`
 - `src/i18n/locales/pt.json`
 - `src/i18n/locales/en.json`
 - `src/i18n/locales/es.json`
@@ -54,6 +110,10 @@ Adicionar em `personalOutlines.editor` (pt/en/es):
 
 ## Garantias
 
-- Zero alteração em chamadas Supabase, store local, ou lógica do timer.
-- Tokens semânticos (Onda 6.8) preservados — apenas classes utilitárias de layout.
+- Zero alteração no `useOutlineTimer` (lógica de tempo intacta).
+- Zero chamadas Supabase. Tudo localStorage.
+- Sem hex inline; só classes utilitárias Tailwind v4 (compatíveis com
+  os tokens da Onda 6.8 — as cores neon usadas para o tema custom são
+  classes padrão Tailwind, não tokens semânticos do tema, o que é
+  aceitável pois são opção explícita de "alto contraste" do usuário).
 - `bunx tsc --noEmit` deve fechar 100% limpo.
