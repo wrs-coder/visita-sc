@@ -287,6 +287,8 @@ function Page() {
 
   async function syncOutlinesIfOnline() {
     if (!activeType) return null;
+    // Anotações são 100% locais — não vão para a nuvem.
+    if (activeType === "talk_notes") return null;
     if (typeof navigator !== "undefined" && navigator.onLine === false) return null;
     const result = await syncOutlines();
     if (!result.ok) console.warn("[personal-outlines] sync skipped", result.error);
