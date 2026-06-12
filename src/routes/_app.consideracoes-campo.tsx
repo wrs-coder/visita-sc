@@ -1827,6 +1827,16 @@ function NoteEditor({
         </div>
         <div className="flex items-center gap-2">
           <SavingIndicator saving={saving} />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMetaCollapsed((v) => !v)}
+            title={metaCollapsed
+              ? t("personalOutlines.editor.expandMeta", { defaultValue: "Expandir cabeçalho" })
+              : t("personalOutlines.editor.collapseMeta", { defaultValue: "Minimizar cabeçalho" })}
+          >
+            {metaCollapsed ? <ChevronsUpDown className="h-4 w-4" /> : <ChevronsDownUp className="h-4 w-4" />}
+          </Button>
           {mode === "outline" && !isTalk && (
             <Button variant="outline" size="sm" onClick={onFullscreen}>
               <Maximize2 className="h-4 w-4 mr-1.5" /> {t("personalOutlines.fullscreen.enter")}
@@ -1834,6 +1844,8 @@ function NoteEditor({
           )}
         </div>
       </div>
+
+
 
       <div className="grid gap-3 w-full max-w-full min-w-0">
         {isField && (
