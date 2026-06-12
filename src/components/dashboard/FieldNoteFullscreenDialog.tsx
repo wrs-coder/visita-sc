@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RichOutlineContent } from "@/lib/rich-content";
+import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import {
   listAllNotesIncludingTrash,
   getActiveLibrary,
@@ -102,12 +103,17 @@ export function FieldNoteFullscreenDialog({
 
   const open = noteId != null;
 
+  const showTimer = note != null && (note.type ?? "field_consideration") !== "talk_notes";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="p-0 gap-0 max-w-[100vw] sm:max-w-[100vw] w-screen h-[100dvh] sm:h-[100dvh] flex flex-col rounded-none overflow-hidden"
       >
-        <div className="flex items-center gap-2 border-b px-3 sm:px-4 py-2 shrink-0 min-w-0">
+        {showTimer && note && (
+          <OutlineTimer outlineId={note.id} variant="fullscreen" />
+        )}
+        <div className={`flex items-center gap-2 border-b px-3 sm:px-4 py-2 shrink-0 min-w-0${showTimer ? " pt-12" : ""}`}>
           <FileText className="h-4 w-4 text-primary shrink-0" />
           <DialogTitle className="text-sm font-semibold truncate flex-1 min-w-0 m-0">
             {note?.title ||
