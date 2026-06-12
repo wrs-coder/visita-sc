@@ -1848,6 +1848,7 @@ function NoteEditor({
 
 
       <div className="grid gap-3 w-full max-w-full min-w-0">
+        {!metaCollapsed && (<>
         {isField && (
           <div className="grid gap-3 sm:grid-cols-2 w-full max-w-full min-w-0">
             <div className="grid gap-1.5 min-w-0">
