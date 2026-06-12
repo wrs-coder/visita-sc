@@ -566,6 +566,7 @@ function Page() {
   async function handlePushNoteById(noteId: string) {
     const note = notes.find((n) => n.id === noteId);
     if (!note) return;
+    if ((note.type ?? activeType) === "talk_notes") return;
     setCloudBusy(true);
     try {
       const r = await fnPushCloud({
