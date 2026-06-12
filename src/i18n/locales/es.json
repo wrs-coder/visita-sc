@@ -1469,6 +1469,8 @@
       "fontDown": "Reducir fuente"
     },
     "editor": {
+      "collapseMeta": "Minimizar encabezado",
+      "expandMeta": "Expandir encabezado",
       "placeholder": "Escribe tu nota aquí…",
       "toolbar": {
         "normal": "Texto normal",
