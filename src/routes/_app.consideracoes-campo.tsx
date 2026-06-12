@@ -492,7 +492,8 @@ function Page() {
     setSelectedNoteId(n.id);
     setSelectedFolderId(n.folderId ?? null);
     setDraft(n);
-    setMode("outline");
+    // "Anotações" não tem modo Esboço — sempre abre direto no editor.
+    setMode((n.type ?? activeType) === "talk_notes" ? "edit" : "outline");
   }
 
   function handleNewNote() {
