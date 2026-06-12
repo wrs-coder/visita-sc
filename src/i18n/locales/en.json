@@ -1494,6 +1494,8 @@
       "fontDown": "Decrease font"
     },
     "editor": {
+      "collapseMeta": "Collapse header",
+      "expandMeta": "Expand header",
       "placeholder": "Write your note here…",
       "toolbar": {
         "normal": "Normal text",
