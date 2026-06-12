@@ -1359,16 +1359,16 @@ function Page() {
 
         {/* Seletor de tipo (obrigatório) */}
         <Card>
-          <CardContent className="p-3 flex flex-wrap items-center gap-3">
+          <CardContent className="p-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <span className="text-xs font-semibold text-muted-foreground">
               {t("personalOutlines.typePicker.label")}:
             </span>
-            <div className="inline-flex rounded-md border bg-background p-0.5">
+            <div className="flex w-full sm:w-auto rounded-md border bg-background p-0.5">
               <button
                 type="button"
                 onClick={() => setActiveType("field_consideration")}
                 className={cn(
-                  "px-3 py-1.5 text-xs rounded-sm transition",
+                  "flex-1 sm:flex-none inline-flex items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs rounded-sm transition",
                   isField ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                 )}
               >
@@ -1378,7 +1378,7 @@ function Page() {
                 type="button"
                 onClick={() => setActiveType("outline")}
                 className={cn(
-                  "px-3 py-1.5 text-xs rounded-sm transition",
+                  "flex-1 sm:flex-none inline-flex items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs rounded-sm transition",
                   isOutline ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                 )}
               >
@@ -1388,11 +1388,11 @@ function Page() {
                 type="button"
                 onClick={() => setActiveType("talk_notes")}
                 className={cn(
-                  "px-3 py-1.5 text-xs rounded-sm transition inline-flex items-center gap-1",
+                  "flex-1 sm:flex-none inline-flex items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs rounded-sm transition",
                   isTalkNotes ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                 )}
               >
-                <NotebookPen className="h-3.5 w-3.5" />
+                <NotebookPen className="h-3.5 w-3.5 shrink-0" />
                 {t("personalOutlines.typePicker.talkNotes")}
               </button>
             </div>
