@@ -133,6 +133,7 @@ export function RichNoteEditor({
   noteId,
   className,
   minHeight = "240px",
+  maxHeight = "70vh",
   outlineId,
 }: RichNoteEditorProps) {
   const { t } = useTranslation();
