@@ -1972,7 +1972,14 @@ function NoteEditor({
 
         <div className="grid gap-1.5 w-full max-w-full min-w-0">
 
-          <Label>{t("fieldConsiderations.fields.content")}</Label>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <Label>{t("fieldConsiderations.fields.content")}</Label>
+            {!isTalk && (
+              <div className="rounded-md border bg-muted/40 px-1.5">
+                <OutlineTimer outlineId={draft.id} variant="toolbar" />
+              </div>
+            )}
+          </div>
           {mode === "edit" ? (
             <RichNoteEditor
               value={draft.content}
@@ -1995,6 +2002,7 @@ function NoteEditor({
           )}
         </div>
       </div>
+
 
       {/* Sticky action bar — sempre visível no rodapé do editor */}
       <div className="sticky bottom-0 left-0 right-0 z-30 -mx-5 px-3 sm:px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
