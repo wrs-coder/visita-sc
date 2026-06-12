@@ -1077,12 +1077,26 @@ function Dashboard() {
               </TabsTrigger>
             </TabsList>
             {([
-              { key: "pastoral", items: elderPastoral },
-              { key: "encouragement", items: elderEncouragement },
-              { key: "recommendations", items: elderRecommendations },
-              { key: "local", items: elderLocal },
-            ] as const).map(({ key, items }) => (
+              { key: "pastoral", items: elderPastoral, detailsKey: "elder-pastoral" as const, label: "Pastoreio" },
+              { key: "encouragement", items: elderEncouragement, detailsKey: "elder-encouragement" as const, label: "Encorajamento" },
+              { key: "recommendations", items: elderRecommendations, detailsKey: "elder-recommendations" as const, label: "Recomendações" },
+              { key: "local", items: elderLocal, detailsKey: "elder-local" as const, label: "Assuntos Locais" },
+            ] as const).map(({ key, items, detailsKey, label }) => (
               <TabsContent key={key} value={key} className="mt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    {label}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setOpenDetails(detailsKey)}
+                    aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes" })}
+                    title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes" })}
+                    className="text-muted-foreground hover:text-primary"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                </div>
                 {items.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhum item registrado.</p>
                 ) : (
