@@ -269,12 +269,79 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
         size="sm"
         className={iconBtnClass}
         onMouseDown={(e) => e.preventDefault()}
-        onClick={() => timer.reset()}
+        onClick={() => setResetOpen(true)}
         title={t("personalOutlines.timer.reset", { defaultValue: "Reiniciar" })}
         aria-label={t("personalOutlines.timer.reset", { defaultValue: "Reiniciar" })}
       >
         <RotateCcw className={iconBtnSize} />
       </Button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={iconBtnClass}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => size.decrease()}
+        disabled={!size.canDecrease}
+        title={t("personalOutlines.timer.zoomOut", {
+          defaultValue: "Diminuir tamanho",
+        })}
+        aria-label={t("personalOutlines.timer.zoomOut", {
+          defaultValue: "Diminuir tamanho",
+        })}
+      >
+        <ZoomOut className={iconBtnSize} />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={iconBtnClass}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => size.increase()}
+        disabled={!size.canIncrease}
+        title={t("personalOutlines.timer.zoomIn", {
+          defaultValue: "Aumentar tamanho",
+        })}
+        aria-label={t("personalOutlines.timer.zoomIn", {
+          defaultValue: "Aumentar tamanho",
+        })}
+      >
+        <ZoomIn className={iconBtnSize} />
+      </Button>
+
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+        <AlertDialogContent className="z-[150]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("personalOutlines.timer.resetConfirmTitle", {
+                defaultValue: "Deseja reiniciar o cronômetro?",
+              })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("personalOutlines.timer.resetConfirmDesc", {
+                defaultValue: "O tempo decorrido voltará a 00:00.",
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t("common.cancel", { defaultValue: "Cancelar" })}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                timer.reset();
+                setResetOpen(false);
+              }}
+            >
+              {t("personalOutlines.timer.resetConfirm", {
+                defaultValue: "Confirmar",
+              })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
