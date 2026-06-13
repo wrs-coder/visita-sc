@@ -1892,11 +1892,12 @@ function NoteEditor({
 
         <div className="grid gap-1.5">
           <Label>{t("fieldConsiderations.fields.title")}</Label>
-          <Input
+          <Textarea
             value={draft.title}
             onChange={(e) => onPatch("title", e.target.value)}
             placeholder={t("fieldConsiderations.fields.titlePh")}
-            className="w-full max-w-full min-w-0"
+            rows={1}
+            className="w-full max-w-full min-w-0 field-sizing-content min-h-9 resize-none break-words"
           />
 
         </div>
