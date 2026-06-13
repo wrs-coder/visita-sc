@@ -1793,7 +1793,7 @@ function NoteEditor({
 
 
   return (
-    <div className="w-full max-w-full overflow-x-clip box-border min-w-0 [overflow-wrap:anywhere] break-words flex flex-col h-[calc(100dvh-8rem)] min-h-[480px]">
+    <div className="w-full max-w-full overflow-x-clip box-border min-w-0 [overflow-wrap:anywhere] break-words flex flex-col min-h-[calc(100dvh-8rem)]">
       <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0 mb-3">
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -1847,7 +1847,7 @@ function NoteEditor({
 
 
 
-      <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden">
+      <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden max-h-[38vh] overflow-y-auto pr-1">
         {!metaCollapsed && (<>
         {isField && (
           <div className="grid gap-3 sm:grid-cols-2 w-full max-w-full min-w-0">
@@ -1994,16 +1994,17 @@ function NoteEditor({
         </>)}
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col gap-1.5 w-full max-w-full min-w-0">
+      <div className="flex-1 min-h-[22rem] flex flex-col gap-1.5 w-full max-w-full min-w-0">
 
         <div className="shrink-0 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Label>{t("fieldConsiderations.fields.content")}</Label>
-          {!isTalk && (
+          {!isTalk && mode === "outline" && (
             <div className="w-full sm:w-auto overflow-x-auto">
               <OutlineTimer outlineId={draft.id} variant="toolbar" />
             </div>
           )}
         </div>
+
         {mode === "edit" ? (
           <RichNoteEditor
             value={draft.content}
