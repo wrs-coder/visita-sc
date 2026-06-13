@@ -9,7 +9,7 @@
  * localStorage + sincronizado entre superfícies via BroadcastChannel).
  * Tema visual configurável (semafórico ou alto contraste) via useTimerTheme.
  */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Pause,
@@ -18,6 +18,7 @@ import {
   Timer as TimerIcon,
   ZoomIn,
   ZoomOut,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -77,6 +78,40 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   const display = formatMMSS(displaySec);
   const isFullscreen = variant === "fullscreen";
   const isAuto = themeId === "auto";
+
+  // Aviso "falta 1 minuto" — dispara apenas uma vez por ciclo, na variante
+  // "toolbar" (sempre montada) para evitar diálogo duplicado quando o banner
+  // fullscreen também estiver visível.
+  const [warnOpen, setWarnOpen] = useState(false);
+  const warnedRef = useRef(false);
+
+  useEffect(() => {
+    if (variant !== "toolbar") return;
+    if (timer.mode !== "countdown") {
+      warnedRef.current = false;
+      return;
+    }
+    if (timer.remainingSec > 60) {
+      warnedRef.current = false;
+      return;
+    }
+    if (
+      timer.isRunning &&
+      timer.remainingSec > 0 &&
+      timer.remainingSec <= 60 &&
+      !warnedRef.current
+    ) {
+      warnedRef.current = true;
+      setWarnOpen(true);
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try {
+          navigator.vibrate([300, 120, 300, 120, 600]);
+        } catch {
+          /* noop */
+        }
+      }
+    }
+  }, [variant, timer.mode, timer.isRunning, timer.remainingSec]);
 
   const handleDisplayTap = () => {
     const now = Date.now();
@@ -338,6 +373,33 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
               {t("personalOutlines.timer.resetConfirm", {
                 defaultValue: "Confirmar",
               })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={warnOpen} onOpenChange={setWarnOpen}>
+        <AlertDialogContent className="z-[160] border-destructive bg-destructive text-destructive-foreground">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive-foreground">
+              <AlertTriangle className="h-5 w-5" />
+              {t("personalOutlines.timer.oneMinuteWarningTitle", {
+                defaultValue: "Falta 1 minuto!",
+              })}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-destructive-foreground/90">
+              {t("personalOutlines.timer.oneMinuteWarningDesc", {
+                defaultValue:
+                  "Resta apenas 1 minuto para o tempo terminar.",
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => setWarnOpen(false)}
+              className="bg-background text-foreground hover:bg-background/90"
+            >
+              {t("common.ok", { defaultValue: "OK" })}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
