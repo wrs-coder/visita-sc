@@ -1514,7 +1514,9 @@
       "zoomOut": "Decrease display size",
       "resetConfirmTitle": "Reset the timer?",
       "resetConfirmDesc": "The elapsed time will go back to 00:00.",
-      "resetConfirm": "Confirm"
+      "resetConfirm": "Confirm",
+      "oneMinuteWarningTitle": "1 minute left!",
+      "oneMinuteWarningDesc": "Only 1 minute remaining until time runs out."
     },
     "editor": {
       "collapseMeta": "Collapse header",
