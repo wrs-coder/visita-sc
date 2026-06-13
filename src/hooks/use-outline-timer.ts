@@ -235,9 +235,19 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
     };
     ch?.addEventListener("message", onMessage);
 
+    const onLocal = (event: Event) => {
+      const data = (event as CustomEvent<BroadcastMessage>).detail;
+      if (!data || data.outlineId !== safeId) return;
+      if (data.senderId === senderIdRef.current) return;
+      commit(data.snapshot, false);
+    };
+    localBus?.addEventListener(LOCAL_EVENT, onLocal);
+
     return () => {
       window.removeEventListener("storage", onStorage);
       ch?.removeEventListener("message", onMessage);
+      localBus?.removeEventListener(LOCAL_EVENT, onLocal);
+
     };
   }, [safeId, commit]);
 
