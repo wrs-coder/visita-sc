@@ -104,6 +104,15 @@ interface BroadcastMessage {
   senderId: string;
 }
 
+// Emissor in-process: BroadcastChannel não entrega para a própria janela
+// e StorageEvent não dispara na aba que escreveu. Sem isto, duas instâncias
+// de useOutlineTimer no mesmo window (ex.: sensor + toolbar) ficam fora de
+// sincronia até um reload.
+const localBus =
+  typeof window !== "undefined" ? new EventTarget() : null;
+const LOCAL_EVENT = "visita-sc:outline-timer:local";
+
+
 function alertLevelFor(progressPct: number): AlertLevel {
   if (progressPct >= 95) return "red";
   if (progressPct >= 80) return "amber";
