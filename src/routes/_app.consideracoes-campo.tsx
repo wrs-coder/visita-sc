@@ -90,6 +90,7 @@ import { shareJsonFile } from "@/lib/share";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
+import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { RichOutlineContent } from "@/lib/rich-content";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
@@ -2019,6 +2020,9 @@ function NoteEditor({
             </div>
           )}
         </div>
+        {!isTalk && mode === "outline" && (
+          <OutlineInactivitySensor outlineId={draft.id} />
+        )}
 
         {mode === "edit" ? (
           <RichNoteEditor
@@ -2124,6 +2128,7 @@ function FullscreenOutline({
   return (
     <div className="fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none">
       {showTimer && <OutlineTimer outlineId={note.id} variant="fullscreen" />}
+      {showTimer && <OutlineInactivitySensor outlineId={note.id} />}
       <div
         className={cn(
           "flex items-center gap-2 border-b px-4 py-2 min-w-0",
