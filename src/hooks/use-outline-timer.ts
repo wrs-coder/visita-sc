@@ -104,6 +104,15 @@ interface BroadcastMessage {
   senderId: string;
 }
 
+// Emissor in-process: BroadcastChannel não entrega para a própria janela
+// e StorageEvent não dispara na aba que escreveu. Sem isto, duas instâncias
+// de useOutlineTimer no mesmo window (ex.: sensor + toolbar) ficam fora de
+// sincronia até um reload.
+const localBus =
+  typeof window !== "undefined" ? new EventTarget() : null;
+const LOCAL_EVENT = "visita-sc:outline-timer:local";
+
+
 function alertLevelFor(progressPct: number): AlertLevel {
   if (progressPct >= 95) return "red";
   if (progressPct >= 80) return "amber";
@@ -185,10 +194,22 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
             /* noop */
           }
         }
+        if (localBus) {
+          localBus.dispatchEvent(
+            new CustomEvent<BroadcastMessage>(LOCAL_EVENT, {
+              detail: {
+                outlineId: safeId,
+                snapshot: next,
+                senderId: senderIdRef.current,
+              },
+            }),
+          );
+        }
       }
     },
     [safeId],
   );
+
 
   // Escuta sinais de outras instâncias / abas.
   useEffect(() => {
@@ -214,9 +235,19 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
     };
     ch?.addEventListener("message", onMessage);
 
+    const onLocal = (event: Event) => {
+      const data = (event as CustomEvent<BroadcastMessage>).detail;
+      if (!data || data.outlineId !== safeId) return;
+      if (data.senderId === senderIdRef.current) return;
+      commit(data.snapshot, false);
+    };
+    localBus?.addEventListener(LOCAL_EVENT, onLocal);
+
     return () => {
       window.removeEventListener("storage", onStorage);
       ch?.removeEventListener("message", onMessage);
+      localBus?.removeEventListener(LOCAL_EVENT, onLocal);
+
     };
   }, [safeId, commit]);
 
