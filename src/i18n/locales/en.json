@@ -1516,7 +1516,10 @@
       "resetConfirmDesc": "The elapsed time will go back to 00:00.",
       "resetConfirm": "Confirm",
       "oneMinuteWarningTitle": "1 minute left!",
-      "oneMinuteWarningDesc": "Only 1 minute remaining until time runs out."
+      "oneMinuteWarningDesc": "Only 1 minute remaining until time runs out.",
+      "sensorPrompt": "Forgot to start? Activate timer:",
+      "sensorOther": "Other...",
+      "sensorDontRemind": "Don't remind again"
     },
     "editor": {
       "collapseMeta": "Collapse header",
