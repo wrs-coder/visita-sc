@@ -1489,7 +1489,9 @@
       "zoomOut": "Disminuir tamaño del visor",
       "resetConfirmTitle": "¿Reiniciar el cronómetro?",
       "resetConfirmDesc": "El tiempo transcurrido volverá a 00:00.",
-      "resetConfirm": "Confirmar"
+      "resetConfirm": "Confirmar",
+      "oneMinuteWarningTitle": "¡Falta 1 minuto!",
+      "oneMinuteWarningDesc": "Solo queda 1 minuto para que termine el tiempo."
     },
     "editor": {
       "collapseMeta": "Minimizar encabezado",
