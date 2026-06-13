@@ -377,6 +377,33 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={warnOpen} onOpenChange={setWarnOpen}>
+        <AlertDialogContent className="z-[160] border-destructive bg-destructive text-destructive-foreground">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive-foreground">
+              <AlertTriangle className="h-5 w-5" />
+              {t("personalOutlines.timer.oneMinuteWarningTitle", {
+                defaultValue: "Falta 1 minuto!",
+              })}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-destructive-foreground/90">
+              {t("personalOutlines.timer.oneMinuteWarningDesc", {
+                defaultValue:
+                  "Resta apenas 1 minuto para o tempo terminar.",
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => setWarnOpen(false)}
+              className="bg-background text-foreground hover:bg-background/90"
+            >
+              {t("common.ok", { defaultValue: "OK" })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
