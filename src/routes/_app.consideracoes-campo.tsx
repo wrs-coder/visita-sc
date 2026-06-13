@@ -2020,6 +2020,10 @@ function NoteEditor({
             </div>
           )}
         </div>
+        {!isTalk && mode === "outline" && (
+          <OutlineInactivitySensor outlineId={draft.id} /> 
+        )}
+        <div className="hidden">{/* spacer */}</div>
 
         {mode === "edit" ? (
           <RichNoteEditor
