@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { RichOutlineContent } from "@/lib/rich-content";
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
+import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import {
   listAllNotesIncludingTrash,
   getActiveLibrary,
