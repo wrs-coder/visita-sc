@@ -194,10 +194,22 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
             /* noop */
           }
         }
+        if (localBus) {
+          localBus.dispatchEvent(
+            new CustomEvent<BroadcastMessage>(LOCAL_EVENT, {
+              detail: {
+                outlineId: safeId,
+                snapshot: next,
+                senderId: senderIdRef.current,
+              },
+            }),
+          );
+        }
       }
     },
     [safeId],
   );
+
 
   // Escuta sinais de outras instâncias / abas.
   useEffect(() => {
