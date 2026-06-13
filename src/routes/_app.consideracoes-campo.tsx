@@ -1928,33 +1928,36 @@ function NoteEditor({
 
               <div className="grid gap-1.5 min-w-0">
                 <Label>{t("fieldConsiderations.fields.prayer")}</Label>
-                <Input
+                <Textarea
                   value={draft.prayer ?? ""}
                   onChange={(e) => onPatch("prayer", e.target.value)}
                   placeholder={t("fieldConsiderations.fields.prayerPh")}
                   readOnly={mode === "outline"}
-                  className="w-full max-w-full min-w-0"
+                  rows={1}
+                  className="w-full max-w-full min-w-0 field-sizing-content min-h-9 resize-none break-words"
                 />
               </div>
               <div className="grid gap-1.5 min-w-0">
                 <Label>{t("fieldConsiderations.fields.territory")}</Label>
-                <Input
+                <Textarea
                   value={draft.territory ?? ""}
                   onChange={(e) => onPatch("territory", e.target.value)}
                   placeholder={t("fieldConsiderations.fields.territoryPh")}
                   readOnly={mode === "outline"}
-                  className="w-full max-w-full min-w-0"
+                  rows={1}
+                  className="w-full max-w-full min-w-0 field-sizing-content min-h-9 resize-none break-words"
                 />
               </div>
             </div>
             <div className="grid gap-1.5 w-full max-w-full min-w-0">
               <Label>{t("fieldConsiderations.fields.assistants")}</Label>
-              <Input
+              <Textarea
                 value={draft.assistants ?? ""}
                 onChange={(e) => onPatch("assistants", e.target.value)}
                 placeholder={t("fieldConsiderations.fields.assistantsPh")}
                 readOnly={mode === "outline"}
-                className="w-full max-w-full min-w-0"
+                rows={1}
+                className="w-full max-w-full min-w-0 field-sizing-content min-h-9 resize-none break-words"
               />
             </div>
 
