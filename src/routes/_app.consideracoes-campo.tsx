@@ -1965,12 +1965,13 @@ function NoteEditor({
         ) : (
           <div className="grid gap-1.5 w-full max-w-full min-w-0">
             <Label>{t("personalOutlines.fields.description")}</Label>
-            <Input
+            <Textarea
               value={draft.description ?? ""}
               onChange={(e) => onPatch("description", e.target.value)}
               placeholder={t("personalOutlines.fields.descriptionPh")}
               readOnly={mode === "outline"}
-              className="w-full max-w-full min-w-0"
+              rows={1}
+              className="w-full max-w-full min-w-0 field-sizing-content min-h-9 resize-none break-words"
             />
           </div>
 
