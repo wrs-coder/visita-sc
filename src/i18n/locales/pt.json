@@ -1517,7 +1517,10 @@
       "resetConfirmDesc": "O tempo decorrido voltará a 00:00.",
       "resetConfirm": "Confirmar",
       "oneMinuteWarningTitle": "Falta 1 minuto!",
-      "oneMinuteWarningDesc": "Resta apenas 1 minuto para o tempo terminar."
+      "oneMinuteWarningDesc": "Resta apenas 1 minuto para o tempo terminar.",
+      "sensorPrompt": "Esqueceu de iniciar? Ativar cronômetro:",
+      "sensorOther": "Outro...",
+      "sensorDontRemind": "Não lembrar novamente"
     },
     "editor": {
       "collapseMeta": "Minimizar cabeçalho",
