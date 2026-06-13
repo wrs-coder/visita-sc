@@ -79,6 +79,40 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   const isFullscreen = variant === "fullscreen";
   const isAuto = themeId === "auto";
 
+  // Aviso "falta 1 minuto" — dispara apenas uma vez por ciclo, na variante
+  // "toolbar" (sempre montada) para evitar diálogo duplicado quando o banner
+  // fullscreen também estiver visível.
+  const [warnOpen, setWarnOpen] = useState(false);
+  const warnedRef = useRef(false);
+
+  useEffect(() => {
+    if (variant !== "toolbar") return;
+    if (timer.mode !== "countdown") {
+      warnedRef.current = false;
+      return;
+    }
+    if (timer.remainingSec > 60) {
+      warnedRef.current = false;
+      return;
+    }
+    if (
+      timer.isRunning &&
+      timer.remainingSec > 0 &&
+      timer.remainingSec <= 60 &&
+      !warnedRef.current
+    ) {
+      warnedRef.current = true;
+      setWarnOpen(true);
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try {
+          navigator.vibrate([300, 120, 300, 120, 600]);
+        } catch {
+          /* noop */
+        }
+      }
+    }
+  }, [variant, timer.mode, timer.isRunning, timer.remainingSec]);
+
   const handleDisplayTap = () => {
     const now = Date.now();
     if (now - lastTapRef.current < 60) return;
