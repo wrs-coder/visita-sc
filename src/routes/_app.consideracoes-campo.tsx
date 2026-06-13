@@ -1847,7 +1847,7 @@ function NoteEditor({
 
 
 
-      <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden max-h-[38vh] overflow-y-auto pr-1">
+      <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden max-h-[38vh] overflow-y-auto overflow-x-hidden pr-1">
         {!metaCollapsed && (<>
         {isField && (
           <div className="grid gap-3 sm:grid-cols-2 w-full max-w-full min-w-0">
@@ -2011,13 +2011,13 @@ function NoteEditor({
             onChange={(html) => onPatch("content", html)}
             placeholder={t("fieldConsiderations.fields.contentPh")}
             noteId={draft.id}
-            minHeight="0"
-            maxHeight="none"
+            minHeight="22rem"
+            maxHeight="60vh"
             className="flex-1 min-h-0"
             outlineId={isTalk ? undefined : draft.id}
           />
         ) : (
-          <div className="flex-1 min-h-0 overflow-y-auto rounded-md border bg-background px-3 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
+          <div className="flex-1 min-h-[22rem] max-h-[60vh] overflow-y-auto rounded-md border bg-background px-3 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
             {draft.content ? (
               <RichOutlineContent html={draft.content} library={activeBible} />
             ) : (
