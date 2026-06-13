@@ -1847,7 +1847,7 @@ function NoteEditor({
 
 
 
-      <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden max-h-[38vh] overflow-y-auto overflow-x-hidden pr-1">
+      <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden overflow-x-hidden">
         {!metaCollapsed && (<>
         {isField && (
           <div className="grid gap-3 sm:grid-cols-2 w-full max-w-full min-w-0">
@@ -1892,11 +1892,12 @@ function NoteEditor({
 
         <div className="grid gap-1.5">
           <Label>{t("fieldConsiderations.fields.title")}</Label>
-          <Input
+          <Textarea
             value={draft.title}
             onChange={(e) => onPatch("title", e.target.value)}
             placeholder={t("fieldConsiderations.fields.titlePh")}
-            className="w-full max-w-full min-w-0"
+            rows={1}
+            className="w-full max-w-full min-w-0 field-sizing-content min-h-9 resize-none break-words"
           />
 
         </div>
@@ -1927,33 +1928,36 @@ function NoteEditor({
 
               <div className="grid gap-1.5 min-w-0">
                 <Label>{t("fieldConsiderations.fields.prayer")}</Label>
-                <Input
+                <Textarea
                   value={draft.prayer ?? ""}
                   onChange={(e) => onPatch("prayer", e.target.value)}
                   placeholder={t("fieldConsiderations.fields.prayerPh")}
                   readOnly={mode === "outline"}
-                  className="w-full max-w-full min-w-0"
+                  rows={1}
+                  className="w-full max-w-full min-w-0 field-sizing-content min-h-9 resize-none break-words"
                 />
               </div>
               <div className="grid gap-1.5 min-w-0">
                 <Label>{t("fieldConsiderations.fields.territory")}</Label>
-                <Input
+                <Textarea
                   value={draft.territory ?? ""}
                   onChange={(e) => onPatch("territory", e.target.value)}
                   placeholder={t("fieldConsiderations.fields.territoryPh")}
                   readOnly={mode === "outline"}
-                  className="w-full max-w-full min-w-0"
+                  rows={1}
+                  className="w-full max-w-full min-w-0 field-sizing-content min-h-9 resize-none break-words"
                 />
               </div>
             </div>
             <div className="grid gap-1.5 w-full max-w-full min-w-0">
               <Label>{t("fieldConsiderations.fields.assistants")}</Label>
-              <Input
+              <Textarea
                 value={draft.assistants ?? ""}
                 onChange={(e) => onPatch("assistants", e.target.value)}
                 placeholder={t("fieldConsiderations.fields.assistantsPh")}
                 readOnly={mode === "outline"}
-                className="w-full max-w-full min-w-0"
+                rows={1}
+                className="w-full max-w-full min-w-0 field-sizing-content min-h-9 resize-none break-words"
               />
             </div>
 
@@ -1961,12 +1965,13 @@ function NoteEditor({
         ) : (
           <div className="grid gap-1.5 w-full max-w-full min-w-0">
             <Label>{t("personalOutlines.fields.description")}</Label>
-            <Input
+            <Textarea
               value={draft.description ?? ""}
               onChange={(e) => onPatch("description", e.target.value)}
               placeholder={t("personalOutlines.fields.descriptionPh")}
               readOnly={mode === "outline"}
-              className="w-full max-w-full min-w-0"
+              rows={1}
+              className="w-full max-w-full min-w-0 field-sizing-content min-h-9 resize-none break-words"
             />
           </div>
 
