@@ -1892,13 +1892,18 @@ function NoteEditor({
 
         <div className="grid gap-1.5">
           <Label>{t("fieldConsiderations.fields.title")}</Label>
-          <Input
-            value={draft.title}
-            onChange={(e) => onPatch("title", e.target.value)}
-            placeholder={t("fieldConsiderations.fields.titlePh")}
-            className="w-full max-w-full min-w-0"
-          />
-
+          {mode === "edit" ? (
+            <Input
+              value={draft.title}
+              onChange={(e) => onPatch("title", e.target.value)}
+              placeholder={t("fieldConsiderations.fields.titlePh")}
+              className="w-full max-w-full min-w-0"
+            />
+          ) : (
+            <div className="w-full max-w-full min-w-0 rounded-md border bg-muted/30 px-3 py-2 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+              {draft.title || <span className="text-muted-foreground">{t("fieldConsiderations.fields.titlePh")}</span>}
+            </div>
+          )}
         </div>
 
         {isField ? (
@@ -1937,24 +1942,34 @@ function NoteEditor({
               </div>
               <div className="grid gap-1.5 min-w-0">
                 <Label>{t("fieldConsiderations.fields.territory")}</Label>
-                <Input
-                  value={draft.territory ?? ""}
-                  onChange={(e) => onPatch("territory", e.target.value)}
-                  placeholder={t("fieldConsiderations.fields.territoryPh")}
-                  readOnly={mode === "outline"}
-                  className="w-full max-w-full min-w-0"
-                />
+                {mode === "edit" ? (
+                  <Input
+                    value={draft.territory ?? ""}
+                    onChange={(e) => onPatch("territory", e.target.value)}
+                    placeholder={t("fieldConsiderations.fields.territoryPh")}
+                    className="w-full max-w-full min-w-0"
+                  />
+                ) : (
+                  <div className="w-full max-w-full min-w-0 rounded-md border bg-muted/30 px-3 py-2 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                    {draft.territory || <span className="text-muted-foreground">{t("fieldConsiderations.fields.territoryPh")}</span>}
+                  </div>
+                )}
               </div>
             </div>
             <div className="grid gap-1.5 w-full max-w-full min-w-0">
               <Label>{t("fieldConsiderations.fields.assistants")}</Label>
-              <Input
-                value={draft.assistants ?? ""}
-                onChange={(e) => onPatch("assistants", e.target.value)}
-                placeholder={t("fieldConsiderations.fields.assistantsPh")}
-                readOnly={mode === "outline"}
-                className="w-full max-w-full min-w-0"
-              />
+              {mode === "edit" ? (
+                <Input
+                  value={draft.assistants ?? ""}
+                  onChange={(e) => onPatch("assistants", e.target.value)}
+                  placeholder={t("fieldConsiderations.fields.assistantsPh")}
+                  className="w-full max-w-full min-w-0"
+                />
+              ) : (
+                <div className="w-full max-w-full min-w-0 rounded-md border bg-muted/30 px-3 py-2 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                  {draft.assistants || <span className="text-muted-foreground">{t("fieldConsiderations.fields.assistantsPh")}</span>}
+                </div>
+              )}
             </div>
 
           </>
