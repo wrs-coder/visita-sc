@@ -2128,6 +2128,7 @@ function FullscreenOutline({
   return (
     <div className="fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none">
       {showTimer && <OutlineTimer outlineId={note.id} variant="fullscreen" />}
+      {showTimer && <OutlineInactivitySensor outlineId={note.id} />}
       <div
         className={cn(
           "flex items-center gap-2 border-b px-4 py-2 min-w-0",
