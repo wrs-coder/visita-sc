@@ -112,7 +112,10 @@ export function FieldNoteFullscreenDialog({
         className="p-0 gap-0 max-w-[100vw] sm:max-w-[100vw] w-screen h-[100dvh] sm:h-[100dvh] flex flex-col rounded-none overflow-hidden"
       >
         {showTimer && note && (
-          <OutlineTimer outlineId={note.id} variant="fullscreen" />
+          <>
+            <OutlineTimer outlineId={note.id} variant="fullscreen" />
+            <OutlineInactivitySensor outlineId={note.id} />
+          </>
         )}
         <div className={`flex items-center gap-2 border-b px-3 sm:px-4 py-2 shrink-0 min-w-0${showTimer ? " pt-12" : ""}`}>
           <FileText className="h-4 w-4 text-primary shrink-0" />
