@@ -115,6 +115,10 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
 
   function onHandlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (e.button !== 0 && e.pointerType === "mouse") return;
+    // Não capturar o pointer quando o toque foi em um botão interno
+    // (ex.: fechar "X"), caso contrário o click do botão é perdido.
+    const target = e.target as HTMLElement | null;
+    if (target && target.closest("button")) return;
     e.preventDefault();
     e.stopPropagation();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
