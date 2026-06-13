@@ -1958,13 +1958,18 @@ function NoteEditor({
             </div>
             <div className="grid gap-1.5 w-full max-w-full min-w-0">
               <Label>{t("fieldConsiderations.fields.assistants")}</Label>
-              <Input
-                value={draft.assistants ?? ""}
-                onChange={(e) => onPatch("assistants", e.target.value)}
-                placeholder={t("fieldConsiderations.fields.assistantsPh")}
-                readOnly={mode === "outline"}
-                className="w-full max-w-full min-w-0"
-              />
+              {mode === "edit" ? (
+                <Input
+                  value={draft.assistants ?? ""}
+                  onChange={(e) => onPatch("assistants", e.target.value)}
+                  placeholder={t("fieldConsiderations.fields.assistantsPh")}
+                  className="w-full max-w-full min-w-0"
+                />
+              ) : (
+                <div className="w-full max-w-full min-w-0 rounded-md border bg-muted/30 px-3 py-2 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                  {draft.assistants || <span className="text-muted-foreground">{t("fieldConsiderations.fields.assistantsPh")}</span>}
+                </div>
+              )}
             </div>
 
           </>
