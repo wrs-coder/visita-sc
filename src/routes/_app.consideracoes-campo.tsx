@@ -1892,13 +1892,18 @@ function NoteEditor({
 
         <div className="grid gap-1.5">
           <Label>{t("fieldConsiderations.fields.title")}</Label>
-          <Input
-            value={draft.title}
-            onChange={(e) => onPatch("title", e.target.value)}
-            placeholder={t("fieldConsiderations.fields.titlePh")}
-            className="w-full max-w-full min-w-0"
-          />
-
+          {mode === "edit" ? (
+            <Input
+              value={draft.title}
+              onChange={(e) => onPatch("title", e.target.value)}
+              placeholder={t("fieldConsiderations.fields.titlePh")}
+              className="w-full max-w-full min-w-0"
+            />
+          ) : (
+            <div className="w-full max-w-full min-w-0 rounded-md border bg-muted/30 px-3 py-2 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+              {draft.title || <span className="text-muted-foreground">{t("fieldConsiderations.fields.titlePh")}</span>}
+            </div>
+          )}
         </div>
 
         {isField ? (
