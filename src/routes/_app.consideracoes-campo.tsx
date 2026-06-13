@@ -1942,13 +1942,18 @@ function NoteEditor({
               </div>
               <div className="grid gap-1.5 min-w-0">
                 <Label>{t("fieldConsiderations.fields.territory")}</Label>
-                <Input
-                  value={draft.territory ?? ""}
-                  onChange={(e) => onPatch("territory", e.target.value)}
-                  placeholder={t("fieldConsiderations.fields.territoryPh")}
-                  readOnly={mode === "outline"}
-                  className="w-full max-w-full min-w-0"
-                />
+                {mode === "edit" ? (
+                  <Input
+                    value={draft.territory ?? ""}
+                    onChange={(e) => onPatch("territory", e.target.value)}
+                    placeholder={t("fieldConsiderations.fields.territoryPh")}
+                    className="w-full max-w-full min-w-0"
+                  />
+                ) : (
+                  <div className="w-full max-w-full min-w-0 rounded-md border bg-muted/30 px-3 py-2 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                    {draft.territory || <span className="text-muted-foreground">{t("fieldConsiderations.fields.territoryPh")}</span>}
+                  </div>
+                )}
               </div>
             </div>
             <div className="grid gap-1.5 w-full max-w-full min-w-0">
