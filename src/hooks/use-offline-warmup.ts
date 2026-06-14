@@ -14,6 +14,7 @@ import {
 } from "@/lib/offline-prefetch";
 import { prefetchRouteShells } from "@/lib/offline-shells";
 import { isOfflineMode } from "@/lib/connection-mode";
+import { localDayKey } from "@/lib/local-day";
 
 const WARMUP_SESSION_KEY = "visita-sc:warmup-session";
 const WARMUP_TTL_MS = 6 * 60 * 60 * 1000; // 6h: re-warm em sessões longas
@@ -21,15 +22,13 @@ const WARMUP_TTL_MS = 6 * 60 * 60 * 1000; // 6h: re-warm em sessões longas
 // (data local do dispositivo) e a congregação ativa não mudou, pulamos
 // completamente o download automático. O usuário ainda pode forçar via
 // botão "Sincronizar" ou ao ativar o Modo Offline.
-function localDayKey(ts: number): string {
-  const d = new Date(ts);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
 
-function warmupFresh(congId: string | null): boolean {
+/**
+ * Exportado para reuso pelo Modo Offline / Toggle de conexão:
+ * pula o `prefetchAllForOffline` quando a pré-carga do dia já existe
+ * para a congregação ativa.
+ */
+export function isOfflinePrefetchFreshToday(congId: string | null): boolean {
   try {
     const raw = localStorage.getItem(LAST_WARMUP_KEY);
     if (!raw) return false;
@@ -40,6 +39,10 @@ function warmupFresh(congId: string | null): boolean {
   } catch {
     return false;
   }
+}
+
+function warmupFresh(congId: string | null): boolean {
+  return isOfflinePrefetchFreshToday(congId);
 }
 void getLastWarmupAt;
 
