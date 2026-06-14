@@ -2031,7 +2031,7 @@ function NoteEditor({
             placeholder={t("fieldConsiderations.fields.contentPh")}
             noteId={draft.id}
             minHeight={metaCollapsed ? "calc(100dvh - 14rem)" : "22rem"}
-            maxHeight={metaCollapsed ? "none" : "60vh"}
+            maxHeight={metaCollapsed ? "calc(100dvh - 14rem)" : "60vh"}
             className="flex-1 min-h-0"
             // Missão 01: sem cronômetro embutido no modo edição.
             outlineId={undefined}

@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useConnectionMode, setMode } from "@/lib/connection-mode";
 import { prefetchAllForOffline, type ProgressEvent } from "@/lib/offline-prefetch";
+import { isOfflinePrefetchFreshToday } from "@/hooks/use-offline-warmup";
 import { queueSize, flushQueue } from "@/lib/offline-queue";
 import { toast } from "sonner";
 
@@ -98,6 +99,14 @@ function ModeSwitchDialog({
   const switchToOffline = async () => {
     if (!user?.id) {
       toast.error(t("offline.requireLogin"));
+      return;
+    }
+    // Missão 02 — gate diário: ativa offline direto se a pré-carga
+    // do dia já existe; evita redownload desnecessário.
+    if (isOfflinePrefetchFreshToday(null)) {
+      setMode("offline");
+      toast.success(t("connection.nowOffline"));
+      onOpenChange(false);
       return;
     }
     setBusy(true);

@@ -250,8 +250,27 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
 
   useEffect(() => {
     if (!auto) return;
-    const tryRun = (reason: string) => {
+    const syncedToday = (): boolean => {
+      try {
+        const raw = localStorage.getItem(LAST_SYNC_KEY);
+        if (!raw) return false;
+        const ts = Number(raw);
+        if (!Number.isFinite(ts) || ts <= 0) return false;
+        const d = new Date(ts);
+        const now = new Date();
+        return (
+          d.getFullYear() === now.getFullYear() &&
+          d.getMonth() === now.getMonth() &&
+          d.getDate() === now.getDate()
+        );
+      } catch { return false; }
+    };
+    const tryRun = (reason: string, force = false) => {
       if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+      // Missão 02 — gate diário: pula sync automático quando já houve
+      // uma sincronização bem-sucedida hoje. SIGNED_IN passa `force=true`
+      // para garantir pelo menos uma sincronização por dia logo no login.
+      if (!force && syncedToday()) return;
       syncNow().catch((err) => console.warn(`[useOutlinesSync] sync failed (${reason})`, err));
     };
     // Disparo inicial quando o user ficar disponível.
@@ -272,10 +291,12 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
       document.addEventListener("visibilitychange", onVisible);
       document.addEventListener("resume", onResume);
     }
-    // Re-sync após SIGNED_IN.
+    // Re-sync após SIGNED_IN (força ao menos 1 sync no login do dia).
     const { data: authSub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+      if (event === "SIGNED_IN") {
         ran.current = true;
+        tryRun(event, true);
+      } else if (event === "TOKEN_REFRESHED") {
         tryRun(event);
       }
     });
