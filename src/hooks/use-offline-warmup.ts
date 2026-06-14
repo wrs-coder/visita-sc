@@ -17,9 +17,17 @@ import { isOfflineMode } from "@/lib/connection-mode";
 
 const WARMUP_SESSION_KEY = "visita-sc:warmup-session";
 const WARMUP_TTL_MS = 6 * 60 * 60 * 1000; // 6h: re-warm em sessões longas
-// Onda 7.11 — Missão 05B: enquanto o último warm-up tiver menos de 24h e
-// a congregação ativa não tiver mudado, pulamos toda a sondagem.
-const WARMUP_FRESH_TTL_MS = 24 * 60 * 60 * 1000;
+// Missão 02 (download persistente): se o último warm-up foi feito HOJE
+// (data local do dispositivo) e a congregação ativa não mudou, pulamos
+// completamente o download automático. O usuário ainda pode forçar via
+// botão "Sincronizar" ou ao ativar o Modo Offline.
+function localDayKey(ts: number): string {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 function warmupFresh(congId: string | null): boolean {
   try {
@@ -27,12 +35,14 @@ function warmupFresh(congId: string | null): boolean {
     if (!raw) return false;
     const s = JSON.parse(raw) as { at?: number; congId?: string | null };
     if ((s.congId ?? null) !== congId) return false;
-    return Date.now() - (s.at ?? 0) < WARMUP_FRESH_TTL_MS;
+    if (!s.at) return false;
+    return localDayKey(s.at) === localDayKey(Date.now());
   } catch {
     return false;
   }
 }
 void getLastWarmupAt;
+
 
 type WarmupState = {
   running: boolean;
