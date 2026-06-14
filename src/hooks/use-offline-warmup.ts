@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import {
   prefetchAllForOffline,
-  getLastWarmupAt,
   LAST_WARMUP_KEY,
   type ProgressEvent,
 } from "@/lib/offline-prefetch";
@@ -28,23 +27,18 @@ const WARMUP_TTL_MS = 6 * 60 * 60 * 1000; // 6h: re-warm em sessões longas
  * pula o `prefetchAllForOffline` quando a pré-carga do dia já existe
  * para a congregação ativa.
  */
-export function isOfflinePrefetchFreshToday(congId: string | null): boolean {
+export function isOfflinePrefetchFreshToday(userId?: string | null): boolean {
   try {
     const raw = localStorage.getItem(LAST_WARMUP_KEY);
     if (!raw) return false;
-    const s = JSON.parse(raw) as { at?: number; congId?: string | null };
-    if ((s.congId ?? null) !== congId) return false;
+    const s = JSON.parse(raw) as { at?: number; userId?: string | null };
+    if (userId && s.userId && s.userId !== userId) return false;
     if (!s.at) return false;
     return localDayKey(s.at) === localDayKey(Date.now());
   } catch {
     return false;
   }
 }
-
-function warmupFresh(congId: string | null): boolean {
-  return isOfflinePrefetchFreshToday(congId);
-}
-void getLastWarmupAt;
 
 
 type WarmupState = {
@@ -107,8 +101,8 @@ export function useOfflineWarmup() {
       return;
     }
 
-    if (warmupFresh(activeCong?.id ?? null)) {
-      // Última pré-carga <24h e mesma congregação: nada para baixar.
+    if (isOfflinePrefetchFreshToday(user.id)) {
+      // Última pré-carga feita hoje para este usuário: nada para baixar.
       markWarmed(user.id);
       state = { ...state, running: false, done: true };
       emit();
