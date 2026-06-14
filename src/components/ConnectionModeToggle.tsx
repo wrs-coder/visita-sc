@@ -103,7 +103,7 @@ function ModeSwitchDialog({
     }
     // Missão 02 — gate diário: ativa offline direto se a pré-carga
     // do dia já existe; evita redownload desnecessário.
-    if (isOfflinePrefetchFreshToday(null)) {
+    if (isOfflinePrefetchFreshToday(user.id)) {
       setMode("offline");
       toast.success(t("connection.nowOffline"));
       onOpenChange(false);
