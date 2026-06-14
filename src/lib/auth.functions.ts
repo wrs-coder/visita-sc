@@ -194,7 +194,7 @@ export const listMyElders = createServerFn({ method: "POST" })
     if (!roles) return { ok: true as const, data: [] };
     const userIds = roles.map((r) => r.user_id);
     const { data: profiles } = await supabaseAdmin
-      .from("profiles").select("id,full_name,phone").in("id", userIds);
+      .from("profiles").select("id,full_name,phone,email,username").in("id", userIds);
     const congMap = new Map(congs.map((c) => [c.id, c]));
     const profMap = new Map((profiles ?? []).map((p) => [p.id, p]));
     return {
@@ -203,10 +203,14 @@ export const listMyElders = createServerFn({ method: "POST" })
         const p = profMap.get(r.user_id);
         const c = r.congregation_id ? congMap.get(r.congregation_id) : null;
         const isCreator = !!c && c.elder_tab_password_created_by === r.user_id;
+        const rawEmail = p?.email ?? null;
+        const email = rawEmail && !SYNTHETIC_EMAIL_REGEX.test(rawEmail) ? rawEmail : null;
         return {
           user_id: r.user_id,
           full_name: p?.full_name ?? "—",
           phone: p?.phone ?? "",
+          email,
+          username: p?.username ?? null,
           congregation_id: r.congregation_id,
           congregation_name: c?.name ?? "—",
           elder_position: r.elder_position,
@@ -218,6 +222,7 @@ export const listMyElders = createServerFn({ method: "POST" })
       }),
     };
   });
+
 
 // Super updates an elder's profile (name, phone, position) for elders in their congregations
 export const updateElderBySuper = createServerFn({ method: "POST" })
