@@ -84,12 +84,15 @@ interface Elder {
   user_id: string;
   full_name: string;
   phone: string;
+  email: string | null;
+  username: string | null;
   congregation_id: string | null;
   congregation_name: string;
   elder_position: string | null;
   elder_tab_password_is_creator?: boolean;
   elder_tab_password?: string | null;
 }
+
 
 const POSITION_LABELS: Record<string, string> = {
   coordenador: "Coordenador",
@@ -445,9 +448,50 @@ function Page() {
                               </Button>
                             </div>
                           </div>
+                          {(e.username || e.email) && (
+                            <div className="pl-12 -mt-1 space-y-1 text-xs">
+                              {e.username && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                  <span className="shrink-0">Usuário:</span>
+                                  <span className="font-mono text-foreground truncate">@{e.username}</span>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-6 w-6 shrink-0"
+                                    title="Copiar usuário"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(e.username ?? "");
+                                      toast.success("Usuário copiado");
+                                    }}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              )}
+                              {e.email && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                  <span className="shrink-0">E-mail:</span>
+                                  <span className="text-foreground break-all">{e.email}</span>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-6 w-6 shrink-0"
+                                    title="Copiar e-mail"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(e.email ?? "");
+                                      toast.success("E-mail copiado");
+                                    }}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                           {e.elder_tab_password_is_creator && e.elder_tab_password && (
                             <ElderTabPasswordReveal password={e.elder_tab_password} />
                           )}
+
                         </div>
                       ))}
                     </div>
