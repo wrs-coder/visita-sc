@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
-import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import {
   prefetchAllForOffline,
   LAST_WARMUP_KEY,
@@ -88,7 +87,6 @@ function markWarmed(userId: string) {
  */
 export function useOfflineWarmup() {
   const { user, role, loading } = useAuth();
-  const activeCong = useActiveCongregation();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
 
@@ -120,7 +118,7 @@ export function useOfflineWarmup() {
         await prefetchAllForOffline({
           queryClient,
           userId: user.id,
-          congregationId: activeCong?.id ?? null,
+          congregationId: null,
           role,
           signal: controller.signal,
           onProgress: (p) => {
@@ -171,5 +169,5 @@ export function useOfflineWarmup() {
       if (idleId !== null && typeof w.cancelIdleCallback === "function") w.cancelIdleCallback(idleId);
       if (timeoutId !== null) window.clearTimeout(timeoutId);
     };
-  }, [user?.id, role, loading, activeCong?.id, queryClient, t]);
+  }, [user?.id, role, loading, queryClient, t]);
 }
