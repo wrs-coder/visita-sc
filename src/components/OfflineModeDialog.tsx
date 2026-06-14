@@ -44,7 +44,7 @@ export function OfflineModeDialog({
     }
     // Missão 02 — gate diário: se já há pré-carga do dia, fecha o diálogo
     // sem novo download. Botão "Forçar atualização" continua disponível.
-    if (!force && isOfflinePrefetchFreshToday(null)) {
+    if (!force && isOfflinePrefetchFreshToday(user.id)) {
       toast.success(t("offline.alreadyFreshToday", { defaultValue: "Dados já atualizados hoje." }));
       setPhase("done");
       return;
