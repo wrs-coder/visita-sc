@@ -1,49 +1,65 @@
-## Missão 01 — Modo edição imersivo (Esboços pessoais)
+## AJUSTE 01 — Scroll interno constante no editor (Modo edição imersivo)
 
-Quando o usuário entra no "modo edição" **e** minimiza tanto o bloco de informações (dia→dirigentes auxiliares) quanto o de identificação (título→descrição), a área de edição entra em **layout imersivo**:
+**Problema:** no modo imersivo (`metaCollapsed` em `_app.consideracoes-campo.tsx`), o editor é renderizado com `minHeight: "calc(100dvh - 14rem)"` e `maxHeight: "none"`. Como `min == max`, o container só cria scroll interno quando o conteúdo ultrapassa a viewport — antes disso o usuário precisa rolar a página inteira.
 
-**Arquivo:** `src/routes/_app.consideracoes-campo.tsx`
+**Solução:** fixar uma altura "janela" para o editor: `minHeight = maxHeight = "calc(100dvh - 14rem)"`. Como o container já tem `overflow-y-auto` (linha 258 de `RichNoteEditor.tsx`), o scroll vertical interno passa a estar sempre disponível, independente da quantidade de texto. A área de digitação fica visível em ~2000 caracteres e o usuário pode rolar dentro da janela ou usar o scroll da página, exatamente como solicitado.
 
-1. Detectar estado "imersivo": `mode === "edit" && infoCollapsed && titleCollapsed` (usar os mesmos flags de colapso já existentes).
-2. Quando imersivo:
-   - O container do editor recebe altura calculada para preencher a viewport (`min-h-[calc(100dvh-...)]`), permitindo ~2000 caracteres visíveis antes do scroll interno do `Conteúdo`.
-   - "Versículos detectados" aparece logo abaixo, também expandido.
-   - **Cronômetro abaixo da toolbar é ocultado** (`OutlineTimer` inline removido nesse modo; o do topo da página permanece).
-   - Aparece um botão "Mostrar campos" (ícone `ChevronsUpDown`) que reabre os blocos minimizados.
-   - Botões **Salvar / Excluir / Enviar p/ nuvem / Exportar** permanecem visíveis numa barra de ações fixa.
-3. Scroll vertical preservado no editor e na página.
+**Arquivo:**
+- `src/routes/_app.consideracoes-campo.tsx` (linhas ~2033-2034): trocar `maxHeight={metaCollapsed ? "none" : "60vh"}` por `maxHeight={metaCollapsed ? "calc(100dvh - 14rem)" : "60vh"}`.
 
-**Toolbar premium em 2 linhas (`src/components/notes/RichNoteToolbar.tsx`):**
-
-Reorganizar em grupos compactos com **dropdown "split-button"** (clique no ícone principal → menu vertical com as variantes):
-- **Linha 1:** Formatação de texto (B/I/U/S — dropdown), Tamanho/cor (dropdown), Alinhamento (dropdown), Lista (dropdown ul/ol/check).
-- **Linha 2:** Inserir (link, imagem, tabela — dropdown), Estrutura (heading, quote, divider — dropdown), Ações (undo/redo), Limpar.
-
-Usa `DropdownMenu` do shadcn; cada grupo expõe um único botão visível com seta. Otimizado para toque (botões ~36px, gap reduzido). Sem perder nenhuma funcionalidade atual.
+Nenhuma mudança em `RichNoteEditor` — o componente já trata `maxHeight` corretamente.
 
 ---
 
-## Missão 02 — Download persistente (1x por dia)
+## AJUSTE 02 — Download 1×/dia também na Onda 7.4 "Offline super"
 
-**Problema atual:** ao voltar de outro app, o warm-up roda de novo porque a sessão de aba (`sessionStorage`) é zerada. Já existe `LAST_WARMUP_KEY` em `localStorage`, mas a janela é 24h *e* depende de `warmupFresh()` ser chamado.
+**Diagnóstico:** o gate "1×/dia" do `useOfflineWarmup` já está ativo. O delay restante ao reabrir o app vem de outro hook automático: **`useOutlinesSync`** (`src/hooks/use-outlines-sync.ts`, linhas 251-290). Ele dispara `syncNow()` em vários gatilhos sem nenhum gate diário:
 
-**Arquivo:** `src/hooks/use-offline-warmup.ts`
+- mount inicial (quando `user` fica disponível)
+- evento `online`
+- `visibilitychange` (voltar para a aba/app)
+- `resume` (Capacitor / volta de segundo plano)
+- `SIGNED_IN` / `TOKEN_REFRESHED` do Supabase
 
-Alterar a regra de pulo para "1x por dia natural por congregação":
+Cada `syncNow()` faz round-trip ao Supabase (list + replace), gerando exatamente o "delay ao retornar" que o usuário descreve. Em modo offline ativo, isso é desperdício total.
 
-1. Trocar `WARMUP_FRESH_TTL_MS` por uma checagem de **data local** (`YYYY-MM-DD`): se `LAST_WARMUP_KEY.at` é do mesmo dia (timezone do dispositivo) **e** mesma `congId`, pular completamente — não baixar, não recarregar, mesmo se `sessionStorage` foi limpo.
-2. Marcar `markWarmed(user.id)` imediatamente nesse caminho (já feito).
-3. Manter triggers manuais inalterados: **botão Sincronizar** e **ativar Modo Offline** continuam forçando o warm-up (eles não passam por `useOfflineWarmup`, chamam `prefetchAllForOffline` diretamente).
-4. Garantir que o app **carregue dados do cache local** mesmo sem warm-up: o React Query + `query-persister` já hidratam do `localStorage`; nenhuma mudança necessária ali.
+Além disso, `prefetchAllForOffline` (chamado manualmente em `OfflineModeDialog` e `ConnectionModeToggle`) hoje sempre baixa tudo, mesmo quando a pré-carga do dia já existe.
 
-**Resultado:** primeira abertura do dia → baixa tudo e persiste. Saídas/retornos no mesmo dia → zero requests automáticos, UI usa cache. No dia seguinte → 1 warm-up novo. Sincronização manual sempre disponível.
+**Solução — aplicar o mesmo gate `localDayKey` em três pontos:**
+
+### 1. `src/hooks/use-outlines-sync.ts`
+- Extrair helper `syncedToday()` que lê `LAST_SYNC_KEY` do `localStorage` e compara com `localDayKey(Date.now())` (mesma função usada em `use-offline-warmup.ts`; mover para `src/lib/connection-mode.ts` ou um util compartilhado).
+- No `useEffect`, antes de chamar `tryRun(...)` por `mount`, `visible`, `resume`, `online`, `TOKEN_REFRESHED`: pular se `syncedToday()` for verdadeiro **e** `isOfflineMode() === false` não exigir. Em modo offline, sempre pular sync automático (não há para onde sincronizar com utilidade no fluxo de leitura).
+- Manter `SIGNED_IN` rodando sempre (login do dia = pode ser primeira vez).
+- Manter `syncNow()` exportado disparável manualmente (botão "Sincronizar" e ativação do Modo Offline continuam funcionando).
+
+### 2. `src/hooks/use-offline-warmup.ts`
+- Mover `localDayKey` e `warmupFresh` para `src/lib/offline-prefetch.ts` (ou util novo), expondo `isOfflinePrefetchFreshToday(congId)`.
+- Sem mudança funcional aqui — só refatoração para reuso.
+
+### 3. `src/components/OfflineModeDialog.tsx` e `src/components/ConnectionModeToggle.tsx`
+- Antes de chamar `prefetchAllForOffline`, checar `isOfflinePrefetchFreshToday(congId)`. Se verdadeiro:
+  - Pular o download.
+  - Mostrar toast "Dados já atualizados hoje" + marcar `setMode("offline")` direto (no toggle) ou fechar diálogo com sucesso (no dialog).
+- Adicionar botão secundário "Forçar atualização" que ignora o gate (para o caso raro do usuário querer redownload manual).
+
+### 4. `src/router.tsx`
+- Subir `staleTime` de `12h` para `24h` para alinhar React Query ao gate diário. O `query-persister` já hidrata do `localStorage`, então telas abrem instantâneas e não disparam refetch até o dia seguinte.
 
 ---
 
-## Verificação
+## Detalhes técnicos
 
-- `bunx tsc --noEmit` limpo.
-- Smoke manual: abrir esboço → editar → minimizar blocos → editor ocupa tela; reabrir blocos pelo botão; toolbar em 2 linhas com dropdowns funcionando; cronômetro inline some no imersivo mas o do topo continua.
-- Warm-up: 2ª abertura no mesmo dia não dispara network (verificar console `[offline-warmup]`).
+- Helper compartilhado:
+  ```ts
+  export function localDayKey(ts: number): string { /* YYYY-MM-DD local */ }
+  export function isFreshToday(key: string, congId: string | null): boolean { /* checa localStorage[key].at == hoje && congId bate */ }
+  ```
+- `LAST_SYNC_KEY` (outlines) e `LAST_WARMUP_KEY` (prefetch) continuam separados — gates independentes por tipo de carga.
+- `isOfflineMode()` continua bloqueando rede para queries no fluxo normal; o gate diário é a camada extra que evita sync mesmo em modo online quando o dado do dia já existe.
+- Botão "Sincronizar" (`SyncButton`) e ativação manual do Modo Offline permanecem como override explícito do usuário.
+- Verificação final: `bunx tsc --noEmit` limpo; smoke test mental do fluxo "abrir app duas vezes no mesmo dia → segunda vez não chama Supabase".
 
-Sem mudanças em schema, backend ou lógica de negócio fora do escopo descrito. Tokens visuais e engine de PDF respeitados.
+## Fora de escopo
+- Não tocar em `auth-attacher`, `client.ts`, schemas, ou lógica de negócio.
+- Não alterar UI/visual além do que descrito em AJUSTE 01.
