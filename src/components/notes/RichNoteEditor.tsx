@@ -37,7 +37,10 @@ interface RichNoteEditorProps {
   maxHeight?: string;
   /** ID do esboço — quando presente, exibe o cronômetro (Missão 06). */
   outlineId?: string;
+  /** Missão 01: barra compacta (2 linhas) — usado no modo edição imersivo. */
+  compact?: boolean;
 }
+
 
 // Extensão de recuo (indent) — preserva margens vindas do Word e permite
 // aumentar/diminuir o recuo de parágrafos e títulos. Salva como atributo
@@ -135,7 +138,9 @@ export function RichNoteEditor({
   minHeight = "240px",
   maxHeight = "70vh",
   outlineId,
+  compact = false,
 }: RichNoteEditorProps) {
+
   const { t } = useTranslation();
   const [focused, setFocused] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
@@ -268,7 +273,9 @@ export function RichNoteEditor({
         focusMode={focusMode}
         onToggleFocusMode={() => setFocusMode((v) => !v)}
         outlineId={outlineId}
+        compact={compact}
       />
+
       <EditorContent editor={editor} />
       {showFooter && (
         <div

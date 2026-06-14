@@ -2030,10 +2030,12 @@ function NoteEditor({
             onChange={(html) => onPatch("content", html)}
             placeholder={t("fieldConsiderations.fields.contentPh")}
             noteId={draft.id}
-            minHeight="22rem"
-            maxHeight="60vh"
+            minHeight={metaCollapsed ? "calc(100dvh - 14rem)" : "22rem"}
+            maxHeight={metaCollapsed ? "none" : "60vh"}
             className="flex-1 min-h-0"
-            outlineId={isTalk ? undefined : draft.id}
+            // Missão 01: sem cronômetro embutido no modo edição.
+            outlineId={undefined}
+            compact={metaCollapsed}
           />
         ) : (
           <div className="flex-1 min-h-[22rem] max-h-[60vh] overflow-y-auto rounded-md border bg-background px-3 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
@@ -2046,6 +2048,7 @@ function NoteEditor({
             )}
           </div>
         )}
+
       </div>
 
 

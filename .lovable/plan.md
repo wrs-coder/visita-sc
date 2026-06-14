@@ -1,56 +1,49 @@
-# Missão 06.2 — Zoom do visor + Reset seguro no OutlineTimer
+## Missão 01 — Modo edição imersivo (Esboços pessoais)
 
-Escopo 100% cliente. Sem Supabase. Sem hex inline. Build `bunx tsc --noEmit` limpo.
+Quando o usuário entra no "modo edição" **e** minimiza tanto o bloco de informações (dia→dirigentes auxiliares) quanto o de identificação (título→descrição), a área de edição entra em **layout imersivo**:
 
-## 1. Zoom do visor (Normal / Grande / Gigante)
+**Arquivo:** `src/routes/_app.consideracoes-campo.tsx`
 
-**Novo módulo:** `src/lib/timer-size.ts`
-- Tipo `TimerSizeId = "normal" | "large" | "huge"`.
-- Hook `useTimerSize()` análogo a `useTimerTheme`: estado + `localStorage` (`visita-sc:outline-timer-size`) + sincronização via `StorageEvent` sintético.
-- Preset por tamanho expõe classes Tailwind para as duas variantes:
-  - `toolbar`: `text-xs` (normal) · `text-sm` (large) · `text-base` (huge), com `px` proporcional.
-  - `fullscreen`: `text-lg` (normal) · `text-2xl` (large) · `text-4xl` (huge), com `py` proporcional para o banner respirar.
-- Ciclos: helpers `nextSize(id)` / `prevSize(id)` para os botões +/−.
+1. Detectar estado "imersivo": `mode === "edit" && infoCollapsed && titleCollapsed` (usar os mesmos flags de colapso já existentes).
+2. Quando imersivo:
+   - O container do editor recebe altura calculada para preencher a viewport (`min-h-[calc(100dvh-...)]`), permitindo ~2000 caracteres visíveis antes do scroll interno do `Conteúdo`.
+   - "Versículos detectados" aparece logo abaixo, também expandido.
+   - **Cronômetro abaixo da toolbar é ocultado** (`OutlineTimer` inline removido nesse modo; o do topo da página permanece).
+   - Aparece um botão "Mostrar campos" (ícone `ChevronsUpDown`) que reabre os blocos minimizados.
+   - Botões **Salvar / Excluir / Enviar p/ nuvem / Exportar** permanecem visíveis numa barra de ações fixa.
+3. Scroll vertical preservado no editor e na página.
 
-**`src/components/notes/OutlineTimer.tsx`:**
-- Consumir `useTimerSize()`; remover `text-lg`/`text-xs` hard-coded de `displayClass` e usar a classe do preset (ambas as variantes).
-- Adicionar dois `Button` ghost ao lado do reset, usando `ZoomIn` / `ZoomOut` do `lucide-react`:
-  - `onClick` chama `setSize(next/prev)`.
-  - `disabled` no extremo (já no maior/menor).
-  - `aria-label` + `title` traduzíveis (`personalOutlines.timer.zoomIn` / `zoomOut`).
-  - Mesma `iconBtnClass`/`iconBtnSize` dos demais para coerência visual e tema.
-- Ordem na barra: `[timer-alvo] [MM:SS] [play/pause] [reset] [zoom-out] [zoom-in]`.
+**Toolbar premium em 2 linhas (`src/components/notes/RichNoteToolbar.tsx`):**
 
-## 2. Reset com confirmação (AlertDialog)
+Reorganizar em grupos compactos com **dropdown "split-button"** (clique no ícone principal → menu vertical com as variantes):
+- **Linha 1:** Formatação de texto (B/I/U/S — dropdown), Tamanho/cor (dropdown), Alinhamento (dropdown), Lista (dropdown ul/ol/check).
+- **Linha 2:** Inserir (link, imagem, tabela — dropdown), Estrutura (heading, quote, divider — dropdown), Ações (undo/redo), Limpar.
 
-**`src/components/notes/OutlineTimer.tsx`:**
-- Importar `AlertDialog*` de `@/components/ui/alert-dialog` (já existe).
-- Estado local `resetOpen: boolean`.
-- Botão reset deixa de chamar `timer.reset()` direto: apenas abre `setResetOpen(true)`.
-- `<AlertDialog>` renderizado dentro do componente com:
-  - Title: `personalOutlines.timer.resetConfirmTitle` ("Deseja reiniciar o cronômetro?")
-  - Description: `personalOutlines.timer.resetConfirmDesc` ("O tempo decorrido voltará a 00:00.")
-  - Cancel: `common.cancel` (fallback "Cancelar") — fecha sem efeito.
-  - Action: `personalOutlines.timer.resetConfirm` ("Confirmar") — chama `timer.reset()` e fecha.
-- O estado de execução (`isRunning`) **não** é tocado pelo cancelamento — a lógica atual de `reset()` já preserva pausa; só roda quando confirmado.
-- `z-index` do conteúdo do dialog mantém o padrão shadcn (acima do banner fullscreen `z-[105]`); se necessário, `className="z-[150]"` no `AlertDialogContent` para garantir sobreposição em fullscreen.
+Usa `DropdownMenu` do shadcn; cada grupo expõe um único botão visível com seta. Otimizado para toque (botões ~36px, gap reduzido). Sem perder nenhuma funcionalidade atual.
 
-## 3. i18n
+---
 
-Adicionar em `src/i18n/locales/{pt,en,es}.json` sob `personalOutlines.timer`:
-- `zoomIn`, `zoomOut`
-- `resetConfirmTitle`, `resetConfirmDesc`, `resetConfirm`
+## Missão 02 — Download persistente (1x por dia)
 
-(Reaproveitar `common.cancel` se já existir; caso contrário, adicionar.)
+**Problema atual:** ao voltar de outro app, o warm-up roda de novo porque a sessão de aba (`sessionStorage`) é zerada. Já existe `LAST_WARMUP_KEY` em `localStorage`, mas a janela é 24h *e* depende de `warmupFresh()` ser chamado.
 
-## 4. Validação
+**Arquivo:** `src/hooks/use-offline-warmup.ts`
+
+Alterar a regra de pulo para "1x por dia natural por congregação":
+
+1. Trocar `WARMUP_FRESH_TTL_MS` por uma checagem de **data local** (`YYYY-MM-DD`): se `LAST_WARMUP_KEY.at` é do mesmo dia (timezone do dispositivo) **e** mesma `congId`, pular completamente — não baixar, não recarregar, mesmo se `sessionStorage` foi limpo.
+2. Marcar `markWarmed(user.id)` imediatamente nesse caminho (já feito).
+3. Manter triggers manuais inalterados: **botão Sincronizar** e **ativar Modo Offline** continuam forçando o warm-up (eles não passam por `useOfflineWarmup`, chamam `prefetchAllForOffline` diretamente).
+4. Garantir que o app **carregue dados do cache local** mesmo sem warm-up: o React Query + `query-persister` já hidratam do `localStorage`; nenhuma mudança necessária ali.
+
+**Resultado:** primeira abertura do dia → baixa tudo e persiste. Saídas/retornos no mesmo dia → zero requests automáticos, UI usa cache. No dia seguinte → 1 warm-up novo. Sincronização manual sempre disponível.
+
+---
+
+## Verificação
 
 - `bunx tsc --noEmit` limpo.
-- Smoke manual no preview: alternar tamanho na toolbar reflete imediatamente no banner fullscreen; reload mantém preferência; clicar reset abre dialog; "Cancelar" preserva contagem; "Confirmar" zera.
+- Smoke manual: abrir esboço → editar → minimizar blocos → editor ocupa tela; reabrir blocos pelo botão; toolbar em 2 linhas com dropdowns funcionando; cronômetro inline some no imersivo mas o do topo continua.
+- Warm-up: 2ª abertura no mesmo dia não dispara network (verificar console `[offline-warmup]`).
 
-## Arquivos tocados
-
-- **novo:** `src/lib/timer-size.ts`
-- editado: `src/components/notes/OutlineTimer.tsx`
-- editado: `src/i18n/locales/pt.json`, `en.json`, `es.json`
-- editado: `.lovable/plan.md` (registro da subonda)
+Sem mudanças em schema, backend ou lógica de negócio fora do escopo descrito. Tokens visuais e engine de PDF respeitados.
