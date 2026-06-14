@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CloudDownload, CheckCircle2, AlertTriangle, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { prefetchAllForOffline, type ProgressEvent } from "@/lib/offline-prefetch";
+import { isOfflinePrefetchFreshToday } from "@/hooks/use-offline-warmup";
 import { toast } from "sonner";
 
 type Phase = "idle" | "running" | "done" | "cancelled";
@@ -36,9 +37,16 @@ export function OfflineModeDialog({
 
   const pct = progress.total > 0 ? Math.round((progress.step / progress.total) * 100) : 0;
 
-  const start = async () => {
+  const start = async (force = false) => {
     if (!user?.id) {
       toast.error(t("offline.requireLogin"));
+      return;
+    }
+    // Missão 02 — gate diário: se já há pré-carga do dia, fecha o diálogo
+    // sem novo download. Botão "Forçar atualização" continua disponível.
+    if (!force && isOfflinePrefetchFreshToday(null)) {
+      toast.success(t("offline.alreadyFreshToday", { defaultValue: "Dados já atualizados hoje." }));
+      setPhase("done");
       return;
     }
     abortRef.current = new AbortController();
@@ -120,8 +128,11 @@ export function OfflineModeDialog({
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 {t("common.cancel")}
               </Button>
-              <Button onClick={start}>
+              <Button onClick={() => start(false)}>
                 <CloudDownload className="h-4 w-4 mr-2" /> {t("offline.start")}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => start(true)} title={t("offline.forceRefresh", { defaultValue: "Forçar atualização" })}>
+                {t("offline.forceRefresh", { defaultValue: "Forçar atualização" })}
               </Button>
             </>
           )}
