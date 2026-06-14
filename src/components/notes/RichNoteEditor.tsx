@@ -37,7 +37,10 @@ interface RichNoteEditorProps {
   maxHeight?: string;
   /** ID do esboço — quando presente, exibe o cronômetro (Missão 06). */
   outlineId?: string;
+  /** Missão 01: barra compacta (2 linhas) — usado no modo edição imersivo. */
+  compact?: boolean;
 }
+
 
 // Extensão de recuo (indent) — preserva margens vindas do Word e permite
 // aumentar/diminuir o recuo de parágrafos e títulos. Salva como atributo
