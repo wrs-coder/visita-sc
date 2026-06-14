@@ -84,12 +84,15 @@ interface Elder {
   user_id: string;
   full_name: string;
   phone: string;
+  email: string | null;
+  username: string | null;
   congregation_id: string | null;
   congregation_name: string;
   elder_position: string | null;
   elder_tab_password_is_creator?: boolean;
   elder_tab_password?: string | null;
 }
+
 
 const POSITION_LABELS: Record<string, string> = {
   coordenador: "Coordenador",
