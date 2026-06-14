@@ -76,6 +76,12 @@ interface ToolbarProps {
    * esboços (ex.: subaba "Anotações").
    */
   outlineId?: string;
+  /**
+   * Missão 01 (modo edição imersivo): renderiza a barra em 2 linhas
+   * com grupos colapsados em dropdowns ("split-button"), economizando
+   * espaço vertical no smartphone sem perder funcionalidade.
+   */
+  compact?: boolean;
 }
 
 export function RichNoteToolbar({
@@ -84,14 +90,17 @@ export function RichNoteToolbar({
   focusMode = false,
   onToggleFocusMode,
   outlineId,
+  compact = false,
 }: ToolbarProps) {
   const { t } = useTranslation();
   const [colorOpen, setColorOpen] = useState(false);
   const [hlOpen, setHlOpen] = useState(false);
   const [tableOpen, setTableOpen] = useState(false);
   const [fontOpen, setFontOpen] = useState(false);
+  const [groupOpen, setGroupOpen] = useState<string | null>(null);
 
   if (!editor) return null;
+
 
   const isActive = (name: string, attrs?: Record<string, unknown>) =>
     editor.isActive(name, attrs);
