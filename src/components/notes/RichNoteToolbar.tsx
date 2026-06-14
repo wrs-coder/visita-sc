@@ -149,7 +149,7 @@ export function RichNoteToolbar({
 
     const closeAll = () => setGroupOpen(null);
 
-    const popoverContent = (children: React.ReactNode) => (
+    const popoverContent = (children: ReactNode) => (
       <PopoverContent
         side="top"
         align="start"
