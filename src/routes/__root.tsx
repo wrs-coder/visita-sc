@@ -108,6 +108,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const { i18n } = useTranslation();
+  const AUTH_USER_KEY = "visita-sc:last-auth-user";
 
   // Onda 7.9 — Sincroniza <html lang> com o idioma ativo (a11y / SR).
   useEffect(() => {
@@ -122,7 +123,14 @@ function RootComponent() {
   }, [i18n]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const clearIdentityScopedCaches = () => {
+      queryClient.clear();
+      // Missão 05B: warm-up incremental fica preso ao user/cong anteriores.
+      try { localStorage.removeItem("visita-sc:last-warmup"); } catch { /* noop */ }
+      try { sessionStorage.removeItem("visita-sc:warmup-session"); } catch { /* noop */ }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       // Missão 05A — Persistência absoluta.
       // Offline: só processa SIGNED_IN.
       if (isOfflineMode() && event !== "SIGNED_IN") return;
@@ -133,15 +141,28 @@ function RootComponent() {
         const deliberate = sessionStorage.getItem("visita-sc:logout-intent") === "1";
         if (!deliberate) return;
       }
-      router.invalidate();
-      queryClient.invalidateQueries();
-      // Troca real de identidade: limpa cache persistido para não vazar
-      // dados entre usuários.
-      if (event === "SIGNED_OUT" || event === "SIGNED_IN") {
-        queryClient.clear();
-        // Missão 05B: warm-up incremental fica preso ao user/cong anteriores.
-        try { localStorage.removeItem("visita-sc:last-warmup"); } catch { /* noop */ }
-        try { sessionStorage.removeItem("visita-sc:warmup-session"); } catch { /* noop */ }
+      // Só invalida/limpa quando há troca real de identidade. Em WebView/APK,
+      // SIGNED_IN pode disparar a cada abertura por restauração de token; limpar
+      // aqui apagava o gate diário e reiniciava todo download offline.
+      if (event === "SIGNED_IN") {
+        const nextUserId = nextSession?.user?.id ?? null;
+        if (!nextUserId) return;
+        let previousUserId: string | null = null;
+        try { previousUserId = localStorage.getItem(AUTH_USER_KEY); } catch { /* noop */ }
+        const changedUser = !!previousUserId && previousUserId !== nextUserId;
+        if (changedUser) clearIdentityScopedCaches();
+        try { localStorage.setItem(AUTH_USER_KEY, nextUserId); } catch { /* noop */ }
+        if (!previousUserId || changedUser) {
+          router.invalidate();
+          queryClient.invalidateQueries();
+        }
+        return;
+      }
+
+      if (event === "SIGNED_OUT") {
+        clearIdentityScopedCaches();
+        try { localStorage.removeItem(AUTH_USER_KEY); } catch { /* noop */ }
+        router.invalidate();
       }
     });
     const onOnline = () => { flushQueue().catch((e) => console.warn("[boot] flush", e)); };
