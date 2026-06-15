@@ -16,6 +16,11 @@ import { localDayKey } from "@/lib/local-day";
 
 const WARMUP_SESSION_KEY = "visita-sc:warmup-session";
 const WARMUP_TTL_MS = 6 * 60 * 60 * 1000; // 6h: re-warm em sessões longas
+// Falha observada após a Onda 7.4: o warm-up automático competia com a
+// restauração da sessão e podia mostrar a nuvem/porcentagem em toda abertura.
+// Mantemos a cobertura offline disponível apenas por ações explícitas
+// (Sincronizar, Modo Offline, comando manual), nunca no boot do aplicativo.
+const AUTO_WARMUP_ON_BOOT = false;
 // Missão 02 (download persistente): se o último warm-up foi feito HOJE
 // (data local do dispositivo) e a congregação ativa não mudou, pulamos
 // completamente o download automático. O usuário ainda pode forçar via
@@ -91,6 +96,11 @@ export function useOfflineWarmup() {
   const { t } = useTranslation();
 
   useEffect(() => {
+    if (!AUTO_WARMUP_ON_BOOT) {
+      state = { running: false, progress: null, shells: null, done: false };
+      emit();
+      return;
+    }
     if (loading || !user?.id) return;
     if (isOfflineMode()) return;
     if (alreadyWarmed(user.id)) {
