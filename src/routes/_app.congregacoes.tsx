@@ -119,6 +119,8 @@ function Page() {
   const fnList = useServerFn(listMyCongregations);
   const fnCreate = useServerFn(createCongregation);
   const fnUpdate = useServerFn(updateCongregation);
+  const fnDelete = useServerFn(deleteCongregation);
+  const fnSetActive = useServerFn(setCongregationActive);
   const fnElders = useServerFn(listMyElders);
   const fnUpdateElder = useServerFn(updateElderBySuper);
   const fnDeleteElder = useServerFn(deleteElderBySuper);
