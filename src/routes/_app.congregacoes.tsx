@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 import {
   listMyCongregations,
   createCongregation,
   updateCongregation,
+  deleteCongregation,
+  setCongregationActive,
 } from "@/lib/congregations.functions";
 import {
   listMyElders,
@@ -118,6 +119,8 @@ function Page() {
   const fnList = useServerFn(listMyCongregations);
   const fnCreate = useServerFn(createCongregation);
   const fnUpdate = useServerFn(updateCongregation);
+  const fnDelete = useServerFn(deleteCongregation);
+  const fnSetActive = useServerFn(setCongregationActive);
   const fnElders = useServerFn(listMyElders);
   const fnUpdateElder = useServerFn(updateElderBySuper);
   const fnDeleteElder = useServerFn(deleteElderBySuper);
@@ -210,9 +213,9 @@ function Page() {
   const remove = async (id: string) => {
     if (!confirm("Excluir esta congregação? Os dados de visitas relacionadas serão perdidos."))
       return;
-    const { error } = await supabase.from("congregations").delete().eq("id", id);
-    if (error) {
-      toast.error(error.message);
+    const res = await fnDelete({ data: { id } });
+    if (!res.ok) {
+      toast.error(res.error);
       return;
     }
     toast.success("Excluída");
@@ -230,12 +233,9 @@ function Page() {
   const activeCount = list.filter((c) => c.is_active !== false).length;
 
   const toggleActive = async (c: Congregation, next: boolean) => {
-    const { error } = await supabase
-      .from("congregations")
-      .update({ is_active: next })
-      .eq("id", c.id);
-    if (error) {
-      toast.error(error.message);
+    const res = await fnSetActive({ data: { id: c.id, isActive: next } });
+    if (!res.ok) {
+      toast.error(res.error);
       return;
     }
     load();

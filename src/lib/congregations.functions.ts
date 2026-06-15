@@ -63,3 +63,36 @@ export const updateCongregation = createServerFn({ method: "POST" })
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const };
   });
+
+export const deleteCongregation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    // Confirma posse antes de excluir (defesa em profundidade além do RLS).
+    const { data: own } = await supabaseAdmin.from("congregations")
+      .select("id").eq("id", data.id).eq("superintendent_id", userId).maybeSingle();
+    if (!own) return { ok: false as const, error: "Não autorizado." };
+    const { error } = await supabaseAdmin.from("congregations")
+      .delete().eq("id", data.id);
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const };
+  });
+
+export const setCongregationActive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ id: z.string().uuid(), isActive: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: own } = await supabaseAdmin.from("congregations")
+      .select("id").eq("id", data.id).eq("superintendent_id", userId).maybeSingle();
+    if (!own) return { ok: false as const, error: "Não autorizado." };
+    const { error } = await supabaseAdmin.from("congregations")
+      .update({ is_active: data.isActive }).eq("id", data.id);
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const };
+  });
