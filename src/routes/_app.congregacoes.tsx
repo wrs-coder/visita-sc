@@ -213,9 +213,9 @@ function Page() {
   const remove = async (id: string) => {
     if (!confirm("Excluir esta congregação? Os dados de visitas relacionadas serão perdidos."))
       return;
-    const { error } = await supabase.from("congregations").delete().eq("id", id);
-    if (error) {
-      toast.error(error.message);
+    const res = await fnDelete({ data: { id } });
+    if (!res.ok) {
+      toast.error(res.error);
       return;
     }
     toast.success("Excluída");
@@ -233,12 +233,9 @@ function Page() {
   const activeCount = list.filter((c) => c.is_active !== false).length;
 
   const toggleActive = async (c: Congregation, next: boolean) => {
-    const { error } = await supabase
-      .from("congregations")
-      .update({ is_active: next })
-      .eq("id", c.id);
-    if (error) {
-      toast.error(error.message);
+    const res = await fnSetActive({ data: { id: c.id, isActive: next } });
+    if (!res.ok) {
+      toast.error(res.error);
       return;
     }
     load();
