@@ -94,7 +94,8 @@ export function useOfflineWarmup() {
     if (loading || !user?.id) return;
     if (isOfflineMode()) return;
     if (alreadyWarmed(user.id)) {
-      state = { ...state, done: true };
+      // Já tratado nesta aba: não mostra badge nem reemite “Pronto para offline”.
+      state = { running: false, progress: null, shells: null, done: false };
       emit();
       return;
     }
@@ -102,7 +103,8 @@ export function useOfflineWarmup() {
     if (isOfflinePrefetchFreshToday(user.id)) {
       // Última pré-carga feita hoje para este usuário: nada para baixar.
       markWarmed(user.id);
-      state = { ...state, running: false, done: true };
+      // Mantém a UI silenciosa em aberturas subsequentes do aplicativo.
+      state = { running: false, progress: null, shells: null, done: false };
       emit();
       return;
     }
