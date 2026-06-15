@@ -3,6 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { isOfflineMode } from "@/lib/connection-mode";
+import { sameLocalDay } from "@/lib/local-day";
 import i18n from "@/i18n";
 
 export type AppRole = "superintendent" | "elder";
@@ -47,6 +48,13 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+type CachedAuthData = {
+  profile: Profile | null;
+  role: AppRole | null;
+  elderPosition: ElderPosition | null;
+  congregation: Congregation | null;
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -58,28 +66,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const PROFILE_CACHE_KEY = (uid: string) => `visita-sc:auth-profile:${uid}`;
 
+  const getCachedUserData = (uid: string): CachedAuthData | null => {
+    try {
+      const raw = localStorage.getItem(PROFILE_CACHE_KEY(uid));
+      return raw ? (JSON.parse(raw) as CachedAuthData) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const hydrateCachedUserData = (uid: string): boolean => {
+    const cached = getCachedUserData(uid);
+    if (!cached) return false;
+    setProfile(cached.profile);
+    setRole(cached.role);
+    setElderPosition(cached.elderPosition);
+    setCongregation(cached.congregation);
+    return true;
+  };
+
+  const isWarmupFreshForUser = (uid: string): boolean => {
+    try {
+      const raw = localStorage.getItem("visita-sc:last-warmup");
+      if (!raw) return false;
+      const s = JSON.parse(raw) as { at?: number; userId?: string | null };
+      if (s.userId && s.userId !== uid) return false;
+      return sameLocalDay(s.at);
+    } catch {
+      return false;
+    }
+  };
+
+  const hasFreshAuthSnapshot = (uid?: string | null): boolean => {
+    if (!uid) return false;
+    return isWarmupFreshForUser(uid) && !!getCachedUserData(uid);
+  };
+
   const loadUserData = async (uid: string | undefined) => {
     if (!uid) {
       setProfile(null); setRole(null); setElderPosition(null); setCongregation(null);
       return;
     }
-    // Em Modo Offline: hidrata exclusivamente do cache local (sem rede).
-    if (isOfflineMode()) {
-      try {
-        const raw = localStorage.getItem(PROFILE_CACHE_KEY(uid));
-        if (raw) {
-          const cached = JSON.parse(raw) as {
-            profile: Profile | null;
-            role: AppRole | null;
-            elderPosition: ElderPosition | null;
-            congregation: Congregation | null;
-          };
-          setProfile(cached.profile);
-          setRole(cached.role);
-          setElderPosition(cached.elderPosition);
-          setCongregation(cached.congregation);
-        }
-      } catch { /* noop */ }
+    // Offline-first: se a preparação diária já foi concluída, hidrata do
+    // snapshot local mesmo estando online, sem tocar no banco em cada abertura.
+    const hydrated = hydrateCachedUserData(uid);
+    if (isOfflineMode() || (hydrated && isWarmupFreshForUser(uid))) {
       return;
     }
     const [{ data: p }, { data: rs }] = await Promise.all([
@@ -137,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (event === "SIGNED_IN") {
-        setLoading(true);
+        if (!hasFreshAuthSnapshot(s?.user?.id)) setLoading(true);
         setTimeout(() => {
           loadUserData(s?.user?.id).finally(() => setLoading(false));
         }, 0);
