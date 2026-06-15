@@ -1987,6 +1987,7 @@ function NoteEditor({
           </div>
 
         )}
+        </>)}
 
         {mode === "edit" && (
           <div className="rounded-lg border bg-muted/30 p-3 space-y-2 w-full max-w-full min-w-0 overflow-hidden break-words">
@@ -2007,8 +2008,8 @@ function NoteEditor({
             )}
           </div>
         )}
-        </>)}
       </div>
+
 
       <div className="flex-1 min-h-[22rem] flex flex-col gap-1.5 w-full max-w-full min-w-0">
 
