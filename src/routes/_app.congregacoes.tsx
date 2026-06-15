@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 import {
   listMyCongregations,
   createCongregation,
   updateCongregation,
+  deleteCongregation,
+  setCongregationActive,
 } from "@/lib/congregations.functions";
 import {
   listMyElders,
