@@ -338,7 +338,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
           <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
           <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs font-semibold text-foreground flex-1 truncate">
-            {match.bookName} {match.chapter}:{headerVerses}
+            {displayBook} {match.chapter}:{headerVerses}
           </span>
           <button
             type="button"
