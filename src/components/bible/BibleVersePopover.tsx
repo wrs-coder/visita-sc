@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Loader2, BookOpen, GripHorizontal, X, Bold, Highlighter, Eraser } from "lucide-react";
 import { getVerseFromLibrary } from "@/lib/bible-notes-store";
+import { getLocalizedBookName } from "@/lib/bible-canon";
 import type { CitationMatch } from "@/lib/bible-refs";
 import { cn } from "@/lib/utils";
 import {
