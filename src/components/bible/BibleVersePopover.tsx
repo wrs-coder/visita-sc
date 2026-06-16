@@ -44,7 +44,8 @@ interface VersePart {
 }
 
 export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseLinkProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName;
   const [open, setOpen] = useState(false);
   const [parts, setParts] = useState<VersePart[] | null>(null);
   const [truncated, setTruncated] = useState(false);
