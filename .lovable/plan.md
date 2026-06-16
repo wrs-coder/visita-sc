@@ -1,65 +1,69 @@
-## AJUSTE 01 — Scroll interno constante no editor (Modo edição imersivo)
+# Localizar o título do popup bíblico pelo idioma da interface
 
-**Problema:** no modo imersivo (`metaCollapsed` em `_app.consideracoes-campo.tsx`), o editor é renderizado com `minHeight: "calc(100dvh - 14rem)"` e `maxHeight: "none"`. Como `min == max`, o container só cria scroll interno quando o conteúdo ultrapassa a viewport — antes disso o usuário precisa rolar a página inteira.
+## Problema
+O popup mostra "Matthew 6:33" mesmo com a UI em português e o texto do versículo em português, porque `match.bookName` é preenchido com o `displayName` extraído do EPUB ativo (que muitas vezes tem TOC em inglês). O usuário escreveu "Mateus 6:33" e espera ver "Mateus" no cabeçalho.
 
-**Solução:** fixar uma altura "janela" para o editor: `minHeight = maxHeight = "calc(100dvh - 14rem)"`. Como o container já tem `overflow-y-auto` (linha 258 de `RichNoteEditor.tsx`), o scroll vertical interno passa a estar sempre disponível, independente da quantidade de texto. A área de digitação fica visível em ~2000 caracteres e o usuário pode rolar dentro da janela ou usar o scroll da página, exatamente como solicitado.
+## Decisão
+O título do popup deve seguir **o idioma da interface (i18next)** — PT/EN/ES — independente do idioma do EPUB ou do termo digitado. Isso garante consistência com o resto da UI e cobre exatamente os 3 idiomas já suportados.
 
-**Arquivo:**
-- `src/routes/_app.consideracoes-campo.tsx` (linhas ~2033-2034): trocar `maxHeight={metaCollapsed ? "none" : "60vh"}` por `maxHeight={metaCollapsed ? "calc(100dvh - 14rem)" : "60vh"}`.
+## Solução
 
-Nenhuma mudança em `RichNoteEditor` — o componente já trata `maxHeight` corretamente.
+### 1. Adicionar mapa de nomes localizados em `src/lib/bible-canon.ts`
+Hoje `CanonicalBook` tem apenas `english` + `aliases` (lista plana). Vou adicionar um campo opcional `names: { pt: string; en: string; es: string }` com o nome canônico de cada um dos 66 livros nos 3 idiomas suportados. O `english` atual continua como fallback final.
 
----
+```ts
+export interface CanonicalBook {
+  id: string;
+  order: number;
+  english: string;
+  names: { pt: string; en: string; es: string };
+  aliases: string[];
+}
+```
 
-## AJUSTE 02 — Download 1×/dia também na Onda 7.4 "Offline super"
+A lista `RAW` ganha um 3º elemento posicional `[order, english, names, ...aliases]` ou, mais limpo, viro a estrutura para objeto. Os aliases existentes não mudam (detecção continua funcionando).
 
-**Diagnóstico:** o gate "1×/dia" do `useOfflineWarmup` já está ativo. O delay restante ao reabrir o app vem de outro hook automático: **`useOutlinesSync`** (`src/hooks/use-outlines-sync.ts`, linhas 251-290). Ele dispara `syncNow()` em vários gatilhos sem nenhum gate diário:
+### 2. Criar helper `getLocalizedBookName(bookId, lang)` em `bible-canon.ts`
+```ts
+export function getLocalizedBookName(bookId: string, lang: "pt" | "en" | "es"): string | null
+```
+Retorna `names[lang]` ou `null` se não encontrar.
 
-- mount inicial (quando `user` fica disponível)
-- evento `online`
-- `visibilitychange` (voltar para a aba/app)
-- `resume` (Capacitor / volta de segundo plano)
-- `SIGNED_IN` / `TOKEN_REFRESHED` do Supabase
+### 3. Localizar no consumo, não na detecção
+**Não vou mexer em `bible-refs.ts`** (mantém `bookName` = displayName do EPUB como hoje, para não quebrar nada que dependa do `CitationMatch.bookName` em outros lugares). A localização acontece no ponto de renderização:
 
-Cada `syncNow()` faz round-trip ao Supabase (list + replace), gerando exatamente o "delay ao retornar" que o usuário descreve. Em modo offline ativo, isso é desperdício total.
+**`src/components/bible/BibleVersePopover.tsx`** (linha 339):
+- Adicionar `const { i18n } = useTranslation()` (já há `useTranslation`).
+- Computar `displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName`.
+- Trocar `{match.bookName}` por `{displayBook}` no cabeçalho.
 
-Além disso, `prefetchAllForOffline` (chamado manualmente em `OfflineModeDialog` e `ConnectionModeToggle`) hoje sempre baixa tudo, mesmo quando a pré-carga do dia já existe.
+### 4. Checar outros consumidores
+Buscar outros usos de `match.bookName` / `CitationMatch.bookName`:
+- `src/lib/rich-content.tsx`
+- `src/components/dashboard/FieldNoteFullscreenDialog.tsx`
+- `src/routes/_app.consideracoes-campo.tsx`
 
-**Solução — aplicar o mesmo gate `localDayKey` em três pontos:**
+Aplicar o mesmo `getLocalizedBookName` apenas onde o nome é exibido ao usuário (cabeçalho/título). Onde o valor é usado para lógica/identificação, manter `bookName` original.
 
-### 1. `src/hooks/use-outlines-sync.ts`
-- Extrair helper `syncedToday()` que lê `LAST_SYNC_KEY` do `localStorage` e compara com `localDayKey(Date.now())` (mesma função usada em `use-offline-warmup.ts`; mover para `src/lib/connection-mode.ts` ou um util compartilhado).
-- No `useEffect`, antes de chamar `tryRun(...)` por `mount`, `visible`, `resume`, `online`, `TOKEN_REFRESHED`: pular se `syncedToday()` for verdadeiro **e** `isOfflineMode() === false` não exigir. Em modo offline, sempre pular sync automático (não há para onde sincronizar com utilidade no fluxo de leitura).
-- Manter `SIGNED_IN` rodando sempre (login do dia = pode ser primeira vez).
-- Manter `syncNow()` exportado disparável manualmente (botão "Sincronizar" e ativação do Modo Offline continuam funcionando).
+## O que NÃO muda
+- Detecção de citações (`findCitations`) — mesma lógica, mesmos aliases, mesma resolução de ambiguidade.
+- `displayName` do EPUB — continua sendo a fonte de verdade para a Biblioteca/Manager.
+- Suporte aos 3 idiomas (PT/EN/ES) — sem regressão; outros idiomas continuam caindo no fallback `match.bookName`.
+- Memória do projeto: zero Bíblia embutida; apenas o mapa de **nomes** dos 66 livros (~3 KB de strings, já é conhecimento canônico público — nome de livro não é tradução de texto bíblico).
 
-### 2. `src/hooks/use-offline-warmup.ts`
-- Mover `localDayKey` e `warmupFresh` para `src/lib/offline-prefetch.ts` (ou util novo), expondo `isOfflinePrefetchFreshToday(congId)`.
-- Sem mudança funcional aqui — só refatoração para reuso.
-
-### 3. `src/components/OfflineModeDialog.tsx` e `src/components/ConnectionModeToggle.tsx`
-- Antes de chamar `prefetchAllForOffline`, checar `isOfflinePrefetchFreshToday(congId)`. Se verdadeiro:
-  - Pular o download.
-  - Mostrar toast "Dados já atualizados hoje" + marcar `setMode("offline")` direto (no toggle) ou fechar diálogo com sucesso (no dialog).
-- Adicionar botão secundário "Forçar atualização" que ignora o gate (para o caso raro do usuário querer redownload manual).
-
-### 4. `src/router.tsx`
-- Subir `staleTime` de `12h` para `24h` para alinhar React Query ao gate diário. O `query-persister` já hidrata do `localStorage`, então telas abrem instantâneas e não disparam refetch até o dia seguinte.
-
----
+## Verificação
+1. `bunx tsc --noEmit` limpo.
+2. Smoke manual no `/consideracoes-campo`: escrever "Mateus 6:33" com UI em PT → título mostra "Mateus 6:33".
+3. Trocar idioma da UI para EN → recarregar popup → título mostra "Matthew 6:33".
+4. Trocar para ES → "Mateo 6:33".
+5. Confirmar que esboço (modo onde já funcionava) continua coerente.
 
 ## Detalhes técnicos
 
-- Helper compartilhado:
-  ```ts
-  export function localDayKey(ts: number): string { /* YYYY-MM-DD local */ }
-  export function isFreshToday(key: string, congId: string | null): boolean { /* checa localStorage[key].at == hoje && congId bate */ }
-  ```
-- `LAST_SYNC_KEY` (outlines) e `LAST_WARMUP_KEY` (prefetch) continuam separados — gates independentes por tipo de carga.
-- `isOfflineMode()` continua bloqueando rede para queries no fluxo normal; o gate diário é a camada extra que evita sync mesmo em modo online quando o dado do dia já existe.
-- Botão "Sincronizar" (`SyncButton`) e ativação manual do Modo Offline permanecem como override explícito do usuário.
-- Verificação final: `bunx tsc --noEmit` limpo; smoke test mental do fluxo "abrir app duas vezes no mesmo dia → segunda vez não chama Supabase".
+### Tamanho do diff
+- `bible-canon.ts`: adicionar 66 entradas `names` (~80 linhas, refatoração estrutural) + função helper (~10 linhas).
+- `BibleVersePopover.tsx`: 2 linhas (import + cálculo) + 1 char no JSX.
+- Outros consumidores: 0–3 trocas pontuais conforme auditoria.
 
-## Fora de escopo
-- Não tocar em `auth-attacher`, `client.ts`, schemas, ou lógica de negócio.
-- Não alterar UI/visual além do que descrito em AJUSTE 01.
+### Risco
+Baixo. Mudança puramente de apresentação; lógica de detecção e armazenamento intactas. Fallback garante que livros não mapeados (não deve haver — são os 66 canônicos) continuem exibindo o nome do EPUB.

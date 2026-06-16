@@ -293,3 +293,92 @@ export function findCanonicalInText(text: string): CanonicalBook | null {
   }
   return null;
 }
+
+// =============================================================
+// Nomes localizados dos 66 livros (apenas nomes — não é texto bíblico).
+// Usados para exibir o título do popup no idioma da interface.
+// =============================================================
+
+export type CanonLang = "pt" | "en" | "es";
+
+const LOCALIZED_NAMES: Record<string, Record<CanonLang, string>> = {
+  B01: { pt: "Gênesis", en: "Genesis", es: "Génesis" },
+  B02: { pt: "Êxodo", en: "Exodus", es: "Éxodo" },
+  B03: { pt: "Levítico", en: "Leviticus", es: "Levítico" },
+  B04: { pt: "Números", en: "Numbers", es: "Números" },
+  B05: { pt: "Deuteronômio", en: "Deuteronomy", es: "Deuteronomio" },
+  B06: { pt: "Josué", en: "Joshua", es: "Josué" },
+  B07: { pt: "Juízes", en: "Judges", es: "Jueces" },
+  B08: { pt: "Rute", en: "Ruth", es: "Rut" },
+  B09: { pt: "1 Samuel", en: "1 Samuel", es: "1 Samuel" },
+  B10: { pt: "2 Samuel", en: "2 Samuel", es: "2 Samuel" },
+  B11: { pt: "1 Reis", en: "1 Kings", es: "1 Reyes" },
+  B12: { pt: "2 Reis", en: "2 Kings", es: "2 Reyes" },
+  B13: { pt: "1 Crônicas", en: "1 Chronicles", es: "1 Crónicas" },
+  B14: { pt: "2 Crônicas", en: "2 Chronicles", es: "2 Crónicas" },
+  B15: { pt: "Esdras", en: "Ezra", es: "Esdras" },
+  B16: { pt: "Neemias", en: "Nehemiah", es: "Nehemías" },
+  B17: { pt: "Ester", en: "Esther", es: "Ester" },
+  B18: { pt: "Jó", en: "Job", es: "Job" },
+  B19: { pt: "Salmos", en: "Psalms", es: "Salmos" },
+  B20: { pt: "Provérbios", en: "Proverbs", es: "Proverbios" },
+  B21: { pt: "Eclesiastes", en: "Ecclesiastes", es: "Eclesiastés" },
+  B22: { pt: "Cântico dos Cânticos", en: "Song of Solomon", es: "Cantar de los Cantares" },
+  B23: { pt: "Isaías", en: "Isaiah", es: "Isaías" },
+  B24: { pt: "Jeremias", en: "Jeremiah", es: "Jeremías" },
+  B25: { pt: "Lamentações", en: "Lamentations", es: "Lamentaciones" },
+  B26: { pt: "Ezequiel", en: "Ezekiel", es: "Ezequiel" },
+  B27: { pt: "Daniel", en: "Daniel", es: "Daniel" },
+  B28: { pt: "Oseias", en: "Hosea", es: "Oseas" },
+  B29: { pt: "Joel", en: "Joel", es: "Joel" },
+  B30: { pt: "Amós", en: "Amos", es: "Amós" },
+  B31: { pt: "Obadias", en: "Obadiah", es: "Abdías" },
+  B32: { pt: "Jonas", en: "Jonah", es: "Jonás" },
+  B33: { pt: "Miqueias", en: "Micah", es: "Miqueas" },
+  B34: { pt: "Naum", en: "Nahum", es: "Nahúm" },
+  B35: { pt: "Habacuque", en: "Habakkuk", es: "Habacuc" },
+  B36: { pt: "Sofonias", en: "Zephaniah", es: "Sofonías" },
+  B37: { pt: "Ageu", en: "Haggai", es: "Ageo" },
+  B38: { pt: "Zacarias", en: "Zechariah", es: "Zacarías" },
+  B39: { pt: "Malaquias", en: "Malachi", es: "Malaquías" },
+  B40: { pt: "Mateus", en: "Matthew", es: "Mateo" },
+  B41: { pt: "Marcos", en: "Mark", es: "Marcos" },
+  B42: { pt: "Lucas", en: "Luke", es: "Lucas" },
+  B43: { pt: "João", en: "John", es: "Juan" },
+  B44: { pt: "Atos", en: "Acts", es: "Hechos" },
+  B45: { pt: "Romanos", en: "Romans", es: "Romanos" },
+  B46: { pt: "1 Coríntios", en: "1 Corinthians", es: "1 Corintios" },
+  B47: { pt: "2 Coríntios", en: "2 Corinthians", es: "2 Corintios" },
+  B48: { pt: "Gálatas", en: "Galatians", es: "Gálatas" },
+  B49: { pt: "Efésios", en: "Ephesians", es: "Efesios" },
+  B50: { pt: "Filipenses", en: "Philippians", es: "Filipenses" },
+  B51: { pt: "Colossenses", en: "Colossians", es: "Colosenses" },
+  B52: { pt: "1 Tessalonicenses", en: "1 Thessalonians", es: "1 Tesalonicenses" },
+  B53: { pt: "2 Tessalonicenses", en: "2 Thessalonians", es: "2 Tesalonicenses" },
+  B54: { pt: "1 Timóteo", en: "1 Timothy", es: "1 Timoteo" },
+  B55: { pt: "2 Timóteo", en: "2 Timothy", es: "2 Timoteo" },
+  B56: { pt: "Tito", en: "Titus", es: "Tito" },
+  B57: { pt: "Filêmon", en: "Philemon", es: "Filemón" },
+  B58: { pt: "Hebreus", en: "Hebrews", es: "Hebreos" },
+  B59: { pt: "Tiago", en: "James", es: "Santiago" },
+  B60: { pt: "1 Pedro", en: "1 Peter", es: "1 Pedro" },
+  B61: { pt: "2 Pedro", en: "2 Peter", es: "2 Pedro" },
+  B62: { pt: "1 João", en: "1 John", es: "1 Juan" },
+  B63: { pt: "2 João", en: "2 John", es: "2 Juan" },
+  B64: { pt: "3 João", en: "3 John", es: "3 Juan" },
+  B65: { pt: "Judas", en: "Jude", es: "Judas" },
+  B66: { pt: "Apocalipse", en: "Revelation", es: "Apocalipsis" },
+};
+
+/**
+ * Retorna o nome canônico do livro no idioma solicitado, ou null se
+ * o bookId ou idioma não estiverem mapeados. Aceita "pt-BR", "en-US"
+ * etc. — usa apenas o prefixo de 2 letras.
+ */
+export function getLocalizedBookName(bookId: string, lang: string): string | null {
+  if (!bookId) return null;
+  const short = (lang || "").slice(0, 2).toLowerCase();
+  if (short !== "pt" && short !== "en" && short !== "es") return null;
+  const entry = LOCALIZED_NAMES[bookId];
+  return entry ? entry[short as CanonLang] : null;
+}

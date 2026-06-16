@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Loader2, BookOpen, GripHorizontal, X, Bold, Highlighter, Eraser } from "lucide-react";
 import { getVerseFromLibrary } from "@/lib/bible-notes-store";
+import { getLocalizedBookName } from "@/lib/bible-canon";
 import type { CitationMatch } from "@/lib/bible-refs";
 import { cn } from "@/lib/utils";
 import {
@@ -43,7 +44,8 @@ interface VersePart {
 }
 
 export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseLinkProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName;
   const [open, setOpen] = useState(false);
   const [parts, setParts] = useState<VersePart[] | null>(null);
   const [truncated, setTruncated] = useState(false);
@@ -336,7 +338,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
           <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
           <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs font-semibold text-foreground flex-1 truncate">
-            {match.bookName} {match.chapter}:{headerVerses}
+            {displayBook} {match.chapter}:{headerVerses}
           </span>
           <button
             type="button"
