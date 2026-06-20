@@ -42,9 +42,10 @@
   "login": {
     "appTitle": "Visita do Superintendente",
     "signIn": "Entrar",
-    "identifierHelp": "Utilizador, e-mail ou ID do circuito",
-    "identifierLabel": "Utilizador / E-mail / ID do Circuito",
-    "identifierPlaceholder": "ex: joao_silva, joao@email.com ou AGO-12",
+    "identifierHelp": "Utilizador, e-mail, telefone ou ID do circuito",
+    "identifierLabel": "Utilizador / E-mail / Telefone / ID do Circuito",
+    "identifierPlaceholder": "ex: joao_silva, joao@email.com, +55 71 98342-0366 ou AGO-12",
+    "phoneExample": "Telefone: digite com DDI e DDD, ex.: +55 71 98342-0366 (pode usar espaços, parênteses ou traços).",
     "password": "Senha",
     "signingIn": "Entrando...",
     "welcome": "Bem-vindo!",
