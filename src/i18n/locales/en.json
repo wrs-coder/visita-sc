@@ -114,6 +114,17 @@
     "shareOpened": "Share dialog opened",
     "backupDownloaded": "Backup downloaded",
     "failGeneric": "Failed",
+    "usernameSection": {
+      "title": "Username",
+      "label": "Username",
+      "placeholder": "e.g.: john_doe",
+      "help": "Lowercase letters, numbers, _ . or -. Between 3 and 30 characters.",
+      "save": "Save username",
+      "updated": "Username updated",
+      "taken": "This username is already in use.",
+      "invalid": "Use 3 to 30 characters: only lowercase letters, numbers, _ . or -.",
+      "loginNote": "Use this name to sign in to the app. Once changed, the previous one no longer works."
+    },
     "wifeAccess": {
       "title": "Wife access",
       "description": "Create a unique code so your wife can open the read-only panel. She'll be able to switch between active congregations and jump back to the current week any time. Her login stays saved on her device.",
