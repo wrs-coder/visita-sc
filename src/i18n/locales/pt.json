@@ -114,6 +114,17 @@
     "shareOpened": "Compartilhamento aberto",
     "backupDownloaded": "Backup baixado",
     "failGeneric": "Falha",
+    "usernameSection": {
+      "title": "Nome de usuário",
+      "label": "Nome de usuário",
+      "placeholder": "ex: joao_silva",
+      "help": "Letras minúsculas, números, _ . ou -. Entre 3 e 30 caracteres.",
+      "save": "Salvar nome de usuário",
+      "updated": "Nome de usuário atualizado",
+      "taken": "Este nome de usuário já está em uso.",
+      "invalid": "Use 3 a 30 caracteres: apenas letras minúsculas, números, _ . ou -.",
+      "loginNote": "Use este nome para entrar no aplicativo. Após alterar, o login antigo deixa de funcionar."
+    },
     "wifeAccess": {
       "title": "Acesso da esposa",
       "description": "Crie um código exclusivo para sua esposa acessar o painel (somente leitura). Ela poderá alternar entre as congregações ativas e voltar para a semana atual a qualquer momento. O login fica salvo no dispositivo dela.",
