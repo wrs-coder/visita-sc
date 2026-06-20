@@ -108,7 +108,9 @@ export function LoginForm() {
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder={t("login.identifierPlaceholder")}
                 />
+                <p className="text-[11px] text-muted-foreground leading-snug">{t("login.phoneExample")}</p>
               </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="pwd">{t("login.password")}</Label>
                 <Input id="pwd" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />

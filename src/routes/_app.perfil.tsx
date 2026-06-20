@@ -17,7 +17,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee, Globe, Languages } from "lucide-react";
+import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee, Globe, Languages, UserCircle2 } from "lucide-react";
 import { SupportDeveloperContent } from "@/components/SupportDeveloper";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +55,9 @@ function Page() {
   const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
   const [wifeCode, setWifeCode] = useState("");
   const [busyWife, setBusyWife] = useState(false);
+  const [username, setUsername] = useState("");
+  const [usernameLoaded, setUsernameLoaded] = useState(false);
+  const [busyUsername, setBusyUsername] = useState(false);
 
   const refreshActiveBible = async () => setActiveBible(await getActiveLibrary());
   useEffect(() => { refreshActiveBible(); }, []);
@@ -68,6 +71,40 @@ function Page() {
     })();
     return () => { cancelled = true; };
   }, [user, role]);
+
+  // Carrega username apenas para anciões (super não usa username sintético).
+  useEffect(() => {
+    if (!user || role !== "elder") return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("username").eq("id", user.id).maybeSingle();
+      if (cancelled) return;
+      setUsername(((data as { username: string | null } | null)?.username) ?? "");
+      setUsernameLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [user, role]);
+
+  const saveUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    const value = username.trim().toLowerCase();
+    if (!/^[a-z0-9_.-]{3,30}$/.test(value)) {
+      toast.error(t("profile.usernameSection.invalid"));
+      return;
+    }
+    setBusyUsername(true);
+    const { error } = await supabase.from("profiles").update({ username: value }).eq("id", user.id);
+    setBusyUsername(false);
+    if (error) {
+      if (error.code === "23505") { toast.error(t("profile.usernameSection.taken")); return; }
+      toast.error(t("profile.saveError"), { description: error.message });
+      return;
+    }
+    setUsername(value);
+    toast.success(t("profile.usernameSection.updated"));
+    refresh();
+  };
 
   const generateWifeCode = () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -259,6 +296,38 @@ function Page() {
           </form>
         </CardContent>
       </Card>
+
+      {role === "elder" && (
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserCircle2 className="h-4 w-4 text-primary" /> {t("profile.usernameSection.title")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={saveUsername} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="username">{t("profile.usernameSection.label")}</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, "").slice(0, 30))}
+                  placeholder={t("profile.usernameSection.placeholder")}
+                  maxLength={30}
+                  minLength={3}
+                  autoComplete="username"
+                  disabled={!usernameLoaded}
+                />
+                <p className="text-xs text-muted-foreground">{t("profile.usernameSection.help")}</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400">{t("profile.usernameSection.loginNote")}</p>
+              </div>
+              <Button type="submit" disabled={busyUsername || !usernameLoaded}>{t("profile.usernameSection.save")}</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+
 
 
       {role === "superintendent" && (

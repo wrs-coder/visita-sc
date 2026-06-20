@@ -1,69 +1,53 @@
-# Localizar o título do popup bíblico pelo idioma da interface
+Atuando como engenheiro sênior, com leitura completa do `instructions.md` (regras 1, 7, 8, 10, 11). Resumo do que será feito e como cada regra é respeitada.
 
-## Problema
-O popup mostra "Matthew 6:33" mesmo com a UI em português e o texto do versículo em português, porque `match.bookName` é preenchido com o `displayName` extraído do EPUB ativo (que muitas vezes tem TOC em inglês). O usuário escreveu "Mateus 6:33" e espera ver "Mateus" no cabeçalho.
+## Missão 01 — Campo "Nome de Usuário" no perfil do ancião
 
-## Decisão
-O título do popup deve seguir **o idioma da interface (i18next)** — PT/EN/ES — independente do idioma do EPUB ou do termo digitado. Isso garante consistência com o resto da UI e cobre exatamente os 3 idiomas já suportados.
+**Onde**: `src/routes/_app.perfil.tsx`, novo card entre "Dados Pessoais" e "E-mail", renderizado **somente quando `role === "elder"`** (super não usa username sintético).
 
-## Solução
+**Comportamento**:
+- Carrega `profiles.username` do usuário atual via `supabase.from("profiles").select("username").eq("id", user.id)`.
+- Input com normalização local: `value.toLowerCase().replace(/[^a-z0-9_.-]/g, "").slice(0, 30)`.
+- Botão "Salvar nome de usuário" valida regex `/^[a-z0-9_.-]{3,30}$/` antes do envio.
+- `supabase.from("profiles").update({ username }).eq("id", user.id)` — mesma RLS já em vigor (`auth.uid() = id`), mesma técnica que já está em uso para `full_name`, `circuit` e `wife_invite_code` no mesmo arquivo. **Não é dado compartilhado entre papéis** (regra 7 só exige serverFn para escrita compartilhada).
+- Trata `error.code === "23505"` (unique violation já existente na coluna `username`) com toast traduzido "Este nome de usuário já está em uso."
+- Em sucesso: toast "Nome de usuário atualizado" + `refresh()` do contexto de auth + nota persistente: "Use este nome para entrar no app."
 
-### 1. Adicionar mapa de nomes localizados em `src/lib/bible-canon.ts`
-Hoje `CanonicalBook` tem apenas `english` + `aliases` (lista plana). Vou adicionar um campo opcional `names: { pt: string; en: string; es: string }` com o nome canônico de cada um dos 66 livros nos 3 idiomas suportados. O `english` atual continua como fallback final.
+**Sem migration** — coluna `username` e seu índice único já existem (usados por `registerElderByUsername` e `resolveLoginIdentifier`).
 
-```ts
-export interface CanonicalBook {
-  id: string;
-  order: number;
-  english: string;
-  names: { pt: string; en: string; es: string };
-  aliases: string[];
-}
-```
+## Missão 02 — Login por telefone
 
-A lista `RAW` ganha um 3º elemento posicional `[order, english, names, ...aliases]` ou, mais limpo, viro a estrutura para objeto. Os aliases existentes não mudam (detecção continua funcionando).
+### Servidor — `src/lib/auth.functions.ts`, `resolveLoginIdentifier.handler`
+Inserir, **entre o bloco "Direct email match" e "Username match"**, um novo bloco:
 
-### 2. Criar helper `getLocalizedBookName(bookId, lang)` em `bible-canon.ts`
-```ts
-export function getLocalizedBookName(bookId: string, lang: "pt" | "en" | "es"): string | null
-```
-Retorna `names[lang]` ou `null` se não encontrar.
+- Se `id` não contém `@` e `id.replace(/\D/g, "").length >= 8`, consulta `profiles` por `phone = digits`.
+- Prioridade de retorno: `email` real (não sintético) → `syntheticEmailFromUsername(username)` → fallback `email`.
+- Se não achar, **continua** o fluxo (username → circuito). Isso preserva o caso atual de username puramente numérico, embora colisões reais sejam improváveis (username exige `[a-z0-9_.-]{3,30}` que poderia ser só dígitos, mas o lookup por telefone tem prioridade — comportamento aceitável e documentado).
 
-### 3. Localizar no consumo, não na detecção
-**Não vou mexer em `bible-refs.ts`** (mantém `bookName` = displayName do EPUB como hoje, para não quebrar nada que dependa do `CitationMatch.bookName` em outros lugares). A localização acontece no ponto de renderização:
+### Cliente — `src/components/auth/LoginForm.tsx`
+- Sem máscara no input — o servidor normaliza com `replace(/\D/g, "")`, então o usuário pode digitar com `+`, espaço, `()` e `-`.
+- Atualizar os textos i18n `login.identifierHelp`, `login.identifierLabel` e `login.identifierPlaceholder` para incluir telefone com exemplo `+55 71 98342-0366` (PT/EN/ES).
 
-**`src/components/bible/BibleVersePopover.tsx`** (linha 339):
-- Adicionar `const { i18n } = useTranslation()` (já há `useTranslation`).
-- Computar `displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName`.
-- Trocar `{match.bookName}` por `{displayBook}` no cabeçalho.
+### Sem migration / sem mudança em RLS
+A coluna `profiles.phone` já existe, já é gravada em `registerElderByUsername` e `registerElderByPhone`, e já é única (verificada no upsert). `resolveLoginIdentifier` roda com `supabaseAdmin` (sem RLS), igual aos demais branches.
 
-### 4. Checar outros consumidores
-Buscar outros usos de `match.bookName` / `CitationMatch.bookName`:
-- `src/lib/rich-content.tsx`
-- `src/components/dashboard/FieldNoteFullscreenDialog.tsx`
-- `src/routes/_app.consideracoes-campo.tsx`
+## Conformidade com `instructions.md`
 
-Aplicar o mesmo `getLocalizedBookName` apenas onde o nome é exibido ao usuário (cabeçalho/título). Onde o valor é usado para lógica/identificação, manter `bookName` original.
+- **§1, §5** — não toca em roles nem em telas do super; super continua logando por email/circuit.
+- **§3, §7** — sem nova tabela, sem nova policy, sem CHECK volátil, sem schema reservado tocado. UPDATE de `profiles.username` cai sob a RLS existente (`auth.uid() = id`).
+- **§8** — toda lógica em `createServerFn` existente; sem nova Edge Function; sem `process.env` em escopo de módulo; sem mudar `start.ts`.
+- **§9** — sem nova query; após salvar username chamamos `refresh()` do `useAuth` (já atualiza o snapshot local incluindo o cache offline em `PROFILE_CACHE_KEY`).
+- **§10** — chaves novas em `pt.json`, `en.json`, `es.json` na mesma alteração, mesma estrutura (`profile.usernameSection.{title,label,help,save,placeholder,taken,updated,loginNote}` e atualização dos 3 `login.identifier*`).
+- **§11** — build `bunx tsc --noEmit` antes de fechar.
+- **§12** — não bloqueia tela para super; não mexe em modelos; sem hardcode de cores.
 
-## O que NÃO muda
-- Detecção de citações (`findCitations`) — mesma lógica, mesmos aliases, mesma resolução de ambiguidade.
-- `displayName` do EPUB — continua sendo a fonte de verdade para a Biblioteca/Manager.
-- Suporte aos 3 idiomas (PT/EN/ES) — sem regressão; outros idiomas continuam caindo no fallback `match.bookName`.
-- Memória do projeto: zero Bíblia embutida; apenas o mapa de **nomes** dos 66 livros (~3 KB de strings, já é conhecimento canônico público — nome de livro não é tradução de texto bíblico).
-
-## Verificação
+## Verificação final
 1. `bunx tsc --noEmit` limpo.
-2. Smoke manual no `/consideracoes-campo`: escrever "Mateus 6:33" com UI em PT → título mostra "Mateus 6:33".
-3. Trocar idioma da UI para EN → recarregar popup → título mostra "Matthew 6:33".
-4. Trocar para ES → "Mateo 6:33".
-5. Confirmar que esboço (modo onde já funcionava) continua coerente.
+2. Smoke manual: ancião com telefone `(71) 98342-0366` cadastrado consegue logar digitando `+5571983420366`, `71 98342-0366` ou `71983420366`. Super continua logando por email/circuito. Ancião abre "Meu perfil", vê e altera seu username; tentativa de username já tomado mostra "já está em uso".
 
-## Detalhes técnicos
+## Sobre gerar novo APK
+Sim — a alteração toca **somente código web (TS/TSX) e i18n**, nenhuma config de Capacitor/Android. Após validar no preview, o APK precisa ser regerado com `bun run android:release:apk` para que o ancião acesse o novo card no perfil e o login por telefone no app instalado. **Não é necessário** mudar `versionCode`/`versionName`, signing key, manifesto, ícones nem `capacitor.config.ts`.
 
-### Tamanho do diff
-- `bible-canon.ts`: adicionar 66 entradas `names` (~80 linhas, refatoração estrutural) + função helper (~10 linhas).
-- `BibleVersePopover.tsx`: 2 linhas (import + cálculo) + 1 char no JSX.
-- Outros consumidores: 0–3 trocas pontuais conforme auditoria.
-
-### Risco
-Baixo. Mudança puramente de apresentação; lógica de detecção e armazenamento intactas. Fallback garante que livros não mapeados (não deve haver — são os 66 canônicos) continuem exibindo o nome do EPUB.
+## Fora de escopo
+- "Esqueci a senha" por SMS (exige provider; o usuário não pediu).
+- Cadastro inicial — formulários já coletam telefone.
+- Bíblia / TNM / modelos — intocados (memória do projeto: zero Bíblia embutida — não afetado).

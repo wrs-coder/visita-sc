@@ -440,15 +440,33 @@ export const resolveLoginIdentifier = createServerFn({ method: "POST" })
       return { ok: false as const, error: "E-mail não cadastrado." };
     }
 
-    // 2) Username match (works for any user)
+    // 2) Phone match — qualquer entrada sem "@" cujos dígitos (após remover
+    // não-dígitos) totalizem 8+ é candidata a telefone. Aceita "+55 71 98342-0366",
+    // "71 98342-0366", "71983420366", etc. — o cadastro já normaliza `phone` em dígitos.
+    const digits = id.replace(/\D/g, "");
+    if (digits.length >= 8) {
+      const { data: byPhone } = await supabaseAdmin
+        .from("profiles").select("id,email,username,phone").eq("phone", digits).maybeSingle();
+      if (byPhone) {
+        if (byPhone.email && !SYNTHETIC_EMAIL_REGEX.test(byPhone.email)) {
+          return { ok: true as const, email: byPhone.email };
+        }
+        if (byPhone.username) return { ok: true as const, email: syntheticEmailFromUsername(byPhone.username) };
+        if (byPhone.email) return { ok: true as const, email: byPhone.email };
+      }
+    }
+
+    // 3) Username match (works for any user)
     const { data: byUser } = await supabaseAdmin
       .from("profiles").select("id,email,username").ilike("username", id).maybeSingle();
     if (byUser) {
-      if (byUser.email) return { ok: true as const, email: byUser.email };
+      if (byUser.email && !SYNTHETIC_EMAIL_REGEX.test(byUser.email)) return { ok: true as const, email: byUser.email };
       if (byUser.username) return { ok: true as const, email: syntheticEmailFromUsername(byUser.username) };
+      if (byUser.email) return { ok: true as const, email: byUser.email };
     }
 
-    // 3) Circuit identifier (super only)
+
+    // 4) Circuit identifier (super only)
     const { data: byCircuit } = await supabaseAdmin
       .from("profiles").select("id,email,username").ilike("circuit", id).maybeSingle();
     if (byCircuit) {
