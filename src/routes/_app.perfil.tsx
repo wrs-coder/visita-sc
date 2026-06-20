@@ -297,6 +297,38 @@ function Page() {
         </CardContent>
       </Card>
 
+      {role === "elder" && (
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserCircle2 className="h-4 w-4 text-primary" /> {t("profile.usernameSection.title")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={saveUsername} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="username">{t("profile.usernameSection.label")}</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, "").slice(0, 30))}
+                  placeholder={t("profile.usernameSection.placeholder")}
+                  maxLength={30}
+                  minLength={3}
+                  autoComplete="username"
+                  disabled={!usernameLoaded}
+                />
+                <p className="text-xs text-muted-foreground">{t("profile.usernameSection.help")}</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400">{t("profile.usernameSection.loginNote")}</p>
+              </div>
+              <Button type="submit" disabled={busyUsername || !usernameLoaded}>{t("profile.usernameSection.save")}</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+
+
 
       {role === "superintendent" && (
         <Card className="shadow-card">
