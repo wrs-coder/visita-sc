@@ -114,6 +114,17 @@
     "shareOpened": "Diálogo de compartir abierto",
     "backupDownloaded": "Respaldo descargado",
     "failGeneric": "Error",
+    "usernameSection": {
+      "title": "Nombre de usuario",
+      "label": "Nombre de usuario",
+      "placeholder": "ej.: juan_perez",
+      "help": "Letras minúsculas, números, _ . o -. Entre 3 y 30 caracteres.",
+      "save": "Guardar nombre de usuario",
+      "updated": "Nombre de usuario actualizado",
+      "taken": "Este nombre de usuario ya está en uso.",
+      "invalid": "Usa de 3 a 30 caracteres: solo letras minúsculas, números, _ . o -.",
+      "loginNote": "Usa este nombre para iniciar sesión. Tras cambiarlo, el anterior deja de funcionar."
+    },
     "wifeAccess": {
       "title": "Acceso de la esposa",
       "description": "Crea un código exclusivo para que tu esposa abra el panel (solo lectura). Podrá alternar entre las congregaciones activas y volver a la semana actual en cualquier momento. Su sesión queda guardada en su dispositivo.",
