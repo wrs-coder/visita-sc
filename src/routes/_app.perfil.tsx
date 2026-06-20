@@ -72,6 +72,40 @@ function Page() {
     return () => { cancelled = true; };
   }, [user, role]);
 
+  // Carrega username apenas para anciões (super não usa username sintético).
+  useEffect(() => {
+    if (!user || role !== "elder") return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("username").eq("id", user.id).maybeSingle();
+      if (cancelled) return;
+      setUsername(((data as { username: string | null } | null)?.username) ?? "");
+      setUsernameLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [user, role]);
+
+  const saveUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    const value = username.trim().toLowerCase();
+    if (!/^[a-z0-9_.-]{3,30}$/.test(value)) {
+      toast.error(t("profile.usernameSection.invalid"));
+      return;
+    }
+    setBusyUsername(true);
+    const { error } = await supabase.from("profiles").update({ username: value }).eq("id", user.id);
+    setBusyUsername(false);
+    if (error) {
+      if (error.code === "23505") { toast.error(t("profile.usernameSection.taken")); return; }
+      toast.error(t("profile.saveError"), { description: error.message });
+      return;
+    }
+    setUsername(value);
+    toast.success(t("profile.usernameSection.updated"));
+    refresh();
+  };
+
   const generateWifeCode = () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let s = "";
