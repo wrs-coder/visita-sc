@@ -55,6 +55,9 @@ function Page() {
   const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
   const [wifeCode, setWifeCode] = useState("");
   const [busyWife, setBusyWife] = useState(false);
+  const [username, setUsername] = useState("");
+  const [usernameLoaded, setUsernameLoaded] = useState(false);
+  const [busyUsername, setBusyUsername] = useState(false);
 
   const refreshActiveBible = async () => setActiveBible(await getActiveLibrary());
   useEffect(() => { refreshActiveBible(); }, []);
