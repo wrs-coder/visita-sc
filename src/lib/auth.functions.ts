@@ -466,7 +466,7 @@ export const resolveLoginIdentifier = createServerFn({ method: "POST" })
     }
 
 
-    // 3) Circuit identifier (super only)
+    // 4) Circuit identifier (super only)
     const { data: byCircuit } = await supabaseAdmin
       .from("profiles").select("id,email,username").ilike("circuit", id).maybeSingle();
     if (byCircuit) {
