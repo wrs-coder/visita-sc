@@ -42,9 +42,10 @@
   "login": {
     "appTitle": "Circuit Overseer's Visit",
     "signIn": "Sign in",
-    "identifierHelp": "Username, e-mail or circuit ID",
-    "identifierLabel": "Username / E-mail / Circuit ID",
-    "identifierPlaceholder": "e.g.: john_doe, john@email.com or AGO-12",
+    "identifierHelp": "Username, e-mail, phone or circuit ID",
+    "identifierLabel": "Username / E-mail / Phone / Circuit ID",
+    "identifierPlaceholder": "e.g.: john_doe, john@email.com, +55 71 98342-0366 or AGO-12",
+    "phoneExample": "Phone: enter with country and area code, e.g. +55 71 98342-0366 (spaces, parentheses and dashes are allowed).",
     "password": "Password",
     "signingIn": "Signing in...",
     "welcome": "Welcome!",
