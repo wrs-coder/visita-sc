@@ -1,53 +1,65 @@
-Atuando como engenheiro sênior, com leitura completa do `instructions.md` (regras 1, 7, 8, 10, 11). Resumo do que será feito e como cada regra é respeitada.
+## Objetivo
 
-## Missão 01 — Campo "Nome de Usuário" no perfil do ancião
+Garantir que os anciãos visitantes (acesso "Corpo de Anciãos / ESC") vejam, de forma organizada e exportável, **todas** as abas da Semana da Visita disponíveis no app do superintendente:
 
-**Onde**: `src/routes/_app.perfil.tsx`, novo card entre "Dados Pessoais" e "E-mail", renderizado **somente quando `role === "elder"`** (super não usa username sintético).
+1. Cronograma
+2. Estudos e Revisitas
+3. Reuniões de Campo
+4. **Reuniões e Discursos** (faltando hoje como aba dedicada)
+5. Refeições
+6. Transporte
+7. **Pastoreios, Recomendações e Outros** (já existe como "Anciãos", incluir no export)
+8. Checklist
 
-**Comportamento**:
-- Carrega `profiles.username` do usuário atual via `supabase.from("profiles").select("username").eq("id", user.id)`.
-- Input com normalização local: `value.toLowerCase().replace(/[^a-z0-9_.-]/g, "").slice(0, 30)`.
-- Botão "Salvar nome de usuário" valida regex `/^[a-z0-9_.-]{3,30}$/` antes do envio.
-- `supabase.from("profiles").update({ username }).eq("id", user.id)` — mesma RLS já em vigor (`auth.uid() = id`), mesma técnica que já está em uso para `full_name`, `circuit` e `wife_invite_code` no mesmo arquivo. **Não é dado compartilhado entre papéis** (regra 7 só exige serverFn para escrita compartilhada).
-- Trata `error.code === "23505"` (unique violation já existente na coluna `username`) com toast traduzido "Este nome de usuário já está em uso."
-- Em sucesso: toast "Nome de usuário atualizado" + `refresh()` do contexto de auth + nota persistente: "Use este nome para entrar no app."
+Escopo: apenas o painel do convidado (`src/routes/visitante.painel.tsx`). Nenhuma mudança em schema, RLS, server functions ou `getGuestSnapshot` — os dados de midweek/weekend/pioneer/elders e `templateExtras` já chegam no snapshot atual; só não há aba e nem entradas no diálogo de exportação.
 
-**Sem migration** — coluna `username` e seu índice único já existem (usados por `registerElderByUsername` e `resolveLoginIdentifier`).
+## Mudanças
 
-## Missão 02 — Login por telefone
+### 1. Nova aba "Reuniões e Discursos" (`value="reunioes"`)
 
-### Servidor — `src/lib/auth.functions.ts`, `resolveLoginIdentifier.handler`
-Inserir, **entre o bloco "Direct email match" e "Username match"**, um novo bloco:
+- Adicionar `<TabsTrigger value="reunioes">` com ícone `Mic` (já importado), ao lado de "Anciãos". Apenas no modo ancião (`!snap.wifeMode`). Atualizar `grid-cols-8` → `grid-cols-9` no modo ancião; modo esposa permanece `grid-cols-7`.
+- `<TabsContent value="reunioes">` renderiza, em cards consistentes com o restante do painel:
+  - **Reunião de meio de semana** (`snap.midweek`) — presidente, tema do discurso de serviço, oração final, com `meeting_at` quando houver. Bloco `TemplateExtraBlock` com `templateExtras.midweek.observations`.
+  - **Reunião de fim de semana** (`snap.weekend`) — tema do discurso público, título, com `meeting_at`. Bloco `TemplateExtraBlock` com cântico inicial/final + observações do `templateExtras.weekend`.
+  - **Reunião com pioneiros / Reunião do superintendente com pioneiros** (`snap.pioneer`) — tema, local, oração inicial/final, horários. `TemplateExtraBlock` com `templateExtras.pioneer.observations`.
+  - **Reunião com anciãos e servos ministeriais** (`snap.elders`) — tema, oração inicial/final, local, `meeting_at`. `TemplateExtraBlock` com `templateExtras.elders.observations`.
+- Cada subseção tem um cabeçalho com ícone e título; usa o mesmo padrão visual ("premium" = card + chip de data/hora + linha discreta de observação) já adotado nas abas Estudos / Campo.
 
-- Se `id` não contém `@` e `id.replace(/\D/g, "").length >= 8`, consulta `profiles` por `phone = digits`.
-- Prioridade de retorno: `email` real (não sintético) → `syntheticEmailFromUsername(username)` → fallback `email`.
-- Se não achar, **continua** o fluxo (username → circuito). Isso preserva o caso atual de username puramente numérico, embora colisões reais sejam improváveis (username exige `[a-z0-9_.-]{3,30}` que poderia ser só dígitos, mas o lookup por telefone tem prioridade — comportamento aceitável e documentado).
+### 2. Diálogo "Compartilhar" — incluir as novas seções
 
-### Cliente — `src/components/auth/LoginForm.tsx`
-- Sem máscara no input — o servidor normaliza com `replace(/\D/g, "")`, então o usuário pode digitar com `+`, espaço, `()` e `-`.
-- Atualizar os textos i18n `login.identifierHelp`, `login.identifierLabel` e `login.identifierPlaceholder` para incluir telefone com exemplo `+55 71 98342-0366` (PT/EN/ES).
+- Estender `SectionKey` para `"cron" | "estudos" | "campo" | "reunioes" | "ref" | "trans" | "pastoreios" | "check"`.
+- `availableSections`: incluir `reunioes` sempre; incluir `pastoreios` e `check` apenas quando `!snap.wifeMode`.
+- `SECTION_LABELS`: adicionar `reunioes` = "Reuniões e Discursos" e `pastoreios` = "Pastoreios, Recomendações e Outros" (com i18n PT/EN/ES em `guest.sections.*`).
+- `selected` default: todas marcadas.
+- `SharePreview`: novos blocos renderizando midweek/weekend/pioneer/elders e o programa de anciãos (reaproveitar `ElderProgramReadOnly` em layout de impressão simples — sem interatividade) quando os respectivos flags estiverem ativos.
+- `shareWhatsapp`: novos parágrafos `*Reuniões e Discursos*` e `*Pastoreios, Recomendações e Outros*` com bullets por evento.
+- Export PNG/PDF: nenhuma mudança de mecânica — já captura o conteúdo de `previewRef` via `html-to-image` + `jsPDF`. Como o conteúdo cresce, manter o `pdf` em `a4` retrato e o algoritmo de proporção atual (já dimensiona corretamente conteúdos longos).
 
-### Sem migration / sem mudança em RLS
-A coluna `profiles.phone` já existe, já é gravada em `registerElderByUsername` e `registerElderByPhone`, e já é única (verificada no upsert). `resolveLoginIdentifier` roda com `supabaseAdmin` (sem RLS), igual aos demais branches.
+### 3. i18n
 
-## Conformidade com `instructions.md`
+Adicionar nas três línguas (`pt.json`, `en.json`, `es.json`):
 
-- **§1, §5** — não toca em roles nem em telas do super; super continua logando por email/circuit.
-- **§3, §7** — sem nova tabela, sem nova policy, sem CHECK volátil, sem schema reservado tocado. UPDATE de `profiles.username` cai sob a RLS existente (`auth.uid() = id`).
-- **§8** — toda lógica em `createServerFn` existente; sem nova Edge Function; sem `process.env` em escopo de módulo; sem mudar `start.ts`.
-- **§9** — sem nova query; após salvar username chamamos `refresh()` do `useAuth` (já atualiza o snapshot local incluindo o cache offline em `PROFILE_CACHE_KEY`).
-- **§10** — chaves novas em `pt.json`, `en.json`, `es.json` na mesma alteração, mesma estrutura (`profile.usernameSection.{title,label,help,save,placeholder,taken,updated,loginNote}` e atualização dos 3 `login.identifier*`).
-- **§11** — build `bunx tsc --noEmit` antes de fechar.
-- **§12** — não bloqueia tela para super; não mexe em modelos; sem hardcode de cores.
+- `guest.sections.reunioes` ("Reuniões e Discursos" / "Meetings and Talks" / "Reuniones y Discursos")
+- `guest.sections.pastoreios` ("Pastoreios, Recomendações e Outros" / etc.)
+- `guest.tabs.meetings` ("Reuniões" / "Meetings" / "Reuniones") — rótulo curto da aba (md:+).
+- Subtítulos da aba: `guest.meetingsTalks.midweek`, `.weekend`, `.pioneer`, `.elders`.
 
-## Verificação final
-1. `bunx tsc --noEmit` limpo.
-2. Smoke manual: ancião com telefone `(71) 98342-0366` cadastrado consegue logar digitando `+5571983420366`, `71 98342-0366` ou `71983420366`. Super continua logando por email/circuito. Ancião abre "Meu perfil", vê e altera seu username; tentativa de username já tomado mostra "já está em uso".
+## Garantias de integridade (Eng. Sr.)
 
-## Sobre gerar novo APK
-Sim — a alteração toca **somente código web (TS/TSX) e i18n**, nenhuma config de Capacitor/Android. Após validar no preview, o APK precisa ser regerado com `bun run android:release:apk` para que o ancião acesse o novo card no perfil e o login por telefone no app instalado. **Não é necessário** mudar `versionCode`/`versionName`, signing key, manifesto, ícones nem `capacitor.config.ts`.
+- **Segurança/RLS/DB**: nenhuma migração, nenhuma alteração de policies, nenhum novo server function. Toda mudança é de UI a partir de dados que o `getGuestSnapshot` já entrega (modo somente leitura para o convidado).
+- **Modo "Esposa" inalterado**: a aba "Reuniões e Discursos" só aparece quando `!snap.wifeMode`. A grade vira `grid-cols-9` no modo ancião e segue `grid-cols-7` no modo esposa.
+- **Não quebrar exportações existentes**: chaves antigas permanecem; apenas adicionamos novas e o `SharePreview` continua tolerante a `selected[k] === undefined` para cache antigo (default true).
+- **Sem novos `console.log`, `any`, `as` arriscado**. Tipos novos derivados do `Snapshot` já tipado.
+- **Build check**: rodar `bunx tsc --noEmit` ao final.
 
-## Fora de escopo
-- "Esqueci a senha" por SMS (exige provider; o usuário não pediu).
-- Cadastro inicial — formulários já coletam telefone.
-- Bíblia / TNM / modelos — intocados (memória do projeto: zero Bíblia embutida — não afetado).
+## Validação manual
+
+1. Logar como ancião visitante via código da congregação.
+2. Ver as 9 abas (Hoje, Cronograma, Estudos, Reuniões de Campo, Refeições, Transporte, **Reuniões e Discursos** (nova), Anciãos, Checklist).
+3. Conferir que cada bloco da nova aba lista corretamente os dados existentes e o `TemplateExtraBlock` quando há observação do modelo.
+4. Abrir "Compartilhar", marcar todas as seções → conferir prévia com todos os blocos → exportar PNG e PDF → conferir que o arquivo contém todas as seções → enviar via WhatsApp e conferir o texto formatado.
+5. Logar como esposa: confirmar que a aba "Reuniões e Discursos" NÃO aparece e que o diálogo de Compartilhar não oferece `reunioes`/`pastoreios`/`check`.
+
+## Sobre novo APK
+
+Apenas alterações em código web (TSX + i18n). **Não é necessário gerar novo APK** se o app Android já está em produção apontando para a build web atualizada (o WebView carrega a nova versão automaticamente após publish). Se a estratégia for empacotar com Capacitor sem update OTA, basta `bunx cap sync android` + rebuild — nenhuma mudança em `AndroidManifest`, permissões ou `versionCode/Name`.

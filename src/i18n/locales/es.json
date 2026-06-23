@@ -1143,15 +1143,28 @@
       "field": "Campo",
       "meals": "Comidas",
       "transport": "Transporte",
+      "meetings": "Reuniones",
+      "pastoreios": "Ancianos",
       "checklist": "Lista"
     },
     "sections": {
       "cron": "Programa",
       "estudos": "Estudios / Revisitas",
       "campo": "Reuniones para el servicio",
+      "reunioes": "Reuniones y Discursos",
       "ref": "Comidas",
       "trans": "Transporte",
+      "pastoreios": "Pastoreo, Recomendaciones y Otros",
       "check": "Lista de verificación"
+    },
+    "meetingsTalks": {
+      "midweek": "Reunión de entresemana",
+      "weekend": "Reunión de fin de semana",
+      "pioneer": "Reunión con precursores",
+      "elders": "Reunión con ancianos y SM",
+      "openingSong": "Cántico inicial",
+      "closingSong": "Cántico final",
+      "empty": "Sin reuniones registradas."
     },
     "empty": {
       "schedule": "Sin eventos.",

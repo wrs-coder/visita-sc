@@ -91,7 +91,17 @@ function groupTransport(rows: TransportRow[]): Array<{ key: string; rows: Transp
   return Array.from(map.entries()).map(([key, rs]) => ({ key, rows: rs }));
 }
 
-type SectionKey = "cron" | "estudos" | "campo" | "ref" | "trans" | "check";
+type SectionKey = "cron" | "estudos" | "campo" | "reunioes" | "ref" | "trans" | "pastoreios" | "check";
+
+const ELDER_UNLOCK_PREFIX = "elderTabUnlocked:";
+function isElderUnlocked(congregationId: string | undefined): boolean {
+  if (!congregationId || typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem(ELDER_UNLOCK_PREFIX + congregationId) === "1";
+  } catch {
+    return false;
+  }
+}
 
 function fmtTime(t: string | null) { return t ? t.slice(0, 5) : "—"; }
 
@@ -111,8 +121,10 @@ function Page() {
     cron: t("guest.sections.cron"),
     estudos: t("guest.sections.estudos"),
     campo: t("guest.sections.campo"),
+    reunioes: t("guest.sections.reunioes"),
     ref: t("guest.sections.ref"),
     trans: t("guest.sections.trans"),
+    pastoreios: t("guest.sections.pastoreios"),
     check: t("guest.sections.check"),
   }), [t]);
 
@@ -171,12 +183,15 @@ function Page() {
   const [shareOpen, setShareOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const availableSections = useMemo<SectionKey[]>(() => {
-    const all: SectionKey[] = ["cron", "estudos", "campo", "ref", "trans"];
-    if (snap && !snap.wifeMode) all.push("check");
+    const all: SectionKey[] = ["cron", "estudos", "campo", "reunioes", "ref", "trans"];
+    if (snap && !snap.wifeMode) {
+      if (isElderUnlocked(snap.congregation.id)) all.push("pastoreios");
+      all.push("check");
+    }
     return all;
   }, [snap]);
   const [selected, setSelected] = useState<Record<SectionKey, boolean>>({
-    cron: true, estudos: true, campo: true, ref: true, trans: true, check: true,
+    cron: true, estudos: true, campo: true, reunioes: true, ref: true, trans: true, pastoreios: true, check: true,
   });
   const toggle = (k: SectionKey) => setSelected((s) => ({ ...s, [k]: !s[k] }));
 
@@ -247,6 +262,37 @@ function Page() {
       L.push("", `*${t("guest.sections.campo")}*`);
       snap.fieldMeetings.forEach((f) => L.push(`• ${fmtDate(f.event_date)} ${f.period} ${fmtTime(f.meeting_time)} — ${f.modality}${f.territory_location ? ` (${f.territory_location})` : ""}${f.auxiliary_leaders ? ` | ${t("guest.labels.auxLeaders")}: ${f.auxiliary_leaders}` : ""}`));
     }
+    if (selected.reunioes && (snap.midweek.length || snap.weekend.length || snap.pioneer.length || snap.elders.length)) {
+      L.push("", `*${t("guest.sections.reunioes")}*`);
+      snap.midweek.forEach((m) => {
+        const parts = [t("guest.meetingsTalks.midweek")];
+        if (m.meeting_at) parts.push(format(parseISO(m.meeting_at), "dd/MM HH:mm"));
+        if (m.chairman) parts.push(`${t("guest.labels.chairman")}: ${m.chairman}`);
+        if (m.service_talk_theme) parts.push(`${t("guest.labels.serviceTalk")}: ${m.service_talk_theme}`);
+        L.push(`• ${parts.join(" — ")}`);
+      });
+      snap.weekend.forEach((w) => {
+        const parts = [t("guest.meetingsTalks.weekend")];
+        if (w.meeting_at) parts.push(format(parseISO(w.meeting_at), "dd/MM HH:mm"));
+        if (w.public_talk_theme) parts.push(`${t("guest.labels.publicTalk")}: ${w.public_talk_theme}`);
+        if (w.talk_theme_title) parts.push(w.talk_theme_title);
+        L.push(`• ${parts.join(" — ")}`);
+      });
+      snap.pioneer.forEach((p) => {
+        const parts = [t("guest.meetingsTalks.pioneer")];
+        if (p.meeting_at) parts.push(format(parseISO(p.meeting_at), "dd/MM HH:mm"));
+        if (p.location) parts.push(p.location);
+        if (p.theme) parts.push(`${t("guest.labels.theme")}: ${p.theme}`);
+        L.push(`• ${parts.join(" — ")}`);
+      });
+      snap.elders.forEach((e) => {
+        const parts = [t("guest.meetingsTalks.elders")];
+        if (e.meeting_at) parts.push(format(parseISO(e.meeting_at), "dd/MM HH:mm"));
+        if (e.location) parts.push(e.location);
+        if (e.theme) parts.push(`${t("guest.labels.theme")}: ${e.theme}`);
+        L.push(`• ${parts.join(" — ")}`);
+      });
+    }
     if (selected.ref && (snap.meals.length || snap.mealDayNotes.length)) {
       L.push("", `*${t("guest.sections.ref")}*`);
       snap.mealDayNotes.forEach((n) => L.push(`• ${fmtDate(n.meal_date)}: ${n.notes}`));
@@ -255,6 +301,28 @@ function Page() {
     if (selected.trans && snap.transport.length) {
       L.push("", `*${t("guest.sections.trans")}*`);
       snap.transport.forEach((tp) => L.push(`• ${tp.event_date ? fmtDate(tp.event_date) : t("guest.labels.noDate")} — ${tp.driver_name}${tp.contact_phone ? ` (${tp.contact_phone})` : ""}`));
+    }
+    if (selected.pastoreios && !snap.wifeMode && snap.elderProgram && isElderUnlocked(snap.congregation.id)) {
+      const ep = snap.elderProgram;
+      const groups: Array<[string, Array<{ slot_label: string | null; family_name?: string | null; person_name?: string | null; full_name?: string | null; subject?: string | null }>]> = [
+        [ep.sections.pastoral, ep.pastoral],
+        [ep.sections.encouragement, ep.encouragement],
+        [ep.sections.recommendations, ep.recommendations],
+        [ep.sections.local, ep.local],
+      ];
+      const hasAny = groups.some(([, list]) => list.length > 0);
+      if (hasAny) {
+        L.push("", `*${t("guest.sections.pastoreios")}*`);
+        for (const [title, list] of groups) {
+          if (!list.length) continue;
+          L.push(`_${title}_`);
+          list.forEach((it) => {
+            const label = it.slot_label ?? "";
+            const name = it.family_name ?? it.person_name ?? it.full_name ?? it.subject ?? "—";
+            L.push(`• ${label ? `${label}: ` : ""}${name}`);
+          });
+        }
+      }
     }
     if (selected.check && snap.checklist.length && !snap.wifeMode) {
       L.push("", `*${t("guest.sections.check")}*`);
@@ -382,7 +450,7 @@ function Page() {
             </CardContent></Card>
 
             <Tabs value={currentTab} onValueChange={setCurrentTab}>
-              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-7" : "grid-cols-8"}`}>
+              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-7" : "grid-cols-9"}`}>
                 <TabsTrigger value="hoje"><Sun className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.today")}</span></TabsTrigger>
                 <TabsTrigger value="cron"><CalendarDays className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.schedule")}</span></TabsTrigger>
                 <TabsTrigger value="estudos"><Users className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.studies")}</span></TabsTrigger>
@@ -393,7 +461,8 @@ function Page() {
                   <TabsTrigger value="couple"><Heart className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.couple")}</span></TabsTrigger>
                 ) : (
                   <>
-                    <TabsTrigger value="pastoreios"><BookOpen className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Anciãos</span></TabsTrigger>
+                    <TabsTrigger value="reunioes"><Mic className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.meetings")}</span></TabsTrigger>
+                    <TabsTrigger value="pastoreios"><BookOpen className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.pastoreios")}</span></TabsTrigger>
                     <TabsTrigger value="check"><ListChecks className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.checklist")}</span></TabsTrigger>
                   </>
                 )}
@@ -552,6 +621,12 @@ function Page() {
                     );
                   })}
               </TabsContent>
+
+              {!snap.wifeMode && (
+                <TabsContent value="reunioes" className="space-y-4 mt-4">
+                  <MeetingsTalksGuestPanel snap={snap} fmtDate={fmtDate} />
+                </TabsContent>
+              )}
 
               {!snap.wifeMode && (
                 <TabsContent value="pastoreios" className="space-y-3 mt-4">
@@ -1002,6 +1077,47 @@ function SharePreview({ snap, selected, fmtDate, mealLabel }: { snap: Snapshot; 
         </Section>
       )}
 
+      {selected.reunioes && (
+        <Section
+          title={t("guest.sections.reunioes")}
+          empty={snap.midweek.length + snap.weekend.length + snap.pioneer.length + snap.elders.length === 0}
+        >
+          {snap.midweek.map((m) => (
+            <div key={`mw-${m.id}`} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">{t("guest.meetingsTalks.midweek")}{m.meeting_at ? ` • ${format(parseISO(m.meeting_at), "dd/MM HH:mm")}` : ""}</div>
+              {m.chairman && <div className="text-xs">{t("guest.labels.chairman")}: {m.chairman}</div>}
+              {m.service_talk_theme && <div className="text-xs">{t("guest.labels.serviceTalk")}: {m.service_talk_theme}</div>}
+              {m.closing_prayer && <div className="text-xs">{t("guest.labels.closingPrayer")}: {m.closing_prayer}</div>}
+            </div>
+          ))}
+          {snap.weekend.map((w) => (
+            <div key={`we-${w.id}`} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">{t("guest.meetingsTalks.weekend")}{w.meeting_at ? ` • ${format(parseISO(w.meeting_at), "dd/MM HH:mm")}` : ""}</div>
+              {w.public_talk_theme && <div className="text-xs">{t("guest.labels.publicTalk")}: {w.public_talk_theme}</div>}
+              {w.talk_theme_title && <div className="text-xs">{w.talk_theme_title}</div>}
+            </div>
+          ))}
+          {snap.pioneer.map((p) => (
+            <div key={`pi-${p.id}`} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">{t("guest.meetingsTalks.pioneer")}{p.meeting_at ? ` • ${format(parseISO(p.meeting_at), "dd/MM HH:mm")}` : ""}</div>
+              {p.location && <div className="text-xs text-gray-600">📍 {p.location}</div>}
+              {p.theme && <div className="text-xs">{t("guest.labels.theme")}: {p.theme}</div>}
+              {p.opening_prayer && <div className="text-xs">{t("guest.labels.openingPrayer")}: {p.opening_prayer}</div>}
+              {p.closing_prayer && <div className="text-xs">{t("guest.labels.closingPrayer")}: {p.closing_prayer}</div>}
+            </div>
+          ))}
+          {snap.elders.map((e) => (
+            <div key={`el-${e.id}`} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">{t("guest.meetingsTalks.elders")}{e.meeting_at ? ` • ${format(parseISO(e.meeting_at), "dd/MM HH:mm")}` : ""}</div>
+              {e.location && <div className="text-xs text-gray-600">📍 {e.location}</div>}
+              {e.theme && <div className="text-xs">{t("guest.labels.theme")}: {e.theme}</div>}
+              {e.opening_prayer && <div className="text-xs">{t("guest.labels.openingPrayer")}: {e.opening_prayer}</div>}
+              {e.closing_prayer && <div className="text-xs">{t("guest.labels.closingPrayer")}: {e.closing_prayer}</div>}
+            </div>
+          ))}
+        </Section>
+      )}
+
       {selected.ref && (
         <Section title={t("guest.sections.ref")} empty={mealDates.length === 0}>
           {mealDates.map((date) => {
@@ -1057,6 +1173,38 @@ function SharePreview({ snap, selected, fmtDate, mealLabel }: { snap: Snapshot; 
               </div>
             );
           })}
+        </Section>
+      )}
+
+      {selected.pastoreios && !snap.wifeMode && snap.elderProgram && isElderUnlocked(snap.congregation.id) && (
+        <Section
+          title={t("guest.sections.pastoreios")}
+          empty={
+            snap.elderProgram.pastoral.length +
+              snap.elderProgram.encouragement.length +
+              snap.elderProgram.recommendations.length +
+              snap.elderProgram.local.length === 0
+          }
+        >
+          {([
+            ["pastoral", snap.elderProgram.sections.pastoral, snap.elderProgram.pastoral],
+            ["encouragement", snap.elderProgram.sections.encouragement, snap.elderProgram.encouragement],
+            ["recommendations", snap.elderProgram.sections.recommendations, snap.elderProgram.recommendations],
+            ["local", snap.elderProgram.sections.local, snap.elderProgram.local],
+          ] as const).map(([key, title, items]) => items.length === 0 ? null : (
+            <div key={key} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-semibold text-xs uppercase tracking-wide text-gray-700">{title}</div>
+              {items.map((it) => {
+                const name = it.family_name ?? it.person_name ?? it.full_name ?? it.subject ?? "—";
+                return (
+                  <div key={it.id} className="text-xs ml-2">
+                    {it.slot_label ? <span className="text-gray-500">{it.slot_label}: </span> : null}
+                    {name}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
         </Section>
       )}
 
@@ -1209,6 +1357,150 @@ function WifeCouplePanel({ code }: { code: string }) {
         </Card>
       ))}
     </div>
+  );
+}
+
+function MeetingsTalksGuestPanel({ snap, fmtDate }: { snap: Snapshot; fmtDate: (d: string) => string }) {
+  const { t } = useTranslation();
+  const fmtIso = (iso: string | null | undefined) =>
+    iso ? format(parseISO(iso), "dd/MM HH:mm") : null;
+
+  const sections: Array<{ key: string; title: string; icon: React.ReactNode; empty: boolean; content: React.ReactNode }> = [
+    {
+      key: "midweek",
+      title: t("guest.meetingsTalks.midweek"),
+      icon: <Mic className="h-4 w-4 text-primary" />,
+      empty: snap.midweek.length === 0,
+      content: (
+        <>
+          <TemplateExtraBlock label={t("guest.meetingsTalks.midweek")} value={snap.templateExtras?.midweek?.observations} variant="blue" />
+          {snap.midweek.map((m) => {
+            const when = fmtIso(m.meeting_at);
+            return (
+              <Card key={m.id}><CardContent className="p-3 space-y-1">
+                {when && <div className="text-xs font-semibold text-primary">{when}</div>}
+                {m.chairman && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.chairman")}: </span>{m.chairman}</div>}
+                {m.service_talk_theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.serviceTalk")}: </span>{m.service_talk_theme}</div>}
+                {m.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{m.closing_prayer}</div>}
+              </CardContent></Card>
+            );
+          })}
+        </>
+      ),
+    },
+    {
+      key: "weekend",
+      title: t("guest.meetingsTalks.weekend"),
+      icon: <Mic className="h-4 w-4 text-primary" />,
+      empty: snap.weekend.length === 0,
+      content: (
+        <>
+          {(snap.templateExtras?.weekend?.opening_song || snap.templateExtras?.weekend?.closing_song) && (
+            <Card><CardContent className="p-3 space-y-1 text-xs">
+              {snap.templateExtras?.weekend?.opening_song && (
+                <div><span className="text-muted-foreground">{t("guest.meetingsTalks.openingSong")}: </span>{snap.templateExtras.weekend.opening_song}</div>
+              )}
+              {snap.templateExtras?.weekend?.closing_song && (
+                <div><span className="text-muted-foreground">{t("guest.meetingsTalks.closingSong")}: </span>{snap.templateExtras.weekend.closing_song}</div>
+              )}
+            </CardContent></Card>
+          )}
+          <TemplateExtraBlock label={t("guest.meetingsTalks.weekend")} value={snap.templateExtras?.weekend?.observations} variant="blue" />
+          {snap.weekend.map((w) => {
+            const when = fmtIso(w.meeting_at);
+            return (
+              <Card key={w.id}><CardContent className="p-3 space-y-1">
+                {when && <div className="text-xs font-semibold text-primary">{when}</div>}
+                {w.public_talk_theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.publicTalk")}: </span>{w.public_talk_theme}</div>}
+                {w.talk_theme_title && <div className="text-xs">{w.talk_theme_title}</div>}
+              </CardContent></Card>
+            );
+          })}
+        </>
+      ),
+    },
+    {
+      key: "pioneer",
+      title: t("guest.meetingsTalks.pioneer"),
+      icon: <Users className="h-4 w-4 text-primary" />,
+      empty: snap.pioneer.length === 0,
+      content: (
+        <>
+          <TemplateExtraBlock label={t("guest.meetingsTalks.pioneer")} value={snap.templateExtras?.pioneer?.observations} variant="blue" />
+          {snap.pioneer.map((p) => {
+            const when = fmtIso(p.meeting_at) ?? fmtIso(p.super_meeting_at);
+            return (
+              <Card key={p.id}><CardContent className="p-3 space-y-1">
+                {when && <div className="text-xs font-semibold text-primary">{when}</div>}
+                {p.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{p.location}</div>}
+                {p.theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.theme")}: </span>{p.theme}</div>}
+                {p.opening_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.openingPrayer")}: </span>{p.opening_prayer}</div>}
+                {p.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{p.closing_prayer}</div>}
+              </CardContent></Card>
+            );
+          })}
+        </>
+      ),
+    },
+    {
+      key: "elders",
+      title: t("guest.meetingsTalks.elders"),
+      icon: <BookOpen className="h-4 w-4 text-primary" />,
+      empty: snap.elders.length === 0,
+      content: (
+        <>
+          <TemplateExtraBlock label={t("guest.meetingsTalks.elders")} value={snap.templateExtras?.elders?.observations} variant="blue" />
+          {snap.elders.map((e) => {
+            const when = fmtIso(e.meeting_at);
+            return (
+              <Card key={e.id}><CardContent className="p-3 space-y-1">
+                {when && <div className="text-xs font-semibold text-primary">{when}</div>}
+                {e.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{e.location}</div>}
+                {e.theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.theme")}: </span>{e.theme}</div>}
+                {e.opening_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.openingPrayer")}: </span>{e.opening_prayer}</div>}
+                {e.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{e.closing_prayer}</div>}
+              </CardContent></Card>
+            );
+          })}
+        </>
+      ),
+    },
+  ];
+
+  const allEmpty = sections.every((s) => s.empty && !(
+    (s.key === "midweek" && snap.templateExtras?.midweek?.observations) ||
+    (s.key === "weekend" && (snap.templateExtras?.weekend?.observations || snap.templateExtras?.weekend?.opening_song || snap.templateExtras?.weekend?.closing_song)) ||
+    (s.key === "pioneer" && snap.templateExtras?.pioneer?.observations) ||
+    (s.key === "elders" && snap.templateExtras?.elders?.observations)
+  ));
+
+  if (allEmpty) {
+    return <Empty text={t("guest.meetingsTalks.empty")} />;
+  }
+  // Silence unused vars in fmtDate signature (kept for parity with other panels).
+  void fmtDate;
+
+  return (
+    <>
+      {sections.map((s) => (
+        <div key={s.key} className="space-y-2">
+          <div className="flex items-center gap-2">
+            {s.icon}
+            <h3 className="font-semibold text-sm">{s.title}</h3>
+          </div>
+          {s.empty && !(
+            (s.key === "midweek" && snap.templateExtras?.midweek?.observations) ||
+            (s.key === "weekend" && (snap.templateExtras?.weekend?.observations || snap.templateExtras?.weekend?.opening_song || snap.templateExtras?.weekend?.closing_song)) ||
+            (s.key === "pioneer" && snap.templateExtras?.pioneer?.observations) ||
+            (s.key === "elders" && snap.templateExtras?.elders?.observations)
+          ) ? (
+            <Card><CardContent className="p-3 text-xs text-muted-foreground">{t("guest.meetingsTalks.empty")}</CardContent></Card>
+          ) : (
+            <div className="space-y-2">{s.content}</div>
+          )}
+        </div>
+      ))}
+    </>
   );
 }
 
