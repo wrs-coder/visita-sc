@@ -1,65 +1,53 @@
+## Diagnóstico
+
+A aba "Anciãos" do visitante (`getGuestSnapshot` em `src/lib/guest.functions.ts`) lê eventos apenas das tabelas por‑visita:
+
+- `elder_pastoral_visits`, `elder_encouragements`, `elder_recommendations`, `elder_local_matters` (filtrando por `visit_id`)
+- `elder_program_visit_sections` (observações) e `elder_program_visit_slots`
+
+As observações aparecem porque, ao criar/abrir a visita, as linhas em `elder_program_visit_sections` são criadas (mesmo vazias) e qualquer texto digitado pelo ancião coordenador é gravado lá com `visit_id`.
+
+Os eventos (Pastoreio, Encorajamento, Recomendações, Assuntos Locais), porém, em muitos casos só existem em `elder_program_template_events` (vinculados ao `template_id`) e não foram materializados nas tabelas por‑visita. Isso acontece quando:
+
+- O modelo foi editado/preenchido após a visita ter sido criada, e
+- O superintendente ainda não rodou `applyElderProgramTemplateToVisit` para essa visita.
+
+Como o coordenador edita pela rota `/programa-ancioes` (que também lê apenas tabelas por‑visita), ele acredita que "salvou" — mas, se o trabalho real está no modelo (`/modelo-programacao-ancioes`), o visitante vê só observações + "Nenhum evento".
+
+Confirmado em produção: existem visitas ativas com `tpl_evts > 0` mas `visit_past/enc/rec/loc = 0` (ex.: visita `cf56c553...`).
+
 ## Objetivo
 
-Garantir que os anciãos visitantes (acesso "Corpo de Anciãos / ESC") vejam, de forma organizada e exportável, **todas** as abas da Semana da Visita disponíveis no app do superintendente:
+Garantir que o visitante (Corpo de Anciãos / ESC) veja sempre o conteúdo mais completo de Pastoreios, sem alterar o fluxo de edição do superintendente nem o modelo de dados.
 
-1. Cronograma
-2. Estudos e Revisitas
-3. Reuniões de Campo
-4. **Reuniões e Discursos** (faltando hoje como aba dedicada)
-5. Refeições
-6. Transporte
-7. **Pastoreios, Recomendações e Outros** (já existe como "Anciãos", incluir no export)
-8. Checklist
+## Plano (somente leitura no servidor do convidado)
 
-Escopo: apenas o painel do convidado (`src/routes/visitante.painel.tsx`). Nenhuma mudança em schema, RLS, server functions ou `getGuestSnapshot` — os dados de midweek/weekend/pioneer/elders e `templateExtras` já chegam no snapshot atual; só não há aba e nem entradas no diálogo de exportação.
+Edição cirúrgica em `src/lib/guest.functions.ts`, dentro do bloco `if (!wifeMode) { ... }` que monta `elderProgram`:
 
-## Mudanças
+1. Após buscar os eventos por‑visita, calcular `visitEventsTotal = pastoral.length + encouragement.length + recommendations.length + local.length`.
+2. Se `visitEventsTotal === 0` E `visit.elder_program_template_id` estiver preenchido, fazer um segundo `Promise.all` lendo, do template, apenas em modo leitura:
+   - `elder_program_template_sections` (section, additional_info)
+   - `elder_program_template_slots` (id, label, sort_order)
+   - `elder_program_template_events` (todos os campos compartilhados, com a coluna `section` para separar)
+3. Mapear os eventos do template para o mesmo shape `ElderEventRow` já usado pelo cliente (campos compartilhados; faltantes ficam `null`; `source = "template"` quando a coluna não existir no template).
+4. Mesclar com prioridade: se uma seção (`pastoral`/`encouragement`/`recommendations`/`local`) estiver vazia na visita, usar a lista do template; do contrário, manter a da visita. Mesma lógica para `slots` e `sections` (somente preencher a chave quando a visita estiver vazia/`""`).
+5. Não alterar o filtro de modo (continua dentro de `if (!wifeMode)`), não tocar em RLS, não tocar em `elder-program.functions.ts`, e não propagar nada para o banco. É exclusivamente um fallback de leitura no snapshot do convidado.
 
-### 1. Nova aba "Reuniões e Discursos" (`value="reunioes"`)
+## Segurança e integridade
 
-- Adicionar `<TabsTrigger value="reunioes">` com ícone `Mic` (já importado), ao lado de "Anciãos". Apenas no modo ancião (`!snap.wifeMode`). Atualizar `grid-cols-8` → `grid-cols-9` no modo ancião; modo esposa permanece `grid-cols-7`.
-- `<TabsContent value="reunioes">` renderiza, em cards consistentes com o restante do painel:
-  - **Reunião de meio de semana** (`snap.midweek`) — presidente, tema do discurso de serviço, oração final, com `meeting_at` quando houver. Bloco `TemplateExtraBlock` com `templateExtras.midweek.observations`.
-  - **Reunião de fim de semana** (`snap.weekend`) — tema do discurso público, título, com `meeting_at`. Bloco `TemplateExtraBlock` com cântico inicial/final + observações do `templateExtras.weekend`.
-  - **Reunião com pioneiros / Reunião do superintendente com pioneiros** (`snap.pioneer`) — tema, local, oração inicial/final, horários. `TemplateExtraBlock` com `templateExtras.pioneer.observations`.
-  - **Reunião com anciãos e servos ministeriais** (`snap.elders`) — tema, oração inicial/final, local, `meeting_at`. `TemplateExtraBlock` com `templateExtras.elders.observations`.
-- Cada subseção tem um cabeçalho com ícone e título; usa o mesmo padrão visual ("premium" = card + chip de data/hora + linha discreta de observação) já adotado nas abas Estudos / Campo.
+- Continua usando `supabaseAdmin` apenas dentro do `createServerFn` do guest, atrás do `inviteCode` já validado.
+- O fallback só dispara para a visita já resolvida e somente para o `template_id` que está em `visits.elder_program_template_id` da congregação correta — sem expor templates de outros superintendentes.
+- O painel do convidado continua respeitando o gate de senha (`ElderTabGate` / `isElderUnlocked`) tanto na exibição quanto na exportação (WhatsApp/PNG/PDF). A exportação volta a incluir eventos automaticamente porque consome `snap.elderProgram` já enriquecido.
+- Nenhuma migração SQL, nenhuma policy nova, nenhuma alteração em tabelas, secrets ou edge functions.
+- `bunx tsc --noEmit` deve continuar limpo (somente código TypeScript em um arquivo já existente).
 
-### 2. Diálogo "Compartilhar" — incluir as novas seções
+## Validação
 
-- Estender `SectionKey` para `"cron" | "estudos" | "campo" | "reunioes" | "ref" | "trans" | "pastoreios" | "check"`.
-- `availableSections`: incluir `reunioes` sempre; incluir `pastoreios` e `check` apenas quando `!snap.wifeMode`.
-- `SECTION_LABELS`: adicionar `reunioes` = "Reuniões e Discursos" e `pastoreios` = "Pastoreios, Recomendações e Outros" (com i18n PT/EN/ES em `guest.sections.*`).
-- `selected` default: todas marcadas.
-- `SharePreview`: novos blocos renderizando midweek/weekend/pioneer/elders e o programa de anciãos (reaproveitar `ElderProgramReadOnly` em layout de impressão simples — sem interatividade) quando os respectivos flags estiverem ativos.
-- `shareWhatsapp`: novos parágrafos `*Reuniões e Discursos*` e `*Pastoreios, Recomendações e Outros*` com bullets por evento.
-- Export PNG/PDF: nenhuma mudança de mecânica — já captura o conteúdo de `previewRef` via `html-to-image` + `jsPDF`. Como o conteúdo cresce, manter o `pdf` em `a4` retrato e o algoritmo de proporção atual (já dimensiona corretamente conteúdos longos).
+1. Visita com eventos por‑visita (`dd384ed7...`): comportamento inalterado, eventos da visita aparecem.
+2. Visita sem eventos por‑visita mas com `elder_program_template_id` populado (`cf56c553...` quando o template tiver eventos): visitante passa a ver os eventos do template.
+3. Visita sem template e sem eventos: continua mostrando "Nenhum evento" (esperado).
+4. Modo esposa (`*` no código): aba Anciãos continua oculta.
 
-### 3. i18n
+## Necessidade de novo APK
 
-Adicionar nas três línguas (`pt.json`, `en.json`, `es.json`):
-
-- `guest.sections.reunioes` ("Reuniões e Discursos" / "Meetings and Talks" / "Reuniones y Discursos")
-- `guest.sections.pastoreios` ("Pastoreios, Recomendações e Outros" / etc.)
-- `guest.tabs.meetings` ("Reuniões" / "Meetings" / "Reuniones") — rótulo curto da aba (md:+).
-- Subtítulos da aba: `guest.meetingsTalks.midweek`, `.weekend`, `.pioneer`, `.elders`.
-
-## Garantias de integridade (Eng. Sr.)
-
-- **Segurança/RLS/DB**: nenhuma migração, nenhuma alteração de policies, nenhum novo server function. Toda mudança é de UI a partir de dados que o `getGuestSnapshot` já entrega (modo somente leitura para o convidado).
-- **Modo "Esposa" inalterado**: a aba "Reuniões e Discursos" só aparece quando `!snap.wifeMode`. A grade vira `grid-cols-9` no modo ancião e segue `grid-cols-7` no modo esposa.
-- **Não quebrar exportações existentes**: chaves antigas permanecem; apenas adicionamos novas e o `SharePreview` continua tolerante a `selected[k] === undefined` para cache antigo (default true).
-- **Sem novos `console.log`, `any`, `as` arriscado**. Tipos novos derivados do `Snapshot` já tipado.
-- **Build check**: rodar `bunx tsc --noEmit` ao final.
-
-## Validação manual
-
-1. Logar como ancião visitante via código da congregação.
-2. Ver as 9 abas (Hoje, Cronograma, Estudos, Reuniões de Campo, Refeições, Transporte, **Reuniões e Discursos** (nova), Anciãos, Checklist).
-3. Conferir que cada bloco da nova aba lista corretamente os dados existentes e o `TemplateExtraBlock` quando há observação do modelo.
-4. Abrir "Compartilhar", marcar todas as seções → conferir prévia com todos os blocos → exportar PNG e PDF → conferir que o arquivo contém todas as seções → enviar via WhatsApp e conferir o texto formatado.
-5. Logar como esposa: confirmar que a aba "Reuniões e Discursos" NÃO aparece e que o diálogo de Compartilhar não oferece `reunioes`/`pastoreios`/`check`.
-
-## Sobre novo APK
-
-Apenas alterações em código web (TSX + i18n). **Não é necessário gerar novo APK** se o app Android já está em produção apontando para a build web atualizada (o WebView carrega a nova versão automaticamente após publish). Se a estratégia for empacotar com Capacitor sem update OTA, basta `bunx cap sync android` + rebuild — nenhuma mudança em `AndroidManifest`, permissões ou `versionCode/Name`.
+Não. A mudança é exclusivamente em código de servidor TypeScript carregado pelo build web (Cloudflare Worker). O APK Capacitor consome o mesmo bundle web servido pela Lovable, portanto basta publicar — não há alteração em `AndroidManifest`, `capacitor.config.ts`, `versionCode`/`versionName` ou permissões nativas.
