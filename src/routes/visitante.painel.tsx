@@ -91,7 +91,17 @@ function groupTransport(rows: TransportRow[]): Array<{ key: string; rows: Transp
   return Array.from(map.entries()).map(([key, rs]) => ({ key, rows: rs }));
 }
 
-type SectionKey = "cron" | "estudos" | "campo" | "ref" | "trans" | "check";
+type SectionKey = "cron" | "estudos" | "campo" | "reunioes" | "ref" | "trans" | "pastoreios" | "check";
+
+const ELDER_UNLOCK_PREFIX = "elderTabUnlocked:";
+function isElderUnlocked(congregationId: string | undefined): boolean {
+  if (!congregationId || typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem(ELDER_UNLOCK_PREFIX + congregationId) === "1";
+  } catch {
+    return false;
+  }
+}
 
 function fmtTime(t: string | null) { return t ? t.slice(0, 5) : "—"; }
 
