@@ -1360,3 +1360,147 @@ function WifeCouplePanel({ code }: { code: string }) {
   );
 }
 
+function MeetingsTalksGuestPanel({ snap, fmtDate }: { snap: Snapshot; fmtDate: (d: string) => string }) {
+  const { t } = useTranslation();
+  const fmtIso = (iso: string | null | undefined) =>
+    iso ? format(parseISO(iso), "dd/MM HH:mm") : null;
+
+  const sections: Array<{ key: string; title: string; icon: React.ReactNode; empty: boolean; content: React.ReactNode }> = [
+    {
+      key: "midweek",
+      title: t("guest.meetingsTalks.midweek"),
+      icon: <Mic className="h-4 w-4 text-primary" />,
+      empty: snap.midweek.length === 0,
+      content: (
+        <>
+          <TemplateExtraBlock label={t("guest.meetingsTalks.midweek")} value={snap.templateExtras?.midweek?.observations} variant="blue" />
+          {snap.midweek.map((m) => {
+            const when = fmtIso(m.meeting_at);
+            return (
+              <Card key={m.id}><CardContent className="p-3 space-y-1">
+                {when && <div className="text-xs font-semibold text-primary">{when}</div>}
+                {m.chairman && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.chairman")}: </span>{m.chairman}</div>}
+                {m.service_talk_theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.serviceTalk")}: </span>{m.service_talk_theme}</div>}
+                {m.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{m.closing_prayer}</div>}
+              </CardContent></Card>
+            );
+          })}
+        </>
+      ),
+    },
+    {
+      key: "weekend",
+      title: t("guest.meetingsTalks.weekend"),
+      icon: <Mic className="h-4 w-4 text-primary" />,
+      empty: snap.weekend.length === 0,
+      content: (
+        <>
+          {(snap.templateExtras?.weekend?.opening_song || snap.templateExtras?.weekend?.closing_song) && (
+            <Card><CardContent className="p-3 space-y-1 text-xs">
+              {snap.templateExtras?.weekend?.opening_song && (
+                <div><span className="text-muted-foreground">{t("guest.meetingsTalks.openingSong")}: </span>{snap.templateExtras.weekend.opening_song}</div>
+              )}
+              {snap.templateExtras?.weekend?.closing_song && (
+                <div><span className="text-muted-foreground">{t("guest.meetingsTalks.closingSong")}: </span>{snap.templateExtras.weekend.closing_song}</div>
+              )}
+            </CardContent></Card>
+          )}
+          <TemplateExtraBlock label={t("guest.meetingsTalks.weekend")} value={snap.templateExtras?.weekend?.observations} variant="blue" />
+          {snap.weekend.map((w) => {
+            const when = fmtIso(w.meeting_at);
+            return (
+              <Card key={w.id}><CardContent className="p-3 space-y-1">
+                {when && <div className="text-xs font-semibold text-primary">{when}</div>}
+                {w.public_talk_theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.publicTalk")}: </span>{w.public_talk_theme}</div>}
+                {w.talk_theme_title && <div className="text-xs">{w.talk_theme_title}</div>}
+              </CardContent></Card>
+            );
+          })}
+        </>
+      ),
+    },
+    {
+      key: "pioneer",
+      title: t("guest.meetingsTalks.pioneer"),
+      icon: <Users className="h-4 w-4 text-primary" />,
+      empty: snap.pioneer.length === 0,
+      content: (
+        <>
+          <TemplateExtraBlock label={t("guest.meetingsTalks.pioneer")} value={snap.templateExtras?.pioneer?.observations} variant="blue" />
+          {snap.pioneer.map((p) => {
+            const when = fmtIso(p.meeting_at) ?? fmtIso(p.super_meeting_at);
+            return (
+              <Card key={p.id}><CardContent className="p-3 space-y-1">
+                {when && <div className="text-xs font-semibold text-primary">{when}</div>}
+                {p.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{p.location}</div>}
+                {p.theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.theme")}: </span>{p.theme}</div>}
+                {p.opening_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.openingPrayer")}: </span>{p.opening_prayer}</div>}
+                {p.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{p.closing_prayer}</div>}
+              </CardContent></Card>
+            );
+          })}
+        </>
+      ),
+    },
+    {
+      key: "elders",
+      title: t("guest.meetingsTalks.elders"),
+      icon: <BookOpen className="h-4 w-4 text-primary" />,
+      empty: snap.elders.length === 0,
+      content: (
+        <>
+          <TemplateExtraBlock label={t("guest.meetingsTalks.elders")} value={snap.templateExtras?.elders?.observations} variant="blue" />
+          {snap.elders.map((e) => {
+            const when = fmtIso(e.meeting_at);
+            return (
+              <Card key={e.id}><CardContent className="p-3 space-y-1">
+                {when && <div className="text-xs font-semibold text-primary">{when}</div>}
+                {e.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{e.location}</div>}
+                {e.theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.theme")}: </span>{e.theme}</div>}
+                {e.opening_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.openingPrayer")}: </span>{e.opening_prayer}</div>}
+                {e.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{e.closing_prayer}</div>}
+              </CardContent></Card>
+            );
+          })}
+        </>
+      ),
+    },
+  ];
+
+  const allEmpty = sections.every((s) => s.empty && !(
+    (s.key === "midweek" && snap.templateExtras?.midweek?.observations) ||
+    (s.key === "weekend" && (snap.templateExtras?.weekend?.observations || snap.templateExtras?.weekend?.opening_song || snap.templateExtras?.weekend?.closing_song)) ||
+    (s.key === "pioneer" && snap.templateExtras?.pioneer?.observations) ||
+    (s.key === "elders" && snap.templateExtras?.elders?.observations)
+  ));
+
+  if (allEmpty) {
+    return <Empty text={t("guest.meetingsTalks.empty")} />;
+  }
+  // Silence unused vars in fmtDate signature (kept for parity with other panels).
+  void fmtDate;
+
+  return (
+    <>
+      {sections.map((s) => (
+        <div key={s.key} className="space-y-2">
+          <div className="flex items-center gap-2">
+            {s.icon}
+            <h3 className="font-semibold text-sm">{s.title}</h3>
+          </div>
+          {s.empty && !(
+            (s.key === "midweek" && snap.templateExtras?.midweek?.observations) ||
+            (s.key === "weekend" && (snap.templateExtras?.weekend?.observations || snap.templateExtras?.weekend?.opening_song || snap.templateExtras?.weekend?.closing_song)) ||
+            (s.key === "pioneer" && snap.templateExtras?.pioneer?.observations) ||
+            (s.key === "elders" && snap.templateExtras?.elders?.observations)
+          ) ? (
+            <Card><CardContent className="p-3 text-xs text-muted-foreground">{t("guest.meetingsTalks.empty")}</CardContent></Card>
+          ) : (
+            <div className="space-y-2">{s.content}</div>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
+
