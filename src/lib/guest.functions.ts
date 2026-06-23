@@ -316,6 +316,85 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
         recommendations: mapRows(epRec.data),
         local: mapRows(epLoc.data),
       };
+
+      // Fallback de leitura: quando a visita ainda não tem eventos próprios
+      // (template não aplicado) mas há um modelo vinculado, exibe o conteúdo
+      // do próprio modelo. Mescla por seção, preservando o que já existe na
+      // visita.
+      const tplId = (visit as { elder_program_template_id?: string | null }).elder_program_template_id ?? null;
+      const totalVisitEvents =
+        elderProgram.pastoral.length +
+        elderProgram.encouragement.length +
+        elderProgram.recommendations.length +
+        elderProgram.local.length;
+      const totalSectionsFilled =
+        (elderProgram.sections.pastoral ? 1 : 0) +
+        (elderProgram.sections.encouragement ? 1 : 0) +
+        (elderProgram.sections.recommendations ? 1 : 0) +
+        (elderProgram.sections.local ? 1 : 0);
+      const needsFallback = !!tplId && (totalVisitEvents === 0 || elderProgram.slots.length === 0 || totalSectionsFilled < 4);
+
+      if (needsFallback && tplId) {
+        const [tplSecs, tplSlots, tplEvts] = await Promise.all([
+          supabaseAdmin
+            .from("elder_program_template_sections")
+            .select("section,additional_info")
+            .eq("template_id", tplId),
+          supabaseAdmin
+            .from("elder_program_template_slots")
+            .select("id,label,sort_order")
+            .eq("template_id", tplId)
+            .order("sort_order"),
+          supabaseAdmin
+            .from("elder_program_template_events")
+            .select(elderCols + ",section")
+            .eq("template_id", tplId)
+            .order("section")
+            .order("sort_order"),
+        ]);
+
+        // Observações por seção: só preenche o que estiver vazio na visita.
+        ((tplSecs.data ?? []) as Array<{ section: string; additional_info: string | null }>).forEach((r) => {
+          if (
+            (r.section === "pastoral" ||
+              r.section === "encouragement" ||
+              r.section === "recommendations" ||
+              r.section === "local") &&
+            !elderProgram!.sections[r.section]
+          ) {
+            elderProgram!.sections[r.section] = r.additional_info ?? "";
+          }
+        });
+
+        // Slots: se a visita não tem nenhum, usa os do modelo.
+        if (elderProgram.slots.length === 0) {
+          elderProgram.slots = ((tplSlots.data ?? []) as Array<{ id: string; label: string }>).map((s) => ({
+            id: s.id,
+            label: s.label,
+          }));
+        }
+
+        // Eventos: separa por seção e, para cada seção vazia na visita,
+        // adota a lista do modelo.
+        const tplBySection: Record<"pastoral" | "encouragement" | "recommendations" | "local", ElderEventRow[]> = {
+          pastoral: [],
+          encouragement: [],
+          recommendations: [],
+          local: [],
+        };
+        for (const raw of (tplEvts.data ?? []) as Array<Partial<ElderEventRow> & { section?: string }>) {
+          const sec = raw.section;
+          if (sec !== "pastoral" && sec !== "encouragement" && sec !== "recommendations" && sec !== "local") continue;
+          const mapped = mapRows([raw])[0];
+          // Marca claramente como vindo do modelo.
+          mapped.source = "template";
+          tplBySection[sec].push(mapped);
+        }
+        if (elderProgram.pastoral.length === 0) elderProgram.pastoral = tplBySection.pastoral;
+        if (elderProgram.encouragement.length === 0) elderProgram.encouragement = tplBySection.encouragement;
+        if (elderProgram.recommendations.length === 0) elderProgram.recommendations = tplBySection.recommendations;
+        if (elderProgram.local.length === 0) elderProgram.local = tplBySection.local;
+      }
     }
 
     const payload = {
