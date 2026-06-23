@@ -1077,6 +1077,47 @@ function SharePreview({ snap, selected, fmtDate, mealLabel }: { snap: Snapshot; 
         </Section>
       )}
 
+      {selected.reunioes && (
+        <Section
+          title={t("guest.sections.reunioes")}
+          empty={snap.midweek.length + snap.weekend.length + snap.pioneer.length + snap.elders.length === 0}
+        >
+          {snap.midweek.map((m) => (
+            <div key={`mw-${m.id}`} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">{t("guest.meetingsTalks.midweek")}{m.meeting_at ? ` • ${format(parseISO(m.meeting_at), "dd/MM HH:mm")}` : ""}</div>
+              {m.chairman && <div className="text-xs">{t("guest.labels.chairman")}: {m.chairman}</div>}
+              {m.service_talk_theme && <div className="text-xs">{t("guest.labels.serviceTalk")}: {m.service_talk_theme}</div>}
+              {m.closing_prayer && <div className="text-xs">{t("guest.labels.closingPrayer")}: {m.closing_prayer}</div>}
+            </div>
+          ))}
+          {snap.weekend.map((w) => (
+            <div key={`we-${w.id}`} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">{t("guest.meetingsTalks.weekend")}{w.meeting_at ? ` • ${format(parseISO(w.meeting_at), "dd/MM HH:mm")}` : ""}</div>
+              {w.public_talk_theme && <div className="text-xs">{t("guest.labels.publicTalk")}: {w.public_talk_theme}</div>}
+              {w.talk_theme_title && <div className="text-xs">{w.talk_theme_title}</div>}
+            </div>
+          ))}
+          {snap.pioneer.map((p) => (
+            <div key={`pi-${p.id}`} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">{t("guest.meetingsTalks.pioneer")}{p.meeting_at ? ` • ${format(parseISO(p.meeting_at), "dd/MM HH:mm")}` : ""}</div>
+              {p.location && <div className="text-xs text-gray-600">📍 {p.location}</div>}
+              {p.theme && <div className="text-xs">{t("guest.labels.theme")}: {p.theme}</div>}
+              {p.opening_prayer && <div className="text-xs">{t("guest.labels.openingPrayer")}: {p.opening_prayer}</div>}
+              {p.closing_prayer && <div className="text-xs">{t("guest.labels.closingPrayer")}: {p.closing_prayer}</div>}
+            </div>
+          ))}
+          {snap.elders.map((e) => (
+            <div key={`el-${e.id}`} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-medium">{t("guest.meetingsTalks.elders")}{e.meeting_at ? ` • ${format(parseISO(e.meeting_at), "dd/MM HH:mm")}` : ""}</div>
+              {e.location && <div className="text-xs text-gray-600">📍 {e.location}</div>}
+              {e.theme && <div className="text-xs">{t("guest.labels.theme")}: {e.theme}</div>}
+              {e.opening_prayer && <div className="text-xs">{t("guest.labels.openingPrayer")}: {e.opening_prayer}</div>}
+              {e.closing_prayer && <div className="text-xs">{t("guest.labels.closingPrayer")}: {e.closing_prayer}</div>}
+            </div>
+          ))}
+        </Section>
+      )}
+
       {selected.ref && (
         <Section title={t("guest.sections.ref")} empty={mealDates.length === 0}>
           {mealDates.map((date) => {
