@@ -129,7 +129,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
 
     const { data: visits } = await supabaseAdmin
       .from("visits")
-      .select("id,title,start_date,end_date,is_active,meeting_talk_template_id,field_meeting_template_id,template_id")
+      .select("id,title,start_date,end_date,is_active,meeting_talk_template_id,field_meeting_template_id,template_id,elder_program_template_id")
       .eq("congregation_id", cong.id)
       .eq("is_active", true)
       .order("start_date", { ascending: false })
