@@ -1168,15 +1168,28 @@
       "field": "Field",
       "meals": "Meals",
       "transport": "Transport",
+      "meetings": "Meetings",
+      "pastoreios": "Elders",
       "checklist": "Checklist"
     },
     "sections": {
       "cron": "Schedule",
       "estudos": "Studies / Return Visits",
       "campo": "Field meetings",
+      "reunioes": "Meetings and Talks",
       "ref": "Meals",
       "trans": "Transport",
+      "pastoreios": "Shepherding, Recommendations and Others",
       "check": "Checklist"
+    },
+    "meetingsTalks": {
+      "midweek": "Midweek meeting",
+      "weekend": "Weekend meeting",
+      "pioneer": "Meeting with pioneers",
+      "elders": "Meeting with elders and MS",
+      "openingSong": "Opening song",
+      "closingSong": "Closing song",
+      "empty": "No meetings recorded."
     },
     "empty": {
       "schedule": "No events.",
