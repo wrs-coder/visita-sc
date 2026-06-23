@@ -269,15 +269,22 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
     // Visível apenas no modo anciãos/ESC (não wifeMode).
     let elderProgram: ElderProgramPayload | null = null;
     if (!wifeMode) {
-      const elderCols =
-        "id,source,sort_order,slot_label,companion,family_name,address,family_members,spiritual_info,category,person_name,contact,health_info,purpose,full_name,field_group,info,suggested_by,subject,sources";
+      // Cada tabela do programa dos anciãos tem colunas próprias. Usar uma
+      // projeção única com campos de outras seções faz o PostgREST rejeitar a
+      // consulta inteira e retornar listas vazias no painel visitante.
+      const pastoralCols = "id,source,sort_order,slot_label,companion,family_name,address,family_members,spiritual_info";
+      const encouragementCols = "id,source,sort_order,category,person_name,address,contact,health_info,spiritual_info";
+      const recommendationCols = "id,source,sort_order,purpose,full_name,family_members,field_group,info";
+      const localMatterCols = "id,source,sort_order,suggested_by,subject,sources,info";
+      const templateEventCols =
+        "id,section,sort_order,slot_label,companion,family_name,address,family_members,spiritual_info,category,person_name,contact,health_info,purpose,full_name,field_group,info,suggested_by,subject,sources";
       const [epSecs, epSlots, epPas, epEnc, epRec, epLoc] = await Promise.all([
         supabaseAdmin.from("elder_program_visit_sections").select("section,additional_info").eq("visit_id", visit.id),
         supabaseAdmin.from("elder_program_visit_slots").select("id,label,sort_order").eq("visit_id", visit.id).order("sort_order"),
-        supabaseAdmin.from("elder_pastoral_visits").select(elderCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
-        supabaseAdmin.from("elder_encouragements").select(elderCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
-        supabaseAdmin.from("elder_recommendations").select(elderCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
-        supabaseAdmin.from("elder_local_matters").select(elderCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
+        supabaseAdmin.from("elder_pastoral_visits").select(pastoralCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
+        supabaseAdmin.from("elder_encouragements").select(encouragementCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
+        supabaseAdmin.from("elder_recommendations").select(recommendationCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
+        supabaseAdmin.from("elder_local_matters").select(localMatterCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
       ]);
       const epSections = { pastoral: "", encouragement: "", recommendations: "", local: "" } as ElderProgramPayload["sections"];
       ((epSecs.data ?? []) as Array<{ section: string; additional_info: string | null }>).forEach((r) => {
@@ -347,7 +354,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
             .order("sort_order"),
           supabaseAdmin
             .from("elder_program_template_events")
-            .select(elderCols + ",section")
+            .select(templateEventCols)
             .eq("template_id", tplId)
             .order("section")
             .order("sort_order"),
