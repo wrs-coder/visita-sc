@@ -1168,6 +1168,8 @@
       "field": "Campo",
       "meals": "Refeições",
       "transport": "Transporte",
+      "meetings": "Reuniões",
+      "pastoreios": "Anciãos",
       "checklist": "Checklist",
       "couple": "Casal"
     },
@@ -1175,9 +1177,20 @@
       "cron": "Cronograma",
       "estudos": "Estudos / Revisitas",
       "campo": "Reuniões de campo",
+      "reunioes": "Reuniões e Discursos",
       "ref": "Refeições",
       "trans": "Transporte",
+      "pastoreios": "Pastoreios, Recomendações e Outros",
       "check": "Checklist"
+    },
+    "meetingsTalks": {
+      "midweek": "Reunião do meio de semana",
+      "weekend": "Reunião do fim de semana",
+      "pioneer": "Reunião com pioneiros",
+      "elders": "Reunião com anciãos e SM",
+      "openingSong": "Cântico inicial",
+      "closingSong": "Cântico final",
+      "empty": "Sem reuniões registradas."
     },
     "empty": {
       "schedule": "Sem eventos.",
