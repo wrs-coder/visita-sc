@@ -1176,6 +1176,38 @@ function SharePreview({ snap, selected, fmtDate, mealLabel }: { snap: Snapshot; 
         </Section>
       )}
 
+      {selected.pastoreios && !snap.wifeMode && snap.elderProgram && isElderUnlocked(snap.congregation.id) && (
+        <Section
+          title={t("guest.sections.pastoreios")}
+          empty={
+            snap.elderProgram.pastoral.length +
+              snap.elderProgram.encouragement.length +
+              snap.elderProgram.recommendations.length +
+              snap.elderProgram.local.length === 0
+          }
+        >
+          {([
+            ["pastoral", snap.elderProgram.sections.pastoral, snap.elderProgram.pastoral],
+            ["encouragement", snap.elderProgram.sections.encouragement, snap.elderProgram.encouragement],
+            ["recommendations", snap.elderProgram.sections.recommendations, snap.elderProgram.recommendations],
+            ["local", snap.elderProgram.sections.local, snap.elderProgram.local],
+          ] as const).map(([key, title, items]) => items.length === 0 ? null : (
+            <div key={key} className="py-1 border-b border-gray-100 last:border-0">
+              <div className="font-semibold text-xs uppercase tracking-wide text-gray-700">{title}</div>
+              {items.map((it) => {
+                const name = it.family_name ?? it.person_name ?? it.full_name ?? it.subject ?? "—";
+                return (
+                  <div key={it.id} className="text-xs ml-2">
+                    {it.slot_label ? <span className="text-gray-500">{it.slot_label}: </span> : null}
+                    {name}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </Section>
+      )}
+
       {selected.check && !snap.wifeMode && (
         <Section title={t("guest.sections.check")} empty={snap.checklist.length === 0}>
           {snap.checklist.map((c) => (
