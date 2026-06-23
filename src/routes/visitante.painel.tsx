@@ -623,6 +623,12 @@ function Page() {
               </TabsContent>
 
               {!snap.wifeMode && (
+                <TabsContent value="reunioes" className="space-y-4 mt-4">
+                  <MeetingsTalksGuestPanel snap={snap} fmtDate={fmtDate} />
+                </TabsContent>
+              )}
+
+              {!snap.wifeMode && (
                 <TabsContent value="pastoreios" className="space-y-3 mt-4">
                   <ElderTabGate congregationId={snap.congregation.id} data={snap.elderProgram ?? null} />
                 </TabsContent>
