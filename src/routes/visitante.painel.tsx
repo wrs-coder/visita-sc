@@ -183,12 +183,15 @@ function Page() {
   const [shareOpen, setShareOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const availableSections = useMemo<SectionKey[]>(() => {
-    const all: SectionKey[] = ["cron", "estudos", "campo", "ref", "trans"];
-    if (snap && !snap.wifeMode) all.push("check");
+    const all: SectionKey[] = ["cron", "estudos", "campo", "reunioes", "ref", "trans"];
+    if (snap && !snap.wifeMode) {
+      if (isElderUnlocked(snap.congregation.id)) all.push("pastoreios");
+      all.push("check");
+    }
     return all;
   }, [snap]);
   const [selected, setSelected] = useState<Record<SectionKey, boolean>>({
-    cron: true, estudos: true, campo: true, ref: true, trans: true, check: true,
+    cron: true, estudos: true, campo: true, reunioes: true, ref: true, trans: true, pastoreios: true, check: true,
   });
   const toggle = (k: SectionKey) => setSelected((s) => ({ ...s, [k]: !s[k] }));
 
