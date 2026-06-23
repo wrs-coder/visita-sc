@@ -262,6 +262,37 @@ function Page() {
       L.push("", `*${t("guest.sections.campo")}*`);
       snap.fieldMeetings.forEach((f) => L.push(`• ${fmtDate(f.event_date)} ${f.period} ${fmtTime(f.meeting_time)} — ${f.modality}${f.territory_location ? ` (${f.territory_location})` : ""}${f.auxiliary_leaders ? ` | ${t("guest.labels.auxLeaders")}: ${f.auxiliary_leaders}` : ""}`));
     }
+    if (selected.reunioes && (snap.midweek.length || snap.weekend.length || snap.pioneer.length || snap.elders.length)) {
+      L.push("", `*${t("guest.sections.reunioes")}*`);
+      snap.midweek.forEach((m) => {
+        const parts = [t("guest.meetingsTalks.midweek")];
+        if (m.meeting_at) parts.push(format(parseISO(m.meeting_at), "dd/MM HH:mm"));
+        if (m.chairman) parts.push(`${t("guest.labels.chairman")}: ${m.chairman}`);
+        if (m.service_talk_theme) parts.push(`${t("guest.labels.serviceTalk")}: ${m.service_talk_theme}`);
+        L.push(`• ${parts.join(" — ")}`);
+      });
+      snap.weekend.forEach((w) => {
+        const parts = [t("guest.meetingsTalks.weekend")];
+        if (w.meeting_at) parts.push(format(parseISO(w.meeting_at), "dd/MM HH:mm"));
+        if (w.public_talk_theme) parts.push(`${t("guest.labels.publicTalk")}: ${w.public_talk_theme}`);
+        if (w.talk_theme_title) parts.push(w.talk_theme_title);
+        L.push(`• ${parts.join(" — ")}`);
+      });
+      snap.pioneer.forEach((p) => {
+        const parts = [t("guest.meetingsTalks.pioneer")];
+        if (p.meeting_at) parts.push(format(parseISO(p.meeting_at), "dd/MM HH:mm"));
+        if (p.location) parts.push(p.location);
+        if (p.theme) parts.push(`${t("guest.labels.theme")}: ${p.theme}`);
+        L.push(`• ${parts.join(" — ")}`);
+      });
+      snap.elders.forEach((e) => {
+        const parts = [t("guest.meetingsTalks.elders")];
+        if (e.meeting_at) parts.push(format(parseISO(e.meeting_at), "dd/MM HH:mm"));
+        if (e.location) parts.push(e.location);
+        if (e.theme) parts.push(`${t("guest.labels.theme")}: ${e.theme}`);
+        L.push(`• ${parts.join(" — ")}`);
+      });
+    }
     if (selected.ref && (snap.meals.length || snap.mealDayNotes.length)) {
       L.push("", `*${t("guest.sections.ref")}*`);
       snap.mealDayNotes.forEach((n) => L.push(`• ${fmtDate(n.meal_date)}: ${n.notes}`));
@@ -270,6 +301,28 @@ function Page() {
     if (selected.trans && snap.transport.length) {
       L.push("", `*${t("guest.sections.trans")}*`);
       snap.transport.forEach((tp) => L.push(`• ${tp.event_date ? fmtDate(tp.event_date) : t("guest.labels.noDate")} — ${tp.driver_name}${tp.contact_phone ? ` (${tp.contact_phone})` : ""}`));
+    }
+    if (selected.pastoreios && !snap.wifeMode && snap.elderProgram && isElderUnlocked(snap.congregation.id)) {
+      const ep = snap.elderProgram;
+      const groups: Array<[string, Array<{ slot_label: string | null; family_name?: string | null; person_name?: string | null; full_name?: string | null; subject?: string | null }>]> = [
+        [ep.sections.pastoral, ep.pastoral],
+        [ep.sections.encouragement, ep.encouragement],
+        [ep.sections.recommendations, ep.recommendations],
+        [ep.sections.local, ep.local],
+      ];
+      const hasAny = groups.some(([, list]) => list.length > 0);
+      if (hasAny) {
+        L.push("", `*${t("guest.sections.pastoreios")}*`);
+        for (const [title, list] of groups) {
+          if (!list.length) continue;
+          L.push(`_${title}_`);
+          list.forEach((it) => {
+            const label = it.slot_label ?? "";
+            const name = it.family_name ?? it.person_name ?? it.full_name ?? it.subject ?? "—";
+            L.push(`• ${label ? `${label}: ` : ""}${name}`);
+          });
+        }
+      }
     }
     if (selected.check && snap.checklist.length && !snap.wifeMode) {
       L.push("", `*${t("guest.sections.check")}*`);
