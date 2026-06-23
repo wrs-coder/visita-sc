@@ -121,8 +121,10 @@ function Page() {
     cron: t("guest.sections.cron"),
     estudos: t("guest.sections.estudos"),
     campo: t("guest.sections.campo"),
+    reunioes: t("guest.sections.reunioes"),
     ref: t("guest.sections.ref"),
     trans: t("guest.sections.trans"),
+    pastoreios: t("guest.sections.pastoreios"),
     check: t("guest.sections.check"),
   }), [t]);
 
