@@ -89,8 +89,23 @@ function sanitizeForHelvetica(text: string): string {
   let out = "";
   for (const ch of text) {
     const code = ch.codePointAt(0) ?? 0;
+    // Tab → 4 espaços (WinAnsi rejeita 0x09 mesmo sendo Latin-1).
+    if (code === 0x09) {
+      out += "    ";
+      continue;
+    }
+    // Demais caracteres de controle (exceto \n e \r) são removidos —
+    // WinAnsi não os aceita.
+    if (code < 0x20 && code !== 0x0a && code !== 0x0d) {
+      continue;
+    }
+    // Faixa de controle C1 (0x80–0x9F) também não é representável.
+    if (code >= 0x80 && code <= 0x9f) {
+      const sub = WINANSI_FALLBACK[ch];
+      out += sub ?? "?";
+      continue;
+    }
     if (code <= 0xff) {
-      // Latin-1: aceito direto.
       out += ch;
       continue;
     }
