@@ -219,10 +219,15 @@ function Page() {
   }, [search.event, events, canEdit, navigate, t]);
 
   // Deep-link: ?action=new&title=...&location=... pré-preenche o dialog de novo evento.
+  // Aguarda canEdit + carga das congregações (quando há congId) para que o escopo
+  // "congregation" seja atribuído corretamente. A limpeza da URL acontece em outro
+  // tick para não competir com a montagem do Dialog.
   const handledNewRef = useRef(false);
   useEffect(() => {
     if (search.action !== "new" || !canEdit) return;
     if (handledNewRef.current) return;
+    // Se há congId mas as congregações ainda não carregaram, aguarda um ciclo.
+    if (search.congId && congregations.length === 0) return;
     handledNewRef.current = true;
     const matchedCong = search.congId && congregations.some((c) => c.id === search.congId)
       ? search.congId
@@ -239,18 +244,24 @@ function Page() {
       companion: search.companion ?? "",
     });
     setOpen(true);
-    navigate({
-      search: {
-        event: undefined,
-        action: undefined,
-        title: undefined,
-        location: undefined,
-        notes: undefined,
-        companion: undefined,
-        congId: undefined,
-      } as never,
-      replace: true,
-    });
+    // Defere a limpeza da URL para o próximo tick, garantindo que React
+    // já tenha comitado o estado `open=true` e renderizado o Dialog antes
+    // de re-renderizar por causa da mudança de search params.
+    const t = window.setTimeout(() => {
+      navigate({
+        search: {
+          event: undefined,
+          action: undefined,
+          title: undefined,
+          location: undefined,
+          notes: undefined,
+          companion: undefined,
+          congId: undefined,
+        } as never,
+        replace: true,
+      });
+    }, 0);
+    return () => window.clearTimeout(t);
   }, [search.action, search.title, search.location, search.notes, search.companion, search.congId, canEdit, congregations, navigate]);
 
 
