@@ -166,15 +166,18 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
     });
 
     // Programa de Anciãos (Pastoreios / Encorajamento / Recomendações / Assuntos locais).
-    const elderCols =
-      "id,source,sort_order,slot_label,companion,family_name,address,family_members,spiritual_info,category,person_name,contact,health_info,purpose,full_name,field_group,info,suggested_by,subject,sources";
+    // Cada tabela tem colunas distintas — projeções separadas para não quebrar o PostgREST.
+    const pastoralCols = "id,source,sort_order,slot_label,companion,family_name,address,family_members,spiritual_info";
+    const encouragementCols = "id,source,sort_order,category,person_name,address,contact,health_info,spiritual_info";
+    const recommendationCols = "id,source,sort_order,purpose,full_name,family_members,field_group,info";
+    const localMatterCols = "id,source,sort_order,suggested_by,subject,sources,info";
     const [epSecs, epSlots, epPas, epEnc, epRec, epLoc] = await Promise.all([
       supabase.from("elder_program_visit_sections").select("section,additional_info").eq("visit_id", visit.id),
       supabase.from("elder_program_visit_slots").select("id,label,sort_order").eq("visit_id", visit.id).order("sort_order"),
-      supabase.from("elder_pastoral_visits").select(elderCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
-      supabase.from("elder_encouragements").select(elderCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
-      supabase.from("elder_recommendations").select(elderCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
-      supabase.from("elder_local_matters").select(elderCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
+      supabase.from("elder_pastoral_visits").select(pastoralCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
+      supabase.from("elder_encouragements").select(encouragementCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
+      supabase.from("elder_recommendations").select(recommendationCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
+      supabase.from("elder_local_matters").select(localMatterCols).eq("visit_id", visit.id).order("sort_order").order("created_at"),
     ]);
     type ElderEventRow = {
       id: string;
