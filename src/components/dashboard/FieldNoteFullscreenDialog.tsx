@@ -110,6 +110,27 @@ export function FieldNoteFullscreenDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="p-0 gap-0 max-w-[100vw] sm:max-w-[100vw] w-screen h-[100dvh] sm:h-[100dvh] flex flex-col rounded-none overflow-hidden"
+        onPointerDownOutside={(e) => {
+          // Não fechar o diálogo quando o usuário interage com o
+          // popover de versículos bíblicos (Radix portala para fora
+          // do DialogContent, então a interação é vista como "outside").
+          const target = e.target as HTMLElement | null;
+          if (target?.closest("[data-radix-popper-content-wrapper]")) {
+            e.preventDefault();
+          }
+        }}
+        onInteractOutside={(e) => {
+          const target = e.target as HTMLElement | null;
+          if (target?.closest("[data-radix-popper-content-wrapper]")) {
+            e.preventDefault();
+          }
+        }}
+        onFocusOutside={(e) => {
+          const target = e.target as HTMLElement | null;
+          if (target?.closest("[data-radix-popper-content-wrapper]")) {
+            e.preventDefault();
+          }
+        }}
       >
         {showTimer && note && (
           <>
