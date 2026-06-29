@@ -251,17 +251,25 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
     };
   }, [safeId, commit]);
 
-  // Tick (1s) enquanto rodando.
+  // Tick (1s) enquanto rodando. Usa delta REAL (Date.now - lastTickAt)
+  // em vez de somar +1 por tick. Sem isto, montar múltiplas instâncias
+  // do hook com o mesmo outlineId (toolbar + banner fullscreen +
+  // sensor) faz cada setInterval somar +1 independentemente — o
+  // cronômetro andaria N vezes mais rápido. Agora todas as instâncias
+  // convergem para o mesmo elapsed baseado no tempo real.
   useEffect(() => {
     if (!snap.isRunning) return;
     const id = window.setInterval(() => {
       const cur = snapRef.current;
       if (!cur.isRunning) return;
-      const nextElapsed = cur.elapsedSec + 1;
+      const now = Date.now();
+      const deltaSec = Math.floor((now - cur.lastTickAt) / 1000);
+      if (deltaSec < 1) return;
+      const nextElapsed = cur.elapsedSec + deltaSec;
       const next: TimerSnapshot = {
         ...cur,
         elapsedSec: nextElapsed,
-        lastTickAt: Date.now(),
+        lastTickAt: cur.lastTickAt + deltaSec * 1000,
         // Em countdown, pausa automaticamente ao chegar no alvo.
         isRunning:
           cur.mode === "countdown" && nextElapsed >= cur.targetSec
