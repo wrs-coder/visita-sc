@@ -58,7 +58,8 @@ function contentOf(n: FieldNote) {
     event_date: n.event_date ?? null,
     period: n.period ?? null,
     // Anexos viajam junto (fotos referenciam apenas o dispositivo local).
-    attachments: n.attachments ?? [],
+    // Passa por `serializeAttachments` para nunca subir jsonb inválido.
+    attachments: serializeAttachments(n.attachments ?? []),
   };
 }
 
