@@ -84,6 +84,10 @@ interface ToolbarProps {
    * espaço vertical no smartphone sem perder funcionalidade.
    */
   compact?: boolean;
+  /** Callback opcional para abrir o diálogo de anexar imagem. */
+  onAddPhotoAttachment?: () => void;
+  /** Callback opcional para abrir o diálogo de vincular link. */
+  onAddLinkAttachment?: () => void;
 }
 
 export function RichNoteToolbar({
@@ -93,6 +97,8 @@ export function RichNoteToolbar({
   onToggleFocusMode,
   outlineId,
   compact = false,
+  onAddPhotoAttachment,
+  onAddLinkAttachment,
 }: ToolbarProps) {
   const { t } = useTranslation();
   const [colorOpen, setColorOpen] = useState(false);
