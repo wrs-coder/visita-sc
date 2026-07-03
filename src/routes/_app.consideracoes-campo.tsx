@@ -2189,6 +2189,9 @@ function FullscreenOutline({
           <X className="h-4 w-4" />
         </Button>
       </div>
+      {note.attachments && note.attachments.length > 0 && (
+        <OutlineAttachmentsBar attachments={note.attachments} readOnly />
+      )}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-6">
         <div
           className="max-w-3xl mx-auto leading-relaxed min-w-0 break-words [overflow-wrap:anywhere]"
