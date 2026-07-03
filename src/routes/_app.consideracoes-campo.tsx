@@ -380,6 +380,9 @@ function Page() {
         sort_order: typeof c.sort_order === "number" ? c.sort_order : null,
         event_date: typeof c.event_date === "string" ? c.event_date : undefined,
         period: typeof c.period === "string" ? c.period : undefined,
+        attachments: Array.isArray(c.attachments)
+          ? (c.attachments as FieldNote["attachments"])
+          : (existing?.attachments ?? []),
         created_at: existing?.created_at ?? now,
         updated_at: now,
         cloud_id: r.outline.id,
