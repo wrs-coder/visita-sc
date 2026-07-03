@@ -26,6 +26,10 @@ import {
   listCloudOutlineTree,
   replaceCloudOutlineTree,
 } from "@/lib/personal-outlines.functions";
+import {
+  serializeAttachments,
+  parseAttachmentsFromContent,
+} from "@/lib/outline-attachments";
 
 const FIXED_OUTLINE_SENTINEL = "__fixed__week-outlines";
 const FIXED_FIELD_SENTINEL = "__fixed__week-considerations";
