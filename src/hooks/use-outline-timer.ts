@@ -113,10 +113,72 @@ const localBus =
 const LOCAL_EVENT = "visita-sc:outline-timer:local";
 
 
-function alertLevelFor(progressPct: number): AlertLevel {
+export function alertLevelFor(progressPct: number): AlertLevel {
   if (progressPct >= 95) return "red";
   if (progressPct >= 80) return "amber";
   return "green";
+}
+
+/**
+ * Cálculo puro do próximo snapshot do cronômetro dado o tempo real.
+ * Extraído do `useEffect` do tick para permitir testes de regressão sem
+ * DOM: chamar N vezes com o mesmo `now` deve produzir sempre o mesmo
+ * `elapsedSec` (idempotência), garantindo que múltiplas instâncias do
+ * hook nunca acelerem o cronômetro.
+ */
+export function computeTickAdvance(cur: TimerSnapshot, now: number): TimerSnapshot | null {
+  if (!cur.isRunning) return null;
+  const deltaSec = Math.floor((now - cur.lastTickAt) / 1000);
+  if (deltaSec < 1) return null;
+  const nextElapsed = cur.elapsedSec + deltaSec;
+  return {
+    ...cur,
+    elapsedSec: nextElapsed,
+    lastTickAt: cur.lastTickAt + deltaSec * 1000,
+    isRunning: cur.mode === "countdown" && nextElapsed >= cur.targetSec ? false : true,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Instrumentação leve (Onda 7.14). Zero overhead em produção quando ninguém
+// consulta `window.__outlineTimerMetrics`. Em dev, imprime no console.
+// ---------------------------------------------------------------------------
+interface OutlineTimerMetrics {
+  ticks: number;
+  driftEvents: number; // deltaSec > 2s (aba em background, throttle, etc.)
+  maxDeltaSec: number;
+  lastEvent?: string;
+  lastEventAt?: number;
+}
+
+function getMetrics(): OutlineTimerMetrics | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as { __outlineTimerMetrics?: OutlineTimerMetrics };
+  if (!w.__outlineTimerMetrics) {
+    w.__outlineTimerMetrics = { ticks: 0, driftEvents: 0, maxDeltaSec: 0 };
+  }
+  return w.__outlineTimerMetrics;
+}
+
+export function logTimerEvent(
+  event: string,
+  payload?: Record<string, unknown>,
+): void {
+  const m = getMetrics();
+  if (m) {
+    m.lastEvent = event;
+    m.lastEventAt = Date.now();
+    if (event === "tick") m.ticks += 1;
+    if (event === "tick-drift") {
+      m.driftEvents += 1;
+      const d = Number(payload?.deltaSec ?? 0);
+      if (d > m.maxDeltaSec) m.maxDeltaSec = d;
+    }
+  }
+  if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug("[outline-timer]", event, payload ?? {});
+  }
 }
 
 export interface UseOutlineTimerResult {
