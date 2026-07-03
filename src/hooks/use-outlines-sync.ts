@@ -53,6 +53,8 @@ function contentOf(n: FieldNote) {
     sort_order: n.sort_order ?? null,
     event_date: n.event_date ?? null,
     period: n.period ?? null,
+    // Anexos viajam junto (fotos referenciam apenas o dispositivo local).
+    attachments: n.attachments ?? [],
   };
 }
 
