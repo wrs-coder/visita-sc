@@ -323,6 +323,16 @@ export function RichNoteEditor({
           </span>
         </div>
       )}
+
+      {onAttachmentsChange && attachDialog && (
+        <AttachmentAddDialog
+          open
+          mode={attachDialog}
+          noteId={noteId ?? "unknown"}
+          onClose={() => setAttachDialog(null)}
+          onAdd={(a) => onAttachmentsChange([...(attachments ?? []), a])}
+        />
+      )}
     </div>
   );
 }
