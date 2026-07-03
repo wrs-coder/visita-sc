@@ -196,9 +196,7 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
         sort_order: typeof cj.sort_order === "number" ? cj.sort_order : null,
         event_date: typeof cj.event_date === "string" ? cj.event_date : undefined,
         period: typeof cj.period === "string" ? cj.period : undefined,
-        attachments: Array.isArray(cj.attachments)
-          ? (cj.attachments as FieldNote["attachments"])
-          : undefined,
+        attachments: parseAttachmentsFromContent(cj),
         updated_at: cTime,
         cloud_id: row.id,
         synced_at: Date.now(),
