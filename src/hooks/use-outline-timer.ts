@@ -227,6 +227,11 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
   );
   const wakeHeldRef = useRef<boolean>(false);
 
+  useEffect(() => {
+    logTimerEvent("mount", { outlineId: safeId, senderId: senderIdRef.current });
+    return () => logTimerEvent("unmount", { outlineId: safeId, senderId: senderIdRef.current });
+  }, [safeId]);
+
   // Re-hidrata ao trocar de nota.
   useEffect(() => {
     if (!safeId) {
