@@ -23,8 +23,11 @@ import { Typography } from "@tiptap/extension-typography";
 import { CharacterCount } from "@tiptap/extension-character-count";
 import { Focus as TiptapFocus } from "@tiptap/extension-focus";
 import { RichNoteToolbar } from "./RichNoteToolbar";
+import { OutlineAttachmentsBar } from "./OutlineAttachmentsBar";
+import { AttachmentAddDialog } from "./AttachmentAddDialog";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
 import { cn } from "@/lib/utils";
+import type { NoteAttachment } from "@/lib/outline-attachments";
 
 interface RichNoteEditorProps {
   value: string;
@@ -39,6 +42,10 @@ interface RichNoteEditorProps {
   outlineId?: string;
   /** Missão 01: barra compacta (2 linhas) — usado no modo edição imersivo. */
   compact?: boolean;
+  /** Anexos atuais do esboço (opcional). */
+  attachments?: NoteAttachment[];
+  /** Callback para atualizar a lista de anexos (opcional). */
+  onAttachmentsChange?: (next: NoteAttachment[]) => void;
 }
 
 
