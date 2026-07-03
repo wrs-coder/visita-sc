@@ -2030,30 +2030,49 @@ function NoteEditor({
           <OutlineInactivitySensor outlineId={draft.id} />
         )}
 
-        {mode === "edit" ? (
-          <RichNoteEditor
-            value={draft.content}
-            onChange={(html) => onPatch("content", html)}
-            placeholder={t("fieldConsiderations.fields.contentPh")}
-            noteId={draft.id}
-            minHeight={metaCollapsed ? "calc(100dvh - 14rem)" : "22rem"}
-            maxHeight={metaCollapsed ? "calc(100dvh - 14rem)" : "60vh"}
-            className="flex-1 min-h-0"
-            // Missão 01: sem cronômetro embutido no modo edição.
-            outlineId={undefined}
-            compact={metaCollapsed}
-          />
-        ) : (
-          <div className="flex-1 min-h-[22rem] max-h-[60vh] overflow-y-auto rounded-md border bg-background px-3 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
-            {draft.content ? (
-              <RichOutlineContent html={draft.content} library={activeBible} />
-            ) : (
-              <span className="text-muted-foreground italic">
-                {t("fieldConsiderations.contentEmpty")}
-              </span>
-            )}
-          </div>
-        )}
+        {(() => {
+          const hasAttachments = (draft.attachments?.length ?? 0) > 0;
+          // Barra de anexos tem altura fixa de 5rem (h-20). Descontar do
+          // cálculo da janela rígida para preservar o scroll interno.
+          const attachRow = hasAttachments ? " - 5rem" : "";
+          const minH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "22rem";
+          const maxH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "60vh";
+          return mode === "edit" ? (
+            <RichNoteEditor
+              value={draft.content}
+              onChange={(html) => onPatch("content", html)}
+              placeholder={t("fieldConsiderations.fields.contentPh")}
+              noteId={draft.id}
+              minHeight={minH}
+              maxHeight={maxH}
+              className="flex-1 min-h-0"
+              // Missão 01: sem cronômetro embutido no modo edição.
+              outlineId={undefined}
+              compact={metaCollapsed}
+              attachments={draft.attachments ?? []}
+              onAttachmentsChange={(next) => onPatch("attachments", next)}
+            />
+          ) : (
+            <>
+              {hasAttachments && (
+                <OutlineAttachmentsBar
+                  attachments={draft.attachments ?? []}
+                  readOnly
+                  className="rounded-md border"
+                />
+              )}
+              <div className="flex-1 min-h-[22rem] max-h-[60vh] overflow-y-auto rounded-md border bg-background px-3 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
+                {draft.content ? (
+                  <RichOutlineContent html={draft.content} library={activeBible} />
+                ) : (
+                  <span className="text-muted-foreground italic">
+                    {t("fieldConsiderations.contentEmpty")}
+                  </span>
+                )}
+              </div>
+            </>
+          );
+        })()}
 
       </div>
 
