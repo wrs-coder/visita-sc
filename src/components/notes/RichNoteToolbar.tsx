@@ -946,6 +946,38 @@ export function RichNoteToolbar({
         </>
       )}
 
+      {(onAddPhotoAttachment || onAddLinkAttachment) && (
+        <>
+          {sep}
+          {onAddPhotoAttachment && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={btn(false)}
+              title={t("personalOutlines.attachments.addPhoto", { defaultValue: "Anexar imagem" })}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onAddPhotoAttachment}
+            >
+              <ImagePlus className="h-4 w-4" />
+            </Button>
+          )}
+          {onAddLinkAttachment && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={btn(false)}
+              title={t("personalOutlines.attachments.addLink", { defaultValue: "Vincular link" })}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onAddLinkAttachment}
+            >
+              <LinkExternalIcon className="h-4 w-4" />
+            </Button>
+          )}
+        </>
+      )}
+
       {outlineId && (
         <>
           <div className="flex-1" aria-hidden />
