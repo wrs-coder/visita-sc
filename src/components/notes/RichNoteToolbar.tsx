@@ -34,6 +34,8 @@ import {
   IndentDecrease,
   Type,
   Focus,
+  ImagePlus,
+  Link as LinkExternalIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
