@@ -284,7 +284,16 @@ export function RichNoteEditor({
         onToggleFocusMode={() => setFocusMode((v) => !v)}
         outlineId={outlineId}
         compact={compact}
+        onAddPhotoAttachment={onAttachmentsChange ? () => setAttachDialog("photo") : undefined}
+        onAddLinkAttachment={onAttachmentsChange ? () => setAttachDialog("link") : undefined}
       />
+
+      {onAttachmentsChange && attachments && attachments.length > 0 && (
+        <OutlineAttachmentsBar
+          attachments={attachments}
+          onRemove={(id) => onAttachmentsChange(attachments.filter((a) => a.id !== id))}
+        />
+      )}
 
       <EditorContent editor={editor} />
       {showFooter && (
