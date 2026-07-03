@@ -57,6 +57,12 @@ export interface FieldNote {
   synced_at?: number | null;
   /** Ordem manual dentro da pasta (menor = primeiro). Sincronizado via content_json. */
   sort_order?: number | null;
+  /**
+   * Anexos em miniatura (fotos locais, links de vídeo, links de publicação).
+   * Retrocompatível — notas antigas ficam sem o campo e continuam válidas.
+   * Fotos gravadas em Capacitor Filesystem ou como Blob URL (web).
+   */
+  attachments?: import("./outline-attachments").NoteAttachment[];
 }
 
 
