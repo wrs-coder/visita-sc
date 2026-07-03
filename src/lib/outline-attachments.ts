@@ -191,3 +191,49 @@ export function isLikelyValidUrl(url: string): boolean {
   if (/^[a-z][a-z0-9+\-.]*:\/\//i.test(s)) return true; // jwlibrary://, mailto: etc.
   return false;
 }
+
+/**
+ * Normaliza um anexo vindo do content_json (jsonb) para o formato in-app.
+ * Silencia entradas inválidas em vez de derrubar a lista inteira.
+ */
+export function normalizeAttachment(raw: unknown): NoteAttachment | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const kind = r.kind;
+  if (kind !== "photo" && kind !== "video" && kind !== "publication") return null;
+  const id = typeof r.id === "string" && r.id.length > 0 ? r.id : makeAttachmentId();
+  const title = typeof r.title === "string" ? r.title.slice(0, 120) : "";
+  const uri = typeof r.uri === "string" ? r.uri : undefined;
+  const url = typeof r.url === "string" ? r.url : undefined;
+  const created_at =
+    typeof r.created_at === "number" && Number.isFinite(r.created_at)
+      ? r.created_at
+      : Date.now();
+  if (kind === "photo" && !uri) return null;
+  if ((kind === "video" || kind === "publication") && !url) return null;
+  return { id, kind, title, uri, url, created_at };
+}
+
+/**
+ * Serializa uma lista para o formato salvo em content_json. Descarta
+ * entradas inválidas para nunca corromper o jsonb no Supabase.
+ */
+export function serializeAttachments(list: NoteAttachment[] | null | undefined): NoteAttachment[] {
+  if (!Array.isArray(list)) return [];
+  const out: NoteAttachment[] = [];
+  for (const item of list) {
+    const norm = normalizeAttachment(item);
+    if (norm) out.push(norm);
+  }
+  return out;
+}
+
+/**
+ * Extrai anexos de um content_json (qualquer coisa que veio do Supabase).
+ */
+export function parseAttachmentsFromContent(cj: unknown): NoteAttachment[] {
+  if (!cj || typeof cj !== "object") return [];
+  const arr = (cj as Record<string, unknown>).attachments;
+  if (!Array.isArray(arr)) return [];
+  return serializeAttachments(arr as NoteAttachment[]);
+}
