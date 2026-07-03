@@ -1,114 +1,31 @@
-# Anexos em Miniatura nos Esboços Pessoais
+## Objetivo
 
-Adicionar suporte a anexos (fotos locais, links de vídeo, links de publicação) com título/tema em cada esboço, sem alterar toolbar existente, sync, cache, autenticação ou dashboard.
+Tornar a barra de miniaturas de anexos (fotos, vídeos, publicações) visível também nos dois modos "tela cheia":
 
-## Escopo (apenas adição)
+1. Tela cheia da aba **Esboços Pessoais** (`src/routes/_app.consideracoes-campo.tsx`, componente interno de fullscreen ~linha 2157).
+2. Tela cheia do **Dashboard** (`src/components/dashboard/FieldNoteFullscreenDialog.tsx`).
 
-- Aba **Esboços Pessoais** / **Considerações de Campo** (`src/routes/_app.consideracoes-campo.tsx`) — mesmo editor imersivo.
-- Modo Edição e Modo Esboço (leitura/tribuna).
-- Nada muda em: relatórios, rotas, dashboard, autenticação, sync inteligente do Supabase, cache local, lógica de persistência, layout base da toolbar de duas linhas.
+Ambos são somente-leitura, portanto a barra entra com `readOnly` — sem botão de remover, mas com clique funcional (foto abre `AttachmentLightbox`, link abre via `openExternalUrl`).
 
-## Modelo de dados
+## Alterações
 
-Campo opcional `attachments` em `FieldNote` (`src/lib/bible-notes-store.ts`) e no schema server (`src/lib/personal-outlines.functions.ts` → `outlineContentSchema`), 100% retrocompatível (default `[]`).
+### 1) `src/routes/_app.consideracoes-campo.tsx` — fullscreen do esboço
+- Ler `note.attachments ?? []` (já existente no tipo `FieldNote`).
+- Renderizar `<OutlineAttachmentsBar attachments={...} readOnly />` logo abaixo do header (linha ~2191), antes do container scrollável do conteúdo.
+- Nenhum ajuste de altura obrigatório: o container do conteúdo é `flex-1 overflow-y-auto`, então a barra (5rem fixa) apenas ocupa espaço acima sem quebrar o layout. Se ausente, a função `OutlineAttachmentsBar` já retorna `null`.
 
-```ts
-export type NoteAttachmentKind = "photo" | "video" | "publication";
-export interface NoteAttachment {
-  id: string;
-  kind: NoteAttachmentKind;
-  title: string;        // "Cântico 120", "Vídeo da Ilustração" (max 60)
-  uri?: string;         // photo: caminho relativo no Filesystem
-  url?: string;         // video/publication: URL externa
-  created_at: number;
-}
-```
+### 2) `src/components/dashboard/FieldNoteFullscreenDialog.tsx`
+- Importar `OutlineAttachmentsBar` de `@/components/notes/OutlineAttachmentsBar`.
+- Renderizar `<OutlineAttachmentsBar attachments={note?.attachments ?? []} readOnly />` entre o header (linha ~194) e o `DialogDescription`/conteúdo scrollável (linha ~204).
+- Mesmo raciocínio: o `flex-1 overflow-y-auto` do conteúdo se acomoda automaticamente.
 
-- Fotos: `@capacitor/filesystem` grava em `Directory.Data`, subpasta `outline-attachments/<noteId>/<attachmentId>.<ext>`. Salvamos o caminho relativo; resolvemos o path absoluto via `Filesystem.getUri`.
-- Web (sem Capacitor nativo): fallback armazena bytes como Blob no IndexedDB (infra já existe em `bible-notes-store.ts`), mesma forma de nota.
-- Sem bucket novo no Supabase. Sync existente serializa `attachments` como parte do `content_json` (jsonb livre). Fotos ficam apenas no dispositivo (privacidade + custo zero).
+## O que NÃO muda
 
-## UI — Toolbar Premium (2 linhas, preservada)
-
-Em `src/components/notes/RichNoteToolbar.tsx`, adicionar **dois ícones compactos** ao final da linha de ações existente:
-- `ImagePlus` → "Anexar Imagem"
-- `LinkIcon` → "Vincular Link"
-
-Sem reorganizar botões, sem alterar altura da toolbar.
-
-## UI — Barra de Miniaturas (nova, abaixo da toolbar)
-
-Novo `src/components/notes/OutlineAttachmentsBar.tsx`, renderizado logo abaixo do `<RichNoteToolbar />` dentro do `RichNoteEditor`, e também no bloco de leitura do route.
-
-- Linha horizontal com scroll-x suave (carrossel), **altura fixa 5rem**.
-- Cada card 48×48 px, `rounded-lg`, borda sutil, botão `X` discreto no canto superior direito (visível ao hover / sempre em mobile).
-- **Tema em uma única linha com `truncate`** (largura máxima igual à do card), garantindo altura absoluta constante da barra — sem deformação com títulos longos. Título completo em `title=`/tooltip.
-- Ícones por tipo:
-  - `photo` → preview `<img>` da URI.
-  - `video` → `PlayCircle` destacado (accent).
-  - `publication` → `FileText` / `BookOpen`.
-- **Android/iOS**: URI das fotos é passada por `Capacitor.convertFileSrc()` antes do `<img src>` para contornar o bloqueio do WebView a `file://` — obrigatório. No web, usa o URL do Blob direto.
-- Estado vazio: barra não renderiza (altura zero, layout intacto).
-
-## Fluxo de adição
-
-Dialog leve (shadcn `Dialog`) disparado pelos botões da toolbar:
-1. **Foto**: `<input type="file" accept="image/*">` (cobre Galeria + Downloads no Android WebView). Bytes copiados para `Directory.Data` via Capacitor Filesystem.
-2. **Link (vídeo/publicação)**: campo URL + toggle tipo, validação `http/https` ou `jwlibrary://`.
-3. Sempre: campo **"Tema/Título"** obrigatório (max 60 chars).
-
-## Altura do editor (preservação rígida)
-
-Em `_app.consideracoes-campo.tsx` (linhas 2034-2035), subtrair a altura constante da barra quando há anexos:
-
-```ts
-const attachRow = draft.attachments?.length ? "5rem" : "0rem";
-minHeight={metaCollapsed ? `calc(100dvh - 14rem - ${attachRow})` : "22rem"}
-maxHeight={metaCollapsed ? `calc(100dvh - 14rem - ${attachRow})` : "60vh"}
-```
-
-Como o tema é truncado em 1 linha, a barra tem altura garantida — o cálculo permanece exato e o scroll interno vertical do texto continua impecável.
-
-## Modo Esboço (leitura / tribuna)
-
-No bloco `mode === "outline"` (linha ~2042) renderiza a mesma `OutlineAttachmentsBar` em modo somente-leitura (sem `X`, sem botão adicionar) acima do conteúdo. Clique dispara as mesmas ações abaixo.
-
-## Ações ao clicar
-
-- **Foto** (edição ou leitura): `AttachmentLightbox` — Dialog fullscreen `bg-black/95`, imagem `max-h-[100dvh] max-w-full object-contain`, X e clique no backdrop fecham; foco volta ao editor.
-- **Link** (vídeo/publicação): helper `openExternalUrl(url)` em `src/lib/outline-attachments.ts`:
-  1. Tenta `Browser.open({ url })` do `@capacitor/browser` (permite deep-link para JW Library etc.).
-  2. **Fallback silencioso**: qualquer erro (plugin indisponível, app inexistente, web puro) cai em `window.open(url, "_blank", "noopener")`. Sem toast de erro, sem clique morto.
-
-## Sync / cache
-
-- `attachments` viaja no `content_json`; pipeline `useOutlinesSync` + `pushOutlineToCloud` / `pullOutlineFromCloud` já persiste jsonb livre — sem alteração.
-- Ao puxar em outro device: `uri` ausente → miniatura mostra placeholder com o tema e badge "somente neste dispositivo".
-- Lixeira / soft-delete inalterados.
-
-## Detalhes técnicos
-
-Novos arquivos:
-- `src/components/notes/OutlineAttachmentsBar.tsx`
-- `src/components/notes/AttachmentAddDialog.tsx`
-- `src/components/notes/AttachmentLightbox.tsx`
-- `src/lib/outline-attachments.ts` (helpers Filesystem + `convertFileSrc` + `openExternalUrl` com fallback)
-
-Editados:
-- `src/lib/bible-notes-store.ts` — `attachments?: NoteAttachment[]` em `FieldNote`.
-- `src/lib/personal-outlines.functions.ts` — `outlineContentSchema` recebe `attachments: z.array(...).optional().default([])`.
-- `src/components/notes/RichNoteEditor.tsx` — props `attachments`, `onAttachmentsChange`, `readOnlyAttachments`; renderiza barra logo abaixo da toolbar.
-- `src/components/notes/RichNoteToolbar.tsx` — 2 ícones novos + callback `onRequestAddAttachment(kind)`.
-- `src/routes/_app.consideracoes-campo.tsx` — passa `draft.attachments`, `onPatch("attachments", ...)`, ajusta altura, renderiza barra no modo leitura.
-
-Deps novas: `@capacitor/browser` (via `bun add`). `@capacitor/filesystem` já presente. `Capacitor.convertFileSrc` vem de `@capacitor/core` já instalado.
-
-i18n: chaves novas sob `personalOutlines.attachments.*` em `src/i18n/locales/{pt,en,es}.json`.
+- Nenhuma mudança no modelo de dados, sync, `personal-outlines.functions.ts`, toolbar do editor ou lógica de persistência.
+- `AttachmentAddDialog` continua acessível apenas pelo editor em modo edição — tela cheia é somente-leitura.
+- Fotos usam `toDisplaySrc` (com `Capacitor.convertFileSrc`) e links usam `openExternalUrl` (deep-link com fallback silencioso), reaproveitando o componente já em produção.
 
 ## Validação
 
-- Notas antigas (sem `attachments`) abrem, editam e sincronizam normalmente.
-- Toolbar mantém as duas linhas atuais; barra de anexos não deforma altura mesmo com títulos longos (truncate).
-- Fotos renderizam no Android via `convertFileSrc` (sem bloqueio de WebView).
-- Links abrem em app nativo quando disponível; fallback silencioso para `window.open`.
-- `bunx tsc --noEmit` passa 100% limpo.
+- `bunx tsc --noEmit` limpo.
+- Abrir nota com anexos no fullscreen do esboço e no fullscreen do dashboard: miniaturas aparecem, X não aparece (readOnly), clique em foto abre lightbox, clique em link abre no navegador/app.

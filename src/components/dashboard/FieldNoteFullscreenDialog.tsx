@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { RichOutlineContent } from "@/lib/rich-content";
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
+import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
 import {
   listAllNotesIncludingTrash,
   getActiveLibrary,
@@ -192,6 +193,12 @@ export function FieldNoteFullscreenDialog({
           {/* Espaço reservado para o X de fechar do Dialog (absoluto, top-right). */}
           <div className="w-8 shrink-0" aria-hidden />
         </div>
+
+        {note?.attachments && note.attachments.length > 0 && (
+          <OutlineAttachmentsBar attachments={note.attachments} readOnly />
+        )}
+
+
 
 
 
