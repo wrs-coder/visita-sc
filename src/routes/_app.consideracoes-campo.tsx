@@ -339,6 +339,7 @@ function Page() {
             sort_order: draft.sort_order ?? null,
             event_date: draft.event_date ?? null,
             period: draft.period ?? null,
+            attachments: draft.attachments ?? [],
           },
         },
       });
