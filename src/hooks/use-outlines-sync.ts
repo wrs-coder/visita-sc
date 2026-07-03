@@ -26,6 +26,10 @@ import {
   listCloudOutlineTree,
   replaceCloudOutlineTree,
 } from "@/lib/personal-outlines.functions";
+import {
+  serializeAttachments,
+  parseAttachmentsFromContent,
+} from "@/lib/outline-attachments";
 
 const FIXED_OUTLINE_SENTINEL = "__fixed__week-outlines";
 const FIXED_FIELD_SENTINEL = "__fixed__week-considerations";
@@ -54,7 +58,8 @@ function contentOf(n: FieldNote) {
     event_date: n.event_date ?? null,
     period: n.period ?? null,
     // Anexos viajam junto (fotos referenciam apenas o dispositivo local).
-    attachments: n.attachments ?? [],
+    // Passa por `serializeAttachments` para nunca subir jsonb inválido.
+    attachments: serializeAttachments(n.attachments ?? []),
   };
 }
 
@@ -191,9 +196,7 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
         sort_order: typeof cj.sort_order === "number" ? cj.sort_order : null,
         event_date: typeof cj.event_date === "string" ? cj.event_date : undefined,
         period: typeof cj.period === "string" ? cj.period : undefined,
-        attachments: Array.isArray(cj.attachments)
-          ? (cj.attachments as FieldNote["attachments"])
-          : undefined,
+        attachments: parseAttachmentsFromContent(cj),
         updated_at: cTime,
         cloud_id: row.id,
         synced_at: Date.now(),
