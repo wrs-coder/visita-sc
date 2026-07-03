@@ -91,6 +91,7 @@ import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
+import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
 import { RichOutlineContent } from "@/lib/rich-content";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
