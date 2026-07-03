@@ -20,10 +20,16 @@ export function AttachmentLightbox({ open, src, alt, onClose }: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        // Impede que o ESC também feche o Dialog pai (tela cheia da nota).
+        e.stopPropagation();
+        e.preventDefault();
+        onClose();
+      }
     };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    // `capture: true` garante que interceptamos antes do listener do Radix Dialog.
+    document.addEventListener("keydown", onKey, { capture: true });
+    return () => document.removeEventListener("keydown", onKey, { capture: true } as EventListenerOptions);
   }, [open, onClose]);
 
   if (!open) return null;
