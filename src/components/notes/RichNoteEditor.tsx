@@ -146,6 +146,8 @@ export function RichNoteEditor({
   maxHeight = "70vh",
   outlineId,
   compact = false,
+  attachments,
+  onAttachmentsChange,
 }: RichNoteEditorProps) {
 
   const { t } = useTranslation();
@@ -153,6 +155,7 @@ export function RichNoteEditor({
   const [focusMode, setFocusMode] = useState(false);
   const kbVisible = useVirtualKeyboardVisible();
   const lastEmittedRef = useRef<string>("");
+  const [attachDialog, setAttachDialog] = useState<"photo" | "link" | null>(null);
   // Tick para forçar leitura do CharacterCount após updates de conteúdo.
   const [, setTick] = useState(0);
 
