@@ -7,6 +7,8 @@
  * - Links (vídeo/publicação): apenas a URL de texto.
  * - `openExternalUrl` tenta o plugin nativo (@capacitor/browser) e faz
  *   fallback silencioso para window.open — nunca deixa o clique "morto".
+ * - `serializeAttachments`/`parseAttachmentsFromContent` garantem que o
+ *   round-trip com o Supabase (jsonb content_json) preserve todos os tipos.
  */
 
 export type NoteAttachmentKind = "photo" | "video" | "publication";
