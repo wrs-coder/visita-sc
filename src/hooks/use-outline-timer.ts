@@ -323,21 +323,12 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
     if (!snap.isRunning) return;
     const id = window.setInterval(() => {
       const cur = snapRef.current;
-      if (!cur.isRunning) return;
       const now = Date.now();
+      const next = computeTickAdvance(cur, now);
+      if (!next) return;
       const deltaSec = Math.floor((now - cur.lastTickAt) / 1000);
-      if (deltaSec < 1) return;
-      const nextElapsed = cur.elapsedSec + deltaSec;
-      const next: TimerSnapshot = {
-        ...cur,
-        elapsedSec: nextElapsed,
-        lastTickAt: cur.lastTickAt + deltaSec * 1000,
-        // Em countdown, pausa automaticamente ao chegar no alvo.
-        isRunning:
-          cur.mode === "countdown" && nextElapsed >= cur.targetSec
-            ? false
-            : true,
-      };
+      logTimerEvent("tick", { deltaSec });
+      if (deltaSec > 2) logTimerEvent("tick-drift", { deltaSec });
       commit(next);
     }, 1000);
     return () => window.clearInterval(id);
