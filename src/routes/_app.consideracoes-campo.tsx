@@ -595,6 +595,7 @@ function Page() {
             sort_order: note.sort_order ?? null,
             event_date: note.event_date ?? null,
             period: note.period ?? null,
+            attachments: note.attachments ?? [],
           },
         },
       });
