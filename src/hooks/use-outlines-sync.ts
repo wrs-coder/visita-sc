@@ -53,6 +53,8 @@ function contentOf(n: FieldNote) {
     sort_order: n.sort_order ?? null,
     event_date: n.event_date ?? null,
     period: n.period ?? null,
+    // Anexos viajam junto (fotos referenciam apenas o dispositivo local).
+    attachments: n.attachments ?? [],
   };
 }
 
@@ -189,6 +191,9 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
         sort_order: typeof cj.sort_order === "number" ? cj.sort_order : null,
         event_date: typeof cj.event_date === "string" ? cj.event_date : undefined,
         period: typeof cj.period === "string" ? cj.period : undefined,
+        attachments: Array.isArray(cj.attachments)
+          ? (cj.attachments as FieldNote["attachments"])
+          : undefined,
         updated_at: cTime,
         cloud_id: row.id,
         synced_at: Date.now(),

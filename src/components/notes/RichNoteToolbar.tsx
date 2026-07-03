@@ -34,6 +34,8 @@ import {
   IndentDecrease,
   Type,
   Focus,
+  ImagePlus,
+  Link as LinkExternalIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -82,6 +84,10 @@ interface ToolbarProps {
    * espaço vertical no smartphone sem perder funcionalidade.
    */
   compact?: boolean;
+  /** Callback opcional para abrir o diálogo de anexar imagem. */
+  onAddPhotoAttachment?: () => void;
+  /** Callback opcional para abrir o diálogo de vincular link. */
+  onAddLinkAttachment?: () => void;
 }
 
 export function RichNoteToolbar({
@@ -91,6 +97,8 @@ export function RichNoteToolbar({
   onToggleFocusMode,
   outlineId,
   compact = false,
+  onAddPhotoAttachment,
+  onAddLinkAttachment,
 }: ToolbarProps) {
   const { t } = useTranslation();
   const [colorOpen, setColorOpen] = useState(false);
@@ -351,6 +359,29 @@ export function RichNoteToolbar({
             <Focus className="h-4 w-4" />
           </Button>
         ) : <div />}
+
+        {/* Anexos — botões extras (imagem + link). Renderiza fora do grid
+            para manter as 2 linhas originais quando ativos. */}
+        {(onAddPhotoAttachment || onAddLinkAttachment) && (
+          <div className="col-span-5 flex items-center justify-end gap-1 -mt-1">
+            {onAddPhotoAttachment && (
+              <Button type="button" variant="ghost" size="sm" className={groupBtn(false)}
+                title={t("personalOutlines.attachments.addPhoto", { defaultValue: "Anexar imagem" })}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={onAddPhotoAttachment}>
+                <ImagePlus className="h-4 w-4" />
+              </Button>
+            )}
+            {onAddLinkAttachment && (
+              <Button type="button" variant="ghost" size="sm" className={groupBtn(false)}
+                title={t("personalOutlines.attachments.addLink", { defaultValue: "Vincular link" })}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={onAddLinkAttachment}>
+                <LinkExternalIcon className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -912,6 +943,38 @@ export function RichNoteToolbar({
           >
             <Focus className="h-4 w-4" />
           </Button>
+        </>
+      )}
+
+      {(onAddPhotoAttachment || onAddLinkAttachment) && (
+        <>
+          {sep}
+          {onAddPhotoAttachment && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={btn(false)}
+              title={t("personalOutlines.attachments.addPhoto", { defaultValue: "Anexar imagem" })}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onAddPhotoAttachment}
+            >
+              <ImagePlus className="h-4 w-4" />
+            </Button>
+          )}
+          {onAddLinkAttachment && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={btn(false)}
+              title={t("personalOutlines.attachments.addLink", { defaultValue: "Vincular link" })}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onAddLinkAttachment}
+            >
+              <LinkExternalIcon className="h-4 w-4" />
+            </Button>
+          )}
         </>
       )}
 

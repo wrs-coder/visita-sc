@@ -15,6 +15,15 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const attachmentSchema = z.object({
+  id: z.string().min(1).max(120),
+  kind: z.enum(["photo", "video", "publication"]),
+  title: z.string().max(120).default(""),
+  uri: z.string().max(4000).optional().nullable(),
+  url: z.string().max(4000).optional().nullable(),
+  created_at: z.number().int().nonnegative().optional(),
+});
+
 const outlineContentSchema = z.object({
   prayer: z.string().max(2000).optional().nullable(),
   territory: z.string().max(400).optional().nullable(),
@@ -26,6 +35,9 @@ const outlineContentSchema = z.object({
   // dia e período não se percam entre dispositivos.
   event_date: z.string().trim().max(40).optional().nullable(),
   period: z.string().trim().max(40).optional().nullable(),
+  // Anexos em miniatura (fotos, vídeos, publicações). Fotos ficam apenas
+  // no dispositivo — o `uri` local não é utilizável em outros aparelhos.
+  attachments: z.array(attachmentSchema).max(60).optional().nullable(),
 });
 
 export type CloudOutlineContent = z.infer<typeof outlineContentSchema>;

@@ -23,8 +23,11 @@ import { Typography } from "@tiptap/extension-typography";
 import { CharacterCount } from "@tiptap/extension-character-count";
 import { Focus as TiptapFocus } from "@tiptap/extension-focus";
 import { RichNoteToolbar } from "./RichNoteToolbar";
+import { OutlineAttachmentsBar } from "./OutlineAttachmentsBar";
+import { AttachmentAddDialog } from "./AttachmentAddDialog";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
 import { cn } from "@/lib/utils";
+import type { NoteAttachment } from "@/lib/outline-attachments";
 
 interface RichNoteEditorProps {
   value: string;
@@ -39,6 +42,10 @@ interface RichNoteEditorProps {
   outlineId?: string;
   /** Missão 01: barra compacta (2 linhas) — usado no modo edição imersivo. */
   compact?: boolean;
+  /** Anexos atuais do esboço (opcional). */
+  attachments?: NoteAttachment[];
+  /** Callback para atualizar a lista de anexos (opcional). */
+  onAttachmentsChange?: (next: NoteAttachment[]) => void;
 }
 
 
@@ -139,6 +146,8 @@ export function RichNoteEditor({
   maxHeight = "70vh",
   outlineId,
   compact = false,
+  attachments,
+  onAttachmentsChange,
 }: RichNoteEditorProps) {
 
   const { t } = useTranslation();
@@ -146,6 +155,7 @@ export function RichNoteEditor({
   const [focusMode, setFocusMode] = useState(false);
   const kbVisible = useVirtualKeyboardVisible();
   const lastEmittedRef = useRef<string>("");
+  const [attachDialog, setAttachDialog] = useState<"photo" | "link" | null>(null);
   // Tick para forçar leitura do CharacterCount após updates de conteúdo.
   const [, setTick] = useState(0);
 
@@ -274,7 +284,16 @@ export function RichNoteEditor({
         onToggleFocusMode={() => setFocusMode((v) => !v)}
         outlineId={outlineId}
         compact={compact}
+        onAddPhotoAttachment={onAttachmentsChange ? () => setAttachDialog("photo") : undefined}
+        onAddLinkAttachment={onAttachmentsChange ? () => setAttachDialog("link") : undefined}
       />
+
+      {onAttachmentsChange && attachments && attachments.length > 0 && (
+        <OutlineAttachmentsBar
+          attachments={attachments}
+          onRemove={(id) => onAttachmentsChange(attachments.filter((a) => a.id !== id))}
+        />
+      )}
 
       <EditorContent editor={editor} />
       {showFooter && (
@@ -303,6 +322,16 @@ export function RichNoteEditor({
             })}
           </span>
         </div>
+      )}
+
+      {onAttachmentsChange && attachDialog && (
+        <AttachmentAddDialog
+          open
+          mode={attachDialog}
+          noteId={noteId ?? "unknown"}
+          onClose={() => setAttachDialog(null)}
+          onAdd={(a) => onAttachmentsChange([...(attachments ?? []), a])}
+        />
       )}
     </div>
   );
