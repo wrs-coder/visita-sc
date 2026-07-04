@@ -15,6 +15,10 @@ export interface TimerSizePreset {
   toolbarText: string;
   /** classes Tailwind aplicadas ao display MM:SS em variant="fullscreen" */
   fullscreenText: string;
+  /** classes Tailwind aplicadas à hora de término (HH:MM) em variant="toolbar" */
+  toolbarEndLabel: string;
+  /** classes Tailwind aplicadas à hora de término (HH:MM) em variant="fullscreen" */
+  fullscreenEndLabel: string;
 }
 
 export const TIMER_SIZES: TimerSizePreset[] = [
