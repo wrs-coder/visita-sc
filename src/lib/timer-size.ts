@@ -22,22 +22,16 @@ export const TIMER_SIZES: TimerSizePreset[] = [
     id: "normal",
     toolbarText: "text-xs px-1",
     fullscreenText: "text-lg px-1",
-    toolbarEndLabel: "text-xs px-1",
-    fullscreenEndLabel: "text-lg px-1",
   },
   {
     id: "large",
     toolbarText: "text-sm px-1.5",
     fullscreenText: "text-2xl px-2 py-0.5",
-    toolbarEndLabel: "text-sm px-1.5",
-    fullscreenEndLabel: "text-2xl px-2 py-0.5",
   },
   {
     id: "huge",
     toolbarText: "text-base px-2",
     fullscreenText: "text-4xl px-3 py-1",
-    toolbarEndLabel: "text-base px-2",
-    fullscreenEndLabel: "text-4xl px-3 py-1",
   },
 ];
 
