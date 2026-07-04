@@ -170,6 +170,10 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
     isFullscreen ? size.preset.fullscreenText : size.preset.toolbarText,
     isAuto ? alertColorClass(timer.alertLevel) : preset.chipText,
   );
+  const endLabelClass = cn(
+    "tabular-nums font-semibold whitespace-nowrap text-primary",
+    isFullscreen ? size.preset.fullscreenText : size.preset.toolbarText,
+  );
 
   return (
     <div
