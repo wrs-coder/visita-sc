@@ -279,6 +279,7 @@ export function RichNoteToolbar({
             <Button type="button" variant="ghost" size="sm" className={itemBtn(isActive("underline"))} onMouseDown={(e) => e.preventDefault()} title={t("personalOutlines.editor.toolbar.underline")} onClick={() => { editor.chain().focus().toggleUnderline().run(); }}><UnderlineIcon className="h-4 w-4" /></Button>
             <Button type="button" variant="ghost" size="sm" className={itemBtn(isActive("subscript"))} onMouseDown={(e) => e.preventDefault()} title={t("personalOutlines.editor.toolbar.subscript")} onClick={() => { editor.chain().focus().toggleSubscript().run(); }}><SubIcon className="h-4 w-4" /></Button>
             <Button type="button" variant="ghost" size="sm" className={itemBtn(isActive("superscript"))} onMouseDown={(e) => e.preventDefault()} title={t("personalOutlines.editor.toolbar.superscript")} onClick={() => { editor.chain().focus().toggleSuperscript().run(); }}><SupIcon className="h-4 w-4" /></Button>
+            <FontSizeSelect editor={editor} />
           </>)}
         </Popover>
 
