@@ -279,7 +279,7 @@ function ScheduleOverride({
   })();
   if (!editable) return <TemplateExtraBlock label={label} value={scheduleText} />;
 
-  const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+  const dayKeys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
   const timeValue = time ? time.slice(0, 5) : "";
   const hasOverride = (templateWeekday ?? null) !== (weekday ?? null) || (templateTime ?? "") !== (time ?? "");
 

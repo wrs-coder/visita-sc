@@ -9,7 +9,7 @@
  * localStorage + sincronizado entre superfícies via BroadcastChannel).
  * Tema visual configurável (semafórico ou alto contraste) via useTimerTheme.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Pause,
@@ -85,6 +85,28 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   const [warnOpen, setWarnOpen] = useState(false);
   const warnedRef = useRef(false);
 
+  // Relógio de parede usado apenas quando pausado: enquanto o cronômetro
+  // corre, `remainingSec` muda a cada segundo e já força re-render. Quando
+  // pausado, precisamos atualizar a hora de término estimada para refletir
+  // o relógio real (se o usuário reiniciasse naquele instante).
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (timer.isRunning) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [timer.isRunning]);
+
+  const endLabel = useMemo(() => {
+    if (timer.mode !== "countdown") return null;
+    const base = timer.isRunning ? Date.now() : now;
+    const end = new Date(base + timer.remainingSec * 1000);
+    return new Intl.DateTimeFormat(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(end);
+  }, [timer.mode, timer.isRunning, timer.remainingSec, now]);
+
   useEffect(() => {
     if (variant !== "toolbar") return;
     if (timer.mode !== "countdown") {
@@ -147,6 +169,13 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
     "tabular-nums font-semibold cursor-pointer select-none",
     isFullscreen ? size.preset.fullscreenText : size.preset.toolbarText,
     isAuto ? alertColorClass(timer.alertLevel) : preset.chipText,
+  );
+  const endLabelClass = cn(
+    "tabular-nums font-bold whitespace-nowrap tracking-tight",
+    "bg-gradient-to-r from-sky-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent",
+    "[text-shadow:0_0_12px_rgba(56,189,248,0.55),0_0_28px_rgba(59,130,246,0.35)]",
+    "drop-shadow-[0_0_6px_rgba(56,189,248,0.45)]",
+    isFullscreen ? size.preset.fullscreenText : size.preset.toolbarText,
   );
 
   return (
@@ -273,6 +302,15 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
       >
         {display}
       </button>
+
+      {endLabel && (
+        <span
+          className={endLabelClass}
+          aria-label={t("personalOutlines.timer.endAt", { defaultValue: "Hora de término estimada" })}
+        >
+          {t("personalOutlines.timer.endShort", { defaultValue: "Término" })}: {endLabel}
+        </span>
+      )}
 
       <Button
         type="button"

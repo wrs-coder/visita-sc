@@ -1544,7 +1544,9 @@
       "oneMinuteWarningDesc": "Only 1 minute remaining until time runs out.",
       "sensorPrompt": "Forgot to start? Activate timer:",
       "sensorOther": "Other...",
-      "sensorDontRemind": "Don't remind again"
+      "sensorDontRemind": "Don't remind again",
+      "endShort": "Ends",
+      "endAt": "Estimated end time"
     },
     "editor": {
       "collapseMeta": "Collapse header",

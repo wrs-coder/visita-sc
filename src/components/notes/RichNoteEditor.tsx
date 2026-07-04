@@ -23,6 +23,7 @@ import { Typography } from "@tiptap/extension-typography";
 import { CharacterCount } from "@tiptap/extension-character-count";
 import { Focus as TiptapFocus } from "@tiptap/extension-focus";
 import { RichNoteToolbar } from "./RichNoteToolbar";
+import { FontSize } from "./extensions/font-size";
 import { OutlineAttachmentsBar } from "./OutlineAttachmentsBar";
 import { AttachmentAddDialog } from "./AttachmentAddDialog";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
@@ -166,6 +167,7 @@ export function RichNoteEditor({
           heading: { levels: [2, 3] },
         }),
         TextStyle,
+        FontSize,
         Color,
         FontFamily.configure({ types: ["textStyle"] }),
         Highlight.configure({ multicolor: true }),
