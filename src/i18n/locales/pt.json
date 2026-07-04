@@ -1545,7 +1545,9 @@
       "oneMinuteWarningDesc": "Resta apenas 1 minuto para o tempo terminar.",
       "sensorPrompt": "Esqueceu de iniciar? Ativar cronômetro:",
       "sensorOther": "Outro...",
-      "sensorDontRemind": "Não lembrar novamente"
+      "sensorDontRemind": "Não lembrar novamente",
+      "endShort": "Término",
+      "endAt": "Hora de término estimada"
     },
     "editor": {
       "collapseMeta": "Minimizar cabeçalho",
