@@ -1,61 +1,68 @@
-## Objetivo
+# Seletor Numérico de Tamanho de Fonte (Toolbar de Esboços)
 
-Cobrir o cronômetro com testes/logs de regressão, validar o novo fluxo de anexos nos dois modos "tela cheia", garantir round-trip correto no Supabase e restaurar o sensor de "esqueceu de iniciar" caso tenha sido afetado.
+Adição **isolada** de um Select numérico (8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30) na toolbar do editor Tiptap. Aplica `font-size` inline apenas à seleção, sem tocar no seletor de bloco (Normal/Título/Subtítulo/Citação) existente.
 
-## 1) Regressão do cronômetro (não acelerar com múltiplas instâncias)
+## 1. Extensão Tiptap `FontSize` (nova)
 
-- Novo arquivo `src/hooks/use-outline-timer.test.ts` (Vitest + `@testing-library/react`, já usado no projeto).
-- Cenário: `renderHook` monta **três** instâncias do `useOutlineTimer("test-id")` simultaneamente (simula toolbar + banner fullscreen + sensor). Chama `.start()` em uma, avança `vi.useFakeTimers()` em 10s, e verifica que `elapsedSec === 10` em todas — não 30. Trava o bug: montar N vezes acelerava N×.
-- Cenário complementar: pause/resume mantém o `elapsedSec` estável; reset zera.
-- `bunx vitest run src/hooks/use-outline-timer.test.ts` deve passar.
+Criar `src/components/notes/extensions/font-size.ts` estendendo o mark `textStyle` (já presente via `@tiptap/extension-text-style`) para adicionar o atributo `fontSize`:
 
-## 2) Instrumentação de logs/métricas do `use-outline-timer`
+- `addGlobalAttributes` em `textStyle` com `fontSize`:
+  - `parseHTML`: lê `element.style.fontSize` (aceita valores em `px`).
+  - `renderHTML`: emite `style="font-size: <valor>px"` (mesclado com outros atributos de `textStyle` como cor/família — o TextStyle já faz a fusão).
+- Comandos `setFontSize(px: number)` e `unsetFontSize()`:
+  - `setFontSize`: `chain().setMark('textStyle', { fontSize: \`${px}px\` }).run()`.
+  - `unsetFontSize`: `chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run()`.
+- Sanitização: só aceita valores da lista fixa (8–30, passo 2). Inválidos → ignora.
 
-- Adicionar utilitário interno `logTimerEvent(event, payload)` no próprio hook (dev only) — usa `import.meta.env.DEV` para não poluir produção.
-- Sinaliza: `mount`, `start`, `pause`, `reset`, `tick-drift` (quando `deltaSec > 2`, útil para detectar aba em background), `broadcast-in`, `broadcast-out`.
-- Em produção mantém um contador em `window.__outlineTimerMetrics` (opt-in) com `{ ticks, driftEvents, maxDelta }` para diagnóstico via console. Zero overhead se ninguém ler.
-- Sem quebra de API pública.
+Registrar a extensão no `useEditor` de `RichNoteEditor.tsx` logo depois de `TextStyle`. Nada mais no editor muda — o `content_json` já serializa marks `textStyle` normalmente, então sincroniza no Supabase automaticamente.
 
-## 3) Validar anexos + lightbox nos dois "tela cheia"
+## 2. UI do Select na Toolbar
 
-- Confirmar via Playwright headless (`/tmp/browser/attachments/`) num roteiro:
-  1. Abrir `/consideracoes-campo` → criar/abrir esboço com 1 foto + 1 link → tela cheia da aba → clicar na miniatura da foto (lightbox abre) → clicar no fundo/X (fecha) → **duplo toque no conteúdo** deve manter o dialog aberto (regra herdada da correção anterior).
-  2. Abrir dashboard → tela cheia da nota → confirmar barra de anexos visível em `readOnly` (sem X), clique na foto abre lightbox, clique no X do lightbox fecha, popup pai continua aberto.
-- Se algum handler no lightbox propagar o click e fechar o `FieldNoteFullscreenDialog`, ajusto `AttachmentLightbox` para `e.stopPropagation()` no wrapper `role="dialog"` e no `onKeyDown` (Escape só fecha o lightbox, não o dialog pai). Já está com `stopPropagation` no `<img>` e no botão, mas o backdrop `onClick={onClose}` sobe para o dialog pai — vou envolver com `stopPropagation` também.
+Editar `src/components/notes/RichNoteToolbar.tsx` (duas variantes: `compact` e desktop).
 
-## 4) Vídeos/publicações consistentes na tela cheia
+Componente reutilizável interno `FontSizeSelect({ editor })`:
 
-- Hoje `OutlineAttachmentsBar` chama `openExternalUrl(a.url)` — funciona nos dois modos porque o componente é o mesmo. Vou apenas:
-  - Garantir que `toDisplaySrc` **não** é aplicado para vídeo/publicação (é só para `photo`) — já está correto, mas adicionar teste unitário curto em `src/lib/outline-attachments.test.ts` cobrindo:
-    - `toDisplaySrc("file:///a.jpg")` no ambiente sem Capacitor devolve a mesma string;
-    - `toDisplaySrc("https://x/y")` passa direto;
-    - `isLikelyValidUrl("jwlibrary://...")` → true; `"foo"` → false.
-  - Deep-link Android: `openExternalUrl` já cai em `window.open` silencioso — sem mudança.
-  - Miniatura de vídeo/publicação exibe título truncado (já ok) e ícone (`PlayCircle` / `FileText`).
+- **Select shadcn** (`@/components/ui/select`) com `SelectTrigger` compacto (`h-8 w-16 px-2 text-xs`).
+- **Options**: `[8,10,12,14,16,18,20,22,24,26,28,30]` + item extra `"Padrão"` no topo (chama `unsetFontSize()`).
+- **Reatividade blindada (Android/mobile)**:
+  - Estado local `currentSize` sincronizado **estritamente** via `editor.on('selectionUpdate', updater)` — **não** escutar `'transaction'` para evitar re-render a cada tecla digitada (gargalo em WebView Android).
+  - Complementar com `editor.on('focus', updater)` para recomputar ao reentrar no editor.
+  - `updater`: lê `editor.getAttributes('textStyle').fontSize`, extrai o número e atualiza o valor exibido; ausente = placeholder `"16"`.
+  - `useEffect` faz `off()` de ambos os listeners no cleanup.
+- **Preservação rígida da seleção (Android)**:
+  - Ao abrir o Select (`onOpenChange(true)`), capturar `savedRange = { from, to }` de `editor.state.selection` em um `useRef`.
+  - `onMouseDown={(e) => e.preventDefault()}` no `SelectTrigger` (mantém foco no editor no desktop).
+  - No `onValueChange`, executar tudo numa única chain para não perder o range no WebView:
+    ```
+    editor.chain()
+      .focus()
+      .setTextSelection(savedRangeRef.current ?? editor.state.selection)
+      .setFontSize(Number(v))   // ou .unsetFontSize() se for "Padrão"
+      .run();
+    ```
+  - Isso garante que, mesmo se o Radix Select fechar o teclado do Android e colapsar a seleção do ProseMirror antes do handler, a formatação seja aplicada ao trecho originalmente selecionado.
 
-## 5) Serialização `content_json` (Supabase round-trip)
+Posicionamento:
 
-- Revisar `src/hooks/use-outlines-sync.ts` (linhas 57 e 194) e `src/lib/personal-outlines.functions.ts` (schema Zod linha 40):
-  - Confirmar que fotos com `uri: "file://…"` gravadas no Filesystem **não** são enviadas ao Supabase se o dispositivo não deve replicá-las (regra: fotos são locais). A URI ainda é serializada — se o outro dispositivo receber, `toDisplaySrc` devolve string vazia e o card mostra fallback `FileText`. Isso é o comportamento desejado; documentar no schema comment.
-  - Adicionar teste em `src/hooks/use-outlines-sync.test.ts` (novo) validando que um `attachments: [photo, video, publication]` sobrevive a `serialize → JSON.parse(JSON.stringify(...)) → deserialize` sem perder campos.
-- Se o schema Zod estiver rejeitando algum `kind`, ampliar `attachmentSchema` para `z.enum(["photo","video","publication"])`.
+- **Desktop (linha principal)**: ao lado dos botões B/I/U, logo antes do separador atual.
+- **Compact (grid de 5 colunas)**: adicionar como célula no G2 (grupo Inline) — Select fica ao lado dos toggles B/I/U dentro do popover; e um mini-trigger de Select fica visível na barra dentro do grupo Fonte (G3), acima da lista de famílias existente. O seletor de bloco (G1) permanece intocado.
 
-## 6) Sensor "esqueceu de iniciar" (60s)
+## 3. Comportamento
 
-- Reler `OutlineInactivitySensor.tsx` — a lógica de owner + `INACTIVITY_MS = 60_000` está intacta e nada nos ajustes recentes tocou aí.
-- Validação manual via Playwright: abrir esboço vazio, aguardar 60s (com `vi.useFakeTimers` no teste unitário e com `page.wait_for_timeout` no e2e), o banner âmbar aparece no topo. Clicar em `5min` inicia o cronômetro e some.
-- Adicionar teste `src/components/notes/OutlineInactivitySensor.test.tsx` que:
-  - Monta o sensor com `outlineId="x"`, avança `vi.advanceTimersByTime(60_000)` e espera `screen.getByRole("alert")` visível;
-  - Ao iniciar o timer (via `useOutlineTimer("x").start()` de outra instância), o banner some.
-- Se o teste falhar por regressão real (ex.: ownership travado depois de desmontar), corrijo o cleanup no `useEffect` de ownership para garantir decremento correto.
+- Sem alterar bloco: `setMark('textStyle', ...)` só aplica ao trecho selecionado, nunca toca em `heading/paragraph`. Se não há seleção (caret), a marca fica "armada" para o próximo texto digitado (comportamento padrão Tiptap, esperado).
+- "Padrão" remove o mark e o texto volta ao CSS herdado — garante que a janela imersiva continue calculando alturas normalmente, já que o CSS base do container não muda.
 
-## Validação final
+## 4. Validação
 
-- `bunx vitest run` (novos testes verdes)
-- `bunx tsgo --noEmit` limpo
-- Playwright screenshots dos 2 fullscreens (esboço + dashboard) com anexos e do banner do sensor após 60s
+- `bunx tsgo --noEmit` 100% limpo.
+- Nenhuma mudança em cálculos de layout imersivo (`_app.consideracoes-campo.tsx`, `FieldNoteFullscreenDialog.tsx`): a extensão apenas emite `<span style="font-size:Npx">`, que respeita o fluxo normal do documento.
+- Testes existentes de sync/attachments não são afetados (a marca é parte do JSON padrão do Tiptap).
 
-## O que NÃO muda
+## Detalhes técnicos
 
-- Nenhuma alteração no modelo de dados, nas RLS policies, nas rotas de auth, no dashboard ou nos relatórios.
-- Nenhuma nova dependência npm.
+- Arquivos alterados:
+  - `src/components/notes/extensions/font-size.ts` (novo).
+  - `src/components/notes/RichNoteEditor.tsx` — importa e registra `FontSize`.
+  - `src/components/notes/RichNoteToolbar.tsx` — importa `Select` do shadcn e injeta `FontSizeSelect` nos dois modos.
+- Sem novas deps npm (usa `@tiptap/extension-text-style` já instalado + `@tiptap/core`).
+- Tipagem: `declare module '@tiptap/core' { interface Commands<ReturnType> { fontSize: { setFontSize: (px:number)=>ReturnType; unsetFontSize: ()=>ReturnType } } }`.

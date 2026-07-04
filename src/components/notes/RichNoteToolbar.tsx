@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Editor } from "@tiptap/react";
 import {
@@ -45,6 +45,75 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { OutlineTimer } from "./OutlineTimer";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FONT_SIZE_OPTIONS, normalizeFontSize } from "./extensions/font-size";
+
+/**
+ * Select numérico de tamanho de fonte (Word-like).
+ *
+ * - Lê o valor corrente escutando estritamente `selectionUpdate` (evita gargalo
+ *   no Android — não escuta `transaction` a cada tecla).
+ * - Blinda a seleção contra o WebView do Android: ao abrir o Select, captura
+ *   o range em um ref e o reaplica com `setTextSelection()` na mesma chain
+ *   que chama `setFontSize()` / `unsetFontSize()`.
+ */
+function FontSizeSelect({ editor, className }: { editor: Editor; className?: string }) {
+  const [current, setCurrent] = useState<string>("");
+  const savedRangeRef = useRef<{ from: number; to: number } | null>(null);
+
+  useEffect(() => {
+    const readCurrent = () => {
+      const raw = (editor.getAttributes("textStyle") as { fontSize?: string | null }).fontSize;
+      const norm = normalizeFontSize(raw ?? null);
+      setCurrent(norm ? String(parseInt(norm, 10)) : "");
+    };
+    readCurrent();
+    editor.on("selectionUpdate", readCurrent);
+    editor.on("focus", readCurrent);
+    return () => {
+      editor.off("selectionUpdate", readCurrent);
+      editor.off("focus", readCurrent);
+    };
+  }, [editor]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      const { from, to } = editor.state.selection;
+      savedRangeRef.current = { from, to };
+    }
+  };
+
+  const handleValueChange = (v: string) => {
+    const range = savedRangeRef.current;
+    const chain = editor.chain().focus();
+    if (range) chain.setTextSelection(range);
+    if (v === "__default__") {
+      chain.unsetFontSize().run();
+    } else {
+      chain.setFontSize(`${v}px`).run();
+    }
+    savedRangeRef.current = null;
+  };
+
+  return (
+    <Select value={current || undefined} onOpenChange={handleOpenChange} onValueChange={handleValueChange}>
+      <SelectTrigger
+        className={cn("h-8 w-[68px] px-2 text-xs shrink-0", className)}
+        onMouseDown={(e) => e.preventDefault()}
+        aria-label="Tamanho da fonte"
+        title="Tamanho da fonte"
+      >
+        <SelectValue placeholder="16" />
+      </SelectTrigger>
+      <SelectContent className="z-[130] min-w-[80px]">
+        <SelectItem value="__default__" className="text-xs">Padrão</SelectItem>
+        {FONT_SIZE_OPTIONS.map((n) => (
+          <SelectItem key={n} value={String(n)} className="text-xs">{n}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 const TEXT_COLORS = [
   "#0f172a", "#dc2626", "#ea580c", "#ca8a04",
@@ -210,6 +279,7 @@ export function RichNoteToolbar({
             <Button type="button" variant="ghost" size="sm" className={itemBtn(isActive("underline"))} onMouseDown={(e) => e.preventDefault()} title={t("personalOutlines.editor.toolbar.underline")} onClick={() => { editor.chain().focus().toggleUnderline().run(); }}><UnderlineIcon className="h-4 w-4" /></Button>
             <Button type="button" variant="ghost" size="sm" className={itemBtn(isActive("subscript"))} onMouseDown={(e) => e.preventDefault()} title={t("personalOutlines.editor.toolbar.subscript")} onClick={() => { editor.chain().focus().toggleSubscript().run(); }}><SubIcon className="h-4 w-4" /></Button>
             <Button type="button" variant="ghost" size="sm" className={itemBtn(isActive("superscript"))} onMouseDown={(e) => e.preventDefault()} title={t("personalOutlines.editor.toolbar.superscript")} onClick={() => { editor.chain().focus().toggleSuperscript().run(); }}><SupIcon className="h-4 w-4" /></Button>
+            <FontSizeSelect editor={editor} />
           </>)}
         </Popover>
 
@@ -469,6 +539,11 @@ export function RichNoteToolbar({
           ))}
         </PopoverContent>
       </Popover>
+
+      {sep}
+
+      {/* Tamanho de fonte numérico (isolado — não altera bloco) */}
+      <FontSizeSelect editor={editor} />
 
       {sep}
 
