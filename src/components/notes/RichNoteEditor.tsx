@@ -167,6 +167,7 @@ export function RichNoteEditor({
           heading: { levels: [2, 3] },
         }),
         TextStyle,
+        FontSize,
         Color,
         FontFamily.configure({ types: ["textStyle"] }),
         Highlight.configure({ multicolor: true }),
