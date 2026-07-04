@@ -85,6 +85,28 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   const [warnOpen, setWarnOpen] = useState(false);
   const warnedRef = useRef(false);
 
+  // Relógio de parede usado apenas quando pausado: enquanto o cronômetro
+  // corre, `remainingSec` muda a cada segundo e já força re-render. Quando
+  // pausado, precisamos atualizar a hora de término estimada para refletir
+  // o relógio real (se o usuário reiniciasse naquele instante).
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (timer.isRunning) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [timer.isRunning]);
+
+  const endLabel = useMemo(() => {
+    if (timer.mode !== "countdown") return null;
+    const base = timer.isRunning ? Date.now() : now;
+    const end = new Date(base + timer.remainingSec * 1000);
+    return new Intl.DateTimeFormat(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(end);
+  }, [timer.mode, timer.isRunning, timer.remainingSec, now]);
+
   useEffect(() => {
     if (variant !== "toolbar") return;
     if (timer.mode !== "countdown") {
