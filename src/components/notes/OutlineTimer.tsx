@@ -171,7 +171,10 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
     isAuto ? alertColorClass(timer.alertLevel) : preset.chipText,
   );
   const endLabelClass = cn(
-    "tabular-nums font-semibold whitespace-nowrap text-primary",
+    "tabular-nums font-bold whitespace-nowrap tracking-tight",
+    "bg-gradient-to-r from-sky-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent",
+    "[text-shadow:0_0_12px_rgba(56,189,248,0.55),0_0_28px_rgba(59,130,246,0.35)]",
+    "drop-shadow-[0_0_6px_rgba(56,189,248,0.45)]",
     isFullscreen ? size.preset.fullscreenText : size.preset.toolbarText,
   );
 
