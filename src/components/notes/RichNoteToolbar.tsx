@@ -542,6 +542,11 @@ export function RichNoteToolbar({
 
       {sep}
 
+      {/* Tamanho de fonte numérico (isolado — não altera bloco) */}
+      <FontSizeSelect editor={editor} />
+
+      {sep}
+
       {/* Formatação inline */}
       <Button
         type="button"
