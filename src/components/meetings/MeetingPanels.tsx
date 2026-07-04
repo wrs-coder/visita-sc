@@ -16,13 +16,9 @@ import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { TemplateExtraBlock, TemplateExtraEditable } from "./TemplateExtraBlock";
 import { useMeetingsEditMode, ReadOnlyValue } from "./meetings-edit-mode";
 
-const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
-
 function formatScheduleText(t: (k: string) => string, weekday: number | null | undefined, time: string | null | undefined): string | null {
   if (weekday == null && !time) return null;
-  const dayLabel = weekday != null && weekday >= 0 && weekday <= 6
-    ? t(`meetingsTalks.weekdays.${WEEKDAY_KEYS[weekday]}`)
-    : "—";
+  const dayLabel = weekday != null ? t(`templates.weekdays.${weekday}`) : "—";
   const timeLabel = time ? time.slice(0, 5) : "—";
   return `${dayLabel} — ${timeLabel}`;
 }
@@ -277,15 +273,13 @@ function ScheduleOverride({
   const save = useServerFn(setVisitTemplateOverride);
   const scheduleText = (() => {
     if (weekday == null && !time) return null;
-    const dayLabel = weekday != null && weekday >= 0 && weekday <= 6
-      ? t(`meetingsTalks.weekdays.${WEEKDAY_KEYS[weekday]}`)
-      : "—";
+    const dayLabel = weekday != null ? t(`templates.weekdays.${weekday}`) : "—";
     const timeLabel = time ? time.slice(0, 5) : "—";
     return `${dayLabel} — ${timeLabel}`;
   })();
   if (!editable) return <TemplateExtraBlock label={label} value={scheduleText} />;
 
-  const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+  const dayKeys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
   const timeValue = time ? time.slice(0, 5) : "";
   const hasOverride = (templateWeekday ?? null) !== (weekday ?? null) || (templateTime ?? "") !== (time ?? "");
 
