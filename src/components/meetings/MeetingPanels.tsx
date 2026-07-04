@@ -277,7 +277,9 @@ function ScheduleOverride({
   const save = useServerFn(setVisitTemplateOverride);
   const scheduleText = (() => {
     if (weekday == null && !time) return null;
-    const dayLabel = weekday != null ? t(`templates.weekdays.${weekday}`) : "—";
+    const dayLabel = weekday != null && weekday >= 0 && weekday <= 6
+      ? t(`meetingsTalks.weekdays.${WEEKDAY_KEYS[weekday]}`)
+      : "—";
     const timeLabel = time ? time.slice(0, 5) : "—";
     return `${dayLabel} — ${timeLabel}`;
   })();
