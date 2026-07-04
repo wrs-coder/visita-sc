@@ -302,19 +302,10 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
 
       {endLabel && (
         <span
-          className="text-[11px] sm:text-xs text-primary font-semibold tabular-nums whitespace-nowrap"
+          className={endLabelClass}
           aria-label={t("personalOutlines.timer.endAt", { defaultValue: "Hora de término estimada" })}
         >
-          {t("personalOutlines.timer.endShort", { defaultValue: "Término" })}:{" "}
-          <span
-            className={cn(
-              "tabular-nums",
-              isFullscreen ? size.preset.fullscreenEndLabel : size.preset.toolbarEndLabel,
-            )}
-            aria-label={endLabel}
-          >
-            {endLabel}
-          </span>
+          {t("personalOutlines.timer.endShort", { defaultValue: "Término" })}: {endLabel}
         </span>
       )}
 
