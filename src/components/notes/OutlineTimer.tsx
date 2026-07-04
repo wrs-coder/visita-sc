@@ -9,7 +9,7 @@
  * localStorage + sincronizado entre superfícies via BroadcastChannel).
  * Tema visual configurável (semafórico ou alto contraste) via useTimerTheme.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Pause,
