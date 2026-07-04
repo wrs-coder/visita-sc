@@ -296,6 +296,15 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
         {display}
       </button>
 
+      {endLabel && (
+        <span
+          className="text-[11px] sm:text-xs text-muted-foreground tabular-nums whitespace-nowrap"
+          aria-label={t("personalOutlines.timer.endAt", { defaultValue: "Hora de término estimada" })}
+        >
+          {t("personalOutlines.timer.endShort", { defaultValue: "Término" })}: {endLabel}
+        </span>
+      )}
+
       <Button
         type="button"
         variant="ghost"
