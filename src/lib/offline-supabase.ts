@@ -62,17 +62,26 @@ function isNetworkError(err: unknown): boolean {
 }
 
 export type OfflineResult = { error: { message: string } | null; queued: boolean };
+export type OfflineInsertOpts = {
+  /** Chave idempotente para dedupe na fila offline (evita inserts duplicados
+   *  quando o usuário navega/volta em placeholders). */
+  dedupeKey?: string;
+};
 
-export async function offlineInsert(table: string, payload: Payload): Promise<OfflineResult> {
+export async function offlineInsert(
+  table: string,
+  payload: Payload,
+  opts: OfflineInsertOpts = {},
+): Promise<OfflineResult> {
   const enriched = enrich(table, payload);
   if (isOffline()) {
-    enqueue({ table, op: "insert", payload: enriched });
+    enqueue({ table, op: "insert", payload: enriched, dedupeKey: opts.dedupeKey });
     return { error: null, queued: true };
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from(table as any) as any).insert(enriched);
   if (error && isNetworkError(error)) {
-    enqueue({ table, op: "insert", payload: enriched });
+    enqueue({ table, op: "insert", payload: enriched, dedupeKey: opts.dedupeKey });
     return { error: null, queued: true };
   }
   return { error: error ?? null, queued: false };
