@@ -15,9 +15,12 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PwaRegister } from "@/components/PwaRegister";
+import { OfflineStatusBar } from "@/components/OfflineStatusBar";
 import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-persister";
 import { flushQueue, startOfflineQueueAutoRetry } from "@/lib/offline-queue";
+import { ensureFreshSession } from "@/lib/session-ready";
 import { isOfflineMode } from "@/lib/connection-mode";
+import { toast } from "sonner";
 import "@/i18n";
 import "@/lib/theme";
 
