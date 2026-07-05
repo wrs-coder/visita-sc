@@ -157,9 +157,14 @@ function applyFetchInterceptor() {
 
 function applySupabaseAutoRefresh() {
   try {
-    if (current === "offline") {
-      // Para o auto-refresh do JWT — sem isso, em modo offline o cliente
-      // tentaria renovar o token, falharia e dispararia SIGNED_OUT.
+    // Pausa em duas situações:
+    //   1. Modo offline manual — sem rede, refresh só gera SIGNED_OUT espúrio.
+    //   2. Aba em background (document.hidden) — no Android WebView, refresh
+    //      em segundo plano falha frequentemente e drena tokens. Retoma no
+    //      `visibilitychange → visible` via `session-ready`.
+    const hidden =
+      typeof document !== "undefined" && document.visibilityState === "hidden";
+    if (current === "offline" || hidden) {
       supabase.auth.stopAutoRefresh?.();
     } else {
       supabase.auth.startAutoRefresh?.();
@@ -173,4 +178,8 @@ function applySupabaseAutoRefresh() {
 if (typeof window !== "undefined") {
   applyFetchInterceptor();
   applySupabaseAutoRefresh();
+  // Reaplica quando a visibilidade muda — o gate acima decide se retoma.
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", applySupabaseAutoRefresh);
+  }
 }
