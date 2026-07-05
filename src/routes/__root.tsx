@@ -168,10 +168,45 @@ function RootComponent() {
         router.invalidate();
       }
     });
-    const onOnline = () => { flushQueue().catch((e) => console.warn("[boot] flush", e)); };
+    const runFlushWithSession = async (label: string) => {
+      try {
+        const sess = await ensureFreshSession();
+        if (!sess.ok) {
+          if (sess.reason === "refresh-failed" || sess.reason === "no-session") {
+            // Toast único; a fila permanece intacta.
+            toast.warning(
+              (typeof window !== "undefined" &&
+                (window as unknown as { __sessionExpiredToasted?: boolean }).__sessionExpiredToasted)
+                ? ""
+                : (() => {
+                    (window as unknown as { __sessionExpiredToasted?: boolean }).__sessionExpiredToasted = true;
+                    return "Sessão expirada — faça login para sincronizar";
+                  })(),
+              { id: "session-expired" },
+            );
+          }
+          return;
+        }
+        // Reseta o flag de toast quando a sessão volta a ser válida.
+        (window as unknown as { __sessionExpiredToasted?: boolean }).__sessionExpiredToasted = false;
+        await flushQueue();
+      } catch (e) {
+        console.warn(`[${label}] flush`, e);
+      }
+    };
+
+    const onOnline = () => { void runFlushWithSession("online"); };
+    const onResume = () => { void runFlushWithSession("resume"); };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void runFlushWithSession("visible");
+    };
+    const onPageShow = (ev: PageTransitionEvent) => {
+      if (ev.persisted) void runFlushWithSession("pageshow");
+    };
     window.addEventListener("online", onOnline);
-    // Capacitor: app retomado do background
-    document.addEventListener("resume", onOnline);
+    document.addEventListener("resume", onResume);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pageshow", onPageShow);
     // Rede crítica: rejeições não tratadas não devem matar a tela.
     const onUnhandled = (ev: PromiseRejectionEvent) => {
       const msg = String((ev.reason as { message?: string })?.message ?? ev.reason ?? "");
@@ -181,13 +216,15 @@ function RootComponent() {
       }
     };
     window.addEventListener("unhandledrejection", onUnhandled);
-    // Tenta flush no boot e arma o auto-retry com backoff exponencial (Onda 4).
-    flushQueue().catch((e) => console.warn("[boot] flush", e));
+    // Tenta flush no boot (com session-ready) e arma auto-retry com backoff.
+    void runFlushWithSession("boot");
     startOfflineQueueAutoRetry();
     return () => {
       subscription.unsubscribe();
       window.removeEventListener("online", onOnline);
-      document.removeEventListener("resume", onOnline);
+      document.removeEventListener("resume", onResume);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pageshow", onPageShow);
       window.removeEventListener("unhandledrejection", onUnhandled);
     };
   }, [router, queryClient]);
