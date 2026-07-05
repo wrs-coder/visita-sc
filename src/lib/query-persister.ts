@@ -6,6 +6,21 @@ import { get, set, del } from "idb-keyval";
 
 const PREFIX = "visita-sc:rq:";
 
+async function retrying<T>(op: () => Promise<T>, attempts = 2): Promise<T | undefined> {
+  let lastErr: unknown;
+  for (let i = 0; i <= attempts; i++) {
+    try {
+      return await op();
+    } catch (err) {
+      lastErr = err;
+      // Backoff curto para "transaction inactive" no WebView Android.
+      await new Promise((r) => setTimeout(r, 50 * (i + 1)));
+    }
+  }
+  console.warn("[query-persister] setItem falhou após retries", lastErr);
+  return undefined;
+}
+
 function makeIdbStorage(): Storage {
   // Implementa apenas a tríade getItem/setItem/removeItem usada pelo persister.
   return {
@@ -18,7 +33,7 @@ function makeIdbStorage(): Storage {
       }
     },
     setItem: async (key: string, value: string) => {
-      try { await set(PREFIX + key, value); } catch { /* quota */ }
+      await retrying(() => set(PREFIX + key, value));
     },
     removeItem: async (key: string) => {
       try { await del(PREFIX + key); } catch { /* ignore */ }
