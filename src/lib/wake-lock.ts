@@ -2,12 +2,15 @@
  * Screen Wake Lock wrapper (Onda 7.12 / Missão 06).
  *
  * Mantém a tela do dispositivo ligada enquanto pelo menos um consumidor
- * tiver o lock adquirido. Usado pelo cronômetro de esboço para evitar que
- * o aparelho hiberne durante o discurso.
+ * tiver o lock adquirido. Usado pelo cronômetro de esboço e pelo flush
+ * grande da fila offline para evitar que o WebView hiberne no meio.
  *
- * Funciona no WebView do Capacitor (Web Wake Lock API) — não exige plugin
- * nativo novo. Falhas silenciosas: se o ambiente não suportar, o timer
- * continua funcionando normalmente.
+ * Refinamento premium (offline-first): timeout rígido máximo de 20s por
+ * aquisição temporária (`acquireScreenWakeLockTimed`), como salvaguarda de
+ * bateria em redes instáveis. Se o consumidor liberar antes, o timer é
+ * cancelado. Se o timer expirar, o lock é liberado automaticamente sem
+ * re-aquisição — se ainda for necessário, o consumidor deve chamar de novo
+ * (evita loop indefinido drenando bateria).
  */
 
 type WakeLockSentinelLike = {
@@ -52,6 +55,12 @@ function installVisibilityHook(): void {
     if (document.visibilityState === "visible" && refCount > 0) {
       void ensureSentinel();
     }
+    // Ao esconder: Android já revoga; garantimos idempotência liberando o ref.
+    if (document.visibilityState === "hidden" && sentinel && !sentinel.released) {
+      sentinel.release().catch(() => {
+        /* noop */
+      });
+    }
   });
 }
 
@@ -73,6 +82,33 @@ export async function releaseScreenWakeLock(): Promise<void> {
       /* noop */
     }
   }
+}
+
+/**
+ * Adquire um wake lock com timeout rígido. Retorna uma função `release()`
+ * idempotente que também cancela o timer. Se o timer expirar antes do
+ * consumidor chamar release, o lock é liberado automaticamente.
+ *
+ * Uso típico: flushes grandes da fila offline (mais de 5 itens) — 20s é
+ * mais que suficiente para o batch típico e evita drenar bateria caso o
+ * flush trave em rede instável.
+ */
+export async function acquireScreenWakeLockTimed(maxMs = 20_000): Promise<() => void> {
+  await acquireScreenWakeLock();
+  let released = false;
+  const timer = setTimeout(() => {
+    if (released) return;
+    released = true;
+    void releaseScreenWakeLock();
+    console.warn(`[wake-lock] timeout de ${maxMs}ms — liberação automática de segurança`);
+  }, maxMs);
+
+  return () => {
+    if (released) return;
+    released = true;
+    clearTimeout(timer);
+    void releaseScreenWakeLock();
+  };
 }
 
 export function isWakeLockSupported(): boolean {
