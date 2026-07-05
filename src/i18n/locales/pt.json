@@ -1351,6 +1351,18 @@
       "elderProgramTemplates": "Modelos da programação dos anciãos",
       "shells": "Telas do aplicativo",
       "starting": "Iniciando…"
+    },
+    "status": {
+      "synced": "Sincronizado",
+      "syncing": "Sincronizando",
+      "syncingProgress": "Sincronizando {{done}}/{{total}}",
+      "pending": "{{n}} pendente(s)",
+      "offlinePending": "Offline — {{n}} pendente(s)",
+      "error": "Erro de sincronização",
+      "sessionExpired": "Sessão expirada — faça login"
+    },
+    "session": {
+      "expired": "Sessão expirada — faça login para sincronizar"
     }
   },
   "connection": {

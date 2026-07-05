@@ -1350,6 +1350,18 @@
       "elderProgramTemplates": "Elder program templates",
       "shells": "App screens",
       "starting": "Starting…"
+    },
+    "status": {
+      "synced": "Synced",
+      "syncing": "Syncing",
+      "syncingProgress": "Syncing {{done}}/{{total}}",
+      "pending": "{{n}} pending",
+      "offlinePending": "Offline — {{n}} pending",
+      "error": "Sync error",
+      "sessionExpired": "Session expired — please sign in"
+    },
+    "session": {
+      "expired": "Session expired — sign in to sync"
     }
   },
   "connection": {

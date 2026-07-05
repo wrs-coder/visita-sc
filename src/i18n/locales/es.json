@@ -1325,6 +1325,18 @@
       "elderProgramTemplates": "Plantillas de programación de ancianos",
       "shells": "Pantallas de la aplicación",
       "starting": "Iniciando…"
+    },
+    "status": {
+      "synced": "Sincronizado",
+      "syncing": "Sincronizando",
+      "syncingProgress": "Sincronizando {{done}}/{{total}}",
+      "pending": "{{n}} pendiente(s)",
+      "offlinePending": "Sin conexión — {{n}} pendiente(s)",
+      "error": "Error de sincronización",
+      "sessionExpired": "Sesión expirada — inicia sesión"
+    },
+    "session": {
+      "expired": "Sesión expirada — inicia sesión para sincronizar"
     }
   },
   "connection": {
