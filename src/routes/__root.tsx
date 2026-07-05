@@ -242,6 +242,7 @@ function RootComponent() {
     >
       <AuthProvider>
         <PwaRegister />
+        <OfflineStatusBar />
         <Outlet />
         <Toaster richColors position="top-center" />
       </AuthProvider>
