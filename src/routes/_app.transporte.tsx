@@ -308,19 +308,31 @@ function Page() {
                     </div>
                   )}
                   <div>
-                    <Label>{t("transport.driverName")}</Label>
+                    <Label>
+                      {t("transport.driverName")}{" "}
+                      <span className="text-xs text-muted-foreground font-normal">
+                        ({t("common.optional", { defaultValue: "opcional" })})
+                      </span>
+                    </Label>
                     <Input
                       className="mt-1"
+                      placeholder={t("transport.driverPlaceholderElders", { defaultValue: "Será preenchido pelos anciãos" })}
                       value={editing.driver_name ?? ""}
                       onChange={(e) => setEditing({ ...editing, driver_name: e.target.value })}
                     />
                   </div>
 
                   <div>
-                    <Label>{t("transport.contactPhone")}</Label>
+                    <Label>
+                      {t("transport.contactPhone")}{" "}
+                      <span className="text-xs text-muted-foreground font-normal">
+                        ({t("common.optional", { defaultValue: "opcional" })})
+                      </span>
+                    </Label>
                     <Input
                       type="tel"
                       className="mt-1"
+                      placeholder={t("transport.driverPlaceholderElders", { defaultValue: "Será preenchido pelos anciãos" })}
                       value={editing.contact_phone ?? ""}
                       onChange={(e) => setEditing({ ...editing, contact_phone: e.target.value })}
                     />
