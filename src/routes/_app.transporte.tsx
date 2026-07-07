@@ -423,32 +423,84 @@ function Page() {
                           )}
                         </div>
                         {isSuper ? (
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <Label className="text-xs">{t("transport.departureTime")}</Label>
-                              <Input
-                                type="time"
-                                className="mt-1 h-9"
-                                defaultValue={r.departure_time ?? ""}
-                                key={`dep-${r.id}-${r.departure_time ?? ""}`}
-                                onBlur={(e) => {
-                                  const v = e.target.value;
-                                  if (v !== (r.departure_time ?? "")) updateRow(r.id, { departure_time: v || null });
-                                }}
-                              />
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-xs">{t("transport.eventTypeLabel")}</Label>
+                                <Select
+                                  value={(r.event_type as string) ?? "field_service"}
+                                  onValueChange={(v) => updateRow(r.id, { event_type: v })}
+                                >
+                                  <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {(["field_service","congregation_meeting","pioneer_meeting","elders_meeting","home_return","other"] as const).map(k => (
+                                      <SelectItem key={k} value={k}>{t(`transport.eventType.${k}`)}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t("transport.directionLabel")}</Label>
+                                <Select
+                                  value={(r.direction as string) ?? "round_trip"}
+                                  onValueChange={(v) => updateRow(r.id, { direction: v })}
+                                >
+                                  <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {(["pickup","dropoff","round_trip"] as const).map(k => (
+                                      <SelectItem key={k} value={k}>{t(`transport.direction.${k}`)}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
                             <div>
-                              <Label className="text-xs">{t("transport.returnTime")}</Label>
-                              <Input
-                                type="time"
-                                className="mt-1 h-9"
-                                defaultValue={r.return_time ?? ""}
-                                key={`ret-${r.id}-${r.return_time ?? ""}`}
-                                onBlur={(e) => {
-                                  const v = e.target.value;
-                                  if (v !== (r.return_time ?? "")) updateRow(r.id, { return_time: v || null });
-                                }}
-                              />
+                              <Label className="text-xs">{t("transport.day")}</Label>
+                              <Select
+                                value={r.event_date ?? "none"}
+                                onValueChange={(v) => updateRow(r.id, { event_date: v === "none" ? null : v })}
+                              >
+                                <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">{t("transport.noSpecificDay")}</SelectItem>
+                                  {days.map((d) => {
+                                    const k = format(d, "yyyy-MM-dd");
+                                    return (
+                                      <SelectItem key={k} value={k}>
+                                        {format(d, "EEE, d MMM", { locale: dateLocale })}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-xs">{t("transport.departureTime")}</Label>
+                                <Input
+                                  type="time"
+                                  className="mt-1 h-9"
+                                  defaultValue={r.departure_time ?? ""}
+                                  key={`dep-${r.id}-${r.departure_time ?? ""}`}
+                                  onBlur={(e) => {
+                                    const v = e.target.value;
+                                    if (v !== (r.departure_time ?? "")) updateRow(r.id, { departure_time: v || null });
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t("transport.returnTime")}</Label>
+                                <Input
+                                  type="time"
+                                  className="mt-1 h-9"
+                                  defaultValue={r.return_time ?? ""}
+                                  key={`ret-${r.id}-${r.return_time ?? ""}`}
+                                  onBlur={(e) => {
+                                    const v = e.target.value;
+                                    if (v !== (r.return_time ?? "")) updateRow(r.id, { return_time: v || null });
+                                  }}
+                                />
+                              </div>
                             </div>
                           </div>
                         ) : (
