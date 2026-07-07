@@ -124,21 +124,20 @@ function Page() {
 
   const save = async () => {
     if (!editing) return;
-    if (!editing.driver_name?.trim()) {
-      toast.error(t("transport.requireDriver"));
-      return;
-    }
     setSaving(true);
     try {
-      const evType = (editing.event_type as string | null) || null;
+      const evType = (editing.event_type as string | null) || "field_service";
       const otherDesc = ((editing as Record<string, unknown>).event_type_other as string | undefined)?.trim();
+      // Motorista e telefone são preenchidos posteriormente pelos anciãos;
+      // gravamos string vazia para satisfazer a coluna NOT NULL sem forçar
+      // o superintendente a informar esses dados na criação.
       const payload = {
         visit_id: visit.id,
-        driver_name: editing.driver_name!.trim(),
+        driver_name: (editing.driver_name ?? "").trim(),
         contact_phone: editing.contact_phone || null,
         event_date: editing.event_date || null,
         event_type: evType,
-        direction: editing.direction || null,
+        direction: editing.direction || "round_trip",
         all_day: !!editing.all_day,
         departure_time: editing.all_day ? null : (editing.departure_time || null),
         return_time: editing.all_day ? null : (editing.return_time || null),
