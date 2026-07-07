@@ -124,21 +124,20 @@ function Page() {
 
   const save = async () => {
     if (!editing) return;
-    if (!editing.driver_name?.trim()) {
-      toast.error(t("transport.requireDriver"));
-      return;
-    }
     setSaving(true);
     try {
-      const evType = (editing.event_type as string | null) || null;
+      const evType = (editing.event_type as string | null) || "field_service";
       const otherDesc = ((editing as Record<string, unknown>).event_type_other as string | undefined)?.trim();
+      // Motorista e telefone são preenchidos posteriormente pelos anciãos;
+      // gravamos string vazia para satisfazer a coluna NOT NULL sem forçar
+      // o superintendente a informar esses dados na criação.
       const payload = {
         visit_id: visit.id,
-        driver_name: editing.driver_name!.trim(),
+        driver_name: (editing.driver_name ?? "").trim(),
         contact_phone: editing.contact_phone || null,
         event_date: editing.event_date || null,
         event_type: evType,
-        direction: editing.direction || null,
+        direction: editing.direction || "round_trip",
         all_day: !!editing.all_day,
         departure_time: editing.all_day ? null : (editing.departure_time || null),
         return_time: editing.all_day ? null : (editing.return_time || null),
@@ -309,19 +308,31 @@ function Page() {
                     </div>
                   )}
                   <div>
-                    <Label>{t("transport.driverName")}</Label>
+                    <Label>
+                      {t("transport.driverName")}{" "}
+                      <span className="text-xs text-muted-foreground font-normal">
+                        ({t("common.optional", { defaultValue: "opcional" })})
+                      </span>
+                    </Label>
                     <Input
                       className="mt-1"
+                      placeholder={t("transport.driverPlaceholderElders", { defaultValue: "Será preenchido pelos anciãos" })}
                       value={editing.driver_name ?? ""}
                       onChange={(e) => setEditing({ ...editing, driver_name: e.target.value })}
                     />
                   </div>
 
                   <div>
-                    <Label>{t("transport.contactPhone")}</Label>
+                    <Label>
+                      {t("transport.contactPhone")}{" "}
+                      <span className="text-xs text-muted-foreground font-normal">
+                        ({t("common.optional", { defaultValue: "opcional" })})
+                      </span>
+                    </Label>
                     <Input
                       type="tel"
                       className="mt-1"
+                      placeholder={t("transport.driverPlaceholderElders", { defaultValue: "Será preenchido pelos anciãos" })}
                       value={editing.contact_phone ?? ""}
                       onChange={(e) => setEditing({ ...editing, contact_phone: e.target.value })}
                     />
@@ -412,32 +423,84 @@ function Page() {
                           )}
                         </div>
                         {isSuper ? (
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <Label className="text-xs">{t("transport.departureTime")}</Label>
-                              <Input
-                                type="time"
-                                className="mt-1 h-9"
-                                defaultValue={r.departure_time ?? ""}
-                                key={`dep-${r.id}-${r.departure_time ?? ""}`}
-                                onBlur={(e) => {
-                                  const v = e.target.value;
-                                  if (v !== (r.departure_time ?? "")) updateRow(r.id, { departure_time: v || null });
-                                }}
-                              />
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-xs">{t("transport.eventTypeLabel")}</Label>
+                                <Select
+                                  value={(r.event_type as string) ?? "field_service"}
+                                  onValueChange={(v) => updateRow(r.id, { event_type: v })}
+                                >
+                                  <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {(["field_service","congregation_meeting","pioneer_meeting","elders_meeting","home_return","other"] as const).map(k => (
+                                      <SelectItem key={k} value={k}>{t(`transport.eventType.${k}`)}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t("transport.directionLabel")}</Label>
+                                <Select
+                                  value={(r.direction as string) ?? "round_trip"}
+                                  onValueChange={(v) => updateRow(r.id, { direction: v })}
+                                >
+                                  <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {(["pickup","dropoff","round_trip"] as const).map(k => (
+                                      <SelectItem key={k} value={k}>{t(`transport.direction.${k}`)}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
                             <div>
-                              <Label className="text-xs">{t("transport.returnTime")}</Label>
-                              <Input
-                                type="time"
-                                className="mt-1 h-9"
-                                defaultValue={r.return_time ?? ""}
-                                key={`ret-${r.id}-${r.return_time ?? ""}`}
-                                onBlur={(e) => {
-                                  const v = e.target.value;
-                                  if (v !== (r.return_time ?? "")) updateRow(r.id, { return_time: v || null });
-                                }}
-                              />
+                              <Label className="text-xs">{t("transport.day")}</Label>
+                              <Select
+                                value={r.event_date ?? "none"}
+                                onValueChange={(v) => updateRow(r.id, { event_date: v === "none" ? null : v })}
+                              >
+                                <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">{t("transport.noSpecificDay")}</SelectItem>
+                                  {days.map((d) => {
+                                    const k = format(d, "yyyy-MM-dd");
+                                    return (
+                                      <SelectItem key={k} value={k}>
+                                        {format(d, "EEE, d MMM", { locale: dateLocale })}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-xs">{t("transport.departureTime")}</Label>
+                                <Input
+                                  type="time"
+                                  className="mt-1 h-9"
+                                  defaultValue={r.departure_time ?? ""}
+                                  key={`dep-${r.id}-${r.departure_time ?? ""}`}
+                                  onBlur={(e) => {
+                                    const v = e.target.value;
+                                    if (v !== (r.departure_time ?? "")) updateRow(r.id, { departure_time: v || null });
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t("transport.returnTime")}</Label>
+                                <Input
+                                  type="time"
+                                  className="mt-1 h-9"
+                                  defaultValue={r.return_time ?? ""}
+                                  key={`ret-${r.id}-${r.return_time ?? ""}`}
+                                  onBlur={(e) => {
+                                    const v = e.target.value;
+                                    if (v !== (r.return_time ?? "")) updateRow(r.id, { return_time: v || null });
+                                  }}
+                                />
+                              </div>
                             </div>
                           </div>
                         ) : (
