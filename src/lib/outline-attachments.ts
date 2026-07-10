@@ -12,17 +12,25 @@
  */
 
 export type NoteAttachmentKind = "photo" | "video" | "publication";
+export type NoteAttachmentSource = "link" | "file";
 
 export interface NoteAttachment {
   id: string;
   kind: NoteAttachmentKind;
   title: string;
-  /** photo: caminho relativo dentro de Directory.Data ou URL blob (web). */
+  /** photo/video-file: caminho relativo dentro de Directory.Data ou URL blob (web). */
   uri?: string;
-  /** video/publication: URL externa. */
+  /** video-link/publication: URL externa. */
   url?: string;
+  /** "file" = anexo local (uri); "link" = URL externa. Default por compat: link se url, file se uri. */
+  source?: NoteAttachmentSource;
+  /** MIME original (útil para vídeos locais). */
+  mime?: string;
   created_at: number;
 }
+
+/** Limite prático (200 MB) para vídeos locais — evita OOM no readAsDataURL. */
+export const MAX_LOCAL_VIDEO_BYTES = 200 * 1024 * 1024;
 
 function uid(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
