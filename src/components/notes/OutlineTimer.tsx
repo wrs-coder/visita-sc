@@ -150,10 +150,10 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   };
 
   const wrapClass = cn(
-    "flex items-center gap-1.5 select-none rounded-md border",
+    "flex items-center gap-1.5 select-none rounded-md border flex-wrap",
     isFullscreen
-      ? "fixed top-0 inset-x-0 z-[105] border-b bg-background/85 backdrop-blur px-3 py-1.5 justify-center"
-      : "min-h-7 flex-wrap px-1.5",
+      ? "fixed top-0 inset-x-0 z-[105] border-b bg-background/85 backdrop-blur px-3 py-1.5 justify-center min-h-9"
+      : "min-h-7 px-1.5",
     isAuto && !isFullscreen && "bg-muted/40",
     !isAuto && preset.chipBg,
     className,
