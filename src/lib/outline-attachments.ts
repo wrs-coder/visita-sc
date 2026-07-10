@@ -273,13 +273,24 @@ export function normalizeAttachment(raw: unknown): NoteAttachment | null {
   const title = typeof r.title === "string" ? r.title.slice(0, 120) : "";
   const uri = typeof r.uri === "string" ? r.uri : undefined;
   const url = typeof r.url === "string" ? r.url : undefined;
+  const mime = typeof r.mime === "string" ? r.mime : undefined;
+  const rawSource = r.source;
+  const source: NoteAttachmentSource | undefined =
+    rawSource === "file" || rawSource === "link"
+      ? rawSource
+      : url
+        ? "link"
+        : uri
+          ? "file"
+          : undefined;
   const created_at =
     typeof r.created_at === "number" && Number.isFinite(r.created_at)
       ? r.created_at
       : Date.now();
   if (kind === "photo" && !uri) return null;
-  if ((kind === "video" || kind === "publication") && !url) return null;
-  return { id, kind, title, uri, url, created_at };
+  if (kind === "publication" && !url) return null;
+  if (kind === "video" && !url && !uri) return null;
+  return { id, kind, title, uri, url, source, mime, created_at };
 }
 
 /**
