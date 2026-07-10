@@ -9,11 +9,12 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X, PlayCircle, FileText } from "lucide-react";
+import { X, PlayCircle, FileText, ExternalLink, HardDrive } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AttachmentLightbox } from "./AttachmentLightbox";
+import { AttachmentVideoLightbox } from "./AttachmentVideoLightbox";
 import {
-  deletePhotoAttachment,
+  deleteFileAttachment,
   openExternalUrl,
   toDisplaySrc,
   type NoteAttachment,
@@ -28,9 +29,18 @@ interface Props {
 
 const BAR_HEIGHT = "h-20"; // 5rem — bate com o desconto do editor.
 
+function isLocalVideo(a: NoteAttachment): boolean {
+  if (a.kind !== "video") return false;
+  if (a.source === "file") return true;
+  // Compat: sem source, mas com uri e sem url → é arquivo local.
+  if (!a.url && a.uri) return true;
+  return false;
+}
+
 export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove, className }: Props) {
   const { t } = useTranslation();
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+  const [videoLightbox, setVideoLightbox] = useState<{ src: string; mime?: string; title: string } | null>(null);
 
   if (!attachments || attachments.length === 0) return null;
 
@@ -39,6 +49,10 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
       const src = toDisplaySrc(a.uri);
       if (!src) return;
       setLightbox({ src, alt: a.title });
+    } else if (isLocalVideo(a)) {
+      const src = toDisplaySrc(a.uri);
+      if (!src) return;
+      setVideoLightbox({ src, mime: a.mime, title: a.title });
     } else if (a.url) {
       await openExternalUrl(a.url);
     }
@@ -46,8 +60,8 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
 
   async function handleRemove(a: NoteAttachment) {
     if (!onRemove) return;
-    if (a.kind === "photo") {
-      await deletePhotoAttachment(a.uri);
+    if (a.kind === "photo" || isLocalVideo(a)) {
+      await deleteFileAttachment(a.uri);
     }
     onRemove(a.id);
   }
@@ -70,8 +84,15 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
         {attachments.map((a) => {
           const isPhoto = a.kind === "photo";
           const isVideo = a.kind === "video";
+          const localVideo = isLocalVideo(a);
+          const isExternal = (isVideo && !localVideo) || a.kind === "publication";
           const src = isPhoto ? toDisplaySrc(a.uri) : "";
           const missing = isPhoto && !src;
+          const defaultLabel = isPhoto
+            ? t("personalOutlines.attachments.photo", { defaultValue: "Foto" })
+            : localVideo
+              ? t("personalOutlines.attachments.videoFile", { defaultValue: "Vídeo" })
+              : t("personalOutlines.attachments.link", { defaultValue: "Link" });
 
           return (
             <div
@@ -82,7 +103,7 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
               <button
                 type="button"
                 onClick={() => handleClick(a)}
-                title={a.title || (isPhoto ? "Foto" : a.url ?? "Link")}
+                title={a.title || defaultLabel}
                 className={cn(
                   "relative h-12 w-12 rounded-lg border bg-muted overflow-hidden",
                   "flex items-center justify-center",
@@ -107,6 +128,23 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
                 {a.kind === "publication" && (
                   <FileText className="h-6 w-6 text-primary" />
                 )}
+
+                {/* Badge sutil: origem (arquivo local vs link externo) */}
+                {(localVideo || isExternal) && (
+                  <span
+                    className={cn(
+                      "absolute bottom-0 right-0 h-3.5 w-3.5 rounded-tl-md bg-background/85 border-l border-t",
+                      "flex items-center justify-center text-muted-foreground",
+                    )}
+                    aria-hidden="true"
+                  >
+                    {localVideo ? (
+                      <HardDrive className="h-2.5 w-2.5" />
+                    ) : (
+                      <ExternalLink className="h-2.5 w-2.5" />
+                    )}
+                  </span>
+                )}
               </button>
 
               {!readOnly && (
@@ -130,7 +168,7 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
                 className="mt-1 w-full text-[10px] leading-tight text-center text-foreground/80 truncate"
                 title={a.title}
               >
-                {a.title || (isPhoto ? "Foto" : "Link")}
+                {a.title || defaultLabel}
               </span>
             </div>
           );
@@ -143,6 +181,15 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
           src={lightbox.src}
           alt={lightbox.alt}
           onClose={() => setLightbox(null)}
+        />
+      )}
+      {videoLightbox && (
+        <AttachmentVideoLightbox
+          open
+          src={videoLightbox.src}
+          mime={videoLightbox.mime}
+          title={videoLightbox.title}
+          onClose={() => setVideoLightbox(null)}
         />
       )}
     </>

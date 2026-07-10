@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ImagePlus, Link as LinkIcon, PlayCircle, FileText, Loader2 } from "lucide-react";
+import { ImagePlus, Link as LinkIcon, PlayCircle, FileText, Loader2, Video } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +23,13 @@ import {
   isLikelyValidUrl,
   makeAttachmentId,
   savePhotoAttachment,
+  saveVideoAttachment,
+  MAX_LOCAL_VIDEO_BYTES,
   type NoteAttachment,
   type NoteAttachmentKind,
 } from "@/lib/outline-attachments";
 
-type Mode = "photo" | "link";
+type Mode = "photo" | "link" | "videoFile";
 
 interface Props {
   open: boolean;
@@ -55,7 +57,8 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
     }
   }, [open, mode]);
 
-  const canSubmit = mode === "photo"
+  const needsFile = mode === "photo" || mode === "videoFile";
+  const canSubmit = needsFile
     ? !!file && title.trim().length > 0 && !busy
     : isLikelyValidUrl(url) && title.trim().length > 0 && !busy;
 
@@ -71,6 +74,19 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
           kind: "photo",
           title: title.trim().slice(0, 60),
           uri: saved.uri,
+          source: "file",
+          created_at: Date.now(),
+        });
+      } else if (mode === "videoFile" && file) {
+        const attId = makeAttachmentId();
+        const saved = await saveVideoAttachment(file, noteId, attId);
+        onAdd({
+          id: saved.attachmentId,
+          kind: "video",
+          title: title.trim().slice(0, 60),
+          uri: saved.uri,
+          mime: saved.mime,
+          source: "file",
           created_at: Date.now(),
         });
       } else if (mode === "link") {
@@ -79,17 +95,27 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
           kind: linkKind,
           title: title.trim().slice(0, 60),
           url: url.trim(),
+          source: "link",
           created_at: Date.now(),
         });
       }
       onClose();
     } catch (err) {
       console.error("[AttachmentAddDialog]", err);
-      toast.error(
-        t("personalOutlines.attachments.addError", {
-          defaultValue: "Não foi possível adicionar o anexo.",
-        }),
-      );
+      const msg = (err as Error | undefined)?.message;
+      if (msg === "VIDEO_TOO_LARGE") {
+        toast.error(
+          t("personalOutlines.attachments.videoTooLarge", {
+            defaultValue: "Vídeo muito grande. Limite: 200 MB.",
+          }),
+        );
+      } else {
+        toast.error(
+          t("personalOutlines.attachments.addError", {
+            defaultValue: "Não foi possível adicionar o anexo.",
+          }),
+        );
+      }
     } finally {
       setBusy(false);
     }
@@ -102,26 +128,34 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
           <DialogTitle className="flex items-center gap-2">
             {mode === "photo" ? (
               <ImagePlus className="h-4 w-4 text-primary" />
+            ) : mode === "videoFile" ? (
+              <Video className="h-4 w-4 text-primary" />
             ) : (
               <LinkIcon className="h-4 w-4 text-primary" />
             )}
             {mode === "photo"
               ? t("personalOutlines.attachments.addPhotoTitle", { defaultValue: "Anexar imagem" })
-              : t("personalOutlines.attachments.addLinkTitle", { defaultValue: "Vincular link" })}
+              : mode === "videoFile"
+                ? t("personalOutlines.attachments.addVideoFileTitle", { defaultValue: "Anexar vídeo" })
+                : t("personalOutlines.attachments.addLinkTitle", { defaultValue: "Vincular link" })}
           </DialogTitle>
           <DialogDescription>
             {mode === "photo"
               ? t("personalOutlines.attachments.addPhotoDesc", {
                   defaultValue: "Escolha uma foto da galeria ou arquivos. Fica salva apenas neste dispositivo.",
                 })
-              : t("personalOutlines.attachments.addLinkDesc", {
-                  defaultValue: "Cole a URL (jw.org, vídeo, cântico...). Abre no aplicativo correspondente quando disponível.",
-                })}
+              : mode === "videoFile"
+                ? t("personalOutlines.attachments.addVideoFileDesc", {
+                    defaultValue: "Selecione um vídeo do dispositivo (até 200 MB). Fica salvo apenas neste aparelho.",
+                  })
+                : t("personalOutlines.attachments.addLinkDesc", {
+                    defaultValue: "Cole a URL (jw.org, vídeo, cântico...). Abre no aplicativo correspondente quando disponível.",
+                  })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
-          {mode === "photo" ? (
+          {needsFile ? (
             <div className="space-y-1.5">
               <Label htmlFor="att-file">
                 {t("personalOutlines.attachments.file", { defaultValue: "Arquivo" })}
@@ -130,13 +164,20 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
                 id="att-file"
                 ref={inputRef}
                 type="file"
-                accept="image/*"
+                accept={mode === "videoFile" ? "video/*" : "image/*"}
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-primary-foreground hover:file:bg-primary/90"
               />
               {file && (
                 <p className="text-xs text-muted-foreground truncate">
-                  {file.name} · {(file.size / 1024).toFixed(0)} KB
+                  {file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB
+                </p>
+              )}
+              {mode === "videoFile" && (
+                <p className="text-[10px] text-muted-foreground">
+                  {t("personalOutlines.attachments.videoLimit", {
+                    defaultValue: "Limite: 200 MB. Prefira MP4 comprimido.",
+                  })}
                 </p>
               )}
             </div>

@@ -12,17 +12,25 @@
  */
 
 export type NoteAttachmentKind = "photo" | "video" | "publication";
+export type NoteAttachmentSource = "link" | "file";
 
 export interface NoteAttachment {
   id: string;
   kind: NoteAttachmentKind;
   title: string;
-  /** photo: caminho relativo dentro de Directory.Data ou URL blob (web). */
+  /** photo/video-file: caminho relativo dentro de Directory.Data ou URL blob (web). */
   uri?: string;
-  /** video/publication: URL externa. */
+  /** video-link/publication: URL externa. */
   url?: string;
+  /** "file" = anexo local (uri); "link" = URL externa. Default por compat: link se url, file se uri. */
+  source?: NoteAttachmentSource;
+  /** MIME original (útil para vídeos locais). */
+  mime?: string;
   created_at: number;
 }
+
+/** Limite prático (200 MB) para vídeos locais — evita OOM no readAsDataURL. */
+export const MAX_LOCAL_VIDEO_BYTES = 200 * 1024 * 1024;
 
 function uid(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -78,6 +86,12 @@ function extFromMime(mime: string): string {
   if (mime.includes("gif")) return "gif";
   if (mime.includes("heic")) return "heic";
   if (mime.includes("jpeg") || mime.includes("jpg")) return "jpg";
+  // Vídeos
+  if (mime.includes("mp4")) return "mp4";
+  if (mime.includes("webm")) return "webm";
+  if (mime.includes("quicktime") || mime.includes("mov")) return "mov";
+  if (mime.includes("matroska") || mime.includes("mkv")) return "mkv";
+  if (mime.includes("3gpp") || mime.includes("3gp")) return "3gp";
   return "bin";
 }
 
@@ -136,6 +150,60 @@ export async function savePhotoAttachment(
   const url = URL.createObjectURL(file);
   blobUriByAttachment.set(attachmentId, url);
   return { attachmentId, uri: url, displaySrc: url };
+}
+
+export interface SaveVideoResult {
+  attachmentId: string;
+  uri: string;
+  displaySrc: string;
+  mime: string;
+}
+
+/**
+ * Persiste um vídeo local escolhido pelo usuário. No nativo grava em
+ * Directory.Data via base64; no web usa Blob URL. Recusa arquivos maiores
+ * que MAX_LOCAL_VIDEO_BYTES para evitar OOM.
+ */
+export async function saveVideoAttachment(
+  file: File,
+  noteId: string,
+  attachmentId: string = makeAttachmentId(),
+): Promise<SaveVideoResult> {
+  if (file.size > MAX_LOCAL_VIDEO_BYTES) {
+    throw new Error("VIDEO_TOO_LARGE");
+  }
+  const mime = file.type || "video/mp4";
+  const ext = extFromMime(mime) || (file.name.split(".").pop() ?? "mp4").toLowerCase();
+  const relativePath = `outline-attachments/${noteId}/${attachmentId}.${ext}`;
+
+  if (isCapacitorNative()) {
+    try {
+      const { Filesystem, Directory } = await import("@capacitor/filesystem");
+      const base64 = await fileToBase64(file);
+      await Filesystem.writeFile({
+        path: relativePath,
+        data: base64,
+        directory: Directory.Data,
+        recursive: true,
+      });
+      const { uri } = await Filesystem.getUri({
+        path: relativePath,
+        directory: Directory.Data,
+      });
+      return { attachmentId, uri, displaySrc: toDisplaySrc(uri), mime };
+    } catch (err) {
+      console.warn("[outline-attachments] video Filesystem write failed, using blob fallback", err);
+    }
+  }
+
+  const url = URL.createObjectURL(file);
+  blobUriByAttachment.set(attachmentId, url);
+  return { attachmentId, uri: url, displaySrc: url, mime };
+}
+
+/** Alias semântico: remove qualquer arquivo local (foto ou vídeo). */
+export async function deleteFileAttachment(uri: string | undefined | null): Promise<void> {
+  return deletePhotoAttachment(uri);
 }
 
 /** Remove a foto do Filesystem (best-effort). Falhas silenciosas. */
@@ -205,13 +273,24 @@ export function normalizeAttachment(raw: unknown): NoteAttachment | null {
   const title = typeof r.title === "string" ? r.title.slice(0, 120) : "";
   const uri = typeof r.uri === "string" ? r.uri : undefined;
   const url = typeof r.url === "string" ? r.url : undefined;
+  const mime = typeof r.mime === "string" ? r.mime : undefined;
+  const rawSource = r.source;
+  const source: NoteAttachmentSource | undefined =
+    rawSource === "file" || rawSource === "link"
+      ? rawSource
+      : url
+        ? "link"
+        : uri
+          ? "file"
+          : undefined;
   const created_at =
     typeof r.created_at === "number" && Number.isFinite(r.created_at)
       ? r.created_at
       : Date.now();
   if (kind === "photo" && !uri) return null;
-  if ((kind === "video" || kind === "publication") && !url) return null;
-  return { id, kind, title, uri, url, created_at };
+  if (kind === "publication" && !url) return null;
+  if (kind === "video" && !url && !uri) return null;
+  return { id, kind, title, uri, url, source, mime, created_at };
 }
 
 /**
