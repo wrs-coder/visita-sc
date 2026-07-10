@@ -9,11 +9,12 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X, PlayCircle, FileText } from "lucide-react";
+import { X, PlayCircle, FileText, ExternalLink, HardDrive } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AttachmentLightbox } from "./AttachmentLightbox";
+import { AttachmentVideoLightbox } from "./AttachmentVideoLightbox";
 import {
-  deletePhotoAttachment,
+  deleteFileAttachment,
   openExternalUrl,
   toDisplaySrc,
   type NoteAttachment,
@@ -28,9 +29,18 @@ interface Props {
 
 const BAR_HEIGHT = "h-20"; // 5rem — bate com o desconto do editor.
 
+function isLocalVideo(a: NoteAttachment): boolean {
+  if (a.kind !== "video") return false;
+  if (a.source === "file") return true;
+  // Compat: sem source, mas com uri e sem url → é arquivo local.
+  if (!a.url && a.uri) return true;
+  return false;
+}
+
 export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove, className }: Props) {
   const { t } = useTranslation();
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+  const [videoLightbox, setVideoLightbox] = useState<{ src: string; mime?: string; title: string } | null>(null);
 
   if (!attachments || attachments.length === 0) return null;
 
@@ -39,6 +49,10 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
       const src = toDisplaySrc(a.uri);
       if (!src) return;
       setLightbox({ src, alt: a.title });
+    } else if (isLocalVideo(a)) {
+      const src = toDisplaySrc(a.uri);
+      if (!src) return;
+      setVideoLightbox({ src, mime: a.mime, title: a.title });
     } else if (a.url) {
       await openExternalUrl(a.url);
     }
@@ -46,8 +60,8 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
 
   async function handleRemove(a: NoteAttachment) {
     if (!onRemove) return;
-    if (a.kind === "photo") {
-      await deletePhotoAttachment(a.uri);
+    if (a.kind === "photo" || isLocalVideo(a)) {
+      await deleteFileAttachment(a.uri);
     }
     onRemove(a.id);
   }
