@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { FileText, PencilLine, Plus, Minus, Loader2 } from "lucide-react";
+import { FileText, PencilLine, Plus, Minus, Loader2, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
