@@ -1,130 +1,73 @@
+## Viabilidade
 
-# Análise dos 3 refinamentos + conformidade com `instructions.md`
+Sim, é totalmente viável e de baixo risco — o modelo `NoteAttachment` já reserva o tipo `"video"` e a barra já renderiza um ícone `PlayCircle`. Basta destravar o fluxo de arquivo local e o player. A única decisão sensível é **como tocar** o vídeo local no Android; a forma mais segura (sem novos plugins e sem quebrar o APK) é usar o elemento `<video>` HTML5 em um lightbox fullscreen — o Android e a WebView tratam isso como player nativo (com botão de tela cheia do próprio sistema, PIP, controles). Isso preserva build limpo e evita adicionar `@capacitor/file-opener` só para isso.
 
-## Veredito dos refinamentos
+## Escopo (zero alteração de schema)
 
-**Todos os 3 são acertados e devem entrar no plano.** Cobrem exatamente as 3 fragilidades reais do plano original em Android/WebView.
+Todo o metadado continua dentro do `content_json.attachments`, respeitando o coalescing da fila offline. Nenhuma tabela nova.
 
----
+## Mudanças por arquivo
 
-### 1. Timeout rígido no Wake Lock (20s) — ✅ ADOTAR
+**1. `src/lib/outline-attachments.ts`**
+- Ampliar `NoteAttachment` com campo opcional `source?: "link" | "file"` (default `"link"` para retrocompat) e `mime?: string`.
+- Ajustar `normalizeAttachment` para preservar `source`/`mime`; entrada antiga (sem `source`) continua válida.
+- Nova função `saveVideoAttachment(file, noteId, id?)` espelhando `savePhotoAttachment`, mas gravando em `outline-attachments/<noteId>/<id>.<ext>` com Filesystem no nativo e Blob URL no web.
+- Extensão MIME: reutilizar helper `extFromMime` expandido (mp4/webm/mov/mkv/3gp).
+- Validação de tamanho: recusar arquivos > 200 MB com mensagem clara (evita OOM no `readAsDataURL`).
+- `deletePhotoAttachment` renomeada logicamente via wrapper `deleteFileAttachment` (mesma implementação; alias exportado, sem breaking).
 
-Ponto correto. Sem timeout, um flush travado por rede intermitente segura a tela acesa indefinidamente, drenando bateria. Refinamento:
+**2. `src/components/notes/AttachmentAddDialog.tsx`**
+- Aceitar `mode="video"` além de `photo`/`link`, ou (melhor) manter os 2 modos atuais e:
+  - No modo `link` já existente, o subtipo "Vídeo" continua criando um `kind:"video", source:"link"` (comportamento atual).
+  - Adicionar **novo modo** `mode="videoFile"`: `<input type="file" accept="video/*">`, título obrigatório, salva via `saveVideoAttachment` e emite `kind:"video", source:"file", uri, mime`.
+- Chamada a partir da toolbar por um novo botão (ícone `Video`/`FileVideo`).
 
-- Timeout máximo **20s** por aquisição, com `setTimeout` liberando o lock via `release()`.
-- Se o flush ainda não terminou aos 20s, **não** re-adquirir automaticamente (evita loop). Deixar o flush continuar em background; nova aquisição só se o usuário voltar ao foreground.
-- Também liberar em `visibilitychange → hidden` (o Android já revoga, mas garantimos idempotência).
+**3. `src/components/notes/RichNoteToolbar.tsx`**
+- Adicionar prop opcional `onAddVideoAttachment?: () => void` (mesma cadeia de `onAddPhotoAttachment`/`onAddLinkAttachment`).
+- Renderizar botão `<Video>` (lucide) ao lado dos existentes, tanto no modo compacto quanto no default.
 
-**Local:** `src/lib/wake-lock.ts` + call site no flush em `src/lib/offline-queue.ts`.
+**4. `src/components/notes/RichNoteEditor.tsx`**
+- Novo estado `attachDialog: "photo" | "link" | "videoFile" | null`.
+- Passar `onAddVideoAttachment={() => setAttachDialog("videoFile")}` ao toolbar quando `onAttachmentsChange` estiver definido.
 
----
+**5. `src/components/notes/OutlineAttachmentsBar.tsx`**
+- Já mostra `PlayCircle` para `kind === "video"`. Ajustar `handleClick`:
+  - `video` + `source === "file"` (ou tem `uri` sem `url`): abrir novo `AttachmentVideoLightbox` com `toDisplaySrc(uri)`.
+  - `video` + `source === "link"` (ou só `url`): manter `openExternalUrl(url)` → aciona deep-link nativo via `@capacitor/browser` (já instalado).
+- Diferenciação visual sutil: badge minúsculo no canto do card (`link` = seta externa; `file` = ícone de download/arquivo). Tokens de cor do tema — sem hex inline.
+- Remoção: já chama `deletePhotoAttachment(uri)`; funciona igualzinho para vídeo local (mesmo diretório).
 
-### 2. `compressToUTF16` no LZ-String — ✅ ADOTAR (com ressalva)
+**6. Novo `src/components/notes/AttachmentVideoLightbox.tsx`**
+- Espelha `AttachmentLightbox` (mesmas garantias de `stopPropagation`/ESC capture para não fechar o Dialog pai).
+- Renderiza `<video src={src} controls playsInline autoPlay className="max-h-[100dvh] max-w-full">`.
+- Botão nativo de fullscreen do `<video>` no Android abre o player em tela cheia do sistema (comportamento equivalente ao "player nativo" pedido). Web funciona idêntico.
 
-Correto para localStorage/IndexedDB (armazenam UTF-16 nativamente; `compressToUTF16` gera string que caiba direto sem overhead de base64). Ressalvas:
+**7. Sync (`personal-outlines.functions.ts`) — nada a fazer**
+- O sync já serializa `content_json` como JSONB opaco. `serializeAttachments` preserva os novos campos automaticamente porque `normalizeAttachment` retorna o objeto tipado.
 
-- Snapshots **grandes (>50KB)** vão para `compressToUTF16`. Para snapshots pequenos, comprimir custa mais CPU do que economiza — manter texto puro abaixo desse limiar.
-- Rodar a compressão dentro de `queueMicrotask` (ou `requestIdleCallback` quando disponível) para não bloquear o thread principal durante digitação no editor — evita micro-travamento no WebView.
-- Adicionar cabeçalho de versão (`v2:` prefix) para permitir leitura de snapshots antigos (não comprimidos) sem invalidar cache.
+**8. i18n (`pt.json`, `en.json`, `es.json`)**
+- Novas chaves: `personalOutlines.attachments.addVideoFile`, `addVideoFileTitle`, `addVideoFileDesc`, `videoFile`, `videoTooLarge` (mensagem de limite).
 
-**Local:** `src/lib/snapshot-cache.ts`.
+## Diretrizes atendidas
 
----
+- **Reaproveitamento**: 100% dentro de `OutlineAttachmentsBar` + `AttachmentAddDialog`; nenhum componente paralelo.
+- **Identificação visual premium**: `PlayCircle` já existe; badge sutil `link/file` usando tokens `text-muted-foreground`/`bg-accent`. Título curto continua abaixo (`truncate`).
+- **Player inteligente**: link → `@capacitor/browser` (deep-link Android); arquivo → `<video controls>` em lightbox, com fullscreen nativo do próprio elemento.
+- **Zero alteração de tabelas**: campo `source` vive dentro do `content_json.attachments[]`.
+- **Tokens semânticos**: todas as cores via classes shadcn/tema; sem hex inline.
 
-### 3. Ordem de autenticação no foreground antes do flush — ✅ ADOTAR (crítico)
+## Riscos e mitigações
 
-Este é o mais importante dos 3. Sem ele, o flush pós-background falha com 401 em ~15% dos casos no Android (token expira em segundo plano + `pageshow` dispara antes do Supabase renovar). Refinamento:
+| Risco | Mitigação |
+|---|---|
+| Vídeos grandes → OOM em `readAsDataURL` | Limite duro de 200 MB com toast claro; recomendar MP4 comprimido |
+| Base64 infla memória (+33%) | Aceito para até 200 MB; roadmap futuro: migrar para stream Blob quando `@capacitor/filesystem` v7 estabilizar `writeFile` com Blob |
+| `file://` bloqueado no WebView | Já resolvido por `Capacitor.convertFileSrc` (`toDisplaySrc`) — o mesmo caminho das fotos |
+| Anexos antigos sem `source` | `normalizeAttachment` default `"link"` quando `url` presente, `"file"` quando só `uri` — retrocompat total |
+| Build/tsgo | Nenhum plugin novo; só tipos ampliados. `bunx tsc --noEmit` continua limpo |
+| APK | Nenhuma alteração em `android/` necessária, sem bump obrigatório de `versionCode` |
 
-- Sequência obrigatória no listener unificado `pageshow`/`visibilitychange → visible`:
-  1. `await supabase.auth.getSession()` — força leitura atual.
-  2. Se `expires_at` está a menos de 60s do agora **ou** já expirou: `await supabase.auth.refreshSession()` e aguardar.
-  3. Só então disparar `flushQueue()`.
-- Se o refresh falhar (offline/sem refresh_token válido): **não** disparar flush — deixar a fila intacta e mostrar toast "Sessão expirada, faça login para sincronizar". Isso evita corromper a fila com 401s que dropam itens.
-- Guard `isFlushing` já previsto no plano cobre a concorrência entre `pageshow` + evento `online`.
+## Fora do escopo
 
-**Local:** novo helper `src/lib/session-ready.ts` chamado pelo listener em `src/routes/__root.tsx` e pelo próprio `offline-queue.flush()`.
-
----
-
-## Conformidade com `instructions.md`
-
-Revisão item a item do plano original + refinamentos:
-
-| Regra | Status | Nota |
-|---|---|---|
-| §4 Persistência local (rascunho antes de "Salvar") | ✅ | Coalescing respeita esse padrão — só afeta writes já disparados. |
-| §7 ServerFn + `supabaseAdmin` para escritas sensíveis | ✅ | Não introduzimos writes diretos novos; apenas otimizamos os existentes. |
-| §7 Zod em `.inputValidator` | ✅ | N/A — sem novos serverFn. |
-| §8 `process.env` só em `.handler()` | ✅ | Sem uso de env vars novo. |
-| §8 `attachSupabaseAuth` em `functionMiddleware` | ✅ | Refinamento #3 depende de sessão válida — reforça essa regra. |
-| §9 Preservar fila de sync existente (`use-outlines-sync`) | ✅ | Coalescing/dedupe é **aditivo** — não substitui o mecanismo atual, envolve-o. |
-| §9 `ensureQueryData` no loader (sem `useEffect+fetch`) | ✅ | Auditoria de `staleTime` respeita o padrão. |
-| §9 Invalidar queries pós-mutação | ✅ | Mantido — flush chama invalidação normal. |
-| §10 i18n pt/en/es simétricas | ⚠️ **ADICIONAR AO PLANO** | Novo `OfflineStatusBar` + toast de conflito + toast de sessão expirada exigem chaves nos 3 locales. |
-| §12 Cores/fontes via tokens semânticos | ✅ | Banner usa tokens de `src/styles.css`. |
-| §12 Rotas novas com `errorComponent`/`notFoundComponent` | ✅ | Nenhuma rota nova. |
-| §1 Não bloquear tela do Superintendente | ✅ | UX offline não bloqueia — apenas informa. |
-
-**Correção formal ao plano:** adicionar seção **"i18n"** listando as chaves novas em `pt.json`/`en.json`/`es.json`:
-- `offline.status.synced`
-- `offline.status.syncing` (com placeholder `{n}`)
-- `offline.status.pending` (com placeholder `{n}`)
-- `offline.status.error`
-- `offline.conflict.title` / `.keepMine` / `.discard`
-- `offline.session.expired`
-- `offline.quota.purged`
-
----
-
-## Plano consolidado — versão final
-
-Todas as 4 áreas do plano original permanecem. Adições:
-
-**Sync / retry / conflitos**
-- 1.1 Coalescing de writes ✅
-- 1.2 Dedupe de inserts ✅
-- 1.3 Backoff exponencial com jitter ✅
-- 1.4 Detecção de conflito por `updated_at` ✅
-- 1.5 Guard `isFlushing` único e serial ✅
-- **1.6 NOVO — session-ready gate antes de qualquer flush (refinamento #3)**
-
-**Cache / prefetch**
-- 2.1 `staleTime` estratégico por query ✅
-- 2.2 **Snapshots com `compressToUTF16` + limiar 50KB + `queueMicrotask` (refinamento #2 refinado)**
-- 2.3 Warmup condicional por rede + priorização ✅
-- 2.4 TTL no Cache Storage do SW ✅
-
-**Confiabilidade Android/WebView**
-- 3.1 Retry em `setItem` do IDB ✅
-- 3.2 **Wake Lock com timeout rígido de 20s (refinamento #1)**
-- 3.3 `pageshow`/`visibilitychange` → session-ready → flush único ✅
-- 3.4 Quota-aware LRU ✅
-- 3.5 Pausar auto-refresh de auth quando `document.hidden` ✅
-
-**UX offline premium**
-- 4.1 Banner de status ✅
-- 4.2 Badge de pendências ✅
-- 4.3 Progress real de flush ✅
-- 4.4 Toast de conflito ✅
-- 4.5 Indicador por campo "salvo offline" ✅
-- **4.6 NOVO — toast "Sessão expirada" quando session-ready gate falha**
-
-**i18n (nova seção — §10)**
-- Chaves acima em `pt.json`/`en.json`/`es.json` na mesma alteração.
-
-**Arquivos afetados (adições sobre o plano original)**
-- `src/lib/session-ready.ts` **(novo)** — helper `ensureFreshSession()`.
-- `src/lib/wake-lock.ts` — parâmetro `maxMs = 20000` + auto-release.
-- `src/lib/snapshot-cache.ts` — `compressToUTF16` + `queueMicrotask` + prefixo de versão.
-- `src/lib/offline-queue.ts` — chamar `ensureFreshSession()` antes do flush.
-- `src/routes/__root.tsx` — listener unificado usa `ensureFreshSession()`.
-- `src/i18n/locales/{pt,en,es}.json` — chaves offline.
-
-**Validação (atualizada)**
-- `bunx tsc --noEmit` 100% limpo.
-- Simular token expirado + `pageshow`: verificar 1 refresh + 0 falhas 401 no Network.
-- Snapshot 200KB: confirmar armazenamento comprimido e ausência de long-task >50ms na thread principal.
-- Wake Lock aos 20s: confirmar `release()` disparado mesmo com flush travado.
-- pt/en/es simétricas (mesma ordem de chaves).
-
-**Fora de escopo** (inalterado): realtime, novos subscribes, CRDT, sync log server-side, qualquer aumento de request count.
+- Miniatura poster real do vídeo (frame extraction) — exige canvas/ffmpeg-wasm; fica para uma onda futura. Por ora, `PlayCircle` sobre fundo `bg-muted`.
+- Sincronizar o **arquivo binário** com Supabase Storage — permanece local (mesma regra das fotos).
