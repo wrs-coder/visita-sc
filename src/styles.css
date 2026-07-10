@@ -630,3 +630,12 @@ main [role="tabpanel"] [role="tab"][data-state="active"] {
     transition: none !important;
   }
 }
+
+/* Utilitário: esconde scrollbar mantendo o scroll (toolbar 2 filas). */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
