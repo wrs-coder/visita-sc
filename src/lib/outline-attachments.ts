@@ -86,6 +86,12 @@ function extFromMime(mime: string): string {
   if (mime.includes("gif")) return "gif";
   if (mime.includes("heic")) return "heic";
   if (mime.includes("jpeg") || mime.includes("jpg")) return "jpg";
+  // Vídeos
+  if (mime.includes("mp4")) return "mp4";
+  if (mime.includes("webm")) return "webm";
+  if (mime.includes("quicktime") || mime.includes("mov")) return "mov";
+  if (mime.includes("matroska") || mime.includes("mkv")) return "mkv";
+  if (mime.includes("3gpp") || mime.includes("3gp")) return "3gp";
   return "bin";
 }
 
