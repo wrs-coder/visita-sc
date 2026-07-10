@@ -128,26 +128,34 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
           <DialogTitle className="flex items-center gap-2">
             {mode === "photo" ? (
               <ImagePlus className="h-4 w-4 text-primary" />
+            ) : mode === "videoFile" ? (
+              <Video className="h-4 w-4 text-primary" />
             ) : (
               <LinkIcon className="h-4 w-4 text-primary" />
             )}
             {mode === "photo"
               ? t("personalOutlines.attachments.addPhotoTitle", { defaultValue: "Anexar imagem" })
-              : t("personalOutlines.attachments.addLinkTitle", { defaultValue: "Vincular link" })}
+              : mode === "videoFile"
+                ? t("personalOutlines.attachments.addVideoFileTitle", { defaultValue: "Anexar vídeo" })
+                : t("personalOutlines.attachments.addLinkTitle", { defaultValue: "Vincular link" })}
           </DialogTitle>
           <DialogDescription>
             {mode === "photo"
               ? t("personalOutlines.attachments.addPhotoDesc", {
                   defaultValue: "Escolha uma foto da galeria ou arquivos. Fica salva apenas neste dispositivo.",
                 })
-              : t("personalOutlines.attachments.addLinkDesc", {
-                  defaultValue: "Cole a URL (jw.org, vídeo, cântico...). Abre no aplicativo correspondente quando disponível.",
-                })}
+              : mode === "videoFile"
+                ? t("personalOutlines.attachments.addVideoFileDesc", {
+                    defaultValue: "Selecione um vídeo do dispositivo (até 200 MB). Fica salvo apenas neste aparelho.",
+                  })
+                : t("personalOutlines.attachments.addLinkDesc", {
+                    defaultValue: "Cole a URL (jw.org, vídeo, cântico...). Abre no aplicativo correspondente quando disponível.",
+                  })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
-          {mode === "photo" ? (
+          {needsFile ? (
             <div className="space-y-1.5">
               <Label htmlFor="att-file">
                 {t("personalOutlines.attachments.file", { defaultValue: "Arquivo" })}
@@ -156,13 +164,20 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
                 id="att-file"
                 ref={inputRef}
                 type="file"
-                accept="image/*"
+                accept={mode === "videoFile" ? "video/*" : "image/*"}
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-primary-foreground hover:file:bg-primary/90"
               />
               {file && (
                 <p className="text-xs text-muted-foreground truncate">
-                  {file.name} · {(file.size / 1024).toFixed(0)} KB
+                  {file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB
+                </p>
+              )}
+              {mode === "videoFile" && (
+                <p className="text-[10px] text-muted-foreground">
+                  {t("personalOutlines.attachments.videoLimit", {
+                    defaultValue: "Limite: 200 MB. Prefira MP4 comprimido.",
+                  })}
                 </p>
               )}
             </div>
