@@ -152,6 +152,60 @@ export async function savePhotoAttachment(
   return { attachmentId, uri: url, displaySrc: url };
 }
 
+export interface SaveVideoResult {
+  attachmentId: string;
+  uri: string;
+  displaySrc: string;
+  mime: string;
+}
+
+/**
+ * Persiste um vídeo local escolhido pelo usuário. No nativo grava em
+ * Directory.Data via base64; no web usa Blob URL. Recusa arquivos maiores
+ * que MAX_LOCAL_VIDEO_BYTES para evitar OOM.
+ */
+export async function saveVideoAttachment(
+  file: File,
+  noteId: string,
+  attachmentId: string = makeAttachmentId(),
+): Promise<SaveVideoResult> {
+  if (file.size > MAX_LOCAL_VIDEO_BYTES) {
+    throw new Error("VIDEO_TOO_LARGE");
+  }
+  const mime = file.type || "video/mp4";
+  const ext = extFromMime(mime) || (file.name.split(".").pop() ?? "mp4").toLowerCase();
+  const relativePath = `outline-attachments/${noteId}/${attachmentId}.${ext}`;
+
+  if (isCapacitorNative()) {
+    try {
+      const { Filesystem, Directory } = await import("@capacitor/filesystem");
+      const base64 = await fileToBase64(file);
+      await Filesystem.writeFile({
+        path: relativePath,
+        data: base64,
+        directory: Directory.Data,
+        recursive: true,
+      });
+      const { uri } = await Filesystem.getUri({
+        path: relativePath,
+        directory: Directory.Data,
+      });
+      return { attachmentId, uri, displaySrc: toDisplaySrc(uri), mime };
+    } catch (err) {
+      console.warn("[outline-attachments] video Filesystem write failed, using blob fallback", err);
+    }
+  }
+
+  const url = URL.createObjectURL(file);
+  blobUriByAttachment.set(attachmentId, url);
+  return { attachmentId, uri: url, displaySrc: url, mime };
+}
+
+/** Alias semântico: remove qualquer arquivo local (foto ou vídeo). */
+export async function deleteFileAttachment(uri: string | undefined | null): Promise<void> {
+  return deletePhotoAttachment(uri);
+}
+
 /** Remove a foto do Filesystem (best-effort). Falhas silenciosas. */
 export async function deletePhotoAttachment(uri: string | undefined | null): Promise<void> {
   if (!uri) return;
