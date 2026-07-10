@@ -806,8 +806,8 @@ export function RichNoteToolbar({
             </PopoverContent>
           </Popover>
 
-          {/* Anexos — imagens e links (preservados, botões diretos) */}
-          {(onAddPhotoAttachment || onAddLinkAttachment) && (
+          {/* Anexos — imagens, vídeos e links (botões diretos) */}
+          {(onAddPhotoAttachment || onAddLinkAttachment || onAddVideoAttachment) && (
             <>
               {sep}
               {onAddPhotoAttachment && (
@@ -816,6 +816,14 @@ export function RichNoteToolbar({
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={onAddPhotoAttachment}>
                   <ImagePlus className="h-4 w-4" />
+                </Button>
+              )}
+              {onAddVideoAttachment && (
+                <Button type="button" variant="ghost" size="sm" className={iconBtn(false)}
+                  title={t("personalOutlines.attachments.addVideoFile", { defaultValue: "Anexar vídeo" })}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={onAddVideoAttachment}>
+                  <Video className="h-4 w-4" />
                 </Button>
               )}
               {onAddLinkAttachment && (
