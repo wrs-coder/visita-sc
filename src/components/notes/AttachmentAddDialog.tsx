@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ImagePlus, Link as LinkIcon, PlayCircle, FileText, Loader2 } from "lucide-react";
+import { ImagePlus, Link as LinkIcon, PlayCircle, FileText, Loader2, Video } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +23,13 @@ import {
   isLikelyValidUrl,
   makeAttachmentId,
   savePhotoAttachment,
+  saveVideoAttachment,
+  MAX_LOCAL_VIDEO_BYTES,
   type NoteAttachment,
   type NoteAttachmentKind,
 } from "@/lib/outline-attachments";
 
-type Mode = "photo" | "link";
+type Mode = "photo" | "link" | "videoFile";
 
 interface Props {
   open: boolean;
@@ -55,7 +57,8 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
     }
   }, [open, mode]);
 
-  const canSubmit = mode === "photo"
+  const needsFile = mode === "photo" || mode === "videoFile";
+  const canSubmit = needsFile
     ? !!file && title.trim().length > 0 && !busy
     : isLikelyValidUrl(url) && title.trim().length > 0 && !busy;
 
@@ -71,6 +74,19 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
           kind: "photo",
           title: title.trim().slice(0, 60),
           uri: saved.uri,
+          source: "file",
+          created_at: Date.now(),
+        });
+      } else if (mode === "videoFile" && file) {
+        const attId = makeAttachmentId();
+        const saved = await saveVideoAttachment(file, noteId, attId);
+        onAdd({
+          id: saved.attachmentId,
+          kind: "video",
+          title: title.trim().slice(0, 60),
+          uri: saved.uri,
+          mime: saved.mime,
+          source: "file",
           created_at: Date.now(),
         });
       } else if (mode === "link") {
@@ -79,17 +95,27 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
           kind: linkKind,
           title: title.trim().slice(0, 60),
           url: url.trim(),
+          source: "link",
           created_at: Date.now(),
         });
       }
       onClose();
     } catch (err) {
       console.error("[AttachmentAddDialog]", err);
-      toast.error(
-        t("personalOutlines.attachments.addError", {
-          defaultValue: "Não foi possível adicionar o anexo.",
-        }),
-      );
+      const msg = (err as Error | undefined)?.message;
+      if (msg === "VIDEO_TOO_LARGE") {
+        toast.error(
+          t("personalOutlines.attachments.videoTooLarge", {
+            defaultValue: "Vídeo muito grande. Limite: 200 MB.",
+          }),
+        );
+      } else {
+        toast.error(
+          t("personalOutlines.attachments.addError", {
+            defaultValue: "Não foi possível adicionar o anexo.",
+          }),
+        );
+      }
     } finally {
       setBusy(false);
     }
