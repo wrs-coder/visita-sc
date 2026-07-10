@@ -156,7 +156,7 @@ export function RichNoteEditor({
   const [focusMode, setFocusMode] = useState(false);
   const kbVisible = useVirtualKeyboardVisible();
   const lastEmittedRef = useRef<string>("");
-  const [attachDialog, setAttachDialog] = useState<"photo" | "link" | null>(null);
+  const [attachDialog, setAttachDialog] = useState<"photo" | "link" | "videoFile" | null>(null);
   // Tick para forçar leitura do CharacterCount após updates de conteúdo.
   const [, setTick] = useState(0);
 
@@ -287,6 +287,7 @@ export function RichNoteEditor({
         outlineId={outlineId}
         compact={compact}
         onAddPhotoAttachment={onAttachmentsChange ? () => setAttachDialog("photo") : undefined}
+        onAddVideoAttachment={onAttachmentsChange ? () => setAttachDialog("videoFile") : undefined}
         onAddLinkAttachment={onAttachmentsChange ? () => setAttachDialog("link") : undefined}
       />
 
