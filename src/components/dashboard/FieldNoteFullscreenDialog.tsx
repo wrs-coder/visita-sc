@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { FileText, PencilLine, Plus, Minus, Loader2 } from "lucide-react";
+import { FileText, PencilLine, Plus, Minus, Loader2, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -190,8 +190,16 @@ export function FieldNoteFullscreenDialog({
             </Button>
           )}
 
-          {/* Espaço reservado para o X de fechar do Dialog (absoluto, top-right). */}
-          <div className="w-8 shrink-0" aria-hidden />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            className="shrink-0"
+            title={t("personalOutlines.fullscreen.exit", { defaultValue: "Sair da tela cheia" })}
+            aria-label={t("personalOutlines.fullscreen.exit", { defaultValue: "Sair da tela cheia" })}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
         {note?.attachments && note.attachments.length > 0 && (
