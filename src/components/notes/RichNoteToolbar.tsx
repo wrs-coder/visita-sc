@@ -35,6 +35,7 @@ import {
   Type,
   Focus,
   ImagePlus,
+  Video,
   Link as LinkExternalIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -157,6 +158,8 @@ interface ToolbarProps {
   onAddPhotoAttachment?: () => void;
   /** Callback opcional para abrir o diálogo de vincular link. */
   onAddLinkAttachment?: () => void;
+  /** Callback opcional para abrir o diálogo de anexar vídeo local. */
+  onAddVideoAttachment?: () => void;
 }
 
 export function RichNoteToolbar({
@@ -168,6 +171,7 @@ export function RichNoteToolbar({
   compact = false,
   onAddPhotoAttachment,
   onAddLinkAttachment,
+  onAddVideoAttachment,
 }: ToolbarProps) {
   const { t } = useTranslation();
   const [colorOpen, setColorOpen] = useState(false);
