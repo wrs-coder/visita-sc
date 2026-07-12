@@ -156,19 +156,19 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   };
 
   const wrapClass = cn(
-    "flex items-center gap-1.5 select-none rounded-md border flex-wrap",
+    "flex items-center gap-1 sm:gap-1.5 select-none border flex-wrap",
     isFullscreen
-      ? "fixed top-0 inset-x-0 z-[105] border-b bg-background/85 backdrop-blur px-3 py-1.5 justify-center min-h-9"
-      : "min-h-7 px-1.5",
+      ? "w-full shrink-0 border-b bg-background/85 backdrop-blur px-2 sm:px-3 py-1 sm:py-1.5 justify-center min-h-8 sm:min-h-9"
+      : "min-h-7 px-1.5 rounded-md",
     isAuto && !isFullscreen && "bg-muted/40",
     !isAuto && preset.chipBg,
     className,
   );
 
-  const iconBtnSize = isFullscreen ? "h-4 w-4" : "h-3.5 w-3.5";
+  const iconBtnSize = isFullscreen ? "h-3.5 w-3.5 sm:h-4 sm:w-4" : "h-3.5 w-3.5";
   const iconBtnClass = cn(
     "p-0 rounded-md transition-colors shrink-0",
-    isFullscreen ? "h-8 w-8" : "h-7 w-7",
+    isFullscreen ? "h-7 w-7 sm:h-8 sm:w-8" : "h-7 w-7",
     isAuto ? "hover:bg-muted" : preset.iconColor,
   );
   const displayClass = cn(
