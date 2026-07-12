@@ -97,15 +97,21 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   }, [timer.isRunning]);
 
   const endLabel = useMemo(() => {
-    if (timer.mode !== "countdown") return null;
     const base = timer.isRunning ? Date.now() : now;
-    const end = new Date(base + timer.remainingSec * 1000);
+    let remainingMs: number;
+    if (timer.mode === "countdown") {
+      remainingMs = timer.remainingSec * 1000;
+    } else {
+      const remainingSec = Math.max(0, timer.targetSec - timer.elapsedSec);
+      remainingMs = remainingSec * 1000;
+    }
+    const end = new Date(base + remainingMs);
     return new Intl.DateTimeFormat(undefined, {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
     }).format(end);
-  }, [timer.mode, timer.isRunning, timer.remainingSec, now]);
+  }, [timer.mode, timer.isRunning, timer.remainingSec, timer.elapsedSec, timer.targetSec, now]);
 
   useEffect(() => {
     if (variant !== "toolbar") return;
