@@ -139,7 +139,7 @@ export function FieldNoteFullscreenDialog({
             <OutlineInactivitySensor outlineId={note.id} />
           </>
         )}
-        <div className={`border-b px-3 sm:px-4 py-2 shrink-0 min-w-0${showTimer ? " pt-12" : ""}`}>
+        <div className="border-b px-3 sm:px-4 py-2 shrink-0 min-w-0">
           {/* Linha 1: título + fechar (sempre visível) */}
           <div className="flex items-center gap-2 min-w-0">
             <FileText className="h-4 w-4 text-primary shrink-0" />

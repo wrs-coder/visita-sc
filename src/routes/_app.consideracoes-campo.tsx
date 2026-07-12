@@ -2158,12 +2158,8 @@ function FullscreenOutline({
     <div className="fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none">
       {showTimer && <OutlineTimer outlineId={note.id} variant="fullscreen" />}
       {showTimer && <OutlineInactivitySensor outlineId={note.id} />}
-      <div
-        className={cn(
-          "border-b px-4 py-2 min-w-0 shrink-0",
-          showTimer && "pt-12",
-        )}
-      >
+      <div className="border-b px-4 py-2 min-w-0 shrink-0">
+
         {/* Linha 1: título + fechar (sempre visível) */}
         <div className="flex items-center gap-2 min-w-0">
           <FileText className="h-4 w-4 text-primary shrink-0" />
