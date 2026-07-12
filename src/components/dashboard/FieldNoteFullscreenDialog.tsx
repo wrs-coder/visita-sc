@@ -139,68 +139,112 @@ export function FieldNoteFullscreenDialog({
             <OutlineInactivitySensor outlineId={note.id} />
           </>
         )}
-        <div className={`flex items-center gap-2 border-b px-3 sm:px-4 py-2 shrink-0 min-w-0${showTimer ? " pt-12" : ""}`}>
-          <FileText className="h-4 w-4 text-primary shrink-0" />
-          <DialogTitle className="text-sm font-semibold truncate flex-1 min-w-0 m-0">
-            {note?.title ||
-              t("fieldConsiderations.fields.title", { defaultValue: "Nota" })}
-          </DialogTitle>
+        <div className={`border-b px-3 sm:px-4 py-2 shrink-0 min-w-0${showTimer ? " pt-12" : ""}`}>
+          {/* Linha 1: título + fechar (sempre visível) */}
+          <div className="flex items-center gap-2 min-w-0">
+            <FileText className="h-4 w-4 text-primary shrink-0" />
+            <DialogTitle className="text-sm font-semibold truncate flex-1 min-w-0 m-0">
+              {note?.title ||
+                t("fieldConsiderations.fields.title", { defaultValue: "Nota" })}
+            </DialogTitle>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              setScale((s) => Math.max(FS_MIN, +(s - FS_STEP).toFixed(2)))
-            }
-            title={t("personalOutlines.fullscreen.fontDown", {
-              defaultValue: "Diminuir fonte",
-            })}
-          >
-            <Minus className="h-4 w-4" />
-          </Button>
-          <span className="text-xs tabular-nums w-10 text-center">
-            {Math.round(scale * 100)}%
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              setScale((s) => Math.min(FS_MAX, +(s + FS_STEP).toFixed(2)))
-            }
-            title={t("personalOutlines.fullscreen.fontUp", {
-              defaultValue: "Aumentar fonte",
-            })}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-
-          {note && (
-            <Button asChild variant="outline" size="sm" className="shrink-0">
-              <Link
-                to="/consideracoes-campo"
-                search={{ noteId: note.id, mode: "outline" }}
+            {/* Controles inline em telas >= sm */}
+            <div className="hidden sm:flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setScale((s) => Math.max(FS_MIN, +(s - FS_STEP).toFixed(2)))
+                }
+                title={t("personalOutlines.fullscreen.fontDown", { defaultValue: "Diminuir fonte" })}
               >
-                <PencilLine className="h-3.5 w-3.5 sm:mr-1" />
-                <span className="hidden sm:inline">
-                  {t("dashboard.studyNotesGoToOutline", {
-                    defaultValue: "Abrir no modo esboço",
-                  })}
-                </span>
-              </Link>
-            </Button>
-          )}
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="text-xs tabular-nums w-10 text-center">
+                {Math.round(scale * 100)}%
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setScale((s) => Math.min(FS_MAX, +(s + FS_STEP).toFixed(2)))
+                }
+                title={t("personalOutlines.fullscreen.fontUp", { defaultValue: "Aumentar fonte" })}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            className="shrink-0"
-            title={t("personalOutlines.fullscreen.exit", { defaultValue: "Sair da tela cheia" })}
-            aria-label={t("personalOutlines.fullscreen.exit", { defaultValue: "Sair da tela cheia" })}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+              {note && (
+                <Button asChild variant="outline" size="sm" className="shrink-0">
+                  <Link
+                    to="/consideracoes-campo"
+                    search={{ noteId: note.id, mode: "outline" }}
+                  >
+                    <PencilLine className="h-3.5 w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">
+                      {t("dashboard.studyNotesGoToOutline", { defaultValue: "Abrir no modo esboço" })}
+                    </span>
+                  </Link>
+                </Button>
+              )}
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+              className="shrink-0 h-9 w-9"
+              title={t("personalOutlines.fullscreen.exit", { defaultValue: "Sair da tela cheia" })}
+              aria-label={t("personalOutlines.fullscreen.exit", { defaultValue: "Sair da tela cheia" })}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* Linha 2 (apenas mobile): zoom + editar */}
+          <div className="flex sm:hidden items-center gap-1 mt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2"
+              onClick={() =>
+                setScale((s) => Math.max(FS_MIN, +(s - FS_STEP).toFixed(2)))
+              }
+              title={t("personalOutlines.fullscreen.fontDown", { defaultValue: "Diminuir fonte" })}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <span className="text-xs tabular-nums w-10 text-center">
+              {Math.round(scale * 100)}%
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2"
+              onClick={() =>
+                setScale((s) => Math.min(FS_MAX, +(s + FS_STEP).toFixed(2)))
+              }
+              title={t("personalOutlines.fullscreen.fontUp", { defaultValue: "Aumentar fonte" })}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+
+            {note && (
+              <Button asChild variant="outline" size="sm" className="ml-auto h-8">
+                <Link
+                  to="/consideracoes-campo"
+                  search={{ noteId: note.id, mode: "outline" }}
+                >
+                  <PencilLine className="h-3.5 w-3.5 mr-1" />
+                  <span className="text-xs">
+                    {t("dashboard.studyNotesGoToOutline", { defaultValue: "Abrir no modo esboço" })}
+                  </span>
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
+
 
         {note?.attachments && note.attachments.length > 0 && (
           <OutlineAttachmentsBar attachments={note.attachments} readOnly />
