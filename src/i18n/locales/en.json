@@ -1647,5 +1647,42 @@
     "light": "Light mode",
     "dark": "Dark mode",
     "toggle": "Toggle dark mode"
+  },
+  "privacy": {
+    "link": "Privacy Policy",
+    "back": "Back",
+    "title": "Privacy Policy",
+    "intro": "Visita SC is a personal organization app for circuit overseers and elders. This page explains clearly which data is handled and how you stay in control of it.",
+    "updated": "Last updated: {{date}}",
+    "sections": {
+      "collected": {
+        "title": "1. Data collected",
+        "body": "Account data: e-mail, username, full name and phone (when provided).\nOrganizational data: circuit, congregations, linked elders, visits and schedules.\nContent you create: personal outlines, notes, templates, checklists and reports.\nAttachments: photos, videos and links you add to outlines.\nThe app does not collect location, device contacts or advertising data."
+      },
+      "purpose": {
+        "title": "2. Purpose of use",
+        "body": "Data is used solely to authenticate your access, display and sync your visits, outlines and schedules across your devices, and allow PDF report export. No advertising profiles are built and no data is sold."
+      },
+      "storage": {
+        "title": "3. Local and cloud storage",
+        "body": "Attachments (photos and videos) are stored only in your device's private directory and are never uploaded to the cloud.\nAccount data, congregations, visits and outline text are stored on a secure server, encrypted in transit (HTTPS), with access rules restricting reads to your own user and the people you linked.\nA local copy (offline cache) is kept on the device so the app works without internet, and it is cleared when you sign out."
+      },
+      "sharing": {
+        "title": "4. Sharing with third parties",
+        "body": "Your data is not sold, rented or shared with third parties for commercial or advertising purposes. The app uses no ad networks and no third-party trackers. Sharing only happens when you trigger it: sending a PDF report or granting guest access to a congregation."
+      },
+      "retention": {
+        "title": "5. Retention",
+        "body": "Data is retained while your account is active, since it forms the history of your work. Records you delete go through the app's trash and are then permanently removed."
+      },
+      "deletion": {
+        "title": "6. Account and data deletion",
+        "body": "You can delete visits, congregations, outlines and attachments directly in the app. For full deletion of your account and all linked data, send a request through the contacts below from your registered e-mail; removal is completed within 30 days."
+      },
+      "contact": {
+        "title": "7. Contact",
+        "body": "Questions about privacy, data correction or deletion can be sent to the person responsible for the app:"
+      }
+    }
   }
 }
