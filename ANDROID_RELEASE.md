@@ -169,10 +169,12 @@ Mantenha o `version` do `package.json` alinhado ao `versionName`.
 
 ## Checklist Play Console
 
-- [ ] Keystore gerada e com backup seguro (+ senhas)
+- [ ] Keystore gerada e com backup seguro em 2 locais (+ senhas no gerenciador)
 - [ ] `android/keystore.properties` criado localmente
 - [ ] `versionCode` incrementado e `versionName` atualizado
 - [ ] AAB gerado com `npm run android:release:aab`
+- [ ] **Assinatura conferida com `npm run android:verify:signature`** (SHA-256 igual ao da chave de upload na Play Console)
+- [ ] Após a 1ª publicação: SHA-256 da chave de distribuição adicionado ao `public/.well-known/assetlinks.json`
 - [ ] URL da política de privacidade preenchida na ficha do app
 - [ ] Formulário de **Segurança dos dados (Data Safety)** preenchido:
       coleta de e-mail/nome/telefone para funcionamento do app, dados
