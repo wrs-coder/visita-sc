@@ -1,73 +1,59 @@
-## Viabilidade
+## Caminho seguro para o AAB de release
 
-Sim, é totalmente viável e de baixo risco — o modelo `NoteAttachment` já reserva o tipo `"video"` e a barra já renderiza um ícone `PlayCircle`. Basta destravar o fluxo de arquivo local e o player. A única decisão sensível é **como tocar** o vídeo local no Android; a forma mais segura (sem novos plugins e sem quebrar o APK) é usar o elemento `<video>` HTML5 em um lightbox fullscreen — o Android e a WebView tratam isso como player nativo (com botão de tela cheia do próprio sistema, PIP, controles). Isso preserva build limpo e evita adicionar `@capacitor/file-opener` só para isso.
+Servidor principal permanece em `https://visita-sc.lovable.app` (`capacitor.config.ts` intocado). Nenhuma server function, fluxo Supabase ou arquivo de PWA é alterado.
 
-## Escopo (zero alteração de schema)
+## 1. Assinatura release permanente — `android/app/build.gradle`
 
-Todo o metadado continua dentro do `content_json.attachments`, respeitando o coalescing da fila offline. Nenhuma tabela nova.
+- Carregar `android/keystore.properties` no topo do arquivo (`Properties` + `FileInputStream`, só quando o arquivo existir).
+- Adicionar `signingConfigs { release { keyAlias / keyPassword / storeFile / storePassword } }` dentro de `android { }`.
+- Em `buildTypes.release`, aplicar `signingConfig signingConfigs.release` **condicionado à existência do `keystore.properties`** — assim quem clona o repositório sem a keystore ainda consegue compilar.
+- `minifyEnabled false` mantido, com comentário explicando o motivo (evitar regressão de R8/ProGuard nesta submissão).
+- Acrescentar `keystore.properties` e `app/*.keystore` ao `android/.gitignore`.
 
-## Mudanças por arquivo
+## 2. Rota de Política de Privacidade
 
-**1. `src/lib/outline-attachments.ts`**
-- Ampliar `NoteAttachment` com campo opcional `source?: "link" | "file"` (default `"link"` para retrocompat) e `mime?: string`.
-- Ajustar `normalizeAttachment` para preservar `source`/`mime`; entrada antiga (sem `source`) continua válida.
-- Nova função `saveVideoAttachment(file, noteId, id?)` espelhando `savePhotoAttachment`, mas gravando em `outline-attachments/<noteId>/<id>.<ext>` com Filesystem no nativo e Blob URL no web.
-- Extensão MIME: reutilizar helper `extFromMime` expandido (mp4/webm/mov/mkv/3gp).
-- Validação de tamanho: recusar arquivos > 200 MB com mensagem clara (evita OOM no `readAsDataURL`).
-- `deletePhotoAttachment` renomeada logicamente via wrapper `deleteFileAttachment` (mesma implementação; alias exportado, sem breaking).
+Novo arquivo `src/routes/politica-privacidade.tsx`:
 
-**2. `src/components/notes/AttachmentAddDialog.tsx`**
-- Aceitar `mode="video"` além de `photo`/`link`, ou (melhor) manter os 2 modos atuais e:
-  - No modo `link` já existente, o subtipo "Vídeo" continua criando um `kind:"video", source:"link"` (comportamento atual).
-  - Adicionar **novo modo** `mode="videoFile"`: `<input type="file" accept="video/*">`, título obrigatório, salva via `saveVideoAttachment` e emite `kind:"video", source:"file", uri, mime`.
-- Chamada a partir da toolbar por um novo botão (ícone `Video`/`FileVideo`).
+- Rota pública, sem gate de autenticação, com `head()` próprio: `title`, `description`, `og:title`, `og:description`, `og:type`, `og:url` e `canonical` apontando para `https://visita-sc.lovable.app/politica-privacidade`.
+- Layout no design system existente (Card, tokens de `src/styles.css`, zero hex inline), com `Logo`, botão de voltar e `LanguageSwitcher`.
+- Conteúdo 100% via i18n (novo bloco `privacy` em `pt.json`, `en.json`, `es.json`), com as seções:
+  1. Dados coletados — e-mail, nome de usuário, telefone, congregação/circuito, esboços, anexos.
+  2. Finalidade de uso.
+  3. Armazenamento local vs. nuvem (anexos e mídia ficam no diretório privado do aparelho; dados de conta e visitas ficam no backend).
+  4. Não compartilhamento com terceiros / ausência de publicidade e rastreamento.
+  5. Retenção.
+  6. Exclusão de conta e dados.
+  7. Contato do responsável (e-mail e WhatsApp já usados no diálogo "Sobre").
+  8. Data da última atualização.
 
-**3. `src/components/notes/RichNoteToolbar.tsx`**
-- Adicionar prop opcional `onAddVideoAttachment?: () => void` (mesma cadeia de `onAddPhotoAttachment`/`onAddLinkAttachment`).
-- Renderizar botão `<Video>` (lucide) ao lado dos existentes, tanto no modo compacto quanto no default.
+Links discretos para a rota:
+- Rodapé do `src/components/auth/LoginForm.tsx`, no mesmo bloco de "Esqueci a senha".
+- Tela `src/routes/_app.configuracoes.tsx`, como linha discreta ao final da página.
 
-**4. `src/components/notes/RichNoteEditor.tsx`**
-- Novo estado `attachDialog: "photo" | "link" | "videoFile" | null`.
-- Passar `onAddVideoAttachment={() => setAttachDialog("videoFile")}` ao toolbar quando `onAttachmentsChange` estiver definido.
+## 3. `AndroidManifest.xml` — conformidade Play Store
 
-**5. `src/components/notes/OutlineAttachmentsBar.tsx`**
-- Já mostra `PlayCircle` para `kind === "video"`. Ajustar `handleClick`:
-  - `video` + `source === "file"` (ou tem `uri` sem `url`): abrir novo `AttachmentVideoLightbox` com `toDisplaySrc(uri)`.
-  - `video` + `source === "link"` (ou só `url`): manter `openExternalUrl(url)` → aciona deep-link nativo via `@capacitor/browser` (já instalado).
-- Diferenciação visual sutil: badge minúsculo no canto do card (`link` = seta externa; `file` = ícone de download/arquivo). Tokens de cor do tema — sem hex inline.
-- Remoção: já chama `deletePhotoAttachment(uri)`; funciona igualzinho para vídeo local (mesmo diretório).
+- `android:allowBackup="false"` e `android:fullBackupContent="false"`.
+- `android:usesCleartextTraffic="false"` explícito no `<application>`.
+- Remover `READ_EXTERNAL_STORAGE` e `WRITE_EXTERNAL_STORAGE` (backups e anexos já usam o diretório privado via `@capacitor/filesystem` + `@capacitor/share`, que não exigem essas permissões em minSdk 24).
+- `INTENT`, App Links e o `FileProvider` permanecem inalterados.
 
-**6. Novo `src/components/notes/AttachmentVideoLightbox.tsx`**
-- Espelha `AttachmentLightbox` (mesmas garantias de `stopPropagation`/ESC capture para não fechar o Dialog pai).
-- Renderiza `<video src={src} controls playsInline autoPlay className="max-h-[100dvh] max-w-full">`.
-- Botão nativo de fullscreen do `<video>` no Android abre o player em tela cheia do sistema (comportamento equivalente ao "player nativo" pedido). Web funciona idêntico.
+## 4. Documentação — `ANDROID_RELEASE.md`
 
-**7. Sync (`personal-outlines.functions.ts`) — nada a fazer**
-- O sync já serializa `content_json` como JSONB opaco. `serializeAttachments` preserva os novos campos automaticamente porque `normalizeAttachment` retorna o objeto tipado.
+Reescrita alinhada à realidade do projeto:
+- Geração da keystore (`npm run android:keystore`) e aviso crítico de backup.
+- Criação do `keystore.properties`.
+- Nota de que o Gradle já está configurado (sem passo manual de snippet).
+- **Correção importante**: a seção atual recomenda remover o bloco `server` do `capacitor.config.ts`. Isso passará a ser marcado como **não suportado hoje**, porque 20 módulos usam `createServerFn` em caminhos relativos e quebrariam com `webDir` local.
+- Geração do AAB (`npm run android:release:aab`) e do APK.
+- Versionamento (`versionCode` / `versionName`).
+- Checklist da Play Console: ícone 512x512, feature graphic 1024x500, screenshots, Data Safety, URL da política de privacidade, keystore em backup.
 
-**8. i18n (`pt.json`, `en.json`, `es.json`)**
-- Novas chaves: `personalOutlines.attachments.addVideoFile`, `addVideoFileTitle`, `addVideoFileDesc`, `videoFile`, `videoTooLarge` (mensagem de limite).
+## 5. Preservação de arquitetura
 
-## Diretrizes atendidas
+Não serão tocados: `capacitor.config.ts`, `public/sw.js`, `public/manifest.webmanifest`, `src/integrations/supabase/*`, `src/start.ts`, `src/server.ts` e qualquer `*.functions.ts`.
 
-- **Reaproveitamento**: 100% dentro de `OutlineAttachmentsBar` + `AttachmentAddDialog`; nenhum componente paralelo.
-- **Identificação visual premium**: `PlayCircle` já existe; badge sutil `link/file` usando tokens `text-muted-foreground`/`bg-accent`. Título curto continua abaixo (`truncate`).
-- **Player inteligente**: link → `@capacitor/browser` (deep-link Android); arquivo → `<video controls>` em lightbox, com fullscreen nativo do próprio elemento.
-- **Zero alteração de tabelas**: campo `source` vive dentro do `content_json.attachments[]`.
-- **Tokens semânticos**: todas as cores via classes shadcn/tema; sem hex inline.
+`targetSdkVersion` já está em **36** em `android/variables.gradle` — acima do mínimo 35, nada a alterar.
 
-## Riscos e mitigações
+## Validação
 
-| Risco | Mitigação |
-|---|---|
-| Vídeos grandes → OOM em `readAsDataURL` | Limite duro de 200 MB com toast claro; recomendar MP4 comprimido |
-| Base64 infla memória (+33%) | Aceito para até 200 MB; roadmap futuro: migrar para stream Blob quando `@capacitor/filesystem` v7 estabilizar `writeFile` com Blob |
-| `file://` bloqueado no WebView | Já resolvido por `Capacitor.convertFileSrc` (`toDisplaySrc`) — o mesmo caminho das fotos |
-| Anexos antigos sem `source` | `normalizeAttachment` default `"link"` quando `url` presente, `"file"` quando só `uri` — retrocompat total |
-| Build/tsgo | Nenhum plugin novo; só tipos ampliados. `bunx tsc --noEmit` continua limpo |
-| APK | Nenhuma alteração em `android/` necessária, sem bump obrigatório de `versionCode` |
-
-## Fora do escopo
-
-- Miniatura poster real do vídeo (frame extraction) — exige canvas/ffmpeg-wasm; fica para uma onda futura. Por ora, `PlayCircle` sobre fundo `bg-muted`.
-- Sincronizar o **arquivo binário** com Supabase Storage — permanece local (mesma regra das fotos).
+`bunx tsc --noEmit` limpo antes de concluir.

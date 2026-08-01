@@ -1648,5 +1648,42 @@
     "light": "Modo claro",
     "dark": "Modo escuro",
     "toggle": "Alternar modo escuro"
+  },
+  "privacy": {
+    "link": "Política de Privacidade",
+    "back": "Voltar",
+    "title": "Política de Privacidade",
+    "intro": "O Visita SC é um aplicativo de organização pessoal para superintendentes de circuito e anciãos. Esta página explica, de forma clara, quais dados são tratados e como você mantém o controle sobre eles.",
+    "updated": "Última atualização: {{date}}",
+    "sections": {
+      "collected": {
+        "title": "1. Dados coletados",
+        "body": "Dados de conta: e-mail, nome de usuário, nome completo e telefone (quando informado).\nDados organizacionais: circuito, congregações, anciãos vinculados, visitas e cronogramas.\nConteúdo criado por você: esboços pessoais, notas, modelos, checklists e relatórios.\nAnexos: fotos, vídeos e links que você adiciona aos esboços.\nO aplicativo não coleta localização, contatos do aparelho, nem dados de publicidade."
+      },
+      "purpose": {
+        "title": "2. Finalidade de uso",
+        "body": "Os dados são usados exclusivamente para autenticar o seu acesso, exibir e sincronizar as suas visitas, esboços e programações entre os seus dispositivos, e permitir a exportação de relatórios em PDF. Não há criação de perfis publicitários nem venda de dados."
+      },
+      "storage": {
+        "title": "3. Armazenamento local e em nuvem",
+        "body": "Anexos (fotos e vídeos) ficam armazenados apenas no diretório privado do seu aparelho e não são enviados para a nuvem.\nDados de conta, congregações, visitas e o texto dos esboços ficam em servidor seguro, com criptografia em trânsito (HTTPS) e regras de acesso que limitam a leitura ao seu próprio usuário e às pessoas que você vinculou.\nUma cópia local (cache offline) é mantida no aparelho para permitir o uso sem internet e é apagada ao sair da conta."
+      },
+      "sharing": {
+        "title": "4. Compartilhamento com terceiros",
+        "body": "Os seus dados não são vendidos, alugados nem compartilhados com terceiros para fins comerciais ou publicitários. O aplicativo não utiliza redes de anúncios nem rastreadores de terceiros. Compartilhamentos ocorrem apenas quando você mesmo aciona: envio de um relatório em PDF ou concessão de acesso de visitante a uma congregação."
+      },
+      "retention": {
+        "title": "5. Retenção",
+        "body": "Os dados permanecem armazenados enquanto a sua conta estiver ativa, pois eles constituem o histórico do seu trabalho. Registros excluídos por você passam pela lixeira do aplicativo e depois são removidos definitivamente."
+      },
+      "deletion": {
+        "title": "6. Exclusão de conta e dados",
+        "body": "Você pode excluir visitas, congregações, esboços e anexos diretamente no aplicativo. Para a exclusão completa da conta e de todos os dados vinculados, envie um pedido pelos contatos abaixo usando o e-mail cadastrado; a remoção é feita em até 30 dias."
+      },
+      "contact": {
+        "title": "7. Contato do responsável",
+        "body": "Dúvidas sobre privacidade, correção ou exclusão de dados podem ser enviadas para o responsável pelo aplicativo:"
+      }
+    }
   }
 }

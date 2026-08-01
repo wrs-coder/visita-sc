@@ -128,8 +128,10 @@ export function LoginForm() {
                 {t("login.newSuper")}{" "}
                 <Link to="/cadastro/superintendente" className="text-primary font-medium hover:underline">{t("login.createAccount")}</Link>
               </div>
-              <div className="pt-1">
+              <div className="pt-1 flex items-center justify-center gap-2">
                 <Link to="/esqueci-senha" className="text-muted-foreground hover:text-primary text-[12px]">{t("login.forgotPassword")}</Link>
+                <span className="text-muted-foreground/50 text-[12px]">·</span>
+                <Link to="/politica-privacidade" className="text-muted-foreground hover:text-primary text-[12px]">{t("privacy.link")}</Link>
               </div>
             </div>
           </CardContent>
