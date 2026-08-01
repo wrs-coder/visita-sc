@@ -146,14 +146,20 @@ Consequências práticas:
 
 ### App Links precisam dos DOIS fingerprints
 
-`public/.well-known/assetlinks.json` hoje contém apenas o fingerprint de **upload**.
-Depois da primeira publicação, copie em
-**Play Console → Configuração → Integridade do app → Certificado de assinatura do app**
-o SHA-256 da **chave de distribuição** e acrescente-o ao array:
+`public/.well-known/assetlinks.json` está com o array de fingerprints **vazio**,
+porque o Package Name é novo e ainda não existe certificado registrado.
+
+Preencha em duas etapas:
+
+1. Após gerar o primeiro AAB, rode `npm run android:verify:signature` e copie o
+   SHA-256 impresso (chave de **upload**).
+2. Após a primeira publicação, copie em
+   **Play Console → Configuração → Integridade do app → Certificado de assinatura do app**
+   o SHA-256 da **chave de distribuição** do Google.
 
 ```json
 "sha256_cert_fingerprints": [
-  "2C:EA:...:61:CA",
+  "<SHA-256 da sua chave de upload>",
   "<SHA-256 da chave de distribuicao do Google>"
 ]
 ```
@@ -169,10 +175,11 @@ Incremente em `android/app/build.gradle`:
 
 ```gradle
 defaultConfig {
-    versionCode 8        // +1 a cada upload na Play (atual: 7)
+    versionCode 2        // +1 a cada upload na Play (atual: 1)
     versionName "4.0.1"  // visível ao usuário (atual: 4.0.0)
 }
 ```
+
 
 Mantenha o `version` do `package.json` alinhado ao `versionName`.
 
