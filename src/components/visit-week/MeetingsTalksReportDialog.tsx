@@ -208,40 +208,42 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
         {
           id: "campo",
           title: "REUNIÕES PARA O SERVIÇO DE CAMPO",
-          additionalInfo: extras.field?.observations ?? null,
+          additionalInfo: obsField,
           blocks: fieldBlocks,
         },
         {
           id: "meio",
           title: "REUNIÃO DO MEIO DE SEMANA",
-          additionalInfo: extras.midweek?.observations ?? null,
+          additionalInfo: obsMidweek,
           blocks: midweekBlocks,
         },
         {
           id: "fim",
           title: "REUNIÃO DO FIM DE SEMANA",
-          additionalInfo: extras.weekend?.observations ?? null,
+          additionalInfo: obsWeekend,
           blocks: weekendBlocks,
         },
         {
           id: "pioneiros",
           title: "REUNIÃO COM PIONEIROS",
-          additionalInfo: extras.pioneer?.observations ?? null,
+          additionalInfo: obsPioneer,
           blocks: pioneerBlocks,
         },
         {
           id: "ancios",
           title: "REUNIÃO COM ANCIÃOS E SERVOS MINISTERIAIS",
-          additionalInfo: extras.elders?.observations ?? null,
+          additionalInfo: obsElders,
           blocks: eldersBlocks,
         },
       ]);
-      setLoading(false);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, visitId, extras]);
+  }, [open, visitId, obsField, obsMidweek, obsWeekend, obsPioneer, obsElders]);
 
   return (
     <VisitWeekReportDialog
