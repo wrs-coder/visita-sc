@@ -21,7 +21,7 @@ npm run cap:add:android
 ```
 
 > O arquivo `capacitor.config.ts` já está pronto com:
-> - `appId`: `app.lovable.visitasc`
+> - `appId`: `com.waorodrigues.visitasc`
 > - `appName`: `Visita SC`
 > - `server.url`: aponta para `https://visita-sc.lovable.app` (carrega o app publicado, então atualizações no Lovable refletem no APK sem rebuild).
 
@@ -44,7 +44,7 @@ Se preferir que o APK funcione 100% offline com o build estático:
 1. Edite `capacitor.config.ts` e **remova** o bloco `server: { ... }`.
 2. Rode `npm run android:build` novamente.
 
-> Observação: nesse modo, o login com Google/Supabase precisa de configuração extra de deep link (`app.lovable.visitasc://`).
+> Observação: nesse modo, o login com Google/Supabase precisa de configuração extra de deep link (`com.waorodrigues.visitasc://`).
 
 ## Scripts disponíveis
 

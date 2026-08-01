@@ -1,4 +1,4 @@
-package app.lovable.visitasc;
+package com.waorodrigues.visitasc;
 
 import com.getcapacitor.BridgeActivity;
 

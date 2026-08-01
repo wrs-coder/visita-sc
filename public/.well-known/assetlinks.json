@@ -3,10 +3,8 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "app.lovable.visitasc",
-      "sha256_cert_fingerprints": [
-        "2C:EA:E9:A9:3E:7E:70:29:DE:95:94:BB:9C:20:69:EC:5B:9D:44:95:0B:83:51:B6:6B:8C:16:0C:67:A9:61:CA"
-      ]
+      "package_name": "com.waorodrigues.visitasc",
+      "sha256_cert_fingerprints": []
     }
   }
 ]

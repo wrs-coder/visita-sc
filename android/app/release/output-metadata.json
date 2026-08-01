@@ -4,7 +4,7 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "app.lovable.visitasc",
+  "applicationId": "com.waorodrigues.visitasc",
   "variantName": "release",
   "elements": [
     {

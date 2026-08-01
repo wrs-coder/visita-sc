@@ -6,14 +6,26 @@ Este guia cobre **gerar a keystore**, **compilar o AAB assinado** e a **checklis
 
 ---
 
+## 0. Package Name atual
+
+O aplicativo usa o Package Name próprio **`com.waorodrigues.visitasc`**.
+
+> O antigo `app.lovable.visitasc` pertence ao namespace compartilhado da plataforma
+> e já estava registrado na Play por outra chave de assinatura — por isso a Play
+> Console pedia "comprovar a propriedade de uma chave de assinatura". Com o ID
+> próprio, esse bloqueio deixa de existir e **qualquer keystore sua** passa a ser a
+> chave de upload oficial deste app.
+
+---
+
 ## 1. Gerar a keystore (apenas uma vez na vida do app)
 
-⚠️ **CRÍTICO**: guarde o arquivo `.keystore` + as senhas em local seguro (gerenciador de senhas + backup offline). Se perder, **não conseguirá mais atualizar** o app na Play Store — será preciso publicar como aplicativo novo.
+⚠️ **CRÍTICO**: guarde o arquivo `.keystore` + as senhas em local seguro (gerenciador de senhas + backup offline). Se perder, com Play App Signing ativo ainda é possível solicitar a redefinição da chave de upload — mas faça dois backups mesmo assim.
 
-> Um fingerprint SHA-256, como `2C:EA:E9:...:61:CA`, identifica publicamente um
-> certificado, mas **não contém a chave privada** e não permite recriar a keystore.
-> O snippet exclusivo exibido pela Play Console também não substitui a keystore,
-> o alias ou as senhas. Nunca coloque esses valores em `keystore.properties`.
+> Um fingerprint SHA-256 identifica publicamente um certificado, mas **não contém a
+> chave privada** e não permite recriar a keystore. O snippet exclusivo exibido pela
+> Play Console também não substitui a keystore, o alias ou as senhas. Nunca coloque
+> esses valores em `keystore.properties`.
 
 ```bash
 npm run android:keystore
@@ -25,30 +37,10 @@ Gera `android/app/visita-sc-release.keystore`. O comando pede:
 - Nome, organização, cidade, etc.
 - Senha da chave (pode ser a mesma do keystore)
 
-### Se você acredita que a chave original ainda está no computador
+Como este é um Package Name novo e ainda não publicado, **não existe fingerprint
+prévio a igualar**: a primeira keystore usada no primeiro AAB define a chave de
+upload registrada pelo Google.
 
-Antes de copiar qualquer `.keystore` ou `.jks` para o projeto, confira o certificado:
-
-```bash
-npm run android:check:keystore -- /caminho/para/sua-chave.keystore
-```
-
-O `keytool` pedirá a senha diretamente no terminal. O script não lê nem armazena
-a senha e só aprova a chave cujo SHA-256 seja exatamente o fingerprint de upload
-registrado. Se a verificação falhar, não use essa chave para gerar o AAB.
-
-### Se a chave original não existe mais
-
-1. Gere uma nova keystore com `npm run android:keystore` e faça dois backups.
-2. Exporte o certificado público da nova chave conforme solicitado pela Play Console.
-3. Em **Configuração → Integridade do app → Certificado da chave de upload**,
-   escolha **Solicitar redefinição da chave de upload** e envie o certificado novo.
-4. Aguarde a confirmação da redefinição antes de enviar outro AAB.
-5. Só então crie `android/keystore.properties` com os dados da nova chave.
-
-Com Play App Signing ativo, essa redefinição troca apenas a chave usada para enviar
-novos AABs. O Package Name `app.lovable.visitasc`, a ficha do aplicativo, as contas
-e a chave de distribuição mantida pelo Google Play permanecem preservados.
 
 ---
 
@@ -122,16 +114,14 @@ npm run android:verify:signature
 
 O comando lê o AAB (ou o APK, se o AAB não existir), imprime o **SHA-256** do certificado e falha se detectar a chave de debug.
 
-O fingerprint precisa bater com o **Certificado da chave de upload** em
-**Play Console → Configuração → Integridade do app**.
+No **primeiro** envio deste Package Name não há fingerprint prévio para comparar:
+basta que o artefato **não** esteja assinado com a chave de debug. O SHA-256 impresso
+passa a ser o **Certificado da chave de upload** registrado pelo Google — anote-o.
 
-Fingerprint de upload atual deste projeto:
-
-```
-2C:EA:E9:A9:3E:7E:70:29:DE:95:94:BB:9C:20:69:EC:5B:9D:44:95:0B:83:51:B6:6B:8C:16:0C:67:A9:61:CA
-```
-
+Nos envios seguintes, o fingerprint precisa bater com o que aparece em
+**Play Console → Configuração → Integridade do app → Certificado da chave de upload**.
 Se não bater, você usou outra keystore — corrija o `keystore.properties` e gere de novo.
+
 
 Envie o `.aab` em **Play Console → Produção (ou Teste interno) → Criar nova versão**.
 
@@ -151,19 +141,25 @@ Consequências práticas:
 - O SHA-256 do seu AAB **não é** o SHA-256 do app instalado no celular.
 - **Perder a chave de upload não é fatal**: em Play Console → Integridade do app →
   *Solicitar redefinição da chave de upload*, o Google registra uma nova. O app,
-  o Package Name (`app.lovable.visitasc`), as avaliações e os usuários são preservados.
+  o Package Name (`com.waorodrigues.visitasc`), as avaliações e os usuários são preservados.
 - Perder a chave de distribuição seria fatal — mas ela está com o Google.
 
 ### App Links precisam dos DOIS fingerprints
 
-`public/.well-known/assetlinks.json` hoje contém apenas o fingerprint de **upload**.
-Depois da primeira publicação, copie em
-**Play Console → Configuração → Integridade do app → Certificado de assinatura do app**
-o SHA-256 da **chave de distribuição** e acrescente-o ao array:
+`public/.well-known/assetlinks.json` está com o array de fingerprints **vazio**,
+porque o Package Name é novo e ainda não existe certificado registrado.
+
+Preencha em duas etapas:
+
+1. Após gerar o primeiro AAB, rode `npm run android:verify:signature` e copie o
+   SHA-256 impresso (chave de **upload**).
+2. Após a primeira publicação, copie em
+   **Play Console → Configuração → Integridade do app → Certificado de assinatura do app**
+   o SHA-256 da **chave de distribuição** do Google.
 
 ```json
 "sha256_cert_fingerprints": [
-  "2C:EA:...:61:CA",
+  "<SHA-256 da sua chave de upload>",
   "<SHA-256 da chave de distribuicao do Google>"
 ]
 ```
@@ -179,10 +175,11 @@ Incremente em `android/app/build.gradle`:
 
 ```gradle
 defaultConfig {
-    versionCode 8        // +1 a cada upload na Play (atual: 7)
+    versionCode 2        // +1 a cada upload na Play (atual: 1)
     versionName "4.0.1"  // visível ao usuário (atual: 4.0.0)
 }
 ```
+
 
 Mantenha o `version` do `package.json` alinhado ao `versionName`.
 

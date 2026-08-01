@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "cap:install": "npm install -D @capacitor/cli && npm install @capacitor/core @capacitor/android",
-    "cap:init": "cap init \"Visita SC\" app.lovable.visitasc --web-dir dist",
+    "cap:init": "cap init \"Visita SC\" com.waorodrigues.visitasc --web-dir dist",
     "cap:add:android": "cap add android",
     "cap:sync": "cap sync",
     "cap:open:android": "cap open android",
@@ -21,7 +21,6 @@
     "android:keystore": "keytool -genkey -v -keystore android/app/visita-sc-release.keystore -alias visita-sc -keyalg RSA -keysize 2048 -validity 10000",
     "android:release:apk": "npm run build && cap sync android && cd android && ./gradlew assembleRelease && cd .. && echo '\\n✅ APK em: android/app/build/outputs/apk/release/app-release.apk'",
     "android:release:aab": "npm run build && cap sync android && cd android && ./gradlew bundleRelease && cd .. && echo '\\n✅ AAB em: android/app/build/outputs/bundle/release/app-release.aab'",
-    "android:check:keystore": "node scripts/check-upload-keystore.mjs",
     "android:verify:signature": "node scripts/verify-android-signature.mjs",
     "test": "vitest run"
   },
