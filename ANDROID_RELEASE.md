@@ -10,6 +10,11 @@ Este guia cobre **gerar a keystore**, **compilar o AAB assinado** e a **checklis
 
 ⚠️ **CRÍTICO**: guarde o arquivo `.keystore` + as senhas em local seguro (gerenciador de senhas + backup offline). Se perder, **não conseguirá mais atualizar** o app na Play Store — será preciso publicar como aplicativo novo.
 
+> Um fingerprint SHA-256, como `2C:EA:E9:...:61:CA`, identifica publicamente um
+> certificado, mas **não contém a chave privada** e não permite recriar a keystore.
+> O snippet exclusivo exibido pela Play Console também não substitui a keystore,
+> o alias ou as senhas. Nunca coloque esses valores em `keystore.properties`.
+
 ```bash
 npm run android:keystore
 ```
@@ -19,6 +24,31 @@ Gera `android/app/visita-sc-release.keystore`. O comando pede:
 - Senha do keystore (anote!)
 - Nome, organização, cidade, etc.
 - Senha da chave (pode ser a mesma do keystore)
+
+### Se você acredita que a chave original ainda está no computador
+
+Antes de copiar qualquer `.keystore` ou `.jks` para o projeto, confira o certificado:
+
+```bash
+npm run android:check:keystore -- /caminho/para/sua-chave.keystore
+```
+
+O `keytool` pedirá a senha diretamente no terminal. O script não lê nem armazena
+a senha e só aprova a chave cujo SHA-256 seja exatamente o fingerprint de upload
+registrado. Se a verificação falhar, não use essa chave para gerar o AAB.
+
+### Se a chave original não existe mais
+
+1. Gere uma nova keystore com `npm run android:keystore` e faça dois backups.
+2. Exporte o certificado público da nova chave conforme solicitado pela Play Console.
+3. Em **Configuração → Integridade do app → Certificado da chave de upload**,
+   escolha **Solicitar redefinição da chave de upload** e envie o certificado novo.
+4. Aguarde a confirmação da redefinição antes de enviar outro AAB.
+5. Só então crie `android/keystore.properties` com os dados da nova chave.
+
+Com Play App Signing ativo, essa redefinição troca apenas a chave usada para enviar
+novos AABs. O Package Name `app.lovable.visitasc`, a ficha do aplicativo, as contas
+e a chave de distribuição mantida pelo Google Play permanecem preservados.
 
 ---
 
@@ -37,6 +67,8 @@ keyPassword=SUA_SENHA_DA_CHAVE
 
 - `storeFile` é relativo a `android/app/` — coloque o `.keystore` nessa pasta.
 - Esse arquivo e os `.keystore` já estão no `android/.gitignore` — **nunca commite**.
+- `storePassword` e `keyPassword` são as senhas reais escolhidas ao gerar a chave;
+  não use fingerprint SHA-256 nem snippet da Play Console nesses campos.
 
 ---
 
