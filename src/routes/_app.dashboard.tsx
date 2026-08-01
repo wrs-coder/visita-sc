@@ -74,6 +74,7 @@ import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
+import { FullVisitReportDialog } from "@/components/visit-week/FullVisitReportDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
 import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.functions";
@@ -198,6 +199,7 @@ function Dashboard() {
   const { t } = useTranslation();
   useActiveCongregation(); // mantém o hook montado para sincronizar contexto
   const [selected, setSelected] = useState<string | null>(null);
+  const [fullReportOpen, setFullReportOpen] = useState(false);
   const { visit } = useActiveVisit({
     enabled: role !== "superintendent" || !!selected,
     allowPlaceholder: role !== "superintendent",
@@ -799,11 +801,21 @@ function Dashboard() {
 
       {visit && (
         <div className="flex flex-wrap justify-end gap-2 print:hidden">
-          <Button asChild size="sm" variant="outline">
+          <Button size="sm" variant="outline" onClick={() => setFullReportOpen(true)}>
+            <FileText className="h-4 w-4 mr-1" /> {t("dashboard.executiveReport")}
+          </Button>
+          <Button asChild size="sm" variant="ghost">
             <Link to="/relatorio/$visitId" params={{ visitId: visit.id }}>
-              <FileText className="h-4 w-4 mr-1" /> {t("dashboard.executiveReport")}
+              {t("report.print")}
             </Link>
           </Button>
+          <FullVisitReportDialog
+            open={fullReportOpen}
+            onOpenChange={setFullReportOpen}
+            visitId={visit.id}
+            visitTitle={visit.title}
+            congregationName={congs.find((c) => c.id === visit.congregation_id)?.name}
+          />
           {role === "superintendent" && (
             <FinishVisitDialog
               visitId={visit.id}

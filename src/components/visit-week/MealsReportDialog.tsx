@@ -50,11 +50,16 @@ export function MealsReportDialog({ open, onOpenChange, visitId, visitTitle, con
   const [loading, setLoading] = useState(false);
   const [sections, setSections] = useState<ReportSection[]>([]);
 
+  // Depender apenas do texto usado — o objeto `extras` é recriado a cada
+  // render e usá-lo como dependência causava um loop infinito no efeito.
+  const generalObs = extras.program?.general_observations ?? null;
+
   useEffect(() => {
     if (!open || !visitId) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
+      try {
       const [{ data: meals }, { data: notes }] = await Promise.all([
         supabase
           .from("meals")
@@ -82,7 +87,7 @@ export function MealsReportDialog({ open, onOpenChange, visitId, visitTitle, con
         byDay.set(m.meal_date, arr);
       }
 
-      const general = extras.program?.general_observations?.trim();
+      const general = generalObs?.trim();
       const out: ReportSection[] = [];
 
       if (general) {
@@ -115,12 +120,14 @@ export function MealsReportDialog({ open, onOpenChange, visitId, visitTitle, con
       }
 
       setSections(out);
-      setLoading(false);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, visitId, extras]);
+  }, [open, visitId, generalObs]);
 
   return (
     <VisitWeekReportDialog

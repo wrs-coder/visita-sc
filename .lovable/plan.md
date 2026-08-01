@@ -1,59 +1,29 @@
-## Caminho seguro para o AAB de release
+## Diagnóstico (confirmado no código)
 
-Servidor principal permanece em `https://visita-sc.lovable.app` (`capacitor.config.ts` intocado). Nenhuma server function, fluxo Supabase ou arquivo de PWA é alterado.
+**Bug 01 — "Carregando dados…" eterno em Reuniões e Discursos**
+`MeetingsTalksReportDialog.tsx` monta as seções dentro de um `useEffect` cujas dependências incluem `extras` (linha 234). O hook `useVisitTemplateExtras` retorna um **objeto novo a cada render** (`{ ...extras, templateExtras, reload }`). Resultado: o efeito roda em loop — `setLoading(true)` é chamado de novo antes de qualquer render estabilizar, então o diálogo nunca sai do estado "Carregando dados…" e o botão "Gerar PDF" fica desabilitado. O mesmo padrão existe em `MealsReportDialog.tsx` (linha 123), que sofre do mesmo defeito.
 
-## 1. Assinatura release permanente — `android/app/build.gradle`
+**Bug 02 — Dashboard gera "print" em vez de PDF premium**
+O botão "Relatório executivo" do dashboard não chama o gerador de PDF: ele apenas navega para a rota `/relatorio/$visitId`, cuja única saída em PDF é `window.print()` (impressão da página HTML) — daí o aspecto de "print". A exportação alternativa dessa tela é Markdown. A engine premium (`pdf-lib` via `src/lib/pdf/pdf-engine.ts` + `generateVisitWeekPdf`) nunca é usada ali.
 
-- Carregar `android/keystore.properties` no topo do arquivo (`Properties` + `FileInputStream`, só quando o arquivo existir).
-- Adicionar `signingConfigs { release { keyAlias / keyPassword / storeFile / storePassword } }` dentro de `android { }`.
-- Em `buildTypes.release`, aplicar `signingConfig signingConfigs.release` **condicionado à existência do `keystore.properties`** — assim quem clona o repositório sem a keystore ainda consegue compilar.
-- `minifyEnabled false` mantido, com comentário explicando o motivo (evitar regressão de R8/ProGuard nesta submissão).
-- Acrescentar `keystore.properties` e `app/*.keystore` ao `android/.gitignore`.
+## Solução proposta
 
-## 2. Rota de Política de Privacidade
+### 1. Estabilizar as dependências dos diálogos (Bugs de loop)
+- Em `MeetingsTalksReportDialog.tsx` e `MealsReportDialog.tsx`: remover o objeto `extras` das dependências e depender apenas dos campos de texto realmente usados (ex.: `extras.field?.observations`, `extras.midweek?.observations`, …), extraídos em constantes antes do efeito.
+- Garantir `setLoading(false)` também em caminho de erro (envolver a busca em `try/finally`), para nunca travar o diálogo se uma consulta falhar.
+- Sem mudanças no hook compartilhado, evitando efeitos colaterais nas outras abas.
 
-Novo arquivo `src/routes/politica-privacidade.tsx`:
+### 2. Relatório executivo premium no Dashboard
+Manter a rota `/relatorio/$visitId` (visualização e impressão continuam existindo) e **adicionar** o caminho premium:
+- Criar `src/components/visit-week/FullVisitReportDialog.tsx`, reutilizando `VisitWeekReportDialog` + `generateVisitWeekPdf` (mesma engine `pdf-lib` já usada nas abas — atende à regra de projeto "pdf-lib, nada de jspdf novo").
+- Seções cobertas, cada uma selecionável por checkbox: Cronograma, Refeições, Transporte, Designações de campo, Reuniões de campo, Meio de semana, Fim de semana, Pioneiros, Anciãos e Servos, Checklist, e o bloco de identificação (congregação, tipo de visita, período, substituto).
+- Cada bloco com título de seção em barra azul, cabeçalho por item (data/hora) e linhas "Rótulo: Valor" completas — o mesmo padrão visual das outras abas, com rodapé numerado.
+- No dashboard, o botão "Relatório executivo" passa a abrir esse diálogo; um link secundário "Ver / imprimir" mantém o acesso à rota atual, para não remover nada que já existe.
+- Na própria rota `/relatorio/$visitId`, adicionar o botão "PDF premium" usando o mesmo diálogo, ao lado de Markdown e Imprimir.
 
-- Rota pública, sem gate de autenticação, com `head()` próprio: `title`, `description`, `og:title`, `og:description`, `og:type`, `og:url` e `canonical` apontando para `https://visita-sc.lovable.app/politica-privacidade`.
-- Layout no design system existente (Card, tokens de `src/styles.css`, zero hex inline), com `Logo`, botão de voltar e `LanguageSwitcher`.
-- Conteúdo 100% via i18n (novo bloco `privacy` em `pt.json`, `en.json`, `es.json`), com as seções:
-  1. Dados coletados — e-mail, nome de usuário, telefone, congregação/circuito, esboços, anexos.
-  2. Finalidade de uso.
-  3. Armazenamento local vs. nuvem (anexos e mídia ficam no diretório privado do aparelho; dados de conta e visitas ficam no backend).
-  4. Não compartilhamento com terceiros / ausência de publicidade e rastreamento.
-  5. Retenção.
-  6. Exclusão de conta e dados.
-  7. Contato do responsável (e-mail e WhatsApp já usados no diálogo "Sobre").
-  8. Data da última atualização.
+### 3. Verificação
+- `bunx tsc --noEmit` limpo.
+- Teste manual no preview: abrir o diálogo de Reuniões e Discursos (deve sair de "Carregando dados…" e gerar o PDF) e gerar o PDF completo pelo dashboard.
 
-Links discretos para a rota:
-- Rodapé do `src/components/auth/LoginForm.tsx`, no mesmo bloco de "Esqueci a senha".
-- Tela `src/routes/_app.configuracoes.tsx`, como linha discreta ao final da página.
-
-## 3. `AndroidManifest.xml` — conformidade Play Store
-
-- `android:allowBackup="false"` e `android:fullBackupContent="false"`.
-- `android:usesCleartextTraffic="false"` explícito no `<application>`.
-- Remover `READ_EXTERNAL_STORAGE` e `WRITE_EXTERNAL_STORAGE` (backups e anexos já usam o diretório privado via `@capacitor/filesystem` + `@capacitor/share`, que não exigem essas permissões em minSdk 24).
-- `INTENT`, App Links e o `FileProvider` permanecem inalterados.
-
-## 4. Documentação — `ANDROID_RELEASE.md`
-
-Reescrita alinhada à realidade do projeto:
-- Geração da keystore (`npm run android:keystore`) e aviso crítico de backup.
-- Criação do `keystore.properties`.
-- Nota de que o Gradle já está configurado (sem passo manual de snippet).
-- **Correção importante**: a seção atual recomenda remover o bloco `server` do `capacitor.config.ts`. Isso passará a ser marcado como **não suportado hoje**, porque 20 módulos usam `createServerFn` em caminhos relativos e quebrariam com `webDir` local.
-- Geração do AAB (`npm run android:release:aab`) e do APK.
-- Versionamento (`versionCode` / `versionName`).
-- Checklist da Play Console: ícone 512x512, feature graphic 1024x500, screenshots, Data Safety, URL da política de privacidade, keystore em backup.
-
-## 5. Preservação de arquitetura
-
-Não serão tocados: `capacitor.config.ts`, `public/sw.js`, `public/manifest.webmanifest`, `src/integrations/supabase/*`, `src/start.ts`, `src/server.ts` e qualquer `*.functions.ts`.
-
-`targetSdkVersion` já está em **36** em `android/variables.gradle` — acima do mínimo 35, nada a alterar.
-
-## Validação
-
-`bunx tsc --noEmit` limpo antes de concluir.
+## Impacto em publicação e estabilidade
+Mudanças 100% de frontend/apresentação: nenhuma alteração de banco, server functions, Capacitor, manifest Android ou service worker. Nada afeta o AAB/Play Store nem o funcionamento offline.

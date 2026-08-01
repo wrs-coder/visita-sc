@@ -85,11 +85,21 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
   const [loading, setLoading] = useState(false);
   const [sections, setSections] = useState<ReportSection[]>([]);
 
+  // Depender apenas dos textos usados — o objeto `extras` é recriado a cada
+  // render e usá-lo como dependência causava um loop infinito no efeito
+  // (o diálogo ficava preso em "Carregando dados…").
+  const obsField = extras.field?.observations ?? null;
+  const obsMidweek = extras.midweek?.observations ?? null;
+  const obsWeekend = extras.weekend?.observations ?? null;
+  const obsPioneer = extras.pioneer?.observations ?? null;
+  const obsElders = extras.elders?.observations ?? null;
+
   useEffect(() => {
     if (!open || !visitId) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
+      try {
       const [{ data: fm }, { data: mw }, { data: we }, { data: pi }, { data: el }] = await Promise.all([
         supabase
           .from("field_meetings")
@@ -198,40 +208,42 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
         {
           id: "campo",
           title: "REUNIÕES PARA O SERVIÇO DE CAMPO",
-          additionalInfo: extras.field?.observations ?? null,
+          additionalInfo: obsField,
           blocks: fieldBlocks,
         },
         {
           id: "meio",
           title: "REUNIÃO DO MEIO DE SEMANA",
-          additionalInfo: extras.midweek?.observations ?? null,
+          additionalInfo: obsMidweek,
           blocks: midweekBlocks,
         },
         {
           id: "fim",
           title: "REUNIÃO DO FIM DE SEMANA",
-          additionalInfo: extras.weekend?.observations ?? null,
+          additionalInfo: obsWeekend,
           blocks: weekendBlocks,
         },
         {
           id: "pioneiros",
           title: "REUNIÃO COM PIONEIROS",
-          additionalInfo: extras.pioneer?.observations ?? null,
+          additionalInfo: obsPioneer,
           blocks: pioneerBlocks,
         },
         {
           id: "ancios",
           title: "REUNIÃO COM ANCIÃOS E SERVOS MINISTERIAIS",
-          additionalInfo: extras.elders?.observations ?? null,
+          additionalInfo: obsElders,
           blocks: eldersBlocks,
         },
       ]);
-      setLoading(false);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, visitId, extras]);
+  }, [open, visitId, obsField, obsMidweek, obsWeekend, obsPioneer, obsElders]);
 
   return (
     <VisitWeekReportDialog
