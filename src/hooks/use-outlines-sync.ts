@@ -16,7 +16,9 @@ import {
   newNoteId,
   newFolderId,
   isFixedFolder,
+  ensureLocalNotesOwner,
   FIXED_FOLDER_WEEK_OUTLINES,
+
   FIXED_FOLDER_WEEK_CONSIDERATIONS,
   type NoteFolder,
   type FieldNote,
@@ -126,18 +128,25 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
   const syncNow = useCallback(async () => {
     // Fallback: se o React ainda não hidratou `user` (comum em WebView/APK
     // logo após login), valida diretamente a sessão antes de abortar.
-    if (!user) {
+    let uid = user?.id ?? null;
+    if (!uid) {
       try {
         const { data } = await supabase.auth.getSession();
-        if (!data?.session?.user) return { ok: false as const, error: "not-authenticated" };
+        uid = data?.session?.user?.id ?? null;
+        if (!uid) return { ok: false as const, error: "not-authenticated" };
       } catch {
         return { ok: false as const, error: "not-authenticated" };
       }
     }
     if (typeof navigator !== "undefined" && navigator.onLine === false) return { ok: false as const, error: "offline" };
 
+    // Isolamento por conta: se o dispositivo estava logado com outro usuário,
+    // limpa o armazenamento local ANTES de ler/enviar qualquer coisa.
+    await ensureLocalNotesOwner(uid);
+
     const cloud = await fnList();
     if (!cloud.ok) return cloud;
+
 
     const [localFoldersAll, localAll] = await Promise.all([
       Promise.all([listFolders("outline"), listFolders("field_consideration")]).then(([a, b]) => [...a, ...b]),
@@ -256,7 +265,25 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
     return { ok: true as const };
   }, [user, fnList, fnReplace]);
 
+  // Guarda de troca de conta: roda mesmo offline e antes de qualquer sync.
+  // Se o dispositivo estava logado com outro usuário, os esboços locais são
+  // apagados para não vazarem para a conta nova.
   useEffect(() => {
+    const uid = user?.id;
+    if (!uid) return;
+    let cancelled = false;
+    ensureLocalNotesOwner(uid)
+      .then((cleared) => {
+        if (cleared && !cancelled) {
+          try { window.dispatchEvent(new CustomEvent("visita-sc:outlines-synced")); } catch { /* noop */ }
+        }
+      })
+      .catch(() => { /* noop */ });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  useEffect(() => {
+
     if (!auto) return;
     const syncedToday = (): boolean => {
       try {
