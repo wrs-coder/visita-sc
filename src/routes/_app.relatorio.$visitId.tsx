@@ -128,11 +128,22 @@ function ReportPage() {
           <Button variant="outline" size="sm" onClick={exportMarkdown}>
             <FileDown className="h-4 w-4 mr-1" /> {t("report.markdown")}
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setPdfOpen(true)}>
+            <FileDown className="h-4 w-4 mr-1" /> PDF
+          </Button>
           <Button size="sm" onClick={() => window.print()}>
             <Printer className="h-4 w-4 mr-1" /> {t("report.print")}
           </Button>
+          <FullVisitReportDialog
+            open={pdfOpen}
+            onOpenChange={setPdfOpen}
+            visitId={visit.id}
+            visitTitle={visit.title}
+            congregationName={cong?.name}
+          />
         </div>
       </div>
+
 
       <article className="report bg-white text-black mx-auto max-w-3xl p-6 md:p-10 rounded-md shadow-card print:shadow-none print:p-0 print:max-w-none">
         <header className="border-b pb-4 mb-6">
