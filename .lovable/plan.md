@@ -1,19 +1,41 @@
-## Diagnóstico confirmado
+## O que essa mensagem significa
 
-O fingerprint `2C:EA:E9:...:61:CA` é somente a identificação pública do certificado; ele não contém a chave privada e não permite recriar o `.keystore`. O snippet `CLW4ESFER6NGUAAAAAAAAAAAAA` também não é uma keystore nem substitui as senhas de assinatura. Portanto, criar `android/keystore.properties` com esses dois valores não corrigiria a rejeição e poderia expor informação sensível.
+`app.lovable.visitasc` **já está registrado no Google Play por outra conta/chave** (é o namespace padrão `app.lovable.*` da plataforma). O Google só liberaria esse nome para quem comprovar a posse da chave de assinatura já associada a ele — chave que não é sua. O fingerprint `2C:EA:E9:…:61:CA` é apenas identificação pública e não prova posse.
 
-Há ainda uma inconsistência nas respostas: foi indicado que a chave não está disponível, embora também tenha sido selecionado “somente no computador”. O caminho seguro será verificar localmente se existe algum `.keystore`/`.jks` capaz de produzir o fingerprint esperado antes de gerar outro certificado.
+Portanto não existe correção de assinatura possível: a solução é publicar com um Package Name próprio, exatamente como a Play Console já havia sugerido: **`com.waorodrigues.visitasc`**.
 
-## Plano seguro
+## Isso quebra o aplicativo?
 
-1. **Manter o App ID** `app.lovable.visitasc` e não alterar contas, banco ou dados dos usuários.
-2. **Não versionar segredos:** manter `android/keystore.properties`, `.keystore` e `.jks` cobertos pelo `.gitignore`; não inserir senhas ou o snippet no código.
-3. **Preparar a configuração local:** deixar um modelo exato de `keystore.properties` para apontar a um arquivo de chave real, com `storeFile`, `storePassword`, `keyAlias` e `keyPassword`.
-4. **Verificar qualquer chave encontrada no computador:** usar `keytool` para extrair o SHA-256 e só aceitar a chave se ele for exatamente `2C:EA:E9:A9:3E:7E:70:29:DE:95:94:BB:9C:20:69:EC:5B:9D:44:95:0B:83:51:B6:6B:8C:16:0C:67:A9:61:CA`.
-5. **Se nenhuma chave corresponder:** gerar uma nova chave de upload e solicitar na Play Console a redefinição da chave de upload. Como o Play App Signing está ativo, isso preserva o Package Name, a conta do app e futuras atualizações.
-6. **Gerar e validar o AAB:** executar o build release e `npm run android:verify:signature`; somente enviar quando o SHA-256 coincidir com o certificado de upload registrado após a recuperação/redefinição.
-7. **Atualizar a documentação:** esclarecer que fingerprint/snippet não são material de assinatura e documentar os dois fluxos — recuperação da chave original ou redefinição segura da chave de upload.
+Não. Verifiquei o projeto: o app carrega o site publicado (`server.url = https://visita-sc.lovable.app`), então login, banco, dados dos usuários e todas as server functions continuam iguais. O app nunca foi publicado (está em rascunho), então não há base instalada nem avaliações a preservar. Muda apenas o identificador nativo Android.
 
-## Limite de segurança
+## Plano
 
-Não criarei uma keystore falsa nem colocarei senhas em arquivo versionado. Sem a chave privada original, a correção legítima é redefinir a chave de upload na Play Console; isso não quebra o aplicativo porque a chave final de distribuição continua gerenciada pelo Google Play.
+1. **Trocar o ID em todos os pontos**
+   - `capacitor.config.ts`: `appId` → `com.waorodrigues.visitasc`
+   - `android/app/build.gradle`: `namespace` e `applicationId`
+   - `android/app/src/main/res/values/strings.xml`: `package_name` e `custom_url_scheme`
+   - `package.json`: script `cap:init`
+   - `CAPACITOR.md` e `ANDROID_RELEASE.md`: referências textuais
+
+2. **Mover a Activity nativa**
+   - `android/app/src/main/java/app/lovable/visitasc/MainActivity.java` → `.../com/waorodrigues/visitasc/MainActivity.java`, com o `package com.waorodrigues.visitasc;` atualizado e a pasta antiga removida.
+
+3. **Versão limpa para o primeiro envio**
+   - `versionCode 1` e `versionName "4.0.0"` (é um app novo na Play; começar em 1 evita confusão futura). `package.json` permanece em `4.0.0`.
+
+4. **Snippet de registro da Play Console**
+   - Manter o `resValue "string", "adi_registration_code"` já presente no `build.gradle`, atualizado se a Play Console gerar um novo snippet para o novo pacote.
+
+5. **App Links / `assetlinks.json`**
+   - Atualizar `public/.well-known/assetlinks.json` com `package_name: com.waorodrigues.visitasc` e deixar o array de fingerprints pronto para receber, após a primeira publicação, o SHA‑256 da **chave de upload** (sua keystore) e o da **chave de distribuição** do Google.
+
+6. **Assinatura**
+   - Fluxo já existente permanece: `android/keystore.properties` local (nunca versionado) → `npm run android:release:aab` → `npm run android:verify:signature`. Como o pacote é novo, **qualquer keystore sua serve**; ela passa a ser a chave de upload oficial deste app. Guarde-a com dois backups.
+
+## Ponto de atenção fora do código
+
+Se você usa login social (Google) com deep link nativo, o esquema de URL passa a ser `com.waorodrigues.visitasc://`. Depois do rename, será preciso registrar esse novo esquema nas URIs de redirecionamento da autenticação. Hoje, com o app carregando o site publicado via HTTPS, o login web continua funcionando normalmente — só o fluxo nativo exigiria esse ajuste.
+
+## Detalhes técnicos
+
+Nenhuma alteração em banco de dados, RLS, server functions ou código React. O `routeTree`, o Supabase e o domínio `visitasc.com.br` ficam intactos. Após as edições, rodar `npm run android:build` para o Capacitor sincronizar o novo ID no projeto nativo.
