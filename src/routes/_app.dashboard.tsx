@@ -198,6 +198,7 @@ function Dashboard() {
   const { t } = useTranslation();
   useActiveCongregation(); // mantém o hook montado para sincronizar contexto
   const [selected, setSelected] = useState<string | null>(null);
+  const [fullReportOpen, setFullReportOpen] = useState(false);
   const { visit } = useActiveVisit({
     enabled: role !== "superintendent" || !!selected,
     allowPlaceholder: role !== "superintendent",
