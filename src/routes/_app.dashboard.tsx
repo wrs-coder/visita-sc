@@ -74,6 +74,7 @@ import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
+import { FullVisitReportDialog } from "@/components/visit-week/FullVisitReportDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
 import { listCoupleMessages, type CoupleThread } from "@/lib/couple-messages.functions";
