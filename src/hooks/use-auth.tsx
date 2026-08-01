@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { isOfflineMode } from "@/lib/connection-mode";
 import { sameLocalDay } from "@/lib/local-day";
+import { ensureLocalDataOwner } from "@/lib/local-owner";
 import i18n from "@/i18n";
 
 export type AppRole = "superintendent" | "elder";
@@ -107,10 +108,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null); setRole(null); setElderPosition(null); setCongregation(null);
       return;
     }
+    // Isolamento por conta: se o dispositivo tinha dados de OUTRO usuário,
+    // apaga todo o cache derivado da nuvem antes de hidratar qualquer coisa.
+    let switchedAccount = false;
+    try { switchedAccount = await ensureLocalDataOwner(uid); } catch { /* noop */ }
+    if (switchedAccount) {
+      setProfile(null); setRole(null); setElderPosition(null); setCongregation(null);
+    }
     // Offline-first: se a preparação diária já foi concluída, hidrata do
     // snapshot local mesmo estando online, sem tocar no banco em cada abertura.
-    const hydrated = hydrateCachedUserData(uid);
-    if (isOfflineMode() || (hydrated && isWarmupFreshForUser(uid))) {
+    const hydrated = switchedAccount ? false : hydrateCachedUserData(uid);
+    if (!switchedAccount && (isOfflineMode() || (hydrated && isWarmupFreshForUser(uid)))) {
       return;
     }
     const [{ data: p }, { data: rs }] = await Promise.all([
