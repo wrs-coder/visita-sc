@@ -126,18 +126,25 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
   const syncNow = useCallback(async () => {
     // Fallback: se o React ainda não hidratou `user` (comum em WebView/APK
     // logo após login), valida diretamente a sessão antes de abortar.
-    if (!user) {
+    let uid = user?.id ?? null;
+    if (!uid) {
       try {
         const { data } = await supabase.auth.getSession();
-        if (!data?.session?.user) return { ok: false as const, error: "not-authenticated" };
+        uid = data?.session?.user?.id ?? null;
+        if (!uid) return { ok: false as const, error: "not-authenticated" };
       } catch {
         return { ok: false as const, error: "not-authenticated" };
       }
     }
     if (typeof navigator !== "undefined" && navigator.onLine === false) return { ok: false as const, error: "offline" };
 
+    // Isolamento por conta: se o dispositivo estava logado com outro usuário,
+    // limpa o armazenamento local ANTES de ler/enviar qualquer coisa.
+    await ensureLocalNotesOwner(uid);
+
     const cloud = await fnList();
     if (!cloud.ok) return cloud;
+
 
     const [localFoldersAll, localAll] = await Promise.all([
       Promise.all([listFolders("outline"), listFolders("field_consideration")]).then(([a, b]) => [...a, ...b]),
