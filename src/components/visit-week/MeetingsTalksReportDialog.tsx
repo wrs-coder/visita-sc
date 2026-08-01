@@ -85,11 +85,21 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
   const [loading, setLoading] = useState(false);
   const [sections, setSections] = useState<ReportSection[]>([]);
 
+  // Depender apenas dos textos usados — o objeto `extras` é recriado a cada
+  // render e usá-lo como dependência causava um loop infinito no efeito
+  // (o diálogo ficava preso em "Carregando dados…").
+  const obsField = extras.field?.observations ?? null;
+  const obsMidweek = extras.midweek?.observations ?? null;
+  const obsWeekend = extras.weekend?.observations ?? null;
+  const obsPioneer = extras.pioneer?.observations ?? null;
+  const obsElders = extras.elders?.observations ?? null;
+
   useEffect(() => {
     if (!open || !visitId) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
+      try {
       const [{ data: fm }, { data: mw }, { data: we }, { data: pi }, { data: el }] = await Promise.all([
         supabase
           .from("field_meetings")
