@@ -1,29 +1,76 @@
-## Diagnóstico (confirmado no código)
+## Diagnóstico
 
-**Bug 01 — "Carregando dados…" eterno em Reuniões e Discursos**
-`MeetingsTalksReportDialog.tsx` monta as seções dentro de um `useEffect` cujas dependências incluem `extras` (linha 234). O hook `useVisitTemplateExtras` retorna um **objeto novo a cada render** (`{ ...extras, templateExtras, reload }`). Resultado: o efeito roda em loop — `setLoading(true)` é chamado de novo antes de qualquer render estabilizar, então o diálogo nunca sai do estado "Carregando dados…" e o botão "Gerar PDF" fica desabilitado. O mesmo padrão existe em `MealsReportDialog.tsx` (linha 123), que sofre do mesmo defeito.
+Verifiquei o projeto: **não existe `android/keystore.properties` nem nenhum arquivo `.keystore` no repositório** (eles estão no `.gitignore`, o que é correto). E o `android/app/build.gradle` (linhas 40-42) aplica a assinatura de release **apenas se `keystore.properties` existir**:
 
-**Bug 02 — Dashboard gera "print" em vez de PDF premium**
-O botão "Relatório executivo" do dashboard não chama o gerador de PDF: ele apenas navega para a rota `/relatorio/$visitId`, cuja única saída em PDF é `window.print()` (impressão da página HTML) — daí o aspecto de "print". A exportação alternativa dessa tela é Markdown. A engine premium (`pdf-lib` via `src/lib/pdf/pdf-engine.ts` + `generateVisitWeekPdf`) nunca é usada ali.
+```gradle
+if (keystorePropertiesFile.exists()) {
+    signingConfig signingConfigs.release
+}
+```
 
-## Solução proposta
+Ou seja: se você rodou `npm run android:release:aab` na sua máquina sem esse arquivo, o Gradle **não falha** — ele simplesmente gera o AAB assinado com a chave de debug. É exatamente isso que produz a mensagem "O APK enviado tem uma assinatura diferente". A causa é essa falha silenciosa, não o Package Name.
 
-### 1. Estabilizar as dependências dos diálogos (Bugs de loop)
-- Em `MeetingsTalksReportDialog.tsx` e `MealsReportDialog.tsx`: remover o objeto `extras` das dependências e depender apenas dos campos de texto realmente usados (ex.: `extras.field?.observations`, `extras.midweek?.observations`, …), extraídos em constantes antes do efeito.
-- Garantir `setLoading(false)` também em caminho de erro (envolver a busca em `try/finally`), para nunca travar o diálogo se uma consulta falhar.
-- Sem mudanças no hook compartilhado, evitando efeitos colaterais nas outras abas.
+Boa notícia, considerando suas respostas: você tem a keystore e as senhas, o app nunca foi publicado, e a **Assinatura de apps do Google Play está ativada**. Isso significa que:
 
-### 2. Relatório executivo premium no Dashboard
-Manter a rota `/relatorio/$visitId` (visualização e impressão continuam existindo) e **adicionar** o caminho premium:
-- Criar `src/components/visit-week/FullVisitReportDialog.tsx`, reutilizando `VisitWeekReportDialog` + `generateVisitWeekPdf` (mesma engine `pdf-lib` já usada nas abas — atende à regra de projeto "pdf-lib, nada de jspdf novo").
-- Seções cobertas, cada uma selecionável por checkbox: Cronograma, Refeições, Transporte, Designações de campo, Reuniões de campo, Meio de semana, Fim de semana, Pioneiros, Anciãos e Servos, Checklist, e o bloco de identificação (congregação, tipo de visita, período, substituto).
-- Cada bloco com título de seção em barra azul, cabeçalho por item (data/hora) e linhas "Rótulo: Valor" completas — o mesmo padrão visual das outras abas, com rodapé numerado.
-- No dashboard, o botão "Relatório executivo" passa a abrir esse diálogo; um link secundário "Ver / imprimir" mantém o acesso à rota atual, para não remover nada que já existe.
-- Na própria rota `/relatorio/$visitId`, adicionar o botão "PDF premium" usando o mesmo diálogo, ao lado de Markdown e Imprimir.
+- **Não é preciso mudar o Package Name.** Mantemos `app.lovable.visitasc`.
+- **Nenhum usuário será afetado** — não há instalações em produção.
+- Com o Play App Signing ativo, sua keystore é apenas a **chave de upload**; o Google detém a chave final de distribuição. Chave de upload pode ser redefinida no futuro sem perder o app, o ID ou os usuários.
 
-### 3. Verificação
-- `bunx tsc --noEmit` limpo.
-- Teste manual no preview: abrir o diálogo de Reuniões e Discursos (deve sair de "Carregando dados…" e gerar o PDF) e gerar o PDF completo pelo dashboard.
+---
 
-## Impacto em publicação e estabilidade
-Mudanças 100% de frontend/apresentação: nenhuma alteração de banco, server functions, Capacitor, manifest Android ou service worker. Nada afeta o AAB/Play Store nem o funcionamento offline.
+## Ponto crítico sobre o `assetlinks.json`
+
+O fingerprint hoje em `public/.well-known/assetlinks.json` é `2C:EA:E9:...:61:CA` — a sua **chave de upload**. Com Play App Signing ativado, o app instalado pelos usuários é assinado pela **chave de distribuição do Google**, que tem um SHA-256 diferente. Se o `assetlinks.json` não tiver esse segundo fingerprint, os App Links (`visitasc.com.br`, `visita-sc.lovable.app`) **não vão abrir no app** depois de publicado.
+
+A correção é listar **ambos** os fingerprints.
+
+---
+
+## Plano de execução
+
+### Passo 1: Tornar a falha de assinatura visível (a raiz do problema)
+Adicionar em `android/app/build.gradle` uma guarda via `gradle.taskGraph.whenReady` que **interrompe o build com mensagem explicativa** quando uma tarefa de release (`assembleRelease`, `bundleRelease`, `package*Release`) é executada sem `android/keystore.properties`. Builds de debug continuam funcionando normalmente para clones sem keystore.
+
+### Passo 2: Adicionar comando de verificação de assinatura
+Incluir em `package.json` o script `android:verify:signature`, rodando `keytool -printcert -jarfile` sobre o AAB gerado para imprimir o SHA-256 da assinatura. Assim você confere, **antes** de subir na Play, se o fingerprint bate com `2C:EA:E9:...:61:CA`.
+
+### Passo 3: Preparar o `assetlinks.json` para os dois fingerprints
+Reestruturar `public/.well-known/assetlinks.json` mantendo o fingerprint de upload atual, com o array já pronto para receber o SHA-256 da chave de distribuição do Google.
+
+> Ajuste em relação à versão anterior do plano: **não** vou inserir um placeholder textual no JSON. Uma string inválida no array faz o verificador do Google reprovar o arquivo inteiro e quebraria os App Links. O segundo fingerprint entra assim que você me enviar o valor real do Play Console.
+
+### Passo 4: Reescrever a seção de assinatura do `ANDROID_RELEASE.md`
+Documentar de forma inequívoca:
+- que `android/keystore.properties` é **obrigatório** para builds de release;
+- o passo de verificação do fingerprint antes do upload;
+- a diferença entre chave de upload e chave de distribuição do Google;
+- como obter o SHA-256 da chave de distribuição (Play Console → Configuração → Integridade do app);
+- o procedimento de "Solicitar redefinição da chave de upload", caso a keystore seja perdida no futuro;
+- reforço de backup da keystore em dois locais.
+
+### Passo 5: Validar
+Rodar `bunx tsc --noEmit` para garantir que nada quebrou no app web. Nenhuma mudança toca em código React, server functions, banco ou service worker — o app em si permanece intacto.
+
+---
+
+## O que você faz na sua máquina depois
+
+1. Criar `android/keystore.properties` (baseado em `android-signing/keystore.properties.example`), apontando `storeFile` para o seu `.keystore` real dentro de `android/app/`.
+2. Rodar `npm run android:release:aab`. Agora, se faltar a keystore, o build **para com erro** em vez de gerar um AAB inválido.
+3. Rodar `npm run android:verify:signature` e confirmar que o SHA-256 é `2C:EA:E9:...:61:CA`.
+4. Subir o AAB na Play Console.
+5. Copiar o SHA-256 da chave de assinatura do Google Play e me enviar — eu completo o `assetlinks.json` e você republica o site.
+
+> Se, mesmo com a keystore correta, a Play continuar recusando: como o app **nunca foi publicado**, existe a saída simples de excluir o rascunho e criar o app novamente, registrando a chave certa desde o início. Isso não é possível depois da primeira publicação — por isso vale resolver agora.
+
+---
+
+## Resumo do impacto
+
+| Item | Situação |
+|---|---|
+| Package Name | **Mantido** — `app.lovable.visitasc` |
+| Usuários existentes | Nenhum impacto (app em rascunho) |
+| Perda de dados / conta | Nenhuma |
+| Código do app (web/React) | Nenhuma alteração |
+| Arquivos alterados | `android/app/build.gradle`, `package.json`, `public/.well-known/assetlinks.json`, `ANDROID_RELEASE.md` |
