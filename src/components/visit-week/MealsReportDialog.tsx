@@ -87,7 +87,7 @@ export function MealsReportDialog({ open, onOpenChange, visitId, visitTitle, con
         byDay.set(m.meal_date, arr);
       }
 
-      const general = extras.program?.general_observations?.trim();
+      const general = generalObs?.trim();
       const out: ReportSection[] = [];
 
       if (general) {
@@ -120,12 +120,14 @@ export function MealsReportDialog({ open, onOpenChange, visitId, visitTitle, con
       }
 
       setSections(out);
-      setLoading(false);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, visitId, extras]);
+  }, [open, visitId, generalObs]);
 
   return (
     <VisitWeekReportDialog
