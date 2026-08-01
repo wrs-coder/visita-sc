@@ -265,7 +265,25 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
     return { ok: true as const };
   }, [user, fnList, fnReplace]);
 
+  // Guarda de troca de conta: roda mesmo offline e antes de qualquer sync.
+  // Se o dispositivo estava logado com outro usuário, os esboços locais são
+  // apagados para não vazarem para a conta nova.
   useEffect(() => {
+    const uid = user?.id;
+    if (!uid) return;
+    let cancelled = false;
+    ensureLocalNotesOwner(uid)
+      .then((cleared) => {
+        if (cleared && !cancelled) {
+          try { window.dispatchEvent(new CustomEvent("visita-sc:outlines-synced")); } catch { /* noop */ }
+        }
+      })
+      .catch(() => { /* noop */ });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  useEffect(() => {
+
     if (!auto) return;
     const syncedToday = (): boolean => {
       try {
