@@ -16,7 +16,9 @@ import {
   newNoteId,
   newFolderId,
   isFixedFolder,
+  ensureLocalNotesOwner,
   FIXED_FOLDER_WEEK_OUTLINES,
+
   FIXED_FOLDER_WEEK_CONSIDERATIONS,
   type NoteFolder,
   type FieldNote,
