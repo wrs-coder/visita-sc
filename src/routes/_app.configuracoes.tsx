@@ -872,6 +872,15 @@ function Page() {
           }}
         />
       )}
+
+      <div className="pt-2 pb-4 text-center">
+        <Link
+          to="/politica-privacidade"
+          className="text-[12px] text-muted-foreground hover:text-primary transition-colors"
+        >
+          {t("privacy.link")}
+        </Link>
+      </div>
     </div>
   );
 }
