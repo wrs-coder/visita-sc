@@ -8,6 +8,7 @@ import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { saveBlob } from "@/lib/share";
+import { FullVisitReportDialog } from "@/components/visit-week/FullVisitReportDialog";
 
 export const Route = createFileRoute("/_app/relatorio/$visitId")({
   component: ReportPage,
