@@ -75,3 +75,45 @@ try {
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
+
+// -----------------------------------------------------------------------------
+// Guarda de assinatura de release.
+//
+// Sem esta guarda, um build de release SEM android/keystore.properties gerava um
+// AAB/APK assinado com a chave de DEBUG -- e a Play Console recusava o upload com
+// "O APK enviado tem uma assinatura diferente". Agora o build FALHA na hora, com
+// mensagem clara, em vez de produzir um artefato invalido em silencio.
+//
+// Builds de debug continuam funcionando normalmente sem a keystore.
+// -----------------------------------------------------------------------------
+gradle.taskGraph.whenReady { graph ->
+    def isReleaseBuild = graph.allTasks.any { task ->
+        def n = task.name
+        n.contains('Release') && (n.startsWith('assemble') || n.startsWith('bundle') || n.startsWith('package'))
+    }
+
+    if (isReleaseBuild && !keystorePropertiesFile.exists()) {
+        throw new GradleException(
+            "\n\n" +
+            "==========================================================================\n" +
+            " BUILD DE RELEASE BLOQUEADO: assinatura de upload ausente\n" +
+            "==========================================================================\n" +
+            " O arquivo android/keystore.properties nao foi encontrado.\n" +
+            "\n" +
+            " Sem ele o AAB/APK sai assinado com a chave de DEBUG, e a Play Console\n" +
+            " recusa o upload com \"O APK enviado tem uma assinatura diferente\".\n" +
+            "\n" +
+            " Como resolver:\n" +
+            "   1. Copie android-signing/keystore.properties.example para\n" +
+            "      android/keystore.properties\n" +
+            "   2. Preencha storeFile, storePassword, keyAlias e keyPassword com os\n" +
+            "      dados da SUA keystore de upload permanente.\n" +
+            "   3. Coloque o arquivo .keystore em android/app/\n" +
+            "   4. Rode novamente: npm run android:release:aab\n" +
+            "   5. Confira o fingerprint: npm run android:verify:signature\n" +
+            "\n" +
+            " Detalhes completos em ANDROID_RELEASE.md\n" +
+            "==========================================================================\n"
+        )
+    }
+}

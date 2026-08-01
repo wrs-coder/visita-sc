@@ -22,7 +22,9 @@ Gera `android/app/visita-sc-release.keystore`. O comando pede:
 
 ---
 
-## 2. Criar o `android/keystore.properties`
+## 2. Criar o `android/keystore.properties` — OBRIGATÓRIO
+
+> ⚠️ **Esta é a causa nº 1 de rejeição na Play Console.** Sem este arquivo, o Gradle antes gerava um AAB assinado com a **chave de debug**, e a Play recusava com *"O APK enviado tem uma assinatura diferente"*. Hoje o build de release **falha imediatamente** com uma mensagem explicativa quando o arquivo não existe.
 
 Use o exemplo em `android-signing/keystore.properties.example`:
 
@@ -33,7 +35,8 @@ keyAlias=visita-sc
 keyPassword=SUA_SENHA_DA_CHAVE
 ```
 
-Esse arquivo e os `.keystore` já estão no `android/.gitignore` — **nunca commite**.
+- `storeFile` é relativo a `android/app/` — coloque o `.keystore` nessa pasta.
+- Esse arquivo e os `.keystore` já estão no `android/.gitignore` — **nunca commite**.
 
 ---
 
@@ -43,8 +46,11 @@ Não é necessário editar nada. O `android/app/build.gradle` já:
 
 - carrega `android/keystore.properties` no topo;
 - define `signingConfigs { release { ... } }`;
-- aplica `signingConfig signingConfigs.release` no `buildTypes.release` **somente quando o `keystore.properties` existe** (assim, quem clonar o repositório sem a keystore ainda consegue compilar);
+- aplica `signingConfig signingConfigs.release` no `buildTypes.release`;
+- **bloqueia** `assembleRelease` / `bundleRelease` com erro claro se `keystore.properties` estiver ausente (guarda `gradle.taskGraph.whenReady` no fim do arquivo);
 - mantém `minifyEnabled false` de propósito, para evitar regressões de R8/ProGuard nesta submissão.
+
+Builds de **debug** continuam funcionando sem keystore, para quem clonar o repositório.
 
 O snippet em `android-signing/build.gradle.snippet` fica apenas como referência histórica.
 
@@ -74,7 +80,64 @@ npm run android:release:apk
 # → android/app/build/outputs/apk/release/app-release.apk
 ```
 
+---
+
+## 5.1. Conferir a assinatura ANTES de subir 🔍
+
+```bash
+npm run android:verify:signature
+```
+
+O comando lê o AAB (ou o APK, se o AAB não existir), imprime o **SHA-256** do certificado e falha se detectar a chave de debug.
+
+O fingerprint precisa bater com o **Certificado da chave de upload** em
+**Play Console → Configuração → Integridade do app**.
+
+Fingerprint de upload atual deste projeto:
+
+```
+2C:EA:E9:A9:3E:7E:70:29:DE:95:94:BB:9C:20:69:EC:5B:9D:44:95:0B:83:51:B6:6B:8C:16:0C:67:A9:61:CA
+```
+
+Se não bater, você usou outra keystore — corrija o `keystore.properties` e gere de novo.
+
 Envie o `.aab` em **Play Console → Produção (ou Teste interno) → Criar nova versão**.
+
+---
+
+## 5.2. Chave de upload × chave de distribuição (Play App Signing)
+
+Com a **Assinatura de apps do Google Play ativada** existem **duas** chaves distintas:
+
+| Chave | Quem detém | Para que serve |
+|---|---|---|
+| **Chave de upload** | Você (`visita-sc-release.keystore`) | Assinar o AAB que você envia à Play |
+| **Chave de distribuição** | Google | Assinar o APK que chega ao aparelho do usuário |
+
+Consequências práticas:
+
+- O SHA-256 do seu AAB **não é** o SHA-256 do app instalado no celular.
+- **Perder a chave de upload não é fatal**: em Play Console → Integridade do app →
+  *Solicitar redefinição da chave de upload*, o Google registra uma nova. O app,
+  o Package Name (`app.lovable.visitasc`), as avaliações e os usuários são preservados.
+- Perder a chave de distribuição seria fatal — mas ela está com o Google.
+
+### App Links precisam dos DOIS fingerprints
+
+`public/.well-known/assetlinks.json` hoje contém apenas o fingerprint de **upload**.
+Depois da primeira publicação, copie em
+**Play Console → Configuração → Integridade do app → Certificado de assinatura do app**
+o SHA-256 da **chave de distribuição** e acrescente-o ao array:
+
+```json
+"sha256_cert_fingerprints": [
+  "2C:EA:...:61:CA",
+  "<SHA-256 da chave de distribuicao do Google>"
+]
+```
+
+Sem isso, `visitasc.com.br` e `visita-sc.lovable.app` **não abrirão dentro do app**.
+Não coloque textos de placeholder no array: qualquer valor inválido reprova o arquivo inteiro.
 
 ---
 
@@ -91,6 +154,7 @@ defaultConfig {
 
 Mantenha o `version` do `package.json` alinhado ao `versionName`.
 
+
 ---
 
 ## 7. Conformidade já aplicada no projeto
@@ -105,10 +169,12 @@ Mantenha o `version` do `package.json` alinhado ao `versionName`.
 
 ## Checklist Play Console
 
-- [ ] Keystore gerada e com backup seguro (+ senhas)
+- [ ] Keystore gerada e com backup seguro em 2 locais (+ senhas no gerenciador)
 - [ ] `android/keystore.properties` criado localmente
 - [ ] `versionCode` incrementado e `versionName` atualizado
 - [ ] AAB gerado com `npm run android:release:aab`
+- [ ] **Assinatura conferida com `npm run android:verify:signature`** (SHA-256 igual ao da chave de upload na Play Console)
+- [ ] Após a 1ª publicação: SHA-256 da chave de distribuição adicionado ao `public/.well-known/assetlinks.json`
 - [ ] URL da política de privacidade preenchida na ficha do app
 - [ ] Formulário de **Segurança dos dados (Data Safety)** preenchido:
       coleta de e-mail/nome/telefone para funcionamento do app, dados
