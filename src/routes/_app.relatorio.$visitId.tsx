@@ -39,6 +39,7 @@ function ReportPage() {
   const [elders, setElders] = useState<Row[]>([]);
   const [checklist, setChecklist] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pdfOpen, setPdfOpen] = useState(false);
 
   const fmtDate = (d?: string | null) => {
     if (!d) return "";
