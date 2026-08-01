@@ -799,11 +799,21 @@ function Dashboard() {
 
       {visit && (
         <div className="flex flex-wrap justify-end gap-2 print:hidden">
-          <Button asChild size="sm" variant="outline">
+          <Button size="sm" variant="outline" onClick={() => setFullReportOpen(true)}>
+            <FileText className="h-4 w-4 mr-1" /> {t("dashboard.executiveReport")}
+          </Button>
+          <Button asChild size="sm" variant="ghost">
             <Link to="/relatorio/$visitId" params={{ visitId: visit.id }}>
-              <FileText className="h-4 w-4 mr-1" /> {t("dashboard.executiveReport")}
+              {t("report.print")}
             </Link>
           </Button>
+          <FullVisitReportDialog
+            open={fullReportOpen}
+            onOpenChange={setFullReportOpen}
+            visitId={visit.id}
+            visitTitle={visit.title}
+            congregationName={congs.find((c) => c.id === visit.congregation_id)?.name}
+          />
           {role === "superintendent" && (
             <FinishVisitDialog
               visitId={visit.id}
