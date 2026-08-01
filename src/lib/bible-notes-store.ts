@@ -904,3 +904,51 @@ export async function importJSON(
   throw new Error("Tipo de payload desconhecido.");
 }
 
+
+// ---- Isolamento por usuário ----
+// O IndexedDB é do dispositivo, não da conta. Sem esta guarda, ao entrar
+// com outro superintendente no mesmo aparelho os esboços/considerações da
+// conta anterior apareciam (e seriam enviados para a conta nova no sync).
+const LS_NOTES_OWNER = "visita-sc:notes-owner";
+
+async function idbClearStore(store: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, "readwrite");
+    tx.objectStore(store).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/** Apaga TODAS as notas e pastas locais (não toca em Bíblias importadas). */
+export async function clearLocalNotesAndFolders(): Promise<void> {
+  try {
+    if (hasIDB()) {
+      await idbClearStore(STORE_NOTES);
+      await idbClearStore(STORE_FOLDERS);
+    }
+  } catch { /* fallthrough */ }
+  try {
+    localStorage.removeItem(LS_FALLBACK_KEY);
+    localStorage.removeItem(LS_FALLBACK_FOLDERS);
+  } catch { /* noop */ }
+}
+
+/**
+ * Garante que os dados locais pertencem ao usuário informado.
+ * Se o dono mudou, limpa o armazenamento local antes de qualquer leitura
+ * ou sincronização. Retorna true quando houve limpeza.
+ */
+export async function ensureLocalNotesOwner(userId: string | null | undefined): Promise<boolean> {
+  if (!userId) return false;
+  let previous: string | null = null;
+  try { previous = localStorage.getItem(LS_NOTES_OWNER); } catch { /* noop */ }
+  if (previous === userId) return false;
+  if (previous && previous !== userId) {
+    await clearLocalNotesAndFolders();
+    try { localStorage.removeItem("visita-sc:outlines-last-sync"); } catch { /* noop */ }
+  }
+  try { localStorage.setItem(LS_NOTES_OWNER, userId); } catch { /* noop */ }
+  return !!previous && previous !== userId;
+}
