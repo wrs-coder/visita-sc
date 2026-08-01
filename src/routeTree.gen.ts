@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VisitanteRouteImport } from './routes/visitante'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as PoliticaPrivacidadeRouteImport } from './routes/politica-privacidade'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as AppRouteImport } from './routes/_app'
@@ -51,6 +52,11 @@ const VisitanteRoute = VisitanteRouteImport.update({
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PoliticaPrivacidadeRoute = PoliticaPrivacidadeRouteImport.update({
+  id: '/politica-privacidade',
+  path: '/politica-privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -215,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/onboarding': typeof OnboardingRoute
+  '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/visitante': typeof VisitanteRouteWithChildren
   '/checklist': typeof AppChecklistRoute
@@ -249,6 +256,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/onboarding': typeof OnboardingRoute
+  '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
@@ -284,6 +292,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/onboarding': typeof OnboardingRoute
+  '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/visitante': typeof VisitanteRouteWithChildren
   '/_app/checklist': typeof AppChecklistRoute
@@ -320,6 +329,7 @@ export interface FileRouteTypes {
     | '/'
     | '/esqueci-senha'
     | '/onboarding'
+    | '/politica-privacidade'
     | '/redefinir-senha'
     | '/visitante'
     | '/checklist'
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
     | '/'
     | '/esqueci-senha'
     | '/onboarding'
+    | '/politica-privacidade'
     | '/redefinir-senha'
     | '/checklist'
     | '/checklist-modelos'
@@ -388,6 +399,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/esqueci-senha'
     | '/onboarding'
+    | '/politica-privacidade'
     | '/redefinir-senha'
     | '/visitante'
     | '/_app/checklist'
@@ -424,6 +436,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   OnboardingRoute: typeof OnboardingRoute
+  PoliticaPrivacidadeRoute: typeof PoliticaPrivacidadeRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   VisitanteRoute: typeof VisitanteRouteWithChildren
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
@@ -444,6 +457,13 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/politica-privacidade': {
+      id: '/politica-privacidade'
+      path: '/politica-privacidade'
+      fullPath: '/politica-privacidade'
+      preLoaderRoute: typeof PoliticaPrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -739,6 +759,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   OnboardingRoute: OnboardingRoute,
+  PoliticaPrivacidadeRoute: PoliticaPrivacidadeRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   VisitanteRoute: VisitanteRouteWithChildren,
   CadastroAnciaoRoute: CadastroAnciaoRoute,
