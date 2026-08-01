@@ -114,16 +114,14 @@ npm run android:verify:signature
 
 O comando lê o AAB (ou o APK, se o AAB não existir), imprime o **SHA-256** do certificado e falha se detectar a chave de debug.
 
-O fingerprint precisa bater com o **Certificado da chave de upload** em
-**Play Console → Configuração → Integridade do app**.
+No **primeiro** envio deste Package Name não há fingerprint prévio para comparar:
+basta que o artefato **não** esteja assinado com a chave de debug. O SHA-256 impresso
+passa a ser o **Certificado da chave de upload** registrado pelo Google — anote-o.
 
-Fingerprint de upload atual deste projeto:
-
-```
-2C:EA:E9:A9:3E:7E:70:29:DE:95:94:BB:9C:20:69:EC:5B:9D:44:95:0B:83:51:B6:6B:8C:16:0C:67:A9:61:CA
-```
-
+Nos envios seguintes, o fingerprint precisa bater com o que aparece em
+**Play Console → Configuração → Integridade do app → Certificado da chave de upload**.
 Se não bater, você usou outra keystore — corrija o `keystore.properties` e gere de novo.
+
 
 Envie o `.aab` em **Play Console → Produção (ou Teste interno) → Criar nova versão**.
 
