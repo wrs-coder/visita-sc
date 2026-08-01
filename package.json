@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "cap:install": "npm install -D @capacitor/cli && npm install @capacitor/core @capacitor/android",
-    "cap:init": "cap init \"Visita SC\" app.lovable.visitasc --web-dir dist",
+    "cap:init": "cap init \"Visita SC\" com.waorodrigues.visitasc --web-dir dist",
     "cap:add:android": "cap add android",
     "cap:sync": "cap sync",
     "cap:open:android": "cap open android",

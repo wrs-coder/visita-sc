@@ -47,7 +47,7 @@ registrado. Se a verificação falhar, não use essa chave para gerar o AAB.
 5. Só então crie `android/keystore.properties` com os dados da nova chave.
 
 Com Play App Signing ativo, essa redefinição troca apenas a chave usada para enviar
-novos AABs. O Package Name `app.lovable.visitasc`, a ficha do aplicativo, as contas
+novos AABs. O Package Name `com.waorodrigues.visitasc`, a ficha do aplicativo, as contas
 e a chave de distribuição mantida pelo Google Play permanecem preservados.
 
 ---
@@ -151,7 +151,7 @@ Consequências práticas:
 - O SHA-256 do seu AAB **não é** o SHA-256 do app instalado no celular.
 - **Perder a chave de upload não é fatal**: em Play Console → Integridade do app →
   *Solicitar redefinição da chave de upload*, o Google registra uma nova. O app,
-  o Package Name (`app.lovable.visitasc`), as avaliações e os usuários são preservados.
+  o Package Name (`com.waorodrigues.visitasc`), as avaliações e os usuários são preservados.
 - Perder a chave de distribuição seria fatal — mas ela está com o Google.
 
 ### App Links precisam dos DOIS fingerprints
