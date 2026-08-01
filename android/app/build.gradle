@@ -9,6 +9,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "app.lovable.visitasc"
     compileSdk = rootProject.ext.compileSdkVersion
+
     defaultConfig {
         applicationId "app.lovable.visitasc"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -16,12 +17,15 @@ android {
         versionCode 7
         versionName "4.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Snippet de validação exigido pelo Google Play Console
+        resValue "string", "adi_registration_code", "CLW4ESFER6NGUAAAAAAAAAAAAAAAAA"
+
         aaptOptions {
-             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
-             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
-            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+
     signingConfigs {
         release {
             if (keystorePropertiesFile.exists()) {
@@ -32,15 +36,11 @@ android {
             }
         }
     }
+
     buildTypes {
         release {
-            // Assinatura permanente aplicada somente quando android/keystore.properties existe.
-            // Sem o arquivo, o build continua funcionando (sem assinatura de release),
-            // para não quebrar clones do repositorio sem a keystore.
-            if (keystorePropertiesFile.exists()) {
-                signingConfig signingConfigs.release
-            }
-            // Mantido em false de proposito: evita regressoes de R8/ProGuard nesta submissao.
+            signingConfig signingConfigs.release
+
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -76,16 +76,6 @@ try {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
 
-// -----------------------------------------------------------------------------
-// Guarda de assinatura de release.
-//
-// Sem esta guarda, um build de release SEM android/keystore.properties gerava um
-// AAB/APK assinado com a chave de DEBUG -- e a Play Console recusava o upload com
-// "O APK enviado tem uma assinatura diferente". Agora o build FALHA na hora, com
-// mensagem clara, em vez de produzir um artefato invalido em silencio.
-//
-// Builds de debug continuam funcionando normalmente sem a keystore.
-// -----------------------------------------------------------------------------
 gradle.taskGraph.whenReady { graph ->
     def isReleaseBuild = graph.allTasks.any { task ->
         def n = task.name
@@ -99,20 +89,6 @@ gradle.taskGraph.whenReady { graph ->
             " BUILD DE RELEASE BLOQUEADO: assinatura de upload ausente\n" +
             "==========================================================================\n" +
             " O arquivo android/keystore.properties nao foi encontrado.\n" +
-            "\n" +
-            " Sem ele o AAB/APK sai assinado com a chave de DEBUG, e a Play Console\n" +
-            " recusa o upload com \"O APK enviado tem uma assinatura diferente\".\n" +
-            "\n" +
-            " Como resolver:\n" +
-            "   1. Copie android-signing/keystore.properties.example para\n" +
-            "      android/keystore.properties\n" +
-            "   2. Preencha storeFile, storePassword, keyAlias e keyPassword com os\n" +
-            "      dados da SUA keystore de upload permanente.\n" +
-            "   3. Coloque o arquivo .keystore em android/app/\n" +
-            "   4. Rode novamente: npm run android:release:aab\n" +
-            "   5. Confira o fingerprint: npm run android:verify:signature\n" +
-            "\n" +
-            " Detalhes completos em ANDROID_RELEASE.md\n" +
             "==========================================================================\n"
         )
     }
