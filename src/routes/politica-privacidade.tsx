@@ -54,7 +54,7 @@ function PrivacyPolicyPage() {
             <ArrowLeft className="h-4 w-4" />
             {t("privacy.back")}
           </Link>
-          <LanguageSwitcher variant="compact" />
+          <LanguageSwitcher />
         </div>
 
         <header className="space-y-3 text-center">
