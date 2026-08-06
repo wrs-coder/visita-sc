@@ -2,6 +2,7 @@ import React from "react";
 import { findCitations, type BookInfo } from "@/lib/bible-refs";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
 import type { BibleLibrary } from "@/lib/bible-notes-store";
+import { RICH_NOTE_CONTENT_CLASS } from "@/lib/rich-note-styles";
 
 // ============================================================================
 // Sanitizer (whitelist mínima) — aceita apenas tags/atributos usados pelo
@@ -10,12 +11,40 @@ import type { BibleLibrary } from "@/lib/bible-notes-store";
 
 const ALLOWED_TAGS = new Set([
   "P", "BR", "UL", "OL", "LI", "STRONG", "EM", "U", "B", "I",
-  "H2", "H3", "SPAN", "MARK",
+  "H1", "H2", "H3", "SPAN", "MARK",
+  "BLOCKQUOTE", "PRE", "CODE", "HR",
+  "TABLE", "THEAD", "TBODY", "TR", "TD", "TH",
+  "SUB", "SUP", "A", "S", "DEL", "LABEL", "INPUT", "DIV",
 ]);
 
-// Apenas estilos inline para cor de texto e marca-texto.
-const STYLE_KEY_WHITELIST = new Set(["color", "background-color"]);
+// Estilos inline preservados (mesmos que o editor produz).
+const STYLE_KEY_WHITELIST = new Set([
+  "color",
+  "background-color",
+  "text-indent",
+  "margin-left",
+  "margin-right",
+  "margin-top",
+  "margin-bottom",
+  "padding-left",
+  "line-height",
+  "font-size",
+  "text-align",
+  "font-weight",
+  "font-style",
+  "font-family",
+]);
 const COLOR_VALUE_RE = /^(#[0-9a-fA-F]{3,8}|rgba?\([\d.,\s%/]+\)|[a-zA-Z]+)$/;
+// Valores seguros: números com unidade, palavras-chave simples, listas de fontes.
+const SAFE_VALUE_RE = /^[-a-zA-Z0-9.,%'"\s]+$/;
+const UNSAFE_VALUE_RE = /(url\s*\(|expression|javascript:|@import|;|\{|\})/i;
+
+function isSafeStyleValue(key: string, value: string): boolean {
+  if (!value || value.length > 120) return false;
+  if (UNSAFE_VALUE_RE.test(value)) return false;
+  if (key === "color" || key === "background-color") return COLOR_VALUE_RE.test(value);
+  return SAFE_VALUE_RE.test(value);
+}
 
 function sanitizeStyle(raw: string): string {
   if (!raw) return "";
@@ -29,11 +58,28 @@ function sanitizeStyle(raw: string): string {
       const key = decl.slice(0, idx).trim().toLowerCase();
       const value = decl.slice(idx + 1).trim();
       if (!STYLE_KEY_WHITELIST.has(key)) return null;
-      if (!COLOR_VALUE_RE.test(value)) return null;
+      if (!isSafeStyleValue(key, value)) return null;
       return `${key}: ${value}`;
     })
     .filter((s): s is string => !!s)
     .join("; ");
+}
+
+const KEEP_ATTRS = new Set([
+  "data-type",
+  "data-checked",
+  "data-align",
+  "colspan",
+  "rowspan",
+  "start",
+  "type",
+  "checked",
+  "disabled",
+]);
+
+function isSafeHref(value: string): boolean {
+  const v = value.trim().toLowerCase();
+  return v.startsWith("http://") || v.startsWith("https://") || v.startsWith("mailto:");
 }
 
 function sanitizeElement(el: Element): void {
@@ -43,6 +89,18 @@ function sanitizeElement(el: Element): void {
       const safe = sanitizeStyle(attr.value);
       if (safe) el.setAttribute("style", safe);
       else el.removeAttribute("style");
+    } else if (name === "href" && el.tagName === "A") {
+      if (isSafeHref(attr.value)) {
+        el.setAttribute("rel", "noopener noreferrer");
+        el.setAttribute("target", "_blank");
+      } else {
+        el.removeAttribute("href");
+      }
+    } else if (name === "rel" || name === "target") {
+      // mantidos apenas quando setados acima
+      if (el.tagName !== "A") el.removeAttribute(name);
+    } else if (KEEP_ATTRS.has(name)) {
+      // preservado
     } else {
       el.removeAttribute(name);
     }
@@ -60,6 +118,7 @@ function sanitizeElement(el: Element): void {
     }
   }
 }
+
 
 /**
  * Sanitiza HTML produzido pelo editor. Whitelist estrita de tags/atributos.
@@ -79,20 +138,39 @@ export function sanitizeNoteHtml(html: string): string {
 // Renderização rich + citações
 // ============================================================================
 
+const STYLE_PROP_MAP: Record<string, keyof React.CSSProperties> = {
+  "color": "color",
+  "background-color": "backgroundColor",
+  "text-indent": "textIndent",
+  "margin-left": "marginLeft",
+  "margin-right": "marginRight",
+  "margin-top": "marginTop",
+  "margin-bottom": "marginBottom",
+  "padding-left": "paddingLeft",
+  "line-height": "lineHeight",
+  "font-size": "fontSize",
+  "text-align": "textAlign",
+  "font-weight": "fontWeight",
+  "font-style": "fontStyle",
+  "font-family": "fontFamily",
+};
+
 function styleObjectFromAttr(styleAttr: string | null): React.CSSProperties | undefined {
   if (!styleAttr) return undefined;
-  const out: React.CSSProperties = {};
+  const out: Record<string, string> = {};
   for (const decl of styleAttr.split(";")) {
     const idx = decl.indexOf(":");
     if (idx < 0) continue;
     const key = decl.slice(0, idx).trim().toLowerCase();
     const value = decl.slice(idx + 1).trim();
     if (!key || !value) continue;
-    if (key === "color") out.color = value;
-    else if (key === "background-color") out.backgroundColor = value;
+    const prop = STYLE_PROP_MAP[key];
+    if (!prop) continue;
+    out[prop as string] = value;
   }
-  return Object.keys(out).length > 0 ? out : undefined;
+  return Object.keys(out).length > 0 ? (out as React.CSSProperties) : undefined;
 }
+
 
 let _keySeed = 0;
 function nextKey(): string {
@@ -157,37 +235,46 @@ function renderNode(node: Node, opts: RenderOpts): React.ReactNode {
   const key = nextKey();
   const lower = tag.toLowerCase();
 
-  switch (lower) {
-    case "br":
-      return <br key={key} />;
-    case "p":
-      return <p key={key} style={style} className="my-1">{children}</p>;
-    case "ul":
-      return <ul key={key} className="list-disc pl-6 space-y-1 my-2" style={style}>{children}</ul>;
-    case "ol":
-      return <ol key={key} className="list-decimal pl-6 space-y-1 my-2" style={style}>{children}</ol>;
-    case "li":
-      return <li key={key} style={style}>{children}</li>;
-    case "h2":
-      return <h2 key={key} className="text-xl font-bold mt-3 mb-1" style={style}>{children}</h2>;
-    case "h3":
-      return <h3 key={key} className="text-base font-semibold mt-2 mb-1" style={style}>{children}</h3>;
-    case "strong":
-    case "b":
-      return <strong key={key} style={style}>{children}</strong>;
-    case "em":
-    case "i":
-      return <em key={key} style={style}>{children}</em>;
-    case "u":
-      return <u key={key} style={style}>{children}</u>;
-    case "mark":
-      return <mark key={key} className="rounded px-0.5" style={style}>{children}</mark>;
-    case "span":
-      return <span key={key} style={style}>{children}</span>;
-    default:
-      return <span key={key} style={style}>{children}</span>;
+  const props: Record<string, unknown> = { key };
+  if (style) props.style = style;
+
+  const dataType = el.getAttribute("data-type");
+  if (dataType) props["data-type"] = dataType;
+  const dataChecked = el.getAttribute("data-checked");
+  if (dataChecked) props["data-checked"] = dataChecked;
+  const colspan = el.getAttribute("colspan");
+  if (colspan) props.colSpan = Number(colspan) || undefined;
+  const rowspan = el.getAttribute("rowspan");
+  if (rowspan) props.rowSpan = Number(rowspan) || undefined;
+
+  if (lower === "br" || lower === "hr") {
+    return React.createElement(lower, props);
   }
+
+  if (lower === "input") {
+    return React.createElement("input", {
+      ...props,
+      type: "checkbox",
+      checked: el.getAttribute("checked") !== null,
+      readOnly: true,
+      disabled: true,
+      className: "mt-1",
+    });
+  }
+
+  if (lower === "a") {
+    const href = el.getAttribute("href");
+    if (href) {
+      props.href = href;
+      props.target = "_blank";
+      props.rel = "noopener noreferrer";
+    }
+    return React.createElement("a", props, children);
+  }
+
+  return React.createElement(lower, props, children);
 }
+
 
 /** Detecta se a string parece conter HTML (vs texto puro). */
 export function looksLikeHtml(s: string): boolean {
@@ -237,5 +324,6 @@ export function RichOutlineContent({
   const nodes = Array.from(root.childNodes).map((n) => (
     <React.Fragment key={nextKey()}>{renderNode(n, { library, fontScale })}</React.Fragment>
   ));
-  return <>{nodes}</>;
+  return <div className={RICH_NOTE_CONTENT_CLASS}>{nodes}</div>;
 }
+
