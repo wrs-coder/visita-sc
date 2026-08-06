@@ -28,6 +28,8 @@ import { OutlineAttachmentsBar } from "./OutlineAttachmentsBar";
 import { AttachmentAddDialog } from "./AttachmentAddDialog";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
 import { cn } from "@/lib/utils";
+import { RICH_NOTE_CONTENT_CLASS } from "@/lib/rich-note-styles";
+
 import type { NoteAttachment } from "@/lib/outline-attachments";
 
 interface RichNoteEditorProps {
