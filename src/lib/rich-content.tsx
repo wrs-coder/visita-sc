@@ -2,6 +2,7 @@ import React from "react";
 import { findCitations, type BookInfo } from "@/lib/bible-refs";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
 import type { BibleLibrary } from "@/lib/bible-notes-store";
+import { RICH_NOTE_CONTENT_CLASS } from "@/lib/rich-note-styles";
 
 // ============================================================================
 // Sanitizer (whitelist mínima) — aceita apenas tags/atributos usados pelo
@@ -10,12 +11,40 @@ import type { BibleLibrary } from "@/lib/bible-notes-store";
 
 const ALLOWED_TAGS = new Set([
   "P", "BR", "UL", "OL", "LI", "STRONG", "EM", "U", "B", "I",
-  "H2", "H3", "SPAN", "MARK",
+  "H1", "H2", "H3", "SPAN", "MARK",
+  "BLOCKQUOTE", "PRE", "CODE", "HR",
+  "TABLE", "THEAD", "TBODY", "TR", "TD", "TH",
+  "SUB", "SUP", "A", "S", "DEL", "LABEL", "INPUT", "DIV",
 ]);
 
-// Apenas estilos inline para cor de texto e marca-texto.
-const STYLE_KEY_WHITELIST = new Set(["color", "background-color"]);
+// Estilos inline preservados (mesmos que o editor produz).
+const STYLE_KEY_WHITELIST = new Set([
+  "color",
+  "background-color",
+  "text-indent",
+  "margin-left",
+  "margin-right",
+  "margin-top",
+  "margin-bottom",
+  "padding-left",
+  "line-height",
+  "font-size",
+  "text-align",
+  "font-weight",
+  "font-style",
+  "font-family",
+]);
 const COLOR_VALUE_RE = /^(#[0-9a-fA-F]{3,8}|rgba?\([\d.,\s%/]+\)|[a-zA-Z]+)$/;
+// Valores seguros: números com unidade, palavras-chave simples, listas de fontes.
+const SAFE_VALUE_RE = /^[-a-zA-Z0-9.,%'"\s]+$/;
+const UNSAFE_VALUE_RE = /(url\s*\(|expression|javascript:|@import|;|\{|\})/i;
+
+function isSafeStyleValue(key: string, value: string): boolean {
+  if (!value || value.length > 120) return false;
+  if (UNSAFE_VALUE_RE.test(value)) return false;
+  if (key === "color" || key === "background-color") return COLOR_VALUE_RE.test(value);
+  return SAFE_VALUE_RE.test(value);
+}
 
 function sanitizeStyle(raw: string): string {
   if (!raw) return "";
@@ -29,11 +58,28 @@ function sanitizeStyle(raw: string): string {
       const key = decl.slice(0, idx).trim().toLowerCase();
       const value = decl.slice(idx + 1).trim();
       if (!STYLE_KEY_WHITELIST.has(key)) return null;
-      if (!COLOR_VALUE_RE.test(value)) return null;
+      if (!isSafeStyleValue(key, value)) return null;
       return `${key}: ${value}`;
     })
     .filter((s): s is string => !!s)
     .join("; ");
+}
+
+const KEEP_ATTRS = new Set([
+  "data-type",
+  "data-checked",
+  "data-align",
+  "colspan",
+  "rowspan",
+  "start",
+  "type",
+  "checked",
+  "disabled",
+]);
+
+function isSafeHref(value: string): boolean {
+  const v = value.trim().toLowerCase();
+  return v.startsWith("http://") || v.startsWith("https://") || v.startsWith("mailto:");
 }
 
 function sanitizeElement(el: Element): void {
@@ -43,6 +89,18 @@ function sanitizeElement(el: Element): void {
       const safe = sanitizeStyle(attr.value);
       if (safe) el.setAttribute("style", safe);
       else el.removeAttribute("style");
+    } else if (name === "href" && el.tagName === "A") {
+      if (isSafeHref(attr.value)) {
+        el.setAttribute("rel", "noopener noreferrer");
+        el.setAttribute("target", "_blank");
+      } else {
+        el.removeAttribute("href");
+      }
+    } else if (name === "rel" || name === "target") {
+      // mantidos apenas quando setados acima
+      if (el.tagName !== "A") el.removeAttribute(name);
+    } else if (KEEP_ATTRS.has(name)) {
+      // preservado
     } else {
       el.removeAttribute(name);
     }
@@ -60,6 +118,7 @@ function sanitizeElement(el: Element): void {
     }
   }
 }
+
 
 /**
  * Sanitiza HTML produzido pelo editor. Whitelist estrita de tags/atributos.
