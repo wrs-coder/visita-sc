@@ -138,20 +138,39 @@ export function sanitizeNoteHtml(html: string): string {
 // Renderização rich + citações
 // ============================================================================
 
+const STYLE_PROP_MAP: Record<string, keyof React.CSSProperties> = {
+  "color": "color",
+  "background-color": "backgroundColor",
+  "text-indent": "textIndent",
+  "margin-left": "marginLeft",
+  "margin-right": "marginRight",
+  "margin-top": "marginTop",
+  "margin-bottom": "marginBottom",
+  "padding-left": "paddingLeft",
+  "line-height": "lineHeight",
+  "font-size": "fontSize",
+  "text-align": "textAlign",
+  "font-weight": "fontWeight",
+  "font-style": "fontStyle",
+  "font-family": "fontFamily",
+};
+
 function styleObjectFromAttr(styleAttr: string | null): React.CSSProperties | undefined {
   if (!styleAttr) return undefined;
-  const out: React.CSSProperties = {};
+  const out: Record<string, string> = {};
   for (const decl of styleAttr.split(";")) {
     const idx = decl.indexOf(":");
     if (idx < 0) continue;
     const key = decl.slice(0, idx).trim().toLowerCase();
     const value = decl.slice(idx + 1).trim();
     if (!key || !value) continue;
-    if (key === "color") out.color = value;
-    else if (key === "background-color") out.backgroundColor = value;
+    const prop = STYLE_PROP_MAP[key];
+    if (!prop) continue;
+    out[prop as string] = value;
   }
-  return Object.keys(out).length > 0 ? out : undefined;
+  return Object.keys(out).length > 0 ? (out as React.CSSProperties) : undefined;
 }
+
 
 let _keySeed = 0;
 function nextKey(): string {
