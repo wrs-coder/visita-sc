@@ -4,7 +4,10 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.waorodrigues.visitasc",
-      "sha256_cert_fingerprints": []
+      "sha256_cert_fingerprints": [
+        "97:3D:54:8A:84:2A:5D:DA:69:E0:1E:5A:F8:8C:0C:BC:97:0A:F1:56:38:B7:34:F7:F1:0A:5D:B7:8A:E5:60:D8",
+        "85:CB:78:EE:1A:32:A0:FB:43:4C:92:1E:E1:C1:B8:84:14:06:31:9C:06:1B:DD:98:08:97:E5:AD:9A:BB:EA:06"
+      ]
     }
   }
 ]
