@@ -235,37 +235,46 @@ function renderNode(node: Node, opts: RenderOpts): React.ReactNode {
   const key = nextKey();
   const lower = tag.toLowerCase();
 
-  switch (lower) {
-    case "br":
-      return <br key={key} />;
-    case "p":
-      return <p key={key} style={style} className="my-1">{children}</p>;
-    case "ul":
-      return <ul key={key} className="list-disc pl-6 space-y-1 my-2" style={style}>{children}</ul>;
-    case "ol":
-      return <ol key={key} className="list-decimal pl-6 space-y-1 my-2" style={style}>{children}</ol>;
-    case "li":
-      return <li key={key} style={style}>{children}</li>;
-    case "h2":
-      return <h2 key={key} className="text-xl font-bold mt-3 mb-1" style={style}>{children}</h2>;
-    case "h3":
-      return <h3 key={key} className="text-base font-semibold mt-2 mb-1" style={style}>{children}</h3>;
-    case "strong":
-    case "b":
-      return <strong key={key} style={style}>{children}</strong>;
-    case "em":
-    case "i":
-      return <em key={key} style={style}>{children}</em>;
-    case "u":
-      return <u key={key} style={style}>{children}</u>;
-    case "mark":
-      return <mark key={key} className="rounded px-0.5" style={style}>{children}</mark>;
-    case "span":
-      return <span key={key} style={style}>{children}</span>;
-    default:
-      return <span key={key} style={style}>{children}</span>;
+  const props: Record<string, unknown> = { key };
+  if (style) props.style = style;
+
+  const dataType = el.getAttribute("data-type");
+  if (dataType) props["data-type"] = dataType;
+  const dataChecked = el.getAttribute("data-checked");
+  if (dataChecked) props["data-checked"] = dataChecked;
+  const colspan = el.getAttribute("colspan");
+  if (colspan) props.colSpan = Number(colspan) || undefined;
+  const rowspan = el.getAttribute("rowspan");
+  if (rowspan) props.rowSpan = Number(rowspan) || undefined;
+
+  if (lower === "br" || lower === "hr") {
+    return React.createElement(lower, props);
   }
+
+  if (lower === "input") {
+    return React.createElement("input", {
+      ...props,
+      type: "checkbox",
+      checked: el.getAttribute("checked") !== null,
+      readOnly: true,
+      disabled: true,
+      className: "mt-1",
+    });
+  }
+
+  if (lower === "a") {
+    const href = el.getAttribute("href");
+    if (href) {
+      props.href = href;
+      props.target = "_blank";
+      props.rel = "noopener noreferrer";
+    }
+    return React.createElement("a", props, children);
+  }
+
+  return React.createElement(lower, props, children);
 }
+
 
 /** Detecta se a string parece conter HTML (vs texto puro). */
 export function looksLikeHtml(s: string): boolean {
