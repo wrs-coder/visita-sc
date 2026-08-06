@@ -324,5 +324,6 @@ export function RichOutlineContent({
   const nodes = Array.from(root.childNodes).map((n) => (
     <React.Fragment key={nextKey()}>{renderNode(n, { library, fontScale })}</React.Fragment>
   ));
-  return <>{nodes}</>;
+  return <div className={RICH_NOTE_CONTENT_CLASS}>{nodes}</div>;
 }
+
