@@ -1,28 +1,36 @@
-# Manter a formatação do texto no "modo esboço" e "tela cheia"
+# Auditoria de segurança — o que encontrei
 
-## O que está acontecendo
+## Boas notícias (verificado no código)
 
-O editor (modo edição) mostra o texto com toda a formatação do Tiptap, mas as telas de leitura ("modo esboço" e "tela cheia") usam um renderizador próprio (`src/lib/rich-content.tsx`) que higieniza o HTML antes de exibir. Hoje esse higienizador:
+- **A senha mestre do superintendente NÃO está no código.** Ela é lida no servidor a partir de uma variável de ambiente secreta (`SUPER_REGISTRATION_CODE`) dentro do server function. Não existe nenhuma ocorrência do número no repositório, nem no bundle enviado ao navegador.
+- **Nenhuma chave secreta exposta.** As únicas chaves presentes no cliente são a URL do backend e a chave publicável (anon) — elas são públicas por design e protegidas por RLS. A chave de serviço só existe no servidor.
+- **Senhas de login dos usuários não são armazenadas pelo app.** Elas ficam no serviço de autenticação (hash) e a redefinição feita pelo superintendente é validada no servidor (só funciona para anciãos das congregações dele).
+- **Verificação automática do banco não apontou problemas de configuração.**
 
-- aceita apenas as tags `p, br, ul, ol, li, strong, em, u, b, i, h2, h3, span, mark` — tudo o mais (tabela, citação/blockquote, código, linha divisória, lista de tarefas, links, sub/sup) é desmontado e vira texto corrido;
-- remove **todos** os atributos, inclusive `data-type` e alinhamento;
-- dos estilos inline, só preserva `color` e `background-color`. Por isso **recuo de margem, espaçamento entre parágrafos, tamanho de fonte, alinhamento e entrelinha desaparecem**.
+## Pontos que recomendo corrigir
 
-## O que será feito
+### 1. Hash da senha da aba "Anciãos" visível a todos os membros (nível crítico)
+Hoje qualquer membro autenticado de uma congregação consegue ler a linha completa da congregação, incluindo o hash da senha da aba Anciãos. Isso permite tentativas de quebra offline dessa senha.
 
-1. Ampliar a lista de estilos preservados no renderizador para os mesmos que o editor produz: `text-indent`, `margin-left`/`margin-right`, `padding-left`, `margin-top`/`margin-bottom`, `line-height`, `font-size`, `text-align`, `font-weight`, `font-style`, `font-family` — com validação de valor (números + unidades seguras, palavras-chave conhecidas), mantendo o bloqueio a `url()`, `expression`, etc.
-2. Ampliar a lista de tags aceitas para cobrir o que a barra de ferramentas gera: `H1`, `BLOCKQUOTE`, `PRE`, `CODE`, `HR`, `TABLE/THEAD/TBODY/TR/TD/TH`, `SUB`, `SUP`, `A`, `S`/`DEL`.
-3. Preservar os atributos estruturais necessários: `data-type` (lista de tarefas), `data-checked`, `colspan`/`rowspan`, `style` e `href` (apenas `http`, `https` e `mailto`, com `rel="noopener noreferrer"`).
-4. Aplicar no renderizador exatamente as mesmas classes visuais que o editor usa (mesmos espaçamentos de parágrafo, títulos, listas, tabela, citação, código, divisória), extraindo essa lista para um único lugar compartilhado entre `RichNoteEditor` e `RichOutlineContent`, para que os dois nunca mais divirjam.
-5. Verificar visualmente uma nota com recuo, espaçamento, alinhamento, lista, tabela e citação nos três modos (edição, esboço, tela cheia).
+Correção: remover o acesso a essas colunas via API de dados (revogar por coluna, como já foi feito com a senha em texto), e expor os dados da congregação para membros por uma consulta/visão que não inclui campos de senha.
 
-## Segurança e compatibilidade
+### 2. Consulta pública de telefone revela o e-mail real do usuário
+O endpoint usado na tela de login aceita um telefone sem autenticação e devolve o e-mail cadastrado. Isso permite descobrir se um telefone existe e qual o e-mail dele.
 
-- A higienização continua sendo por lista de permissões; nada de `script`, `iframe`, `on*`, `javascript:` ou `style` com URL passa.
-- Nenhuma mudança em como as notas são salvas, sincronizadas ou exportadas — só na exibição. Notas antigas em texto puro continuam pelo mesmo caminho atual.
-- Os popups de citação bíblica (VerseLink) continuam funcionando, pois o percurso dos nós de texto é preservado.
+Correção: manter a resolução telefone → conta apenas no servidor, sem devolver o e-mail ao navegador (o login passa a ser concluído no próprio servidor/edge), e limitar tentativas repetidas.
 
-## Arquivos afetados
+### 3. Regras de permissão só validadas na escrita, não na leitura/edição
+Em várias tabelas de modelos e eventos do superintendente, a checagem do papel "superintendente" existe só na criação, não na leitura/alteração/exclusão de registros já existentes. Se o papel de alguém for removido, ele ainda consegue mexer nos registros antigos que criou.
 
-- `src/lib/rich-content.tsx` (principal)
-- `src/components/notes/RichNoteEditor.tsx` (passa a importar as classes compartilhadas)
+Correção: aplicar a mesma checagem de papel também nas regras de leitura/alteração/exclusão dessas tabelas.
+
+### 4. Endurecimento adicional (opcional, recomendado)
+- Exigir senha mínima maior que 6 caracteres para contas de superintendente.
+- Limitar tentativas de uso do código mestre de superintendente (proteção contra força bruta) e registrar tentativas falhas.
+
+## Detalhes técnicos
+
+- Migration: `REVOKE`/policy split em `public.congregations` para excluir `elder_tab_password_hash`, `elder_tab_password_created_by`, `elder_tab_password_updated_at` da leitura por membros; criar view segura `congregations_public` (ou RPC) usada pelo cliente.
+- Ajustar `USING` das policies `ALL` em `meeting_talk_templates`, `checklist_templates`, `templates`, `elder_program_templates`, `talk_themes`, `field_meeting_templates` e eventos de circuito para incluir `private.has_role(auth.uid(),'superintendent')`.
+- `resolveLoginIdentifier` em `src/lib/auth.functions.ts`: deixar de retornar `email`; fazer o sign-in por telefone via server function autenticadora, com rate limit por IP/telefone.
+- Nada nas telas, no cronômetro, nos esboços ou no modo offline é alterado.
