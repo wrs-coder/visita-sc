@@ -46,7 +46,7 @@ export const Route = createFileRoute("/_app/comunicacao-casal")({ component: Pag
 function Page() {
   const { t, i18n } = useTranslation();
   const dateLocale = getDateLocale(i18n.language);
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const nav = useNavigate();
   const listFn = useServerFn(listCoupleMessages);
   const createFn = useServerFn(createCoupleMessage);
@@ -70,6 +70,7 @@ function Page() {
   }, [role, nav]);
 
   const load = useCallback(async () => {
+    if (!user || role !== "superintendent") return;
     try {
       const r = await listFn();
       if (r.ok) setThreads(r.threads);
@@ -78,14 +79,15 @@ function Page() {
     } finally {
       setLoading(false);
     }
-  }, [listFn]);
+  }, [listFn, user, role]);
 
   useEffect(() => {
+    if (!user || role !== "superintendent") return;
     load();
     markFn().catch(() => {});
     const id = setInterval(load, 30_000);
     return () => clearInterval(id);
-  }, [load, markFn]);
+  }, [load, markFn, user, role]);
 
   const send = async () => {
     if (!title.trim()) return toast.error(t("couple.titleRequired"));
