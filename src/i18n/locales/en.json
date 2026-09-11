@@ -50,6 +50,7 @@
     "signingIn": "Signing in...",
     "welcome": "Welcome!",
     "invalidCredentials": "Invalid credentials",
+    "connectionError": "Could not connect to the server. Check your internet connection and try again.",
     "newElder": "I'm a new elder —",
     "createAccessElder": "create access",
     "newSuper": "I'm a new circuit overseer —",

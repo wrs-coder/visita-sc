@@ -3,7 +3,14 @@ import { getRequest } from "@tanstack/react-start/server";
 
 import { renderErrorPage } from "./lib/error-page";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
-import { getApiOrigin, isNativeApp, nextApiOrigin, resolveApiUrl } from "@/lib/api-origin";
+import {
+  getApiOrigin,
+  invalidateApiOrigin,
+  isNativeApp,
+  nextApiOrigin,
+  resolveApiUrl,
+  resolveBestApiOrigin,
+} from "@/lib/api-origin";
 import { corsHeaders, isAllowedOrigin } from "@/lib/cors";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
@@ -70,10 +77,16 @@ function withOrigin(input: RequestInfo | URL, origin: string): RequestInfo | URL
 const apiFetch: typeof fetch = async (input, init) => {
   if (!isNativeApp()) return fetch(input, init);
 
+  // Antes de qualquer RPC, confirma qual publicação realmente está servindo
+  // esta aplicação. Assim uma origem antiga memorizada nunca prende o login.
+  const resolvedOrigin = await resolveBestApiOrigin();
+  if (!resolvedOrigin) throw new TypeError("Nenhum servidor do Visita SC está acessível");
+
   const nativeInit: RequestInit = { ...init, credentials: "omit" };
   try {
-    return await fetch(withOrigin(input, getApiOrigin()), nativeInit);
+    return await fetch(withOrigin(input, resolvedOrigin), nativeInit);
   } catch (error) {
+    invalidateApiOrigin();
     const fallback = nextApiOrigin();
     try {
       return await fetch(withOrigin(input, fallback), nativeInit);

@@ -50,6 +50,7 @@
     "signingIn": "Entrando...",
     "welcome": "¡Bienvenido!",
     "invalidCredentials": "Credenciales inválidas",
+    "connectionError": "No se pudo conectar al servidor. Comprueba tu conexión e inténtalo de nuevo.",
     "newElder": "Soy anciano nuevo —",
     "createAccessElder": "crear acceso",
     "newSuper": "Soy superintendente nuevo —",

@@ -10,6 +10,7 @@ function headersFor(request: Request): Record<string, string> {
   const origin = request.headers.get("origin");
   const base: Record<string, string> = {
     "cache-control": "no-store",
+    "x-visita-sc-server": "1",
     Vary: "Origin",
   };
   if (isAllowedOrigin(origin)) {

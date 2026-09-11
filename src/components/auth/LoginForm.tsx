@@ -53,6 +53,9 @@ export function LoginForm() {
       if (error || !signIn.user) { toast.error(t("login.invalidCredentials")); return; }
       toast.success(t("login.welcome"));
       await redirectByRole(signIn.user.id);
+    } catch (error) {
+      console.warn("[login] falha de conexão", error);
+      toast.error(t("login.connectionError"));
     } finally { setBusy(false); }
   };
 
