@@ -866,7 +866,19 @@ function Dashboard() {
           icon={<CalendarDays className="h-4 w-4 text-primary" />}
           title={t("dashboard.todayBlockTitle")}
           headerRight={
-            <Link to="/cronograma" className="text-primary text-xs font-medium inline-flex items-center hover:underline">
+            <Link
+              to="/cronograma"
+              search={{
+                event: undefined,
+                action: undefined,
+                title: undefined,
+                location: undefined,
+                notes: undefined,
+                companion: undefined,
+                congId: undefined,
+              }}
+              className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+            >
               {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
             </Link>
           }

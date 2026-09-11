@@ -214,3 +214,47 @@ Mantenha o `version` do `package.json` alinhado ao `versionName`.
 - [ ] Descrição curta e completa da loja
 - [ ] Classificação de conteúdo respondida
 - [ ] Público-alvo definido (não direcionado a crianças)
+
+## Versão 4.1.0 — app 100% local com endereço de dados dinâmico
+
+A partir da 4.1.0 o aplicativo instalado não abre mais um site remoto: os
+arquivos ficam dentro do aparelho (casca local) e apenas as chamadas de dados
+vão para os domínios publicados.
+
+### Como empacotar
+
+```bash
+npm run app:package          # build + gera a casca local em dist-app/
+npm run android:release:apk  # APK de teste interno
+npm run android:release:aab  # AAB para a Play Store
+```
+
+`npm run app:package` roda `npm run build` e depois `npm run app:shell`, que
+sobe a build localmente, captura o HTML inicial e escreve `dist-app/`
+(pasta usada pelo Capacitor via `webDir`).
+
+### Endereço de dados
+
+`src/lib/api-origin.ts` escolhe em tempo de execução, nesta ordem:
+
+1. o último endereço que funcionou (memorizado no aparelho);
+2. `https://www.visitasc.com.br`;
+3. `https://visitasc.com.br`;
+4. `https://visita-sc.lovable.app`.
+
+Se uma chamada falhar por rede, a camada de dados repete automaticamente na
+próxima origem, sem recarregar o app e sem deslogar o usuário.
+
+As origens autorizadas no servidor estão em `src/lib/cors.ts`. Ao adicionar um
+novo domínio, inclua-o nos dois arquivos.
+
+### Versões
+
+- `versionName 4.1.0`, `versionCode 3` em `android/app/build.gradle`
+- `package.json` alinhado em `4.1.0`
+
+### Teste obrigatório antes do AAB
+
+1. Instalar o APK de teste em um aparelho real.
+2. Abrir o app em modo avião: a tela inicial deve carregar (dados em cache).
+3. Reativar a internet: login, cronograma e esboços devem sincronizar.
