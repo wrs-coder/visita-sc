@@ -4,10 +4,11 @@ import { getRequest } from "@tanstack/react-start/server";
 import { renderErrorPage } from "./lib/error-page";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
 import {
+  API_REQUEST_TIMEOUT_MS,
+  apiOriginAttempts,
   getApiOrigin,
   invalidateApiOrigin,
   isNativeApp,
-  nextApiOrigin,
   resolveApiUrl,
   resolveBestApiOrigin,
 } from "@/lib/api-origin";
@@ -82,18 +83,28 @@ const apiFetch: typeof fetch = async (input, init) => {
   const resolvedOrigin = await resolveBestApiOrigin();
   if (!resolvedOrigin) throw new TypeError("Nenhum servidor do Visita SC está acessível");
 
-  const nativeInit: RequestInit = { ...init, credentials: "omit" };
-  try {
-    return await fetch(withOrigin(input, resolvedOrigin), nativeInit);
-  } catch (error) {
-    invalidateApiOrigin();
-    const fallback = nextApiOrigin();
+  let firstError: unknown = null;
+  for (const origin of apiOriginAttempts(resolvedOrigin)) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+    const abortFromCaller = () => controller.abort();
+    init?.signal?.addEventListener("abort", abortFromCaller, { once: true });
     try {
-      return await fetch(withOrigin(input, fallback), nativeInit);
-    } catch {
-      throw error;
+      return await fetch(withOrigin(input, origin), {
+        ...init,
+        credentials: "omit",
+        signal: controller.signal,
+      });
+    } catch (error) {
+      firstError ??= error;
+      invalidateApiOrigin();
+    } finally {
+      clearTimeout(timer);
+      init?.signal?.removeEventListener("abort", abortFromCaller);
     }
   }
+
+  throw firstError ?? new TypeError("Nenhum servidor do Visita SC está acessível");
 };
 
 export const startInstance = createStart(() => ({

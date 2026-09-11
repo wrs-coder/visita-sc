@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { API_ORIGINS, rankApiOrigins } from "./api-origin";
+import { API_ORIGINS, apiOriginAttempts, rankApiOrigins } from "./api-origin";
 
 describe("rankApiOrigins", () => {
   it("prioriza o domínio próprio quando não há preferência salva", () => {
@@ -21,5 +21,13 @@ describe("rankApiOrigins", () => {
 
   it("ignora origens salvas que não pertencem à lista aprovada", () => {
     expect(rankApiOrigins("https://example.com")).toEqual([...API_ORIGINS]);
+  });
+
+  it("tenta as três origens quando a preferida falha", () => {
+    expect(apiOriginAttempts("https://visita-sc.lovable.app")).toEqual([
+      "https://visita-sc.lovable.app",
+      "https://visitasc.com.br",
+      "https://www.visitasc.com.br",
+    ]);
   });
 });

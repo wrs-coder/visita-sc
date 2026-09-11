@@ -21,6 +21,7 @@ const STORAGE_KEY = "visitasc.api-origin";
 const PROBE_PATH = "/api/public/ping";
 const PROBE_TIMEOUT_MS = 8000;
 const PROBE_VALID_FOR_MS = 30000;
+export const API_REQUEST_TIMEOUT_MS = 12000;
 
 let currentOrigin: string | null = null;
 let lastSuccessfulProbeAt = 0;
@@ -65,6 +66,11 @@ export function rankApiOrigins(saved: string | null): string[] {
 /** Ordem de tentativa: origem memorizada primeiro, depois as demais. */
 export function orderedOrigins(): string[] {
   return rankApiOrigins(safeGet(STORAGE_KEY));
+}
+
+/** Coloca a origem validada primeiro sem perder nenhuma contingência. */
+export function apiOriginAttempts(preferred: string): string[] {
+  return [preferred, ...API_ORIGINS.filter((origin) => origin !== preferred)];
 }
 
 /** Origem usada agora para chamadas de dados. */
