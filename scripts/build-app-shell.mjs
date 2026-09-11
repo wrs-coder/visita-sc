@@ -272,11 +272,14 @@ async function buildStaticShell(dir) {
 function toRelativeAssetPaths(html) {
   let out = html.replace(/(src|href)="\/(assets\/[^"]+)"/g, '$1="./$2"');
   out = out.replace(/(src|href)='\/(assets\/[^']+)'/g, "$1='./$2'");
+  // O manifest do PWA não vai no pacote nativo: remover o link evita um 404.
+  out = out.replace(/<link[^>]+rel=["']manifest["'][^>]*>/gi, "");
   if (!/<base\s/i.test(out)) {
     out = out.replace(/<head([^>]*)>/i, '<head$1><base href="./" />');
   }
   return out;
 }
+
 
 /**
  * Conferência obrigatória: todo arquivo assets/... citado na casca (e nos
