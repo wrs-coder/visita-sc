@@ -243,7 +243,19 @@ npm run android:release:aab  # AAB para a Play Store
 4. **valida** o HTML (precisa começar com `<!DOCTYPE html>`, ter
    `<script type="module">` e referenciar `/assets/`). Se falhar, o comando
    aborta com erro — nada é empacotado;
-5. escreve `dist-app/` (pasta usada pelo Capacitor via `webDir`).
+5. troca o `import()` dinâmico da casca por `<script type="module" src>` e
+   adiciona `modulepreload` dos chunks de primeiro nível (o WebView do
+   Capacitor falha em `import()` e isso causava tela branca);
+6. **confere todos os arquivos**: cada `/assets/*.js|css` citado na casca e nos
+   chunks precisa existir em `dist-app/`. Faltando qualquer um, o comando
+   aborta e lista o que faltou;
+7. escreve `dist-app/` (pasta usada pelo Capacitor via `webDir`).
+
+> Dentro do aplicativo instalado o service worker **não** é registrado
+> (`src/components/PwaRegister.tsx`) e caches `html-*`/`static-*` antigos são
+> apagados na abertura. Isso impede que uma casca velha, guardada por uma
+> versão anterior do APK, aponte para chunks que já não existem.
+
 
 No Windows, Linux ou macOS, o processo é o mesmo e não exige passos manuais:
 basta rodar `npm run android:release:apk` ou `npm run android:release:aab`.
