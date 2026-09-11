@@ -105,8 +105,9 @@ export function resolveApiUrl(input: string, origin = getApiOrigin()): string {
 }
 
 /**
- * Só aceita o endpoint desta aplicação. Isso evita memorizar um domínio que
- * responde com uma página intermediária, redirecionamento ou aplicação errada.
+ * Só aceita o status exclusivo do endpoint de saúde. O cabeçalho de identidade
+ * reforça a validação após a publicação, mas não é obrigatório durante uma
+ * atualização gradual entre versões do servidor e do APK.
  */
 async function probe(origin: string): Promise<string> {
   const controller = new AbortController();
@@ -117,7 +118,7 @@ async function probe(origin: string): Promise<string> {
       cache: "no-store",
       signal: controller.signal,
     });
-    if (response.status !== 204 || response.headers.get("x-visita-sc-server") !== "1") {
+    if (response.status !== 204) {
       throw new Error(`Servidor incompatível em ${origin}`);
     }
     return origin;
