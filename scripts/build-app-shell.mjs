@@ -18,6 +18,23 @@ import path from "node:path";
 
 const root = process.cwd();
 const outDir = path.join(root, "dist-app");
+
+/**
+ * No Windows, OneDrive/antivírus/processos recém-encerrados seguram arquivos
+ * por alguns instantes (EBUSY/EPERM/ENOTEMPTY). Aguarda e tenta de novo.
+ */
+async function rmWithRetries(target, options = {}, tentativas = 5) {
+  const opts = { force: true, ...options };
+  for (let i = 0; ; i++) {
+    try {
+      return await rm(target, opts);
+    } catch (error) {
+      const code = error?.code ?? "";
+      if (!["EBUSY", "EPERM", "ENOTEMPTY"].includes(code) || i >= tentativas - 1) throw error;
+      await new Promise((r) => setTimeout(r, 300 * 2 ** i));
+    }
+  }
+}
 const PORT = Number(process.env.SHELL_PORT ?? 8788);
 const CLEAN_STALE = !process.argv.includes("--no-clean-stale");
 
@@ -106,7 +123,7 @@ async function captureShellFromServer() {
   // junto com o wrangler.json da build. Ele é recriado a cada build, então
   // pode ser removido com segurança aqui.
   const deployConfig = path.join(root, ".wrangler", "deploy", "config.json");
-  await rm(deployConfig, { force: true });
+  await rmWithRetries(deployConfig);
 
   const logs = [];
   // No Windows, `npx` é um arquivo .cmd: sem `shell: true` o spawn falha com ENOENT.
@@ -340,16 +357,16 @@ async function normalizeShell(html, dir) {
 
 /** Copia a saída escolhida para dist-app e grava a casca. */
 async function assemble(dir, shellHtml) {
-  await rm(outDir, { recursive: true, force: true });
+  await rmWithRetries(outDir, { recursive: true });
   await mkdir(outDir, { recursive: true });
   await cp(dir, outDir, { recursive: true });
   // Casca intermediária não deve ficar duplicada dentro do APK.
-  await rm(path.join(outDir, "_shell.html"), { force: true });
-  await rm(path.join(outDir, "_shell"), { recursive: true, force: true });
+  await rmWithRetries(path.join(outDir, "_shell.html"));
+  await rmWithRetries(path.join(outDir, "_shell"), { recursive: true });
   // O cache offline do site (service worker) não roda no app instalado e
   // qualquer resíduo dele volta a causar tela branca: não vai no pacote.
-  await rm(path.join(outDir, "sw.js"), { force: true });
-  await rm(path.join(outDir, "manifest.webmanifest"), { force: true });
+  await rmWithRetries(path.join(outDir, "sw.js"));
+  await rmWithRetries(path.join(outDir, "manifest.webmanifest"));
 
   let html = await normalizeShell(shellHtml, outDir);
   html = toRelativeAssetPaths(html);
@@ -421,8 +438,17 @@ try {
     for (const other of CLIENT_DIR_CANDIDATES) {
       if (other === usedDir) continue;
       if (!existsSync(other)) continue;
-      await rm(other, { recursive: true, force: true });
-      console.log(`• Saída antiga removida: ${path.relative(root, other)}`);
+      try {
+        await rmWithRetries(other, { recursive: true });
+        console.log(`• Saída antiga removida: ${path.relative(root, other)}`);
+      } catch (error) {
+        // Pasta antiga travada (OneDrive/antivírus) não impede o pacote:
+        // a saída mais recente já foi usada e validada. Apenas avisa.
+        console.warn(
+          `• Não consegui remover a saída antiga ${path.relative(root, other)} ` +
+            `(${error?.code ?? error}). O pacote não é afetado; apague-a manualmente depois, se quiser.`,
+        );
+      }
     }
   }
 
