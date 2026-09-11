@@ -67,6 +67,7 @@ try {
   await writeFile(path.join(outDir, "index.html"), html, "utf8");
 
   console.log(`✅ Casca local gerada em dist-app/ (${(html.length / 1024).toFixed(1)} KB de HTML)`);
+  process.exit(0);
 } catch (error) {
   stop();
   console.error("✖ Falha ao gerar a casca local:", error);
