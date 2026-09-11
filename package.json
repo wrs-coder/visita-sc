@@ -4,7 +4,7 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
-  "scripts": {
+ "scripts": {
     "dev": "vite dev",
     "build": "vite build",
     "build:dev": "vite build --mode development",
@@ -21,8 +21,8 @@
     "android:build": "npm run app:package && cap sync android",
     "android:run": "npm run app:package && cap sync android && cap open android",
     "android:keystore": "keytool -genkey -v -keystore android/app/visita-sc-release.keystore -alias visita-sc -keyalg RSA -keysize 2048 -validity 10000",
-    "android:release:apk": "npm run app:package && cap sync android && cd android && ./gradlew assembleRelease && cd .. && echo '\\n✅ APK em: android/app/build/outputs/apk/release/app-release.apk'",
-    "android:release:aab": "npm run app:package && cap sync android && cd android && ./gradlew bundleRelease && cd .. && echo '\\n✅ AAB em: android/app/build/outputs/bundle/release/app-release.aab'",
+    "android:release:apk": "npm run app:package && cap sync android && cd android && gradlew assembleRelease && cd .. && echo \"\\n✅ APK em: android/app/build/outputs/apk/release/app-release.apk\"",
+    "android:release:aab": "npm run app:package && cap sync android && cd android && gradlew bundleRelease && cd .. && echo \"\\n✅ AAB em: android/app/build/outputs/bundle/release/app-release.aab\"",
     "android:verify:signature": "node scripts/verify-android-signature.mjs",
     "test": "vitest run"
   },
