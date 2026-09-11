@@ -196,12 +196,35 @@ async function buildStaticShell(dir) {
     }
   }
 
-  // Preferência 2: varredura da pasta assets/ pelo padrão dos bundles do Vite.
+  // Preferência 2: identificar a entrada real pelo conteúdo — é o bundle que
+  // inicia o React (hydrateRoot/createRoot) e que nenhum outro arquivo importa.
   if (!entryJs) {
     const files = (await readdir(assetsDir)).filter((f) => f.endsWith(".js"));
-    entryJs = files.find((f) => /^index-[\w-]+\.js$/.test(f)) ?? files.sort().at(-1) ?? null;
-    if (entryJs) entryJs = `assets/${entryJs}`;
+    const imported = new Set();
+    const sources = new Map();
+    for (const file of files) {
+      const code = await readFile(path.join(assetsDir, file), "utf8");
+      sources.set(file, code);
+      for (const m of code.matchAll(/["'`]\.?\/?assets\/([\w.-]+\.js)["'`]/g)) imported.add(m[1]);
+    }
+    const roots = files.filter((f) => !imported.has(f));
+    const startsReact = (f) => /hydrateRoot|createRoot\s*\(/.test(sources.get(f) ?? "");
+    entryJs =
+      roots.find(startsReact) ??
+      files.find(startsReact) ??
+      roots.find((f) => /^index-[\w-]+\.js$/.test(f)) ??
+      files.find((f) => /^index-[\w-]+\.js$/.test(f)) ??
+      null;
+    if (entryJs) {
+      // Pré-carrega os imports diretos da entrada para acelerar a abertura.
+      const code = sources.get(entryJs) ?? "";
+      for (const m of code.matchAll(/from\s*["'`]\.?\/?assets\/([\w.-]+\.js)["'`]/g)) {
+        preload.push(`assets/${m[1]}`);
+      }
+      entryJs = `assets/${entryJs}`;
+    }
   }
+
   if (!entryCss) {
     const cssFiles = (await readdir(assetsDir)).filter((f) => f.endsWith(".css"));
     if (cssFiles.length > 0) entryCss = `assets/${cssFiles.sort().at(-1)}`;
