@@ -4,7 +4,9 @@
  *
  * Ordem de tentativa para obter o `index.html`:
  *   1. casca oficial gerada pelo prerender do TanStack Start (`_shell.html`);
- *   2. reserva: sobe o servidor da build (`wrangler dev`) e captura o HTML de "/".
+ *   2. sobe o servidor da build (`wrangler dev`) e captura o HTML de "/";
+ *   3. reserva: monta a casca estaticamente a partir dos arquivos já gerados
+ *      (bundle em `assets/`), sem subprocesso algum — funciona em qualquer SO.
  *
  * O arquivo só é aceito se for realmente uma página com script de inicialização.
  * Assim, uma build ruim falha aqui — nunca vira um APK de tela preta.
@@ -91,9 +93,12 @@ async function captureShellFromServer() {
   await rm(deployConfig, { force: true });
 
   const logs = [];
-  const server = spawn("npx", ["wrangler", "dev", "--port", String(PORT), "--local"], {
+  // No Windows, `npx` é um arquivo .cmd: sem `shell: true` o spawn falha com ENOENT.
+  const npxBin = process.platform === "win32" ? "npx.cmd" : "npx";
+  const server = spawn(npxBin, ["wrangler", "dev", "--port", String(PORT), "--local"], {
     cwd: serverDir,
     stdio: ["ignore", "pipe", "pipe"],
+    shell: process.platform === "win32",
   });
   server.stdout.on("data", (d) => logs.push(String(d)));
   server.stderr.on("data", (d) => logs.push(String(d)));
@@ -133,9 +138,92 @@ async function captureShellFromServer() {
   }
 }
 
+/**
+ * Reserva definitiva: monta a casca estaticamente a partir dos arquivos da
+ * build, sem iniciar nenhum servidor. Funciona em Windows, Linux e macOS.
+ */
+async function buildStaticShell() {
+  const assetsDir = path.join(clientDir, "assets");
+  if (!existsSync(assetsDir)) {
+    throw new Error("Pasta assets/ não encontrada na saída do cliente.");
+  }
+
+  let entryJs = null;
+  let entryCss = null;
+
+  // Preferência 1: manifesto do Vite, que aponta a entrada exata.
+  const manifestPath = path.join(assetsDir, ".vite", "manifest.json");
+  if (existsSync(manifestPath)) {
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    const entry = Object.values(manifest).find((item) => item && item.isEntry);
+    if (entry?.file) {
+      entryJs = entry.file.replace(/^\//, "");
+      entryCss = Array.isArray(entry.css) ? entry.css[0] : null;
+    }
+  }
+
+  // Preferência 2: varredura da pasta assets/ pelo padrão dos bundles do Vite.
+  if (!entryJs) {
+    const files = (await readdir(assetsDir)).filter((f) => f.endsWith(".js"));
+    entryJs =
+      files.find((f) => /^index-[\w-]+\.js$/.test(f)) ?? files.sort().at(-1) ?? null;
+    if (entryJs) entryJs = `assets/${entryJs}`;
+  }
+  if (!entryCss) {
+    const cssFiles = (await readdir(assetsDir)).filter((f) => f.endsWith(".css"));
+    if (cssFiles.length > 0) entryCss = `assets/${cssFiles.sort().at(-1)}`;
+  }
+
+  if (!entryJs) {
+    throw new Error("Nenhum bundle de entrada (*.js) encontrado em assets/.");
+  }
+
+  const favicon = existsSync(path.join(clientDir, "favicon.svg"))
+    ? '<link rel="icon" href="/favicon.svg" type="image/svg+xml" />'
+    : existsSync(path.join(clientDir, "favicon.ico"))
+      ? '<link rel="icon" href="/favicon.ico" />'
+      : "";
+  const manifest = existsSync(path.join(clientDir, "manifest.webmanifest"))
+    ? '<link rel="manifest" href="/manifest.webmanifest" />'
+    : "";
+  const stylesheet = entryCss ? `<link rel="stylesheet" href="/${entryCss}" />` : "";
+
+  const html = [
+    "<!DOCTYPE html>",
+    '<html lang="pt-BR">',
+    "  <head>",
+    '    <meta charset="UTF-8" />',
+    '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />',
+    "    <title>Visita SC</title>",
+    favicon && `    ${favicon}`,
+    manifest && `    ${manifest}`,
+    stylesheet && `    ${stylesheet}`,
+    "  </head>",
+    "  <body>",
+    '    <div id="root"></div>',
+    `    <script type="module" async>import("/${entryJs}");</script>`,
+    "  </body>",
+    "</html>",
+    "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return { html, source: "montagem estática dos arquivos da build" };
+}
 
 try {
-  const shell = (await readOfficialShell()) ?? (await captureShellFromServer());
+  let shell = await readOfficialShell();
+  if (!shell) {
+    try {
+      shell = await captureShellFromServer();
+    } catch (error) {
+      console.warn(`• Servidor local indisponível (${error.message ?? error}).`);
+      console.warn("• Usando a montagem estática como alternativa…");
+      shell = await buildStaticShell();
+    }
+  }
+
   const problems = validateShell(shell.html);
   if (problems.length > 0) {
     console.error(
