@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Logo } from "@/components/Logo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
-const CANONICAL = "https://visita-sc.lovable.app/politica-privacidade";
+const CANONICAL = "https://visitasc.com.br/politica-privacidade";
 
 export const Route = createFileRoute("/politica-privacidade")({
   head: () => ({

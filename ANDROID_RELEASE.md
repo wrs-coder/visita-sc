@@ -82,13 +82,13 @@ O snippet em `android-signing/build.gradle.snippet` fica apenas como referência
 
 ## 4. Modo de carregamento do app
 
-O `capacitor.config.ts` aponta para `https://visita-sc.lovable.app`. **Mantenha assim.**
+O `capacitor.config.ts` usa `webDir: "dist-app"` e **não possui `server.url`**.
+Assim, a interface roda localmente no aparelho; apenas as chamadas de dados usam
+os domínios publicados escolhidos dinamicamente.
 
-> ❌ **Não remova o bloco `server` hoje.**
-> O app é TanStack Start com SSR: 20 módulos usam `createServerFn` em caminhos relativos (login, congregações, esboços, sincronização, relatórios, backups). Com `webDir` local, essas chamadas iriam para o próprio dispositivo, sem servidor, e falhariam.
-> O empacotamento 100% offline é uma migração de arquitetura (mover as server functions para chamadas com URL absoluta ao backend + testes de autenticação em WebView), planejada para uma onda futura.
-
-O uso sem internet continua coberto pelo cache offline-first do app e pelo service worker.
+Não adicione um `server.url`: isso voltaria a fazer o APK depender de uma página
+remota para abrir. O uso sem internet continua coberto pelos dados e arquivos
+locais do aplicativo.
 
 ---
 
@@ -146,8 +146,8 @@ Consequências práticas:
 
 ### App Links precisam dos DOIS fingerprints
 
-`public/.well-known/assetlinks.json` está com o array de fingerprints **vazio**,
-porque o Package Name é novo e ainda não existe certificado registrado.
+`public/.well-known/assetlinks.json` contém os fingerprints das chaves de upload
+e distribuição atualmente registradas.
 
 Preencha em duas etapas:
 
@@ -192,7 +192,7 @@ Mantenha o `version` do `package.json` alinhado ao `versionName`.
 - `android:allowBackup="false"`, `android:fullBackupContent="false"` e `data_extraction_rules.xml` excluindo todos os domínios — nenhum dado do app entra em backup na nuvem ou transferência entre aparelhos.
 - `android:usesCleartextTraffic="false"` explícito.
 - Sem `READ_EXTERNAL_STORAGE` / `WRITE_EXTERNAL_STORAGE`: backups, modelos e anexos usam o diretório privado via `@capacitor/filesystem` e o seletor do sistema via `@capacitor/share`. Única permissão declarada: `INTERNET`.
-- Política de privacidade pública em **https://visita-sc.lovable.app/politica-privacidade** (PT/EN/ES).
+- Política de privacidade pública em **https://visitasc.com.br/politica-privacidade** (PT/EN/ES).
 
 ---
 
@@ -276,8 +276,8 @@ Nunca copie arquivos manualmente para `dist-app/`.
 `src/lib/api-origin.ts` escolhe em tempo de execução, nesta ordem:
 
 1. o último endereço que funcionou (memorizado no aparelho);
-2. `https://www.visitasc.com.br`;
-3. `https://visitasc.com.br`;
+2. `https://visitasc.com.br`;
+3. `https://www.visitasc.com.br`;
 4. `https://visita-sc.lovable.app`.
 
 Se uma chamada falhar por rede, a camada de dados repete automaticamente na
@@ -288,8 +288,8 @@ novo domínio, inclua-o nos dois arquivos.
 
 ### Versões
 
-- `versionName 4.1.0`, `versionCode 3` em `android/app/build.gradle`
-- `package.json` alinhado em `4.1.0`
+- Consulte `android/app/build.gradle` para `versionName` e `versionCode` atuais.
+- O campo `version` do `package.json` permanece alinhado ao `versionName`.
 
 ### Teste obrigatório antes do AAB
 

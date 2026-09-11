@@ -23,7 +23,8 @@ npm run cap:add:android
 > O arquivo `capacitor.config.ts` já está pronto com:
 > - `appId`: `com.waorodrigues.visitasc`
 > - `appName`: `Visita SC`
-> - `server.url`: aponta para `https://visita-sc.lovable.app` (carrega o app publicado, então atualizações no Lovable refletem no APK sem rebuild).
+> - `webDir`: `dist-app` (a interface fica dentro do APK/AAB)
+> - sem `server.url`: as chamadas de dados usam `visitasc.com.br` primeiro e os outros domínios apenas como alternativas.
 
 ## Gerar / atualizar o APK
 
@@ -37,14 +38,12 @@ npm run cap:open:android
 
 No Android Studio: **Build → Build Bundle(s) / APK(s) → Build APK(s)**.
 
-## Empacotar o conteúdo localmente (sem depender do site)
+## Conteúdo local e conexão
 
-Se preferir que o APK funcione 100% offline com o build estático:
-
-1. Edite `capacitor.config.ts` e **remova** o bloco `server: { ... }`.
-2. Rode `npm run android:build` novamente.
-
-> Observação: nesse modo, o login com Google/Supabase precisa de configuração extra de deep link (`com.waorodrigues.visitasc://`).
+O APK já é empacotado com a interface local. Não adicione `server.url` e não
+copie arquivos manualmente para `dist-app`: os scripts abaixo geram e validam a
+casca automaticamente. A troca do endereço de dados não recarrega a interface
+nem apaga a sessão do usuário.
 
 ## Scripts disponíveis
 
