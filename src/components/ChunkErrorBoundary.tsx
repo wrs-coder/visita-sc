@@ -13,10 +13,33 @@ interface State {
 const CHUNK_REGEX =
   /failed to fetch dynamically imported module|loading chunk|chunkloaderror|importing a module script failed/i;
 
+const RECOVER_KEY = "visita-sc:chunk-recover";
+
+async function purgeCaches() {
+  if (typeof window === "undefined") return;
+  try {
+    if ("serviceWorker" in navigator) {
+      const rs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(rs.map((r) => r.unregister().catch(() => undefined)));
+    }
+  } catch {
+    /* noop */
+  }
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => /^(html|static)-/.test(k)).map((k) => caches.delete(k)));
+    }
+  } catch {
+    /* noop */
+  }
+}
+
 function isChunkError(err: unknown): boolean {
   const msg = String((err as { message?: string })?.message ?? err ?? "");
   return CHUNK_REGEX.test(msg);
 }
+
 
 function FallbackUI({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation();
