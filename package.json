@@ -17,7 +17,7 @@
     "cap:sync": "cap sync",
     "cap:open:android": "cap open android",
     "app:shell": "node scripts/build-app-shell.mjs",
-    "app:package": "npm run build && npm run app:shell",
+    "app:package": "node scripts/kill-stale-shell.mjs && npm run build && npm run app:shell",
     "android:build": "npm run app:package && cap sync android",
     "android:run": "npm run app:package && cap sync android && cap open android",
     "android:keystore": "keytool -genkey -v -keystore android/app/visita-sc-release.keystore -alias visita-sc -keyalg RSA -keysize 2048 -validity 10000",
