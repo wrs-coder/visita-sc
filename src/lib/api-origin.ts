@@ -15,8 +15,11 @@ export const API_ORIGINS = [
 ] as const;
 
 const STORAGE_KEY = "visitasc.api-origin";
-const PROBE_PATH = "/manifest.webmanifest";
-const PROBE_TIMEOUT_MS = 4000;
+// Endpoint próprio do servidor (autoriza a chamada vinda do app). Arquivos
+// estáticos como o manifest são servidos pela hospedagem sem essa autorização,
+// então nunca servem como teste de conexão.
+const PROBE_PATH = "/api/public/ping";
+const PROBE_TIMEOUT_MS = 8000;
 
 let currentOrigin: string | null = null;
 
