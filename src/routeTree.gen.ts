@@ -42,6 +42,7 @@ import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoe
 import { Route as AppComunicacaoCasalRouteImport } from './routes/_app.comunicacao-casal'
 import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist-modelos'
 import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
+import { Route as ApiPublicPingRouteImport } from './routes/api/public/ping'
 import { Route as AppRelatorioVisitIdRouteImport } from './routes/_app.relatorio.$visitId'
 
 const VisitanteRoute = VisitanteRouteImport.update({
@@ -211,6 +212,11 @@ const AppChecklistRoute = AppChecklistRouteImport.update({
   path: '/checklist',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicPingRoute = ApiPublicPingRouteImport.update({
+  id: '/api/public/ping',
+  path: '/api/public/ping',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRelatorioVisitIdRoute = AppRelatorioVisitIdRouteImport.update({
   id: '/relatorio/$visitId',
   path: '/relatorio/$visitId',
@@ -251,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/visitante/painel': typeof VisitantePainelRoute
   '/visitante/': typeof VisitanteIndexRoute
   '/relatorio/$visitId': typeof AppRelatorioVisitIdRoute
+  '/api/public/ping': typeof ApiPublicPingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -285,6 +292,7 @@ export interface FileRoutesByTo {
   '/visitante/painel': typeof VisitantePainelRoute
   '/visitante': typeof VisitanteIndexRoute
   '/relatorio/$visitId': typeof AppRelatorioVisitIdRoute
+  '/api/public/ping': typeof ApiPublicPingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -322,6 +330,7 @@ export interface FileRoutesById {
   '/visitante/painel': typeof VisitantePainelRoute
   '/visitante/': typeof VisitanteIndexRoute
   '/_app/relatorio/$visitId': typeof AppRelatorioVisitIdRoute
+  '/api/public/ping': typeof ApiPublicPingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -359,6 +368,7 @@ export interface FileRouteTypes {
     | '/visitante/painel'
     | '/visitante/'
     | '/relatorio/$visitId'
+    | '/api/public/ping'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -393,6 +403,7 @@ export interface FileRouteTypes {
     | '/visitante/painel'
     | '/visitante'
     | '/relatorio/$visitId'
+    | '/api/public/ping'
   id:
     | '__root__'
     | '/'
@@ -429,6 +440,7 @@ export interface FileRouteTypes {
     | '/visitante/painel'
     | '/visitante/'
     | '/_app/relatorio/$visitId'
+    | '/api/public/ping'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -441,6 +453,7 @@ export interface RootRouteChildren {
   VisitanteRoute: typeof VisitanteRouteWithChildren
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
   CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
+  ApiPublicPingRoute: typeof ApiPublicPingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -676,6 +689,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppChecklistRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/ping': {
+      id: '/api/public/ping'
+      path: '/api/public/ping'
+      fullPath: '/api/public/ping'
+      preLoaderRoute: typeof ApiPublicPingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/relatorio/$visitId': {
       id: '/_app/relatorio/$visitId'
       path: '/relatorio/$visitId'
@@ -764,6 +784,7 @@ const rootRouteChildren: RootRouteChildren = {
   VisitanteRoute: VisitanteRouteWithChildren,
   CadastroAnciaoRoute: CadastroAnciaoRoute,
   CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,
+  ApiPublicPingRoute: ApiPublicPingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
