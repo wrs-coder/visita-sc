@@ -9,26 +9,13 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
 // @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
 //
-// APP_SHELL=1 ativa o prerender da casca estática (SPA shell) usada pelo APK/AAB.
-// Fora desse modo o site continua 100% SSR, exatamente como hoje.
-const appShell = process.env["APP_SHELL"] === "1";
-
+// Observação (casca do app Android): o prerender oficial de SPA shell do
+// TanStack Start não funciona com a saída Cloudflare/Nitro deste projeto —
+// ele procura `dist/server/server.js`, que o preset cloudflare não gera.
+// Por isso a casca é montada por `scripts/build-app-shell.mjs`, que roda a
+// própria build (wrangler dev em dist/server) e valida o HTML resultante.
 export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
-    ...(appShell
-      ? {
-          spa: {
-            enabled: true,
-            maskPath: "/",
-            prerender: {
-              enabled: true,
-              outputPath: "/_shell",
-              crawlLinks: false,
-              retryCount: 1,
-            },
-          },
-        }
-      : {}),
   },
 });
