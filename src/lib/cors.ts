@@ -21,8 +21,9 @@ export function corsHeaders(origin: string): Record<string, string> {
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers":
-      "authorization, content-type, accept, x-requested-with, x-tss-serialized, x-tss-raw-response, x-tsr-redirect",
-    "Access-Control-Expose-Headers": "x-tss-serialized, x-tsr-redirect, content-type",
+      "authorization, content-type, accept, x-requested-with, x-tsr-serverfn, x-tsr-redirect, x-tss-serialized, x-tss-raw, x-tss-raw-response, x-tss-context",
+    "Access-Control-Expose-Headers":
+      "x-tsr-redirect, x-tss-serialized, x-tss-raw, x-tss-raw-response, x-tss-context, x-visita-sc-server, content-type",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };

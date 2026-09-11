@@ -20,8 +20,12 @@ const STORAGE_KEY = "visitasc.api-origin";
 // então nunca servem como teste de conexão.
 const PROBE_PATH = "/api/public/ping";
 const PROBE_TIMEOUT_MS = 8000;
+const PROBE_VALID_FOR_MS = 30000;
+export const API_REQUEST_TIMEOUT_MS = 12000;
 
 let currentOrigin: string | null = null;
+let lastSuccessfulProbeAt = 0;
+let inflightResolution: Promise<string | null> | null = null;
 
 function safeGet(key: string): string | null {
   try {
@@ -51,13 +55,22 @@ export function isNativeApp(): boolean {
 }
 
 /** Ordem de tentativa: origem memorizada primeiro, depois as demais. */
-export function orderedOrigins(): string[] {
-  const saved = safeGet(STORAGE_KEY);
+export function rankApiOrigins(saved: string | null): string[] {
   const list = [...API_ORIGINS] as string[];
   if (saved && list.includes(saved)) {
     return [saved, ...list.filter((o) => o !== saved)];
   }
   return list;
+}
+
+/** Ordem de tentativa: origem memorizada primeiro, depois as demais. */
+export function orderedOrigins(): string[] {
+  return rankApiOrigins(safeGet(STORAGE_KEY));
+}
+
+/** Coloca a origem validada primeiro sem perder nenhuma contingência. */
+export function apiOriginAttempts(preferred: string): string[] {
+  return [preferred, ...API_ORIGINS.filter((origin) => origin !== preferred)];
 }
 
 /** Origem usada agora para chamadas de dados. */
@@ -71,6 +84,7 @@ export function getApiOrigin(): string {
 
 export function setApiOrigin(origin: string) {
   currentOrigin = origin;
+  lastSuccessfulProbeAt = Date.now();
   safeSet(STORAGE_KEY, origin);
 }
 
@@ -91,18 +105,22 @@ export function resolveApiUrl(input: string, origin = getApiOrigin()): string {
 }
 
 /**
- * Qualquer resposta HTTP conta como "servidor acessível" — inclusive erros.
- * Só falha de rede/timeout significa offline.
+ * Só aceita o status exclusivo do endpoint de saúde. O cabeçalho de identidade
+ * reforça a validação após a publicação, mas não é obrigatório durante uma
+ * atualização gradual entre versões do servidor e do APK.
  */
 async function probe(origin: string): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   try {
-    await fetch(origin + PROBE_PATH, {
+    const response = await fetch(origin + PROBE_PATH, {
       method: "GET",
       cache: "no-store",
       signal: controller.signal,
     });
+    if (response.status !== 204) {
+      throw new Error(`Servidor incompatível em ${origin}`);
+    }
     return origin;
   } finally {
     clearTimeout(timer);
@@ -116,19 +134,38 @@ async function probe(origin: string): Promise<string> {
  */
 export async function resolveBestApiOrigin(): Promise<string | null> {
   if (!isNativeApp()) return null;
-  const list = orderedOrigins();
-  const attempts = list.map((origin, index) =>
-    index === 0
-      ? probe(origin)
-      : new Promise<string>((resolve, reject) => {
-          setTimeout(() => probe(origin).then(resolve, reject), index * 250);
-        }),
-  );
-  try {
-    const winner = await Promise.any(attempts);
-    setApiOrigin(winner);
-    return winner;
-  } catch {
-    return null;
+  if (currentOrigin && Date.now() - lastSuccessfulProbeAt < PROBE_VALID_FOR_MS) {
+    return currentOrigin;
   }
+  if (inflightResolution) return inflightResolution;
+
+  const list = orderedOrigins();
+  inflightResolution = (async () => {
+    const attempts = list.map((origin, index) =>
+      index === 0
+        ? probe(origin)
+        : new Promise<string>((resolve, reject) => {
+            setTimeout(() => probe(origin).then(resolve, reject), index * 250);
+          }),
+    );
+    try {
+      const winner = await Promise.any(attempts);
+      setApiOrigin(winner);
+      return winner;
+    } catch {
+      currentOrigin = null;
+      lastSuccessfulProbeAt = 0;
+      return null;
+    } finally {
+      inflightResolution = null;
+    }
+  })();
+
+  return inflightResolution;
+}
+
+/** Força uma nova verificação após uma falha real de transporte. */
+export function invalidateApiOrigin() {
+  currentOrigin = null;
+  lastSuccessfulProbeAt = 0;
 }

@@ -94,6 +94,10 @@ locais do aplicativo.
 
 ## 5. Gerar o APK ou o AAB assinado
 
+Versão preparada neste repositório: **4.1.4** (`versionCode 7`). Esta versão
+corrige o login da casca local, incluindo os cabeçalhos das chamadas internas
+no CORS e a troca automática entre os três endereços publicados.
+
 ```bash
 # AAB (formato exigido pela Play Store)
 npm run android:release:aab

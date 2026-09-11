@@ -3,7 +3,15 @@ import { getRequest } from "@tanstack/react-start/server";
 
 import { renderErrorPage } from "./lib/error-page";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
-import { getApiOrigin, isNativeApp, nextApiOrigin, resolveApiUrl } from "@/lib/api-origin";
+import {
+  API_REQUEST_TIMEOUT_MS,
+  apiOriginAttempts,
+  getApiOrigin,
+  invalidateApiOrigin,
+  isNativeApp,
+  resolveApiUrl,
+  resolveBestApiOrigin,
+} from "@/lib/api-origin";
 import { corsHeaders, isAllowedOrigin } from "@/lib/cors";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
@@ -70,17 +78,33 @@ function withOrigin(input: RequestInfo | URL, origin: string): RequestInfo | URL
 const apiFetch: typeof fetch = async (input, init) => {
   if (!isNativeApp()) return fetch(input, init);
 
-  const nativeInit: RequestInit = { ...init, credentials: "omit" };
-  try {
-    return await fetch(withOrigin(input, getApiOrigin()), nativeInit);
-  } catch (error) {
-    const fallback = nextApiOrigin();
+  // Antes de qualquer RPC, confirma qual publicação realmente está servindo
+  // esta aplicação. Assim uma origem antiga memorizada nunca prende o login.
+  const resolvedOrigin = await resolveBestApiOrigin();
+  if (!resolvedOrigin) throw new TypeError("Nenhum servidor do Visita SC está acessível");
+
+  let firstError: unknown = null;
+  for (const origin of apiOriginAttempts(resolvedOrigin)) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+    const abortFromCaller = () => controller.abort();
+    init?.signal?.addEventListener("abort", abortFromCaller, { once: true });
     try {
-      return await fetch(withOrigin(input, fallback), nativeInit);
-    } catch {
-      throw error;
+      return await fetch(withOrigin(input, origin), {
+        ...init,
+        credentials: "omit",
+        signal: controller.signal,
+      });
+    } catch (error) {
+      firstError ??= error;
+      invalidateApiOrigin();
+    } finally {
+      clearTimeout(timer);
+      init?.signal?.removeEventListener("abort", abortFromCaller);
     }
   }
+
+  throw firstError ?? new TypeError("Nenhum servidor do Visita SC está acessível");
 };
 
 export const startInstance = createStart(() => ({
