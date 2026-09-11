@@ -231,25 +231,31 @@ npm run android:release:aab  # AAB para a Play Store
 
 `npm run app:package` roda `npm run build` e depois `npm run app:shell`, que:
 
-1. localiza a saída do cliente (`dist/client` ou `.output/public`);
+1. localiza a saída do cliente entre `dist/client`, `.output/public` e
+   `dist/public` e usa **a mais recente** (evita empacotar uma build antiga);
 2. sobe a **build** com `wrangler dev` dentro de `dist/server` (nunca o
    `wrangler.jsonc` da raiz, que aponta para o código-fonte) e captura o HTML
-   inicial de `/`;
+   inicial de `/`, com tempo limite por tentativa e 2 minutos no total;
 3. se o servidor local não subir (por exemplo, no Windows, onde `npx` é um
    `.cmd`), **monta a casca estaticamente** a partir dos arquivos já gerados:
-   localiza o bundle de entrada em `assets/` (manifesto do Vite ou
-   `index-*.js`) e escreve um `index.html` completo com os links de CSS, ícone
-   e manifesto;
+   usa o manifesto do Vite ou, na falta dele, identifica o bundle de entrada
+   pelo conteúdo (`hydrateRoot`) e escreve um `index.html` completo;
 4. **valida** o HTML (precisa começar com `<!DOCTYPE html>`, ter
-   `<script type="module">` e referenciar `/assets/`). Se falhar, o comando
+   `<script type="module">` e referenciar `assets/`). Se falhar, o comando
    aborta com erro — nada é empacotado;
 5. troca o `import()` dinâmico da casca por `<script type="module" src>` e
    adiciona `modulepreload` dos chunks de primeiro nível (o WebView do
    Capacitor falha em `import()` e isso causava tela branca);
-6. **confere todos os arquivos**: cada `/assets/*.js|css` citado na casca e nos
-   chunks precisa existir em `dist-app/`. Faltando qualquer um, o comando
-   aborta e lista o que faltou;
-7. escreve `dist-app/` (pasta usada pelo Capacitor via `webDir`).
+6. deixa todos os caminhos **relativos** (`./assets/...`) com `<base href="./">`
+   e remove `sw.js`, `manifest.webmanifest` e o `<link rel="manifest">` — o
+   cache offline do site não roda no aplicativo instalado;
+7. **confere todos os arquivos**: cada `assets/*.js|css` citado na casca e nos
+   chunks precisa existir em `dist-app/`. Se faltar algum, o script tenta
+   recopiar de outra pasta de saída candidata e, se ainda faltar, aborta
+   listando o que faltou;
+8. escreve `dist-app/` (pasta usada pelo Capacitor via `webDir`) e apaga as
+   pastas de saída antigas para a próxima build não se confundir.
+
 
 > Dentro do aplicativo instalado o service worker **não** é registrado
 > (`src/components/PwaRegister.tsx`) e caches `html-*`/`static-*` antigos são

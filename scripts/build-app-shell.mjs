@@ -8,17 +8,18 @@
  *   3. reserva: monta a casca estaticamente a partir dos arquivos já gerados
  *      (bundle em `assets/`), sem subprocesso algum — funciona em qualquer SO.
  *
- * O arquivo só é aceito se for realmente uma página com script de inicialização.
- * Assim, uma build ruim falha aqui — nunca vira um APK de tela preta.
+ * O arquivo só é aceito se for realmente uma página com script de inicialização
+ * e se TODOS os arquivos citados existirem dentro de `dist-app/`.
  */
 import { spawn } from "node:child_process";
 import { cp, mkdir, readFile, rm, writeFile, readdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
 const outDir = path.join(root, "dist-app");
 const PORT = Number(process.env.SHELL_PORT ?? 8788);
+const CLEAN_STALE = !process.argv.includes("--no-clean-stale");
 
 // A saída do cliente muda conforme o ambiente/adaptador.
 const CLIENT_DIR_CANDIDATES = [
@@ -27,9 +28,9 @@ const CLIENT_DIR_CANDIDATES = [
   path.join(root, "dist", "public"),
 ];
 
-const clientDir = CLIENT_DIR_CANDIDATES.find((dir) => existsSync(dir));
+const existingCandidates = CLIENT_DIR_CANDIDATES.filter((dir) => existsSync(dir));
 
-if (!clientDir) {
+if (existingCandidates.length === 0) {
   console.error(
     "✖ Saída do cliente não encontrada. Rode `npm run build` antes.\n  Procurei em:\n   - " +
       CLIENT_DIR_CANDIDATES.map((d) => path.relative(root, d)).join("\n   - "),
@@ -37,7 +38,22 @@ if (!clientDir) {
   process.exit(1);
 }
 
-console.log(`• Usando a saída do cliente: ${path.relative(root, clientDir)}`);
+/** Escolhe a saída mais recente: pastas antigas de builds anteriores enganam. */
+const ranked = existingCandidates
+  .map((dir) => ({ dir, mtime: statSync(dir).mtimeMs }))
+  .sort((a, b) => b.mtime - a.mtime);
+
+const clientDir = ranked[0].dir;
+const otherCandidates = ranked.slice(1).map((r) => r.dir);
+
+console.log(
+  `• Saída do cliente escolhida: ${path.relative(root, clientDir)} (modificada em ${new Date(
+    ranked[0].mtime,
+  ).toISOString()})`,
+);
+for (const other of otherCandidates) {
+  console.log(`  ↳ ignorando saída mais antiga: ${path.relative(root, other)}`);
+}
 
 /** A casca precisa ser uma página HTML que inicialize o app. */
 function validateShell(html) {
@@ -45,7 +61,7 @@ function validateShell(html) {
   if (!/^\s*<!doctype html/i.test(html)) problems.push("não começa com <!DOCTYPE html>");
   if (!/<script/i.test(html)) problems.push("não contém nenhuma tag <script>");
   if (!/type="module"|type='module'/i.test(html)) problems.push('não contém <script type="module">');
-  if (!/\/assets\//.test(html)) problems.push("não referencia nenhum bundle em /assets/");
+  if (!/assets\//.test(html)) problems.push("não referencia nenhum bundle em assets/");
   return problems;
 }
 
@@ -55,9 +71,9 @@ const SHELL_CANDIDATES = [
   "index.html",
 ];
 
-async function readOfficialShell() {
+async function readOfficialShell(dir) {
   for (const rel of SHELL_CANDIDATES) {
-    const file = path.join(clientDir, rel);
+    const file = path.join(dir, rel);
     if (!existsSync(file)) continue;
     const html = await readFile(file, "utf8");
     const problems = validateShell(html);
@@ -116,10 +132,16 @@ async function captureShellFromServer() {
     process.exit(1);
   });
 
+  const deadline = Date.now() + 120_000;
   try {
-    for (let i = 0; i < 60; i++) {
+    while (Date.now() < deadline) {
       try {
-        const res = await fetch(`http://localhost:${PORT}/`, { headers: { Accept: "text/html" } });
+        // Timeout por tentativa: sem isso, um servidor que aceita a conexão e
+        // nunca responde deixa o empacotamento pendurado para sempre.
+        const res = await fetch(`http://localhost:${PORT}/`, {
+          headers: { Accept: "text/html" },
+          signal: AbortSignal.timeout(8000),
+        });
         if (res.ok) {
           const type = res.headers.get("content-type") ?? "";
           const html = await res.text();
@@ -127,10 +149,11 @@ async function captureShellFromServer() {
           console.warn(`• Resposta inesperada (${type}); tentando de novo…`);
         }
       } catch {
-        /* servidor ainda subindo */
+        /* servidor ainda subindo ou sem resposta */
       }
       await new Promise((r) => setTimeout(r, 2000));
     }
+
     console.error(logs.join("").slice(-2000));
     throw new Error("O servidor local não respondeu HTML a tempo (log acima).");
   } finally {
@@ -142,8 +165,8 @@ async function captureShellFromServer() {
  * Reserva definitiva: monta a casca estaticamente a partir dos arquivos da
  * build, sem iniciar nenhum servidor. Funciona em Windows, Linux e macOS.
  */
-async function buildStaticShell() {
-  const assetsDir = path.join(clientDir, "assets");
+async function buildStaticShell(dir) {
+  const assetsDir = path.join(dir, "assets");
   if (!existsSync(assetsDir)) {
     throw new Error("Pasta assets/ não encontrada na saída do cliente.");
   }
@@ -151,7 +174,7 @@ async function buildStaticShell() {
   let entryJs = null;
   let entryCss = null;
   /** Chunks estáticos importados pela entrada (para modulepreload). */
-  let preload = [];
+  const preload = [];
 
   // Preferência 1: manifesto do Vite, que aponta a entrada exata.
   const manifestPath = path.join(assetsDir, ".vite", "manifest.json");
@@ -173,13 +196,35 @@ async function buildStaticShell() {
     }
   }
 
-  // Preferência 2: varredura da pasta assets/ pelo padrão dos bundles do Vite.
+  // Preferência 2: identificar a entrada real pelo conteúdo — é o bundle que
+  // inicia o React (hydrateRoot/createRoot) e que nenhum outro arquivo importa.
   if (!entryJs) {
     const files = (await readdir(assetsDir)).filter((f) => f.endsWith(".js"));
+    const imported = new Set();
+    const sources = new Map();
+    for (const file of files) {
+      const code = await readFile(path.join(assetsDir, file), "utf8");
+      sources.set(file, code);
+      for (const m of code.matchAll(/["'`]\.?\/?assets\/([\w.-]+\.js)["'`]/g)) imported.add(m[1]);
+    }
+    const roots = files.filter((f) => !imported.has(f));
+    const startsReact = (f) => /hydrateRoot|createRoot\s*\(/.test(sources.get(f) ?? "");
     entryJs =
-      files.find((f) => /^index-[\w-]+\.js$/.test(f)) ?? files.sort().at(-1) ?? null;
-    if (entryJs) entryJs = `assets/${entryJs}`;
+      roots.find(startsReact) ??
+      files.find(startsReact) ??
+      roots.find((f) => /^index-[\w-]+\.js$/.test(f)) ??
+      files.find((f) => /^index-[\w-]+\.js$/.test(f)) ??
+      null;
+    if (entryJs) {
+      // Pré-carrega os imports diretos da entrada para acelerar a abertura.
+      const code = sources.get(entryJs) ?? "";
+      for (const m of code.matchAll(/from\s*["'`]\.?\/?assets\/([\w.-]+\.js)["'`]/g)) {
+        preload.push(`assets/${m[1]}`);
+      }
+      entryJs = `assets/${entryJs}`;
+    }
   }
+
   if (!entryCss) {
     const cssFiles = (await readdir(assetsDir)).filter((f) => f.endsWith(".css"));
     if (cssFiles.length > 0) entryCss = `assets/${cssFiles.sort().at(-1)}`;
@@ -189,30 +234,27 @@ async function buildStaticShell() {
     throw new Error("Nenhum bundle de entrada (*.js) encontrado em assets/.");
   }
 
-  const favicon = existsSync(path.join(clientDir, "favicon.svg"))
-    ? '<link rel="icon" href="/favicon.svg" type="image/svg+xml" />'
-    : existsSync(path.join(clientDir, "favicon.ico"))
-      ? '<link rel="icon" href="/favicon.ico" />'
+  const favicon = existsSync(path.join(dir, "favicon.svg"))
+    ? '<link rel="icon" href="./favicon.svg" type="image/svg+xml" />'
+    : existsSync(path.join(dir, "favicon.ico"))
+      ? '<link rel="icon" href="./favicon.ico" />'
       : "";
-  const manifest = existsSync(path.join(clientDir, "manifest.webmanifest"))
-    ? '<link rel="manifest" href="/manifest.webmanifest" />'
-    : "";
-  const stylesheet = entryCss ? `<link rel="stylesheet" href="/${entryCss}" />` : "";
+  const stylesheet = entryCss ? `<link rel="stylesheet" href="./${entryCss}" />` : "";
 
   const html = [
     "<!DOCTYPE html>",
     '<html lang="pt-BR">',
     "  <head>",
     '    <meta charset="UTF-8" />',
+    '    <base href="./" />',
     '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />',
     "    <title>Visita SC</title>",
     favicon && `    ${favicon}`,
-    manifest && `    ${manifest}`,
     stylesheet && `    ${stylesheet}`,
     // Carregamento direto (sem import() dinâmico): falhas ficam visíveis e
     // o WebView do Capacitor não depende de um passo assíncrono extra.
-    ...preload.map((file) => `    <link rel="modulepreload" href="/${file}" />`),
-    `    <script type="module" src="/${entryJs}"></script>`,
+    ...preload.map((file) => `    <link rel="modulepreload" href="./${file}" />`),
+    `    <script type="module" src="./${entryJs}"></script>`,
     "  </head>",
     "  <body>",
     '    <div id="root"></div>',
@@ -226,29 +268,42 @@ async function buildStaticShell() {
   return { html, source: "montagem estática dos arquivos da build" };
 }
 
+/** Toda referência vira relativa: nada de caminho absoluto dentro do WebView. */
+function toRelativeAssetPaths(html) {
+  let out = html.replace(/(src|href)="\/(assets\/[^"]+)"/g, '$1="./$2"');
+  out = out.replace(/(src|href)='\/(assets\/[^']+)'/g, "$1='./$2'");
+  // O manifest do PWA não vai no pacote nativo: remover o link evita um 404.
+  out = out.replace(/<link[^>]+rel=["']manifest["'][^>]*>/gi, "");
+  if (!/<base\s/i.test(out)) {
+    out = out.replace(/<head([^>]*)>/i, '<head$1><base href="./" />');
+  }
+  return out;
+}
+
+
 /**
- * Conferência obrigatória: todo arquivo /assets/... citado na casca (e nos
+ * Conferência obrigatória: todo arquivo assets/... citado na casca (e nos
  * imports estáticos dos chunks citados) precisa existir dentro de dist-app.
- * Sem isso, um pacote incompleto vira tela branca no aparelho.
  */
 async function verifyPackagedAssets(dir, html) {
   const missing = [];
   const visited = new Set();
-  const queue = [...html.matchAll(/\/assets\/[\w./-]+\.(?:js|css)/g)].map((m) => m[0]);
+  const normalize = (ref) => ref.replace(/^\.?\//, "");
+  const queue = [...html.matchAll(/\.?\/?assets\/[\w./-]+\.(?:js|css)/g)].map((m) => normalize(m[0]));
 
   while (queue.length > 0) {
     const ref = queue.shift();
     if (visited.has(ref)) continue;
     visited.add(ref);
-    const file = path.join(dir, ref.replace(/^\//, ""));
+    const file = path.join(dir, ref);
     if (!existsSync(file)) {
       missing.push(ref);
       continue;
     }
     if (ref.endsWith(".js")) {
       const code = await readFile(file, "utf8");
-      for (const m of code.matchAll(/["'`](\/assets\/[\w./-]+\.(?:js|css))["'`]/g)) {
-        queue.push(m[1]);
+      for (const m of code.matchAll(/["'`](\.?\/assets\/[\w./-]+\.(?:js|css))["'`]/g)) {
+        queue.push(normalize(m[1]));
       }
     }
   }
@@ -256,42 +311,61 @@ async function verifyPackagedAssets(dir, html) {
   return { missing, checked: visited.size };
 }
 
-
 /**
  * Troca o `import()` dinâmico da casca por um <script type="module" src>
- * estático e pré-carrega os chunks de primeiro nível. No WebView do Capacitor
- * o import dinâmico falha silenciosamente (tela branca); o script estático
- * carrega direto e reporta erro de verdade.
+ * estático e pré-carrega os chunks de primeiro nível.
  */
 async function normalizeShell(html, dir) {
-  const re = /<script type="module"[^>]*>\s*import\(\s*["'](\/assets\/[\w./-]+\.js)["']\s*\)\s*;?\s*<\/script>/i;
+  const re =
+    /<script type="module"[^>]*>\s*import\(\s*["'](\.?\/?assets\/[\w./-]+\.js)["']\s*\)\s*;?\s*<\/script>/i;
   const match = html.match(re);
   if (!match) return html;
-  const entry = match[1];
+  const entry = match[1].replace(/^\.?\//, "");
 
   const preload = new Set();
-  const entryFile = path.join(dir, entry.replace(/^\//, ""));
+  const entryFile = path.join(dir, entry);
   if (existsSync(entryFile)) {
     const code = await readFile(entryFile, "utf8");
-    for (const m of code.matchAll(/from\s*["'](\/assets\/[\w./-]+\.js)["']/g)) preload.add(m[1]);
-    for (const m of code.matchAll(/import\s*["'](\/assets\/[\w./-]+\.js)["']/g)) preload.add(m[1]);
+    for (const m of code.matchAll(/from\s*["'](\.?\/?assets\/[\w./-]+\.js)["']/g))
+      preload.add(m[1].replace(/^\.?\//, ""));
+    for (const m of code.matchAll(/import\s*["'](\.?\/?assets\/[\w./-]+\.js)["']/g))
+      preload.add(m[1].replace(/^\.?\//, ""));
   }
 
   const links = [...preload]
-    .map((file) => `<link rel="modulepreload" href="${file}" />`)
+    .map((file) => `<link rel="modulepreload" href="./${file}" />`)
     .join("");
-  return html.replace(re, `${links}<script type="module" src="${entry}"></script>`);
+  return html.replace(re, `${links}<script type="module" src="./${entry}"></script>`);
+}
+
+/** Copia a saída escolhida para dist-app e grava a casca. */
+async function assemble(dir, shellHtml) {
+  await rm(outDir, { recursive: true, force: true });
+  await mkdir(outDir, { recursive: true });
+  await cp(dir, outDir, { recursive: true });
+  // Casca intermediária não deve ficar duplicada dentro do APK.
+  await rm(path.join(outDir, "_shell.html"), { force: true });
+  await rm(path.join(outDir, "_shell"), { recursive: true, force: true });
+  // O cache offline do site (service worker) não roda no app instalado e
+  // qualquer resíduo dele volta a causar tela branca: não vai no pacote.
+  await rm(path.join(outDir, "sw.js"), { force: true });
+  await rm(path.join(outDir, "manifest.webmanifest"), { force: true });
+
+  let html = await normalizeShell(shellHtml, outDir);
+  html = toRelativeAssetPaths(html);
+  await writeFile(path.join(outDir, "index.html"), html, "utf8");
+  return html;
 }
 
 try {
-  let shell = await readOfficialShell();
+  let shell = await readOfficialShell(clientDir);
   if (!shell) {
     try {
       shell = await captureShellFromServer();
     } catch (error) {
       console.warn(`• Servidor local indisponível (${error.message ?? error}).`);
       console.warn("• Usando a montagem estática como alternativa…");
-      shell = await buildStaticShell();
+      shell = await buildStaticShell(clientDir);
     }
   }
 
@@ -304,15 +378,8 @@ try {
     process.exit(1);
   }
 
-  await rm(outDir, { recursive: true, force: true });
-  await mkdir(outDir, { recursive: true });
-  await cp(clientDir, outDir, { recursive: true });
-  // Remove a casca intermediária para não ficar duplicada dentro do APK.
-  await rm(path.join(outDir, "_shell.html"), { force: true });
-  await rm(path.join(outDir, "_shell"), { recursive: true, force: true });
-  shell.html = await normalizeShell(shell.html, outDir);
-  await writeFile(path.join(outDir, "index.html"), shell.html, "utf8");
-
+  let usedDir = clientDir;
+  let html = await assemble(usedDir, shell.html);
 
   const files = await readdir(outDir);
   if (!files.includes("index.html")) {
@@ -320,18 +387,50 @@ try {
     process.exit(1);
   }
 
-  const { missing, checked } = await verifyPackagedAssets(outDir, shell.html);
+  let { missing, checked } = await verifyPackagedAssets(outDir, html);
+
+  // Correção automática: a casca pode ter vindo de uma build cujos arquivos
+  // estão em outra pasta candidata. Se todos os faltantes existirem lá,
+  // refazemos a cópia a partir dela e revalidamos uma única vez.
+  if (missing.length > 0) {
+    for (const candidate of otherCandidates) {
+      const allThere = missing.every((ref) => existsSync(path.join(candidate, ref)));
+      if (!allThere) continue;
+      console.warn(
+        `• Arquivos faltando em ${path.relative(root, usedDir)}; recopiando de ${path.relative(root, candidate)}…`,
+      );
+      usedDir = candidate;
+      html = await assemble(usedDir, shell.html);
+      ({ missing, checked } = await verifyPackagedAssets(outDir, html));
+      break;
+    }
+  }
+
   if (missing.length > 0) {
     console.error(
-      "✖ Arquivos citados pela casca não existem em dist-app/:\n   - " +
+      `✖ Arquivos citados pela casca (origem: ${shell.source}) não existem em dist-app/ ` +
+        `(copiado de ${path.relative(root, usedDir)}):\n   - ` +
         missing.join("\n   - ") +
-        "\n  Nada foi empacotado com segurança. Rode `npm run build` novamente e repita.",
+        "\n  Nada foi empacotado com segurança. Apague dist/ e .output/, rode `npm run build` e repita.",
     );
     process.exit(1);
   }
 
+  // Saídas antigas só somem depois do pacote ficar pronto e validado.
+  if (CLEAN_STALE) {
+    for (const other of CLIENT_DIR_CANDIDATES) {
+      if (other === usedDir) continue;
+      if (!existsSync(other)) continue;
+      await rm(other, { recursive: true, force: true });
+      console.log(`• Saída antiga removida: ${path.relative(root, other)}`);
+    }
+  }
+
   console.log(
-    `✅ Casca local pronta em dist-app/ (origem: ${shell.source}, ${(shell.html.length / 1024).toFixed(1)} KB, ${checked} arquivos conferidos).`,
+    `✅ Casca local pronta em dist-app/ (origem: ${shell.source}, copiada de ${path.relative(
+      root,
+      usedDir,
+    )}, ${(html.length / 1024).toFixed(1)} KB, ${checked} arquivos conferidos).`,
   );
 
   process.exit(0);
