@@ -150,6 +150,8 @@ async function buildStaticShell() {
 
   let entryJs = null;
   let entryCss = null;
+  /** Chunks estáticos importados pela entrada (para modulepreload). */
+  let preload = [];
 
   // Preferência 1: manifesto do Vite, que aponta a entrada exata.
   const manifestPath = path.join(assetsDir, ".vite", "manifest.json");
@@ -159,6 +161,15 @@ async function buildStaticShell() {
     if (entry?.file) {
       entryJs = entry.file.replace(/^\//, "");
       entryCss = Array.isArray(entry.css) ? entry.css[0] : null;
+      const seen = new Set();
+      const walk = (key) => {
+        const item = manifest[key];
+        if (!item || seen.has(key)) return;
+        seen.add(key);
+        if (item.file && item.file !== entry.file) preload.push(item.file.replace(/^\//, ""));
+        for (const dep of item.imports ?? []) walk(dep);
+      };
+      for (const dep of entry.imports ?? []) walk(dep);
     }
   }
 
@@ -198,10 +209,13 @@ async function buildStaticShell() {
     favicon && `    ${favicon}`,
     manifest && `    ${manifest}`,
     stylesheet && `    ${stylesheet}`,
+    // Carregamento direto (sem import() dinâmico): falhas ficam visíveis e
+    // o WebView do Capacitor não depende de um passo assíncrono extra.
+    ...preload.map((file) => `    <link rel="modulepreload" href="/${file}" />`),
+    `    <script type="module" src="/${entryJs}"></script>`,
     "  </head>",
     "  <body>",
     '    <div id="root"></div>',
-    `    <script type="module" async>import("/${entryJs}");</script>`,
     "  </body>",
     "</html>",
     "",
@@ -211,6 +225,37 @@ async function buildStaticShell() {
 
   return { html, source: "montagem estática dos arquivos da build" };
 }
+
+/**
+ * Conferência obrigatória: todo arquivo /assets/... citado na casca (e nos
+ * imports estáticos dos chunks citados) precisa existir dentro de dist-app.
+ * Sem isso, um pacote incompleto vira tela branca no aparelho.
+ */
+async function verifyPackagedAssets(dir, html) {
+  const missing = [];
+  const visited = new Set();
+  const queue = [...html.matchAll(/\/assets\/[\w./-]+\.(?:js|css)/g)].map((m) => m[0]);
+
+  while (queue.length > 0) {
+    const ref = queue.shift();
+    if (visited.has(ref)) continue;
+    visited.add(ref);
+    const file = path.join(dir, ref.replace(/^\//, ""));
+    if (!existsSync(file)) {
+      missing.push(ref);
+      continue;
+    }
+    if (ref.endsWith(".js")) {
+      const code = await readFile(file, "utf8");
+      for (const m of code.matchAll(/["'`](\/assets\/[\w./-]+\.(?:js|css))["'`]/g)) {
+        queue.push(m[1]);
+      }
+    }
+  }
+
+  return { missing, checked: visited.size };
+}
+
 
 try {
   let shell = await readOfficialShell();
