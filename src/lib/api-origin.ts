@@ -9,8 +9,8 @@
 // usuário nunca é deslogado quando a origem muda.
 
 export const API_ORIGINS = [
-  "https://www.visitasc.com.br",
   "https://visitasc.com.br",
+  "https://www.visitasc.com.br",
   "https://visita-sc.lovable.app",
 ] as const;
 
