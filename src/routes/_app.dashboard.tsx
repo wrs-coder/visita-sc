@@ -246,7 +246,7 @@ function Dashboard() {
   const [coupleUnread, setCoupleUnread] = useState(0);
 
   const loadCouple = useCallback(async () => {
-    if (role !== "superintendent") return;
+    if (!user || role !== "superintendent") return;
     try {
       const r = await listCoupleFn();
       if (r.ok) {
@@ -256,7 +256,7 @@ function Dashboard() {
     } catch (err) {
       console.warn("[dashboard] couple load failed", err);
     }
-  }, [listCoupleFn, role]);
+  }, [listCoupleFn, role, user]);
 
   useEffect(() => {
     loadCouple();
