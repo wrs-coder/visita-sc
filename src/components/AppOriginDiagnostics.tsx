@@ -2,34 +2,68 @@
 // Se a casca abrir mas nenhum dos endereços publicados responder, mostra um
 // aviso claro com botão "tentar novamente" — em vez de tela vazia.
 // No site (navegador) o componente não faz nada.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw, WifiOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { isNativeApp, resolveBestApiOrigin } from "@/lib/api-origin";
 
+// Só avisa depois de duas falhas seguidas, para não assustar por uma
+// oscilação momentânea de rede.
+const FAILURES_BEFORE_WARNING = 2;
+const RETRY_DELAY_MS = 10000;
+
 export function AppOriginDiagnostics() {
   const [unreachable, setUnreachable] = useState(false);
   const [checking, setChecking] = useState(false);
+  const failures = useRef(0);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const check = useCallback(async () => {
     if (!isNativeApp()) return;
     setChecking(true);
     try {
       const origin = await resolveBestApiOrigin();
-      setUnreachable(origin === null);
+      if (origin) {
+        failures.current = 0;
+        setUnreachable(false);
+      } else {
+        failures.current += 1;
+        setUnreachable(failures.current >= FAILURES_BEFORE_WARNING);
+      }
     } catch {
-      setUnreachable(true);
+      failures.current += 1;
+      setUnreachable(failures.current >= FAILURES_BEFORE_WARNING);
     } finally {
       setChecking(false);
     }
   }, []);
 
   useEffect(() => {
-    void check();
-    const onOnline = () => void check();
+    let cancelled = false;
+
+    const schedule = () => {
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+      retryTimer.current = setTimeout(run, RETRY_DELAY_MS);
+    };
+
+    const run = async () => {
+      if (cancelled) return;
+      await check();
+      if (!cancelled && failures.current > 0) schedule();
+    };
+
+    void run();
+    const onOnline = () => {
+      failures.current = 0;
+      void run();
+    };
     window.addEventListener("online", onOnline);
-    return () => window.removeEventListener("online", onOnline);
+    return () => {
+      cancelled = true;
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+      window.removeEventListener("online", onOnline);
+    };
   }, [check]);
 
   if (!unreachable) return null;

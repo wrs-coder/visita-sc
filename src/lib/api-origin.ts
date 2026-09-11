@@ -15,8 +15,11 @@ export const API_ORIGINS = [
 ] as const;
 
 const STORAGE_KEY = "visitasc.api-origin";
-const PROBE_PATH = "/manifest.webmanifest";
-const PROBE_TIMEOUT_MS = 4000;
+// Endpoint próprio do servidor (autoriza a chamada vinda do app). Arquivos
+// estáticos como o manifest são servidos pela hospedagem sem essa autorização,
+// então nunca servem como teste de conexão.
+const PROBE_PATH = "/api/public/ping";
+const PROBE_TIMEOUT_MS = 8000;
 
 let currentOrigin: string | null = null;
 
@@ -87,35 +90,45 @@ export function resolveApiUrl(input: string, origin = getApiOrigin()): string {
   return origin + (input.startsWith("/") ? input : `/${input}`);
 }
 
-async function probe(origin: string): Promise<boolean> {
+/**
+ * Qualquer resposta HTTP conta como "servidor acessível" — inclusive erros.
+ * Só falha de rede/timeout significa offline.
+ */
+async function probe(origin: string): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   try {
-    const res = await fetch(origin + PROBE_PATH, {
+    await fetch(origin + PROBE_PATH, {
       method: "GET",
       cache: "no-store",
       signal: controller.signal,
     });
-    return res.ok;
-  } catch {
-    return false;
+    return origin;
   } finally {
     clearTimeout(timer);
   }
 }
 
 /**
- * Testa as origens em ordem e memoriza a primeira que responder.
- * Retorna null se nenhuma responder (offline) — o app continua funcionando
- * com o cache local.
+ * Testa todas as origens em paralelo e memoriza a primeira que responder
+ * (a preferida ganha um pequeno adiantamento). Retorna null se nenhuma
+ * responder (offline) — o app continua funcionando com o cache local.
  */
 export async function resolveBestApiOrigin(): Promise<string | null> {
   if (!isNativeApp()) return null;
-  for (const origin of orderedOrigins()) {
-    if (await probe(origin)) {
-      setApiOrigin(origin);
-      return origin;
-    }
+  const list = orderedOrigins();
+  const attempts = list.map((origin, index) =>
+    index === 0
+      ? probe(origin)
+      : new Promise<string>((resolve, reject) => {
+          setTimeout(() => probe(origin).then(resolve, reject), index * 250);
+        }),
+  );
+  try {
+    const winner = await Promise.any(attempts);
+    setApiOrigin(winner);
+    return winner;
+  } catch {
+    return null;
   }
-  return null;
 }
