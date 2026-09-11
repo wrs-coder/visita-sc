@@ -27,8 +27,18 @@ Nada muda no site publicado, no banco de dados, no login, na sincronização off
   - `verifyPackagedAssets`: manter a normalização atual da barra inicial; ao encontrar faltantes, tentar `resolveFromOtherCandidates()` — se todos os faltantes existirem em outro candidato, refazer `cp` e revalidar uma única vez; caso contrário `process.exit(1)` com a lista.
   - `normalizeShell` / `buildStaticShell`: emitir `<base href="./">` e reescrever `href`/`src` de `/assets/...` para `./assets/...`, inclusive nos `modulepreload`.
 - `package.json`: sem alteração de comandos; `app:package` continua `build` + `app:shell`.
-- Sem mudança em `vite.config.ts`, `capacitor.config.ts`, versão ou `versionCode`.
+- Sem mudança em `vite.config.ts` nem em `capacitor.config.ts`.
+
+## Outros ajustes necessários (conferidos agora)
+
+Além do empacotamento, só faltam dois detalhes pequenos; o resto já está correto.
+
+1. **Tirar o arquivo de cache offline de dentro do aplicativo.** A pasta do aplicativo ainda leva o `sw.js` do site. Ele não é ativado no aparelho (a proteção já foi feita), mas basta um resíduo antigo para reaparecer o problema de tela branca. O script passa a apagar `sw.js` e o `manifest.webmanifest` de `dist-app`.
+2. **Subir a versão para 4.1.2 (`versionCode` 5)** em `package.json` e `android/app/build.gradle`, para a Play Store aceitar o novo envio e o aparelho substituir a instalação anterior.
+
+Já verificado e correto, sem mudanças: identificação do aplicativo (`com.waorodrigues.visitasc`), navegação liberada apenas para os três endereços publicados e o serviço de dados, escolha automática do endereço que responde, e a proteção que impede o cache offline de rodar dentro do aplicativo instalado.
 
 ## Depois de aprovado
 
 Rodar `npm run android:release:apk` (ou `:aab`) e conferir no log qual pasta de saída foi usada e a contagem de arquivos conferidos.
+
