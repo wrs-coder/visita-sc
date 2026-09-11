@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PwaRegister } from "@/components/PwaRegister";
 import { OfflineStatusBar } from "@/components/OfflineStatusBar";
+import { AppOriginDiagnostics } from "@/components/AppOriginDiagnostics";
 import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-persister";
 import { flushQueue, startOfflineQueueAutoRetry } from "@/lib/offline-queue";
 import { ensureFreshSession } from "@/lib/session-ready";
@@ -243,6 +244,7 @@ function RootComponent() {
       <AuthProvider>
         <PwaRegister />
         <OfflineStatusBar />
+        <AppOriginDiagnostics />
         <Outlet />
         <Toaster richColors position="top-center" />
       </AuthProvider>

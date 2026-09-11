@@ -229,9 +229,23 @@ npm run android:release:apk  # APK de teste interno
 npm run android:release:aab  # AAB para a Play Store
 ```
 
-`npm run app:package` roda `npm run build` e depois `npm run app:shell`, que
-sobe a build localmente, captura o HTML inicial e escreve `dist-app/`
-(pasta usada pelo Capacitor via `webDir`).
+`npm run app:package` roda `npm run build` e depois `npm run app:shell`, que:
+
+1. localiza a saída do cliente (`dist/client` ou `.output/public`);
+2. sobe a **build** com `wrangler dev` dentro de `dist/server` (nunca o
+   `wrangler.jsonc` da raiz, que aponta para o código-fonte) e captura o HTML
+   inicial de `/`;
+3. **valida** o HTML (precisa começar com `<!DOCTYPE html>`, ter
+   `<script type="module">` e referenciar `/assets/`). Se falhar, o comando
+   aborta com erro — nada é empacotado;
+4. escreve `dist-app/` (pasta usada pelo Capacitor via `webDir`).
+
+Se a casca sair inválida, a mensagem de erro traz o log do servidor local.
+Nunca copie arquivos manualmente para `dist-app/`: rode `npm run app:package`.
+
+> Nota: o prerender oficial de SPA shell do TanStack Start não é usado aqui —
+> ele espera `dist/server/server.js`, que o preset Cloudflare não gera.
+
 
 ### Endereço de dados
 
