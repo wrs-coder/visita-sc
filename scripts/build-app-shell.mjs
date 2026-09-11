@@ -83,11 +83,20 @@ async function captureShellFromServer() {
     );
   }
   console.log(`• Renderizando a casca a partir de ${path.relative(root, serverDir)}…`);
-  const server = spawn(
-    "npx",
-    ["wrangler", "dev", "--cwd", serverDir, "--port", String(PORT), "--local"],
-    { cwd: root, stdio: ["ignore", "pipe", "pipe"] },
-  );
+
+  // O wrangler recusa rodar quando encontra o "deploy config" gerado na raiz
+  // junto com o wrangler.json da build. Ele é recriado a cada build, então
+  // pode ser removido com segurança aqui.
+  const deployConfig = path.join(root, ".wrangler", "deploy", "config.json");
+  await rm(deployConfig, { force: true });
+
+  const logs = [];
+  const server = spawn("npx", ["wrangler", "dev", "--port", String(PORT), "--local"], {
+    cwd: serverDir,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  server.stdout.on("data", (d) => logs.push(String(d)));
+  server.stderr.on("data", (d) => logs.push(String(d)));
 
   const stop = () => {
     try {
@@ -109,7 +118,7 @@ async function captureShellFromServer() {
         if (res.ok) {
           const type = res.headers.get("content-type") ?? "";
           const html = await res.text();
-          if (type.includes("text/html")) return { html, source: "wrangler dev /" };
+          if (type.includes("text/html")) return { html, source: "servidor local da build" };
           console.warn(`• Resposta inesperada (${type}); tentando de novo…`);
         }
       } catch {
@@ -117,11 +126,13 @@ async function captureShellFromServer() {
       }
       await new Promise((r) => setTimeout(r, 2000));
     }
-    throw new Error("O servidor local não respondeu HTML a tempo.");
+    console.error(logs.join("").slice(-2000));
+    throw new Error("O servidor local não respondeu HTML a tempo (log acima).");
   } finally {
     stop();
   }
 }
+
 
 try {
   const shell = (await readOfficialShell()) ?? (await captureShellFromServer());
