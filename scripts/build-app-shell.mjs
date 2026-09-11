@@ -257,6 +257,32 @@ async function verifyPackagedAssets(dir, html) {
 }
 
 
+/**
+ * Troca o `import()` dinâmico da casca por um <script type="module" src>
+ * estático e pré-carrega os chunks de primeiro nível. No WebView do Capacitor
+ * o import dinâmico falha silenciosamente (tela branca); o script estático
+ * carrega direto e reporta erro de verdade.
+ */
+async function normalizeShell(html, dir) {
+  const re = /<script type="module"[^>]*>\s*import\(\s*["'](\/assets\/[\w./-]+\.js)["']\s*\)\s*;?\s*<\/script>/i;
+  const match = html.match(re);
+  if (!match) return html;
+  const entry = match[1];
+
+  const preload = new Set();
+  const entryFile = path.join(dir, entry.replace(/^\//, ""));
+  if (existsSync(entryFile)) {
+    const code = await readFile(entryFile, "utf8");
+    for (const m of code.matchAll(/from\s*["'](\/assets\/[\w./-]+\.js)["']/g)) preload.add(m[1]);
+    for (const m of code.matchAll(/import\s*["'](\/assets\/[\w./-]+\.js)["']/g)) preload.add(m[1]);
+  }
+
+  const links = [...preload]
+    .map((file) => `<link rel="modulepreload" href="${file}" />`)
+    .join("");
+  return html.replace(re, `${links}<script type="module" src="${entry}"></script>`);
+}
+
 try {
   let shell = await readOfficialShell();
   if (!shell) {
@@ -284,7 +310,9 @@ try {
   // Remove a casca intermediária para não ficar duplicada dentro do APK.
   await rm(path.join(outDir, "_shell.html"), { force: true });
   await rm(path.join(outDir, "_shell"), { recursive: true, force: true });
+  shell.html = await normalizeShell(shell.html, outDir);
   await writeFile(path.join(outDir, "index.html"), shell.html, "utf8");
+
 
   const files = await readdir(outDir);
   if (!files.includes("index.html")) {
