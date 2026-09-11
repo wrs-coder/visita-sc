@@ -18,6 +18,23 @@ import path from "node:path";
 
 const root = process.cwd();
 const outDir = path.join(root, "dist-app");
+
+/**
+ * No Windows, OneDrive/antivírus/processos recém-encerrados seguram arquivos
+ * por alguns instantes (EBUSY/EPERM/ENOTEMPTY). Aguarda e tenta de novo.
+ */
+async function rmWithRetries(target, options = {}, tentativas = 5) {
+  const opts = { force: true, ...options };
+  for (let i = 0; ; i++) {
+    try {
+      return await rm(target, opts);
+    } catch (error) {
+      const code = error?.code ?? "";
+      if (!["EBUSY", "EPERM", "ENOTEMPTY"].includes(code) || i >= tentativas - 1) throw error;
+      await new Promise((r) => setTimeout(r, 300 * 2 ** i));
+    }
+  }
+}
 const PORT = Number(process.env.SHELL_PORT ?? 8788);
 const CLEAN_STALE = !process.argv.includes("--no-clean-stale");
 
