@@ -292,9 +292,20 @@ try {
     process.exit(1);
   }
 
+  const { missing, checked } = await verifyPackagedAssets(outDir, shell.html);
+  if (missing.length > 0) {
+    console.error(
+      "✖ Arquivos citados pela casca não existem em dist-app/:\n   - " +
+        missing.join("\n   - ") +
+        "\n  Nada foi empacotado com segurança. Rode `npm run build` novamente e repita.",
+    );
+    process.exit(1);
+  }
+
   console.log(
-    `✅ Casca local pronta em dist-app/ (origem: ${shell.source}, ${(shell.html.length / 1024).toFixed(1)} KB).`,
+    `✅ Casca local pronta em dist-app/ (origem: ${shell.source}, ${(shell.html.length / 1024).toFixed(1)} KB, ${checked} arquivos conferidos).`,
   );
+
   process.exit(0);
 } catch (error) {
   console.error("✖ Falha ao gerar a casca local:", error);
