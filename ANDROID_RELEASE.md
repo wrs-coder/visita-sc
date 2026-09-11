@@ -235,13 +235,19 @@ npm run android:release:aab  # AAB para a Play Store
 2. sobe a **build** com `wrangler dev` dentro de `dist/server` (nunca o
    `wrangler.jsonc` da raiz, que aponta para o código-fonte) e captura o HTML
    inicial de `/`;
-3. **valida** o HTML (precisa começar com `<!DOCTYPE html>`, ter
+3. se o servidor local não subir (por exemplo, no Windows, onde `npx` é um
+   `.cmd`), **monta a casca estaticamente** a partir dos arquivos já gerados:
+   localiza o bundle de entrada em `assets/` (manifesto do Vite ou
+   `index-*.js`) e escreve um `index.html` completo com os links de CSS, ícone
+   e manifesto;
+4. **valida** o HTML (precisa começar com `<!DOCTYPE html>`, ter
    `<script type="module">` e referenciar `/assets/`). Se falhar, o comando
    aborta com erro — nada é empacotado;
-4. escreve `dist-app/` (pasta usada pelo Capacitor via `webDir`).
+5. escreve `dist-app/` (pasta usada pelo Capacitor via `webDir`).
 
-Se a casca sair inválida, a mensagem de erro traz o log do servidor local.
-Nunca copie arquivos manualmente para `dist-app/`: rode `npm run app:package`.
+No Windows, Linux ou macOS, o processo é o mesmo e não exige passos manuais:
+basta rodar `npm run android:release:apk` ou `npm run android:release:aab`.
+Nunca copie arquivos manualmente para `dist-app/`.
 
 > Nota: o prerender oficial de SPA shell do TanStack Start não é usado aqui —
 > ele espera `dist/server/server.js`, que o preset Cloudflare não gera.
