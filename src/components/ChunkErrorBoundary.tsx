@@ -13,10 +13,33 @@ interface State {
 const CHUNK_REGEX =
   /failed to fetch dynamically imported module|loading chunk|chunkloaderror|importing a module script failed/i;
 
+const RECOVER_KEY = "visita-sc:chunk-recover";
+
+async function purgeCaches() {
+  if (typeof window === "undefined") return;
+  try {
+    if ("serviceWorker" in navigator) {
+      const rs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(rs.map((r) => r.unregister().catch(() => undefined)));
+    }
+  } catch {
+    /* noop */
+  }
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => /^(html|static)-/.test(k)).map((k) => caches.delete(k)));
+    }
+  } catch {
+    /* noop */
+  }
+}
+
 function isChunkError(err: unknown): boolean {
   const msg = String((err as { message?: string })?.message ?? err ?? "");
   return CHUNK_REGEX.test(msg);
 }
+
 
 function FallbackUI({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation();
@@ -50,17 +73,35 @@ export class ChunkErrorBoundary extends Component<{ children: ReactNode }, State
   componentDidCatch(error: Error, info: ErrorInfo) {
     if (isChunkError(error)) {
       console.warn("[ChunkErrorBoundary] chunk load falhou:", error.message, info.componentStack);
+      // Rede de segurança: limpa caches de casca e recarrega UMA vez.
+      void this.autoRecoverOnce();
     } else {
       // Non-chunk errors: log but rethrow so o errorComponent global trate.
       console.error("[ChunkErrorBoundary] non-chunk error:", error);
     }
   }
 
+  autoRecoverOnce = async () => {
+    if (typeof window === "undefined") return;
+    try {
+      if (sessionStorage.getItem(RECOVER_KEY) === "1") return;
+      sessionStorage.setItem(RECOVER_KEY, "1");
+    } catch {
+      return;
+    }
+    await purgeCaches();
+    window.location.replace("/");
+  };
+
   handleRetry = () => {
     // Para chunks ausentes, reload é o caminho mais confiável.
-    if (typeof window !== "undefined") window.location.reload();
-    else this.setState({ hasError: false, isChunkError: false, error: null });
+    if (typeof window !== "undefined") {
+      void purgeCaches().then(() => window.location.reload());
+    } else {
+      this.setState({ hasError: false, isChunkError: false, error: null });
+    }
   };
+
 
   render() {
     if (this.state.hasError) {

@@ -150,6 +150,8 @@ async function buildStaticShell() {
 
   let entryJs = null;
   let entryCss = null;
+  /** Chunks estáticos importados pela entrada (para modulepreload). */
+  let preload = [];
 
   // Preferência 1: manifesto do Vite, que aponta a entrada exata.
   const manifestPath = path.join(assetsDir, ".vite", "manifest.json");
@@ -159,6 +161,15 @@ async function buildStaticShell() {
     if (entry?.file) {
       entryJs = entry.file.replace(/^\//, "");
       entryCss = Array.isArray(entry.css) ? entry.css[0] : null;
+      const seen = new Set();
+      const walk = (key) => {
+        const item = manifest[key];
+        if (!item || seen.has(key)) return;
+        seen.add(key);
+        if (item.file && item.file !== entry.file) preload.push(item.file.replace(/^\//, ""));
+        for (const dep of item.imports ?? []) walk(dep);
+      };
+      for (const dep of entry.imports ?? []) walk(dep);
     }
   }
 
@@ -198,10 +209,13 @@ async function buildStaticShell() {
     favicon && `    ${favicon}`,
     manifest && `    ${manifest}`,
     stylesheet && `    ${stylesheet}`,
+    // Carregamento direto (sem import() dinâmico): falhas ficam visíveis e
+    // o WebView do Capacitor não depende de um passo assíncrono extra.
+    ...preload.map((file) => `    <link rel="modulepreload" href="/${file}" />`),
+    `    <script type="module" src="/${entryJs}"></script>`,
     "  </head>",
     "  <body>",
     '    <div id="root"></div>',
-    `    <script type="module" async>import("/${entryJs}");</script>`,
     "  </body>",
     "</html>",
     "",
@@ -210,6 +224,63 @@ async function buildStaticShell() {
     .join("\n");
 
   return { html, source: "montagem estática dos arquivos da build" };
+}
+
+/**
+ * Conferência obrigatória: todo arquivo /assets/... citado na casca (e nos
+ * imports estáticos dos chunks citados) precisa existir dentro de dist-app.
+ * Sem isso, um pacote incompleto vira tela branca no aparelho.
+ */
+async function verifyPackagedAssets(dir, html) {
+  const missing = [];
+  const visited = new Set();
+  const queue = [...html.matchAll(/\/assets\/[\w./-]+\.(?:js|css)/g)].map((m) => m[0]);
+
+  while (queue.length > 0) {
+    const ref = queue.shift();
+    if (visited.has(ref)) continue;
+    visited.add(ref);
+    const file = path.join(dir, ref.replace(/^\//, ""));
+    if (!existsSync(file)) {
+      missing.push(ref);
+      continue;
+    }
+    if (ref.endsWith(".js")) {
+      const code = await readFile(file, "utf8");
+      for (const m of code.matchAll(/["'`](\/assets\/[\w./-]+\.(?:js|css))["'`]/g)) {
+        queue.push(m[1]);
+      }
+    }
+  }
+
+  return { missing, checked: visited.size };
+}
+
+
+/**
+ * Troca o `import()` dinâmico da casca por um <script type="module" src>
+ * estático e pré-carrega os chunks de primeiro nível. No WebView do Capacitor
+ * o import dinâmico falha silenciosamente (tela branca); o script estático
+ * carrega direto e reporta erro de verdade.
+ */
+async function normalizeShell(html, dir) {
+  const re = /<script type="module"[^>]*>\s*import\(\s*["'](\/assets\/[\w./-]+\.js)["']\s*\)\s*;?\s*<\/script>/i;
+  const match = html.match(re);
+  if (!match) return html;
+  const entry = match[1];
+
+  const preload = new Set();
+  const entryFile = path.join(dir, entry.replace(/^\//, ""));
+  if (existsSync(entryFile)) {
+    const code = await readFile(entryFile, "utf8");
+    for (const m of code.matchAll(/from\s*["'](\/assets\/[\w./-]+\.js)["']/g)) preload.add(m[1]);
+    for (const m of code.matchAll(/import\s*["'](\/assets\/[\w./-]+\.js)["']/g)) preload.add(m[1]);
+  }
+
+  const links = [...preload]
+    .map((file) => `<link rel="modulepreload" href="${file}" />`)
+    .join("");
+  return html.replace(re, `${links}<script type="module" src="${entry}"></script>`);
 }
 
 try {
@@ -239,7 +310,9 @@ try {
   // Remove a casca intermediária para não ficar duplicada dentro do APK.
   await rm(path.join(outDir, "_shell.html"), { force: true });
   await rm(path.join(outDir, "_shell"), { recursive: true, force: true });
+  shell.html = await normalizeShell(shell.html, outDir);
   await writeFile(path.join(outDir, "index.html"), shell.html, "utf8");
+
 
   const files = await readdir(outDir);
   if (!files.includes("index.html")) {
@@ -247,9 +320,20 @@ try {
     process.exit(1);
   }
 
+  const { missing, checked } = await verifyPackagedAssets(outDir, shell.html);
+  if (missing.length > 0) {
+    console.error(
+      "✖ Arquivos citados pela casca não existem em dist-app/:\n   - " +
+        missing.join("\n   - ") +
+        "\n  Nada foi empacotado com segurança. Rode `npm run build` novamente e repita.",
+    );
+    process.exit(1);
+  }
+
   console.log(
-    `✅ Casca local pronta em dist-app/ (origem: ${shell.source}, ${(shell.html.length / 1024).toFixed(1)} KB).`,
+    `✅ Casca local pronta em dist-app/ (origem: ${shell.source}, ${(shell.html.length / 1024).toFixed(1)} KB, ${checked} arquivos conferidos).`,
   );
+
   process.exit(0);
 } catch (error) {
   console.error("✖ Falha ao gerar a casca local:", error);
