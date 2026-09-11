@@ -68,12 +68,26 @@ async function readOfficialShell() {
   return null;
 }
 
+const SERVER_DIR_CANDIDATES = [
+  path.join(root, "dist", "server"),
+  path.join(root, ".output", "server"),
+];
+
 async function captureShellFromServer() {
-  console.log("• Casca oficial ausente — usando a captura pelo servidor local (reserva).");
-  const server = spawn("npx", ["wrangler", "dev", "--port", String(PORT), "--local"], {
-    cwd: root,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  // Importante: o wrangler precisa rodar sobre a BUILD (dist/server/wrangler.json),
+  // e não sobre o wrangler.jsonc da raiz, que aponta para o código-fonte.
+  const serverDir = SERVER_DIR_CANDIDATES.find((dir) => existsSync(path.join(dir, "wrangler.json")));
+  if (!serverDir) {
+    throw new Error(
+      "Build do servidor não encontrada (dist/server/wrangler.json). Rode `npm run build` antes.",
+    );
+  }
+  console.log(`• Renderizando a casca a partir de ${path.relative(root, serverDir)}…`);
+  const server = spawn(
+    "npx",
+    ["wrangler", "dev", "--cwd", serverDir, "--port", String(PORT), "--local"],
+    { cwd: root, stdio: ["ignore", "pipe", "pipe"] },
+  );
 
   const stop = () => {
     try {
