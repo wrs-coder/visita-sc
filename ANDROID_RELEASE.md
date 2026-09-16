@@ -300,3 +300,18 @@ novo domínio, inclua-o nos dois arquivos.
 1. Instalar o APK de teste em um aparelho real.
 2. Abrir o app em modo avião: a tela inicial deve carregar (dados em cache).
 3. Reativar a internet: login, cronograma e esboços devem sincronizar.
+
+---
+
+## 8. Domínio principal vs. contingências do app
+
+Quando `visitasc.com.br` está definido como domínio **principal**, os endereços
+`www.visitasc.com.br` e `visita-sc.lovable.app` respondem **302** para ele —
+inclusive em `/api/public/ping`. O redirecionamento não carrega autorização
+CORS, então essas origens não funcionam como contingência dentro do APK/AAB.
+
+- A partir da versão **4.1.5**, a sonda de conexão descarta automaticamente
+  origens que redirecionam (`redirect: "manual"`).
+- Recomendado: **remover o domínio principal** (Project Settings → Domains →
+  ⋯ → *Unset as primary*) para que os três endereços respondam diretamente e o
+  app tenha três contingências reais.
