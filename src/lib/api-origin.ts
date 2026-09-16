@@ -105,9 +105,12 @@ export function resolveApiUrl(input: string, origin = getApiOrigin()): string {
 }
 
 /**
- * Só aceita o status exclusivo do endpoint de saúde. O cabeçalho de identidade
- * reforça a validação após a publicação, mas não é obrigatório durante uma
- * atualização gradual entre versões do servidor e do APK.
+ * Só aceita o status exclusivo do endpoint de saúde respondido DIRETAMENTE.
+ * Origens que redirecionam (302 para o domínio principal) são rejeitadas:
+ * o redirecionamento não carrega autorização CORS e a chamada seria bloqueada
+ * na WebView. `redirect: "manual"` evita seguir o 302 e expõe o redirecionamento
+ * como `opaqueredirect`, permitindo descartar essa origem e escolher uma que
+ * responda de verdade.
  */
 async function probe(origin: string): Promise<string> {
   const controller = new AbortController();
@@ -116,12 +119,17 @@ async function probe(origin: string): Promise<string> {
     const response = await fetch(origin + PROBE_PATH, {
       method: "GET",
       cache: "no-store",
+      redirect: "manual",
       signal: controller.signal,
     });
-    if (response.status !== 204) {
-      throw new Error(`Servidor incompatível em ${origin}`);
+    if (response.status === 204) return origin;
+    if (
+      response.type === "opaqueredirect" ||
+      (response.status >= 300 && response.status < 400)
+    ) {
+      throw new Error(`${origin} redireciona para outro domínio`);
     }
-    return origin;
+    throw new Error(`Servidor incompatível em ${origin}`);
   } finally {
     clearTimeout(timer);
   }
