@@ -11,6 +11,7 @@ import {
   isNativeApp,
   resolveApiUrl,
   resolveBestApiOrigin,
+  setApiOrigin,
 } from "@/lib/api-origin";
 import { corsHeaders, isAllowedOrigin } from "@/lib/cors";
 
@@ -93,11 +94,13 @@ const apiFetch: typeof fetch = async (input, init) => {
     const abortFromCaller = () => controller.abort();
     init?.signal?.addEventListener("abort", abortFromCaller, { once: true });
     try {
-      return await fetch(withOrigin(input, origin), {
+      const response = await fetch(withOrigin(input, origin), {
         ...init,
         credentials: "omit",
         signal: controller.signal,
       });
+      setApiOrigin(origin);
+      return response;
     } catch (error) {
       firstError ??= error;
       invalidateApiOrigin();
