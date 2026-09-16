@@ -104,13 +104,24 @@ export function resolveApiUrl(input: string, origin = getApiOrigin()): string {
   return origin + (input.startsWith("/") ? input : `/${input}`);
 }
 
+/** Verdadeiro quando a resposta veio de outro domínio (redirecionamento). */
+export function isCrossHostRedirect(origin: string, responseUrl: string): boolean {
+  if (!responseUrl) return false;
+  try {
+    return new URL(responseUrl).host !== new URL(origin).host;
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Só aceita o status exclusivo do endpoint de saúde respondido DIRETAMENTE.
- * Origens que redirecionam (302 para o domínio principal) são rejeitadas:
- * o redirecionamento não carrega autorização CORS e a chamada seria bloqueada
- * na WebView. `redirect: "manual"` evita seguir o 302 e expõe o redirecionamento
- * como `opaqueredirect`, permitindo descartar essa origem e escolher uma que
- * responda de verdade.
+ * Confirma que a origem responde diretamente ao endpoint de saúde.
+ *
+ * Não usamos `redirect: "manual"`: esse modo falha em várias versões do
+ * navegador interno do Android (WebView), derrubando o teste mesmo com
+ * internet perfeita. Em vez disso seguimos o redirecionamento normalmente e
+ * comparamos o endereço final da resposta — se mudou de domínio, a origem é
+ * descartada, porque o redirecionamento não carrega a autorização CORS.
  */
 async function probe(origin: string): Promise<string> {
   const controller = new AbortController();
@@ -119,20 +130,38 @@ async function probe(origin: string): Promise<string> {
     const response = await fetch(origin + PROBE_PATH, {
       method: "GET",
       cache: "no-store",
-      redirect: "manual",
       signal: controller.signal,
     });
-    if (response.status === 204) return origin;
-    if (
-      response.type === "opaqueredirect" ||
-      (response.status >= 300 && response.status < 400)
-    ) {
+    if (isCrossHostRedirect(origin, response.url)) {
       throw new Error(`${origin} redireciona para outro domínio`);
     }
-    throw new Error(`Servidor incompatível em ${origin}`);
+    if (response.status === 204 || response.ok) return origin;
+    throw new Error(`Servidor indisponível em ${origin} (${response.status})`);
   } finally {
     clearTimeout(timer);
   }
+}
+
+export type OriginProbeResult = { origin: string; ok: boolean; detail: string };
+
+/** Testa todas as origens e devolve o resultado de cada uma (diagnóstico). */
+export async function probeAllOrigins(): Promise<OriginProbeResult[]> {
+  return Promise.all(
+    orderedOrigins().map(async (origin) => {
+      try {
+        await probe(origin);
+        return { origin, ok: true, detail: "respondeu" };
+      } catch (error) {
+        const detail =
+          error instanceof DOMException && error.name === "AbortError"
+            ? "sem resposta (tempo esgotado)"
+            : error instanceof Error
+              ? error.message
+              : "falha de rede";
+        return { origin, ok: false, detail };
+      }
+    }),
+  );
 }
 
 /**

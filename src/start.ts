@@ -78,13 +78,16 @@ function withOrigin(input: RequestInfo | URL, origin: string): RequestInfo | URL
 const apiFetch: typeof fetch = async (input, init) => {
   if (!isNativeApp()) return fetch(input, init);
 
-  // Antes de qualquer RPC, confirma qual publicação realmente está servindo
-  // esta aplicação. Assim uma origem antiga memorizada nunca prende o login.
-  const resolvedOrigin = await resolveBestApiOrigin();
-  if (!resolvedOrigin) throw new TypeError("Nenhum servidor do Visita SC está acessível");
+  // Antes de qualquer RPC, tenta confirmar qual publicação está servindo o app.
+  // Se o teste não conseguir decidir (aparelhos onde ele falha mesmo com
+  // internet), NÃO desistimos: tentamos de verdade cada endereço publicado.
+  const resolvedOrigin = await resolveBestApiOrigin().catch(() => null);
+  const attempts = resolvedOrigin
+    ? apiOriginAttempts(resolvedOrigin)
+    : apiOriginAttempts(getApiOrigin());
 
   let firstError: unknown = null;
-  for (const origin of apiOriginAttempts(resolvedOrigin)) {
+  for (const origin of attempts) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
     const abortFromCaller = () => controller.abort();
