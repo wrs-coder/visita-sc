@@ -55,3 +55,20 @@ nem apaga a sessão do usuário.
 | `npm run android:build` | `build` + `cap sync android` |
 | `npm run android:run` | Build + sync + abre Android Studio |
 | `npm run cap:open:android` | Abre o projeto Android no Android Studio |
+
+## Domínio principal e redirecionamento (importante)
+
+Se um dos domínios estiver definido como **principal** nas configurações do
+projeto, os demais respondem **302 (redirecionamento)** — inclusive em
+`/api/public/ping`. Esse redirecionamento não carrega autorização de acesso
+(CORS), então a WebView bloqueia a chamada: a origem que redireciona deixa de
+servir como contingência do app.
+
+Por isso:
+
+- A sonda de conexão (`src/lib/api-origin.ts`) usa `redirect: "manual"` e
+  **descarta origens que redirecionam**, escolhendo apenas as que respondem
+  diretamente.
+- Para ter as três contingências reais (`visitasc.com.br`,
+  `www.visitasc.com.br`, `visita-sc.lovable.app`), mantenha **nenhum domínio
+  como principal** (Project Settings → Domains → ⋯ → *Unset as primary*).
