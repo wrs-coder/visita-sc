@@ -96,6 +96,20 @@ export function PinSetupDialog({ open, onOpenChange, onCreated }: Props) {
         label,
       );
       toast.success(t("offlinePin.created"));
+
+      if (bioSupported && useBio) {
+        const key = getUnlockedContentKey(s.user.id);
+        if (key) {
+          try {
+            await enableBiometric(key, t("offlinePin.biometricReason"));
+            await setVaultBiometricFlag(true);
+            toast.success(t("offlinePin.biometricEnabled"));
+          } catch {
+            toast.warning(t("offlinePin.biometricNotEnabled"));
+          }
+        }
+      }
+
       setPin("");
       setConfirm("");
       onOpenChange(false);
