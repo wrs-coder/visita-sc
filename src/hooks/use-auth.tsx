@@ -218,6 +218,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // distinguir um logout real do botão "Sair" de um SIGNED_OUT espúrio
     // disparado por refresh-token vencido.
     try { sessionStorage.setItem("visita-sc:logout-intent", "1"); } catch { /* noop */ }
+    // Sair do aplicativo apaga o cofre de acesso offline deste aparelho.
+    try { await clearVault(); } catch { /* noop */ }
     await supabase.auth.signOut();
   };
 
