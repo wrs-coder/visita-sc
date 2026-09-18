@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,10 +15,25 @@ import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { useConnectionMode, setMode } from "@/lib/connection-mode";
+import { PinUnlockPanel } from "@/components/auth/PinUnlockPanel";
+import { PinSetupDialog } from "@/components/auth/PinSetupDialog";
+import { getVaultMeta, isVaultExpired, type VaultMeta } from "@/lib/offline-credentials";
 
-const APP_VERSION = "4.1.4";
-const APP_BUILD = "2026.09.11";
-const APP_UPDATED_AT = "11/09/2026";
+const APP_VERSION = "4.2.0";
+const APP_BUILD = "2026.09.18";
+const APP_UPDATED_AT = "18/09/2026";
+
+const PIN_PROMPT_SKIP_KEY = "visita-sc:pin-prompt-skipped-at";
+const PIN_PROMPT_SKIP_MS = 7 * 24 * 60 * 60 * 1000;
+
+function pinPromptSkipped(): boolean {
+  try {
+    const raw = localStorage.getItem(PIN_PROMPT_SKIP_KEY);
+    return !!raw && Date.now() - Number(raw) < PIN_PROMPT_SKIP_MS;
+  } catch {
+    return false;
+  }
+}
 
 export function LoginForm() {
   const nav = useNavigate();
@@ -27,6 +42,21 @@ export function LoginForm() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [vault, setVault] = useState<VaultMeta | null>(null);
+  const [usePassword, setUsePassword] = useState(false);
+  const [pinSetupOpen, setPinSetupOpen] = useState(false);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void getVaultMeta().then((m) => {
+      if (!alive) return;
+      setVault(m && !isVaultExpired(m) ? m : null);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const redirectByRole = async (userId: string) => {
     const { data } = await supabase
@@ -41,6 +71,11 @@ export function LoginForm() {
 
   const mode = useConnectionMode();
   const offline = mode === "offline";
+  const showPinPanel = !!vault && !usePassword;
+
+  const finishLogin = async (userId: string) => {
+    await redirectByRole(userId);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,12 +87,20 @@ export function LoginForm() {
       const { data: signIn, error } = await supabase.auth.signInWithPassword({ email: r.email, password });
       if (error || !signIn.user) { toast.error(t("login.invalidCredentials")); return; }
       toast.success(t("login.welcome"));
-      await redirectByRole(signIn.user.id);
+      const existing = await getVaultMeta();
+      const sameUser = existing?.userId === signIn.user.id;
+      if (!sameUser && !pinPromptSkipped()) {
+        setPendingUserId(signIn.user.id);
+        setPinSetupOpen(true);
+        return;
+      }
+      await finishLogin(signIn.user.id);
     } catch (error) {
       console.warn("[login] falha de conexão", error);
       toast.error(t("login.connectionError"));
     } finally { setBusy(false); }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-primary-soft/40 flex items-center justify-center p-4">
