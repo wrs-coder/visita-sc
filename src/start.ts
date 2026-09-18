@@ -73,6 +73,26 @@ function withOrigin(input: RequestInfo | URL, origin: string): RequestInfo | URL
   return new Request(absolute, input);
 }
 
+const INCOMPATIBLE_SERVER_FUNCTION = "VISITASC_SERVER_FN_INCOMPATIBLE";
+
+function isServerFunctionRequest(input: RequestInfo | URL, init?: RequestInit): boolean {
+  const headers = new Headers(input instanceof Request ? input.headers : undefined);
+  new Headers(init?.headers).forEach((value, key) => headers.set(key, value));
+  return headers.get("x-tsr-serverfn") === "true";
+}
+
+async function isIncompatibleServerFunctionResponse(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  response: Response,
+): Promise<boolean> {
+  if (!isServerFunctionRequest(input, init) || response.status < 500) return false;
+  const type = response.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!type.includes("text/html")) return false;
+  const body = await response.clone().text().catch(() => "");
+  return /this page didn't load|<!doctype html|<html/i.test(body);
+}
+
 // No aplicativo nativo o app roda local; as chamadas de dados vão para o
 // domínio publicado escolhido dinamicamente, com uma nova tentativa na
 // próxima origem quando a rede falha.
@@ -99,6 +119,9 @@ const apiFetch: typeof fetch = async (input, init) => {
         credentials: "omit",
         signal: controller.signal,
       });
+      if (await isIncompatibleServerFunctionResponse(input, init, response)) {
+        throw new Error(INCOMPATIBLE_SERVER_FUNCTION);
+      }
       setApiOrigin(origin);
       return response;
     } catch (error) {

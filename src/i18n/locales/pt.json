@@ -51,6 +51,7 @@
     "welcome": "Bem-vindo!",
     "invalidCredentials": "Credenciais inválidas",
     "connectionError": "Não foi possível conectar ao servidor. Verifique a internet e tente novamente.",
+    "incompatibleApp": "Esta instalação não é compatível com a versão publicada. Atualize o aplicativo e tente novamente.",
     "newElder": "Sou ancião novo —",
     "createAccessElder": "criar acesso",
     "newSuper": "Sou superintendente novo —",
