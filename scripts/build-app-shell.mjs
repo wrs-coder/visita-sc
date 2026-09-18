@@ -347,7 +347,7 @@ async function verifyPackagedAssets(dir, html) {
 /** Impede a geração de APK/AAB com endereços de função incompatíveis. */
 async function verifyLoginServerFunctionId(dir) {
   const files = await readdir(dir, { recursive: true });
-  const javascriptFiles = files.filter((file) => typeof file === "string" && file.endsWith(".js"));
+  const javascriptFiles = files.filter((file) => file.endsWith(".js"));
   for (const relativeFile of javascriptFiles) {
     const source = await readFile(path.join(dir, relativeFile), "utf8");
     if (source.includes(EXPECTED_LOGIN_SERVER_FN_ID)) {
