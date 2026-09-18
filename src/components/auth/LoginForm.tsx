@@ -276,7 +276,24 @@ export function LoginForm() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <PinSetupDialog
+          open={pinSetupOpen}
+          onOpenChange={(v) => {
+            setPinSetupOpen(v);
+            if (!v && pendingUserId) {
+              try { localStorage.setItem(PIN_PROMPT_SKIP_KEY, String(Date.now())); } catch { /* noop */ }
+              const uid = pendingUserId;
+              setPendingUserId(null);
+              void finishLogin(uid);
+            }
+          }}
+          onCreated={() => {
+            try { localStorage.removeItem(PIN_PROMPT_SKIP_KEY); } catch { /* noop */ }
+          }}
+        />
       </div>
+
     </div>
   );
 }
