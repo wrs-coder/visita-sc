@@ -157,6 +157,24 @@ export function PinSetupDialog({ open, onOpenChange, onCreated }: Props) {
               type="password"
             />
           </div>
+          {bioSupported ? (
+            <label className="flex items-start gap-2 rounded-lg border p-3 cursor-pointer">
+              <Checkbox
+                checked={useBio}
+                onCheckedChange={(v) => setUseBio(v === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm leading-snug">
+                <span className="font-medium flex items-center gap-1.5">
+                  <Fingerprint className="h-4 w-4 text-primary" />
+                  {bioOnly ? t("offlinePin.useDeviceLock") : t("offlinePin.useBiometric")}
+                </span>
+                <span className="text-muted-foreground text-xs block mt-0.5">
+                  {t("offlinePin.biometricHint")}
+                </span>
+              </span>
+            </label>
+          ) : null}
           <div className="flex gap-2 pt-1">
             <Button
               type="button"
