@@ -22,6 +22,7 @@ import { SupportDeveloperContent } from "@/components/SupportDeveloper";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { BibleManagerDialog } from "@/components/bible/BibleManagerDialog";
+import { OfflinePinCard } from "@/components/auth/OfflinePinCard";
 import { getActiveLibrary, type BibleLibrary } from "@/lib/bible-notes-store";
 
 import { useTranslation } from "react-i18next";
@@ -419,6 +420,10 @@ function Page() {
           </form>
         </CardContent>
       </Card>
+
+      <OfflinePinCard />
+
+
 
       {role === "superintendent" && (
         <>
