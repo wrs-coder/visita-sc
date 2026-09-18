@@ -45,6 +45,22 @@ export function PinSetupDialog({ open, onOpenChange, onCreated }: Props) {
   const [pin, setPin] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
+  const [bioSupported, setBioSupported] = useState(false);
+  const [bioOnly, setBioOnly] = useState(false);
+  const [useBio, setUseBio] = useState(true);
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    void checkBiometricSupport().then((s) => {
+      if (!alive) return;
+      setBioSupported(s.available);
+      setBioOnly(s.deviceCredentialOnly);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [open]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
