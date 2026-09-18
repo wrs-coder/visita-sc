@@ -10,6 +10,7 @@ describe("CORS do aplicativo instalado", () => {
     expect(allowed).toContain("x-tsr-serverfn");
     expect(allowed).toContain("x-tss-raw");
     expect(allowed).toContain("x-tss-context");
+    expect(allowed).toContain("x-visita-sc-transport");
   });
 
   it("não autoriza origens desconhecidas", () => {

@@ -26,7 +26,11 @@ describe("transporte HTTPS nativo", () => {
     expect(requester).toHaveBeenCalledWith(expect.objectContaining({
       method: "POST",
       data: "corpo-serializado",
-      headers: expect.objectContaining({ authorization: "Bearer teste", "x-tsr-serverfn": "true" }),
+      headers: expect.objectContaining({
+        authorization: "Bearer teste",
+        "x-tsr-serverfn": "true",
+        "x-visita-sc-transport": "VISITASC_NATIVE_HTTP_V1",
+      }),
       disableRedirects: false,
     }));
     expect(finalUrl).toBe("https://visitasc.com.br/_serverFn/abc");

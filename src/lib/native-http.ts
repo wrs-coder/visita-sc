@@ -35,6 +35,7 @@ async function toNativeOptions(input: RequestInfo | URL, init?: RequestInit): Pr
   request.headers.forEach((value, key) => {
     if (!BLOCKED_REQUEST_HEADERS.has(key.toLowerCase())) headers[key] = value;
   });
+  headers["x-visita-sc-transport"] = NATIVE_HTTP_BUNDLE_MARKER;
 
   const method = request.method.toUpperCase();
   const data = BODYLESS_METHODS.has(method) ? undefined : await request.clone().text();
