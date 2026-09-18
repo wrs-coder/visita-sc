@@ -1,56 +1,52 @@
-# Diagnóstico e correção do login Android por domínio personalizado
+# Corrigir definitivamente o login do APK/AAB gerado no Windows
 
-## Diagnóstico confirmado
+## Causa real confirmada
 
-- A versão 4.0.0 não usava uma casca local: o aplicativo abria diretamente `https://visita-sc.lovable.app`. Página, login e funções do servidor eram da mesma origem, portanto não dependiam de comunicação entre domínios.
-- A versão 4.2.0 mudou para uma casca empacotada no aparelho, cuja origem é `https://localhost`. O login passou a depender de chamadas entre essa origem local e um dos três domínios publicados.
-- O login atual executa duas operações de rede dentro do mesmo tratamento de erro:
-  1. resolve usuário/telefone por uma função do servidor, encaminhada ao domínio selecionado;
-  2. autentica a senha diretamente no serviço de autenticação do backend.
-- A mensagem “Não foi possível conectar ao servidor” não identifica qual dessas operações falhou. Ela também mascara erros de configuração como se fossem falha de internet.
-- Os três endereços respondem agora ao teste `/api/public/ping` com HTTPS válido e autorização para `Origin: https://localhost`. Os domínios personalizados e o endereço `lovable.app` servem a mesma publicação. Não há bloqueio por domínio no banco de dados.
-- O problema estrutural é, portanto, o novo fluxo híbrido da 4.2.0: a entrada depende de uma função RPC do framework atravessando domínios a partir da WebView. Esse caminho não existia na 4.0.0 e é o ponto frágil anterior à autenticação. A configuração `allowNavigation` não libera requisições de dados; ela só controla navegação de páginas.
-- É possível usar `visitasc.com.br` no aplicativo. A solução correta é manter a casca local, mas retirar do primeiro login a dependência desse transporte RPC entre origens.
+A falha começou na mudança de arquitetura de **11 de setembro**, não na versão 4.2.0 nem no PIN/biometria.
 
-## Implementação proposta
+- Até a versão 4.0.0, o aplicativo abria o site publicado diretamente. O navegador e o servidor recebiam o mesmo pacote gerado na publicação, então os endereços internos das funções sempre coincidiam.
+- Em 11 de setembro, o commit `a52efe0` removeu o endereço remoto fixo e passou a gerar a interface localmente no computador para incluí-la no APK/AAB.
+- O framework gera o endereço de cada função do servidor aplicando SHA-256 sobre `caminho do arquivo + nome da função`.
+- Esse caminho usa `/` no servidor Linux, mas pode usar `\` no Windows. Assim, o APK compilado no Windows grava um identificador diferente daquele existente no servidor publicado.
+- Para a primeira função do login, o servidor publicado usa `f5e176a0…`, enquanto a forma equivalente com separadores do Windows gera `1c4b589e…`.
+- O teste real confirmou o comportamento: a chamada com o identificador publicado retorna **200** nos três domínios; um identificador incompatível retorna **500** com a página “This page didn't load”. O login atual converte esse erro em “Não foi possível conectar ao servidor”.
+- Isso explica todos os sintomas ao mesmo tempo: o site funciona, o APK 4.0.0 funciona, `/api/public/ping` funciona, trocar domínios/CORS não resolve, e o defeito aparece somente nos APKs produzidos pela nova casca local no Windows.
+- Não existe bloqueio do banco aos domínios personalizados. `visitasc.com.br`, `www.visitasc.com.br` e `visita-sc.lovable.app` aceitam hoje o preflight e a função correta a partir de `https://localhost`.
 
-### 1. Criar uma entrada HTTP estável para o login nativo
+## Implementação
 
-- Criar uma rota pública JSON específica para resolver usuário, telefone ou e-mail.
-- Validar entrada, limitar tamanho e devolver somente o identificador necessário para autenticação, sem expor perfil ou existência de dados além do comportamento atual.
-- Aplicar a mesma lista restrita de origens e responder corretamente a `OPTIONS`.
-- Não registrar senha, token ou identificador completo em logs.
-- Manter o login por e-mail e senha diretamente no serviço de autenticação, como já funciona na versão 4.0.0; nenhuma senha será armazenada ou intermediada pelo servidor do app.
+### 1. Tornar os identificadores independentes do sistema operacional
 
-### 2. Tornar o cliente Android determinístico
+- Configurar a geração dos identificadores das funções no build para normalizar todo caminho para `/` antes do SHA-256.
+- Reproduzir exatamente o formato padrão já usado pela publicação Linux, preservando os identificadores atuais do servidor e evitando quebra nas versões web.
+- Aplicar isso de forma central na configuração do framework, cobrindo todas as funções — login, sincronização, relatórios, mensagens e demais áreas — em vez de corrigir apenas uma chamada.
 
-- No aplicativo instalado, chamar a nova rota HTTP usando `visitasc.com.br`, `www.visitasc.com.br` e `visita-sc.lovable.app`, com tempo limite e contingência controlada.
-- Aceitar uma origem somente quando a resposta tiver a marca esperada do servidor e o formato JSON válido; um simples `204` não será considerado prova suficiente de que o login completo funciona.
-- Memorizar apenas a última origem funcional e invalidá-la diante de falha real de transporte.
-- No navegador, preservar o fluxo de mesma origem e o comportamento atual.
+### 2. Impedir nova regressão no empacotamento Android
 
-### 3. Separar e diagnosticar as etapas do login
+- Criar teste que simule caminhos Windows e Linux e exija o mesmo identificador nos dois casos.
+- Fazer o processo de geração do APK/AAB validar que o identificador de `resolveLoginIdentifier` presente na casca coincide com o identificador esperado da publicação.
+- Interromper a geração do pacote com mensagem clara se houver incompatibilidade, em vez de produzir um APK que só falha no celular.
 
-- Tratar separadamente: resolução do usuário, autenticação da senha e leitura da função do usuário.
-- Mostrar “credenciais inválidas” somente para resposta real de autenticação; falhas de transporte continuarão sem revelar informações sensíveis.
-- Registrar localmente, sem dados pessoais ou segredos, etapa, host, código HTTP, tempo e tipo de falha.
-- Acrescentar aos detalhes de conexão um teste real da rota de resolução, além do ping, para distinguir DNS/TLS, autorização entre origens e indisponibilidade do backend.
+### 3. Melhorar o diagnóstico sem mudar o login
 
-### 4. Preservar segurança e compatibilidade
+- Separar no formulário as falhas da resolução do usuário, da autenticação da senha e da leitura da função do usuário.
+- Tratar resposta HTTP 500/HTML da função como “aplicativo incompatível com a versão publicada”, não como falta de internet.
+- Não registrar usuário, senha, e-mail, token ou qualquer dado pessoal.
 
-- Não alterar tabelas, políticas de acesso, usuários, senhas, esboços, textos bíblicos, PIN ou biometria.
-- Não armazenar a senha do login e não mover a validação de senha para código local.
-- Preservar o desbloqueio offline já criado como alternativa somente para contas previamente autenticadas.
-- Manter o domínio `lovable.app` como contingência, sem torná-lo obrigatório.
+### 4. Preservar o sistema existente
+
+- Manter `visitasc.com.br` como origem preferencial e os outros dois endereços como contingência.
+- Não alterar banco, políticas de acesso, contas existentes, senhas, esboços, textos bíblicos, cache offline, PIN ou biometria.
+- Não criar uma nova API de login: corrigir o identificador na origem elimina a causa sem duplicar lógica sensível.
 
 ## Validação obrigatória
 
-- Testar `GET`, `OPTIONS` e a nova chamada `POST` a partir de `https://localhost` e `capacitor://localhost` nos três domínios.
-- Testar usuário inexistente, senha incorreta, login válido, servidor primário indisponível e troca automática de domínio.
-- Validar a casca empacotada, e não apenas o site: conferir arquivos copiados para o Android e executar o fluxo em contexto equivalente à WebView.
-- Confirmar que nenhum log contém senha, token, e-mail completo ou dados pessoais.
-- Executar testes focados, verificação TypeScript e build; somente depois preparar APK/AAB com novo `versionCode`.
+- Confirmar por teste que caminhos Windows e Linux geram o mesmo hash publicado.
+- Gerar a casca Android e conferir o identificador dentro dos arquivos efetivamente copiados para o aplicativo.
+- Executar `OPTIONS` e `POST` reais da primeira etapa do login, com origem `https://localhost`, nos três domínios.
+- Testar no pacote Android: usuário inexistente, senha incorreta e login válido; depois testar queda do domínio principal e uso da contingência.
+- Executar testes, verificação TypeScript e build antes de elevar `versionCode` e gerar novo APK/AAB.
 
 ## Resultado esperado
 
-O APK/AAB continuará Offline-First, usará `visitasc.com.br` como endereço preferencial e conseguirá autenticar sem depender do transporte RPC entre origens que diferencia a 4.2.0 da 4.0.0. O endereço `visita-sc.lovable.app` permanecerá como contingência, e eventuais falhas futuras indicarão precisamente a etapa afetada em vez da mensagem genérica atual.
+O APK/AAB compilado no Windows chamará exatamente as mesmas funções existentes na publicação. O login continuará usando o fluxo online atual, poderá operar por `visitasc.com.br`, e deixará de acusar falsamente falta de conexão sem qualquer alteração nos usuários ou no banco de dados.
