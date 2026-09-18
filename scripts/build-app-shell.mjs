@@ -34,6 +34,7 @@ const EXPECTED_LOGIN_SERVER_FN_ID = serverFunctionId(
   LOGIN_SERVER_FN.filename,
   LOGIN_SERVER_FN.functionName,
 );
+const NATIVE_HTTP_BUNDLE_MARKER = "VISITASC_NATIVE_HTTP_V1";
 
 /**
  * No Windows, OneDrive/antivírus/processos recém-encerrados seguram arquivos
@@ -361,6 +362,23 @@ async function verifyLoginServerFunctionId(dir) {
   );
 }
 
+/** Impede pacote Android sem a ponte HTTPS nativa que evita preflight CORS. */
+async function verifyNativeHttpTransport(dir) {
+  const files = await readdir(dir, { recursive: true });
+  const javascriptFiles = files.filter((file) => file.endsWith(".js"));
+  for (const relativeFile of javascriptFiles) {
+    const source = await readFile(path.join(dir, relativeFile), "utf8");
+    if (source.includes(NATIVE_HTTP_BUNDLE_MARKER) && source.includes("CapacitorHttp")) {
+      console.log("• Transporte HTTPS nativo conferido.");
+      return;
+    }
+  }
+  throw new Error(
+    "A casca não contém o transporte HTTPS nativo. " +
+      "O APK/AAB continuaria sujeito a bloqueio CORS; gere uma nova build antes de continuar.",
+  );
+}
+
 /**
  * Troca o `import()` dinâmico da casca por um <script type="module" src>
  * estático e pré-carrega os chunks de primeiro nível.
@@ -467,6 +485,7 @@ try {
   }
 
   await verifyLoginServerFunctionId(outDir);
+  await verifyNativeHttpTransport(outDir);
 
   // Saídas antigas só somem depois do pacote ficar pronto e validado.
   if (CLEAN_STALE) {

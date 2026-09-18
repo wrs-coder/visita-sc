@@ -127,14 +127,23 @@ async function probe(origin: string): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   try {
+    if (isNativeApp()) {
+      const { nativeHttpRequest } = await import("./native-http");
+      const { response, finalUrl } = await nativeHttpRequest(origin + PROBE_PATH, {
+        method: "GET",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (response.status === 204 || response.ok) return new URL(finalUrl).origin;
+      throw new Error(`Servidor indisponível em ${origin} (${response.status})`);
+    }
+
     const response = await fetch(origin + PROBE_PATH, {
       method: "GET",
       cache: "no-store",
       signal: controller.signal,
     });
-    if (isCrossHostRedirect(origin, response.url)) {
-      throw new Error(`${origin} redireciona para outro domínio`);
-    }
+    if (isCrossHostRedirect(origin, response.url)) throw new Error(`${origin} redireciona para outro domínio`);
     if (response.status === 204 || response.ok) return origin;
     throw new Error(`Servidor indisponível em ${origin} (${response.status})`);
   } finally {
