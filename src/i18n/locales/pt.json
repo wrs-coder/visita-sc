@@ -1721,6 +1721,18 @@
     "removeTitle": "Remover o acesso offline?",
     "removeDesc": "Você continuará entrando normalmente com usuário e senha. Nenhum dado da nuvem é apagado.",
     "removed": "Acesso offline removido deste aparelho.",
-    "needsOnline": "Conecte-se à internet uma vez para criar o PIN."
+    "needsOnline": "Conecte-se à internet uma vez para criar o PIN.",
+    "biometricUnlock": "Entrar com digital",
+    "biometricReason": "Confirme para abrir o Visita SC",
+    "biometricFailed": "Não foi possível confirmar sua identidade. Use o PIN.",
+    "biometricEnabled": "Digital ativada neste aparelho.",
+    "biometricDisabled": "Digital desativada neste aparelho.",
+    "biometricNotEnabled": "Não foi possível ativar a digital. O PIN continua funcionando.",
+    "useBiometric": "Usar digital ou rosto neste aparelho",
+    "useDeviceLock": "Usar o desbloqueio do aparelho (PIN, padrão ou senha)",
+    "biometricHint": "Atalho apenas neste aparelho. O PIN de 6 dígitos continua sendo o caminho garantido de entrada.",
+    "biometricEnable": "Ativar",
+    "confirmPinTitle": "Confirme seu PIN",
+    "confirmPinDesc": "Digite o PIN de 6 dígitos para liberar a digital neste aparelho."
   }
 }

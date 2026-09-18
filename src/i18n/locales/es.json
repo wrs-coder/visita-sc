@@ -1695,6 +1695,18 @@
     "removeTitle": "¿Quitar el acceso sin conexión?",
     "removeDesc": "Seguirás entrando con usuario y contraseña. No se borra ningún dato de la nube.",
     "removed": "Acceso sin conexión eliminado de este dispositivo.",
-    "needsOnline": "Conéctate a internet una vez para crear el PIN."
+    "needsOnline": "Conéctate a internet una vez para crear el PIN.",
+    "biometricUnlock": "Entrar con huella",
+    "biometricReason": "Confirma para abrir Visita SC",
+    "biometricFailed": "No se pudo confirmar tu identidad. Usa el PIN.",
+    "biometricEnabled": "Huella activada en este dispositivo.",
+    "biometricDisabled": "Huella desactivada en este dispositivo.",
+    "biometricNotEnabled": "No se pudo activar la huella. El PIN sigue funcionando.",
+    "useBiometric": "Usar huella o rostro en este dispositivo",
+    "useDeviceLock": "Usar el desbloqueo del dispositivo (PIN, patrón o contraseña)",
+    "biometricHint": "Atajo solo en este dispositivo. El PIN de 6 dígitos sigue siendo la vía garantizada.",
+    "biometricEnable": "Activar",
+    "confirmPinTitle": "Confirma tu PIN",
+    "confirmPinDesc": "Escribe el PIN de 6 dígitos para activar la huella en este dispositivo."
   }
 }
