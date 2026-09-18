@@ -59,11 +59,12 @@ export function LoginForm() {
   }, []);
 
   const redirectByRole = async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .order("created_at", { ascending: true });
+    if (error) throw error;
     const roles = (data ?? []).map((r) => r.role);
     const isSuper = roles.includes("superintendent");
     nav({ to: isSuper ? "/dashboard" : "/cronograma" });
@@ -81,9 +82,11 @@ export function LoginForm() {
     e.preventDefault();
     if (offline) { toast.error(t("connection.firstLoginNeedsInternet")); return; }
     setBusy(true);
+    let stage: "identifier" | "authentication" | "role" = "identifier";
     try {
       const r = await resolveFn({ data: { identifier: identifier.trim() } });
       if (!r.ok) { toast.error(r.error); return; }
+      stage = "authentication";
       const { data: signIn, error } = await supabase.auth.signInWithPassword({ email: r.email, password });
       if (error || !signIn.user) { toast.error(t("login.invalidCredentials")); return; }
       toast.success(t("login.welcome"));
@@ -94,10 +97,16 @@ export function LoginForm() {
         setPinSetupOpen(true);
         return;
       }
+      stage = "role";
       await finishLogin(signIn.user.id);
     } catch (error) {
-      console.warn("[login] falha de conexão", error);
-      toast.error(t("login.connectionError"));
+      const message = error instanceof Error ? error.message : "";
+      console.warn(`[login] falha na etapa: ${stage}`);
+      toast.error(
+        message.includes("VISITASC_SERVER_FN_INCOMPATIBLE")
+          ? t("login.incompatibleApp")
+          : t("login.connectionError"),
+      );
     } finally { setBusy(false); }
   };
 
