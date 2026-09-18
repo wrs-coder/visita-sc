@@ -1,12 +1,20 @@
 // Criação / alteração do PIN de acesso offline.
 // Só funciona com sessão ativa (login online feito) — a senha NÃO é guardada.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { KeyRound } from "lucide-react";
+import { Fingerprint, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { createVault, isPinValid, maskLabel } from "@/lib/offline-credentials";
+import {
+  createVault,
+  getUnlockedContentKey,
+  isPinValid,
+  maskLabel,
+  setVaultBiometricFlag,
+} from "@/lib/offline-credentials";
+import { checkBiometricSupport, enableBiometric } from "@/lib/biometric-unlock";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
