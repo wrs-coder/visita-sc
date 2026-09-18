@@ -298,7 +298,10 @@
     "noElders": "Aún no hay ancianos registrados en tus congregaciones."
   },
   "schedule": {
-    "status": { "confirmed": "Confirmado", "pending": "Aplazado" },
+    "status": {
+      "confirmed": "Confirmado",
+      "pending": "Aplazado"
+    },
     "title": "Cronograma Semanal",
     "newEvent": "Nuevo",
     "editEvent": "Editar compromiso",
@@ -1660,5 +1663,38 @@
         "body": "Las dudas sobre privacidad, corrección o eliminación de datos pueden enviarse al responsable de la aplicación:"
       }
     }
+  },
+  "offlinePin": {
+    "title": "Entrar sin internet",
+    "subtitleWithLabel": "Cuenta guardada en este dispositivo: {{label}}",
+    "pinLabel": "PIN de 6 dígitos",
+    "unlock": "Entrar con PIN",
+    "unlocking": "Abriendo...",
+    "useAccount": "Entrar con usuario y contraseña",
+    "wrongPin": "PIN incorrecto.",
+    "attemptsLeft": "Quedan {{n}} intentos antes de borrar el acceso sin conexión.",
+    "locked": "Demasiados intentos. Inténtalo en {{seconds}}s.",
+    "expired": "El acceso sin conexión caducó (30 días sin conexión). Entra una vez con internet.",
+    "destroyed": "Acceso sin conexión borrado por exceso de intentos. Entra con usuario y contraseña.",
+    "unsupported": "Este dispositivo no puede guardar el acceso sin conexión de forma segura.",
+    "unlocked": "Acceso permitido en este dispositivo.",
+    "createTitle": "Crear PIN de acceso sin conexión",
+    "createDesc": "Con un PIN de 6 dígitos puedes abrir la aplicación sin internet y seguir viendo todo lo ya descargado. Tu contraseña no se guarda en el dispositivo.",
+    "newPin": "Nuevo PIN (6 dígitos)",
+    "confirmPin": "Repite el PIN",
+    "invalidFormat": "Usa exactamente 6 dígitos.",
+    "mismatch": "Los dos PIN no coinciden.",
+    "create": "Crear PIN",
+    "later": "Ahora no",
+    "created": "PIN creado. Ya puedes entrar sin internet.",
+    "manageTitle": "Acceso sin conexión (PIN)",
+    "manageDescOn": "Activo en este dispositivo. Válido hasta {{date}}: cada entrada con internet lo renueva.",
+    "manageDescOff": "Aún no configurado en este dispositivo.",
+    "change": "Cambiar PIN",
+    "remove": "Quitar acceso sin conexión",
+    "removeTitle": "¿Quitar el acceso sin conexión?",
+    "removeDesc": "Seguirás entrando con usuario y contraseña. No se borra ningún dato de la nube.",
+    "removed": "Acceso sin conexión eliminado de este dispositivo.",
+    "needsOnline": "Conéctate a internet una vez para crear el PIN."
   }
 }

@@ -298,7 +298,10 @@
     "noElders": "Nenhum ancião cadastrado nas suas congregações ainda."
   },
   "schedule": {
-    "status": { "confirmed": "Confirmado", "pending": "Adiado" },
+    "status": {
+      "confirmed": "Confirmado",
+      "pending": "Adiado"
+    },
     "title": "Cronograma Semanal",
     "newEvent": "Novo",
     "editEvent": "Editar compromisso",
@@ -1686,5 +1689,38 @@
         "body": "Dúvidas sobre privacidade, correção ou exclusão de dados podem ser enviadas para o responsável pelo aplicativo:"
       }
     }
+  },
+  "offlinePin": {
+    "title": "Entrar sem internet",
+    "subtitleWithLabel": "Conta guardada neste aparelho: {{label}}",
+    "pinLabel": "PIN de 6 dígitos",
+    "unlock": "Entrar com PIN",
+    "unlocking": "Abrindo...",
+    "useAccount": "Entrar com usuário e senha",
+    "wrongPin": "PIN incorreto.",
+    "attemptsLeft": "Restam {{n}} tentativas antes de o acesso offline ser apagado.",
+    "locked": "Muitas tentativas. Tente novamente em {{seconds}}s.",
+    "expired": "O acesso offline expirou (30 dias sem conexão). Entre uma vez com internet.",
+    "destroyed": "Acesso offline apagado por excesso de tentativas. Entre com usuário e senha.",
+    "unsupported": "Este aparelho não permite guardar o acesso offline com segurança.",
+    "unlocked": "Acesso liberado neste aparelho.",
+    "createTitle": "Criar PIN de acesso offline",
+    "createDesc": "Com um PIN de 6 dígitos você entra no aplicativo mesmo sem internet e continua vendo tudo o que já foi baixado. Sua senha não é guardada no aparelho.",
+    "newPin": "Novo PIN (6 dígitos)",
+    "confirmPin": "Repita o PIN",
+    "invalidFormat": "Use exatamente 6 dígitos.",
+    "mismatch": "Os dois PINs não são iguais.",
+    "create": "Criar PIN",
+    "later": "Agora não",
+    "created": "PIN criado. Agora você pode entrar sem internet.",
+    "manageTitle": "Acesso sem internet (PIN)",
+    "manageDescOn": "Ativo neste aparelho. Válido até {{date}} — cada entrada com internet renova o prazo.",
+    "manageDescOff": "Ainda não configurado neste aparelho.",
+    "change": "Alterar PIN",
+    "remove": "Remover acesso offline",
+    "removeTitle": "Remover o acesso offline?",
+    "removeDesc": "Você continuará entrando normalmente com usuário e senha. Nenhum dado da nuvem é apagado.",
+    "removed": "Acesso offline removido deste aparelho.",
+    "needsOnline": "Conecte-se à internet uma vez para criar o PIN."
   }
 }
