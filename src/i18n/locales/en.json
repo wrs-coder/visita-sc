@@ -298,7 +298,10 @@
     "noElders": "No elders registered in your congregations yet."
   },
   "schedule": {
-    "status": { "confirmed": "Confirmed", "pending": "Postponed" },
+    "status": {
+      "confirmed": "Confirmed",
+      "pending": "Postponed"
+    },
     "title": "Weekly Schedule",
     "newEvent": "New",
     "editEvent": "Edit appointment",
@@ -1685,5 +1688,38 @@
         "body": "Questions about privacy, data correction or deletion can be sent to the person responsible for the app:"
       }
     }
+  },
+  "offlinePin": {
+    "title": "Sign in without internet",
+    "subtitleWithLabel": "Account saved on this device: {{label}}",
+    "pinLabel": "6-digit PIN",
+    "unlock": "Sign in with PIN",
+    "unlocking": "Opening...",
+    "useAccount": "Sign in with username and password",
+    "wrongPin": "Wrong PIN.",
+    "attemptsLeft": "{{n}} attempts left before offline access is erased.",
+    "locked": "Too many attempts. Try again in {{seconds}}s.",
+    "expired": "Offline access expired (30 days without a connection). Sign in once with internet.",
+    "destroyed": "Offline access erased after too many attempts. Sign in with username and password.",
+    "unsupported": "This device cannot store offline access securely.",
+    "unlocked": "Access granted on this device.",
+    "createTitle": "Create an offline access PIN",
+    "createDesc": "With a 6-digit PIN you can open the app without internet and still see everything already downloaded. Your password is not stored on the device.",
+    "newPin": "New PIN (6 digits)",
+    "confirmPin": "Repeat the PIN",
+    "invalidFormat": "Use exactly 6 digits.",
+    "mismatch": "The two PINs do not match.",
+    "create": "Create PIN",
+    "later": "Not now",
+    "created": "PIN created. You can now sign in without internet.",
+    "manageTitle": "Offline access (PIN)",
+    "manageDescOn": "Active on this device. Valid until {{date}} — each online sign-in renews it.",
+    "manageDescOff": "Not set up on this device yet.",
+    "change": "Change PIN",
+    "remove": "Remove offline access",
+    "removeTitle": "Remove offline access?",
+    "removeDesc": "You will keep signing in normally with username and password. No cloud data is deleted.",
+    "removed": "Offline access removed from this device.",
+    "needsOnline": "Connect to the internet once to create the PIN."
   }
 }
