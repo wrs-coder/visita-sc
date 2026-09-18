@@ -49,4 +49,6 @@
          portanto nenhuma permissão de armazenamento externo é necessária. -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Desbloqueio offline por digital/rosto (opcional; o PIN do app é o caminho garantido). -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 </manifest>
