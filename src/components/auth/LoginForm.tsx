@@ -133,6 +133,18 @@ export function LoginForm() {
 
         <Card className="shadow-elevated border-0">
           <CardContent className="p-6">
+            {showPinPanel && vault ? (
+              <PinUnlockPanel
+                meta={vault}
+                onUsePassword={() => setUsePassword(true)}
+                onUnlocked={() => nav({ to: "/" })}
+                onVaultGone={() => {
+                  setVault(null);
+                  setUsePassword(true);
+                }}
+              />
+            ) : (
+              <>
             <div className="flex items-center gap-3 mb-5">
               <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                 <UserCircle2 className="h-6 w-6" />
@@ -165,6 +177,14 @@ export function LoginForm() {
                 <LogIn className="mr-2 h-4 w-4" /> {busy ? t("login.signingIn") : t("login.signIn")}
               </Button>
             </form>
+            {vault ? (
+              <Button type="button" variant="ghost" className="w-full mt-2" onClick={() => setUsePassword(false)}>
+                {t("offlinePin.unlock")}
+              </Button>
+            ) : null}
+              </>
+            )}
+
             <div className="mt-4 space-y-1 text-center text-sm">
               <div>
                 {t("login.newElder")}{" "}
