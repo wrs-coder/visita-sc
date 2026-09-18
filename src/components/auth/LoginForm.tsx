@@ -19,7 +19,7 @@ import { PinUnlockPanel } from "@/components/auth/PinUnlockPanel";
 import { PinSetupDialog } from "@/components/auth/PinSetupDialog";
 import { getVaultMeta, isVaultExpired, type VaultMeta } from "@/lib/offline-credentials";
 
-const APP_VERSION = "4.2.0";
+const APP_VERSION = "4.2.1";
 const APP_BUILD = "2026.09.18";
 const APP_UPDATED_AT = "18/09/2026";
 
