@@ -1720,6 +1720,18 @@
     "removeTitle": "Remove offline access?",
     "removeDesc": "You will keep signing in normally with username and password. No cloud data is deleted.",
     "removed": "Offline access removed from this device.",
-    "needsOnline": "Connect to the internet once to create the PIN."
+    "needsOnline": "Connect to the internet once to create the PIN.",
+    "biometricUnlock": "Sign in with fingerprint",
+    "biometricReason": "Confirm to open Visita SC",
+    "biometricFailed": "Could not confirm your identity. Use the PIN.",
+    "biometricEnabled": "Fingerprint enabled on this device.",
+    "biometricDisabled": "Fingerprint disabled on this device.",
+    "biometricNotEnabled": "Could not enable fingerprint. The PIN still works.",
+    "useBiometric": "Use fingerprint or face on this device",
+    "useDeviceLock": "Use the device lock (PIN, pattern or password)",
+    "biometricHint": "Shortcut for this device only. The 6-digit PIN remains the guaranteed way in.",
+    "biometricEnable": "Enable",
+    "confirmPinTitle": "Confirm your PIN",
+    "confirmPinDesc": "Enter the 6-digit PIN to enable fingerprint on this device."
   }
 }

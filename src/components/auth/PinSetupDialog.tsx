@@ -1,12 +1,20 @@
 // Criação / alteração do PIN de acesso offline.
 // Só funciona com sessão ativa (login online feito) — a senha NÃO é guardada.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { KeyRound } from "lucide-react";
+import { Fingerprint, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { createVault, isPinValid, maskLabel } from "@/lib/offline-credentials";
+import {
+  createVault,
+  getUnlockedContentKey,
+  isPinValid,
+  maskLabel,
+  setVaultBiometricFlag,
+} from "@/lib/offline-credentials";
+import { checkBiometricSupport, enableBiometric } from "@/lib/biometric-unlock";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -37,6 +45,22 @@ export function PinSetupDialog({ open, onOpenChange, onCreated }: Props) {
   const [pin, setPin] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
+  const [bioSupported, setBioSupported] = useState(false);
+  const [bioOnly, setBioOnly] = useState(false);
+  const [useBio, setUseBio] = useState(true);
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    void checkBiometricSupport().then((s) => {
+      if (!alive) return;
+      setBioSupported(s.available);
+      setBioOnly(s.deviceCredentialOnly);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [open]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +96,20 @@ export function PinSetupDialog({ open, onOpenChange, onCreated }: Props) {
         label,
       );
       toast.success(t("offlinePin.created"));
+
+      if (bioSupported && useBio) {
+        const key = getUnlockedContentKey(s.user.id);
+        if (key) {
+          try {
+            await enableBiometric(key, t("offlinePin.biometricReason"));
+            await setVaultBiometricFlag(true);
+            toast.success(t("offlinePin.biometricEnabled"));
+          } catch {
+            toast.warning(t("offlinePin.biometricNotEnabled"));
+          }
+        }
+      }
+
       setPin("");
       setConfirm("");
       onOpenChange(false);
@@ -119,6 +157,24 @@ export function PinSetupDialog({ open, onOpenChange, onCreated }: Props) {
               type="password"
             />
           </div>
+          {bioSupported ? (
+            <label className="flex items-start gap-2 rounded-lg border p-3 cursor-pointer">
+              <Checkbox
+                checked={useBio}
+                onCheckedChange={(v) => setUseBio(v === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm leading-snug">
+                <span className="font-medium flex items-center gap-1.5">
+                  <Fingerprint className="h-4 w-4 text-primary" />
+                  {bioOnly ? t("offlinePin.useDeviceLock") : t("offlinePin.useBiometric")}
+                </span>
+                <span className="text-muted-foreground text-xs block mt-0.5">
+                  {t("offlinePin.biometricHint")}
+                </span>
+              </span>
+            </label>
+          ) : null}
           <div className="flex gap-2 pt-1">
             <Button
               type="button"
