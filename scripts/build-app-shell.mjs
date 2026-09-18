@@ -15,9 +15,25 @@ import { spawn } from "node:child_process";
 import { cp, mkdir, readFile, rm, writeFile, readdir } from "node:fs/promises";
 import { existsSync, statSync } from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 
 const root = process.cwd();
 const outDir = path.join(root, "dist-app");
+const LOGIN_SERVER_FN = {
+  filename: "src/lib/auth.functions.ts",
+  functionName: "resolveLoginIdentifier_createServerFn_handler",
+};
+
+function serverFunctionId(filename, functionName) {
+  return createHash("sha256")
+    .update(`${filename.replaceAll("\\", "/")}--${functionName}`)
+    .digest("hex");
+}
+
+const EXPECTED_LOGIN_SERVER_FN_ID = serverFunctionId(
+  LOGIN_SERVER_FN.filename,
+  LOGIN_SERVER_FN.functionName,
+);
 
 /**
  * No Windows, OneDrive/antivírus/processos recém-encerrados seguram arquivos
@@ -328,6 +344,23 @@ async function verifyPackagedAssets(dir, html) {
   return { missing, checked: visited.size };
 }
 
+/** Impede a geração de APK/AAB com endereços de função incompatíveis. */
+async function verifyLoginServerFunctionId(dir) {
+  const files = await readdir(dir, { recursive: true });
+  const javascriptFiles = files.filter((file) => typeof file === "string" && file.endsWith(".js"));
+  for (const relativeFile of javascriptFiles) {
+    const source = await readFile(path.join(dir, relativeFile), "utf8");
+    if (source.includes(EXPECTED_LOGIN_SERVER_FN_ID)) {
+      console.log(`• Identificador do login conferido: ${EXPECTED_LOGIN_SERVER_FN_ID.slice(0, 12)}…`);
+      return;
+    }
+  }
+  throw new Error(
+    "A casca não contém o identificador de login da publicação. " +
+      "O APK/AAB seria incompatível; gere uma nova build antes de continuar.",
+  );
+}
+
 /**
  * Troca o `import()` dinâmico da casca por um <script type="module" src>
  * estático e pré-carrega os chunks de primeiro nível.
@@ -432,6 +465,8 @@ try {
     );
     process.exit(1);
   }
+
+  await verifyLoginServerFunctionId(outDir);
 
   // Saídas antigas só somem depois do pacote ficar pronto e validado.
   if (CLEAN_STALE) {
