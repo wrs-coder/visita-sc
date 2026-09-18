@@ -14,6 +14,7 @@ import {
   setApiOrigin,
 } from "@/lib/api-origin";
 import { corsHeaders, isAllowedOrigin } from "@/lib/cors";
+import { nativeHttpRequest } from "@/lib/native-http";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -114,7 +115,8 @@ const apiFetch: typeof fetch = async (input, init) => {
     const abortFromCaller = () => controller.abort();
     init?.signal?.addEventListener("abort", abortFromCaller, { once: true });
     try {
-      const response = await fetch(withOrigin(input, origin), {
+      const target = withOrigin(input, origin);
+      const { response, finalUrl } = await nativeHttpRequest(target, {
         ...init,
         credentials: "omit",
         signal: controller.signal,
@@ -122,7 +124,7 @@ const apiFetch: typeof fetch = async (input, init) => {
       if (await isIncompatibleServerFunctionResponse(input, init, response)) {
         throw new Error(INCOMPATIBLE_SERVER_FUNCTION);
       }
-      setApiOrigin(origin);
+      setApiOrigin(new URL(finalUrl).origin);
       return response;
     } catch (error) {
       firstError ??= error;

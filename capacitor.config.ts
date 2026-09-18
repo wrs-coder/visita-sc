@@ -20,6 +20,12 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
   },
+  plugins: {
+    // A ponte é chamada explicitamente apenas no APK/AAB; o site mantém fetch.
+    CapacitorHttp: {
+      enabled: false,
+    },
+  },
 };
 
 export default config;
