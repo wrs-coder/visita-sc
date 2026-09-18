@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { isOfflineMode } from "@/lib/connection-mode";
 import { sameLocalDay } from "@/lib/local-day";
 import { ensureLocalDataOwner } from "@/lib/local-owner";
+import { clearVault, touchVaultOnline, updateVaultProfile } from "@/lib/offline-credentials";
+
 import i18n from "@/i18n";
 
 export type AppRole = "superintendent" | "elder";
