@@ -145,12 +145,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setCongregation(newCong);
     // Snapshot do estado de auth para hidratar em Modo Offline.
+    const snapshot = { profile: p ?? null, role: newRole, elderPosition: newPosition, congregation: newCong };
     try {
-      localStorage.setItem(PROFILE_CACHE_KEY(uid), JSON.stringify({
-        profile: p ?? null, role: newRole, elderPosition: newPosition, congregation: newCong,
-      }));
+      localStorage.setItem(PROFILE_CACHE_KEY(uid), JSON.stringify(snapshot));
     } catch { /* quota */ }
+    // Mantém o retrato guardado no cofre offline em dia (quando existir).
+    void updateVaultProfile(snapshot, uid).catch(() => undefined);
   };
+
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
@@ -189,8 +191,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
+      // Renova o prazo do acesso offline sempre que há sessão válida.
+      if (s?.access_token && s.refresh_token && s.user && !isOfflineMode()) {
+        void touchVaultOnline(
+          { access_token: s.access_token, refresh_token: s.refresh_token, expires_at: s.expires_at ?? null },
+          s.user.id,
+        ).catch(() => undefined);
+      }
       loadUserData(s?.user?.id).finally(() => setLoading(false));
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
