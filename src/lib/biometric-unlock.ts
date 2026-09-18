@@ -109,7 +109,7 @@ export async function disableBiometric(): Promise<void> {
   if (!isNative()) return;
   try {
     const SecureStorage = await storage();
-    await SecureStorage.remove(STORE_KEY);
+    await SecureStorage.removeItem(STORE_KEY);
   } catch {
     /* nada guardado */
   }
