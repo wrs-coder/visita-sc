@@ -189,6 +189,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
     supabase.auth.getSession().then(({ data: { session: s } }) => {
+      // Sem sessão do servidor, mas com o cofre offline aberto neste aparelho:
+      // reconhece o usuário a partir do retrato local já baixado.
+      if (!s) {
+        const local = readOfflineSession();
+        if (local && getCachedUserData(local.userId)) {
+          setMode("offline");
+          setSession(null);
+          setUser({
+            id: local.userId,
+            email: local.email ?? undefined,
+            app_metadata: {},
+            user_metadata: {},
+            aud: "authenticated",
+            created_at: new Date(local.at).toISOString(),
+          } as User);
+          hydrateCachedUserData(local.userId);
+          setLoading(false);
+          return;
+        }
+      }
       setSession(s);
       setUser(s?.user ?? null);
       // Renova o prazo do acesso offline sempre que há sessão válida.
