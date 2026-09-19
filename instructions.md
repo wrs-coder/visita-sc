@@ -89,3 +89,26 @@ Antes de encerrar qualquer mudança que toque modelos, papéis ou visitas, confi
 - Hardcode de cores/fontes fora de `src/styles.css` (usar tokens semânticos).
 - Bloquear telas do Superintendente por ausência de congregação fixa (reforço da regra 1).
 
+## 13. Acesso sem Internet (PIN e Biometria)
+
+- A senha da conta NUNCA é guardada no aparelho. O cofre local (`src/lib/offline-credentials.ts`) guarda apenas sessão (access/refresh token) e o retrato de perfil, cifrados com AES-GCM.
+- Formato v2 obrigatório: `contentKey` aleatória de 256 bits cifra o conteúdo; a `contentKey` é embrulhada pela chave derivada do PIN (PBKDF2-SHA256, mínimo 210.000 iterações) e pode ser guardada no cofre nativo liberado por digital/rosto.
+- PIN é sempre de 6 dígitos e continua sendo o caminho garantido de recuperação; biometria é apenas atalho e nunca pode ser a única forma de abrir o cofre.
+- Validade de 30 dias sem contato com o servidor; 5 erros iniciam espera progressiva; 10 erros destroem o cofre. Logout explícito apaga cofre, chave nativa e sessão local.
+- Nenhuma tela de entrada pode ficar presa esperando o servidor: toda restauração de sessão tem verificação de rede e limite de tempo, caindo para Modo Offline.
+- Com o cofre aberto e o servidor inacessível, o app reconhece o usuário pela sessão local (`src/lib/offline-session.ts`) + snapshot `visita-sc:auth-profile:<uid>`. A sessão real do servidor sempre tem prioridade.
+- Diálogos de criação/ativação fecham imediatamente após a confirmação do PIN; a ativação da biometria acontece depois, com aviso próprio.
+- Proibido alterar o fluxo de login online (usuário/senha) ao mexer nesses recursos.
+
+## 14. Conexão do Aplicativo Instalado (APK/AAB)
+
+- A casca Capacitor é local (`webDir: dist-app`); chamadas ao servidor no app nativo usam o transporte HTTPS nativo (`src/lib/native-http.ts`), nunca dependem de CORS/preflight do WebView.
+- Lista fixa de destinos permitidos: `visitasc.com.br`, `www.visitasc.com.br` e `visita-sc.lovable.app`, somente HTTPS. Redirecionamento só é aceito entre esses hosts.
+- IDs de Server Function devem ser gerados de forma portável (`src/lib/server-function-id.ts`), iguais no Windows e no Linux.
+- `scripts/build-app-shell.mjs` valida, antes de empacotar, o marcador do transporte nativo e o hash da Server Function de login. Falha na validação impede gerar o pacote.
+
+## 15. Versionamento do Aplicativo
+
+- Toda mudança de versão altera, na mesma alteração: `package.json`, `APP_VERSION` em `src/components/auth/LoginForm.tsx` e `versionName`/`versionCode` em `android/app/build.gradle`.
+- `versionCode` sempre incrementa; `versionName` segue semver e é o número exibido na tela "Sobre".
+

@@ -97,9 +97,16 @@ export function PinSetupDialog({ open, onOpenChange, onCreated }: Props) {
       );
       toast.success(t("offlinePin.created"));
 
-      if (bioSupported && useBio) {
-        const key = getUnlockedContentKey(s.user.id);
-        if (key) {
+      // Fecha imediatamente: a confirmação do PIN já concluiu o processo.
+      setPin("");
+      setConfirm("");
+      const key = bioSupported && useBio ? getUnlockedContentKey(s.user.id) : null;
+      onOpenChange(false);
+      onCreated?.();
+
+      // A digital/rosto é ativada depois do fechamento, com aviso próprio.
+      if (key) {
+        void (async () => {
           try {
             await enableBiometric(key, t("offlinePin.biometricReason"));
             await setVaultBiometricFlag(true);
@@ -107,13 +114,8 @@ export function PinSetupDialog({ open, onOpenChange, onCreated }: Props) {
           } catch {
             toast.warning(t("offlinePin.biometricNotEnabled"));
           }
-        }
+        })();
       }
-
-      setPin("");
-      setConfirm("");
-      onOpenChange(false);
-      onCreated?.();
     } catch (err) {
       console.warn("[offline-pin] falha ao criar cofre", err);
       toast.error(t("offlinePin.unsupported"));

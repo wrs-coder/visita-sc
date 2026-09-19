@@ -100,9 +100,10 @@ export function OfflinePinCard() {
       await unlockVault(pin);
       const key = getUnlockedContentKey(meta?.userId);
       if (!key) throw new Error("no-key");
-      await turnOn(key);
+      // Fecha assim que o PIN é aceito; a digital é confirmada em seguida.
       setPinAskOpen(false);
       setPin("");
+      await turnOn(key);
     } catch {
       toast.error(t("offlinePin.wrongPin"));
     } finally {

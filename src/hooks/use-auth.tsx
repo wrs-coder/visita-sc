@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { isOfflineMode } from "@/lib/connection-mode";
+import { isOfflineMode, setMode } from "@/lib/connection-mode";
+import { clearOfflineSession, readOfflineSession } from "@/lib/offline-session";
 import { sameLocalDay } from "@/lib/local-day";
 import { ensureLocalDataOwner } from "@/lib/local-owner";
 import { clearVault, touchVaultOnline, updateVaultProfile } from "@/lib/offline-credentials";
@@ -189,6 +190,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
     supabase.auth.getSession().then(({ data: { session: s } }) => {
+      // Sem sessão do servidor, mas com o cofre offline aberto neste aparelho:
+      // reconhece o usuário a partir do retrato local já baixado.
+      if (!s) {
+        const local = readOfflineSession();
+        if (local && getCachedUserData(local.userId)) {
+          setMode("offline");
+          setSession(null);
+          setUser({
+            id: local.userId,
+            email: local.email ?? undefined,
+            app_metadata: {},
+            user_metadata: {},
+            aud: "authenticated",
+            created_at: new Date(local.at).toISOString(),
+          } as User);
+          hydrateCachedUserData(local.userId);
+          setLoading(false);
+          return;
+        }
+      }
       setSession(s);
       setUser(s?.user ?? null);
       // Renova o prazo do acesso offline sempre que há sessão válida.
@@ -220,6 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try { sessionStorage.setItem("visita-sc:logout-intent", "1"); } catch { /* noop */ }
     // Sair do aplicativo apaga o cofre de acesso offline deste aparelho.
     try { await clearVault(); } catch { /* noop */ }
+    clearOfflineSession();
     await supabase.auth.signOut();
   };
 
