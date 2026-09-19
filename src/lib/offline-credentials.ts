@@ -145,6 +145,12 @@ export async function clearVault(): Promise<void> {
   if (typeof window === "undefined") return;
   memoryKey = null;
   try {
+    const { clearOfflineSession } = await import("@/lib/offline-session");
+    clearOfflineSession();
+  } catch {
+    /* noop */
+  }
+  try {
     const { disableBiometric } = await import("@/lib/biometric-unlock");
     await disableBiometric();
   } catch {

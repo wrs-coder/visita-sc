@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { isOfflineMode } from "@/lib/connection-mode";
+import { isOfflineMode, setMode } from "@/lib/connection-mode";
+import { clearOfflineSession, readOfflineSession } from "@/lib/offline-session";
 import { sameLocalDay } from "@/lib/local-day";
 import { ensureLocalDataOwner } from "@/lib/local-owner";
 import { clearVault, touchVaultOnline, updateVaultProfile } from "@/lib/offline-credentials";
@@ -240,6 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try { sessionStorage.setItem("visita-sc:logout-intent", "1"); } catch { /* noop */ }
     // Sair do aplicativo apaga o cofre de acesso offline deste aparelho.
     try { await clearVault(); } catch { /* noop */ }
+    clearOfflineSession();
     await supabase.auth.signOut();
   };
 
