@@ -64,15 +64,26 @@ export function PinUnlockPanel({ meta, onUsePassword, onUnlocked, onVaultGone }:
       }
     }
 
-    let online = true;
-    try {
-      const { error } = await supabase.auth.setSession({
-        access_token: payload.session.access_token,
-        refresh_token: payload.session.refresh_token,
-      });
-      if (error) online = false;
-    } catch {
-      online = false;
+    // Sessão local: garante que o app reconheça o usuário mesmo que o
+    // servidor não responda (modo avião / falha de rede).
+    saveOfflineSession(payload.userId, payload.email);
+
+    const hasNetwork = typeof navigator === "undefined" || navigator.onLine !== false;
+    let online = hasNetwork;
+    if (hasNetwork) {
+      try {
+        // Limite curto: sem isto a restauração pode ficar pendurada sem rede.
+        const result = await Promise.race([
+          supabase.auth.setSession({
+            access_token: payload.session.access_token,
+            refresh_token: payload.session.refresh_token,
+          }),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+        ]);
+        if (!result || result.error) online = false;
+      } catch {
+        online = false;
+      }
     }
     // Sem rede (ou token expirado sem conseguir renovar): segue em Modo
     // Offline, lendo tudo do cache local já baixado.
