@@ -19,9 +19,9 @@ import { PinUnlockPanel } from "@/components/auth/PinUnlockPanel";
 import { PinSetupDialog } from "@/components/auth/PinSetupDialog";
 import { getVaultMeta, isVaultExpired, type VaultMeta } from "@/lib/offline-credentials";
 
-const APP_VERSION = "4.2.2";
-const APP_BUILD = "2026.09.18";
-const APP_UPDATED_AT = "18/09/2026";
+const APP_VERSION = "4.2.3";
+const APP_BUILD = "2026.09.19";
+const APP_UPDATED_AT = "19/09/2026";
 
 const PIN_PROMPT_SKIP_KEY = "visita-sc:pin-prompt-skipped-at";
 const PIN_PROMPT_SKIP_MS = 7 * 24 * 60 * 60 * 1000;
