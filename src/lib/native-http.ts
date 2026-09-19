@@ -19,7 +19,9 @@ export function isAllowedNativeApiUrl(value: string): boolean {
   }
 }
 
-function responseBody(data: unknown): BodyInit | null {
+function responseBody(data: unknown, status: number): BodyInit | null {
+  // Respostas 204 No Content e 205 Reset Content NUNCA podem ter corpo
+  if (status === 204 || status === 205) return null;
   if (data == null) return null;
   if (typeof data === "string") return data;
   return JSON.stringify(data);
@@ -61,7 +63,7 @@ export function createNativeHttpRequest(requester: NativeRequester) {
       throw new TypeError("O servidor redirecionou para um destino não autorizado");
     }
     return {
-      response: new Response(responseBody(result.data), {
+      response: new Response(responseBody(result.data, result.status), {
         status: result.status,
         headers: result.headers,
       }),
