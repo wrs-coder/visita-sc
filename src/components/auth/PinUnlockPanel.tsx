@@ -15,6 +15,7 @@ import {
   type VaultPayload,
 } from "@/lib/offline-credentials";
 import { isBiometricEnabled, unlockWithBiometric } from "@/lib/biometric-unlock";
+import { saveOfflineSession } from "@/lib/offline-session";
 import { setMode } from "@/lib/connection-mode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
