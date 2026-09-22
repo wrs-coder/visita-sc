@@ -363,7 +363,9 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         onFocusOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
+        // Esc é uma ação deliberada do usuário (teclado): fecha o popup.
+        // Cliques fora, blur e toggle continuam ignorados (Missão 03).
+        onEscapeKeyDown={() => explicitClose()}
       >
         {/* Alça de arrasto + fechar */}
         <div
