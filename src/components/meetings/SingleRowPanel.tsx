@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { readOneWithMirror } from "@/lib/local-first";
 import { offlineInsert, offlineUpdate } from "@/lib/local-write";
 import type { Visit } from "@/hooks/use-active-visit";
 import { toast } from "sonner";
@@ -30,17 +31,23 @@ export function useSingleRow<T extends { id: string }>(
     let cancelled = false;
     const load = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from(table as never)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .select(columns as any)
-        .eq("visit_id", visit.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const res = await readOneWithMirror<Record<string, unknown>>({
+        table,
+        remote: () => supabase
+          .from(table as never)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .select(columns as any)
+          .eq("visit_id", visit.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle() as never,
+        filter: (r) => r.visit_id === visit.id,
+        sort: (a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")),
+      });
+      const data = res.row;
       if (cancelled) return;
       if (data) { setRow(data as unknown as T); setLoading(false); return; }
-      if (error) { setRow(null); setLoading(false); return; }
+      if (res.source === "local") { setRow(null); setLoading(false); return; }
       if (!creatingRef.current) {
         creatingRef.current = true;
         await offlineInsert(table, { visit_id: visit.id });
