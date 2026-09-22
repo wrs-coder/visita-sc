@@ -32,6 +32,7 @@ import {
   NotebookPen,
   ChevronsDownUp,
   ChevronsUpDown,
+  Search,
 } from "lucide-react";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
@@ -88,6 +89,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { findCitations, stripHtmlForDetection, type CitationMatch } from "@/lib/bible-refs";
 import { shareJsonFile } from "@/lib/share";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
+import { BibleSearchDialog } from "@/components/bible/BibleSearchDialog";
 import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
