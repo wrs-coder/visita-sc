@@ -54,13 +54,36 @@ function Page() {
   useEffect(() => {
     if (!visit) return;
     const load = async () => {
-      const [{ data }, { data: notes }] = await Promise.all([
-        supabase.from("meals").select("*").eq("visit_id", visit.id).order("meal_date").order("type"),
-        supabase.from("meal_day_notes").select("meal_date,notes").eq("visit_id", visit.id),
+      // Local-first: o servidor continua sendo a fonte quando responde; se
+      // falhar (offline), usamos o espelho local já baixado neste aparelho.
+      const [mealsRes, notesRes] = await Promise.all([
+        readWithMirror<Meal & Record<string, unknown>>({
+          table: "meals",
+          remote: () =>
+            supabase
+              .from("meals")
+              .select("*")
+              .eq("visit_id", visit.id)
+              .order("meal_date")
+              .order("type") as never,
+          filter: (r) => r.visit_id === visit.id,
+          sort: (a, b) =>
+            String(a.meal_date).localeCompare(String(b.meal_date)) ||
+            String(a.type).localeCompare(String(b.type)),
+        }),
+        readWithMirror<{ visit_id: string; meal_date: string; notes: string }>({
+          table: "meal_day_notes",
+          remote: () =>
+            supabase
+              .from("meal_day_notes")
+              .select("*")
+              .eq("visit_id", visit.id) as never,
+          filter: (r) => r.visit_id === visit.id,
+        }),
       ]);
-      setMeals((data ?? []) as Meal[]);
+      setMeals(mealsRes.rows as Meal[]);
       const map: Record<string, string> = {};
-      for (const n of (notes ?? []) as Array<{ meal_date: string; notes: string }>) map[n.meal_date] = n.notes;
+      for (const n of notesRes.rows) map[n.meal_date] = n.notes;
       setDayNotes(map);
     };
     load();
