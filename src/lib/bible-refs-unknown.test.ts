@@ -1,15 +1,24 @@
 import { describe, it, expect } from "vitest";
 import { CANON } from "./bible-canon";
-import { findUnknownCitations, suggestBook, type BookInfo } from "./bible-refs";
+import { findUnknownCitations, suggestBook, suggestBooks, type BookInfo } from "./bible-refs";
 
 const PT: Record<string, string> = {
-  B19: "Salmos", B40: "Mateus", B43: "João", B45: "Romanos", B66: "Apocalipse",
+  B13: "1 Crônicas", B18: "Jó", B19: "Salmos", B40: "Mateus", B43: "João",
+  B45: "Romanos", B46: "1 Coríntios", B66: "Apocalipse",
 };
 
 const books: BookInfo[] = CANON.map((c) => ({
   bookId: c.id,
   displayName: PT[c.id] ?? c.english,
   aliases: [],
+}));
+
+// Como a Bíblia real importada do EPUB traz aliases próprios, usamos os
+// aliases canônicos para simular abreviações comuns ("1Co", "1Cro"...).
+const booksWithAliases: BookInfo[] = CANON.map((c) => ({
+  bookId: c.id,
+  displayName: PT[c.id] ?? c.english,
+  aliases: c.aliases,
 }));
 
 describe("findUnknownCitations", () => {
