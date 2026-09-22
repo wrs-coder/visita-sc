@@ -453,7 +453,42 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
           >
             <Eraser className="h-3.5 w-3.5" />
           </button>
+          <div className="mx-1 h-4 w-px bg-border" />
+          <button
+            type="button"
+            aria-pressed={chapterMode}
+            title={
+              chapterMode
+                ? t("bibleVerse.backToVerse", { defaultValue: "Voltar ao versículo" })
+                : t("bibleVerse.readChapter", { defaultValue: "Ler o capítulo inteiro" })
+            }
+            onClick={() => setChapterMode((v) => !v)}
+            className={cn(
+              "p-1 rounded hover:bg-background",
+              chapterMode ? "bg-background text-foreground" : "text-muted-foreground",
+            )}
+          >
+            <List className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title={t("bibleVerse.prevChapter", { defaultValue: "Capítulo anterior" })}
+            onClick={() => goChapter(-1)}
+            disabled={chapter <= 1}
+            className="p-1 rounded hover:bg-background text-muted-foreground disabled:opacity-40"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title={t("bibleVerse.nextChapter", { defaultValue: "Próximo capítulo" })}
+            onClick={() => goChapter(1)}
+            className="p-1 rounded hover:bg-background text-muted-foreground"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
+
 
         <div className="overflow-y-auto max-h-[calc(70vh-5rem)]">
           {loading ? (
