@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { readWithMirror } from "@/lib/local-first";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -121,13 +122,17 @@ function Page() {
 
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
-    supabase
-      .from("congregations")
-      .select("id,name")
-      .eq("superintendent_id", user.id)
-      .order("name")
-      .then(({ data }) => {
-        const list = data ?? [];
+    void readWithMirror<{ id: string; name: string } & Record<string, unknown>>({
+      table: "congregations",
+      remote: () => supabase
+        .from("congregations")
+        .select("id,name")
+        .eq("superintendent_id", user.id)
+        .order("name") as never,
+      sort: (a, b) => String(a.name).localeCompare(String(b.name)),
+    })
+      .then(({ rows }) => {
+        const list = rows;
         setCongs(list);
         setCongId((prev) => {
           if (prev && list.some((c) => c.id === prev)) return prev;
@@ -148,13 +153,18 @@ function Page() {
   useEffect(() => {
     if (!congId) { setNotes([]); return; }
     const load = async () => {
-      const { data } = await supabase
-        .from("private_notes")
-        .select("*")
-        .eq("congregation_id", congId)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
-      setNotes((data ?? []) as unknown as Note[]);
+      const res = await readWithMirror<Record<string, unknown>>({
+        table: "private_notes",
+        remote: () => supabase
+          .from("private_notes")
+          .select("*")
+          .eq("congregation_id", congId)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false }) as never,
+        filter: (r) => r.congregation_id === congId && !r.deleted_at,
+        sort: (a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")),
+      });
+      setNotes(res.rows as unknown as Note[]);
       setSelected(new Set());
     };
     load();

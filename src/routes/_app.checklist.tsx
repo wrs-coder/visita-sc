@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { readWithMirror } from "@/lib/local-first";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,8 +43,13 @@ function Page() {
   useEffect(() => {
     if (!visit) return;
     const load = async () => {
-      const { data } = await supabase.from("checklist_items").select("*").eq("visit_id", visit.id).order("sort_order").order("created_at");
-      setItems((data ?? []) as Item[]);
+      const res = await readWithMirror<Item & Record<string, unknown>>({
+        table: "checklist_items",
+        remote: () => supabase.from("checklist_items").select("*").eq("visit_id", visit.id).order("sort_order").order("created_at") as never,
+        filter: (r) => r.visit_id === visit.id,
+        sort: (a, b) => Number(a.sort_order) - Number(b.sort_order),
+      });
+      setItems(res.rows as Item[]);
     };
     load();
     const ch = supabase.channel(`chk-${visit.id}`).on("postgres_changes", { event: "*", schema: "public", table: "checklist_items", filter: `visit_id=eq.${visit.id}` }, load).subscribe();
