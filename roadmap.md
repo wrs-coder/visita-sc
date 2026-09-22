@@ -8,3 +8,4 @@
 - [x] Remover a dependência de CORS do WebView usando HTTPS nativo no APK/AAB 4.2.2.
 - [ ] (usuário) Remover domínio principal em Project Settings → Domains para ativar as 3 contingências reais.
 - [ ] (usuário) Abrir chamado no suporte Lovable sobre falha regional de acesso a *.lovable.app.
+- [x] Aplicar melhorias bíblicas ao esboço e à Tela Cheia, incluindo inserção direta do texto na nota.

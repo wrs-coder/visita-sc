@@ -10,13 +10,14 @@ interface Props {
   citation: UnknownCitation;
   libraryId: string | null;
   fontScale?: number;
+  onInsert?: (text: string) => void | Promise<void>;
 }
 
 /**
  * Marca uma referência com aparência de citação cujo livro não foi reconhecido
  * e oferece o livro mais próximo como sugestão. Não altera o texto do esboço.
  */
-export function UnknownRefLink({ citation, libraryId, fontScale = 1 }: Props) {
+export function UnknownRefLink({ citation, libraryId, fontScale = 1, onInsert }: Props) {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const s = citation.suggestion;
@@ -60,7 +61,7 @@ export function UnknownRefLink({ citation, libraryId, fontScale = 1 }: Props) {
             <p className="text-xs text-muted-foreground">
               {t("bibleRef.didYouMean", { defaultValue: "Você quis dizer:" })}
             </p>
-            <VerseLink match={suggestedMatch} libraryId={libraryId} />
+            <VerseLink match={suggestedMatch} libraryId={libraryId} onInsert={onInsert} />
           </div>
         ) : null}
       </PopoverContent>

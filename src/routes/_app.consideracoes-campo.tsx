@@ -96,6 +96,7 @@ import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySen
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
 import { RichOutlineContent } from "@/lib/rich-content";
 import { cn } from "@/lib/utils";
+import { appendPlainTextToNote } from "@/lib/note-content";
 import { useServerFn } from "@tanstack/react-start";
 import {
   listCloudOutlines,
@@ -552,6 +553,25 @@ function Page() {
     } finally {
       setTimeout(() => setSaving(false), 300);
     }
+  }
+
+  async function handleInsertBibleText(text: string) {
+    if (!draft || !activeType) return;
+    const updated: FieldNote = {
+      ...draft,
+      type: draft.type ?? activeType,
+      content: appendPlainTextToNote(draft.content, text),
+      updated_at: Date.now(),
+      dirty: true,
+    };
+    await persistNote(updated);
+    setDraft(updated);
+    setNotes((all) => {
+      const index = all.findIndex((note) => note.id === updated.id);
+      const next = index >= 0 ? [...all] : [updated, ...all];
+      if (index >= 0) next[index] = updated;
+      return next.sort((a, b) => b.updated_at - a.updated_at);
+    });
   }
 
   async function handleDeleteNote() {
@@ -1608,6 +1628,7 @@ function Page() {
                     onFullscreen={() => setFullscreen(true)}
                     onCloud={handleCloudOpen}
                     dateFmt={dateFmt}
+                    onInsertBibleText={handleInsertBibleText}
                   />
                 )}
               </CardContent>
@@ -1621,6 +1642,7 @@ function Page() {
           note={draft}
           library={activeBible}
           onClose={() => setFullscreen(false)}
+          onInsertBibleText={handleInsertBibleText}
         />
       )}
 
@@ -1715,11 +1737,12 @@ interface EditorProps {
   onFullscreen: () => void;
   onCloud: () => void;
   dateFmt: (ts: number) => string;
+  onInsertBibleText: (text: string) => void | Promise<void>;
 }
 
 function NoteEditor({
   draft, mode, type, saving, activeBible, detected,
-  onPatch, onModeChange, onSave, onDelete, onExport, onFullscreen, onCloud, dateFmt,
+  onPatch, onModeChange, onSave, onDelete, onExport, onFullscreen, onCloud, dateFmt, onInsertBibleText,
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
@@ -2010,7 +2033,7 @@ function NoteEditor({
             ) : (
               <div className="flex flex-wrap gap-1.5 max-w-full min-w-0">
                 {detected.map((m, i) => (
-                  <VerseLink key={`${m.index}-${i}`} match={m} libraryId={activeBible?.id ?? null} />
+                  <VerseLink key={`${m.index}-${i}`} match={m} libraryId={activeBible?.id ?? null} onInsert={onInsertBibleText} />
                 ))}
               </div>
             )}
@@ -2068,7 +2091,7 @@ function NoteEditor({
               )}
               <div className="flex-1 min-h-[22rem] max-h-[60vh] overflow-y-auto rounded-md border bg-background px-3 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
                 {draft.content ? (
-                  <RichOutlineContent html={draft.content} library={activeBible} />
+                  <RichOutlineContent html={draft.content} library={activeBible} onInsertVerse={onInsertBibleText} />
                 ) : (
                   <span className="text-muted-foreground italic">
                     {t("fieldConsiderations.contentEmpty")}
@@ -2119,10 +2142,12 @@ function FullscreenOutline({
   note,
   library,
   onClose,
+  onInsertBibleText,
 }: {
   note: FieldNote;
   library: BibleLibrary | null;
   onClose: () => void;
+  onInsertBibleText: (text: string) => void | Promise<void>;
 }) {
   const { t } = useTranslation();
   const [scale, setScale] = useState<number>(() => {
@@ -2237,7 +2262,7 @@ function FullscreenOutline({
           style={{ fontSize: `${scale}rem` }}
         >
           {note.content ? (
-            <RichOutlineContent html={note.content} library={library} fontScale={scale} />
+            <RichOutlineContent html={note.content} library={library} fontScale={scale} onInsertVerse={onInsertBibleText} />
           ) : (
             <span className="text-muted-foreground italic">{t("fieldConsiderations.contentEmpty")}</span>
           )}
