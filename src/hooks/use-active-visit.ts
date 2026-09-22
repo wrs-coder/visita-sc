@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCongregation } from "./use-active-congregation";
 import { useAuth } from "./use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { readOneWithMirror } from "@/lib/local-first";
 import { format } from "date-fns";
 
 export interface Visit {
