@@ -276,6 +276,17 @@
 .pb-safe { padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem); }
 .pt-safe { padding-top: max(env(safe-area-inset-top, 0px), 0.5rem); }
 
+/* Android 15+ (edge-to-edge): o conteúdo passa por baixo das barras de
+   sistema. Estas classes adicionam apenas o recuo real informado pelo
+   sistema (0px em navegadores/desktop), sem alterar layout na web. */
+.safe-top { padding-top: env(safe-area-inset-top, 0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-x {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.safe-bottom-extra { padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px)); }
+
 /* Transição CSS-only de 150 ms para o toggle de "Modo edição". */
 .edit-mode-transition {
   transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease,
