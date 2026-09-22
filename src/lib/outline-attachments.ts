@@ -44,14 +44,23 @@ export const MAX_LOCAL_VIDEO_BYTES = 200 * 1024 * 1024;
 /** Maior lado permitido para fotos anexadas. */
 const MAX_PHOTO_EDGE = 2000;
 
-const attachmentStore = (() => {
+/**
+ * Abertura preguiçosa: o IndexedDB só é tocado quando um anexo é realmente
+ * usado. Abrir no carregamento do módulo podia derrubar o arranque do app.
+ */
+let attachmentStoreCache: ReturnType<typeof createStore> | null | undefined;
+
+function getAttachmentStore(): ReturnType<typeof createStore> | null {
+  if (attachmentStoreCache !== undefined) return attachmentStoreCache;
   try {
-    if (typeof indexedDB === "undefined") return null;
-    return createStore("visitasc-attachments", "files");
+    attachmentStoreCache = typeof indexedDB === "undefined"
+      ? null
+      : createStore("visitasc-attachments", "files");
   } catch {
-    return null;
+    attachmentStoreCache = null;
   }
-})();
+  return attachmentStoreCache;
+}
 
 function uid(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -195,8 +204,9 @@ async function writeLocalFile(
       console.warn("[outline-attachments] Filesystem write falhou, usando IndexedDB", err);
     }
   }
-  if (!attachmentStore) throw new Error("ATTACHMENT_STORAGE_UNAVAILABLE");
-  await idbSet(relativePath, new Blob([blob], { type: mime }), attachmentStore);
+  const store = getAttachmentStore();
+  if (!store) throw new Error("ATTACHMENT_STORAGE_UNAVAILABLE");
+  await idbSet(relativePath, new Blob([blob], { type: mime }), store);
   return "idb";
 }
 
@@ -257,9 +267,10 @@ export async function resolveAttachmentSrc(a: NoteAttachment): Promise<string | 
 
   if (a.path) {
     if (a.storage === "idb" || !isCapacitorNative()) {
-      if (!attachmentStore) return null;
+      const store = getAttachmentStore();
+      if (!store) return null;
       try {
-        const blob = await idbGet<Blob>(a.path, attachmentStore);
+        const blob = await idbGet<Blob>(a.path, store);
         if (blob) return URL.createObjectURL(blob);
       } catch (err) {
         console.warn("[outline-attachments] leitura IndexedDB falhou", err);
@@ -329,8 +340,9 @@ export async function deleteFileAttachment(a: NoteAttachment | string | null | u
   }
   if (!rel) return;
 
-  if (attachmentStore) {
-    try { await idbDel(rel, attachmentStore); } catch { /* noop */ }
+  const delStore = getAttachmentStore();
+  if (delStore) {
+    try { await idbDel(rel, delStore); } catch { /* noop */ }
   }
   if (isCapacitorNative()) {
     try {

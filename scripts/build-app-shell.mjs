@@ -125,15 +125,35 @@ const SERVER_DIR_CANDIDATES = [
   path.join(root, ".output", "server"),
 ];
 
+/**
+ * O preset Cloudflare/Nitro gera o worker (`index.mjs`) mas nem sempre um
+ * `wrangler.json` ao lado dele. Sem esse arquivo o wrangler não sobe e a casca
+ * acabava caindo na montagem estática — que produz tela preta no aparelho.
+ */
+async function ensureWranglerConfig(serverDir, assetsDir) {
+  const file = path.join(serverDir, "wrangler.json");
+  if (existsSync(file)) return;
+  const config = {
+    name: "visitasc-app-shell",
+    main: "index.mjs",
+    compatibility_date: "2025-09-24",
+    compatibility_flags: ["nodejs_compat"],
+    assets: { directory: path.relative(serverDir, assetsDir).split(path.sep).join("/") },
+  };
+  await writeFile(file, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+  console.log("• wrangler.json da build criado para renderizar a casca.");
+}
+
 async function captureShellFromServer() {
-  // Importante: o wrangler precisa rodar sobre a BUILD (dist/server/wrangler.json),
+  // Importante: o wrangler precisa rodar sobre a BUILD (dist/server/index.mjs),
   // e não sobre o wrangler.jsonc da raiz, que aponta para o código-fonte.
-  const serverDir = SERVER_DIR_CANDIDATES.find((dir) => existsSync(path.join(dir, "wrangler.json")));
+  const serverDir = SERVER_DIR_CANDIDATES.find((dir) => existsSync(path.join(dir, "index.mjs")));
   if (!serverDir) {
     throw new Error(
-      "Build do servidor não encontrada (dist/server/wrangler.json). Rode `npm run build` antes.",
+      "Build do servidor não encontrada (dist/server/index.mjs). Rode `npm run build` antes.",
     );
   }
+  await ensureWranglerConfig(serverDir, clientDir);
   console.log(`• Renderizando a casca a partir de ${path.relative(root, serverDir)}…`);
 
   // O wrangler recusa rodar quando encontra o "deploy config" gerado na raiz
@@ -195,117 +215,12 @@ async function captureShellFromServer() {
   }
 }
 
-/**
- * Reserva definitiva: monta a casca estaticamente a partir dos arquivos da
- * build, sem iniciar nenhum servidor. Funciona em Windows, Linux e macOS.
- */
-async function buildStaticShell(dir) {
-  const assetsDir = path.join(dir, "assets");
-  if (!existsSync(assetsDir)) {
-    throw new Error("Pasta assets/ não encontrada na saída do cliente.");
-  }
-
-  let entryJs = null;
-  let entryCss = null;
-  /** Chunks estáticos importados pela entrada (para modulepreload). */
-  const preload = [];
-
-  // Preferência 1: manifesto do Vite, que aponta a entrada exata.
-  const manifestPath = path.join(assetsDir, ".vite", "manifest.json");
-  if (existsSync(manifestPath)) {
-    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-    const entry = Object.values(manifest).find((item) => item && item.isEntry);
-    if (entry?.file) {
-      entryJs = entry.file.replace(/^\//, "");
-      entryCss = Array.isArray(entry.css) ? entry.css[0] : null;
-      const seen = new Set();
-      const walk = (key) => {
-        const item = manifest[key];
-        if (!item || seen.has(key)) return;
-        seen.add(key);
-        if (item.file && item.file !== entry.file) preload.push(item.file.replace(/^\//, ""));
-        for (const dep of item.imports ?? []) walk(dep);
-      };
-      for (const dep of entry.imports ?? []) walk(dep);
-    }
-  }
-
-  // Preferência 2: identificar a entrada real pelo conteúdo — é o bundle que
-  // inicia o React (hydrateRoot/createRoot) e que nenhum outro arquivo importa.
-  if (!entryJs) {
-    const files = (await readdir(assetsDir)).filter((f) => f.endsWith(".js"));
-    const imported = new Set();
-    const sources = new Map();
-    for (const file of files) {
-      const code = await readFile(path.join(assetsDir, file), "utf8");
-      sources.set(file, code);
-      for (const m of code.matchAll(/["'`]\.?\/?assets\/([\w.-]+\.js)["'`]/g)) imported.add(m[1]);
-    }
-    const roots = files.filter((f) => !imported.has(f));
-    const startsReact = (f) => /hydrateRoot|createRoot\s*\(/.test(sources.get(f) ?? "");
-    entryJs =
-      roots.find(startsReact) ??
-      files.find(startsReact) ??
-      roots.find((f) => /^index-[\w-]+\.js$/.test(f)) ??
-      files.find((f) => /^index-[\w-]+\.js$/.test(f)) ??
-      null;
-    if (entryJs) {
-      // Pré-carrega os imports diretos da entrada para acelerar a abertura.
-      const code = sources.get(entryJs) ?? "";
-      for (const m of code.matchAll(/from\s*["'`]\.?\/?assets\/([\w.-]+\.js)["'`]/g)) {
-        preload.push(`assets/${m[1]}`);
-      }
-      entryJs = `assets/${entryJs}`;
-    }
-  }
-
-  if (!entryCss) {
-    const cssFiles = (await readdir(assetsDir)).filter((f) => f.endsWith(".css"));
-    if (cssFiles.length > 0) entryCss = `assets/${cssFiles.sort().at(-1)}`;
-  }
-
-  if (!entryJs) {
-    throw new Error("Nenhum bundle de entrada (*.js) encontrado em assets/.");
-  }
-
-  const favicon = existsSync(path.join(dir, "favicon.svg"))
-    ? '<link rel="icon" href="./favicon.svg" type="image/svg+xml" />'
-    : existsSync(path.join(dir, "favicon.ico"))
-      ? '<link rel="icon" href="./favicon.ico" />'
-      : "";
-  const stylesheet = entryCss ? `<link rel="stylesheet" href="./${entryCss}" />` : "";
-
-  const html = [
-    "<!DOCTYPE html>",
-    '<html lang="pt-BR">',
-    "  <head>",
-    '    <meta charset="UTF-8" />',
-    '    <base href="./" />',
-    '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />',
-    "    <title>Visita SC</title>",
-    favicon && `    ${favicon}`,
-    stylesheet && `    ${stylesheet}`,
-    // Carregamento direto (sem import() dinâmico): falhas ficam visíveis e
-    // o WebView do Capacitor não depende de um passo assíncrono extra.
-    ...preload.map((file) => `    <link rel="modulepreload" href="./${file}" />`),
-    `    <script type="module" src="./${entryJs}"></script>`,
-    "  </head>",
-    "  <body>",
-    '    <div id="root"></div>',
-    "  </body>",
-    "</html>",
-    "",
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  return { html, source: "montagem estática dos arquivos da build" };
-}
-
 /** Toda referência vira relativa: nada de caminho absoluto dentro do WebView. */
 function toRelativeAssetPaths(html) {
-  let out = html.replace(/(src|href)="\/(assets\/[^"]+)"/g, '$1="./$2"');
-  out = out.replace(/(src|href)='\/(assets\/[^']+)'/g, "$1='./$2'");
+  // Qualquer src/href que aponte para a raiz do site (assets, favicon, ícones)
+  // vira relativo: dentro do APK não existe raiz de site, só a pasta do pacote.
+  let out = html.replace(/(src|href)="\/(?!\/)([^"]*)"/g, '$1="./$2"');
+  out = out.replace(/(src|href)='\/(?!\/)([^']*)'/g, "$1='./$2'");
   // O manifest do PWA não vai no pacote nativo: remover o link evita um 404.
   out = out.replace(/<link[^>]+rel=["']manifest["'][^>]*>/gi, "");
   if (!/<base\s/i.test(out)) {
@@ -322,7 +237,7 @@ function toRelativeAssetPaths(html) {
 async function verifyPackagedAssets(dir, html) {
   const missing = [];
   const visited = new Set();
-  const normalize = (ref) => ref.replace(/^\.?\//, "");
+  const normalize = (ref) => ref.replace(/^(\.\/|\/)+/, "");
   const queue = [...html.matchAll(/\.?\/?assets\/[\w./-]+\.(?:js|css)/g)].map((m) => normalize(m[0]));
 
   while (queue.length > 0) {
@@ -336,7 +251,8 @@ async function verifyPackagedAssets(dir, html) {
     }
     if (ref.endsWith(".js")) {
       const code = await readFile(file, "utf8");
-      for (const m of code.matchAll(/["'`](\.?\/assets\/[\w./-]+\.(?:js|css))["'`]/g)) {
+      // Inclui imports estáticos e dinâmicos (anexos, arquivos, compartilhamento).
+      for (const m of code.matchAll(/["'`]((?:\.?\/)?assets\/[\w./-]+\.(?:js|css))["'`]/g)) {
         queue.push(normalize(m[1]));
       }
     }
@@ -411,6 +327,12 @@ async function assemble(dir, shellHtml) {
   await rmWithRetries(outDir, { recursive: true });
   await mkdir(outDir, { recursive: true });
   await cp(dir, outDir, { recursive: true });
+  // Arquivos públicos (ícones, favicon, imagens) que o adaptador possa não ter
+  // copiado: sem eles o app abre com 404 visíveis no console.
+  const publicDir = path.join(root, "public");
+  if (existsSync(publicDir)) {
+    await cp(publicDir, outDir, { recursive: true, force: false, errorOnExist: false });
+  }
   // Casca intermediária não deve ficar duplicada dentro do APK.
   await rmWithRetries(path.join(outDir, "_shell.html"));
   await rmWithRetries(path.join(outDir, "_shell"), { recursive: true });
@@ -425,19 +347,28 @@ async function assemble(dir, shellHtml) {
   return html;
 }
 
+/**
+ * O bundle do cliente inicia com `hydrate()`, que exige os dados de
+ * inicialização (`$_TSR`) gravados pela renderização. Uma casca sem esses
+ * dados lança "Invariant failed" logo no arranque — tela preta no aparelho.
+ * Por isso a casca só é aceita se trouxer esses dados.
+ */
+function hasHydrationBootstrap(html) {
+  return /\$_TSR/.test(html);
+}
+
 try {
   let shell = await readOfficialShell(clientDir);
   if (!shell) {
-    try {
-      shell = await captureShellFromServer();
-    } catch (error) {
-      console.warn(`• Servidor local indisponível (${error.message ?? error}).`);
-      console.warn("• Usando a montagem estática como alternativa…");
-      shell = await buildStaticShell(clientDir);
-    }
+    shell = await captureShellFromServer();
   }
 
   const problems = validateShell(shell.html);
+  if (!hasHydrationBootstrap(shell.html)) {
+    problems.push(
+      'não contém os dados de inicialização do app ($_TSR) — essa casca abriria em tela preta ("Invariant failed")',
+    );
+  }
   if (problems.length > 0) {
     console.error(
       `✖ A casca obtida de "${shell.source}" não é válida:\n   - ${problems.join("\n   - ")}\n` +
