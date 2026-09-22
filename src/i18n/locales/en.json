@@ -1646,7 +1646,16 @@
     "bold": "Bold",
     "highlight": "Highlight selection",
     "clearHighlights": "Clear highlights",
-    "selectToHighlight": "Select some text to highlight."
+    "selectToHighlight": "Select some text to highlight.",
+    "copy": "Copy text",
+    "copied": "Text copied",
+    "copyFailed": "Could not copy",
+    "readChapter": "Read full chapter",
+    "backToVerse": "Back to verse",
+    "prevChapter": "Previous chapter",
+    "nextChapter": "Next chapter",
+    "truncated": "Showing {{shown}} of {{total}} verses.",
+    "showAll": "Show all"
   },
   "theme": {
     "light": "Light mode",

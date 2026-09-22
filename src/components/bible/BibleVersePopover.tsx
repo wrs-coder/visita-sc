@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, BookOpen, GripHorizontal, X, Bold, Highlighter, Eraser } from "lucide-react";
-import { getVerseFromLibrary } from "@/lib/bible-notes-store";
+import {
+  Loader2, BookOpen, GripHorizontal, X, Bold, Highlighter, Eraser,
+  Copy, ChevronLeft, ChevronRight, List,
+} from "lucide-react";
+import { getChapterFromLibrary } from "@/lib/bible-notes-store";
+import { pushVerseHistory } from "@/lib/bible-history";
 import { getLocalizedBookName } from "@/lib/bible-canon";
 import type { CitationMatch } from "@/lib/bible-refs";
 import { cn } from "@/lib/utils";
@@ -47,9 +51,13 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
   const { t, i18n } = useTranslation();
   const displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName;
   const [open, setOpen] = useState(false);
-  const [parts, setParts] = useState<VersePart[] | null>(null);
-  const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Capítulo atualmente carregado (permite navegar entre capítulos).
+  const [chapter, setChapter] = useState(match.chapter);
+  const [chapterVerses, setChapterVerses] = useState<VersePart[] | null>(null);
+  // Modo "capítulo completo" e "ver mais" (acima do limite de MAX_RANGE).
+  const [chapterMode, setChapterMode] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   // View settings (color + bold) — global, persisted in localStorage.
   const [settings, setSettings] = useState<BibleViewSettings>(() => loadSettings());
@@ -112,8 +120,14 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
   }, [explicitClose]);
 
   useEffect(() => {
-    if (!open) setOffset({ x: 0, y: 0 });
-  }, [open]);
+    if (!open) {
+      setOffset({ x: 0, y: 0 });
+      // Volta ao estado original da citação ao reabrir.
+      setChapterMode(false);
+      setShowAll(false);
+      setChapter(match.chapter);
+    }
+  }, [open, match.chapter]);
 
   function onHandlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (e.button !== 0 && e.pointerType === "mouse") return;
@@ -159,56 +173,91 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
     dragRef.current = null;
   }
 
+  // Carrega o capítulo inteiro numa única transação (getAll + IDBKeyRange),
+  // em vez de uma leitura por versículo. Serve tanto para a citação quanto
+  // para o modo "capítulo completo" e a navegação entre capítulos.
   useEffect(() => {
-    if (!open || parts !== null) return;
+    if (!open) return;
     if (!libraryId) {
-      setParts([]);
+      setChapterVerses([]);
       return;
     }
+    let cancelled = false;
     setLoading(true);
+    getChapterFromLibrary(libraryId, match.bookId, chapter)
+      .then((recs) => {
+        if (cancelled) return;
+        setChapterVerses(recs.map((r) => ({ verse: r.verse, text: r.text })).filter((r) => r.text));
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setChapterVerses([]);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [open, libraryId, match.bookId, chapter]);
 
-    let nums: number[];
-    let cappedTruncation = false;
-    if (match.verses && match.verses.length > 0) {
-      nums = [...match.verses];
-      if (nums.length > MAX_RANGE) {
-        nums = nums.slice(0, MAX_RANGE);
-        cappedTruncation = true;
-      }
-    } else {
-      const start = match.verse;
-      let end = match.verseEnd && match.verseEnd > start ? match.verseEnd : start;
-      if (end - start + 1 > MAX_RANGE) {
-        end = start + MAX_RANGE - 1;
-        cappedTruncation = true;
-      }
-      nums = [];
-      for (let v = start; v <= end; v++) nums.push(v);
-    }
+  // Versículos exibidos: capítulo inteiro ou apenas os da citação.
+  const selectedVerses = useMemo<number[]>(() => {
+    if (match.verses && match.verses.length > 0) return [...match.verses];
+    const start = match.verse;
+    const end = match.verseEnd && match.verseEnd > start ? match.verseEnd : start;
+    const nums: number[] = [];
+    for (let v = start; v <= end; v++) nums.push(v);
+    return nums;
+  }, [match.verse, match.verseEnd, match.verses]);
 
-    Promise.all(
-      nums.map((v) =>
-        getVerseFromLibrary(libraryId, match.bookId, match.chapter, v).then((rec) => ({
-          verse: v,
-          text: rec?.text ?? "",
-        })),
-      ),
-    ).then((results) => {
-      setParts(results.filter((r) => r.text));
-      setTruncated(cappedTruncation);
-      setLoading(false);
-    });
-  }, [open, libraryId, match.bookId, match.chapter, match.verse, match.verseEnd, match.verses, parts]);
+  const totalSelected = selectedVerses.length;
+  const truncated = !chapterMode && !showAll && totalSelected > MAX_RANGE;
+
+  const parts = useMemo<VersePart[] | null>(() => {
+    if (chapterVerses === null) return null;
+    if (chapterMode) return chapterVerses;
+    const byVerse = new Map(chapterVerses.map((v) => [v.verse, v.text]));
+    const nums = truncated ? selectedVerses.slice(0, MAX_RANGE) : selectedVerses;
+    return nums
+      .map((v) => ({ verse: v, text: byVerse.get(v) ?? "" }))
+      .filter((p) => p.text);
+  }, [chapterVerses, chapterMode, selectedVerses, truncated]);
 
   // Load highlights for the verses currently shown.
   useEffect(() => {
     if (!open || !parts || !libraryId) return;
     const map: Record<number, BibleHighlight[]> = {};
     for (const p of parts) {
-      map[p.verse] = getHighlights(highlightKey(libraryId, match.bookId, match.chapter, p.verse));
+      map[p.verse] = getHighlights(highlightKey(libraryId, match.bookId, chapter, p.verse));
     }
     setHighlightsByVerse(map);
-  }, [open, parts, libraryId, match.bookId, match.chapter]);
+  }, [open, parts, libraryId, match.bookId, chapter]);
+
+  // Histórico local dos últimos versículos consultados.
+  useEffect(() => {
+    if (!open) return;
+    pushVerseHistory({
+      bookId: match.bookId,
+      bookName: displayBook,
+      chapter: match.chapter,
+      verse: match.verse,
+    });
+  }, [open, match.bookId, match.chapter, match.verse, displayBook]);
+
+  const onCopy = useCallback(async () => {
+    if (!parts || parts.length === 0) return;
+    const ref = `${displayBook} ${chapter}:${parts.map((p) => p.verse).join(", ")}`;
+    const body = parts.map((p) => `${p.verse} ${p.text}`).join(" ");
+    try {
+      await navigator.clipboard.writeText(`${ref} — ${body}`);
+      toast.success(t("bibleVerse.copied", { defaultValue: "Texto copiado" }));
+    } catch {
+      toast.error(t("bibleVerse.copyFailed", { defaultValue: "Não foi possível copiar" }));
+    }
+  }, [parts, displayBook, chapter, t]);
+
+  const goChapter = useCallback((delta: number) => {
+    setChapter((c) => Math.max(1, c + delta));
+    setChapterMode(true);
+  }, []);
 
   const updateSetting = (patch: Partial<BibleViewSettings>) => {
     setSettings(saveSettings(patch));
@@ -251,7 +300,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
     const start = Math.min(a.offset, b.offset);
     const end = Math.max(a.offset, b.offset);
     if (end <= start) return;
-    const key = highlightKey(libraryId, match.bookId, match.chapter, a.verse);
+    const key = highlightKey(libraryId, match.bookId, chapter, a.verse);
     const next = addHighlight(key, { start, end });
     setHighlightsByVerse((m) => ({ ...m, [a.verse]: next }));
     sel.removeAllRanges();
@@ -259,7 +308,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
 
   const onSegmentClick = (verse: number, segStart: number, highlighted: boolean) => {
     if (!libraryId || !highlighted) return;
-    const key = highlightKey(libraryId, match.bookId, match.chapter, verse);
+    const key = highlightKey(libraryId, match.bookId, chapter, verse);
     const next = removeHighlightAt(key, segStart);
     setHighlightsByVerse((m) => ({ ...m, [verse]: next }));
   };
@@ -267,18 +316,21 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
   const onClearAll = () => {
     if (!libraryId || !parts) return;
     for (const p of parts) {
-      clearHighlights(highlightKey(libraryId, match.bookId, match.chapter, p.verse));
+      clearHighlights(highlightKey(libraryId, match.bookId, chapter, p.verse));
     }
     setHighlightsByVerse(Object.fromEntries(parts.map((p) => [p.verse, []])));
   };
 
   const isList = Boolean(match.verses && match.verses.length > 1);
   const isRange = !isList && match.verseEnd && match.verseEnd > match.verse;
-  const headerVerses = isList
-    ? match.verses!.join(",")
-    : match.verseEnd
-      ? `${match.verse}-${match.verseEnd}`
-      : `${match.verse}`;
+  const headerVerses = chapterMode
+    ? ""
+    : isList
+      ? match.verses!.join(",")
+      : match.verseEnd
+        ? `${match.verse}-${match.verseEnd}`
+        : `${match.verse}`;
+  const multiVerse = chapterMode || isRange || isList;
 
   const textContainerClass = useMemo(
     () => cn("text-sm leading-relaxed space-y-1.5 px-4 py-3 rounded-b-md", `bible-color-${settings.color}`, settings.bold && "bible-text-bold"),
@@ -323,7 +375,9 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         onFocusOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
+        // Esc é uma ação deliberada do usuário (teclado): fecha o popup.
+        // Cliques fora, blur e toggle continuam ignorados (Missão 03).
+        onEscapeKeyDown={() => explicitClose()}
       >
         {/* Alça de arrasto + fechar */}
         <div
@@ -338,8 +392,17 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
           <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
           <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs font-semibold text-foreground flex-1 truncate">
-            {displayBook} {match.chapter}:{headerVerses}
+            {displayBook} {chapter}{headerVerses ? `:${headerVerses}` : ""}
           </span>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); void onCopy(); }}
+            className="p-1 rounded hover:bg-background text-muted-foreground"
+            aria-label={t("bibleVerse.copy", { defaultValue: "Copiar texto" })}
+            title={t("bibleVerse.copy", { defaultValue: "Copiar texto" })}
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </button>
           <button
             type="button"
             onClick={(e) => {
@@ -402,7 +465,42 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
           >
             <Eraser className="h-3.5 w-3.5" />
           </button>
+          <div className="mx-1 h-4 w-px bg-border" />
+          <button
+            type="button"
+            aria-pressed={chapterMode}
+            title={
+              chapterMode
+                ? t("bibleVerse.backToVerse", { defaultValue: "Voltar ao versículo" })
+                : t("bibleVerse.readChapter", { defaultValue: "Ler o capítulo inteiro" })
+            }
+            onClick={() => setChapterMode((v) => !v)}
+            className={cn(
+              "p-1 rounded hover:bg-background",
+              chapterMode ? "bg-background text-foreground" : "text-muted-foreground",
+            )}
+          >
+            <List className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title={t("bibleVerse.prevChapter", { defaultValue: "Capítulo anterior" })}
+            onClick={() => goChapter(-1)}
+            disabled={chapter <= 1}
+            className="p-1 rounded hover:bg-background text-muted-foreground disabled:opacity-40"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title={t("bibleVerse.nextChapter", { defaultValue: "Próximo capítulo" })}
+            onClick={() => goChapter(1)}
+            className="p-1 rounded hover:bg-background text-muted-foreground"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
+
 
         <div className="overflow-y-auto max-h-[calc(70vh-5rem)]">
           {loading ? (
@@ -418,7 +516,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
               onDoubleClick={handleDoubleTapClose}
               onTouchEnd={handleTextTouchEnd}
             >
-              {isRange || isList ? (
+              {multiVerse ? (
                 <p>
                   {parts.map((p, i) => (
                     <span key={p.verse}>
@@ -434,8 +532,20 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
                 <p>{renderVerseSegments(parts[0])}</p>
               )}
               {truncated && (
-                <p className="text-[11px] opacity-70 italic pt-1">
-                  Intervalo grande — mostrando apenas os primeiros {MAX_RANGE} versículos.
+                <p className="text-[11px] opacity-80 italic pt-1">
+                  {t("bibleVerse.truncated", {
+                    defaultValue:
+                      "Mostrando {{shown}} de {{total}} versículos.",
+                    shown: MAX_RANGE,
+                    total: totalSelected,
+                  })}{" "}
+                  <button
+                    type="button"
+                    onClick={() => setShowAll(true)}
+                    className="underline font-medium not-italic"
+                  >
+                    {t("bibleVerse.showAll", { defaultValue: "Ver todos" })}
+                  </button>
                 </p>
               )}
             </div>

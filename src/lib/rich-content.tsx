@@ -172,17 +172,15 @@ function styleObjectFromAttr(styleAttr: string | null): React.CSSProperties | un
 }
 
 
-let _keySeed = 0;
-function nextKey(): string {
-  _keySeed = (_keySeed + 1) % 1_000_000;
-  return `rk-${_keySeed}`;
-}
-
+// Chaves estáveis: derivadas da posição do nó na árvore ("0.2.1"), e não de
+// um contador global. Sem isso o React remontava toda a subárvore a cada
+// render, fechando popovers de versículo abertos e perdendo o scroll.
 function renderTextWithCitations(
   text: string,
   books: BookInfo[] | undefined,
   libraryId: string | null,
   fontScale: number | undefined,
+  path: string,
 ): React.ReactNode {
   if (!text) return text;
   const matches = findCitations(books, text);
@@ -193,7 +191,7 @@ function renderTextWithCitations(
     if (m.index > cursor) parts.push(text.slice(cursor, m.index));
     parts.push(
       <VerseLink
-        key={`${nextKey()}-${i}`}
+        key={`${path}-c${i}`}
         match={m}
         libraryId={libraryId}
         fontScale={fontScale}
@@ -210,29 +208,29 @@ interface RenderOpts {
   fontScale?: number;
 }
 
-function renderNode(node: Node, opts: RenderOpts): React.ReactNode {
+function renderNode(node: Node, opts: RenderOpts, path: string): React.ReactNode {
   const books = opts.library?.books;
   const libraryId = opts.library?.id ?? null;
 
   if (node.nodeType === Node.TEXT_NODE) {
-    return renderTextWithCitations(node.nodeValue ?? "", books, libraryId, opts.fontScale);
+    return renderTextWithCitations(node.nodeValue ?? "", books, libraryId, opts.fontScale, path);
   }
   if (node.nodeType !== Node.ELEMENT_NODE) return null;
 
   const el = node as Element;
   const tag = el.tagName;
   if (!ALLOWED_TAGS.has(tag)) {
-    return Array.from(el.childNodes).map((c) => (
-      <React.Fragment key={nextKey()}>{renderNode(c, opts)}</React.Fragment>
+    return Array.from(el.childNodes).map((c, i) => (
+      <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`)}</React.Fragment>
     ));
   }
 
-  const children = Array.from(el.childNodes).map((c) => (
-    <React.Fragment key={nextKey()}>{renderNode(c, opts)}</React.Fragment>
+  const children = Array.from(el.childNodes).map((c, i) => (
+    <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`)}</React.Fragment>
   ));
 
   const style = styleObjectFromAttr(el.getAttribute("style"));
-  const key = nextKey();
+  const key = path;
   const lower = tag.toLowerCase();
 
   const props: Record<string, unknown> = { key };
@@ -290,7 +288,7 @@ export function looksLikeHtml(s: string): boolean {
  * Aceita também texto puro (notas antigas) — caso em que cai no caminho
  * `whitespace-pre-wrap` simples.
  */
-export function RichOutlineContent({
+function RichOutlineContentImpl({
   html,
   library,
   fontScale,
@@ -301,29 +299,46 @@ export function RichOutlineContent({
   fontScale?: number;
   emptyFallback?: React.ReactNode;
 }): React.ReactElement {
-  if (!html || !html.trim()) {
-    return <>{emptyFallback ?? null}</>;
-  }
+  const libraryId = library?.id ?? null;
 
-  if (!looksLikeHtml(html)) {
-    return (
-      <div className="whitespace-pre-wrap">
-        {renderTextWithCitations(html, library?.books, library?.id ?? null, fontScale)}
-      </div>
-    );
-  }
+  // Todo o trabalho pesado (sanitização + DOMParser + varredura de citações)
+  // acontece uma única vez por conteúdo/biblioteca, e não a cada render.
+  const rendered = React.useMemo<React.ReactElement | null>(() => {
+    if (!html || !html.trim()) return null;
 
-  if (typeof window === "undefined" || !("DOMParser" in window)) {
-    return <div className="whitespace-pre-wrap">{html}</div>;
-  }
+    if (!looksLikeHtml(html)) {
+      return (
+        <div className="whitespace-pre-wrap">
+          {renderTextWithCitations(html, library?.books, libraryId, fontScale, "t")}
+        </div>
+      );
+    }
 
-  const safe = sanitizeNoteHtml(html);
-  const doc = new DOMParser().parseFromString(`<div id="__root">${safe}</div>`, "text/html");
-  const root = doc.getElementById("__root");
-  if (!root) return <></>;
-  const nodes = Array.from(root.childNodes).map((n) => (
-    <React.Fragment key={nextKey()}>{renderNode(n, { library, fontScale })}</React.Fragment>
-  ));
-  return <div className={RICH_NOTE_CONTENT_CLASS}>{nodes}</div>;
+    if (typeof window === "undefined" || !("DOMParser" in window)) {
+      return <div className="whitespace-pre-wrap">{html}</div>;
+    }
+
+    const safe = sanitizeNoteHtml(html);
+    const doc = new DOMParser().parseFromString(`<div id="__root">${safe}</div>`, "text/html");
+    const root = doc.getElementById("__root");
+    if (!root) return null;
+    const nodes = Array.from(root.childNodes).map((n, i) => (
+      <React.Fragment key={`n${i}`}>
+        {renderNode(n, { library, fontScale }, `n${i}`)}
+      </React.Fragment>
+    ));
+    return <div className={RICH_NOTE_CONTENT_CLASS}>{nodes}</div>;
+    // `library` só importa pela identidade do id/livros; fontScale muda tamanho.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [html, libraryId, library?.books, fontScale]);
+
+  if (!rendered) return <>{emptyFallback ?? null}</>;
+  return rendered;
 }
+
+/**
+ * Memoizado: só re-renderiza quando o HTML, a biblioteca ativa ou a escala
+ * mudam. Evita reprocessar notas longas a cada atualização de estado do pai.
+ */
+export const RichOutlineContent = React.memo(RichOutlineContentImpl);
 

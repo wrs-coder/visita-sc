@@ -1621,7 +1621,16 @@
     "bold": "Negrita",
     "highlight": "Resaltar selección",
     "clearHighlights": "Borrar resaltados",
-    "selectToHighlight": "Selecciona un texto para resaltar."
+    "selectToHighlight": "Selecciona un texto para resaltar.",
+    "copy": "Copiar texto",
+    "copied": "Texto copiado",
+    "copyFailed": "No se pudo copiar",
+    "readChapter": "Leer el capítulo completo",
+    "backToVerse": "Volver al versículo",
+    "prevChapter": "Capítulo anterior",
+    "nextChapter": "Capítulo siguiente",
+    "truncated": "Mostrando {{shown}} de {{total}} versículos.",
+    "showAll": "Ver todos"
   },
   "theme": {
     "light": "Modo claro",
