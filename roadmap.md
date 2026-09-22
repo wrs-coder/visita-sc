@@ -14,6 +14,6 @@
 - [x] Impedir que a imagem nativa de abertura reapareça sobre o editor durante rolagem, teclado e seleção de texto (4.2.6/versionCode 16).
 - [x] Offline-First evolutivo — Fase 0 (base local): espelho `src/lib/local-db.ts` com carimbos, tombstones, cursor e resolução de conflito. Camada passiva, nenhuma tela alterada.
 - [x] Offline-First evolutivo — Fase 1: carimbos `updated_at` + registro de exclusões no banco e download incremental (`src/lib/local-sync.ts`), ainda sem ligar nas telas.
-- [ ] Offline-First evolutivo — Fase 2: telas críticas lendo do espelho local (com caminho antigo como reserva).
+- [x] Offline-First evolutivo — Fase 2: telas Refeições, Transporte e visita ativa lendo do espelho local (`src/lib/local-first.ts`), servidor continua sendo a fonte quando responde.
 - [ ] Offline-First evolutivo — Fase 3: caixa de saída + reconciliação de conflito.
 - [ ] Offline-First evolutivo — Fase 4: sincronização automática e painel de estado.
