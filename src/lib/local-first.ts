@@ -76,25 +76,25 @@ export async function readOneWithMirror<T extends Row>(opts: {
   id?: string | null;
   filter?: (row: T) => boolean;
   sort?: (a: T, b: T) => number;
-}): Promise<MirrorReadResult<T | null>> {
+}): Promise<{ row: T | null; source: "remote" | "local" }> {
   try {
     const { data, error } = await opts.remote();
     if (error) throw error;
     if (data) mirrorAsync(opts.table, [data]);
-    return { rows: data ?? null, source: "remote" } as MirrorReadResult<T | null>;
+    return { row: data ?? null, source: "remote" };
   } catch (err) {
     console.warn("[local-first] servidor indisponível, usando dados locais", opts.table, err);
     try {
       if (opts.id) {
         const row = await getRow<T>(opts.table, opts.id);
-        if (row) return { rows: row, source: "local" } as MirrorReadResult<T | null>;
+        if (row) return { row, source: "local" };
       }
       const rows = await getRows<T>(opts.table, opts.filter);
       const sorted = opts.sort ? [...rows].sort(opts.sort) : rows;
-      return { rows: sorted[0] ?? null, source: "local" } as MirrorReadResult<T | null>;
+      return { row: sorted[0] ?? null, source: "local" };
     } catch (mirrorErr) {
       console.warn("[local-first] espelho indisponível", opts.table, mirrorErr);
-      return { rows: null, source: "local" } as MirrorReadResult<T | null>;
+      return { row: null, source: "local" };
     }
   }
 }
