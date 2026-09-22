@@ -376,7 +376,12 @@ export function suggestBook(
   if (!books || books.length === 0 || !term) return null;
   const q = stripDiacritics(term.toLowerCase()).replace(/\.$/, "").replace(/\s+/g, " ").trim();
   if (q.length < 2) return null;
-  let best: { bookId: string; displayName: string; d: number } | null = null;
+  let best: { bookId: string; displayName: string; score: number } | null = null;
+  const prefixLen = (a: string, b: string) => {
+    let n = 0;
+    while (n < a.length && n < b.length && a[n] === b[n]) n++;
+    return n;
+  };
   for (const b of books) {
     const candidates = [b.displayName, ...(b.aliases ?? [])];
     for (const c of candidates) {
@@ -385,8 +390,11 @@ export function suggestBook(
       // Distância máxima proporcional ao tamanho: termos curtos toleram menos erro.
       const limit = k.length <= 3 ? 1 : k.length <= 6 ? 2 : 3;
       const d = levenshtein(q, k);
-      if (d <= limit && (!best || d < best.d)) {
-        best = { bookId: b.bookId, displayName: b.displayName, d };
+      if (d > limit) continue;
+      // Desempate por prefixo em comum ("joõa" → "joão", não "joel").
+      const score = d - prefixLen(q, k) * 0.1;
+      if (!best || score < best.score) {
+        best = { bookId: b.bookId, displayName: b.displayName, score };
       }
     }
   }
@@ -421,15 +429,30 @@ export function findUnknownCitations(
     if (taken.some(([s, e]) => start < e && end > s)) continue;
     const key = stripDiacritics(bookTerm.toLowerCase()).replace(/\.$/, "");
     if (lookup.has(key)) continue;
-    const suggestion = suggestBook(books, bookTerm);
+    // O capture pode trazer a palavra anterior ("Veja Joõa"); tenta o termo
+    // completo e, se não houver sugestão, apenas a última palavra.
+    let term = bookTerm;
+    let suggestion = suggestBook(books, term);
+    if (!suggestion) {
+      const parts = bookTerm.split(/\s+/);
+      if (parts.length > 1) {
+        const tail = parts.slice(-1)[0];
+        const tailKey = stripDiacritics(tail.toLowerCase()).replace(/\.$/, "");
+        if (lookup.has(tailKey)) continue;
+        suggestion = suggestBook(books, tail);
+        if (suggestion) term = tail;
+      }
+    }
     if (!suggestion) continue;
+    const offset = bookTerm.length - term.length;
+    const rawFixed = `${term} ${m[2]}:${m[3]}`;
     out.push({
-      raw,
-      bookTerm,
+      raw: rawFixed,
+      bookTerm: term,
       chapter: parseInt(m[2], 10),
       verse: parseInt(m[3], 10),
-      index: start,
-      length: end - start,
+      index: start + offset,
+      length: end - start - offset,
       suggestion,
     });
   }
