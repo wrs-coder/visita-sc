@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { listPending, retryNow, subscribeQueue, type QueuedMutation } from "@/lib/offline-queue";
@@ -23,15 +24,15 @@ import {
   type AutoSyncState,
 } from "@/lib/local-auto-sync";
 
-function formatRel(iso: string | null, t: (k: string, o?: Record<string, unknown>) => string): string {
+function formatRel(iso: string | null, t: TFunction): string {
   if (!iso) return t("sync.never", "nunca");
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.round(diff / 60000);
   if (min < 1) return t("sync.now", "agora");
-  if (min < 60) return t("sync.minutesAgo", "há {{n}} min", { n: min });
+  if (min < 60) return t("sync.minutesAgo", { n: min, defaultValue: "há {{n}} min" });
   const h = Math.round(min / 60);
-  if (h < 24) return t("sync.hoursAgo", "há {{n}} h", { n: h });
-  return t("sync.daysAgo", "há {{n}} d", { n: Math.round(h / 24) });
+  if (h < 24) return t("sync.hoursAgo", { n: h, defaultValue: "há {{n}} h" });
+  return t("sync.daysAgo", { n: Math.round(h / 24), defaultValue: "há {{n}} d" });
 }
 
 function formatMB(bytes: number): string {
