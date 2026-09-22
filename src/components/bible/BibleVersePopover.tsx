@@ -6,6 +6,7 @@ import {
   Copy, ChevronLeft, ChevronRight, List,
 } from "lucide-react";
 import { getChapterFromLibrary } from "@/lib/bible-notes-store";
+import { pushVerseHistory } from "@/lib/bible-history";
 import { getLocalizedBookName } from "@/lib/bible-canon";
 import type { CitationMatch } from "@/lib/bible-refs";
 import { cn } from "@/lib/utils";
