@@ -1647,7 +1647,16 @@
     "bold": "Negrito",
     "highlight": "Grifar trecho selecionado",
     "clearHighlights": "Limpar grifos",
-    "selectToHighlight": "Selecione um trecho do texto para grifar."
+    "selectToHighlight": "Selecione um trecho do texto para grifar.",
+    "copy": "Copiar texto",
+    "copied": "Texto copiado",
+    "copyFailed": "Não foi possível copiar",
+    "readChapter": "Ler o capítulo inteiro",
+    "backToVerse": "Voltar ao versículo",
+    "prevChapter": "Capítulo anterior",
+    "nextChapter": "Próximo capítulo",
+    "truncated": "Mostrando {{shown}} de {{total}} versículos.",
+    "showAll": "Ver todos"
   },
   "theme": {
     "light": "Modo claro",
