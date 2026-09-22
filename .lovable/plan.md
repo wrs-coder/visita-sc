@@ -46,3 +46,23 @@ Correção: oferecer, logo após o login, um "baixar tudo agora" com barra de pr
 ## Execução sugerida
 
 Etapa A: itens 1 e 5. Etapa B: item 2. Etapa C: itens 3 e 4.
+
+## Riscos
+
+Baixos, porque nada troca a base existente:
+
+- **Baixar mais dados por dia** (esboços + download inicial): mais tráfego, mas tudo incremental — só o que mudou desde a última vez. Sem risco de corromper dados.
+- **Anexos na nuvem**: o único item com custo de armazenamento. Mitigado mantendo fotos reduzidas a 2000 px e vídeos limitados a 200 MB; a cópia local continua principal e o anexo na nuvem é opcional.
+- **Limpeza do espelho**: o único item que apaga algo localmente. Protegido por regra simples: nunca remove nada pendente de envio nem da semana/congregação ativa.
+- **Lista de pendências**: só exibe o que já existe; não altera o envio.
+
+Nenhum item toca regras de acesso do banco (RLS), a Bíblia offline ou o login por PIN/biometria. Cada etapa é independente: se uma falhar, as anteriores continuam valendo.
+
+## Consumo de servidor e banco
+
+- **Sincronização automática**: continua no máximo 2 vezes ao dia, e incremental (poucas dezenas de linhas por vez). Mesmo adicionando os esboços, o volume é pequeno — texto JSON de alguns KB por esboço.
+- **Download inicial**: acontece uma vez por aparelho novo, sob comando do usuário. Para um superintendente com 30 congregações e um ano de histórico, estimativa de alguns MB — comparável a abrir o app por uma semana.
+- **Banco de dados**: nenhuma tabela ou índice novo é necessário para os itens 1, 3, 4 e 5. O item 2 (anexos) usa um espaço de arquivos na nuvem; dependendo da quantidade de fotos/vídeos dos usuários, é o único item que pode gerar custo relevante com o tempo — por isso fica como etapa separada (B), que pode ser ativada depois de medir o uso.
+- **Tombstones** (registro de exclusões) já existem e crescem devagar; podem ganhar limpeza periódica simples em etapa futura.
+
+Resumo: itens 1, 3, 4 e 5 têm impacto quase nulo de custo. O item 2 é o único com custo de armazenamento crescente e pode esperar.
