@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { supabase } from "@/integrations/supabase/client";
+import { readWithMirror } from "@/lib/local-first";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,13 +54,20 @@ export function FieldMeetingsPanel() {
   useEffect(() => {
     if (!visit) return;
     const load = async () => {
-      const { data } = await supabase
-        .from("field_meetings")
-        .select("id,visit_id,event_date,period,modality,meeting_time,meeting_location,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations,is_active")
-        .eq("visit_id", visit.id)
-        .order("event_date")
-        .order("period");
-      setRows((data ?? []) as Row[]);
+      const res = await readWithMirror<Row & Record<string, unknown>>({
+        table: "field_meetings",
+        remote: () => supabase
+          .from("field_meetings")
+          .select("id,visit_id,event_date,period,modality,meeting_time,meeting_location,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations,is_active")
+          .eq("visit_id", visit.id)
+          .order("event_date")
+          .order("period") as never,
+        filter: (r) => r.visit_id === visit.id,
+        sort: (a, b) =>
+          String(a.event_date).localeCompare(String(b.event_date)) ||
+          String(a.period).localeCompare(String(b.period)),
+      });
+      setRows(res.rows as Row[]);
     };
     load();
     const ch = supabase

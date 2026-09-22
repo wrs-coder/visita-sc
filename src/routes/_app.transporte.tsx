@@ -32,6 +32,7 @@ import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { TransportReportDialog } from "@/components/visit-week/TransportReportDialog";
 import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
 import { readWithMirror } from "@/lib/local-first";
+import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/local-write";
 
 export const Route = createFileRoute("/_app/transporte")({ component: Page });
 
@@ -154,7 +155,7 @@ function Page() {
         description: evType === "other" && otherDesc ? otherDesc : null,
         notes: editing.notes || null,
       };
-      const { error } = await supabase.from("transport_schedule").insert(payload);
+      const { error } = await offlineInsert("transport_schedule", payload as Record<string, unknown>);
       if (error) {
         toast.error(error.message);
         return;
@@ -169,7 +170,7 @@ function Page() {
 
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("transport_schedule").delete().eq("id", id);
+    const { error } = await offlineDelete("transport_schedule", { id });
     if (error) toast.error(error.message);
   };
 
@@ -183,7 +184,7 @@ function Page() {
 
   // Update a single row (per-event driver fields).
   const updateRow = async (id: string, patch: Partial<Transport>) => {
-    const { error } = await supabase.from("transport_schedule").update(patch).eq("id", id);
+    const { error } = await offlineUpdate("transport_schedule", patch as Record<string, unknown>, { id });
     if (error) toast.error(error.message);
   };
 
