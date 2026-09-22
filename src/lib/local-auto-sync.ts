@@ -62,16 +62,47 @@ export function getAutoSyncState(): AutoSyncState {
   return { ...state };
 }
 
-const INTERVAL_MS = 5 * 60 * 1000; // 5 min
 const MIN_GAP_MS = 30 * 1000; // evita tempestade em eventos encadeados
 let lastStart = 0;
 let started = false;
+
+// ————— Janelas diárias (horário do aparelho) —————
+export type SyncWindow = "morning" | "afternoon";
+
+export function currentSyncWindow(now: Date = new Date()): SyncWindow | null {
+  const h = now.getHours();
+  if (h >= 6 && h < 12) return "morning";
+  if (h >= 12) return "afternoon";
+  return null; // 00:00–05:59: sem sincronização automática
+}
+
+function dayKey(d: Date = new Date()): string {
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+const windowCursorKey = (w: SyncWindow) => `__auto_sync_window:${w}`;
+
+/** A janela atual já sincronizou hoje? (null = fora de janela) */
+async function windowAlreadySyncedToday(w: SyncWindow): Promise<boolean> {
+  return (await getCursor(windowCursorKey(w))) === dayKey();
+}
 
 export async function runAutoSync(opts?: { force?: boolean }): Promise<PullResult[] | null> {
   if (typeof navigator !== "undefined" && !navigator.onLine) return null;
   if (state.running) return null;
   const now = Date.now();
   if (!opts?.force && now - lastStart < MIN_GAP_MS) return null;
+
+  // Sem force: respeita a janela do dia (máx. 1 execução por janela).
+  let windowToMark: SyncWindow | null = null;
+  if (!opts?.force) {
+    const w = currentSyncWindow();
+    if (!w) return null;
+    if (await windowAlreadySyncedToday(w)) return null;
+    windowToMark = w;
+  }
   lastStart = now;
 
   state = { ...state, running: true, error: null, progress: null };
