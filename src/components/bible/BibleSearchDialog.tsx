@@ -61,7 +61,7 @@ export function BibleSearchDialog({ open, onOpenChange, library }: Props) {
 
   const toMatch = (bookId: string, chapter: number, verse: number): CitationMatch => {
     const name = getLocalizedBookName(bookId, i18n.language)
-      ?? library?.books.find((b) => b.id === bookId)?.name
+      ?? library?.books.find((b) => b.bookId === bookId)?.displayName
       ?? bookId;
     return {
       raw: `${name} ${chapter}:${verse}`,
