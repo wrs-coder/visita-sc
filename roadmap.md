@@ -9,3 +9,4 @@
 - [ ] (usuário) Remover domínio principal em Project Settings → Domains para ativar as 3 contingências reais.
 - [ ] (usuário) Abrir chamado no suporte Lovable sobre falha regional de acesso a *.lovable.app.
 - [x] Aplicar melhorias bíblicas ao esboço e à Tela Cheia, incluindo inserção direta do texto na nota.
+- [x] Detectar citações bíblicas por bloco (parágrafo/lista), corrigindo links e avisos de referência com erro nos modos Esboço e Tela Cheia; completar abreviações 1Te/2Te/1Thess/2Thess.
