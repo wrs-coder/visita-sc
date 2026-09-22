@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { TransportReportDialog } from "@/components/visit-week/TransportReportDialog";
 import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
+import { readWithMirror } from "@/lib/local-first";
 
 export const Route = createFileRoute("/_app/transporte")({ component: Page });
 
@@ -69,13 +70,22 @@ function Page() {
   useEffect(() => {
     if (!visit) return;
     const load = async () => {
-      const { data } = await supabase
-        .from("transport_schedule")
-        .select("*")
-        .eq("visit_id", visit.id)
-        .order("event_date", { nullsFirst: false })
-        .order("departure_time", { nullsFirst: false });
-      setItems((data ?? []) as Transport[]);
+      // Local-first: servidor primeiro; espelho local como reserva offline.
+      const res = await readWithMirror<Transport & Record<string, unknown>>({
+        table: "transport_schedule",
+        remote: () =>
+          supabase
+            .from("transport_schedule")
+            .select("*")
+            .eq("visit_id", visit.id)
+            .order("event_date", { nullsFirst: false })
+            .order("departure_time", { nullsFirst: false }) as never,
+        filter: (r) => r.visit_id === visit.id,
+        sort: (a, b) =>
+          String(a.event_date ?? "").localeCompare(String(b.event_date ?? "")) ||
+          String(a.departure_time ?? "").localeCompare(String(b.departure_time ?? "")),
+      });
+      setItems(res.rows as Transport[]);
     };
     load();
     const ch = supabase
