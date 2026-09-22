@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
@@ -972,8 +973,8 @@ function WifeCoupleSummaryCard({ code, onOpen }: { code: string; onOpen: () => v
     let cancelled = false;
     const load = async () => {
       try {
-        const r = await listFn({ data: { inviteCode: code } });
-        if (cancelled || !r.ok) return;
+        const { data: r } = await readFnWithMirrorSafe(`wife-couple:${code}`, () => listFn({ data: { inviteCode: code } }));
+        if (cancelled || !r?.ok) return;
         setUnread(r.unread);
         setTotal(r.threads.length);
       } catch (err) {
@@ -1249,8 +1250,8 @@ function WifeCouplePanel({ code }: { code: string }) {
 
   const load = useCallback(async () => {
     try {
-      const r = await listFn({ data: { inviteCode: code } });
-      if (r.ok) setThreads(r.threads);
+      const { data: r } = await readFnWithMirrorSafe(`wife-couple:${code}`, () => listFn({ data: { inviteCode: code } }));
+      if (r?.ok) setThreads(r.threads);
     } catch (err) {
       console.warn("[wife-couple] load failed", err);
     } finally {

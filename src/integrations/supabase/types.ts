@@ -72,6 +72,7 @@ export type Database = {
           sort_order: number
           template_id: string
           title: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
@@ -80,6 +81,7 @@ export type Database = {
           sort_order?: number
           template_id: string
           title: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
@@ -88,6 +90,7 @@ export type Database = {
           sort_order?: number
           template_id?: string
           title?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -195,6 +198,7 @@ export type Database = {
           is_active: boolean
           name: string
           superintendent_id: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
@@ -207,6 +211,7 @@ export type Database = {
           is_active?: boolean
           name: string
           superintendent_id: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
@@ -219,6 +224,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           superintendent_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -553,6 +559,7 @@ export type Database = {
           label: string
           sort_order: number
           template_id: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
@@ -560,6 +567,7 @@ export type Database = {
           label: string
           sort_order?: number
           template_id: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
@@ -567,6 +575,7 @@ export type Database = {
           label?: string
           sort_order?: number
           template_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -638,6 +647,7 @@ export type Database = {
           id: string
           label: string
           sort_order: number
+          updated_at: string
           visit_id: string
         }
         Insert: {
@@ -645,6 +655,7 @@ export type Database = {
           id?: string
           label: string
           sort_order?: number
+          updated_at?: string
           visit_id: string
         }
         Update: {
@@ -652,6 +663,7 @@ export type Database = {
           id?: string
           label?: string
           sort_order?: number
+          updated_at?: string
           visit_id?: string
         }
         Relationships: []
@@ -858,6 +870,7 @@ export type Database = {
           template_id: string
           territory_location: string | null
           territory_number: string | null
+          updated_at: string
         }
         Insert: {
           auxiliary_leaders?: string | null
@@ -874,6 +887,7 @@ export type Database = {
           template_id: string
           territory_location?: string | null
           territory_number?: string | null
+          updated_at?: string
         }
         Update: {
           auxiliary_leaders?: string | null
@@ -890,6 +904,7 @@ export type Database = {
           template_id?: string
           territory_location?: string | null
           territory_number?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -1223,6 +1238,7 @@ export type Database = {
           sort_order: number
           template_id: string
           title: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
@@ -1230,6 +1246,7 @@ export type Database = {
           sort_order?: number
           template_id: string
           title: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
@@ -1237,6 +1254,7 @@ export type Database = {
           sort_order?: number
           template_id?: string
           title?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -1486,6 +1504,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          updated_at: string
           username: string | null
           wife_invite_code: string | null
         }
@@ -1497,6 +1516,7 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          updated_at?: string
           username?: string | null
           wife_invite_code?: string | null
         }
@@ -1508,6 +1528,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          updated_at?: string
           username?: string | null
           wife_invite_code?: string | null
         }
@@ -1530,6 +1551,7 @@ export type Database = {
           payload: Json
           sort_order: number
           template_id: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
@@ -1539,6 +1561,7 @@ export type Database = {
           payload?: Json
           sort_order?: number
           template_id: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
@@ -1548,6 +1571,7 @@ export type Database = {
           payload?: Json
           sort_order?: number
           template_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -1651,6 +1675,27 @@ export type Database = {
           },
         ]
       }
+      sync_tombstones: {
+        Row: {
+          deleted_at: string
+          id: number
+          row_id: string
+          table_name: string
+        }
+        Insert: {
+          deleted_at?: string
+          id?: never
+          row_id: string
+          table_name: string
+        }
+        Update: {
+          deleted_at?: string
+          id?: never
+          row_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       talk_themes: {
         Row: {
           congregation_id: string | null
@@ -1750,6 +1795,7 @@ export type Database = {
           elder_position: Database["public"]["Enums"]["elder_position"] | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -1758,6 +1804,7 @@ export type Database = {
           elder_position?: Database["public"]["Enums"]["elder_position"] | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -1766,6 +1813,7 @@ export type Database = {
           elder_position?: Database["public"]["Enums"]["elder_position"] | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1908,6 +1956,7 @@ export type Database = {
           template_id: string | null
           template_snapshot: Json
           title: string
+          updated_at: string
         }
         Insert: {
           checklist_template_id?: string | null
@@ -1926,6 +1975,7 @@ export type Database = {
           template_id?: string | null
           template_snapshot?: Json
           title: string
+          updated_at?: string
         }
         Update: {
           checklist_template_id?: string | null
@@ -1944,6 +1994,7 @@ export type Database = {
           template_id?: string | null
           template_snapshot?: Json
           title?: string
+          updated_at?: string
         }
         Relationships: [
           {

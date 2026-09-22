@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790112845668,
+      "tag": "0000_offline_first_sync_stamps_and_tombstones",
+      "breakpoints": true
+    }
+  ]
+}

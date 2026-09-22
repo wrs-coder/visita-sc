@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { readFnWithMirrorSafe, readOneWithMirror } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -248,8 +249,8 @@ function Dashboard() {
   const loadCouple = useCallback(async () => {
     if (!user || role !== "superintendent") return;
     try {
-      const r = await listCoupleFn();
-      if (r.ok) {
+      const { data: r } = await readFnWithMirrorSafe("couple-messages:super", () => listCoupleFn());
+      if (r?.ok) {
         setCoupleThreads(r.threads);
         setCoupleUnread(r.unread);
       }
@@ -392,8 +393,8 @@ function Dashboard() {
     let cancelled = false;
     (async () => {
       try {
-        const r = await fnLoadElder({ data: { visitId: visit.id } });
-        if (cancelled || !r.ok) return;
+        const { data: r } = await readFnWithMirrorSafe(`elder-program:${visit.id}`, () => fnLoadElder({ data: { visitId: visit.id } }));
+        if (cancelled || !r?.ok) return;
         setElderPastoral(r.pastoral);
         setElderEncouragement(r.encouragement);
         setElderRecommendations(r.recommendations);
@@ -620,10 +621,23 @@ function Dashboard() {
     let cancelled = false;
     (async () => {
       const viewedDow = viewedDate.getDay();
+      const byVisit = (r: Record<string, unknown>) => r.visit_id === visit.id;
       const [mw, we, pi] = await Promise.all([
-        supabase.from("midweek_meetings").select("meeting_at, service_talk_theme, chairman, closing_prayer").eq("visit_id", visit.id).maybeSingle(),
-        supabase.from("weekend_meetings").select("meeting_at, talk_theme_title, public_talk_theme").eq("visit_id", visit.id).maybeSingle(),
-        supabase.from("pioneer_meetings").select("meeting_at, super_meeting_at, theme, location, opening_prayer, closing_prayer").eq("visit_id", visit.id).maybeSingle(),
+        readOneWithMirror<Record<string, unknown>>({
+          table: "midweek_meetings",
+          remote: () => supabase.from("midweek_meetings").select("meeting_at, service_talk_theme, chairman, closing_prayer").eq("visit_id", visit.id).maybeSingle() as never,
+          filter: byVisit,
+        }).then((r) => ({ data: r.row as { meeting_at?: string | null; service_talk_theme?: string | null; chairman?: string | null; closing_prayer?: string | null } | null })),
+        readOneWithMirror<Record<string, unknown>>({
+          table: "weekend_meetings",
+          remote: () => supabase.from("weekend_meetings").select("meeting_at, talk_theme_title, public_talk_theme").eq("visit_id", visit.id).maybeSingle() as never,
+          filter: byVisit,
+        }).then((r) => ({ data: r.row as { meeting_at?: string | null; talk_theme_title?: string | null; public_talk_theme?: string | null } | null })),
+        readOneWithMirror<Record<string, unknown>>({
+          table: "pioneer_meetings",
+          remote: () => supabase.from("pioneer_meetings").select("meeting_at, super_meeting_at, theme, location, opening_prayer, closing_prayer").eq("visit_id", visit.id).maybeSingle() as never,
+          filter: byVisit,
+        }).then((r) => ({ data: r.row as { meeting_at?: string | null; super_meeting_at?: string | null; theme?: string | null; location?: string | null; opening_prayer?: string | null; closing_prayer?: string | null } | null })),
       ]);
       const out: MeetingTodayItem[] = [];
       const push = (

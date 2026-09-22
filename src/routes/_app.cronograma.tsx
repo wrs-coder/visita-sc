@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import { supabase } from "@/integrations/supabase/client";
+import { readWithMirror } from "@/lib/local-first";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,7 +66,7 @@ import type { Locale } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
+import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/local-write";
 import { getHiddenEventIds } from "@/lib/hidden-events";
 import { dayAccentStyle } from "@/lib/day-accent";
 
@@ -157,29 +158,45 @@ function Page() {
     const load = async () => {
       // Filtra na origem: eventos concluídos (status=completed) não devem voltar à UI.
       // For superintendent → own events. For others → events visible to them (RLS filters).
-      let query = supabase
-        .from("circuit_schedule_events")
-        .select("*")
-        .neq("status", "completed")
-        .gte("event_date", today)
-        .order("event_date")
-        .order("start_time");
-      if (canEdit) query = query.eq("superintendent_id", userId);
-      const { data } = await query;
+      const res = await readWithMirror<Event & Record<string, unknown>>({
+        table: "circuit_schedule_events",
+        remote: () => {
+          let query = supabase
+            .from("circuit_schedule_events")
+            .select("*")
+            .neq("status", "completed")
+            .gte("event_date", today)
+            .order("event_date")
+            .order("start_time");
+          if (canEdit) query = query.eq("superintendent_id", userId);
+          return query as never;
+        },
+        filter: (e) =>
+          e.status !== "completed" &&
+          String(e.event_date) >= today &&
+          (!canEdit || e.superintendent_id === userId),
+        sort: (a, b) =>
+          String(a.event_date).localeCompare(String(b.event_date)) ||
+          String(a.start_time ?? "").localeCompare(String(b.start_time ?? "")),
+      });
       if (!cancelled) {
         const hidden = getHiddenEventIds();
-        setEvents(((data ?? []) as Event[]).filter((e) => !hidden.has(e.id)));
+        setEvents((res.rows as Event[]).filter((e) => !hidden.has(e.id)));
       }
     };
 
     const loadCongs = async () => {
       if (!canEdit) return;
-      const { data } = await supabase
-        .from("congregations")
-        .select("id,name")
-        .eq("superintendent_id", userId)
-        .order("name");
-      if (!cancelled) setCongregations((data ?? []) as CongregationLite[]);
+      const res = await readWithMirror<CongregationLite & Record<string, unknown>>({
+        table: "congregations",
+        remote: () => supabase
+          .from("congregations")
+          .select("id,name")
+          .eq("superintendent_id", userId)
+          .order("name") as never,
+        sort: (a, b) => String(a.name).localeCompare(String(b.name)),
+      });
+      if (!cancelled) setCongregations(res.rows as CongregationLite[]);
     };
 
     load();

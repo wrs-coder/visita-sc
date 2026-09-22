@@ -21,6 +21,8 @@ import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { armBootGuard, markAppMounted } from "@/lib/boot-guard";
 import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-persister";
 import { flushQueue, startOfflineQueueAutoRetry } from "@/lib/offline-queue";
+import { startLocalWriteReconciler } from "@/lib/local-write";
+import { startAutoSync } from "@/lib/local-auto-sync";
 import { ensureFreshSession } from "@/lib/session-ready";
 import { isOfflineMode } from "@/lib/connection-mode";
 import { toast } from "sonner";
@@ -222,7 +224,11 @@ function RootComponent() {
     // Tenta flush no boot (com session-ready) e arma auto-retry com backoff.
     void runFlushWithSession("boot");
     startOfflineQueueAutoRetry();
+    const stopReconciler = startLocalWriteReconciler();
+    const stopAutoSync = startAutoSync();
     return () => {
+      stopAutoSync();
+      stopReconciler();
       subscription.unsubscribe();
       window.removeEventListener("online", onOnline);
       document.removeEventListener("resume", onResume);

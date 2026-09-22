@@ -31,6 +31,8 @@ import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { TransportReportDialog } from "@/components/visit-week/TransportReportDialog";
 import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
+import { readWithMirror } from "@/lib/local-first";
+import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/local-write";
 
 export const Route = createFileRoute("/_app/transporte")({ component: Page });
 
@@ -69,13 +71,22 @@ function Page() {
   useEffect(() => {
     if (!visit) return;
     const load = async () => {
-      const { data } = await supabase
-        .from("transport_schedule")
-        .select("*")
-        .eq("visit_id", visit.id)
-        .order("event_date", { nullsFirst: false })
-        .order("departure_time", { nullsFirst: false });
-      setItems((data ?? []) as Transport[]);
+      // Local-first: servidor primeiro; espelho local como reserva offline.
+      const res = await readWithMirror<Transport & Record<string, unknown>>({
+        table: "transport_schedule",
+        remote: () =>
+          supabase
+            .from("transport_schedule")
+            .select("*")
+            .eq("visit_id", visit.id)
+            .order("event_date", { nullsFirst: false })
+            .order("departure_time", { nullsFirst: false }) as never,
+        filter: (r) => r.visit_id === visit.id,
+        sort: (a, b) =>
+          String(a.event_date ?? "").localeCompare(String(b.event_date ?? "")) ||
+          String(a.departure_time ?? "").localeCompare(String(b.departure_time ?? "")),
+      });
+      setItems(res.rows as Transport[]);
     };
     load();
     const ch = supabase
@@ -144,7 +155,7 @@ function Page() {
         description: evType === "other" && otherDesc ? otherDesc : null,
         notes: editing.notes || null,
       };
-      const { error } = await supabase.from("transport_schedule").insert(payload);
+      const { error } = await offlineInsert("transport_schedule", payload as Record<string, unknown>);
       if (error) {
         toast.error(error.message);
         return;
@@ -159,7 +170,7 @@ function Page() {
 
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("transport_schedule").delete().eq("id", id);
+    const { error } = await offlineDelete("transport_schedule", { id });
     if (error) toast.error(error.message);
   };
 
@@ -173,7 +184,7 @@ function Page() {
 
   // Update a single row (per-event driver fields).
   const updateRow = async (id: string, patch: Partial<Transport>) => {
-    const { error } = await supabase.from("transport_schedule").update(patch).eq("id", id);
+    const { error } = await offlineUpdate("transport_schedule", patch as Record<string, unknown>, { id });
     if (error) toast.error(error.message);
   };
 

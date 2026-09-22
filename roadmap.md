@@ -11,3 +11,9 @@
 - [x] Aplicar melhorias bíblicas ao esboço e à Tela Cheia, incluindo inserção direta do texto na nota.
 - [x] Detectar citações bíblicas por bloco (parágrafo/lista), corrigindo links e avisos de referência com erro nos modos Esboço e Tela Cheia; completar abreviações 1Te/2Te/1Thess/2Thess.
 - [x] Ativar otimização R8 e tratar exibição ponta a ponta (Android 15+), versão 4.2.4/versionCode 14.
+- [x] Impedir que a imagem nativa de abertura reapareça sobre o editor durante rolagem, teclado e seleção de texto (4.2.6/versionCode 16).
+- [x] Offline-First evolutivo — Fase 0 (base local): espelho `src/lib/local-db.ts` com carimbos, tombstones, cursor e resolução de conflito. Camada passiva, nenhuma tela alterada.
+- [x] Offline-First evolutivo — Fase 1: carimbos `updated_at` + registro de exclusões no banco e download incremental (`src/lib/local-sync.ts`), ainda sem ligar nas telas.
+- [x] Offline-First evolutivo — Fase 2: telas Refeições, Transporte e visita ativa lendo do espelho local (`src/lib/local-first.ts`), servidor continua sendo a fonte quando responde.
+- [x] Offline-First evolutivo — Fase 3: caixa de saída + reconciliação de conflito (local-write + reconciliador ligados às telas).
+- [x] Offline-First evolutivo — Fase 4: sincronização automática (local-auto-sync) + painel de estado no Perfil (SyncStatusCard); cursor incremental corrigido.
