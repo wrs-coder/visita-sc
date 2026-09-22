@@ -18,6 +18,7 @@ import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 import { MealsReportDialog } from "@/components/visit-week/MealsReportDialog";
 import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
+import { readWithMirror } from "@/lib/local-first";
 
 export const Route = createFileRoute("/_app/refeicoes")({ component: Page });
 
