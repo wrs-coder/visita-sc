@@ -172,17 +172,15 @@ function styleObjectFromAttr(styleAttr: string | null): React.CSSProperties | un
 }
 
 
-let _keySeed = 0;
-function nextKey(): string {
-  _keySeed = (_keySeed + 1) % 1_000_000;
-  return `rk-${_keySeed}`;
-}
-
+// Chaves estáveis: derivadas da posição do nó na árvore ("0.2.1"), e não de
+// um contador global. Sem isso o React remontava toda a subárvore a cada
+// render, fechando popovers de versículo abertos e perdendo o scroll.
 function renderTextWithCitations(
   text: string,
   books: BookInfo[] | undefined,
   libraryId: string | null,
   fontScale: number | undefined,
+  path: string,
 ): React.ReactNode {
   if (!text) return text;
   const matches = findCitations(books, text);
@@ -193,7 +191,7 @@ function renderTextWithCitations(
     if (m.index > cursor) parts.push(text.slice(cursor, m.index));
     parts.push(
       <VerseLink
-        key={`${nextKey()}-${i}`}
+        key={`${path}-c${i}`}
         match={m}
         libraryId={libraryId}
         fontScale={fontScale}
