@@ -1,6 +1,8 @@
 import React from "react";
-import { findCitations, type BookInfo } from "@/lib/bible-refs";
+import { findCitations, findUnknownCitations, type BookInfo } from "@/lib/bible-refs";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
+import { UnknownRefLink } from "@/components/bible/UnknownRefPopover";
+
 import type { BibleLibrary } from "@/lib/bible-notes-store";
 import { RICH_NOTE_CONTENT_CLASS } from "@/lib/rich-note-styles";
 
@@ -184,24 +186,43 @@ function renderTextWithCitations(
 ): React.ReactNode {
   if (!text) return text;
   const matches = findCitations(books, text);
-  if (matches.length === 0) return text;
+  const unknown = findUnknownCitations(books, text, matches);
+  if (matches.length === 0 && unknown.length === 0) return text;
+  type Piece =
+    | { kind: "known"; index: number; length: number; m: (typeof matches)[number] }
+    | { kind: "unknown"; index: number; length: number; u: (typeof unknown)[number] };
+  const pieces: Piece[] = [
+    ...matches.map((m) => ({ kind: "known" as const, index: m.index, length: m.length, m })),
+    ...unknown.map((u) => ({ kind: "unknown" as const, index: u.index, length: u.length, u })),
+  ].sort((a, b) => a.index - b.index);
   const parts: React.ReactNode[] = [];
   let cursor = 0;
-  matches.forEach((m, i) => {
-    if (m.index > cursor) parts.push(text.slice(cursor, m.index));
+  pieces.forEach((p, i) => {
+    if (p.index < cursor) return;
+    if (p.index > cursor) parts.push(text.slice(cursor, p.index));
     parts.push(
-      <VerseLink
-        key={`${path}-c${i}`}
-        match={m}
-        libraryId={libraryId}
-        fontScale={fontScale}
-      />,
+      p.kind === "known" ? (
+        <VerseLink
+          key={`${path}-c${i}`}
+          match={p.m}
+          libraryId={libraryId}
+          fontScale={fontScale}
+        />
+      ) : (
+        <UnknownRefLink
+          key={`${path}-u${i}`}
+          citation={p.u}
+          libraryId={libraryId}
+          fontScale={fontScale}
+        />
+      ),
     );
-    cursor = m.index + m.length;
+    cursor = p.index + p.length;
   });
   if (cursor < text.length) parts.push(text.slice(cursor));
   return <>{parts}</>;
 }
+
 
 interface RenderOpts {
   library: BibleLibrary | null;

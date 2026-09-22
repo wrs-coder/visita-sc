@@ -334,3 +334,141 @@ export function stripHtmlForDetection(html: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+// ---------------------------------------------------------------------------
+// Referências não reconhecidas (erro de digitação na abreviação do livro).
+// ---------------------------------------------------------------------------
+
+export interface UnknownCitation {
+  raw: string;
+  bookTerm: string;
+  chapter: number;
+  verse: number;
+  index: number;
+  length: number;
+  /** Sugestão mais próxima (quando houver). */
+  suggestion?: { bookId: string; displayName: string };
+}
+
+/** Damerau-Levenshtein: conta troca de letras vizinhas como 1 erro ("Joõa" → "João"). */
+// Palavras comuns que antecedem números e não são livros.
+const STOP_TERMS = new Set([
+  "as", "às", "aos", "nas", "nos", "das", "dos", "para", "pela", "pelo",
+  "hoje", "hora", "horas", "sala", "ate", "ate as", "em", "no", "na",
+  "at", "to", "from", "room", "page", "pag", "pagina", "parte",
+  "los", "las", "por", "hasta", "hora s",
+]);
+
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const d: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
+  );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[m][n];
+}
+
+/** Livro mais próximo do termo digitado (null quando a distância é grande demais). */
+export function suggestBook(
+  books: BookInfo[] | undefined,
+  term: string,
+): { bookId: string; displayName: string } | null {
+  if (!books || books.length === 0 || !term) return null;
+  const q = stripDiacritics(term.toLowerCase()).replace(/\.$/, "").replace(/\s+/g, " ").trim();
+  // Termos muito curtos gerariam falsos positivos ("às 19:30").
+  if (q.length < 3) return null;
+  if (STOP_TERMS.has(q)) return null;
+  let best: { bookId: string; displayName: string; score: number } | null = null;
+  const prefixLen = (a: string, b: string) => {
+    let n = 0;
+    while (n < a.length && n < b.length && a[n] === b[n]) n++;
+    return n;
+  };
+  for (const b of books) {
+    const candidates = [b.displayName, ...(b.aliases ?? [])];
+    for (const c of candidates) {
+      const k = stripDiacritics(c.toLowerCase()).replace(/\.$/, "").trim();
+      if (!k) continue;
+      // Distância máxima proporcional ao tamanho: termos curtos toleram menos erro.
+      const limit = k.length <= 4 ? 1 : k.length <= 7 ? 2 : 3;
+      const d = levenshtein(q, k);
+      if (d > limit) continue;
+      // Desempate por prefixo em comum ("joõa" → "joão", não "joel").
+      const score = d - prefixLen(q, k) * 0.1;
+      if (!best || score < best.score) {
+        best = { bookId: b.bookId, displayName: b.displayName, score };
+      }
+    }
+  }
+  return best ? { bookId: best.bookId, displayName: best.displayName } : null;
+}
+
+const UNKNOWN_RE =
+  /(?:^|[^\p{L}\p{N}])((?:[1-3]\s*)?\p{L}[\p{L}.]{1,14}(?:\s+\p{L}[\p{L}.]{1,14})?)\s*\.?\s*(\d{1,3})\s*:\s*(\d{1,3})/gu;
+
+/**
+ * Detecta trechos com cara de citação bíblica cujo livro NÃO foi reconhecido,
+ * mas que têm um livro parecido na biblioteca (provável erro de digitação).
+ * Só retorna casos com sugestão, evitando falsos positivos (horários etc.).
+ */
+export function findUnknownCitations(
+  books: BookInfo[] | undefined,
+  text: string,
+  known?: CitationMatch[],
+): UnknownCitation[] {
+  if (!books || books.length === 0 || !text) return [];
+  const lang = detectBibleLanguage(books);
+  const { lookup } = compile(books, lang);
+  const taken = (known ?? findCitations(books, text)).map((m) => [m.index, m.index + m.length] as const);
+  const out: UnknownCitation[] = [];
+  const re = new RegExp(UNKNOWN_RE.source, UNKNOWN_RE.flags);
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const bookTerm = m[1].trim();
+    const raw = `${bookTerm} ${m[2]}:${m[3]}`;
+    const start = m.index + m[0].indexOf(m[1]);
+    const end = start + m[0].length - m[0].indexOf(m[1]);
+    if (taken.some(([s, e]) => start < e && end > s)) continue;
+    const key = stripDiacritics(bookTerm.toLowerCase()).replace(/\.$/, "");
+    if (lookup.has(key)) continue;
+    // O capture pode trazer a palavra anterior ("Veja Joõa"); tenta o termo
+    // completo e, se não houver sugestão, apenas a última palavra.
+    let term = bookTerm;
+    let suggestion = suggestBook(books, term);
+    if (!suggestion) {
+      const parts = bookTerm.split(/\s+/);
+      if (parts.length > 1) {
+        const tail = parts.slice(-1)[0];
+        const tailKey = stripDiacritics(tail.toLowerCase()).replace(/\.$/, "");
+        if (lookup.has(tailKey)) continue;
+        suggestion = suggestBook(books, tail);
+        if (suggestion) term = tail;
+      }
+    }
+    if (!suggestion) continue;
+    const offset = bookTerm.length - term.length;
+    const rawFixed = `${term} ${m[2]}:${m[3]}`;
+    out.push({
+      raw: rawFixed,
+      bookTerm: term,
+      chapter: parseInt(m[2], 10),
+      verse: parseInt(m[3], 10),
+      index: start + offset,
+      length: end - start - offset,
+      suggestion,
+    });
+  }
+  return out;
+}
