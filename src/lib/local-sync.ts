@@ -36,9 +36,9 @@ export type PullResult = { table: string; rows: number; ok: boolean; error?: str
  * Baixa incrementalmente uma tabela e grava no espelho local.
  * O cursor só avança quando a gravação local foi bem-sucedida.
  */
-export async function pullTable(table: string, pull: PullFn): Promise<PullResult> {
+export async function pullTable(table: string, pull: PullFn, full = false): Promise<PullResult> {
   try {
-    const since = await getCursor(table);
+    const since = full ? null : await getCursor(table);
     const rows = await pull({ table, since });
     if (rows.length) {
       await upsertRows(table, rows);
@@ -95,6 +95,8 @@ export type SyncOptions = {
   tombstones?: TombstoneFn;
   onProgress?: (p: SyncProgress) => void;
   signal?: AbortSignal;
+  /** Quando true, ignora o cursor e baixa a tabela inteira (download inicial). */
+  full?: boolean;
 };
 
 /** Sincroniza (somente leitura) a lista de tabelas para o espelho local. */
@@ -104,7 +106,7 @@ export async function syncTables(opts: SyncOptions): Promise<PullResult[]> {
   let done = 0;
   for (const table of opts.tables) {
     if (opts.signal?.aborted) break;
-    results.push(await pullTable(table, opts.pull));
+    results.push(await pullTable(table, opts.pull, opts.full === true));
     done++;
     opts.onProgress?.({ done, total, table });
   }
