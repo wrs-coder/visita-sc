@@ -108,6 +108,10 @@ export async function runAutoSync(opts?: { force?: boolean }): Promise<PullResul
   state = { ...state, running: true, error: null, progress: null };
   emit();
   try {
+    if (windowToMark) {
+      // Marca a janela como consumida hoje (best-effort; falha não impede a sync).
+      await setCursor(windowCursorKey(windowToMark), dayKey()).catch(() => {});
+    }
     const results = await syncTables({
       tables: [...AUTO_SYNC_TABLES],
       pull: supabasePull,
