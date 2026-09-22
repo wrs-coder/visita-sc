@@ -1,21 +1,23 @@
 /**
  * Lightbox de foto anexada — Dialog fullscreen com fundo escuro.
- * Clique no X ou no backdrop fecha e devolve o foco ao editor.
+ * O arquivo é resolvido sob demanda (Filesystem nativo ou IndexedDB).
  */
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { X, ImageOff, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { useAttachmentSrc } from "@/hooks/use-attachment-src";
+import type { NoteAttachment } from "@/lib/outline-attachments";
 
 interface Props {
   open: boolean;
-  src: string;
-  alt?: string;
+  attachment: NoteAttachment;
   onClose: () => void;
 }
 
-export function AttachmentLightbox({ open, src, alt, onClose }: Props) {
+export function AttachmentLightbox({ open, attachment, onClose }: Props) {
   const { t } = useTranslation();
+  const { src, status, markMissing } = useAttachmentSrc(attachment, open);
 
   useEffect(() => {
     if (!open) return;
@@ -27,7 +29,6 @@ export function AttachmentLightbox({ open, src, alt, onClose }: Props) {
         onClose();
       }
     };
-    // `capture: true` garante que interceptamos antes do listener do Radix Dialog.
     document.addEventListener("keydown", onKey, { capture: true });
     return () => document.removeEventListener("keydown", onKey, { capture: true } as EventListenerOptions);
   }, [open, onClose]);
@@ -56,14 +57,29 @@ export function AttachmentLightbox({ open, src, alt, onClose }: Props) {
         <X className="h-5 w-5" />
       </button>
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt={alt ?? ""}
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[100dvh] max-w-full object-contain select-none"
-        draggable={false}
-      />
+      {status === "loading" && <Loader2 className="h-8 w-8 animate-spin text-white/80" />}
+
+      {status === "missing" && (
+        <div className="flex flex-col items-center gap-2 text-white/85 px-6 text-center">
+          <ImageOff className="h-10 w-10" />
+          <p className="text-sm">
+            {t("personalOutlines.attachments.unavailable", {
+              defaultValue: "Anexo indisponível neste aparelho",
+            })}
+          </p>
+        </div>
+      )}
+
+      {status === "ready" && src && (
+        <img
+          src={src}
+          alt={attachment.title ?? ""}
+          onClick={(e) => e.stopPropagation()}
+          onError={markMissing}
+          className="max-h-[100dvh] max-w-full object-contain select-none"
+          draggable={false}
+        />
+      )}
     </div>
   );
 }
