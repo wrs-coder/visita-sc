@@ -13,12 +13,7 @@ import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
-import {
-  localUpdate as offlineUpdate,
-  localInsert as offlineInsert,
-  localDelete as offlineDelete,
-  localUpsert as offlineUpsert,
-} from "@/lib/local-write";
+import { offlineUpdate, offlineInsert, offlineDelete, offlineUpsert } from "@/lib/local-write";
 import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 import { MealsReportDialog } from "@/components/visit-week/MealsReportDialog";
