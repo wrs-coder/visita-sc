@@ -75,6 +75,21 @@ export function LoginForm() {
   const showPinPanel = !!vault && !usePassword;
 
   const finishLogin = async (userId: string) => {
+    // Etapa A — primeiro acesso neste aparelho: oferece download completo em
+    // segundo plano (espelho local vazio). Não bloqueia a navegação; falhas
+    // são silenciosas e a sincronização diária continua funcionando.
+    void (async () => {
+      try {
+        const stats = await localDbStats();
+        if (stats.tables.length > 0) return;
+        const tid = toast(t("sync.downloading", "Baixando seus dados para uso offline…"), { duration: Infinity });
+        const results = await runFullSync();
+        toast.dismiss(tid);
+        if (results && results.every((r) => r.ok)) {
+          toast.success(t("sync.downloadDone", "Download completo concluído"));
+        }
+      } catch { /* silencioso */ }
+    })();
     await redirectByRole(userId);
   };
 
