@@ -16,6 +16,7 @@ import {
   currentSyncWindow,
   getAutoSyncState,
   runAutoSync,
+  runFullSync,
   subscribeAutoSync,
 } from "@/lib/local-auto-sync";
 
@@ -129,5 +130,11 @@ describe("local-auto-sync (Fase 4)", () => {
       expect(auto).not.toBeNull();
       expect(syncTables).toHaveBeenCalledTimes(2);
     });
+  });
+
+  it("runFullSync ignora cursores e baixa todas as tabelas", async () => {
+    const results = await runFullSync();
+    expect(results).not.toBeNull();
+    expect(vi.mocked(syncTables).mock.calls[0]?.[0]).toMatchObject({ full: true });
   });
 });
