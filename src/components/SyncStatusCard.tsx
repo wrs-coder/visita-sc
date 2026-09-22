@@ -75,7 +75,8 @@ export function SyncStatusCard() {
     };
     void estimate();
     // Re-medir ao final de cada sincronização (após a limpeza silenciosa).
-    return subscribeAutoSync((s) => { if (!s.running && s.lastRunAt) void estimate(); }) as unknown as () => void;
+    const unsub = subscribeAutoSync((s) => { if (!s.running && s.lastRunAt) void estimate(); });
+    return () => { alive = false; unsub(); };
   }, []);
 
   const downloadAll = async () => {
