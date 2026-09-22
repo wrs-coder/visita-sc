@@ -5,6 +5,7 @@ import {
   serializeAttachments,
   parseAttachmentsFromContent,
   normalizeAttachment,
+  isLocalFileAttachment,
   type NoteAttachment,
 } from "./outline-attachments";
 
@@ -40,7 +41,7 @@ describe("toDisplaySrc (sem Capacitor no ambiente de teste)", () => {
 });
 
 describe("normalizeAttachment", () => {
-  it("aceita foto com uri", () => {
+  it("aceita foto com uri legada", () => {
     const a = normalizeAttachment({
       id: "1",
       kind: "photo",
@@ -50,8 +51,32 @@ describe("normalizeAttachment", () => {
     });
     expect(a?.kind).toBe("photo");
     expect(a?.uri).toBe("file:///x.jpg");
+    expect(a?.source).toBe("file");
   });
-  it("descarta foto sem uri", () => {
+  it("aceita foto com storage/path novos", () => {
+    const a = normalizeAttachment({
+      id: "1",
+      kind: "photo",
+      title: "Capa",
+      storage: "idb",
+      path: "outline-attachments/n1/a1.jpg",
+      created_at: 1,
+    });
+    expect(a?.storage).toBe("idb");
+    expect(a?.path).toBe("outline-attachments/n1/a1.jpg");
+  });
+  it("ignora storage inválido", () => {
+    const a = normalizeAttachment({
+      id: "1",
+      kind: "photo",
+      title: "Capa",
+      storage: "s3",
+      path: "outline-attachments/n1/a1.jpg",
+      created_at: 1,
+    });
+    expect(a?.storage).toBeUndefined();
+  });
+  it("descarta foto sem uri e sem path", () => {
     expect(normalizeAttachment({ id: "1", kind: "photo", title: "x" })).toBeNull();
   });
   it("descarta link sem url", () => {
@@ -62,22 +87,52 @@ describe("normalizeAttachment", () => {
   });
 });
 
+describe("isLocalFileAttachment", () => {
+  it("foto com path é local", () => {
+    expect(
+      isLocalFileAttachment({ id: "1", kind: "photo", title: "", path: "p", created_at: 1 }),
+    ).toBe(true);
+  });
+  it("vídeo com url externa não é local", () => {
+    expect(
+      isLocalFileAttachment({ id: "1", kind: "video", title: "", url: "https://x", created_at: 1 }),
+    ).toBe(false);
+  });
+  it("publicação nunca é local", () => {
+    expect(
+      isLocalFileAttachment({ id: "1", kind: "publication", title: "", url: "https://x", created_at: 1 }),
+    ).toBe(false);
+  });
+});
+
 describe("round-trip content_json (Supabase)", () => {
   const list: NoteAttachment[] = [
-    { id: "a1", kind: "photo", title: "Capa", uri: "file:///a.jpg", created_at: 1 },
+    {
+      id: "a1",
+      kind: "photo",
+      title: "Capa",
+      storage: "idb",
+      path: "outline-attachments/n1/a1.jpg",
+      mime: "image/jpeg",
+      source: "file",
+      created_at: 1,
+    },
     { id: "a2", kind: "video", title: "Ilustração", url: "https://jw.org/v/1", created_at: 2 },
     { id: "a3", kind: "publication", title: "Cântico 120", url: "jwlibrary://finder?docid=1", created_at: 3 },
+    { id: "a4", kind: "photo", title: "Antiga", uri: "file:///a.jpg", created_at: 4 },
   ];
 
   it("serialize → JSON → parse preserva todos os tipos", () => {
     const cj = { content: "x", attachments: serializeAttachments(list) };
     const roundTripped = JSON.parse(JSON.stringify(cj));
     const parsed = parseAttachmentsFromContent(roundTripped);
-    expect(parsed).toHaveLength(3);
-    expect(parsed.map((a) => a.kind)).toEqual(["photo", "video", "publication"]);
-    expect(parsed[0].uri).toBe("file:///a.jpg");
+    expect(parsed).toHaveLength(4);
+    expect(parsed.map((a) => a.kind)).toEqual(["photo", "video", "publication", "photo"]);
+    expect(parsed[0].path).toBe("outline-attachments/n1/a1.jpg");
+    expect(parsed[0].storage).toBe("idb");
     expect(parsed[1].url).toBe("https://jw.org/v/1");
     expect(parsed[2].url).toBe("jwlibrary://finder?docid=1");
+    expect(parsed[3].uri).toBe("file:///a.jpg");
   });
 
   it("parseAttachmentsFromContent tolera content_json vazio/legacy", () => {
@@ -92,7 +147,7 @@ describe("round-trip content_json (Supabase)", () => {
       { id: "bad", kind: "audio" }, // desconhecido
       list[1],
       null,
-      { kind: "photo" }, // sem uri
+      { kind: "photo" }, // sem uri/path
       list[2],
     ];
     const parsed = parseAttachmentsFromContent({ attachments: mixed });
