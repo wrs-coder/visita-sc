@@ -13,6 +13,7 @@ import { RichOutlineContent } from "@/lib/rich-content";
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
+import { BibleHistoryChips } from "@/components/bible/BibleHistoryChips";
 import {
   listAllNotesIncludingTrash,
   getActiveLibrary,
@@ -291,12 +292,17 @@ export function FieldNoteFullscreenDialog({
               style={{ fontSize: `${scale}rem` }}
             >
               {note.content ? (
-                <RichOutlineContent
-                  html={note.content}
-                  library={library}
-                  fontScale={scale}
-                  onInsertVerse={insertVerse}
-                />
+                <>
+                  <RichOutlineContent
+                    html={note.content}
+                    library={library}
+                    fontScale={scale}
+                    onInsertVerse={insertVerse}
+                  />
+                  <div className="mt-5">
+                    <BibleHistoryChips library={library} onInsert={insertVerse} />
+                  </div>
+                </>
               ) : (
                 <span className="text-muted-foreground italic">
                   {t("fieldConsiderations.contentEmpty", {

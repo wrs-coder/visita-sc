@@ -15,7 +15,13 @@ import { VerseLink } from "./BibleVersePopover";
  * Lista dos últimos versículos abertos (apenas local, sem rede).
  * Atualiza ao focar a janela para refletir consultas feitas no modo leitura.
  */
-export function BibleHistoryChips({ library }: { library: BibleLibrary | null }) {
+export function BibleHistoryChips({
+  library,
+  onInsert,
+}: {
+  library: BibleLibrary | null;
+  onInsert?: (text: string) => void | Promise<void>;
+}) {
   const { t, i18n } = useTranslation();
   const [items, setItems] = useState<BibleHistoryEntry[]>([]);
 
@@ -64,6 +70,7 @@ export function BibleHistoryChips({ library }: { library: BibleLibrary | null })
             match={toMatch(e)}
             libraryId={library.id}
             className="text-xs"
+            onInsert={onInsert}
           />
         ))}
       </div>

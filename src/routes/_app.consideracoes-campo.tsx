@@ -2037,7 +2037,7 @@ function NoteEditor({
                 ))}
               </div>
             )}
-            <BibleHistoryChips library={activeBible} />
+            <BibleHistoryChips library={activeBible} onInsert={onInsertBibleText} />
           </div>
 
         )}
@@ -2262,7 +2262,12 @@ function FullscreenOutline({
           style={{ fontSize: `${scale}rem` }}
         >
           {note.content ? (
-            <RichOutlineContent html={note.content} library={library} fontScale={scale} onInsertVerse={onInsertBibleText} />
+            <>
+              <RichOutlineContent html={note.content} library={library} fontScale={scale} onInsertVerse={onInsertBibleText} />
+              <div className="mt-5">
+                <BibleHistoryChips library={library} onInsert={onInsertBibleText} />
+              </div>
+            </>
           ) : (
             <span className="text-muted-foreground italic">{t("fieldConsiderations.contentEmpty")}</span>
           )}
