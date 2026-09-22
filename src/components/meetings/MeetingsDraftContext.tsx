@@ -17,7 +17,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { offlineUpdate } from "@/lib/offline-supabase";
+import { offlineUpdate } from "@/lib/local-write";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";

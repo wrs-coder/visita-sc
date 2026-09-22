@@ -144,3 +144,12 @@ export function __resetLocalWriteForTests() {
   touchedTables.clear();
   watching = false;
 }
+
+// Aliases compatíveis com o antigo `offline-supabase`, para que as telas
+// existentes passem a espelhar localmente apenas trocando o import.
+export {
+  localInsert as offlineInsert,
+  localUpsert as offlineUpsert,
+  localUpdate as offlineUpdate,
+  localDelete as offlineDelete,
+};

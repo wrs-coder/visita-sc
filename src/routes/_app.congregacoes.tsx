@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -141,11 +142,11 @@ function Page() {
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const res = await fnList();
-    if (res.ok) setList(res.data as Congregation[]);
-    else toast.error(res.error);
-    const er = await fnElders();
-    if (er.ok) setElders(er.data as Elder[]);
+    const { data: res } = await readFnWithMirrorSafe("congregations:list", () => fnList());
+    if (res?.ok) setList(res.data as Congregation[]);
+    else if (res) toast.error(res.error);
+    const { data: er } = await readFnWithMirrorSafe("congregations:elders", () => fnElders());
+    if (er?.ok) setElders(er.data as Elder[]);
     setLoading(false);
   }, [user, fnList, fnElders]);
 

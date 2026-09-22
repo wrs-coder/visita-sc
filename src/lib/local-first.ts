@@ -98,3 +98,47 @@ export async function readOneWithMirror<T extends Row>(opts: {
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Leitura local-first para telas que usam funções do servidor (não SQL direto).
+// Guardamos o resultado inteiro (JSON) sob uma chave estável. Quando o servidor
+// falha, devolvemos a última resposta salva no aparelho.
+// ---------------------------------------------------------------------------
+
+const FN_CACHE_TABLE = "__fn_cache__";
+
+export type CachedFnResult<T> = { data: T | null; source: "remote" | "local" };
+
+export async function readFnWithMirror<T>(
+  key: string,
+  fn: () => Promise<T>,
+): Promise<CachedFnResult<T>> {
+  try {
+    const data = await fn();
+    void upsertRows(FN_CACHE_TABLE, [
+      { id: key, payload: data as unknown, updated_at: new Date().toISOString() },
+    ]).catch((err) => console.warn("[local-first] falha ao guardar", key, err));
+    return { data, source: "remote" };
+  } catch (err) {
+    console.warn("[local-first] servidor indisponível, usando cópia local", key, err);
+    try {
+      const row = await getRow<{ id: string; payload: T }>(FN_CACHE_TABLE, key);
+      if (row && row.payload !== undefined) return { data: row.payload, source: "local" };
+    } catch (cacheErr) {
+      console.warn("[local-first] cópia local indisponível", key, cacheErr);
+    }
+    throw err;
+  }
+}
+
+/** Igual a `readFnWithMirror`, mas nunca lança: devolve `null` se não houver cópia. */
+export async function readFnWithMirrorSafe<T>(
+  key: string,
+  fn: () => Promise<T>,
+): Promise<CachedFnResult<T>> {
+  try {
+    return await readFnWithMirror(key, fn);
+  } catch {
+    return { data: null, source: "local" };
+  }
+}

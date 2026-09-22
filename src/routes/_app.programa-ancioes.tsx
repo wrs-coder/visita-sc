@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
@@ -180,8 +181,10 @@ function Page() {
   const reload = useCallback(async () => {
     if (!visit) return;
     setLoading(true);
-    const r = await fnLoad({ data: { visitId: visit.id } });
+    const cached = await readFnWithMirrorSafe(`elder-program:${visit.id}`, () => fnLoad({ data: { visitId: visit.id } }));
+    const r = cached.data;
     setLoading(false);
+    if (!r) { toast.error("Erro"); return; }
     if (!r.ok) { toast.error(r.error ?? "Erro"); return; }
     setSections(r.sections);
     setSlots(r.slots.map((s) => s.label));
