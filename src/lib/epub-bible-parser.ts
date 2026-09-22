@@ -1020,7 +1020,13 @@ function detectCanonicalBookForDoc(href: string, doc: Document): { book: Canonic
 }
 
 /** Função principal: parseia um File EPUB e devolve livros + versículos. */
+/** Devolve o controle ao navegador para manter a UI/progresso fluidos. */
+function yieldToUI(): Promise<void> {
+  return new Promise((r) => setTimeout(r, 0));
+}
+
 export async function parseEpub(file: File, onProgress?: ParseProgress): Promise<ParsedEpub> {
+
   onProgress?.("unzip", 0);
   const zip = await JSZip.loadAsync(file);
   onProgress?.("unzip", 1);
@@ -1040,7 +1046,10 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
 
   for (let i = 0; i < opf.spine.length; i++) {
     onProgress?.("index-books", (i / Math.max(opf.spine.length, 1)) * 0.3);
+    // Cede o thread a cada poucos arquivos para a barra de progresso fluir.
+    if (i % 5 === 0) await yieldToUI();
     const idref = opf.spine[i];
+
     const item = opf.manifest.get(idref);
     if (!item) continue;
     const path = resolvePath(opf.basePath, item.href);
@@ -1082,9 +1091,11 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
   const total = Math.max(sortedBuckets.length, 1);
   for (let bi = 0; bi < sortedBuckets.length; bi++) {
     onProgress?.("index-books", 0.3 + (bi / total) * 0.7);
+    await yieldToUI();
     const bucket = sortedBuckets[bi];
     const bookId = bucket.book.id;
     const multiFile = bucket.hrefs.length > 1;
+
 
     // Dedup por chave "chap:verse". Regra:
     //  - texto vindo de marcadores DOM reais ("marker") substitui qualquer
