@@ -119,8 +119,14 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
   }, [explicitClose]);
 
   useEffect(() => {
-    if (!open) setOffset({ x: 0, y: 0 });
-  }, [open]);
+    if (!open) {
+      setOffset({ x: 0, y: 0 });
+      // Volta ao estado original da citação ao reabrir.
+      setChapterMode(false);
+      setShowAll(false);
+      setChapter(match.chapter);
+    }
+  }, [open, match.chapter]);
 
   function onHandlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (e.button !== 0 && e.pointerType === "mouse") return;
