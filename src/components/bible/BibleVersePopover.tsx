@@ -395,16 +395,20 @@ export function VerseLink({
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "text-sky-600 dark:text-sky-400 underline-offset-2 hover:underline font-medium",
-            className,
-          )}
-          style={fontScale !== 1 ? { fontSize: `${fontScale}em` } : undefined}
-        >
-          {match.raw}
-        </button>
+        {hideTrigger ? (
+          <span aria-hidden className="inline-block h-0 w-0 overflow-hidden align-baseline" />
+        ) : (
+          <button
+            type="button"
+            className={cn(
+              "text-sky-600 dark:text-sky-400 underline-offset-2 hover:underline font-medium",
+              className,
+            )}
+            style={fontScale !== 1 ? { fontSize: `${fontScale}em` } : undefined}
+          >
+            {match.raw}
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent
         ref={contentRef}
