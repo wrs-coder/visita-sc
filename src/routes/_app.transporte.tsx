@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { TransportReportDialog } from "@/components/visit-week/TransportReportDialog";
 import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
+import { readWithMirror } from "@/lib/local-first";
 
 export const Route = createFileRoute("/_app/transporte")({ component: Page });
 
