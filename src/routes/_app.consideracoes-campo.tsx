@@ -2012,7 +2012,9 @@ function NoteEditor({
                 ))}
               </div>
             )}
+            <BibleHistoryChips library={activeBible} />
           </div>
+
         )}
       </div>
 
