@@ -50,28 +50,51 @@ export function useActiveVisit(options: UseActiveVisitOptions = {}) {
     queryKey,
     enabled,
     queryFn: async () => {
-      const { data: currentVisit } = await supabase
-        .from("visits")
-        .select("*")
-        .eq("congregation_id", congId!)
-        .eq("is_active", true)
-        .lte("start_date", today)
-        .gte("end_date", today)
-        .order("start_date", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (currentVisit) return currentVisit as Visit;
+      // Local-first: o servidor continua mandando quando responde; offline,
+      // usamos a visita já espelhada neste aparelho.
+      const current = await readOneWithMirror<Visit & Record<string, unknown>>({
+        table: "visits",
+        remote: () =>
+          supabase
+            .from("visits")
+            .select("*")
+            .eq("congregation_id", congId!)
+            .eq("is_active", true)
+            .lte("start_date", today)
+            .gte("end_date", today)
+            .order("start_date", { ascending: false })
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle() as never,
+        filter: (r) =>
+          r.congregation_id === congId &&
+          r.is_active === true &&
+          String(r.start_date) <= today &&
+          String(r.end_date) >= today,
+        sort: (a, b) => String(b.start_date).localeCompare(String(a.start_date)),
+      });
+      if (current.row) return current.row as Visit;
 
-      const { data } = await supabase
-        .from("visits")
-        .select("*")
-        .eq("congregation_id", congId!)
-        .order("is_active", { ascending: false })
-        .order("start_date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (data) return data as Visit;
+      const latest = await readOneWithMirror<Visit & Record<string, unknown>>({
+        table: "visits",
+        remote: () =>
+          supabase
+            .from("visits")
+            .select("*")
+            .eq("congregation_id", congId!)
+            .order("is_active", { ascending: false })
+            .order("start_date", { ascending: false })
+            .limit(1)
+            .maybeSingle() as never,
+        filter: (r) => r.congregation_id === congId,
+        sort: (a, b) =>
+          Number(b.is_active) - Number(a.is_active) ||
+          String(b.start_date).localeCompare(String(a.start_date)),
+      });
+      if (latest.row) return latest.row as Visit;
+
+      // Offline: nunca criar placeholder (evita linha fantasma sem servidor).
+      if (current.source === "local" || latest.source === "local") return null;
 
       // Sem visitas: cria placeholder se for o Superintendente.
       if (!allowPlaceholder || !isSuperOfCong) return null;
