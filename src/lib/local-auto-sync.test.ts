@@ -10,8 +10,10 @@ vi.mock("@/lib/local-sync", () => ({
 }));
 
 import { syncTables } from "@/lib/local-sync";
+import { __resetLocalDbForTests } from "@/lib/local-db";
 import {
   __resetAutoSyncForTests,
+  currentSyncWindow,
   getAutoSyncState,
   runAutoSync,
   subscribeAutoSync,
@@ -20,7 +22,9 @@ import {
 describe("local-auto-sync (Fase 4)", () => {
   beforeEach(() => {
     __resetAutoSyncForTests();
+    __resetLocalDbForTests();
     vi.clearAllMocks();
+    vi.useRealTimers();
     Object.defineProperty(globalThis.navigator, "onLine", { value: true, configurable: true });
   });
 
