@@ -1,9 +1,13 @@
-// FASE 4 — Sincronização automática do espelho local.
+// FASE 4 — Sincronização automática do espelho local (2x ao dia).
 //
-// Dispara o download incremental (local-sync) nos momentos certos:
-// abertura do app, retorno da conexão ("online"), retorno ao primeiro plano
-// e um intervalo de segurança. Nunca roda em paralelo, nunca roda sem
-// internet e nunca lança erro para a interface.
+// O download incremental (local-sync) roda automaticamente no máximo
+// duas vezes por dia: uma na janela da manhã (06:00–11:59) e outra na
+// janela da tarde (12:00–23:59), no horário do aparelho. Os gatilhos
+// (abertura do app, retorno da conexão, retorno ao primeiro plano)
+// continuam ativos, mas só executam de fato quando a janela atual ainda
+// não sincronizou naquele dia. A sincronização manual (botão no Perfil)
+// usa force:true e ignora as janelas. Nunca roda em paralelo, nunca roda
+// sem internet e nunca lança erro para a interface.
 
 import {
   syncTables,
@@ -12,6 +16,7 @@ import {
   type PullResult,
   type SyncProgress,
 } from "@/lib/local-sync";
+import { getCursor, setCursor } from "@/lib/local-db";
 
 // Mesmas tabelas já espelhadas pelas telas (Fases 2 e 3).
 export const AUTO_SYNC_TABLES = [
