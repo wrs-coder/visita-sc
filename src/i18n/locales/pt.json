@@ -1744,16 +1744,5 @@
     "biometricEnable": "Ativar",
     "confirmPinTitle": "Confirme seu PIN",
     "confirmPinDesc": "Digite o PIN de 6 dígitos para liberar a digital neste aparelho."
-  },
-  "bibleSearch": {
-    "title": "Buscar na Bíblia",
-    "open": "Buscar na Bíblia",
-    "placeholder": "Referência (João 3:16) ou palavras do texto",
-    "searching": "Buscando...",
-    "empty": "Nenhum versículo encontrado.",
-    "results": "{{n}} resultado(s)",
-    "history": "Consultas recentes",
-    "clearHistory": "Limpar",
-    "noLibrary": "Importe uma Bíblia para usar a busca."
   }
 }

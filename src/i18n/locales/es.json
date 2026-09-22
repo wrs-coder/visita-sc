@@ -1718,16 +1718,5 @@
     "biometricEnable": "Activar",
     "confirmPinTitle": "Confirma tu PIN",
     "confirmPinDesc": "Escribe el PIN de 6 dígitos para activar la huella en este dispositivo."
-  },
-  "bibleSearch": {
-    "title": "Buscar en la Biblia",
-    "open": "Buscar en la Biblia",
-    "placeholder": "Referencia (Juan 3:16) o palabras del texto",
-    "searching": "Buscando...",
-    "empty": "No se encontraron versículos.",
-    "results": "{{n}} resultado(s)",
-    "history": "Consultas recientes",
-    "clearHistory": "Borrar",
-    "noLibrary": "Importa una Biblia para usar la búsqueda."
   }
 }
