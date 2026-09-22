@@ -50,9 +50,13 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
   const { t, i18n } = useTranslation();
   const displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName;
   const [open, setOpen] = useState(false);
-  const [parts, setParts] = useState<VersePart[] | null>(null);
-  const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Capítulo atualmente carregado (permite navegar entre capítulos).
+  const [chapter, setChapter] = useState(match.chapter);
+  const [chapterVerses, setChapterVerses] = useState<VersePart[] | null>(null);
+  // Modo "capítulo completo" e "ver mais" (acima do limite de MAX_RANGE).
+  const [chapterMode, setChapterMode] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   // View settings (color + bold) — global, persisted in localStorage.
   const [settings, setSettings] = useState<BibleViewSettings>(() => loadSettings());
