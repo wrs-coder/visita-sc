@@ -34,14 +34,14 @@ describe("local-auto-sync (Fase 4)", () => {
   });
 
   it("não roda em paralelo", async () => {
-    let release: (() => void) | null = null;
+    let release: () => void = () => {};
     vi.mocked(syncTables).mockImplementationOnce(
-      () => new Promise((res) => { release = () => res([]); }) as never,
+      () => new Promise((res) => { release = () => res([]); }),
     );
     const p1 = runAutoSync({ force: true });
     const p2 = await runAutoSync({ force: true });
     expect(p2).toBeNull();
-    release?.();
+    release();
     await p1;
   });
 
