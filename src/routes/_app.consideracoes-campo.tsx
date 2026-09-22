@@ -88,6 +88,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { findCitations, stripHtmlForDetection, type CitationMatch } from "@/lib/bible-refs";
 import { shareJsonFile } from "@/lib/share";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
+import { BibleHistoryChips } from "@/components/bible/BibleHistoryChips";
+
 import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
