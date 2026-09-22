@@ -288,7 +288,7 @@ export function looksLikeHtml(s: string): boolean {
  * Aceita também texto puro (notas antigas) — caso em que cai no caminho
  * `whitespace-pre-wrap` simples.
  */
-export function RichOutlineContent({
+function RichOutlineContentImpl({
   html,
   library,
   fontScale,
@@ -299,29 +299,46 @@ export function RichOutlineContent({
   fontScale?: number;
   emptyFallback?: React.ReactNode;
 }): React.ReactElement {
-  if (!html || !html.trim()) {
-    return <>{emptyFallback ?? null}</>;
-  }
+  const libraryId = library?.id ?? null;
 
-  if (!looksLikeHtml(html)) {
-    return (
-      <div className="whitespace-pre-wrap">
-        {renderTextWithCitations(html, library?.books, library?.id ?? null, fontScale)}
-      </div>
-    );
-  }
+  // Todo o trabalho pesado (sanitização + DOMParser + varredura de citações)
+  // acontece uma única vez por conteúdo/biblioteca, e não a cada render.
+  const rendered = React.useMemo<React.ReactElement | null>(() => {
+    if (!html || !html.trim()) return null;
 
-  if (typeof window === "undefined" || !("DOMParser" in window)) {
-    return <div className="whitespace-pre-wrap">{html}</div>;
-  }
+    if (!looksLikeHtml(html)) {
+      return (
+        <div className="whitespace-pre-wrap">
+          {renderTextWithCitations(html, library?.books, libraryId, fontScale, "t")}
+        </div>
+      );
+    }
 
-  const safe = sanitizeNoteHtml(html);
-  const doc = new DOMParser().parseFromString(`<div id="__root">${safe}</div>`, "text/html");
-  const root = doc.getElementById("__root");
-  if (!root) return <></>;
-  const nodes = Array.from(root.childNodes).map((n) => (
-    <React.Fragment key={nextKey()}>{renderNode(n, { library, fontScale })}</React.Fragment>
-  ));
-  return <div className={RICH_NOTE_CONTENT_CLASS}>{nodes}</div>;
+    if (typeof window === "undefined" || !("DOMParser" in window)) {
+      return <div className="whitespace-pre-wrap">{html}</div>;
+    }
+
+    const safe = sanitizeNoteHtml(html);
+    const doc = new DOMParser().parseFromString(`<div id="__root">${safe}</div>`, "text/html");
+    const root = doc.getElementById("__root");
+    if (!root) return null;
+    const nodes = Array.from(root.childNodes).map((n, i) => (
+      <React.Fragment key={`n${i}`}>
+        {renderNode(n, { library, fontScale }, `n${i}`)}
+      </React.Fragment>
+    ));
+    return <div className={RICH_NOTE_CONTENT_CLASS}>{nodes}</div>;
+    // `library` só importa pela identidade do id/livros; fontScale muda tamanho.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [html, libraryId, library?.books, fontScale]);
+
+  if (!rendered) return <>{emptyFallback ?? null}</>;
+  return rendered;
 }
+
+/**
+ * Memoizado: só re-renderiza quando o HTML, a biblioteca ativa ou a escala
+ * mudam. Evita reprocessar notas longas a cada atualização de estado do pai.
+ */
+export const RichOutlineContent = React.memo(RichOutlineContentImpl);
 
