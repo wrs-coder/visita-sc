@@ -54,10 +54,13 @@ interface VersePart {
   text: string;
 }
 
-export function VerseLink({ match, libraryId, className, fontScale = 1, onInsert }: VerseLinkProps) {
+export function VerseLink({
+  match, libraryId, className, fontScale = 1, onInsert,
+  autoOpen = false, hideTrigger = false, onClosed,
+}: VerseLinkProps) {
   const { t, i18n } = useTranslation();
   const displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName;
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
   const [loading, setLoading] = useState(false);
   // Capítulo atualmente carregado (permite navegar entre capítulos).
   const [chapter, setChapter] = useState(match.chapter);
