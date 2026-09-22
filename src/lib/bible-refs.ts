@@ -351,6 +351,14 @@ export interface UnknownCitation {
 }
 
 /** Damerau-Levenshtein: conta troca de letras vizinhas como 1 erro ("Joõa" → "João"). */
+// Palavras comuns que antecedem números e não são livros.
+const STOP_TERMS = new Set([
+  "as", "às", "aos", "nas", "nos", "das", "dos", "para", "pela", "pelo",
+  "hoje", "hora", "horas", "sala", "ate", "ate as", "em", "no", "na",
+  "at", "to", "from", "room", "page", "pag", "pagina", "parte",
+  "los", "las", "por", "hasta", "hora s",
+]);
+
 function levenshtein(a: string, b: string): number {
   if (a === b) return 0;
   const m = a.length;
@@ -379,7 +387,9 @@ export function suggestBook(
 ): { bookId: string; displayName: string } | null {
   if (!books || books.length === 0 || !term) return null;
   const q = stripDiacritics(term.toLowerCase()).replace(/\.$/, "").replace(/\s+/g, " ").trim();
-  if (q.length < 2) return null;
+  // Termos muito curtos gerariam falsos positivos ("às 19:30").
+  if (q.length < 3) return null;
+  if (STOP_TERMS.has(q)) return null;
   let best: { bookId: string; displayName: string; score: number } | null = null;
   const prefixLen = (a: string, b: string) => {
     let n = 0;
@@ -392,7 +402,7 @@ export function suggestBook(
       const k = stripDiacritics(c.toLowerCase()).replace(/\.$/, "").trim();
       if (!k) continue;
       // Distância máxima proporcional ao tamanho: termos curtos toleram menos erro.
-      const limit = k.length <= 3 ? 1 : k.length <= 6 ? 2 : 3;
+      const limit = k.length <= 4 ? 1 : k.length <= 7 ? 2 : 3;
       const d = levenshtein(q, k);
       if (d > limit) continue;
       // Desempate por prefixo em comum ("joõa" → "joão", não "joel").
