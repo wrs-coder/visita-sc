@@ -484,6 +484,7 @@ export function findUnknownCitations(
       index: start + offset,
       length: end - start - offset,
       suggestion,
+      suggestions,
     });
   }
   return out;
