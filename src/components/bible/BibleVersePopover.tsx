@@ -311,11 +311,14 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
 
   const isList = Boolean(match.verses && match.verses.length > 1);
   const isRange = !isList && match.verseEnd && match.verseEnd > match.verse;
-  const headerVerses = isList
-    ? match.verses!.join(",")
-    : match.verseEnd
-      ? `${match.verse}-${match.verseEnd}`
-      : `${match.verse}`;
+  const headerVerses = chapterMode
+    ? ""
+    : isList
+      ? match.verses!.join(",")
+      : match.verseEnd
+        ? `${match.verse}-${match.verseEnd}`
+        : `${match.verse}`;
+  const multiVerse = chapterMode || isRange || isList;
 
   const textContainerClass = useMemo(
     () => cn("text-sm leading-relaxed space-y-1.5 px-4 py-3 rounded-b-md", `bible-color-${settings.color}`, settings.bold && "bible-text-bold"),
