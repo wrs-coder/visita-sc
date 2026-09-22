@@ -12,3 +12,8 @@
 - [x] Detectar citações bíblicas por bloco (parágrafo/lista), corrigindo links e avisos de referência com erro nos modos Esboço e Tela Cheia; completar abreviações 1Te/2Te/1Thess/2Thess.
 - [x] Ativar otimização R8 e tratar exibição ponta a ponta (Android 15+), versão 4.2.4/versionCode 14.
 - [x] Impedir que a imagem nativa de abertura reapareça sobre o editor durante rolagem, teclado e seleção de texto (4.2.6/versionCode 16).
+- [ ] Offline-First evolutivo — Fase 0 (base local): espelho `src/lib/local-db.ts` com carimbos, tombstones, cursor e resolução de conflito. Camada passiva, nenhuma tela alterada.
+- [ ] Offline-First evolutivo — Fase 1: download incremental alimentando o espelho local.
+- [ ] Offline-First evolutivo — Fase 2: telas críticas lendo do espelho local (com caminho antigo como reserva).
+- [ ] Offline-First evolutivo — Fase 3: caixa de saída + reconciliação de conflito.
+- [ ] Offline-First evolutivo — Fase 4: sincronização automática e painel de estado.
