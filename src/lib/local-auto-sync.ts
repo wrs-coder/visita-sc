@@ -99,7 +99,7 @@ async function windowAlreadySyncedToday(w: SyncWindow): Promise<boolean> {
   return (await getCursor(windowCursorKey(w))) === dayKey();
 }
 
-export async function runAutoSync(opts?: { force?: boolean }): Promise<PullResult[] | null> {
+export async function runAutoSync(opts?: { force?: boolean; full?: boolean }): Promise<PullResult[] | null> {
   if (typeof navigator !== "undefined" && !navigator.onLine) return null;
   if (state.running) return null;
   const now = Date.now();
@@ -126,6 +126,7 @@ export async function runAutoSync(opts?: { force?: boolean }): Promise<PullResul
       tables: [...AUTO_SYNC_TABLES],
       pull: supabasePull,
       tombstones: supabaseTombstones,
+      full: opts?.full === true,
       onProgress: (p) => {
         state = { ...state, progress: p };
         emit();
@@ -142,6 +143,11 @@ export async function runAutoSync(opts?: { force?: boolean }): Promise<PullResul
       error: failed.length ? failed.map((f) => f.table).join(", ") : null,
     };
     emit();
+    if (failed.length === 0) {
+      // Etapa C — limpeza silenciosa do espelho após sync bem-sucedida.
+      // Nunca remove pendências (`dirty`); falhas são ignoradas.
+      void pruneLocalData().catch(() => {});
+    }
     return results;
   } catch (err) {
     state = {
