@@ -9,7 +9,6 @@ import {
   getRows,
   localDbStats,
   markDeleted,
-  markDirty,
   pruneLocalData,
   setCursor,
   upsertRows,
@@ -100,9 +99,8 @@ describe("local-db (Fase 0 — espelho local)", () => {
     await upsertRows("meals", [
       row("old-live", old),
       row("fresh-live", fresh),
-      row("old-pending", old),
     ]);
-    await markDirty("meals", "old-pending");
+    await upsertRows("meals", [row("old-pending", old)], { dirty: true });
     await upsertRows("meals", [row("old-deleted", old)]);
     await markDeleted("meals", "old-deleted", old);
 
