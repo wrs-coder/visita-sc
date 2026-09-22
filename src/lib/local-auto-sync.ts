@@ -147,25 +147,23 @@ export async function runAutoSync(opts?: { force?: boolean }): Promise<PullResul
   }
 }
 
-/** Liga os gatilhos automáticos. Retorna função de limpeza. Idempotente. */
+/** Liga os gatilhos automáticos (limitados às janelas diárias). Idempotente. */
 export function startAutoSync(): () => void {
   if (started || typeof window === "undefined") return () => {};
   started = true;
 
-  void runAutoSync(); // abertura do app
+  void runAutoSync(); // abertura do app (só executa se a janela ainda não rodou hoje)
   const onOnline = () => void runAutoSync();
   const onVisible = () => {
     if (document.visibilityState === "visible") void runAutoSync();
   };
   window.addEventListener("online", onOnline);
   document.addEventListener("visibilitychange", onVisible);
-  const timer = setInterval(() => void runAutoSync(), INTERVAL_MS);
 
   return () => {
     started = false;
     window.removeEventListener("online", onOnline);
     document.removeEventListener("visibilitychange", onVisible);
-    clearInterval(timer);
   };
 }
 
