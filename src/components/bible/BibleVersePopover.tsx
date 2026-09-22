@@ -520,8 +520,20 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
                 <p>{renderVerseSegments(parts[0])}</p>
               )}
               {truncated && (
-                <p className="text-[11px] opacity-70 italic pt-1">
-                  Intervalo grande — mostrando apenas os primeiros {MAX_RANGE} versículos.
+                <p className="text-[11px] opacity-80 italic pt-1">
+                  {t("bibleVerse.truncated", {
+                    defaultValue:
+                      "Mostrando {{shown}} de {{total}} versículos.",
+                    shown: MAX_RANGE,
+                    total: totalSelected,
+                  })}{" "}
+                  <button
+                    type="button"
+                    onClick={() => setShowAll(true)}
+                    className="underline font-medium not-italic"
+                  >
+                    {t("bibleVerse.showAll", { defaultValue: "Ver todos" })}
+                  </button>
                 </p>
               )}
             </div>
