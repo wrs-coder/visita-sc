@@ -1,9 +1,13 @@
-// FASE 4 — Sincronização automática do espelho local.
+// FASE 4 — Sincronização automática do espelho local (2x ao dia).
 //
-// Dispara o download incremental (local-sync) nos momentos certos:
-// abertura do app, retorno da conexão ("online"), retorno ao primeiro plano
-// e um intervalo de segurança. Nunca roda em paralelo, nunca roda sem
-// internet e nunca lança erro para a interface.
+// O download incremental (local-sync) roda automaticamente no máximo
+// duas vezes por dia: uma na janela da manhã (06:00–11:59) e outra na
+// janela da tarde (12:00–23:59), no horário do aparelho. Os gatilhos
+// (abertura do app, retorno da conexão, retorno ao primeiro plano)
+// continuam ativos, mas só executam de fato quando a janela atual ainda
+// não sincronizou naquele dia. A sincronização manual (botão no Perfil)
+// usa force:true e ignora as janelas. Nunca roda em paralelo, nunca roda
+// sem internet e nunca lança erro para a interface.
 
 import {
   syncTables,
@@ -12,6 +16,7 @@ import {
   type PullResult,
   type SyncProgress,
 } from "@/lib/local-sync";
+import { getCursor, setCursor } from "@/lib/local-db";
 
 // Mesmas tabelas já espelhadas pelas telas (Fases 2 e 3).
 export const AUTO_SYNC_TABLES = [
@@ -57,21 +62,56 @@ export function getAutoSyncState(): AutoSyncState {
   return { ...state };
 }
 
-const INTERVAL_MS = 5 * 60 * 1000; // 5 min
 const MIN_GAP_MS = 30 * 1000; // evita tempestade em eventos encadeados
 let lastStart = 0;
 let started = false;
+
+// ————— Janelas diárias (horário do aparelho) —————
+export type SyncWindow = "morning" | "afternoon";
+
+export function currentSyncWindow(now: Date = new Date()): SyncWindow | null {
+  const h = now.getHours();
+  if (h >= 6 && h < 12) return "morning";
+  if (h >= 12) return "afternoon";
+  return null; // 00:00–05:59: sem sincronização automática
+}
+
+function dayKey(d: Date = new Date()): string {
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+const windowCursorKey = (w: SyncWindow) => `__auto_sync_window:${w}`;
+
+/** A janela atual já sincronizou hoje? (null = fora de janela) */
+async function windowAlreadySyncedToday(w: SyncWindow): Promise<boolean> {
+  return (await getCursor(windowCursorKey(w))) === dayKey();
+}
 
 export async function runAutoSync(opts?: { force?: boolean }): Promise<PullResult[] | null> {
   if (typeof navigator !== "undefined" && !navigator.onLine) return null;
   if (state.running) return null;
   const now = Date.now();
   if (!opts?.force && now - lastStart < MIN_GAP_MS) return null;
+
+  // Sem force: respeita a janela do dia (máx. 1 execução por janela).
+  let windowToMark: SyncWindow | null = null;
+  if (!opts?.force) {
+    const w = currentSyncWindow();
+    if (!w) return null;
+    if (await windowAlreadySyncedToday(w)) return null;
+    windowToMark = w;
+  }
   lastStart = now;
 
   state = { ...state, running: true, error: null, progress: null };
   emit();
   try {
+    if (windowToMark) {
+      // Marca a janela como consumida hoje (best-effort; falha não impede a sync).
+      await setCursor(windowCursorKey(windowToMark), dayKey()).catch(() => {});
+    }
     const results = await syncTables({
       tables: [...AUTO_SYNC_TABLES],
       pull: supabasePull,
@@ -107,25 +147,23 @@ export async function runAutoSync(opts?: { force?: boolean }): Promise<PullResul
   }
 }
 
-/** Liga os gatilhos automáticos. Retorna função de limpeza. Idempotente. */
+/** Liga os gatilhos automáticos (limitados às janelas diárias). Idempotente. */
 export function startAutoSync(): () => void {
   if (started || typeof window === "undefined") return () => {};
   started = true;
 
-  void runAutoSync(); // abertura do app
+  void runAutoSync(); // abertura do app (só executa se a janela ainda não rodou hoje)
   const onOnline = () => void runAutoSync();
   const onVisible = () => {
     if (document.visibilityState === "visible") void runAutoSync();
   };
   window.addEventListener("online", onOnline);
   document.addEventListener("visibilitychange", onVisible);
-  const timer = setInterval(() => void runAutoSync(), INTERVAL_MS);
 
   return () => {
     started = false;
     window.removeEventListener("online", onOnline);
     document.removeEventListener("visibilitychange", onVisible);
-    clearInterval(timer);
   };
 }
 
