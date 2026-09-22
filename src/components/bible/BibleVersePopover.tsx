@@ -380,8 +380,17 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
           <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
           <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs font-semibold text-foreground flex-1 truncate">
-            {displayBook} {match.chapter}:{headerVerses}
+            {displayBook} {chapter}{headerVerses ? `:${headerVerses}` : ""}
           </span>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); void onCopy(); }}
+            className="p-1 rounded hover:bg-background text-muted-foreground"
+            aria-label={t("bibleVerse.copy", { defaultValue: "Copiar texto" })}
+            title={t("bibleVerse.copy", { defaultValue: "Copiar texto" })}
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </button>
           <button
             type="button"
             onClick={(e) => {
