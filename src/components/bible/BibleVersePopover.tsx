@@ -504,7 +504,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
               onDoubleClick={handleDoubleTapClose}
               onTouchEnd={handleTextTouchEnd}
             >
-              {isRange || isList ? (
+              {multiVerse ? (
                 <p>
                   {parts.map((p, i) => (
                     <span key={p.verse}>
