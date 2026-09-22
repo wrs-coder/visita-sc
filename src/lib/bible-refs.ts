@@ -334,3 +334,104 @@ export function stripHtmlForDetection(html: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+// ---------------------------------------------------------------------------
+// Referências não reconhecidas (erro de digitação na abreviação do livro).
+// ---------------------------------------------------------------------------
+
+export interface UnknownCitation {
+  raw: string;
+  bookTerm: string;
+  chapter: number;
+  verse: number;
+  index: number;
+  length: number;
+  /** Sugestão mais próxima (quando houver). */
+  suggestion?: { bookId: string; displayName: string };
+}
+
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  let prev = Array.from({ length: n + 1 }, (_, i) => i);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+
+/** Livro mais próximo do termo digitado (null quando a distância é grande demais). */
+export function suggestBook(
+  books: BookInfo[] | undefined,
+  term: string,
+): { bookId: string; displayName: string } | null {
+  if (!books || books.length === 0 || !term) return null;
+  const q = stripDiacritics(term.toLowerCase()).replace(/\.$/, "").replace(/\s+/g, " ").trim();
+  if (q.length < 2) return null;
+  let best: { bookId: string; displayName: string; d: number } | null = null;
+  for (const b of books) {
+    const candidates = [b.displayName, ...(b.aliases ?? [])];
+    for (const c of candidates) {
+      const k = stripDiacritics(c.toLowerCase()).replace(/\.$/, "").trim();
+      if (!k) continue;
+      // Distância máxima proporcional ao tamanho: termos curtos toleram menos erro.
+      const limit = k.length <= 3 ? 1 : k.length <= 6 ? 2 : 3;
+      const d = levenshtein(q, k);
+      if (d <= limit && (!best || d < best.d)) {
+        best = { bookId: b.bookId, displayName: b.displayName, d };
+      }
+    }
+  }
+  return best ? { bookId: best.bookId, displayName: best.displayName } : null;
+}
+
+const UNKNOWN_RE =
+  /(?:^|[^\p{L}\p{N}])((?:[1-3]\s*)?\p{L}[\p{L}.]{1,14}(?:\s+\p{L}[\p{L}.]{1,14})?)\s*\.?\s*(\d{1,3})\s*:\s*(\d{1,3})/gu;
+
+/**
+ * Detecta trechos com cara de citação bíblica cujo livro NÃO foi reconhecido,
+ * mas que têm um livro parecido na biblioteca (provável erro de digitação).
+ * Só retorna casos com sugestão, evitando falsos positivos (horários etc.).
+ */
+export function findUnknownCitations(
+  books: BookInfo[] | undefined,
+  text: string,
+  known?: CitationMatch[],
+): UnknownCitation[] {
+  if (!books || books.length === 0 || !text) return [];
+  const lang = detectBibleLanguage(books);
+  const { lookup } = compile(books, lang);
+  const taken = (known ?? findCitations(books, text)).map((m) => [m.index, m.index + m.length] as const);
+  const out: UnknownCitation[] = [];
+  const re = new RegExp(UNKNOWN_RE.source, UNKNOWN_RE.flags);
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const bookTerm = m[1].trim();
+    const raw = `${bookTerm} ${m[2]}:${m[3]}`;
+    const start = m.index + m[0].indexOf(m[1]);
+    const end = start + m[0].length - m[0].indexOf(m[1]);
+    if (taken.some(([s, e]) => start < e && end > s)) continue;
+    const key = stripDiacritics(bookTerm.toLowerCase()).replace(/\.$/, "");
+    if (lookup.has(key)) continue;
+    const suggestion = suggestBook(books, bookTerm);
+    if (!suggestion) continue;
+    out.push({
+      raw,
+      bookTerm,
+      chapter: parseInt(m[2], 10),
+      verse: parseInt(m[3], 10),
+      index: start,
+      length: end - start,
+      suggestion,
+    });
+  }
+  return out;
+}
