@@ -140,6 +140,13 @@ export function VerseLink({
     }
   }, [open, match.chapter]);
 
+  // Uso programático: avisa o componente pai quando o usuário fecha o balão.
+  const wasOpenRef = useRef(open);
+  useEffect(() => {
+    if (wasOpenRef.current && !open) onClosed?.();
+    wasOpenRef.current = open;
+  }, [open, onClosed]);
+
   function onHandlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (e.button !== 0 && e.pointerType === "mouse") return;
     // Não capturar o pointer quando o toque foi em um botão interno
