@@ -288,7 +288,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
     const start = Math.min(a.offset, b.offset);
     const end = Math.max(a.offset, b.offset);
     if (end <= start) return;
-    const key = highlightKey(libraryId, match.bookId, match.chapter, a.verse);
+    const key = highlightKey(libraryId, match.bookId, chapter, a.verse);
     const next = addHighlight(key, { start, end });
     setHighlightsByVerse((m) => ({ ...m, [a.verse]: next }));
     sel.removeAllRanges();
@@ -296,7 +296,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
 
   const onSegmentClick = (verse: number, segStart: number, highlighted: boolean) => {
     if (!libraryId || !highlighted) return;
-    const key = highlightKey(libraryId, match.bookId, match.chapter, verse);
+    const key = highlightKey(libraryId, match.bookId, chapter, verse);
     const next = removeHighlightAt(key, segStart);
     setHighlightsByVerse((m) => ({ ...m, [verse]: next }));
   };
@@ -304,7 +304,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
   const onClearAll = () => {
     if (!libraryId || !parts) return;
     for (const p of parts) {
-      clearHighlights(highlightKey(libraryId, match.bookId, match.chapter, p.verse));
+      clearHighlights(highlightKey(libraryId, match.bookId, chapter, p.verse));
     }
     setHighlightsByVerse(Object.fromEntries(parts.map((p) => [p.verse, []])));
   };
