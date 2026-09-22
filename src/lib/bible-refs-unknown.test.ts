@@ -42,4 +42,30 @@ describe("findUnknownCitations", () => {
   it("suggestBook devolve null para termos distantes", () => {
     expect(suggestBook(books, "Congregação")).toBeNull();
   });
+
+  it("suggestBooks devolve até 3 opções ordenadas (João antes de Jó para 'Joõa')", () => {
+    const out = suggestBooks(booksWithAliases, "Joõa");
+    expect(out.length).toBeGreaterThanOrEqual(2);
+    expect(out[0].bookId).toBe("B43");
+  });
+
+  it("suggestBooks distingue livros parecidos ('1Co' → 1 Coríntios e 1 Crônicas)", () => {
+    const out = suggestBooks(booksWithAliases, "1Co");
+    const ids = out.map((s) => s.bookId);
+    expect(ids).toContain("B46");
+    expect(ids).toContain("B13");
+    expect(out.length).toBeLessThanOrEqual(3);
+  });
+
+  it("findUnknownCitations preenche a lista de sugestões", () => {
+    const out = findUnknownCitations(booksWithAliases, "Texto com 1Co 3:16 errado");
+    expect(out).toHaveLength(1);
+    expect(out[0].suggestions?.length ?? 0).toBeGreaterThanOrEqual(2);
+    expect(out[0].suggestion?.bookId).toBe(out[0].suggestions?.[0].bookId);
+  });
+
+  it("suggestBooks devolve vazio para termos distantes ou comuns", () => {
+    expect(suggestBooks(books, "Congregação")).toEqual([]);
+    expect(suggestBooks(books, "às")).toEqual([]);
+  });
 });
