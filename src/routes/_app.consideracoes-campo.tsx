@@ -2184,7 +2184,7 @@ function FullscreenOutline({
   const showTimer = (note.type ?? "field_consideration") !== "talk_notes";
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none">
+    <div className="fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none safe-top safe-bottom safe-x">
       {showTimer && <OutlineTimer outlineId={note.id} variant="fullscreen" />}
       {showTimer && <OutlineInactivitySensor outlineId={note.id} />}
       <div className="border-b px-4 py-2 min-w-0 shrink-0">
