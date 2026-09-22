@@ -16,9 +16,10 @@ import {
   type PullResult,
   type SyncProgress,
 } from "@/lib/local-sync";
-import { getCursor, setCursor } from "@/lib/local-db";
+import { getCursor, pruneLocalData, setCursor } from "@/lib/local-db";
 
-// Mesmas tabelas já espelhadas pelas telas (Fases 2 e 3).
+// Tabelas espelhadas: Fases 2/3 + Etapa A (esboços e reuniões ligadas a eles).
+// Todas têm `updated_at` e gatilho de tombstone no banco (migração da Fase 1).
 export const AUTO_SYNC_TABLES = [
   "congregations",
   "circuit_schedule_events",
@@ -29,6 +30,15 @@ export const AUTO_SYNC_TABLES = [
   "meal_day_notes",
   "transport_schedule",
   "private_notes",
+  // Etapa A — esboços pessoais e dados de reuniões/discursos.
+  "personal_outlines",
+  "visits",
+  "schedule_events",
+  "midweek_meetings",
+  "weekend_meetings",
+  "pioneer_meetings",
+  "elders_servants_meetings",
+  "talk_themes",
 ] as const;
 
 export type AutoSyncState = {

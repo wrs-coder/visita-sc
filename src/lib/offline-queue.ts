@@ -81,6 +81,26 @@ export function queueSize(): number {
   return read().length;
 }
 
+/** Etapa C — lista detalhada das alterações pendentes (para o painel). */
+export function listPending(): QueuedMutation[] {
+  return read();
+}
+
+/**
+ * Etapa C — força nova tentativa imediata de UM item pendente:
+ * zera o backoff e dispara o flush da fila. Retorna false se o item
+ * não existir.
+ */
+export function retryNow(id: string): boolean {
+  const q = read();
+  const idx = q.findIndex((it) => it.id === id);
+  if (idx < 0) return false;
+  q[idx] = { ...q[idx], attempts: 0, nextAttemptAt: Date.now() };
+  write(q);
+  void flushQueue();
+  return true;
+}
+
 export function subscribe(fn: Listener): () => void {
   listeners.add(fn);
   fn(queueSize());
