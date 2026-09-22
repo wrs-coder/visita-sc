@@ -102,7 +102,7 @@ describe("local-db (Fase 0 — espelho local)", () => {
     ]);
     await upsertRows("meals", [row("old-pending", old)], { dirty: true });
     await upsertRows("meals", [row("old-deleted", old)]);
-    await markDeleted("meals", "old-deleted", old);
+    await markDeleted("meals", ["old-deleted"], old);
 
     const res = await pruneLocalData({ now });
     expect(res.removed).toBe(2); // old-live + old-deleted
