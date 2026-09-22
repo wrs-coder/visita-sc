@@ -397,13 +397,14 @@ function renderNode(node: Node, opts: RenderOpts, path: string, plan: CitationPl
   const tag = el.tagName;
   if (!ALLOWED_TAGS.has(tag)) {
     return Array.from(el.childNodes).map((c, i) => (
-      <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`)}</React.Fragment>
+      <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`, plan)}</React.Fragment>
     ));
   }
 
   const children = Array.from(el.childNodes).map((c, i) => (
-    <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`)}</React.Fragment>
+    <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`, plan)}</React.Fragment>
   ));
+
 
   const style = styleObjectFromAttr(el.getAttribute("style"));
   const key = path;
