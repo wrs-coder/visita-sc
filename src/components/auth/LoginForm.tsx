@@ -18,8 +18,10 @@ import { useConnectionMode, setMode } from "@/lib/connection-mode";
 import { PinUnlockPanel } from "@/components/auth/PinUnlockPanel";
 import { PinSetupDialog } from "@/components/auth/PinSetupDialog";
 import { getVaultMeta, isVaultExpired, type VaultMeta } from "@/lib/offline-credentials";
+import { localDbStats } from "@/lib/local-db";
+import { runFullSync } from "@/lib/local-auto-sync";
 
-const APP_VERSION = "4.2.6";
+const APP_VERSION = "4.2.7";
 const APP_BUILD = "2026.09.22";
 const APP_UPDATED_AT = "19/09/2026";
 
@@ -75,6 +77,21 @@ export function LoginForm() {
   const showPinPanel = !!vault && !usePassword;
 
   const finishLogin = async (userId: string) => {
+    // Etapa A — primeiro acesso neste aparelho: oferece download completo em
+    // segundo plano (espelho local vazio). Não bloqueia a navegação; falhas
+    // são silenciosas e a sincronização diária continua funcionando.
+    void (async () => {
+      try {
+        const stats = await localDbStats();
+        if (stats.tables.length > 0) return;
+        const tid = toast(t("sync.downloading", "Baixando seus dados para uso offline…"), { duration: Infinity });
+        const results = await runFullSync();
+        toast.dismiss(tid);
+        if (results && results.every((r) => r.ok)) {
+          toast.success(t("sync.downloadDone", "Download completo concluído"));
+        }
+      } catch { /* silencioso */ }
+    })();
     await redirectByRole(userId);
   };
 

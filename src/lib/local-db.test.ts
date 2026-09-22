@@ -9,6 +9,7 @@ import {
   getRows,
   localDbStats,
   markDeleted,
+  pruneLocalData,
   setCursor,
   upsertRows,
 } from "./local-db";
@@ -88,5 +89,30 @@ describe("local-db (Fase 0 — espelho local)", () => {
     });
     await clearLocalDb();
     expect((await localDbStats()).tables).toEqual([]);
+  });
+
+  it("poda tombstones e linhas antigas, preservando pendências (dirty)", async () => {
+    const now = Date.parse("2026-09-22T12:00:00Z");
+    const old = "2026-01-01T00:00:00Z"; // > 180 dias
+    const fresh = "2026-09-20T12:00:00Z";
+
+    await upsertRows("meals", [
+      row("old-live", old),
+      row("fresh-live", fresh),
+    ]);
+    await upsertRows("meals", [row("old-pending", old)], { dirty: true });
+    await upsertRows("meals", [row("old-deleted", old)]);
+    await markDeleted("meals", ["old-deleted"], old);
+
+    const res = await pruneLocalData({ now });
+    expect(res.removed).toBe(2); // old-live + old-deleted
+    const ids = (await getRows("meals")).map((r) => r.id).sort();
+    expect(ids).toEqual(["fresh-live", "old-pending"]);
+  });
+
+  it("não poda cursores internos (janelas de sincronização)", async () => {
+    await setCursor("__auto_sync_window:morning", "2026-09-22");
+    await pruneLocalData({ now: Date.parse("2026-09-22T12:00:00Z") });
+    expect(await getCursor("__auto_sync_window:morning")).toBe("2026-09-22");
   });
 });

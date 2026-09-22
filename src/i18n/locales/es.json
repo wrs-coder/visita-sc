@@ -1260,7 +1260,17 @@
     "unstable": "Conexión inestable. Tus datos siguen guardados de forma segura en el dispositivo.",
     "sent": "{{n}} cambio(s) enviado(s)",
     "remaining": "{{n}} cambio(s) aún pendiente(s) — guardados localmente.",
-    "updated": "Datos actualizados"
+    "updated": "Datos actualizados",
+    "title": "Sincronización sin conexión",
+    "last": "Última sincronización",
+    "error": "Error en: {{t}}",
+    "running": "Sincronizando…",
+    "downloadAll": "Descargar todo ahora",
+    "downloading": "Descargando tus datos para uso sin conexión…",
+    "downloadDone": "Descarga completa finalizada",
+    "storageUsed": "{{used}} MB de ~{{quota}} MB en el dispositivo",
+    "retry": "Intentando enviar de nuevo…",
+    "pendingTitle": "Cambios pendientes"
   },
   "templateIO": {
     "export": "Exportar plantilla",

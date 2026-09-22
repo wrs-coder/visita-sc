@@ -16,9 +16,10 @@ import {
   type PullResult,
   type SyncProgress,
 } from "@/lib/local-sync";
-import { getCursor, setCursor } from "@/lib/local-db";
+import { getCursor, pruneLocalData, setCursor } from "@/lib/local-db";
 
-// Mesmas tabelas já espelhadas pelas telas (Fases 2 e 3).
+// Tabelas espelhadas: Fases 2/3 + Etapa A (esboços e reuniões ligadas a eles).
+// Todas têm `updated_at` e gatilho de tombstone no banco (migração da Fase 1).
 export const AUTO_SYNC_TABLES = [
   "congregations",
   "circuit_schedule_events",
@@ -29,6 +30,15 @@ export const AUTO_SYNC_TABLES = [
   "meal_day_notes",
   "transport_schedule",
   "private_notes",
+  // Etapa A — esboços pessoais e dados de reuniões/discursos.
+  "personal_outlines",
+  "visits",
+  "schedule_events",
+  "midweek_meetings",
+  "weekend_meetings",
+  "pioneer_meetings",
+  "elders_servants_meetings",
+  "talk_themes",
 ] as const;
 
 export type AutoSyncState = {
@@ -89,7 +99,7 @@ async function windowAlreadySyncedToday(w: SyncWindow): Promise<boolean> {
   return (await getCursor(windowCursorKey(w))) === dayKey();
 }
 
-export async function runAutoSync(opts?: { force?: boolean }): Promise<PullResult[] | null> {
+export async function runAutoSync(opts?: { force?: boolean; full?: boolean }): Promise<PullResult[] | null> {
   if (typeof navigator !== "undefined" && !navigator.onLine) return null;
   if (state.running) return null;
   const now = Date.now();
@@ -116,6 +126,7 @@ export async function runAutoSync(opts?: { force?: boolean }): Promise<PullResul
       tables: [...AUTO_SYNC_TABLES],
       pull: supabasePull,
       tombstones: supabaseTombstones,
+      full: opts?.full === true,
       onProgress: (p) => {
         state = { ...state, progress: p };
         emit();
@@ -132,6 +143,11 @@ export async function runAutoSync(opts?: { force?: boolean }): Promise<PullResul
       error: failed.length ? failed.map((f) => f.table).join(", ") : null,
     };
     emit();
+    if (failed.length === 0) {
+      // Etapa C — limpeza silenciosa do espelho após sync bem-sucedida.
+      // Nunca remove pendências (`dirty`); falhas são ignoradas.
+      void pruneLocalData().catch(() => {});
+    }
     return results;
   } catch (err) {
     state = {
@@ -145,6 +161,15 @@ export async function runAutoSync(opts?: { force?: boolean }): Promise<PullResul
     emit();
     return null;
   }
+}
+
+/**
+ * Etapa A — download completo (tela nova ou primeiro acesso no aparelho).
+ * Ignora cursores e baixa todas as tabelas do zero, com barra de progresso.
+ * Manual (botão "Baixar tudo agora" / pós-login): não consome a janela do dia.
+ */
+export function runFullSync(): Promise<PullResult[] | null> {
+  return runAutoSync({ force: true, full: true });
 }
 
 /** Liga os gatilhos automáticos (limitados às janelas diárias). Idempotente. */
