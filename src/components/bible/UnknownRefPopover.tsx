@@ -43,50 +43,70 @@ export function UnknownRefLink({ citation, libraryId, fontScale = 1, onInsert }:
     length: 0,
   });
 
+  const [selected, setSelected] = useState<{ bookId: string; name: string } | null>(null);
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="underline decoration-dotted decoration-destructive/70 underline-offset-2 text-inherit"
-          style={{ fontSize: `${fontScale}em` }}
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="underline decoration-dotted decoration-destructive/70 underline-offset-2 text-inherit"
+            style={{ fontSize: `${fontScale}em` }}
+          >
+            {citation.raw}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-64 max-w-[90vw] p-3 space-y-2 text-sm z-[110]"
+          align="start"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onFocusOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={() => setOpen(false)}
         >
-          {citation.raw}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-64 max-w-[90vw] p-3 space-y-2 text-sm z-[110]"
-        align="start"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
-        onFocusOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={() => setOpen(false)}
-      >
-        <div className="flex items-start gap-2 font-medium">
-          <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
-          <span>
-            {t("bibleRef.notFound", { defaultValue: "Referência não encontrada" })}
-          </span>
-        </div>
-        {suggestions.length > 0 ? (
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">
-              {t("bibleRef.didYouMean", { defaultValue: "Você quis dizer:" })}
-            </p>
-            <div className="space-y-1" onClickCapture={() => setOpen(false)}>
-              {suggestions.map((s) => (
-                <VerseLink
-                  key={s.bookId}
-                  match={toMatch(s)}
-                  libraryId={libraryId}
-                  onInsert={onInsert}
-                />
-              ))}
-            </div>
+          <div className="flex items-start gap-2 font-medium">
+            <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+            <span>
+              {t("bibleRef.notFound", { defaultValue: "Referência não encontrada" })}
+            </span>
           </div>
-        ) : null}
-      </PopoverContent>
-    </Popover>
+          {suggestions.length > 0 ? (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">
+                {t("bibleRef.didYouMean", { defaultValue: "Você quis dizer:" })}
+              </p>
+              <div className="space-y-1">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.bookId}
+                    type="button"
+                    className="block text-left text-sky-600 dark:text-sky-400 underline-offset-2 hover:underline font-medium"
+                    onClick={() => {
+                      setOpen(false);
+                      setSelected(s);
+                    }}
+                  >
+                    {`${s.name} ${citation.chapter}:${citation.verse}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </PopoverContent>
+      </Popover>
+      {selected ? (
+        <VerseLink
+          key={selected.bookId}
+          match={toMatch(selected)}
+          libraryId={libraryId}
+          onInsert={onInsert}
+          autoOpen
+          hideTrigger
+          onClosed={() => setSelected(null)}
+        />
+      ) : null}
+    </>
   );
 }

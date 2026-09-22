@@ -31,6 +31,12 @@ interface VerseLinkProps {
   className?: string;
   fontScale?: number;
   onInsert?: (text: string) => void | Promise<void>;
+  /** Abre o balão já montado (uso programático, sem clique no gatilho). */
+  autoOpen?: boolean;
+  /** Esconde visualmente o gatilho — o balão fica ancorado no mesmo ponto. */
+  hideTrigger?: boolean;
+  /** Chamado quando o balão é fechado deliberadamente pelo usuário. */
+  onClosed?: () => void;
 }
 
 const MAX_RANGE = 10;
@@ -48,10 +54,13 @@ interface VersePart {
   text: string;
 }
 
-export function VerseLink({ match, libraryId, className, fontScale = 1, onInsert }: VerseLinkProps) {
+export function VerseLink({
+  match, libraryId, className, fontScale = 1, onInsert,
+  autoOpen = false, hideTrigger = false, onClosed,
+}: VerseLinkProps) {
   const { t, i18n } = useTranslation();
   const displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName;
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
   const [loading, setLoading] = useState(false);
   // Capítulo atualmente carregado (permite navegar entre capítulos).
   const [chapter, setChapter] = useState(match.chapter);
@@ -130,6 +139,13 @@ export function VerseLink({ match, libraryId, className, fontScale = 1, onInsert
       setChapter(match.chapter);
     }
   }, [open, match.chapter]);
+
+  // Uso programático: avisa o componente pai quando o usuário fecha o balão.
+  const wasOpenRef = useRef(open);
+  useEffect(() => {
+    if (wasOpenRef.current && !open) onClosed?.();
+    wasOpenRef.current = open;
+  }, [open, onClosed]);
 
   function onHandlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (e.button !== 0 && e.pointerType === "mouse") return;
@@ -379,16 +395,20 @@ export function VerseLink({ match, libraryId, className, fontScale = 1, onInsert
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "text-sky-600 dark:text-sky-400 underline-offset-2 hover:underline font-medium",
-            className,
-          )}
-          style={fontScale !== 1 ? { fontSize: `${fontScale}em` } : undefined}
-        >
-          {match.raw}
-        </button>
+        {hideTrigger ? (
+          <span aria-hidden className="inline-block h-0 w-0 overflow-hidden align-baseline" />
+        ) : (
+          <button
+            type="button"
+            className={cn(
+              "text-sky-600 dark:text-sky-400 underline-offset-2 hover:underline font-medium",
+              className,
+            )}
+            style={fontScale !== 1 ? { fontSize: `${fontScale}em` } : undefined}
+          >
+            {match.raw}
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent
         ref={contentRef}
