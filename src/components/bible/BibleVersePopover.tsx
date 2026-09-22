@@ -31,6 +31,12 @@ interface VerseLinkProps {
   className?: string;
   fontScale?: number;
   onInsert?: (text: string) => void | Promise<void>;
+  /** Abre o balão já montado (uso programático, sem clique no gatilho). */
+  autoOpen?: boolean;
+  /** Esconde visualmente o gatilho — o balão fica ancorado no mesmo ponto. */
+  hideTrigger?: boolean;
+  /** Chamado quando o balão é fechado deliberadamente pelo usuário. */
+  onClosed?: () => void;
 }
 
 const MAX_RANGE = 10;
