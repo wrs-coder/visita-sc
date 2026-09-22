@@ -17,6 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { PwaRegister } from "@/components/PwaRegister";
 import { OfflineStatusBar } from "@/components/OfflineStatusBar";
 import { AppOriginDiagnostics } from "@/components/AppOriginDiagnostics";
+import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
+import { armBootGuard, markAppMounted } from "@/lib/boot-guard";
 import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-persister";
 import { flushQueue, startOfflineQueueAutoRetry } from "@/lib/offline-queue";
 import { ensureFreshSession } from "@/lib/session-ready";
@@ -24,6 +26,9 @@ import { isOfflineMode } from "@/lib/connection-mode";
 import { toast } from "sonner";
 import "@/i18n";
 import "@/lib/theme";
+
+// Rede de segurança: nunca mais uma tela preta sem explicação no app instalado.
+armBootGuard();
 
 function NotFoundComponent() {
   const { t } = useTranslation();
@@ -227,7 +232,10 @@ function RootComponent() {
     };
   }, [router, queryClient]);
 
+  useEffect(() => { markAppMounted(); }, []);
+
   return (
+    <ChunkErrorBoundary>
     <PersistQueryClientProvider
       client={queryClient}
       persistOptions={{
@@ -249,5 +257,6 @@ function RootComponent() {
         <Toaster richColors position="top-center" />
       </AuthProvider>
     </PersistQueryClientProvider>
+    </ChunkErrorBoundary>
   );
 }
