@@ -317,3 +317,54 @@ describe("stripHtmlForDetection", () => {
     expect(all[1].bookId).toBe("B43");
   });
 });
+
+// ============================================================================
+// G. Abreviações numeradas, intervalos e listas (PT / EN / ES)
+// ============================================================================
+describe("abreviações numeradas, intervalos e listas", () => {
+  it.each([
+    ["1 Tessalonicenses 3:1", "B52"],
+    ["1Te 3:1", "B52"],
+    ["1 Te 3:1", "B52"],
+    ["2Te 2:3", "B53"],
+    ["1Ts 5:17", "B52"],
+    ["2 Tes 1:3", "B53"],
+    ["1Co 13:4", "B46"],
+    ["2Tm 3:16", "B55"],
+    ["1 Pe 1:3", "B60"],
+    ["1 Jo 4:8", "B62"],
+  ])('PT "%s" → %s', (text, expected) => {
+    expect(firstMatch(ptBooks, text)?.bookId).toBe(expected);
+  });
+
+  it.each([
+    ["1 Thess 4:13", "B52"],
+    ["2 Thess 1:7", "B53"],
+    ["1 Thessalonians 5:17", "B52"],
+  ])('EN "%s" → %s', (text, expected) => {
+    expect(firstMatch(enBooks, text)?.bookId).toBe(expected);
+  });
+
+  it("intervalo 3:1-5", () => {
+    const m = firstMatch(ptBooks, "1 Tessalonicenses 3:1-5");
+    expect(m?.bookId).toBe("B52");
+    expect(m?.verse).toBe(1);
+    expect(m?.verseEnd).toBe(5);
+  });
+
+  it("lista 3:1,3,5", () => {
+    const m = firstMatch(ptBooks, "1Te 3:1,3,5");
+    expect(m?.bookId).toBe("B52");
+    expect(m?.verses).toEqual([1, 3, 5]);
+  });
+
+  it("intervalo em abreviação curta com ponto", () => {
+    const m = firstMatch(ptBooks, "Sal. 83:18");
+    expect(m?.bookId).toBe("B19");
+    expect(m?.verse).toBe(18);
+  });
+
+  it("não confunde horário com citação", () => {
+    expect(findCitations(ptBooks, "às 19:30 na sala")).toHaveLength(0);
+  });
+});
