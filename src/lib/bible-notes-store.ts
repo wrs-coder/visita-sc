@@ -538,6 +538,80 @@ export async function getVerseFromLibrary(
   });
 }
 
+/**
+ * Lê vários versículos de um capítulo em UMA transação (getAll + IDBKeyRange),
+ * em vez de N leituras individuais. Retorna ordenado por número do versículo.
+ */
+export async function getChapterFromLibrary(
+  libId: string,
+  bookId: string,
+  chapter: number,
+): Promise<BibleVerseRecord[]> {
+  if (!hasIDB()) return [];
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_BIBLES, "readonly");
+    const prefix = `${libId}:${bookId}:${chapter}:`;
+    const range = IDBKeyRange.bound(prefix, `${prefix}\uffff`);
+    const req = tx.objectStore(STORE_BIBLES).getAll(range);
+    req.onsuccess = () => {
+      const all = (req.result as BibleVerseRecord[]) ?? [];
+      all.sort((a, b) => a.verse - b.verse);
+      resolve(all);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export interface BibleSearchHit {
+  bookId: string;
+  chapter: number;
+  verse: number;
+  text: string;
+}
+
+/**
+ * Busca textual simples (substring, sem acentos/caixa) na biblioteca ativa.
+ * Percorre por cursor e para assim que atingir `limit`, evitando carregar
+ * a Bíblia inteira na memória.
+ */
+export async function searchVersesInLibrary(
+  libId: string,
+  query: string,
+  limit = 50,
+): Promise<BibleSearchHit[]> {
+  const needle = query
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+  if (!hasIDB() || needle.length < 3) return [];
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_BIBLES, "readonly");
+    const range = IDBKeyRange.bound(`${libId}:`, `${libId}:\uffff`);
+    const req = tx.objectStore(STORE_BIBLES).openCursor(range);
+    const out: BibleSearchHit[] = [];
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (!cursor || out.length >= limit) {
+        resolve(out);
+        return;
+      }
+      const rec = cursor.value as BibleVerseRecord;
+      const hay = rec.text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+      if (hay.includes(needle)) {
+        out.push({ bookId: rec.bookId, chapter: rec.chapter, verse: rec.verse, text: rec.text });
+      }
+      cursor.continue();
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
 // =============================================================
 // Stubs de compatibilidade (removidos na sub-etapa 3.3)
 // Mantidos apenas para o código antigo (BibleManagerDialog, VersePopover)
