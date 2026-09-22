@@ -1286,7 +1286,17 @@
     "unstable": "Ligação instável. Os seus dados continuam guardados em segurança no dispositivo.",
     "sent": "{{n}} alteração(ões) enviada(s)",
     "remaining": "{{n}} alteração(ões) ainda pendente(s) — guardadas localmente.",
-    "updated": "Dados atualizados"
+    "updated": "Dados atualizados",
+    "title": "Sincronização offline",
+    "last": "Última sincronização",
+    "error": "Falha em: {{t}}",
+    "running": "Sincronizando…",
+    "downloadAll": "Baixar tudo agora",
+    "downloading": "Baixando seus dados para uso offline…",
+    "downloadDone": "Download completo concluído",
+    "storageUsed": "{{used}} MB de ~{{quota}} MB no aparelho",
+    "retry": "Tentando enviar novamente…",
+    "pendingTitle": "Alterações pendentes"
   },
   "templateIO": {
     "export": "Exportar modelo",

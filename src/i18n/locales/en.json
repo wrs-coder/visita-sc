@@ -1285,7 +1285,17 @@
     "unstable": "Unstable connection. Your data is safely stored on the device.",
     "sent": "{{n}} change(s) sent",
     "remaining": "{{n}} change(s) still pending — stored locally.",
-    "updated": "Data updated"
+    "updated": "Data updated",
+    "title": "Offline sync",
+    "last": "Last sync",
+    "error": "Failed on: {{t}}",
+    "running": "Syncing…",
+    "downloadAll": "Download everything now",
+    "downloading": "Downloading your data for offline use…",
+    "downloadDone": "Full download complete",
+    "storageUsed": "{{used}} MB of ~{{quota}} MB on this device",
+    "retry": "Trying to send again…",
+    "pendingTitle": "Pending changes"
   },
   "templateIO": {
     "export": "Export template",
