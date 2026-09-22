@@ -49,7 +49,15 @@ export function UnknownRefLink({ citation, libraryId, fontScale = 1, onInsert }:
           {citation.raw}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-3 space-y-2 text-sm" align="start">
+      <PopoverContent
+        className="w-64 max-w-[90vw] p-3 space-y-2 text-sm z-[110]"
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={() => setOpen(false)}
+      >
         <div className="flex items-start gap-2 font-medium">
           <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
           <span>
