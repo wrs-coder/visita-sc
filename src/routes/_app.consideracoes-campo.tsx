@@ -2000,7 +2000,22 @@ function NoteEditor({
             <div className="flex items-center gap-2 text-xs font-semibold">
               <BookOpen className="h-3.5 w-3.5 text-primary" />
               {t("fieldConsiderations.detected")}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="ml-auto h-7 px-2 text-[11px]"
+                onClick={() => setSearchOpen(true)}
+              >
+                <Search className="h-3.5 w-3.5 mr-1" />
+                {t("bibleSearch.open", { defaultValue: "Buscar na Bíblia" })}
+              </Button>
             </div>
+            <BibleSearchDialog
+              open={searchOpen}
+              onOpenChange={setSearchOpen}
+              library={activeBible}
+            />
             {detected.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 {t("fieldConsiderations.detectedEmpty")}
