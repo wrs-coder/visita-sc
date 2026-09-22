@@ -326,6 +326,58 @@ export async function clearTable(table: string): Promise<void> {
   });
 }
 
+export type PruneResult = { tables: number; removed: number };
+
+/**
+ * Etapa C — Limpeza do espelho local.
+ * Remove, por tabela:
+ * - tombstones (linhas excluídas) mais antigos que `tombstoneDays` (padrão 30);
+ * - linhas vivas NÃO pendentes (`dirty`) mais antigas que `rowDays`
+ *   (padrão 180), medidas pelo `updatedAt`.
+ *
+ * Nunca remove linhas `dirty` (escritas localmente e ainda não enviadas).
+ * O cursor da tabela é preservado: linhas podadas voltam apenas com um
+ * download completo ("Baixar tudo agora").
+ */
+export async function pruneLocalData(opts?: {
+  rowDays?: number;
+  tombstoneDays?: number;
+  now?: number;
+}): Promise<PruneResult> {
+  const rowDays = opts?.rowDays ?? 180;
+  const tombstoneDays = opts?.tombstoneDays ?? 30;
+  const now = opts?.now ?? Date.now();
+  const rowCutoff = new Date(now - rowDays * 86_400_000).toISOString();
+  const tombCutoff = new Date(now - tombstoneDays * 86_400_000).toISOString();
+  return serialize(async () => {
+    const kv = await getKv();
+    const index = (await kv.get<string[]>(INDEX_KEY)) ?? [];
+    let removed = 0;
+    let tables = 0;
+    for (const table of index) {
+      // Cursores internos de controle (janelas de sync) não são podados.
+      if (table.startsWith("__")) continue;
+      const file = await readFile(table);
+      const before = Object.keys(file.rows).length;
+      for (const [id, row] of Object.entries(file.rows)) {
+        if (row.dirty) continue; // pendente de envio: nunca podar
+        if (row.deletedAt) {
+          if (row.deletedAt < tombCutoff) delete file.rows[id];
+        } else if (row.updatedAt && row.updatedAt < rowCutoff) {
+          delete file.rows[id];
+        }
+      }
+      const after = Object.keys(file.rows).length;
+      if (after !== before) {
+        removed += before - after;
+        tables++;
+        await writeFile(table, file);
+      }
+    }
+    return { tables, removed };
+  });
+}
+
 /** Limpa TODO o espelho local (usado em logout explícito / troca de conta). */
 export async function clearLocalDb(): Promise<void> {
   await serialize(async () => {
