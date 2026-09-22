@@ -172,56 +172,80 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
     dragRef.current = null;
   }
 
+  // Carrega o capítulo inteiro numa única transação (getAll + IDBKeyRange),
+  // em vez de uma leitura por versículo. Serve tanto para a citação quanto
+  // para o modo "capítulo completo" e a navegação entre capítulos.
   useEffect(() => {
-    if (!open || parts !== null) return;
+    if (!open) return;
     if (!libraryId) {
-      setParts([]);
+      setChapterVerses([]);
       return;
     }
+    let cancelled = false;
     setLoading(true);
+    getChapterFromLibrary(libraryId, match.bookId, chapter)
+      .then((recs) => {
+        if (cancelled) return;
+        setChapterVerses(recs.map((r) => ({ verse: r.verse, text: r.text })).filter((r) => r.text));
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setChapterVerses([]);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [open, libraryId, match.bookId, chapter]);
 
-    let nums: number[];
-    let cappedTruncation = false;
-    if (match.verses && match.verses.length > 0) {
-      nums = [...match.verses];
-      if (nums.length > MAX_RANGE) {
-        nums = nums.slice(0, MAX_RANGE);
-        cappedTruncation = true;
-      }
-    } else {
-      const start = match.verse;
-      let end = match.verseEnd && match.verseEnd > start ? match.verseEnd : start;
-      if (end - start + 1 > MAX_RANGE) {
-        end = start + MAX_RANGE - 1;
-        cappedTruncation = true;
-      }
-      nums = [];
-      for (let v = start; v <= end; v++) nums.push(v);
-    }
+  // Versículos exibidos: capítulo inteiro ou apenas os da citação.
+  const selectedVerses = useMemo<number[]>(() => {
+    if (match.verses && match.verses.length > 0) return [...match.verses];
+    const start = match.verse;
+    const end = match.verseEnd && match.verseEnd > start ? match.verseEnd : start;
+    const nums: number[] = [];
+    for (let v = start; v <= end; v++) nums.push(v);
+    return nums;
+  }, [match.verse, match.verseEnd, match.verses]);
 
-    Promise.all(
-      nums.map((v) =>
-        getVerseFromLibrary(libraryId, match.bookId, match.chapter, v).then((rec) => ({
-          verse: v,
-          text: rec?.text ?? "",
-        })),
-      ),
-    ).then((results) => {
-      setParts(results.filter((r) => r.text));
-      setTruncated(cappedTruncation);
-      setLoading(false);
-    });
-  }, [open, libraryId, match.bookId, match.chapter, match.verse, match.verseEnd, match.verses, parts]);
+  const totalSelected = selectedVerses.length;
+  const truncated = !chapterMode && !showAll && totalSelected > MAX_RANGE;
+
+  const parts = useMemo<VersePart[] | null>(() => {
+    if (chapterVerses === null) return null;
+    if (chapterMode) return chapterVerses;
+    const byVerse = new Map(chapterVerses.map((v) => [v.verse, v.text]));
+    const nums = truncated ? selectedVerses.slice(0, MAX_RANGE) : selectedVerses;
+    return nums
+      .map((v) => ({ verse: v, text: byVerse.get(v) ?? "" }))
+      .filter((p) => p.text);
+  }, [chapterVerses, chapterMode, selectedVerses, truncated]);
 
   // Load highlights for the verses currently shown.
   useEffect(() => {
     if (!open || !parts || !libraryId) return;
     const map: Record<number, BibleHighlight[]> = {};
     for (const p of parts) {
-      map[p.verse] = getHighlights(highlightKey(libraryId, match.bookId, match.chapter, p.verse));
+      map[p.verse] = getHighlights(highlightKey(libraryId, match.bookId, chapter, p.verse));
     }
     setHighlightsByVerse(map);
-  }, [open, parts, libraryId, match.bookId, match.chapter]);
+  }, [open, parts, libraryId, match.bookId, chapter]);
+
+  const onCopy = useCallback(async () => {
+    if (!parts || parts.length === 0) return;
+    const ref = `${displayBook} ${chapter}:${parts.map((p) => p.verse).join(", ")}`;
+    const body = parts.map((p) => `${p.verse} ${p.text}`).join(" ");
+    try {
+      await navigator.clipboard.writeText(`${ref} — ${body}`);
+      toast.success(t("bibleVerse.copied", { defaultValue: "Texto copiado" }));
+    } catch {
+      toast.error(t("bibleVerse.copyFailed", { defaultValue: "Não foi possível copiar" }));
+    }
+  }, [parts, displayBook, chapter, t]);
+
+  const goChapter = useCallback((delta: number) => {
+    setChapter((c) => Math.max(1, c + delta));
+    setChapterMode(true);
+  }, []);
 
   const updateSetting = (patch: Partial<BibleViewSettings>) => {
     setSettings(saveSettings(patch));
