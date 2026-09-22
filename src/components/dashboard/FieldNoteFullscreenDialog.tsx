@@ -126,7 +126,7 @@ export function FieldNoteFullscreenDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="p-0 gap-0 max-w-[100vw] sm:max-w-[100vw] w-screen h-[100dvh] sm:h-[100dvh] flex flex-col rounded-none overflow-hidden"
+        className="p-0 gap-0 max-w-[100vw] sm:max-w-[100vw] w-screen h-[100dvh] sm:h-[100dvh] flex flex-col rounded-none overflow-hidden safe-top safe-bottom safe-x"
         onPointerDownOutside={(e) => {
           // Não fechar o diálogo quando o usuário interage com o
           // popover de versículos bíblicos (Radix portala para fora

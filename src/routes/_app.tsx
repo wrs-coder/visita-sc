@@ -270,7 +270,7 @@ function AppLayout() {
       {/* Onda 7.9 — Anunciador SR-only de mudança de rota. */}
       <RouteAnnouncer pathname={location.pathname} />
       {/* Mobile top bar */}
-      <header className="md:hidden sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm">
+      <header className="md:hidden sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm safe-top safe-x">
         <div className="flex items-center justify-between px-3 h-14">
           <div className="flex items-center gap-2">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -328,7 +328,7 @@ function AppLayout() {
 
       <div className="md:flex">
         {/* Desktop sidebar */}
-        <aside className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-sidebar text-sidebar-foreground">
+        <aside className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-sidebar text-sidebar-foreground safe-top safe-bottom">
           <div className="shrink-0">
             <SidebarHeader
               congregationName={displayedCongregationName}
@@ -364,7 +364,7 @@ function AppLayout() {
           className="flex-1 md:ml-72 min-w-0 max-w-full overflow-x-hidden focus:outline-none"
           style={accentStyle(accentForPath(location.pathname))}
         >
-          <div className="max-w-5xl mx-auto p-4 md:p-8 pb-24 min-w-0">
+          <div className="max-w-5xl mx-auto p-4 md:p-8 safe-bottom-extra safe-x min-w-0">
 
             {blocked ? (
               <div className="min-h-[60vh] flex items-center justify-center">

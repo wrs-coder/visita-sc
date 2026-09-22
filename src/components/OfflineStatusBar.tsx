@@ -110,7 +110,7 @@ export function OfflineStatusBar() {
       role="status"
       aria-live="polite"
       className={cn(
-        "fixed top-2 left-1/2 -translate-x-1/2 z-[60] pointer-events-none",
+        "fixed top-[max(0.5rem,env(safe-area-inset-top,0px))] left-1/2 -translate-x-1/2 z-[60] pointer-events-none",
         "flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium",
         "shadow-sm backdrop-blur-sm transition-opacity",
         s.bg,

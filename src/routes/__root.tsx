@@ -66,7 +66,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Visita do SC" },
       { name: "description", content: "Aplicativo para organizar a Semana da Visita do Superintendente de Circuito: cronograma, escala de campo, refeições e checklist da congregação." },
       { name: "theme-color", content: "#1e3a8a" },
