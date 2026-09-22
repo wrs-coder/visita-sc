@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -248,8 +249,8 @@ function Dashboard() {
   const loadCouple = useCallback(async () => {
     if (!user || role !== "superintendent") return;
     try {
-      const r = await listCoupleFn();
-      if (r.ok) {
+      const { data: r } = await readFnWithMirrorSafe("couple-messages:super", () => listCoupleFn());
+      if (r?.ok) {
         setCoupleThreads(r.threads);
         setCoupleUnread(r.unread);
       }
@@ -392,8 +393,8 @@ function Dashboard() {
     let cancelled = false;
     (async () => {
       try {
-        const r = await fnLoadElder({ data: { visitId: visit.id } });
-        if (cancelled || !r.ok) return;
+        const { data: r } = await readFnWithMirrorSafe(`elder-program:${visit.id}`, () => fnLoadElder({ data: { visitId: visit.id } }));
+        if (cancelled || !r?.ok) return;
         setElderPastoral(r.pastoral);
         setElderEncouragement(r.encouragement);
         setElderRecommendations(r.recommendations);

@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
@@ -72,8 +73,8 @@ function Page() {
   const load = useCallback(async () => {
     if (!user || role !== "superintendent") return;
     try {
-      const r = await listFn();
-      if (r.ok) setThreads(r.threads);
+      const { data: r } = await readFnWithMirrorSafe("couple-messages:super", () => listFn());
+      if (r?.ok) setThreads(r.threads);
     } catch (err) {
       console.warn("[couple] load failed", err);
     } finally {
