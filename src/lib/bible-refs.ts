@@ -348,6 +348,8 @@ export interface UnknownCitation {
   length: number;
   /** Sugestão mais próxima (quando houver). */
   suggestion?: { bookId: string; displayName: string };
+  /** Até 3 sugestões ordenadas da mais provável para a menos provável. */
+  suggestions?: { bookId: string; displayName: string }[];
 }
 
 /** Damerau-Levenshtein: conta troca de letras vizinhas como 1 erro ("Joõa" → "João"). */
