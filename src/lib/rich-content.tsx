@@ -208,29 +208,29 @@ interface RenderOpts {
   fontScale?: number;
 }
 
-function renderNode(node: Node, opts: RenderOpts): React.ReactNode {
+function renderNode(node: Node, opts: RenderOpts, path: string): React.ReactNode {
   const books = opts.library?.books;
   const libraryId = opts.library?.id ?? null;
 
   if (node.nodeType === Node.TEXT_NODE) {
-    return renderTextWithCitations(node.nodeValue ?? "", books, libraryId, opts.fontScale);
+    return renderTextWithCitations(node.nodeValue ?? "", books, libraryId, opts.fontScale, path);
   }
   if (node.nodeType !== Node.ELEMENT_NODE) return null;
 
   const el = node as Element;
   const tag = el.tagName;
   if (!ALLOWED_TAGS.has(tag)) {
-    return Array.from(el.childNodes).map((c) => (
-      <React.Fragment key={nextKey()}>{renderNode(c, opts)}</React.Fragment>
+    return Array.from(el.childNodes).map((c, i) => (
+      <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`)}</React.Fragment>
     ));
   }
 
-  const children = Array.from(el.childNodes).map((c) => (
-    <React.Fragment key={nextKey()}>{renderNode(c, opts)}</React.Fragment>
+  const children = Array.from(el.childNodes).map((c, i) => (
+    <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`)}</React.Fragment>
   ));
 
   const style = styleObjectFromAttr(el.getAttribute("style"));
-  const key = nextKey();
+  const key = path;
   const lower = tag.toLowerCase();
 
   const props: Record<string, unknown> = { key };
