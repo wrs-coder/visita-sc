@@ -1744,5 +1744,13 @@
     "biometricEnable": "Ativar",
     "confirmPinTitle": "Confirme seu PIN",
     "confirmPinDesc": "Digite o PIN de 6 dígitos para liberar a digital neste aparelho."
+  },
+  "bibleRef": {
+    "notFound": "Referência não encontrada",
+    "didYouMean": "Você quis dizer:"
+  },
+  "bibleHistory": {
+    "title": "Consultas recentes",
+    "clear": "Limpar"
   }
 }

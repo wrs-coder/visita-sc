@@ -1743,5 +1743,13 @@
     "biometricEnable": "Enable",
     "confirmPinTitle": "Confirm your PIN",
     "confirmPinDesc": "Enter the 6-digit PIN to enable fingerprint on this device."
+  },
+  "bibleRef": {
+    "notFound": "Reference not found",
+    "didYouMean": "Did you mean:"
+  },
+  "bibleHistory": {
+    "title": "Recent lookups",
+    "clear": "Clear"
   }
 }
