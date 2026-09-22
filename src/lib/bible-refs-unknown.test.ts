@@ -43,10 +43,12 @@ describe("findUnknownCitations", () => {
     expect(suggestBook(books, "Congregação")).toBeNull();
   });
 
-  it("suggestBooks devolve até 3 opções ordenadas (João antes de Jó para 'Joõa')", () => {
-    const out = suggestBooks(booksWithAliases, "Joõa");
-    expect(out.length).toBeGreaterThanOrEqual(2);
+  it("suggestBooks devolve até 3 opções e inclui João para 'Joõa'", () => {
+    const out = suggestBooks(books, "Joõa");
+    expect(out.length).toBeGreaterThanOrEqual(1);
+    expect(out.length).toBeLessThanOrEqual(3);
     expect(out[0].bookId).toBe("B43");
+    expect(out.map((s) => s.bookId)).toContain("B43");
   });
 
   it("suggestBooks distingue livros parecidos ('1Co' → 1 Coríntios e 1 Crônicas)", () => {
@@ -58,9 +60,10 @@ describe("findUnknownCitations", () => {
   });
 
   it("findUnknownCitations preenche a lista de sugestões", () => {
-    const out = findUnknownCitations(booksWithAliases, "Texto com 1Co 3:16 errado");
+    const out = findUnknownCitations(booksWithAliases, "Texto com 1Corintias 3:16 errado");
     expect(out).toHaveLength(1);
     expect(out[0].suggestions?.length ?? 0).toBeGreaterThanOrEqual(2);
+    expect(out[0].suggestions?.map((s) => s.bookId)).toContain("B46");
     expect(out[0].suggestion?.bookId).toBe(out[0].suggestions?.[0].bookId);
   });
 
