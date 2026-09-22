@@ -461,18 +461,19 @@ export function findUnknownCitations(
     // O capture pode trazer a palavra anterior ("Veja Joõa"); tenta o termo
     // completo e, se não houver sugestão, apenas a última palavra.
     let term = bookTerm;
-    let suggestion = suggestBook(books, term);
-    if (!suggestion) {
+    let suggestions = suggestBooks(books, term);
+    if (suggestions.length === 0) {
       const parts = bookTerm.split(/\s+/);
       if (parts.length > 1) {
         const tail = parts.slice(-1)[0];
         const tailKey = stripDiacritics(tail.toLowerCase()).replace(/\.$/, "");
         if (lookup.has(tailKey)) continue;
-        suggestion = suggestBook(books, tail);
-        if (suggestion) term = tail;
+        suggestions = suggestBooks(books, tail);
+        if (suggestions.length > 0) term = tail;
       }
     }
-    if (!suggestion) continue;
+    if (suggestions.length === 0) continue;
+    const suggestion = suggestions[0];
     const offset = bookTerm.length - term.length;
     const rawFixed = `${term} ${m[2]}:${m[3]}`;
     out.push({
