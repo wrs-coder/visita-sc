@@ -230,6 +230,17 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
     setHighlightsByVerse(map);
   }, [open, parts, libraryId, match.bookId, chapter]);
 
+  // Histórico local dos últimos versículos consultados.
+  useEffect(() => {
+    if (!open) return;
+    pushVerseHistory({
+      bookId: match.bookId,
+      bookName: displayBook,
+      chapter: match.chapter,
+      verse: match.verse,
+    });
+  }, [open, match.bookId, match.chapter, match.verse, displayBook]);
+
   const onCopy = useCallback(async () => {
     if (!parts || parts.length === 0) return;
     const ref = `${displayBook} ${chapter}:${parts.map((p) => p.verse).join(", ")}`;
