@@ -11,3 +11,4 @@
 - [x] Aplicar melhorias bíblicas ao esboço e à Tela Cheia, incluindo inserção direta do texto na nota.
 - [x] Detectar citações bíblicas por bloco (parágrafo/lista), corrigindo links e avisos de referência com erro nos modos Esboço e Tela Cheia; completar abreviações 1Te/2Te/1Thess/2Thess.
 - [x] Ativar otimização R8 e tratar exibição ponta a ponta (Android 15+), versão 4.2.4/versionCode 14.
+- [x] Impedir que a imagem nativa de abertura reapareça sobre o editor durante rolagem, teclado e seleção de texto (4.2.6/versionCode 16).
