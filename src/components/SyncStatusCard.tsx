@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { listPending, retryNow, subscribeQueue, type QueuedMutation } from "@/lib/offline-queue";
+import { listPending, retryNow, subscribe as subscribeQueue, type QueuedMutation } from "@/lib/offline-queue";
 import {
   getAutoSyncState,
   runAutoSync,
