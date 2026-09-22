@@ -17,3 +17,7 @@
 - [x] Offline-First evolutivo — Fase 2: telas Refeições, Transporte e visita ativa lendo do espelho local (`src/lib/local-first.ts`), servidor continua sendo a fonte quando responde.
 - [x] Offline-First evolutivo — Fase 3: caixa de saída + reconciliação de conflito (local-write + reconciliador ligados às telas).
 - [x] Offline-First evolutivo — Fase 4: sincronização automática (local-auto-sync) + painel de estado no Perfil (SyncStatusCard); cursor incremental corrigido.
+- [x] Sincronização automática reduzida a 2x/dia (manhã e tarde); botão manual continua livre.
+- [x] Etapa A (offline-first): esboços/reuniões na sincronização (`personal_outlines`, `visits`, reuniões, `talk_themes`, `schedule_events`) + download completo guiado ("Baixar tudo agora" e oferta automática no primeiro login do aparelho).
+- [x] Etapa C (offline-first): limpeza segura do espelho local (preserva pendências), medidor de espaço no aparelho e lista de pendências com "tentar de novo" por item. Versão 4.2.7/versionCode 17.
+- [ ] (adiada) Etapa B: sincronizar anexos (fotos/vídeos) com a nuvem.
