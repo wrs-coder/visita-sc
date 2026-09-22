@@ -13,7 +13,7 @@ import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { FIELD_MODALITIES, FIELD_MODALITY_LABELS } from "@/lib/field-meeting-templates.functions";
-import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
+import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/local-write";
 import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { TemplateExtraEditable } from "./TemplateExtraBlock";
 import { Textarea } from "@/components/ui/textarea";

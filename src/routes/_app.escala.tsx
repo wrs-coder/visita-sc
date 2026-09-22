@@ -14,7 +14,7 @@ import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
-import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
+import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/local-write";
 import { FieldStudiesReportDialog } from "@/components/visit-week/FieldStudiesReportDialog";
 import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
 

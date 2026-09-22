@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { offlineInsert, offlineUpdate } from "@/lib/offline-supabase";
+import { offlineInsert, offlineUpdate } from "@/lib/local-write";
 import type { Visit } from "@/hooks/use-active-visit";
 import { toast } from "sonner";
 import { useMeetingsDraft } from "./MeetingsDraftContext";

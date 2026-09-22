@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import type { JsPdfCompat } from "@/lib/pdf/pdf-engine";
-import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
+import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/local-write";
 import { saveBlob } from "@/lib/share";
 
 function makeUuid(): string {

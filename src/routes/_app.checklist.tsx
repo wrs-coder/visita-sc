@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Check, Trash2, Loader2, Pencil, Download } from "lucide-react";
 import { toast } from "sonner";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
-import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
+import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/local-write";
 import { saveBlob } from "@/lib/share";
 import { ChecklistReportDialog } from "@/components/visit-week/ChecklistReportDialog";
 import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";

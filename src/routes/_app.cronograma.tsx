@@ -65,7 +65,7 @@ import type { Locale } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/offline-supabase";
+import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/local-write";
 import { getHiddenEventIds } from "@/lib/hidden-events";
 import { dayAccentStyle } from "@/lib/day-accent";
 

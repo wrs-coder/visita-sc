@@ -41,7 +41,7 @@ import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone }
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/offline-supabase";
+import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/local-write";
 import { useTranslation } from "react-i18next";
 import { maskPhone } from "@/lib/masks";
 import { SavingIndicator } from "@/components/SavingIndicator";
