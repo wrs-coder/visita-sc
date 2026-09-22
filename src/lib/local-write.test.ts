@@ -1,14 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { __resetLocalDbForTests, getRow, getRows, upsertRows } from "@/lib/local-db";
 
-const offline = {
+vi.mock("@/lib/offline-supabase", () => ({
   offlineInsert: vi.fn(async () => ({ error: null, queued: true })),
   offlineUpsert: vi.fn(async () => ({ error: null, queued: true })),
   offlineUpdate: vi.fn(async () => ({ error: null, queued: true })),
   offlineDelete: vi.fn(async () => ({ error: null, queued: true })),
-};
-
-vi.mock("@/lib/offline-supabase", () => offline);
+}));
 vi.mock("@/lib/offline-queue", () => ({
   queueSize: () => 0,
   subscribe: () => () => undefined,
