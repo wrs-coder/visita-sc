@@ -40,7 +40,16 @@ export async function pullTable(table: string, pull: PullFn): Promise<PullResult
   try {
     const since = await getCursor(table);
     const rows = await pull({ table, since });
-    if (rows.length) await upsertRows(table, rows);
+    if (rows.length) {
+      await upsertRows(table, rows);
+      // Cursor avança para o maior updated_at recebido (somente após gravar).
+      let newest: string | null = null;
+      for (const row of rows) {
+        const u = row["updated_at"];
+        if (typeof u === "string" && (!newest || u > newest)) newest = u;
+      }
+      if (newest) await setCursor(table, newest);
+    }
     return { table, rows: rows.length, ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

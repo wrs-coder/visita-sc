@@ -15,5 +15,5 @@
 - [x] Offline-First evolutivo — Fase 0 (base local): espelho `src/lib/local-db.ts` com carimbos, tombstones, cursor e resolução de conflito. Camada passiva, nenhuma tela alterada.
 - [x] Offline-First evolutivo — Fase 1: carimbos `updated_at` + registro de exclusões no banco e download incremental (`src/lib/local-sync.ts`), ainda sem ligar nas telas.
 - [x] Offline-First evolutivo — Fase 2: telas Refeições, Transporte e visita ativa lendo do espelho local (`src/lib/local-first.ts`), servidor continua sendo a fonte quando responde.
-- [ ] Offline-First evolutivo — Fase 3: caixa de saída + reconciliação de conflito.
-- [ ] Offline-First evolutivo — Fase 4: sincronização automática e painel de estado.
+- [x] Offline-First evolutivo — Fase 3: caixa de saída + reconciliação de conflito (local-write + reconciliador ligados às telas).
+- [x] Offline-First evolutivo — Fase 4: sincronização automática (local-auto-sync) + painel de estado no Perfil (SyncStatusCard); cursor incremental corrigido.
