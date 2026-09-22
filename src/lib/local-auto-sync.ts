@@ -163,6 +163,15 @@ export async function runAutoSync(opts?: { force?: boolean; full?: boolean }): P
   }
 }
 
+/**
+ * Etapa A — download completo (tela nova ou primeiro acesso no aparelho).
+ * Ignora cursores e baixa todas as tabelas do zero, com barra de progresso.
+ * Manual (botão "Baixar tudo agora" / pós-login): não consome a janela do dia.
+ */
+export function runFullSync(): Promise<PullResult[] | null> {
+  return runAutoSync({ force: true, full: true });
+}
+
 /** Liga os gatilhos automáticos (limitados às janelas diárias). Idempotente. */
 export function startAutoSync(): () => void {
   if (started || typeof window === "undefined") return () => {};
