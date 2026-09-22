@@ -1743,16 +1743,5 @@
     "biometricEnable": "Enable",
     "confirmPinTitle": "Confirm your PIN",
     "confirmPinDesc": "Enter the 6-digit PIN to enable fingerprint on this device."
-  },
-  "bibleSearch": {
-    "title": "Search the Bible",
-    "open": "Search the Bible",
-    "placeholder": "Reference (John 3:16) or words from the text",
-    "searching": "Searching...",
-    "empty": "No verses found.",
-    "results": "{{n}} result(s)",
-    "history": "Recent lookups",
-    "clearHistory": "Clear",
-    "noLibrary": "Import a Bible to use search."
   }
 }
