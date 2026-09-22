@@ -348,6 +348,8 @@ export interface UnknownCitation {
   length: number;
   /** Sugestão mais próxima (quando houver). */
   suggestion?: { bookId: string; displayName: string };
+  /** Até 3 sugestões ordenadas da mais provável para a menos provável. */
+  suggestions?: { bookId: string; displayName: string }[];
 }
 
 /** Damerau-Levenshtein: conta troca de letras vizinhas como 1 erro ("Joõa" → "João"). */
@@ -380,22 +382,23 @@ function levenshtein(a: string, b: string): number {
   return d[m][n];
 }
 
-/** Livro mais próximo do termo digitado (null quando a distância é grande demais). */
-export function suggestBook(
+/** Livros mais próximos do termo digitado (até `max`, da melhor para a pior opção). */
+export function suggestBooks(
   books: BookInfo[] | undefined,
   term: string,
-): { bookId: string; displayName: string } | null {
-  if (!books || books.length === 0 || !term) return null;
+  max = 3,
+): { bookId: string; displayName: string }[] {
+  if (!books || books.length === 0 || !term) return [];
   const q = stripDiacritics(term.toLowerCase()).replace(/\.$/, "").replace(/\s+/g, " ").trim();
   // Termos muito curtos gerariam falsos positivos ("às 19:30").
-  if (q.length < 3) return null;
-  if (STOP_TERMS.has(q)) return null;
-  let best: { bookId: string; displayName: string; score: number } | null = null;
+  if (q.length < 3) return [];
+  if (STOP_TERMS.has(q)) return [];
   const prefixLen = (a: string, b: string) => {
     let n = 0;
     while (n < a.length && n < b.length && a[n] === b[n]) n++;
     return n;
   };
+  const byBook = new Map<string, { bookId: string; displayName: string; score: number }>();
   for (const b of books) {
     const candidates = [b.displayName, ...(b.aliases ?? [])];
     for (const c of candidates) {
@@ -407,12 +410,24 @@ export function suggestBook(
       if (d > limit) continue;
       // Desempate por prefixo em comum ("joõa" → "joão", não "joel").
       const score = d - prefixLen(q, k) * 0.1;
-      if (!best || score < best.score) {
-        best = { bookId: b.bookId, displayName: b.displayName, score };
+      const prev = byBook.get(b.bookId);
+      if (!prev || score < prev.score) {
+        byBook.set(b.bookId, { bookId: b.bookId, displayName: b.displayName, score });
       }
     }
   }
-  return best ? { bookId: best.bookId, displayName: best.displayName } : null;
+  return [...byBook.values()]
+    .sort((a, b) => a.score - b.score)
+    .slice(0, max)
+    .map(({ bookId, displayName }) => ({ bookId, displayName }));
+}
+
+/** Livro mais próximo do termo digitado (null quando a distância é grande demais). */
+export function suggestBook(
+  books: BookInfo[] | undefined,
+  term: string,
+): { bookId: string; displayName: string } | null {
+  return suggestBooks(books, term, 1)[0] ?? null;
 }
 
 const UNKNOWN_RE =
@@ -446,18 +461,19 @@ export function findUnknownCitations(
     // O capture pode trazer a palavra anterior ("Veja Joõa"); tenta o termo
     // completo e, se não houver sugestão, apenas a última palavra.
     let term = bookTerm;
-    let suggestion = suggestBook(books, term);
-    if (!suggestion) {
+    let suggestions = suggestBooks(books, term);
+    if (suggestions.length === 0) {
       const parts = bookTerm.split(/\s+/);
       if (parts.length > 1) {
         const tail = parts.slice(-1)[0];
         const tailKey = stripDiacritics(tail.toLowerCase()).replace(/\.$/, "");
         if (lookup.has(tailKey)) continue;
-        suggestion = suggestBook(books, tail);
-        if (suggestion) term = tail;
+        suggestions = suggestBooks(books, tail);
+        if (suggestions.length > 0) term = tail;
       }
     }
-    if (!suggestion) continue;
+    if (suggestions.length === 0) continue;
+    const suggestion = suggestions[0];
     const offset = bookTerm.length - term.length;
     const rawFixed = `${term} ${m[2]}:${m[3]}`;
     out.push({
@@ -468,6 +484,7 @@ export function findUnknownCitations(
       index: start + offset,
       length: end - start - offset,
       suggestion,
+      suggestions,
     });
   }
   return out;

@@ -15,28 +15,33 @@ interface Props {
 
 /**
  * Marca uma referência com aparência de citação cujo livro não foi reconhecido
- * e oferece o livro mais próximo como sugestão. Não altera o texto do esboço.
+ * e oferece os livros mais próximos como sugestão. Não altera o texto do esboço.
  */
 export function UnknownRefLink({ citation, libraryId, fontScale = 1, onInsert }: Props) {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
-  const s = citation.suggestion;
-  const suggestedName = s
-    ? getLocalizedBookName(s.bookId, i18n.language) ?? s.displayName
-    : null;
+  const rawSuggestions =
+    citation.suggestions && citation.suggestions.length > 0
+      ? citation.suggestions
+      : citation.suggestion
+        ? [citation.suggestion]
+        : [];
+  const suggestions = rawSuggestions
+    .slice(0, 3)
+    .map((s) => ({
+      bookId: s.bookId,
+      name: getLocalizedBookName(s.bookId, i18n.language) ?? s.displayName,
+    }));
 
-  const suggestedMatch: CitationMatch | null =
-    s && suggestedName
-      ? {
-          raw: `${suggestedName} ${citation.chapter}:${citation.verse}`,
-          bookId: s.bookId,
-          bookName: suggestedName,
-          chapter: citation.chapter,
-          verse: citation.verse,
-          index: 0,
-          length: 0,
-        }
-      : null;
+  const toMatch = (s: { bookId: string; name: string }): CitationMatch => ({
+    raw: `${s.name} ${citation.chapter}:${citation.verse}`,
+    bookId: s.bookId,
+    bookName: s.name,
+    chapter: citation.chapter,
+    verse: citation.verse,
+    index: 0,
+    length: 0,
+  });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -64,12 +69,21 @@ export function UnknownRefLink({ citation, libraryId, fontScale = 1, onInsert }:
             {t("bibleRef.notFound", { defaultValue: "Referência não encontrada" })}
           </span>
         </div>
-        {suggestedMatch ? (
+        {suggestions.length > 0 ? (
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
               {t("bibleRef.didYouMean", { defaultValue: "Você quis dizer:" })}
             </p>
-            <VerseLink match={suggestedMatch} libraryId={libraryId} onInsert={onInsert} />
+            <div className="space-y-1" onClickCapture={() => setOpen(false)}>
+              {suggestions.map((s) => (
+                <VerseLink
+                  key={s.bookId}
+                  match={toMatch(s)}
+                  libraryId={libraryId}
+                  onInsert={onInsert}
+                />
+              ))}
+            </div>
           </div>
         ) : null}
       </PopoverContent>
