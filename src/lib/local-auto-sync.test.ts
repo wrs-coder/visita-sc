@@ -21,7 +21,7 @@ describe("local-auto-sync (Fase 4)", () => {
   beforeEach(() => {
     __resetAutoSyncForTests();
     vi.clearAllMocks();
-    Object.defineProperty(window.navigator, "onLine", { value: true, configurable: true });
+    Object.defineProperty(globalThis.navigator, "onLine", { value: true, configurable: true });
   });
 
   it("executa e registra sucesso com total de linhas", async () => {
