@@ -1720,6 +1720,7 @@ function NoteEditor({
   onPatch, onModeChange, onSave, onDelete, onExport, onFullscreen, onCloud, dateFmt,
 }: EditorProps) {
   const { t } = useTranslation();
+  const [searchOpen, setSearchOpen] = useState(false);
   const isField = type === "field_consideration";
   const isTalk = type === "talk_notes";
   const { visit } = useActiveVisit();
