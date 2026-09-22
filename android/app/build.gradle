@@ -14,8 +14,8 @@ android {
         applicationId "com.waorodrigues.visitasc"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 14
-        versionName "4.2.4"
+        versionCode 15
+        versionName "4.2.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
         // Snippet de validação exigido pelo Google Play Console

@@ -1,24 +1,24 @@
 /**
- * Lightbox de vídeo — dispara o player HTML5 nativo em fullscreen.
- * Segue o mesmo padrão de captura (ESC/stopPropagation) do lightbox de foto
- * para nunca fechar o Dialog pai por engano.
+ * Lightbox de vídeo — player HTML5 em tela cheia.
+ * O arquivo é resolvido sob demanda (Filesystem nativo ou IndexedDB).
  */
 import { useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import { X, ImageOff, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { useAttachmentSrc } from "@/hooks/use-attachment-src";
+import type { NoteAttachment } from "@/lib/outline-attachments";
 
 interface Props {
   open: boolean;
-  src: string;
-  mime?: string;
-  title?: string;
+  attachment: NoteAttachment;
   onClose: () => void;
 }
 
-export function AttachmentVideoLightbox({ open, src, mime, title, onClose }: Props) {
+export function AttachmentVideoLightbox({ open, attachment, onClose }: Props) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const { src, status, markMissing } = useAttachmentSrc(attachment, open);
 
   useEffect(() => {
     if (!open) return;
@@ -35,11 +35,10 @@ export function AttachmentVideoLightbox({ open, src, mime, title, onClose }: Pro
   }, [open, onClose]);
 
   useEffect(() => {
-    if (!open) return;
-    // Auto-play best-effort; se o navegador bloquear, o usuário toca em play.
+    if (!open || status !== "ready") return;
     const v = videoRef.current;
     v?.play().catch(() => { /* noop */ });
-  }, [open, src]);
+  }, [open, status, src]);
 
   if (!open) return null;
 
@@ -51,7 +50,7 @@ export function AttachmentVideoLightbox({ open, src, mime, title, onClose }: Pro
       )}
       role="dialog"
       aria-modal="true"
-      aria-label={title}
+      aria-label={attachment.title}
       onClick={onClose}
     >
       <button
@@ -66,17 +65,33 @@ export function AttachmentVideoLightbox({ open, src, mime, title, onClose }: Pro
         <X className="h-5 w-5" />
       </button>
 
-      <video
-        ref={videoRef}
-        src={src}
-        controls
-        playsInline
-        preload="metadata"
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[100dvh] max-w-full outline-none"
-      >
-        {mime ? <source src={src} type={mime} /> : null}
-      </video>
+      {status === "loading" && <Loader2 className="h-8 w-8 animate-spin text-white/80" />}
+
+      {status === "missing" && (
+        <div className="flex flex-col items-center gap-2 text-white/85 px-6 text-center">
+          <ImageOff className="h-10 w-10" />
+          <p className="text-sm">
+            {t("personalOutlines.attachments.unavailable", {
+              defaultValue: "Anexo indisponível neste aparelho",
+            })}
+          </p>
+        </div>
+      )}
+
+      {status === "ready" && src && (
+        <video
+          ref={videoRef}
+          src={src}
+          controls
+          playsInline
+          preload="metadata"
+          onClick={(e) => e.stopPropagation()}
+          onError={markMissing}
+          className="max-h-[100dvh] max-w-full outline-none"
+        >
+          {attachment.mime ? <source src={src} type={attachment.mime} /> : null}
+        </video>
+      )}
     </div>
   );
 }
