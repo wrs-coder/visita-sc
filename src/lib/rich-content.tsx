@@ -233,26 +233,178 @@ interface RenderOpts {
   onInsertVerse?: (text: string) => void | Promise<void>;
 }
 
-function renderNode(node: Node, opts: RenderOpts, path: string): React.ReactNode {
+// ---------------------------------------------------------------------------
+// Detecção por BLOCO (parágrafo / item de lista / célula), e não por text node.
+//
+// O editor fragmenta o texto em vários nós quando há cor, negrito, tamanho de
+// fonte etc. Procurando citação em cada fragmento isolado, uma referência como
+// "1 Tessalonicenses 3:1" partida ao meio nunca era encontrada nos modos de
+// leitura (esboço / tela cheia) — embora o modo edição, que junta todo o texto
+// antes de procurar, a encontrasse. Aqui juntamos o texto de cada bloco, com
+// os offsets de cada nó, rodamos a detecção uma única vez e depois fatiamos os
+// resultados de volta nos nós correspondentes.
+// ---------------------------------------------------------------------------
+
+const BLOCK_TAGS = new Set([
+  "P", "LI", "H1", "H2", "H3", "DIV", "BLOCKQUOTE", "PRE", "TD", "TH",
+]);
+
+/** Pedaço renderizável dentro de um text node (coordenadas locais ao nó). */
+interface NodePiece {
+  s: number;
+  e: number;
+  /** null = trecho consumido por uma citação que começou num nó anterior. */
+  el: React.ReactNode | null;
+}
+
+type CitationPlan = Map<Node, NodePiece[]>;
+
+/** Junta os text nodes "inline" do bloco, ignorando blocos aninhados. */
+function collectBlockText(
+  el: Element,
+  nodes: { node: Node; start: number }[],
+  ref: { text: string },
+): void {
+  for (const child of Array.from(el.childNodes)) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      const t = child.nodeValue ?? "";
+      if (!t) continue;
+      nodes.push({ node: child, start: ref.text.length });
+      ref.text += t;
+    } else if (child.nodeType === Node.ELEMENT_NODE) {
+      const tag = (child as Element).tagName;
+      if (tag === "BR") {
+        ref.text += "\n";
+        continue;
+      }
+      if (BLOCK_TAGS.has(tag)) continue; // tratado no próprio bloco
+      collectBlockText(child as Element, nodes, ref);
+    }
+  }
+}
+
+function addBlockMatches(
+  text: string,
+  nodes: { node: Node; start: number }[],
+  path: string,
+  opts: RenderOpts,
+  plan: CitationPlan,
+): void {
+  if (!text.trim()) return;
   const books = opts.library?.books;
   const libraryId = opts.library?.id ?? null;
+  const matches = findCitations(books, text);
+  const unknown = findUnknownCitations(books, text, matches);
+  if (matches.length === 0 && unknown.length === 0) return;
 
+  type Piece =
+    | { kind: "known"; index: number; length: number; m: (typeof matches)[number] }
+    | { kind: "unknown"; index: number; length: number; u: (typeof unknown)[number] };
+  const pieces: Piece[] = [
+    ...matches.map((m) => ({ kind: "known" as const, index: m.index, length: m.length, m })),
+    ...unknown.map((u) => ({ kind: "unknown" as const, index: u.index, length: u.length, u })),
+  ].sort((a, b) => a.index - b.index);
+
+  let cursor = 0;
+  pieces.forEach((p, i) => {
+    if (p.index < cursor) return;
+    const s = p.index;
+    const e = p.index + p.length;
+    cursor = e;
+    const element =
+      p.kind === "known" ? (
+        <VerseLink
+          key={`${path}-c${i}`}
+          match={p.m}
+          libraryId={libraryId}
+          fontScale={opts.fontScale}
+          onInsert={opts.onInsertVerse}
+        />
+      ) : (
+        <UnknownRefLink
+          key={`${path}-u${i}`}
+          citation={p.u}
+          libraryId={libraryId}
+          fontScale={opts.fontScale}
+          onInsert={opts.onInsertVerse}
+        />
+      );
+
+    let first = true;
+    for (const { node, start } of nodes) {
+      const len = (node.nodeValue ?? "").length;
+      const ns = start;
+      const ne = start + len;
+      if (ne <= s || ns >= e) continue;
+      const localS = Math.max(s, ns) - ns;
+      const localE = Math.min(e, ne) - ns;
+      if (localE <= localS) continue;
+      const list = plan.get(node) ?? [];
+      list.push({ s: localS, e: localE, el: first ? element : null });
+      plan.set(node, list);
+      first = false;
+    }
+  });
+}
+
+/** Monta o plano de citações do elemento raiz (recursivo por blocos). */
+function buildCitationPlan(root: Element, opts: RenderOpts, path: string, plan: CitationPlan): void {
+  const nodes: { node: Node; start: number }[] = [];
+  const ref = { text: "" };
+  collectBlockText(root, nodes, ref);
+  if (nodes.length > 0) addBlockMatches(ref.text, nodes, path, opts, plan);
+
+  const descend = (el: Element, p: string): void => {
+    Array.from(el.children).forEach((child, i) => {
+      const childPath = `${p}.${i}`;
+      if (BLOCK_TAGS.has(child.tagName)) {
+        buildCitationPlan(child, opts, childPath, plan);
+      } else {
+        descend(child, childPath);
+      }
+    });
+  };
+  descend(root, path);
+}
+
+/** Renderiza um text node aplicando o plano de citações do bloco. */
+function renderPlannedText(node: Node, plan: CitationPlan): React.ReactNode {
+  const text = node.nodeValue ?? "";
+  if (!text) return text;
+  const pieces = plan.get(node);
+  if (!pieces || pieces.length === 0) return text;
+  const sorted = [...pieces].sort((a, b) => a.s - b.s);
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  for (const piece of sorted) {
+    if (piece.s < cursor) continue;
+    if (piece.s > cursor) parts.push(text.slice(cursor, piece.s));
+    if (piece.el) parts.push(piece.el);
+    cursor = piece.e;
+  }
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return <>{parts}</>;
+}
+
+function renderNode(node: Node, opts: RenderOpts, path: string, plan: CitationPlan): React.ReactNode {
   if (node.nodeType === Node.TEXT_NODE) {
-    return renderTextWithCitations(node.nodeValue ?? "", books, libraryId, opts.fontScale, path, opts.onInsertVerse);
+    return renderPlannedText(node, plan);
   }
   if (node.nodeType !== Node.ELEMENT_NODE) return null;
+
 
   const el = node as Element;
   const tag = el.tagName;
   if (!ALLOWED_TAGS.has(tag)) {
     return Array.from(el.childNodes).map((c, i) => (
-      <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`)}</React.Fragment>
+      <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`, plan)}</React.Fragment>
     ));
   }
 
   const children = Array.from(el.childNodes).map((c, i) => (
-    <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`)}</React.Fragment>
+    <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`, plan)}</React.Fragment>
   ));
+
 
   const style = styleObjectFromAttr(el.getAttribute("style"));
   const key = path;
@@ -349,12 +501,16 @@ function RichOutlineContentImpl({
     const doc = new DOMParser().parseFromString(`<div id="__root">${safe}</div>`, "text/html");
     const root = doc.getElementById("__root");
     if (!root) return null;
+    const opts: RenderOpts = { library, fontScale, onInsertVerse };
+    const plan: CitationPlan = new Map();
+    buildCitationPlan(root, opts, "n", plan);
     const nodes = Array.from(root.childNodes).map((n, i) => (
       <React.Fragment key={`n${i}`}>
-        {renderNode(n, { library, fontScale, onInsertVerse }, `n${i}`)}
+        {renderNode(n, opts, `n${i}`, plan)}
       </React.Fragment>
     ));
     return <div className={RICH_NOTE_CONTENT_CLASS}>{nodes}</div>;
+
     // `library` só importa pela identidade do id/livros; fontScale muda tamanho.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [html, libraryId, library?.books, fontScale, onInsertVerse]);

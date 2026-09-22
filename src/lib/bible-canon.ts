@@ -171,9 +171,10 @@ const RAW: Array<[number, string, ...string[]]> = [
     "colossenses","colosenses","colossians","colossiens","kolosser","colossesi",
     "cl","col","co"],
   [52, "1 Thessalonians",
-    "1 tessalonicenses","i tessalonicenses","1 tesalonicenses","1ts","1 ts","1tes","1 tes","1tess","1 tess","1th","1 th","1 thessaloniciens","1 thessalonicher","1 tessalonicesi"],
+    "1 tessalonicenses","i tessalonicenses","1 tesalonicenses","1ts","1 ts","1tes","1 tes","1tess","1 tess","1th","1 th","1te","1 te","1thes","1 thes","1thess","1 thess","1 thessaloniciens","1 thessalonicher","1 tessalonicesi"],
   [53, "2 Thessalonians",
-    "2 tessalonicenses","ii tessalonicenses","2 tesalonicenses","2ts","2 ts","2tes","2 tes","2tess","2 tess","2th","2 th","2 thessaloniciens","2 thessalonicher","2 tessalonicesi"],
+    "2 tessalonicenses","ii tessalonicenses","2 tesalonicenses","2ts","2 ts","2tes","2 tes","2tess","2 tess","2th","2 th","2te","2 te","2thes","2 thes","2thess","2 thess","2 thessaloniciens","2 thessalonicher","2 tessalonicesi"],
+
   [54, "1 Timothy",
     "1 timoteo","i timoteo","1tm","1 tm","1tim","1 tim","1ti","1 ti","1 timothy","1 timothee","1 timotheus","1 timoteo"],
   [55, "2 Timothy",
