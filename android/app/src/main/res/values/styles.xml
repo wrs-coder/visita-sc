@@ -12,7 +12,9 @@
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="android:background">@null</item>
+        <!-- Fundo sólido: qualquer atraso na abertura mostra a cor do app,
+             nunca uma tela preta. -->
+        <item name="android:windowBackground">@color/appWindowBackground</item>
         <!-- Android 15+: exibição de ponta a ponta. As barras ficam
              transparentes e o conteúdo web usa env(safe-area-inset-*). -->
         <item name="android:statusBarColor">@android:color/transparent</item>
