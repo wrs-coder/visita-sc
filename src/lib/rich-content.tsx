@@ -501,12 +501,16 @@ function RichOutlineContentImpl({
     const doc = new DOMParser().parseFromString(`<div id="__root">${safe}</div>`, "text/html");
     const root = doc.getElementById("__root");
     if (!root) return null;
+    const opts: RenderOpts = { library, fontScale, onInsertVerse };
+    const plan: CitationPlan = new Map();
+    buildCitationPlan(root, opts, "n", plan);
     const nodes = Array.from(root.childNodes).map((n, i) => (
       <React.Fragment key={`n${i}`}>
-        {renderNode(n, { library, fontScale, onInsertVerse }, `n${i}`)}
+        {renderNode(n, opts, `n${i}`, plan)}
       </React.Fragment>
     ));
     return <div className={RICH_NOTE_CONTENT_CLASS}>{nodes}</div>;
+
     // `library` só importa pela identidade do id/livros; fontScale muda tamanho.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [html, libraryId, library?.books, fontScale, onInsertVerse]);
