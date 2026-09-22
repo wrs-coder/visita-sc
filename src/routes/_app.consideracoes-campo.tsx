@@ -32,7 +32,6 @@ import {
   NotebookPen,
   ChevronsDownUp,
   ChevronsUpDown,
-  Search,
 } from "lucide-react";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
