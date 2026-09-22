@@ -9,6 +9,8 @@ import {
   getRows,
   localDbStats,
   markDeleted,
+  markDirty,
+  pruneLocalData,
   setCursor,
   upsertRows,
 } from "./local-db";
@@ -89,4 +91,3 @@ describe("local-db (Fase 0 — espelho local)", () => {
     await clearLocalDb();
     expect((await localDbStats()).tables).toEqual([]);
   });
-});
