@@ -183,6 +183,7 @@ function renderTextWithCitations(
   libraryId: string | null,
   fontScale: number | undefined,
   path: string,
+  onInsertVerse?: (text: string) => void | Promise<void>,
 ): React.ReactNode {
   if (!text) return text;
   const matches = findCitations(books, text);
@@ -207,6 +208,7 @@ function renderTextWithCitations(
           match={p.m}
           libraryId={libraryId}
           fontScale={fontScale}
+          onInsert={onInsertVerse}
         />
       ) : (
         <UnknownRefLink
@@ -214,6 +216,7 @@ function renderTextWithCitations(
           citation={p.u}
           libraryId={libraryId}
           fontScale={fontScale}
+          onInsert={onInsertVerse}
         />
       ),
     );
@@ -227,6 +230,7 @@ function renderTextWithCitations(
 interface RenderOpts {
   library: BibleLibrary | null;
   fontScale?: number;
+  onInsertVerse?: (text: string) => void | Promise<void>;
 }
 
 function renderNode(node: Node, opts: RenderOpts, path: string): React.ReactNode {
@@ -234,7 +238,7 @@ function renderNode(node: Node, opts: RenderOpts, path: string): React.ReactNode
   const libraryId = opts.library?.id ?? null;
 
   if (node.nodeType === Node.TEXT_NODE) {
-    return renderTextWithCitations(node.nodeValue ?? "", books, libraryId, opts.fontScale, path);
+    return renderTextWithCitations(node.nodeValue ?? "", books, libraryId, opts.fontScale, path, opts.onInsertVerse);
   }
   if (node.nodeType !== Node.ELEMENT_NODE) return null;
 
@@ -314,11 +318,13 @@ function RichOutlineContentImpl({
   library,
   fontScale,
   emptyFallback,
+  onInsertVerse,
 }: {
   html: string;
   library: BibleLibrary | null;
   fontScale?: number;
   emptyFallback?: React.ReactNode;
+  onInsertVerse?: (text: string) => void | Promise<void>;
 }): React.ReactElement {
   const libraryId = library?.id ?? null;
 
@@ -330,7 +336,7 @@ function RichOutlineContentImpl({
     if (!looksLikeHtml(html)) {
       return (
         <div className="whitespace-pre-wrap">
-          {renderTextWithCitations(html, library?.books, libraryId, fontScale, "t")}
+          {renderTextWithCitations(html, library?.books, libraryId, fontScale, "t", onInsertVerse)}
         </div>
       );
     }
@@ -345,13 +351,13 @@ function RichOutlineContentImpl({
     if (!root) return null;
     const nodes = Array.from(root.childNodes).map((n, i) => (
       <React.Fragment key={`n${i}`}>
-        {renderNode(n, { library, fontScale }, `n${i}`)}
+        {renderNode(n, { library, fontScale, onInsertVerse }, `n${i}`)}
       </React.Fragment>
     ));
     return <div className={RICH_NOTE_CONTENT_CLASS}>{nodes}</div>;
     // `library` só importa pela identidade do id/livros; fontScale muda tamanho.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [html, libraryId, library?.books, fontScale]);
+  }, [html, libraryId, library?.books, fontScale, onInsertVerse]);
 
   if (!rendered) return <>{emptyFallback ?? null}</>;
   return rendered;

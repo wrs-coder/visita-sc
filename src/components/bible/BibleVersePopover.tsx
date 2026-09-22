@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Loader2, BookOpen, GripHorizontal, X, Bold, Highlighter, Eraser,
-  Copy, ChevronLeft, ChevronRight, List,
+  Copy, ChevronLeft, ChevronRight, List, FilePlus2,
 } from "lucide-react";
 import { getChapterFromLibrary } from "@/lib/bible-notes-store";
 import { pushVerseHistory } from "@/lib/bible-history";
@@ -30,6 +30,7 @@ interface VerseLinkProps {
   libraryId: string | null;
   className?: string;
   fontScale?: number;
+  onInsert?: (text: string) => void | Promise<void>;
 }
 
 const MAX_RANGE = 10;
@@ -47,7 +48,7 @@ interface VersePart {
   text: string;
 }
 
-export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseLinkProps) {
+export function VerseLink({ match, libraryId, className, fontScale = 1, onInsert }: VerseLinkProps) {
   const { t, i18n } = useTranslation();
   const displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName;
   const [open, setOpen] = useState(false);
@@ -58,6 +59,7 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
   // Modo "capítulo completo" e "ver mais" (acima do limite de MAX_RANGE).
   const [chapterMode, setChapterMode] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [inserting, setInserting] = useState(false);
 
   // View settings (color + bold) — global, persisted in localStorage.
   const [settings, setSettings] = useState<BibleViewSettings>(() => loadSettings());
@@ -242,17 +244,39 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
     });
   }, [open, match.bookId, match.chapter, match.verse, displayBook]);
 
-  const onCopy = useCallback(async () => {
+  const buildVerseText = useCallback(() => {
     if (!parts || parts.length === 0) return;
-    const ref = `${displayBook} ${chapter}:${parts.map((p) => p.verse).join(", ")}`;
+    const ref = chapterMode
+      ? `${displayBook} ${chapter}`
+      : `${displayBook} ${chapter}:${parts.map((p) => p.verse).join(", ")}`;
     const body = parts.map((p) => `${p.verse} ${p.text}`).join(" ");
+    return `${ref} — ${body}`;
+  }, [parts, displayBook, chapter, chapterMode]);
+
+  const onCopy = useCallback(async () => {
+    const text = buildVerseText();
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(`${ref} — ${body}`);
+      await navigator.clipboard.writeText(text);
       toast.success(t("bibleVerse.copied", { defaultValue: "Texto copiado" }));
     } catch {
       toast.error(t("bibleVerse.copyFailed", { defaultValue: "Não foi possível copiar" }));
     }
-  }, [parts, displayBook, chapter, t]);
+  }, [buildVerseText, t]);
+
+  const onInsertClick = useCallback(async () => {
+    const text = buildVerseText();
+    if (!text || !onInsert || inserting) return;
+    setInserting(true);
+    try {
+      await onInsert(text);
+      toast.success(t("bibleVerse.inserted", { defaultValue: "Texto inserido no esboço" }));
+    } catch {
+      toast.error(t("bibleVerse.insertFailed", { defaultValue: "Não foi possível inserir o texto" }));
+    } finally {
+      setInserting(false);
+    }
+  }, [buildVerseText, inserting, onInsert, t]);
 
   const goChapter = useCallback((delta: number) => {
     setChapter((c) => Math.max(1, c + delta));
@@ -403,6 +427,18 @@ export function VerseLink({ match, libraryId, className, fontScale = 1 }: VerseL
           >
             <Copy className="h-3.5 w-3.5" />
           </button>
+          {onInsert && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); void onInsertClick(); }}
+              disabled={inserting || !parts || parts.length === 0}
+              className="p-1 rounded hover:bg-background text-muted-foreground disabled:opacity-40"
+              aria-label={t("bibleVerse.insert", { defaultValue: "Inserir no esboço" })}
+              title={t("bibleVerse.insert", { defaultValue: "Inserir no esboço" })}
+            >
+              {inserting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FilePlus2 className="h-3.5 w-3.5" />}
+            </button>
+          )}
           <button
             type="button"
             onClick={(e) => {

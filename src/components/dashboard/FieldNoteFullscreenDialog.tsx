@@ -13,12 +13,15 @@ import { RichOutlineContent } from "@/lib/rich-content";
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
+import { BibleHistoryChips } from "@/components/bible/BibleHistoryChips";
 import {
   listAllNotesIncludingTrash,
   getActiveLibrary,
+  saveNote,
   type FieldNote,
   type BibleLibrary,
 } from "@/lib/bible-notes-store";
+import { appendPlainTextToNote } from "@/lib/note-content";
 
 interface FieldNoteFullscreenDialogProps {
   noteId: string | null;
@@ -47,7 +50,7 @@ const FS_STEP = 0.1;
 export function FieldNoteFullscreenDialog({
   noteId,
   onOpenChange,
-  onSaved: _onSaved,
+  onSaved,
 }: FieldNoteFullscreenDialogProps) {
   const { t } = useTranslation();
   const [note, setNote] = useState<FieldNote | null>(null);
@@ -106,6 +109,19 @@ export function FieldNoteFullscreenDialog({
   const open = noteId != null;
 
   const showTimer = note != null && (note.type ?? "field_consideration") !== "talk_notes";
+
+  const insertVerse = async (text: string) => {
+    if (!note) return;
+    const updated: FieldNote = {
+      ...note,
+      content: appendPlainTextToNote(note.content, text),
+      updated_at: Date.now(),
+      dirty: true,
+    };
+    await saveNote(updated);
+    setNote(updated);
+    onSaved?.(updated);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -276,11 +292,17 @@ export function FieldNoteFullscreenDialog({
               style={{ fontSize: `${scale}rem` }}
             >
               {note.content ? (
-                <RichOutlineContent
-                  html={note.content}
-                  library={library}
-                  fontScale={scale}
-                />
+                <>
+                  <RichOutlineContent
+                    html={note.content}
+                    library={library}
+                    fontScale={scale}
+                    onInsertVerse={insertVerse}
+                  />
+                  <div className="mt-5">
+                    <BibleHistoryChips library={library} onInsert={insertVerse} />
+                  </div>
+                </>
               ) : (
                 <span className="text-muted-foreground italic">
                   {t("fieldConsiderations.contentEmpty", {
