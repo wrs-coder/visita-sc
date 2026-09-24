@@ -1,29 +1,28 @@
-# Bíblia em mais idiomas: JWPUB vs EPUB
+# Bíblia em mais idiomas: avaliação do fluxo JWPUB sugerido pelo Gemini
 
-## Resposta curta
+## Avaliação do fluxo, passo a passo
 
-Trocar EPUB por JWPUB **quebraria** a função atual se fosse feito do jeito da sugestão do Gemini. Adicionar o JWPUB **ao lado** do EPUB, sem remover nada, não quebra. Mas o formato não é o que limita os idiomas hoje.
+O fluxo em si está correto na lógica (importar, extrair o `.db`, converter a referência em IDs numéricos e buscar no banco). O problema está em dois pontos que o fluxo não mostra:
+
+1. **Passo 2 — "extrai o nwt_T.db".** A extração funciona, porque o JWPUB é um ZIP. Mas o texto dos versículos dentro desse `.db` fica **comprimido e cifrado**. Extrair o arquivo não significa conseguir ler os versículos. Seria preciso fazer engenharia reversa da cifra, que pode mudar a qualquer atualização do formato.
+2. **Passo 4 — "converte a busca para IDs".** Essa conversão depende de uma **lista de nomes e abreviações dos livros em cada idioma** ("João" → 43, "John" → 43, "ヨハネ" → 43). O JWPUB não entrega essa lista pronta. Ou seja, o trabalho principal é o mesmo, independente do formato do arquivo.
+
+Além disso:
+
+3. **Termos de uso.** Os termos do jw.org proíbem engenharia reversa e extração de conteúdo das publicações. Risco para a publicação na Play Store e para a conta de desenvolvedor.
+4. **Peso e desempenho.** Ler um `.db` no celular exige um leitor SQLite embutido (cerca de 1 a 1,5 MB a mais) e mais memória na importação, pesado em aparelhos simples.
+5. **Regressão.** Substituir o EPUB faria as Bíblias já importadas pararem de funcionar. Grifos, cores, histórico e sugestões dependem dos códigos de livro atuais.
 
 ## O que limita os idiomas hoje
 
-A Bíblia TNM em EPUB já existe em dezenas de idiomas. O que limita a detecção automática é a **lista de nomes e abreviações dos livros**. Hoje ela cobre só português, inglês e espanhol. Um EPUB em francês ou japonês até seria importado, mas "Jean 3:16" ou "ヨハネ 3:16" não seriam reconhecidos no esboço.
-
-Então, para ter mais idiomas, o caminho mais barato e sem risco é **ampliar essa lista de nomes**. O formato do arquivo pode continuar o mesmo.
-
-## Riscos do JWPUB
-
-1. **Conteúdo cifrado.** Dentro do JWPUB, o texto dos versículos fica comprimido e cifrado. O pseudocódigo do Gemini só extrai o arquivo `.db`, mas não consegue ler os versículos. Seria preciso fazer engenharia reversa da cifra. Isso é frágil (pode mudar a qualquer momento) e juridicamente arriscado.
-2. **Termos de uso.** Os termos do jw.org proíbem engenharia reversa e extração de conteúdo das publicações. Isso é um risco para a publicação na Play Store e para a conta de desenvolvedor.
-3. **Peso e desempenho.** Ler um arquivo `.db` no celular exige um leitor SQLite embutido (cerca de 1 a 1,5 MB a mais). A importação também gasta mais memória em aparelhos simples.
-4. **Regressão.** Substituir o EPUB faria as Bíblias já importadas pelos usuários pararem de funcionar. Grifos, cores, histórico e sugestões dependem dos códigos de livro atuais.
-5. **"Idioma MEPS".** O número do idioma no JWPUB não traz os nomes dos livros. Ainda seria preciso criar a lista de nomes e abreviações de cada idioma, ou seja, o mesmo trabalho do caminho recomendado.
+Não é o formato do arquivo. A TNM em EPUB já existe em dezenas de idiomas. O que limita a detecção automática é a lista de nomes e abreviações, que hoje cobre só português, inglês e espanhol. Um EPUB em francês até seria importado, mas "Jean 3:16" não seria reconhecido no esboço.
 
 ## Recomendação
 
-- Manter o EPUB como está (sem risco).
+- Manter o EPUB como está (sem risco, sem quebrar nada).
 - Ampliar a detecção para novos idiomas, com nomes completos e abreviações oficiais da TNM de cada um. A escolha dos idiomas fica com você: por exemplo francês, italiano, alemão, japonês e coreano.
 - Reconhecer o idioma do EPUB importado automaticamente, para ativar o conjunto de nomes certo.
-- Deixar o JWPUB de fora por causa dos riscos 1 e 2. Se um dia houver um jeito oficial e aberto de ler esse formato, ele entra como opção extra, sem substituir o EPUB.
+- Deixar o JWPUB de fora por causa dos pontos 1 e 3. Se um dia houver um jeito oficial e aberto de ler esse formato, ele entra como opção extra, sem substituir o EPUB.
 
 ## Detalhes técnicos
 
