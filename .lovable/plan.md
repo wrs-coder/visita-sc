@@ -1,68 +1,33 @@
-# Offline-First do Visita SC — o que ainda falta
+# Bíblia em mais idiomas: JWPUB vs EPUB
 
-As fases 0 a 4 estão completas: espelho local, carimbos de data, registro de exclusões, leitura local nas telas, envio do que foi feito offline e sincronização automática duas vezes por dia com painel no Perfil.
+## Resposta curta
 
-Ainda restam cinco pontos que fazem diferença no uso real, em ordem de impacto.
+Trocar EPUB por JWPUB **quebraria** a função atual se fosse feito do jeito da sugestão do Gemini. Adicionar o JWPUB **ao lado** do EPUB, sem remover nada, não quebra. Mas o formato não é o que limita os idiomas hoje.
 
-## 1. Esboços não entram na sincronização automática (prioridade alta)
+## O que limita os idiomas hoje
 
-Hoje a lista de dados baixados automaticamente cobre congregações, cronograma, escala, refeições, transporte, checklist, reuniões de campo e notas. Os esboços pessoais ficaram de fora, então só chegam ao aparelho quando a tela é aberta com internet.
+A Bíblia TNM em EPUB já existe em dezenas de idiomas. O que limita a detecção automática é a **lista de nomes e abreviações dos livros**. Hoje ela cobre só português, inglês e espanhol. Um EPUB em francês ou japonês até seria importado, mas "Jean 3:16" ou "ヨハネ 3:16" não seriam reconhecidos no esboço.
 
-Correção: incluir os esboços (e as reuniões/discursos ligados a eles) na lista de download automático, com o mesmo tratamento de exclusões.
+Então, para ter mais idiomas, o caminho mais barato e sem risco é **ampliar essa lista de nomes**. O formato do arquivo pode continuar o mesmo.
 
-## 2. Anexos de esboço não viajam entre aparelhos
+## Riscos do JWPUB
 
-Fotos e vídeos ficam gravados só no aparelho que os adicionou. Em outro celular aparece "Anexo indisponível neste aparelho".
+1. **Conteúdo cifrado.** Dentro do JWPUB, o texto dos versículos fica comprimido e cifrado. O pseudocódigo do Gemini só extrai o arquivo `.db`, mas não consegue ler os versículos. Seria preciso fazer engenharia reversa da cifra. Isso é frágil (pode mudar a qualquer momento) e juridicamente arriscado.
+2. **Termos de uso.** Os termos do jw.org proíbem engenharia reversa e extração de conteúdo das publicações. Isso é um risco para a publicação na Play Store e para a conta de desenvolvedor.
+3. **Peso e desempenho.** Ler um arquivo `.db` no celular exige um leitor SQLite embutido (cerca de 1 a 1,5 MB a mais). A importação também gasta mais memória em aparelhos simples.
+4. **Regressão.** Substituir o EPUB faria as Bíblias já importadas pelos usuários pararem de funcionar. Grifos, cores, histórico e sugestões dependem dos códigos de livro atuais.
+5. **"Idioma MEPS".** O número do idioma no JWPUB não traz os nomes dos livros. Ainda seria preciso criar a lista de nomes e abreviações de cada idioma, ou seja, o mesmo trabalho do caminho recomendado.
 
-Correção: enviar o arquivo para o armazenamento da nuvem quando houver boa conexão e baixá-lo sob demanda no outro aparelho, mantendo a cópia local como fonte principal. Fotos continuam reduzidas a 2000 px.
+## Recomendação
 
-## 3. O espelho local cresce sem limite
-
-O espelho guarda tudo o que foi baixado, sem limpeza. Em aparelhos com pouco espaço isso pode virar problema, e nada avisa o usuário.
-
-Correção: medir o espaço usado, mostrar no painel do Perfil e limpar automaticamente dados antigos de semanas/congregações que não são mais usadas, nunca apagando o que está pendente de envio.
-
-## 4. Alterações pendentes sem visibilidade real
-
-O painel mostra só a quantidade de alterações pendentes. Se uma delas falhar repetidamente, o usuário não sabe qual é nem consegue tentar de novo individualmente.
-
-Correção: listar as pendências com descrição simples, data e botão de "tentar de novo"; sinalizar quando uma alteração foi substituída por uma versão mais nova vinda de outro aparelho.
-
-## 5. Primeiro acesso em aparelho novo continua dependente da tela aberta
-
-Ao instalar em um celular novo, o app só enche o espelho conforme as telas são visitadas. Se o usuário abrir o app e depois ficar sem internet, faltam dados.
-
-Correção: oferecer, logo após o login, um "baixar tudo agora" com barra de progresso, usando a mesma sincronização já existente.
+- Manter o EPUB como está (sem risco).
+- Ampliar a detecção para novos idiomas, com nomes completos e abreviações oficiais da TNM de cada um. A escolha dos idiomas fica com você: por exemplo francês, italiano, alemão, japonês e coreano.
+- Reconhecer o idioma do EPUB importado automaticamente, para ativar o conjunto de nomes certo.
+- Deixar o JWPUB de fora por causa dos riscos 1 e 2. Se um dia houver um jeito oficial e aberto de ler esse formato, ele entra como opção extra, sem substituir o EPUB.
 
 ## Detalhes técnicos
 
-- `src/lib/local-auto-sync.ts`: acrescentar `personal_outlines` e tabelas relacionadas em `AUTO_SYNC_TABLES`; confirmar que cada uma tem `updated_at` e gatilho de tombstone (a migração da Fase 1 cobriu 39 tabelas — validar antes).
-- Anexos: novo módulo de upload/baixa apoiado em `src/lib/outline-attachments.ts` e no bucket de armazenamento do backend, com fila reaproveitando `offline-queue.ts`.
-- Espaço: `navigator.storage.estimate()` + rotina de poda em `src/lib/local-db.ts`, preservando registros com `dirty = true`.
-- Pendências: expor a fila de `offline-queue`/`local-write` no `SyncStatusCard.tsx`.
-- Download inicial: `syncTables` com `force: true` e progresso, disparado por ação do usuário.
-- Sem mudanças em RLS, Bíblia offline ou login por PIN/biometria. Versão sugerida ao fechar: 4.2.7/versionCode 17.
-
-## Execução sugerida
-
-Etapa A: itens 1 e 5. Etapa B: item 2. Etapa C: itens 3 e 4.
-
-## Riscos
-
-Baixos, porque nada troca a base existente:
-
-- **Baixar mais dados por dia** (esboços + download inicial): mais tráfego, mas tudo incremental — só o que mudou desde a última vez. Sem risco de corromper dados.
-- **Anexos na nuvem**: o único item com custo de armazenamento. Mitigado mantendo fotos reduzidas a 2000 px e vídeos limitados a 200 MB; a cópia local continua principal e o anexo na nuvem é opcional.
-- **Limpeza do espelho**: o único item que apaga algo localmente. Protegido por regra simples: nunca remove nada pendente de envio nem da semana/congregação ativa.
-- **Lista de pendências**: só exibe o que já existe; não altera o envio.
-
-Nenhum item toca regras de acesso do banco (RLS), a Bíblia offline ou o login por PIN/biometria. Cada etapa é independente: se uma falhar, as anteriores continuam valendo.
-
-## Consumo de servidor e banco
-
-- **Sincronização automática**: continua no máximo 2 vezes ao dia, e incremental (poucas dezenas de linhas por vez). Mesmo adicionando os esboços, o volume é pequeno — texto JSON de alguns KB por esboço.
-- **Download inicial**: acontece uma vez por aparelho novo, sob comando do usuário. Para um superintendente com 30 congregações e um ano de histórico, estimativa de alguns MB — comparável a abrir o app por uma semana.
-- **Banco de dados**: nenhuma tabela ou índice novo é necessário para os itens 1, 3, 4 e 5. O item 2 (anexos) usa um espaço de arquivos na nuvem; dependendo da quantidade de fotos/vídeos dos usuários, é o único item que pode gerar custo relevante com o tempo — por isso fica como etapa separada (B), que pode ser ativada depois de medir o uso.
-- **Tombstones** (registro de exclusões) já existem e crescem devagar; podem ganhar limpeza periódica simples em etapa futura.
-
-Resumo: itens 1, 3, 4 e 5 têm impacto quase nulo de custo. O item 2 é o único com custo de armazenamento crescente e pode esperar.
+- A lista de nomes e abreviações está em `src/lib/bible-canon.ts` e `src/lib/bible-refs.ts`. Cada novo idioma recebe uma tabela própria com os códigos atuais de livro (1 a 66), então grifos e histórico continuam compatíveis.
+- Idiomas com escrita não latina (japonês, coreano, chinês) precisam de regras de detecção sem espaço entre o livro e o capítulo, e do separador `:` ou `：`.
+- O importador em `src/lib/epub-bible-parser.ts` já lê o idioma do arquivo. Esse idioma passa a escolher a tabela de nomes. As sugestões de "Referência não encontrada" passam a usar o idioma ativo.
+- Novos testes para cada idioma (intervalos, listas, falsos positivos). Sem mudanças no banco, nas regras de acesso, no login por PIN/biometria nem nos anexos.
