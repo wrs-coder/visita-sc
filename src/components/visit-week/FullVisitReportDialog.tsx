@@ -9,6 +9,9 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { VisitWeekReportDialog } from "./VisitWeekReportDialog";
 import { kv, type ReportSection } from "./pdf-utils";
+import { formatWeekdayTime } from "./report-schedule";
+import { checklistBlock } from "./ChecklistReportDialog";
+import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 
 type Row = Record<string, unknown>;
 
@@ -55,6 +58,19 @@ export function FullVisitReportDialog({
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [sections, setSections] = useState<ReportSection[]>([]);
+  const extras = useVisitTemplateExtras(open ? visitId : null);
+  const obsField = extras.field?.observations ?? null;
+  const obsMidweek = extras.midweek?.observations ?? null;
+  const obsWeekend = extras.weekend?.observations ?? null;
+  const obsPioneer = extras.pioneer?.observations ?? null;
+  const obsElders = extras.elders?.observations ?? null;
+  const midFinalSong = extras.midweek?.final_song ?? null;
+  const weOpenSong = extras.weekend?.opening_song ?? null;
+  const weCloseSong = extras.weekend?.closing_song ?? null;
+  const piWeekday = extras.pioneer?.weekday ?? null;
+  const piTime = extras.pioneer?.meeting_time ?? null;
+  const elWeekday = extras.elders?.weekday ?? null;
+  const elTime = extras.elders?.meeting_time ?? null;
 
   useEffect(() => {
     if (!open || !visitId) return;
@@ -149,9 +165,9 @@ export function FullVisitReportDialog({
             lines: [
               kv("Motorista", s(x.driver_name)),
               kv("Telefone", s(x.contact_phone)),
-              kv("Horário", fmtTime(x.event_time)),
+              kv("Horário", x.all_day ? "Dia inteiro" : [fmtTime(x.departure_time) && `ida ${fmtTime(x.departure_time)}`, fmtTime(x.return_time) && `volta ${fmtTime(x.return_time)}`].filter(Boolean).join(" · ") || null),
               kv("Descrição", s(x.description)),
-              kv("Observações", s(x.observations)),
+              kv("Observações", s(x.notes)),
             ].filter((x2): x2 is string => !!x2),
           })),
         });
@@ -165,8 +181,9 @@ export function FullVisitReportDialog({
             lines: [
               kv("Acompanhante", s(a.acompanhante)),
               kv("Ponto de encontro", s(a.meeting_point)),
-              kv("Horário", fmtTime(a.start_time)),
-              kv("Observações", s(a.observations ?? a.notes)),
+              kv("Horário", fmtTime(a.meeting_time)),
+              kv("Telefone", s(a.contact_phone)),
+              kv("Observações", s(a.notes)),
             ].filter((x): x is string => !!x),
           })),
         });
@@ -174,6 +191,7 @@ export function FullVisitReportDialog({
         out.push({
           id: "reunioes-campo",
           title: "REUNIÕES PARA O SERVIÇO DE CAMPO",
+          additionalInfo: obsField,
           emptyMessage: "— Sem reuniões de campo —",
           blocks: rows(fm).map((f) => ({
             heading: `${fmtDay(f.event_date)}${f.period ? ` · ${s(f.period)}` : ""}${fmtTime(f.meeting_time) ? ` · ${fmtTime(f.meeting_time)}` : ""}`,
@@ -194,6 +212,7 @@ export function FullVisitReportDialog({
         out.push({
           id: "meio-semana",
           title: "REUNIÃO DO MEIO DE SEMANA",
+          additionalInfo: obsMidweek,
           emptyMessage: "— Sem dados —",
           blocks: rows(mw).map((x) => ({
             heading: x.meeting_at ? fmtDateTime(x.meeting_at) : "Reunião do meio de semana",
@@ -201,6 +220,7 @@ export function FullVisitReportDialog({
               kv("Presidente", s(x.chairman)),
               kv("Discurso do serviço", s(x.service_talk_theme)),
               kv("Oração final", s(x.closing_prayer)),
+              kv("Cântico final", midFinalSong),
             ].filter((l): l is string => !!l),
           })),
         });
@@ -208,12 +228,15 @@ export function FullVisitReportDialog({
         out.push({
           id: "fim-semana",
           title: "REUNIÃO DO FIM DE SEMANA",
+          additionalInfo: obsWeekend,
           emptyMessage: "— Sem dados —",
           blocks: rows(we).map((x) => ({
             heading: x.meeting_at ? fmtDateTime(x.meeting_at) : "Reunião do fim de semana",
             lines: [
               kv("Discurso público", s(x.public_talk_theme)),
-              kv("Tema da Sentinela", s(x.talk_theme_title)),
+              kv("Discurso final", s(x.talk_theme_title)),
+              kv("Cântico inicial", weOpenSong),
+              kv("Cântico final", weCloseSong),
             ].filter((l): l is string => !!l),
           })),
         });
@@ -221,9 +244,10 @@ export function FullVisitReportDialog({
         out.push({
           id: "pioneiros",
           title: "REUNIÃO COM PIONEIROS",
+          additionalInfo: obsPioneer,
           emptyMessage: "— Sem dados —",
           blocks: rows(pi).map((x) => ({
-            heading: x.meeting_at ? fmtDateTime(x.meeting_at) : "Reunião com pioneiros",
+            heading: formatWeekdayTime(piWeekday, piTime),
             lines: [
               kv("Tema", s(x.theme)),
               kv("Local", s(x.location)),
@@ -237,9 +261,10 @@ export function FullVisitReportDialog({
         out.push({
           id: "ancioes",
           title: "REUNIÃO COM ANCIÃOS E SERVOS MINISTERIAIS",
+          additionalInfo: obsElders,
           emptyMessage: "— Sem dados —",
           blocks: rows(el).map((x) => ({
-            heading: x.meeting_at ? fmtDateTime(x.meeting_at) : "Reunião com anciãos e servos",
+            heading: formatWeekdayTime(elWeekday, elTime),
             lines: [
               kv("Tema", s(x.theme)),
               kv("Local", s(x.location)),
@@ -253,10 +278,7 @@ export function FullVisitReportDialog({
           id: "checklist",
           title: "CHECKLIST",
           emptyMessage: "— Sem itens no checklist —",
-          blocks: rows(cl).map((c) => ({
-            heading: `${c.status === "done" ? "[concluído]" : "[pendente]"} ${s(c.title) ?? ""}`.trim(),
-            lines: [kv("Notas", s(c.notes))].filter((l): l is string => !!l),
-          })),
+          blocks: rows(cl).map((c) => checklistBlock(c)),
         });
 
         setSections(out);
