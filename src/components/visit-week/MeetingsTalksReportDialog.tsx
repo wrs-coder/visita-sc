@@ -12,6 +12,7 @@ import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { VisitWeekReportDialog } from "./VisitWeekReportDialog";
 import type { ReportSection } from "./pdf-utils";
 import { kv } from "./pdf-utils";
+import { formatWeekdayTime } from "./report-schedule";
 
 interface FieldMeetingRow {
   id: string;
@@ -93,6 +94,14 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
   const obsWeekend = extras.weekend?.observations ?? null;
   const obsPioneer = extras.pioneer?.observations ?? null;
   const obsElders = extras.elders?.observations ?? null;
+  const midFinalSong = extras.midweek?.final_song ?? null;
+  const weOpenSong = extras.weekend?.opening_song ?? null;
+  const weCloseSong = extras.weekend?.closing_song ?? null;
+  const piWeekday = extras.pioneer?.weekday ?? null;
+  const piTime = extras.pioneer?.meeting_time ?? null;
+  const elWeekday = extras.elders?.weekday ?? null;
+  const elTime = extras.elders?.meeting_time ?? null;
+
 
   useEffect(() => {
     if (!open || !visitId) return;
@@ -155,6 +164,7 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
                 kv("Presidente", midweek.chairman),
                 kv("Discurso do serviço", midweek.service_talk_theme),
                 kv("Oração final", midweek.closing_prayer),
+                kv("Cântico final", midFinalSong),
               ].filter((x): x is string => !!x),
             },
           ]
@@ -167,7 +177,9 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
               heading: weekend.meeting_at ? fmtDateTime(weekend.meeting_at) : "Reunião do fim de semana",
               lines: [
                 kv("Discurso público", weekend.public_talk_theme),
-                kv("Tema da Sentinela", weekend.talk_theme_title),
+                kv("Discurso final", weekend.talk_theme_title),
+                kv("Cântico inicial", weOpenSong),
+                kv("Cântico final", weCloseSong),
               ].filter((x): x is string => !!x),
             },
           ]
@@ -177,7 +189,7 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
       const pioneerBlocks = pioneer
         ? [
             {
-              heading: pioneer.meeting_at ? fmtDateTime(pioneer.meeting_at) : "Reunião com pioneiros",
+              heading: formatWeekdayTime(piWeekday, piTime),
               lines: [
                 kv("Tema", pioneer.theme),
                 kv("Local", pioneer.location),
@@ -193,7 +205,7 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
       const eldersBlocks = elders
         ? [
             {
-              heading: elders.meeting_at ? fmtDateTime(elders.meeting_at) : "Reunião com anciãos e servos ministeriais",
+              heading: formatWeekdayTime(elWeekday, elTime),
               lines: [
                 kv("Tema", elders.theme),
                 kv("Local", elders.location),
@@ -243,7 +255,7 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
     return () => {
       cancelled = true;
     };
-  }, [open, visitId, obsField, obsMidweek, obsWeekend, obsPioneer, obsElders]);
+  }, [open, visitId, obsField, obsMidweek, obsWeekend, obsPioneer, obsElders, midFinalSong, weOpenSong, weCloseSong, piWeekday, piTime, elWeekday, elTime]);
 
   return (
     <VisitWeekReportDialog
