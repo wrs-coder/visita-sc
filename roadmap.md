@@ -20,4 +20,5 @@
 - [x] Sincronização automática reduzida a 2x/dia (manhã e tarde); botão manual continua livre.
 - [x] Etapa A (offline-first): esboços/reuniões na sincronização (`personal_outlines`, `visits`, reuniões, `talk_themes`, `schedule_events`) + download completo guiado ("Baixar tudo agora" e oferta automática no primeiro login do aparelho).
 - [x] Etapa C (offline-first): limpeza segura do espelho local (preserva pendências), medidor de espaço no aparelho e lista de pendências com "tentar de novo" por item. Versão 4.2.7/versionCode 17.
+- [x] Relatórios executivos: dia e horário de Pioneiros e Anciãos/Servos iguais à aba "Reuniões e Discursos", "A combinar" quando não definido, checklist completo na exportação. Versão 4.2.8/versionCode 18.
 - [ ] (adiada) Etapa B: sincronizar anexos (fotos/vídeos) com a nuvem.
