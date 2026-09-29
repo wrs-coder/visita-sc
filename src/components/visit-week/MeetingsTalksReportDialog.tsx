@@ -93,6 +93,14 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
   const obsWeekend = extras.weekend?.observations ?? null;
   const obsPioneer = extras.pioneer?.observations ?? null;
   const obsElders = extras.elders?.observations ?? null;
+  const midFinalSong = extras.midweek?.final_song ?? null;
+  const weOpenSong = extras.weekend?.opening_song ?? null;
+  const weCloseSong = extras.weekend?.closing_song ?? null;
+  const piWeekday = extras.pioneer?.weekday ?? null;
+  const piTime = extras.pioneer?.meeting_time ?? null;
+  const elWeekday = extras.elders?.weekday ?? null;
+  const elTime = extras.elders?.meeting_time ?? null;
+
 
   useEffect(() => {
     if (!open || !visitId) return;
