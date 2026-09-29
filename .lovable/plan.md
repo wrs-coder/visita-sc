@@ -9,6 +9,9 @@ A aba conta os dias começando pela **segunda-feira** (0 = Segunda … 6 = Domin
 - Vale para o relatório de "Reuniões e Discursos" e para o relatório completo da visita, que usam o mesmo ajuste.
 - Nada mais muda: nem a estrutura do relatório, nem as outras informações.
 
+## Outros relatórios verificados
+Só esses dois relatórios têm o erro. Os outros relatórios (Refeições, Transporte, Campo, Resumo da semana, Checklist e o relatório da visita) calculam o dia a partir da data do calendário e mostram o dia certo.
+
 ## Detalhes técnicos
 - `src/components/visit-week/report-schedule.ts`: reordenar `WEEKDAYS_PT` para Segunda…Domingo, igual a `templates.weekdays` em pt.json.
 - Adicionar um teste pequeno (0 → Segunda, 4 → Sexta, 5 → Sábado, 6 → Domingo, vazio → "A combinar").
