@@ -1,14 +1,15 @@
 // Helpers para exibir nos relatórios o mesmo dia/horário que a aba
 // "Reuniões e Discursos" mostra (modelo vinculado ou ajuste da visita).
 
+// Mesma ordem da aba (templates.weekdays): 0 = Segunda … 6 = Domingo.
 const WEEKDAYS_PT = [
-  "Domingo",
   "Segunda-feira",
   "Terça-feira",
   "Quarta-feira",
   "Quinta-feira",
   "Sexta-feira",
   "Sábado",
+  "Domingo",
 ];
 
 export const TO_BE_DEFINED = "A combinar";
