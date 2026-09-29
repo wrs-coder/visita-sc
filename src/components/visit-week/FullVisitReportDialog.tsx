@@ -289,7 +289,7 @@ export function FullVisitReportDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, visitId, visitTitle, congregationName]);
+  }, [open, visitId, visitTitle, congregationName, obsField, obsMidweek, obsWeekend, obsPioneer, obsElders, midFinalSong, weOpenSong, weCloseSong, piWeekday, piTime, elWeekday, elTime]);
 
   return (
     <VisitWeekReportDialog
@@ -300,6 +300,7 @@ export function FullVisitReportDialog({
       visitTitle={visitTitle}
       subtitle={congregationName}
       sections={sections}
+      showAdditionalInfoToggle
       loading={loading}
     />
   );
