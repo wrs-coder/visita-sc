@@ -348,10 +348,10 @@ export function VerseLink({
     const sel = typeof window !== "undefined" ? window.getSelection() : null;
     if (sel && !sel.isCollapsed && textRef.current?.contains(sel.anchorNode)) {
       // Aplica direto quando já há texto selecionado.
-      setTimeout(() => onHighlightClickRef.current?.(), 0);
+      onHighlightClickRef.current?.(c);
     }
   };
-  const onHighlightClickRef = useRef<(() => void) | null>(null);
+  const onHighlightClickRef = useRef<((color?: HighlightColor) => void) | null>(null);
 
   // Compute the (verse, offset) from a DOM Range endpoint within the text container.
   // Each verse span has data-verse and a single text node as descendants (split by segments).
@@ -368,7 +368,7 @@ export function VerseLink({
     return { verse, offset: segStart + offsetInNode };
   }, []);
 
-  const onHighlightClick = () => {
+  const onHighlightClick = (color?: HighlightColor) => {
     if (!libraryId || !parts) return;
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
@@ -391,10 +391,11 @@ export function VerseLink({
     const end = Math.max(a.offset, b.offset);
     if (end <= start) return;
     const key = highlightKey(libraryId, match.bookId, chapter, a.verse);
-    const next = addHighlight(key, { start, end, color: settings.highlightColor });
+    const next = addHighlight(key, { start, end, color: color ?? settings.highlightColor });
     setHighlightsByVerse((m) => ({ ...m, [a.verse]: next }));
     sel.removeAllRanges();
   };
+  onHighlightClickRef.current = onHighlightClick;
 
   const onSegmentClick = (verse: number, segStart: number, highlighted: boolean) => {
     if (!libraryId || !highlighted) return;
