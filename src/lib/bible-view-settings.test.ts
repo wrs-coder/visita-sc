@@ -35,6 +35,14 @@ describe("bible view settings", () => {
     expect(loadSettings().color).toBe("sepia");
   });
 
+  it("mantém a última escala para qualquer balão aberto depois, sem alterar as outras preferências", () => {
+    saveSettings({ color: "night_blue", height: 300, textScale: 1.4 });
+    const nextPopover = loadSettings();
+    expect(nextPopover.textScale).toBe(1.4);
+    saveSettings({ textScale: clampTextScale(nextPopover.textScale + 0.1) });
+    expect(loadSettings()).toMatchObject({ textScale: 1.5, color: "night_blue", height: 300 });
+  });
+
   it("destaques antigos sem cor viram amarelo", () => {
     store.set("bible:highlights:v1", JSON.stringify({ k: [{ start: 0, end: 4 }] }));
     expect(getHighlights("k")).toEqual([{ start: 0, end: 4, color: "yellow" }]);

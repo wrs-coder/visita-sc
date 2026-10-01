@@ -1620,6 +1620,8 @@
     "dragHandle": "Arrastrar",
     "close": "Cerrar",
     "viewSettings": "Apariencia",
+    "showControls": "Mostrar controles del texto bíblico",
+    "hideControls": "Ocultar controles del texto bíblico",
     "color": "Color",
     "colors": {
       "white": "Blanco",

@@ -1645,6 +1645,8 @@
     "dragHandle": "Drag",
     "close": "Close",
     "viewSettings": "Appearance",
+    "showControls": "Show Bible text controls",
+    "hideControls": "Hide Bible text controls",
     "color": "Color",
     "colors": {
       "white": "White",

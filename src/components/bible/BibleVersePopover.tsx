@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import {
   Loader2, BookOpen, GripHorizontal, X, Bold, Highlighter, Eraser,
   Copy, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, List, FilePlus2,
-  AArrowDown, AArrowUp,
+  AArrowDown, AArrowUp, SlidersHorizontal,
 } from "lucide-react";
 import { getChapterFromLibrary } from "@/lib/bible-notes-store";
 import { pushVerseHistory } from "@/lib/bible-history";
@@ -74,6 +75,8 @@ export function VerseLink({
   const { t, i18n } = useTranslation();
   const displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName;
   const [open, setOpen] = useState(autoOpen);
+  const [controlsExpanded, setControlsExpanded] = useState(false);
+  const controlsId = useId();
   const [loading, setLoading] = useState(false);
   // Capítulo atualmente carregado (permite navegar entre capítulos).
   const [chapter, setChapter] = useState(match.chapter);
@@ -92,10 +95,16 @@ export function VerseLink({
   // Stored as a map verse -> highlights[] for the verses currently shown.
   const [highlightsByVerse, setHighlightsByVerse] = useState<Record<number, BibleHighlight[]>>({});
 
-  // Offset de arrasto aplicado via margin (não conflita com o transform do
-  // Floating UI/Radix). Resetado sempre que o popup fecha.
+  // Deslocamento visual independente do posicionador do Radix. Usar a
+  // propriedade CSS `translate` evita que margens alterem a âncora e façam o
+  // balão recuar ou ficar preso durante o arraste.
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const [contentNode, setContentNode] = useState<HTMLDivElement | null>(null);
+  const attachContent = useCallback((node: HTMLDivElement | null) => {
+    contentRef.current = node;
+    setContentNode(node);
+  }, []);
   const textRef = useRef<HTMLDivElement | null>(null);
   const lastTapRef = useRef<number>(0);
   const dragRef = useRef<{
@@ -121,6 +130,8 @@ export function VerseLink({
 
   const handleOpenChange = useCallback((next: boolean) => {
     if (next) {
+      setSettings(loadSettings());
+      setControlsExpanded(false);
       setOpen(true);
       return;
     }
@@ -148,6 +159,7 @@ export function VerseLink({
   useEffect(() => {
     if (!open) {
       setOffset({ x: 0, y: 0 });
+      setControlsExpanded(false);
       // Volta ao estado original da citação ao reabrir.
       setChapterMode(false);
       setShowAll(false);
@@ -189,12 +201,17 @@ export function VerseLink({
     const el = contentRef.current;
     if (el) {
       const rect = el.getBoundingClientRect();
-      const minX = 8 - (rect.left - offset.x);
-      const maxX = window.innerWidth - 8 - (rect.right - offset.x);
-      const minY = 8 - (rect.top - offset.y);
-      const maxY = window.innerHeight - 8 - (rect.bottom - offset.y);
-      next.x = Math.min(Math.max(next.x, minX), maxX);
-      next.y = Math.min(Math.max(next.y, minY), maxY);
+      const viewport = window.visualViewport;
+      const viewportLeft = viewport?.offsetLeft ?? 0;
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportRight = viewportLeft + (viewport?.width ?? window.innerWidth);
+      const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
+      const minX = viewportLeft + 8 - (rect.left - offset.x);
+      const maxX = viewportRight - 8 - (rect.right - offset.x);
+      const minY = viewportTop + 8 - (rect.top - offset.y);
+      const maxY = viewportBottom - 8 - (rect.bottom - offset.y);
+      next.x = Math.min(Math.max(next.x, minX), Math.max(minX, maxX));
+      next.y = Math.min(Math.max(next.y, minY), Math.max(minY, maxY));
     }
     setOffset(next);
   }
@@ -206,6 +223,48 @@ export function VerseLink({
     } catch { /* noop */ }
     dragRef.current = null;
   }
+
+  // Se os controles, a altura ou a orientação mudarem depois do arraste,
+  // manter o cabeçalho e a alça inferior dentro da área visível.
+  useEffect(() => {
+    if (!open) return;
+    const el = contentNode;
+    if (!el) return;
+    const keepVisible = () => {
+      if (dragRef.current) return;
+      const rect = el.getBoundingClientRect();
+      const viewport = window.visualViewport;
+      const left = viewport?.offsetLeft ?? 0;
+      const top = viewport?.offsetTop ?? 0;
+      const right = left + (viewport?.width ?? window.innerWidth);
+      const bottom = top + (viewport?.height ?? window.innerHeight);
+      setOffset((current) => {
+        // Only adjust an already dragged popup. An unopened Radix popup
+        // still needs to settle next to its reference naturally.
+        if (current.x === 0 && current.y === 0) return current;
+        const minX = left + 8 - rect.left + current.x;
+        const minY = top + 8 - rect.top + current.y;
+        const x = Math.min(Math.max(current.x, minX), Math.max(minX, right - 8 - rect.right + current.x));
+        const y = Math.min(Math.max(current.y, minY), Math.max(minY, bottom - 8 - rect.bottom + current.y));
+        return x === current.x && y === current.y ? current : { x, y };
+      });
+    };
+    const observer = new ResizeObserver(keepVisible);
+    observer.observe(el);
+    // Radix moves its fixed wrapper after a viewport change. Observe that
+    // wrapper too, otherwise an early clamp is undone by its next placement.
+    const wrapper = el.closest("[data-radix-popper-content-wrapper]");
+    const wrapperObserver = new MutationObserver(keepVisible);
+    if (wrapper) wrapperObserver.observe(wrapper, { attributes: true, attributeFilter: ["style"] });
+    window.addEventListener("resize", keepVisible);
+    window.visualViewport?.addEventListener("resize", keepVisible);
+    return () => {
+      observer.disconnect();
+      wrapperObserver.disconnect();
+      window.removeEventListener("resize", keepVisible);
+      window.visualViewport?.removeEventListener("resize", keepVisible);
+    };
+  }, [open, contentNode]);
 
   // Carrega o capítulo inteiro numa única transação (getAll + IDBKeyRange),
   // em vez de uma leitura por versículo. Serve tanto para a citação quanto
@@ -498,10 +557,10 @@ export function VerseLink({
         )}
       </PopoverTrigger>
       <PopoverContent
-        ref={contentRef}
-        className="w-80 max-w-[90vw] max-h-[70vh] overflow-hidden z-[110] p-0"
+        ref={attachContent}
+        className="w-80 max-w-[90vw] max-h-[85dvh] overflow-hidden z-[110] p-0 flex flex-col"
         align="start"
-        style={{ marginLeft: offset.x, marginTop: offset.y }}
+        style={{ translate: `${offset.x}px ${offset.y}px` }}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
@@ -525,6 +584,19 @@ export function VerseLink({
           <span className="text-xs font-semibold text-foreground flex-1 truncate">
             {displayBook} {chapter}{headerVerses ? `:${headerVerses}` : ""}
           </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-expanded={controlsExpanded}
+            aria-controls={controlsId}
+            aria-label={t(controlsExpanded ? "bibleVerse.hideControls" : "bibleVerse.showControls")}
+            title={t(controlsExpanded ? "bibleVerse.hideControls" : "bibleVerse.showControls")}
+            onClick={(e) => { e.stopPropagation(); setControlsExpanded((v) => !v); }}
+            className="h-7 w-7 shrink-0 text-muted-foreground"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </Button>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); void onCopy(); }}
@@ -560,6 +632,7 @@ export function VerseLink({
         </div>
 
 
+        <div id={controlsId} hidden={!controlsExpanded} className="shrink-0 max-h-[40dvh] overflow-y-auto">
         {/* Barra de aparência (cor, negrito, grifar) */}
         <div className="flex items-center gap-1.5 px-2 py-1.5 border-b bg-muted/30" aria-label={t("bibleVerse.viewSettings")}>
           <div className="flex items-center gap-1" role="radiogroup" aria-label={t("bibleVerse.color")}>
@@ -707,11 +780,12 @@ export function VerseLink({
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
+        </div>
 
 
         <div
-          className={cn("overflow-y-auto overscroll-contain", effectiveHeight == null && "max-h-[calc(70vh-5rem)]")}
-          style={effectiveHeight != null ? { height: effectiveHeight } : undefined}
+          className={cn("overflow-y-auto overscroll-contain min-h-0", effectiveHeight == null && "max-h-[70dvh]")}
+          style={effectiveHeight != null ? { height: effectiveHeight, flexShrink: 1 } : undefined}
         >
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-3">
@@ -722,7 +796,7 @@ export function VerseLink({
             <div
               ref={textRef}
               className={textContainerClass}
-              style={{ fontSize: `${fontScale * settings.textScale * 0.875}rem` }}
+              style={{ fontSize: `${settings.textScale * 0.875}rem` }}
               onDoubleClick={handleDoubleTapClose}
               onTouchEnd={handleTextTouchEnd}
             >
