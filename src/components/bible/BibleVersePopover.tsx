@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -76,6 +76,7 @@ export function VerseLink({
   const displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName;
   const [open, setOpen] = useState(autoOpen);
   const [controlsExpanded, setControlsExpanded] = useState(false);
+  const controlsId = useId();
   const [loading, setLoading] = useState(false);
   // Capítulo atualmente carregado (permite navegar entre capítulos).
   const [chapter, setChapter] = useState(match.chapter);
@@ -535,7 +536,7 @@ export function VerseLink({
             variant="ghost"
             size="icon"
             aria-expanded={controlsExpanded}
-            aria-controls="bible-verse-controls"
+            aria-controls={controlsId}
             aria-label={t(controlsExpanded ? "bibleVerse.hideControls" : "bibleVerse.showControls")}
             title={t(controlsExpanded ? "bibleVerse.hideControls" : "bibleVerse.showControls")}
             onClick={(e) => { e.stopPropagation(); setControlsExpanded((v) => !v); }}
@@ -578,7 +579,7 @@ export function VerseLink({
         </div>
 
 
-        <div id="bible-verse-controls" hidden={!controlsExpanded} className="shrink-0 max-h-[40dvh] overflow-y-auto">
+        <div id={controlsId} hidden={!controlsExpanded} className="shrink-0 max-h-[40dvh] overflow-y-auto">
         {/* Barra de aparência (cor, negrito, grifar) */}
         <div className="flex items-center gap-1.5 px-2 py-1.5 border-b bg-muted/30" aria-label={t("bibleVerse.viewSettings")}>
           <div className="flex items-center gap-1" role="radiogroup" aria-label={t("bibleVerse.color")}>
