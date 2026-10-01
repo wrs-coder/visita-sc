@@ -95,8 +95,9 @@ export function VerseLink({
   // Stored as a map verse -> highlights[] for the verses currently shown.
   const [highlightsByVerse, setHighlightsByVerse] = useState<Record<number, BibleHighlight[]>>({});
 
-  // Offset de arrasto aplicado via margin (não conflita com o transform do
-  // Floating UI/Radix). Resetado sempre que o popup fecha.
+  // Deslocamento visual independente do posicionador do Radix. Usar a
+  // propriedade CSS `translate` evita que margens alterem a âncora e façam o
+  // balão recuar ou ficar preso durante o arraste.
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const contentRef = useRef<HTMLDivElement | null>(null);
   const textRef = useRef<HTMLDivElement | null>(null);
@@ -195,10 +196,15 @@ export function VerseLink({
     const el = contentRef.current;
     if (el) {
       const rect = el.getBoundingClientRect();
+      const viewport = window.visualViewport;
+      const viewportLeft = viewport?.offsetLeft ?? 0;
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportRight = viewportLeft + (viewport?.width ?? window.innerWidth);
+      const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
       const minX = 8 - (rect.left - offset.x);
-      const maxX = window.innerWidth - 8 - (rect.right - offset.x);
-      const minY = 8 - (rect.top - offset.y);
-      const maxY = window.innerHeight - 8 - (rect.bottom - offset.y);
+      const maxX = viewportRight - 8 - (rect.right - offset.x);
+      const minY = viewportTop + 8 - (rect.top - offset.y);
+      const maxY = viewportBottom - 8 - (rect.bottom - offset.y);
       next.x = Math.min(Math.max(next.x, minX), maxX);
       next.y = Math.min(Math.max(next.y, minY), maxY);
     }
@@ -507,7 +513,7 @@ export function VerseLink({
         ref={contentRef}
         className="w-80 max-w-[90vw] max-h-[85dvh] overflow-hidden z-[110] p-0 flex flex-col"
         align="start"
-        style={{ marginLeft: offset.x, marginTop: offset.y }}
+        style={{ translate: `${offset.x}px ${offset.y}px` }}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
