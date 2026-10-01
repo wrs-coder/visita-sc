@@ -1,26 +1,16 @@
-# Investigar e corrigir a lentidão (telas e importação da Bíblia)
+# Balão bíblico: leitura primeiro
 
-## Causas prováveis (a confirmar com medição)
-1. **Animação entre telas espera a tela anterior sair** antes de mostrar a nova (modo "esperar"). Soma um atraso fixo em toda troca de tela, pior em celulares mais simples.
-2. **Disputa pelo armazenamento do aparelho.** Desde a 4.2.7, cada resposta do servidor também é copiada para o banco local, e o cache das telas inteiro é regravado a cada segundo. Essas gravações disputam o mesmo armazenamento usado pela importação da Bíblia.
-3. **Cache das telas maior.** Com mais tabelas no espelho e no cache, salvar e restaurar o cache inteiro ficou mais pesado.
-4. **Importação da Bíblia com muitas pausas curtas.** As pausas que mantêm a tela respondendo deixam a importação mais longa quando há outras gravações acontecendo.
+## Resultado esperado
+- Ao abrir uma referência no esboço ou na Tela Cheia, o balão prioriza o texto bíblico. O cabeçalho continua mostrando a referência e mantém copiar, inserir (quando disponível) e fechar.
+- Um botão com ícone e descrição acessível alterna entre **mostrar** e **ocultar** os recursos adicionais. Ao expandir, aparecem as opções atuais de fundo, negrito, tamanho da letra, cores de destaque, capítulo e navegação; ao recolher, nada é perdido. O texto continua rolável, selecionável e destacável; a alça de altura continua acessível.
+- O tamanho de letra escolhido permanece salvo no aparelho e se aplica igualmente a todos os balões, inclusive os abertos pelo esboço e pela Tela Cheia. O tamanho do texto do esboço não deve multiplicar o tamanho do texto bíblico no balão.
 
-Ainda não está confirmado qual desses pesa mais. O primeiro passo é medir.
+## Segurança e compatibilidade
+- Usar o componente único do balão já compartilhado entre as telas, sem alterar o EPUB importado, a Bíblia armazenada, os destaques, o banco, o login ou o comportamento de fechar e arrastar.
+- O modo compacto é o padrão ao abrir cada balão; expandir/recolher altera apenas a apresentação daquele balão. Preferências de fundo, negrito, altura, cor e tamanho já salvas permanecem intactas.
+- Conferir em telas pequenas que o cabeçalho e os controles expandidos não cortem o texto nem encubram a alça; o conteúdo deve ganhar o espaço liberado sem saltos de posicionamento.
 
-## Passos
-1. **Medir antes de mudar:** tempo de troca de tela, tamanho do cache salvo e duração da importação do EPUB no preview com perfil de celular.
-2. **Telas:** a nova tela aparece já, sem esperar a anterior sair, com animação mais curta. Sem animação quando o celular pede menos movimento.
-3. **Gravações:** espaçar o salvamento do cache, de 1 s para cerca de 5 s, e agrupar as cópias para o banco local em lotes.
-4. **Importação da Bíblia:** pausar o salvamento do cache e as cópias de fundo enquanto importa, e fazer pausas menos frequentes. Leitura e formato da Bíblia ficam iguais.
-5. **Medir de novo** e comparar com o passo 1. Só manter o que melhorar de verdade.
-
-## O que não muda
-Banco/RLS, Bíblia importada e formato EPUB, login/PIN/biometria, sincronização 2x ao dia, fila offline.
-
-## Detalhes técnicos
-- `RouteTransition.tsx`: trocar `AnimatePresence mode="wait"` por animação só de entrada (sem exit) e com duração menor.
-- `query-persister.ts`: `throttleTime` 1000 → ~5000. Também conferir o tamanho de `visita-sc-rq-cache`.
-- `local-first.ts`/`local-write.ts`: juntar as gravações de espelho em lote (microtask/idle).
-- `bible-notes-store.ts`/`epub-bible-parser.ts`: flag global "importando" que suspende o persister e o espelho. Fazer `yieldToUI` por tempo decorrido (~16 ms) em vez de contar iterações.
-- Validar com os testes, `tsgo` e build. Exige nova versão do APK/AAB (4.3.0).
+## Detalhes técnicos e verificação
+- Ajustar `BibleVersePopover.tsx` para alternar a visibilidade das duas barras de controles; conservar ações essenciais no cabeçalho e o redimensionamento. Usar rótulos acessíveis e indicação do estado expandido.
+- Reutilizar `textScale` de `bible-view-settings.ts`, que já é persistido em `bible:view-settings`; separar o `fontScale` do texto do esboço (aplicável ao link) da escala do texto do balão. Não criar outra chave nem migrar dados.
+- Acrescentar testes de regressão para preferência de tamanho entre balões e para o estado compacto/expandido; validar testes e tipos. Conferir no navegador em largura de celular e desktop: abertura no esboço e Tela Cheia, expandir/recolher, alterar a letra, fechar/reabrir e ver o mesmo tamanho em outra referência.
