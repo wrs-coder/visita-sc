@@ -10,6 +10,12 @@
 - O modo compacto é o padrão ao abrir cada balão; expandir/recolher altera apenas a apresentação daquele balão. Preferências de fundo, negrito, altura, cor e tamanho já salvas permanecem intactas.
 - Conferir em telas pequenas que o cabeçalho e os controles expandidos não cortem o texto nem encubram a alça; o conteúdo deve ganhar o espaço liberado sem saltos de posicionamento.
 
+## Riscos e prevenção
+- **Baixo:** o usuário pode não perceber os recursos recolhidos; manter o botão de expandir visível, com rótulo e indicação de estado.
+- **Baixo a moderado:** letras maiores ou altura personalizada podem reduzir a área útil em celulares; respeitar os limites atuais e verificar conteúdo rolável e botões acessíveis em ambas as apresentações.
+- **Baixo:** aplicar uma escala global pode mudar o tamanho em balões abertos da Tela Cheia, onde hoje também entra a escala do esboço; separar essas escalas e testar reabertura e alternância entre contextos.
+- Os versículos importados e destaques não mudam de formato; a apresentação anterior continua disponível ao expandir.
+
 ## Detalhes técnicos e verificação
 - Ajustar `BibleVersePopover.tsx` para alternar a visibilidade das duas barras de controles; conservar ações essenciais no cabeçalho e o redimensionamento. Usar rótulos acessíveis e indicação do estado expandido.
 - Reutilizar `textScale` de `bible-view-settings.ts`, que já é persistido em `bible:view-settings`; separar o `fontScale` do texto do esboço (aplicável ao link) da escala do texto do balão. Não criar outra chave nem migrar dados.
