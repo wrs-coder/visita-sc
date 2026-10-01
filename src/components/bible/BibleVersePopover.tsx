@@ -205,8 +205,8 @@ export function VerseLink({
       const maxX = viewportRight - 8 - (rect.right - offset.x);
       const minY = viewportTop + 8 - (rect.top - offset.y);
       const maxY = viewportBottom - 8 - (rect.bottom - offset.y);
-      next.x = Math.min(Math.max(next.x, minX), maxX);
-      next.y = Math.min(Math.max(next.y, minY), maxY);
+      next.x = Math.min(Math.max(next.x, minX), Math.max(minX, maxX));
+      next.y = Math.min(Math.max(next.y, minY), Math.max(minY, maxY));
     }
     setOffset(next);
   }
@@ -237,17 +237,25 @@ export function VerseLink({
         // Only adjust an already dragged popup. An unopened Radix popup
         // still needs to settle next to its reference naturally.
         if (current.x === 0 && current.y === 0) return current;
-        const x = Math.min(Math.max(current.x, left + 8 - rect.left + current.x), right - 8 - rect.right + current.x);
-        const y = Math.min(Math.max(current.y, top + 8 - rect.top + current.y), bottom - 8 - rect.bottom + current.y);
+        const minX = left + 8 - rect.left + current.x;
+        const minY = top + 8 - rect.top + current.y;
+        const x = Math.min(Math.max(current.x, minX), Math.max(minX, right - 8 - rect.right + current.x));
+        const y = Math.min(Math.max(current.y, minY), Math.max(minY, bottom - 8 - rect.bottom + current.y));
         return x === current.x && y === current.y ? current : { x, y };
       });
     };
     const observer = new ResizeObserver(keepVisible);
     observer.observe(el);
+    // Radix moves its fixed wrapper after a viewport change. Observe that
+    // wrapper too, otherwise an early clamp is undone by its next placement.
+    const wrapper = el.closest("[data-radix-popper-content-wrapper]");
+    const wrapperObserver = new MutationObserver(keepVisible);
+    if (wrapper) wrapperObserver.observe(wrapper, { attributes: true, attributeFilter: ["style"] });
     window.addEventListener("resize", keepVisible);
     window.visualViewport?.addEventListener("resize", keepVisible);
     return () => {
       observer.disconnect();
+      wrapperObserver.disconnect();
       window.removeEventListener("resize", keepVisible);
       window.visualViewport?.removeEventListener("resize", keepVisible);
     };
