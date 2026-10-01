@@ -22,3 +22,4 @@
 - [x] Etapa C (offline-first): limpeza segura do espelho local (preserva pendências), medidor de espaço no aparelho e lista de pendências com "tentar de novo" por item. Versão 4.2.7/versionCode 17.
 - [x] Relatórios executivos: dia e horário de Pioneiros e Anciãos/Servos iguais à aba "Reuniões e Discursos", "A combinar" quando não definido, checklist completo na exportação. Versão 4.2.8/versionCode 18.
 - [ ] (adiada) Etapa B: sincronizar anexos (fotos/vídeos) com a nuvem.
+- [ ] Balão bíblico: apresentar texto primeiro com controles expansíveis e manter a escala da letra igual entre esboços e Tela Cheia; conferir em tela pequena.
