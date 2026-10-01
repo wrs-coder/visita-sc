@@ -1,20 +1,26 @@
-# Ampliação segura da Bíblia EPUB e do balão de textos
+# Balão de textos bíblicos: leitura e destaques
 
-## Objetivo
-Reconhecer nomes e abreviações dos livros em francês, italiano, alemão, japonês e coreano, conforme a TNM, sem incluir textos bíblicos no aplicativo. Melhorar a leitura dos textos importados no balão: ajustar a letra, rolar e avançar/voltar entre versículos, ajustar sua altura e escolher pelo menos quatro cores de destaque. As melhorias devem funcionar também na Tela Cheia.
+## Escopo
+Fazer agora só a leitura do balão e os destaques coloridos, inclusive na Tela Cheia. Não mexer em idiomas, importação EPUB, versículos guardados, banco de dados nem login/PIN/biometria.
 
-## Situação confirmada e riscos
-- A importação já lê o idioma declarado no EPUB e o guarda na biblioteca local, mas o detector de citações infere apenas português, inglês e espanhol pelos nomes dos livros. O catálogo atual contém alguns nomes europeus, porém não um conjunto validado e separado por idioma; japonês e coreano não estão cobertos. O parser depende de reconhecer livros para importar seus versículos.
-- O balão já permite rolar o texto, ler o capítulo inteiro, avançar capítulos e arrastá-lo. Não tem tamanho de letra independente nem ajuste de altura. O destaque tem uma cor só; as cinco cores existentes mudam o fundo do texto, não a cor do destaque.
-- **Risco principal — livro errado ou não importado:** abreviações colidem entre idiomas e livros; escrita japonesa/coreana usa limites de palavra e pontuação distintos. Não ativar aliases não verificados nem adivinhar livro pela posição. Validar nomes e abreviações em fontes oficiais e amostras EPUB autorizadas antes de habilitar cada idioma. Se faltar segurança na identificação, preservar o funcionamento anterior e informar a limitação, sem trocar a Bíblia ativa.
-- **Risco de interface/dados:** aumentar o balão em telas pequenas pode ocultar controles; a nova estrutura de destaques pode apagar ou misturar grifos antigos. Preservar os grifos legados como amarelos e limitar tamanho/posição à área visível.
-- Não é possível prometer risco zero sem testar EPUBs reais desses cinco idiomas, sobretudo variantes e edições diferentes. A interface do aplicativo permanece nos idiomas atuais; o texto bíblico continua vindo exclusivamente do EPUB importado.
+## 1. Leitura do balão
+- Botões A- / A+ para mudar o tamanho da letra só no texto bíblico, com limites legíveis e preferência salva no aparelho.
+- Manter a rolagem interna e acrescentar versículo anterior/próximo. A navegação para no início e no fim do capítulo, sem pular para o livro errado.
+- Alça inferior para ajustar a altura do balão. A altura escolhida é salva e fica limitada à área visível, sem esconder botões nem passar das áreas seguras do celular.
+- Preservar: capítulo inteiro, capítulos anterior/próximo, copiar, inserir no esboço, arrastar, fechar, fundo, negrito e histórico.
 
-## Execução proposta
-1. **Catálogo e identificação:** usar como fonte principal as tabelas oficiais de livros enviadas pelo usuário (um arquivo por idioma, com nome completo e abreviações dos 66 livros). Aproveitar só nomes e abreviações; qualquer texto bíblico da tabela é descartado e nunca embutido. Conferir cada tabela: 66 livros, ordem, duplicidades e colisões. Manter os IDs canônicos existentes. Usar primeiro o idioma declarado no EPUB, com verificação cruzada dos nomes reais dos livros; quando o dado estiver ausente ou contraditório, usar detecção conservadora ou estado desconhecido. Criar índices de citações específicos para o idioma da biblioteca, preservando as regras PT/EN/ES. Adaptar o reconhecimento Unicode para japonês/coreano, espaços opcionais e pontuação usual sem gerar falsos positivos. Títulos exibidos devem preferir os nomes reais do EPUB quando o idioma não tiver tradução da interface.
-2. **Leitura do balão:** oferecer controle de tamanho de letra próprio, com limites legíveis e preferência local; manter a rolagem interna e acrescentar anterior/próximo versículo, respeitando início/fim de capítulo e livro. Preservar leitura do capítulo, copiar/inserir, arrastar, fechar e histórico. Adicionar alça inferior para altura ajustável, limitada ao espaço disponível e às áreas seguras do celular; manter controles acessíveis na Tela Cheia e com teclado aberto.
-3. **Destaques:** apresentar pelo menos quatro cores distintas com contraste em todos os fundos existentes. Guardar a cor por trecho e versículo no armazenamento local, migrando a leitura dos registros sem cor para amarelo. Tratar sobreposição e remoção de trechos de forma determinística, sem perder destaques existentes.
-4. **Validação antes da entrega:** testes de 66 livros e colisões por idioma, referências com intervalos/listas e pontuação CJK, regressões PT/EN/ES, EPUBs de amostra, navegação em limites, persistência de tamanho/altura/cores e grifos antigos. Conferir visualmente no celular e no computador, nos esboços e na Tela Cheia, inclusive com capítulos longos; executar testes e verificação de tipos e conferir o resultado do aplicativo. Não alterar banco, login/PIN/biometria, JWPUB nem o armazenamento dos versículos já importados.
+## 2. Destaques
+- Ao destacar um trecho, escolher entre amarelo, verde, azul, rosa e laranja.
+- Os destaques antigos continuam amarelos. Remover destaque continua funcionando.
+- Cores legíveis em todos os fundos atuais do balão.
+
+## Validação
+- Testes automáticos para limites de letra/altura, navegação de versículos, leitura dos destaques antigos, novas cores e remoção.
+- Rodar os testes existentes e a verificação de tipos.
+- Conferir visualmente em celular e computador, no esboço e na Tela Cheia, com um capítulo longo.
 
 ## Detalhes técnicos
-Partes envolvidas: catálogo e detector (`bible-canon.ts`, `bible-refs.ts`), importador EPUB (`epub-bible-parser.ts`), balão (`BibleVersePopover.tsx`), preferências e destaques locais (`bible-view-settings.ts`) e estilos sem cores avulsas fora dos tokens globais. Bibliotecas já importadas devem continuar abrindo; se um EPUB antigo tiver livros ausentes, oferecer reimportação manual, nunca substituir dados automaticamente.
+- Preferências em `src/lib/bible-view-settings.ts`: `fontScale` e `height` opcionais com valores padrão; leitura tolerante a dados antigos.
+- Destaques: `color` opcional por trecho; ausência de cor é tratada como `yellow`. `buildSegments` passa a devolver a cor sem mudar a chave de armazenamento.
+- Balão em `src/components/bible/BibleVersePopover.tsx`: navegação calculada a partir do capítulo já carregado; redimensionamento por Pointer Events limitado ao viewport.
+- Cores via tokens novos em `src/styles.css`, sem cores avulsas nos componentes.
