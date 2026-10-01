@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Loader2, BookOpen, GripHorizontal, X, Bold, Highlighter, Eraser,
-  Copy, ChevronLeft, ChevronRight, List, FilePlus2,
+  Copy, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, List, FilePlus2,
+  AArrowDown, AArrowUp,
 } from "lucide-react";
 import { getChapterFromLibrary } from "@/lib/bible-notes-store";
 import { pushVerseHistory } from "@/lib/bible-history";
@@ -15,6 +16,14 @@ import {
   saveSettings,
   type BibleViewSettings,
   type BibleColor,
+  type HighlightColor,
+  HIGHLIGHT_COLORS,
+  TEXT_SCALE_MIN,
+  TEXT_SCALE_MAX,
+  TEXT_SCALE_STEP,
+  clampTextScale,
+  clampHeight,
+  neighborVerse,
   highlightKey,
   getHighlights,
   addHighlight,
@@ -23,6 +32,10 @@ import {
   buildSegments,
   type BibleHighlight,
 } from "@/lib/bible-view-settings";
+
+const HL_LABELS: Record<HighlightColor, string> = {
+  yellow: "Amarelo", green: "Verde", blue: "Azul", pink: "Rosa", orange: "Laranja",
+};
 import { toast } from "sonner";
 
 interface VerseLinkProps {
@@ -69,6 +82,8 @@ export function VerseLink({
   const [chapterMode, setChapterMode] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [inserting, setInserting] = useState(false);
+  // Versículo isolado escolhido pelas setas anterior/próximo.
+  const [verseOverride, setVerseOverride] = useState<number | null>(null);
 
   // View settings (color + bold) — global, persisted in localStorage.
   const [settings, setSettings] = useState<BibleViewSettings>(() => loadSettings());
@@ -136,6 +151,7 @@ export function VerseLink({
       // Volta ao estado original da citação ao reabrir.
       setChapterMode(false);
       setShowAll(false);
+      setVerseOverride(null);
       setChapter(match.chapter);
     }
   }, [open, match.chapter]);
@@ -232,6 +248,7 @@ export function VerseLink({
   const parts = useMemo<VersePart[] | null>(() => {
     if (chapterVerses === null) return null;
     if (chapterMode) return chapterVerses;
+    if (verseOverride != null) return chapterVerses.filter((v) => v.verse === verseOverride);
     const byVerse = new Map(chapterVerses.map((v) => [v.verse, v.text]));
     const nums = truncated ? selectedVerses.slice(0, MAX_RANGE) : selectedVerses;
     return nums
@@ -297,11 +314,44 @@ export function VerseLink({
   const goChapter = useCallback((delta: number) => {
     setChapter((c) => Math.max(1, c + delta));
     setChapterMode(true);
+    setVerseOverride(null);
   }, []);
+
+  // Navegação versículo a versículo, sem sair do capítulo carregado.
+  const availableVerses = useMemo(() => (chapterVerses ?? []).map((v) => v.verse), [chapterVerses]);
+  const navAnchor = useMemo(() => {
+    if (verseOverride != null) return { lo: verseOverride, hi: verseOverride };
+    if (chapterMode || chapter !== match.chapter) return { lo: Infinity, hi: -Infinity };
+    return { lo: Math.min(...selectedVerses), hi: Math.max(...selectedVerses) };
+  }, [verseOverride, chapterMode, chapter, match.chapter, selectedVerses]);
+  const prevVerse = Number.isFinite(navAnchor.lo)
+    ? neighborVerse(availableVerses, navAnchor.lo, -1)
+    : (availableVerses.length ? Math.min(...availableVerses) : null);
+  const nextVerse = Number.isFinite(navAnchor.hi)
+    ? neighborVerse(availableVerses, navAnchor.hi, 1)
+    : (availableVerses.length ? Math.min(...availableVerses) : null);
+  const goVerse = (delta: -1 | 1) => {
+    const target = delta < 0 ? prevVerse : nextVerse;
+    if (target == null) return;
+    setChapterMode(false);
+    setVerseOverride(target);
+  };
 
   const updateSetting = (patch: Partial<BibleViewSettings>) => {
     setSettings(saveSettings(patch));
   };
+  const changeTextScale = (dir: -1 | 1) => {
+    updateSetting({ textScale: clampTextScale(settings.textScale + dir * TEXT_SCALE_STEP) });
+  };
+  const onPickHighlightColor = (c: HighlightColor) => {
+    updateSetting({ highlightColor: c });
+    const sel = typeof window !== "undefined" ? window.getSelection() : null;
+    if (sel && !sel.isCollapsed && textRef.current?.contains(sel.anchorNode)) {
+      // Aplica direto quando já há texto selecionado.
+      setTimeout(() => onHighlightClickRef.current?.(), 0);
+    }
+  };
+  const onHighlightClickRef = useRef<(() => void) | null>(null);
 
   // Compute the (verse, offset) from a DOM Range endpoint within the text container.
   // Each verse span has data-verse and a single text node as descendants (split by segments).
@@ -341,7 +391,7 @@ export function VerseLink({
     const end = Math.max(a.offset, b.offset);
     if (end <= start) return;
     const key = highlightKey(libraryId, match.bookId, chapter, a.verse);
-    const next = addHighlight(key, { start, end });
+    const next = addHighlight(key, { start, end, color: settings.highlightColor });
     setHighlightsByVerse((m) => ({ ...m, [a.verse]: next }));
     sel.removeAllRanges();
   };
@@ -365,12 +415,14 @@ export function VerseLink({
   const isRange = !isList && match.verseEnd && match.verseEnd > match.verse;
   const headerVerses = chapterMode
     ? ""
-    : isList
-      ? match.verses!.join(",")
-      : match.verseEnd
-        ? `${match.verse}-${match.verseEnd}`
-        : `${match.verse}`;
-  const multiVerse = chapterMode || isRange || isList;
+    : verseOverride != null
+      ? `${verseOverride}`
+      : isList
+        ? match.verses!.join(",")
+        : match.verseEnd
+          ? `${match.verse}-${match.verseEnd}`
+          : `${match.verse}`;
+  const multiVerse = chapterMode || (verseOverride == null && (isRange || isList));
 
   const textContainerClass = useMemo(
     () => cn("text-sm leading-relaxed space-y-1.5 px-4 py-3 rounded-b-md", `bible-color-${settings.color}`, settings.bold && "bible-text-bold"),
@@ -384,13 +436,47 @@ export function VerseLink({
         key={`${p.verse}-${i}`}
         data-verse={p.verse}
         data-seg-start={s.start}
-        className={s.highlighted ? "bible-highlight" : undefined}
+        className={s.highlighted ? `bible-highlight bible-hl-${s.color ?? "yellow"}` : undefined}
         onClick={s.highlighted ? () => onSegmentClick(p.verse, s.start, true) : undefined}
       >
         {s.text}
       </span>
     ));
   };
+
+  // Altura ajustável pelo usuário (limitada à tela).
+  const [viewportH, setViewportH] = useState(() => (typeof window === "undefined" ? 800 : window.innerHeight));
+  useEffect(() => {
+    if (!open) return;
+    const onResize = () => setViewportH(window.innerHeight);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [open]);
+  const effectiveHeight = clampHeight(settings.height, viewportH);
+  const resizeRef = useRef<{ startY: number; base: number; pointerId: number } | null>(null);
+  const scrollBoxHeight = () =>
+    (textRef.current?.parentElement?.getBoundingClientRect().height ?? 200);
+  function onResizePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    e.preventDefault();
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    resizeRef.current = { startY: e.clientY, base: effectiveHeight ?? scrollBoxHeight(), pointerId: e.pointerId };
+  }
+  function onResizePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const r = resizeRef.current;
+    if (!r || r.pointerId !== e.pointerId) return;
+    const h = clampHeight(r.base + (e.clientY - r.startY), window.innerHeight);
+    setSettings((s) => ({ ...s, height: h }));
+  }
+  function onResizePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    const r = resizeRef.current;
+    if (!r || r.pointerId !== e.pointerId) return;
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    resizeRef.current = null;
+    setSettings((s) => saveSettings({ height: s.height }));
+  }
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -507,15 +593,59 @@ export function VerseLink({
           </button>
           <button
             type="button"
+            title={t("bibleVerse.fontSmaller", { defaultValue: "Diminuir letra" })}
+            aria-label={t("bibleVerse.fontSmaller", { defaultValue: "Diminuir letra" })}
+            onClick={() => changeTextScale(-1)}
+            disabled={settings.textScale <= TEXT_SCALE_MIN}
+            className="p-1 rounded hover:bg-background text-muted-foreground disabled:opacity-40"
+          >
+            <AArrowDown className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title={t("bibleVerse.fontLarger", { defaultValue: "Aumentar letra" })}
+            aria-label={t("bibleVerse.fontLarger", { defaultValue: "Aumentar letra" })}
+            onClick={() => changeTextScale(1)}
+            disabled={settings.textScale >= TEXT_SCALE_MAX}
+            className="p-1 rounded hover:bg-background text-muted-foreground disabled:opacity-40"
+          >
+            <AArrowUp className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Destaque e navegação */}
+        <div className="flex flex-wrap items-center gap-1.5 px-2 py-1.5 border-b bg-muted/30">
+          <button
+            type="button"
             title={t("bibleVerse.highlight")}
+            aria-label={t("bibleVerse.highlight")}
             onClick={onHighlightClick}
             className="p-1 rounded hover:bg-background text-muted-foreground"
           >
             <Highlighter className="h-3.5 w-3.5" />
           </button>
+          <div className="flex items-center gap-1" role="radiogroup" aria-label={t("bibleVerse.highlightColor", { defaultValue: "Cor do destaque" })}>
+            {HIGHLIGHT_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                role="radio"
+                aria-checked={settings.highlightColor === c}
+                aria-label={t(`bibleVerse.highlightColors.${c}`, { defaultValue: HL_LABELS[c] })}
+                title={t(`bibleVerse.highlightColors.${c}`, { defaultValue: HL_LABELS[c] })}
+                onClick={() => onPickHighlightColor(c)}
+                className={cn(
+                  "h-4 w-4 rounded-sm border bible-hl-swatch",
+                  `bible-hl-${c}`,
+                  settings.highlightColor === c ? "ring-2 ring-primary ring-offset-1" : "border-border",
+                )}
+              />
+            ))}
+          </div>
           <button
             type="button"
             title={t("bibleVerse.clearHighlights")}
+            aria-label={t("bibleVerse.clearHighlights")}
             onClick={onClearAll}
             className="p-1 rounded hover:bg-background text-muted-foreground"
           >
@@ -530,13 +660,33 @@ export function VerseLink({
                 ? t("bibleVerse.backToVerse", { defaultValue: "Voltar ao versículo" })
                 : t("bibleVerse.readChapter", { defaultValue: "Ler o capítulo inteiro" })
             }
-            onClick={() => setChapterMode((v) => !v)}
+            onClick={() => { setVerseOverride(null); setChapterMode((v) => !v); }}
             className={cn(
               "p-1 rounded hover:bg-background",
               chapterMode ? "bg-background text-foreground" : "text-muted-foreground",
             )}
           >
             <List className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title={t("bibleVerse.prevVerse", { defaultValue: "Versículo anterior" })}
+            aria-label={t("bibleVerse.prevVerse", { defaultValue: "Versículo anterior" })}
+            onClick={() => goVerse(-1)}
+            disabled={prevVerse == null}
+            className="p-1 rounded hover:bg-background text-muted-foreground disabled:opacity-40"
+          >
+            <ChevronUp className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title={t("bibleVerse.nextVerse", { defaultValue: "Próximo versículo" })}
+            aria-label={t("bibleVerse.nextVerse", { defaultValue: "Próximo versículo" })}
+            onClick={() => goVerse(1)}
+            disabled={nextVerse == null}
+            className="p-1 rounded hover:bg-background text-muted-foreground disabled:opacity-40"
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
@@ -558,7 +708,10 @@ export function VerseLink({
         </div>
 
 
-        <div className="overflow-y-auto max-h-[calc(70vh-5rem)]">
+        <div
+          className={cn("overflow-y-auto overscroll-contain", effectiveHeight == null && "max-h-[calc(70vh-5rem)]")}
+          style={effectiveHeight != null ? { height: effectiveHeight } : undefined}
+        >
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-3">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -568,7 +721,7 @@ export function VerseLink({
             <div
               ref={textRef}
               className={textContainerClass}
-              style={fontScale !== 1 ? { fontSize: `${fontScale}rem` } : undefined}
+              style={{ fontSize: `${fontScale * settings.textScale * 0.875}rem` }}
               onDoubleClick={handleDoubleTapClose}
               onTouchEnd={handleTextTouchEnd}
             >
@@ -577,7 +730,7 @@ export function VerseLink({
                   {parts.map((p, i) => (
                     <span key={p.verse}>
                       {i > 0 ? " " : ""}
-                      <sup className="text-[10px] font-semibold opacity-70 mr-0.5">
+                      <sup className="text-[0.7em] font-semibold opacity-70 mr-0.5">
                         {p.verse}
                       </sup>
                       {renderVerseSegments(p)}
@@ -610,6 +763,21 @@ export function VerseLink({
               {t("bibleVerse.notFound")}
             </p>
           )}
+        </div>
+        {/* Alça para ajustar a altura */}
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label={t("bibleVerse.resize", { defaultValue: "Ajustar altura" })}
+          title={t("bibleVerse.resize", { defaultValue: "Ajustar altura" })}
+          onPointerDown={onResizePointerDown}
+          onPointerMove={onResizePointerMove}
+          onPointerUp={onResizePointerUp}
+          onPointerCancel={onResizePointerUp}
+          onDoubleClick={() => updateSetting({ height: null })}
+          className="flex h-4 items-center justify-center border-t bg-muted/40 cursor-ns-resize touch-none select-none"
+        >
+          <span className="h-1 w-10 rounded-full bg-muted-foreground/40" />
         </div>
       </PopoverContent>
     </Popover>
