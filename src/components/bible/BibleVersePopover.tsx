@@ -620,7 +620,7 @@ export function VerseLink({
             type="button"
             title={t("bibleVerse.highlight")}
             aria-label={t("bibleVerse.highlight")}
-            onClick={onHighlightClick}
+            onClick={() => onHighlightClick()}
             className="p-1 rounded hover:bg-background text-muted-foreground"
           >
             <Highlighter className="h-3.5 w-3.5" />
