@@ -100,6 +100,11 @@ export function VerseLink({
   // balão recuar ou ficar preso durante o arraste.
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const [contentNode, setContentNode] = useState<HTMLDivElement | null>(null);
+  const attachContent = useCallback((node: HTMLDivElement | null) => {
+    contentRef.current = node;
+    setContentNode(node);
+  }, []);
   const textRef = useRef<HTMLDivElement | null>(null);
   const lastTapRef = useRef<number>(0);
   const dragRef = useRef<{
@@ -193,7 +198,7 @@ export function VerseLink({
     const dx = e.clientX - d.startX;
     const dy = e.clientY - d.startY;
     const next = { x: d.baseX + dx, y: d.baseY + dy };
-    const el = contentRef.current;
+    const el = contentNode;
     if (el) {
       const rect = el.getBoundingClientRect();
       const viewport = window.visualViewport;
@@ -259,7 +264,7 @@ export function VerseLink({
       window.removeEventListener("resize", keepVisible);
       window.visualViewport?.removeEventListener("resize", keepVisible);
     };
-  }, [open]);
+  }, [open, contentNode]);
 
   // Carrega o capítulo inteiro numa única transação (getAll + IDBKeyRange),
   // em vez de uma leitura por versículo. Serve tanto para a citação quanto
@@ -552,7 +557,7 @@ export function VerseLink({
         )}
       </PopoverTrigger>
       <PopoverContent
-        ref={contentRef}
+        ref={attachContent}
         className="w-80 max-w-[90vw] max-h-[85dvh] overflow-hidden z-[110] p-0 flex flex-col"
         align="start"
         style={{ translate: `${offset.x}px ${offset.y}px` }}
