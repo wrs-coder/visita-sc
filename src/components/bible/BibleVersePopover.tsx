@@ -198,7 +198,7 @@ export function VerseLink({
     const dx = e.clientX - d.startX;
     const dy = e.clientY - d.startY;
     const next = { x: d.baseX + dx, y: d.baseY + dy };
-    const el = contentNode;
+    const el = contentRef.current;
     if (el) {
       const rect = el.getBoundingClientRect();
       const viewport = window.visualViewport;
@@ -228,7 +228,7 @@ export function VerseLink({
   // manter o cabeçalho e a alça inferior dentro da área visível.
   useEffect(() => {
     if (!open) return;
-    const el = contentRef.current;
+    const el = contentNode;
     if (!el) return;
     const keepVisible = () => {
       if (dragRef.current) return;
