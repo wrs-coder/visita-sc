@@ -209,16 +209,31 @@
 
 .bible-text-bold { font-weight: 700; }
 
+:root {
+  --bible-hl-yellow: 250 204 21;
+  --bible-hl-green: 74 222 128;
+  --bible-hl-blue: 96 165 250;
+  --bible-hl-pink: 244 114 182;
+  --bible-hl-orange: 251 146 60;
+  --bible-hl-alpha: 0.55;
+}
 .bible-highlight {
-  background-color: rgba(250, 204, 21, 0.55); /* amarelo translúcido */
+  --hl: var(--bible-hl-yellow);
+  background-color: rgb(var(--hl) / var(--bible-hl-alpha));
   color: inherit;
   border-radius: 2px;
   padding: 0 1px;
   cursor: pointer;
 }
+.bible-hl-yellow { --hl: var(--bible-hl-yellow); }
+.bible-hl-green  { --hl: var(--bible-hl-green); }
+.bible-hl-blue   { --hl: var(--bible-hl-blue); }
+.bible-hl-pink   { --hl: var(--bible-hl-pink); }
+.bible-hl-orange { --hl: var(--bible-hl-orange); }
+.bible-hl-swatch { background-color: rgb(var(--hl)); }
 .bible-color-black .bible-highlight,
 .bible-color-night_blue .bible-highlight {
-  background-color: rgba(250, 204, 21, 0.35);
+  --bible-hl-alpha: 0.4;
 }
 
 
