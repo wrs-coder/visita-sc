@@ -201,7 +201,7 @@ export function VerseLink({
       const viewportTop = viewport?.offsetTop ?? 0;
       const viewportRight = viewportLeft + (viewport?.width ?? window.innerWidth);
       const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
-      const minX = 8 - (rect.left - offset.x);
+      const minX = viewportLeft + 8 - (rect.left - offset.x);
       const maxX = viewportRight - 8 - (rect.right - offset.x);
       const minY = viewportTop + 8 - (rect.top - offset.y);
       const maxY = viewportBottom - 8 - (rect.bottom - offset.y);
@@ -218,6 +218,40 @@ export function VerseLink({
     } catch { /* noop */ }
     dragRef.current = null;
   }
+
+  // Se os controles, a altura ou a orientação mudarem depois do arraste,
+  // manter o cabeçalho e a alça inferior dentro da área visível.
+  useEffect(() => {
+    if (!open) return;
+    const el = contentRef.current;
+    if (!el) return;
+    const keepVisible = () => {
+      if (dragRef.current) return;
+      const rect = el.getBoundingClientRect();
+      const viewport = window.visualViewport;
+      const left = viewport?.offsetLeft ?? 0;
+      const top = viewport?.offsetTop ?? 0;
+      const right = left + (viewport?.width ?? window.innerWidth);
+      const bottom = top + (viewport?.height ?? window.innerHeight);
+      setOffset((current) => {
+        // Only adjust an already dragged popup. An unopened Radix popup
+        // still needs to settle next to its reference naturally.
+        if (current.x === 0 && current.y === 0) return current;
+        const x = Math.min(Math.max(current.x, left + 8 - rect.left + current.x), right - 8 - rect.right + current.x);
+        const y = Math.min(Math.max(current.y, top + 8 - rect.top + current.y), bottom - 8 - rect.bottom + current.y);
+        return x === current.x && y === current.y ? current : { x, y };
+      });
+    };
+    const observer = new ResizeObserver(keepVisible);
+    observer.observe(el);
+    window.addEventListener("resize", keepVisible);
+    window.visualViewport?.addEventListener("resize", keepVisible);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", keepVisible);
+      window.visualViewport?.removeEventListener("resize", keepVisible);
+    };
+  }, [open]);
 
   // Carrega o capítulo inteiro numa única transação (getAll + IDBKeyRange),
   // em vez de uma leitura por versículo. Serve tanto para a citação quanto
