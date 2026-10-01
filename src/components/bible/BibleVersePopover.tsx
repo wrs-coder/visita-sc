@@ -95,10 +95,16 @@ export function VerseLink({
   // Stored as a map verse -> highlights[] for the verses currently shown.
   const [highlightsByVerse, setHighlightsByVerse] = useState<Record<number, BibleHighlight[]>>({});
 
-  // Offset de arrasto aplicado via margin (não conflita com o transform do
-  // Floating UI/Radix). Resetado sempre que o popup fecha.
+  // Deslocamento visual independente do posicionador do Radix. Usar a
+  // propriedade CSS `translate` evita que margens alterem a âncora e façam o
+  // balão recuar ou ficar preso durante o arraste.
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const [contentNode, setContentNode] = useState<HTMLDivElement | null>(null);
+  const attachContent = useCallback((node: HTMLDivElement | null) => {
+    contentRef.current = node;
+    setContentNode(node);
+  }, []);
   const textRef = useRef<HTMLDivElement | null>(null);
   const lastTapRef = useRef<number>(0);
   const dragRef = useRef<{
@@ -195,12 +201,17 @@ export function VerseLink({
     const el = contentRef.current;
     if (el) {
       const rect = el.getBoundingClientRect();
-      const minX = 8 - (rect.left - offset.x);
-      const maxX = window.innerWidth - 8 - (rect.right - offset.x);
-      const minY = 8 - (rect.top - offset.y);
-      const maxY = window.innerHeight - 8 - (rect.bottom - offset.y);
-      next.x = Math.min(Math.max(next.x, minX), maxX);
-      next.y = Math.min(Math.max(next.y, minY), maxY);
+      const viewport = window.visualViewport;
+      const viewportLeft = viewport?.offsetLeft ?? 0;
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportRight = viewportLeft + (viewport?.width ?? window.innerWidth);
+      const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
+      const minX = viewportLeft + 8 - (rect.left - offset.x);
+      const maxX = viewportRight - 8 - (rect.right - offset.x);
+      const minY = viewportTop + 8 - (rect.top - offset.y);
+      const maxY = viewportBottom - 8 - (rect.bottom - offset.y);
+      next.x = Math.min(Math.max(next.x, minX), Math.max(minX, maxX));
+      next.y = Math.min(Math.max(next.y, minY), Math.max(minY, maxY));
     }
     setOffset(next);
   }
@@ -212,6 +223,48 @@ export function VerseLink({
     } catch { /* noop */ }
     dragRef.current = null;
   }
+
+  // Se os controles, a altura ou a orientação mudarem depois do arraste,
+  // manter o cabeçalho e a alça inferior dentro da área visível.
+  useEffect(() => {
+    if (!open) return;
+    const el = contentNode;
+    if (!el) return;
+    const keepVisible = () => {
+      if (dragRef.current) return;
+      const rect = el.getBoundingClientRect();
+      const viewport = window.visualViewport;
+      const left = viewport?.offsetLeft ?? 0;
+      const top = viewport?.offsetTop ?? 0;
+      const right = left + (viewport?.width ?? window.innerWidth);
+      const bottom = top + (viewport?.height ?? window.innerHeight);
+      setOffset((current) => {
+        // Only adjust an already dragged popup. An unopened Radix popup
+        // still needs to settle next to its reference naturally.
+        if (current.x === 0 && current.y === 0) return current;
+        const minX = left + 8 - rect.left + current.x;
+        const minY = top + 8 - rect.top + current.y;
+        const x = Math.min(Math.max(current.x, minX), Math.max(minX, right - 8 - rect.right + current.x));
+        const y = Math.min(Math.max(current.y, minY), Math.max(minY, bottom - 8 - rect.bottom + current.y));
+        return x === current.x && y === current.y ? current : { x, y };
+      });
+    };
+    const observer = new ResizeObserver(keepVisible);
+    observer.observe(el);
+    // Radix moves its fixed wrapper after a viewport change. Observe that
+    // wrapper too, otherwise an early clamp is undone by its next placement.
+    const wrapper = el.closest("[data-radix-popper-content-wrapper]");
+    const wrapperObserver = new MutationObserver(keepVisible);
+    if (wrapper) wrapperObserver.observe(wrapper, { attributes: true, attributeFilter: ["style"] });
+    window.addEventListener("resize", keepVisible);
+    window.visualViewport?.addEventListener("resize", keepVisible);
+    return () => {
+      observer.disconnect();
+      wrapperObserver.disconnect();
+      window.removeEventListener("resize", keepVisible);
+      window.visualViewport?.removeEventListener("resize", keepVisible);
+    };
+  }, [open, contentNode]);
 
   // Carrega o capítulo inteiro numa única transação (getAll + IDBKeyRange),
   // em vez de uma leitura por versículo. Serve tanto para a citação quanto
@@ -504,10 +557,10 @@ export function VerseLink({
         )}
       </PopoverTrigger>
       <PopoverContent
-        ref={contentRef}
+        ref={attachContent}
         className="w-80 max-w-[90vw] max-h-[85dvh] overflow-hidden z-[110] p-0 flex flex-col"
         align="start"
-        style={{ marginLeft: offset.x, marginTop: offset.y }}
+        style={{ translate: `${offset.x}px ${offset.y}px` }}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
