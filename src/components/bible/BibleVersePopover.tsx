@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import {
   Loader2, BookOpen, GripHorizontal, X, Bold, Highlighter, Eraser,
   Copy, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, List, FilePlus2,
-  AArrowDown, AArrowUp,
+  AArrowDown, AArrowUp, SlidersHorizontal,
 } from "lucide-react";
 import { getChapterFromLibrary } from "@/lib/bible-notes-store";
 import { pushVerseHistory } from "@/lib/bible-history";
@@ -74,6 +75,7 @@ export function VerseLink({
   const { t, i18n } = useTranslation();
   const displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName;
   const [open, setOpen] = useState(autoOpen);
+  const [controlsExpanded, setControlsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   // Capítulo atualmente carregado (permite navegar entre capítulos).
   const [chapter, setChapter] = useState(match.chapter);
@@ -121,6 +123,8 @@ export function VerseLink({
 
   const handleOpenChange = useCallback((next: boolean) => {
     if (next) {
+      setSettings(loadSettings());
+      setControlsExpanded(false);
       setOpen(true);
       return;
     }
@@ -148,6 +152,7 @@ export function VerseLink({
   useEffect(() => {
     if (!open) {
       setOffset({ x: 0, y: 0 });
+      setControlsExpanded(false);
       // Volta ao estado original da citação ao reabrir.
       setChapterMode(false);
       setShowAll(false);
@@ -499,7 +504,7 @@ export function VerseLink({
       </PopoverTrigger>
       <PopoverContent
         ref={contentRef}
-        className="w-80 max-w-[90vw] max-h-[70vh] overflow-hidden z-[110] p-0"
+        className="w-80 max-w-[90vw] max-h-[85dvh] overflow-hidden z-[110] p-0 flex flex-col"
         align="start"
         style={{ marginLeft: offset.x, marginTop: offset.y }}
         onOpenAutoFocus={(e) => e.preventDefault()}
@@ -525,6 +530,19 @@ export function VerseLink({
           <span className="text-xs font-semibold text-foreground flex-1 truncate">
             {displayBook} {chapter}{headerVerses ? `:${headerVerses}` : ""}
           </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-expanded={controlsExpanded}
+            aria-controls="bible-verse-controls"
+            aria-label={t(controlsExpanded ? "bibleVerse.hideControls" : "bibleVerse.showControls")}
+            title={t(controlsExpanded ? "bibleVerse.hideControls" : "bibleVerse.showControls")}
+            onClick={(e) => { e.stopPropagation(); setControlsExpanded((v) => !v); }}
+            className="h-7 w-7 shrink-0 text-muted-foreground"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </Button>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); void onCopy(); }}
@@ -560,6 +578,7 @@ export function VerseLink({
         </div>
 
 
+        <div id="bible-verse-controls" hidden={!controlsExpanded} className="shrink-0 max-h-[40dvh] overflow-y-auto">
         {/* Barra de aparência (cor, negrito, grifar) */}
         <div className="flex items-center gap-1.5 px-2 py-1.5 border-b bg-muted/30" aria-label={t("bibleVerse.viewSettings")}>
           <div className="flex items-center gap-1" role="radiogroup" aria-label={t("bibleVerse.color")}>
@@ -707,11 +726,12 @@ export function VerseLink({
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
+        </div>
 
 
         <div
-          className={cn("overflow-y-auto overscroll-contain", effectiveHeight == null && "max-h-[calc(70vh-5rem)]")}
-          style={effectiveHeight != null ? { height: effectiveHeight } : undefined}
+          className={cn("overflow-y-auto overscroll-contain min-h-0", effectiveHeight == null && "max-h-[70dvh]")}
+          style={effectiveHeight != null ? { height: effectiveHeight, flexShrink: 1 } : undefined}
         >
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-3">
@@ -722,7 +742,7 @@ export function VerseLink({
             <div
               ref={textRef}
               className={textContainerClass}
-              style={{ fontSize: `${fontScale * settings.textScale * 0.875}rem` }}
+              style={{ fontSize: `${settings.textScale * 0.875}rem` }}
               onDoubleClick={handleDoubleTapClose}
               onTouchEnd={handleTextTouchEnd}
             >

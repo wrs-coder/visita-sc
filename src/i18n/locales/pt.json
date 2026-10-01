@@ -1646,6 +1646,8 @@
     "dragHandle": "Arrastar",
     "close": "Fechar",
     "viewSettings": "Aparência",
+    "showControls": "Mostrar recursos do texto bíblico",
+    "hideControls": "Ocultar recursos do texto bíblico",
     "color": "Cor",
     "colors": {
       "white": "Branco",
