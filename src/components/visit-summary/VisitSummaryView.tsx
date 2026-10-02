@@ -1269,7 +1269,7 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
             <div className="text-xs text-muted-foreground">{t("guest.today.noMeetings")}</div>
           ) : (
             <div className="space-y-2">
-              {showMidweek && snap.midweek.map((m) => (
+              {showMidweek && todayMidweek.map((m) => (
                 <div key={m.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
                   <div className="font-medium">{t("guest.today.midweek")}</div>
                   {m.chairman && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.chairman")}: </span>{m.chairman}</div>}
@@ -1293,7 +1293,7 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
                   {p.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{p.closing_prayer}</div>}
                 </div>
               ))}
-              {showElders && snap.elders.map((e) => (
+              {showElders && todayElders.map((e) => (
                 <div key={e.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
                   <div className="font-medium">{t("guest.today.elders")} • {formatWeekdayTime(snap.templateExtras?.elders?.weekday, snap.templateExtras?.elders?.meeting_time)}</div>
                   {e.theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.theme")}: </span>{e.theme}</div>}
