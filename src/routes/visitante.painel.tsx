@@ -1388,7 +1388,7 @@ function WifeCouplePanel({ code }: { code: string }) {
 function MeetingsTalksGuestPanel({ snap, fmtDate }: { snap: Snapshot; fmtDate: (d: string) => string }) {
   const { t } = useTranslation();
   const fmtIso = (iso: string | null | undefined) =>
-    iso ? formatAnchorWeekdayTime(iso) : null;
+    formatAnchorWeekdayTime(iso);
 
   const sections: Array<{ key: string; title: string; icon: React.ReactNode; empty: boolean; content: React.ReactNode }> = [
     {
