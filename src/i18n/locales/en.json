@@ -324,6 +324,7 @@
     "scope": "Event with",
     "selectCongregations": "Select congregations",
     "visibleToSpouse": "Hide from Wife",
+    "hideNotesFromSpouse": "Hide notes from Wife",
     "complete": "Complete",
     "postpone": "Postpone",
     "postponeTo": "Postpone to",

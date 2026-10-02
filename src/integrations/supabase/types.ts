@@ -137,6 +137,7 @@ export type Database = {
           end_time: string | null
           event_date: string
           event_type: string
+          hide_notes_from_spouse: boolean
           id: string
           location: string | null
           notes: string | null
@@ -155,6 +156,7 @@ export type Database = {
           end_time?: string | null
           event_date: string
           event_type?: string
+          hide_notes_from_spouse?: boolean
           id?: string
           location?: string | null
           notes?: string | null
@@ -173,6 +175,7 @@ export type Database = {
           end_time?: string | null
           event_date?: string
           event_type?: string
+          hide_notes_from_spouse?: boolean
           id?: string
           location?: string | null
           notes?: string | null

@@ -142,7 +142,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
     // todayIso já definido no topo
     let circuitQuery = supabaseAdmin
       .from("circuit_schedule_events")
-      .select("id,event_date,start_time,end_time,title,location,event_type,notes,scope,congregation_ids,visible_to_spouse,superintendent_id,status")
+      .select("id,event_date,start_time,end_time,title,location,event_type,notes,scope,congregation_ids,visible_to_spouse,hide_notes_from_spouse,superintendent_id,status")
       .neq("scope", "personal")
       .neq("status", "completed")
       .gte("event_date", todayIso)
@@ -168,7 +168,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       title: e.title,
       location: e.location,
       type: e.event_type,
-      notes: e.notes,
+      notes: wifeMode && e.hide_notes_from_spouse ? null : e.notes,
     }));
 
     if (!visit) {
