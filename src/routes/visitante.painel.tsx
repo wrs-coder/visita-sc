@@ -24,7 +24,7 @@ import { wifeListCoupleMessages, wifeCreateCoupleMessage, wifeMarkCoupleMessages
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { type ElderProgramEvent } from "@/components/visit-summary/ElderProgramReadOnly";
-import { MeetingsTalksPanel } from "@/components/visit-summary/MeetingsTalksPanel";
+import { MeetingsTalksPanel, type MeetingsTalksSnap } from "@/components/visit-summary/MeetingsTalksPanel";
 import { ElderTabGate } from "@/components/visit-summary/ElderTabGate";
 import { formatWeekdayTime, formatAnchorWeekdayTime, anchorWeekday } from "@/components/visit-week/report-schedule";
 
@@ -640,7 +640,7 @@ function Page() {
 
               {!snap.wifeMode && (
                 <TabsContent value="reunioes" className="space-y-4 mt-4">
-                  <MeetingsTalksPanel snap={snap} />
+                  <MeetingsTalksPanel snap={snap as unknown as MeetingsTalksSnap} />
                 </TabsContent>
               )}
 
