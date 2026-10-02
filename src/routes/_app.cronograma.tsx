@@ -118,6 +118,7 @@ interface Event {
   scope: Scope;
   congregation_ids: string[];
   visible_to_spouse: boolean;
+  hide_notes_from_spouse?: boolean;
   status: string;
 }
 
@@ -335,6 +336,8 @@ function Page() {
       scope,
       congregation_ids: scope === "all" || scope === "personal" || scope === "wife" ? [] : congIds,
       visible_to_spouse: scope === "wife" ? true : (editing.visible_to_spouse ?? true),
+      hide_notes_from_spouse:
+        scope !== "wife" && (editing.visible_to_spouse ?? true) && !!editing.hide_notes_from_spouse,
     };
     const res = editing.id
       ? await offlineUpdate("circuit_schedule_events", payload, { id: editing.id })
@@ -654,6 +657,12 @@ function EventCard({
             <Users className="h-3 w-3" />
             {congNames}
             {!e.visible_to_spouse && <EyeOff className="h-3 w-3 ml-1" />}
+            {e.visible_to_spouse && e.hide_notes_from_spouse && (
+              <span className="ml-1 inline-flex items-center gap-0.5" title={t("schedule.hideNotesFromSpouse")}>
+                <EyeOff className="h-3 w-3" />
+                <span className="text-[10px]">{t("schedule.notes")}</span>
+              </span>
+            )}
           </div>
           {e.location && (
             <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -850,6 +859,19 @@ function EventDialog({
               id="visible-spouse"
               checked={!(editing.visible_to_spouse ?? true)}
               onCheckedChange={(v) => setEditing({ ...editing, visible_to_spouse: !v })}
+            />
+          </div>
+        )}
+        {scope !== "wife" && (
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <Label htmlFor="hide-notes-spouse" className="cursor-pointer">
+              {t("schedule.hideNotesFromSpouse")}
+            </Label>
+            <Switch
+              id="hide-notes-spouse"
+              disabled={!(editing.visible_to_spouse ?? true)}
+              checked={(editing.visible_to_spouse ?? true) && !!editing.hide_notes_from_spouse}
+              onCheckedChange={(v) => setEditing({ ...editing, hide_notes_from_spouse: v })}
             />
           </div>
         )}

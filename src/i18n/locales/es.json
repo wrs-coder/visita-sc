@@ -324,6 +324,7 @@
     "scope": "Evento con",
     "selectCongregations": "Seleccionar congregaciones",
     "visibleToSpouse": "Ocultar para la Esposa",
+    "hideNotesFromSpouse": "Ocultar observaciones a la Esposa",
     "complete": "Concluir",
     "postpone": "Aplazar",
     "postponeTo": "Aplazar para",
