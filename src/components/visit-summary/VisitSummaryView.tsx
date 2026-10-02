@@ -3,6 +3,8 @@
 // superintendente. Aceita o mesmo shape de Snapshot e expõe export
 // PDF/PNG/WhatsApp via `saveBlob` (estabilidade nativa: nada de download
 // automático no navegador no APK).
+import { formatWeekdayTime } from "@/components/visit-week/report-schedule";
+import type { VisitTemplateExtras } from "@/lib/visit-template-extras.shared";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
@@ -62,6 +64,7 @@ export interface VisitSnapshot {
   pioneer: Array<{ id: string; meeting_at: string | null; super_meeting_at: string | null; location: string | null; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
   elders: Array<{ id: string; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
   elderProgram?: ElderProgramData | null;
+  templateExtras?: VisitTemplateExtras;
 }
 
 type SectionKey = "cron" | "estudos" | "campo" | "ref" | "trans" | "check";
@@ -1055,7 +1058,7 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
               {todayPioneer.map((p) => (
                 <div key={p.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
                   <div className="font-medium">
-                    {t("guest.today.pioneer")} • {fmtAt(p.meeting_at)}
+                    {t("guest.today.pioneer")} • {formatWeekdayTime(snap.templateExtras?.pioneer?.weekday, snap.templateExtras?.pioneer?.meeting_time)}
                   </div>
                   {p.location && (
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
@@ -1086,7 +1089,7 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
               {showElders &&
                 snap.elders.map((e) => (
                   <div key={e.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
-                    <div className="font-medium">{t("guest.today.elders")}</div>
+                    <div className="font-medium">{t("guest.today.elders")} • {formatWeekdayTime(snap.templateExtras?.elders?.weekday, snap.templateExtras?.elders?.meeting_time)}</div>
                     {e.theme && (
                       <div className="text-xs">
                         <span className="text-muted-foreground">{t("guest.labels.theme")}: </span>
@@ -1266,7 +1269,7 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
               ))}
               {todayPioneer.map((p) => (
                 <div key={p.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
-                  <div className="font-medium">{t("guest.today.pioneer")} • {fmtAt(p.meeting_at)}</div>
+                  <div className="font-medium">{t("guest.today.pioneer")} • {formatWeekdayTime(snap.templateExtras?.pioneer?.weekday, snap.templateExtras?.pioneer?.meeting_time)}</div>
                   {p.location && <div className="text-xs text-muted-foreground flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span className="whitespace-pre-wrap break-words">{p.location}</span></div>}
                   {p.theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.theme")}: </span>{p.theme}</div>}
                   {p.opening_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.openingPrayer")}: </span>{p.opening_prayer}</div>}
@@ -1275,7 +1278,7 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
               ))}
               {showElders && snap.elders.map((e) => (
                 <div key={e.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
-                  <div className="font-medium">{t("guest.today.elders")}</div>
+                  <div className="font-medium">{t("guest.today.elders")} • {formatWeekdayTime(snap.templateExtras?.elders?.weekday, snap.templateExtras?.elders?.meeting_time)}</div>
                   {e.theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.theme")}: </span>{e.theme}</div>}
                   {e.opening_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.openingPrayer")}: </span>{e.opening_prayer}</div>}
                   {e.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{e.closing_prayer}</div>}
