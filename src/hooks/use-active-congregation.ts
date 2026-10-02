@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth, type Congregation } from "./use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { readOneWithMirror } from "@/lib/local-first";
 
 const KEY = "active_congregation_id";
 const EVT = "active-congregation-changed";
@@ -47,13 +48,19 @@ export function useActiveCongregation(): Congregation | null {
     queryKey: ["congregations", "byId", overrideId],
     enabled: shouldFetchOverride,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("congregations")
-        .select("id,name,superintendent_id")
-        .eq("id", overrideId!)
-        .maybeSingle();
+      // Local-first: sem servidor, usa o espelho de congregações do aparelho.
+      const { row: data } = await readOneWithMirror<Record<string, unknown>>({
+        table: "congregations",
+        id: overrideId,
+        remote: async () =>
+          await supabase
+            .from("congregations")
+            .select("id,name,superintendent_id")
+            .eq("id", overrideId!)
+            .maybeSingle(),
+      });
       return data
-        ? ({ ...(data as Omit<Congregation, "invite_code">), invite_code: "" } as Congregation)
+        ? ({ ...(data as unknown as Omit<Congregation, "invite_code">), invite_code: "" } as Congregation)
         : null;
     },
   });
@@ -62,15 +69,21 @@ export function useActiveCongregation(): Congregation | null {
     queryKey: ["congregations", "firstSuperintendentFallback", user?.id],
     enabled: role === "superintendent" && !!user?.id && !overrideId,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("congregations")
-        .select("id,name,superintendent_id,is_active")
-        .eq("superintendent_id", user!.id)
-        .order("name")
-        .limit(1)
-        .maybeSingle();
+      const { row: data } = await readOneWithMirror<Record<string, unknown>>({
+        table: "congregations",
+        remote: async () =>
+          await supabase
+            .from("congregations")
+            .select("id,name,superintendent_id,is_active")
+            .eq("superintendent_id", user!.id)
+            .order("name")
+            .limit(1)
+            .maybeSingle(),
+        filter: (r) => r.superintendent_id === user!.id,
+        sort: (a, b) => String(a.name ?? "").localeCompare(String(b.name ?? "")),
+      });
       return data
-        ? ({ ...(data as Omit<Congregation, "invite_code">), invite_code: "" } as Congregation)
+        ? ({ ...(data as unknown as Omit<Congregation, "invite_code">), invite_code: "" } as Congregation)
         : null;
     },
   });
