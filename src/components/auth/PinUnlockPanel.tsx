@@ -15,7 +15,7 @@ import {
   type VaultPayload,
 } from "@/lib/offline-credentials";
 import { isBiometricEnabled, unlockWithBiometric } from "@/lib/biometric-unlock";
-import { saveOfflineSession } from "@/lib/offline-session";
+import { saveOfflineSession, announceOfflineSession } from "@/lib/offline-session";
 import { setMode } from "@/lib/connection-mode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,7 +87,17 @@ export function PinUnlockPanel({ meta, onUsePassword, onUnlocked, onVaultGone }:
     }
     // Sem rede (ou token expirado sem conseguir renovar): segue em Modo
     // Offline, lendo tudo do cache local já baixado.
-    if (!online) setMode("offline");
+    if (!online) {
+      setMode("offline");
+      // Garante um retrato mínimo para o app reconhecer o usuário.
+      try {
+        const k = `visita-sc:auth-profile:${payload.userId}`;
+        if (!localStorage.getItem(k)) {
+          localStorage.setItem(k, JSON.stringify({ profile: null, role: null, elderPosition: null, congregation: null }));
+        }
+      } catch { /* quota */ }
+      announceOfflineSession();
+    }
 
     toast.success(t("offlinePin.unlocked"));
     setPin("");
