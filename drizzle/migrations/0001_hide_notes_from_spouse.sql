@@ -1,0 +1,1 @@
+ALTER TABLE public.circuit_schedule_events ADD COLUMN IF NOT EXISTS hide_notes_from_spouse boolean NOT NULL DEFAULT false;
