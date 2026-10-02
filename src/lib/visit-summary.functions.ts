@@ -141,7 +141,7 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
         .order("created_at"),
       supabase
         .from("midweek_meetings")
-        .select("id,chairman,service_talk_theme,closing_prayer")
+        .select("id,meeting_at,chairman,service_talk_theme,closing_prayer")
         .eq("visit_id", visit.id),
       supabase
         .from("weekend_meetings")
@@ -155,7 +155,7 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
         .order("meeting_at"),
       supabase
         .from("elders_servants_meetings")
-        .select("id,theme,opening_prayer,closing_prayer")
+        .select("id,meeting_at,location,theme,opening_prayer,closing_prayer")
         .eq("visit_id", visit.id),
     ]);
 

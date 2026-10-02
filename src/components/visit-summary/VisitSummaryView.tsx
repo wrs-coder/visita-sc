@@ -46,6 +46,7 @@ import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { saveBlob } from "@/lib/share";
 import { DayDetailsDialog } from "@/components/dashboard/DayDetailsDialog";
+import { MeetingsTalksPanel } from "@/components/visit-summary/MeetingsTalksPanel";
 import { ElderProgramReadOnly, type ElderProgramData } from "@/components/visit-summary/ElderProgramReadOnly";
 
 export interface VisitSnapshot {
@@ -59,10 +60,10 @@ export interface VisitSnapshot {
   fieldMeetings: Array<{ id: string; event_date: string; period: string; modality: string; meeting_time: string | null; territory_number: string | null; territory_location: string | null; auxiliary_leaders: string | null; closing_prayer: string | null }>;
   transport: Array<{ id: string; event_date: string | null; driver_name: string; contact_phone: string | null; description: string | null; notes: string | null; weekday?: number | null; event_type?: string | null; direction?: string | null; all_day?: boolean | null; departure_time?: string | null; return_time?: string | null }>;
   checklist: Array<{ id: string; title: string; description: string | null; status: string; link_or_notes: string | null; info_text: string | null }>;
-  midweek: Array<{ id: string; chairman: string | null; service_talk_theme: string | null; closing_prayer: string | null }>;
+  midweek: Array<{ id: string; meeting_at?: string | null; chairman: string | null; service_talk_theme: string | null; closing_prayer: string | null }>;
   weekend: Array<{ id: string; meeting_at: string | null; public_talk_theme: string | null; talk_theme_title: string | null }>;
   pioneer: Array<{ id: string; meeting_at: string | null; super_meeting_at: string | null; location: string | null; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
-  elders: Array<{ id: string; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
+  elders: Array<{ id: string; meeting_at?: string | null; location?: string | null; theme: string | null; opening_prayer: string | null; closing_prayer: string | null }>;
   elderProgram?: ElderProgramData | null;
   templateExtras?: VisitTemplateExtras;
 }
@@ -344,7 +345,7 @@ export function VisitSummaryView({
 
           <Tabs defaultValue="hoje">
             <TabsList
-              className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-8"}`}
+              className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-9"}`}
             >
               <TabsTrigger value="hoje">
                 <Sun className="h-4 w-4 md:mr-1" />
@@ -370,6 +371,12 @@ export function VisitSummaryView({
                 <Car className="h-4 w-4 md:mr-1" />
                 <span className="hidden md:inline">{t("guest.tabs.transport")}</span>
               </TabsTrigger>
+              {!snap.wifeMode && (
+                <TabsTrigger value="reunioes">
+                  <Mic className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">{t("guest.tabs.meetings")}</span>
+                </TabsTrigger>
+              )}
               {!snap.wifeMode && (
                 <TabsTrigger value="pastoreios">
                   <BookOpen className="h-4 w-4 md:mr-1" />
@@ -735,6 +742,11 @@ export function VisitSummaryView({
 
 
             {!snap.wifeMode && (
+              <TabsContent value="reunioes" className="space-y-4 mt-4">
+                <MeetingsTalksPanel snap={snap} />
+              </TabsContent>
+            )}
+            {!snap.wifeMode && (
               <TabsContent value="pastoreios" className="space-y-3 mt-4">
                 <ElderProgramReadOnly data={snap.elderProgram ?? null} />
               </TabsContent>
@@ -815,12 +827,17 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
     : false;
 
   const isSameDay = (iso: string | null) => !!iso && iso.slice(0, 10) === todayIso;
-  const todayWeekend = snap.weekend.filter((w) => inVisit && anchorWeekday(w.meeting_at) === (parseISO(todayIso).getDay() + 6) % 7);
-  const todayPioneer = snap.pioneer.filter(
-    (p) => isSameDay(p.meeting_at) || isSameDay(p.super_meeting_at),
-  );
-  const showMidweek = inVisit && snap.midweek.length > 0;
-  const showElders = inVisit && snap.elders.length > 0;
+  const todayWd = (parseISO(todayIso).getDay() + 6) % 7;
+  const pioWd = snap.templateExtras?.pioneer?.weekday ?? null;
+  const eldWd = snap.templateExtras?.elders?.weekday ?? null;
+  const todayWeekend = snap.weekend.filter((w) => inVisit && anchorWeekday(w.meeting_at) === todayWd);
+  const todayMidweek = snap.midweek.filter((m) => inVisit && anchorWeekday(m.meeting_at) === todayWd);
+  const todayPioneer = pioWd != null
+    ? (inVisit && pioWd === todayWd ? snap.pioneer : [])
+    : snap.pioneer.filter((p) => isSameDay(p.meeting_at) || isSameDay(p.super_meeting_at));
+  const todayElders = inVisit && eldWd != null && eldWd === todayWd ? snap.elders : [];
+  const showMidweek = todayMidweek.length > 0;
+  const showElders = todayElders.length > 0;
 
   const hasMeetings =
     todayWeekend.length > 0 || todayPioneer.length > 0 || showMidweek || showElders;
@@ -1013,9 +1030,9 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
           ) : (
             <>
               {showMidweek &&
-                snap.midweek.map((m) => (
+                todayMidweek.map((m) => (
                   <div key={m.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
-                    <div className="font-medium">{t("guest.today.midweek")}</div>
+                    <div className="font-medium">{t("guest.today.midweek")} • {formatAnchorWeekdayTime(m.meeting_at)}</div>
                     {m.chairman && (
                       <div className="text-xs">
                         <span className="text-muted-foreground">{t("guest.labels.chairman")}: </span>
@@ -1039,7 +1056,7 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
               {todayWeekend.map((w) => (
                 <div key={w.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
                   <div className="font-medium">
-                    {t("guest.today.weekend")} • {fmtAt(w.meeting_at)}
+                    {t("guest.today.weekend")} • {formatAnchorWeekdayTime(w.meeting_at)}
                   </div>
                   {w.public_talk_theme && (
                     <div className="text-xs">
@@ -1087,7 +1104,7 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
                 </div>
               ))}
               {showElders &&
-                snap.elders.map((e) => (
+                todayElders.map((e) => (
                   <div key={e.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
                     <div className="font-medium">{t("guest.today.elders")} • {formatWeekdayTime(snap.templateExtras?.elders?.weekday, snap.templateExtras?.elders?.meeting_time)}</div>
                     {e.theme && (
@@ -1262,7 +1279,7 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
               ))}
               {todayWeekend.map((w) => (
                 <div key={w.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
-                  <div className="font-medium">{t("guest.today.weekend")} • {fmtAt(w.meeting_at)}</div>
+                  <div className="font-medium">{t("guest.today.weekend")} • {formatAnchorWeekdayTime(w.meeting_at)}</div>
                   {w.public_talk_theme && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.publicTalk")}: </span>{w.public_talk_theme}</div>}
                   {w.talk_theme_title && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.finalTalk")}: </span>{w.talk_theme_title}</div>}
                 </div>
