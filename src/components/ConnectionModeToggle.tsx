@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useConnectionMode, setMode } from "@/lib/connection-mode";
+import { runAutoSync } from "@/lib/local-auto-sync";
 import { prefetchAllForOffline, type ProgressEvent } from "@/lib/offline-prefetch";
 import { isOfflinePrefetchFreshToday } from "@/hooks/use-offline-warmup";
 import { queueSize, flushQueue } from "@/lib/offline-queue";
@@ -121,6 +122,8 @@ function ModeSwitchDialog({
         onProgress: setProgress,
         t,
       });
+      // Mesma cópia local usada pela entrada sem internet (PIN/digital).
+      try { await runAutoSync({ force: true }); } catch { /* usa o espelho existente */ }
       setMode("offline");
       if (res.errors === 0) toast.success(t("connection.nowOffline"));
       else toast.warning(t("offline.partialToast", { n: res.errors }));

@@ -5,6 +5,13 @@
 // perfil já baixado, que também vive em `visita-sc:auth-profile:<uid>`.
 
 const KEY = "visita-sc:offline-session";
+export const OFFLINE_SESSION_EVENT = "visita-sc:offline-session";
+
+/** Avisa o app (AuthProvider) que a sessão local acabou de ser aberta. */
+export function announceOfflineSession(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(OFFLINE_SESSION_EVENT));
+}
 
 export type OfflineSession = {
   userId: string;

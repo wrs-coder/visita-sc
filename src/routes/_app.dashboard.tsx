@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { readFnWithMirrorSafe, readOneWithMirror } from "@/lib/local-first";
+import { readFnWithMirrorSafe, readOneWithMirror, readWithMirror } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -428,14 +428,17 @@ function Dashboard() {
 
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
-    supabase
-      .from("congregations")
-      .select("id,name")
-      .eq("superintendent_id", user.id)
-      .order("name")
-      .then(({ data }) => {
-        setCongs(data ?? []);
-      });
+    void readWithMirror<{ id: string; name: string; superintendent_id?: string }>({
+      table: "congregations",
+      remote: async () =>
+        await supabase
+          .from("congregations")
+          .select("id,name,superintendent_id")
+          .eq("superintendent_id", user.id)
+          .order("name"),
+      filter: (r) => r.superintendent_id === user.id,
+      sort: (a, b) => a.name.localeCompare(b.name),
+    }).then(({ rows }) => setCongs(rows.map((r) => ({ id: r.id, name: r.name }))));
   }, [role, user]);
 
   // Auto-seleção pela SEMANA VIGENTE (segunda a domingo). Roda ao montar o
@@ -451,15 +454,20 @@ function Dashboard() {
       // Visitas que se sobrepõem à semana vigente. Garante que já na
       // segunda-feira o seletor mostre a congregação cuja visita só começa
       // mais tarde na semana (ex.: terça).
-      const { data } = await supabase
-        .from("visits")
-        .select("congregation_id, start_date, end_date")
-        .lte("start_date", weekEnd)
-        .gte("end_date", weekStart)
-        .eq("is_active", true)
-        .order("start_date", { ascending: true });
+      const { rows: list } = await readWithMirror<{ congregation_id: string; start_date: string; end_date: string; is_active?: boolean }>({
+        table: "visits",
+        remote: async () =>
+          await supabase
+            .from("visits")
+            .select("congregation_id, start_date, end_date")
+            .lte("start_date", weekEnd)
+            .gte("end_date", weekStart)
+            .eq("is_active", true)
+            .order("start_date", { ascending: true }),
+        filter: (v) => v.is_active !== false && v.start_date <= weekEnd && v.end_date >= weekStart,
+        sort: (a, b) => a.start_date.localeCompare(b.start_date),
+      });
       if (cancelled) return;
-      const list = data ?? [];
       // 1º) visita que cobre HOJE; 2º) próxima a começar na semana.
       const covering = list.find((v) => v.start_date <= today && v.end_date >= today);
       const upcoming = list.find((v) => v.start_date >= today) ?? list[0];
