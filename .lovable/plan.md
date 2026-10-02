@@ -13,6 +13,7 @@ O que será feito:
 2. Sem internet, o painel e o seletor passam a usar essa cópia guardada, mostrando a congregação e permitindo trocar entre as já baixadas.
 3. Conferir, com o app sem rede, que visita, cronograma, escala, refeições e checklist aparecem a partir da cópia offline já existente; se alguma tela ainda depender só do servidor, corrigir no mesmo passo.
 4. Download por período: a cada sincronização, baixar automaticamente **todas as congregações com visita no mês atual** e também **a primeira visita do mês seguinte**, com todos os dados delas (visita, cronograma, escala, refeições, transporte, checklist, reuniões, programa de anciãos). Assim, ao trocar de congregação no seletor sem internet, os dados já estão no aparelho.
+5. Mesma estrutura nos dois modos: a entrada sem internet (PIN/digital) e o Modo Offline que você liga manualmente passam a usar o mesmo download do mês e a mesma lista de congregações guardada. Ao ligar o Modo Offline manualmente com internet, o app faz antes esse download, se ainda não tiver sido feito hoje.
 
 ## O que será feito
 1. No momento do desbloqueio por PIN ou digital, quando não houver servidor, o app passa a reconhecer o usuário **na hora**, usando o retrato de perfil guardado no cofre, e entra no Modo Offline.
