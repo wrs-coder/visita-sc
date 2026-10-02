@@ -12,3 +12,12 @@ describe("formatWeekdayTime", () => {
     expect(formatWeekdayTime(null, null)).toBe("A combinar");
   });
 });
+
+import { formatAnchorWeekdayTime } from "./report-schedule";
+describe("formatAnchorWeekdayTime", () => {
+  it("lê dia e horário da data âncora", () => {
+    expect(formatAnchorWeekdayTime(new Date("2024-01-09T19:30:00").toISOString())).toBe("Terça-feira · 19:30");
+    expect(formatAnchorWeekdayTime(new Date("2024-01-07T09:00:00").toISOString())).toBe("Domingo · 09:00");
+    expect(formatAnchorWeekdayTime(null)).toBe("A combinar");
+  });
+});

@@ -30,3 +30,22 @@ export function kvAlways(label: string, value: string | null | undefined): strin
   const v = value == null ? "" : String(value).trim();
   return `${label}: ${v || "—"}`;
 }
+
+/**
+ * Meio/Fim de semana guardam dia+hora numa data âncora (07/01/2024 = domingo
+ * + dia escolhido). Lê só o dia da semana e o horário, como a aba faz.
+ */
+export function formatAnchorWeekdayTime(iso: string | null | undefined): string {
+  if (!iso) return TO_BE_DEFINED;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return TO_BE_DEFINED;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return formatWeekdayTime((d.getDay() + 6) % 7, `${pad(d.getHours())}:${pad(d.getMinutes())}`);
+}
+
+/** Dia da semana da data âncora na ordem da aba (0 = Segunda). */
+export function anchorWeekday(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : (d.getDay() + 6) % 7;
+}

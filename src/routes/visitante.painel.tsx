@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { type ElderProgramEvent } from "@/components/visit-summary/ElderProgramReadOnly";
 import { ElderTabGate } from "@/components/visit-summary/ElderTabGate";
-import { formatWeekdayTime } from "@/components/visit-week/report-schedule";
+import { formatWeekdayTime, formatAnchorWeekdayTime, anchorWeekday } from "@/components/visit-week/report-schedule";
 
 
 export const Route = createFileRoute("/visitante/painel")({ component: Page });
@@ -279,14 +279,14 @@ function Page() {
       L.push("", `*${t("guest.sections.reunioes")}*`);
       snap.midweek.forEach((m) => {
         const parts = [t("guest.meetingsTalks.midweek")];
-        if (m.meeting_at) parts.push(format(parseISO(m.meeting_at), "dd/MM HH:mm"));
+        if (m.meeting_at) parts.push(formatAnchorWeekdayTime(m.meeting_at));
         if (m.chairman) parts.push(`${t("guest.labels.chairman")}: ${m.chairman}`);
         if (m.service_talk_theme) parts.push(`${t("guest.labels.serviceTalk")}: ${m.service_talk_theme}`);
         L.push(`• ${parts.join(" — ")}`);
       });
       snap.weekend.forEach((w) => {
         const parts = [t("guest.meetingsTalks.weekend")];
-        if (w.meeting_at) parts.push(format(parseISO(w.meeting_at), "dd/MM HH:mm"));
+        if (w.meeting_at) parts.push(formatAnchorWeekdayTime(w.meeting_at));
         if (w.public_talk_theme) parts.push(`${t("guest.labels.publicTalk")}: ${w.public_talk_theme}`);
         if (w.talk_theme_title) parts.push(w.talk_theme_title);
         L.push(`• ${parts.join(" — ")}`);
@@ -717,7 +717,8 @@ function TodayDashboard({
     : false;
 
   const isSameDay = (iso: string | null | undefined) => !!iso && iso.slice(0, 10) === viewedIso;
-  const todayWeekend = snap.weekend.filter((w) => isSameDay(w.meeting_at));
+  const viewedWeekdayEarly = (parseISO(viewedIso).getDay() + 6) % 7;
+  const todayWeekend = snap.weekend.filter((w) => inVisit && anchorWeekday(w.meeting_at) === viewedWeekdayEarly);
   // Dia da semana do dia visualizado na ordem da aba (0 = Segunda … 6 = Domingo).
   const viewedWeekday = (parseISO(viewedIso).getDay() + 6) % 7;
   const pioWd = snap.templateExtras?.pioneer?.weekday ?? null;
@@ -725,7 +726,7 @@ function TodayDashboard({
   const todayPioneer = pioWd != null
     ? (inVisit && pioWd === viewedWeekday ? snap.pioneer : [])
     : snap.pioneer.filter((p) => isSameDay(p.meeting_at) || isSameDay(p.super_meeting_at));
-  const todayMidweek = snap.midweek.filter((m) => isSameDay(m.meeting_at));
+  const todayMidweek = snap.midweek.filter((m) => inVisit && anchorWeekday(m.meeting_at) === viewedWeekday);
   const todayElders = eldWd != null
     ? (inVisit && eldWd === viewedWeekday ? snap.elders : [])
     : snap.elders.filter((e) => isSameDay(e.meeting_at));
@@ -1108,7 +1109,7 @@ function SharePreview({ snap, selected, fmtDate, mealLabel }: { snap: Snapshot; 
         >
           {snap.midweek.map((m) => (
             <div key={`mw-${m.id}`} className="py-1 border-b border-gray-100 last:border-0">
-              <div className="font-medium">{t("guest.meetingsTalks.midweek")}{m.meeting_at ? ` • ${format(parseISO(m.meeting_at), "dd/MM HH:mm")}` : ""}</div>
+              <div className="font-medium">{t("guest.meetingsTalks.midweek")}{m.meeting_at ? ` • ${formatAnchorWeekdayTime(m.meeting_at)}` : ""}</div>
               {m.chairman && <div className="text-xs">{t("guest.labels.chairman")}: {m.chairman}</div>}
               {m.service_talk_theme && <div className="text-xs">{t("guest.labels.serviceTalk")}: {m.service_talk_theme}</div>}
               {m.closing_prayer && <div className="text-xs">{t("guest.labels.closingPrayer")}: {m.closing_prayer}</div>}
@@ -1116,7 +1117,7 @@ function SharePreview({ snap, selected, fmtDate, mealLabel }: { snap: Snapshot; 
           ))}
           {snap.weekend.map((w) => (
             <div key={`we-${w.id}`} className="py-1 border-b border-gray-100 last:border-0">
-              <div className="font-medium">{t("guest.meetingsTalks.weekend")}{w.meeting_at ? ` • ${format(parseISO(w.meeting_at), "dd/MM HH:mm")}` : ""}</div>
+              <div className="font-medium">{t("guest.meetingsTalks.weekend")}{w.meeting_at ? ` • ${formatAnchorWeekdayTime(w.meeting_at)}` : ""}</div>
               {w.public_talk_theme && <div className="text-xs">{t("guest.labels.publicTalk")}: {w.public_talk_theme}</div>}
               {w.talk_theme_title && <div className="text-xs">{t("guest.labels.finalTalk")}: {w.talk_theme_title}</div>}
             </div>
@@ -1387,7 +1388,7 @@ function WifeCouplePanel({ code }: { code: string }) {
 function MeetingsTalksGuestPanel({ snap, fmtDate }: { snap: Snapshot; fmtDate: (d: string) => string }) {
   const { t } = useTranslation();
   const fmtIso = (iso: string | null | undefined) =>
-    iso ? format(parseISO(iso), "dd/MM HH:mm") : null;
+    formatAnchorWeekdayTime(iso);
 
   const sections: Array<{ key: string; title: string; icon: React.ReactNode; empty: boolean; content: React.ReactNode }> = [
     {
