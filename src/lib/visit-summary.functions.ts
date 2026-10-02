@@ -239,6 +239,19 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
       local: mapRows(epLoc.data),
     };
 
+    const { data: vLinks } = await supabase
+      .from("visits")
+      .select("meeting_talk_template_id,field_meeting_template_id,template_id")
+      .eq("id", visit.id)
+      .maybeSingle();
+    const { loadMergedVisitExtras } = await import("./visit-template-extras.server");
+    const templateExtras = await loadMergedVisitExtras(supabase, {
+      id: visit.id,
+      meeting_talk_template_id: vLinks?.meeting_talk_template_id ?? null,
+      field_meeting_template_id: vLinks?.field_meeting_template_id ?? null,
+      template_id: vLinks?.template_id ?? null,
+    });
+
     const payload = {
       ok: true as const,
       wifeMode: false,
@@ -256,6 +269,7 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
       pioneer: pioneer ?? [],
       elders: elders ?? [],
       elderProgram,
+      templateExtras,
     };
     return JSON.parse(JSON.stringify(payload)) as typeof payload;
   });
