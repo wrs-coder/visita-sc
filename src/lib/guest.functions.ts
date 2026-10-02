@@ -199,8 +199,8 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       supabaseAdmin.from("schedule_events").select("id,event_date,start_time,end_time,title,location,type,notes").eq("visit_id", visit.id).eq("is_active", true).order("event_date").order("start_time"),
       supabaseAdmin.from("meals").select("id,meal_date,type,host_name,location,meal_time,contact_phone,notes").eq("visit_id", visit.id).eq("is_active", true).order("meal_date"),
       supabaseAdmin.from("meal_day_notes").select("meal_date,notes").eq("visit_id", visit.id),
-      supabaseAdmin.from("field_assignments").select("id,event_date,period,meeting_point,meeting_time,acompanhante,acompanhante_for,contact_phone").eq("visit_id", visit.id).eq("is_active", true).order("event_date"),
-      supabaseAdmin.from("field_meetings").select("id,event_date,period,modality,meeting_time,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations").eq("visit_id", visit.id).eq("is_active", true).order("event_date").order("period"),
+      supabaseAdmin.from("field_assignments").select("id,event_date,period,meeting_point,meeting_time,acompanhante,acompanhante_for,contact_phone,notes").eq("visit_id", visit.id).eq("is_active", true).order("event_date"),
+      supabaseAdmin.from("field_meetings").select("id,event_date,period,modality,meeting_time,meeting_location,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations").eq("visit_id", visit.id).eq("is_active", true).order("event_date").order("period"),
       supabaseAdmin.from("transport_schedule").select("id,event_date,weekday,event_type,direction,all_day,departure_time,return_time,driver_name,contact_phone,description,notes").eq("visit_id", visit.id).eq("is_active", true).order("event_date"),
       wifeMode
         ? Promise.resolve({ data: [] as Array<{ id: string; title: string; description: string | null; status: string; link_or_notes: string | null; info_text: string | null }> })
@@ -219,51 +219,10 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       return (a.start_time ?? "").localeCompare(b.start_time ?? "");
     });
 
-    // Load read-only "from template" extras (observations + weekend songs +
-    // program general observations). Elders' observations are hidden in
-    // wifeMode (spouse panel).
-    const [
-      { data: fmTpl },
-      { data: mtRoot },
-      { data: mtMid },
-      { data: mtPio },
-      { data: mtEld },
-      { data: progTpl },
-    ] = await Promise.all([
-      visit.field_meeting_template_id
-        ? supabaseAdmin.from("field_meeting_templates").select("observations").eq("id", visit.field_meeting_template_id).maybeSingle()
-        : Promise.resolve({ data: null }),
-      visit.meeting_talk_template_id
-        ? supabaseAdmin.from("meeting_talk_templates").select("weekend_opening_song,weekend_closing_song,weekend_observations").eq("id", visit.meeting_talk_template_id).maybeSingle()
-        : Promise.resolve({ data: null }),
-      visit.meeting_talk_template_id
-        ? supabaseAdmin.from("meeting_talk_template_midweek").select("observations").eq("template_id", visit.meeting_talk_template_id).maybeSingle()
-        : Promise.resolve({ data: null }),
-      visit.meeting_talk_template_id
-        ? supabaseAdmin.from("meeting_talk_template_pioneer").select("observations").eq("template_id", visit.meeting_talk_template_id).maybeSingle()
-        : Promise.resolve({ data: null }),
-      visit.meeting_talk_template_id && !wifeMode
-        ? supabaseAdmin.from("meeting_talk_template_elders").select("observations").eq("template_id", visit.meeting_talk_template_id).maybeSingle()
-        : Promise.resolve({ data: null }),
-      visit.template_id
-        ? supabaseAdmin.from("program_templates").select("general_observations").eq("id", visit.template_id).maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
-
-    const templateExtras = {
-      field: fmTpl ? { observations: (fmTpl as { observations: string | null }).observations ?? null } : null,
-      midweek: mtMid ? { observations: (mtMid as { observations: string | null }).observations ?? null } : null,
-      weekend: mtRoot
-        ? {
-            opening_song: (mtRoot as { weekend_opening_song: string | null }).weekend_opening_song ?? null,
-            closing_song: (mtRoot as { weekend_closing_song: string | null }).weekend_closing_song ?? null,
-            observations: (mtRoot as { weekend_observations: string | null }).weekend_observations ?? null,
-          }
-        : null,
-      pioneer: mtPio ? { observations: (mtPio as { observations: string | null }).observations ?? null } : null,
-      elders: mtEld ? { observations: (mtEld as { observations: string | null }).observations ?? null } : null,
-      program: progTpl ? { general_observations: (progTpl as { general_observations: string | null }).general_observations ?? null } : null,
-    };
+    // Extras dos modelos + ajustes da visita (mesma regra da aba).
+    // Observações e horário dos anciãos ficam ocultos no wifeMode.
+    const { loadMergedVisitExtras } = await import("./visit-template-extras.server");
+    const templateExtras = await loadMergedVisitExtras(supabaseAdmin, visit, { includeElders: !wifeMode });
 
     // Programa de Anciãos (Pastoreios / Encorajamento / Recomendações / Assuntos locais).
     // Visível apenas no modo anciãos/ESC (não wifeMode).
