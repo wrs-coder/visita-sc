@@ -3,7 +3,7 @@
 // superintendente. Aceita o mesmo shape de Snapshot e expõe export
 // PDF/PNG/WhatsApp via `saveBlob` (estabilidade nativa: nada de download
 // automático no navegador no APK).
-import { formatWeekdayTime } from "@/components/visit-week/report-schedule";
+import { formatWeekdayTime, formatAnchorWeekdayTime, anchorWeekday } from "@/components/visit-week/report-schedule";
 import type { VisitTemplateExtras } from "@/lib/visit-template-extras.shared";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -815,7 +815,7 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
     : false;
 
   const isSameDay = (iso: string | null) => !!iso && iso.slice(0, 10) === todayIso;
-  const todayWeekend = snap.weekend.filter((w) => isSameDay(w.meeting_at));
+  const todayWeekend = snap.weekend.filter((w) => inVisit && anchorWeekday(w.meeting_at) === (parseISO(todayIso).getDay() + 6) % 7);
   const todayPioneer = snap.pioneer.filter(
     (p) => isSameDay(p.meeting_at) || isSameDay(p.super_meeting_at),
   );

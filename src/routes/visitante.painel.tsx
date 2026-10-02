@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { type ElderProgramEvent } from "@/components/visit-summary/ElderProgramReadOnly";
 import { ElderTabGate } from "@/components/visit-summary/ElderTabGate";
-import { formatWeekdayTime } from "@/components/visit-week/report-schedule";
+import { formatWeekdayTime, formatAnchorWeekdayTime, anchorWeekday } from "@/components/visit-week/report-schedule";
 
 
 export const Route = createFileRoute("/visitante/painel")({ component: Page });
