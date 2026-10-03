@@ -90,11 +90,11 @@ export async function checkForAppUpdate(opts?: { force?: boolean }): Promise<Upd
         signal: controller.signal,
       });
       if (!response.ok) return null;
-      payload = (await response.json()) as typeof payload;
+      payload = (await response.json()) as VersionPayload;
     } else {
       const response = await fetch(url, { cache: "no-store", signal: controller.signal });
       if (!response.ok) return null;
-      payload = (await response.json()) as typeof payload;
+      payload = (await response.json()) as VersionPayload;
     }
 
     const latest = typeof payload?.latest === "string" ? payload.latest : null;
