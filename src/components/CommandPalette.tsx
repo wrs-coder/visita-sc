@@ -261,8 +261,7 @@ export function CommandPalette() {
             <CommandItem
               value="logout sair"
               onSelect={() => run(async () => {
-                await signOut();
-                navigate({ to: "/" });
+                if (await signOut()) navigate({ to: "/" });
               })}
             >
               <LogOut className="mr-2 h-4 w-4" />

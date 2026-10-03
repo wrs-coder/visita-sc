@@ -144,6 +144,12 @@ async function writeRecord(rec: VaultRecord): Promise<void> {
 export async function clearVault(): Promise<void> {
   if (typeof window === "undefined") return;
   memoryKey = null;
+  // 1) Dados do aparelho primeiro — nunca dependem do plugin nativo.
+  try {
+    localStorage.removeItem(VAULT_KEY);
+  } catch {
+    /* noop */
+  }
   try {
     const { clearOfflineSession } = await import("@/lib/offline-session");
     clearOfflineSession();
@@ -151,21 +157,20 @@ export async function clearVault(): Promise<void> {
     /* noop */
   }
   try {
-    const { disableBiometric } = await import("@/lib/biometric-unlock");
-    await disableBiometric();
-  } catch {
-    /* sem plugin nativo */
-  }
-  try {
     const { del } = await import("idb-keyval");
     await del(VAULT_KEY);
   } catch {
     /* noop */
   }
+  // 2) Chave da biometria, com limite de tempo para não travar no APK.
   try {
-    localStorage.removeItem(VAULT_KEY);
+    const { disableBiometric } = await import("@/lib/biometric-unlock");
+    await Promise.race([
+      disableBiometric(),
+      new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+    ]);
   } catch {
-    /* noop */
+    /* sem plugin nativo */
   }
 }
 
