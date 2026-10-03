@@ -315,7 +315,7 @@ function AppLayout() {
             <SyncButton onSync={syncOutlines} />
             <button
               onClick={() => {
-                signOut().then((ok) => { if (ok) nav({ to: "/auth" as never }); });
+                signOut().then((ok) => { if (ok) nav({ to: "/" }); });
               }}
               className="p-2 rounded-md hover:bg-white/10"
               aria-label={t("sidebar.logout")}
@@ -351,7 +351,7 @@ function AppLayout() {
             <Button
               variant="ghost"
               className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/60"
-              onClick={() => signOut().then((ok) => { if (ok) nav({ to: "/auth" as never }); })}
+              onClick={() => signOut().then((ok) => { if (ok) nav({ to: "/" }); })}
             >
               <LogOut className="mr-2 h-4 w-4" /> {t("sidebar.logout")}
             </Button>

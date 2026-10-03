@@ -94,7 +94,7 @@ function Page() {
                 <Input id="code" required value={code} onChange={(e) => setCode(e.target.value)} placeholder={t("onboarding.codePlaceholder")} />
               </div>
               <div className="flex gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => signOut().then((ok) => { if (ok) nav({ to: "/auth" as never }); })} className="flex-1">{t("onboarding.exit")}</Button>
+                <Button type="button" variant="outline" onClick={() => signOut().then((ok) => { if (ok) nav({ to: "/" }); })} className="flex-1">{t("onboarding.exit")}</Button>
                 <Button type="submit" disabled={busy} className="flex-1">{busy ? t("onboarding.wait") : t("onboarding.continue")}</Button>
               </div>
             </form>

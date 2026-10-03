@@ -190,9 +190,16 @@ export function OfflinePinCard() {
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
-                await clearVault();
-                reload();
-                toast.success(t("offlinePin.removed"));
+                try {
+                  await clearVault();
+                  const left = await getVaultMeta();
+                  setMeta(left);
+                  if (left) throw new Error("still-there");
+                  setBioOn(false);
+                  toast.success(t("offlinePin.removed"));
+                } catch {
+                  toast.error(t("offlinePin.removeFailed"));
+                }
               }}
             >
               {t("offlinePin.remove")}
