@@ -47,7 +47,7 @@ interface AuthContextValue {
   congregation: Congregation | null;
   needsOnboarding: boolean;
   refresh: () => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
