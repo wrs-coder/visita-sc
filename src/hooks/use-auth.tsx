@@ -232,23 +232,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refresh = async () => { await loadUserData(user?.id); };
-  const signOut = async () => {
-    // Em Modo Offline, NUNCA executar logout — sem internet, o usuário não
-    // conseguirá voltar a entrar (primeiro login exige rede).
-    if (isOfflineMode()) {
+  const signOut = async (): Promise<boolean> => {
+    const online = typeof navigator === "undefined" || navigator.onLine !== false;
+    // Sem internet, NUNCA executar logout — o usuário não conseguiria voltar.
+    if (isOfflineMode() && !online) {
       try {
         toast.warning(i18n.t("connection.cannotLogoutOffline"));
       } catch { /* noop */ }
-      return;
+      return false;
     }
-    // Marca intenção deliberada — o listener acima usa esta flag para
-    // distinguir um logout real do botão "Sair" de um SIGNED_OUT espúrio
-    // disparado por refresh-token vencido.
+    // Com internet: desliga o Modo Offline (ex.: ligado pela entrada via PIN)
+    // e tenta enviar alterações pendentes antes de sair.
+    if (isOfflineMode()) setMode("online");
+    try {
+      const { flushQueue } = await import("@/lib/offline-queue");
+      await flushQueue();
+    } catch { /* segue com a saída */ }
     try { sessionStorage.setItem("visita-sc:logout-intent", "1"); } catch { /* noop */ }
-    // Sair do aplicativo apaga o cofre de acesso offline deste aparelho.
     try { await clearVault(); } catch { /* noop */ }
     clearOfflineSession();
-    await supabase.auth.signOut();
+    try { await supabase.auth.signOut(); } catch { /* sessão local já limpa abaixo */ }
+    // Entrada via PIN não tem sessão do servidor: limpa o estado manualmente.
+    setSession(null); setUser(null);
+    setProfile(null); setRole(null); setElderPosition(null); setCongregation(null);
+    setLoading(false);
+    return true;
   };
 
   // Super may have role but no active congregation yet — that's NOT onboarding,
