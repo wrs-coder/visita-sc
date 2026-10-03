@@ -1767,5 +1767,17 @@
   "bibleHistory": {
     "title": "Recent lookups",
     "clear": "Clear"
+  },
+  "appUpdate": {
+    "availableTitle": "New version available",
+    "availableDesc": "Version {{latest}} is already on the Play Store.",
+    "requiredTitle": "Important update",
+    "requiredDesc": "Your version ({{current}}) is too old. Update to keep everything working.",
+    "updateNow": "Update",
+    "later": "Not now"
+  },
+  "connectionBanner": {
+    "dismiss": "Minimize notice",
+    "reopen": "Show connection notice"
   }
 }
