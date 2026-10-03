@@ -3,7 +3,8 @@
 // aviso claro com botão "tentar novamente" e o resultado de cada endereço.
 // No site (navegador) o componente não faz nada.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, RefreshCw, WifiOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { ChevronDown, RefreshCw, WifiOff, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,10 +20,13 @@ const FAILURES_BEFORE_WARNING = 2;
 const RETRY_DELAY_MS = 10000;
 
 export function AppOriginDiagnostics() {
+  const { t } = useTranslation();
   const [unreachable, setUnreachable] = useState(false);
   const [checking, setChecking] = useState(false);
   const [details, setDetails] = useState<OriginProbeResult[]>([]);
   const [showDetails, setShowDetails] = useState(false);
+  // Banner minimizado pelo usuário — vale só para a sessão atual.
+  const [dismissed, setDismissed] = useState(false);
   const failures = useRef(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
