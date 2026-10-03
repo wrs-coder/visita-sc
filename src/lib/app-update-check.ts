@@ -79,7 +79,8 @@ export async function checkForAppUpdate(opts?: { force?: boolean }): Promise<Upd
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     const url = resolveApiUrl("/api/public/version");
-    let payload: { latest?: string; minSupported?: string } | null = null;
+    type VersionPayload = { latest?: string; minSupported?: string };
+    let payload: VersionPayload | null = null;
 
     if (isNativeApp()) {
       const { nativeHttpRequest } = await import("@/lib/native-http");
