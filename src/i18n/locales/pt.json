@@ -324,6 +324,7 @@
     "scope": "Evento com",
     "selectCongregations": "Selecionar congregações",
     "visibleToSpouse": "Ocultar para Esposa",
+    "hideNotesFromSpouse": "Ocultar observações da Esposa",
     "complete": "Concluir",
     "postpone": "Adiar",
     "postponeTo": "Adiar para",
@@ -1767,5 +1768,17 @@
   "bibleHistory": {
     "title": "Consultas recentes",
     "clear": "Limpar"
+  },
+  "appUpdate": {
+    "availableTitle": "Nova versão disponível",
+    "availableDesc": "A versão {{latest}} já está na Play Store.",
+    "requiredTitle": "Atualização importante",
+    "requiredDesc": "Sua versão ({{current}}) ficou antiga demais. Atualize para continuar com tudo funcionando.",
+    "updateNow": "Atualizar",
+    "later": "Agora não"
+  },
+  "connectionBanner": {
+    "dismiss": "Minimizar aviso",
+    "reopen": "Mostrar aviso de conexão"
   }
 }

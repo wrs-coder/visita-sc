@@ -3,7 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { isOfflineMode, setMode } from "@/lib/connection-mode";
-import { clearOfflineSession, readOfflineSession } from "@/lib/offline-session";
+import { clearOfflineSession, readOfflineSession, OFFLINE_SESSION_EVENT } from "@/lib/offline-session";
 import { sameLocalDay } from "@/lib/local-day";
 import { ensureLocalDataOwner } from "@/lib/local-owner";
 import { clearVault, touchVaultOnline, updateVaultProfile } from "@/lib/offline-credentials";
@@ -189,27 +189,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setTimeout(() => loadUserData(s?.user?.id), 0);
       }
     });
+    // Sem sessão do servidor, mas com o cofre offline aberto neste aparelho:
+    // reconhece o usuário a partir do retrato local já baixado.
+    const enterOfflineSession = (): boolean => {
+      const local = readOfflineSession();
+      if (!local || !getCachedUserData(local.userId)) return false;
+      setMode("offline");
+      setSession(null);
+      setUser({
+        id: local.userId,
+        email: local.email ?? undefined,
+        app_metadata: {},
+        user_metadata: {},
+        aud: "authenticated",
+        created_at: new Date(local.at).toISOString(),
+      } as User);
+      hydrateCachedUserData(local.userId);
+      setLoading(false);
+      return true;
+    };
+    const onOfflineSession = () => { enterOfflineSession(); };
+    window.addEventListener(OFFLINE_SESSION_EVENT, onOfflineSession);
+
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      // Sem sessão do servidor, mas com o cofre offline aberto neste aparelho:
-      // reconhece o usuário a partir do retrato local já baixado.
-      if (!s) {
-        const local = readOfflineSession();
-        if (local && getCachedUserData(local.userId)) {
-          setMode("offline");
-          setSession(null);
-          setUser({
-            id: local.userId,
-            email: local.email ?? undefined,
-            app_metadata: {},
-            user_metadata: {},
-            aud: "authenticated",
-            created_at: new Date(local.at).toISOString(),
-          } as User);
-          hydrateCachedUserData(local.userId);
-          setLoading(false);
-          return;
-        }
-      }
+      if (!s && enterOfflineSession()) return;
       setSession(s);
       setUser(s?.user ?? null);
       // Renova o prazo do acesso offline sempre que há sessão válida.
@@ -222,7 +225,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loadUserData(s?.user?.id).finally(() => setLoading(false));
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener(OFFLINE_SESSION_EVENT, onOfflineSession);
+    };
   }, []);
 
   const refresh = async () => { await loadUserData(user?.id); };

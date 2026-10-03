@@ -141,7 +141,7 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
         .order("created_at"),
       supabase
         .from("midweek_meetings")
-        .select("id,chairman,service_talk_theme,closing_prayer")
+        .select("id,meeting_at,chairman,service_talk_theme,closing_prayer")
         .eq("visit_id", visit.id),
       supabase
         .from("weekend_meetings")
@@ -155,7 +155,7 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
         .order("meeting_at"),
       supabase
         .from("elders_servants_meetings")
-        .select("id,theme,opening_prayer,closing_prayer")
+        .select("id,meeting_at,location,theme,opening_prayer,closing_prayer")
         .eq("visit_id", visit.id),
     ]);
 
@@ -239,6 +239,19 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
       local: mapRows(epLoc.data),
     };
 
+    const { data: vLinks } = await supabase
+      .from("visits")
+      .select("meeting_talk_template_id,field_meeting_template_id,template_id")
+      .eq("id", visit.id)
+      .maybeSingle();
+    const { loadMergedVisitExtras } = await import("./visit-template-extras.server");
+    const templateExtras = await loadMergedVisitExtras(supabase, {
+      id: visit.id,
+      meeting_talk_template_id: vLinks?.meeting_talk_template_id ?? null,
+      field_meeting_template_id: vLinks?.field_meeting_template_id ?? null,
+      template_id: vLinks?.template_id ?? null,
+    });
+
     const payload = {
       ok: true as const,
       wifeMode: false,
@@ -256,6 +269,7 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
       pioneer: pioneer ?? [],
       elders: elders ?? [],
       elderProgram,
+      templateExtras,
     };
     return JSON.parse(JSON.stringify(payload)) as typeof payload;
   });
