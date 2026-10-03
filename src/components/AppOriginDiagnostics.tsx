@@ -39,6 +39,7 @@ export function AppOriginDiagnostics() {
         failures.current = 0;
         setUnreachable(false);
         setDetails([]);
+        setDismissed(false);
       } else {
         failures.current += 1;
         const failing = failures.current >= FAILURES_BEFORE_WARNING;
@@ -82,6 +83,20 @@ export function AppOriginDiagnostics() {
 
   if (!unreachable) return null;
 
+  // Banner minimizado: resta só um indicador flutuante que reabre o aviso.
+  if (dismissed) {
+    return (
+      <button
+        type="button"
+        onClick={() => setDismissed(false)}
+        aria-label={t("connectionBanner.reopen", "Mostrar aviso de conexão")}
+        className="fixed bottom-4 right-4 z-[150] flex size-9 items-center justify-center rounded-full border border-border bg-card/95 text-muted-foreground shadow-md backdrop-blur transition hover:scale-105 active:scale-95"
+      >
+        <WifiOff className="size-4" aria-hidden />
+      </button>
+    );
+  }
+
   return (
     <div className="fixed inset-x-0 bottom-0 z-[150] border-t border-border bg-card/95 px-4 py-3 backdrop-blur">
       <div className="mx-auto flex max-w-md flex-col gap-2">
@@ -93,6 +108,14 @@ export function AppOriginDiagnostics() {
           <Button size="sm" variant="outline" disabled={checking} onClick={() => void check()}>
             <RefreshCw className={checking ? "size-4 animate-spin" : "size-4"} aria-hidden />
             Tentar
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label={t("connectionBanner.dismiss", "Minimizar aviso")}
+            onClick={() => setDismissed(true)}
+          >
+            <X className="size-4" aria-hidden />
           </Button>
         </div>
 

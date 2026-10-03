@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PwaRegister } from "@/components/PwaRegister";
 import { OfflineStatusBar } from "@/components/OfflineStatusBar";
 import { AppOriginDiagnostics } from "@/components/AppOriginDiagnostics";
+import { AppUpdatePrompt } from "@/components/AppUpdatePrompt";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { armBootGuard, markAppMounted } from "@/lib/boot-guard";
 import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-persister";
@@ -260,6 +261,7 @@ function RootComponent() {
         <PwaRegister />
         <OfflineStatusBar />
         <AppOriginDiagnostics />
+        <AppUpdatePrompt />
         <Outlet />
         <Toaster richColors position="top-center" />
       </AuthProvider>
