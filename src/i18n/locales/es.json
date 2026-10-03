@@ -1733,7 +1733,8 @@
     "biometricHint": "Atajo solo en este dispositivo. El PIN de 6 dígitos sigue siendo la vía garantizada.",
     "biometricEnable": "Activar",
     "confirmPinTitle": "Confirma tu PIN",
-    "confirmPinDesc": "Escribe el PIN de 6 dígitos para activar la huella en este dispositivo."
+    "confirmPinDesc": "Escribe el PIN de 6 dígitos para activar la huella en este dispositivo.",
+    "removeFailed": "No se pudo quitar el acceso sin conexión. Inténtalo de nuevo."
   },
   "bibleRef": {
     "notFound": "Referencia no encontrada",

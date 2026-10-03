@@ -1759,7 +1759,8 @@
     "biometricHint": "Atalho apenas neste aparelho. O PIN de 6 dígitos continua sendo o caminho garantido de entrada.",
     "biometricEnable": "Ativar",
     "confirmPinTitle": "Confirme seu PIN",
-    "confirmPinDesc": "Digite o PIN de 6 dígitos para liberar a digital neste aparelho."
+    "confirmPinDesc": "Digite o PIN de 6 dígitos para liberar a digital neste aparelho.",
+    "removeFailed": "Não foi possível remover o acesso offline. Tente novamente."
   },
   "bibleRef": {
     "notFound": "Referência não encontrada",

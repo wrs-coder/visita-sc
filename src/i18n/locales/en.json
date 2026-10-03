@@ -1758,7 +1758,8 @@
     "biometricHint": "Shortcut for this device only. The 6-digit PIN remains the guaranteed way in.",
     "biometricEnable": "Enable",
     "confirmPinTitle": "Confirm your PIN",
-    "confirmPinDesc": "Enter the 6-digit PIN to enable fingerprint on this device."
+    "confirmPinDesc": "Enter the 6-digit PIN to enable fingerprint on this device.",
+    "removeFailed": "Could not remove offline access. Please try again."
   },
   "bibleRef": {
     "notFound": "Reference not found",
