@@ -27,3 +27,11 @@ Hoje o visualizador de fotos não tem zoom próprio. Quando o zoom "funciona", �
 - O zoom passa a funcionar sempre: **pinça com dois dedos** para aproximar e afastar, **toque duplo** para alternar entre 2x e o tamanho normal, e **arrastar** para mover a foto com zoom. No computador, também com a **roda do mouse**.
 - Botões **+ / − / tamanho normal** no visualizador. O zoom volta ao normal ao trocar de foto ou fechar.
 - Técnico: `react-zoom-pan-pinch` (`TransformWrapper`/`TransformComponent`) em `AttachmentLightbox.tsx`, com `touch-action: none` na área da foto, zoom entre 1x e 5x e `doubleClick` com zoom.
+
+## Tópicos recolhíveis nos esboços (incluído)
+- No modo edição, selecione um trecho e toque em **"Criar tópico"** na barra de ferramentas. O trecho vira um bloco com um título curto e uma setinha. Você pode **renomear** e **desfazer** o tópico ("Remover tópico" mantém o texto).
+- Nos modos esboço, imersivo e tela cheia, tocar na setinha **recolhe ou expande** o tópico. Ao recolher, fica só o título com um resumo discreto, por exemplo "6 linhas".
+- Botões **"Recolher todos" / "Expandir todos"** no topo do esboço.
+- **O estado fica salvo neste aparelho**: o esboço reabre do jeito que você deixou.
+- Esboços antigos continuam iguais até você criar tópicos.
+- Técnico: novo nó TipTap `outlineTopic` (bloco com `id` e `title`, conteúdo `block+`), usando `<details>`/`<summary>` na renderização. O comando `wrapIn` vem da seleção em `RichNoteToolbar.tsx`. O mesmo nó entra em `RichNoteEditor.tsx` e no renderizador de leitura `rich-content.tsx`. O estado de recolhido fica no localStorage por esboço e por tópico (`outline-collapse:${noteId}`). O conteúdo continua no mesmo `content_json`, sem mudança no banco. Testes de renderização e do round-trip do nó.
