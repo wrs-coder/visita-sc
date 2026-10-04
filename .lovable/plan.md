@@ -1,29 +1,23 @@
-# Vídeo nos esboços (app Android): guardar só a referência e abrir no player do celular
+# Vídeo nos esboços (app Android): cópia segura em partes + abertura no player do celular
 
-## O que acontece hoje
-No app instalado, o anexo de vídeo não guarda só o caminho. Ele tenta **copiar o vídeo inteiro** para dentro do app. Para isso, transforma o arquivo todo em texto de uma vez e manda pela ponte com o Android. Essa etapa falha com vídeos médios ou grandes, mesmo com espaço livre no aparelho. O app então tenta um segundo local de armazenamento, que também falha, e aparece "Não foi possível adicionar o anexo". As fotos já tiveram a mesma falha pelo mesmo motivo. No navegador (PWA) o caminho é outro, e por isso lá funciona.
+## Por que falha hoje
+No app instalado, o vídeo é copiado para dentro do app, mas de um jeito ruim: o arquivo inteiro vira texto de uma vez e passa de uma só vez pela ponte com o Android. Isso estoura o limite da ponte, mesmo com bastante memória livre no celular, e aparece "Não foi possível adicionar o anexo". As fotos já tiveram a mesma falha antes. No PWA o caminho é outro, e por isso funciona.
 
-A seleção de arquivos que o app usa hoje não dá acesso ao caminho real do vídeo no celular, só ao conteúdo. Por isso o app acabava copiando.
+## Recomendação (mais robusta a longo prazo)
+Guardar só o caminho do vídeo é frágil: o anexo quebra se o vídeo for movido, apagado ou "limpo" pela galeria, ou se o Android revogar a permissão. Por isso, o melhor é **manter a cópia dentro do app, mas feita do jeito certo**:
 
-## O que será feito
-1. **No app Android, o vídeo não será mais copiado.** Ao tocar em "Anexar vídeo", abre o seletor de arquivos do Android. O app guarda só a referência ao vídeo, com permissão permanente de leitura, mais o nome e o tamanho para mostrar no cartão.
-2. **Reprodução no player nativo do Android.** Ao tocar no anexo, o vídeo abre no aplicativo de vídeo do celular, e não mais dentro do app.
-3. **Se o vídeo for apagado ou movido** no celular, o cartão mostra "Vídeo não encontrado neste aparelho" e oferece remover o anexo. O app não trava.
-4. **Sem limite de 200 MB** no app Android, porque nada é copiado.
-5. **PWA/navegador sem mudança**: continua funcionando como hoje.
-6. Vídeos já anexados que foram copiados continuam abrindo como antes.
+1. **Cópia em partes pequenas** (cerca de 1 MB por vez). O consumo de memória fica baixo e estável, e a ponte nunca estoura. Funciona até o limite de 200 MB.
+2. **Reprodução no player nativo do Android**: ao tocar no anexo, o vídeo abre no aplicativo de vídeo do celular, a partir da cópia guardada no app.
+3. **Cópia que não fica pela metade**: se faltar espaço ou algo falhar, o arquivo incompleto é apagado e aparece uma mensagem clara, como "Pouco espaço no aparelho" ou "Falha ao gravar o vídeo".
+4. **Progresso visível** ("Gravando… 45%") enquanto o vídeo é copiado.
+5. **A mesma correção vale para fotos grandes**, para a falha antiga não voltar.
+6. Anexos antigos continuam abrindo. O PWA não muda.
 7. Versão **4.2.13 / versionCode 23**. A versão anunciada como nova só muda depois que a Play Store aprovar.
 
-Fotos, links, Bíblia, login e PIN não mudam.
-
-## Atenção
-- Como só a referência fica guardada, apagar ou mover o vídeo no celular faz o anexo parar de abrir.
-- A referência vale só neste aparelho. Ao sincronizar, o anexo aparece nos outros aparelhos como indisponível.
+O vídeo fica salvo de verdade no app, então não depende de você manter o arquivo original. Em troca, ocupa espaço no celular. Ao remover o anexo, a cópia é apagada.
 
 ## Detalhes técnicos
-- Novos plugins: `@capawesome/capacitor-file-picker` (`pickVideos`, que devolve um `content://` com permissão persistente) e `@capawesome-team/capacitor-file-opener` (`openFile` com `mimeType`, que abre via Intent ACTION_VIEW). Depois, rodar `npx cap sync android`.
-- `outline-attachments.ts`: novo `storage: "ref"` com `path = content://...`, mais `name`/`size`. Novo `pickNativeVideoReference()`. `openLocalVideo(a)` usa o FileOpener para `ref` e `fs`. A verificação de existência é feita no momento de abrir. `normalizeAttachment` aceita `ref`, e `deleteFileAttachment` ignora `ref` (o arquivo do usuário nunca é apagado).
-- `AttachmentAddDialog.tsx`: no app nativo, o modo `videoFile` troca o campo de arquivo por um botão "Escolher vídeo" ligado ao plugin. No web, nada muda.
-- `OutlineAttachmentsBar.tsx`: no app nativo, o toque no vídeo chama `openLocalVideo` em vez de abrir o lightbox. Se der erro, mostra o estado de indisponível.
-- Traduções pt/en/es. Testes de normalização e do round-trip com `ref`. Typecheck e testes.
-- Fora do plano (modo planejamento): registrar a tarefa no roadmap quando a implementação começar.
+- `outline-attachments.ts`: `writeLocalFile` nativo passa a gravar em pedaços. O primeiro vai com `Filesystem.writeFile` e os seguintes com `Filesystem.appendFile`. Cada pedaço vem de `blob.slice()` com tamanho múltiplo de 3 bytes, para o base64 continuar válido. Aceita `onProgress`. Para vídeo, no app nativo, não há mais fallback para IndexedDB. Em caso de erro, roda `deleteFile` e lança `VIDEO_WRITE_FAILED` ou `STORAGE_FULL`.
+- Novo plugin `@capawesome-team/capacitor-file-opener`: `openLocalVideo(a)` pega o caminho com `Filesystem.getUri` e chama `openFile({ path, mimeType })`. Se falhar, usa o lightbox atual.
+- `AttachmentAddDialog.tsx`: mostra o progresso e as novas mensagens de erro. `OutlineAttachmentsBar.tsx`: no app nativo, o toque no vídeo abre o player do Android.
+- Traduções pt/en/es. Teste da divisão em pedaços (o base64 juntado é igual ao original). Typecheck e testes. Depois, rodar `npx cap sync android`.
