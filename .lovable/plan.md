@@ -21,3 +21,9 @@ O vídeo fica salvo de verdade no app, então não depende de você manter o arq
 - Novo plugin `@capawesome-team/capacitor-file-opener`: `openLocalVideo(a)` pega o caminho com `Filesystem.getUri` e chama `openFile({ path, mimeType })`. Se falhar, usa o lightbox atual.
 - `AttachmentAddDialog.tsx`: mostra o progresso e as novas mensagens de erro. `OutlineAttachmentsBar.tsx`: no app nativo, o toque no vídeo abre o player do Android.
 - Traduções pt/en/es. Teste da divisão em pedaços (o base64 juntado é igual ao original). Typecheck e testes. Depois, rodar `npx cap sync android`.
+
+## Zoom nas fotos (incluído)
+Hoje o visualizador de fotos não tem zoom próprio. Quando o zoom "funciona", é o zoom da página inteira, que o celular às vezes permite e às vezes bloqueia.
+- O zoom passa a funcionar sempre: **pinça com dois dedos** para aproximar e afastar, **toque duplo** para alternar entre 2x e o tamanho normal, e **arrastar** para mover a foto com zoom. No computador, também com a **roda do mouse**.
+- Botões **+ / − / tamanho normal** no visualizador. O zoom volta ao normal ao trocar de foto ou fechar.
+- Técnico: `react-zoom-pan-pinch` (`TransformWrapper`/`TransformComponent`) em `AttachmentLightbox.tsx`, com `touch-action: none` na área da foto, zoom entre 1x e 5x e `doubleClick` com zoom.
