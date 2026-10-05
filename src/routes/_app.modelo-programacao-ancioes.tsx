@@ -26,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash2, Copy, Pencil, Save, BookOpen } from "lucide-react";
 import { toast } from "sonner";
+import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { CharCounterTextarea } from "@/components/ui/char-counter-textarea";
 
 export const Route = createFileRoute("/_app/modelo-programacao-ancioes")({ component: Page });
@@ -295,10 +296,18 @@ function Page() {
                 </div>
               </CardContent></Card>
 
+              <CollapseProvider scope="tpl-elder" visitId={activeId ?? null}>
+              <div className="flex justify-end">
+                <CollapseAllButton ids={[...SECTIONS.map((s) => `sec:${s}`), ...events.map((e) => `ev:${e.id}`)]} />
+              </div>
               {SECTIONS.map((section) => (
                 <Card key={section}>
                   <CardContent className="p-4 space-y-4">
-                    <h2 className="font-bold text-sm uppercase tracking-wide text-primary">{SECTION_TITLES[section]}</h2>
+                    <div className="flex items-center gap-1">
+                      <CollapseIdToggle id={`sec:${section}`} />
+                      <h2 className="font-bold text-sm uppercase tracking-wide text-primary">{SECTION_TITLES[section]}</h2>
+                    </div>
+                    <CollapseBody id={`sec:${section}`} className="space-y-4">
                     <div>
                       <Label className="text-xs">Informações adicionais do superintendente</Label>
                       <CharCounterTextarea
@@ -337,6 +346,7 @@ function Page() {
 
                     <div className="space-y-3">
                       {eventsOf(section).map((ev) => (
+                        <CollapseItem key={ev.id} id={`ev:${ev.id}`} summary={ev.family_name || ev.person_name || ev.full_name || ev.subject || ev.slot_label || "—"}>
                         <EventEditor
                           key={ev.id}
                           ev={ev}
@@ -344,14 +354,17 @@ function Page() {
                           onChange={(patch) => updateEvent(ev.id, patch)}
                           onRemove={() => removeEvent(ev.id)}
                         />
+                        </CollapseItem>
                       ))}
                       <Button type="button" variant="outline" size="sm" onClick={() => addEvent(section)}>
                         <Plus className="h-4 w-4 mr-1" /> Adicionar evento
                       </Button>
                     </div>
+                    </CollapseBody>
                   </CardContent>
                 </Card>
               ))}
+              </CollapseProvider>
             </>
           )}
         </div>
