@@ -9,65 +9,46 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppRouteImport } from './routes/_app'
-import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as PoliticaPrivacidadeRouteImport } from './routes/politica-privacidade'
-import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as VisitanteRouteImport } from './routes/visitante'
-import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
-import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist-modelos'
-import { Route as AppComunicacaoCasalRouteImport } from './routes/_app.comunicacao-casal'
-import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
-import { Route as AppCongregacoesRouteImport } from './routes/_app.congregacoes'
-import { Route as AppConsideracoesCampoRouteImport } from './routes/_app.consideracoes-campo'
-import { Route as AppCronogramaRouteImport } from './routes/_app.cronograma'
-import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
-import { Route as AppEscalaRouteImport } from './routes/_app.escala'
-import { Route as AppLixeiraRouteImport } from './routes/_app.lixeira'
-import { Route as AppModeloProgramacaoAncioesRouteImport } from './routes/_app.modelo-programacao-ancioes'
-import { Route as AppModeloReunioesDeCampoRouteImport } from './routes/_app.modelo-reunioes-de-campo'
-import { Route as AppModeloReunioesDiscursosRouteImport } from './routes/_app.modelo-reunioes-discursos'
-import { Route as AppModelosRouteImport } from './routes/_app.modelos'
-import { Route as AppNotasRouteImport } from './routes/_app.notas'
-import { Route as AppPerfilRouteImport } from './routes/_app.perfil'
-import { Route as AppProgramaAncioesRouteImport } from './routes/_app.programa-ancioes'
-import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
-import { Route as AppResumoSemanaRouteImport } from './routes/_app.resumo-semana'
-import { Route as AppReunioesDeCampoRouteImport } from './routes/_app.reunioes-de-campo'
-import { Route as AppReunioesDiscursosRouteImport } from './routes/_app.reunioes-discursos'
-import { Route as AppTransporteRouteImport } from './routes/_app.transporte'
-import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
-import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as PoliticaPrivacidadeRouteImport } from './routes/politica-privacidade'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as VisitanteIndexRouteImport } from './routes/visitante.index'
 import { Route as VisitantePainelRouteImport } from './routes/visitante.painel'
-import { Route as AppRelatorioVisitIdRouteImport } from './routes/_app.relatorio.$visitId'
-import { Route as ApiPublicPingRouteImport } from './routes/api/public/ping'
+import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
+import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
+import { Route as AppTransporteRouteImport } from './routes/_app.transporte'
+import { Route as AppReunioesDiscursosRouteImport } from './routes/_app.reunioes-discursos'
+import { Route as AppReunioesDeCampoRouteImport } from './routes/_app.reunioes-de-campo'
+import { Route as AppResumoSemanaRouteImport } from './routes/_app.resumo-semana'
+import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
+import { Route as AppProgramaAncioesRouteImport } from './routes/_app.programa-ancioes'
+import { Route as AppPerfilRouteImport } from './routes/_app.perfil'
+import { Route as AppNotasRouteImport } from './routes/_app.notas'
+import { Route as AppModelosRouteImport } from './routes/_app.modelos'
+import { Route as AppModeloReunioesDiscursosRouteImport } from './routes/_app.modelo-reunioes-discursos'
+import { Route as AppModeloReunioesDeCampoRouteImport } from './routes/_app.modelo-reunioes-de-campo'
+import { Route as AppModeloProgramacaoAncioesRouteImport } from './routes/_app.modelo-programacao-ancioes'
+import { Route as AppLixeiraRouteImport } from './routes/_app.lixeira'
+import { Route as AppEscalaRouteImport } from './routes/_app.escala'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppCronogramaRouteImport } from './routes/_app.cronograma'
+import { Route as AppConsideracoesCampoRouteImport } from './routes/_app.consideracoes-campo'
+import { Route as AppCongregacoesRouteImport } from './routes/_app.congregacoes'
+import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
+import { Route as AppComunicacaoCasalRouteImport } from './routes/_app.comunicacao-casal'
+import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist-modelos'
+import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
 import { Route as ApiPublicVersionRouteImport } from './routes/api/public/version'
+import { Route as ApiPublicPingRouteImport } from './routes/api/public/ping'
+import { Route as AppRelatorioVisitIdRouteImport } from './routes/_app.relatorio.$visitId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EsqueciSenhaRoute = EsqueciSenhaRouteImport.update({
-  id: '/esqueci-senha',
-  path: '/esqueci-senha',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PoliticaPrivacidadeRoute = PoliticaPrivacidadeRouteImport.update({
-  id: '/politica-privacidade',
-  path: '/politica-privacidade',
+const VisitanteRoute = VisitanteRouteImport.update({
+  id: '/visitante',
+  path: '/visitante',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
@@ -75,132 +56,28 @@ const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VisitanteRoute = VisitanteRouteImport.update({
-  id: '/visitante',
-  path: '/visitante',
+const PoliticaPrivacidadeRoute = PoliticaPrivacidadeRouteImport.update({
+  id: '/politica-privacidade',
+  path: '/politica-privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppChecklistRoute = AppChecklistRouteImport.update({
-  id: '/checklist',
-  path: '/checklist',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppChecklistModelosRoute = AppChecklistModelosRouteImport.update({
-  id: '/checklist-modelos',
-  path: '/checklist-modelos',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppComunicacaoCasalRoute = AppComunicacaoCasalRouteImport.update({
-  id: '/comunicacao-casal',
-  path: '/comunicacao-casal',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
-  id: '/configuracoes',
-  path: '/configuracoes',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppCongregacoesRoute = AppCongregacoesRouteImport.update({
-  id: '/congregacoes',
-  path: '/congregacoes',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppConsideracoesCampoRoute = AppConsideracoesCampoRouteImport.update({
-  id: '/consideracoes-campo',
-  path: '/consideracoes-campo',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppCronogramaRoute = AppCronogramaRouteImport.update({
-  id: '/cronograma',
-  path: '/cronograma',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDashboardRoute = AppDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppEscalaRoute = AppEscalaRouteImport.update({
-  id: '/escala',
-  path: '/escala',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppLixeiraRoute = AppLixeiraRouteImport.update({
-  id: '/lixeira',
-  path: '/lixeira',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppModeloProgramacaoAncioesRoute =
-  AppModeloProgramacaoAncioesRouteImport.update({
-    id: '/modelo-programacao-ancioes',
-    path: '/modelo-programacao-ancioes',
-    getParentRoute: () => AppRoute,
-  } as any)
-const AppModeloReunioesDeCampoRoute =
-  AppModeloReunioesDeCampoRouteImport.update({
-    id: '/modelo-reunioes-de-campo',
-    path: '/modelo-reunioes-de-campo',
-    getParentRoute: () => AppRoute,
-  } as any)
-const AppModeloReunioesDiscursosRoute =
-  AppModeloReunioesDiscursosRouteImport.update({
-    id: '/modelo-reunioes-discursos',
-    path: '/modelo-reunioes-discursos',
-    getParentRoute: () => AppRoute,
-  } as any)
-const AppModelosRoute = AppModelosRouteImport.update({
-  id: '/modelos',
-  path: '/modelos',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppNotasRoute = AppNotasRouteImport.update({
-  id: '/notas',
-  path: '/notas',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPerfilRoute = AppPerfilRouteImport.update({
-  id: '/perfil',
-  path: '/perfil',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppProgramaAncioesRoute = AppProgramaAncioesRouteImport.update({
-  id: '/programa-ancioes',
-  path: '/programa-ancioes',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppRefeicoesRoute = AppRefeicoesRouteImport.update({
-  id: '/refeicoes',
-  path: '/refeicoes',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppResumoSemanaRoute = AppResumoSemanaRouteImport.update({
-  id: '/resumo-semana',
-  path: '/resumo-semana',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppReunioesDeCampoRoute = AppReunioesDeCampoRouteImport.update({
-  id: '/reunioes-de-campo',
-  path: '/reunioes-de-campo',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppReunioesDiscursosRoute = AppReunioesDiscursosRouteImport.update({
-  id: '/reunioes-discursos',
-  path: '/reunioes-discursos',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppTransporteRoute = AppTransporteRouteImport.update({
-  id: '/transporte',
-  path: '/transporte',
-  getParentRoute: () => AppRoute,
-} as any)
-const CadastroAnciaoRoute = CadastroAnciaoRouteImport.update({
-  id: '/cadastro/anciao',
-  path: '/cadastro/anciao',
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CadastroSuperintendenteRoute = CadastroSuperintendenteRouteImport.update({
-  id: '/cadastro/superintendente',
-  path: '/cadastro/superintendente',
+const EsqueciSenhaRoute = EsqueciSenhaRouteImport.update({
+  id: '/esqueci-senha',
+  path: '/esqueci-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VisitanteIndexRoute = VisitanteIndexRouteImport.update({
@@ -213,20 +90,143 @@ const VisitantePainelRoute = VisitantePainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => VisitanteRoute,
 } as any)
-const AppRelatorioVisitIdRoute = AppRelatorioVisitIdRouteImport.update({
-  id: '/relatorio/$visitId',
-  path: '/relatorio/$visitId',
+const CadastroSuperintendenteRoute = CadastroSuperintendenteRouteImport.update({
+  id: '/cadastro/superintendente',
+  path: '/cadastro/superintendente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CadastroAnciaoRoute = CadastroAnciaoRouteImport.update({
+  id: '/cadastro/anciao',
+  path: '/cadastro/anciao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppTransporteRoute = AppTransporteRouteImport.update({
+  id: '/transporte',
+  path: '/transporte',
   getParentRoute: () => AppRoute,
+} as any)
+const AppReunioesDiscursosRoute = AppReunioesDiscursosRouteImport.update({
+  id: '/reunioes-discursos',
+  path: '/reunioes-discursos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReunioesDeCampoRoute = AppReunioesDeCampoRouteImport.update({
+  id: '/reunioes-de-campo',
+  path: '/reunioes-de-campo',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppResumoSemanaRoute = AppResumoSemanaRouteImport.update({
+  id: '/resumo-semana',
+  path: '/resumo-semana',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRefeicoesRoute = AppRefeicoesRouteImport.update({
+  id: '/refeicoes',
+  path: '/refeicoes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProgramaAncioesRoute = AppProgramaAncioesRouteImport.update({
+  id: '/programa-ancioes',
+  path: '/programa-ancioes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPerfilRoute = AppPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotasRoute = AppNotasRouteImport.update({
+  id: '/notas',
+  path: '/notas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppModelosRoute = AppModelosRouteImport.update({
+  id: '/modelos',
+  path: '/modelos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppModeloReunioesDiscursosRoute =
+  AppModeloReunioesDiscursosRouteImport.update({
+    id: '/modelo-reunioes-discursos',
+    path: '/modelo-reunioes-discursos',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppModeloReunioesDeCampoRoute =
+  AppModeloReunioesDeCampoRouteImport.update({
+    id: '/modelo-reunioes-de-campo',
+    path: '/modelo-reunioes-de-campo',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppModeloProgramacaoAncioesRoute =
+  AppModeloProgramacaoAncioesRouteImport.update({
+    id: '/modelo-programacao-ancioes',
+    path: '/modelo-programacao-ancioes',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppLixeiraRoute = AppLixeiraRouteImport.update({
+  id: '/lixeira',
+  path: '/lixeira',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEscalaRoute = AppEscalaRouteImport.update({
+  id: '/escala',
+  path: '/escala',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCronogramaRoute = AppCronogramaRouteImport.update({
+  id: '/cronograma',
+  path: '/cronograma',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppConsideracoesCampoRoute = AppConsideracoesCampoRouteImport.update({
+  id: '/consideracoes-campo',
+  path: '/consideracoes-campo',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCongregacoesRoute = AppCongregacoesRouteImport.update({
+  id: '/congregacoes',
+  path: '/congregacoes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppComunicacaoCasalRoute = AppComunicacaoCasalRouteImport.update({
+  id: '/comunicacao-casal',
+  path: '/comunicacao-casal',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppChecklistModelosRoute = AppChecklistModelosRouteImport.update({
+  id: '/checklist-modelos',
+  path: '/checklist-modelos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppChecklistRoute = AppChecklistRouteImport.update({
+  id: '/checklist',
+  path: '/checklist',
+  getParentRoute: () => AppRoute,
+} as any)
+const ApiPublicVersionRoute = ApiPublicVersionRouteImport.update({
+  id: '/api/public/version',
+  path: '/api/public/version',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicPingRoute = ApiPublicPingRouteImport.update({
   id: '/api/public/ping',
   path: '/api/public/ping',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicVersionRoute = ApiPublicVersionRouteImport.update({
-  id: '/api/public/version',
-  path: '/api/public/version',
-  getParentRoute: () => rootRouteImport,
+const AppRelatorioVisitIdRoute = AppRelatorioVisitIdRouteImport.update({
+  id: '/relatorio/$visitId',
+  path: '/relatorio/$visitId',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -471,39 +471,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_app': {
-      id: '/_app'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/esqueci-senha': {
-      id: '/esqueci-senha'
-      path: '/esqueci-senha'
-      fullPath: '/esqueci-senha'
-      preLoaderRoute: typeof EsqueciSenhaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/politica-privacidade': {
-      id: '/politica-privacidade'
-      path: '/politica-privacidade'
-      fullPath: '/politica-privacidade'
-      preLoaderRoute: typeof PoliticaPrivacidadeRouteImport
+    '/visitante': {
+      id: '/visitante'
+      path: '/visitante'
+      fullPath: '/visitante'
+      preLoaderRoute: typeof VisitanteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/redefinir-senha': {
@@ -513,179 +485,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/visitante': {
-      id: '/visitante'
-      path: '/visitante'
-      fullPath: '/visitante'
-      preLoaderRoute: typeof VisitanteRouteImport
+    '/politica-privacidade': {
+      id: '/politica-privacidade'
+      path: '/politica-privacidade'
+      fullPath: '/politica-privacidade'
+      preLoaderRoute: typeof PoliticaPrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/checklist': {
-      id: '/_app/checklist'
-      path: '/checklist'
-      fullPath: '/checklist'
-      preLoaderRoute: typeof AppChecklistRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/checklist-modelos': {
-      id: '/_app/checklist-modelos'
-      path: '/checklist-modelos'
-      fullPath: '/checklist-modelos'
-      preLoaderRoute: typeof AppChecklistModelosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/comunicacao-casal': {
-      id: '/_app/comunicacao-casal'
-      path: '/comunicacao-casal'
-      fullPath: '/comunicacao-casal'
-      preLoaderRoute: typeof AppComunicacaoCasalRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/configuracoes': {
-      id: '/_app/configuracoes'
-      path: '/configuracoes'
-      fullPath: '/configuracoes'
-      preLoaderRoute: typeof AppConfiguracoesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/congregacoes': {
-      id: '/_app/congregacoes'
-      path: '/congregacoes'
-      fullPath: '/congregacoes'
-      preLoaderRoute: typeof AppCongregacoesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/consideracoes-campo': {
-      id: '/_app/consideracoes-campo'
-      path: '/consideracoes-campo'
-      fullPath: '/consideracoes-campo'
-      preLoaderRoute: typeof AppConsideracoesCampoRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/cronograma': {
-      id: '/_app/cronograma'
-      path: '/cronograma'
-      fullPath: '/cronograma'
-      preLoaderRoute: typeof AppCronogramaRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/dashboard': {
-      id: '/_app/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AppDashboardRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/escala': {
-      id: '/_app/escala'
-      path: '/escala'
-      fullPath: '/escala'
-      preLoaderRoute: typeof AppEscalaRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/lixeira': {
-      id: '/_app/lixeira'
-      path: '/lixeira'
-      fullPath: '/lixeira'
-      preLoaderRoute: typeof AppLixeiraRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/modelo-programacao-ancioes': {
-      id: '/_app/modelo-programacao-ancioes'
-      path: '/modelo-programacao-ancioes'
-      fullPath: '/modelo-programacao-ancioes'
-      preLoaderRoute: typeof AppModeloProgramacaoAncioesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/modelo-reunioes-de-campo': {
-      id: '/_app/modelo-reunioes-de-campo'
-      path: '/modelo-reunioes-de-campo'
-      fullPath: '/modelo-reunioes-de-campo'
-      preLoaderRoute: typeof AppModeloReunioesDeCampoRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/modelo-reunioes-discursos': {
-      id: '/_app/modelo-reunioes-discursos'
-      path: '/modelo-reunioes-discursos'
-      fullPath: '/modelo-reunioes-discursos'
-      preLoaderRoute: typeof AppModeloReunioesDiscursosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/modelos': {
-      id: '/_app/modelos'
-      path: '/modelos'
-      fullPath: '/modelos'
-      preLoaderRoute: typeof AppModelosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/notas': {
-      id: '/_app/notas'
-      path: '/notas'
-      fullPath: '/notas'
-      preLoaderRoute: typeof AppNotasRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/perfil': {
-      id: '/_app/perfil'
-      path: '/perfil'
-      fullPath: '/perfil'
-      preLoaderRoute: typeof AppPerfilRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/programa-ancioes': {
-      id: '/_app/programa-ancioes'
-      path: '/programa-ancioes'
-      fullPath: '/programa-ancioes'
-      preLoaderRoute: typeof AppProgramaAncioesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/refeicoes': {
-      id: '/_app/refeicoes'
-      path: '/refeicoes'
-      fullPath: '/refeicoes'
-      preLoaderRoute: typeof AppRefeicoesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/resumo-semana': {
-      id: '/_app/resumo-semana'
-      path: '/resumo-semana'
-      fullPath: '/resumo-semana'
-      preLoaderRoute: typeof AppResumoSemanaRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/reunioes-de-campo': {
-      id: '/_app/reunioes-de-campo'
-      path: '/reunioes-de-campo'
-      fullPath: '/reunioes-de-campo'
-      preLoaderRoute: typeof AppReunioesDeCampoRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/reunioes-discursos': {
-      id: '/_app/reunioes-discursos'
-      path: '/reunioes-discursos'
-      fullPath: '/reunioes-discursos'
-      preLoaderRoute: typeof AppReunioesDiscursosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/transporte': {
-      id: '/_app/transporte'
-      path: '/transporte'
-      fullPath: '/transporte'
-      preLoaderRoute: typeof AppTransporteRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/cadastro/anciao': {
-      id: '/cadastro/anciao'
-      path: '/cadastro/anciao'
-      fullPath: '/cadastro/anciao'
-      preLoaderRoute: typeof CadastroAnciaoRouteImport
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cadastro/superintendente': {
-      id: '/cadastro/superintendente'
-      path: '/cadastro/superintendente'
-      fullPath: '/cadastro/superintendente'
-      preLoaderRoute: typeof CadastroSuperintendenteRouteImport
+    '/esqueci-senha': {
+      id: '/esqueci-senha'
+      path: '/esqueci-senha'
+      fullPath: '/esqueci-senha'
+      preLoaderRoute: typeof EsqueciSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/visitante/': {
@@ -702,12 +534,180 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VisitantePainelRouteImport
       parentRoute: typeof VisitanteRoute
     }
-    '/_app/relatorio/$visitId': {
-      id: '/_app/relatorio/$visitId'
-      path: '/relatorio/$visitId'
-      fullPath: '/relatorio/$visitId'
-      preLoaderRoute: typeof AppRelatorioVisitIdRouteImport
+    '/cadastro/superintendente': {
+      id: '/cadastro/superintendente'
+      path: '/cadastro/superintendente'
+      fullPath: '/cadastro/superintendente'
+      preLoaderRoute: typeof CadastroSuperintendenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cadastro/anciao': {
+      id: '/cadastro/anciao'
+      path: '/cadastro/anciao'
+      fullPath: '/cadastro/anciao'
+      preLoaderRoute: typeof CadastroAnciaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/transporte': {
+      id: '/_app/transporte'
+      path: '/transporte'
+      fullPath: '/transporte'
+      preLoaderRoute: typeof AppTransporteRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/reunioes-discursos': {
+      id: '/_app/reunioes-discursos'
+      path: '/reunioes-discursos'
+      fullPath: '/reunioes-discursos'
+      preLoaderRoute: typeof AppReunioesDiscursosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reunioes-de-campo': {
+      id: '/_app/reunioes-de-campo'
+      path: '/reunioes-de-campo'
+      fullPath: '/reunioes-de-campo'
+      preLoaderRoute: typeof AppReunioesDeCampoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/resumo-semana': {
+      id: '/_app/resumo-semana'
+      path: '/resumo-semana'
+      fullPath: '/resumo-semana'
+      preLoaderRoute: typeof AppResumoSemanaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/refeicoes': {
+      id: '/_app/refeicoes'
+      path: '/refeicoes'
+      fullPath: '/refeicoes'
+      preLoaderRoute: typeof AppRefeicoesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/programa-ancioes': {
+      id: '/_app/programa-ancioes'
+      path: '/programa-ancioes'
+      fullPath: '/programa-ancioes'
+      preLoaderRoute: typeof AppProgramaAncioesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/perfil': {
+      id: '/_app/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AppPerfilRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/notas': {
+      id: '/_app/notas'
+      path: '/notas'
+      fullPath: '/notas'
+      preLoaderRoute: typeof AppNotasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/modelos': {
+      id: '/_app/modelos'
+      path: '/modelos'
+      fullPath: '/modelos'
+      preLoaderRoute: typeof AppModelosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/modelo-reunioes-discursos': {
+      id: '/_app/modelo-reunioes-discursos'
+      path: '/modelo-reunioes-discursos'
+      fullPath: '/modelo-reunioes-discursos'
+      preLoaderRoute: typeof AppModeloReunioesDiscursosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/modelo-reunioes-de-campo': {
+      id: '/_app/modelo-reunioes-de-campo'
+      path: '/modelo-reunioes-de-campo'
+      fullPath: '/modelo-reunioes-de-campo'
+      preLoaderRoute: typeof AppModeloReunioesDeCampoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/modelo-programacao-ancioes': {
+      id: '/_app/modelo-programacao-ancioes'
+      path: '/modelo-programacao-ancioes'
+      fullPath: '/modelo-programacao-ancioes'
+      preLoaderRoute: typeof AppModeloProgramacaoAncioesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/lixeira': {
+      id: '/_app/lixeira'
+      path: '/lixeira'
+      fullPath: '/lixeira'
+      preLoaderRoute: typeof AppLixeiraRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/escala': {
+      id: '/_app/escala'
+      path: '/escala'
+      fullPath: '/escala'
+      preLoaderRoute: typeof AppEscalaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/cronograma': {
+      id: '/_app/cronograma'
+      path: '/cronograma'
+      fullPath: '/cronograma'
+      preLoaderRoute: typeof AppCronogramaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/consideracoes-campo': {
+      id: '/_app/consideracoes-campo'
+      path: '/consideracoes-campo'
+      fullPath: '/consideracoes-campo'
+      preLoaderRoute: typeof AppConsideracoesCampoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/congregacoes': {
+      id: '/_app/congregacoes'
+      path: '/congregacoes'
+      fullPath: '/congregacoes'
+      preLoaderRoute: typeof AppCongregacoesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/configuracoes': {
+      id: '/_app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AppConfiguracoesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/comunicacao-casal': {
+      id: '/_app/comunicacao-casal'
+      path: '/comunicacao-casal'
+      fullPath: '/comunicacao-casal'
+      preLoaderRoute: typeof AppComunicacaoCasalRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/checklist-modelos': {
+      id: '/_app/checklist-modelos'
+      path: '/checklist-modelos'
+      fullPath: '/checklist-modelos'
+      preLoaderRoute: typeof AppChecklistModelosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/checklist': {
+      id: '/_app/checklist'
+      path: '/checklist'
+      fullPath: '/checklist'
+      preLoaderRoute: typeof AppChecklistRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/api/public/version': {
+      id: '/api/public/version'
+      path: '/api/public/version'
+      fullPath: '/api/public/version'
+      preLoaderRoute: typeof ApiPublicVersionRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/ping': {
       id: '/api/public/ping'
@@ -716,12 +716,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/version': {
-      id: '/api/public/version'
-      path: '/api/public/version'
-      fullPath: '/api/public/version'
-      preLoaderRoute: typeof ApiPublicVersionRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_app/relatorio/$visitId': {
+      id: '/_app/relatorio/$visitId'
+      path: '/relatorio/$visitId'
+      fullPath: '/relatorio/$visitId'
+      preLoaderRoute: typeof AppRelatorioVisitIdRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }

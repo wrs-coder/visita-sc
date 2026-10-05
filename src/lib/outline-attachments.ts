@@ -184,29 +184,86 @@ export async function downscaleImage(
   }
 }
 
+/** Tamanho de cada pedaço gravado no Filesystem nativo (múltiplo de 3 → base64 válido). */
+export const NATIVE_CHUNK_BYTES = 3 * 256 * 1024; // 768 KB
+
+/** Divide um tamanho total em faixas [start, end) de `chunk` bytes. */
+export function chunkRanges(total: number, chunk: number = NATIVE_CHUNK_BYTES): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
+  if (total <= 0) return [[0, 0]];
+  for (let start = 0; start < total; start += chunk) {
+    out.push([start, Math.min(total, start + chunk)]);
+  }
+  return out;
+}
+
+function isStorageFullError(err: unknown): boolean {
+  const msg = String((err as Error | undefined)?.message ?? err ?? "").toLowerCase();
+  return /enospc|no space|quota|disk full|espaço/.test(msg);
+}
+
+/**
+ * Grava o Blob no Filesystem nativo em pedaços pequenos, evitando enviar o
+ * arquivo inteiro de uma vez pela ponte (causa da falha em vídeos/fotos grandes).
+ * Em caso de erro apaga o arquivo parcial.
+ */
+async function writeNativeChunked(
+  blob: Blob,
+  relativePath: string,
+  onProgress?: (fraction: number) => void,
+): Promise<void> {
+  const { Filesystem, Directory } = await import("@capacitor/filesystem");
+  const ranges = chunkRanges(blob.size);
+  try {
+    for (let i = 0; i < ranges.length; i += 1) {
+      const [start, end] = ranges[i];
+      const data = await blobToBase64(blob.slice(start, end));
+      if (i === 0) {
+        await Filesystem.writeFile({ path: relativePath, data, directory: Directory.Data, recursive: true });
+      } else {
+        await Filesystem.appendFile({ path: relativePath, data, directory: Directory.Data });
+      }
+      onProgress?.(blob.size ? end / blob.size : 1);
+    }
+  } catch (err) {
+    try {
+      await Filesystem.deleteFile({ path: relativePath, directory: Directory.Data });
+    } catch {
+      /* noop */
+    }
+    throw err;
+  }
+}
+
 async function writeLocalFile(
   blob: Blob,
   mime: string,
   relativePath: string,
+  opts: { onProgress?: (fraction: number) => void; nativeOnly?: boolean } = {},
 ): Promise<NoteAttachmentStorage> {
   if (isCapacitorNative()) {
     try {
-      const { Filesystem, Directory } = await import("@capacitor/filesystem");
-      const base64 = await blobToBase64(blob);
-      await Filesystem.writeFile({
-        path: relativePath,
-        data: base64,
-        directory: Directory.Data,
-        recursive: true,
-      });
+      await writeNativeChunked(blob, relativePath, opts.onProgress);
       return "fs";
     } catch (err) {
-      console.warn("[outline-attachments] Filesystem write falhou, usando IndexedDB", err);
+      console.warn("[outline-attachments] Filesystem write falhou", err);
+      if (opts.nativeOnly) {
+        throw new Error(isStorageFullError(err) ? "STORAGE_FULL" : "VIDEO_WRITE_FAILED");
+      }
+      if (isStorageFullError(err)) throw new Error("STORAGE_FULL");
     }
   }
   const store = getAttachmentStore();
   if (!store) throw new Error("ATTACHMENT_STORAGE_UNAVAILABLE");
-  await idbSet(relativePath, new Blob([blob], { type: mime }), store);
+  try {
+    await idbSet(relativePath, new Blob([blob], { type: mime }), store);
+  } catch (err) {
+    if (isStorageFullError(err) || (err as DOMException)?.name === "QuotaExceededError") {
+      throw new Error("STORAGE_FULL");
+    }
+    throw err;
+  }
+  opts.onProgress?.(1);
   return "idb";
 }
 
@@ -225,28 +282,58 @@ export async function savePhotoAttachment(
   file: File,
   noteId: string,
   attachmentId: string = makeAttachmentId(),
+  onProgress?: (fraction: number) => void,
 ): Promise<SavePhotoResult> {
   const { blob, mime } = await downscaleImage(file);
   const ext = extFromMime(mime) || "jpg";
   const path = `outline-attachments/${noteId}/${attachmentId}.${ext}`;
-  const storage = await writeLocalFile(blob, mime, path);
+  const storage = await writeLocalFile(blob, mime, path, { onProgress });
   return { attachmentId, storage, path, mime };
 }
 
-/** Persiste um vídeo local escolhido pelo usuário. */
+/** Persiste um vídeo local escolhido pelo usuário (cópia em pedaços no app nativo). */
 export async function saveVideoAttachment(
   file: File,
   noteId: string,
   attachmentId: string = makeAttachmentId(),
+  onProgress?: (fraction: number) => void,
 ): Promise<SaveVideoResult> {
   if (file.size > MAX_LOCAL_VIDEO_BYTES) {
     throw new Error("VIDEO_TOO_LARGE");
   }
   const mime = file.type || "video/mp4";
-  const ext = extFromMime(mime) || (file.name.split(".").pop() ?? "mp4").toLowerCase();
+  const fromMime = extFromMime(mime);
+  const ext = fromMime !== "bin" ? fromMime : (file.name.split(".").pop() ?? "mp4").toLowerCase();
   const path = `outline-attachments/${noteId}/${attachmentId}.${ext}`;
-  const storage = await writeLocalFile(file, mime, path);
+  const storage = await writeLocalFile(file, mime, path, { onProgress, nativeOnly: true });
   return { attachmentId, storage, path, mime };
+}
+
+/**
+ * Abre um vídeo local no player nativo do Android. Devolve false quando não
+ * for possível (navegador, arquivo inexistente ou sem app de vídeo) — o
+ * chamador então usa o player interno.
+ */
+export async function openLocalVideoNative(a: NoteAttachment): Promise<boolean> {
+  if (!isCapacitorNative()) return false;
+  if (a.storage === "idb") return false;
+  try {
+    let uri: string | null = null;
+    const { Filesystem, Directory } = await import("@capacitor/filesystem");
+    if (a.path) {
+      await Filesystem.stat({ path: a.path, directory: Directory.Data });
+      uri = (await Filesystem.getUri({ path: a.path, directory: Directory.Data })).uri;
+    } else if (a.uri && a.uri.startsWith("file:")) {
+      uri = a.uri;
+    }
+    if (!uri) return false;
+    const { FileOpener } = await import("@capawesome-team/capacitor-file-opener");
+    await FileOpener.openFile({ path: uri, mimeType: a.mime || "video/mp4" });
+    return true;
+  } catch (err) {
+    console.warn("[outline-attachments] abrir no player nativo falhou", err);
+    return false;
+  }
 }
 
 /** True quando o anexo aponta para um arquivo local (foto ou vídeo do aparelho). */
