@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useAuth } from "@/hooks/use-auth";
+import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,6 +143,10 @@ function Page() {
         value={extras.program?.general_observations}
       />
 
+      <CollapseProvider scope="meals" visitId={visit.id}>
+      <div className="flex justify-end">
+        <CollapseAllButton ids={[...days.map((d) => `day:${format(d, "yyyy-MM-dd")}`), ...meals.map((m) => `ev:${m.id}`)]} />
+      </div>
       <fieldset disabled={!editAllowed} className="space-y-5 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
         {days.map((d) => {
           const key = format(d, "yyyy-MM-dd");
@@ -149,8 +154,11 @@ function Page() {
           const dayNote = dayNotes[key] ?? "";
           return (
             <section key={key}>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex min-w-0 items-center gap-1">
+                  <CollapseIdToggle id={`day:${key}`} />
+                  <h2 className="truncate text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>
+                </div>
                 {isSuper && (
                   <div className="flex gap-1 flex-wrap">
                     <Button size="sm" variant="outline" onClick={() => add(key, "breakfast")}><Plus className="h-3 w-3 mr-1" />{t("meals.breakfast")}</Button>
@@ -159,12 +167,15 @@ function Page() {
                   </div>
                 )}
               </div>
+              <CollapseBody id={`day:${key}`}>
               <DayNoteEditor mealDate={key} value={dayNote} isSuper={isSuper} onChange={(v) => setDayNotes((s) => ({ ...s, [key]: v }))} onSave={(v) => saveDayNote(key, v)} />
               {dayMeals.length === 0 ? (
                 <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("meals.noMeals")}</CardContent></Card>
               ) : (
                 dayMeals.map((m) => (
-                  <MealCard key={m.id} meal={m} isSuper={isSuper} saving={savingId === m.id} update={update} remove={remove} />
+                  <CollapseItem key={m.id} id={`ev:${m.id}`} summary={[MEAL_LABEL[m.type], m.meal_time?.slice(0, 5), m.host_name].filter(Boolean).join(" · ")}>
+                    <MealCard meal={m} isSuper={isSuper} saving={savingId === m.id} update={update} remove={remove} />
+                  </CollapseItem>
                 ))
               )}
             </section>

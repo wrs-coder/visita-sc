@@ -14,6 +14,7 @@ import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/local-write";
 import { FieldStudiesReportDialog } from "@/components/visit-week/FieldStudiesReportDialog";
@@ -112,14 +113,21 @@ function Page() {
 
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
 
+      <CollapseProvider scope="field-studies" visitId={visit.id}>
+      <div className="flex justify-end">
+        <CollapseAllButton ids={[...days.map((d) => `day:${format(d, "yyyy-MM-dd")}`), ...rows.map((r) => `ev:${r.id}`)]} />
+      </div>
       <fieldset disabled={!editAllowed} className="space-y-5 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
         {days.map((d) => {
           const key = format(d, "yyyy-MM-dd");
           const dayRows = rows.filter((r) => r.event_date === key);
           return (
             <section key={key}>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex min-w-0 items-center gap-1">
+                  <CollapseIdToggle id={`day:${key}`} />
+                  <h2 className="truncate text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>
+                </div>
                 {isSuper && (
                   <div className="flex gap-1">
                     <Button size="sm" variant="outline" onClick={() => add(key, "Manhã")}><Plus className="h-3 w-3 mr-1" />{t("fieldStudies.morning")}</Button>
@@ -127,17 +135,22 @@ function Page() {
                   </div>
                 )}
               </div>
+              <CollapseBody id={`day:${key}`}>
               {dayRows.length === 0 ? (
                 <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("fieldStudies.noShifts")}</CardContent></Card>
               ) : (
                 dayRows.map((r) => (
-                  <RowCard key={r.id} row={r} isSuper={isSuper} saving={savingId === r.id} update={update} remove={remove} />
+                  <CollapseItem key={r.id} id={`ev:${r.id}`} summary={[PERIOD_LABELS[r.period] ?? r.period, r.meeting_time?.slice(0, 5), r.acompanhante].filter(Boolean).join(" · ")}>
+                    <RowCard row={r} isSuper={isSuper} saving={savingId === r.id} update={update} remove={remove} />
+                  </CollapseItem>
                 ))
               )}
+              </CollapseBody>
             </section>
           );
         })}
       </fieldset>
+      </CollapseProvider>
 
       <FieldStudiesReportDialog
         open={reportOpen}

@@ -13,6 +13,7 @@ import { format, parseISO, eachDayOfInterval } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { FIELD_MODALITIES, FIELD_MODALITY_LABELS } from "@/lib/field-meeting-templates.functions";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/local-write";
 import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
@@ -103,7 +104,15 @@ export function FieldMeetingsPanel() {
   const morning = t("meetingsTalks.field.morning");
   const afternoon = t("meetingsTalks.field.afternoon");
 
+  const collapseIds = [
+    ...days.map((d) => `day:${format(d, "yyyy-MM-dd")}`),
+    ...rows.map((r) => `ev:${r.id}`),
+  ];
+  const rowSummary = (r: Row) =>
+    [r.period, r.meeting_time?.slice(0, 5), r.meeting_location].filter(Boolean).join(" · ");
+
   return (
+    <CollapseProvider scope="field-meetings" visitId={visit.id}>
     <div className="space-y-5">
       <p className="text-sm text-muted-foreground">
         {isSuper
@@ -121,6 +130,8 @@ export function FieldMeetingsPanel() {
         onSaved={extras.reload}
       />
 
+      <div className="flex justify-end"><CollapseAllButton ids={collapseIds} /></div>
+
       {superEditing || !isSuper ? (
         <div className="space-y-5 min-w-0">
           {days.map((d) => {
@@ -128,8 +139,11 @@ export function FieldMeetingsPanel() {
             const dayRows = rows.filter((r) => r.event_date === key);
             return (
               <section key={key}>
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex min-w-0 items-center gap-1">
+                    <CollapseIdToggle id={`day:${key}`} />
+                    <h2 className="truncate text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>
+                  </div>
                   {superEditing && (
                     <div className="flex gap-1">
                       <Button size="sm" variant="outline" onClick={() => add(key, morning)}><Plus className="h-3 w-3 mr-1" />{morning}</Button>
@@ -137,13 +151,17 @@ export function FieldMeetingsPanel() {
                     </div>
                   )}
                 </div>
+                <CollapseBody id={`day:${key}`}>
                 {dayRows.length === 0 ? (
                   <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("meetingsTalks.field.noShifts")}</CardContent></Card>
                 ) : (
                   dayRows.map((r) => (
-                    <RowCard key={r.id} row={r} isSuper={superEditing} saving={savingId === r.id} update={update} remove={remove} />
+                    <CollapseItem key={r.id} id={`ev:${r.id}`} summary={rowSummary(r)}>
+                      <RowCard row={r} isSuper={superEditing} saving={savingId === r.id} update={update} remove={remove} />
+                    </CollapseItem>
                   ))
                 )}
+                </CollapseBody>
               </section>
             );
           })}
@@ -155,20 +173,28 @@ export function FieldMeetingsPanel() {
             const dayRows = rows.filter((r) => r.event_date === key);
             return (
               <section key={key}>
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>
+                <div className="flex min-w-0 items-center gap-1 mb-2">
+                  <CollapseIdToggle id={`day:${key}`} />
+                  <h2 className="truncate text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>
+                </div>
+                <CollapseBody id={`day:${key}`}>
                 {dayRows.length === 0 ? (
                   <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("meetingsTalks.field.noShifts")}</CardContent></Card>
                 ) : (
                   dayRows.map((r) => (
-                    <RowCard key={r.id} row={r} isSuper={false} saving={false} update={update} remove={remove} />
+                    <CollapseItem key={r.id} id={`ev:${r.id}`} summary={rowSummary(r)}>
+                      <RowCard row={r} isSuper={false} saving={false} update={update} remove={remove} />
+                    </CollapseItem>
                   ))
                 )}
+                </CollapseBody>
               </section>
             );
           })}
         </div>
       )}
     </div>
+    </CollapseProvider>
   );
 }
 
