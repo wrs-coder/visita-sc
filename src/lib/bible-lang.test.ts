@@ -28,4 +28,20 @@ describe("resolveBibleLang", () => {
     expect(resolveBibleLang("fr", b("Xyz")).lang).toBe("fr");
     expect(parseLangTag("")).toEqual({ base: "xx", region: null });
   });
+  it("corrige uma edição francesa já importada, mesmo com nomes ingleses de reserva", () => {
+    expect(resolveBibleLang("en", en, "Traduction du monde nouveau (nwt-F)"))
+      .toEqual({ lang: "fr", langLabel: "Français" });
+  });
+  it("reconhece português de Portugal e Brasil pelo código da edição", () => {
+    expect(resolveBibleLang("en", en, "Tradução do Novo Mundo (Nwt-TPO)").langLabel).toBe("Português (Portugal)");
+    expect(resolveBibleLang("en", en, "Tradução do Novo Mundo (NWT_T)").langLabel).toBe("Português (Brasil)");
+  });
+  it("reconhece livros franceses quando o código da edição não está presente", () => {
+    expect(resolveBibleLang("en", b("Exode", "Lévitique", "Matthieu")))
+      .toEqual({ lang: "fr", langLabel: "Français" });
+  });
+  it("não troca um idioma fora dos três iniciais por nomes ambíguos", () => {
+    expect(resolveBibleLang("fr", en).lang).toBe("fr");
+    expect(resolveBibleLang("de", b("Genesis")).lang).toBe("de");
+  });
 });
