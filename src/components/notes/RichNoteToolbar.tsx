@@ -543,11 +543,7 @@ export function RichNoteToolbar({
     else if (v === "quote") chain.toggleBlockquote().run();
   };
 
-  const row = (children: ReactNode) => (
-    <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap no-scrollbar min-w-0">
-      {children}
-    </div>
-  );
+  const row = (children: ReactNode) => <ScrollRow>{children}</ScrollRow>;
 
   return (
     <div
@@ -712,6 +708,38 @@ export function RichNoteToolbar({
       {/* ===== Fila 2 — Estrutura, listas e inserção ===== */}
       {row(
         <>
+          {topicButton(iconBtn(false))}
+          {/* Anexos — imagens, vídeos e links (botões diretos) */}
+          {(onAddPhotoAttachment || onAddLinkAttachment || onAddVideoAttachment) && (
+            <>
+              {onAddPhotoAttachment && (
+                <Button type="button" variant="ghost" size="sm" className={iconBtn(false)}
+                  title={t("personalOutlines.attachments.addPhoto", { defaultValue: "Anexar imagem" })}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={onAddPhotoAttachment}>
+                  <ImagePlus className="h-4 w-4" />
+                </Button>
+              )}
+              {onAddVideoAttachment && (
+                <Button type="button" variant="ghost" size="sm" className={iconBtn(false)}
+                  title={t("personalOutlines.attachments.addVideoFile", { defaultValue: "Anexar vídeo" })}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={onAddVideoAttachment}>
+                  <Video className="h-4 w-4" />
+                </Button>
+              )}
+              {onAddLinkAttachment && (
+                <Button type="button" variant="ghost" size="sm" className={iconBtn(false)}
+                  title={t("personalOutlines.attachments.addLink", { defaultValue: "Vincular link" })}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={onAddLinkAttachment}>
+                  <LinkExternalIcon className="h-4 w-4" />
+                </Button>
+              )}
+            </>
+          )}
+
+          {sep}
           {/* Listas */}
           <Button type="button" variant="ghost" size="sm" className={iconBtn(isActive("bulletList"))}
             title={t("personalOutlines.editor.toolbar.bullets")}
@@ -828,39 +856,6 @@ export function RichNoteToolbar({
             </PopoverContent>
           </Popover>
 
-          {/* Anexos — imagens, vídeos e links (botões diretos) */}
-          {(onAddPhotoAttachment || onAddLinkAttachment || onAddVideoAttachment) && (
-            <>
-              {sep}
-              {onAddPhotoAttachment && (
-                <Button type="button" variant="ghost" size="sm" className={iconBtn(false)}
-                  title={t("personalOutlines.attachments.addPhoto", { defaultValue: "Anexar imagem" })}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={onAddPhotoAttachment}>
-                  <ImagePlus className="h-4 w-4" />
-                </Button>
-              )}
-              {onAddVideoAttachment && (
-                <Button type="button" variant="ghost" size="sm" className={iconBtn(false)}
-                  title={t("personalOutlines.attachments.addVideoFile", { defaultValue: "Anexar vídeo" })}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={onAddVideoAttachment}>
-                  <Video className="h-4 w-4" />
-                </Button>
-              )}
-              {onAddLinkAttachment && (
-                <Button type="button" variant="ghost" size="sm" className={iconBtn(false)}
-                  title={t("personalOutlines.attachments.addLink", { defaultValue: "Vincular link" })}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={onAddLinkAttachment}>
-                  <LinkExternalIcon className="h-4 w-4" />
-                </Button>
-              )}
-            </>
-          )}
-
-          {sep}
-          {topicButton(iconBtn(false))}
           {onToggleFocusMode && (
             <>
               {sep}
@@ -879,3 +874,100 @@ export function RichNoteToolbar({
   );
 }
 
+/** Fila com rolagem lateral: dedo (nativo), arrastar com mouse, rodinha e setas. */
+function ScrollRow({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const drag = useRef<{ x: number; sl: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () =>
+      setEdges({
+        left: el.scrollLeft > 2,
+        right: el.scrollLeft + el.clientWidth < el.scrollWidth - 2,
+      });
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    const onWheel = (e: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth) return;
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        el.scrollLeft += e.deltaY;
+        e.preventDefault();
+      }
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      el.removeEventListener("scroll", update);
+      el.removeEventListener("wheel", onWheel);
+      ro.disconnect();
+    };
+  }, []);
+
+  const scrollBy = (dir: number) => {
+    const el = ref.current;
+    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.7, behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative min-w-0">
+      <div
+        ref={ref}
+        className="flex items-center gap-1 overflow-x-auto whitespace-nowrap no-scrollbar min-w-0"
+        onPointerDown={(e) => {
+          if (e.pointerType !== "mouse" || !ref.current) return;
+          drag.current = { x: e.clientX, sl: ref.current.scrollLeft, moved: false };
+        }}
+        onPointerMove={(e) => {
+          const d = drag.current;
+          if (!d || !ref.current) return;
+          const dx = e.clientX - d.x;
+          if (!d.moved && Math.abs(dx) > 5) d.moved = true;
+          if (d.moved) ref.current.scrollLeft = d.sl - dx;
+        }}
+        onPointerUp={() => {
+          suppressClick.current = !!drag.current?.moved;
+          drag.current = null;
+        }}
+        onPointerLeave={() => {
+          drag.current = null;
+        }}
+        onClickCapture={(e) => {
+          if (suppressClick.current) {
+            e.preventDefault();
+            e.stopPropagation();
+            suppressClick.current = false;
+          }
+        }}
+      >
+        {children}
+      </div>
+      {edges.left && (
+        <button
+          type="button"
+          aria-label="Rolar para a esquerda"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => scrollBy(-1)}
+          className="absolute left-0 top-0 bottom-0 flex w-6 items-center justify-start bg-gradient-to-r from-background via-background/80 to-transparent text-muted-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+      )}
+      {edges.right && (
+        <button
+          type="button"
+          aria-label="Rolar para a direita"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => scrollBy(1)}
+          className="absolute right-0 top-0 bottom-0 flex w-6 items-center justify-end bg-gradient-to-l from-background via-background/80 to-transparent text-muted-foreground"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  );
+}
