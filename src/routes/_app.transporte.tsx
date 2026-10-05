@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useAuth } from "@/hooks/use-auth";
+import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -370,6 +371,10 @@ function Page() {
 
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
 
+      <CollapseProvider scope="transport" visitId={visit.id}>
+      <div className="flex justify-end">
+        <CollapseAllButton ids={[...groups.map((g) => `day:${g.key}`), ...groups.flatMap((g) => g.rows.map((r) => `ev:${r.id}`))]} />
+      </div>
       <fieldset
         disabled={!editAllowed}
         className="grid gap-3 disabled:opacity-70 min-w-0 border-0 p-0 m-0"
@@ -398,6 +403,7 @@ function Page() {
                         : t("transport.noDay")}
                     </div>
                   </div>
+                  <CollapseIdToggle id={`day:${key}`} />
                   {isSuper && (
                     <Switch
                       checked={allActive}
@@ -407,6 +413,7 @@ function Page() {
                   )}
                 </div>
 
+                <CollapseBody id={`day:${key}`} className="space-y-3">
                 {/* All-day toggle (shared for the day) */}
                 <label className="flex items-center gap-2 text-sm">
                   <Switch
@@ -421,7 +428,8 @@ function Page() {
                   {rows.map((r, idx) => {
                     const showDriver = !head.all_day || idx === 0;
                     return (
-                      <div key={r.id} className="rounded-md border bg-muted/20 p-3 space-y-2">
+                      <CollapseItem key={r.id} id={`ev:${r.id}`} summary={[r.event_type ? eventTypeLabel(r.event_type) : null, r.direction ? directionLabel(r.direction) : null].filter(Boolean).join(" · ") || "—"}>
+                      <div className="rounded-md border bg-muted/20 p-3 space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <div className="text-xs font-medium">
                             {r.event_type ? eventTypeLabel(r.event_type) : t("transport.noDay")}
@@ -569,6 +577,7 @@ function Page() {
                           </div>
                         )}
                       </div>
+                      </CollapseItem>
                     );
                   })}
                   {head.all_day && (
@@ -577,11 +586,13 @@ function Page() {
                     </div>
                   )}
                 </div>
+                </CollapseBody>
               </CardContent>
             </Card>
           );
         })}
       </fieldset>
+      </CollapseProvider>
 
       <TransportReportDialog
         open={reportOpen}

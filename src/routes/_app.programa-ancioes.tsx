@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
+import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import {
   listElderProgramForVisit,
@@ -264,7 +265,10 @@ function Page() {
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
 
       {loading ? <LoadingPanel /> : (
-        <>
+        <CollapseProvider scope="elder-program" visitId={visit.id}>
+          <div className="flex justify-end">
+            <CollapseAllButton ids={[...SECTIONS.map((s) => `sec:${s}`), ...SECTIONS.flatMap((s) => listFor(s).map((e) => `ev:${e.id}`))]} />
+          </div>
           {!isSuper && (
             <ElderTabPasswordCard congregationId={visit.congregation_id} />
           )}
@@ -274,7 +278,11 @@ function Page() {
             return (
               <Card key={section}>
                 <CardContent className="p-4 space-y-4">
-                  <h2 className="font-bold text-sm uppercase tracking-wide text-primary">{SECTION_TITLES[section]}</h2>
+                  <div className="flex min-w-0 items-center justify-between gap-2">
+                    <h2 className="truncate font-bold text-sm uppercase tracking-wide text-primary">{SECTION_TITLES[section]}</h2>
+                    <CollapseIdToggle id={`sec:${section}`} />
+                  </div>
+                  <CollapseBody id={`sec:${section}`} className="space-y-4">
 
                   <TemplateExtraBlock label="Informações adicionais do superintendente" value={sections[section]} />
 
@@ -295,8 +303,8 @@ function Page() {
                             )
                           : new Set<string>();
                         return (
+                          <CollapseItem key={ev.id} id={`ev:${ev.id}`} summary={[ev.slot_label, ev.family_name ?? ev.person_name].filter(Boolean).join(" · ") || SECTION_TITLES[section]}>
                           <EventCard
-                            key={ev.id}
                             ev={ev}
                             slots={slots}
                             usedSlots={usedSlots}
@@ -310,6 +318,7 @@ function Page() {
                             alreadyScheduled={dispatchedIds.has(`cron:${ev.id}`)}
                             alreadySavedToNotes={dispatchedIds.has(`notas:${ev.id}`)}
                           />
+                          </CollapseItem>
 
                         );
                       })}
@@ -321,11 +330,12 @@ function Page() {
                       <Plus className="h-4 w-4 mr-1" /> Adicionar
                     </Button>
                   )}
+                  </CollapseBody>
                 </CardContent>
               </Card>
             );
           })}
-        </>
+        </CollapseProvider>
       )}
       <ElderExecutiveReportDialog
         open={reportOpen}

@@ -18,6 +18,7 @@ import {
   deleteFileAttachment,
   isLocalFileAttachment,
   openExternalUrl,
+  openLocalVideoNative,
   type NoteAttachment,
 } from "@/lib/outline-attachments";
 
@@ -120,7 +121,10 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
       return;
     }
     if (a.kind === "photo") setLightbox(a);
-    else if (isLocalVideo(a)) setVideoLightbox(a);
+    else if (isLocalVideo(a)) {
+      const opened = await openLocalVideoNative(a);
+      if (!opened) setVideoLightbox(a);
+    }
     else if (a.url) await openExternalUrl(a.url);
   }
 

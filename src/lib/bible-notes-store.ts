@@ -1,4 +1,5 @@
 // IndexedDB wrapper for "Considerações de campo" notes + Bíblias importadas via EPUB.
+import { resolveBibleLang } from "./bible-lang";
 // Fallback para localStorage apenas para as notas (a Bíblia exige IndexedDB pelo volume).
 // 100% local — sem rede, sem Supabase.
 
@@ -440,7 +441,7 @@ export async function listLibraries(): Promise<BibleLibrary[]> {
     const tx = db.transaction(STORE_LIBRARIES, "readonly");
     const req = tx.objectStore(STORE_LIBRARIES).getAll();
     req.onsuccess = () => {
-      const all = (req.result as BibleLibrary[]) ?? [];
+      const all = ((req.result as BibleLibrary[]) ?? []).map(withResolvedLang);
       all.sort((a, b) => b.imported_at - a.imported_at);
       resolve(all);
     };
@@ -517,9 +518,26 @@ export async function getActiveLibrary(): Promise<BibleLibrary | null> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_LIBRARIES, "readonly");
     const req = tx.objectStore(STORE_LIBRARIES).get(id);
-    req.onsuccess = () => resolve((req.result as BibleLibrary | undefined) ?? null);
+    req.onsuccess = () => {
+      const lib = (req.result as BibleLibrary | undefined) ?? null;
+      resolve(lib ? withResolvedLang(lib) : null);
+    };
     req.onerror = () => reject(req.error);
   });
+}
+
+/** Corrige só o idioma exibido (em memória) a partir dos nomes dos livros. */
+function withResolvedLang(lib: BibleLibrary): BibleLibrary {
+  try {
+    if (!Array.isArray(lib.books) || lib.books.length === 0) return lib;
+    const r = resolveBibleLang(lib.lang, lib.books, lib.title);
+    if (r.lang === lib.lang && r.langLabel === lib.langLabel) return lib;
+    // Mantém o rótulo regional já gravado se o idioma base coincidir.
+    if (r.lang === lib.lang && lib.langLabel.startsWith(`${r.langLabel} (`)) return lib;
+    return { ...lib, lang: r.lang, langLabel: r.langLabel };
+  } catch {
+    return lib;
+  }
 }
 
 export async function getVerseFromLibrary(

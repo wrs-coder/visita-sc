@@ -1,5 +1,6 @@
 # Roadmap
 
+- [x] Corrigir o idioma exibido de Bíblias EPUB já importadas e futuras sem regravar versículos nem destaques; validar francês e português europeu.
 - [x] Corrigir "spawn npx ENOENT" no Windows: shell:true em scripts/build-app-shell.mjs + fallback de montagem estática da casca (sem subprocesso).
 - [x] Priorizar `visitasc.com.br` diretamente no aplicativo e validar o fallback de conexão da versão 4.1.3.
 - [x] Corrigir o CORS real das server functions, validar a origem antes do login e publicar a correção Android 4.1.4.
@@ -23,3 +24,6 @@
 - [x] Relatórios executivos: dia e horário de Pioneiros e Anciãos/Servos iguais à aba "Reuniões e Discursos", "A combinar" quando não definido, checklist completo na exportação. Versão 4.2.8/versionCode 18.
 - [ ] (adiada) Etapa B: sincronizar anexos (fotos/vídeos) com a nuvem.
 - [x] Balão bíblico: apresentar texto primeiro com controles expansíveis e manter a escala da letra igual entre esboços e Tela Cheia; arraste livre corrigido e conferido em tela pequena.
+- [x] 4.2.13: vídeo/foto gravados em pedaços no app Android (corrige "Não foi possível adicionar o anexo"), vídeo abre no player nativo, zoom nas fotos, tópicos recolhíveis nos esboços.
+- [ ] (usuário) Instalar a 4.2.13 no celular e conferir anexar vídeo MP4, zoom e tópicos.
+- [ ] 4.2.14: barra compacta restaurada a duas linhas roláveis; falta concluir AAB assinado e entregar as notas desde 4.2.12.

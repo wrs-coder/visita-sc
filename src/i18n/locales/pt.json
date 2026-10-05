@@ -1618,6 +1618,25 @@
         "indent": "Aumentar recuo",
         "outdent": "Diminuir recuo"
       }
+    },
+    "attachments": {
+      "storageFull": "Pouco espaço no aparelho para gravar este anexo.",
+      "videoWriteFailed": "Falha ao gravar o vídeo no aparelho. Tente novamente.",
+      "saving": "Gravando… {{pct}}%",
+      "zoomIn": "Aproximar",
+      "zoomOut": "Afastar",
+      "zoomReset": "Tamanho normal"
+    },
+    "topics": {
+      "create": "Criar tópico",
+      "remove": "Remover tópico",
+      "rename": "Renomear tópico",
+      "defaultTitle": "Tópico",
+      "titlePrompt": "Título do tópico",
+      "collapse": "Recolher tópico",
+      "expand": "Expandir tópico",
+      "collapseAll": "Recolher todos",
+      "expandAll": "Expandir todos"
     }
   },
   "bibleManager": {
@@ -1781,5 +1800,11 @@
   "connectionBanner": {
     "dismiss": "Minimizar aviso",
     "reopen": "Mostrar aviso de conexão"
+  },
+  "collapse": {
+    "collapse": "Recolher",
+    "expand": "Expandir",
+    "collapseAll": "Recolher tudo",
+    "expandAll": "Expandir tudo"
   }
 }

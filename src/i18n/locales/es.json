@@ -1592,6 +1592,25 @@
         "indent": "Aumentar sangría",
         "outdent": "Reducir sangría"
       }
+    },
+    "attachments": {
+      "storageFull": "Poco espacio en el dispositivo para guardar este adjunto.",
+      "videoWriteFailed": "No se pudo guardar el video en el dispositivo. Inténtalo de nuevo.",
+      "saving": "Guardando… {{pct}}%",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "zoomReset": "Tamaño normal"
+    },
+    "topics": {
+      "create": "Crear tema",
+      "remove": "Quitar tema",
+      "rename": "Renombrar tema",
+      "defaultTitle": "Tema",
+      "titlePrompt": "Título del tema",
+      "collapse": "Contraer tema",
+      "expand": "Expandir tema",
+      "collapseAll": "Contraer todos",
+      "expandAll": "Expandir todos"
     }
   },
   "bibleManager": {
@@ -1755,5 +1774,11 @@
   "connectionBanner": {
     "dismiss": "Minimizar aviso",
     "reopen": "Mostrar aviso de conexión"
+  },
+  "collapse": {
+    "collapse": "Contraer",
+    "expand": "Expandir",
+    "collapseAll": "Contraer todo",
+    "expandAll": "Expandir todo"
   }
 }
