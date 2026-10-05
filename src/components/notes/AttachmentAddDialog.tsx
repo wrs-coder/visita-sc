@@ -46,6 +46,7 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
   const [linkKind, setLinkKind] = useState<Extract<NoteAttachmentKind, "video" | "publication">>("video");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -65,10 +66,12 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
   async function submit() {
     if (!canSubmit) return;
     setBusy(true);
+    setProgress(null);
+    const onProgress = (f: number) => setProgress(Math.round(f * 100));
     try {
       if (mode === "photo" && file) {
         const attId = makeAttachmentId();
-        const saved = await savePhotoAttachment(file, noteId, attId);
+        const saved = await savePhotoAttachment(file, noteId, attId, onProgress);
         onAdd({
           id: saved.attachmentId,
           kind: "photo",
@@ -81,7 +84,7 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
         });
       } else if (mode === "videoFile" && file) {
         const attId = makeAttachmentId();
-        const saved = await saveVideoAttachment(file, noteId, attId);
+        const saved = await saveVideoAttachment(file, noteId, attId, onProgress);
         onAdd({
           id: saved.attachmentId,
           kind: "video",
@@ -112,6 +115,18 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
             defaultValue: "Vídeo muito grande. Limite: 200 MB.",
           }),
         );
+      } else if (msg === "STORAGE_FULL") {
+        toast.error(
+          t("personalOutlines.attachments.storageFull", {
+            defaultValue: "Pouco espaço no aparelho para gravar este anexo.",
+          }),
+        );
+      } else if (msg === "VIDEO_WRITE_FAILED") {
+        toast.error(
+          t("personalOutlines.attachments.videoWriteFailed", {
+            defaultValue: "Falha ao gravar o vídeo no aparelho. Tente novamente.",
+          }),
+        );
       } else {
         toast.error(
           t("personalOutlines.attachments.addError", {
@@ -121,6 +136,7 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
       }
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   }
 
@@ -256,7 +272,12 @@ export function AttachmentAddDialog({ open, mode, noteId, onClose, onAdd }: Prop
           </Button>
           <Button type="button" onClick={submit} disabled={!canSubmit}>
             {busy && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
-            {t("personalOutlines.attachments.add", { defaultValue: "Adicionar" })}
+            {busy && progress !== null
+              ? t("personalOutlines.attachments.saving", {
+                  defaultValue: "Gravando… {{pct}}%",
+                  pct: progress,
+                })
+              : t("personalOutlines.attachments.add", { defaultValue: "Adicionar" })}
           </Button>
         </DialogFooter>
       </DialogContent>
