@@ -173,15 +173,17 @@ function Page() {
                 <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("meals.noMeals")}</CardContent></Card>
               ) : (
                 dayMeals.map((m) => (
-                  <CollapseItem key={m.id} id={`ev:${m.id}`} summary={[MEAL_LABEL[m.type], m.meal_time?.slice(0, 5), m.host_name].filter(Boolean).join(" · ")}>
+                  <CollapseItem key={m.id} id={`ev:${m.id}`} summary={[t(`meals.${m.type}`), m.meal_time?.slice(0, 5), m.host_name].filter(Boolean).join(" · ")}>
                     <MealCard meal={m} isSuper={isSuper} saving={savingId === m.id} update={update} remove={remove} />
                   </CollapseItem>
                 ))
               )}
+              </CollapseBody>
             </section>
           );
         })}
       </fieldset>
+      </CollapseProvider>
 
       <MealsReportDialog
         open={reportOpen}
