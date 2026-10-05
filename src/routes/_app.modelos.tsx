@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, FileStack, Save, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 
 export const Route = createFileRoute("/_app/modelos")({ component: Page });
 
@@ -241,13 +242,29 @@ function Page() {
           const notes = notesBySlot[slot] ?? {};
           return (
             <TabsContent key={slot} value={String(slot)} className="space-y-4">
+              <CollapseProvider scope="tpl-program" visitId={`tpl:${slot}`}>
+              <div className="flex justify-end">
+                <CollapseAllButton ids={(["study", "meal", "transport"] as Kind[]).flatMap((k) => [
+                  ...DAY_OPTS.map((d) => `${k}:day:${d}`),
+                  ...items.map((it, i) => (it.kind === k ? `${k}:ev:${i}` : null)).filter((x): x is string => !!x),
+                ])} />
+              </div>
               <Card><CardContent className="p-4 space-y-3">
                 <div>
                   <Label>{t("templates.program.templateName")}</Label>
                   <Input className="mt-1" value={namesBySlot[slot] ?? ""} onChange={(e) => setNamesBySlot({ ...namesBySlot, [slot]: e.target.value })} onBlur={(e) => renameSlot(slot, e.target.value)} />
                 </div>
 
-                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
+                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL}
+                  dayExtra={(d) => (
+                    <Input
+                      className="h-9"
+                      placeholder="Informações adicionais do superintendente"
+                      value={(studyNotesBySlot[slot] ?? {})[String(d)] ?? ""}
+                      onChange={(e) => setStudyNotesBySlot({ ...studyNotesBySlot, [slot]: { ...(studyNotesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
+                      onBlur={(e) => saveStudyNote(slot, String(d), e.target.value)}
+                    />
+                  )} />
 
                 <div className="border rounded-lg p-3 space-y-2">
                   <h3 className="text-sm font-semibold">Informações adicionais do superintendente — Estudos e Revisitas por dia</h3>
@@ -268,23 +285,18 @@ function Page() {
                     />
                     <p className="text-xs text-muted-foreground mt-1">Aparecem em vermelho no topo da aba Estudos e Revisitas dos anciãos.</p>
                   </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {DAY_OPTS.map((d) => (
-                      <div key={d} className="flex items-center gap-2">
-                        <div className="text-xs font-medium w-24 shrink-0 text-muted-foreground">{DAY_LABEL[d]}</div>
-                        <Input
-                          className="h-9 flex-1"
-                          placeholder="Informações adicionais do superintendente"
-                          value={(studyNotesBySlot[slot] ?? {})[String(d)] ?? ""}
-                          onChange={(e) => setStudyNotesBySlot({ ...studyNotesBySlot, [slot]: { ...(studyNotesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
-                          onBlur={(e) => saveStudyNote(slot, String(d), e.target.value)}
-                        />
-                      </div>
-                    ))}
-                  </div>
                 </div>
 
-                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
+                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL}
+                  dayExtra={(d) => (
+                    <Input
+                      className="h-9"
+                      placeholder={t("templates.program.mealNotesPlaceholder")}
+                      value={notes[String(d)] ?? ""}
+                      onChange={(e) => setNotesBySlot({ ...notesBySlot, [slot]: { ...(notesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
+                      onBlur={(e) => saveMealNote(slot, String(d), e.target.value)}
+                    />
+                  )} />
 
                 <div className="border rounded-lg p-3 space-y-2">
                   <h3 className="text-sm font-semibold">{t("templates.program.mealNotesTitle")}</h3>
@@ -305,20 +317,6 @@ function Page() {
                     />
                     <p className="text-xs text-muted-foreground mt-1">{t("templates.program.generalObservationsHint")}</p>
                   </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {DAY_OPTS.map((d) => (
-                      <div key={d} className="flex items-center gap-2">
-                        <div className="text-xs font-medium w-24 shrink-0 text-muted-foreground">{DAY_LABEL[d]}</div>
-                        <Input
-                          className="h-9 flex-1"
-                          placeholder={t("templates.program.mealNotesPlaceholder")}
-                          value={notes[String(d)] ?? ""}
-                          onChange={(e) => setNotesBySlot({ ...notesBySlot, [slot]: { ...(notesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
-                          onBlur={(e) => saveMealNote(slot, String(d), e.target.value)}
-                        />
-                      </div>
-                    ))}
-                  </div>
                 </div>
 
                 <KindBlock title={t("templates.program.transportTitle")} kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
@@ -327,6 +325,7 @@ function Page() {
                   <Save className="h-4 w-4 mr-1" /> {t("templates.program.saveTemplate")}
                 </Button>
               </CardContent></Card>
+              </CollapseProvider>
             </TabsContent>
           );
         })}
@@ -335,36 +334,63 @@ function Page() {
   );
 }
 
-function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLabel }: {
+function summarize(kind: Kind, p: Payload, t: (k: string) => string): string {
+  const v = (k: string) => (p[k] == null || p[k] === "" ? null : String(p[k]));
+  const time = (k: string) => v(k)?.slice(0, 5) ?? null;
+  if (kind === "study") return [v("period"), time("meeting_time"), v("acompanhante")].filter(Boolean).join(" · ");
+  if (kind === "meal") return [v("type") ? t(`templates.program.meal.${v("type")}`) : null, time("meal_time"), v("host_name")].filter(Boolean).join(" · ");
+  return [v("driver_name"), time("departure_time")].filter(Boolean).join(" · ");
+}
+
+function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLabel, dayExtra }: {
   title: string; kind: Kind; tplId: string | undefined; items: ItemDraft[];
   onAdd: () => void;
   onUpdate: (tplId: string, idx: number, patch: Partial<ItemDraft>) => void;
   onRemove: (tplId: string, idx: number) => void;
   dayLabel: Record<number, string>;
+  dayExtra?: (d: number) => React.ReactNode;
 }) {
   const { t } = useTranslation();
   const filtered = items.map((it, i) => ({ it, i })).filter(({ it }) => it.kind === kind);
+  const days = DAY_OPTS.filter((d) => dayExtra || filtered.some(({ it }) => it.day_offset === d));
   return (
     <div className="border rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold">{title}</h3>
         <Button size="sm" variant="outline" onClick={onAdd}><Plus className="h-3 w-3 mr-1" />{t("common.add")}</Button>
       </div>
-      {filtered.length === 0 && <p className="text-xs text-muted-foreground">{t("templates.program.noItems")}</p>}
-      <div className="space-y-2">
-        {filtered.map(({ it, i }) => (
-          <div key={i} className="bg-muted/30 rounded-md p-2 space-y-2">
-            <div className="flex items-center gap-2">
-              <Select value={String(it.day_offset)} onValueChange={(v) => tplId && onUpdate(tplId, i, { day_offset: Number(v) })}>
-                <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
-                <SelectContent>{DAY_OPTS.map((d) => <SelectItem key={d} value={String(d)}>{dayLabel[d]}</SelectItem>)}</SelectContent>
-              </Select>
-              <div className="flex-1" />
-              <Button size="icon" variant="ghost" onClick={() => tplId && onRemove(tplId, i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-            </div>
-            <PayloadEditor kind={kind} payload={it.payload} onChange={(p) => tplId && onUpdate(tplId, i, { payload: p })} />
-          </div>
-        ))}
+      {filtered.length === 0 && !dayExtra && <p className="text-xs text-muted-foreground">{t("templates.program.noItems")}</p>}
+      <div className="space-y-3">
+        {days.map((d) => {
+          const dayItems = filtered.filter(({ it }) => it.day_offset === d);
+          const dayId = `${kind}:day:${d}`;
+          return (
+            <section key={d}>
+              <div className="flex items-center gap-1 mb-1">
+                <CollapseIdToggle id={dayId} />
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dayLabel[d]}</div>
+              </div>
+              <CollapseBody id={dayId} className="space-y-2">
+                {dayExtra?.(d)}
+                {dayItems.map(({ it, i }) => (
+                  <CollapseItem key={i} id={`${kind}:ev:${i}`} summary={summarize(kind, it.payload, t) || "—"}>
+                    <div className="bg-muted/30 rounded-md p-2 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Select value={String(it.day_offset)} onValueChange={(v) => tplId && onUpdate(tplId, i, { day_offset: Number(v) })}>
+                          <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                          <SelectContent>{DAY_OPTS.map((dd) => <SelectItem key={dd} value={String(dd)}>{dayLabel[dd]}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <div className="flex-1" />
+                        <Button size="icon" variant="ghost" onClick={() => tplId && onRemove(tplId, i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                      </div>
+                      <PayloadEditor kind={kind} payload={it.payload} onChange={(p) => tplId && onUpdate(tplId, i, { payload: p })} />
+                    </div>
+                  </CollapseItem>
+                ))}
+              </CollapseBody>
+            </section>
+          );
+        })}
       </div>
     </div>
   );
