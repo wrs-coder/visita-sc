@@ -167,3 +167,9 @@ export function CollapseAllButton({ ids, className }: { ids: string[]; className
     </button>
   );
 }
+
+/** Setinha ligada ao contexto (para títulos de dia/seção). */
+export function CollapseIdToggle({ id, className }: { id: string; className?: string }) {
+  const [open, toggle] = useCollapseOpen(id);
+  return <CollapseToggle open={open} onToggle={toggle} className={className} />;
+}
