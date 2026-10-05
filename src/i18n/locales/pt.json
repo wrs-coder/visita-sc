@@ -1800,5 +1800,11 @@
   "connectionBanner": {
     "dismiss": "Minimizar aviso",
     "reopen": "Mostrar aviso de conexão"
+  },
+  "collapse": {
+    "collapse": "Recolher",
+    "expand": "Expandir",
+    "collapseAll": "Recolher tudo",
+    "expandAll": "Expandir tudo"
   }
 }

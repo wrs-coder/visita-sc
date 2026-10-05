@@ -1774,5 +1774,11 @@
   "connectionBanner": {
     "dismiss": "Minimizar aviso",
     "reopen": "Mostrar aviso de conexión"
+  },
+  "collapse": {
+    "collapse": "Contraer",
+    "expand": "Expandir",
+    "collapseAll": "Contraer todo",
+    "expandAll": "Expandir todo"
   }
 }

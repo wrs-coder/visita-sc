@@ -1799,5 +1799,11 @@
   "connectionBanner": {
     "dismiss": "Minimize notice",
     "reopen": "Show connection notice"
+  },
+  "collapse": {
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "collapseAll": "Collapse all",
+    "expandAll": "Expand all"
   }
 }
