@@ -267,11 +267,12 @@ export function RichNoteToolbar({
     return (
       <div
         className={cn(
-          "sticky top-0 z-20 grid grid-cols-5 gap-1 rounded-t-md border-b bg-background/95 backdrop-blur px-2 py-1.5 transition-all",
+          "sticky top-0 z-20 flex flex-col gap-1 rounded-t-md border-b bg-background/95 backdrop-blur px-2 py-1.5 transition-all",
           !visible && "opacity-0 pointer-events-none -translate-y-1",
         )}
         onMouseDown={(e) => e.preventDefault()}
       >
+        <ScrollRow>
         {/* G1 — Estilo de bloco */}
         <Popover open={openG("block")} onOpenChange={setG("block")}>
           <PopoverTrigger asChild>
@@ -370,6 +371,35 @@ export function RichNoteToolbar({
           </PopoverContent>
         </Popover>
 
+        </ScrollRow>
+        <ScrollRow>
+        {/* Ações principais — sempre no começo da segunda fila. */}
+        {topicButton(groupBtn(false))}
+        {onAddPhotoAttachment && (
+          <Button type="button" variant="ghost" size="sm" className={groupBtn(false)}
+            title={t("personalOutlines.attachments.addPhoto", { defaultValue: "Anexar imagem" })}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onAddPhotoAttachment}>
+            <ImagePlus className="h-4 w-4" />
+          </Button>
+        )}
+        {onAddVideoAttachment && (
+          <Button type="button" variant="ghost" size="sm" className={groupBtn(false)}
+            title={t("personalOutlines.attachments.addVideoFile", { defaultValue: "Anexar vídeo" })}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onAddVideoAttachment}>
+            <Video className="h-4 w-4" />
+          </Button>
+        )}
+        {onAddLinkAttachment && (
+          <Button type="button" variant="ghost" size="sm" className={groupBtn(false)}
+            title={t("personalOutlines.attachments.addLink", { defaultValue: "Vincular link" })}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onAddLinkAttachment}>
+            <LinkExternalIcon className="h-4 w-4" />
+          </Button>
+        )}
+
         {/* G6 — Listas + recuo */}
         <Popover open={openG("lists")} onOpenChange={setG("lists")}>
           <PopoverTrigger asChild>
@@ -456,38 +486,7 @@ export function RichNoteToolbar({
             <Focus className="h-4 w-4" />
           </Button>
         ) : <div />}
-
-        {/* Anexos — botões extras (imagem + link). Renderiza fora do grid
-            para manter as 2 linhas originais quando ativos. */}
-        {(onAddPhotoAttachment || onAddLinkAttachment || onAddVideoAttachment) && (
-          <div className="col-span-5 flex items-center justify-end gap-1 -mt-1">
-            {topicButton(groupBtn(false))}
-            {onAddPhotoAttachment && (
-              <Button type="button" variant="ghost" size="sm" className={groupBtn(false)}
-                title={t("personalOutlines.attachments.addPhoto", { defaultValue: "Anexar imagem" })}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={onAddPhotoAttachment}>
-                <ImagePlus className="h-4 w-4" />
-              </Button>
-            )}
-            {onAddVideoAttachment && (
-              <Button type="button" variant="ghost" size="sm" className={groupBtn(false)}
-                title={t("personalOutlines.attachments.addVideoFile", { defaultValue: "Anexar vídeo" })}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={onAddVideoAttachment}>
-                <Video className="h-4 w-4" />
-              </Button>
-            )}
-            {onAddLinkAttachment && (
-              <Button type="button" variant="ghost" size="sm" className={groupBtn(false)}
-                title={t("personalOutlines.attachments.addLink", { defaultValue: "Vincular link" })}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={onAddLinkAttachment}>
-                <LinkExternalIcon className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        )}
+        </ScrollRow>
       </div>
     );
   }
