@@ -25,7 +25,7 @@ No modo compacto, a barra usa duas linhas de cinco grupos. Ao incluir **Criar t�
 1. Atualizar o aplicativo de **4.2.13 (código 23)** para **4.2.14 (código 24)** no pacote Android, na identificação interna e na tela de entrada.
 2. Manter o aviso automático apontando para a última versão já aprovada na loja; a 4.2.14 só será anunciada aos usuários depois da aprovação da Play Store.
 3. Gerar o arquivo AAB assinado para envio e conferir a assinatura com a verificação já existente no projeto.
-4. Entregar também um texto curto de “O que há de novo” mencionando a correção da barra e os ajustes acumulados desde a versão publicada.
+4. Entregar também um texto curto de “O que há de novo” cobrindo os ajustes acumulados desde a versão publicada **4.2.12**: anexos grandes de foto e vídeo no Android, zoom das fotos, tópicos recolhíveis nos esboços, recolher/expandir nas visitas e modelos, idioma correto das Bíblias EPUB e correção da barra do editor.
 
 ## Limites
 
