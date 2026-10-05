@@ -35,4 +35,6 @@ Hoje o visualizador de fotos não tem zoom próprio. Quando o zoom "funciona", �
 - Botões **"Recolher todos" / "Expandir todos"** no topo do esboço.
 - **O estado fica salvo neste aparelho**: o esboço reabre do jeito que você deixou.
 - Esboços antigos continuam iguais até você criar tópicos.
+- **Dentro dos tópicos, tudo funciona como no resto do esboço**: formatação (negrito, cores, grifo, tamanho, fonte, listas, tabelas), aumentar e diminuir recuo, alinhamento, textos bíblicos clicáveis com o balão de versículos, marcação de tarefas e o modo foco. O título do tópico também aceita textos bíblicos.
+- Verificação: um esboço de teste com todos esses recursos dentro de um tópico, conferido no modo edição e nos modos esboço, imersivo e tela cheia, com o tópico recolhido e expandido.
 - Técnico: novo nó TipTap `outlineTopic` (bloco com `id` e `title`, conteúdo `block+`), usando `<details>`/`<summary>` na renderização. O comando `wrapIn` vem da seleção em `RichNoteToolbar.tsx`. O mesmo nó entra em `RichNoteEditor.tsx` e no renderizador de leitura `rich-content.tsx`. O estado de recolhido fica no localStorage por esboço e por tópico (`outline-collapse:${noteId}`). O conteúdo continua no mesmo `content_json`, sem mudança no banco. Testes de renderização e do round-trip do nó.
