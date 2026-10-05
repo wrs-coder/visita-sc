@@ -530,10 +530,10 @@ export async function getActiveLibrary(): Promise<BibleLibrary | null> {
 function withResolvedLang(lib: BibleLibrary): BibleLibrary {
   try {
     if (!Array.isArray(lib.books) || lib.books.length === 0) return lib;
-    const r = resolveBibleLang(lib.lang, lib.books);
+    const r = resolveBibleLang(lib.lang, lib.books, lib.title);
     if (r.lang === lib.lang && r.langLabel === lib.langLabel) return lib;
     // Mantém o rótulo regional já gravado se o idioma base coincidir.
-    if (r.lang === lib.lang && lib.langLabel.includes("(")) return lib;
+    if (r.lang === lib.lang && lib.langLabel.startsWith(`${r.langLabel} (`)) return lib;
     return { ...lib, lang: r.lang, langLabel: r.langLabel };
   } catch {
     return lib;

@@ -1202,7 +1202,7 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
   books.sort((a, b) => a.order - b.order);
 
   try {
-    const r = resolveBibleLang(opf.meta.langTag ?? opf.meta.lang, books);
+    const r = resolveBibleLang(opf.meta.langTag ?? opf.meta.lang, books, opf.meta.title);
     opf.meta.lang = r.lang;
     opf.meta.langLabel = r.langLabel;
   } catch { /* mantém o idioma declarado */ }
