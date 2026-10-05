@@ -126,9 +126,9 @@ function Page() {
             <AccordionItem key={it.id} value={it.id} className="bg-card border rounded-lg shadow-card px-4 data-[state=open]:shadow-elevated section-accent">
               <div className="flex items-center gap-3">
                 <button
-                  disabled={!canEdit}
-                  onClick={(e) => { e.stopPropagation(); if (canEdit) update(it.id, { status: it.status === "done" ? "pending" : "done" }); }}
-                  className={`shrink-0 h-6 w-6 rounded-md border-2 flex items-center justify-center transition ${it.status === "done" ? "bg-success border-success" : "border-muted-foreground/30 hover:border-primary"} ${!canEdit ? "opacity-60 cursor-not-allowed" : ""}`}>
+                  disabled={!canEdit || !editAllowed}
+                  onClick={(e) => { e.stopPropagation(); if (canEdit && editAllowed) update(it.id, { status: it.status === "done" ? "pending" : "done" }); }}
+                  className={`shrink-0 h-6 w-6 rounded-md border-2 flex items-center justify-center transition ${it.status === "done" ? "bg-success border-success" : "border-muted-foreground/30 hover:border-primary"} ${!canEdit || !editAllowed ? "opacity-60 cursor-not-allowed" : ""}`}>
                   {it.status === "done" && <Check className="h-3.5 w-3.5 text-success-foreground" />}
                 </button>
                 <AccordionTrigger className="flex-1 hover:no-underline py-3">
