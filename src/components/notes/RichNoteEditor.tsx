@@ -24,6 +24,7 @@ import { CharacterCount } from "@tiptap/extension-character-count";
 import { Focus as TiptapFocus } from "@tiptap/extension-focus";
 import { RichNoteToolbar } from "./RichNoteToolbar";
 import { FontSize } from "./extensions/font-size";
+import { OutlineTopic } from "./extensions/outline-topic";
 import { OutlineAttachmentsBar } from "./OutlineAttachmentsBar";
 import { AttachmentAddDialog } from "./AttachmentAddDialog";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
@@ -199,6 +200,14 @@ export function RichNoteEditor({
         TableCell,
         TaskList,
         TaskItem.configure({ nested: true }),
+        OutlineTopic.configure({
+          labels: {
+            rename: t("personalOutlines.topics.rename", { defaultValue: "Renomear tópico" }),
+            remove: t("personalOutlines.topics.remove", { defaultValue: "Remover tópico" }),
+            defaultTitle: t("personalOutlines.topics.defaultTitle", { defaultValue: "Tópico" }),
+            titlePrompt: t("personalOutlines.topics.titlePrompt", { defaultValue: "Título do tópico" }),
+          },
+        }),
         Placeholder.configure({
           placeholder: placeholder ?? t("personalOutlines.editor.placeholder"),
         }),
