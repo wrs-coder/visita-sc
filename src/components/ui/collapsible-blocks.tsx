@@ -99,22 +99,30 @@ export function CollapseToggle({ open, onToggle, className }: { open: boolean; o
     ? t("collapse.collapse", { defaultValue: "Recolher" })
     : t("collapse.expand", { defaultValue: "Expandir" });
   return (
-    <button
-      type="button"
+    <span
+      role="button"
+      tabIndex={0}
       onClick={(e) => {
         e.stopPropagation();
         onToggle();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggle();
+        }
       }}
       aria-expanded={open}
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
+        "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
         className,
       )}
     >
       <ChevronDown className={cn("h-4 w-4 transition-transform", !open && "-rotate-90")} />
-    </button>
+    </span>
   );
 }
 
@@ -152,11 +160,18 @@ export function CollapseAllButton({ ids, className }: { ids: string[]; className
   const anyOpen = ids.some((id) => c.isOpen(id));
   if (ids.length === 0) return null;
   return (
-    <button
-      type="button"
+    <span
+      role="button"
+      tabIndex={0}
       onClick={() => c.setAll(ids, !anyOpen)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          c.setAll(ids, !anyOpen);
+        }
+      }}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
+        "inline-flex cursor-pointer select-none items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
         className,
       )}
     >
@@ -164,7 +179,7 @@ export function CollapseAllButton({ ids, className }: { ids: string[]; className
       {anyOpen
         ? t("collapse.collapseAll", { defaultValue: "Recolher tudo" })
         : t("collapse.expandAll", { defaultValue: "Expandir tudo" })}
-    </button>
+    </span>
   );
 }
 
