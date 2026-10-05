@@ -4,6 +4,7 @@
 // (ver bible-canon.ts), independente do idioma do EPUB.
 
 import JSZip from "jszip";
+import { resolveBibleLang } from "./bible-lang";
 import {
   CANON,
   findCanonicalInText,
@@ -31,6 +32,7 @@ export interface ParsedEpubMeta {
   lang: string;        // ISO-639-1 (ex: "pt", "en")
   langLabel: string;   // rótulo legível (ex: "Português")
   identifier?: string;
+  langTag?: string;    // idioma declarado bruto (ex: "pt-PT")
 }
 
 export interface ParsedEpub {
@@ -161,11 +163,12 @@ async function parseOpf(zip: JSZip, opfPath: string): Promise<OpfData> {
 
   const meta: ParsedEpubMeta = {
     title: dc("title") || "Bíblia importada",
-    lang: normalizeLang(dc("language")),
+    lang: normalizeLang(dc("language") || doc.documentElement?.getAttribute("xml:lang")),
     langLabel: "",
     identifier: dc("identifier") || undefined,
   };
   meta.langLabel = langLabel(meta.lang);
+  meta.langTag = dc("language") || doc.documentElement?.getAttribute("xml:lang") || undefined;
 
   const manifest = new Map<string, { href: string; mediaType: string }>();
   const items = doc.getElementsByTagName("item");
@@ -1197,6 +1200,12 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
 
   // Garante 'order' consistente
   books.sort((a, b) => a.order - b.order);
+
+  try {
+    const r = resolveBibleLang(opf.meta.langTag ?? opf.meta.lang, books);
+    opf.meta.lang = r.lang;
+    opf.meta.langLabel = r.langLabel;
+  } catch { /* mantém o idioma declarado */ }
 
   return { meta: opf.meta, books, verses };
 }
