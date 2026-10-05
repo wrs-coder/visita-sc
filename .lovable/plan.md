@@ -1,4 +1,4 @@
-# Corrigir a barra de ferramentas dos esboços no smartphone
+# Corrigir a barra dos esboços e preparar a versão 4.2.14
 
 ## O que aconteceu
 
@@ -19,6 +19,13 @@ No modo compacto, a barra usa duas linhas de cinco grupos. Ao incluir **Criar t�
 - Confirmar que **Criar tópico**, foto, vídeo e link abrem corretamente.
 - Conferir também o modo normal para garantir que a correção anterior da rolagem permaneceu funcionando.
 - Executar a verificação de tipos e os testes automatizados do projeto.
+
+## Versão para a Play Store
+
+1. Atualizar o aplicativo de **4.2.13 (código 23)** para **4.2.14 (código 24)** no pacote Android, na identificação interna e na tela de entrada.
+2. Manter o aviso automático apontando para a última versão já aprovada na loja; a 4.2.14 só será anunciada aos usuários depois da aprovação da Play Store.
+3. Gerar o arquivo AAB assinado para envio e conferir a assinatura com a verificação já existente no projeto.
+4. Entregar também um texto curto de “O que há de novo” mencionando a correção da barra e os ajustes acumulados desde a versão publicada.
 
 ## Limites
 
