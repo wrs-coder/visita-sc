@@ -34,6 +34,7 @@ import {
   IndentDecrease,
   Type,
   Focus,
+  ListCollapse,
   ImagePlus,
   Video,
   Link as LinkExternalIcon,
@@ -179,6 +180,26 @@ export function RichNoteToolbar({
   const [tableOpen, setTableOpen] = useState(false);
   const [fontOpen, setFontOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState<string | null>(null);
+
+  const topicButton = (cls: string) => (
+    <Button type="button" variant="ghost" size="sm" className={cls}
+      title={t("personalOutlines.topics.create", { defaultValue: "Criar tópico" })}
+      aria-label={t("personalOutlines.topics.create", { defaultValue: "Criar tópico" })}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => {
+        if (!editor) return;
+        const title = window.prompt(
+          t("personalOutlines.topics.titlePrompt", { defaultValue: "Título do tópico" }),
+          "",
+        );
+        if (title === null) return;
+        editor.chain().focus().setOutlineTopic(
+          title.trim() || t("personalOutlines.topics.defaultTitle", { defaultValue: "Tópico" }),
+        ).run();
+      }}>
+      <ListCollapse className="h-4 w-4" />
+    </Button>
+  );
 
   if (!editor) return null;
 
@@ -438,6 +459,7 @@ export function RichNoteToolbar({
             para manter as 2 linhas originais quando ativos. */}
         {(onAddPhotoAttachment || onAddLinkAttachment || onAddVideoAttachment) && (
           <div className="col-span-5 flex items-center justify-end gap-1 -mt-1">
+            {topicButton(groupBtn(false))}
             {onAddPhotoAttachment && (
               <Button type="button" variant="ghost" size="sm" className={groupBtn(false)}
                 title={t("personalOutlines.attachments.addPhoto", { defaultValue: "Anexar imagem" })}
@@ -837,6 +859,8 @@ export function RichNoteToolbar({
             </>
           )}
 
+          {sep}
+          {topicButton(iconBtn(false))}
           {onToggleFocusMode && (
             <>
               {sep}

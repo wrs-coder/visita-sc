@@ -1617,6 +1617,25 @@
         "indent": "Increase indent",
         "outdent": "Decrease indent"
       }
+    },
+    "attachments": {
+      "storageFull": "Not enough space on this device to save this attachment.",
+      "videoWriteFailed": "Could not save the video on this device. Please try again.",
+      "saving": "Saving… {{pct}}%",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomReset": "Actual size"
+    },
+    "topics": {
+      "create": "Create topic",
+      "remove": "Remove topic",
+      "rename": "Rename topic",
+      "defaultTitle": "Topic",
+      "titlePrompt": "Topic title",
+      "collapse": "Collapse topic",
+      "expand": "Expand topic",
+      "collapseAll": "Collapse all",
+      "expandAll": "Expand all"
     }
   },
   "bibleManager": {

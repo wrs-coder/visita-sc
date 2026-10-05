@@ -5,6 +5,8 @@ import { UnknownRefLink } from "@/components/bible/UnknownRefPopover";
 
 import type { BibleLibrary } from "@/lib/bible-notes-store";
 import { RICH_NOTE_CONTENT_CLASS } from "@/lib/rich-note-styles";
+import { OUTLINE_TOPIC_TYPE } from "@/lib/outline-topics";
+import { OutlineTopicBlock, OutlineTopicsToolbar } from "@/components/notes/OutlineTopicBlock";
 
 // ============================================================================
 // Sanitizer (whitelist mínima) — aceita apenas tags/atributos usados pelo
@@ -69,6 +71,8 @@ function sanitizeStyle(raw: string): string {
 
 const KEEP_ATTRS = new Set([
   "data-type",
+  "data-topic-id",
+  "data-title",
   "data-checked",
   "data-align",
   "colspan",
@@ -405,6 +409,27 @@ function renderNode(node: Node, opts: RenderOpts, path: string, plan: CitationPl
     <React.Fragment key={`${path}.${i}`}>{renderNode(c, opts, `${path}.${i}`, plan)}</React.Fragment>
   ));
 
+  if (tag === "DIV" && el.getAttribute("data-type") === OUTLINE_TOPIC_TYPE) {
+    const topicId = el.getAttribute("data-topic-id") || path;
+    const title = el.getAttribute("data-title") || "";
+    return (
+      <OutlineTopicBlock
+        key={path}
+        id={topicId}
+        title={renderTextWithCitations(
+          title,
+          opts.library?.books,
+          opts.library?.id ?? null,
+          opts.fontScale,
+          `${path}-title`,
+          opts.onInsertVerse,
+        )}
+      >
+        {children}
+      </OutlineTopicBlock>
+    );
+  }
+
 
   const style = styleObjectFromAttr(el.getAttribute("style"));
   const key = path;
@@ -509,7 +534,15 @@ function RichOutlineContentImpl({
         {renderNode(n, opts, `n${i}`, plan)}
       </React.Fragment>
     ));
-    return <div className={RICH_NOTE_CONTENT_CLASS}>{nodes}</div>;
+    const topicIds = Array.from(root.querySelectorAll(`div[data-type="${OUTLINE_TOPIC_TYPE}"]`))
+      .map((d) => d.getAttribute("data-topic-id") || "")
+      .filter(Boolean);
+    return (
+      <div className={RICH_NOTE_CONTENT_CLASS}>
+        {topicIds.length > 0 && <OutlineTopicsToolbar ids={topicIds} />}
+        {nodes}
+      </div>
+    );
 
     // `library` só importa pela identidade do id/livros; fontScale muda tamanho.
     // eslint-disable-next-line react-hooks/exhaustive-deps
