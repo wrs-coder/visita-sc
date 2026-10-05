@@ -140,7 +140,7 @@ function Page() {
                 <Card><CardContent className="p-4 text-sm text-muted-foreground">{t("fieldStudies.noShifts")}</CardContent></Card>
               ) : (
                 dayRows.map((r) => (
-                  <CollapseItem key={r.id} id={`ev:${r.id}`} summary={[PERIOD_LABELS[r.period] ?? r.period, r.meeting_time?.slice(0, 5), r.acompanhante].filter(Boolean).join(" · ")}>
+                  <CollapseItem key={r.id} id={`ev:${r.id}`} summary={[r.period, r.meeting_time?.slice(0, 5), r.acompanhante].filter(Boolean).join(" · ")}>
                     <RowCard row={r} isSuper={isSuper} saving={savingId === r.id} update={update} remove={remove} />
                   </CollapseItem>
                 ))
