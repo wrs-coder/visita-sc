@@ -112,7 +112,7 @@ function Page() {
 
       {canManage && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
 
-      <fieldset disabled={!editAllowed} className="space-y-5 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
+      <div className="space-y-5 min-w-0">
       <Card><CardContent className="p-5">
         <div className="flex justify-between items-end mb-2"><div className="text-sm font-medium">{t("checklistPage.progress")}</div><div className="text-sm font-semibold">{done}/{items.length} ({progress}%)</div></div>
         <Progress value={progress} className="h-2" />
@@ -126,9 +126,9 @@ function Page() {
             <AccordionItem key={it.id} value={it.id} className="bg-card border rounded-lg shadow-card px-4 data-[state=open]:shadow-elevated section-accent">
               <div className="flex items-center gap-3">
                 <button
-                  disabled={!canEdit}
-                  onClick={(e) => { e.stopPropagation(); if (canEdit) update(it.id, { status: it.status === "done" ? "pending" : "done" }); }}
-                  className={`shrink-0 h-6 w-6 rounded-md border-2 flex items-center justify-center transition ${it.status === "done" ? "bg-success border-success" : "border-muted-foreground/30 hover:border-primary"} ${!canEdit ? "opacity-60 cursor-not-allowed" : ""}`}>
+                  disabled={!canEdit || !editAllowed}
+                  onClick={(e) => { e.stopPropagation(); if (canEdit && editAllowed) update(it.id, { status: it.status === "done" ? "pending" : "done" }); }}
+                  className={`shrink-0 h-6 w-6 rounded-md border-2 flex items-center justify-center transition ${it.status === "done" ? "bg-success border-success" : "border-muted-foreground/30 hover:border-primary"} ${!canEdit || !editAllowed ? "opacity-60 cursor-not-allowed" : ""}`}>
                   {it.status === "done" && <Check className="h-3.5 w-3.5 text-success-foreground" />}
                 </button>
                 <AccordionTrigger className="flex-1 hover:no-underline py-3">
@@ -142,7 +142,7 @@ function Page() {
                 </AccordionTrigger>
               </div>
               <AccordionContent>
-                <div className="space-y-3 pt-1 pb-3">
+                <fieldset disabled={!editAllowed} className="space-y-3 pt-1 pb-3 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
                   <FieldArea label={t("checklistPage.infoLabel")} v={it.info_text ?? ""} onSave={(v) => update(it.id, { info_text: v })} readOnly={!canEdit} />
                   <FieldArea label={t("checklistPage.linkNotesLabel")} v={it.link_or_notes ?? ""} onSave={(v) => update(it.id, { link_or_notes: v })} readOnly={!canEdit} />
                   {canManage && (
@@ -151,13 +151,13 @@ function Page() {
                       <Button size="sm" variant="ghost" onClick={() => remove(it.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5 mr-1" />{t("checklistPage.remove")}</Button>
                     </div>
                   )}
-                </div>
+                </fieldset>
               </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
       )}
-      </fieldset>
+      </div>
 
       <Dialog open={!!editItem} onOpenChange={(o) => !o && setEditItem(null)}>
         <DialogContent className="max-w-md">
