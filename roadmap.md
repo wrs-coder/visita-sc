@@ -26,3 +26,4 @@
 - [x] Balão bíblico: apresentar texto primeiro com controles expansíveis e manter a escala da letra igual entre esboços e Tela Cheia; arraste livre corrigido e conferido em tela pequena.
 - [x] 4.2.13: vídeo/foto gravados em pedaços no app Android (corrige "Não foi possível adicionar o anexo"), vídeo abre no player nativo, zoom nas fotos, tópicos recolhíveis nos esboços.
 - [ ] (usuário) Instalar a 4.2.13 no celular e conferir anexar vídeo MP4, zoom e tópicos.
+- [ ] 4.2.14: restaurar a barra compacta dos esboços a duas linhas roláveis, gerar o AAB assinado e entregar as notas desde 4.2.12.
