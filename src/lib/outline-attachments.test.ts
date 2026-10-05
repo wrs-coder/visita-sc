@@ -155,3 +155,26 @@ describe("round-trip content_json (Supabase)", () => {
     expect(parsed.map((a) => a.id)).toEqual(["a1", "a2", "a3"]);
   });
 });
+
+import { chunkRanges, NATIVE_CHUNK_BYTES } from "./outline-attachments";
+
+describe("chunkRanges (gravação nativa em pedaços)", () => {
+  it("pedaço é múltiplo de 3 (base64 válido ao concatenar)", () => {
+    expect(NATIVE_CHUNK_BYTES % 3).toBe(0);
+  });
+  it("cobre o arquivo inteiro sem buracos", () => {
+    const total = NATIVE_CHUNK_BYTES * 2 + 17;
+    const r = chunkRanges(total);
+    expect(r).toHaveLength(3);
+    expect(r[0][0]).toBe(0);
+    expect(r[2][1]).toBe(total);
+    for (let i = 1; i < r.length; i++) expect(r[i][0]).toBe(r[i - 1][1]);
+  });
+  it("base64 de pedaços concatenado = base64 do todo", () => {
+    const bytes = Uint8Array.from({ length: 10 }, (_, i) => i * 7);
+    const b64 = (u: Uint8Array) => Buffer.from(u).toString("base64");
+    const joined = chunkRanges(bytes.length, 3).map(([s, e]) => b64(bytes.slice(s, e))).join("");
+    expect(Buffer.from(joined.match(/.{1,4}/g)!.map((p) => Buffer.from(p, "base64").toString("binary")).join(""), "binary")).toEqual(Buffer.from(bytes));
+    expect(chunkRanges(bytes.length, 3).length).toBe(4);
+  });
+});
