@@ -38,6 +38,8 @@ import {
   ImagePlus,
   Video,
   Link as LinkExternalIcon,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
