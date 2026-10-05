@@ -24,6 +24,7 @@ import { CharCounterTextarea } from "@/components/ui/char-counter-textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Trash2, Copy, Pencil, MapPin, AlertCircle, Save } from "lucide-react";
+import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -331,9 +332,21 @@ function Page() {
                     {t("templates.field.noShifts")}
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {items.map((it, idx) => (
-                      <div key={idx} className="border rounded-md p-3 space-y-2 bg-muted/30">
+                  <CollapseProvider scope="tpl-field" visitId={active?.id ?? null}>
+                  <div className="flex justify-end">
+                    <CollapseAllButton ids={[...DAY_OPTS.map((d) => `day:${d}`), ...items.map((_, i) => `ev:${i}`)]} />
+                  </div>
+                  <div className="space-y-3">
+                    {DAY_OPTS.filter((d) => items.some((it) => it.day_offset === d)).map((d) => (
+                    <section key={d}>
+                      <div className="flex items-center gap-1 mb-1">
+                        <CollapseIdToggle id={`day:${d}`} />
+                        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{DAY_LABEL[d]}</div>
+                      </div>
+                      <CollapseBody id={`day:${d}`} className="space-y-2">
+                    {items.map((it, idx) => it.day_offset !== d ? null : (
+                      <CollapseItem key={idx} id={`ev:${idx}`} summary={[it.period, it.meeting_time?.slice(0, 5), modalityLabel(it.modality)].filter(Boolean).join(" · ")}>
+                      <div className="border rounded-md p-3 space-y-2 bg-muted/30">
                         <div className="flex items-center gap-2 flex-wrap">
                           <Select value={String(it.day_offset)} onValueChange={(v) => updateItem(idx, { day_offset: Number(v) })}>
                             <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
@@ -384,8 +397,13 @@ function Page() {
                         )}
                         <Input placeholder={t("templates.field.closingPrayer")} value={it.closing_prayer} onChange={(e) => updateItem(idx, { closing_prayer: e.target.value })} className="h-8" />
                       </div>
+                      </CollapseItem>
+                    ))}
+                      </CollapseBody>
+                    </section>
                     ))}
                   </div>
+                  </CollapseProvider>
                 )}
               </CardContent></Card>
             </>
