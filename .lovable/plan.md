@@ -30,7 +30,8 @@ Hoje o visualizador de fotos não tem zoom próprio. Quando o zoom "funciona", �
 
 ## Tópicos recolhíveis nos esboços (incluído)
 - No modo edição, selecione um trecho e toque em **"Criar tópico"** na barra de ferramentas. O trecho vira um bloco com um título curto e uma setinha. Você pode **renomear** e **desfazer** o tópico ("Remover tópico" mantém o texto).
-- Nos modos esboço, imersivo e tela cheia, tocar na setinha **recolhe ou expande** o tópico. Ao recolher, fica só o título com um resumo discreto, por exemplo "6 linhas".
+- Cada tópico tem uma **setinha no título** e outra **no final do tópico**. Assim, quando você terminar de falar, pode recolher o tópico sem precisar voltar ao começo.
+- Nos modos esboço, imersivo e tela cheia, tocar em qualquer uma das setinhas **recolhe ou expande** o tópico. Recolhido, aparece **só o título**, sem resumo.
 - Botões **"Recolher todos" / "Expandir todos"** no topo do esboço.
 - **O estado fica salvo neste aparelho**: o esboço reabre do jeito que você deixou.
 - Esboços antigos continuam iguais até você criar tópicos.
