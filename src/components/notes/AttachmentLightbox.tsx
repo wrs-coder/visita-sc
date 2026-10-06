@@ -46,18 +46,6 @@ export function AttachmentLightbox({ open, attachment, onClose }: Props) {
       aria-modal="true"
       onClick={onClose}
     >
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
-        aria-label={t("common.close", { defaultValue: "Fechar" })}
-        className="absolute top-3 right-3 h-10 w-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-white/60"
-      >
-        <X className="h-5 w-5" />
-      </button>
-
       {status === "loading" && <Loader2 className="h-8 w-8 animate-spin text-white/80" />}
 
       {status === "missing" && (
@@ -127,6 +115,19 @@ export function AttachmentLightbox({ open, attachment, onClose }: Props) {
           </TransformWrapper>
         </div>
       )}
+      
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        aria-label={t("common.close", { defaultValue: "Fechar" })}
+        className="absolute top-3 right-3 z-30 h-10 w-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-white/60"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
     </div>
   );
 }
