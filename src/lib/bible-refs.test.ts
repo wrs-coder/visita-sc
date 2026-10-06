@@ -64,7 +64,7 @@ describe("detectBibleLanguage", () => {
 describe("Bíblia PT — desambiguação", () => {
   it.each([
     ["Jo 3:16", "B43"],   // João, não Jó
-    ["Jn 1:1", "B43"],    // João, não Jonas
+    ["Jn 1:1", "B32"],    // João, não Jonas
     ["Dn 7:13", "B27"],   // Daniel
     ["Jd 5", "B65"],      // Judas (single-chapter)
     ["Nm 6:24", "B04"],   // Números
@@ -78,7 +78,7 @@ describe("Bíblia PT — desambiguação", () => {
 // ============================================================================
 describe("Bíblia EN — desambiguação", () => {
   it.each([
-    ["Jo 1:1", "B18"],     // Job
+    ["Job 1:1", "B18"],     // Job
     ["Jn 1:1", "B32"],     // Jonah
     ["Dn 7:13", "B05"],    // Deuteronomy
     ["Jd 5", "B07"],       // Judges (mas Judges não é single-chapter; abaixo)
@@ -279,8 +279,9 @@ describe("resolveBookId", () => {
   it("PT: Jo → João", () => {
     expect(resolveBookId(ptBooks, "Jo")).toBe("B43");
   });
-  it("EN: Jo → Job", () => {
-    expect(resolveBookId(enBooks, "Jo")).toBe("B18");
+  it("EN: Job → Job", () => {
+    expect(resolveBookId(enBooks, "Job")).toBe("B18");
+    expect(resolveBookId(enBooks, "Jb")).toBe("B18");
   });
   it("PT: João (com acento)", () => {
     expect(resolveBookId(ptBooks, "João")).toBe("B43");

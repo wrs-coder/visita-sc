@@ -82,8 +82,8 @@ const SINGLE_CHAPTER_BOOK_IDS = new Set(["B31", "B57", "B63", "B64", "B65"]);
 // Aliases que aparecem em mais de um livro do CANON. Mapeia idioma → bookId preferido.
 // Para "unknown" mantemos o comportamento atual (primeiro a registrar vence).
 const AMBIGUOUS_ALIASES: Record<string, Partial<Record<Lang, string>>> = {
-  jo: { pt: "B43", en: "B18", es: "B18" }, // João vs Job
-  jn: { pt: "B43", en: "B32" },             // João vs Jonas
+  jo: { pt: "B43", en: "B43", es: "B43" }, // João vs Job
+  jn: { pt: "B32", en: "B32" },             // João vs Jonas
   dn: { pt: "B27", en: "B05" },             // Daniel vs Deuteronômio
   jd: { pt: "B65", en: "B07" },             // Judas vs Juízes
   nm: { pt: "B04", en: "B04" },             // Números (sempre)
@@ -255,6 +255,11 @@ function dissect(raw: string): {
 
 
 export function resolveBookId(books: BookInfo[], name: string): string | null {
+  const trimmed = name.trim().replace(/\.$/, "");
+  // Se tem acento ("Jó" ou "jó") -> Livro de Jó (B18)
+  if (/^[jJ][óòôõöÓÒÔÕÖ]$/.test(trimmed)) return "B18";
+  // Se não tem acento ("Jo" ou "jo") -> Livro de João (B43)
+  if (/^[jJ][oO]$/.test(trimmed)) return "B43";
   const lang = detectBibleLanguage(books);
   const { lookup } = compile(books, lang);
   const key = stripDiacritics(name.toLowerCase()).replace(/\.$/, "");
@@ -276,7 +281,16 @@ export function findCitations(books: BookInfo[] | undefined, text: string): Cita
     const d = dissect(raw);
     if (!d) continue;
     const key = stripDiacritics(d.bookTerm.toLowerCase()).replace(/\.$/, "");
-    const info = lookup.get(key);
+    let info = lookup.get(key);
+    // Diferenciação precisa entre Jó (com acento -> B18) e Jo / João (sem acento -> B43)
+    const termClean = d.bookTerm.trim().replace(/\.$/, "");
+    if (/^[jJ][óòôõöÓÒÔÕÖ]$/.test(termClean)) {
+      const jobBook = books.find((b) => b.bookId === "B18");
+      if (jobBook) info = { bookId: "B18", displayName: jobBook.displayName };
+    } else if (/^[jJ][oO]$/.test(termClean)) {
+      const johnBook = books.find((b) => b.bookId === "B43");
+      if (johnBook) info = { bookId: "B43", displayName: johnBook.displayName };
+    }
     if (!info) continue;
     // Forma sem ":" só é válida para livros de capítulo único
     if (d.noColon && !SINGLE_CHAPTER_BOOK_IDS.has(info.bookId)) continue;
