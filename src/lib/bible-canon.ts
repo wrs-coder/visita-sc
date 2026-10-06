@@ -270,6 +270,14 @@ export const ALL_ALIASES_LONG_FIRST: { alias: string; book: CanonicalBook }[] = 
 /** Resolve um nome (em qualquer idioma) para um livro canônico, ou null. */
 export function resolveCanonical(name: string): CanonicalBook | null {
   if (!name) return null;
+  // Diferenciação entre Jó (com acento -> Livro 18) e Jo (sem acento -> Livro 43)
+  const trimmed = name.trim().replace(/\.$/, "");
+  if (/^[jJ][óòôõöÓÒÔÕÖ]$/.test(trimmed)) {
+    return CANON.find((b) => b.id === "B18") ?? null;
+  }
+  if (/^[jJ][oO]$/.test(trimmed)) {
+    return CANON.find((b) => b.id === "B43") ?? null;
+  }
   const norm = normalizeName(name);
   if (!norm) return null;
   const direct = ALIAS_INDEX.get(norm);
@@ -298,6 +306,10 @@ export function resolveCanonical(name: string): CanonicalBook | null {
 /** Procura o livro canônico mais plausível dentro de um pedaço de texto (heading, título). */
 export function findCanonicalInText(text: string): CanonicalBook | null {
   if (!text) return null;
+  // Se o título contiver expressamente a palavra "Jó" isolada com acento agudo
+  if (/(^|[^a-zA-Z0-9À-ÿ])[jJ][óÓ]([^a-zA-Z0-9À-ÿ]|$)/.test(text)) {
+    return CANON.find((b) => b.id === "B18") ?? null;
+  }
   const norm = normalizeName(text);
   if (!norm) return null;
   // 1) match direto
