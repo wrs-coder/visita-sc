@@ -8,11 +8,11 @@
 import { isNativeApp, resolveApiUrl } from "@/lib/api-origin";
 
 // Versão desta casca — manter igual a package.json / build.gradle / LoginForm.
-export const APP_VERSION = "4.2.11";
+export const APP_VERSION = "4.2.15";
 
 const LAST_CHECK_KEY = "visita-sc:last-update-check";
 const DISMISS_KEY = "visita-sc:update-dismissed";
-const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6h
+const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 min — "Agora não" cobre o resto do dia
 const FETCH_TIMEOUT_MS = 8000;
 
 export type UpdateCheckResult = {
@@ -62,6 +62,18 @@ export function isUpdateDismissedToday(version: string): boolean {
   return safeGet(DISMISS_KEY) === `${new Date().toDateString()}:${version}`;
 }
 
+/** Versão real instalada (Android), com o número fixo como reserva. */
+export async function getInstalledVersion(): Promise<string> {
+  try {
+    const { App } = await import("@capacitor/app");
+    const info = await App.getInfo();
+    if (info?.version && /^\d+(\.\d+)*$/.test(info.version)) return info.version;
+  } catch {
+    /* fallback */
+  }
+  return APP_VERSION;
+}
+
 /**
  * Consulta o endpoint de versão. Retorna null quando não é app instalado,
  * está offline, a última checagem foi recente ou a rede falhou — nunca lança.
@@ -103,13 +115,14 @@ export async function checkForAppUpdate(opts?: { force?: boolean }): Promise<Upd
     if (!latest) return null;
 
     safeSet(LAST_CHECK_KEY, String(Date.now()));
+    const current = await getInstalledVersion();
 
     return {
       latest,
       minSupported,
-      current: APP_VERSION,
-      updateAvailable: compareVersions(latest, APP_VERSION) > 0,
-      belowMinimum: compareVersions(APP_VERSION, minSupported) < 0,
+      current,
+      updateAvailable: compareVersions(latest, current) > 0,
+      belowMinimum: compareVersions(current, minSupported) < 0,
     };
   } catch {
     return null;
