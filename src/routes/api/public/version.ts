@@ -6,7 +6,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { corsHeaders, isAllowedOrigin } from "@/lib/cors";
 
-export const LATEST_APP_VERSION = "4.2.16";
+export const LATEST_APP_VERSION = "4.2.15";
 export const MIN_SUPPORTED_APP_VERSION = "4.2.0";
 
 function headersFor(request: Request): Record<string, string> {
