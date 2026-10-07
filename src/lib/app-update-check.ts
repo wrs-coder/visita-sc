@@ -8,7 +8,7 @@
 import { isNativeApp, resolveApiUrl } from "@/lib/api-origin";
 
 // Versão desta casca — manter igual a package.json / build.gradle / LoginForm.
-export const APP_VERSION = "4.2.16";
+export const APP_VERSION = "4.2.15";
 
 const LAST_CHECK_KEY = "visita-sc:last-update-check";
 const DISMISS_KEY = "visita-sc:update-dismissed";
