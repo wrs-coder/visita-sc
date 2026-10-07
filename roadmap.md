@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Produzir manual externo PDF e Markdown nos sete módulos aprovados, com capturas reais de smartphone anonimizadas e revisão visual de todas as páginas.
+
 - [x] Corrigir o idioma exibido de Bíblias EPUB já importadas e futuras sem regravar versículos nem destaques; validar francês e português europeu.
 - [x] Corrigir "spawn npx ENOENT" no Windows: shell:true em scripts/build-app-shell.mjs + fallback de montagem estática da casca (sem subprocesso).
 - [x] Priorizar `visitasc.com.br` diretamente no aplicativo e validar o fallback de conexão da versão 4.1.3.
