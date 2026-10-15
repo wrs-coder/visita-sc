@@ -17,8 +17,43 @@ function stripTags(s: string): string {
   return s.replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").trim();
 }
 
-function cleanStyle(style: string): string {
-  return style
+const PX_PER: Record<string, number> = { px: 1, pt: 4 / 3, cm: 96 / 2.54, mm: 96 / 25.4, in: 96, pc: 16 };
+
+/** Converte medida do Word (cm, pt, in, px...) em pixels. */
+export function toPx(v: string): number {
+  const m = /^(-?[\d.]+)\s*(px|pt|cm|mm|in|pc)?$/i.exec(v.trim());
+  if (!m) return 0;
+  return parseFloat(m[1]) * PX_PER[(m[2] || "px").toLowerCase()];
+}
+
+/** 1,25 cm / 36 pt / 0,5 in (~48px) = 1 nível do editor (32px). */
+export function indentLevel(px: number): number {
+  return Math.min(8, Math.max(0, Math.round(px / 48)));
+}
+
+function normalizeIndent(style: string, dropIndent: boolean): string {
+  let ml = 0;
+  let ti = 0;
+  const rest: string[] = [];
+  for (const d of style.split(";")) {
+    const i = d.indexOf(":");
+    const key = d.slice(0, i).trim().toLowerCase();
+    const val = d.slice(i + 1).trim();
+    if (key === "margin-left" || key === "padding-left") ml = Math.max(ml, toPx(val));
+    else if (key === "text-indent") ti = toPx(val);
+    else if (key === "margin") {
+      const parts = val.split(/\s+/);
+      const left = parts[3] ?? parts[1] ?? parts[0];
+      if (left) ml = Math.max(ml, toPx(left));
+    } else rest.push(d);
+  }
+  const lvl = dropIndent ? 0 : indentLevel(ml + Math.max(0, ti));
+  if (lvl) rest.push(`margin-left:${lvl * 32}px`);
+  return rest.join(";");
+}
+
+function cleanStyle(style: string, dropIndent = false): string {
+  return normalizeIndent(style, dropIndent)
     .split(";")
     .map((d) => d.trim())
     .filter((d) => {
@@ -41,6 +76,7 @@ function cleanStyle(style: string): string {
         "text-autospace",
         "page-break-before",
         "border",
+        "margin",
       ].includes(key);
     })
     .join(";");
@@ -65,25 +101,40 @@ function convertLists(html: string): string {
     const glyph = block ? stripTags(block[1]) : "";
     const ordered = /^(\(?[0-9]+|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[.)]/.test(glyph);
     const content = block ? inner.replace(LIST_BLOCK_RE, "") : inner;
-    return `<li data-wl="${ordered ? "ol" : "ul"}">${content.trim()}</li>`;
+    const lv = /level(\d+)/i.exec(attrs);
+    let level = lv ? Math.max(0, parseInt(lv[1], 10) - 1) : 0;
+    if (!lv) {
+      const st = /style=("([^"]*)"|'([^']*)')/i.exec(attrs);
+      const ml = st ? /margin-left:\s*([^;]+)/i.exec(st[2] ?? st[3] ?? "") : null;
+      if (ml) level = Math.max(0, indentLevel(toPx(ml[1])) - 1);
+    }
+    return `<li data-wl="${ordered ? "ol" : "ul"}" data-lv="${Math.min(8, level)}">${content.trim()}</li>`;
   });
   // Agrupa itens consecutivos do mesmo tipo.
   return withItems.replace(
-    /(?:<li data-wl="(ul|ol)">[\s\S]*?<\/li>\s*)+/g,
+    /(?:<li data-wl="(ul|ol)" data-lv="\d+">[\s\S]*?<\/li>\s*)+/g,
     (group) => {
       let out = "";
-      let current: string | null = null;
-      const re = /<li data-wl="(ul|ol)">([\s\S]*?)<\/li>/g;
+      // Pilha de listas abertas (uma por nível) — mantém subtópicos aninhados.
+      const stack: string[] = [];
+      const re = /<li data-wl="(ul|ol)" data-lv="(\d+)">([\s\S]*?)<\/li>/g;
       let m: RegExpExecArray | null;
       while ((m = re.exec(group))) {
-        if (m[1] !== current) {
-          if (current) out += `</${current}>`;
-          current = m[1];
-          out += `<${current}>`;
+        const type = m[1];
+        const lvl = Math.min(parseInt(m[2], 10), stack.length);
+        while (stack.length > lvl + 1) out += `</li></${stack.pop()}>`;
+        if (stack.length === lvl + 1 && stack[lvl] !== type) {
+          out += `</li></${stack.pop()}>`;
+        } else if (stack.length === lvl + 1) {
+          out += "</li>";
         }
-        out += `<li><p>${m[2]}</p></li>`;
+        if (stack.length === lvl) {
+          stack.push(type);
+          out += `<${type}>`;
+        }
+        out += `<li><p>${m[3]}</p>`;
       }
-      if (current) out += `</${current}>`;
+      while (stack.length) out += `</li></${stack.pop()}>`;
       return out;
     },
   );
