@@ -30,6 +30,7 @@ import { AttachmentAddDialog } from "./AttachmentAddDialog";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
 import { cn } from "@/lib/utils";
 import { RICH_NOTE_CONTENT_CLASS } from "@/lib/rich-note-styles";
+import { cleanWordHtml } from "@/lib/word-paste-cleaner";
 
 import type { NoteAttachment } from "@/lib/outline-attachments";
 
@@ -214,6 +215,14 @@ export function RichNoteEditor({
       ],
       content: value || "",
       editorProps: {
+        // Colagem do Word: limpa o HTML do Office e mantém a formatação útil.
+        transformPastedHTML: (html) => {
+          try {
+            return cleanWordHtml(html);
+          } catch {
+            return html;
+          }
+        },
         attributes: {
           class: cn(
             "prose-sm max-w-none focus:outline-none px-3 py-2",
