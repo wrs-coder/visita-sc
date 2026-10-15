@@ -21,6 +21,23 @@ describe("cleanWordHtml", () => {
     expect(out).toBe("<ul><li><p>Primeiro</p></li><li><p>Segundo</p></li></ul>");
   });
 
+  it("converts Word indents in cm/pt/in into editor indent levels", () => {
+    expect(cleanWordHtml(wrap('<p class="MsoNormal" style="margin-left:1.25cm">A</p>'))).toBe('<p style="margin-left:32px">A</p>');
+    expect(cleanWordHtml(wrap('<p class="MsoNormal" style="margin-left:72.0pt">B</p>'))).toBe('<p style="margin-left:64px">B</p>');
+    expect(cleanWordHtml(wrap('<p class="MsoNormal" style="margin-left:0in;text-indent:.5in">C</p>'))).toBe('<p style="margin-left:32px">C</p>');
+  });
+
+  it("keeps multilevel Word lists nested", () => {
+    const out = cleanWordHtml(
+      wrap(
+        '<p class="MsoListParagraph" style="mso-list:l0 level1 lfo1"><!--[if !supportLists]--><span>·</span><!--[endif]-->Pai</p>' +
+          '<p class="MsoListParagraph" style="mso-list:l0 level2 lfo1"><!--[if !supportLists]--><span>o</span><!--[endif]-->Filho</p>' +
+          '<p class="MsoListParagraph" style="mso-list:l0 level1 lfo1"><!--[if !supportLists]--><span>·</span><!--[endif]-->Tio</p>',
+      ),
+    );
+    expect(out).toBe("<ul><li><p>Pai</p><ul><li><p>Filho</p></li></ul></li><li><p>Tio</p></li></ul>");
+  });
+
   it("converts numbered Word paragraphs into an ordered list", () => {
     const out = cleanWordHtml(
       wrap('<p class="MsoListParagraph"><!--[if !supportLists]--><span>1.</span><!--[endif]-->Um</p>'),
