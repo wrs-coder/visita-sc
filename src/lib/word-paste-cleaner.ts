@@ -21,7 +21,7 @@ const PX_PER: Record<string, number> = { px: 1, pt: 4 / 3, cm: 96 / 2.54, mm: 96
 
 /** Converte medida do Word (cm, pt, in, px...) em pixels. */
 export function toPx(v: string): number {
-  const m = /^(-?[\d.]+)\s*(px|pt|cm|mm|in|pc)?$/i.exec(v.trim());
+  const m = /^(-?[\d.]+)\s*(px|pt|cm|mm|in|pc)?$/i.exec(v.trim().replace(",", "."));
   if (!m) return 0;
   return parseFloat(m[1]) * PX_PER[(m[2] || "px").toLowerCase()];
 }
@@ -39,7 +39,8 @@ function normalizeIndent(style: string, dropIndent: boolean): string {
     const i = d.indexOf(":");
     const key = d.slice(0, i).trim().toLowerCase();
     const val = d.slice(i + 1).trim();
-    if (key === "margin-left" || key === "padding-left") ml = Math.max(ml, toPx(val));
+    if (key === "x-tab-indent") ml += toPx(val);
+    else if (key === "margin-left" || key === "padding-left") ml = Math.max(ml, toPx(val));
     else if (key === "text-indent") ti = toPx(val);
     else if (key === "margin") {
       const parts = val.split(/\s+/);
@@ -140,6 +141,29 @@ function convertLists(html: string): string {
   );
 }
 
+const LEAD_TAB_RE = /^((?:\s|&nbsp;|<(?!\/?p\b)[a-z][^>]*>)*?)<span\b[^>]*mso-tab-count:\s*(\d+)[^>]*>[\s\S]*?<\/span>/i;
+
+/** Tabulações no início do parágrafo (mso-tab-count) viram degraus de recuo. */
+function convertTabs(html: string): string {
+  return html.replace(/<p\b([^>]*)>([\s\S]*?)<\/p>/gi, (full, attrs: string, inner: string) => {
+    let tabs = 0;
+    let rest = inner;
+    let m: RegExpExecArray | null;
+    while ((m = LEAD_TAB_RE.exec(rest))) {
+      tabs += parseInt(m[2], 10);
+      rest = m[1] + rest.slice(m[0].length);
+    }
+    if (!tabs) return full;
+    rest = rest.replace(/^((?:<[^>]+>)*)(?:\s|&nbsp;)+/i, "$1");
+    const extra = `x-tab-indent:${tabs * 48}px`;
+    const st = /\sstyle=("([^"]*)"|'([^']*)')/i.exec(attrs);
+    const nextAttrs = st
+      ? attrs.replace(st[0], ` style="${(st[2] ?? st[3] ?? "").replace(/;?\s*$/, ";")}${extra}"`)
+      : `${attrs} style="${extra}"`;
+    return `<p${nextAttrs}>${rest}</p>`;
+  });
+}
+
 export function cleanWordHtml(html: string): string {
   if (!isWordHtml(html)) return html;
   let out = html;
@@ -150,6 +174,7 @@ export function cleanWordHtml(html: string): string {
     .replace(/<!--StartFragment-->|<!--EndFragment-->/g, "")
     .replace(/<(style|xml|script|head)\b[\s\S]*?<\/\1>/gi, "")
     .replace(/<(meta|link)\b[^>]*>/gi, "");
+  out = convertTabs(out);
   out = convertLists(out);
   out = out
     // Demais comentários condicionais e comentários comuns.
