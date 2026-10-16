@@ -60,4 +60,14 @@ describe("cleanWordHtml", () => {
   it("maps Word heading 1 to the editor's top heading level", () => {
     expect(cleanWordHtml(wrap('<h1 class="MsoTitle">Tema</h1>'))).toBe("<h2>Tema</h2>");
   });
+
+  it("turns leading Word tabs into indent levels", () => {
+    expect(cleanWordHtml(wrap(`<p class=MsoNormal><span style='mso-tab-count:2'>&nbsp;&nbsp;&nbsp; </span>C</p>`))).toBe('<p style="margin-left:64px">C</p>');
+    expect(cleanWordHtml(wrap(`<p class=MsoNormal style='margin-left:35.4pt'><span style='mso-tab-count:1'> </span>D</p>`))).toBe('<p style="margin-left:64px">D</p>');
+  });
+
+  it("accepts decimal comma and hanging indents", () => {
+    expect(cleanWordHtml(wrap(`<p class=MsoNormal style='margin-left:2,5cm'>E</p>`))).toBe('<p style="margin-left:64px">E</p>');
+    expect(cleanWordHtml(wrap(`<p class=MsoNormal style='margin-left:35.4pt;text-indent:-17.7pt'>F</p>`))).toBe('<p style="margin-left:32px">F</p>');
+  });
 });
