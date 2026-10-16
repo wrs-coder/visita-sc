@@ -4,7 +4,7 @@
  * exatamente igual, preservando o comportamento atual da colagem.
  */
 
-const WORD_MARKERS = /(urn:schemas-microsoft-com:office|class=["']?Mso|mso-[a-z-]+\s*:|<o:p\b)/i;
+const WORD_MARKERS = /(urn:schemas-microsoft-com:office|class=["']?Mso|mso-[a-z-]+\s*:|<o:p\b|class=["']?OutlineElement|data-ccp-props|class=["']?(?:Paragraph|TextRun)\b)/i;
 
 export function isWordHtml(html: string): boolean {
   return !!html && WORD_MARKERS.test(html);
@@ -164,9 +164,102 @@ function convertTabs(html: string): string {
   });
 }
 
+const INDENT_KEYS = /^(margin-left|margin|padding-left|text-indent|mso-margin-left-alt)$/i;
+
+/** Recuos definidos em estilos do documento (<style> p.Recuo2{margin-left:...}) viram inline. */
+function inlineClassIndents(html: string): string {
+  const rules: Record<string, string> = {};
+  const styleRe = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
+  let s: RegExpExecArray | null;
+  while ((s = styleRe.exec(html))) {
+    const css = s[1].replace(/<!--|-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    const ruleRe = /([^{}@]+)\{([^}]*)\}/g;
+    let r: RegExpExecArray | null;
+    while ((r = ruleRe.exec(css))) {
+      const decls = r[2]
+        .split(";")
+        .filter((d) => INDENT_KEYS.test(d.slice(0, d.indexOf(":")).trim()))
+        .map((d) => d.trim().replace(/^mso-margin-left-alt/i, "margin-left"))
+        .join(";");
+      if (!decls) continue;
+      for (const sel of r[1].split(",")) {
+        const m = /\.([\w-]+)\s*$/.exec(sel.trim());
+        if (m) rules[m[1].toLowerCase()] = rules[m[1].toLowerCase()] ? `${rules[m[1].toLowerCase()]};${decls}` : decls;
+      }
+    }
+  }
+  if (!Object.keys(rules).length) return html;
+  return html.replace(/<(p|h[1-6]|li|div)\b([^>]*)>/gi, (full, tag: string, attrs: string) => {
+    const cls = /\sclass=("([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(attrs);
+    if (!cls) return full;
+    const names = (cls[2] ?? cls[3] ?? cls[4] ?? "").split(/\s+/);
+    const extra = names.map((n) => rules[n.toLowerCase()]).filter(Boolean).join(";");
+    if (!extra) return full;
+    const st = /\sstyle=("([^"]*)"|'([^']*)')/i.exec(attrs);
+    // Estilo inline vem depois e prevalece.
+    const nextAttrs = st
+      ? attrs.replace(st[0], ` style="${extra};${(st[2] ?? st[3] ?? "").replace(/"/g, "'")}"`)
+      : `${attrs} style="${extra}"`;
+    return `<${tag}${nextAttrs}>`;
+  });
+}
+
+function leftOf(style: string): number {
+  let ml = 0;
+  for (const d of style.split(";")) {
+    const i = d.indexOf(":");
+    const key = d.slice(0, i).trim().toLowerCase();
+    const val = d.slice(i + 1).trim();
+    if (key === "margin-left" || key === "padding-left") ml = Math.max(ml, toPx(val));
+    else if (key === "margin") {
+      const p = val.split(/\s+/);
+      ml = Math.max(ml, toPx(p[3] ?? p[1] ?? p[0] ?? "0"));
+    }
+  }
+  return ml;
+}
+
+/** Word Online/Office 365: o recuo fica no <div> que embrulha o parágrafo. */
+function pushDivIndentIntoParagraphs(html: string): string {
+  return html.replace(
+    /<div\b([^>]*)>(\s*(?:<(?!\/?div\b|p\b)[^>]*>\s*)*)<p\b([^>]*)>/gi,
+    (full, dAttrs: string, between: string, pAttrs: string) => {
+      const st = /\sstyle=("([^"]*)"|'([^']*)')/i.exec(dAttrs);
+      const px = st ? leftOf(st[2] ?? st[3] ?? "") : 0;
+      if (px < 8) return full;
+      const extra = `x-tab-indent:${px}px`;
+      const ps = /\sstyle=("([^"]*)"|'([^']*)')/i.exec(pAttrs);
+      const next = ps
+        ? pAttrs.replace(ps[0], ` style="${(ps[2] ?? ps[3] ?? "").replace(/;?\s*$/, ";")}${extra}"`)
+        : `${pAttrs} style="${extra}"`;
+      return `<div${dAttrs}>${between}<p${next}>`;
+    },
+  );
+}
+
+/** Tabulações literais (\t) ou espaços duros no começo do parágrafo viram degraus. */
+function convertLeadingWhitespace(html: string): string {
+  return html.replace(/<p\b([^>]*)>([\s\S]*?)<\/p>/gi, (full, attrs: string, inner: string) => {
+    const m = /^((?:<(?!\/?p\b)[a-z][^>]*>)*)((?:\t|&nbsp;|\u00A0| )+)/i.exec(inner);
+    if (!m) return full;
+    const ws = m[2];
+    const tabs = (ws.match(/\t/g) || []).length;
+    const spaces = (ws.match(/&nbsp;|\u00A0| /gi) || []).length;
+    const steps = tabs + Math.floor(spaces / 4);
+    if (!steps) return full;
+    const rest = m[1] + inner.slice(m[0].length);
+    const extra = `x-tab-indent:${steps * 48}px`;
+    const st = /\sstyle=("([^"]*)"|'([^']*)')/i.exec(attrs);
+    const nextAttrs = st
+      ? attrs.replace(st[0], ` style="${(st[2] ?? st[3] ?? "").replace(/;?\s*$/, ";")}${extra}"`)
+      : `${attrs} style="${extra}"`;
+    return `<p${nextAttrs}>${rest}</p>`;
+  });
+}
+
 export function cleanWordHtml(html: string): string {
   if (!isWordHtml(html)) return html;
-  let out = html;
+  let out = inlineClassIndents(html);
   // Só o corpo interessa.
   const body = /<body[^>]*>([\s\S]*?)<\/body>/i.exec(out);
   if (body) out = body[1];
@@ -174,7 +267,9 @@ export function cleanWordHtml(html: string): string {
     .replace(/<!--StartFragment-->|<!--EndFragment-->/g, "")
     .replace(/<(style|xml|script|head)\b[\s\S]*?<\/\1>/gi, "")
     .replace(/<(meta|link)\b[^>]*>/gi, "");
+  out = pushDivIndentIntoParagraphs(out);
   out = convertTabs(out);
+  out = convertLeadingWhitespace(out);
   out = convertLists(out);
   out = out
     // Demais comentários condicionais e comentários comuns.

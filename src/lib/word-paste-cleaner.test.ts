@@ -70,4 +70,18 @@ describe("cleanWordHtml", () => {
     expect(cleanWordHtml(wrap(`<p class=MsoNormal style='margin-left:2,5cm'>E</p>`))).toBe('<p style="margin-left:64px">E</p>');
     expect(cleanWordHtml(wrap(`<p class=MsoNormal style='margin-left:35.4pt;text-indent:-17.7pt'>F</p>`))).toBe('<p style="margin-left:32px">F</p>');
   });
+
+  it("reads indents defined in the document's paragraph styles", () => {
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><style><!-- p.Nivel2, li.Nivel2 {margin-left:2,5cm; text-indent:-0,6cm} --></style></head><body><p class=Nivel2>G</p></body></html>`;
+    expect(cleanWordHtml(html)).toBe('<p style="margin-left:64px">G</p>');
+  });
+
+  it("reads Word Online indents placed on the wrapping div", () => {
+    const html = `<div class="OutlineElement Ltr" style="margin: 0px 0px 0px 96px; padding: 0px"><p class="Paragraph"><span class="TextRun">H</span></p></div>`;
+    expect(cleanWordHtml(html)).toContain('<p style="margin-left:64px">');
+  });
+
+  it("turns leading literal tabs into indent levels", () => {
+    expect(cleanWordHtml(wrap(`<p class=MsoNormal>\t\tI</p>`))).toBe('<p style="margin-left:64px">I</p>');
+  });
 });
