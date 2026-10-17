@@ -22,6 +22,10 @@ Com base nas amostras reais `kmse27` e `S-341`:
 5. **Saída montada do zero:** o HTML é gerado só com etiquetas permitidas (`p`, `h2`, `h3`, `ul`, `ol`, `li`, `b`, `i`, `u`, `span` com cor e `margin-left`). Depois passa pelo mesmo filtro de segurança que já protege os esboços hoje. Nenhum atributo do arquivo é copiado direto.
 6. **Confirmação antes de salvar:** o usuário vê uma prévia e decide se cria o esboço. Nada existente é sobrescrito.
 
+## Android e iOS
+- Android: o seletor de arquivos do sistema já funciona hoje no aplicativo, por exemplo na importação de modelos. Não precisa de nenhuma permissão nova de armazenamento, porque o arquivo escolhido é entregue direto ao aplicativo. O filtro do seletor aceita o tipo do DOCX e também a extensão `.docx`, pois alguns gerenciadores de arquivos não informam o tipo.
+- iOS: o aplicativo ainda não tem versão para iPhone. Quando tiver, o mesmo seletor funciona pelo app Arquivos, sem configuração extra.
+
 ## Validação
 - Testes automáticos: amostra DOCX com 3 degraus e títulos, arquivo grande demais, bomba zip, arquivo que não é DOCX, XML com entidade externa e conteúdo com `<script>`. O conteúdo perigoso tem que sair removido.
 - Teste no navegador: importar, salvar e conferir os quatro modos.
