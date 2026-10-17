@@ -34,12 +34,15 @@ export function indentLevel(px: number): number {
 function normalizeIndent(style: string, dropIndent: boolean): string {
   let ml = 0;
   let ti = 0;
+  let forced: number | null = null;
   const rest: string[] = [];
   for (const d of style.split(";")) {
     const i = d.indexOf(":");
     const key = d.slice(0, i).trim().toLowerCase();
     const val = d.slice(i + 1).trim();
-    if (key === "x-tab-indent") ml += toPx(val);
+    if (key === "x-level") forced = Math.min(8, Math.max(0, parseInt(val, 10) || 0));
+    else if (key === "x-bold") continue;
+    else if (key === "x-tab-indent") ml += toPx(val);
     else if (key === "margin-left" || key === "padding-left") ml = Math.max(ml, toPx(val));
     else if (key === "text-indent") ti = toPx(val);
     else if (key === "margin") {
@@ -48,7 +51,12 @@ function normalizeIndent(style: string, dropIndent: boolean): string {
       if (left) ml = Math.max(ml, toPx(left));
     } else rest.push(d);
   }
-  const lvl = dropIndent ? 0 : indentLevel(ml + Math.max(0, ti));
+  const tabs = /x-tab-indent:\s*([\d.]+)px/i.exec(style);
+  const lvl = dropIndent
+    ? 0
+    : forced !== null
+      ? Math.min(8, forced + (tabs ? Math.round(parseFloat(tabs[1]) / 48) : 0))
+      : indentLevel(ml + Math.max(0, ti));
   if (lvl) rest.push(`margin-left:${lvl * 32}px`);
   return rest.join(";");
 }
@@ -169,6 +177,7 @@ const INDENT_KEYS = /^(margin-left|margin|padding-left|text-indent|mso-margin-le
 /** Recuos definidos em estilos do documento (<style> p.Recuo2{margin-left:...}) viram inline. */
 function inlineClassIndents(html: string): string {
   const rules: Record<string, string> = {};
+  const boldClasses = new Set<string>();
   const styleRe = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
   let s: RegExpExecArray | null;
   while ((s = styleRe.exec(html))) {
@@ -181,6 +190,11 @@ function inlineClassIndents(html: string): string {
         .filter((d) => INDENT_KEYS.test(d.slice(0, d.indexOf(":")).trim()))
         .map((d) => d.trim().replace(/^mso-margin-left-alt/i, "margin-left"))
         .join(";");
+      const bold = /font-weight\s*:\s*(bold|[6-9]00)/i.test(r[2]);
+      for (const sel of r[1].split(",")) {
+        const bm = /\.([\w-]+)\s*$/.exec(sel.trim());
+        if (bold && bm) boldClasses.add(bm[1].toLowerCase());
+      }
       if (!decls) continue;
       for (const sel of r[1].split(",")) {
         const m = /\.([\w-]+)\s*$/.exec(sel.trim());
@@ -188,12 +202,16 @@ function inlineClassIndents(html: string): string {
       }
     }
   }
-  if (!Object.keys(rules).length) return html;
   return html.replace(/<(p|h[1-6]|li|div)\b([^>]*)>/gi, (full, tag: string, attrs: string) => {
     const cls = /\sclass=("([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(attrs);
     if (!cls) return full;
     const names = (cls[2] ?? cls[3] ?? cls[4] ?? "").split(/\s+/);
-    const extra = names.map((n) => rules[n.toLowerCase()]).filter(Boolean).join(";");
+    const parts = names.map((n) => rules[n.toLowerCase()]).filter(Boolean);
+    // Esboços oficiais (JW Indent0..N): o número da classe é o degrau.
+    const lvlCls = names.map((n) => /indent(\d)$/i.exec(n)).find(Boolean);
+    if (lvlCls) parts.push(`x-level:${lvlCls[1]}`);
+    if (names.some((n) => boldClasses.has(n.toLowerCase()))) parts.push("x-bold:1");
+    const extra = parts.join(";");
     if (!extra) return full;
     const st = /\sstyle=("([^"]*)"|'([^']*)')/i.exec(attrs);
     // Estilo inline vem depois e prevalece.
@@ -271,6 +289,10 @@ export function cleanWordHtml(html: string): string {
   out = convertTabs(out);
   out = convertLeadingWhitespace(out);
   out = convertLists(out);
+  // Títulos com negrito definido na classe (ex.: JWHEADING) entram em negrito.
+  out = out.replace(/<(p|h[1-6])\b([^>]*x-bold:1[^>]*)>([\s\S]*?)<\/\1>/gi, "<$1$2><b>$3</b></$1>");
+  // Âncoras internas do Word (<a name="_Hlk...">) sem link.
+  out = out.replace(/<a\b(?![^>]*\bhref=)[^>]*>([\s\S]*?)<\/a>/gi, "$1");
   out = out
     // Demais comentários condicionais e comentários comuns.
     .replace(/<!--\[if[\s\S]*?<!\[endif\]-->/gi, "")
