@@ -1467,6 +1467,15 @@
       "empty": "No field meeting found for that day and shift.",
       "offline": "Available online only",
       "lastSync": "Last sync"
+    },
+    "docxImport": {
+      "button": "Import outline (.docx)",
+      "done": "Outline imported. Review it and tap Save.",
+      "err_too_large": "File too large (max 10 MB).",
+      "err_not_docx": "File not recognized. Open it in Word and save as .docx.",
+      "err_macro": "Files with macros are not accepted. Save as a regular .docx.",
+      "err_unsafe": "File rejected for security reasons.",
+      "err_empty": "The file has no text to import."
     }
   },
   "personalOutlines": {
