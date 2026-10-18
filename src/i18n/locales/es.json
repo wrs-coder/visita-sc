@@ -1442,6 +1442,15 @@
       "empty": "No se encontró reunión de campo para ese día y turno.",
       "offline": "Disponible solo en línea",
       "lastSync": "Última sincronización"
+    },
+    "docxImport": {
+      "button": "Importar bosquejo (.docx)",
+      "done": "Bosquejo importado. Revíselo y toque Guardar.",
+      "err_too_large": "Archivo demasiado grande (máximo 10 MB).",
+      "err_not_docx": "Archivo no reconocido. Ábralo en Word y guárdelo como .docx.",
+      "err_macro": "No se aceptan archivos con macros. Guárdelo como .docx normal.",
+      "err_unsafe": "Archivo rechazado por seguridad.",
+      "err_empty": "El archivo no tiene texto para importar."
     }
   },
   "personalOutlines": {

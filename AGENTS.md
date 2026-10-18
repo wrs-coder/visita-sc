@@ -6,3 +6,4 @@
 - Collapsible outline topics are a TipTap block node wrapping ordinary blocks (div[data-type=outline-topic]), with collapsed state kept only in device localStorage, so formatting, indent and Bible-ref detection keep working unchanged.
 - Collapse/expand state in visit tabs and template editors is device-local presentation state (localStorage via collapsible-blocks.tsx); collapsed content is hidden, never unmounted, so drafts and unsaved inputs survive.
 - Pasted Word indentation is normalized once in word-paste-cleaner.ts into margin-left multiples of 32px (tabs, margins, decimal commas, list levels), so the editor and readers only consume that single format.
+- DOCX outline import runs only on the device (docx-import.ts) with file-size, unzip-size and entry limits, rejects DOCTYPE/ENTITY and macros, and feeds the same Word paste normalizer and note sanitizer, because imported files are untrusted input.

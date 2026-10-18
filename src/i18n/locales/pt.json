@@ -1468,6 +1468,15 @@
       "empty": "Nenhuma reunião de campo encontrada para esse dia e turno.",
       "offline": "Disponível apenas online",
       "lastSync": "Última sincronização"
+    },
+    "docxImport": {
+      "button": "Importar esboço (.docx)",
+      "done": "Esboço importado. Confira e toque em Salvar.",
+      "err_too_large": "Arquivo grande demais (máximo 10 MB).",
+      "err_not_docx": "Arquivo não reconhecido. Abra no Word e salve como .docx.",
+      "err_macro": "Arquivos com macros não são aceitos. Salve como .docx comum.",
+      "err_unsafe": "Arquivo recusado por segurança.",
+      "err_empty": "O arquivo não tem texto para importar."
     }
   },
   "personalOutlines": {

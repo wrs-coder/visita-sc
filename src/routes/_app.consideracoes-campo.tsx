@@ -32,6 +32,7 @@ import {
   NotebookPen,
   ChevronsDownUp,
   ChevronsUpDown,
+  FileUp,
 } from "lucide-react";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
@@ -86,7 +87,7 @@ import {
 } from "@/lib/bible-notes-store";
 import { Checkbox } from "@/components/ui/checkbox";
 import { findCitations, stripHtmlForDetection, type CitationMatch } from "@/lib/bible-refs";
-import { shareJsonFile } from "@/lib/share";
+import { shareJsonFile, pickFile } from "@/lib/share";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { BibleHistoryChips } from "@/components/bible/BibleHistoryChips";
 
@@ -94,7 +95,7 @@ import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
-import { RichOutlineContent } from "@/lib/rich-content";
+import { RichOutlineContent, sanitizeNoteHtml } from "@/lib/rich-content";
 import { cn } from "@/lib/utils";
 import { appendPlainTextToNote } from "@/lib/note-content";
 import { useServerFn } from "@tanstack/react-start";
@@ -514,6 +515,24 @@ function Page() {
     setDraft(n);
     setSelectedNoteId(n.id);
     setMode("edit");
+  }
+
+  async function handleImportDocx() {
+    if (!activeType) return;
+    const file = await pickFile(".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    if (!file) return;
+    try {
+      const { importDocx } = await import("@/lib/docx-import");
+      const r = await importDocx(file);
+      const n = { ...emptyNote(activeType, selectedFolderId), title: r.title, content: sanitizeNoteHtml(r.html) };
+      setDraft(n);
+      setSelectedNoteId(n.id);
+      setMode("edit");
+      toast.success(t("fieldConsiderations.docxImport.done"));
+    } catch (e) {
+      const code = (e as { code?: string })?.code ?? "not_docx";
+      toast.error(t(`fieldConsiderations.docxImport.err_${code}`, { defaultValue: t("fieldConsiderations.docxImport.err_not_docx") }));
+    }
   }
 
   async function handleSave() {
@@ -1461,6 +1480,9 @@ function Page() {
                     <div className="flex gap-1.5">
                       <Button size="sm" className="flex-1" onClick={handleNewNote}>
                         <Plus className="h-4 w-4 mr-1" /> {t("fieldConsiderations.newNote")}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={handleImportDocx} title={t("fieldConsiderations.docxImport.button")} aria-label={t("fieldConsiderations.docxImport.button")}>
+                        <FileUp className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => handleCreateFolder(null)} title={t("personalOutlines.folders.new")}>
                         <FolderPlus className="h-4 w-4" />
