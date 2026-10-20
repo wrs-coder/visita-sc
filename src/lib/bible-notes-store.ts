@@ -30,6 +30,8 @@ export interface NoteFolder {
   parentId: string | null;
   type: NoteType;
   created_at: number;
+  /** Sincronização automática na nuvem (pastas fixas da semana sempre sincronizam). */
+  autoSync?: boolean;
   /** Soft-delete (ms epoch). */
   deleted_at?: number | null;
 }
@@ -1043,4 +1045,20 @@ export async function ensureLocalNotesOwner(userId: string | null | undefined): 
   }
   try { localStorage.setItem(LS_NOTES_OWNER, userId); } catch { /* noop */ }
   return !!previous && previous !== userId;
+}
+
+
+/** True quando a pasta (ou alguma pasta-mãe) sincroniza automaticamente. Pastas fixas da semana sempre. */
+export function isAutoSyncFolder(folderId: string | null | undefined, folders: NoteFolder[]): boolean {
+  if (!folderId) return false;
+  if (folderId === FIXED_FOLDER_WEEK_OUTLINES || folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS) return true;
+  const byId = new Map(folders.map((f) => [f.id, f]));
+  const seen = new Set<string>();
+  let cur = byId.get(folderId);
+  while (cur && !seen.has(cur.id)) {
+    if (cur.autoSync) return true;
+    seen.add(cur.id);
+    cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+  }
+  return false;
 }
