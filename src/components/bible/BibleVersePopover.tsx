@@ -479,7 +479,8 @@ export function VerseLink({
     const key = highlightKey(libraryId, match.bookId, chapter, a.verse);
     const next = addHighlight(key, { start, end, color: color ?? settings.highlightColor });
     setHighlightsByVerse((m) => ({ ...m, [a.verse]: next }));
-    sel.removeAllRanges();
+    savedRangeRef.current = null;
+    sel?.removeAllRanges();
   };
   onHighlightClickRef.current = onHighlightClick;
 
@@ -720,6 +721,8 @@ export function VerseLink({
             type="button"
             title={t("bibleVerse.highlight")}
             aria-label={t("bibleVerse.highlight")}
+            onPointerDown={keepSelection}
+            onMouseDown={keepSelection}
             onClick={() => onHighlightClick()}
             className="p-1 rounded hover:bg-background text-muted-foreground"
           >
@@ -734,6 +737,8 @@ export function VerseLink({
                 aria-checked={settings.highlightColor === c}
                 aria-label={t(`bibleVerse.highlightColors.${c}`, { defaultValue: HL_LABELS[c] })}
                 title={t(`bibleVerse.highlightColors.${c}`, { defaultValue: HL_LABELS[c] })}
+                onPointerDown={keepSelection}
+                onMouseDown={keepSelection}
                 onClick={() => onPickHighlightColor(c)}
                 className={cn(
                   "h-4 w-4 rounded-sm border bible-hl-swatch",
