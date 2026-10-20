@@ -2113,7 +2113,7 @@ function NoteEditor({
 
       <div className="flex-1 min-h-[22rem] flex flex-col gap-1.5 w-full max-w-full min-w-0">
 
-        <div className="shrink-0 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="shrink-0 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-background border-b flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Label>{t("fieldConsiderations.fields.content")}</Label>
           {!isTalk && mode === "outline" && (
             <div className="w-full sm:w-auto overflow-x-auto">
@@ -2251,7 +2251,7 @@ function FullscreenOutline({
   const showTimer = (note.type ?? "field_consideration") !== "talk_notes";
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none safe-top safe-bottom safe-x">
+    <div className="webkit-stable-layer fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none safe-top safe-bottom safe-x">
       {showTimer && <OutlineTimer outlineId={note.id} variant="fullscreen" />}
       {showTimer && <OutlineInactivitySensor outlineId={note.id} />}
       <div className="border-b px-4 py-2 min-w-0 shrink-0">
