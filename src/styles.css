@@ -665,3 +665,11 @@ main [role="tabpanel"] [role="tab"][data-state="active"] {
     display: none;
   }
 }
+
+/* iPad/WebKit: isola o leitor em camada própria para evitar piscadas ao rolar/selecionar */
+@utility webkit-stable-layer {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  isolation: isolate;
+  -webkit-overflow-scrolling: touch;
+}
