@@ -79,6 +79,7 @@ import {
   FIXED_FOLDER_WEEK_CONSIDERATIONS,
   FIXED_FOLDER_WEEK_OUTLINES,
   isFixedFolder,
+  isAutoSyncFolder,
   type FieldNote,
   type NoteFolder,
   type NoteType,
@@ -555,7 +556,7 @@ function Page() {
       });
       setDraft(updated);
       if (activeType !== "talk_notes") setMode("outline");
-      const syncResult = await syncOutlinesIfOnline();
+      const syncResult = isAutoSyncFolder(updated.folderId, folders) ? await syncOutlinesIfOnline() : null;
       if (activeType === "outline" && syncResult?.ok) {
         const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
         const syncedNotes = ns
@@ -695,6 +696,7 @@ function Page() {
       parentId,
       type: activeType,
       created_at: Date.now(),
+      autoSync: activeType !== "talk_notes" && confirm(t("personalOutlines.folders.autoSyncAsk", { defaultValue: "Sincronizar esta pasta automaticamente na nuvem (outros aparelhos)?" })),
     };
     await saveFolder(f);
     setFolders((all) => [...all, f]);
@@ -710,6 +712,38 @@ function Page() {
     setFolders((all) => all.map((f) => (f.id === folder.id ? updated : f)));
     // Offline-first: renomear pasta fica local; sincroniza só sob demanda.
   }
+
+  async function handleToggleAutoSync(folder: NoteFolder) {
+    const updated = { ...folder, autoSync: !folder.autoSync };
+    await saveFolder(updated);
+    setFolders((all) => all.map((f) => (f.id === folder.id ? updated : f)));
+    toast.success(updated.autoSync
+      ? t("personalOutlines.folders.autoSyncOn", { defaultValue: "Sincronização automática ativada" })
+      : t("personalOutlines.folders.autoSyncOff", { defaultValue: "Sincronização automática desativada" }));
+    if (updated.autoSync) void syncOutlinesIfOnline();
+  }
+
+  // Ao abrir/retomar o app: busca novidades das pastas sincronizadas (no máx. a cada 5 min).
+  const lastAutoSyncRef = React.useRef(0);
+  useEffect(() => {
+    if (!activeType || activeType === "talk_notes") return;
+    const run = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      if (Date.now() - lastAutoSyncRef.current < 5 * 60 * 1000) return;
+      lastAutoSyncRef.current = Date.now();
+      void syncOutlinesIfOnline().catch(() => { /* silencioso */ });
+    };
+    run();
+    document.addEventListener("visibilitychange", run);
+    window.addEventListener("online", run);
+    document.addEventListener("resume", run);
+    return () => {
+      document.removeEventListener("visibilitychange", run);
+      window.removeEventListener("online", run);
+      document.removeEventListener("resume", run);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeType]);
 
   async function handleDeleteFolder(folder: NoteFolder) {
     if (!confirm(t("personalOutlines.folders.deleteWarn"))) return;
@@ -1209,6 +1243,9 @@ function Page() {
             ? <FolderOpen className={cn("h-4 w-4", fixed && "text-primary")} />
             : <Folder className={cn("h-4 w-4", fixed && "text-primary")} />}
           <span className={cn("flex-1 truncate", fixed && "font-medium")}>{folderName}</span>
+          {!fixed && isAutoSyncFolder(folder.id, folders) && activeType !== "talk_notes" && (
+            <Cloud className="h-3.5 w-3.5 text-primary" aria-label={t("personalOutlines.folders.autoSyncBadge", { defaultValue: "Sincroniza automaticamente" })} />
+          )}
           {fixed && (
             <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
               {t("personalOutlines.folders.fixedBadge", { defaultValue: "Fixa" })}
@@ -1231,6 +1268,14 @@ function Page() {
                 <DropdownMenuItem onClick={() => handleRenameFolder(folder)}>
                   <Pencil className="h-4 w-4 mr-2" />
                   {t("personalOutlines.folders.rename")}
+                </DropdownMenuItem>
+              )}
+              {!fixed && activeType !== "talk_notes" && (
+                <DropdownMenuItem onClick={() => handleToggleAutoSync(folder)}>
+                  <Cloud className="h-4 w-4 mr-2" />
+                  {folder.autoSync
+                    ? t("personalOutlines.folders.autoSyncDisable", { defaultValue: "Desativar sincronização automática" })
+                    : t("personalOutlines.folders.autoSyncEnable", { defaultValue: "Ativar sincronização automática" })}
                 </DropdownMenuItem>
               )}
               {!fixed && (
