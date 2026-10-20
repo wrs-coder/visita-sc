@@ -402,10 +402,37 @@ export function VerseLink({
   const changeTextScale = (dir: -1 | 1) => {
     updateSetting({ textScale: clampTextScale(settings.textScale + dir * TEXT_SCALE_STEP) });
   };
+  // iPadOS (WebKit) desfaz a seleção ao tocar num botão; guardamos o último trecho
+  // selecionado dentro do texto para aplicar o destaque mesmo assim.
+  const savedRangeRef = useRef<Range | null>(null);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onSelChange = () => {
+      const sel = window.getSelection();
+      const c = textRef.current;
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !c) return;
+      const r = sel.getRangeAt(0);
+      if (c.contains(r.startContainer) && c.contains(r.endContainer)) savedRangeRef.current = r.cloneRange();
+    };
+    document.addEventListener("selectionchange", onSelChange);
+    return () => document.removeEventListener("selectionchange", onSelChange);
+  }, []);
+  const getActiveRange = (): Range | null => {
+    const sel = typeof window !== "undefined" ? window.getSelection() : null;
+    const c = textRef.current;
+    if (sel && !sel.isCollapsed && sel.rangeCount > 0 && c) {
+      const r = sel.getRangeAt(0);
+      if (c.contains(r.startContainer) && c.contains(r.endContainer)) return r;
+    }
+    const saved = savedRangeRef.current;
+    if (saved && !saved.collapsed && c && c.contains(saved.startContainer) && c.contains(saved.endContainer)) return saved;
+    return null;
+  };
+  const keepSelection = (e: React.SyntheticEvent) => e.preventDefault();
+
   const onPickHighlightColor = (c: HighlightColor) => {
     updateSetting({ highlightColor: c });
-    const sel = typeof window !== "undefined" ? window.getSelection() : null;
-    if (sel && !sel.isCollapsed && textRef.current?.contains(sel.anchorNode)) {
+    if (getActiveRange()) {
       // Aplica direto quando já há texto selecionado.
       onHighlightClickRef.current?.(c);
     }
@@ -430,11 +457,11 @@ export function VerseLink({
   const onHighlightClick = (color?: HighlightColor) => {
     if (!libraryId || !parts) return;
     const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+    const range = getActiveRange();
+    if (!range) {
       toast.info(t("bibleVerse.selectToHighlight"));
       return;
     }
-    const range = sel.getRangeAt(0);
     const container = textRef.current;
     if (!container || !container.contains(range.startContainer) || !container.contains(range.endContainer)) {
       toast.info(t("bibleVerse.selectToHighlight"));
