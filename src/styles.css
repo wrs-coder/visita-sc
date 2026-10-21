@@ -695,3 +695,10 @@ main [role="tabpanel"] [role="tab"][data-state="active"] {
     backdrop-filter: none !important;
   }
 }
+
+/* Listas longas: o navegador pula o desenho das linhas fora da tela,
+   sem mudar aparência, ordem ou arrastar-e-soltar. */
+.cv-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 32px;
+}
