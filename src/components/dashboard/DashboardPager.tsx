@@ -104,7 +104,7 @@ export function DashboardPager({ pages }: { pages: DashboardPage[] }) {
       </div>
       <div
         ref={trackRef}
-        className="-mx-4 flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mx-4 flex items-start snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ overscrollBehaviorX: "contain", touchAction: "pan-x pan-y" }}
       >
         {pages.map((p) => (
