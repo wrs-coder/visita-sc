@@ -74,7 +74,7 @@ import {
 import { format, parseISO, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { UpcomingVisitsButton } from "@/components/dashboard/UpcomingVisitsDialog";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
 import { FullVisitReportDialog } from "@/components/visit-week/FullVisitReportDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
@@ -760,20 +760,15 @@ function Dashboard() {
     <div className="space-y-6">
       <PwaInstallButton />
       <header className="space-y-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
+        <div>
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
             </p>
             <h1 className="mt-1 font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
               {t("dashboard.greeting", { name: profile?.full_name?.split(" ")[0] ?? t("dashboard.brother") })}
             </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {role === "superintendent" ? t("dashboard.panelSuper") : t("dashboard.panelElder")}
-              {visit ? ` · ${t("dashboard.visitLabel", { title: visit.title })}` : ` · ${t("dashboard.noActiveVisit")}`}
-            </p>
           </div>
-          <ThemeToggle className="shrink-0 mt-1" />
         </div>
         <div>
           <TemplateUpdatesBadge
@@ -883,6 +878,13 @@ function Dashboard() {
               </SelectContent>
             </Select>
           ) : <span />}
+          {!visit && (
+            <span className="mr-auto text-xs text-muted-foreground truncate">
+              {t("dashboard.noActiveVisit")}
+            </span>
+          )}
+          <div className="flex items-center gap-1.5 shrink-0">
+          {role === "superintendent" && <UpcomingVisitsButton congregations={congs} />}
           {visit && (
             <>
               <DropdownMenu>
