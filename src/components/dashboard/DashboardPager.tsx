@@ -90,6 +90,7 @@ export function DashboardPager({ pages }: { pages: DashboardPage[] }) {
             type="button"
             role="tab"
             aria-selected={active === p.id}
+            data-state={active === p.id ? "active" : "inactive"}
             onClick={() => goTo(p.id)}
             className={cn(
               "min-h-9 rounded-lg px-1 text-xs font-semibold transition-colors",
@@ -110,7 +111,7 @@ export function DashboardPager({ pages }: { pages: DashboardPage[] }) {
         {pages.map((p) => (
           <section
             key={p.id}
-            role="tabpanel"
+            role="group"
             aria-label={p.label}
             className="w-full shrink-0 snap-start snap-always space-y-6 px-4"
           >
