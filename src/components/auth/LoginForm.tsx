@@ -104,7 +104,14 @@ export function LoginForm() {
       const r = await resolveFn({ data: { identifier: identifier.trim() } });
       if (!r.ok) { toast.error(r.error); return; }
       stage = "authentication";
-      const { data: signIn, error } = await supabase.auth.signInWithPassword({ email: r.email, password });
+      // Tenta a senha exatamente como digitada; se falhar e houver espaços
+      // acidentais no início/fim, tenta de novo sem eles. Assim ninguém que
+      // já usa a senha original deixa de conseguir entrar.
+      let { data: signIn, error } = await supabase.auth.signInWithPassword({ email: r.email, password });
+      const trimmed = password.trim();
+      if ((error || !signIn.user) && trimmed && trimmed !== password) {
+        ({ data: signIn, error } = await supabase.auth.signInWithPassword({ email: r.email, password: trimmed }));
+      }
       if (error || !signIn.user) { toast.error(t("login.invalidCredentials")); return; }
       toast.success(t("login.welcome"));
       const existing = await getVaultMeta();
