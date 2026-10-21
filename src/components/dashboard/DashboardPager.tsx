@@ -1,7 +1,8 @@
 // Etapa 4 — Telas deslizantes do Dashboard (só no celular).
 // No celular: seletor rápido + carrossel horizontal com scroll-snap.
 // A partir de md: todas as telas empilhadas, como a lista de sempre.
-// Todas as telas ficam montadas (nada se perde ao trocar).
+// Etapa 5A: no celular a tela visível monta primeiro; as demais montam
+// logo depois, com o aparelho ocioso, e nunca são desmontadas.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,28 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState(pages[0]?.id ?? "");
   const restored = useRef(false);
+  const [mounted, setMounted] = useState<Set<string> | null>(null);
+
+  // Monta a tela inicial na hora e as outras em segundo plano.
+  useEffect(() => {
+    if (!isMobile || mounted) return;
+    let saved: string | null = null;
+    try { saved = window.localStorage.getItem(STORAGE_KEY); } catch { /* ignore */ }
+    const first = pages.some((p) => p.id === saved) ? saved! : pages[0]?.id;
+    setMounted(new Set(first ? [first] : []));
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    const mountAll = () => setMounted(new Set(pages.map((p) => p.id)));
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(mountAll, { timeout: 1200 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(mountAll, 300);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile]);
+
+  // Páginas novas (ex.: cartão que passou a ter conteúdo) entram montadas.
+  const isMounted = (id: string) => !mounted || mounted.has(id) || mounted.size >= pages.length;
 
   // Restaura a última tela após hidratação.
   useEffect(() => {
@@ -72,6 +95,7 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
     const el = trackRef.current;
     const idx = pages.findIndex((p) => p.id === id);
     if (!el || idx < 0) return;
+    setMounted((m) => (m && !m.has(id) ? new Set([...m, id]) : m));
     el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
     setActive(id);
   };
@@ -123,7 +147,7 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
             aria-label={p.label}
             className="w-full shrink-0 snap-start snap-always space-y-6 px-4"
           >
-            {p.content}
+            {isMounted(p.id) || p.id === active ? p.content : <div className="min-h-[60vh]" aria-hidden="true" />}
           </section>
         ))}
       </div>
