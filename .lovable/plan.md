@@ -14,7 +14,7 @@ Feito em três rodadas separadas, com testes entre elas. A primeira é a mais r�
 Hoje os versículos já ficam guardados no aparelho, organizados por livro e capítulo. Mas cada vez que você toca numa referência, o app volta a ler o capítulo do armazenamento e espera. A melhoria:
 1. **Capítulos já abertos ficam na memória** enquanto o app estiver aberto: tocar de novo na mesma referência abre na hora.
 2. **Leitura antecipada:** ao abrir um esboço, os capítulos citados nele são carregados em segundo plano, antes de você tocar.
-3. **Bíblia ativa preparada na abertura do app**, sem esperar o primeiro toque.
+3. **Bíblia ativa preparada logo depois da abertura**, sem esperar o primeiro toque. Só começa depois que o login (inclusive PIN/biometria) terminou e a primeira tela já apareceu, com o aparelho ocioso. Não participa do login nem da tela de abertura; se der qualquer erro, é ignorada e o balão funciona como hoje.
 4. Nada é reimportado nem regravado: destaques, idiomas e Bíblias atuais continuam iguais. Ao remover ou trocar de Bíblia, a memória é limpa.
 
 ### Rodada A — Painel
