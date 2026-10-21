@@ -178,7 +178,7 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
             key={p.id}
             role="tabpanel"
             aria-label={p.label}
-            className="w-full shrink-0 snap-start snap-always space-y-6 px-4 md:px-0 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0"
+            className="w-full shrink-0 snap-start snap-always space-y-6 px-4 md:px-0 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0 lg:[&>*]:w-full lg:[&>*]:min-w-0"
           >
             {isMounted(p.id) || p.id === active ? p.content : <div className="min-h-[60vh]" aria-hidden="true" />}
           </section>
