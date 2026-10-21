@@ -30,3 +30,6 @@
 - [ ] (usuário) Instalar a 4.2.13 no celular e conferir anexar vídeo MP4, zoom e tópicos.
 - [x] 4.2.14: barra compacta restaurada a duas linhas roláveis; aprovada na Play Store e anunciada aos aparelhos (LATEST_APP_VERSION).
 - [x] Dashboard: cartão "Reuniões da semana" com títulos por campo; Pioneiros e Anciãos e Servos pelo "Dia e Horário (definido pelo Superintendente)", também no cronograma Hoje/Amanhã.
+- [x] Etapa 5 / Rodada 0: balão bíblico instantâneo (capítulos em memória, leitura antecipada, Bíblia preparada após o login).
+- [ ] Etapa 5 / Rodada A: dividir o Painel em peças separadas (aguarda o usuário testar a Rodada 0).
+- [ ] Etapa 5 / Rodada B: dividir os Esboços pessoais em peças separadas (após a Rodada A).
