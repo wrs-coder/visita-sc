@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useActiveCongregation } from "./use-active-congregation";
+import { useActiveCongregation, getActiveCongregationOverride } from "./use-active-congregation";
 import { useAuth } from "./use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { readOneWithMirror } from "@/lib/local-first";
@@ -99,6 +99,9 @@ export function useActiveVisit(options: UseActiveVisitOptions = {}) {
 
       // Sem visitas: cria placeholder se for o Superintendente.
       if (!allowPlaceholder || !isSuperOfCong) return null;
+      // Só cria quando o usuário ESCOLHEU essa congregação (nunca no fallback
+      // alfabético automático — origem das visitas fantasmas de segunda).
+      if (getActiveCongregationOverride() !== congId) return null;
       const { data: inserted } = await supabase
         .from("visits")
         .insert({

@@ -476,11 +476,24 @@ function Dashboard() {
         setSelected(match);
         setActiveCongregationOverride(match);
       } else {
-        // Sem visita na semana: NÃO limpa o override global — preserva a
-        // "Congregação ativa" anterior para que outras telas continuem
-        // funcionando. Localmente reflete o que houver no override.
-        const existing = getActiveCongregationOverride();
-        setSelected(existing);
+        // Sem visita na semana: antecipa a PRÓXIMA visita agendada (evita
+        // cair na 1ª congregação alfabética e criar "Programação geral").
+        const { data: next } = await supabase
+          .from("visits")
+          .select("congregation_id")
+          .gt("start_date", weekEnd)
+          .eq("is_active", true)
+          .order("start_date", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        const nextCong = (next as { congregation_id?: string } | null)?.congregation_id ?? null;
+        if (nextCong) {
+          setSelected(nextCong);
+          setActiveCongregationOverride(nextCong);
+        } else {
+          setSelected(getActiveCongregationOverride());
+        }
       }
     })();
     return () => {

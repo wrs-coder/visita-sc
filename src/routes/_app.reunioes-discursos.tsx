@@ -95,7 +95,7 @@ function useEnsureVisitForSuper(congregationId: string | null, enabled: boolean)
       const { data } = await supabase
         .from("visits").select("id").eq("congregation_id", congregationId).limit(1);
       if (cancelled) return;
-      if (!data || data.length === 0) {
+      if ((!data || data.length === 0) && getActiveCongregationOverride() === congregationId) {
         const today = format(new Date(), "yyyy-MM-dd");
         await supabase.from("visits").insert({
           congregation_id: congregationId,
