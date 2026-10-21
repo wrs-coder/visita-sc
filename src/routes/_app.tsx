@@ -88,6 +88,28 @@ function AppLayout() {
   // Onda 7.4 — Warm-up offline silencioso após o login (idle, 1x/6h por aba).
   useOfflineWarmup();
 
+  // Prepara a Bíblia ativa em segundo plano, só depois do login concluído
+  // e com o aparelho ocioso. Erros são ignorados (balão funciona como antes).
+  const bibleWarmUserId = !loading && user ? user.id : null;
+  useEffect(() => {
+    if (!bibleWarmUserId) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      const run = () => {
+        if (cancelled) return;
+        import("@/lib/bible-notes-store")
+          .then(async (m) => {
+            const lib = await m.getActiveLibrary();
+            if (!cancelled && lib) await m.getChapterFromLibrary(lib.id, "B43", 1);
+          })
+          .catch(() => { /* ignore */ });
+      };
+      const idle = (window as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback;
+      if (idle) idle(run); else run();
+    }, 4000);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [bibleWarmUserId]);
+
 
   const openSupport = () => {
     setMobileMenuOpen(false);

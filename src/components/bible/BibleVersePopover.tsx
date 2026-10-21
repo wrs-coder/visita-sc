@@ -7,7 +7,7 @@ import {
   Copy, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, List, FilePlus2,
   AArrowDown, AArrowUp, SlidersHorizontal,
 } from "lucide-react";
-import { getChapterFromLibrary } from "@/lib/bible-notes-store";
+import { getChapterFromLibrary, prefetchChapters } from "@/lib/bible-notes-store";
 import { pushVerseHistory } from "@/lib/bible-history";
 import { getLocalizedBookName } from "@/lib/bible-canon";
 import type { CitationMatch } from "@/lib/bible-refs";
@@ -290,6 +290,11 @@ export function VerseLink({
       });
     return () => { cancelled = true; };
   }, [open, libraryId, match.bookId, chapter]);
+
+  // Leitura antecipada: deixa o capítulo pronto antes do toque.
+  useEffect(() => {
+    prefetchChapters(libraryId, [{ bookId: match.bookId, chapter }]);
+  }, [libraryId, match.bookId, chapter]);
 
   // Versículos exibidos: capítulo inteiro ou apenas os da citação.
   const selectedVerses = useMemo<number[]>(() => {
