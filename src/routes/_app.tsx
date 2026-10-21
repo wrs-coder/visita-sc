@@ -226,7 +226,7 @@ function AppLayout() {
   const Nav = ({ onClick }: { onClick?: () => void }) => (
     <nav className="space-y-5">
       {sections.map((sec) => {
-        const open = !closedSections.includes(sec.id) || sec.items.some((i) => isActiveLink(i.to));
+        const open = !closedSections.includes(sec.id);
         if (sec.collapsible) {
           // "Modelos de Base" — accordion com os 3 itens de modelos; perfil fica fora, abaixo.
           const modelItems = sec.items.filter((i) => i.to !== "/perfil");
