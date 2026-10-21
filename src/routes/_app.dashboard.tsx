@@ -1236,7 +1236,7 @@ function Dashboard() {
           </CollapsibleCard>
         );
         const visitWeekCards = visit && (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="contents">
             <CollapsibleCard id="visit-field-meeting" accent="meetings" icon={<Users className="h-4 w-4 text-primary" />} title={t("dashboard.fieldMeeting")} headerRight={viewAll("/reunioes-discursos")}>
               <WeekGroups
                 items={fieldMeetingsWeek}
@@ -1257,7 +1257,7 @@ function Dashboard() {
                         {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""} · {MODALITY_LABEL[f.modality] ?? f.modality}
                       </span>
                       {filled.length > 0 && (
-                        <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-1">
+                        <dl className="grid grid-cols-1 gap-y-1 sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)] sm:gap-x-3">
                           {filled.map(([label, value]) => (
                             <div key={label} className="contents">
                               <dt className="text-xs text-muted-foreground pt-0.5">{label.replace(/:$/, "")}</dt>
@@ -1292,7 +1292,7 @@ function Dashboard() {
                         {a.period}{a.meeting_time ? ` · ${a.meeting_time.slice(0, 5)}` : ""}
                       </span>
                       {filled.length > 0 && (
-                        <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-1">
+                        <dl className="grid grid-cols-1 gap-y-1 sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)] sm:gap-x-3">
                           {filled.map(([label, value]) => (
                             <div key={label} className="contents">
                               <dt className="text-xs text-muted-foreground pt-0.5">{label}</dt>
