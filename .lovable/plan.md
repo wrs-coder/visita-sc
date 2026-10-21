@@ -17,14 +17,14 @@ Este é um documento só de sugestões. Nada será alterado sem a sua aprovaçã
 5. **Manter a tela acesa só com o cronômetro correndo**, como já acontece. Revisar se nenhuma outra tela segura a tela acesa.
 
 ## 3. Visual premium
-1. **Hierarquia mais clara no Dashboard:** um cartão de destaque "Hoje" no topo (congregação, próxima reunião, cronômetro) e o resto mais discreto.
+1. **Dashboard mantém o layout atual**, com toda a programação visível de uma vez. Só um acabamento visual (cores, espaçamentos e sombras), sem esconder nenhuma informação e sem cliques a mais.
 2. **Espaçamentos e cantos padronizados**, com uma escala única para que todas as telas pareçam do mesmo app.
 3. **Transições suaves e curtas** ao abrir cartões, recolher tópicos e trocar de aba, desligadas automaticamente quando o aparelho pede "reduzir movimento".
 4. **Estados vazios ilustrados** (sem esboços, sem visitas), com um botão de ação claro em vez de tela em branco.
 5. **Ícone, tela de abertura e cores do cronômetro alinhados** à paleta da Onda 6.8. Hoje o "Término" usa cores fixas fora do padrão.
 
 ## 4. Usabilidade
-1. **Barra inferior fixa no celular** com as 4 áreas mais usadas (Hoje, Esboços, Itinerário, Perfil), alcançáveis com o polegar.
+1. **Sem barra inferior fixa:** fica o menu atual, para não ocupar espaço na tela do celular.
 2. **Busca global** (esboços, versículos, congregações) por um único botão.
 3. **Desfazer em vez de confirmar:** ao apagar algo, mostrar "Apagado, desfazer" por alguns segundos, já que existe lixeira.
 4. **Indicador claro de sincronização** (salvo no aparelho / enviado / pendente), sempre visível e discreto.
@@ -46,7 +46,7 @@ Cada etapa seria feita isoladamente, validada com a verificação do código e o
 
 ## Riscos para quem já usa o app
 - **Muito baixo:** Bateria 1 e 2, Visual 2, 3 e 5, Usabilidade 3, 4 e 6. Mudam só a aparência ou o desempenho, e nenhum dado é alterado.
-- **Baixo:** a barra inferior e o cartão "Hoje", porque mudam onde as coisas ficam. O cuidado é manter o menu atual também, para ninguém se perder.
+- **Baixo:** o acabamento visual do Dashboard, porque nada muda de lugar.
 - **Médio:** dividir as telas gigantes. É o maior ganho, mas mexe em muito código, então seria feito por partes, uma tela por rodada.
 - **O acesso dos usuários não é interrompido em nenhum caso:** login, PIN, biometria, banco e dados salvos no aparelho ficam intocados. No Android, a mudança só chega quando o usuário atualizar pela Play Store.
 
