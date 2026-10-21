@@ -98,7 +98,7 @@ import { Maximize2, PencilLine } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { DashboardPager } from "@/components/dashboard/DashboardPager";
-import { buildDayTimeline, groupByDate, type TimelineKind, type TimelineSource } from "@/lib/today-timeline";
+import { buildDayTimeline, groupByDate, resolveWeekdaySlot, type TimelineKind, type TimelineSource } from "@/lib/today-timeline";
 
 
 
@@ -180,6 +180,10 @@ interface MeetingTodayItem {
   opening_prayer?: string | null;
   closing_prayer?: string | null;
   public_talk_theme?: string | null;
+  final_talk?: string | null;
+  final_song?: string | null;
+  opening_song?: string | null;
+  closing_song?: string | null;
 }
 
 const MODALITY_LABEL: Record<string, string> = {
@@ -668,7 +672,16 @@ function Dashboard() {
           filter: byVisit,
         }).then((r) => ({ data: r.row as { meeting_at?: string | null; super_meeting_at?: string | null; theme?: string | null; location?: string | null; opening_prayer?: string | null; closing_prayer?: string | null } | null })),
       ]);
+      const el = await readOneWithMirror<Record<string, unknown>>({
+        table: "elders_servants_meetings",
+        remote: () => supabase.from("elders_servants_meetings").select("theme, location, opening_prayer, closing_prayer").eq("visit_id", visit.id).maybeSingle() as never,
+        filter: byVisit,
+      }).then((r) => ({ data: r.row as { theme?: string | null; location?: string | null; opening_prayer?: string | null; closing_prayer?: string | null } | null }))
+        .catch(() => ({ data: null }));
       const out: MeetingTodayItem[] = [];
+      const pushAt = (item: Omit<MeetingTodayItem, "date" | "meeting_at">, slot: { date: string; at: string } | null) => {
+        if (slot) out.push({ ...item, date: slot.date, meeting_at: slot.at });
+      };
       const push = (
         kind: MeetingTodayItem["kind"],
         at: string | null | undefined,
@@ -683,25 +696,46 @@ function Dashboard() {
         if (!date) return;
         out.push({ kind, date, meeting_at: at, theme: theme ?? null, location: location ?? null, ...extra });
       };
+      const ex = meetingExtras;
       push("midweek", mw.data?.meeting_at, mw.data?.service_talk_theme, null, {
         chairman: mw.data?.chairman ?? null,
         closing_prayer: mw.data?.closing_prayer ?? null,
+        final_song: ex.midweek?.final_song ?? ex.templateExtras.midweek?.final_song ?? null,
       });
       push("weekend", we.data?.meeting_at, we.data?.talk_theme_title ?? we.data?.public_talk_theme, null, {
         public_talk_theme: we.data?.public_talk_theme ?? null,
+        final_talk: we.data?.talk_theme_title ?? null,
+        opening_song: ex.weekend?.opening_song ?? ex.templateExtras.weekend?.opening_song ?? null,
+        closing_song: ex.weekend?.closing_song ?? ex.templateExtras.weekend?.closing_song ?? null,
       });
-      const piAt = pi.data?.super_meeting_at ?? pi.data?.meeting_at;
-      push("pioneer", piAt, pi.data?.theme, pi.data?.location, {
+      // Pioneiros e Anciãos: "Dia e Horário (definido pelo Superintendente)".
+      const piWd = ex.pioneer?.weekday ?? ex.templateExtras.pioneer?.weekday;
+      const piTm = ex.pioneer?.meeting_time ?? ex.templateExtras.pioneer?.meeting_time;
+      const piSlot = resolveWeekdaySlot(piWd, piTm, visitDays);
+      const piExtra = {
         opening_prayer: pi.data?.opening_prayer ?? null,
         closing_prayer: pi.data?.closing_prayer ?? null,
-      });
-      // elders_servants_meetings não tem data/hora; fica fora deste filtro.
-      out.sort((x, y) => x.date.localeCompare(y.date));
+      };
+      if (piSlot) {
+        pushAt({ kind: "pioneer", theme: pi.data?.theme ?? null, location: pi.data?.location ?? null, ...piExtra }, piSlot);
+      } else {
+        push("pioneer", pi.data?.super_meeting_at ?? pi.data?.meeting_at, pi.data?.theme, pi.data?.location, piExtra);
+      }
+      const elWd = ex.elders?.weekday ?? ex.templateExtras.elders?.weekday;
+      const elTm = ex.elders?.meeting_time ?? ex.templateExtras.elders?.meeting_time;
+      pushAt({
+        kind: "elders",
+        theme: el.data?.theme ?? null,
+        location: el.data?.location ?? null,
+        opening_prayer: el.data?.opening_prayer ?? null,
+        closing_prayer: el.data?.closing_prayer ?? null,
+      }, resolveWeekdaySlot(elWd, elTm, visitDays));
+      out.sort((x, y) => x.date.localeCompare(y.date) || x.meeting_at.localeCompare(y.meeting_at));
       if (!cancelled) setMeetingsToday(out);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visit, viewedIso]);
+  }, [visit, viewedIso, meetingExtras.midweek, meetingExtras.weekend, meetingExtras.pioneer, meetingExtras.elders, meetingExtras.templateExtras]);
 
   const meals = mealsWeek.filter((m) => m.meal_date === viewedIso);
   const transports = transportsWeek.filter((x) => x.event_date === viewedIso);
