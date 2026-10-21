@@ -944,6 +944,46 @@ function Dashboard() {
         </div>
       )}
 
+      <Dialog open={!!eventDetail} onOpenChange={(o) => { if (!o) setEventDetail(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="break-words pr-6">{eventDetail?.item.title}</DialogTitle>
+          </DialogHeader>
+          {eventDetail && (
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+                <Clock className="h-3 w-3" />
+                {eventDetail.item.time ?? t("dashboard.pager.noTime", { defaultValue: "Sem horário" })}
+              </div>
+              {eventDetail.item.details && eventDetail.item.details.length > 0 ? (
+                <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-1.5">
+                  {eventDetail.item.details.map((d) => (
+                    <div key={d.label} className="contents">
+                      <dt className="text-xs text-muted-foreground pt-0.5">{d.label}</dt>
+                      <dd className="text-sm break-words whitespace-pre-wrap">{d.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : eventDetail.item.subtitle ? (
+                <p className="text-sm whitespace-pre-wrap break-words">{eventDetail.item.subtitle}</p>
+              ) : null}
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setEventDetail(null)}>
+              {t("common.close", { defaultValue: "Fechar" })}
+            </Button>
+            {eventDetail && (
+              <Button asChild>
+                <Link to={eventDetail.to as "/cronograma"} onClick={() => setEventDetail(null)}>
+                  {t("dashboard.openPage", { defaultValue: "Abrir página" })}
+                </Link>
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {(() => {
         // Etapa 4 — telas deslizantes. "Hoje"/"Amanhã" trazem a linha do tempo
         // do dia; os cartões da tela "Visita" mostram a semana inteira.
