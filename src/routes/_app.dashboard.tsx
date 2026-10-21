@@ -1236,7 +1236,7 @@ function Dashboard() {
           </CollapsibleCard>
         );
         const visitWeekCards = visit && (
-          <div className="contents">
+          <div className="space-y-6 lg:contents">
             <CollapsibleCard id="visit-field-meeting" accent="meetings" icon={<Users className="h-4 w-4 text-primary" />} title={t("dashboard.fieldMeeting")} headerRight={viewAll("/reunioes-discursos")}>
               <WeekGroups
                 items={fieldMeetingsWeek}
