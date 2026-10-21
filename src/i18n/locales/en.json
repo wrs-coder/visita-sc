@@ -26,7 +26,8 @@
     "notFoundDesc": "The page you are looking for does not exist.",
     "goHome": "Go to home",
     "somethingWrong": "Something went wrong",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "undo": "Undo"
   },
   "a11y": {
     "skipToContent": "Skip to content",
