@@ -1628,7 +1628,7 @@ function Dashboard() {
         </CollapsibleCard>
       )}
       {visit && (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4">
           <CollapsibleCard
             id="visit-checklist"
           accent="checklist"

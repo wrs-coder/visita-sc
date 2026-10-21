@@ -1,10 +1,8 @@
-// Etapa 4 — Telas deslizantes do Dashboard (só no celular).
-// No celular: seletor rápido + carrossel horizontal com scroll-snap.
-// A partir de md: todas as telas empilhadas, como a lista de sempre.
-// Etapa 5A: no celular a tela visível monta primeiro; as demais montam
-// logo depois, com o aparelho ocioso, e nunca são desmontadas.
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
+// Telas deslizantes do Dashboard em todas as larguras (celular, tablet,
+// computador). Seletor rápido + carrossel horizontal com scroll-snap.
+// A tela visível monta primeiro; as demais montam com o aparelho ocioso
+// e nunca são desmontadas. Em telas largas os cartões ficam em 2 colunas.
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export type DashboardPage = { id: string; label: string; content: ReactNode; badge?: boolean };
@@ -12,15 +10,14 @@ export type DashboardPage = { id: string; label: string; content: ReactNode; bad
 const STORAGE_KEY = "dashboard.pager.page";
 
 export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { pages: DashboardPage[]; unreadLabel?: string }) {
-  const isMobile = useIsMobile();
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [active, setActive] = useState(pages[0]?.id ?? "");
   const restored = useRef(false);
   const [mounted, setMounted] = useState<Set<string> | null>(null);
 
-  // Monta a tela inicial na hora e as outras em segundo plano.
   useEffect(() => {
-    if (!isMobile || mounted) return;
+    if (mounted) return;
     let saved: string | null = null;
     try { saved = window.localStorage.getItem(STORAGE_KEY); } catch { /* ignore */ }
     const first = pages.some((p) => p.id === saved) ? saved! : pages[0]?.id;
@@ -34,14 +31,12 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
     const id = window.setTimeout(mountAll, 300);
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile]);
+  }, []);
 
-  // Páginas novas (ex.: cartão que passou a ter conteúdo) entram montadas.
   const isMounted = (id: string) => !mounted || mounted.has(id) || mounted.size >= pages.length;
 
-  // Restaura a última tela após hidratação.
   useEffect(() => {
-    if (!isMobile || restored.current || !trackRef.current) return;
+    if (restored.current || !trackRef.current) return;
     restored.current = true;
     let saved: string | null = null;
     try { saved = window.localStorage.getItem(STORAGE_KEY); } catch { /* ignore */ }
@@ -51,12 +46,11 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
       requestAnimationFrame(() => requestAnimationFrame(() => { el.scrollLeft = idx * el.clientWidth; }));
       setActive(pages[idx].id);
     }
-  }, [isMobile, pages]);
+  }, [pages]);
 
-  // Marca a aba visível conforme o deslize.
   useEffect(() => {
     const el = trackRef.current;
-    if (!isMobile || !el) return;
+    if (!el) return;
     let raf = 0;
     const onScroll = () => {
       cancelAnimationFrame(raf);
@@ -69,7 +63,6 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
         }
       });
     };
-    // Garante que a tela sempre pare inteira e centralizada.
     let settle = 0;
     const snapNearest = () => {
       const w = Math.max(1, el.clientWidth);
@@ -90,19 +83,17 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
       cancelAnimationFrame(raf);
       window.clearTimeout(settle);
     };
-  }, [isMobile, pages]);
+  }, [pages]);
 
-  // A altura acompanha a tela ativa (evita espaço vazio nas telas curtas).
   const activeIdx = Math.max(0, pages.findIndex((p) => p.id === active));
   useEffect(() => {
     const el = trackRef.current;
-    if (!isMobile || !el) return;
+    if (!el) return;
     const section = el.children[activeIdx] as HTMLElement | undefined;
     if (!section) return;
     let lastW = el.clientWidth;
     const apply = () => {
       el.style.height = `${section.offsetHeight}px`;
-      // Largura mudou (girar, teclado): realinha a tela atual.
       if (el.clientWidth !== lastW) {
         lastW = el.clientWidth;
         el.scrollLeft = activeIdx * el.clientWidth;
@@ -113,11 +104,7 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
     ro.observe(section);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [isMobile, activeIdx]);
-
-  if (!isMobile) {
-    return <div className="space-y-6">{pages.map((p) => <div key={p.id} className="space-y-6">{p.content}</div>)}</div>;
-  }
+  }, [activeIdx]);
 
   const goTo = (id: string) => {
     const el = trackRef.current;
@@ -127,6 +114,20 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
     setMounted((m) => (m && !m.has(id) ? new Set([...m, id]) : m));
     el.scrollTo({ left: idx * el.clientWidth, behavior: fresh ? "auto" : "smooth" });
     setActive(id);
+    try { window.localStorage.setItem(STORAGE_KEY, id); } catch { /* ignore */ }
+  };
+
+  const onTabKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const last = pages.length - 1;
+    let next = -1;
+    if (e.key === "ArrowRight") next = activeIdx >= last ? 0 : activeIdx + 1;
+    else if (e.key === "ArrowLeft") next = activeIdx <= 0 ? last : activeIdx - 1;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = last;
+    if (next < 0) return;
+    e.preventDefault();
+    goTo(pages[next].id);
+    tabRefs.current[next]?.focus();
   };
 
   return (
@@ -134,19 +135,22 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
       <div
         role="tablist"
         aria-label="Telas do painel"
-        className="sticky top-14 z-20 -mx-1 grid gap-1 rounded-xl border bg-card p-1 shadow-sm"
+        onKeyDown={onTabKey}
+        className="sticky top-14 z-20 -mx-1 grid gap-1 rounded-xl border bg-card p-1 shadow-sm md:mx-auto md:max-w-2xl"
         style={{ gridTemplateColumns: `repeat(${pages.length}, minmax(0, 1fr))` }}
       >
-        {pages.map((p) => (
+        {pages.map((p, i) => (
           <button
             key={p.id}
+            ref={(n) => { tabRefs.current[i] = n; }}
             type="button"
             role="tab"
             aria-selected={active === p.id}
+            tabIndex={active === p.id ? 0 : -1}
             data-state={active === p.id ? "active" : "inactive"}
             onClick={() => goTo(p.id)}
             className={cn(
-              "min-h-9 rounded-lg px-1 text-xs font-semibold transition-colors",
+              "min-h-9 rounded-lg px-1 text-xs font-semibold transition-colors md:text-sm",
               active === p.id
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-accent/60",
@@ -166,15 +170,15 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
       </div>
       <div
         ref={trackRef}
-        className="-mx-4 flex items-start snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mx-4 flex items-start snap-x snap-mandatory overflow-x-auto md:mx-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ overscrollBehaviorX: "contain", touchAction: "pan-x pan-y" }}
       >
         {pages.map((p) => (
           <section
             key={p.id}
-            role="group"
+            role="tabpanel"
             aria-label={p.label}
-            className="w-full shrink-0 snap-start snap-always space-y-6 px-4"
+            className="w-full shrink-0 snap-start snap-always space-y-6 px-4 md:px-0 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0 lg:[&>*]:w-full lg:[&>*]:min-w-0"
           >
             {isMounted(p.id) || p.id === active ? p.content : <div className="min-h-[60vh]" aria-hidden="true" />}
           </section>
