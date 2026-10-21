@@ -61,6 +61,9 @@
 
 :root {
   --radius: 0.75rem;
+  --timer-ok: oklch(0.55 0.15 155);
+  --timer-warn: oklch(0.68 0.16 70);
+  --timer-over: oklch(0.55 0.22 27);
 
   /* Azul marinho #1e3a8a -> oklch ~ 0.32 0.13 264 */
   --background: oklch(0.985 0.005 247);
@@ -137,6 +140,21 @@
   --shadow-hover: 0 2px 4px 0 oklch(0 0 0 / 0.35), 0 10px 24px -6px oklch(0 0 0 / 0.55);
   --shadow-elevated: 0 8px 24px -8px oklch(0 0 0 / 0.6);
   --shadow-focus: 0 0 0 3px oklch(0.72 0.13 260 / 0.35);
+  --timer-ok: oklch(0.75 0.16 155);
+  --timer-warn: oklch(0.82 0.15 80);
+  --timer-over: oklch(0.7 0.2 25);
+}
+
+/* Preto puro (OLED) — opcional, só junto com .dark. */
+.dark.oled {
+  --background: oklch(0 0 0);
+  --card: oklch(0.16 0 0);
+  --popover: oklch(0.18 0 0);
+  --muted: oklch(0.2 0 0);
+  --secondary: oklch(0.2 0 0);
+  --sidebar: oklch(0.08 0 0);
+  --sidebar-accent: oklch(0.2 0 0);
+  --sidebar-border: oklch(1 0 0 / 12%);
 }
 
 @layer base {
