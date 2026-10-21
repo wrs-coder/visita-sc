@@ -1346,7 +1346,7 @@ function Page() {
         {...draggable.attributes}
         {...draggable.listeners}
         className={cn(
-          "group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm touch-none select-none",
+          "cv-row group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm touch-none select-none",
           selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
           isClipped && "opacity-60 italic",
           hint === "before" && "border-t-2 border-primary",
