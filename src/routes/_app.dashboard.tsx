@@ -94,7 +94,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Maximize2, PencilLine, ChevronDown as ChevronDownIcon, Printer as PrinterIcon, Flag as FlagIcon } from "lucide-react";
+import { MoreVertical, ChevronDown as ChevronDownIcon, Printer as PrinterIcon, Flag as FlagIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
