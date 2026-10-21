@@ -1,5 +1,6 @@
 // IndexedDB wrapper for "Considerações de campo" notes + Bíblias importadas via EPUB.
 import { resolveBibleLang } from "./bible-lang";
+import { ChapterCache } from "./bible-chapter-cache";
 // Fallback para localStorage apenas para as notas (a Bíblia exige IndexedDB pelo volume).
 // 100% local — sem rede, sem Supabase.
 
@@ -300,6 +301,8 @@ function libraryId(): string {
   return "lib-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+const chapterCache = new ChapterCache<BibleVerseRecord>(60);
+
 function verseKey(libId: string, bookId: string, chapter: number, verse: number): string {
   return `${libId}:${bookId}:${chapter}:${verse}`;
 }
@@ -452,6 +455,7 @@ export async function listLibraries(): Promise<BibleLibrary[]> {
 }
 
 export async function removeLibrary(id: string): Promise<void> {
+  chapterCache.clearLibrary(id);
   if (!hasIDB()) return;
   const db = await openDB();
   // Apaga versículos
