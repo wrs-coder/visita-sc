@@ -48,7 +48,7 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
     const idx = pages.findIndex((p) => p.id === saved);
     if (idx > 0) {
       const el = trackRef.current;
-      requestAnimationFrame(() => { el.scrollLeft = idx * el.clientWidth; });
+      requestAnimationFrame(() => requestAnimationFrame(() => { el.scrollLeft = idx * el.clientWidth; }));
       setActive(pages[idx].id);
     }
   }, [isMobile, pages]);
@@ -69,8 +69,27 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
         }
       });
     };
+    // Garante que a tela sempre pare inteira e centralizada.
+    let settle = 0;
+    const snapNearest = () => {
+      const w = Math.max(1, el.clientWidth);
+      const idx = Math.min(pages.length - 1, Math.max(0, Math.round(el.scrollLeft / w)));
+      if (Math.abs(el.scrollLeft - idx * w) > 1) el.scrollTo({ left: idx * w, behavior: "smooth" });
+    };
+    const onScrollSettle = () => {
+      window.clearTimeout(settle);
+      settle = window.setTimeout(snapNearest, 140);
+    };
     el.addEventListener("scroll", onScroll, { passive: true });
-    return () => { el.removeEventListener("scroll", onScroll); cancelAnimationFrame(raf); };
+    el.addEventListener("scroll", onScrollSettle, { passive: true });
+    el.addEventListener("scrollend", snapNearest);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      el.removeEventListener("scroll", onScrollSettle);
+      el.removeEventListener("scrollend", snapNearest);
+      cancelAnimationFrame(raf);
+      window.clearTimeout(settle);
+    };
   }, [isMobile, pages]);
 
   // A altura acompanha a tela ativa (evita espaço vazio nas telas curtas).
@@ -80,10 +99,19 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
     if (!isMobile || !el) return;
     const section = el.children[activeIdx] as HTMLElement | undefined;
     if (!section) return;
-    const apply = () => { el.style.height = `${section.offsetHeight}px`; };
+    let lastW = el.clientWidth;
+    const apply = () => {
+      el.style.height = `${section.offsetHeight}px`;
+      // Largura mudou (girar, teclado): realinha a tela atual.
+      if (el.clientWidth !== lastW || Math.abs(el.scrollLeft - activeIdx * el.clientWidth) > 1) {
+        lastW = el.clientWidth;
+        el.scrollLeft = activeIdx * el.clientWidth;
+      }
+    };
     apply();
     const ro = new ResizeObserver(apply);
     ro.observe(section);
+    ro.observe(el);
     return () => ro.disconnect();
   }, [isMobile, activeIdx]);
 
@@ -95,8 +123,9 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
     const el = trackRef.current;
     const idx = pages.findIndex((p) => p.id === id);
     if (!el || idx < 0) return;
+    const fresh = !!mounted && !mounted.has(id);
     setMounted((m) => (m && !m.has(id) ? new Set([...m, id]) : m));
-    el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
+    el.scrollTo({ left: idx * el.clientWidth, behavior: fresh ? "auto" : "smooth" });
     setActive(id);
   };
 
