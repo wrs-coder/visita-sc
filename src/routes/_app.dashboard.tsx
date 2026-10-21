@@ -97,6 +97,8 @@ import {
 import { Maximize2, PencilLine } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
+import { DashboardPager } from "@/components/dashboard/DashboardPager";
+import { buildDayTimeline, groupByDate, type TimelineKind, type TimelineSource } from "@/lib/today-timeline";
 
 
 
@@ -133,6 +135,7 @@ interface Meal {
 }
 interface Transport {
   id: string;
+  event_date: string;
   driver_name: string;
   contact_phone: string | null;
   description: string | null;
@@ -145,6 +148,7 @@ interface Transport {
 }
 interface FieldAssignment {
   id: string;
+  event_date: string;
   period: string;
   meeting_point: string | null;
   meeting_time: string | null;
@@ -155,6 +159,7 @@ interface FieldAssignment {
 }
 interface FieldMeetingToday {
   id: string;
+  event_date: string;
   period: string;
   modality: string;
   meeting_time: string | null;
@@ -168,6 +173,7 @@ interface FieldMeetingToday {
 interface MeetingTodayItem {
   kind: "midweek" | "weekend" | "pioneer" | "elders";
   meeting_at: string;
+  date: string;
   theme: string | null;
   location: string | null;
   chairman?: string | null;
@@ -209,11 +215,11 @@ function Dashboard() {
   });
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
-  const [meals, setMeals] = useState<Meal[]>([]);
-  const [transports, setTransports] = useState<Transport[]>([]);
-  const [assignments, setAssignments] = useState<FieldAssignment[]>([]);
-  const [fieldMeetings, setFieldMeetings] = useState<FieldMeetingToday[]>([]);
-  const [meetingsToday, setMeetingsToday] = useState<MeetingTodayItem[]>([]);
+  const [mealsWeek, setMeals] = useState<Meal[]>([]);
+  const [transportsWeek, setTransports] = useState<Transport[]>([]);
+  const [assignmentsWeek, setAssignments] = useState<FieldAssignment[]>([]);
+  const [fieldMeetingsWeek, setFieldMeetings] = useState<FieldMeetingToday[]>([]);
+  const [meetingsWeek, setMeetingsToday] = useState<MeetingTodayItem[]>([]);
   const meetingExtras = useVisitTemplateExtras(visit?.id);
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [pendingCount, setPendingCount] = useState(0);
@@ -228,10 +234,10 @@ function Dashboard() {
   const [overdueDialogId, setOverdueDialogId] = useState<string | null>(null);
   const today = format(new Date(), "yyyy-MM-dd");
   // Ajuste 02: alterna entre hoje (0) e amanhã (1) para os 6 cartões diários.
-  const [dayOffset, setDayOffset] = useState<0 | 1>(0);
+  const dayOffset = 0;
   const viewedDate = addDays(new Date(), dayOffset);
   const viewedIso = format(viewedDate, "yyyy-MM-dd");
-  const isTomorrow = dayOffset === 1;
+  const tomorrowIso = format(addDays(new Date(), 1), "yyyy-MM-dd");
 
   // Mission 2: eventos do circuito (circuit_schedule_events) do dia vigente.
   const [circuitToday, setCircuitToday] = useState<Array<{
@@ -240,6 +246,7 @@ function Dashboard() {
     start_time: string | null;
     location: string | null;
     event_type: string;
+    event_date: string;
   }>>([]);
 
   // Mission 1: recados da esposa (preview no dashboard).
@@ -272,15 +279,15 @@ function Dashboard() {
     (async () => {
       const { data } = await supabase
         .from("circuit_schedule_events")
-        .select("id, title, start_time, location, event_type")
+        .select("id, title, start_time, location, event_type, event_date")
         .eq("superintendent_id", user.id)
-        .eq("event_date", viewedIso)
+        .in("event_date", [viewedIso, tomorrowIso])
         .neq("status", "completed")
         .order("start_time");
       if (!cancelled) setCircuitToday(data ?? []);
     })();
     return () => { cancelled = true; };
-  }, [role, user, viewedIso]);
+  }, [role, user, viewedIso, tomorrowIso]);
 
   // Mission: cartão "Esboços e Notas" — aba "Considerações de campo".
   // Mostra apenas notas locais da pasta fixa "Considerações da Semana".
@@ -540,32 +547,32 @@ function Dashboard() {
             .from("meals")
             .select("id, meal_date, meal_time, type, host_name, location, contact_phone, notes")
             .eq("visit_id", visit.id)
-            .eq("meal_date", viewedIso)
             .eq("is_active", true)
+            .order("meal_date")
             .order("meal_time"),
           supabase
             .from("transport_schedule")
-            .select("id, driver_name, contact_phone, description, notes, event_type, direction, departure_time, return_time, all_day")
+            .select("id, event_date, driver_name, contact_phone, description, notes, event_type, direction, departure_time, return_time, all_day")
             .eq("visit_id", visit.id)
-            .eq("event_date", viewedIso)
-            .eq("is_active", true),
+            .eq("is_active", true)
+            .order("event_date"),
           supabase
             .from("field_assignments")
             .select(
-              "id, period, meeting_point, meeting_time, acompanhante, acompanhante_for, contact_phone, notes",
+              "id, event_date, period, meeting_point, meeting_time, acompanhante, acompanhante_for, contact_phone, notes",
             )
             .eq("visit_id", visit.id)
-            .eq("event_date", viewedIso)
             .eq("is_active", true)
+            .order("event_date")
             .order("period"),
           supabase
             .from("field_meetings")
             .select(
-              "id, period, modality, meeting_time, meeting_location, territory_number, territory_location, auxiliary_leaders, closing_prayer, observations",
+              "id, event_date, period, modality, meeting_time, meeting_location, territory_number, territory_location, auxiliary_leaders, closing_prayer, observations",
             )
             .eq("visit_id", visit.id)
-            .eq("event_date", viewedIso)
             .eq("is_active", true)
+            .order("event_date")
             .order("period"),
         ]);
       setEvents(e ?? []);
@@ -641,7 +648,8 @@ function Dashboard() {
     if (!visit) { setMeetingsToday([]); return; }
     let cancelled = false;
     (async () => {
-      const viewedDow = viewedDate.getDay();
+      const visitDays: string[] = [];
+      for (let d = parseISO(visit.start_date); format(d, "yyyy-MM-dd") <= visit.end_date && visitDays.length < 31; d = addDays(d, 1)) visitDays.push(format(d, "yyyy-MM-dd"));
       const byVisit = (r: Record<string, unknown>) => r.visit_id === visit.id;
       const [mw, we, pi] = await Promise.all([
         readOneWithMirror<Record<string, unknown>>({
@@ -671,8 +679,9 @@ function Dashboard() {
         if (!at) return;
         const d = new Date(at);
         if (Number.isNaN(d.getTime())) return;
-        if (d.getDay() !== viewedDow) return;
-        out.push({ kind, meeting_at: at, theme: theme ?? null, location: location ?? null, ...extra });
+        const date = visitDays.find((iso) => parseISO(iso).getDay() === d.getDay());
+        if (!date) return;
+        out.push({ kind, date, meeting_at: at, theme: theme ?? null, location: location ?? null, ...extra });
       };
       push("midweek", mw.data?.meeting_at, mw.data?.service_talk_theme, null, {
         chairman: mw.data?.chairman ?? null,
@@ -687,12 +696,18 @@ function Dashboard() {
         closing_prayer: pi.data?.closing_prayer ?? null,
       });
       // elders_servants_meetings não tem data/hora; fica fora deste filtro.
+      out.sort((x, y) => x.date.localeCompare(y.date));
       if (!cancelled) setMeetingsToday(out);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visit, viewedIso]);
 
+  const meals = mealsWeek.filter((m) => m.meal_date === viewedIso);
+  const transports = transportsWeek.filter((x) => x.event_date === viewedIso);
+  const assignments = assignmentsWeek.filter((x) => x.event_date === viewedIso);
+  const fieldMeetings = fieldMeetingsWeek.filter((x) => x.event_date === viewedIso);
+  const meetingsToday = meetingsWeek.filter((x) => x.date === viewedIso);
   // todayEvents removed: replaced by "Hoje no cronograma" (circuit-scoped) card.
   const doneCount = checklist.filter((c) => c.status === "done").length;
   const total = checklist.length;
@@ -727,37 +742,6 @@ function Dashboard() {
           />
         </div>
       </header>
-
-
-      {/* Ajuste 02: alternador "Hoje / Amanhã" — atualiza apenas os 6 cartões diários. */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {isTomorrow ? (
-          <>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setDayOffset(0)}
-              className="h-8"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              {t("dashboard.viewToday", { defaultValue: "Voltar para hoje" })}
-            </Button>
-            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
-              {t("dashboard.viewingTomorrow", { defaultValue: "Vendo: amanhã" })} · {format(viewedDate, "EEE, dd/MM", { locale: ptBR })}
-            </span>
-          </>
-        ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setDayOffset(1)}
-            className="h-8"
-          >
-            {t("dashboard.viewNextDay", { defaultValue: "Ver dia seguinte" })}
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        )}
-      </div>
 
 
       {pendingCount > 0 && (
@@ -894,109 +878,351 @@ function Dashboard() {
         </Card>
       )}
 
-      {role === "superintendent" && (
-        <CollapsibleCard
-          id="super-today-circuit"
-          accent="visit"
-          icon={<CalendarDays className="h-4 w-4 text-primary" />}
-          title={t("dashboard.todayBlockTitle")}
-          headerRight={
-            <Link
-              to="/cronograma"
-              search={{
-                event: undefined,
-                action: undefined,
-                title: undefined,
-                location: undefined,
-                notes: undefined,
-                companion: undefined,
-                congId: undefined,
-              }}
-              className="text-primary text-xs font-medium inline-flex items-center hover:underline"
+      {(() => {
+        // Etapa 4 — telas deslizantes. "Hoje"/"Amanhã" trazem a linha do tempo
+        // do dia; os cartões da tela "Visita" mostram a semana inteira.
+        const meetingLabels: Record<MeetingTodayItem["kind"], string> = {
+          midweek: t("meetingsTalks.tabMeio", { defaultValue: "Meio de Semana" }),
+          weekend: t("meetingsTalks.tabFim", { defaultValue: "Fim de Semana" }),
+          pioneer: t("meetingsTalks.tabPioneiros", { defaultValue: "Pioneiros" }),
+          elders: t("meetingsTalks.tabAncios", { defaultValue: "Anciãos e Servos" }),
+        };
+        const meetingTime = (at: string) => {
+          const d = new Date(at);
+          return Number.isNaN(d.getTime()) ? null : format(d, "HH:mm");
+        };
+        const mealLabel = (type: string) =>
+          type === "lunch" ? t("dashboard.meals.lunch") : type === "dinner" ? t("dashboard.meals.dinner") : t("dashboard.meals.breakfast");
+        const sources: TimelineSource[] = [
+          ...(role === "superintendent"
+            ? circuitToday.map((e) => ({
+                id: `c-${e.id}`, kind: "schedule" as const, date: e.event_date, time: e.start_time,
+                title: e.title, subtitle: e.location,
+              }))
+            : events.map((e) => ({
+                id: `s-${e.id}`, kind: "schedule" as const, date: e.event_date, time: e.start_time,
+                title: e.title, subtitle: e.location,
+              }))),
+          ...fieldMeetingsWeek.map((f) => ({
+            id: `f-${f.id}`, kind: "field" as const, date: f.event_date, time: f.meeting_time,
+            title: `${t("dashboard.fieldMeeting")} · ${MODALITY_LABEL[f.modality] ?? f.modality}`,
+            subtitle: f.meeting_location,
+          })),
+          ...assignmentsWeek.map((a) => ({
+            id: `a-${a.id}`, kind: "study" as const, date: a.event_date, time: a.meeting_time,
+            title: `${t("dashboard.studiesVisits")}${a.acompanhante ? ` · ${a.acompanhante}` : ""}`,
+            subtitle: a.meeting_point,
+          })),
+          ...mealsWeek.map((m) => ({
+            id: `m-${m.id}`, kind: "meal" as const, date: m.meal_date, time: m.meal_time,
+            title: `${mealLabel(m.type)}${m.host_name ? ` · ${m.host_name}` : ""}`,
+            subtitle: m.location,
+          })),
+          ...meetingsWeek.map((mt) => ({
+            id: `r-${mt.kind}`, kind: "meeting" as const, date: mt.date, time: meetingTime(mt.meeting_at),
+            title: `${meetingLabels[mt.kind]}${mt.theme ? ` · ${mt.theme}` : ""}`,
+            subtitle: mt.location,
+          })),
+          ...transportsWeek.map((tr) => ({
+            id: `t-${tr.id}`, kind: "transport" as const, date: tr.event_date, time: tr.departure_time,
+            title: `${t("sidebar.transport")} · ${tr.driver_name}`,
+            subtitle: tr.description,
+          })),
+        ];
+        const KIND_META: Record<TimelineKind, { icon: React.ComponentType<{ className?: string }>; to: string }> = {
+          schedule: { icon: CalendarDays, to: "/cronograma" },
+          field: { icon: Users, to: "/reunioes-discursos" },
+          study: { icon: BookOpen, to: "/escala" },
+          meal: { icon: UtensilsCrossed, to: "/refeicoes" },
+          meeting: { icon: CalendarDays, to: "/reunioes-discursos" },
+          transport: { icon: Car, to: "/transporte" },
+        };
+        const renderTimeline = (dateIso: string, id: string, title: string) => {
+          const items = buildDayTimeline(sources, dateIso);
+          return (
+            <CollapsibleCard
+              id={id}
+              accent="visit"
+              icon={<CalendarDays className="h-4 w-4 text-primary" />}
+              title={`${title} · ${format(parseISO(dateIso), "EEE, dd/MM", { locale: ptBR })}`}
+              headerRight={
+                <Link to="/cronograma" search={{ event: undefined, action: undefined, title: undefined, location: undefined, notes: undefined, companion: undefined, congId: undefined }} className="text-primary text-xs font-medium inline-flex items-center hover:underline shrink-0">
+                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+                </Link>
+              }
             >
-              {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-            </Link>
+              {items.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("dashboard.todayBlockEmpty")}</p>
+              ) : (
+                <ul className="space-y-2">
+                  {items.map((it, i) => {
+                    const meta = KIND_META[it.kind];
+                    const Icon = meta.icon;
+                    const showNoTime = it.time === null && (i === 0 || items[i - 1].time !== null);
+                    return (
+                      <li key={it.id}>
+                        {showNoTime && (
+                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-1 mt-2">
+                            {t("dashboard.pager.noTime", { defaultValue: "Sem horário" })}
+                          </div>
+                        )}
+                        <Link to={meta.to} className="flex items-start gap-3 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors">
+                          <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[58px] text-center">
+                            <Clock className="inline h-3 w-3 mr-0.5" />
+                            {it.time ?? "—"}
+                          </div>
+                          <Icon className="h-4 w-4 text-primary shrink-0 mt-1" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm break-words">{it.title}</div>
+                            {it.subtitle && (
+                              <div className="text-xs text-muted-foreground flex items-start gap-1 break-words">
+                                <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                                <span className="whitespace-pre-wrap">{it.subtitle}</span>
+                              </div>
+                            )}
+                          </div>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CollapsibleCard>
+          );
+        };
+        function WeekGroups<T>({ items, getDate, render }: { items: T[]; getDate: (x: T) => string; render: (x: T) => React.ReactNode }) {
+          const groups = groupByDate(items, getDate);
+          if (groups.length === 0) {
+            return <p className="text-sm text-muted-foreground">{t("dashboard.pager.noActivityWeek", { defaultValue: "Nada registrado nesta semana." })}</p>;
           }
-        >
-          {circuitToday.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("dashboard.todayBlockEmpty")}</p>
-          ) : (
-            <ul className="space-y-2">
-              {circuitToday.map((e) => (
-                <li key={e.id} className="flex items-start gap-3 p-2 rounded-md border bg-card">
-                  <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[58px] text-center">
-                    <Clock className="inline h-3 w-3 mr-0.5" />
-                    {e.start_time?.slice(0, 5) ?? "—"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[10px] uppercase tracking-wide text-primary/70 font-semibold">
-                      {t(`schedule.types.${e.event_type}`, { defaultValue: e.event_type })}
-                    </div>
-                    <div className="font-medium truncate">{e.title}</div>
-                    {e.location && (
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {e.location}
-                      </div>
+          return (
+            <div className="space-y-4">
+              {groups.map((g) => (
+                <div key={g.date} className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {format(parseISO(g.date), "EEEE, dd/MM", { locale: ptBR })}
+                    {g.date === today && (
+                      <span className="normal-case tracking-normal px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px]">
+                        {t("dashboard.pager.today", { defaultValue: "Hoje" })}
+                      </span>
                     )}
                   </div>
-                </li>
+                  <ul className="space-y-3">{g.items.map(render)}</ul>
+                </div>
               ))}
-            </ul>
-          )}
-        </CollapsibleCard>
-      )}
-
-      {role === "superintendent" && (
-        <CollapsibleCard
-          id="super-couple"
-          accent="couple"
-          icon={<Heart className="h-4 w-4 text-primary" />}
-          title={
-            <span className="inline-flex items-center gap-2">
-              {t("dashboard.coupleCardTitle")}
-              {coupleUnread > 0 && (
-                <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-semibold">
-                  {t("dashboard.coupleCardUnread", { count: coupleUnread })}
-                </span>
-              )}
-            </span>
-          }
-          headerRight={
-            <Link to="/comunicacao-casal" className="text-primary text-xs font-medium inline-flex items-center hover:underline">
-              {t("dashboard.coupleCardOpen")} <ChevronRight className="h-3 w-3" />
-            </Link>
-          }
-        >
-          {coupleThreads.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("dashboard.coupleCardEmpty")}</p>
-          ) : (
-            <ul className="space-y-2">
-              {coupleThreads.slice(0, 3).map((th) => {
-                const last = th.replies[th.replies.length - 1] ?? th.root;
-                const isUnread = last.author === "wife" && !last.read_by_super;
+            </div>
+          );
+        }
+        const viewAll = (to: string) => (
+          <Link to={to} className="text-primary text-xs font-medium inline-flex items-center hover:underline shrink-0">
+            {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
+          </Link>
+        );
+        const meetingsWeekCard = visit && (
+          <CollapsibleCard
+            id="visit-meetings-today"
+            accent="meetings"
+            icon={<CalendarDays className="h-4 w-4 text-primary" />}
+            title={t("dashboard.pager.meetingsWeek", { defaultValue: "Reuniões da semana" })}
+            headerRight={viewAll("/reunioes-discursos")}
+          >
+            <WeekGroups
+              items={meetingsWeek}
+              getDate={(mt) => mt.date}
+              render={(mt) => {
+                const time = meetingTime(mt.meeting_at);
                 return (
-                  <li key={th.root.id} className="p-2 rounded-md border bg-card">
-                    <div className="flex items-center gap-2">
-                      <div className="font-medium text-sm flex-1 min-w-0 truncate">
-                        {th.root.title}
-                      </div>
-                      {isUnread && <span className="h-2 w-2 rounded-full bg-primary shrink-0" />}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      <span className="font-medium">
-                        {last.author === "wife" ? t("couple.fromWife") : t("couple.fromSuper")}:
-                      </span>{" "}
-                      {last.body}
+                  <li key={mt.kind} className="text-sm flex items-start gap-2">
+                    <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
+                      {meetingLabels[mt.kind]}{time ? ` · ${time}` : ""}
+                    </span>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      {mt.theme && <div className="font-medium break-words whitespace-normal">{mt.theme}</div>}
+                      {mt.public_talk_theme && mt.public_talk_theme !== mt.theme && (
+                        <div className="text-xs text-muted-foreground break-words">{mt.public_talk_theme}</div>
+                      )}
+                      {mt.location && (
+                        <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{mt.location}</span>
+                        </div>
+                      )}
+                      {mt.chairman && <div className="text-xs text-muted-foreground break-words">{mt.chairman}</div>}
+                      {mt.opening_prayer && <div className="text-xs text-muted-foreground break-words">{mt.opening_prayer}</div>}
+                      {mt.closing_prayer && (
+                        <div className="text-xs text-muted-foreground break-words">{t("dashboard.closingPrayer")} {mt.closing_prayer}</div>
+                      )}
                     </div>
                   </li>
                 );
-              })}
-            </ul>
-          )}
-        </CollapsibleCard>
-      )}
+              }}
+            />
+          </CollapsibleCard>
+        );
+        const visitWeekCards = visit && (
+          <div className="grid gap-4 md:grid-cols-2">
+            <CollapsibleCard id="visit-field-meeting" accent="meetings" icon={<Users className="h-4 w-4 text-primary" />} title={t("dashboard.fieldMeeting")} headerRight={viewAll("/reunioes-discursos")}>
+              <WeekGroups
+                items={fieldMeetingsWeek}
+                getDate={(f) => f.event_date}
+                render={(f) => (
+                  <li key={f.id} className="text-sm space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
+                        {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{MODALITY_LABEL[f.modality] ?? f.modality}</span>
+                    </div>
+                    {f.meeting_location && (
+                      <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
+                        <MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{f.meeting_location}</span>
+                      </div>
+                    )}
+                    {(f.territory_number || f.territory_location) && (
+                      <div className="text-xs text-muted-foreground break-words whitespace-normal">
+                        <span className="font-medium">{t("dashboard.territory")} S-13:</span>{" "}
+                        {f.territory_number || "—"}{f.territory_location ? ` · ${f.territory_location}` : ""}
+                      </div>
+                    )}
+                    {f.auxiliary_leaders && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{t("dashboard.arrangements")} {f.auxiliary_leaders}</div>}
+                    {f.closing_prayer && <div className="text-xs text-muted-foreground break-words">{t("dashboard.closingPrayer")} {f.closing_prayer}</div>}
+                    {f.observations && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{f.observations}</div>}
+                  </li>
+                )}
+              />
+            </CollapsibleCard>
 
+            <CollapsibleCard id="visit-studies" accent="elder" icon={<BookOpen className="h-4 w-4 text-primary" />} title={t("dashboard.studiesVisits")} headerRight={viewAll("/escala")}>
+              <WeekGroups
+                items={assignmentsWeek}
+                getDate={(a) => a.event_date}
+                render={(a) => (
+                  <li key={a.id} className="text-sm flex items-start gap-2">
+                    <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
+                      {a.period}{a.meeting_time ? ` · ${a.meeting_time.slice(0, 5)}` : ""}
+                    </span>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      {a.acompanhante && (
+                        <div className="font-medium break-words">
+                          {a.acompanhante}{a.acompanhante_for ? ` → ${ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for}` : ""}
+                        </div>
+                      )}
+                      {a.meeting_point && (
+                        <div className="text-xs text-muted-foreground break-words flex items-start gap-1">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{a.meeting_point}</span>
+                        </div>
+                      )}
+                      {a.contact_phone && <div className="text-xs text-muted-foreground break-words">📞 {a.contact_phone}</div>}
+                      {a.notes && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{a.notes}</div>}
+                    </div>
+                  </li>
+                )}
+              />
+            </CollapsibleCard>
+
+            <CollapsibleCard id="visit-meals" accent="meals" icon={<UtensilsCrossed className="h-4 w-4 text-primary" />} title={t("dashboard.pager.mealsWeek", { defaultValue: "Refeições da semana" })} headerRight={viewAll("/refeicoes")}>
+              <WeekGroups
+                items={mealsWeek}
+                getDate={(m) => m.meal_date}
+                render={(m) => (
+                  <li key={m.id} className="text-sm flex items-start gap-2">
+                    <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
+                      {mealLabel(m.type)}{m.meal_time ? ` · ${m.meal_time.slice(0, 5)}` : ""}
+                    </span>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      {m.host_name && <div className="font-medium break-words">{m.host_name}</div>}
+                      {m.location && (
+                        <div className="text-xs text-muted-foreground break-words flex items-start gap-1">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{m.location}</span>
+                        </div>
+                      )}
+                      {m.contact_phone && <div className="text-xs text-muted-foreground break-words">📞 {m.contact_phone}</div>}
+                      {m.notes && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{m.notes}</div>}
+                    </div>
+                  </li>
+                )}
+              />
+            </CollapsibleCard>
+
+            <CollapsibleCard id="visit-transport" accent="checklist" icon={<Car className="h-4 w-4 text-primary" />} title={t("dashboard.pager.transportWeek", { defaultValue: "Transporte da semana" })} headerRight={viewAll("/transporte")}>
+              <WeekGroups
+                items={transportsWeek}
+                getDate={(tr) => tr.event_date}
+                render={(tr) => (
+                  <li key={tr.id} className="text-sm space-y-0.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {(tr.departure_time || tr.return_time) && (
+                        <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
+                          {tr.departure_time?.slice(0, 5) ?? "—"}{tr.return_time ? ` → ${tr.return_time.slice(0, 5)}` : ""}
+                        </span>
+                      )}
+                      <span className="font-medium break-words">{tr.driver_name}</span>
+                    </div>
+                    {tr.contact_phone && <div className="text-xs text-muted-foreground break-words">📞 {tr.contact_phone}</div>}
+                    {tr.description && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{tr.description}</div>}
+                    {tr.notes && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{tr.notes}</div>}
+                  </li>
+                )}
+              />
+            </CollapsibleCard>
+          </div>
+        );
+        const pages = [
+          {
+            id: "hoje",
+            label: t("dashboard.pager.tabToday", { defaultValue: "Hoje" }),
+            content: (
+              <>
+      {!visit && (
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-muted-foreground">
+              {t("dashboard.noActiveVisitMsg")}{" "}
+              {role === "superintendent" ? (
+                <Link to="/configuracoes" className="text-primary font-medium hover:underline">
+                  {t("dashboard.registerNewVisit")}
+                </Link>
+              ) : (
+                t("dashboard.waitSuper")
+              )}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+      {visit &&
+        visit.title === "Visita SCS" &&
+        (() => {
+          const v = visit as unknown as {
+            substitute_name?: string | null;
+            substitute_phone?: string | null;
+          };
+          if (!v.substitute_name && !v.substitute_phone) return null;
+          return (
+            <Card className="shadow-card border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5">
+              <CardContent className="p-5 flex items-start gap-4">
+                <div className="h-12 w-12 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                  <UserCheck className="h-6 w-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] uppercase tracking-wider text-primary font-semibold">
+                    {t("dashboard.scsSubstitute")}
+                  </div>
+                  {v.substitute_name && (
+                    <div className="text-lg font-bold mt-0.5 break-words">{v.substitute_name}</div>
+                  )}
+                  {v.substitute_phone && (
+                    <a
+                      href={`tel:${v.substitute_phone}`}
+                      className="text-sm text-foreground/80 mt-1 inline-flex items-center gap-1 hover:text-primary"
+                    >
+                      📞 {v.substitute_phone}
+                    </a>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+                {renderTimeline(today, "super-today-circuit", t("dashboard.todayBlockTitle"))}
       {role === "superintendent" && (
         <CollapsibleCard
           id="super-study-notes"
@@ -1104,7 +1330,19 @@ function Dashboard() {
           </Tabs>
         </CollapsibleCard>
       )}
-
+                {meetingsWeekCard}
+              </>
+            ),
+          },
+          ...(visit
+            ? [{ id: "visita", label: t("dashboard.pager.tabVisit", { defaultValue: "Visita" }), content: <>{visitWeekCards}</> }]
+            : []),
+          ...(visit
+            ? [{
+                id: "pastoreio",
+                label: t("dashboard.pager.tabPastoral", { defaultValue: "Pastoreio" }),
+                content: (
+                  <>
       {role === "superintendent" && visit && (
         <CollapsibleCard
           id="super-elder-program"
@@ -1211,62 +1449,6 @@ function Dashboard() {
           </Tabs>
         </CollapsibleCard>
       )}
-
-
-
-
-
-      {!visit && (
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">
-              {t("dashboard.noActiveVisitMsg")}{" "}
-              {role === "superintendent" ? (
-                <Link to="/configuracoes" className="text-primary font-medium hover:underline">
-                  {t("dashboard.registerNewVisit")}
-                </Link>
-              ) : (
-                t("dashboard.waitSuper")
-              )}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-      {visit &&
-        visit.title === "Visita SCS" &&
-        (() => {
-          const v = visit as unknown as {
-            substitute_name?: string | null;
-            substitute_phone?: string | null;
-          };
-          if (!v.substitute_name && !v.substitute_phone) return null;
-          return (
-            <Card className="shadow-card border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5">
-              <CardContent className="p-5 flex items-start gap-4">
-                <div className="h-12 w-12 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0">
-                  <UserCheck className="h-6 w-6" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[11px] uppercase tracking-wider text-primary font-semibold">
-                    {t("dashboard.scsSubstitute")}
-                  </div>
-                  {v.substitute_name && (
-                    <div className="text-lg font-bold mt-0.5 break-words">{v.substitute_name}</div>
-                  )}
-                  {v.substitute_phone && (
-                    <a
-                      href={`tel:${v.substitute_phone}`}
-                      className="text-sm text-foreground/80 mt-1 inline-flex items-center gap-1 hover:text-primary"
-                    >
-                      📞 {v.substitute_phone}
-                    </a>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })()}
-
       {visit && (
         <div className="grid gap-4 md:grid-cols-2">
           <CollapsibleCard
@@ -1306,353 +1488,72 @@ function Dashboard() {
           </CollapsibleCard>
         </div>
       )}
-
-      {visit && (
-        <div className="grid gap-4 md:grid-cols-2 auto-rows-fr">
-          {/* 1 — Reunião de campo */}
-          <CollapsibleCard
-            id="visit-field-meeting"
-          accent="meetings"
-            icon={<Users className="h-4 w-4 text-primary" />}
-            title={t("dashboard.fieldMeeting")}
-            headerRight={
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setOpenDetails("field")}
-                  aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
-                  title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-                <Link
-                  to="/reunioes-discursos"
-                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-                >
-                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
-            }
-          >
-            {fieldMeetings.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {t("dashboard.noActivityToday")}
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {fieldMeetings.map((f) => (
-                  <li key={f.id} className="text-sm space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
-                        {f.period}
-                        {f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {MODALITY_LABEL[f.modality] ?? f.modality}
-                      </span>
+                  </>
+                ),
+              }]
+            : []),
+          {
+            id: "amanha",
+            label: t("dashboard.pager.tabTomorrow", { defaultValue: "Amanhã" }),
+            content: (
+              <>
+                {renderTimeline(tomorrowIso, "dashboard-tomorrow", t("dashboard.pager.tomorrowTitle", { defaultValue: "Cronograma de amanhã" }))}
+      {role === "superintendent" && (
+        <CollapsibleCard
+          id="super-couple"
+          accent="couple"
+          icon={<Heart className="h-4 w-4 text-primary" />}
+          title={
+            <span className="inline-flex items-center gap-2">
+              {t("dashboard.coupleCardTitle")}
+              {coupleUnread > 0 && (
+                <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-semibold">
+                  {t("dashboard.coupleCardUnread", { count: coupleUnread })}
+                </span>
+              )}
+            </span>
+          }
+          headerRight={
+            <Link to="/comunicacao-casal" className="text-primary text-xs font-medium inline-flex items-center hover:underline">
+              {t("dashboard.coupleCardOpen")} <ChevronRight className="h-3 w-3" />
+            </Link>
+          }
+        >
+          {coupleThreads.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("dashboard.coupleCardEmpty")}</p>
+          ) : (
+            <ul className="space-y-2">
+              {coupleThreads.slice(0, 3).map((th) => {
+                const last = th.replies[th.replies.length - 1] ?? th.root;
+                const isUnread = last.author === "wife" && !last.read_by_super;
+                return (
+                  <li key={th.root.id} className="p-2 rounded-md border bg-card">
+                    <div className="flex items-center gap-2">
+                      <div className="font-medium text-sm flex-1 min-w-0 truncate">
+                        {th.root.title}
+                      </div>
+                      {isUnread && <span className="h-2 w-2 rounded-full bg-primary shrink-0" />}
                     </div>
-                    {f.meeting_location && (
-                      <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
-                        <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                        <span>{f.meeting_location}</span>
-                      </div>
-                    )}
-                    {(f.territory_number || f.territory_location) && (
-                      <div className="text-xs text-muted-foreground break-words whitespace-normal">
-                        <span className="font-medium">{t("dashboard.territory")} S-13:</span>{" "}
-                        {f.territory_number || "—"}
-                        {f.territory_location ? ` · ${f.territory_location}` : ""}
-                      </div>
-                    )}
-                    {f.auxiliary_leaders && (
-                      <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
-                        {t("dashboard.arrangements")} {f.auxiliary_leaders}
-                      </div>
-                    )}
-                    {f.closing_prayer && (
-                      <div className="text-xs text-muted-foreground break-words whitespace-normal">
-                        {t("dashboard.closingPrayer")} {f.closing_prayer}
-                      </div>
-                    )}
-                    {f.observations && (
-                      <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
-                        {f.observations}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CollapsibleCard>
-
-          {/* 2 — Estudos e revisitas */}
-          <CollapsibleCard
-            id="visit-studies"
-          accent="elder"
-            icon={<BookOpen className="h-4 w-4 text-primary" />}
-            title={t("dashboard.studiesVisits")}
-            headerRight={
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setOpenDetails("studies")}
-                  aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
-                  title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-                <Link
-                  to="/reunioes-de-campo"
-                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-                >
-                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
-            }
-          >
-            {assignments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {t("dashboard.noActivityToday")}
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {assignments.map((a) => (
-                  <li key={a.id} className="text-sm flex items-start gap-2">
-                    <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
-                      {a.period}
-                      {a.meeting_time ? ` · ${a.meeting_time.slice(0, 5)}` : ""}
-                    </span>
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      {a.acompanhante && (
-                        <div className="font-medium break-words whitespace-normal">
-                          {a.acompanhante}
-                          {a.acompanhante_for
-                            ? ` → ${ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for}`
-                            : ""}
-                        </div>
-                      )}
-                      {a.meeting_point && (
-                        <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
-                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                          <span>{a.meeting_point}</span>
-                        </div>
-                      )}
-                      {a.contact_phone && (
-                        <div className="text-xs text-muted-foreground break-words">
-                          📞 {a.contact_phone}
-                        </div>
-                      )}
-                      {a.notes && (
-                        <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
-                          {a.notes}
-                        </div>
-                      )}
+                    <div className="text-xs text-muted-foreground truncate">
+                      <span className="font-medium">
+                        {last.author === "wife" ? t("couple.fromWife") : t("couple.fromSuper")}:
+                      </span>{" "}
+                      {last.body}
                     </div>
                   </li>
-                ))}
-              </ul>
-            )}
-          </CollapsibleCard>
-
-          {/* 3 — Refeições de hoje */}
-          <CollapsibleCard
-            id="visit-meals"
-          accent="meals"
-            icon={<UtensilsCrossed className="h-4 w-4 text-primary" />}
-            title={t("dashboard.mealsToday")}
-            headerRight={
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setOpenDetails("meals")}
-                  aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
-                  title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-                <Link
-                  to="/refeicoes"
-                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-                >
-                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
-            }
-          >
-            {meals.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {t("dashboard.noActivityToday")}
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {meals.map((m) => (
-                  <li key={m.id} className="text-sm flex items-start gap-2">
-                    <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
-                      {m.type === "lunch" ? t("dashboard.meals.lunch") : m.type === "dinner" ? t("dashboard.meals.dinner") : t("dashboard.meals.breakfast")}
-                      {m.meal_time ? ` · ${m.meal_time.slice(0, 5)}` : ""}
-                    </span>
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      {m.host_name && (
-                        <div className="font-medium break-words whitespace-normal">
-                          {m.host_name}
-                        </div>
-                      )}
-                      {m.location && (
-                        <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
-                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                          <span>{m.location}</span>
-                        </div>
-                      )}
-                      {m.contact_phone && (
-                        <div className="text-xs text-muted-foreground break-words">
-                          📞 {m.contact_phone}
-                        </div>
-                      )}
-                      {m.notes && (
-                        <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
-                          {m.notes}
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CollapsibleCard>
-
-          {/* 4 — Reuniões de hoje (dados de "Reuniões e Discursos") */}
-          <CollapsibleCard
-            id="visit-meetings-today"
-          accent="meetings"
-            icon={<CalendarDays className="h-4 w-4 text-primary" />}
-            title={t("dashboard.meetingsToday", { defaultValue: "Reuniões de hoje" })}
-            headerRight={
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setOpenDetails("meetings")}
-                  aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
-                  title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-                <Link
-                  to="/reunioes-discursos"
-                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-                >
-                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
-            }
-          >
-            {meetingsToday.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {t("dashboard.noActivityToday")}
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {meetingsToday.map((mt) => {
-                  const labels: Record<MeetingTodayItem["kind"], string> = {
-                    midweek: t("meetingsTalks.tabMeio", { defaultValue: "Meio de Semana" }),
-                    weekend: t("meetingsTalks.tabFim", { defaultValue: "Fim de Semana" }),
-                    pioneer: t("meetingsTalks.tabPioneiros", { defaultValue: "Pioneiros" }),
-                    elders: t("meetingsTalks.tabAncios", { defaultValue: "Anciãos e Servos" }),
-                  };
-                  const time = (() => {
-                    try {
-                      const d = new Date(mt.meeting_at);
-                      return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-                    } catch { return ""; }
-                  })();
-                  return (
-                    <li key={mt.kind} className="text-sm flex items-start gap-2">
-                      <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
-                        {labels[mt.kind]}
-                        {time ? ` · ${time}` : ""}
-                      </span>
-                      <div className="min-w-0 flex-1 space-y-0.5">
-                        {mt.theme && (
-                          <div className="font-medium break-words whitespace-normal">
-                            {mt.theme}
-                          </div>
-                        )}
-                        {mt.location && (
-                          <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
-                            <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                            <span>{mt.location}</span>
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </CollapsibleCard>
-
-          {/* 5 — Transporte de hoje */}
-          <CollapsibleCard
-            id="visit-transport"
-          accent="checklist"
-            icon={<Car className="h-4 w-4 text-primary" />}
-            title={t("dashboard.transportToday")}
-            headerRight={
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setOpenDetails("transport")}
-                  aria-label={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
-                  title={t("dashboard.viewDayDetails", { defaultValue: "Ver detalhes do dia" })}
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-                <Link
-                  to="/transporte"
-                  className="text-primary text-xs font-medium inline-flex items-center hover:underline"
-                >
-                  {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
-            }
-          >
-            {transports.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {t("dashboard.noActivityToday")}
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {transports.map((tr) => (
-                  <li key={tr.id} className="text-sm space-y-0.5">
-                    <div className="font-medium break-words whitespace-normal">
-                      {tr.driver_name}
-                    </div>
-                    {tr.contact_phone && (
-                      <div className="text-xs text-muted-foreground break-words">
-                        📞 {tr.contact_phone}
-                      </div>
-                    )}
-                    {tr.description && (
-                      <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
-                        {tr.description}
-                      </div>
-                    )}
-                    {tr.notes && (
-                      <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
-                        {tr.notes}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CollapsibleCard>
-        </div>
+                );
+              })}
+            </ul>
+          )}
+        </CollapsibleCard>
       )}
+              </>
+            ),
+          },
+        ];
+        return <DashboardPager pages={pages} />;
+      })()}
+
 
       {/* Popups "Ver detalhes do dia" — somente leitura, reaproveitam os dados já carregados. */}
       {(() => {
