@@ -22,6 +22,12 @@ Tem razão: esses três itens do plano de melhorias ainda não foram feitos. Só
 - A cor da tela de abertura, da barra do navegador e do aplicativo instalado passa a usar o mesmo azul do app.
 - **O desenho do ícone não muda.** Ele já foi aprovado na Play Store e mudá-lo exigiria nova revisão.
 
+## 4. Ícones do cronômetro alinhados com fonte grande (celular)
+- Hoje, ao aumentar a fonte, os botões (iniciar, pausar, zerar, cores e tamanho) caem para a linha de baixo de forma torta.
+- Novo arranjo: o tempo fica sempre numa linha própria, centralizado. Logo abaixo vem uma única fileira de botões, alinhada e com espaçamento igual.
+- Com fonte pequena, tudo continua numa linha só, como hoje.
+- Os botões continuam com tamanho fácil de tocar e o tempo nunca é cortado.
+
 ## O que não muda
 - Os dados salvos, o login, o PIN, a biometria, a Bíblia, a sincronização e o layout das telas.
 
