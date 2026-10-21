@@ -1065,27 +1065,40 @@ function Dashboard() {
               getDate={(mt) => mt.date}
               render={(mt) => {
                 const time = meetingTime(mt.meeting_at);
+                const L = (k: string, d: string) => t(k, { defaultValue: d });
+                const rows: Array<[string, string | null | undefined]> =
+                  mt.kind === "midweek" ? [
+                    [L("meetingsTalks.midweek.chairman", "Presidente da Reunião"), mt.chairman],
+                    [L("meetingsTalks.midweek.serviceTalk", "Tema: Discurso de serviço"), mt.theme],
+                    [L("meetingsTalks.fromTemplate.finalSong", "Cântico final"), mt.final_song],
+                    [L("meetingsTalks.midweek.closingPrayer", "Oração Final"), mt.closing_prayer],
+                  ] : mt.kind === "weekend" ? [
+                    [L("meetingsTalks.fromTemplate.openingSong", "Cântico inicial"), mt.opening_song],
+                    [L("meetingsTalks.weekend.publicTalk", "Discurso Público"), mt.public_talk_theme],
+                    [L("meetingsTalks.weekend.finalTalk", "Discurso Final"), mt.final_talk],
+                    [L("meetingsTalks.fromTemplate.closingSong", "Cântico final"), mt.closing_song],
+                  ] : [
+                    [L(`meetingsTalks.${mt.kind}.theme`, "Tema:"), mt.theme],
+                    [L(`meetingsTalks.${mt.kind}.openingPrayer`, "Oração Inicial"), mt.opening_prayer],
+                    [L(`meetingsTalks.${mt.kind}.closingPrayer`, "Oração Final"), mt.closing_prayer],
+                    [L("meetingsTalks.fromTemplate.location", "Local"), mt.location],
+                  ];
+                const filled = rows.filter(([, v]) => v && String(v).trim());
                 return (
-                  <li key={mt.kind} className="text-sm flex items-start gap-2">
-                    <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
-                      {meetingLabels[mt.kind]}{time ? ` · ${time}` : ""}
+                  <li key={mt.kind} className="text-sm space-y-1.5 pb-2 border-b border-border/50 last:border-b-0 last:pb-0">
+                    <span className="inline-flex px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
+                      {meetingLabels[mt.kind]}{time && time !== "00:00" ? ` · ${time}` : ""}
                     </span>
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      {mt.theme && <div className="font-medium break-words whitespace-normal">{mt.theme}</div>}
-                      {mt.public_talk_theme && mt.public_talk_theme !== mt.theme && (
-                        <div className="text-xs text-muted-foreground break-words">{mt.public_talk_theme}</div>
-                      )}
-                      {mt.location && (
-                        <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
-                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{mt.location}</span>
-                        </div>
-                      )}
-                      {mt.chairman && <div className="text-xs text-muted-foreground break-words">{mt.chairman}</div>}
-                      {mt.opening_prayer && <div className="text-xs text-muted-foreground break-words">{mt.opening_prayer}</div>}
-                      {mt.closing_prayer && (
-                        <div className="text-xs text-muted-foreground break-words">{t("dashboard.closingPrayer")} {mt.closing_prayer}</div>
-                      )}
-                    </div>
+                    {filled.length > 0 && (
+                      <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-1">
+                        {filled.map(([label, value]) => (
+                          <div key={label} className="contents">
+                            <dt className="text-xs text-muted-foreground pt-0.5">{label.replace(/:$/, "")}</dt>
+                            <dd className="text-sm break-words whitespace-normal">{value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
                   </li>
                 );
               }}
