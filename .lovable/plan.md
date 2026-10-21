@@ -8,14 +8,11 @@
 ## 2. Linha "Painel do Superintendente · Visita: Visita"
 Hoje ela repete informações: o papel já está no menu lateral, e o nome da visita aparece duplicado ("Visita: Visita"). A pílula da congregação logo abaixo já mostra onde você está.
 
-Sugestão (vou aplicar esta se você aprovar):
+O que será feito:
 - Remover essa linha.
-- Juntar a data ao título, como uma linha pequena acima da saudação, no formato atual: "QUARTA-FEIRA, 21 DE OUTUBRO".
-- Quando não houver visita ativa, mostrar só um aviso discreto "Sem visita ativa" ao lado da pílula, para não perder essa informação.
+- Manter a data como uma linha pequena acima da saudação: "QUARTA-FEIRA, 21 DE OUTUBRO".
+- Quando não houver visita ativa, mostrar só um aviso discreto "Sem visita ativa" ao lado da pílula.
 
-Alternativas, se preferir:
-- A: manter a linha, mas mostrar só o nome real da visita (ex.: "Visita de 20 a 26 de outubro"), sem o papel.
-- B: mostrar o nome da visita como um texto pequeno dentro da pílula da congregação.
 
 Essa linha é só um texto: removê-la não afeta nenhuma função. A pílula da congregação e o menu de ações (⋮) continuam iguais.
 
