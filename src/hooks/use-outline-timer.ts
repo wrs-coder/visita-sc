@@ -119,23 +119,43 @@ export function alertLevelFor(progressPct: number): AlertLevel {
   return "green";
 }
 
+/** Tempo excedido máximo acompanhado com avisos (5 minutos). */
+export const MAX_OVERTIME_SEC = 5 * 60;
+
+/**
+ * Marco de aviso atingido, idêntico nos modos regressivo e progressivo
+ * (ambos usam `elapsedSec` vs `targetSec`):
+ *   0 = falta 1 minuto · 1 = tempo terminou · 2..6 = passou 1..5 minutos.
+ * Retorna -1 quando nenhum marco foi atingido.
+ */
+export function alertMilestoneFor(elapsedSec: number, targetSec: number): number {
+  const diff = Math.floor(elapsedSec) - Math.floor(targetSec);
+  if (diff >= 0) return 1 + Math.min(5, Math.floor(diff / 60));
+  // "Falta 1 minuto" só faz sentido se o alvo for maior que 1 minuto.
+  if (diff >= -60 && targetSec > 60) return 0;
+  return -1;
+}
+
 /**
  * Cálculo puro do próximo snapshot do cronômetro dado o tempo real.
  * Extraído do `useEffect` do tick para permitir testes de regressão sem
  * DOM: chamar N vezes com o mesmo `now` deve produzir sempre o mesmo
  * `elapsedSec` (idempotência), garantindo que múltiplas instâncias do
  * hook nunca acelerem o cronômetro.
+ *
+ * Countdown: segue contando o tempo excedido e só para em alvo + 5 min.
  */
 export function computeTickAdvance(cur: TimerSnapshot, now: number): TimerSnapshot | null {
   if (!cur.isRunning) return null;
   const deltaSec = Math.floor((now - cur.lastTickAt) / 1000);
   if (deltaSec < 1) return null;
-  const nextElapsed = cur.elapsedSec + deltaSec;
+  const limit = cur.targetSec + MAX_OVERTIME_SEC;
+  const reachedLimit = cur.mode === "countdown" && cur.elapsedSec + deltaSec >= limit;
   return {
     ...cur,
-    elapsedSec: nextElapsed,
+    elapsedSec: reachedLimit ? Math.max(cur.elapsedSec, limit) : cur.elapsedSec + deltaSec,
     lastTickAt: cur.lastTickAt + deltaSec * 1000,
-    isRunning: cur.mode === "countdown" && nextElapsed >= cur.targetSec ? false : true,
+    isRunning: !reachedLimit,
   };
 }
 
@@ -364,9 +384,9 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
   const start = useCallback(() => {
     const cur = snapRef.current;
     if (cur.isRunning) return;
-    // Se em countdown e já estourou, reinicia para o alvo cheio.
+    // Se em countdown e já atingiu o limite do tempo excedido, reinicia.
     const elapsed =
-      cur.mode === "countdown" && cur.elapsedSec >= cur.targetSec
+      cur.mode === "countdown" && cur.elapsedSec >= cur.targetSec + MAX_OVERTIME_SEC
         ? 0
         : cur.elapsedSec;
     commit({ ...cur, elapsedSec: elapsed, isRunning: true, lastTickAt: Date.now() });

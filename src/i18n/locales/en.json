@@ -1583,7 +1583,12 @@
       "sensorOther": "Other...",
       "sensorDontRemind": "Don't remind again",
       "endShort": "Ends",
-      "endAt": "Estimated end time"
+      "endAt": "Estimated end time",
+      "timeUpTitle": "Time is up!",
+      "timeUpDesc": "The chosen time has ended.",
+      "overtimeTitle_one": "You are {{count}} minute over",
+      "overtimeTitle_other": "You are {{count}} minutes over",
+      "overtimeDesc": "You have gone past the chosen time."
     },
     "editor": {
       "collapseMeta": "Collapse header",
