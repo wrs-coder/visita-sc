@@ -21,8 +21,8 @@ import { getVaultMeta, isVaultExpired, type VaultMeta } from "@/lib/offline-cred
 import { localDbStats } from "@/lib/local-db";
 import { runFullSync } from "@/lib/local-auto-sync";
 
-const APP_VERSION = "4.2.16";
-const APP_BUILD = "2026.09.22";
+const APP_VERSION = "4.2.17";
+const APP_BUILD = "2026.10.21";
 const APP_UPDATED_AT = "19/09/2026";
 
 const PIN_PROMPT_SKIP_KEY = "visita-sc:pin-prompt-skipped-at";
