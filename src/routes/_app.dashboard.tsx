@@ -1111,30 +1111,34 @@ function Dashboard() {
               <WeekGroups
                 items={fieldMeetingsWeek}
                 getDate={(f) => f.event_date}
-                render={(f) => (
-                  <li key={f.id} className="text-sm space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
-                        {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""}
+                render={(f) => {
+                  const L = (k: string, d: string) => t(k, { defaultValue: d });
+                  const rows: Array<[string, string | null]> = [
+                    [L("meetingsTalks.field.location", "Local da Reunião de Campo"), f.meeting_location],
+                    [`${t("dashboard.territory", { defaultValue: "Território" })} S-13`, f.territory_number],
+                    [L("meetingsTalks.field.territoryLocation", "Localização do território"), f.territory_location],
+                    [L("meetingsTalks.field.auxiliaryLeaders", "Dirigentes auxiliares"), f.auxiliary_leaders],
+                    [L("meetingsTalks.field.closingPrayer", "Oração final"), f.closing_prayer],
+                  ];
+                  const filled = rows.filter(([, v]) => v && v.trim());
+                  return (
+                    <li key={f.id} className="text-sm space-y-1.5 pb-2 border-b border-border/50 last:border-b-0 last:pb-0">
+                      <span className="inline-flex px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
+                        {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""} · {MODALITY_LABEL[f.modality] ?? f.modality}
                       </span>
-                      <span className="text-xs text-muted-foreground">{MODALITY_LABEL[f.modality] ?? f.modality}</span>
-                    </div>
-                    {f.meeting_location && (
-                      <div className="text-xs text-muted-foreground break-words whitespace-normal flex items-start gap-1">
-                        <MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{f.meeting_location}</span>
-                      </div>
-                    )}
-                    {(f.territory_number || f.territory_location) && (
-                      <div className="text-xs text-muted-foreground break-words whitespace-normal">
-                        <span className="font-medium">{t("dashboard.territory")} S-13:</span>{" "}
-                        {f.territory_number || "—"}{f.territory_location ? ` · ${f.territory_location}` : ""}
-                      </div>
-                    )}
-                    {f.auxiliary_leaders && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{t("dashboard.arrangements")} {f.auxiliary_leaders}</div>}
-                    {f.closing_prayer && <div className="text-xs text-muted-foreground break-words">{t("dashboard.closingPrayer")} {f.closing_prayer}</div>}
-                    {f.observations && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{f.observations}</div>}
-                  </li>
-                )}
+                      {filled.length > 0 && (
+                        <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-1">
+                          {filled.map(([label, value]) => (
+                            <div key={label} className="contents">
+                              <dt className="text-xs text-muted-foreground pt-0.5">{label.replace(/:$/, "")}</dt>
+                              <dd className="text-sm break-words whitespace-pre-wrap">{value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
+                    </li>
+                  );
+                }}
               />
             </CollapsibleCard>
 
