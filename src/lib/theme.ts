@@ -1,14 +1,14 @@
-// Tema (claro/escuro) — persistência local e aplicação imediata da classe `.dark`
-// no <html>. Sem dependência de framework para evitar flash entre renders.
-// Side-effect import em __root.tsx garante que o tema seja aplicado antes
-// da primeira pintura útil.
+// Tema (claro/escuro + preto puro opcional) — persistência local e aplicação
+// imediata das classes `.dark` / `.oled` no <html>, sem flash entre renders.
 
 const STORAGE_KEY = "visita-sc:theme:v1";
+const OLED_KEY = "visita-sc:theme-oled:v1";
 
 export type ThemeMode = "light" | "dark";
 
 type Listener = (mode: ThemeMode) => void;
 const listeners = new Set<Listener>();
+const oledListeners = new Set<(on: boolean) => void>();
 
 function systemPrefersDark(): boolean {
   if (typeof window === "undefined") return false;
@@ -33,12 +33,23 @@ export function getTheme(): ThemeMode {
   return readStored() ?? (systemPrefersDark() ? "dark" : "light");
 }
 
-function apply(mode: ThemeMode) {
+export function getOled(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(OLED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function apply(mode: ThemeMode, oled = getOled()) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  if (mode === "dark") root.classList.add("dark");
-  else root.classList.remove("dark");
+  root.classList.toggle("dark", mode === "dark");
+  root.classList.toggle("oled", mode === "dark" && oled);
   root.style.colorScheme = mode;
+  const color = mode === "dark" ? (oled ? "#000000" : "#0b1020") : "#1e3a8a";
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", color));
 }
 
 export function setTheme(mode: ThemeMode, persist = true) {
@@ -53,6 +64,21 @@ export function setTheme(mode: ThemeMode, persist = true) {
   listeners.forEach((l) => l(mode));
 }
 
+export function setOled(on: boolean) {
+  try {
+    window.localStorage.setItem(OLED_KEY, on ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+  apply(getTheme(), on);
+  oledListeners.forEach((l) => l(on));
+}
+
+export function subscribeOled(l: (on: boolean) => void): () => void {
+  oledListeners.add(l);
+  return () => oledListeners.delete(l);
+}
+
 export function toggleTheme() {
   setTheme(getTheme() === "dark" ? "light" : "dark");
 }
@@ -62,8 +88,6 @@ export function subscribeTheme(listener: Listener): () => void {
   return () => listeners.delete(listener);
 }
 
-// Aplica imediatamente ao carregar o módulo no browser. Se o usuário ainda
-// não escolheu, segue a preferência do sistema (sem persistir).
 if (typeof window !== "undefined") {
   apply(getTheme());
 }

@@ -26,7 +26,8 @@
     "notFoundDesc": "La página que buscas no existe.",
     "goHome": "Ir al inicio",
     "somethingWrong": "Algo salió mal",
-    "tryAgain": "Intentar de nuevo"
+    "tryAgain": "Intentar de nuevo",
+    "undo": "Deshacer"
   },
   "a11y": {
     "skipToContent": "Saltar al contenido",
@@ -214,6 +215,7 @@
     "endedOn": "finalizada el",
     "finishNow": "Finalizar Ahora",
     "executiveReport": "Informe ejecutivo",
+    "visitActions": "Visita",
     "activeCongregation": "Congregación activa",
     "activeCongregationHelp": "Selecciona la congregación del circuito para ver y gestionar sus datos.",
     "noVisit": "Sin visita",
@@ -261,7 +263,24 @@
       "lunch": "Almuerzo",
       "dinner": "Cena",
       "breakfast": "Desayuno"
-    }
+    },
+    "pager": {
+      "tabToday": "Hoy",
+      "tabVisit": "Visita",
+      "tabPastoral": "Pastoreo",
+      "tabTomorrow": "Mañana",
+      "tomorrowTitle": "Programa de mañana",
+      "noTime": "Sin horario",
+      "noActivityWeek": "Nada registrado esta semana.",
+      "today": "Hoy",
+      "meetingsWeek": "Reuniones de la semana",
+      "mealsWeek": "Comidas de la semana",
+      "transportWeek": "Transporte de la semana",
+      "tabOutlines": "Bosquejos",
+      "unreadMessages": "Mensajes no leídos"
+    },
+    "recommendedCardTitle": "Notas del SC – Recomendados",
+    "openPage": "Abrir página"
   },
   "itinerary": {
     "title": "Itinerario",
@@ -453,7 +472,11 @@
       "pickup": "Recoger",
       "dropoff": "Llevar",
       "round_trip": "Ida y vuelta"
-    }
+    },
+    "driver": "Conductor",
+    "departure": "Salida",
+    "return": "Regreso",
+    "description": "Descripción"
   },
   "checklistPage": {
     "title": "Lista de tareas de la Congregación",
@@ -1558,7 +1581,14 @@
       "sensorOther": "Otro...",
       "sensorDontRemind": "No recordar de nuevo",
       "endShort": "Fin",
-      "endAt": "Hora estimada de finalización"
+      "endAt": "Hora estimada de finalización",
+      "timeUpTitle": "¡Se acabó el tiempo!",
+      "timeUpDesc": "El tiempo elegido ha terminado.",
+      "overtimeTitle_one": "Te pasaste {{count}} minuto",
+      "overtimeTitle_other": "Te pasaste {{count}} minutos",
+      "overtimeDesc": "Ya superaste el tiempo elegido.",
+      "showControls": "Mostrar botones",
+      "hideControls": "Ocultar botones"
     },
     "editor": {
       "collapseMeta": "Minimizar encabezado",
@@ -1679,7 +1709,8 @@
   "theme": {
     "light": "Modo claro",
     "dark": "Modo oscuro",
-    "toggle": "Alternar modo oscuro"
+    "toggle": "Alternar modo oscuro",
+    "oled": "Negro puro"
   },
   "privacy": {
     "link": "Política de Privacidad",

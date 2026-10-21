@@ -3,6 +3,7 @@ import {
   computeTickAdvance,
   alertLevelFor,
   formatMMSS,
+  alertMilestoneFor,
   type TimerSnapshot,
 } from "./use-outline-timer";
 
@@ -55,11 +56,18 @@ describe("computeTickAdvance — idempotência (não acelerar)", () => {
     expect(computeTickAdvance(snap, snap.lastTickAt + 5000)).toBeNull();
   });
 
-  it("countdown pausa automaticamente ao atingir o alvo", () => {
+  it("countdown continua após o alvo (tempo excedido)", () => {
     const snap = baseSnap({ targetSec: 60, elapsedSec: 58, lastTickAt: 1_000_000 });
-    const next = computeTickAdvance(snap, 1_005_000); // +5s → 63 >= 60
-    expect(next?.isRunning).toBe(false);
+    const next = computeTickAdvance(snap, 1_005_000); // +5s → 63
+    expect(next?.isRunning).toBe(true);
     expect(next?.elapsedSec).toBe(63);
+  });
+
+  it("countdown para sozinho em alvo + 5 minutos", () => {
+    const snap = baseSnap({ targetSec: 60, elapsedSec: 358, lastTickAt: 1_000_000 });
+    const next = computeTickAdvance(snap, 1_010_000); // passaria de 360
+    expect(next?.isRunning).toBe(false);
+    expect(next?.elapsedSec).toBe(360);
   });
 
   it("countup nunca pausa sozinho", () => {
@@ -86,6 +94,17 @@ describe("computeTickAdvance — idempotência (não acelerar)", () => {
     // 10 ticks de 1s → 10s, não 30.
     expect(snap.elapsedSec).toBe(10);
   });
+});
+
+describe("alertMilestoneFor — mesmos marcos nos dois modos", () => {
+  const T = 30 * 60;
+  it("nenhum marco antes de faltar 1 minuto", () => expect(alertMilestoneFor(T - 61, T)).toBe(-1));
+  it("falta 1 minuto", () => expect(alertMilestoneFor(T - 60, T)).toBe(0));
+  it("tempo terminou", () => expect(alertMilestoneFor(T, T)).toBe(1));
+  it("passou 1 minuto", () => expect(alertMilestoneFor(T + 60, T)).toBe(2));
+  it("passou 2 minutos", () => expect(alertMilestoneFor(T + 125, T)).toBe(3));
+  it("passou 5 minutos", () => expect(alertMilestoneFor(T + 300, T)).toBe(6));
+  it("não passa de 5 minutos", () => expect(alertMilestoneFor(T + 900, T)).toBe(6));
 });
 
 describe("alertLevelFor", () => {

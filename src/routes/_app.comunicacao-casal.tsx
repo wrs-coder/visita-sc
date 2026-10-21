@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { setVisibleInterval } from "@/lib/visible-interval";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -86,8 +87,7 @@ function Page() {
     if (!user || role !== "superintendent") return;
     load();
     markFn().catch(() => {});
-    const id = setInterval(load, 30_000);
-    return () => clearInterval(id);
+    return setVisibleInterval(load, 30_000);
   }, [load, markFn, user, role]);
 
   const send = async () => {

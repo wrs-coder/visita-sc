@@ -46,6 +46,7 @@ import { RouteTransition } from "@/components/RouteTransition";
 import { useOfflineWarmup } from "@/hooks/use-offline-warmup";
 import { OfflineReadyBadge } from "@/components/OfflineReadyBadge";
 import { RouteAnnouncer } from "@/components/RouteAnnouncer";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 
 export const Route = createFileRoute("/_app")({
@@ -63,6 +64,21 @@ function AppLayout() {
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  // Seções do menu recolhidas (preferência local do aparelho).
+  const [closedSections, setClosedSections] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem("visita-sc:nav-closed") || "[]");
+      if (Array.isArray(v)) setClosedSections(v.filter((x) => typeof x === "string"));
+    } catch { /* ignore */ }
+  }, []);
+  const toggleSection = (id: string) => {
+    setClosedSections((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      try { localStorage.setItem("visita-sc:nav-closed", JSON.stringify(next)); } catch { /* quota */ }
+      return next;
+    });
+  };
 
   // auto:false → o sync de Esboços Pessoais só roda sob demanda (botão de
   // sincronização, Salvar de uma nota ou diálogo de Nuvem). Edições locais
@@ -72,6 +88,28 @@ function AppLayout() {
 
   // Onda 7.4 — Warm-up offline silencioso após o login (idle, 1x/6h por aba).
   useOfflineWarmup();
+
+  // Prepara a Bíblia ativa em segundo plano, só depois do login concluído
+  // e com o aparelho ocioso. Erros são ignorados (balão funciona como antes).
+  const bibleWarmUserId = !loading && user ? user.id : null;
+  useEffect(() => {
+    if (!bibleWarmUserId) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      const run = () => {
+        if (cancelled) return;
+        import("@/lib/bible-notes-store")
+          .then(async (m) => {
+            const lib = await m.getActiveLibrary();
+            if (!cancelled && lib) await m.getChapterFromLibrary(lib.id, "B43", 1);
+          })
+          .catch(() => { /* ignore */ });
+      };
+      const idle = (window as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback;
+      if (idle) idle(run); else run();
+    }, 4000);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [bibleWarmUserId]);
 
 
   const openSupport = () => {
@@ -127,7 +165,6 @@ function AppLayout() {
               { to: "/congregacoes", label: t("sidebar.congregations"), icon: Building2 },
               { to: "/consideracoes-campo", label: t("sidebar.personalOutlines"), icon: FileText },
               { to: "/notas", label: t("sidebar.privateNotes"), icon: Lock },
-              { to: "/lixeira", label: t("sidebar.trash", { defaultValue: "Lixeira" }), icon: Trash2 },
             ]
           : []),
       ],
@@ -197,9 +234,22 @@ function AppLayout() {
     );
   };
 
+  const SectionHeader = ({ id, label, open }: { id: string; label: string; open: boolean }) => (
+    <button
+      type="button"
+      onClick={() => toggleSection(id)}
+      aria-expanded={open}
+      className="w-full flex items-center justify-between rounded-md hover:bg-sidebar-accent/40 transition"
+    >
+      <SectionLabel>{label}</SectionLabel>
+      <ChevronDown className={cn("h-3.5 w-3.5 mr-2 opacity-60 transition-transform", open && "rotate-180")} aria-hidden="true" />
+    </button>
+  );
+
   const Nav = ({ onClick }: { onClick?: () => void }) => (
     <nav className="space-y-5">
       {sections.map((sec) => {
+        const open = !closedSections.includes(sec.id);
         if (sec.collapsible) {
           // "Modelos de Base" — accordion com os 3 itens de modelos; perfil fica fora, abaixo.
           const modelItems = sec.items.filter((i) => i.to !== "/perfil");
@@ -207,8 +257,8 @@ function AppLayout() {
           const anyActive = modelItems.some((i) => isActiveLink(i.to));
           return (
             <div key={sec.id} className="space-y-1">
-              <SectionLabel>{sec.label}</SectionLabel>
-              {modelItems.length > 0 && (
+              <SectionHeader id={sec.id} label={sec.label} open={open} />
+              {open && modelItems.length > 0 && (
                 <Collapsible defaultOpen={anyActive}>
                   <CollapsibleTrigger
                     className={cn(
@@ -228,25 +278,27 @@ function AppLayout() {
                   </CollapsibleContent>
                 </Collapsible>
               )}
-              {perfil && <LinkItem it={perfil} onClick={onClick} />}
-              <button
-                type="button"
-                onClick={openSupport}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
-              >
-                <Coffee className="h-4 w-4" /> {t("sidebar.supportDev")}
-              </button>
+              {open && perfil && <LinkItem it={perfil} onClick={onClick} />}
+              {open && (
+                <button
+                  type="button"
+                  onClick={openSupport}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+                >
+                  <Coffee className="h-4 w-4" /> {t("sidebar.supportDev")}
+                </button>
+              )}
             </div>
           );
         }
         const hasPerfil = sec.items.some((i) => i.to === "/perfil");
         return (
           <div key={sec.id} className="space-y-1">
-            <SectionLabel>{sec.label}</SectionLabel>
-            {sec.items.map((it) => (
+            <SectionHeader id={sec.id} label={sec.label} open={open} />
+            {open && sec.items.map((it) => (
               <LinkItem key={it.to} it={it} onClick={onClick} />
             ))}
-            {hasPerfil && (
+            {open && hasPerfil && (
               <button
                 type="button"
                 onClick={openSupport}
@@ -295,8 +347,9 @@ function AppLayout() {
                     circuit={profile?.circuit ?? null}
                   />
                 </div>
-                <div className="p-3 pb-0">
-                  <ConnectionModeToggle />
+                <div className="p-3 pb-0 grid grid-cols-3 gap-2">
+                  <ConnectionModeToggle compact />
+                  <ThemeToggle variant="sidebar" />
                 </div>
                 <div className="p-3 flex-1 overflow-y-auto overscroll-contain">
                   <Nav onClick={() => setMobileMenuOpen(false)} />
@@ -313,6 +366,16 @@ function AppLayout() {
           <div className="flex items-center gap-1">
             <OfflineReadyBadge />
             <SyncButton onSync={syncOutlines} />
+            {role === "superintendent" && (
+              <Link
+                to="/lixeira"
+                className="p-2 rounded-md hover:bg-white/10"
+                aria-label={t("sidebar.trash", { defaultValue: "Lixeira" })}
+                title={t("sidebar.trash", { defaultValue: "Lixeira" })}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Link>
+            )}
             <button
               onClick={() => {
                 signOut().then((ok) => { if (ok) nav({ to: "/" }); });
@@ -337,8 +400,9 @@ function AppLayout() {
               circuit={profile?.circuit ?? null}
             />
           </div>
-          <div className="p-3 pb-0">
-            <ConnectionModeToggle />
+          <div className="p-3 pb-0 grid grid-cols-3 gap-2">
+            <ConnectionModeToggle compact />
+            <ThemeToggle variant="sidebar" />
           </div>
           <div className="p-3 flex-1 overflow-y-auto overscroll-contain min-h-0">
             <Nav />
@@ -346,6 +410,16 @@ function AppLayout() {
           <div className="p-3 border-t border-sidebar-border space-y-2">
             <div className="px-1 flex items-center justify-between">
               <SyncButton onSync={syncOutlines} className="flex-1 justify-start text-sidebar-foreground hover:bg-sidebar-accent/60 px-3 py-2 rounded-md" />
+              {role === "superintendent" && (
+                <Link
+                  to="/lixeira"
+                  className="p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent/60"
+                  aria-label={t("sidebar.trash", { defaultValue: "Lixeira" })}
+                  title={t("sidebar.trash", { defaultValue: "Lixeira" })}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Link>
+              )}
               <OfflineReadyBadge className="text-sidebar-foreground/80" />
             </div>
             <Button

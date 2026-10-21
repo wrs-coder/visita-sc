@@ -67,6 +67,7 @@ import {
   listFolders as listFoldersStore,
   saveNote as persistNote,
   deleteNote as removeNote,
+  restoreNote as restoreTrashedNote,
   newNoteId,
   getActiveLibrary,
   listFolders,
@@ -92,7 +93,16 @@ import { shareJsonFile, pickFile } from "@/lib/share";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { BibleHistoryChips } from "@/components/bible/BibleHistoryChips";
 
-import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
+// Rodada B: o editor (TipTap) só carrega ao editar um esboço; a lista abre
+// primeiro. Ele é pré-carregado em segundo plano para abrir sem espera.
+const loadRichNoteEditor = () => import("@/components/notes/RichNoteEditor");
+const RichNoteEditor = React.lazy(() => loadRichNoteEditor().then((m) => ({ default: m.RichNoteEditor })));
+if (typeof window !== "undefined") {
+  const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+  const warm = () => { void loadRichNoteEditor().catch(() => {}); };
+  if (w.requestIdleCallback) w.requestIdleCallback(warm, { timeout: 3000 });
+  else window.setTimeout(warm, 1500);
+}
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
@@ -594,19 +604,44 @@ function Page() {
     });
   }
 
+  // "Desfazer" no aviso de exclusão: a nota só foi para a lixeira, então
+  // basta restaurá-la (mesma rotina da Lixeira).
+  function toastDeletedWithUndo(removed: FieldNote[]) {
+    toast.success(t("fieldConsiderations.deleted"), {
+      duration: 6000,
+      action: removed.length
+        ? {
+            label: t("common.undo", { defaultValue: "Desfazer" }),
+            onClick: async () => {
+              for (const n of removed) await restoreTrashedNote(n.id);
+              setNotes((all) => {
+                const ids = new Set(all.map((n) => n.id));
+                const back = removed
+                  .filter((n) => !ids.has(n.id))
+                  .map((n) => ({ ...n, deleted_at: null }));
+                return [...back, ...all].sort((a, b) => b.updated_at - a.updated_at);
+              });
+            },
+          }
+        : undefined,
+    });
+  }
+
   async function handleDeleteNote() {
     if (!draft) return;
     if (!confirm(t("fieldConsiderations.deleteConfirm"))) return;
+    const removedDraft = notes.filter((n) => n.id === draft.id);
     await removeNote(draft.id);
     setNotes((all) => all.filter((n) => n.id !== draft.id));
     setDraft(null);
     setSelectedNoteId(null);
     // Offline-first: a exclusão fica local; sincroniza só no próximo Salvar/Sincronizar.
-    toast.success(t("fieldConsiderations.deleted"));
+    toastDeletedWithUndo(removedDraft);
   }
 
   async function handleDeleteNoteById(noteId: string) {
     if (!confirm(t("fieldConsiderations.deleteConfirm"))) return;
+    const removedOne = notes.filter((n) => n.id === noteId);
     await removeNote(noteId);
     setNotes((all) => all.filter((n) => n.id !== noteId));
     if (draft?.id === noteId) {
@@ -614,7 +649,7 @@ function Page() {
       setSelectedNoteId(null);
     }
     // Offline-first: a exclusão fica local; sincroniza só no próximo Salvar/Sincronizar.
-    toast.success(t("fieldConsiderations.deleted"));
+    toastDeletedWithUndo(removedOne);
   }
 
   async function handlePushNoteById(noteId: string) {
@@ -662,6 +697,7 @@ function Page() {
   async function handleDeleteMany(ids: string[]) {
     if (ids.length === 0) return;
     if (!confirm(t("fieldConsiderations.deleteConfirm"))) return;
+    const removedMany = notes.filter((n) => ids.includes(n.id));
     for (const id of ids) {
       await removeNote(id);
     }
@@ -669,7 +705,7 @@ function Page() {
     if (draft && ids.includes(draft.id)) { setDraft(null); setSelectedNoteId(null); }
     setSelectedIds(new Set());
     // Offline-first: exclusão em lote fica local; sincroniza só sob demanda.
-    toast.success(t("fieldConsiderations.deleted"));
+    toastDeletedWithUndo(removedMany);
   }
 
   async function handleExportMany(ids: string[]) {
@@ -1346,7 +1382,7 @@ function Page() {
         {...draggable.attributes}
         {...draggable.listeners}
         className={cn(
-          "group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm touch-none select-none",
+          "cv-row group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm touch-none select-none",
           selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
           isClipped && "opacity-60 italic",
           hint === "before" && "border-t-2 border-primary",
@@ -2133,6 +2169,7 @@ function NoteEditor({
           const minH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "22rem";
           const maxH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "60vh";
           return mode === "edit" ? (
+            <React.Suspense fallback={<div className="flex-1 rounded-md border bg-muted/30" style={{ minHeight: minH }} aria-busy="true" />}>
             <RichNoteEditor
               value={draft.content}
               onChange={(html) => onPatch("content", html)}
@@ -2147,6 +2184,7 @@ function NoteEditor({
               attachments={draft.attachments ?? []}
               onAttachmentsChange={(next) => onPatch("attachments", next)}
             />
+            </React.Suspense>
           ) : (
             <>
               {hasAttachments && (

@@ -26,7 +26,8 @@
     "notFoundDesc": "The page you are looking for does not exist.",
     "goHome": "Go to home",
     "somethingWrong": "Something went wrong",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "undo": "Undo"
   },
   "a11y": {
     "skipToContent": "Skip to content",
@@ -214,6 +215,7 @@
     "endedOn": "ended on",
     "finishNow": "Finalize Now",
     "executiveReport": "Executive report",
+    "visitActions": "Visit",
     "activeCongregation": "Active congregation",
     "activeCongregationHelp": "Select the circuit's congregation to view and manage its data.",
     "noVisit": "No visit",
@@ -261,7 +263,24 @@
       "lunch": "Lunch",
       "dinner": "Dinner",
       "breakfast": "Breakfast"
-    }
+    },
+    "pager": {
+      "tabToday": "Today",
+      "tabVisit": "Visit",
+      "tabPastoral": "Shepherding",
+      "tabTomorrow": "Tomorrow",
+      "tomorrowTitle": "Tomorrow's schedule",
+      "noTime": "No time set",
+      "noActivityWeek": "Nothing recorded this week.",
+      "today": "Today",
+      "meetingsWeek": "Meetings this week",
+      "mealsWeek": "Meals this week",
+      "transportWeek": "Transport this week",
+      "tabOutlines": "Outlines",
+      "unreadMessages": "Unread messages"
+    },
+    "recommendedCardTitle": "CO Notes – Recommended",
+    "openPage": "Open page"
   },
   "itinerary": {
     "title": "Itinerary",
@@ -478,7 +497,11 @@
       "pickup": "Pickup",
       "dropoff": "Dropoff",
       "round_trip": "Round trip"
-    }
+    },
+    "driver": "Driver",
+    "departure": "Departure",
+    "return": "Return",
+    "description": "Description"
   },
   "checklistPage": {
     "title": "Congregation Checklist",
@@ -1583,7 +1606,14 @@
       "sensorOther": "Other...",
       "sensorDontRemind": "Don't remind again",
       "endShort": "Ends",
-      "endAt": "Estimated end time"
+      "endAt": "Estimated end time",
+      "timeUpTitle": "Time is up!",
+      "timeUpDesc": "The chosen time has ended.",
+      "overtimeTitle_one": "You are {{count}} minute over",
+      "overtimeTitle_other": "You are {{count}} minutes over",
+      "overtimeDesc": "You have gone past the chosen time.",
+      "showControls": "Show buttons",
+      "hideControls": "Hide buttons"
     },
     "editor": {
       "collapseMeta": "Collapse header",
@@ -1704,7 +1734,8 @@
   "theme": {
     "light": "Light mode",
     "dark": "Dark mode",
-    "toggle": "Toggle dark mode"
+    "toggle": "Toggle dark mode",
+    "oled": "Pure black"
   },
   "privacy": {
     "link": "Privacy Policy",

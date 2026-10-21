@@ -19,6 +19,7 @@ import {
   ZoomIn,
   ZoomOut,
   AlertTriangle,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +41,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
+  alertMilestoneFor,
   formatMMSS,
   useOutlineTimer,
   type AlertLevel,
@@ -54,12 +56,33 @@ interface OutlineTimerProps {
 }
 
 const PRESETS_MIN = [5, 10, 15, 30, 45];
+const ALERT_KEY_PREFIX = "visita-sc:outline-timer-alert:";
+
+function readShownMilestone(outlineId: string): number {
+  try {
+    const raw = window.localStorage.getItem(ALERT_KEY_PREFIX + outlineId);
+    const n = raw === null ? -1 : Number(raw);
+    return Number.isFinite(n) ? n : -1;
+  } catch {
+    return -1;
+  }
+}
+
+function writeShownMilestone(outlineId: string, milestone: number): void {
+  try {
+    window.localStorage.setItem(ALERT_KEY_PREFIX + outlineId, String(milestone));
+  } catch {
+    /* quota / modo privado — ignora */
+  }
+}
 
 function alertColorClass(level: AlertLevel): string {
-  if (level === "red") return "text-destructive";
-  if (level === "amber") return "text-amber-500";
-  return "text-emerald-600";
+  if (level === "red") return "text-timer-over";
+  if (level === "amber") return "text-timer-warn";
+  return "text-timer-ok";
 }
+
+const CONTROLS_KEY = "visita-sc:timer-controls-collapsed";
 
 export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProps) {
   const { t } = useTranslation();
@@ -72,18 +95,30 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
     String(Math.round(timer.targetSec / 60)),
   );
   const lastTapRef = useRef<number>(0);
+  const [controlsCollapsed, setControlsCollapsed] = useState(false);
+  useEffect(() => {
+    try { setControlsCollapsed(window.localStorage.getItem(CONTROLS_KEY) === "1"); } catch { /* noop */ }
+  }, []);
+  const toggleControls = () => {
+    setControlsCollapsed((prev) => {
+      const next = !prev;
+      try { window.localStorage.setItem(CONTROLS_KEY, next ? "1" : "0"); } catch { /* noop */ }
+      return next;
+    });
+  };
 
-  const displaySec =
-    timer.mode === "countdown" ? timer.remainingSec : timer.elapsedSec;
-  const display = formatMMSS(displaySec);
+  const overtimeSec = Math.max(0, timer.elapsedSec - timer.targetSec);
+  const display =
+    timer.mode === "countdown"
+      ? overtimeSec > 0
+        ? `+${formatMMSS(overtimeSec)}`
+        : formatMMSS(timer.remainingSec)
+      : formatMMSS(timer.elapsedSec);
   const isFullscreen = variant === "fullscreen";
   const isAuto = themeId === "auto";
 
-  // Aviso "falta 1 minuto" — dispara apenas uma vez por ciclo, na variante
-  // "toolbar" (sempre montada) para evitar diálogo duplicado quando o banner
-  // fullscreen também estiver visível.
-  const [warnOpen, setWarnOpen] = useState(false);
-  const warnedRef = useRef(false);
+  // Marco de aviso aberto no momento (null = nenhum).
+  const [warnMilestone, setWarnMilestone] = useState<number | null>(null);
 
   // Relógio de parede usado apenas quando pausado: enquanto o cronômetro
   // corre, `remainingSec` muda a cada segundo e já força re-render. Quando
@@ -92,7 +127,8 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     if (timer.isRunning) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    // Pausado: a hora de término (HH:MM) só precisa de atualização ocasional.
+    const id = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(id);
   }, [timer.isRunning]);
 
@@ -113,33 +149,55 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
     }).format(end);
   }, [timer.mode, timer.isRunning, timer.remainingSec, timer.elapsedSec, timer.targetSec, now]);
 
+  // Avisos por marco (falta 1 min, terminou, passou 1..5 min). Vale para os
+  // dois modos e todas as superfícies (modo esboço e tela cheia). O marco
+  // já exibido fica em localStorage por esboço: a primeira instância a ver
+  // o marco o "reivindica" e as demais (ou um reload) não repetem.
+  const milestone = alertMilestoneFor(timer.elapsedSec, timer.targetSec);
   useEffect(() => {
-    if (variant !== "toolbar") return;
-    if (timer.mode !== "countdown") {
-      warnedRef.current = false;
+    if (!outlineId) return;
+    const stored = readShownMilestone(outlineId);
+    if (milestone <= stored) {
+      if (milestone < stored) writeShownMilestone(outlineId, milestone);
       return;
     }
-    if (timer.remainingSec > 60) {
-      warnedRef.current = false;
-      return;
-    }
-    if (
-      timer.isRunning &&
-      timer.remainingSec > 0 &&
-      timer.remainingSec <= 60 &&
-      !warnedRef.current
-    ) {
-      warnedRef.current = true;
-      setWarnOpen(true);
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        try {
-          navigator.vibrate([300, 120, 300, 120, 600]);
-        } catch {
-          /* noop */
-        }
+    writeShownMilestone(outlineId, milestone);
+    // Só avisa com o cronômetro correndo (ou no instante em que para
+    // sozinho no limite de 5 minutos excedidos).
+    if (!timer.isRunning && milestone < 6) return;
+    setWarnMilestone(milestone);
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try {
+        navigator.vibrate(
+          milestone === 0 ? [300, 120, 300, 120, 600] : [600, 200, 600, 200, 900],
+        );
+      } catch {
+        /* noop */
       }
     }
-  }, [variant, timer.mode, timer.isRunning, timer.remainingSec]);
+  }, [outlineId, milestone, timer.isRunning]);
+
+  const warnTitle =
+    warnMilestone === 0
+      ? t("personalOutlines.timer.oneMinuteWarningTitle", { defaultValue: "Falta 1 minuto!" })
+      : warnMilestone === 1
+        ? t("personalOutlines.timer.timeUpTitle", { defaultValue: "O tempo terminou!" })
+        : t("personalOutlines.timer.overtimeTitle", {
+            count: (warnMilestone ?? 2) - 1,
+            defaultValue: "Você passou {{count}} minuto(s)",
+          });
+  const warnDesc =
+    warnMilestone === 0
+      ? t("personalOutlines.timer.oneMinuteWarningDesc", {
+          defaultValue: "Resta apenas 1 minuto para o tempo terminar.",
+        })
+      : warnMilestone === 1
+        ? t("personalOutlines.timer.timeUpDesc", {
+            defaultValue: "O tempo escolhido chegou ao fim.",
+          })
+        : t("personalOutlines.timer.overtimeDesc", {
+            defaultValue: "Você já ultrapassou o tempo escolhido.",
+          });
 
   const handleDisplayTap = () => {
     const now = Date.now();
@@ -155,8 +213,12 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
     setTargetOpen(false);
   };
 
+  const controlsLabel = controlsCollapsed
+    ? t("personalOutlines.timer.showControls", { defaultValue: "Mostrar botões" })
+    : t("personalOutlines.timer.hideControls", { defaultValue: "Recolher botões" });
+
   const wrapClass = cn(
-    "flex items-center gap-1 sm:gap-1.5 select-none border flex-wrap",
+    "flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 sm:gap-x-1.5 select-none border",
     isFullscreen
       ? "w-full shrink-0 border-b bg-background/85 backdrop-blur px-2 sm:px-3 py-1 sm:py-1.5 justify-center min-h-8 sm:min-h-9"
       : "min-h-7 px-1.5 rounded-md",
@@ -178,9 +240,7 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   );
   const endLabelClass = cn(
     "tabular-nums font-bold whitespace-nowrap tracking-tight",
-    "bg-gradient-to-r from-sky-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent",
-    "[text-shadow:0_0_12px_rgba(56,189,248,0.55),0_0_28px_rgba(59,130,246,0.35)]",
-    "drop-shadow-[0_0_6px_rgba(56,189,248,0.45)]",
+    "text-primary",
     isFullscreen ? size.preset.fullscreenText : size.preset.toolbarText,
   );
 
@@ -190,6 +250,7 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
       role="group"
       aria-label={t("personalOutlines.timer.label", { defaultValue: "Cronômetro do esboço" })}
     >
+      <div className="flex items-center justify-center gap-1 min-w-0 max-w-full">
       <Popover open={targetOpen} onOpenChange={setTargetOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -322,6 +383,26 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
         type="button"
         variant="ghost"
         size="sm"
+        className={cn(iconBtnClass, "h-6 w-6")}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={toggleControls}
+        aria-expanded={!controlsCollapsed}
+        title={controlsLabel}
+        aria-label={controlsLabel}
+      >
+        <ChevronDown
+          className={cn("h-3.5 w-3.5 transition-transform", controlsCollapsed && "-rotate-90")}
+        />
+      </Button>
+      </div>
+
+      <div
+        className={cn("flex items-center justify-center gap-1 shrink-0", controlsCollapsed && "hidden")}
+      >
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
         className={iconBtnClass}
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => timer.toggle()}
@@ -389,6 +470,7 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
       >
         <ZoomIn className={iconBtnSize} />
       </Button>
+      </div>
 
       <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
         <AlertDialogContent className="z-[150]">
@@ -422,25 +504,25 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={warnOpen} onOpenChange={setWarnOpen}>
+      <AlertDialog
+        open={warnMilestone !== null}
+        onOpenChange={(open) => {
+          if (!open) setWarnMilestone(null);
+        }}
+      >
         <AlertDialogContent className="z-[160] border-destructive bg-destructive text-destructive-foreground">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive-foreground">
               <AlertTriangle className="h-5 w-5" />
-              {t("personalOutlines.timer.oneMinuteWarningTitle", {
-                defaultValue: "Falta 1 minuto!",
-              })}
+              {warnTitle}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-destructive-foreground/90">
-              {t("personalOutlines.timer.oneMinuteWarningDesc", {
-                defaultValue:
-                  "Resta apenas 1 minuto para o tempo terminar.",
-              })}
+              {warnDesc}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction
-              onClick={() => setWarnOpen(false)}
+              onClick={() => setWarnMilestone(null)}
               className="bg-background text-foreground hover:bg-background/90"
             >
               {t("common.ok", { defaultValue: "OK" })}

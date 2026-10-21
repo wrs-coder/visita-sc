@@ -26,7 +26,8 @@
     "notFoundDesc": "A página que você procura não existe.",
     "goHome": "Ir para o início",
     "somethingWrong": "Algo deu errado",
-    "tryAgain": "Tentar novamente"
+    "tryAgain": "Tentar novamente",
+    "undo": "Desfazer"
   },
   "a11y": {
     "skipToContent": "Pular para o conteúdo",
@@ -214,6 +215,7 @@
     "endedOn": "encerrada em",
     "finishNow": "Finalizar Agora",
     "executiveReport": "Relatório executivo",
+    "visitActions": "Visita",
     "activeCongregation": "Congregação ativa",
     "activeCongregationHelp": "Selecione a congregação do circuito para ver e gerenciar seus dados.",
     "noVisit": "Sem visita",
@@ -261,7 +263,24 @@
       "lunch": "Almoço",
       "dinner": "Jantar",
       "breakfast": "Café"
-    }
+    },
+    "pager": {
+      "tabToday": "Hoje",
+      "tabVisit": "Visita",
+      "tabPastoral": "Pastoreio",
+      "tabTomorrow": "Amanhã",
+      "tomorrowTitle": "Cronograma de amanhã",
+      "noTime": "Sem horário",
+      "noActivityWeek": "Nada registrado nesta semana.",
+      "today": "Hoje",
+      "meetingsWeek": "Reuniões da semana",
+      "mealsWeek": "Refeições da semana",
+      "transportWeek": "Transporte da semana",
+      "tabOutlines": "Esboços",
+      "unreadMessages": "Recados não lidos"
+    },
+    "recommendedCardTitle": "Notas do SC – Recomendados",
+    "openPage": "Abrir página"
   },
   "itinerary": {
     "title": "Itinerário",
@@ -478,7 +497,11 @@
       "pickup": "Buscar",
       "dropoff": "Levar",
       "round_trip": "Ida e volta"
-    }
+    },
+    "driver": "Motorista",
+    "departure": "Saída",
+    "return": "Retorno",
+    "description": "Descrição"
   },
   "checklistPage": {
     "title": "Checklist da Congregação",
@@ -1584,7 +1607,14 @@
       "sensorOther": "Outro...",
       "sensorDontRemind": "Não lembrar novamente",
       "endShort": "Término",
-      "endAt": "Hora de término estimada"
+      "endAt": "Hora de término estimada",
+      "timeUpTitle": "O tempo terminou!",
+      "timeUpDesc": "O tempo escolhido chegou ao fim.",
+      "overtimeTitle_one": "Você passou {{count}} minuto",
+      "overtimeTitle_other": "Você passou {{count}} minutos",
+      "overtimeDesc": "Você já ultrapassou o tempo escolhido.",
+      "showControls": "Mostrar botões",
+      "hideControls": "Recolher botões"
     },
     "editor": {
       "collapseMeta": "Minimizar cabeçalho",
@@ -1705,7 +1735,8 @@
   "theme": {
     "light": "Modo claro",
     "dark": "Modo escuro",
-    "toggle": "Alternar modo escuro"
+    "toggle": "Alternar modo escuro",
+    "oled": "Preto puro"
   },
   "privacy": {
     "link": "Política de Privacidade",
