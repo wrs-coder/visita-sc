@@ -852,52 +852,17 @@ function Dashboard() {
 
 
 
-      {visit && (
-        <div className="flex flex-wrap justify-end gap-2 print:hidden">
-          <Button size="sm" variant="outline" onClick={() => setFullReportOpen(true)}>
-            <FileText className="h-4 w-4 mr-1" /> {t("dashboard.executiveReport")}
-          </Button>
-          <Button asChild size="sm" variant="ghost">
-            <Link to="/relatorio/$visitId" params={{ visitId: visit.id }}>
-              {t("report.print")}
-            </Link>
-          </Button>
-          <FullVisitReportDialog
-            open={fullReportOpen}
-            onOpenChange={setFullReportOpen}
-            visitId={visit.id}
-            visitTitle={visit.title}
-            congregationName={congs.find((c) => c.id === visit.congregation_id)?.name}
-          />
-          {role === "superintendent" && (
-            <FinishVisitDialog
-              visitId={visit.id}
-              visitTitle={visit.title}
-              onFinished={() => {
-                setSelected(null);
-                setActiveCongregationOverride(null);
-              }}
-            />
-          )}
-        </div>
-      )}
-
-
-      {role === "superintendent" && congs.length > 0 && (
-        <Card className="shadow-card">
-          <CardContent className="p-4 flex items-center gap-3">
-            <Building2 className="h-4 w-4 text-primary shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-                {t("dashboard.activeCongregation")}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {t("dashboard.activeCongregationHelp")}
-              </div>
-            </div>
+      {((role === "superintendent" && congs.length > 0) || visit) && (
+        <div className="flex items-center justify-between gap-2 print:hidden">
+          {role === "superintendent" && congs.length > 0 ? (
             <Select value={selected ?? NO_CURRENT_VISIT_VALUE} onValueChange={handleSelectCong}>
-              <SelectTrigger className="w-[200px] max-w-[60vw]">
-                <SelectValue />
+              <SelectTrigger
+                aria-label={t("dashboard.activeCongregation")}
+                title={t("dashboard.activeCongregation")}
+                className="h-8 w-auto max-w-[70%] min-w-0 gap-1.5 rounded-full border-primary/20 bg-primary/5 px-3 text-sm font-medium shadow-none"
+              >
+                <Building2 className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="truncate"><SelectValue /></span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={NO_CURRENT_VISIT_VALUE}>{t("dashboard.noVisit")}</SelectItem>
@@ -908,8 +873,63 @@ function Dashboard() {
                 ))}
               </SelectContent>
             </Select>
-          </CardContent>
-        </Card>
+          ) : <span />}
+          {visit && (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline" className="h-8 rounded-full px-3 gap-1.5 shrink-0">
+                    <FileText className="h-3.5 w-3.5" />
+                    {t("dashboard.visitActions", { defaultValue: "Visita" })}
+                    <ChevronDownIcon className="h-3.5 w-3.5 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onSelect={() => setFullReportOpen(true)}>
+                    <FileText className="h-4 w-4 mr-2" /> {t("dashboard.executiveReport")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/relatorio/$visitId" params={{ visitId: visit.id }}>
+                      <PrinterIcon className="h-4 w-4 mr-2" /> {t("report.print")}
+                    </Link>
+                  </DropdownMenuItem>
+                  {role === "superintendent" && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onSelect={() => setFinishOpen(true)}
+                      >
+                        <FlagIcon className="h-4 w-4 mr-2" />
+                        {t("finishVisit.trigger", { defaultValue: "Finalizar Visita" })}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <FullVisitReportDialog
+                open={fullReportOpen}
+                onOpenChange={setFullReportOpen}
+                visitId={visit.id}
+                visitTitle={visit.title}
+                congregationName={congs.find((c) => c.id === visit.congregation_id)?.name}
+              />
+              {role === "superintendent" && (
+                <FinishVisitDialog
+                  visitId={visit.id}
+                  visitTitle={visit.title}
+                  hideTrigger
+                  open={finishOpen}
+                  onOpenChange={setFinishOpen}
+                  onFinished={() => {
+                    setSelected(null);
+                    setActiveCongregationOverride(null);
+                  }}
+                />
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {(() => {
