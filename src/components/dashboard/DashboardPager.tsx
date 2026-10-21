@@ -103,7 +103,7 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
     const apply = () => {
       el.style.height = `${section.offsetHeight}px`;
       // Largura mudou (girar, teclado): realinha a tela atual.
-      if (el.clientWidth !== lastW || Math.abs(el.scrollLeft - activeIdx * el.clientWidth) > 1) {
+      if (el.clientWidth !== lastW) {
         lastW = el.clientWidth;
         el.scrollLeft = activeIdx * el.clientWidth;
       }
