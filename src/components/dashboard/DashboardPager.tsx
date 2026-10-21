@@ -6,11 +6,11 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
-export type DashboardPage = { id: string; label: string; content: ReactNode };
+export type DashboardPage = { id: string; label: string; content: ReactNode; badge?: boolean };
 
 const STORAGE_KEY = "dashboard.pager.page";
 
-export function DashboardPager({ pages }: { pages: DashboardPage[] }) {
+export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { pages: DashboardPage[]; unreadLabel?: string }) {
   const isMobile = useIsMobile();
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState(pages[0]?.id ?? "");
@@ -99,7 +99,15 @@ export function DashboardPager({ pages }: { pages: DashboardPage[] }) {
                 : "text-muted-foreground hover:bg-accent/60",
             )}
           >
-            {p.label}
+            <span className="relative inline-flex items-center">
+              {p.label}
+              {p.badge && (
+                <>
+                  <span aria-hidden="true" className="absolute -right-2.5 -top-0.5 h-2 w-2 rounded-full ring-2 ring-card" style={{ background: "var(--accent-couple)" }} />
+                  <span className="sr-only">{unreadLabel}</span>
+                </>
+              )}
+            </span>
           </button>
         ))}
       </div>

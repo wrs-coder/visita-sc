@@ -1223,26 +1223,17 @@ function Dashboard() {
           );
         })()}
                 {renderTimeline(today, "super-today-circuit", t("dashboard.todayBlockTitle"))}
-      {role === "superintendent" && (
-        <CollapsibleCard
-          id="super-study-notes"
-          accent="notes"
-          icon={<BookOpen className="h-4 w-4 text-primary" />}
-          title={t("dashboard.studyNotesTitle")}
-        >
-          <Tabs defaultValue="outlines" className="w-full min-w-0 overflow-hidden">
-            <TabsList className="grid h-auto w-full grid-cols-3 items-stretch gap-1">
-              <TabsTrigger value="outlines" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
-                {t("dashboard.studyNotesOutlinesTab")}
-              </TabsTrigger>
-              <TabsTrigger value="weekOutlines" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
-                {t("dashboard.studyNotesWeekOutlinesTab")}
-              </TabsTrigger>
-              <TabsTrigger value="recomendados" className="h-auto min-h-9 whitespace-normal break-words px-1.5 py-1.5 text-[11px] leading-tight sm:px-3 sm:text-sm">
-                {t("dashboard.studyNotesRecomendadosTab")}
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="outlines" className="mt-3">
+              </>
+            ),
+            badge: role === "superintendent" && coupleUnread > 0,
+          },
+          ...(role === "superintendent"
+            ? [{
+                id: "esbocos",
+                label: t("dashboard.pager.tabOutlines", { defaultValue: "Esboços" }),
+                content: (
+                  <>
+        <CollapsibleCard id="notes-field" accent="notes" icon={<BookOpen className="h-4 w-4 text-primary" />} title={t("dashboard.studyNotesOutlinesTab")}>
               {outlinesPreview.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("dashboard.studyNotesEmptyOutlines")}</p>
               ) : (
@@ -1268,8 +1259,8 @@ function Dashboard() {
                   )}
                 </div>
               )}
-            </TabsContent>
-            <TabsContent value="weekOutlines" className="mt-3">
+        </CollapsibleCard>
+        <CollapsibleCard id="notes-week" accent="notes" icon={<BookOpen className="h-4 w-4 text-primary" />} title={t("dashboard.studyNotesWeekOutlinesTab")}>
               {weekOutlinesPreview.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("dashboard.studyNotesEmptyWeekOutlines")}</p>
               ) : (
@@ -1294,48 +1285,13 @@ function Dashboard() {
                   )}
                 </div>
               )}
-            </TabsContent>
-            <TabsContent value="recomendados" className="mt-3">
-              {recomendadosPreview.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("dashboard.studyNotesEmptyRecomendados")}</p>
-              ) : (
-                <ul className="space-y-2">
-                  {recomendadosPreview.map((n) => (
-                    <li key={n.id}>
-                      <button
-                        type="button"
-                        onClick={() => setRecomendadoOpen(n)}
-                        className="w-full text-left flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors min-w-0"
-                      >
-                        <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm whitespace-normal break-words [overflow-wrap:anywhere]">
-                            {(n.payload?.nome?.trim() || n.title || "(sem título)")}
-                          </div>
-                          {n.payload?.tipo && (
-                            <div className="text-xs text-muted-foreground whitespace-normal break-words">
-                              {n.payload.tipo}
-                            </div>
-                          )}
-                          <div className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(n.updated_at), { addSuffix: true, locale: ptBR })}
-                          </div>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </TabsContent>
-          </Tabs>
         </CollapsibleCard>
-      )}
-                {meetingsWeekCard}
-              </>
-            ),
-          },
+                  </>
+                ),
+              }]
+            : []),
           ...(visit
-            ? [{ id: "visita", label: t("dashboard.pager.tabVisit", { defaultValue: "Visita" }), content: <>{visitWeekCards}</> }]
+            ? [{ id: "visita", label: t("dashboard.pager.tabVisit", { defaultValue: "Visita" }), content: <>{meetingsWeekCard}{visitWeekCards}</> }]
             : []),
           ...(visit
             ? [{
@@ -1449,6 +1405,40 @@ function Dashboard() {
           </Tabs>
         </CollapsibleCard>
       )}
+      {role === "superintendent" && visit && (
+        <CollapsibleCard id="notes-recommended" accent="notes" icon={<FileText className="h-4 w-4 text-primary" />} title={t("dashboard.recommendedCardTitle", { defaultValue: "Notas do SC – Recomendados" })}>
+              {recomendadosPreview.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("dashboard.studyNotesEmptyRecomendados")}</p>
+              ) : (
+                <ul className="space-y-2">
+                  {recomendadosPreview.map((n) => (
+                    <li key={n.id}>
+                      <button
+                        type="button"
+                        onClick={() => setRecomendadoOpen(n)}
+                        className="w-full text-left flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors min-w-0"
+                      >
+                        <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm whitespace-normal break-words [overflow-wrap:anywhere]">
+                            {(n.payload?.nome?.trim() || n.title || "(sem título)")}
+                          </div>
+                          {n.payload?.tipo && (
+                            <div className="text-xs text-muted-foreground whitespace-normal break-words">
+                              {n.payload.tipo}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(n.updated_at), { addSuffix: true, locale: ptBR })}
+                          </div>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+        </CollapsibleCard>
+      )}
       {visit && (
         <div className="grid gap-4 md:grid-cols-2">
           <CollapsibleCard
@@ -1551,7 +1541,7 @@ function Dashboard() {
             ),
           },
         ];
-        return <DashboardPager pages={pages} />;
+        return <DashboardPager pages={pages} unreadLabel={t("dashboard.pager.unreadMessages", { defaultValue: "Recados não lidos" })} />;
       })()}
 
 
