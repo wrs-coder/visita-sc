@@ -568,8 +568,11 @@ export async function getChapterFromLibrary(
   chapter: number,
 ): Promise<BibleVerseRecord[]> {
   if (!hasIDB()) return [];
+  const cacheKey = ChapterCache.key(libId, bookId, chapter);
+  const hit = chapterCache.get(cacheKey);
+  if (hit) return hit;
   const db = await openDB();
-  return new Promise((resolve, reject) => {
+  const result = await new Promise<BibleVerseRecord[]>((resolve, reject) => {
     const tx = db.transaction(STORE_BIBLES, "readonly");
     const prefix = `${libId}:${bookId}:${chapter}:`;
     const range = IDBKeyRange.bound(prefix, `${prefix}\uffff`);
@@ -581,6 +584,31 @@ export async function getChapterFromLibrary(
     };
     req.onerror = () => reject(req.error);
   });
+  if (result.length > 0) chapterCache.set(cacheKey, result);
+  return result;
+}
+
+/** Carrega capítulos em segundo plano (ignora erros). */
+export function prefetchChapters(
+  libId: string | null | undefined,
+  refs: Array<{ bookId: string; chapter: number }>,
+): void {
+  if (!libId || refs.length === 0 || !hasIDB()) return;
+  const seen = new Set<string>();
+  const list = refs.filter((r) => {
+    const k = `${r.bookId}:${r.chapter}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).slice(0, 30);
+  const run = async () => {
+    for (const r of list) {
+      try { await getChapterFromLibrary(libId, r.bookId, r.chapter); } catch { return; }
+    }
+  };
+  const idle = (globalThis as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback;
+  if (idle) idle(() => void run());
+  else setTimeout(() => void run(), 300);
 }
 
 export interface BibleSearchHit {
