@@ -94,7 +94,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { MoreVertical, ChevronDown as ChevronDownIcon, Printer as PrinterIcon, Flag as FlagIcon } from "lucide-react";
+import { Maximize2, PencilLine, MoreVertical, ChevronDown as ChevronDownIcon, Printer as PrinterIcon, Flag as FlagIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -886,10 +886,13 @@ function Dashboard() {
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline" className="h-8 rounded-full px-3 gap-1.5 shrink-0">
-                    <FileText className="h-3.5 w-3.5" />
-                    {t("dashboard.visitActions", { defaultValue: "Visita" })}
-                    <ChevronDownIcon className="h-3.5 w-3.5 opacity-60" />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 w-8 rounded-full p-0 shrink-0"
+                    aria-label={t("dashboard.visitActions", { defaultValue: "Ações" })}
+                  >
+                    <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
