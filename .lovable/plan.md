@@ -43,3 +43,16 @@ Este é um documento só de sugestões. Nada será alterado sem a sua aprovaçã
 5. Dividir as telas gigantes (maior ganho, feito por etapas com testes).
 
 Cada etapa seria feita isoladamente, validada com a verificação do código e os testes, sem tocar no banco, no login, na Bíblia ou na sincronização.
+
+## Riscos para quem já usa o app
+- **Muito baixo:** Bateria 1 e 2, Visual 2, 3 e 5, Usabilidade 3, 4 e 6. Mudam só a aparência ou o desempenho, e nenhum dado é alterado.
+- **Baixo:** a barra inferior e o cartão "Hoje", porque mudam onde as coisas ficam. O cuidado é manter o menu atual também, para ninguém se perder.
+- **Médio:** dividir as telas gigantes. É o maior ganho, mas mexe em muito código, então seria feito por partes, uma tela por rodada.
+- **O acesso dos usuários não é interrompido em nenhum caso:** login, PIN, biometria, banco e dados salvos no aparelho ficam intocados. No Android, a mudança só chega quando o usuário atualizar pela Play Store.
+
+## Como gastar o mínimo de créditos
+1. Agrupar itens parecidos numa única rodada (por exemplo, Bateria 1 e 2 juntas).
+2. Pedir uma etapa por vez, já aprovada, sem rodadas de discussão no meio.
+3. Testar no celular e publicar só no fim de cada etapa.
+4. Deixar a divisão das telas gigantes por último e só fazer se sobrar crédito.
+
