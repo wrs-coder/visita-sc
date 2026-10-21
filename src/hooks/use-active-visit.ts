@@ -99,6 +99,9 @@ export function useActiveVisit(options: UseActiveVisitOptions = {}) {
 
       // Sem visitas: cria placeholder se for o Superintendente.
       if (!allowPlaceholder || !isSuperOfCong) return null;
+      // Só cria quando o usuário ESCOLHEU essa congregação (nunca no fallback
+      // alfabético automático — origem das visitas fantasmas de segunda).
+      if (getActiveCongregationOverride() !== congId) return null;
       const { data: inserted } = await supabase
         .from("visits")
         .insert({
