@@ -10,15 +10,17 @@ Cuidados:
 ## O que muda
 
 ### 1. Seletor rápido
-Fica logo abaixo do cartão "Congregação ativa", com 4 abas curtas: **Hoje · Visita · Pastoreio · Casal**. A aba atual fica destacada. Um toque leva direto à tela escolhida, e deslizar o dedo também troca a aba.
+Fica logo abaixo do cartão "Congregação ativa", com 4 abas curtas: **Hoje · Visita · Pastoreio · Amanhã**. A aba atual fica destacada. Um toque leva direto à tela escolhida, e deslizar o dedo também troca a aba.
 
 ### 2. As quatro telas
 ```text
-Tela 1 Hoje      : Hoje (cronograma completo) | Esboços e Notas | Reuniões
-Tela 2 Visita    : Reunião de Campo | Estudos e Revisitas | Refeições | Transporte do dia
+Tela 1 Hoje      : Hoje (cronograma completo do dia) | Esboços e Notas | Reuniões da semana
+Tela 2 Visita    : Reunião de Campo | Estudos e Revisitas | Refeições | Transporte  (semana inteira)
 Tela 3 Pastoreio : Pastoreiem o Rebanho de Deus | Checklist da Congregação
-Tela 4 Casal     : Recados da esposa | Cronograma do dia seguinte
+Tela 4 Amanhã    : Cronograma do dia seguinte | Recados da esposa
 ```
+**Sem informação repetida:** o que é do dia aparece só no "Hoje". Os cartões de Reuniões, Reunião de Campo, Estudos e Revisitas, Refeições e Transporte passam a mostrar a semana inteira da visita, agrupada por dia, com todos os detalhes de cada evento (horário, local, dirigente, pessoas, endereço e observações, conforme o caso). O dia de hoje aparece marcado na lista, para você se situar.
+
 Os cartões que hoje só aparecem para o superintendente continuam assim. Se uma tela ficar vazia para algum perfil, ela some do seletor.
 
 ### 3. "Hoje" mais completo
