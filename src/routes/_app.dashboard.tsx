@@ -94,7 +94,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Maximize2, PencilLine } from "lucide-react";
+import { Maximize2, PencilLine, ChevronDown as ChevronDownIcon, Printer as PrinterIcon, Flag as FlagIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { DashboardPager } from "@/components/dashboard/DashboardPager";
@@ -212,6 +219,7 @@ function Dashboard() {
   useActiveCongregation(); // mantém o hook montado para sincronizar contexto
   const [selected, setSelected] = useState<string | null>(null);
   const [fullReportOpen, setFullReportOpen] = useState(false);
+  const [finishOpen, setFinishOpen] = useState(false);
   const { visit } = useActiveVisit({
     enabled: role !== "superintendent" || !!selected,
     allowPlaceholder: role !== "superintendent",
