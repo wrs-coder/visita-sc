@@ -27,6 +27,9 @@ Tem razão: esses três itens do plano de melhorias ainda não foram feitos. Só
 - Novo arranjo: o tempo fica sempre numa linha própria, centralizado. Logo abaixo vem uma única fileira de botões, alinhada e com espaçamento igual.
 - Com fonte pequena, tudo continua numa linha só, como hoje.
 - Os botões continuam com tamanho fácil de tocar e o tempo nunca é cortado.
+- **Recolher e expandir a fileira de botões:** uma pequena seta ao lado do tempo esconde ou mostra iniciar, pausar, zerar, cores e tamanho. Recolhida, sobra só o tempo, mais limpo. O app lembra a escolha.
+- Vale igual nos três lugares: no modo esboço, na tela cheia dos Esboços pessoais e na tela cheia do painel.
+- O cronômetro continua correndo ao recolher, e os avisos de tempo continuam aparecendo.
 
 ## O que não muda
 - Os dados salvos, o login, o PIN, a biometria, a Bíblia, a sincronização e o layout das telas.
@@ -37,3 +40,5 @@ Tem razão: esses três itens do plano de melhorias ainda não foram feitos. Só
 - Timer: replace `text-emerald-*/amber-*/red-*` in `OutlineTimer.tsx` and the `auto` swatch in `timer-theme.ts` with tokens (`--timer-ok`, `--timer-warn`, `--timer-over`) defined in `styles.css` for light and dark.
 - Android: `colors.xml` `appWindowBackground` gets a `values-night` variant. The manifest and `theme-color` stay on the current brand blue. Android changes only reach users with the next Play Store version.
 - Validation: `bunx tsgo --noEmit`, `bunx vitest run`, and a Playwright screenshot of the dashboard and timer at 393px in light, dark and pure black.
+- Timer layout: in `OutlineTimer.tsx`, replace the container's `flex-wrap` (line 203) with a grid. The display goes in its own centered row, and the controls go in one `flex justify-center` row with `shrink-0` icons. Check at 360px and 393px with the largest size.
+- Collapsible controls: `controlsCollapsed` in `OutlineTimer`, persisted in localStorage (device-local presentation state, the same pattern as collapsible-blocks). Controls are hidden, not unmounted, and a chevron with `aria-expanded` toggles them. Both fullscreens (personal outline and `FieldNoteFullscreenDialog`) use the same `OutlineTimer`, so the change applies to all three places.
