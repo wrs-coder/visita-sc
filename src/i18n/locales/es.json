@@ -262,6 +262,19 @@
       "lunch": "Almuerzo",
       "dinner": "Cena",
       "breakfast": "Desayuno"
+    },
+    "pager": {
+      "tabToday": "Hoy",
+      "tabVisit": "Visita",
+      "tabPastoral": "Pastoreo",
+      "tabTomorrow": "Mañana",
+      "tomorrowTitle": "Programa de mañana",
+      "noTime": "Sin horario",
+      "noActivityWeek": "Nada registrado esta semana.",
+      "today": "Hoy",
+      "meetingsWeek": "Reuniones de la semana",
+      "mealsWeek": "Comidas de la semana",
+      "transportWeek": "Transporte de la semana"
     }
   },
   "itinerary": {

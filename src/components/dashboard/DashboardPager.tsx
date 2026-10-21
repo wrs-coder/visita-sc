@@ -50,6 +50,20 @@ export function DashboardPager({ pages }: { pages: DashboardPage[] }) {
     return () => { el.removeEventListener("scroll", onScroll); cancelAnimationFrame(raf); };
   }, [isMobile, pages]);
 
+  // A altura acompanha a tela ativa (evita espaço vazio nas telas curtas).
+  const activeIdx = Math.max(0, pages.findIndex((p) => p.id === active));
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!isMobile || !el) return;
+    const section = el.children[activeIdx] as HTMLElement | undefined;
+    if (!section) return;
+    const apply = () => { el.style.height = `${section.offsetHeight}px`; };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(section);
+    return () => ro.disconnect();
+  }, [isMobile, activeIdx]);
+
   if (!isMobile) {
     return <div className="space-y-6">{pages.map((p) => <div key={p.id} className="space-y-6">{p.content}</div>)}</div>;
   }

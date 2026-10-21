@@ -262,6 +262,19 @@
       "lunch": "Lunch",
       "dinner": "Dinner",
       "breakfast": "Breakfast"
+    },
+    "pager": {
+      "tabToday": "Today",
+      "tabVisit": "Visit",
+      "tabPastoral": "Shepherding",
+      "tabTomorrow": "Tomorrow",
+      "tomorrowTitle": "Tomorrow's schedule",
+      "noTime": "No time set",
+      "noActivityWeek": "Nothing recorded this week.",
+      "today": "Today",
+      "meetingsWeek": "Meetings this week",
+      "mealsWeek": "Meals this week",
+      "transportWeek": "Transport this week"
     }
   },
   "itinerary": {
