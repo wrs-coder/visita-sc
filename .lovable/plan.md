@@ -1,30 +1,45 @@
-# Capacitor 8.5.2 + avisos do cronômetro (1 minuto, tempo terminado e tempo excedido)
+# Análise do Visita SC: sugestões de fluidez, visual, bateria e usabilidade
 
-## 1. Atualizar o Capacitor para 8.5.2 (fecha a falha GHSA-rvm3-566m-v7fv)
-- Fixar `@capacitor/core` e `@capacitor/android` em `8.5.2`, os dois na mesma versão. Assim o aviso "version doesn't match" não volta.
-- Os outros plugins continuam como estão, porque são compatíveis.
-- O site não muda nada. Quem já tem o app instalado não perde nenhum dado.
-- No VS Code, rode depois `npm install` e `npx cap sync android`. Em seguida, gere o APK/AAB.
+Este é um documento só de sugestões. Nada será alterado sem a sua aprovação, item por item. Todas elas seguem as diretrizes do instructions.md: Superintendente sem congregação fixa, rascunho local com "Salvar dados" explícito e banco de dados intocado.
 
-## 2. Avisos valem para os dois modos do cronômetro
-Os avisos passam a contar a partir do **tempo escolhido**, e não do 00:00. Isso vale tanto na contagem regressiva quanto na progressiva:
-- **Falta 1 minuto:** na regressiva, quando faltar 01:00. Na progressiva, quando faltar 1 minuto para o tempo escolhido (por exemplo, aos 29:00 de um tempo de 30 minutos).
-- **O tempo terminou:** quando o tempo escolhido é atingido. Aparece em destaque vermelho, com vibração (quando o aparelho permite) e um botão "OK".
-- **Tempo excedido:** "Você passou 1 minuto", "Você passou 2 minutos" e assim por diante até "Você passou 5 minutos", um aviso por minuto.
-- Na regressiva, depois do 00:00 o cronômetro mostra `+01:23` em vermelho. Na progressiva, ele continua subindo (31:23) e fica em vermelho.
-- Ao completar 5 minutos excedidos, os avisos param. A regressiva para sozinha. A progressiva continua contando, como já acontece hoje.
+## 1. Fluidez e velocidade
+1. **Dividir as duas telas gigantes.** O Dashboard e os Esboços têm cerca de 100 mil caracteres cada. Separar as partes (cards, editor, tela cheia) e carregar cada uma só quando for aberta. Resultado: o app abre mais rápido e trava menos ao digitar.
+2. **Deixar as telas mais usadas guardadas no aparelho** depois da primeira abertura, para que abram na hora, mesmo com internet fraca. Ocupa um pouco mais de memória interna.
+3. **Listas longas** (esboços, pastas, lixeira, histórico) desenhando só o que aparece na tela. Rolagem lisa mesmo com centenas de itens.
+4. **Mostrar os dados salvos primeiro e atualizar em silêncio.** Hoje algumas telas mostram "carregando". O ideal é exibir o espelho local na hora.
+5. **Bíblia EPUB pré-indexada** após a importação (índice de livros e capítulos salvo), para que o balão de versículos abra instantaneamente.
 
-## 3. Avisos em todas as telas do esboço
-Os avisos aparecem no **modo esboço** e no **modo tela cheia**, tanto na aba Esboços quanto no Dashboard. Cada aviso aparece só uma vez por esboço, mesmo com o cronômetro aberto em mais de um lugar.
+## 2. Bateria
+1. **Reduzir os efeitos de vidro (desfoque).** Existem cerca de 12 telas com esse efeito, que pesa na bateria e foi a causa da piscada azul no iPad. Trocar por fundo sólido levemente transparente.
+2. **Unificar os relógios internos.** Hoje há 7 contadores independentes que rodam a cada segundo. Usar um só e pausar tudo quando o app estiver em segundo plano.
+3. **Sincronização inteligente.** Manter a de manhã e a de tarde, mas pular quando a bateria estiver baixa ou em modo economia, e nunca rodar com o app fechado.
+4. **Tema escuro verdadeiro (preto puro) opcional.** Economiza bastante em telas OLED, que são a maioria dos celulares atuais.
+5. **Manter a tela acesa só com o cronômetro correndo**, como já acontece. Revisar se nenhuma outra tela segura a tela acesa.
 
-Os textos ficam em português, inglês e espanhol.
+## 3. Visual premium
+1. **Hierarquia mais clara no Dashboard:** um cartão de destaque "Hoje" no topo (congregação, próxima reunião, cronômetro) e o resto mais discreto.
+2. **Espaçamentos e cantos padronizados**, com uma escala única para que todas as telas pareçam do mesmo app.
+3. **Transições suaves e curtas** ao abrir cartões, recolher tópicos e trocar de aba, desligadas automaticamente quando o aparelho pede "reduzir movimento".
+4. **Estados vazios ilustrados** (sem esboços, sem visitas), com um botão de ação claro em vez de tela em branco.
+5. **Ícone, tela de abertura e cores do cronômetro alinhados** à paleta da Onda 6.8. Hoje o "Término" usa cores fixas fora do padrão.
 
-## O que não muda
-Banco de dados, login, Bíblia, anexos, sincronização, os botões do cronômetro e a tela acesa enquanto ele roda.
+## 4. Usabilidade
+1. **Barra inferior fixa no celular** com as 4 áreas mais usadas (Hoje, Esboços, Itinerário, Perfil), alcançáveis com o polegar.
+2. **Busca global** (esboços, versículos, congregações) por um único botão.
+3. **Desfazer em vez de confirmar:** ao apagar algo, mostrar "Apagado, desfazer" por alguns segundos, já que existe lixeira.
+4. **Indicador claro de sincronização** (salvo no aparelho / enviado / pendente), sempre visível e discreto.
+5. **Botões maiores no modo tela cheia** para usar em pé, durante a reunião.
+6. **Atalhos no tablet com teclado:** Esc fecha, Espaço inicia ou pausa o cronômetro.
 
-## Detalhes técnicos
-- `use-outline-timer.ts`: no modo countdown, `computeTickAdvance` deve seguir até `targetSec + 300` e só então definir `isRunning=false`. O countup continua sem parar. Expor `overtimeSec = max(0, elapsed - target)`, que fica igual nos dois modos porque `elapsedSec` já é comum aos dois. O `start()` reinicia a contagem se ela já chegou ao limite.
-- Marcos calculados sobre `elapsedSec - targetSec`: `-60`, `0`, `+60` até `+300`. Para não repetir avisos entre instâncias nem depois de recarregar a página, guardar os marcos já exibidos em localStorage por `outlineId` e ciclo, e limpar no reset, no setTarget e na troca de modo. Se o tempo saltar (página recarregada, aba em segundo plano), mostrar só o último marco atingido.
-- Um único observador de alertas, montado nos dois modos (esboço e tela cheia) da aba Esboços e do Dashboard. Remover a trava `variant !== "toolbar"` do `OutlineTimer.tsx`. Exibir o aviso em uma camada própria (portal) para que ele fique visível também na tela cheia.
-- Testes: ajustar o teste "countdown pausa automaticamente" para o novo limite de +5 minutos e testar os marcos nos dois modos e a deduplicação.
-- Validar com `bunx tsgo --noEmit` e `bunx vitest run`.
+## 5. Tamanho e memória (aceitável, como você permitiu)
+- Guardar fontes e ícones dentro do app (abre sem internet e mais rápido): cerca de 1 a 2 MB a mais.
+- Cache maior de telas e imagens no aparelho: alguns MB de memória interna.
+
+## Ordem recomendada (maior ganho com menor risco)
+1. Bateria 1 e 2 (rápidos e seguros).
+2. Fluidez 4 e 3.
+3. Usabilidade 3 e 4.
+4. Visual 1 e 3.
+5. Dividir as telas gigantes (maior ganho, feito por etapas com testes).
+
+Cada etapa seria feita isoladamente, validada com a verificação do código e os testes, sem tocar no banco, no login, na Bíblia ou na sincronização.
