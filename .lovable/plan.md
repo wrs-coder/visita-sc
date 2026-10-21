@@ -13,7 +13,7 @@ Este é um documento só de sugestões. Nada será alterado sem a sua aprovaçã
 
 ## 2. Bateria
 1. **Reduzir os efeitos de vidro (desfoque).** Existem cerca de 12 telas com esse efeito, que pesa na bateria e foi a causa da piscada azul no iPad. Trocar por fundo sólido levemente transparente.
-2. **Unificar os relógios internos.** Hoje há 7 contadores independentes que rodam a cada segundo. Usar um só e pausar tudo quando o app estiver em segundo plano.
+2. **Contadores internos mais econômicos.** O relógio do "Término" roda a cada segundo mesmo com o cronômetro pausado: passa a rodar a cada minuto. As 5 verificações no servidor (mensagens do casal, painel do visitante, selo de modelos, a cada 30 a 60 segundos) param com o app em segundo plano e voltam ao abri-lo.
 3. **Sincronização inteligente.** Manter a de manhã e a de tarde, mas pular quando a bateria estiver baixa ou em modo economia, e nunca rodar com o app fechado.
 4. **Tema escuro verdadeiro (preto puro) opcional.** Economiza bastante em telas OLED, que são a maioria dos celulares atuais.
 5. **Manter a tela acesa só com o cronômetro correndo**, como já acontece. Revisar se nenhuma outra tela segura a tela acesa.
