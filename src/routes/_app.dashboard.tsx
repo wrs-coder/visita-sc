@@ -943,6 +943,7 @@ function Dashboard() {
               )}
             </>
           )}
+          </div>
         </div>
       )}
 

@@ -46,6 +46,7 @@ import { RouteTransition } from "@/components/RouteTransition";
 import { useOfflineWarmup } from "@/hooks/use-offline-warmup";
 import { OfflineReadyBadge } from "@/components/OfflineReadyBadge";
 import { RouteAnnouncer } from "@/components/RouteAnnouncer";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 
 export const Route = createFileRoute("/_app")({
@@ -346,8 +347,9 @@ function AppLayout() {
                     circuit={profile?.circuit ?? null}
                   />
                 </div>
-                <div className="p-3 pb-0">
+                <div className="p-3 pb-0 space-y-2">
                   <ConnectionModeToggle />
+                  <ThemeToggle variant="sidebar" />
                 </div>
                 <div className="p-3 flex-1 overflow-y-auto overscroll-contain">
                   <Nav onClick={() => setMobileMenuOpen(false)} />
@@ -398,8 +400,9 @@ function AppLayout() {
               circuit={profile?.circuit ?? null}
             />
           </div>
-          <div className="p-3 pb-0">
+          <div className="p-3 pb-0 space-y-2">
             <ConnectionModeToggle />
+            <ThemeToggle variant="sidebar" />
           </div>
           <div className="p-3 flex-1 overflow-y-auto overscroll-contain min-h-0">
             <Nav />
