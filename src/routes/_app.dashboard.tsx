@@ -220,6 +220,7 @@ function Dashboard() {
   const [selected, setSelected] = useState<string | null>(null);
   const [fullReportOpen, setFullReportOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
+  const [eventDetail, setEventDetail] = useState<{ item: import("@/lib/today-timeline").TimelineItem; to: string } | null>(null);
   const { visit } = useActiveVisit({
     enabled: role !== "superintendent" || !!selected,
     allowPlaceholder: role !== "superintendent",
@@ -958,40 +959,95 @@ function Dashboard() {
         };
         const mealLabel = (type: string) =>
           type === "lunch" ? t("dashboard.meals.lunch") : type === "dinner" ? t("dashboard.meals.dinner") : t("dashboard.meals.breakfast");
+        const L = (k: string, d: string) => t(k, { defaultValue: d });
+        const toDetails = (rows: Array<[string, string | null | undefined]>) =>
+          rows
+            .filter(([, v]) => v != null && String(v).trim())
+            .map(([label, value]) => ({ label: label.replace(/:$/, ""), value: String(value) }));
+        const meetingDetailRows = (mt: MeetingTodayItem): Array<[string, string | null | undefined]> =>
+          mt.kind === "midweek" ? [
+            [L("meetingsTalks.midweek.chairman", "Presidente da Reunião"), mt.chairman],
+            [L("meetingsTalks.midweek.serviceTalk", "Tema: Discurso de serviço"), mt.theme],
+            [L("meetingsTalks.fromTemplate.finalSong", "Cântico final"), mt.final_song],
+            [L("meetingsTalks.midweek.closingPrayer", "Oração Final"), mt.closing_prayer],
+            [L("meetingsTalks.fromTemplate.location", "Local"), mt.location],
+          ] : mt.kind === "weekend" ? [
+            [L("meetingsTalks.fromTemplate.openingSong", "Cântico inicial"), mt.opening_song],
+            [L("meetingsTalks.weekend.publicTalk", "Discurso Público"), mt.public_talk_theme],
+            [L("meetingsTalks.weekend.finalTalk", "Discurso Final"), mt.final_talk],
+            [L("meetingsTalks.fromTemplate.closingSong", "Cântico final"), mt.closing_song],
+            [L("meetingsTalks.fromTemplate.location", "Local"), mt.location],
+          ] : [
+            [L(`meetingsTalks.${mt.kind}.theme`, "Tema:"), mt.theme],
+            [L(`meetingsTalks.${mt.kind}.openingPrayer`, "Oração Inicial"), mt.opening_prayer],
+            [L(`meetingsTalks.${mt.kind}.closingPrayer`, "Oração Final"), mt.closing_prayer],
+            [L("meetingsTalks.fromTemplate.location", "Local"), mt.location],
+          ];
         const sources: TimelineSource[] = [
           ...(role === "superintendent"
             ? circuitToday.map((e) => ({
                 id: `c-${e.id}`, kind: "schedule" as const, date: e.event_date, time: e.start_time,
                 title: e.title, subtitle: e.location,
+                details: toDetails([[L("schedule.location", "Local"), e.location]]),
               }))
             : events.map((e) => ({
                 id: `s-${e.id}`, kind: "schedule" as const, date: e.event_date, time: e.start_time,
                 title: e.title, subtitle: e.location,
+                details: toDetails([[L("schedule.location", "Local"), e.location]]),
               }))),
           ...fieldMeetingsWeek.map((f) => ({
             id: `f-${f.id}`, kind: "field" as const, date: f.event_date, time: f.meeting_time,
             title: `${t("dashboard.fieldMeeting")} · ${MODALITY_LABEL[f.modality] ?? f.modality}`,
             subtitle: f.meeting_location,
+            details: toDetails([
+              [L("meetingsTalks.field.location", "Local da Reunião de Campo"), f.meeting_location],
+              [`${L("dashboard.territory", "Território")} S-13`, f.territory_number],
+              [L("meetingsTalks.field.territoryLocation", "Localização do território"), f.territory_location],
+              [L("meetingsTalks.field.auxiliaryLeaders", "Dirigentes auxiliares"), f.auxiliary_leaders],
+              [L("meetingsTalks.field.closingPrayer", "Oração final"), f.closing_prayer],
+            ]),
           })),
           ...assignmentsWeek.map((a) => ({
             id: `a-${a.id}`, kind: "study" as const, date: a.event_date, time: a.meeting_time,
             title: `${t("dashboard.studiesVisits")}${a.acompanhante ? ` · ${a.acompanhante}` : ""}`,
             subtitle: a.meeting_point,
+            details: toDetails([
+              [L("fieldStudies.meetingPoint", "Local de encontro"), a.meeting_point],
+              [L("fieldStudies.companion", "Acompanhante para estudos"), a.acompanhante],
+              [L("fieldStudies.companionFor", "Acompanhante para"), a.acompanhante_for ? (ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for) : null],
+              [L("fieldStudies.contactPhone", "Telefone de contato"), a.contact_phone],
+              [L("schedule.notes", "Observações"), a.notes],
+            ]),
           })),
           ...mealsWeek.map((m) => ({
             id: `m-${m.id}`, kind: "meal" as const, date: m.meal_date, time: m.meal_time,
             title: `${mealLabel(m.type)}${m.host_name ? ` · ${m.host_name}` : ""}`,
             subtitle: m.location,
+            details: toDetails([
+              [L("meals.host", "Anfitrião"), m.host_name],
+              [L("schedule.location", "Local"), m.location],
+              [L("fieldStudies.contactPhone", "Telefone de contato"), m.contact_phone],
+              [L("schedule.notes", "Observações"), m.notes],
+            ]),
           })),
           ...meetingsWeek.map((mt) => ({
             id: `r-${mt.kind}`, kind: "meeting" as const, date: mt.date, time: meetingTime(mt.meeting_at),
             title: `${meetingLabels[mt.kind]}${mt.theme ? ` · ${mt.theme}` : ""}`,
             subtitle: mt.location,
+            details: toDetails(meetingDetailRows(mt)),
           })),
           ...transportsWeek.map((tr) => ({
             id: `t-${tr.id}`, kind: "transport" as const, date: tr.event_date, time: tr.departure_time,
             title: `${t("sidebar.transport")} · ${tr.driver_name}`,
             subtitle: tr.description,
+            details: toDetails([
+              [L("transport.driver", "Motorista"), tr.driver_name],
+              [L("transport.departure", "Saída"), tr.departure_time?.slice(0, 5)],
+              [L("transport.return", "Retorno"), tr.return_time?.slice(0, 5)],
+              [L("fieldStudies.contactPhone", "Telefone de contato"), tr.contact_phone],
+              [L("transport.description", "Descrição"), tr.description],
+              [L("schedule.notes", "Observações"), tr.notes],
+            ]),
           })),
         ];
         const KIND_META: Record<TimelineKind, { icon: React.ComponentType<{ className?: string }>; to: string }> = {
@@ -1031,7 +1087,7 @@ function Dashboard() {
                             {t("dashboard.pager.noTime", { defaultValue: "Sem horário" })}
                           </div>
                         )}
-                        <Link to={meta.to} className="flex items-start gap-3 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors">
+                        <button type="button" onClick={() => setEventDetail({ item: it, to: meta.to })} className="w-full text-left flex items-start gap-3 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors">
                           <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[58px] text-center">
                             <Clock className="inline h-3 w-3 mr-0.5" />
                             {it.time ?? "—"}
@@ -1046,7 +1102,7 @@ function Dashboard() {
                               </div>
                             )}
                           </div>
-                        </Link>
+                        </button>
                       </li>
                     );
                   })}

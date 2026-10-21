@@ -17,6 +17,8 @@ export type TimelineItem = {
   time: string | null;
   title: string;
   subtitle?: string | null;
+  /** Detalhes somente leitura exibidos ao tocar no evento. */
+  details?: Array<{ label: string; value: string }>;
 };
 
 export type TimelineSource = TimelineItem & { date: string };
