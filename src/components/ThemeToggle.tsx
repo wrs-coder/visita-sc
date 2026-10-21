@@ -26,26 +26,36 @@ export function ThemeToggle({ className, compact = false, variant = "default" }:
   const oledLabel = t("theme.oled", { defaultValue: "Preto puro" });
 
   if (variant === "sidebar") {
+    const base =
+      "flex flex-col items-center justify-center gap-1 h-14 rounded-xl border text-xs font-semibold transition min-w-0";
+    const on = "bg-sidebar-accent border-sidebar-accent-foreground/30 text-sidebar-accent-foreground";
+    const off = "bg-sidebar-accent/20 border-sidebar-border text-sidebar-foreground/80 hover:bg-sidebar-accent/50";
     return (
-      <div className={`rounded-xl border border-sidebar-border bg-sidebar-accent/30 text-sidebar-foreground ${className ?? ""}`}>
-        <label className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium cursor-pointer">
-          {isDark ? <Moon className="h-4 w-4 shrink-0" /> : <Sun className="h-4 w-4 shrink-0" />}
-          <span className="flex-1">{label}</span>
-          <Switch
-            checked={isDark}
-            onCheckedChange={(v) => setMode(v ? "dark" : "light")}
-            aria-label={t("theme.toggle", { defaultValue: "Alternar modo escuro" })}
-            className="no-touch-min"
-          />
-        </label>
-        {isDark && (
-          <label className="flex items-center gap-3 px-3 pb-2.5 text-sm cursor-pointer">
-            <span className="h-4 w-4 shrink-0" />
-            <span className="flex-1 opacity-80">{oledLabel}</span>
-            <Switch checked={oled} onCheckedChange={setOled} aria-label={oledLabel} className="no-touch-min" />
-          </label>
-        )}
-      </div>
+      <>
+        <button
+          type="button"
+          aria-pressed={isDark}
+          aria-label={label}
+          title={label}
+          onClick={() => setMode(isDark ? "light" : "dark")}
+          className={`${base} ${isDark ? on : off} ${className ?? ""}`}
+        >
+          {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          <span className="truncate max-w-full px-1">{t("theme.darkShort", { defaultValue: "Escuro" })}</span>
+        </button>
+        <button
+          type="button"
+          aria-pressed={oled}
+          aria-label={oledLabel}
+          title={oledLabel}
+          disabled={!isDark}
+          onClick={() => setOled(!oled)}
+          className={`${base} ${isDark && oled ? on : off} disabled:opacity-40 disabled:pointer-events-none`}
+        >
+          <span className={`h-4 w-4 rounded-full border border-current ${isDark && oled ? "bg-current" : ""}`} />
+          <span className="truncate max-w-full px-1">{t("theme.oledShort", { defaultValue: "Preto" })}</span>
+        </button>
+      </>
     );
   }
 
