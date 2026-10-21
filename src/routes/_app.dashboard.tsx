@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { setVisibleInterval } from "@/lib/visible-interval";
 import { readFnWithMirrorSafe, readOneWithMirror, readWithMirror } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -261,8 +262,7 @@ function Dashboard() {
 
   useEffect(() => {
     loadCouple();
-    const id = setInterval(loadCouple, 30_000);
-    return () => clearInterval(id);
+    return setVisibleInterval(loadCouple, 30_000);
   }, [loadCouple]);
 
   // Eventos do circuito de hoje (escopos visíveis ao super = todos os próprios).

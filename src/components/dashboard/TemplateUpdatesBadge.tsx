@@ -5,6 +5,7 @@
 // Não altera dados da visita — é só um aviso. Para aplicar a atualização,
 // o usuário usa o botão "Aplicar modelo" que já existe em cada aba.
 
+import { setVisibleInterval } from "@/lib/visible-interval";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Bell, BellRing, Download, Loader2, X } from "lucide-react";
@@ -63,8 +64,7 @@ export function TemplateUpdatesBadge({ congregationId }: Props) {
 
   useEffect(() => {
     void refreshCount();
-    const id = setInterval(refreshCount, 60_000); // refresh suave a cada 1min
-    return () => clearInterval(id);
+    return setVisibleInterval(() => void refreshCount(), 60_000);
   }, [refreshCount]);
 
   const handleOpen = async () => {
