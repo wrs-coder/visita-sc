@@ -29,3 +29,4 @@
 - [x] 4.2.13: vídeo/foto gravados em pedaços no app Android (corrige "Não foi possível adicionar o anexo"), vídeo abre no player nativo, zoom nas fotos, tópicos recolhíveis nos esboços.
 - [ ] (usuário) Instalar a 4.2.13 no celular e conferir anexar vídeo MP4, zoom e tópicos.
 - [x] 4.2.14: barra compacta restaurada a duas linhas roláveis; aprovada na Play Store e anunciada aos aparelhos (LATEST_APP_VERSION).
+- [x] Dashboard: cartão "Reuniões da semana" com títulos por campo; Pioneiros e Anciãos e Servos pelo "Dia e Horário (definido pelo Superintendente)", também no cronograma Hoje/Amanhã.
