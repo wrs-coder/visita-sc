@@ -2,6 +2,8 @@
 
 Este é um documento só de sugestões. Nada será alterado sem a sua aprovação, item por item. Todas elas seguem as diretrizes do instructions.md: Superintendente sem congregação fixa, rascunho local com "Salvar dados" explícito e banco de dados intocado.
 
+**O layout atual do Dashboard e da aba "Esboços pessoais" é mantido.** As imagens geradas eram só ilustração. Nos Esboços entram apenas a rolagem mais lisa, o aviso "Apagado – Desfazer" e o selo de sincronização.
+
 ## 1. Fluidez e velocidade
 1. **Dividir as duas telas gigantes.** O Dashboard e os Esboços têm cerca de 100 mil caracteres cada. Separar as partes (cards, editor, tela cheia) e carregar cada uma só quando for aberta. Resultado: o app abre mais rápido e trava menos ao digitar.
 2. **Guardar todas as telas no aparelho.** No app Android isso já acontece, porque as telas vêm dentro do aplicativo. No iPhone, iPad e navegador, todas as telas seriam baixadas em segundo plano na primeira abertura e passariam a abrir na hora, mesmo sem internet. Ocupa alguns MB a mais.
