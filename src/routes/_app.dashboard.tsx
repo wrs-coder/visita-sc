@@ -1540,7 +1540,7 @@ function Dashboard() {
             ),
           },
         ];
-        return <DashboardPager pages={pages} />;
+        return <DashboardPager pages={pages} unreadLabel={t("dashboard.pager.unreadMessages", { defaultValue: "Recados não lidos" })} />;
       })()}
 
 

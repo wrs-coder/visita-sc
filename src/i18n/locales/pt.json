@@ -274,8 +274,11 @@
       "today": "Hoje",
       "meetingsWeek": "Reuniões da semana",
       "mealsWeek": "Refeições da semana",
-      "transportWeek": "Transporte da semana"
-    }
+      "transportWeek": "Transporte da semana",
+      "tabOutlines": "Esboços",
+      "unreadMessages": "Recados não lidos"
+    },
+    "recommendedCardTitle": "Notas do SC – Recomendados"
   },
   "itinerary": {
     "title": "Itinerário",

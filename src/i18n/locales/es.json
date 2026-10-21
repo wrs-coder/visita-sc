@@ -274,8 +274,11 @@
       "today": "Hoy",
       "meetingsWeek": "Reuniones de la semana",
       "mealsWeek": "Comidas de la semana",
-      "transportWeek": "Transporte de la semana"
-    }
+      "transportWeek": "Transporte de la semana",
+      "tabOutlines": "Bosquejos",
+      "unreadMessages": "Mensajes no leídos"
+    },
+    "recommendedCardTitle": "Notas del SC – Recomendados"
   },
   "itinerary": {
     "title": "Itinerario",

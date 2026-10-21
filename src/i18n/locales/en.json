@@ -274,8 +274,11 @@
       "today": "Today",
       "meetingsWeek": "Meetings this week",
       "mealsWeek": "Meals this week",
-      "transportWeek": "Transport this week"
-    }
+      "transportWeek": "Transport this week",
+      "tabOutlines": "Outlines",
+      "unreadMessages": "Unread messages"
+    },
+    "recommendedCardTitle": "CO Notes – Recommended"
   },
   "itinerary": {
     "title": "Itinerary",
