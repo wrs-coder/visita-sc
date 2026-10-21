@@ -1146,27 +1146,34 @@ function Dashboard() {
               <WeekGroups
                 items={assignmentsWeek}
                 getDate={(a) => a.event_date}
-                render={(a) => (
-                  <li key={a.id} className="text-sm flex items-start gap-2">
-                    <span className="inline-flex shrink-0 px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
-                      {a.period}{a.meeting_time ? ` · ${a.meeting_time.slice(0, 5)}` : ""}
-                    </span>
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      {a.acompanhante && (
-                        <div className="font-medium break-words">
-                          {a.acompanhante}{a.acompanhante_for ? ` → ${ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for}` : ""}
-                        </div>
+                render={(a) => {
+                  const L = (k: string, d: string) => t(k, { defaultValue: d });
+                  const rows: Array<[string, string | null]> = [
+                    [L("fieldStudies.meetingPoint", "Local de encontro"), a.meeting_point],
+                    [L("fieldStudies.companion", "Acompanhante para estudos"), a.acompanhante],
+                    [L("fieldStudies.companionFor", "Acompanhante para"), a.acompanhante_for ? (ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for) : null],
+                    [L("fieldStudies.contactPhone", "Telefone de contato"), a.contact_phone],
+                    [L("common.notes", "Observações"), a.notes],
+                  ];
+                  const filled = rows.filter(([, v]) => v && v.trim());
+                  return (
+                    <li key={a.id} className="text-sm space-y-1.5 pb-2 border-b border-border/50 last:border-b-0 last:pb-0">
+                      <span className="inline-flex px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs">
+                        {a.period}{a.meeting_time ? ` · ${a.meeting_time.slice(0, 5)}` : ""}
+                      </span>
+                      {filled.length > 0 && (
+                        <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-1">
+                          {filled.map(([label, value]) => (
+                            <div key={label} className="contents">
+                              <dt className="text-xs text-muted-foreground pt-0.5">{label}</dt>
+                              <dd className="text-sm break-words whitespace-pre-wrap">{value}</dd>
+                            </div>
+                          ))}
+                        </dl>
                       )}
-                      {a.meeting_point && (
-                        <div className="text-xs text-muted-foreground break-words flex items-start gap-1">
-                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{a.meeting_point}</span>
-                        </div>
-                      )}
-                      {a.contact_phone && <div className="text-xs text-muted-foreground break-words">📞 {a.contact_phone}</div>}
-                      {a.notes && <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">{a.notes}</div>}
-                    </div>
-                  </li>
-                )}
+                    </li>
+                  );
+                }}
               />
             </CollapsibleCard>
 
