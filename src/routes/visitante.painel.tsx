@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { setVisibleInterval } from "@/lib/visible-interval";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -1007,8 +1008,8 @@ function WifeCoupleSummaryCard({ code, onOpen }: { code: string; onOpen: () => v
       }
     };
     load();
-    const id = setInterval(load, 30_000);
-    return () => { cancelled = true; clearInterval(id); };
+    const stop = setVisibleInterval(load, 30_000);
+    return () => { cancelled = true; stop(); };
   }, [listFn, code]);
 
   return (
@@ -1287,8 +1288,7 @@ function WifeCouplePanel({ code }: { code: string }) {
   useEffect(() => {
     load();
     markFn({ data: { inviteCode: code } }).catch(() => {});
-    const id = setInterval(load, 30_000);
-    return () => clearInterval(id);
+    return setVisibleInterval(load, 30_000);
   }, [load, markFn, code]);
 
   const send = async () => {

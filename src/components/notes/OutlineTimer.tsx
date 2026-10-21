@@ -113,7 +113,8 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     if (timer.isRunning) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    // Pausado: a hora de término (HH:MM) só precisa de atualização ocasional.
+    const id = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(id);
   }, [timer.isRunning]);
 

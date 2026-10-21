@@ -685,3 +685,13 @@ main [role="tabpanel"] [role="tab"][data-state="active"] {
     -webkit-touch-callout: none;
   }
 }
+
+/* Economia de bateria em celulares/tablets: o desfoque de fundo é caro no
+   WebView/WebKit (e causava piscadas no iPad). Os fundos já são quase
+   opacos, então o visual praticamente não muda. */
+@media (pointer: coarse) {
+  [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
