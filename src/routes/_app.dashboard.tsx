@@ -1153,7 +1153,7 @@ function Dashboard() {
                     [L("fieldStudies.companion", "Acompanhante para estudos"), a.acompanhante],
                     [L("fieldStudies.companionFor", "Acompanhante para"), a.acompanhante_for ? (ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for) : null],
                     [L("fieldStudies.contactPhone", "Telefone de contato"), a.contact_phone],
-                    [L("common.notes", "Observações"), a.notes],
+                    [L("schedule.notes", "Observações"), a.notes],
                   ];
                   const filled = rows.filter(([, v]) => v && v.trim());
                   return (
