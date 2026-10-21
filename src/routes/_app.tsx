@@ -342,6 +342,16 @@ function AppLayout() {
           <div className="flex items-center gap-1">
             <OfflineReadyBadge />
             <SyncButton onSync={syncOutlines} />
+            {role === "superintendent" && (
+              <Link
+                to="/lixeira"
+                className="p-2 rounded-md hover:bg-white/10"
+                aria-label={t("sidebar.trash", { defaultValue: "Lixeira" })}
+                title={t("sidebar.trash", { defaultValue: "Lixeira" })}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Link>
+            )}
             <button
               onClick={() => {
                 signOut().then((ok) => { if (ok) nav({ to: "/" }); });
@@ -375,6 +385,16 @@ function AppLayout() {
           <div className="p-3 border-t border-sidebar-border space-y-2">
             <div className="px-1 flex items-center justify-between">
               <SyncButton onSync={syncOutlines} className="flex-1 justify-start text-sidebar-foreground hover:bg-sidebar-accent/60 px-3 py-2 rounded-md" />
+              {role === "superintendent" && (
+                <Link
+                  to="/lixeira"
+                  className="p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent/60"
+                  aria-label={t("sidebar.trash", { defaultValue: "Lixeira" })}
+                  title={t("sidebar.trash", { defaultValue: "Lixeira" })}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Link>
+              )}
               <OfflineReadyBadge className="text-sidebar-foreground/80" />
             </div>
             <Button
