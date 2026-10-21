@@ -1584,7 +1584,12 @@
       "sensorOther": "Outro...",
       "sensorDontRemind": "Não lembrar novamente",
       "endShort": "Término",
-      "endAt": "Hora de término estimada"
+      "endAt": "Hora de término estimada",
+      "timeUpTitle": "O tempo terminou!",
+      "timeUpDesc": "O tempo escolhido chegou ao fim.",
+      "overtimeTitle_one": "Você passou {{count}} minuto",
+      "overtimeTitle_other": "Você passou {{count}} minutos",
+      "overtimeDesc": "Você já ultrapassou o tempo escolhido."
     },
     "editor": {
       "collapseMeta": "Minimizar cabeçalho",

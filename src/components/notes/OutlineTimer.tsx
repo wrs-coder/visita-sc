@@ -465,25 +465,25 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={warnOpen} onOpenChange={setWarnOpen}>
+      <AlertDialog
+        open={warnMilestone !== null}
+        onOpenChange={(open) => {
+          if (!open) setWarnMilestone(null);
+        }}
+      >
         <AlertDialogContent className="z-[160] border-destructive bg-destructive text-destructive-foreground">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive-foreground">
               <AlertTriangle className="h-5 w-5" />
-              {t("personalOutlines.timer.oneMinuteWarningTitle", {
-                defaultValue: "Falta 1 minuto!",
-              })}
+              {warnTitle}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-destructive-foreground/90">
-              {t("personalOutlines.timer.oneMinuteWarningDesc", {
-                defaultValue:
-                  "Resta apenas 1 minuto para o tempo terminar.",
-              })}
+              {warnDesc}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction
-              onClick={() => setWarnOpen(false)}
+              onClick={() => setWarnMilestone(null)}
               className="bg-background text-foreground hover:bg-background/90"
             >
               {t("common.ok", { defaultValue: "OK" })}
