@@ -93,7 +93,16 @@ import { shareJsonFile, pickFile } from "@/lib/share";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
 import { BibleHistoryChips } from "@/components/bible/BibleHistoryChips";
 
-import { RichNoteEditor } from "@/components/notes/RichNoteEditor";
+// Rodada B: o editor (TipTap) só carrega ao editar um esboço; a lista abre
+// primeiro. Ele é pré-carregado em segundo plano para abrir sem espera.
+const loadRichNoteEditor = () => import("@/components/notes/RichNoteEditor");
+const RichNoteEditor = React.lazy(() => loadRichNoteEditor().then((m) => ({ default: m.RichNoteEditor })));
+if (typeof window !== "undefined") {
+  const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+  const warm = () => { void loadRichNoteEditor().catch(() => {}); };
+  if (w.requestIdleCallback) w.requestIdleCallback(warm, { timeout: 3000 });
+  else window.setTimeout(warm, 1500);
+}
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
@@ -2160,6 +2169,7 @@ function NoteEditor({
           const minH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "22rem";
           const maxH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "60vh";
           return mode === "edit" ? (
+            <React.Suspense fallback={<div className="flex-1 rounded-md border bg-muted/30" style={{ minHeight: minH }} aria-busy="true" />}>
             <RichNoteEditor
               value={draft.content}
               onChange={(html) => onPatch("content", html)}
@@ -2174,6 +2184,7 @@ function NoteEditor({
               attachments={draft.attachments ?? []}
               onAttachmentsChange={(next) => onPatch("attachments", next)}
             />
+            </React.Suspense>
           ) : (
             <>
               {hasAttachments && (

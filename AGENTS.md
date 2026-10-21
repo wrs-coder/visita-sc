@@ -8,3 +8,4 @@
 - Pasted Word indentation is normalized once in word-paste-cleaner.ts into margin-left multiples of 32px (tabs, margins, decimal commas, list levels), so the editor and readers only consume that single format.
 - DOCX outline import runs only on the device (docx-import.ts) with file-size, unzip-size and entry limits, rejects DOCTYPE/ENTITY and macros, and feeds the same Word paste normalizer and note sanitizer, because imported files are untrusted input.
 - The mobile dashboard groups existing cards into swipeable pages (DashboardPager, CSS scroll-snap): the visible page mounts first, the rest mount on idle and are never unmounted, and from md up all render stacked, because card state must survive and desktop keeps the full list.
+- The personal outlines screen lazy-loads the TipTap editor (React.lazy + idle prewarm) so the list opens first; editor props and save flow stay unchanged.
