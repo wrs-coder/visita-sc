@@ -4,7 +4,7 @@ Este é um documento só de sugestões. Nada será alterado sem a sua aprovaçã
 
 ## 1. Fluidez e velocidade
 1. **Dividir as duas telas gigantes.** O Dashboard e os Esboços têm cerca de 100 mil caracteres cada. Separar as partes (cards, editor, tela cheia) e carregar cada uma só quando for aberta. Resultado: o app abre mais rápido e trava menos ao digitar.
-2. **Deixar as telas mais usadas guardadas no aparelho** depois da primeira abertura, para que abram na hora, mesmo com internet fraca. Ocupa um pouco mais de memória interna.
+2. **Guardar todas as telas no aparelho.** No app Android isso já acontece, porque as telas vêm dentro do aplicativo. No iPhone, iPad e navegador, todas as telas seriam baixadas em segundo plano na primeira abertura e passariam a abrir na hora, mesmo sem internet. Ocupa alguns MB a mais.
 3. **Listas longas** (esboços, pastas, lixeira, histórico) desenhando só o que aparece na tela. Rolagem lisa mesmo com centenas de itens.
 4. **Mostrar os dados salvos primeiro e atualizar em silêncio.** Hoje algumas telas mostram "carregando". O ideal é exibir o espelho local na hora.
 5. **Bíblia EPUB pré-indexada** após a importação (índice de livros e capítulos salvo), para que o balão de versículos abra instantaneamente.
