@@ -5,6 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-timer-ok: var(--timer-ok);
+  --color-timer-warn: var(--timer-warn);
+  --color-timer-over: var(--timer-over);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

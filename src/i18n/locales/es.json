@@ -1581,7 +1581,9 @@
       "timeUpDesc": "El tiempo elegido ha terminado.",
       "overtimeTitle_one": "Te pasaste {{count}} minuto",
       "overtimeTitle_other": "Te pasaste {{count}} minutos",
-      "overtimeDesc": "Ya superaste el tiempo elegido."
+      "overtimeDesc": "Ya superaste el tiempo elegido.",
+      "showControls": "Mostrar botones",
+      "hideControls": "Ocultar botones"
     },
     "editor": {
       "collapseMeta": "Minimizar encabezado",
@@ -1702,7 +1704,8 @@
   "theme": {
     "light": "Modo claro",
     "dark": "Modo oscuro",
-    "toggle": "Alternar modo oscuro"
+    "toggle": "Alternar modo oscuro",
+    "oled": "Negro puro"
   },
   "privacy": {
     "link": "Política de Privacidad",

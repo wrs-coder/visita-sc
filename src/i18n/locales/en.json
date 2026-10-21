@@ -1606,7 +1606,9 @@
       "timeUpDesc": "The chosen time has ended.",
       "overtimeTitle_one": "You are {{count}} minute over",
       "overtimeTitle_other": "You are {{count}} minutes over",
-      "overtimeDesc": "You have gone past the chosen time."
+      "overtimeDesc": "You have gone past the chosen time.",
+      "showControls": "Show buttons",
+      "hideControls": "Hide buttons"
     },
     "editor": {
       "collapseMeta": "Collapse header",
@@ -1727,7 +1729,8 @@
   "theme": {
     "light": "Light mode",
     "dark": "Dark mode",
-    "toggle": "Toggle dark mode"
+    "toggle": "Toggle dark mode",
+    "oled": "Pure black"
   },
   "privacy": {
     "link": "Privacy Policy",
