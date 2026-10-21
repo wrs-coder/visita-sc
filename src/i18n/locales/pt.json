@@ -26,7 +26,8 @@
     "notFoundDesc": "A página que você procura não existe.",
     "goHome": "Ir para o início",
     "somethingWrong": "Algo deu errado",
-    "tryAgain": "Tentar novamente"
+    "tryAgain": "Tentar novamente",
+    "undo": "Desfazer"
   },
   "a11y": {
     "skipToContent": "Pular para o conteúdo",
