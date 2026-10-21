@@ -21,12 +21,41 @@ import { isOfflinePrefetchFreshToday } from "@/hooks/use-offline-warmup";
 import { queueSize, flushQueue } from "@/lib/offline-queue";
 import { toast } from "sonner";
 
-export function ConnectionModeToggle({ className }: { className?: string }) {
+export function ConnectionModeToggle({ className, compact = false }: { className?: string; compact?: boolean }) {
   const { t } = useTranslation();
   const mode = useConnectionMode();
   const [open, setOpen] = useState(false);
 
   const isOffline = mode === "offline";
+
+  if (compact) {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          title={t(isOffline ? "connection.switchToOnline" : "connection.switchToOffline")}
+          aria-label={t(isOffline ? "connection.modeOffline" : "connection.modeOnline")}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 h-14 rounded-xl border text-xs font-semibold transition min-w-0",
+            isOffline
+              ? "bg-amber-500/15 border-amber-500/40 text-amber-100 hover:bg-amber-500/25"
+              : "bg-emerald-500/15 border-emerald-500/40 text-emerald-100 hover:bg-emerald-500/25",
+            className,
+          )}
+        >
+          <span className="flex items-center gap-1">
+            <span className={cn("h-2 w-2 rounded-full", isOffline ? "bg-amber-400 animate-pulse" : "bg-emerald-400")} />
+            {isOffline ? <WifiOff className="h-4 w-4" /> : <Wifi className="h-4 w-4" />}
+          </span>
+          <span className="truncate max-w-full px-1">
+            {isOffline ? t("connection.offlineShort", { defaultValue: "Offline" }) : t("connection.onlineShort", { defaultValue: "Online" })}
+          </span>
+        </button>
+        <ModeSwitchDialog open={open} onOpenChange={setOpen} current={mode} />
+      </>
+    );
+  }
 
   return (
     <>

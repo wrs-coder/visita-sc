@@ -347,8 +347,8 @@ function AppLayout() {
                     circuit={profile?.circuit ?? null}
                   />
                 </div>
-                <div className="p-3 pb-0 space-y-2">
-                  <ConnectionModeToggle />
+                <div className="p-3 pb-0 grid grid-cols-3 gap-2">
+                  <ConnectionModeToggle compact />
                   <ThemeToggle variant="sidebar" />
                 </div>
                 <div className="p-3 flex-1 overflow-y-auto overscroll-contain">
@@ -400,8 +400,8 @@ function AppLayout() {
               circuit={profile?.circuit ?? null}
             />
           </div>
-          <div className="p-3 pb-0 space-y-2">
-            <ConnectionModeToggle />
+          <div className="p-3 pb-0 grid grid-cols-3 gap-2">
+            <ConnectionModeToggle compact />
             <ThemeToggle variant="sidebar" />
           </div>
           <div className="p-3 flex-1 overflow-y-auto overscroll-contain min-h-0">
