@@ -279,7 +279,8 @@
       "tabOutlines": "Esboços",
       "unreadMessages": "Recados não lidos"
     },
-    "recommendedCardTitle": "Notas do SC – Recomendados"
+    "recommendedCardTitle": "Notas do SC – Recomendados",
+    "openPage": "Abrir página"
   },
   "itinerary": {
     "title": "Itinerário",
@@ -496,7 +497,11 @@
       "pickup": "Buscar",
       "dropoff": "Levar",
       "round_trip": "Ida e volta"
-    }
+    },
+    "driver": "Motorista",
+    "departure": "Saída",
+    "return": "Retorno",
+    "description": "Descrição"
   },
   "checklistPage": {
     "title": "Checklist da Congregação",

@@ -279,7 +279,8 @@
       "tabOutlines": "Outlines",
       "unreadMessages": "Unread messages"
     },
-    "recommendedCardTitle": "CO Notes – Recommended"
+    "recommendedCardTitle": "CO Notes – Recommended",
+    "openPage": "Open page"
   },
   "itinerary": {
     "title": "Itinerary",
@@ -496,7 +497,11 @@
       "pickup": "Pickup",
       "dropoff": "Dropoff",
       "round_trip": "Round trip"
-    }
+    },
+    "driver": "Driver",
+    "departure": "Departure",
+    "return": "Return",
+    "description": "Description"
   },
   "checklistPage": {
     "title": "Congregation Checklist",

@@ -279,7 +279,8 @@
       "tabOutlines": "Bosquejos",
       "unreadMessages": "Mensajes no leídos"
     },
-    "recommendedCardTitle": "Notas del SC – Recomendados"
+    "recommendedCardTitle": "Notas del SC – Recomendados",
+    "openPage": "Abrir página"
   },
   "itinerary": {
     "title": "Itinerario",
@@ -471,7 +472,11 @@
       "pickup": "Recoger",
       "dropoff": "Llevar",
       "round_trip": "Ida y vuelta"
-    }
+    },
+    "driver": "Conductor",
+    "departure": "Salida",
+    "return": "Regreso",
+    "description": "Descripción"
   },
   "checklistPage": {
     "title": "Lista de tareas de la Congregación",
