@@ -58,3 +58,23 @@ export function groupByDate<T>(items: T[], getDate: (it: T) => string | null | u
   }
   return [...map.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, items]) => ({ date, items }));
 }
+
+/**
+ * Dia/horário "definido pelo Superintendente" (weekday 0 = segunda … 6 = domingo
+ * e "HH:MM") → data dentro dos dias da visita + data/hora local ISO.
+ */
+export function resolveWeekdaySlot(
+  weekday: number | null | undefined,
+  time: string | null | undefined,
+  visitDays: string[],
+): { date: string; at: string } | null {
+  if (weekday == null || weekday < 0 || weekday > 6) return null;
+  const jsDay = (weekday + 1) % 7;
+  const date = visitDays.find((iso) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d).getDay() === jsDay;
+  });
+  if (!date) return null;
+  const hhmm = normalizeTime(time) ?? "00:00";
+  return { date, at: `${date}T${hhmm}:00` };
+}
