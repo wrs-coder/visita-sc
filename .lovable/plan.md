@@ -10,12 +10,15 @@ O cartão "Esboços e Notas" com subabas deixa de existir e vira cartões separa
 - **Considerações de campo**: mesma lista, mesmos toques e mesmo "Ver todos" de hoje.
 - **Esboços da semana**: mesma lista e mesmo "Ver mais" de hoje.
 
-A aba "Hoje" passa a ter: cronograma do dia + Reuniões da semana.
+A aba "Hoje" passa a ter só o cronograma completo do dia.
 
-### 3. Aba "Pastoreio"
-Ganha o cartão **"Notas do SC – Recomendados"**, com a mesma lista de antes. Tocar numa nota abre a mesma janela de leitura. O cartão fica antes de "Pastoreiem o Rebanho de Deus" e do Checklist.
+### 3. Aba "Visita"
+"Reuniões da semana" passa para cá, como primeiro cartão. Depois vêm Reunião de Campo, Estudos e Revisitas, Refeições e Transporte.
 
-### 4. Aviso delicado de recados
+### 4. Aba "Pastoreio"
+A ordem fica: Pastoreiem o Rebanho de Deus, depois **"Notas do SC – Recomendados"** e por fim Checklist. O cartão Recomendados traz a mesma lista de antes, e tocar numa nota abre a mesma janela de leitura.
+
+### 5. Aviso delicado de recados
 Quando há recado da esposa não lido, aparece um pequeno ponto colorido na aba "Hoje" do seletor. Ele some quando os recados são lidos. Os leitores de tela anunciam "recados não lidos". O aviso usa a cor dos recados, sem número grande e sem animação chamativa.
 
 ### No computador
