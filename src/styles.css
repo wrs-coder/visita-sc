@@ -665,3 +665,23 @@ main [role="tabpanel"] [role="tab"][data-state="active"] {
     display: none;
   }
 }
+
+/* iPad/WebKit: isola o leitor em camada própria para evitar piscadas ao rolar/selecionar */
+@utility webkit-stable-layer {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  isolation: isolate;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* iOS/Safari: toque imediato em controles (sem atraso do duplo toque)
+   e sem balão "Copiar/Compartilhar" ao segurar botões. Texto continua selecionável. */
+@layer base {
+  button, a, [role="button"], [role="tab"], label, summary, select {
+    touch-action: manipulation;
+  }
+  button, [role="button"], [role="tab"] {
+    -webkit-touch-callout: none;
+  }
+}

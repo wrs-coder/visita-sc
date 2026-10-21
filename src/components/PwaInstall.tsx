@@ -43,7 +43,9 @@ function isNativeApp(): boolean {
 function isIos(): boolean {
   if (typeof window === "undefined") return false;
   const ua = window.navigator.userAgent;
-  return /iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream;
+  if (/iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream) return true;
+  // iPadOS 13+ se identifica como Mac; diferencia pela tela de toque.
+  return /Macintosh/.test(ua) && (window.navigator.maxTouchPoints ?? 0) > 1;
 }
 
 export function PwaInstallButton() {

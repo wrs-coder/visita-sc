@@ -21,8 +21,8 @@ import { getVaultMeta, isVaultExpired, type VaultMeta } from "@/lib/offline-cred
 import { localDbStats } from "@/lib/local-db";
 import { runFullSync } from "@/lib/local-auto-sync";
 
-const APP_VERSION = "4.2.16";
-const APP_BUILD = "2026.09.22";
+const APP_VERSION = "4.2.17";
+const APP_BUILD = "2026.10.21";
 const APP_UPDATED_AT = "19/09/2026";
 
 const PIN_PROMPT_SKIP_KEY = "visita-sc:pin-prompt-skipped-at";
@@ -104,7 +104,14 @@ export function LoginForm() {
       const r = await resolveFn({ data: { identifier: identifier.trim() } });
       if (!r.ok) { toast.error(r.error); return; }
       stage = "authentication";
-      const { data: signIn, error } = await supabase.auth.signInWithPassword({ email: r.email, password });
+      // Tenta a senha exatamente como digitada; se falhar e houver espaços
+      // acidentais no início/fim, tenta de novo sem eles. Assim ninguém que
+      // já usa a senha original deixa de conseguir entrar.
+      let { data: signIn, error } = await supabase.auth.signInWithPassword({ email: r.email, password });
+      const trimmed = password.trim();
+      if ((error || !signIn.user) && trimmed && trimmed !== password) {
+        ({ data: signIn, error } = await supabase.auth.signInWithPassword({ email: r.email, password: trimmed }));
+      }
       if (error || !signIn.user) { toast.error(t("login.invalidCredentials")); return; }
       toast.success(t("login.welcome"));
       const existing = await getVaultMeta();
