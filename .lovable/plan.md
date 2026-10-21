@@ -8,7 +8,14 @@
 - Tudo é carregado e redesenhado junto: ao mexer num cartão, a tela inteira é recalculada.
 
 ## O que muda (só por dentro)
-Feito em duas rodadas separadas, uma tela por vez, com testes entre elas.
+Feito em três rodadas separadas, com testes entre elas. A primeira é a mais rápida e segura.
+
+### Rodada 0 — Balão bíblico instantâneo (item que ficou faltando)
+Hoje os versículos já ficam guardados no aparelho, organizados por livro e capítulo. Mas cada vez que você toca numa referência, o app volta a ler o capítulo do armazenamento e espera. A melhoria:
+1. **Capítulos já abertos ficam na memória** enquanto o app estiver aberto: tocar de novo na mesma referência abre na hora.
+2. **Leitura antecipada:** ao abrir um esboço, os capítulos citados nele são carregados em segundo plano, antes de você tocar.
+3. **Bíblia ativa preparada na abertura do app**, sem esperar o primeiro toque.
+4. Nada é reimportado nem regravado: destaques, idiomas e Bíblias atuais continuam iguais. Ao remover ou trocar de Bíblia, a memória é limpa.
 
 ### Rodada A — Painel
 1. Cada uma das 5 telas (Hoje, Esboços, Visita, Pastoreio, Amanhã) vira uma peça separada.
