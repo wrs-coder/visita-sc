@@ -19,6 +19,7 @@ import {
   ZoomIn,
   ZoomOut,
   AlertTriangle,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,10 +77,12 @@ function writeShownMilestone(outlineId: string, milestone: number): void {
 }
 
 function alertColorClass(level: AlertLevel): string {
-  if (level === "red") return "text-destructive";
-  if (level === "amber") return "text-amber-500";
-  return "text-emerald-600";
+  if (level === "red") return "text-timer-over";
+  if (level === "amber") return "text-timer-warn";
+  return "text-timer-ok";
 }
+
+const CONTROLS_KEY = "visita-sc:timer-controls-collapsed";
 
 export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProps) {
   const { t } = useTranslation();
@@ -92,6 +95,17 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
     String(Math.round(timer.targetSec / 60)),
   );
   const lastTapRef = useRef<number>(0);
+  const [controlsCollapsed, setControlsCollapsed] = useState(false);
+  useEffect(() => {
+    try { setControlsCollapsed(window.localStorage.getItem(CONTROLS_KEY) === "1"); } catch { /* noop */ }
+  }, []);
+  const toggleControls = () => {
+    setControlsCollapsed((prev) => {
+      const next = !prev;
+      try { window.localStorage.setItem(CONTROLS_KEY, next ? "1" : "0"); } catch { /* noop */ }
+      return next;
+    });
+  };
 
   const overtimeSec = Math.max(0, timer.elapsedSec - timer.targetSec);
   const display =
@@ -199,8 +213,12 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
     setTargetOpen(false);
   };
 
+  const controlsLabel = controlsCollapsed
+    ? t("personalOutlines.timer.showControls", { defaultValue: "Mostrar botões" })
+    : t("personalOutlines.timer.hideControls", { defaultValue: "Recolher botões" });
+
   const wrapClass = cn(
-    "flex items-center gap-1 sm:gap-1.5 select-none border flex-wrap",
+    "flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 sm:gap-x-1.5 select-none border",
     isFullscreen
       ? "w-full shrink-0 border-b bg-background/85 backdrop-blur px-2 sm:px-3 py-1 sm:py-1.5 justify-center min-h-8 sm:min-h-9"
       : "min-h-7 px-1.5 rounded-md",
@@ -222,9 +240,7 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   );
   const endLabelClass = cn(
     "tabular-nums font-bold whitespace-nowrap tracking-tight",
-    "bg-gradient-to-r from-sky-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent",
-    "[text-shadow:0_0_12px_rgba(56,189,248,0.55),0_0_28px_rgba(59,130,246,0.35)]",
-    "drop-shadow-[0_0_6px_rgba(56,189,248,0.45)]",
+    "text-primary",
     isFullscreen ? size.preset.fullscreenText : size.preset.toolbarText,
   );
 
@@ -234,6 +250,7 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
       role="group"
       aria-label={t("personalOutlines.timer.label", { defaultValue: "Cronômetro do esboço" })}
     >
+      <div className="flex items-center justify-center gap-1 min-w-0 max-w-full">
       <Popover open={targetOpen} onOpenChange={setTargetOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -366,6 +383,26 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
         type="button"
         variant="ghost"
         size="sm"
+        className={cn(iconBtnClass, "h-6 w-6")}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={toggleControls}
+        aria-expanded={!controlsCollapsed}
+        title={controlsLabel}
+        aria-label={controlsLabel}
+      >
+        <ChevronDown
+          className={cn("h-3.5 w-3.5 transition-transform", controlsCollapsed && "-rotate-90")}
+        />
+      </Button>
+      </div>
+
+      <div
+        className={cn("flex items-center justify-center gap-1 shrink-0", controlsCollapsed && "hidden")}
+      >
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
         className={iconBtnClass}
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => timer.toggle()}
@@ -433,6 +470,7 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
       >
         <ZoomIn className={iconBtnSize} />
       </Button>
+      </div>
 
       <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
         <AlertDialogContent className="z-[150]">

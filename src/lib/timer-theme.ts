@@ -38,7 +38,7 @@ export const TIMER_THEMES: TimerThemePreset[] = [
     chipText: "",
     iconColor: "",
     swatchBg: "bg-background",
-    swatchText: "text-emerald-600",
+    swatchText: "text-timer-ok",
   },
   {
     id: "yellow-on-black",
