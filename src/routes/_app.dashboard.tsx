@@ -975,7 +975,7 @@ function Dashboard() {
             </Button>
             {eventDetail && (
               <Button asChild>
-                <Link to={eventDetail.to as "/cronograma"} onClick={() => setEventDetail(null)}>
+                <Link to={eventDetail.to as "/cronograma"} search={{} as never} onClick={() => setEventDetail(null)}>
                   {t("dashboard.openPage", { defaultValue: "Abrir página" })}
                 </Link>
               </Button>
