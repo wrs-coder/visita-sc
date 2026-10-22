@@ -1,7 +1,7 @@
 // Seções Anotações e Estudo Pessoal da esposa, com Modo Foco e gaveta.
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Download, FileText, FolderOpen, Plus, Settings2, Trash2, Upload, BookOpen } from "lucide-react";
+import { ArrowLeft, Download, FileText, FolderOpen, Plus, Settings2, Trash2, Upload, BookOpen, Search, X, Save, Eye, PenLine, BookMarked, StickyNote, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,22 @@ import {
 } from "@/lib/guest-workspace-store";
 import { readGuestSession } from "@/lib/guest-session";
 import { BibleReadingTab } from "./BibleReadingTab";
+import { RichOutlineContent } from "@/lib/rich-content";
+import { getActiveLibrary, type BibleLibrary } from "@/lib/bible-notes-store";
+import { refHtml, noteBlockHtml, internalLinkHtml, filterWsItems } from "@/lib/guest-workspace-store";
+
+const THEME_SUGGESTIONS = ["Qualidades Cristãs", "História Bíblica", "Adoração Matinal"];
+function Mark({ text, q }: { text: string; q: string }) {
+  if (!q) return <>{text}</>;
+  const i = text.toLowerCase().indexOf(q);
+  if (i < 0) return <>{text}</>;
+  return <>{text.slice(0, i)}<mark className="rounded bg-accent px-0.5 text-accent-foreground">{text.slice(i, i + q.length)}</mark>{text.slice(i + q.length)}</>;
+}
+function snippet(plain: string, q: string) {
+  if (!q) return plain.slice(0, 120);
+  const i = plain.toLowerCase().indexOf(q);
+  return i < 40 ? plain.slice(0, 120) : "…" + plain.slice(i - 30, i + 90);
+}
 const RichNoteEditor = lazy(() => import("@/components/notes/RichNoteEditor").then((m) => ({ default: m.RichNoteEditor })));
 
 export type GuestSection = "week" | "notes" | "study";
@@ -61,6 +77,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
   const [ready, setReady] = useState(false);
   const [studyTab, setStudyTab] = useState<"bible" | "research">("bible");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [freshId, setFreshId] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
   const [folder, setFolder] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
@@ -98,15 +115,13 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
 
   const kind: WsKind = section === "notes" ? "note" : studyTab;
   const q = query.trim().toLowerCase();
-  const list = data.items
-    .filter((i) => i.kind === kind && (!folder || i.folderId === folder) && (!color || i.color === color)
-      && (!q || i.title.toLowerCase().includes(q) || htmlToPlain(i.body).toLowerCase().includes(q)))
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const list = filterWsItems(data.items, { kind, folder, color, query: q });
   const open = data.items.find((i) => i.id === openId) ?? null;
 
   const create = () => {
     const item: WsItem = { id: crypto.randomUUID(), kind, title: "", body: "", folderId: folder, color, updatedAt: new Date().toISOString() };
     update((d) => ({ ...d, items: [item, ...d.items] }));
+    setFreshId(item.id);
     setOpenId(item.id);
   };
   const createFromVerse = (ref: string, text: string) => {
@@ -115,8 +130,8 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
     setOpenId(item.id);
   };
   const kindFolders = data.folders.filter((f) => !f.kind || f.kind === kind);
-  const addFolder = () => {
-    const name = window.prompt(t("guestWs.newFolder", { defaultValue: "Nova pasta" }))?.trim();
+  const addFolder = (preset?: string) => {
+    const name = (preset ?? window.prompt(t("guestWs.newFolder", { defaultValue: "Nova pasta" })))?.trim();
     if (name) update((d) => ({ ...d, folders: [...d.folders, { id: crypto.randomUUID(), name: name.slice(0, 120), kind }] }));
   };
   const renameFolder = (id: string) => {
@@ -131,10 +146,12 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
   };
 
   if (open) {
-    return <FocusEditor item={open} data={data}
+    return <FocusEditor key={open.id} item={open} data={data} startEdit={freshId === open.id || !open.body.trim()}
+      onSave={() => { flush(); toast.success(t("guestWs.saved", { defaultValue: "Salvo" })); }}
+      onOpenItem={(id) => { if (data.items.some((i) => i.id === id)) setOpenId(id); else toast.error(t("guestWs.linkMissing", { defaultValue: "Item não encontrado." })); }}
       onChange={(p) => update((d) => ({ ...d, items: d.items.map((i) => i.id === open.id ? { ...i, ...p, updatedAt: new Date().toISOString() } : i) }))}
       onDelete={() => { update((d) => ({ ...d, items: d.items.filter((i) => i.id !== open.id) })); setOpenId(null); }}
-      onClose={() => setOpenId(null)} />;
+      onClose={() => { setOpenId(null); setFreshId(null); }} />;
   }
 
   return (
@@ -158,15 +175,25 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
         <FolderOpen className="h-4 w-4 text-muted-foreground" aria-hidden />
         <button type="button" onClick={() => setFolder(null)} className={cn("rounded-full border px-3 py-1 text-xs", !folder ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
         {kindFolders.map((f) => (
-          <button key={f.id} type="button" onClick={() => setFolder(f.id)} className={cn("rounded-full border px-3 py-1 text-xs", folder === f.id ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{f.name}</button>
+          <button key={f.id} type="button" onClick={() => setFolder(f.id)} className={cn("rounded-full border px-3 py-1 text-xs", folder === f.id ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{f.name} <span className="opacity-70">{data.items.filter((i) => i.kind === kind && i.folderId === f.id).length}</span></button>
         ))}
-        <Button type="button" size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={addFolder}><Plus className="h-3.5 w-3.5" />{t("guestWs.folder", { defaultValue: "Pasta" })}</Button>
+        {kind === "research" && !data.folders.some((f) => f.kind === "research") && THEME_SUGGESTIONS.map((n) => (
+          <button key={n} type="button" onClick={() => addFolder(n)} className="rounded-full border border-dashed px-3 py-1 text-xs text-muted-foreground hover:bg-accent/60">+ {n}</button>
+        ))}
+        <Button type="button" size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => addFolder()}><Plus className="h-3.5 w-3.5" />{t("guestWs.folder", { defaultValue: "Pasta" })}</Button>
         {folder && <>
           <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => renameFolder(folder)}>{t("guestWs.rename", { defaultValue: "Renomear" })}</Button>
           <Button type="button" size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => deleteFolder(folder)}>{t("guestWs.delete", { defaultValue: "Apagar" })}</Button>
         </>}
       </div>
-      <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("guestWs.search", { defaultValue: "Pesquisar…" })} className="h-9" />
+      <div className="sticky top-14 z-10 -mx-1 bg-background px-1 py-1">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("guestWs.searchKw", { defaultValue: "Buscar no título ou no texto…" })} className="h-9 pl-8 pr-8" aria-label={t("guestWs.search", { defaultValue: "Pesquisar" })} />
+          {query && <button type="button" onClick={() => setQuery("")} aria-label={t("guestWs.clear", { defaultValue: "Limpar" })} className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground hover:bg-accent"><X className="h-4 w-4" /></button>}
+        </div>
+        {q && <p className="pt-1 text-xs text-muted-foreground">{t("guestWs.found", { defaultValue: "{{count}} encontrada(s)", count: list.length })}</p>}
+      </div>
       <Button onClick={create} variant="outline" className="w-full justify-start gap-2 border-dashed">
         <Plus className="h-4 w-4" />{t("guestWs.new", { defaultValue: "Nova" })}
       </Button>
@@ -180,8 +207,11 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
               <button type="button" onClick={() => setOpenId(i.id)} className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-accent/40">
                 {i.color && <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", colorDot[i.color])} />}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{i.title || t("guestWs.untitled", { defaultValue: "Sem título" })}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{htmlToPlain(i.body).slice(0, 120) || "—"}</span>
+                  <span className="block truncate text-sm font-medium"><Mark text={i.title || t("guestWs.untitled", { defaultValue: "Sem título" })} q={q} /></span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {i.folderId && <span className="mr-1 rounded bg-muted px-1">{data.folders.find((f) => f.id === i.folderId)?.name}</span>}
+                    <Mark text={snippet(htmlToPlain(i.body), q) || "—"} q={q} />
+                  </span>
                 </span>
               </button>
             </li>
@@ -198,10 +228,19 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
   );
 }
 
-function FocusEditor({ item, data, onChange, onDelete, onClose }: {
+function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenItem, startEdit }: {
   item: WsItem; data: WsData; onChange: (p: Partial<WsItem>) => void; onDelete: () => void; onClose: () => void;
+  onSave: () => void; onOpenItem: (id: string) => void; startEdit: boolean;
 }) {
   const { t } = useTranslation();
+  const [mode, setMode] = useState<"read" | "edit">(startEdit ? "edit" : "read");
+  const [library, setLibrary] = useState<BibleLibrary | null>(null);
+  const [linkOpen, setLinkOpen] = useState(false);
+  useEffect(() => { void getActiveLibrary().then(setLibrary).catch(() => null); }, []);
+  const append = (html: string) => { onChange({ body: toNoteHtml(item.body) + html }); };
+  const addRef = () => { const r = window.prompt(t("guestWs.refPrompt", { defaultValue: "Referência (ex.: Jo 3:16)" }))?.trim(); if (r) append(refHtml(r)); };
+  const addNote = () => { const n = window.prompt(t("guestWs.notePrompt", { defaultValue: "Nota explicativa" }))?.trim(); if (n) append(noteBlockHtml(n)); };
+  const others = data.items.filter((i) => i.id !== item.id && (i.kind === "research" || i.kind === "note"));
   const size = { sm: "text-sm", md: "text-base", lg: "text-lg" }[data.settings.fontSize];
   const exportAs = async (fmt: "txt" | "md" | "pdf") => {
     const name = slugify(item.title || "anotacao") || "anotacao";
@@ -227,6 +266,11 @@ function FocusEditor({ item, data, onChange, onDelete, onClose }: {
       <div className="flex items-center gap-1 px-2 py-2">
         <Button variant="ghost" size="sm" onClick={onClose} className="gap-1 text-muted-foreground"><ArrowLeft className="h-4 w-4" />{t("guestWs.back", { defaultValue: "Voltar" })}</Button>
         <div className="flex-1" />
+        <div className="flex rounded-full border p-0.5" role="radiogroup">
+          <button type="button" role="radio" aria-checked={mode === "read"} onClick={() => setMode("read")} className={cn("flex items-center gap-1 rounded-full px-2.5 py-1 text-xs", mode === "read" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}><Eye className="h-3.5 w-3.5" />{t("guestWs.readMode", { defaultValue: "Ler" })}</button>
+          <button type="button" role="radio" aria-checked={mode === "edit"} onClick={() => setMode("edit")} className={cn("flex items-center gap-1 rounded-full px-2.5 py-1 text-xs", mode === "edit" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}><PenLine className="h-3.5 w-3.5" />{t("guestWs.editMode", { defaultValue: "Editar" })}</button>
+        </div>
+        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={onSave} aria-label={t("guestWs.save", { defaultValue: "Salvar" })}><Save className="h-4 w-4" /></Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" aria-label={t("guestWs.export", { defaultValue: "Exportar" })}><Download className="h-4 w-4" /></Button>
@@ -251,12 +295,34 @@ function FocusEditor({ item, data, onChange, onDelete, onClose }: {
           <option value="">{t("guestWs.noFolder", { defaultValue: "Sem pasta" })}</option>
           {data.folders.filter((f) => !f.kind || f.kind === item.kind).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
         </select>
-        <div className={cn("flex-1", size)}>
+        {mode === "edit" && (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={addRef}><BookMarked className="h-3.5 w-3.5" />{t("guestWs.addRef", { defaultValue: "Referência" })}</Button>
+            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={addNote}><StickyNote className="h-3.5 w-3.5" />{t("guestWs.addNote", { defaultValue: "Nota" })}</Button>
+            <DropdownMenu open={linkOpen} onOpenChange={setLinkOpen}>
+              <DropdownMenuTrigger asChild><Button size="sm" variant="outline" className="h-7 gap-1 text-xs"><Link2 className="h-3.5 w-3.5" />{t("guestWs.addLink", { defaultValue: "Link interno" })}</Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
+                {others.length === 0 ? <DropdownMenuItem disabled>{t("guestWs.noOthers", { defaultValue: "Nenhuma outra pesquisa ou anotação" })}</DropdownMenuItem>
+                  : others.map((o) => <DropdownMenuItem key={o.id} onClick={() => append(internalLinkHtml(o.id, o.title || t("guestWs.untitled", { defaultValue: "Sem título" })))}>{o.title || t("guestWs.untitled", { defaultValue: "Sem título" })}</DropdownMenuItem>)}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+        {mode === "read" ? (
+          <div className={cn("flex-1 py-2", size)} onClickCapture={(e) => {
+            const a = (e.target as HTMLElement).closest("a");
+            const h = a?.getAttribute("href") ?? "";
+            if (h.startsWith("#ws:")) { e.preventDefault(); e.stopPropagation(); onOpenItem(h.slice(4)); }
+          }}>
+            <RichOutlineContent html={toNoteHtml(item.body)} library={library}
+              emptyFallback={<p className="text-sm text-muted-foreground">{t("guestWs.emptyRead", { defaultValue: "Sem texto ainda. Toque em Editar para escrever." })}</p>} />
+          </div>
+        ) : <div className={cn("flex-1", size)}>
           <Suspense fallback={<p className="text-sm text-muted-foreground">{t("guestWs.loading", { defaultValue: "Carregando…" })}</p>}>
             <RichNoteEditor value={toNoteHtml(item.body)} onChange={(html) => onChange({ body: html })} noteId={item.id}
               placeholder={t("guestWs.bodyPh", { defaultValue: "Comece a escrever…" })} minHeight="50vh" maxHeight="none" />
           </Suspense>
-        </div>
+        </div>}
       </div>
     </div>
   );

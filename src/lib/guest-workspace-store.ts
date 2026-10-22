@@ -145,3 +145,17 @@ export const htmlToPlain = (html: string) => html.replace(/<\/(p|h\d|li|blockquo
 export function verseNoteHtml(ref: string, text: string): string {
   return `<blockquote><p><strong>${escapeHtml(ref)}</strong> ${escapeHtml(text)}</p></blockquote><p></p>`;
 }
+
+/** Referência bíblica destacada (fica clicável na leitura). */
+export const refHtml = (ref: string) => `<p><strong>${escapeHtml(ref.slice(0, 120))}</strong></p>`;
+export const noteBlockHtml = (text: string) => `<blockquote><p><strong>Nota:</strong> ${escapeHtml(text.slice(0, 5000))}</p></blockquote><p></p>`;
+export const internalLinkHtml = (id: string, title: string) =>
+  /^[A-Za-z0-9-]{1,64}$/.test(id) ? `<p><a href="#ws:${id}">${escapeHtml(title.slice(0, 300))}</a></p>` : "";
+
+/** Lista filtrada (tipo, pasta, cor, palavra no título ou texto), mais recentes primeiro. */
+export function filterWsItems(items: WsItem[], f: { kind: WsKind; folder: string | null; color: string | null; query: string }): WsItem[] {
+  const q = f.query.trim().toLowerCase();
+  return items.filter((i) => i.kind === f.kind && (!f.folder || i.folderId === f.folder) && (!f.color || i.color === f.color)
+    && (!q || i.title.toLowerCase().includes(q) || htmlToPlain(i.body).toLowerCase().includes(q)))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
