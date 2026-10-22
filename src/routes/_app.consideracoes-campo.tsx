@@ -2211,7 +2211,7 @@ function NoteEditor({
                   className="rounded-md border"
                 />
               )}
-              <div className="flex-1 min-h-[22rem] max-h-[60vh] overflow-y-auto rounded-md border bg-background px-3 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
+              <div className="flex-1 min-h-[22rem] max-h-[60vh] overflow-y-auto rounded-md border bg-background px-4 py-4 sm:px-6 text-[15px] leading-7 break-words [overflow-wrap:anywhere]">
                 {draft.content ? (
                   <RichOutlineContent html={draft.content} library={activeBible} onInsertVerse={onInsertBibleText} />
                 ) : (
