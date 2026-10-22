@@ -220,12 +220,23 @@ export const restoreFullBackup = createServerFn({ method: "POST" })
       .from("congregations").select("id").eq("superintendent_id", userId);
     const ownedCongIds = new Set((ownedCongs ?? []).map((c) => c.id as string));
 
+    // Congregações do backup que não existem mais no banco podem ser recriadas;
+    // as que pertencem a outro superintendente continuam bloqueadas.
+    const backupIds = d.congregations
+      .map((r) => (r as Record<string, unknown>).id)
+      .filter((v): v is string => typeof v === "string");
+    const { data: existing } = backupIds.length
+      ? await supabaseAdmin.from("congregations").select("id").in("id", backupIds)
+      : { data: [] as Array<{ id: string }> };
+    const existingIds = new Set((existing ?? []).map((c) => c.id as string));
+
     const allowedCongregationRows = d.congregations.filter((r) => {
       const id = (r as Record<string, unknown>).id;
-      return typeof id === "string" && ownedCongIds.has(id);
+      return typeof id === "string" && (ownedCongIds.has(id) || !existingIds.has(id));
     });
     const skippedCongregations = d.congregations.length - allowedCongregationRows.length;
-    const allowedCongIds = ownedCongIds;
+    const allowedCongIds = new Set<string>(ownedCongIds);
+    for (const r of allowedCongregationRows) allowedCongIds.add((r as Record<string, unknown>).id as string);
 
     const congregations = allowedCongregationRows.map((r) => ({ ...r, superintendent_id: userId }));
 
