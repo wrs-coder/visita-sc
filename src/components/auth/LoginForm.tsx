@@ -21,6 +21,7 @@ import { useConnectionMode, setMode } from "@/lib/connection-mode";
 import { PinUnlockPanel } from "@/components/auth/PinUnlockPanel";
 import { PinSetupDialog } from "@/components/auth/PinSetupDialog";
 import { getVaultMeta, isVaultExpired, type VaultMeta } from "@/lib/offline-credentials";
+import { guestLogin } from "@/lib/guest-login";
 import { localDbStats } from "@/lib/local-db";
 import { runFullSync } from "@/lib/local-auto-sync";
 
