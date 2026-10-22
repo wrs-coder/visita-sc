@@ -41,7 +41,8 @@
     "es": "Español"
   },
   "login": {
-    "appTitle": "Visita del Superintendente",
+    "appTitle": "Visita SC",
+    "appSubtitle": "Visita del Superintendente",
     "signIn": "Entrar",
     "identifierHelp": "Para SC y Comité de Servicio",
     "identifierLabel": "Usuario",

@@ -42,6 +42,7 @@
   },
   "login": {
     "appTitle": "Circuit Overseer's Visit",
+    "appSubtitle": "Circuit Overseer's Visit",
     "signIn": "Sign in",
     "identifierHelp": "For CO and Service Committee",
     "identifierLabel": "Username",
