@@ -53,3 +53,16 @@ describe("guest workspace", () => {
     expect((await loadWs(sk)).items.map((i) => i.id)).toEqual(["b"]);
   });
 });
+
+describe("pastas por aba", () => {
+  it("pasta antiga com itens de duas abas vira duas pastas; vazia vira Anotações", async () => {
+    const { sanitizeWs } = await import("./guest-workspace-store");
+    const it_ = (id: string, kind: string) => ({ id, kind, title: "", body: "", folderId: "f1", color: null, updatedAt: "x" });
+    const d = sanitizeWs({ folders: [{ id: "f1", name: "Tema" }, { id: "f2", name: "Vazia" }], items: [it_("a", "note"), it_("b", "research")] });
+    const a = d.items.find((i) => i.id === "a")!, b = d.items.find((i) => i.id === "b")!;
+    expect(d.folders.find((f) => f.id === a.folderId)?.kind).toBe("note");
+    expect(d.folders.find((f) => f.id === b.folderId)?.kind).toBe("research");
+    expect(a.folderId).not.toBe(b.folderId);
+    expect(d.folders.find((f) => f.id === "f2")?.kind).toBe("note");
+  });
+});
