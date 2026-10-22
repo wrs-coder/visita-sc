@@ -30,3 +30,17 @@ Topo fixo e discreto com 3 botões segmentados (funciona bem no celular e no com
 - `visitante.painel.tsx`: envolver o bloco `<Tabs>` existente (linhas ~465-675) dentro da seção "week" sem alterar seu conteúdo; montagem das outras seções sob demanda.
 - Textos novos com `t()` + `defaultValue` em pt; chaves adicionadas em pt/en/es.
 - Só tokens de `styles.css`, sem cores fixas. Validar com `tsgo` e `vitest`.
+
+## Backup e Dados (na gaveta lateral)
+Nova seção "Backup e Dados" dentro da gaveta, com:
+- **Gerar backup**: cria um arquivo .zip no aparelho com Anotações, Pastas, Pesquisas e Histórico de Leitura da Bíblia da esposa.
+- **Restaurar backup**: escolhe um .zip do aparelho, mostra o que será restaurado e pede confirmação antes de substituir.
+- **Importar Plano/Bíblia**: escolhe arquivo local (EPUB da TNM, pelo leitor privado já existente, ou plano de leitura em .json).
+- **Exportar item**: dentro de cada anotação ou pesquisa aberta, botão discreto para salvar como .txt, .md ou PDF.
+- Tudo funciona sem internet: arquivos são lidos e gerados no próprio aparelho, sem passar pelo servidor. No Android usa a gravação em partes já existente.
+
+### Detalhes técnicos (backup)
+- Reutilizar `backup-package.ts` (`packBackupZip`/`unpackBackupZip`, formato v3, zip seguro) e `backup-client.ts` (`dumpClientBackup`/`restoreClientBackup`) filtrando apenas os stores/chaves do espaço da esposa (prefixo `guest.workspace.*` + notas/pastas/histórico locais). `server.json` vai vazio para não depender de `backup.functions.ts` (que exige rede e sessão de superintendente).
+- Importar Bíblia: chamar o fluxo existente de `epub-bible-parser.ts` / `BibleManagerDialog`; nenhuma Bíblia embutida.
+- Exportar PDF via `src/lib/pdf/pdf-engine.ts` (pdf-lib); .txt/.md via Blob local; no nativo, Filesystem em partes.
+- Restaurar valida manifest, tamanho e tipo antes de gravar; nunca toca no banco.
