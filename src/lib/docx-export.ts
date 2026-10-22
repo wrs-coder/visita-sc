@@ -101,8 +101,8 @@ export function htmlToDocxBody(title: string, html: string): string {
   const counters = new Map<number, number>();
   return paras
     .map((p) => {
-      const twips = Math.round((p.leftPx / 32) * 284);
-      const ppr = [p.style ? `<w:pStyle w:val="${p.style}"/>` : "", twips > 0 ? `<w:ind w:left="${twips}"${p.prefix ? ' w:hanging="284"' : ""}/>` : ""].join("");
+      const twips = Math.round((p.leftPx / 32) * 720);
+      const ppr = [p.style ? `<w:pStyle w:val="${p.style}"/>` : "", twips > 0 ? `<w:ind w:left="${twips}"${p.prefix ? ' w:hanging="360"' : ""}/>` : ""].join("");
       let prefix = "";
       if (p.prefix === "ol") { const n = (counters.get(twips) ?? 0) + 1; counters.set(twips, n); prefix = `${n}.\t`; }
       else if (p.prefix === "ul") prefix = "•\t";

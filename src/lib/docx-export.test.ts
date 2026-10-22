@@ -12,8 +12,8 @@ describe("docx export", () => {
     const bytes = await htmlToDocxBytes("", html);
     const zip = await JSZip.loadAsync(bytes);
     const xml = await zip.file("word/document.xml")!.async("string");
-    expect(xml).toContain('w:left="284"');
-    expect(xml).toContain('w:left="852"');
+    expect(xml).toContain('w:left="720"');
+    expect(xml).toContain('w:left="2160"');
     expect(xml).toContain("<w:b/>");
     const r = await importDocx(asFile("x.docx", bytes));
     expect(r.html).toBe(html);
