@@ -1,5 +1,5 @@
 // Seções Anotações e Estudo Pessoal da esposa, com Modo Foco e gaveta.
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Download, FileText, FolderOpen, Plus, Settings2, Trash2, Upload, BookOpen, Search, X, Save, Eye, PenLine, BookMarked, StickyNote, Link2 } from "lucide-react";
 import { toast } from "sonner";
@@ -19,6 +19,10 @@ import {
 import { readGuestSession } from "@/lib/guest-session";
 import { BibleReadingTab } from "./BibleReadingTab";
 import { RichOutlineContent } from "@/lib/rich-content";
+import { findCitations, stripHtmlForDetection } from "@/lib/bible-refs";
+import { VerseLink } from "@/components/bible/BibleVersePopover";
+import { BibleHistoryChips } from "@/components/bible/BibleHistoryChips";
+import { appendPlainTextToNote } from "@/lib/note-content";
 import { getActiveLibrary, type BibleLibrary } from "@/lib/bible-notes-store";
 import { refHtml, noteBlockHtml, internalLinkHtml, filterWsItems } from "@/lib/guest-workspace-store";
 
@@ -240,6 +244,8 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
   const append = (html: string) => { onChange({ body: toNoteHtml(item.body) + html }); };
   const addRef = () => { const r = window.prompt(t("guestWs.refPrompt", { defaultValue: "Referência (ex.: Jo 3:16)" }))?.trim(); if (r) append(refHtml(r)); };
   const addNote = () => { const n = window.prompt(t("guestWs.notePrompt", { defaultValue: "Nota explicativa" }))?.trim(); if (n) append(noteBlockHtml(n)); };
+  const detected = useMemo(() => (library ? findCitations(library.books, stripHtmlForDetection(item.body)) : []), [library, item.body]);
+  const insertVerse = (text: string) => onChange({ body: appendPlainTextToNote(toNoteHtml(item.body), text) });
   const others = data.items.filter((i) => i.id !== item.id && (i.kind === "research" || i.kind === "note"));
   const size = { sm: "text-sm", md: "text-base", lg: "text-lg" }[data.settings.fontSize];
   const exportAs = async (fmt: "txt" | "md" | "pdf") => {
@@ -322,6 +328,13 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
             <RichNoteEditor value={toNoteHtml(item.body)} onChange={(html) => onChange({ body: html })} noteId={item.id}
               placeholder={t("guestWs.bodyPh", { defaultValue: "Comece a escrever…" })} minHeight="50vh" maxHeight="none" />
           </Suspense>
+          <div className="mt-3 w-full min-w-0 space-y-2 overflow-hidden break-words rounded-lg border bg-muted/30 p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold"><BookOpen className="h-3.5 w-3.5 text-primary" />{t("fieldConsiderations.detected", { defaultValue: "Versículos detectados" })}</div>
+            {!library ? <p className="text-xs text-muted-foreground">{t("guestWs.noBibleDetect", { defaultValue: "Importe a Bíblia (EPUB) na gaveta de configurações para ver os versículos." })}</p>
+              : detected.length === 0 ? <p className="text-xs text-muted-foreground">{t("fieldConsiderations.detectedEmpty", { defaultValue: "Digite uma citação (ex.: João 3:16) para visualizar." })}</p>
+              : <div className="flex min-w-0 max-w-full flex-wrap gap-1.5">{detected.map((m, i) => <VerseLink key={`${m.index}-${i}`} match={m} libraryId={library.id} onInsert={insertVerse} />)}</div>}
+            <BibleHistoryChips library={library} onInsert={insertVerse} />
+          </div>
         </div>}
       </div>
     </div>
