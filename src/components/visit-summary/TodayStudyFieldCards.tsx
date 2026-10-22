@@ -20,7 +20,7 @@ export function TodayStudyFieldCards({
 }: {
   studies: TodayStudy[];
   fieldMeetings: TodayFieldMeeting[];
-  fmtTime: (v: string | null | undefined) => string;
+  fmtTime: (v: string | null) => string;
   plain?: boolean;
 }) {
   const { t } = useTranslation();
