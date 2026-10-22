@@ -11,3 +11,4 @@
 - The personal outlines screen lazy-loads the TipTap editor (React.lazy + idle prewarm) so the list opens first; editor props and save flow stay unchanged.
 
 - Guest (wife) personal workspace lives only on-device in IndexedDB (localStorage fallback) under guest.workspace.<hash of invite code>.data, with no server sync queue, and its backup reuses backup-package.ts zip format with an empty server part, so it works fully offline and stays isolated per invite code.
+- DOCX export (notes and whole folders as zip) is built on-device in docx-export.ts with the existing JSZip, using 720 twips per 32px indent step so exported files re-import through docx-import.ts unchanged.

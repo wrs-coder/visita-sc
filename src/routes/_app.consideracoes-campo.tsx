@@ -1,3 +1,5 @@
+import { htmlToDocx, folderToDocxZip, safeFileName, DOCX_MIME, type DocxFolderEntry } from "@/lib/docx-export";
+import { saveBlob } from "@/lib/share";
 import { FieldNoteInfoButton } from "@/components/notes/FieldNoteInfoButton";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -1023,6 +1025,32 @@ function Page() {
 
 
 
+  async function handleExportFolderDocx(folder: NoteFolder) {
+    const entries: DocxFolderEntry[] = [];
+    const walk = (fid: string, path: string[]) => {
+      for (const n of notes) if (n.folderId === fid && !n.deleted_at) entries.push({ path, title: n.title || "Esboço", html: n.content ?? "" });
+      for (const f of folders) if (f.parentId === fid && !f.deleted_at) walk(f.id, [...path, f.name]);
+    };
+    walk(folder.id, [folder.name]);
+    if (!entries.length) { toast.info(t("personalOutlines.folders.emptyFolder", { defaultValue: "Esta pasta está vazia." })); return; }
+    try {
+      const blob = await folderToDocxZip(entries);
+      await saveBlob(blob, { filename: `${safeFileName(folder.name, "pasta")}.zip`, mimeType: "application/zip" });
+    } catch (e) {
+      toast.error(String(e instanceof Error ? e.message : e));
+    }
+  }
+
+  async function handleExportNoteDocx() {
+    if (!draft) return;
+    try {
+      const blob = await htmlToDocx(draft.title, draft.content ?? "");
+      await saveBlob(blob, { filename: `${safeFileName(draft.title)}.docx`, mimeType: DOCX_MIME });
+    } catch (e) {
+      toast.error(String(e instanceof Error ? e.message : e));
+    }
+  }
+
   async function handleExportFolder(folder: NoteFolder) {
     try {
       const payload = await exportFolderJSON(folder.id);
@@ -1413,6 +1441,10 @@ function Page() {
               <DropdownMenuItem onClick={() => handleExportFolder(folder)}>
                 <Download className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.exportFolder")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportFolderDocx(folder)}>
+                <FileText className="h-4 w-4 mr-2" />
+                {t("personalOutlines.folders.exportFolderDocx", { defaultValue: "Exportar pasta (Word)" })}
               </DropdownMenuItem>
               {!fixed && (
                 <>
@@ -1900,6 +1932,7 @@ function Page() {
                     onSave={handleSave}
                     onDelete={handleDeleteNote}
                     onExport={handleExportNote}
+                    onExportDocx={handleExportNoteDocx}
                     onFullscreen={() => setFullscreen(true)}
                     onCloud={handleCloudOpen}
                     dateFmt={dateFmt}
@@ -2039,6 +2072,7 @@ interface EditorProps {
   onSave: () => void;
   onDelete: () => void;
   onExport: () => void;
+  onExportDocx: () => void;
   onFullscreen: () => void;
   onCloud: () => void;
   dateFmt: (ts: number) => string;
@@ -2047,7 +2081,7 @@ interface EditorProps {
 
 function NoteEditor({
   draft, mode, type, saving, activeBible, detected,
-  onPatch, onModeChange, onSave, onDelete, onExport, onFullscreen, onCloud, dateFmt, onInsertBibleText,
+  onPatch, onModeChange, onSave, onDelete, onExport, onExportDocx, onFullscreen, onCloud, dateFmt, onInsertBibleText,
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
@@ -2338,19 +2372,7 @@ function NoteEditor({
             </div>
 
           </>
-        ) : (
-          <div className="grid gap-1.5 w-full max-w-full min-w-0">
-            <Label>{t("personalOutlines.fields.description")}</Label>
-            <Input
-              value={draft.description ?? ""}
-              onChange={(e) => onPatch("description", e.target.value)}
-              placeholder={t("personalOutlines.fields.descriptionPh")}
-              readOnly={mode === "outline"}
-              className="w-full max-w-full min-w-0"
-            />
-          </div>
-
-        )}
+        ) : null}
         </>)}
 
         {mode === "edit" && (
@@ -2451,6 +2473,9 @@ function NoteEditor({
         )}
         <Button variant="outline" size="sm" onClick={onExport} title={t("personalOutlines.folders.exportNote")}>
           <Download className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.folders.exportNote")}</span>
+        </Button>
+        <Button variant="outline" size="sm" onClick={onExportDocx} title={t("personalOutlines.folders.exportDocx", { defaultValue: "Word (.docx)" })}>
+          <FileText className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">Word</span>
         </Button>
         {!isTalk && (
           <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
