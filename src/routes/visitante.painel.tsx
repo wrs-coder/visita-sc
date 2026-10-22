@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { type ElderProgramEvent } from "@/components/visit-summary/ElderProgramReadOnly";
 import { MeetingsTalksPanel, type MeetingsTalksSnap } from "@/components/visit-summary/MeetingsTalksPanel";
 import { ElderTabGate } from "@/components/visit-summary/ElderTabGate";
+import { GuestSectionNav, GuestWorkspace, useGuestSection } from "@/components/guest-workspace/GuestWorkspace";
 import { formatWeekdayTime, formatAnchorWeekdayTime, anchorWeekday } from "@/components/visit-week/report-schedule";
 
 
@@ -121,6 +122,7 @@ function isElderUnlocked(congregationId: string | undefined): boolean {
 function fmtTime(t: string | null) { return t ? t.slice(0, 5) : "—"; }
 
 function Page() {
+  const [guestSection, setGuestSection] = useGuestSection();
   const { t, i18n } = useTranslation();
   const dateLocale = getDateLocale(i18n.language);
   const nav = useNavigate();
@@ -451,7 +453,10 @@ function Page() {
 
 
       <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
-        {!snap.visit ? (
+        <GuestSectionNav value={guestSection} onChange={setGuestSection} />
+        {guestSection !== "week" ? (
+          <GuestWorkspace section={guestSection} />
+        ) : !snap.visit ? (
           <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
             {t("guest.noActiveVisit")}
           </CardContent></Card>
@@ -677,9 +682,9 @@ function Page() {
           </>
         )}
 
-        <div className="text-center pt-4">
+        {guestSection === "week" && <div className="text-center pt-4">
           <Button variant="outline" size="sm" onClick={() => code && load(code, snap?.selectedCongregationId ?? null)}>{t("guest.refresh")}</Button>
-        </div>
+        </div>}
       </main>
     </div>
   );

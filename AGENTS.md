@@ -9,3 +9,5 @@
 - DOCX outline import runs only on the device (docx-import.ts) with file-size, unzip-size and entry limits, rejects DOCTYPE/ENTITY and macros, and feeds the same Word paste normalizer and note sanitizer, because imported files are untrusted input.
 - The dashboard groups existing cards into swipeable pages at every width (DashboardPager, CSS scroll-snap, no viewport hook so SSR matches): the visible page mounts first, the rest mount on idle and are never unmounted, because card state must survive tab switches.
 - The personal outlines screen lazy-loads the TipTap editor (React.lazy + idle prewarm) so the list opens first; editor props and save flow stay unchanged.
+
+- Guest (wife) personal workspace lives only on-device in localStorage under guest.workspace.*, and its backup reuses backup-package.ts zip format with an empty server part, so it works fully offline without the superintendent server backup.
