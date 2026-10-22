@@ -409,16 +409,11 @@ export function VisitSummaryView({
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium">{e.title}</div>
-                        {e.location && (
-                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {e.location}
-                          </div>
-                        )}
-                        {e.notes && (
-                          <div className="text-xs text-muted-foreground mt-1">{e.notes}</div>
-                        )}
+                        <div className="font-medium mb-1">{e.title}</div>
+                        <InfoList rows={[
+                          [t("guest.labels.location"), e.location],
+                          [t("guest.labels.notes"), e.notes],
+                        ]} />
                       </div>
                       {onEditEvent && (
                         <Button
@@ -454,25 +449,12 @@ export function VisitSummaryView({
                           </span>
                         )}
                       </div>
-                      {f.meeting_point && (
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {f.meeting_point}
-                        </div>
-                      )}
-                      {f.acompanhante && (
-                        <div className="text-xs">
-                          <span className="text-muted-foreground">{t("guest.labels.companion")}: </span>
-                          {f.acompanhante}
-                          {f.acompanhante_for ? ` (${t("guest.labels.withCompanion")} ${f.acompanhante_for})` : ""}
-                        </div>
-                      )}
-                      {f.contact_phone && (
-                        <div className="text-xs flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {f.contact_phone}
-                        </div>
-                      )}
+                      <InfoList rows={[
+                        [t("guest.labels.meetingPoint"), f.meeting_point],
+                        [t("guest.labels.companion"), f.acompanhante],
+                        [t("guest.labels.companionFor"), f.acompanhante_for],
+                        [t("guest.labels.phone"), f.contact_phone],
+                      ]} />
                     </CardContent>
                   </Card>
                 ))
@@ -496,33 +478,13 @@ export function VisitSummaryView({
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {t("guest.labels.modality")}: {f.modality}
-                      </div>
-                      {f.territory_number && (
-                        <div className="text-xs">
-                          <span className="text-muted-foreground">{t("guest.labels.territoryS13")}: </span>
-                          {f.territory_number}
-                        </div>
-                      )}
-                      {f.territory_location && (
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {f.territory_location}
-                        </div>
-                      )}
-                      {f.auxiliary_leaders && (
-                        <div className="text-xs">
-                          <span className="text-muted-foreground">{t("guest.labels.auxLeaders")}: </span>
-                          {f.auxiliary_leaders}
-                        </div>
-                      )}
-                      {f.closing_prayer && (
-                        <div className="text-xs">
-                          <span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>
-                          {f.closing_prayer}
-                        </div>
-                      )}
+                      <InfoList rows={[
+                        [t("guest.labels.modality"), f.modality],
+                        [t("guest.labels.territoryS13"), f.territory_number],
+                        [t("guest.labels.territoryLocation"), f.territory_location],
+                        [t("guest.labels.auxLeaders"), f.auxiliary_leaders],
+                        [t("guest.labels.closingPrayer"), f.closing_prayer],
+                      ]} />
                     </CardContent>
                   </Card>
                 ))
@@ -564,27 +526,12 @@ export function VisitSummaryView({
                                   </span>
                                 )}
                               </div>
-                              {m.host_name && (
-                                <div className="text-xs">
-                                  <span className="text-muted-foreground">{t("guest.labels.host")}: </span>
-                                  {m.host_name}
-                                </div>
-                              )}
-                              {m.location && (
-                                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {m.location}
-                                </div>
-                              )}
-                              {m.contact_phone && (
-                                <div className="text-xs flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {m.contact_phone}
-                                </div>
-                              )}
-                              {m.notes && (
-                                <div className="text-xs text-muted-foreground">{m.notes}</div>
-                              )}
+                              <InfoList rows={[
+                                [t("guest.labels.host"), m.host_name],
+                                [t("guest.labels.location"), m.location],
+                                [t("guest.labels.phone"), m.contact_phone],
+                                [t("guest.labels.notes"), m.notes],
+                              ]} />
                             </CardContent>
                           </Card>
                         ))}

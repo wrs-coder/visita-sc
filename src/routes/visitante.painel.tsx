@@ -692,7 +692,7 @@ function Page() {
           </>
         )}
 
-        {guestSection === "week" && <div className="text-center pt-4">
+        {(!snap.wifeMode || guestSection === "week") && <div className="text-center pt-4">
           <Button variant="outline" size="sm" onClick={() => code && load(code, snap?.selectedCongregationId ?? null)}>{t("guest.refresh")}</Button>
         </div>}
       </main>
