@@ -11,16 +11,19 @@ Cada cartão some quando não houver nada para hoje. A mudança vale para os tr�
 Tudo fica na mesma tela de login, sem cliques a mais:
 
 ```text
- Telefone ou e-mail  [            ]
- Senha               [            ]
+ Entrar com sua conta
+ Para SC e Comissão de Serviço
+ Usuário      [                 ]
+ Senha        [                 ]
  ───────────── ou ─────────────
  Você tem um código de acesso?
- [ Insira aqui o código          ]
  Para anciãos e esposa do superintendente
+ [ Insira aqui o código          ]
  [           Entrar              ]
 ```
 
-- Quem tem conta preenche telefone e senha e toca em "Entrar", como hoje.
+- O título do campo de conta passa de "Utilizador / E-mail / Telefone / ID do Circuito" para apenas **"Usuário"**, e os exemplos dentro e abaixo do campo saem. Continua aceitando telefone, e-mail ou ID, como hoje.
+- Quem tem conta preenche usuário e senha e toca em "Entrar", como hoje.
 - Quem tem código preenche só o campo do código e toca no mesmo "Entrar". O app descobre sozinho se é acesso do corpo de anciãos ou da esposa do superintendente e abre o painel certo.
 - Ao começar a digitar o código, os campos de telefone e senha ficam esmaecidos (e vice-versa), para ninguém se confundir.
 - O campo do código aceita letras minúsculas e espaços (corrige sozinho). Se o código estiver errado: "Código não encontrado. Confira as letras e tente de novo."
