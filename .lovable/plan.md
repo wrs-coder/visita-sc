@@ -1,6 +1,6 @@
 # Esboços da Semana: tipo de discurso, campos e botão Detalhes
 
-Só para esboços (não Consideração de Campo) na pasta "Esboços da Semana". Esboços já criados continuam iguais: sem tipo escolhido, nada aparece. Nada muda no banco, nas regras ou no salvamento.
+Só para esboços (não Consideração de Campo) na pasta "Esboços da Semana". Esboços já criados continuam iguais até você abrir um deles em modo edição: aí dá para escolher o tipo e preencher os campos, e o texto do esboço não é alterado. Nada muda no banco, nas regras ou no salvamento.
 
 ## 1. Seletor "Tipo de esboço" (modo edição)
 Opções: Discurso Público; Discurso de Serviço – Inicial; Reunião – Pioneiros; Reunião – Anciãos; Discurso de Serviço – Final; Discurso — Eventos.
