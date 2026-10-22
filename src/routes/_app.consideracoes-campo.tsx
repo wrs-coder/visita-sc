@@ -2590,24 +2590,10 @@ function MoveToDialog({
               <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-2 pt-1">
                 {t("personalOutlines.typePicker.outline", { defaultValue: "Esboços" })}
               </div>
-              <Row
-                label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
-                depth={0}
-                folderId={null}
-                icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
-                targetType="outline"
-              />
               {renderTree(null, 0, "outline")}
               <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-2 pt-3">
                 {t("personalOutlines.typePicker.field", { defaultValue: "Consideração de Campo" })}
               </div>
-              <Row
-                label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
-                depth={0}
-                folderId={null}
-                icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
-                targetType="field_consideration"
-              />
               {renderTree(null, 0, "field_consideration")}
             </>
           ) : (
