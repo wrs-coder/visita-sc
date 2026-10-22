@@ -1,3 +1,4 @@
+import { htmlToDocx, folderToDocxZip, safeFileName } from "@/lib/docx-export";
 // Seções Anotações e Estudo Pessoal da esposa, com Modo Foco e gaveta.
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -144,6 +145,15 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
     const name = window.prompt(t("guestWs.renameFolder", { defaultValue: "Renomear pasta" }), cur?.name)?.trim();
     if (name) update((d) => ({ ...d, folders: d.folders.map((f) => f.id === id ? { ...f, name: name.slice(0, 120) } : f) }));
   };
+  const exportFolderDocx = async (id: string) => {
+    const f = data.folders.find((x) => x.id === id);
+    const items = data.items.filter((i) => i.kind === kind && i.folderId === id);
+    if (!f || !items.length) { toast.info(t("guestWs.emptyFolder", { defaultValue: "Esta pasta está vazia." })); return; }
+    try {
+      const blob = await folderToDocxZip(items.map((i) => ({ path: [f.name], title: i.title || "Anotação", html: toNoteHtml(i.body) })));
+      await saveBlob(blob, { filename: `${safeFileName(f.name, "pasta")}.zip`, mimeType: "application/zip" });
+    } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
+  };
   const deleteFolder = (id: string) => {
     if (!window.confirm(t("guestWs.confirmDeleteFolder", { defaultValue: "Apagar a pasta? As anotações continuam, sem pasta." }))) return;
     update((d) => ({ ...d, folders: d.folders.filter((f) => f.id !== id), items: d.items.map((i) => i.folderId === id ? { ...i, folderId: null } : i) }));
@@ -187,6 +197,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
         ))}
         <Button type="button" size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => addFolder()}><Plus className="h-3.5 w-3.5" />{t("guestWs.folder", { defaultValue: "Pasta" })}</Button>
         {folder && <>
+          <Button type="button" size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => exportFolderDocx(folder)}><Download className="h-3.5 w-3.5" />Word</Button>
           <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => renameFolder(folder)}>{t("guestWs.rename", { defaultValue: "Renomear" })}</Button>
           <Button type="button" size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => deleteFolder(folder)}>{t("guestWs.delete", { defaultValue: "Apagar" })}</Button>
         </>}
@@ -249,10 +260,12 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
   const insertVerse = (text: string) => onChange({ body: appendPlainTextToNote(toNoteHtml(item.body), text) });
   const others = data.items.filter((i) => i.id !== item.id && (i.kind === "research" || i.kind === "note"));
   const size = { sm: "text-sm", md: "text-base", lg: "text-lg" }[data.settings.fontSize];
-  const exportAs = async (fmt: "txt" | "md" | "pdf") => {
+  const exportAs = async (fmt: "txt" | "md" | "pdf" | "docx") => {
     const name = slugify(item.title || "anotacao") || "anotacao";
     let blob: Blob;
-    if (fmt === "pdf") {
+    if (fmt === "docx") {
+      blob = await htmlToDocx(item.title, toNoteHtml(item.body));
+    } else if (fmt === "pdf") {
       const pdf = await createJsPdfCompat({ unit: "mm" });
       let y = 20;
       pdf.setFont(true); pdf.setFontSize(16);
@@ -286,6 +299,7 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
             <DropdownMenuItem onClick={() => exportAs("txt")}>Texto (.txt)</DropdownMenuItem>
             <DropdownMenuItem onClick={() => exportAs("md")}>Markdown (.md)</DropdownMenuItem>
             <DropdownMenuItem onClick={() => exportAs("pdf")}>PDF</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportAs("docx")}>Word (.docx)</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground" aria-label={t("guestWs.delete", { defaultValue: "Apagar" })}
