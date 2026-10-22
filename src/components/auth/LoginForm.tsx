@@ -184,7 +184,7 @@ export function LoginForm() {
           <div className="mx-auto h-14 w-14 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center mb-4 overflow-hidden">
             <Logo className="h-10 w-10" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("login.appTitle")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("login.appTitle")}<div>Atos 15:36; Rom 1:11,12</div></h1>
         </div>
 
         <Card className="shadow-elevated border-0">
