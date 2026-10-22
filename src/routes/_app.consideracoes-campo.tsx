@@ -528,17 +528,31 @@ function Page() {
     setSelectedFolderId(n.folderId ?? null);
     setDraft(n);
     setShowLibrary(false);
+    if (activeType) setRecentIds(touchRecent(activeType, n.id));
     // "Anotações" não tem modo Esboço — sempre abre direto no editor.
     setMode((n.type ?? activeType) === "talk_notes" ? "edit" : "outline");
   }
 
-  function handleNewNote() {
-    if (!activeType) return;
-    const n = emptyNote(activeType, selectedFolderId);
+  // Criação exige escolher a pasta antes.
+  function openNewWithFolder(folderId: string) {
+    if (!activeType || !pendingCreate) return;
+    const base = emptyNote(activeType, folderId);
+    const n = pendingCreate.kind === "docx"
+      ? { ...base, title: pendingCreate.title, content: pendingCreate.html }
+      : base;
+    setPendingCreate(null);
+    setSelectedFolderId(folderId);
+    setExpanded((s) => new Set(s).add(folderId));
     setDraft(n);
     setSelectedNoteId(n.id);
     setShowLibrary(false);
+    setRecentIds(touchRecent(activeType, n.id));
     setMode("edit");
+  }
+
+  function handleNewNote() {
+    if (!activeType) return;
+    setPendingCreate({ kind: "new" });
   }
 
   async function handleImportDocx() {
@@ -548,10 +562,7 @@ function Page() {
     try {
       const { importDocx } = await import("@/lib/docx-import");
       const r = await importDocx(file);
-      const n = { ...emptyNote(activeType, selectedFolderId), title: r.title, content: sanitizeNoteHtml(r.html) };
-      setDraft(n);
-      setSelectedNoteId(n.id);
-      setMode("edit");
+      setPendingCreate({ kind: "docx", title: r.title, html: sanitizeNoteHtml(r.html) });
       toast.success(t("fieldConsiderations.docxImport.done"));
     } catch (e) {
       const code = (e as { code?: string })?.code ?? "not_docx";
