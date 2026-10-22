@@ -119,6 +119,8 @@ import {
   deleteCloudOutline,
 } from "@/lib/personal-outlines.functions";
 import { useOutlinesSync } from "@/hooks/use-outlines-sync";
+import { TalkOutlineFields, useTalkSync } from "@/components/notes/TalkOutlineFields";
+import { sanitizeTalk } from "@/lib/talk-outline-info";
 import {
   DndContext,
   MouseSensor,
@@ -1923,6 +1925,9 @@ function NoteEditor({
   }, [metaCollapsed]);
 
   const isWeekConsiderations = draft.folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS;
+  const isWeekOutline = type === "outline" && draft.folderId === FIXED_FOLDER_WEEK_OUTLINES;
+  const onTalk = (v: NonNullable<FieldNote["talk"]>) => onPatch("talk", v);
+  const talkSync = useTalkSync(visit?.id, draft.talk, onTalk);
   const canSync = isField && isWeekConsiderations && !!draft.event_date && !!draft.period && !!visit;
   const offline = isOfflineMode();
 
@@ -2030,6 +2035,13 @@ function NoteEditor({
               syncing={syncing}
             />
           )}
+          {isWeekOutline && draft.talk?.kind && (
+            <FieldNoteInfoButton
+              note={draft}
+              onSync={talkSync.can ? talkSync.sync : undefined}
+              syncing={talkSync.syncing}
+            />
+          )}
           {!(isField && mode === "outline") && (
           <Button
             variant="ghost"
@@ -2098,6 +2110,10 @@ function NoteEditor({
               </Select>
             </div>
           </div>
+        )}
+
+        {isWeekOutline && mode === "edit" && (
+          <TalkOutlineFields talk={draft.talk} onChange={onTalk} visitId={visit?.id} />
         )}
 
         <div className="grid gap-1.5">
