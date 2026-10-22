@@ -1716,6 +1716,46 @@ function Page() {
                       onDragEnd={handleDndEnd}
                       onDragCancel={() => { setDragItem(null); setDropHint(null); }}
                     >
+                      {submittedQuery ? (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground px-1">
+                            {t("personalOutlines.search.results", { defaultValue: "{{n}} resultado(s) para \"{{q}}\"", n: searchResults.length, q: submittedQuery })}
+                          </p>
+                          {searchResults.length === 0 ? (
+                            <p className="text-xs text-muted-foreground text-center py-4">
+                              {t("personalOutlines.search.none", { defaultValue: "Nenhum esboço com esse tema." })}
+                            </p>
+                          ) : (
+                            <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
+                              {searchResults.map((n) => <NoteRow key={n.id} note={n} depth={0} />)}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                      <>
+                      {recentNotes.length > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {t("personalOutlines.recent", { defaultValue: "Recentes" })}
+                          </div>
+                          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none]">
+                            {recentNotes.map((n) => (
+                              <button
+                                key={n.id}
+                                type="button"
+                                onClick={() => selectNote(n)}
+                                className={cn(
+                                  "shrink-0 max-w-[11rem] truncate rounded-lg border px-2.5 py-1.5 text-xs text-left",
+                                  selectedNoteId === n.id ? "border-primary bg-primary/10 text-primary" : "bg-card hover:bg-muted",
+                                )}
+                              >
+                                {n.title || t("fieldConsiderations.fields.title")}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       {rootFolders.length > 0 && (
                         <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none]">
                           <PillChip id={null} label={t("common.all", { defaultValue: "Todos" })} />
@@ -1725,7 +1765,6 @@ function Page() {
                         </div>
                       )}
                       <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
-                        <RootDropZone />
                         {rootFolders.length === 0 && rootNotes.length === 0 && (
                           <p className="text-xs text-muted-foreground text-center py-4">
                             {t("personalOutlines.folders.empty")}
@@ -1736,10 +1775,13 @@ function Page() {
                           .map((f) => (
                             <FolderRow key={f.id} folder={f} depth={0} />
                           ))}
+                        {!activePill && rootNotes.length > 0 && <RootDropZone />}
                         {!activePill && rootNotes.map((n) => (
-                          <NoteRow key={n.id} note={n} depth={0} />
+                          <NoteRow key={n.id} note={n} depth={1} />
                         ))}
                       </div>
+                      </>
+                      )}
                       <DragOverlay dropAnimation={null}>
                         {dragItem ? (
                           <div className="rounded-md bg-primary text-primary-foreground px-2 py-1 text-xs shadow-lg">
