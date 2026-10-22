@@ -178,35 +178,65 @@ export function LoginForm() {
               />
             ) : (
               <>
-            <div className="flex items-center gap-3 mb-5">
-              <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                <UserCircle2 className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-lg leading-tight">{t("login.signIn")}</h2>
-                <p className="text-xs text-muted-foreground">{t("login.identifierHelp")}</p>
-              </div>
-            </div>
-            <form onSubmit={submit} className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="identifier">{t("login.identifierLabel")}</Label>
-                <Input
-                  id="identifier"
-                  type="text"
-                  required
-                  autoComplete="username"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder={t("login.identifierPlaceholder")}
-                />
-                <p className="text-[11px] text-muted-foreground leading-snug">{t("login.phoneExample")}</p>
+            <form onSubmit={submit} className="space-y-4">
+              <fieldset className={`space-y-3 transition-opacity ${usingCode ? "opacity-40" : ""}`}>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <UserCircle2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-base leading-tight">{t("login.accountTitle")}</h2>
+                    <p className="text-xs text-muted-foreground">{t("login.identifierHelp")}</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="identifier">{t("login.identifierLabel")}</Label>
+                  <Input
+                    id="identifier"
+                    type="text"
+                    required={!usingCode}
+                    autoComplete="username"
+                    className="h-11"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="pwd">{t("login.password")}</Label>
+                  <Input id="pwd" type="password" required={!usingCode} autoComplete="current-password" className="h-11" value={password} onChange={(e) => setPassword(e.target.value)} />
+                </div>
+              </fieldset>
+
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="h-px flex-1 bg-border" />
+                <span>{t("login.or")}</span>
+                <div className="h-px flex-1 bg-border" />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="pwd">{t("login.password")}</Label>
-                <Input id="pwd" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <Button type="submit" className="w-full h-11 mt-1" disabled={busy}>
+              <fieldset className={`space-y-1.5 transition-opacity ${usingAccount ? "opacity-40" : ""}`}>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <KeyRound className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <Label htmlFor="access-code" className="font-semibold text-base leading-tight">{t("login.codeQuestion")}</Label>
+                    <p className="text-xs text-muted-foreground">{t("login.codeHelp")}</p>
+                  </div>
+                </div>
+                <Input
+                  id="access-code"
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  maxLength={20}
+                  className="h-11 font-mono uppercase tracking-widest"
+                  placeholder={t("login.codePlaceholder")}
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                />
+                <p className="text-[11px] text-muted-foreground">{t("login.noCode")}</p>
+              </fieldset>
+
+              <Button type="submit" className="w-full h-11" disabled={busy}>
                 <LogIn className="mr-2 h-4 w-4" /> {busy ? t("login.signingIn") : t("login.signIn")}
               </Button>
             </form>
@@ -226,6 +256,7 @@ export function LoginForm() {
               <div>
                 {t("login.newSuper")}{" "}
                 <Link to="/cadastro/superintendente" className="text-primary font-medium hover:underline">{t("login.createAccount")}</Link>
+                <div><HowToGetCode /></div>
               </div>
               <div className="pt-1 flex items-center justify-center gap-2">
                 <Link to="/esqueci-senha" className="text-muted-foreground hover:text-primary text-[12px]">{t("login.forgotPassword")}</Link>
@@ -235,10 +266,6 @@ export function LoginForm() {
             </div>
           </CardContent>
         </Card>
-
-        <Link to="/visitante" className="mt-4 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2">
-          <Eye className="h-4 w-4" /> {t("login.guestAccess")}
-        </Link>
 
         <SupportDeveloperDialog
           trigger={
