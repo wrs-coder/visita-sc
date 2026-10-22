@@ -1222,7 +1222,13 @@
       "publicTalk": "Discurso público",
       "finalTalk": "Discurso final",
       "theme": "Tema",
-      "leaders": "Dirigentes"
+      "leaders": "Dirigentes",
+      "location": "Lugar",
+      "phone": "Teléfono de contacto",
+      "notes": "Observaciones",
+      "meetingPoint": "Lugar de encuentro",
+      "companionFor": "Acompañante para",
+      "territoryLocation": "Lugar del territorio"
     },
     "today": {
       "summary": "Resumen del día",

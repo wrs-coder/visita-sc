@@ -1247,7 +1247,13 @@
       "publicTalk": "Public talk",
       "finalTalk": "Final talk",
       "theme": "Theme",
-      "leaders": "Leaders"
+      "leaders": "Leaders",
+      "location": "Location",
+      "phone": "Contact phone",
+      "notes": "Notes",
+      "meetingPoint": "Meeting point",
+      "companionFor": "Companion for",
+      "territoryLocation": "Territory location"
     },
     "today": {
       "summary": "Today's summary",
