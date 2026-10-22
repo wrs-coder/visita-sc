@@ -359,6 +359,7 @@ function Page() {
             assistants: draft.assistants ?? null,
             description: draft.description ?? null,
             content: draft.content ?? "",
+            talk: draft.talk ?? null,
             sort_order: draft.sort_order ?? null,
             event_date: draft.event_date ?? null,
             period: draft.period ?? null,
@@ -400,6 +401,7 @@ function Page() {
         assistants: typeof c.assistants === "string" ? c.assistants : "",
         description: typeof c.description === "string" ? c.description : "",
         content: typeof c.content === "string" ? c.content : "",
+        talk: sanitizeTalk(c.talk),
         sort_order: typeof c.sort_order === "number" ? c.sort_order : null,
         event_date: typeof c.event_date === "string" ? c.event_date : undefined,
         period: typeof c.period === "string" ? c.period : undefined,
@@ -677,6 +679,7 @@ function Page() {
             assistants: note.assistants ?? null,
             description: note.description ?? null,
             content: note.content ?? "",
+            talk: note.talk ?? null,
             sort_order: note.sort_order ?? null,
             event_date: note.event_date ?? null,
             period: note.period ?? null,
@@ -2396,7 +2399,7 @@ function FullscreenOutline({
             </Button>
           </div>
 
-          {(note.type ?? "field_consideration") === "field_consideration" && <FieldNoteInfoButton note={note} />}
+          {((note.type ?? "field_consideration") === "field_consideration" || !!note.talk?.kind) && <FieldNoteInfoButton note={note} />}
           <Button
             variant="ghost"
             size="icon"

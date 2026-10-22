@@ -30,6 +30,17 @@ const outlineContentSchema = z.object({
   assistants: z.string().max(2000).optional().nullable(),
   description: z.string().max(4000).optional().nullable(),
   content: z.string().max(100_000).default(""),
+  talk: z.object({
+    kind: z.string().max(40).optional().nullable(),
+    talk_title: z.string().max(2000).optional().nullable(),
+    song: z.string().max(2000).optional().nullable(),
+    prayer: z.string().max(2000).optional().nullable(),
+    opening_prayer: z.string().max(2000).optional().nullable(),
+    closing_prayer: z.string().max(2000).optional().nullable(),
+    next_congregation: z.string().max(2000).optional().nullable(),
+    next_theme: z.string().max(2000).optional().nullable(),
+    next_speaker: z.string().max(2000).optional().nullable(),
+  }).optional().nullable(),
   sort_order: z.number().int().min(-1_000_000).max(1_000_000).optional().nullable(),
   // Específicos de "Consideração de campo" — preservados no sync para que
   // dia e período não se percam entre dispositivos.
