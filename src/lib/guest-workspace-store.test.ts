@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mem = new Map<string, unknown>();
+const ls = new Map<string, string>();
+(globalThis as { localStorage?: unknown }).localStorage = {
+  getItem: (k: string) => ls.get(k) ?? null,
+  setItem: (k: string, v: string) => { ls.set(k, String(v)); },
+  removeItem: (k: string) => { ls.delete(k); },
+  clear: () => ls.clear(),
+};
 vi.mock("idb-keyval", () => ({
   get: async (k: string) => mem.get(k),
   set: async (k: string, v: unknown) => { mem.set(k, v); },
