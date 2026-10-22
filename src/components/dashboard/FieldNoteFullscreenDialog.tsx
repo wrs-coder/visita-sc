@@ -290,7 +290,7 @@ export function FieldNoteFullscreenDialog({
             </div>
           ) : (
             <div
-              className="max-w-3xl mx-auto leading-relaxed min-w-0 break-words [overflow-wrap:anywhere]"
+              className="max-w-[68ch] mx-auto leading-loose min-w-0 break-words [overflow-wrap:anywhere]"
               style={{ fontSize: `${scale}rem` }}
             >
               {note.content ? (

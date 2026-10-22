@@ -1,13 +1,24 @@
 import { useState } from "react";
-import { Info } from "lucide-react";
+import { Info, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { InfoList } from "@/components/visit-summary/InfoList";
 import { fieldNoteInfoRows, type FieldNoteInfoSource } from "@/lib/field-note-info";
+import { cn } from "@/lib/utils";
 
 /** Botão discreto que mostra, só para leitura, os detalhes da Consideração de Campo. */
-export function FieldNoteInfoButton({ note, className }: { note: FieldNoteInfoSource; className?: string }) {
+export function FieldNoteInfoButton({
+  note,
+  className,
+  onSync,
+  syncing,
+}: {
+  note: FieldNoteInfoSource;
+  className?: string;
+  onSync?: () => void | Promise<void>;
+  syncing?: boolean;
+}) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const label = t("fieldConsiderations.info.title", { defaultValue: "Detalhes da consideração" });
@@ -28,7 +39,22 @@ export function FieldNoteInfoButton({ note, className }: { note: FieldNoteInfoSo
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="z-[130] max-w-[92vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{label}</DialogTitle>
+            <div className="flex items-center gap-2 pr-6">
+              <DialogTitle className="flex-1">{label}</DialogTitle>
+              {onSync && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs rounded-full"
+                  disabled={syncing}
+                  onClick={() => void onSync()}
+                >
+                  <RefreshCw className={cn("h-3.5 w-3.5 mr-1", syncing && "animate-spin")} />
+                  {t("common.sync", { defaultValue: "Sincronizar" })}
+                </Button>
+              )}
+            </div>
             <DialogDescription className="sr-only">{label}</DialogDescription>
           </DialogHeader>
           {rows.length ? (
