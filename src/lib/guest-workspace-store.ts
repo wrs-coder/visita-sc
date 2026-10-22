@@ -3,13 +3,13 @@
 // código de convite. Nada vai para o servidor.
 import { get as idbGet, set as idbSet } from "idb-keyval";
 import { packBackupZip, unpackBackupZip } from "./backup-package";
-import { isValidChapterKey, chaptersOf, type ReadingPlan, type Highlight } from "./bible-chapters";
+import { isValidChapterKey, chaptersOf, type ReadingPlan, type Highlight, type CustomPlan } from "./bible-chapters";
 
 export type WsKind = "note" | "bible" | "research";
 export interface WsItem { id: string; kind: WsKind; title: string; body: string; folderId: string | null; color: string | null; updatedAt: string }
-export interface WsFolder { id: string; name: string }
+export interface WsFolder { id: string; name: string; kind?: WsKind }
 export interface WsSettings { fontSize: "sm" | "md" | "lg"; width: "narrow" | "wide" }
-export interface WsReading { plan: ReadingPlan; startDate: string; done: string[] }
+export interface WsReading { plan: ReadingPlan; startDate: string; done: string[]; custom?: CustomPlan }
 export interface WsData { items: WsItem[]; folders: WsFolder[]; settings: WsSettings; reading: WsReading; highlights: Highlight[] }
 
 export const WS_PREFIX = "guest.workspace.";
@@ -76,13 +76,21 @@ export function sanitizeWs(raw: unknown): WsData {
   }) : [];
   const folders = Array.isArray(r.folders) ? r.folders.slice(0, 500).flatMap((x): WsFolder[] => {
     const o = x as Record<string, unknown>;
-    return o && typeof o.id === "string" ? [{ id: str(o.id, 64), name: str(o.name, 120) }] : [];
+    if (!o || typeof o.id !== "string" || typeof o.name !== "string" || !o.name.trim()) return [];
+    const k = kinds.includes(o.kind as WsKind) ? { kind: o.kind as WsKind } : {};
+    return [{ id: str(o.id, 64), name: str(o.name, 120), ...k }];
   }) : [];
   const s = (r.settings ?? {}) as Record<string, unknown>;
   const rd = (r.reading ?? {}) as Record<string, unknown>;
-  const plan: ReadingPlan = rd.plan === "chrono" || rd.plan === "year" ? rd.plan : "canon";
+  const plan: ReadingPlan = rd.plan === "chrono" || rd.plan === "year" || rd.plan === "custom" ? rd.plan : "canon";
   const done = Array.isArray(rd.done) ? [...new Set(rd.done.filter((k): k is string => typeof k === "string" && isValidChapterKey(k)))] : [];
   const sd = str(rd.startDate, 10);
+  const cu = (rd.custom ?? null) as Record<string, unknown> | null;
+  const custom: CustomPlan | undefined = cu && typeof cu === "object" ? {
+    books: Array.isArray(cu.books) ? [...new Set(cu.books.filter((b): b is string => typeof b === "string" && /^B\d\d$/.test(b) && chaptersOf(b) > 0))] : [],
+    perDay: typeof cu.perDay === "number" && Number.isInteger(cu.perDay) && cu.perDay >= 1 && cu.perDay <= 50 ? cu.perDay : null,
+    endDate: typeof cu.endDate === "string" && /^\d{4}-\d\d-\d\d$/.test(cu.endDate) ? cu.endDate : null,
+  } : undefined;
   const highlights = Array.isArray(r.highlights) ? r.highlights.slice(0, 5000).flatMap((x): Highlight[] => {
     const o = x as Record<string, unknown>;
     if (!o || typeof o.id !== "string") return [];
@@ -92,7 +100,7 @@ export function sanitizeWs(raw: unknown): WsData {
   return { items, folders, settings: {
     fontSize: s.fontSize === "sm" || s.fontSize === "lg" ? s.fontSize : "md",
     width: s.width === "wide" ? "wide" : "narrow",
-  }, reading: { plan, done, startDate: /^\d{4}-\d\d-\d\d$/.test(sd) ? sd : base.reading.startDate }, highlights };
+  }, reading: { plan, done, startDate: /^\d{4}-\d\d-\d\d$/.test(sd) ? sd : base.reading.startDate, ...(custom ? { custom } : {}) }, highlights };
 }
 
 export async function buildWsBackup(d: WsData): Promise<Blob> {
@@ -120,5 +128,20 @@ export async function readWsBackup(file: File): Promise<WsData> {
 }
 
 export function itemToText(i: WsItem, md: boolean) {
-  return md ? `# ${i.title || "Sem título"}\n\n${i.body}\n` : `${i.title || "Sem título"}\n\n${i.body}\n`;
+  const b = htmlToPlain(i.body);
+  return md ? `# ${i.title || "Sem título"}\n\n${b}\n` : `${i.title || "Sem título"}\n\n${b}\n`;
+}
+
+const escapeHtml = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+/** Texto simples antigo vira HTML; HTML fica como está. */
+export function toNoteHtml(body: string): string {
+  if (!body.trim()) return "";
+  if (/<\/?[a-z][\s\S]*>/i.test(body)) return body;
+  return body.split(/\n/).map((l) => `<p>${escapeHtml(l)}</p>`).join("");
+}
+export const htmlToPlain = (html: string) => html.replace(/<\/(p|h\d|li|blockquote|div)>/gi, "\n").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "")
+  .replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&amp;/g, "&").replace(/\n{3,}/g, "\n\n").trim();
+/** Anotação criada a partir de um versículo. */
+export function verseNoteHtml(ref: string, text: string): string {
+  return `<blockquote><p><strong>${escapeHtml(ref)}</strong> ${escapeHtml(text)}</p></blockquote><p></p>`;
 }

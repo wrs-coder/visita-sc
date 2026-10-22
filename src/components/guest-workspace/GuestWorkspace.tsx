@@ -1,5 +1,5 @@
 // Seções Anotações e Estudo Pessoal da esposa, com Modo Foco e gaveta.
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Download, FileText, FolderOpen, Plus, Settings2, Trash2, Upload, BookOpen } from "lucide-react";
 import { toast } from "sonner";
@@ -13,11 +13,12 @@ import { saveBlob } from "@/lib/share";
 import { createJsPdfCompat, slugify } from "@/lib/pdf/pdf-engine";
 import { cn } from "@/lib/utils";
 import {
-  loadWs, saveWs, emptyWs, buildWsBackup, readWsBackup, itemToText, WS_COLORS, wsSessionKey,
+  loadWs, saveWs, emptyWs, buildWsBackup, readWsBackup, itemToText, WS_COLORS, wsSessionKey, toNoteHtml, htmlToPlain, verseNoteHtml,
   type WsData, type WsItem, type WsKind,
 } from "@/lib/guest-workspace-store";
 import { readGuestSession } from "@/lib/guest-session";
 import { BibleReadingTab } from "./BibleReadingTab";
+const RichNoteEditor = lazy(() => import("@/components/notes/RichNoteEditor").then((m) => ({ default: m.RichNoteEditor })));
 
 export type GuestSection = "week" | "notes" | "study";
 const SECTION_KEY = "guest.workspace.section";
@@ -63,6 +64,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
   const [sheet, setSheet] = useState(false);
   const [folder, setFolder] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const skRef = useRef("anon");
   const pending = useRef<WsData | null>(null);
   const timer = useRef<number | undefined>(undefined);
@@ -95,8 +97,10 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
   if (!ready) return <p className="py-10 text-center text-sm text-muted-foreground">{t("guestWs.loading", { defaultValue: "Carregando…" })}</p>;
 
   const kind: WsKind = section === "notes" ? "note" : studyTab;
+  const q = query.trim().toLowerCase();
   const list = data.items
-    .filter((i) => i.kind === kind && (!folder || i.folderId === folder) && (!color || i.color === color))
+    .filter((i) => i.kind === kind && (!folder || i.folderId === folder) && (!color || i.color === color)
+      && (!q || i.title.toLowerCase().includes(q) || htmlToPlain(i.body).toLowerCase().includes(q)))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const open = data.items.find((i) => i.id === openId) ?? null;
 
@@ -104,6 +108,26 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
     const item: WsItem = { id: crypto.randomUUID(), kind, title: "", body: "", folderId: folder, color, updatedAt: new Date().toISOString() };
     update((d) => ({ ...d, items: [item, ...d.items] }));
     setOpenId(item.id);
+  };
+  const createFromVerse = (ref: string, text: string) => {
+    const item: WsItem = { id: crypto.randomUUID(), kind: "bible", title: ref, body: verseNoteHtml(ref, text), folderId: null, color: null, updatedAt: new Date().toISOString() };
+    update((d) => ({ ...d, items: [item, ...d.items] }));
+    setOpenId(item.id);
+  };
+  const kindFolders = data.folders.filter((f) => !f.kind || f.kind === kind);
+  const addFolder = () => {
+    const name = window.prompt(t("guestWs.newFolder", { defaultValue: "Nova pasta" }))?.trim();
+    if (name) update((d) => ({ ...d, folders: [...d.folders, { id: crypto.randomUUID(), name: name.slice(0, 120), kind }] }));
+  };
+  const renameFolder = (id: string) => {
+    const cur = data.folders.find((f) => f.id === id);
+    const name = window.prompt(t("guestWs.renameFolder", { defaultValue: "Renomear pasta" }), cur?.name)?.trim();
+    if (name) update((d) => ({ ...d, folders: d.folders.map((f) => f.id === id ? { ...f, name: name.slice(0, 120) } : f) }));
+  };
+  const deleteFolder = (id: string) => {
+    if (!window.confirm(t("guestWs.confirmDeleteFolder", { defaultValue: "Apagar a pasta? As anotações continuam, sem pasta." }))) return;
+    update((d) => ({ ...d, folders: d.folders.filter((f) => f.id !== id), items: d.items.map((i) => i.folderId === id ? { ...i, folderId: null } : i) }));
+    setFolder(null);
   };
 
   if (open) {
@@ -130,6 +154,19 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
       </div>
 
       {(() => { const block = (<div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <FolderOpen className="h-4 w-4 text-muted-foreground" aria-hidden />
+        <button type="button" onClick={() => setFolder(null)} className={cn("rounded-full border px-3 py-1 text-xs", !folder ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
+        {kindFolders.map((f) => (
+          <button key={f.id} type="button" onClick={() => setFolder(f.id)} className={cn("rounded-full border px-3 py-1 text-xs", folder === f.id ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{f.name}</button>
+        ))}
+        <Button type="button" size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={addFolder}><Plus className="h-3.5 w-3.5" />{t("guestWs.folder", { defaultValue: "Pasta" })}</Button>
+        {folder && <>
+          <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => renameFolder(folder)}>{t("guestWs.rename", { defaultValue: "Renomear" })}</Button>
+          <Button type="button" size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => deleteFolder(folder)}>{t("guestWs.delete", { defaultValue: "Apagar" })}</Button>
+        </>}
+      </div>
+      <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("guestWs.search", { defaultValue: "Pesquisar…" })} className="h-9" />
       <Button onClick={create} variant="outline" className="w-full justify-start gap-2 border-dashed">
         <Plus className="h-4 w-4" />{t("guestWs.new", { defaultValue: "Nova" })}
       </Button>
@@ -144,7 +181,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
                 {i.color && <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", colorDot[i.color])} />}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{i.title || t("guestWs.untitled", { defaultValue: "Sem título" })}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{i.body.slice(0, 120) || "—"}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{htmlToPlain(i.body).slice(0, 120) || "—"}</span>
                 </span>
               </button>
             </li>
@@ -153,7 +190,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
       )}
       </div>);
       return section === "study" && studyTab === "bible"
-        ? <BibleReadingTab data={data} update={update} notes={block} /> : block; })()}
+        ? <BibleReadingTab data={data} update={update} notes={block} onNote={createFromVerse} /> : block; })()}
 
       <WorkspaceSheet open={sheet} onOpenChange={setSheet} data={data} update={update}
         folder={folder} setFolder={setFolder} color={color} setColor={setColor} />
@@ -175,7 +212,7 @@ function FocusEditor({ item, data, onChange, onDelete, onClose }: {
       pdf.setFont(true); pdf.setFontSize(16);
       for (const l of pdf.splitTextToSize(item.title || "Sem título", pdf.pageW - 30)) { pdf.text(l, 15, y); y += 8; }
       pdf.setFont(false); pdf.setFontSize(11); y += 4;
-      for (const l of pdf.splitTextToSize(item.body, pdf.pageW - 30)) {
+      for (const l of pdf.splitTextToSize(htmlToPlain(item.body), pdf.pageW - 30)) {
         if (y > pdf.pageH - 15) { pdf.addPage(); y = 20; }
         pdf.text(l, 15, y); y += 5.5;
       }
@@ -205,13 +242,21 @@ function FocusEditor({ item, data, onChange, onDelete, onClose }: {
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
-      <div className={cn("mx-auto flex w-full flex-1 flex-col px-5 pb-6", data.settings.width === "wide" ? "max-w-4xl" : "max-w-2xl")}>
+      <div className={cn("mx-auto flex w-full flex-1 flex-col overflow-y-auto px-5 pb-6", data.settings.width === "wide" ? "max-w-4xl" : "max-w-2xl")}>
         <input value={item.title} onChange={(e) => onChange({ title: e.target.value })} autoFocus={!item.title}
           placeholder={t("guestWs.titlePh", { defaultValue: "Título" })}
           className="w-full bg-transparent py-2 text-2xl font-semibold outline-none placeholder:text-muted-foreground/50" />
-        <textarea value={item.body} onChange={(e) => onChange({ body: e.target.value })}
-          placeholder={t("guestWs.bodyPh", { defaultValue: "Comece a escrever…" })}
-          className={cn("w-full flex-1 resize-none bg-transparent leading-relaxed outline-none placeholder:text-muted-foreground/50", size)} />
+        <select value={item.folderId ?? ""} onChange={(e) => onChange({ folderId: e.target.value || null })}
+          aria-label={t("guestWs.moveFolder", { defaultValue: "Pasta" })} className="mb-2 h-8 w-fit rounded-md border bg-background px-2 text-xs">
+          <option value="">{t("guestWs.noFolder", { defaultValue: "Sem pasta" })}</option>
+          {data.folders.filter((f) => !f.kind || f.kind === item.kind).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+        </select>
+        <div className={cn("flex-1", size)}>
+          <Suspense fallback={<p className="text-sm text-muted-foreground">{t("guestWs.loading", { defaultValue: "Carregando…" })}</p>}>
+            <RichNoteEditor value={toNoteHtml(item.body)} onChange={(html) => onChange({ body: html })} noteId={item.id}
+              placeholder={t("guestWs.bodyPh", { defaultValue: "Comece a escrever…" })} minHeight="50vh" maxHeight="none" />
+          </Suspense>
+        </div>
       </div>
     </div>
   );

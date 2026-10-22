@@ -27,3 +27,26 @@ describe("leitura da Bíblia", () => {
     expect(filterHighlights(hs, null, "AMOR").map((h) => h.id)).toEqual(["2"]);
   });
 });
+
+import { customPlanDay as _cpd, chapterSequence as _cs } from "./bible-chapters";
+import { sanitizeWs as _sw, verseNoteHtml as _vn } from "./guest-workspace-store";
+describe("meta personalizada e anotações", () => {
+  it("sequência só com livros escolhidos", () => {
+    const s = _cs("custom", { books: ["B57", "B65"], perDay: null, endDate: null });
+    expect(s).toEqual(["B57:1", "B65:1"]);
+  });
+  it("3 capítulos por dia", () => {
+    const c = { books: ["B01"], perDay: 3, endDate: null };
+    expect(_cpd(c, "2026-01-01", new Date(2026, 0, 2))?.keys).toEqual(["B01:4", "B01:5", "B01:6"]);
+    expect(_cpd({ ...c, perDay: null }, "2026-01-01", new Date(2026, 0, 2))).toBeNull();
+  });
+  it("sanitize descarta livro inválido e pasta mal formada", () => {
+    const d = _sw({ reading: { plan: "custom", custom: { books: ["B01", "B99", "x"], perDay: 99 } }, folders: [{ id: "a" }, { id: "b", name: "Ok", kind: "bible" }] });
+    expect(d.reading.custom?.books).toEqual(["B01"]);
+    expect(d.reading.custom?.perDay).toBeNull();
+    expect(d.folders).toEqual([{ id: "b", name: "Ok", kind: "bible" }]);
+  });
+  it("anotação do versículo contém a referência", () => {
+    expect(_vn("João 3:16", "Deus amou")).toContain("João 3:16");
+  });
+});
