@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { getGuestSnapshot } from "@/lib/guest.functions";
-import { saveGuestSession } from "@/lib/guest-session";
+import { guestLogin } from "@/lib/guest-login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,10 +26,10 @@ function Page() {
     const c = code.trim().toUpperCase();
     if (!/^[A-Z0-9]{4,12}\*?$/.test(c)) { toast.error(t("guest.invalidCode")); return; }
     setBusy(true);
-    const r = await fn({ data: { inviteCode: c } });
+    const res = await guestLogin(c, fn as never);
     setBusy(false);
-    if (!r.ok) { toast.error(r.error); return; }
-    saveGuestSession(c);
+    if (res === "invalid") { toast.error(t("guest.invalidCode")); return; }
+    if (res === "network") { toast.error(t("login.connectionError")); return; }
     nav({ to: "/visitante/painel" });
   };
 

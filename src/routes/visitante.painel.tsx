@@ -160,6 +160,9 @@ function Page() {
     if (cached && !opts?.pickCurrent) {
       setSnap(cached);
       setLoading(false);
+      // Acabou de ser baixado na tela de entrada: não repete a consulta.
+      const at = snapshotSavedAt("guest", cacheKey);
+      if (at && Date.now() - at < 60_000) return;
     } else {
       setLoading(true);
     }

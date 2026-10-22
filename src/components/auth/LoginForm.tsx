@@ -107,19 +107,17 @@ export function LoginForm() {
     if (!/^[A-Z0-9]{4,12}\*?$/.test(c)) { toast.error(t("login.codeNotFound")); return; }
     setBusy(true);
     try {
-      const r = await guestFn({ data: { inviteCode: c } });
-      if (!r.ok) { toast.error(t("login.codeNotFound")); return; }
-      saveGuestSession(c);
+      const res = await guestLogin(c, guestFn as never);
+      if (res === "invalid") { toast.error(t("login.codeNotFound")); return; }
+      if (res === "network") { toast.error(t("login.connectionError")); return; }
       nav({ to: "/visitante/painel" });
-    } catch {
-      toast.error(t("login.connectionError"));
     } finally { setBusy(false); }
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (offline) { toast.error(t("connection.firstLoginNeedsInternet")); return; }
     if (usingCode && !usingAccount) { await submitCode(); return; }
+    if (offline) { toast.error(t("connection.firstLoginNeedsInternet")); return; }
     if (!identifier.trim() || !password) { toast.error(t("login.fillAccount")); return; }
     setBusy(true);
     let stage: "identifier" | "authentication" | "role" = "identifier";
