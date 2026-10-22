@@ -924,34 +924,6 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
       </Card>
 
       <TodayStudyFieldCards studies={todayField} fieldMeetings={todayFieldMeetings} fmtTime={fmtTime} />
-                {f.acompanhante && (
-                  <div className="text-xs">
-                    {t("guest.labels.companion")}: {f.acompanhante}
-                  </div>
-                )}
-              </div>
-            ))}
-            {todayFieldMeetings.map((f) => (
-              <div key={f.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
-                <div className="font-medium">
-                  {f.period} • {fmtTime(f.meeting_time)} • {f.modality}
-                </div>
-                {f.territory_location && (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {f.territory_location}
-                  </div>
-                )}
-                {f.auxiliary_leaders && (
-                  <div className="text-xs">
-                    {t("guest.labels.leaders")}: {f.auxiliary_leaders}
-                  </div>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardContent className="p-4 space-y-3">
