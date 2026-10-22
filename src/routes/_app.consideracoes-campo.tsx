@@ -1962,6 +1962,7 @@ function NoteEditor({
         </div>
         <div className="flex items-center gap-2">
           <SavingIndicator saving={saving} />
+          {isField && <FieldNoteInfoButton note={draft} />}
           <Button
             variant="ghost"
             size="sm"
@@ -2322,6 +2323,7 @@ function FullscreenOutline({
             </Button>
           </div>
 
+          {(note.type ?? "field_consideration") === "field_consideration" && <FieldNoteInfoButton note={note} />}
           <Button
             variant="ghost"
             size="icon"
