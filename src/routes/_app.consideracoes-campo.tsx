@@ -1,3 +1,4 @@
+import { FieldNoteInfoButton } from "@/components/notes/FieldNoteInfoButton";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -6,6 +7,7 @@ import {
   Plus,
   Trash2,
   Search,
+  ChevronLeft,
   Save,
   
   Pencil,
@@ -208,6 +210,9 @@ function Page() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [draft, setDraft] = useState<FieldNote | null>(null);
+  // Só apresentação: no celular alterna entre Biblioteca (lista) e Modo Foco (esboço).
+  const [showLibrary, setShowLibrary] = useState(true);
+  useEffect(() => { if (draft) setShowLibrary(false); }, [draft?.id]);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
@@ -1382,7 +1387,7 @@ function Page() {
         {...draggable.attributes}
         {...draggable.listeners}
         className={cn(
-          "cv-row group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm touch-none select-none",
+          "cv-row group w-full flex items-center gap-1.5 rounded-lg px-1.5 py-2 text-sm touch-none select-none",
           selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
           isClipped && "opacity-60 italic",
           hint === "before" && "border-t-2 border-primary",
@@ -1415,8 +1420,13 @@ function Page() {
           onClick={() => selectNote(note)}
           className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
         >
-          <FileText className="h-3.5 w-3.5 shrink-0 opacity-70" />
-          <span className="truncate flex-1">{note.title || t("fieldConsiderations.fields.title")}</span>
+          <FileText className="h-4 w-4 shrink-0 opacity-70" />
+          <span className="flex-1 min-w-0">
+            <span className="block truncate font-medium">{note.title || t("fieldConsiderations.fields.title")}</span>
+            {note.updated_at ? (
+              <span className="block truncate text-[11px] text-muted-foreground">{new Date(note.updated_at).toLocaleDateString()}</span>
+            ) : null}
+          </span>
         </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -1535,10 +1545,10 @@ function Page() {
             </CardContent>
           </Card>
         ) : (
-          <div className="flex flex-col gap-4 w-full max-w-full min-w-0">
+          <div className="flex flex-col gap-4 w-full max-w-full min-w-0 lg:grid lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
 
             {/* Sidebar: árvore de pastas */}
-            <Card className="h-fit">
+            <Card className={cn("h-fit", draft && !showLibrary && "hidden lg:block")}>
               <CardContent className="p-3 space-y-3">
                 <div className="flex items-center gap-2">
                   <Folder className="h-4 w-4 text-primary" />
@@ -1559,33 +1569,34 @@ function Page() {
                 {!foldersCollapsed && (
                   <>
                     <div className="flex gap-1.5">
-                      <Button size="sm" className="flex-1" onClick={handleNewNote}>
-                        <Plus className="h-4 w-4 mr-1" /> {t("fieldConsiderations.newNote")}
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={handleImportDocx} title={t("fieldConsiderations.docxImport.button")} aria-label={t("fieldConsiderations.docxImport.button")}>
-                        <FileUp className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleCreateFolder(null)} title={t("personalOutlines.folders.new")}>
-                        <FolderPlus className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        title={t("personalOutlines.folders.import")}
-                      >
-                        <Upload className="h-4 w-4" />
-                      </Button>
-                      {!isTalkNotes && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCloudOpen}
-                          title={t("personalOutlines.cloud.downloadButton", { defaultValue: "Baixar da nuvem" })}
-                        >
-                          <CloudDownload className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" className="flex-1 h-9 rounded-full">
+                            <Plus className="h-4 w-4 mr-1" /> {t("personalOutlines.list.new", { defaultValue: "Novo" })}
+                            <ChevronDown className="h-3.5 w-3.5 ml-1 opacity-80" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-56">
+                          <DropdownMenuItem onClick={handleNewNote}>
+                            <Plus className="h-4 w-4 mr-2" /> {t("fieldConsiderations.newNote")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleImportDocx}>
+                            <FileUp className="h-4 w-4 mr-2" /> {t("fieldConsiderations.docxImport.button")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleCreateFolder(null)}>
+                            <FolderPlus className="h-4 w-4 mr-2" /> {t("personalOutlines.folders.new")}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                            <Upload className="h-4 w-4 mr-2" /> {t("personalOutlines.folders.import")}
+                          </DropdownMenuItem>
+                          {!isTalkNotes && (
+                            <DropdownMenuItem onClick={handleCloudOpen}>
+                              <CloudDownload className="h-4 w-4 mr-2" /> {t("personalOutlines.cloud.downloadButton", { defaultValue: "Baixar da nuvem" })}
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -1599,12 +1610,12 @@ function Page() {
                       />
                     </div>
                     <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                       <Input
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder={t("fieldConsiderations.search")}
-                        className="pl-7 h-9"
+                        className="pl-8 h-10 rounded-full"
                       />
                     </div>
                     {clipboardNoteIds.length > 0 && (
@@ -1708,8 +1719,13 @@ function Page() {
 
 
             {/* Editor */}
-            <Card className="w-full max-w-full overflow-hidden min-w-0">
+            <Card className={cn("w-full max-w-full overflow-hidden min-w-0", (!draft || showLibrary) && "hidden lg:block")}>
               <CardContent className="p-5 space-y-4 w-full max-w-full overflow-x-hidden box-border min-w-0">
+                {draft && (
+                  <Button variant="ghost" size="sm" className="lg:hidden -ml-2 -mt-2 h-8 px-2 text-primary" onClick={() => { setShowLibrary(true); window.scrollTo({ top: 0 }); }}>
+                    <ChevronLeft className="h-4 w-4 mr-1" /> {t("personalOutlines.list.back", { defaultValue: "Esboços" })}
+                  </Button>
+                )}
 
                 {!draft ? (
                   <p className="text-sm text-muted-foreground text-center py-12">
@@ -2195,7 +2211,7 @@ function NoteEditor({
                   className="rounded-md border"
                 />
               )}
-              <div className="flex-1 min-h-[22rem] max-h-[60vh] overflow-y-auto rounded-md border bg-background px-3 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
+              <div className="flex-1 min-h-[22rem] max-h-[60vh] overflow-y-auto rounded-md border bg-background px-4 py-4 sm:px-6 text-[15px] leading-7 break-words [overflow-wrap:anywhere]">
                 {draft.content ? (
                   <RichOutlineContent html={draft.content} library={activeBible} onInsertVerse={onInsertBibleText} />
                 ) : (

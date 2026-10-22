@@ -34,6 +34,6 @@
 - [ ] Etapa 5 / Rodada A: dividir o Painel em peças separadas (aguarda o usuário testar a Rodada 0).
 - [ ] Etapa 5 / Rodada B: dividir os Esboços pessoais em peças separadas (após a Rodada A).
 - [x] Esboços premium — Rodada 1: botão "Detalhes" somente leitura na Consideração de Campo (modo esboço e telas cheias).
-- [ ] Esboços premium — Rodada 2: botão "+ Novo" com menu, busca larga, pastas em pílulas, cartões mais legíveis.
-- [ ] Esboços premium — Rodada 3: Biblioteca x Modo Foco (lista separada do esboço) e leitura tipo folha impressa.
+- [x] Esboços premium — Rodada 2: botão "+ Novo" com menu, busca larga, pastas em pílulas, cartões mais legíveis.
+- [x] Esboços premium — Rodada 3: Biblioteca x Modo Foco (lista separada do esboço) e leitura tipo folha impressa.
 - [ ] (opcional, após aprovação no uso) Rodada 4: recolher campos da Consideração de Campo em "Editar detalhes".
