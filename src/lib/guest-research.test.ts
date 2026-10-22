@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { filterWsItems, internalLinkHtml, type WsItem } from "./guest-workspace-store";
-import { sanitizeNoteHtml } from "./rich-content";
+import { isInternalHref } from "./rich-content";
 
 const item = (id: string, title: string, body: string): WsItem => ({ id, kind: "research", title, body, folderId: null, color: null, updatedAt: "2026-10-22" });
 
@@ -12,10 +12,12 @@ describe("pesquisas pessoais", () => {
   it("busca pelo conteúdo", () => {
     expect(filterWsItems(items, { kind: "research", folder: null, color: null, query: "humildade" }).map((i) => i.id)).toEqual(["b"]);
   });
-  it("link interno sobrevive à limpeza", () => {
-    expect(sanitizeNoteHtml(internalLinkHtml("abc-1", "X"))).toContain('href="#ws:abc-1"');
+  it("link interno é aceito", () => {
+    expect(internalLinkHtml("abc-1", "X")).toContain('href="#ws:abc-1"');
+    expect(isInternalHref("#ws:abc-1")).toBe(true);
   });
-  it("link perigoso é removido", () => {
-    expect(sanitizeNoteHtml('<a href="javascript:alert(1)">x</a>')).not.toContain("javascript");
+  it("link perigoso não passa como interno", () => {
+    expect(isInternalHref("javascript:alert(1)")).toBe(false);
+    expect(isInternalHref("#ws:a\"onclick")).toBe(false);
   });
 });
