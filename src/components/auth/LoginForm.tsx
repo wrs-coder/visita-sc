@@ -251,7 +251,7 @@ export function LoginForm() {
                   autoComplete="off"
                   autoCapitalize="characters"
                   maxLength={20}
-                  className="h-11 font-mono uppercase tracking-widest"
+                  className="h-11 font-mono uppercase tracking-widest placeholder:font-sans placeholder:normal-case placeholder:tracking-normal"
                   placeholder={t("login.codePlaceholder")}
                   value={accessCode}
                   onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
