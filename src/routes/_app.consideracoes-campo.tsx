@@ -35,6 +35,7 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   FileUp,
+  Clock,
 } from "lucide-react";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
@@ -109,6 +110,9 @@ import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
 import { RichOutlineContent, sanitizeNoteHtml } from "@/lib/rich-content";
+import { searchOutlines } from "@/lib/outline-search";
+import { readRecent, touchRecent } from "@/lib/recent-outlines";
+import { repairFolderTypes } from "@/lib/folder-type-repair";
 import { cn } from "@/lib/utils";
 import { appendPlainTextToNote } from "@/lib/note-content";
 import { useServerFn } from "@tanstack/react-start";
@@ -135,6 +139,17 @@ import {
   type DragEndEvent,
   type DragOverEvent,
 } from "@dnd-kit/core";
+
+// Corrige uma vez por abertura pastas cujo tipo não bate com os esboços dentro.
+async function repairFolderTypesLocal() {
+  try {
+    const [fs, ns] = await Promise.all([listFoldersStore(), listNotes()]);
+    const real = fs.filter((f) => !isFixedFolder(f.id));
+    const r = repairFolderTypes(real, ns);
+    for (const f of r.folders) await saveFolder(f);
+    for (const n of r.notes) await persistNote(n);
+  } catch { /* silencioso */ }
+}
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
   validateSearch: (search: Record<string, unknown>): {
@@ -255,9 +270,24 @@ function Page() {
 
   // Multi-seleção
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Busca por tema, recentes e criação com pasta obrigatória
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [submittedQuery, setSubmittedQuery] = useState("");
+  const [recentIds, setRecentIds] = useState<string[]>([]);
+  const [pendingCreate, setPendingCreate] = useState<
+    null | { kind: "new" } | { kind: "docx"; title: string; html: string }
+  >(null);
+  function closeSearch() {
+    setSearchOpen(false);
+    setQuery("");
+    setSubmittedQuery("");
+  }
   // Limpa seleção/clipboard ao trocar de subaba
   useEffect(() => {
     setSelectedIds(new Set());
+    setActivePill(null);
+    closeSearch();
+    setRecentIds(activeType ? readRecent(activeType) : []);
     // "Anotações" é só edição — força modo edit ao entrar na subaba.
     if (activeType === "talk_notes") setMode("edit");
   }, [activeType]);
@@ -474,6 +504,7 @@ function Page() {
       return;
     }
     (async () => {
+      await repairFolderTypesLocal();
       const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
       setFolders(fs);
       const filteredNs = ns.filter((n) => (n.type ?? "field_consideration") === activeType);
@@ -528,17 +559,31 @@ function Page() {
     setSelectedFolderId(n.folderId ?? null);
     setDraft(n);
     setShowLibrary(false);
+    if (activeType) setRecentIds(touchRecent(activeType, n.id));
     // "Anotações" não tem modo Esboço — sempre abre direto no editor.
     setMode((n.type ?? activeType) === "talk_notes" ? "edit" : "outline");
   }
 
-  function handleNewNote() {
-    if (!activeType) return;
-    const n = emptyNote(activeType, selectedFolderId);
+  // Criação exige escolher a pasta antes.
+  function openNewWithFolder(folderId: string) {
+    if (!activeType || !pendingCreate) return;
+    const base = emptyNote(activeType, folderId);
+    const n = pendingCreate.kind === "docx"
+      ? { ...base, title: pendingCreate.title, content: pendingCreate.html }
+      : base;
+    setPendingCreate(null);
+    setSelectedFolderId(folderId);
+    setExpanded((s) => new Set(s).add(folderId));
     setDraft(n);
     setSelectedNoteId(n.id);
     setShowLibrary(false);
+    setRecentIds(touchRecent(activeType, n.id));
     setMode("edit");
+  }
+
+  function handleNewNote() {
+    if (!activeType) return;
+    setPendingCreate({ kind: "new" });
   }
 
   async function handleImportDocx() {
@@ -548,10 +593,7 @@ function Page() {
     try {
       const { importDocx } = await import("@/lib/docx-import");
       const r = await importDocx(file);
-      const n = { ...emptyNote(activeType, selectedFolderId), title: r.title, content: sanitizeNoteHtml(r.html) };
-      setDraft(n);
-      setSelectedNoteId(n.id);
-      setMode("edit");
+      setPendingCreate({ kind: "docx", title: r.title, html: sanitizeNoteHtml(r.html) });
       toast.success(t("fieldConsiderations.docxImport.done"));
     } catch (e) {
       const code = (e as { code?: string })?.code ?? "not_docx";
@@ -1030,9 +1072,12 @@ function Page() {
   const dateFmt = (ts: number) =>
     new Date(ts).toLocaleDateString(i18n.language, { day: "2-digit", month: "short", year: "numeric" });
 
-  // Árvore: pastas filhas de um parentId, filtradas por busca
-  const matchesQuery = (n: FieldNote) =>
-    !query.trim() || (n.title || "").toLowerCase().includes(query.trim().toLowerCase());
+  // A busca por tema mostra uma lista própria; a árvore não é filtrada.
+  const matchesQuery = (_n: FieldNote) => true;
+  const searchResults = submittedQuery ? searchOutlines(notes, submittedQuery) : [];
+  const recentNotes = recentIds
+    .map((id) => notes.find((n) => n.id === id))
+    .filter((n): n is FieldNote => !!n);
   // Ordena dentro da pasta por sort_order asc, fallback updated_at desc.
   const sortInFolder = (a: FieldNote, b: FieldNote) => {
     const ao = a.sort_order ?? Number.POSITIVE_INFINITY;
@@ -1243,7 +1288,7 @@ function Page() {
         onClick={() => setSelectedFolderId(null)}
       >
         <FolderOpen className="h-4 w-4" />
-        <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
+        <span className="flex-1 text-muted-foreground">{t("personalOutlines.folders.noFolder", { defaultValue: "Sem pasta" })}</span>
         {clipboardNoteIds.length > 0 && (
           <button
             type="button"
@@ -1639,16 +1684,36 @@ function Page() {
                           e.target.value = "";
                         }}
                       />
+                      <Button
+                        size="sm"
+                        variant={searchOpen ? "secondary" : "outline"}
+                        className="h-9 w-9 p-0 rounded-full shrink-0"
+                        aria-label={t("personalOutlines.search.open", { defaultValue: "Procurar esboço" })}
+                        onClick={() => {
+                          if (searchOpen) closeSearch();
+                          else setSearchOpen(true);
+                        }}
+                      >
+                        {searchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+                      </Button>
                     </div>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder={t("fieldConsiderations.search")}
-                        className="pl-8 h-10 rounded-full"
-                      />
-                    </div>
+                    {searchOpen && (
+                      <form
+                        className="flex gap-1.5"
+                        onSubmit={(e) => { e.preventDefault(); setSubmittedQuery(query.trim()); }}
+                      >
+                        <Input
+                          autoFocus
+                          value={query}
+                          onChange={(e) => { setQuery(e.target.value); if (!e.target.value.trim()) setSubmittedQuery(""); }}
+                          placeholder={t("personalOutlines.search.placeholder", { defaultValue: "Tema do esboço" })}
+                          className="h-9 rounded-full flex-1"
+                        />
+                        <Button type="submit" size="sm" className="h-9 rounded-full" disabled={!query.trim()}>
+                          {t("personalOutlines.search.submit", { defaultValue: "Procurar" })}
+                        </Button>
+                      </form>
+                    )}
                     {clipboardNoteIds.length > 0 && (
                       <div className="flex items-center gap-2 rounded-md border border-dashed border-primary/40 bg-primary/5 px-2 py-1.5 text-xs">
                         <Scissors className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -1716,6 +1781,46 @@ function Page() {
                       onDragEnd={handleDndEnd}
                       onDragCancel={() => { setDragItem(null); setDropHint(null); }}
                     >
+                      {submittedQuery ? (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground px-1">
+                            {t("personalOutlines.search.results", { defaultValue: "{{n}} resultado(s) para \"{{q}}\"", n: searchResults.length, q: submittedQuery })}
+                          </p>
+                          {searchResults.length === 0 ? (
+                            <p className="text-xs text-muted-foreground text-center py-4">
+                              {t("personalOutlines.search.none", { defaultValue: "Nenhum esboço com esse tema." })}
+                            </p>
+                          ) : (
+                            <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
+                              {searchResults.map((n) => <NoteRow key={n.id} note={n} depth={0} />)}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                      <>
+                      {recentNotes.length > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {t("personalOutlines.recent", { defaultValue: "Recentes" })}
+                          </div>
+                          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none]">
+                            {recentNotes.map((n) => (
+                              <button
+                                key={n.id}
+                                type="button"
+                                onClick={() => selectNote(n)}
+                                className={cn(
+                                  "shrink-0 max-w-[11rem] truncate rounded-lg border px-2.5 py-1.5 text-xs text-left",
+                                  selectedNoteId === n.id ? "border-primary bg-primary/10 text-primary" : "bg-card hover:bg-muted",
+                                )}
+                              >
+                                {n.title || t("fieldConsiderations.fields.title")}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       {rootFolders.length > 0 && (
                         <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none]">
                           <PillChip id={null} label={t("common.all", { defaultValue: "Todos" })} />
@@ -1725,7 +1830,6 @@ function Page() {
                         </div>
                       )}
                       <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
-                        <RootDropZone />
                         {rootFolders.length === 0 && rootNotes.length === 0 && (
                           <p className="text-xs text-muted-foreground text-center py-4">
                             {t("personalOutlines.folders.empty")}
@@ -1736,10 +1840,13 @@ function Page() {
                           .map((f) => (
                             <FolderRow key={f.id} folder={f} depth={0} />
                           ))}
+                        {!activePill && rootNotes.length > 0 && <RootDropZone />}
                         {!activePill && rootNotes.map((n) => (
-                          <NoteRow key={n.id} note={n} depth={0} />
+                          <NoteRow key={n.id} note={n} depth={1} />
                         ))}
                       </div>
+                      </>
+                      )}
                       <DragOverlay dropAnimation={null}>
                         {dragItem ? (
                           <div className="rounded-md bg-primary text-primary-foreground px-2 py-1 text-xs shadow-lg">
@@ -1870,6 +1977,36 @@ function Page() {
       </Dialog>
 
 
+      <Dialog open={!!pendingCreate} onOpenChange={(o) => { if (!o) setPendingCreate(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("personalOutlines.chooseFolder.title", { defaultValue: "Salvar em qual pasta?" })}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[50vh] overflow-y-auto space-y-1">
+            {folders.length === 0 && (
+              <p className="text-xs text-muted-foreground py-2">
+                {t("personalOutlines.chooseFolder.empty", { defaultValue: "Crie uma pasta para guardar o esboço." })}
+              </p>
+            )}
+            {folders.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => openNewWithFolder(f.id)}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-left hover:bg-muted"
+              >
+                <Folder className="h-4 w-4 text-primary shrink-0" />
+                <span className="truncate">{f.name}</span>
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => handleCreateFolder(null)}>
+              <FolderPlus className="h-4 w-4 mr-1" /> {t("personalOutlines.folders.new")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {moveTarget && (
         <MoveToDialog
           folders={folders}
@@ -2590,24 +2727,10 @@ function MoveToDialog({
               <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-2 pt-1">
                 {t("personalOutlines.typePicker.outline", { defaultValue: "Esboços" })}
               </div>
-              <Row
-                label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
-                depth={0}
-                folderId={null}
-                icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
-                targetType="outline"
-              />
               {renderTree(null, 0, "outline")}
               <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-2 pt-3">
                 {t("personalOutlines.typePicker.field", { defaultValue: "Consideração de Campo" })}
               </div>
-              <Row
-                label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
-                depth={0}
-                folderId={null}
-                icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
-                targetType="field_consideration"
-              />
               {renderTree(null, 0, "field_consideration")}
             </>
           ) : (
