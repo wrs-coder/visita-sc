@@ -17,6 +17,7 @@ import {
   type WsData, type WsItem, type WsKind,
 } from "@/lib/guest-workspace-store";
 import { readGuestSession } from "@/lib/guest-session";
+import { BibleReadingTab } from "./BibleReadingTab";
 
 export type GuestSection = "week" | "notes" | "study";
 const SECTION_KEY = "guest.workspace.section";
@@ -128,6 +129,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
         </Button>
       </div>
 
+      {(() => { const block = (<div className="space-y-3">
       <Button onClick={create} variant="outline" className="w-full justify-start gap-2 border-dashed">
         <Plus className="h-4 w-4" />{t("guestWs.new", { defaultValue: "Nova" })}
       </Button>
@@ -149,6 +151,9 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
           ))}
         </ul>
       )}
+      </div>);
+      return section === "study" && studyTab === "bible"
+        ? <BibleReadingTab data={data} update={update} notes={block} /> : block; })()}
 
       <WorkspaceSheet open={sheet} onOpenChange={setSheet} data={data} update={update}
         folder={folder} setFolder={setFolder} color={color} setColor={setColor} />
