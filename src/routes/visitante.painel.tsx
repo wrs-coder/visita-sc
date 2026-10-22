@@ -455,7 +455,7 @@ function Page() {
       <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
         <GuestSectionNav value={guestSection} onChange={setGuestSection} />
         {guestSection !== "week" ? (
-          <GuestWorkspace section={guestSection} />
+          <GuestWorkspace key={guestSection} section={guestSection} />
         ) : !snap.visit ? (
           <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
             {t("guest.noActiveVisit")}
