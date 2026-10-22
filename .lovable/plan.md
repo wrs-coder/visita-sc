@@ -20,6 +20,13 @@ Opções que eu descartei:
 
 **Ida e volta:** um .docx exportado pode ser importado de novo e mantém os recuos.
 
+## 3. Exportar uma pasta inteira em Word
+- No menu de cada pasta entra a opção "Exportar pasta (Word)". Ela vale para as três subabas de "Esboços Pessoais" e para as pastas da esposa em "Anotações" e "Estudo Pessoal".
+- O aplicativo gera um único arquivo `.zip` com o nome da pasta. Dentro dele vai um `.docx` para cada esboço ou nota, com o título como nome do arquivo. Se dois títulos forem iguais, o segundo ganha um número no fim, por exemplo "(2)".
+- Também entram as subpastas, quando existirem, organizadas em pastas dentro do zip.
+- Tudo é feito no aparelho e funciona sem internet. O resultado é compartilhado ou baixado como nos outros formatos.
+- Uma pasta vazia mostra um aviso, e nenhum arquivo é gerado.
+
 ## Validação
 - Testes automáticos: o arquivo gerado é um Word válido, mantém negrito e os 3 degraus, e reimportar devolve o mesmo texto.
 - A verificação de tipos e todos os testes precisam passar.
