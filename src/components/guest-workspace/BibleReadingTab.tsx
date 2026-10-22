@@ -26,6 +26,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   const toggleList = () => { const n = !listOpen; setListOpen(n); try { localStorage.setItem(BOOKS_OPEN_KEY, n ? "1" : "0"); } catch { /* */ } };
   const custom: CustomPlan = data.reading.custom ?? { books: ALL_BOOKS, perDay: null, endDate: null };
   const [reading, setReading] = useState<string | null>(null);
+  const [pick, setPick] = useState<string | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [preset, setPreset] = useState<string | undefined>();
   const [bibleOpen, setBibleOpen] = useState(false);
@@ -156,16 +157,19 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
                 <div className="space-y-2 px-4 pb-3">
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-1.5">
                     {Array.from({ length: n }, (_, i) => `${b}:${i + 1}`).map((k, i) => (
-                      <button key={k} type="button" aria-pressed={done.has(k)} onClick={() => toggle(k)}
-                        className={cn("h-9 rounded-md border text-xs font-medium", done.has(k) ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{i + 1}</button>
+                      <button key={k} type="button" aria-pressed={pick === k} onClick={() => setPick(k)}
+                        className={cn("h-9 rounded-md border text-xs font-medium", done.has(k) ? "bg-primary text-primary-foreground" : "hover:bg-accent/60", pick === k && "ring-2 ring-ring ring-offset-2 ring-offset-background")}>{i + 1}</button>
                     ))}
                   </div>
-                  <p className="text-[11px] text-muted-foreground">{t("guestWs.tapHint", { defaultValue: "Toque para marcar. Para ler, use o botão abaixo." })}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {Array.from({ length: n }, (_, i) => `${b}:${i + 1}`).filter((k) => !done.has(k)).slice(0, 1).map((k) => (
-                      <Button key={k} size="sm" variant="outline" onClick={() => setReading(k)}>{t("guestWs.read", { defaultValue: "Ler" })} {label(k)}</Button>
-                    ))}
-                  </div>
+                  {(() => {
+                    const k = pick?.startsWith(`${b}:`) ? pick : Array.from({ length: n }, (_, i) => `${b}:${i + 1}`).find((x) => !done.has(x)) ?? `${b}:1`;
+                    return (
+                      <div className="flex flex-wrap gap-1.5">
+                        <Button size="sm" onClick={() => setReading(k)}>{t("guestWs.read", { defaultValue: "Ler" })} {label(k)}</Button>
+                        <Button size="sm" variant="outline" onClick={() => toggle(k)}>{done.has(k) ? t("guestWs.unmark", { defaultValue: "Desmarcar" }) : t("guestWs.mark", { defaultValue: "Marcar como lido" })}</Button>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </li>
