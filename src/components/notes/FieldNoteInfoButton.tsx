@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { InfoList } from "@/components/visit-summary/InfoList";
 import { fieldNoteInfoRows, type FieldNoteInfoSource } from "@/lib/field-note-info";
 import { cn } from "@/lib/utils";
+import { talkOutlineInfoRows, type TalkInfo } from "@/lib/talk-outline-info";
 
 /** Botão discreto que mostra, só para leitura, os detalhes da Consideração de Campo. */
 export function FieldNoteInfoButton({
@@ -14,15 +15,17 @@ export function FieldNoteInfoButton({
   onSync,
   syncing,
 }: {
-  note: FieldNoteInfoSource;
+  note: FieldNoteInfoSource & { talk?: TalkInfo | null };
   className?: string;
   onSync?: () => void | Promise<void>;
   syncing?: boolean;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const label = t("fieldConsiderations.info.title", { defaultValue: "Detalhes da consideração" });
-  const rows = fieldNoteInfoRows(note, (k, d) => t(k, { defaultValue: d }));
+  const tr = (k: string, d: string) => t(k, { defaultValue: d });
+  const isTalk = !!note.talk?.kind;
+  const label = isTalk ? tr("talkOutline.info.title", "Detalhes do esboço") : tr("fieldConsiderations.info.title", "Detalhes da consideração");
+  const rows = isTalk ? talkOutlineInfoRows(note.talk, tr) : fieldNoteInfoRows(note, tr);
   return (
     <>
       <Button

@@ -164,7 +164,7 @@ export function FieldNoteFullscreenDialog({
               {note?.title ||
                 t("fieldConsiderations.fields.title", { defaultValue: "Nota" })}
             </DialogTitle>
-            {note && (note.type ?? "field_consideration") === "field_consideration" && <FieldNoteInfoButton note={note} />}
+            {note && ((note.type ?? "field_consideration") === "field_consideration" || !!note.talk?.kind) && <FieldNoteInfoButton note={note} />}
 
             {/* Controles inline em telas >= sm */}
             <div className="hidden sm:flex items-center gap-2">

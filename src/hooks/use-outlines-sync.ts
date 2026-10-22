@@ -1,3 +1,4 @@
+import { sanitizeTalk } from "@/lib/talk-outline-info";
 // Hook de sincronização cloud↔local para esboços pessoais E considerações de campo.
 // Estratégia: a tabela personal_outlines no Supabase guarda ambos os tipos.
 // - Notas: content_json.note_type ∈ {"outline", "field_consideration"} (default "outline" p/ legado).
@@ -56,6 +57,7 @@ function contentOf(n: FieldNote) {
     assistants: n.assistants ?? null,
     description: n.description ?? null,
     content: n.content ?? "",
+    talk: n.talk ?? null,
     sort_order: n.sort_order ?? null,
     event_date: n.event_date ?? null,
     period: n.period ?? null,
@@ -202,6 +204,7 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
         assistants: typeof cj.assistants === "string" ? cj.assistants : "",
         description: typeof cj.description === "string" ? cj.description : "",
         content: typeof cj.content === "string" ? cj.content : "",
+        talk: sanitizeTalk(cj.talk),
         sort_order: typeof cj.sort_order === "number" ? cj.sort_order : null,
         event_date: typeof cj.event_date === "string" ? cj.event_date : undefined,
         period: typeof cj.period === "string" ? cj.period : undefined,

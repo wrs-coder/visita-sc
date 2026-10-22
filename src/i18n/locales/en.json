@@ -1867,5 +1867,39 @@
     "expand": "Expand",
     "collapseAll": "Collapse all",
     "expandAll": "Expand all"
+  },
+  "talkOutline": {
+    "kindLabel": "Outline type",
+    "kindPh": "Choose the type",
+    "kindNone": "No type",
+    "kinds": {
+      "public_talk": "Public Talk",
+      "service_initial": "Service Talk – Opening",
+      "pioneer_meeting": "Meeting – Pioneers",
+      "elders_meeting": "Meeting – Elders",
+      "service_final": "Service Talk – Closing",
+      "event_talk": "Talk — Events"
+    },
+    "fields": {
+      "talk_title": "Title",
+      "song": "Song",
+      "opening_song": "Opening song",
+      "prayer": "Prayer",
+      "opening_prayer": "Opening prayer",
+      "closing_prayer": "Closing prayer",
+      "next_congregation": "Next congregation",
+      "next_theme": "Next talk theme",
+      "next_speaker": "Next speaker"
+    },
+    "sync": {
+      "button": "Sync from Meetings and Talks",
+      "success": "Information synced.",
+      "empty": "Nothing filled in Meetings and Talks for this type.",
+      "offline": "No internet",
+      "noVisit": "No active visit"
+    },
+    "info": {
+      "title": "Outline details"
+    }
   }
 }

@@ -1842,5 +1842,39 @@
     "expand": "Expandir",
     "collapseAll": "Contraer todo",
     "expandAll": "Expandir todo"
+  },
+  "talkOutline": {
+    "kindLabel": "Tipo de bosquejo",
+    "kindPh": "Elija el tipo",
+    "kindNone": "Sin tipo",
+    "kinds": {
+      "public_talk": "Discurso Público",
+      "service_initial": "Discurso de Servicio – Inicial",
+      "pioneer_meeting": "Reunión – Precursores",
+      "elders_meeting": "Reunión – Ancianos",
+      "service_final": "Discurso de Servicio – Final",
+      "event_talk": "Discurso — Eventos"
+    },
+    "fields": {
+      "talk_title": "Título",
+      "song": "Canción",
+      "opening_song": "Canción inicial",
+      "prayer": "Oración",
+      "opening_prayer": "Oración inicial",
+      "closing_prayer": "Oración final",
+      "next_congregation": "Próxima congregación",
+      "next_theme": "Tema del próximo discurso",
+      "next_speaker": "Próximo orador"
+    },
+    "sync": {
+      "button": "Sincronizar de Reuniones y Discursos",
+      "success": "Información sincronizada.",
+      "empty": "Nada completado en Reuniones y Discursos para este tipo.",
+      "offline": "Sin internet",
+      "noVisit": "Ninguna visita activa"
+    },
+    "info": {
+      "title": "Detalles del bosquejo"
+    }
   }
 }

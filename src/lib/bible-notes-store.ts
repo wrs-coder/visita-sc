@@ -47,6 +47,8 @@ export interface FieldNote {
   prayer?: string;
   territory?: string;
   assistants?: string;
+  /** Tipo e campos do esboço da semana (opcional). */
+  talk?: import("./talk-outline-info").TalkInfo;
   description?: string;
   content: string;
   created_at: number;

@@ -119,6 +119,8 @@ import {
   deleteCloudOutline,
 } from "@/lib/personal-outlines.functions";
 import { useOutlinesSync } from "@/hooks/use-outlines-sync";
+import { TalkOutlineFields, useTalkSync } from "@/components/notes/TalkOutlineFields";
+import { sanitizeTalk } from "@/lib/talk-outline-info";
 import {
   DndContext,
   MouseSensor,
@@ -359,6 +361,7 @@ function Page() {
             assistants: draft.assistants ?? null,
             description: draft.description ?? null,
             content: draft.content ?? "",
+            talk: draft.talk ?? null,
             sort_order: draft.sort_order ?? null,
             event_date: draft.event_date ?? null,
             period: draft.period ?? null,
@@ -400,6 +403,7 @@ function Page() {
         assistants: typeof c.assistants === "string" ? c.assistants : "",
         description: typeof c.description === "string" ? c.description : "",
         content: typeof c.content === "string" ? c.content : "",
+        talk: sanitizeTalk(c.talk),
         sort_order: typeof c.sort_order === "number" ? c.sort_order : null,
         event_date: typeof c.event_date === "string" ? c.event_date : undefined,
         period: typeof c.period === "string" ? c.period : undefined,
@@ -677,6 +681,7 @@ function Page() {
             assistants: note.assistants ?? null,
             description: note.description ?? null,
             content: note.content ?? "",
+            talk: note.talk ?? null,
             sort_order: note.sort_order ?? null,
             event_date: note.event_date ?? null,
             period: note.period ?? null,
@@ -1920,6 +1925,9 @@ function NoteEditor({
   }, [metaCollapsed]);
 
   const isWeekConsiderations = draft.folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS;
+  const isWeekOutline = type === "outline" && draft.folderId === FIXED_FOLDER_WEEK_OUTLINES;
+  const onTalk = (v: NonNullable<FieldNote["talk"]>) => onPatch("talk", v);
+  const talkSync = useTalkSync(visit?.id, draft.talk, onTalk);
   const canSync = isField && isWeekConsiderations && !!draft.event_date && !!draft.period && !!visit;
   const offline = isOfflineMode();
 
@@ -2027,6 +2035,13 @@ function NoteEditor({
               syncing={syncing}
             />
           )}
+          {isWeekOutline && draft.talk?.kind && (
+            <FieldNoteInfoButton
+              note={draft}
+              onSync={talkSync.can ? talkSync.sync : undefined}
+              syncing={talkSync.syncing}
+            />
+          )}
           {!(isField && mode === "outline") && (
           <Button
             variant="ghost"
@@ -2095,6 +2110,10 @@ function NoteEditor({
               </Select>
             </div>
           </div>
+        )}
+
+        {isWeekOutline && mode === "edit" && (
+          <TalkOutlineFields talk={draft.talk} onChange={onTalk} visitId={visit?.id} />
         )}
 
         <div className="grid gap-1.5">
@@ -2396,7 +2415,7 @@ function FullscreenOutline({
             </Button>
           </div>
 
-          {(note.type ?? "field_consideration") === "field_consideration" && <FieldNoteInfoButton note={note} />}
+          {((note.type ?? "field_consideration") === "field_consideration" || !!note.talk?.kind) && <FieldNoteInfoButton note={note} />}
           <Button
             variant="ghost"
             size="icon"
