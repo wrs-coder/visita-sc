@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { toast } from "sonner";
 import { LogIn, Info, Mail, MessageCircle, UserCircle2, Coffee, Wifi, KeyRound } from "lucide-react";
 import { getGuestSnapshot } from "@/lib/guest.functions";
-import { saveGuestSession } from "@/lib/guest-session";
 import { HowToGetCode } from "@/components/auth/HowToGetCode";
 import { Logo } from "@/components/Logo";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
