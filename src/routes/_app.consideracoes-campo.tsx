@@ -1030,9 +1030,12 @@ function Page() {
   const dateFmt = (ts: number) =>
     new Date(ts).toLocaleDateString(i18n.language, { day: "2-digit", month: "short", year: "numeric" });
 
-  // Árvore: pastas filhas de um parentId, filtradas por busca
-  const matchesQuery = (n: FieldNote) =>
-    !query.trim() || (n.title || "").toLowerCase().includes(query.trim().toLowerCase());
+  // A busca por tema mostra uma lista própria; a árvore não é filtrada.
+  const matchesQuery = (_n: FieldNote) => true;
+  const searchResults = submittedQuery ? searchOutlines(notes, submittedQuery) : [];
+  const recentNotes = recentIds
+    .map((id) => notes.find((n) => n.id === id))
+    .filter((n): n is FieldNote => !!n);
   // Ordena dentro da pasta por sort_order asc, fallback updated_at desc.
   const sortInFolder = (a: FieldNote, b: FieldNote) => {
     const ao = a.sort_order ?? Number.POSITIVE_INFINITY;
@@ -1243,7 +1246,7 @@ function Page() {
         onClick={() => setSelectedFolderId(null)}
       >
         <FolderOpen className="h-4 w-4" />
-        <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
+        <span className="flex-1 text-muted-foreground">{t("personalOutlines.folders.noFolder", { defaultValue: "Sem pasta" })}</span>
         {clipboardNoteIds.length > 0 && (
           <button
             type="button"
