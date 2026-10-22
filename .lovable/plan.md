@@ -8,6 +8,10 @@ Causa confirmada no registro do aparelho: ao trocar de modo, o editor de texto a
 Causa confirmada no código: a tela só sai da lista quando o esboço aberto muda. Tocar de novo no mesmo esboço não muda nada, então a lista continua na frente.
 - Correção: tocar num esboço (ou criar um novo) sempre leva para a leitura, mesmo que seja o mesmo.
 
+## 3. Campo "Título" duplicado
+- O "Título" extra da caixa "Tipo de esboço" sai. Fica só o título principal do esboço, e o botão ℹ️ Detalhes passa a mostrar esse título.
+
+
 ## Verificação
 - Verificação de tipos e todos os testes.
 - No celular (393px), com sua conta: abrir esboço, alternar Esboço/Edição várias vezes sem erro; tocar "← Esboços" e reabrir o mesmo esboço.
