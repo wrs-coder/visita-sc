@@ -1654,6 +1654,33 @@ function Page() {
             </CardContent>
           </Card>
         ) : (
+          <>
+          {recentNotes.length > 0 && !submittedQuery && (
+            <Card className={cn("mb-4", draft && !showLibrary && "hidden lg:block")}>
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  {t("personalOutlines.recentTitle", { defaultValue: "Esboços recentes" })}
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none]">
+                  {recentNotes.map((n) => (
+                    <button
+                      key={n.id}
+                      type="button"
+                      onClick={() => selectNote(n)}
+                      className={cn(
+                        "shrink-0 w-40 rounded-xl border px-3 py-2 text-left transition-colors",
+                        selectedNoteId === n.id ? "border-primary bg-primary/10" : "bg-card hover:bg-muted",
+                      )}
+                    >
+                      <span className="block truncate text-sm font-medium">{n.title || t("fieldConsiderations.fields.title")}</span>
+                      <span className="block text-[11px] text-muted-foreground">{dateFmt(n.updated_at)}</span>
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
           <div className={cn("flex flex-col gap-4 w-full max-w-full min-w-0 lg:grid lg:items-start", draft && libCollapsed ? "lg:grid-cols-1" : "lg:grid-cols-[18rem_minmax(0,1fr)]")}>
             {/* Sidebar: árvore de pastas */}
             <Card className={cn("h-fit", draft && !showLibrary && "hidden lg:block", draft && libCollapsed && "lg:hidden")}>
@@ -1830,29 +1857,6 @@ function Page() {
                         </div>
                       ) : (
                       <>
-                      {recentNotes.length > 0 && (
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            {t("personalOutlines.recent", { defaultValue: "Recentes" })}
-                          </div>
-                          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none]">
-                            {recentNotes.map((n) => (
-                              <button
-                                key={n.id}
-                                type="button"
-                                onClick={() => selectNote(n)}
-                                className={cn(
-                                  "shrink-0 max-w-[11rem] truncate rounded-lg border px-2.5 py-1.5 text-xs text-left",
-                                  selectedNoteId === n.id ? "border-primary bg-primary/10 text-primary" : "bg-card hover:bg-muted",
-                                )}
-                              >
-                                {n.title || t("fieldConsiderations.fields.title")}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                       {rootFolders.length > 0 && (
                         <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none]">
                           <PillChip id={null} label={t("common.all", { defaultValue: "Todos" })} />
