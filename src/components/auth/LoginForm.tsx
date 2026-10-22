@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { toast } from "sonner";
 import { LogIn, Info, Mail, MessageCircle, UserCircle2, Coffee, Wifi, KeyRound } from "lucide-react";
 import { getGuestSnapshot } from "@/lib/guest.functions";
-import { saveGuestSession } from "@/lib/guest-session";
 import { HowToGetCode } from "@/components/auth/HowToGetCode";
 import { Logo } from "@/components/Logo";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
@@ -21,6 +20,7 @@ import { useConnectionMode, setMode } from "@/lib/connection-mode";
 import { PinUnlockPanel } from "@/components/auth/PinUnlockPanel";
 import { PinSetupDialog } from "@/components/auth/PinSetupDialog";
 import { getVaultMeta, isVaultExpired, type VaultMeta } from "@/lib/offline-credentials";
+import { guestLogin } from "@/lib/guest-login";
 import { localDbStats } from "@/lib/local-db";
 import { runFullSync } from "@/lib/local-auto-sync";
 
@@ -107,19 +107,17 @@ export function LoginForm() {
     if (!/^[A-Z0-9]{4,12}\*?$/.test(c)) { toast.error(t("login.codeNotFound")); return; }
     setBusy(true);
     try {
-      const r = await guestFn({ data: { inviteCode: c } });
-      if (!r.ok) { toast.error(t("login.codeNotFound")); return; }
-      saveGuestSession(c);
+      const res = await guestLogin(c, guestFn as never);
+      if (res === "invalid") { toast.error(t("login.codeNotFound")); return; }
+      if (res === "network") { toast.error(t("login.connectionError")); return; }
       nav({ to: "/visitante/painel" });
-    } catch {
-      toast.error(t("login.connectionError"));
     } finally { setBusy(false); }
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (offline) { toast.error(t("connection.firstLoginNeedsInternet")); return; }
     if (usingCode && !usingAccount) { await submitCode(); return; }
+    if (offline) { toast.error(t("connection.firstLoginNeedsInternet")); return; }
     if (!identifier.trim() || !password) { toast.error(t("login.fillAccount")); return; }
     setBusy(true);
     let stage: "identifier" | "authentication" | "role" = "identifier";

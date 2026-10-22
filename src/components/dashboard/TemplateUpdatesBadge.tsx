@@ -63,8 +63,10 @@ export function TemplateUpdatesBadge({ congregationId }: Props) {
   }, [congregationId, countFn, session]);
 
   useEffect(() => {
-    void refreshCount();
-    return setVisibleInterval(() => void refreshCount(), 60_000);
+    // Verificação secundária: espera a tela abrir antes de consultar.
+    const first = window.setTimeout(() => void refreshCount(), 2500);
+    const stop = setVisibleInterval(() => void refreshCount(), 60_000);
+    return () => { window.clearTimeout(first); stop(); };
   }, [refreshCount]);
 
   const handleOpen = async () => {
