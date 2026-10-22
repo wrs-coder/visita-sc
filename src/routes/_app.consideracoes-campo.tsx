@@ -213,6 +213,7 @@ function Page() {
   // Só apresentação: no celular alterna entre Biblioteca (lista) e Modo Foco (esboço).
   const [showLibrary, setShowLibrary] = useState(true);
   const [activePill, setActivePill] = useState<string | null>(null);
+  const [libCollapsed, setLibCollapsed] = useState(false);
   useEffect(() => { if (draft) setShowLibrary(false); }, [draft?.id]);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1569,10 +1570,9 @@ function Page() {
             </CardContent>
           </Card>
         ) : (
-          <div className="flex flex-col gap-4 w-full max-w-full min-w-0 lg:grid lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
-
+          <div className={cn("flex flex-col gap-4 w-full max-w-full min-w-0 lg:grid lg:items-start", draft && libCollapsed ? "lg:grid-cols-1" : "lg:grid-cols-[18rem_minmax(0,1fr)]")}>
             {/* Sidebar: árvore de pastas */}
-            <Card className={cn("h-fit", draft && !showLibrary && "hidden lg:block")}>
+            <Card className={cn("h-fit", draft && !showLibrary && "hidden lg:block", draft && libCollapsed && "lg:hidden")}>
               <CardContent className="p-3 space-y-3">
                 <div className="flex items-center gap-2">
                   <Folder className="h-4 w-4 text-primary" />
@@ -1756,9 +1756,17 @@ function Page() {
             <Card className={cn("w-full max-w-full overflow-hidden min-w-0", (!draft || showLibrary) && "hidden lg:block")}>
               <CardContent className="p-5 space-y-4 w-full max-w-full overflow-x-hidden box-border min-w-0">
                 {draft && (
-                  <Button variant="ghost" size="sm" className="lg:hidden -ml-2 -mt-2 h-8 px-2 text-primary" onClick={() => { setShowLibrary(true); window.scrollTo({ top: 0 }); }}>
-                    <ChevronLeft className="h-4 w-4 mr-1" /> {t("personalOutlines.list.back", { defaultValue: "Esboços" })}
-                  </Button>
+                  <div className="flex items-center -ml-2 -mt-2">
+                    <Button variant="ghost" size="sm" className="lg:hidden h-8 px-2 text-primary" onClick={() => { setShowLibrary(true); window.scrollTo({ top: 0 }); }}>
+                      <ChevronLeft className="h-4 w-4 mr-1" /> {t("personalOutlines.list.back", { defaultValue: "Esboços" })}
+                    </Button>
+                    <Button variant="ghost" size="sm" className="hidden lg:inline-flex h-8 px-2 text-primary" onClick={() => setLibCollapsed((v) => !v)}>
+                      {libCollapsed ? <ChevronLeft className="h-4 w-4 mr-1" /> : <Maximize2 className="h-4 w-4 mr-1" />}
+                      {libCollapsed
+                        ? t("personalOutlines.list.show", { defaultValue: "Mostrar esboços" })
+                        : t("personalOutlines.list.expand", { defaultValue: "Expandir" })}
+                    </Button>
+                  </div>
                 )}
 
                 {!draft ? (
