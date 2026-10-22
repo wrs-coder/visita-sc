@@ -18,6 +18,7 @@ import {
 } from "@/lib/guest-workspace-store";
 import { readGuestSession } from "@/lib/guest-session";
 import { BibleReadingTab } from "./BibleReadingTab";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { RichOutlineContent } from "@/lib/rich-content";
 import { findCitations, stripHtmlForDetection } from "@/lib/bible-refs";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
@@ -190,7 +191,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
           <Button type="button" size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => deleteFolder(folder)}>{t("guestWs.delete", { defaultValue: "Apagar" })}</Button>
         </>}
       </div>
-      <div className="sticky top-14 z-10 -mx-1 bg-background px-1 py-1">
+      <div className="sticky top-0 z-10 -mx-1 bg-background px-1 py-1">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("guestWs.searchKw", { defaultValue: "Buscar no título ou no texto…" })} className="h-9 pl-8 pr-8" aria-label={t("guestWs.search", { defaultValue: "Pesquisar" })} />
@@ -384,6 +385,10 @@ function WorkspaceSheet({ kind, open, onOpenChange, data, update, folder, setFol
           <SheetDescription className="sr-only">{t("guestWs.drawer", { defaultValue: "Pastas e configurações" })}</SheetDescription>
         </SheetHeader>
         <div className="space-y-6 px-4 pb-6">
+          <section className="space-y-2">
+            <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.appearance", { defaultValue: "Aparência" })}</h3>
+            <ThemeToggle />
+          </section>
           <section className="space-y-2">
             <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-muted-foreground"><FolderOpen className="h-3.5 w-3.5" />{t("guestWs.folders", { defaultValue: "Pastas" })} · {kind === "note" ? t("guestWs.notes", { defaultValue: "Anotações" }) : kind === "bible" ? t("guestWs.bible", { defaultValue: "Leitura da Bíblia" }) : t("guestWs.research", { defaultValue: "Pesquisas Pessoais" })}</h3>
             <div className="flex flex-wrap gap-1.5">
