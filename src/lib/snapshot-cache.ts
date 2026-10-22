@@ -16,7 +16,8 @@
 //
 // Retrocompatível: leituras aceitam ambos os formatos.
 
-import { compressToUTF16, decompressFromUTF16 } from "lz-string";
+import LZString from "lz-string";
+const { compressToUTF16, decompressFromUTF16 } = LZString;
 
 const PREFIX = "visita-sc:snap:";
 const COMPRESS_THRESHOLD_BYTES = 50 * 1024; // 50 KB
