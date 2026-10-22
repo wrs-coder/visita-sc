@@ -5,12 +5,12 @@ const t = (_k: string, d: string) => d;
 
 describe("talk outline", () => {
   it("campos por tipo", () => {
-    expect(FIELDS_BY_KIND.public_talk).toEqual(["talk_title", "song"]);
-    expect(FIELDS_BY_KIND.service_initial).toEqual(["talk_title", "song", "prayer"]);
-    expect(FIELDS_BY_KIND.service_final).toEqual(["talk_title", "song", "next_congregation"]);
-    expect(FIELDS_BY_KIND.event_talk).toEqual(["talk_title", "song", "next_theme", "next_speaker"]);
-    expect(FIELDS_BY_KIND.pioneer_meeting).toEqual(["talk_title", "opening_prayer", "closing_prayer"]);
-    expect(FIELDS_BY_KIND.elders_meeting).toEqual(["talk_title", "opening_prayer", "closing_prayer"]);
+    expect(FIELDS_BY_KIND.public_talk).toEqual(["song"]);
+    expect(FIELDS_BY_KIND.service_initial).toEqual(["song", "prayer"]);
+    expect(FIELDS_BY_KIND.service_final).toEqual(["song", "next_congregation"]);
+    expect(FIELDS_BY_KIND.event_talk).toEqual(["song", "next_theme", "next_speaker"]);
+    expect(FIELDS_BY_KIND.pioneer_meeting).toEqual(["opening_prayer", "closing_prayer"]);
+    expect(FIELDS_BY_KIND.elders_meeting).toEqual(["opening_prayer", "closing_prayer"]);
   });
   it("sincronização puxa da origem certa", () => {
     const src = { weekend_opening_song: "10", weekend_closing_song: "20", midweek_final_song: "30", midweek_closing_prayer: "Ana", pioneer_opening_prayer: "P1", elders_closing_prayer: "E2" };
@@ -24,7 +24,7 @@ describe("talk outline", () => {
   it("balão omite vazios e esboço sem tipo não mostra nada", () => {
     expect(talkOutlineInfoRows(undefined, t)).toEqual([]);
     expect(talkOutlineInfoRows({ kind: null, song: "5" }, t)).toEqual([]);
-    expect(talkOutlineInfoRows({ kind: "public_talk", talk_title: "Fé", song: " " }, t)).toEqual([["Tipo", "Discurso Público"], ["Título", "Fé"]]);
+    expect(talkOutlineInfoRows({ kind: "public_talk", song: " " }, t, "Fé")).toEqual([["Tipo", "Discurso Público"], ["Título", "Fé"]]);
   });
   it("sanitize ignora lixo", () => {
     expect(sanitizeTalk({ kind: "x", song: 3, prayer: "a" })).toEqual({ kind: null, prayer: "a" });

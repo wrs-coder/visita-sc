@@ -25,7 +25,7 @@ export function FieldNoteInfoButton({
   const tr = (k: string, d: string) => t(k, { defaultValue: d });
   const isTalk = !!note.talk?.kind;
   const label = isTalk ? tr("talkOutline.info.title", "Detalhes do esboço") : tr("fieldConsiderations.info.title", "Detalhes da consideração");
-  const rows = isTalk ? talkOutlineInfoRows(note.talk, tr) : fieldNoteInfoRows(note, tr);
+  const rows = isTalk ? talkOutlineInfoRows(note.talk, tr, note.title) : fieldNoteInfoRows(note, tr);
   return (
     <>
       <Button
