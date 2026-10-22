@@ -2339,7 +2339,6 @@ function NoteEditor({
 
           </>
         ) : null}
-        )}
         </>)}
 
         {mode === "edit" && (
