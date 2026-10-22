@@ -212,6 +212,7 @@ function Page() {
   const [draft, setDraft] = useState<FieldNote | null>(null);
   // Só apresentação: no celular alterna entre Biblioteca (lista) e Modo Foco (esboço).
   const [showLibrary, setShowLibrary] = useState(true);
+  const [activePill, setActivePill] = useState<string | null>(null);
   useEffect(() => { if (draft) setShowLibrary(false); }, [draft?.id]);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1141,6 +1142,7 @@ function Page() {
     if (s === "root") return { kind: "root" };
     if (s.startsWith("note:")) return { kind: "note", id: s.slice(5) };
     if (s.startsWith("folder:")) return { kind: "folder", id: s.slice(7) };
+    if (s.startsWith("pill:")) return { kind: "folder", id: s.slice(5) };
     return null;
   }
 
@@ -1196,6 +1198,28 @@ function Page() {
     }
   }
 
+
+  function PillChip({ id, label }: { id: string | null; label: string }) {
+    const droppable = useDroppable({ id: id ? `pill:${id}` : "pill-all", disabled: !id });
+    const active = activePill === id;
+    return (
+      <button
+        type="button"
+        ref={droppable.setNodeRef}
+        onClick={() => {
+          setActivePill(id);
+          if (id) setExpanded((prev) => new Set(prev).add(id));
+        }}
+        className={cn(
+          "shrink-0 rounded-full border px-3 py-1 text-xs whitespace-nowrap transition max-w-[12rem] truncate",
+          active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted",
+          droppable.isOver && "ring-2 ring-ring",
+        )}
+      >
+        {label}
+      </button>
+    );
+  }
 
   function RootDropZone() {
     const droppable = useDroppable({ id: "root" });
@@ -1483,7 +1507,7 @@ function Page() {
   return (
     <>
       <div className="space-y-4 w-full max-w-full overflow-x-clip box-border min-w-0">
-        <header className="flex items-center gap-3">
+        <header className={cn("flex items-center gap-3", draft && !showLibrary && "hidden lg:flex")}>
           <div className="rounded-xl bg-primary/10 p-2 text-primary">
             <FileText className="h-5 w-5" />
           </div>
@@ -1497,7 +1521,7 @@ function Page() {
 
 
         {/* Seletor de tipo (obrigatório) */}
-        <Card>
+        <Card className={cn(draft && !showLibrary && "hidden lg:block")}>
           <CardContent className="p-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <span className="text-xs font-semibold text-muted-foreground">
               {t("personalOutlines.typePicker.label")}:
@@ -1685,6 +1709,14 @@ function Page() {
                       onDragEnd={handleDndEnd}
                       onDragCancel={() => { setDragItem(null); setDropHint(null); }}
                     >
+                      {rootFolders.length > 0 && (
+                        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none]">
+                          <PillChip id={null} label={t("common.all", { defaultValue: "Todos" })} />
+                          {rootFolders.map((f) => (
+                            <PillChip key={f.id} id={f.id} label={f.name} />
+                          ))}
+                        </div>
+                      )}
                       <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
                         <RootDropZone />
                         {rootFolders.length === 0 && rootNotes.length === 0 && (
@@ -1692,10 +1724,12 @@ function Page() {
                             {t("personalOutlines.folders.empty")}
                           </p>
                         )}
-                        {rootFolders.map((f) => (
-                          <FolderRow key={f.id} folder={f} depth={0} />
-                        ))}
-                        {rootNotes.map((n) => (
+                        {rootFolders
+                          .filter((f) => !activePill || f.id === activePill)
+                          .map((f) => (
+                            <FolderRow key={f.id} folder={f} depth={0} />
+                          ))}
+                        {!activePill && rootNotes.map((n) => (
                           <NoteRow key={n.id} note={n} depth={0} />
                         ))}
                       </div>
@@ -1978,7 +2012,14 @@ function NoteEditor({
         </div>
         <div className="flex items-center gap-2">
           <SavingIndicator saving={saving} />
-          {isField && <FieldNoteInfoButton note={draft} />}
+          {isField && (
+            <FieldNoteInfoButton
+              note={draft}
+              onSync={canSync && !offline ? handleSyncFromField : undefined}
+              syncing={syncing}
+            />
+          )}
+          {!(isField && mode === "outline") && (
           <Button
             variant="ghost"
             size="sm"
@@ -1988,7 +2029,13 @@ function NoteEditor({
               : t("personalOutlines.editor.collapseMeta", { defaultValue: "Minimizar cabeçalho" })}
           >
             {metaCollapsed ? <ChevronsUpDown className="h-4 w-4" /> : <ChevronsDownUp className="h-4 w-4" />}
+            {isField && (
+              <span className="ml-1 text-xs">
+                {t("fieldConsiderations.editDetails", { defaultValue: "Editar detalhes" })}
+              </span>
+            )}
           </Button>
+          )}
           {mode === "outline" && !isTalk && (
             <Button variant="outline" size="sm" onClick={onFullscreen}>
               <Maximize2 className="h-4 w-4 mr-1.5" /> {t("personalOutlines.fullscreen.enter")}
@@ -2000,7 +2047,7 @@ function NoteEditor({
 
 
       <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden max-h-[38vh] overflow-y-auto overflow-x-hidden pr-1">
-        {!metaCollapsed && (<>
+        {!metaCollapsed && !(isField && mode === "outline") && (<>
         {isField && (
           <div className="grid gap-3 sm:grid-cols-2 w-full max-w-full min-w-0">
             <div className="grid gap-1.5 min-w-0">
@@ -2211,7 +2258,8 @@ function NoteEditor({
                   className="rounded-md border"
                 />
               )}
-              <div className="flex-1 min-h-[22rem] max-h-[60vh] overflow-y-auto rounded-md border bg-background px-4 py-4 sm:px-6 text-[15px] leading-7 break-words [overflow-wrap:anywhere]">
+              <div className="flex-1 min-h-[22rem] bg-background px-1 py-4 sm:px-6 text-[17px] leading-8 break-words [overflow-wrap:anywhere]">
+                <div className="max-w-[68ch] mx-auto">
                 {draft.content ? (
                   <RichOutlineContent html={draft.content} library={activeBible} onInsertVerse={onInsertBibleText} />
                 ) : (
@@ -2219,6 +2267,7 @@ function NoteEditor({
                     {t("fieldConsiderations.contentEmpty")}
                   </span>
                 )}
+                </div>
               </div>
             </>
           );
