@@ -26,12 +26,12 @@ export type TalkField = (typeof TALK_FIELDS)[number];
 export type TalkInfo = { kind?: TalkKind | null } & Partial<Record<TalkField, string | null>>;
 
 export const FIELDS_BY_KIND: Record<TalkKind, TalkField[]> = {
-  public_talk: ["talk_title", "song"],
-  service_initial: ["talk_title", "song", "prayer"],
-  service_final: ["talk_title", "song", "next_congregation"],
-  event_talk: ["talk_title", "song", "next_theme", "next_speaker"],
-  pioneer_meeting: ["talk_title", "opening_prayer", "closing_prayer"],
-  elders_meeting: ["talk_title", "opening_prayer", "closing_prayer"],
+  public_talk: ["song"],
+  service_initial: ["song", "prayer"],
+  service_final: ["song", "next_congregation"],
+  event_talk: ["song", "next_theme", "next_speaker"],
+  pioneer_meeting: ["opening_prayer", "closing_prayer"],
+  elders_meeting: ["opening_prayer", "closing_prayer"],
 };
 
 export const DEFAULT_LABELS: Record<TalkKind | TalkField, string> = {
@@ -107,10 +107,11 @@ export function talkSyncPatch(kind: TalkKind, src: TalkSyncSource): Partial<Reco
 type Tr = (key: string, fallback: string) => string;
 
 /** Linhas do balão Detalhes: tipo + campos preenchidos do tipo. */
-export function talkOutlineInfoRows(talk: TalkInfo | null | undefined, t: Tr): [string, string][] {
+export function talkOutlineInfoRows(talk: TalkInfo | null | undefined, t: Tr, title?: string | null): [string, string][] {
   if (!talk?.kind) return [];
   const kind = talk.kind;
   const rows: [string, string][] = [[t("talkOutline.kindLabel", "Tipo"), t(`talkOutline.kinds.${kind}`, DEFAULT_LABELS[kind])]];
+  if (title && title.trim()) rows.push([t("talkOutline.fields.talk_title", "Título"), title.trim()]);
   for (const f of FIELDS_BY_KIND[kind]) {
     const v = talk[f];
     if (typeof v === "string" && v.trim()) {
