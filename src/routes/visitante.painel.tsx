@@ -34,6 +34,7 @@ import { type ElderProgramEvent } from "@/components/visit-summary/ElderProgramR
 import { MeetingsTalksPanel, type MeetingsTalksSnap } from "@/components/visit-summary/MeetingsTalksPanel";
 import { ElderTabGate } from "@/components/visit-summary/ElderTabGate";
 import { GuestSectionNav, GuestWorkspace, useGuestSection } from "@/components/guest-workspace/GuestWorkspace";
+import { InfoList } from "@/components/visit-summary/InfoList";
 import { formatWeekdayTime, formatAnchorWeekdayTime, anchorWeekday } from "@/components/visit-week/report-schedule";
 
 
@@ -453,8 +454,8 @@ function Page() {
 
 
       <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
-        <GuestSectionNav value={guestSection} onChange={setGuestSection} />
-        {guestSection !== "week" ? (
+        {snap.wifeMode && <GuestSectionNav value={guestSection} onChange={setGuestSection} />}
+        {snap.wifeMode && guestSection !== "week" ? (
           <GuestWorkspace key={guestSection} section={guestSection} />
         ) : !snap.visit ? (
           <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
@@ -502,9 +503,11 @@ function Page() {
                         <div><Clock className="inline h-3 w-3" /> {fmtTime(e.start_time)}</div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium">{e.title}</div>
-                        {e.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{e.location}</div>}
-                        {e.notes && <div className="text-xs text-muted-foreground mt-1">{e.notes}</div>}
+                        <div className="font-medium mb-1">{e.title}</div>
+                        <InfoList rows={[
+                          [t("guest.labels.location"), e.location],
+                          [t("guest.labels.notes"), e.notes],
+                        ]} />
                       </div>
                     </CardContent></Card>
                   ))}
@@ -518,10 +521,13 @@ function Page() {
                         <div className="font-medium text-sm">{fmtDate(f.event_date)} • {f.period}</div>
                         {f.meeting_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(f.meeting_time)}</span>}
                       </div>
-                      {f.meeting_point && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.meeting_point}</div>}
-                      {f.acompanhante && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.companion")}: </span>{f.acompanhante}{f.acompanhante_for ? ` (${t("guest.labels.withCompanion")} ${f.acompanhante_for})` : ""}</div>}
-                      {f.contact_phone && <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{f.contact_phone}</div>}
-                      {f.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{f.notes}</div>}
+                      <InfoList rows={[
+                        [t("guest.labels.meetingPoint"), f.meeting_point],
+                        [t("guest.labels.companion"), f.acompanhante],
+                        [t("guest.labels.companionFor"), f.acompanhante_for],
+                        [t("guest.labels.phone"), f.contact_phone],
+                        [t("guest.labels.notes"), f.notes],
+                      ]} />
                     </CardContent></Card>
                   ))}
               </TabsContent>
@@ -539,12 +545,14 @@ function Page() {
                         <div className="font-medium text-sm">{fmtDate(f.event_date)} • {f.period}</div>
                         {f.meeting_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(f.meeting_time)}</span>}
                       </div>
-                      {f.meeting_location && <div className="text-xs flex items-center gap-1"><MapPin className="h-3 w-3" />{f.meeting_location}</div>}
-                      <div className="text-xs text-muted-foreground">{t("guest.labels.modality")}: {f.modality}</div>
-                      {f.territory_number && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.territoryS13")}: </span>{f.territory_number}</div>}
-                      {f.territory_location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.territory_location}</div>}
-                      {f.auxiliary_leaders && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.auxLeaders")}: </span>{f.auxiliary_leaders}</div>}
-                      {f.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{f.closing_prayer}</div>}
+                      <InfoList rows={[
+                        [t("guest.labels.meetingPoint"), f.meeting_location],
+                        [t("guest.labels.modality"), f.modality],
+                        [t("guest.labels.territoryS13"), f.territory_number],
+                        [t("guest.labels.territoryLocation"), f.territory_location],
+                        [t("guest.labels.auxLeaders"), f.auxiliary_leaders],
+                        [t("guest.labels.closingPrayer"), f.closing_prayer],
+                      ]} />
                       {f.observations && f.observations.trim() && (
                         <div className="rounded-md border border-blue-500/30 bg-blue-500/5 px-2 py-1.5 mt-1">
                           <div className="text-[10px] uppercase tracking-wide font-medium text-blue-600 dark:text-blue-400 opacity-80">{t("meetingsTalks.fromTemplate.fieldObservations")}</div>
@@ -575,10 +583,12 @@ function Page() {
                               <div className="font-medium text-sm">{fmtDate(m.meal_date)} • {mealLabel(m.type)}</div>
                               {m.meal_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(m.meal_time)}</span>}
                             </div>
-                            {m.host_name && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.host")}: </span>{m.host_name}</div>}
-                            {m.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{m.location}</div>}
-                            {m.contact_phone && <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{m.contact_phone}</div>}
-                            {m.notes && <div className="text-xs text-muted-foreground">{m.notes}</div>}
+                            <InfoList rows={[
+                              [t("guest.labels.host"), m.host_name],
+                              [t("guest.labels.location"), m.location],
+                              [t("guest.labels.phone"), m.contact_phone],
+                              [t("guest.labels.notes"), m.notes],
+                            ]} />
                           </CardContent></Card>
                         ))}
                       </div>
