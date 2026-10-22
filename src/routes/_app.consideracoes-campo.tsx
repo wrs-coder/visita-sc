@@ -35,6 +35,7 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   FileUp,
+  Clock,
 } from "lucide-react";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
@@ -109,6 +110,9 @@ import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
 import { RichOutlineContent, sanitizeNoteHtml } from "@/lib/rich-content";
+import { searchOutlines } from "@/lib/outline-search";
+import { readRecent, touchRecent } from "@/lib/recent-outlines";
+import { repairFolderTypes } from "@/lib/folder-type-repair";
 import { cn } from "@/lib/utils";
 import { appendPlainTextToNote } from "@/lib/note-content";
 import { useServerFn } from "@tanstack/react-start";
@@ -135,6 +139,17 @@ import {
   type DragEndEvent,
   type DragOverEvent,
 } from "@dnd-kit/core";
+
+// Corrige uma vez por abertura pastas cujo tipo não bate com os esboços dentro.
+async function repairFolderTypesLocal() {
+  try {
+    const [fs, ns] = await Promise.all([listFoldersStore(), listNotes()]);
+    const real = fs.filter((f) => !isFixedFolder(f.id));
+    const r = repairFolderTypes(real, ns);
+    for (const f of r.folders) await saveFolder(f);
+    for (const n of r.notes) await persistNote(n);
+  } catch { /* silencioso */ }
+}
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
   validateSearch: (search: Record<string, unknown>): {
@@ -1962,6 +1977,36 @@ function Page() {
       </Dialog>
 
 
+      <Dialog open={!!pendingCreate} onOpenChange={(o) => { if (!o) setPendingCreate(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("personalOutlines.chooseFolder.title", { defaultValue: "Salvar em qual pasta?" })}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[50vh] overflow-y-auto space-y-1">
+            {folders.length === 0 && (
+              <p className="text-xs text-muted-foreground py-2">
+                {t("personalOutlines.chooseFolder.empty", { defaultValue: "Crie uma pasta para guardar o esboço." })}
+              </p>
+            )}
+            {folders.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => openNewWithFolder(f.id)}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-left hover:bg-muted"
+              >
+                <Folder className="h-4 w-4 text-primary shrink-0" />
+                <span className="truncate">{f.name}</span>
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => handleCreateFolder(null)}>
+              <FolderPlus className="h-4 w-4 mr-1" /> {t("personalOutlines.folders.new")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {moveTarget && (
         <MoveToDialog
           folders={folders}
