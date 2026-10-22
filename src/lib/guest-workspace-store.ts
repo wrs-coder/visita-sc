@@ -80,6 +80,17 @@ export function sanitizeWs(raw: unknown): WsData {
     const k = kinds.includes(o.kind as WsKind) ? { kind: o.kind as WsKind } : {};
     return [{ id: str(o.id, 64), name: str(o.name, 120), ...k }];
   }) : [];
+  // Pastas antigas sem aba: vão para a aba dos seus itens (copiadas se houver várias).
+  for (const f of folders.filter((x) => !x.kind)) {
+    const used = [...new Set(items.filter((i) => i.folderId === f.id).map((i) => i.kind))];
+    if (used.length <= 1) { f.kind = used[0] ?? "note"; continue; }
+    f.kind = used[0];
+    for (const k of used.slice(1)) {
+      const nid = `${f.id}-${k}`.slice(0, 64);
+      if (!folders.some((x) => x.id === nid)) folders.push({ id: nid, name: f.name, kind: k });
+      for (const i of items) if (i.folderId === f.id && i.kind === k) i.folderId = nid;
+    }
+  }
   const s = (r.settings ?? {}) as Record<string, unknown>;
   const rd = (r.reading ?? {}) as Record<string, unknown>;
   const plan: ReadingPlan = rd.plan === "chrono" || rd.plan === "year" || rd.plan === "custom" ? rd.plan : "canon";

@@ -133,7 +133,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
     update((d) => ({ ...d, items: [item, ...d.items] }));
     setOpenId(item.id);
   };
-  const kindFolders = data.folders.filter((f) => !f.kind || f.kind === kind);
+  const kindFolders = data.folders.filter((f) => f.kind === kind);
   const addFolder = (preset?: string) => {
     const name = (preset ?? window.prompt(t("guestWs.newFolder", { defaultValue: "Nova pasta" })))?.trim();
     if (name) update((d) => ({ ...d, folders: [...d.folders, { id: crypto.randomUUID(), name: name.slice(0, 120), kind }] }));
@@ -162,7 +162,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         {section === "study" ? (
-          <Tabs value={studyTab} onValueChange={(v) => { setStudyTab(v as "bible" | "research"); try { localStorage.setItem(STUDY_KEY, v); } catch { /* */ } }} className="flex-1">
+          <Tabs value={studyTab} onValueChange={(v) => { setStudyTab(v as "bible" | "research"); setFolder(null); try { localStorage.setItem(STUDY_KEY, v); } catch { /* */ } }} className="flex-1">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="bible">{t("guestWs.bible", { defaultValue: "Leitura da Bíblia" })}</TabsTrigger>
               <TabsTrigger value="research">{t("guestWs.research", { defaultValue: "Pesquisas Pessoais" })}</TabsTrigger>
@@ -226,7 +226,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
       return section === "study" && studyTab === "bible"
         ? <BibleReadingTab data={data} update={update} notes={block} onNote={createFromVerse} /> : block; })()}
 
-      <WorkspaceSheet open={sheet} onOpenChange={setSheet} data={data} update={update}
+      <WorkspaceSheet kind={kind} open={sheet} onOpenChange={setSheet} data={data} update={update}
         folder={folder} setFolder={setFolder} color={color} setColor={setColor} />
     </div>
   );
@@ -299,7 +299,7 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
         <select value={item.folderId ?? ""} onChange={(e) => onChange({ folderId: e.target.value || null })}
           aria-label={t("guestWs.moveFolder", { defaultValue: "Pasta" })} className="mb-2 h-8 w-fit rounded-md border bg-background px-2 text-xs">
           <option value="">{t("guestWs.noFolder", { defaultValue: "Sem pasta" })}</option>
-          {data.folders.filter((f) => !f.kind || f.kind === item.kind).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+          {data.folders.filter((f) => f.kind === item.kind).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
         </select>
         {mode === "edit" && (
           <div className="mb-2 flex flex-wrap gap-1.5">
@@ -341,8 +341,8 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
   );
 }
 
-function WorkspaceSheet({ open, onOpenChange, data, update, folder, setFolder, color, setColor }: {
-  open: boolean; onOpenChange: (o: boolean) => void; data: WsData; update: (fn: (d: WsData) => WsData) => void;
+function WorkspaceSheet({ kind, open, onOpenChange, data, update, folder, setFolder, color, setColor }: {
+  kind: WsKind; open: boolean; onOpenChange: (o: boolean) => void; data: WsData; update: (fn: (d: WsData) => WsData) => void;
   folder: string | null; setFolder: (f: string | null) => void; color: string | null; setColor: (c: string | null) => void;
 }) {
   const { t } = useTranslation();
@@ -385,13 +385,13 @@ function WorkspaceSheet({ open, onOpenChange, data, update, folder, setFolder, c
         </SheetHeader>
         <div className="space-y-6 px-4 pb-6">
           <section className="space-y-2">
-            <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-muted-foreground"><FolderOpen className="h-3.5 w-3.5" />{t("guestWs.folders", { defaultValue: "Pastas" })}</h3>
+            <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-muted-foreground"><FolderOpen className="h-3.5 w-3.5" />{t("guestWs.folders", { defaultValue: "Pastas" })} · {kind === "note" ? t("guestWs.notes", { defaultValue: "Anotações" }) : kind === "bible" ? t("guestWs.bible", { defaultValue: "Leitura da Bíblia" }) : t("guestWs.research", { defaultValue: "Pesquisas Pessoais" })}</h3>
             <div className="flex flex-wrap gap-1.5">
               <button className={chip(!folder)} onClick={() => setFolder(null)}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
-              {data.folders.map((f) => <button key={f.id} className={chip(folder === f.id)} onClick={() => setFolder(f.id)}>{f.name}</button>)}
+              {data.folders.filter((f) => f.kind === kind).map((f) => <button key={f.id} className={chip(folder === f.id)} onClick={() => setFolder(f.id)}>{f.name}</button>)}
             </div>
             <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const name = newFolder.trim(); if (!name) return;
-              update((d) => ({ ...d, folders: [...d.folders, { id: crypto.randomUUID(), name }] })); setNewFolder(""); }}>
+              update((d) => ({ ...d, folders: [...d.folders, { id: crypto.randomUUID(), name, kind }] })); setNewFolder(""); }}>
               <Input value={newFolder} onChange={(e) => setNewFolder(e.target.value)} placeholder={t("guestWs.newFolder", { defaultValue: "Nova pasta" })} className="h-8" />
               <Button type="submit" size="sm" variant="outline"><Plus className="h-4 w-4" /></Button>
             </form>
