@@ -255,9 +255,24 @@ function Page() {
 
   // Multi-seleção
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Busca por tema, recentes e criação com pasta obrigatória
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [submittedQuery, setSubmittedQuery] = useState("");
+  const [recentIds, setRecentIds] = useState<string[]>([]);
+  const [pendingCreate, setPendingCreate] = useState<
+    null | { kind: "new" } | { kind: "docx"; title: string; html: string }
+  >(null);
+  function closeSearch() {
+    setSearchOpen(false);
+    setQuery("");
+    setSubmittedQuery("");
+  }
   // Limpa seleção/clipboard ao trocar de subaba
   useEffect(() => {
     setSelectedIds(new Set());
+    setActivePill(null);
+    closeSearch();
+    setRecentIds(activeType ? readRecent(activeType) : []);
     // "Anotações" é só edição — força modo edit ao entrar na subaba.
     if (activeType === "talk_notes") setMode("edit");
   }, [activeType]);
@@ -474,6 +489,7 @@ function Page() {
       return;
     }
     (async () => {
+      await repairFolderTypesLocal();
       const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
       setFolders(fs);
       const filteredNs = ns.filter((n) => (n.type ?? "field_consideration") === activeType);
