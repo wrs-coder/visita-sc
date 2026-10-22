@@ -34,6 +34,7 @@ import { type ElderProgramEvent } from "@/components/visit-summary/ElderProgramR
 import { MeetingsTalksPanel, type MeetingsTalksSnap } from "@/components/visit-summary/MeetingsTalksPanel";
 import { ElderTabGate } from "@/components/visit-summary/ElderTabGate";
 import { GuestSectionNav, GuestWorkspace, useGuestSection } from "@/components/guest-workspace/GuestWorkspace";
+import { TodayStudyFieldCards } from "@/components/visit-summary/TodayStudyFieldCards";
 import { InfoList } from "@/components/visit-summary/InfoList";
 import { formatWeekdayTime, formatAnchorWeekdayTime, anchorWeekday } from "@/components/visit-week/report-schedule";
 
@@ -881,35 +882,7 @@ function TodayDashboard({
         </CardContent>
       </Card>
 
-      {(todayField.length > 0 || todayFieldMeetings.length > 0) && (
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center gap-2 font-semibold text-sm">
-              <Users className="h-4 w-4" /> {t("guest.today.studiesField")}
-            </div>
-            {todayField.map((f) => (
-              <div key={f.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
-                <div className="font-medium">{f.period} • {fmtTime(f.meeting_time)}</div>
-                {f.meeting_point && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.meeting_point}</div>}
-                {f.acompanhante && <div className="text-xs">{t("guest.labels.companion")}: {f.acompanhante}{f.acompanhante_for ? ` (${t("guest.labels.withCompanion")} ${f.acompanhante_for})` : ""}</div>}
-                {f.contact_phone && <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{f.contact_phone}</div>}
-                {f.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{f.notes}</div>}
-              </div>
-            ))}
-            {todayFieldMeetings.map((f) => (
-              <div key={f.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
-                <div className="font-medium">{f.period} • {fmtTime(f.meeting_time)} • {f.modality}</div>
-                {f.meeting_location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.meeting_location}</div>}
-                {f.territory_number && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.territoryS13")}: </span>{f.territory_number}</div>}
-                {f.territory_location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.territory_location}</div>}
-                {f.auxiliary_leaders && <div className="text-xs">{t("guest.labels.auxLeaders")}: {f.auxiliary_leaders}</div>}
-                {f.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{f.closing_prayer}</div>}
-                {f.observations && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{f.observations}</div>}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      <TodayStudyFieldCards studies={todayField} fieldMeetings={todayFieldMeetings} fmtTime={fmtTime} />
 
       <Card>
         <CardContent className="p-4 space-y-3">

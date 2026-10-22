@@ -43,9 +43,9 @@
   "login": {
     "appTitle": "Visita del Superintendente",
     "signIn": "Entrar",
-    "identifierHelp": "Usuario, correo, teléfono o ID del circuito",
-    "identifierLabel": "Usuario / Correo / Teléfono / ID del Circuito",
-    "identifierPlaceholder": "ej.: juan_perez, juan@email.com, +55 71 98342-0366 o AGO-12",
+    "identifierHelp": "Para SC y Comité de Servicio",
+    "identifierLabel": "Usuario",
+    "identifierPlaceholder": "",
     "phoneExample": "Teléfono: introduce con prefijo del país y área, ej.: +55 71 98342-0366 (puedes usar espacios, paréntesis o guiones).",
     "password": "Contraseña",
     "signingIn": "Entrando...",
@@ -60,7 +60,20 @@
     "forgotPassword": "Olvidé mi contraseña",
     "guestAccess": "Acceso Cuerpo de ancianos y ESC",
     "supportDev": "Apoya al Desarrollador ☕",
-    "aboutApp": "Acerca de la Aplicación"
+    "aboutApp": "Acerca de la Aplicación",
+    "accountTitle": "Entrar con su cuenta",
+    "codeQuestion": "¿Tiene un código de acceso?",
+    "codeHelp": "Para ancianos y la esposa del superintendente",
+    "codePlaceholder": "Escriba aquí el código",
+    "noCode": "¿No tiene el código? Pídalo al superintendente.",
+    "codeNotFound": "Código no encontrado. Revise las letras e intente de nuevo.",
+    "fillAccount": "Complete usuario y contraseña, o el código de acceso.",
+    "howGetCode": "¿Cómo obtener el código?",
+    "howGetCodeTitle": "Código para crear cuenta de superintendente",
+    "howGetCodeBody": "El código de registro lo envía el desarrollador de la aplicación. Envíe un correo con su nombre y circuito para recibirlo.",
+    "requestByEmail": "Pedir por correo",
+    "emailSubject": "Solicitud de código de registro - Visita SC",
+    "or": "o"
   },
   "profile": {
     "title": "Mi perfil",
@@ -1243,7 +1256,9 @@
       "weekend": "Reunión del fin de semana",
       "pioneer": "Reunión con Precursores",
       "elders": "Reunión del Cuerpo de Ancianos y CS",
-      "otherEvents": "Otros eventos de hoy"
+      "otherEvents": "Otros eventos de hoy",
+      "studies": "Estudios del día",
+      "field": "Reunión de campo del día"
     },
     "meal": {
       "lunch": "Almuerzo",

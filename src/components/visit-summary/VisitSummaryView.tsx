@@ -3,6 +3,7 @@
 // superintendente. Aceita o mesmo shape de Snapshot e expõe export
 // PDF/PNG/WhatsApp via `saveBlob` (estabilidade nativa: nada de download
 // automático no navegador no APK).
+import { TodayStudyFieldCards } from "@/components/visit-summary/TodayStudyFieldCards";
 import { InfoList } from "./InfoList";
 import { formatWeekdayTime, formatAnchorWeekdayTime, anchorWeekday } from "@/components/visit-week/report-schedule";
 import type { VisitTemplateExtras } from "@/lib/visit-template-extras.shared";
@@ -922,51 +923,7 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
         </CardContent>
       </Card>
 
-      {(todayField.length > 0 || todayFieldMeetings.length > 0) && (
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center gap-2 font-semibold text-sm">
-              <Users className="h-4 w-4" /> {t("guest.today.studiesField")}
-            </div>
-            {todayField.map((f) => (
-              <div key={f.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
-                <div className="font-medium">
-                  {f.period} • {fmtTime(f.meeting_time)}
-                </div>
-                {f.meeting_point && (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {f.meeting_point}
-                  </div>
-                )}
-                {f.acompanhante && (
-                  <div className="text-xs">
-                    {t("guest.labels.companion")}: {f.acompanhante}
-                  </div>
-                )}
-              </div>
-            ))}
-            {todayFieldMeetings.map((f) => (
-              <div key={f.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
-                <div className="font-medium">
-                  {f.period} • {fmtTime(f.meeting_time)} • {f.modality}
-                </div>
-                {f.territory_location && (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {f.territory_location}
-                  </div>
-                )}
-                {f.auxiliary_leaders && (
-                  <div className="text-xs">
-                    {t("guest.labels.leaders")}: {f.auxiliary_leaders}
-                  </div>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      <TodayStudyFieldCards studies={todayField} fieldMeetings={todayFieldMeetings} fmtTime={fmtTime} />
 
       <Card>
         <CardContent className="p-4 space-y-3">
@@ -1183,30 +1140,7 @@ function TodayDashboard({ snap }: { snap: VisitSnapshot }) {
           )}
         </section>
 
-        {/* Estudos / Campo */}
-        {(todayField.length > 0 || todayFieldMeetings.length > 0) && (
-          <section className="space-y-1">
-            <div className="flex items-center gap-2 font-semibold">
-              <Users className="h-4 w-4" /> {t("guest.today.studiesField")}
-            </div>
-            <ul className="space-y-2">
-              {todayField.map((f) => (
-                <li key={f.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
-                  <div className="font-medium">{f.period} • {fmtTime(f.meeting_time)}</div>
-                  {f.meeting_point && <div className="text-xs text-muted-foreground flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span className="whitespace-pre-wrap break-words">{f.meeting_point}</span></div>}
-                  {f.acompanhante && <div className="text-xs">{t("guest.labels.companion")}: {f.acompanhante}</div>}
-                </li>
-              ))}
-              {todayFieldMeetings.map((f) => (
-                <li key={f.id} className="border-l-2 border-primary/30 pl-3 space-y-0.5">
-                  <div className="font-medium">{f.period} • {fmtTime(f.meeting_time)} • {f.modality}</div>
-                  {f.territory_location && <div className="text-xs text-muted-foreground flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span className="whitespace-pre-wrap break-words">{f.territory_location}</span></div>}
-                  {f.auxiliary_leaders && <div className="text-xs whitespace-pre-wrap break-words">{t("guest.labels.leaders")}: {f.auxiliary_leaders}</div>}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        <TodayStudyFieldCards studies={todayField} fieldMeetings={todayFieldMeetings} fmtTime={fmtTime} plain />
 
         {/* Reuniões */}
         <section className="space-y-1">

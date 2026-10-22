@@ -9,7 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { LogIn, Eye, Info, Mail, MessageCircle, UserCircle2, Coffee, Wifi } from "lucide-react";
+import { LogIn, Info, Mail, MessageCircle, UserCircle2, Coffee, Wifi, KeyRound } from "lucide-react";
+import { getGuestSnapshot } from "@/lib/guest.functions";
+import { saveGuestSession } from "@/lib/guest-session";
+import { HowToGetCode } from "@/components/auth/HowToGetCode";
 import { Logo } from "@/components/Logo";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -41,9 +44,13 @@ export function LoginForm() {
   const nav = useNavigate();
   const { t } = useTranslation();
   const resolveFn = useServerFn(resolveLoginIdentifier);
+  const guestFn = useServerFn(getGuestSnapshot);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [accessCode, setAccessCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const usingCode = accessCode.trim().length > 0;
+  const usingAccount = identifier.trim().length > 0 || password.length > 0;
   const [vault, setVault] = useState<VaultMeta | null>(null);
   const [usePassword, setUsePassword] = useState(false);
   const [pinSetupOpen, setPinSetupOpen] = useState(false);
@@ -95,9 +102,25 @@ export function LoginForm() {
     await redirectByRole(userId);
   };
 
+  const submitCode = async () => {
+    const c = accessCode.replace(/[\s-]/g, "").toUpperCase();
+    if (!/^[A-Z0-9]{4,12}\*?$/.test(c)) { toast.error(t("login.codeNotFound")); return; }
+    setBusy(true);
+    try {
+      const r = await guestFn({ data: { inviteCode: c } });
+      if (!r.ok) { toast.error(t("login.codeNotFound")); return; }
+      saveGuestSession(c);
+      nav({ to: "/visitante/painel" });
+    } catch {
+      toast.error(t("login.connectionError"));
+    } finally { setBusy(false); }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (offline) { toast.error(t("connection.firstLoginNeedsInternet")); return; }
+    if (usingCode && !usingAccount) { await submitCode(); return; }
+    if (!identifier.trim() || !password) { toast.error(t("login.fillAccount")); return; }
     setBusy(true);
     let stage: "identifier" | "authentication" | "role" = "identifier";
     try {
@@ -178,35 +201,65 @@ export function LoginForm() {
               />
             ) : (
               <>
-            <div className="flex items-center gap-3 mb-5">
-              <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                <UserCircle2 className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-lg leading-tight">{t("login.signIn")}</h2>
-                <p className="text-xs text-muted-foreground">{t("login.identifierHelp")}</p>
-              </div>
-            </div>
-            <form onSubmit={submit} className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="identifier">{t("login.identifierLabel")}</Label>
-                <Input
-                  id="identifier"
-                  type="text"
-                  required
-                  autoComplete="username"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder={t("login.identifierPlaceholder")}
-                />
-                <p className="text-[11px] text-muted-foreground leading-snug">{t("login.phoneExample")}</p>
+            <form onSubmit={submit} className="space-y-4">
+              <fieldset className={`space-y-3 transition-opacity ${usingCode ? "opacity-40" : ""}`}>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <UserCircle2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-base leading-tight">{t("login.accountTitle")}</h2>
+                    <p className="text-xs text-muted-foreground">{t("login.identifierHelp")}</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="identifier">{t("login.identifierLabel")}</Label>
+                  <Input
+                    id="identifier"
+                    type="text"
+                    required={!usingCode}
+                    autoComplete="username"
+                    className="h-11"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="pwd">{t("login.password")}</Label>
+                  <Input id="pwd" type="password" required={!usingCode} autoComplete="current-password" className="h-11" value={password} onChange={(e) => setPassword(e.target.value)} />
+                </div>
+              </fieldset>
+
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="h-px flex-1 bg-border" />
+                <span>{t("login.or")}</span>
+                <div className="h-px flex-1 bg-border" />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="pwd">{t("login.password")}</Label>
-                <Input id="pwd" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <Button type="submit" className="w-full h-11 mt-1" disabled={busy}>
+              <fieldset className={`space-y-1.5 transition-opacity ${usingAccount ? "opacity-40" : ""}`}>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <KeyRound className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <Label htmlFor="access-code" className="font-semibold text-base leading-tight">{t("login.codeQuestion")}</Label>
+                    <p className="text-xs text-muted-foreground">{t("login.codeHelp")}</p>
+                  </div>
+                </div>
+                <Input
+                  id="access-code"
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  maxLength={20}
+                  className="h-11 font-mono uppercase tracking-widest placeholder:font-sans placeholder:normal-case placeholder:tracking-normal"
+                  placeholder={t("login.codePlaceholder")}
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                />
+                <p className="text-[11px] text-muted-foreground">{t("login.noCode")}</p>
+              </fieldset>
+
+              <Button type="submit" className="w-full h-11" disabled={busy}>
                 <LogIn className="mr-2 h-4 w-4" /> {busy ? t("login.signingIn") : t("login.signIn")}
               </Button>
             </form>
@@ -226,6 +279,7 @@ export function LoginForm() {
               <div>
                 {t("login.newSuper")}{" "}
                 <Link to="/cadastro/superintendente" className="text-primary font-medium hover:underline">{t("login.createAccount")}</Link>
+                <div><HowToGetCode /></div>
               </div>
               <div className="pt-1 flex items-center justify-center gap-2">
                 <Link to="/esqueci-senha" className="text-muted-foreground hover:text-primary text-[12px]">{t("login.forgotPassword")}</Link>
@@ -235,10 +289,6 @@ export function LoginForm() {
             </div>
           </CardContent>
         </Card>
-
-        <Link to="/visitante" className="mt-4 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2">
-          <Eye className="h-4 w-4" /> {t("login.guestAccess")}
-        </Link>
 
         <SupportDeveloperDialog
           trigger={

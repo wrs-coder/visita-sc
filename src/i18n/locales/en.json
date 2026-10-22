@@ -43,9 +43,9 @@
   "login": {
     "appTitle": "Circuit Overseer's Visit",
     "signIn": "Sign in",
-    "identifierHelp": "Username, e-mail, phone or circuit ID",
-    "identifierLabel": "Username / E-mail / Phone / Circuit ID",
-    "identifierPlaceholder": "e.g.: john_doe, john@email.com, +55 71 98342-0366 or AGO-12",
+    "identifierHelp": "For CO and Service Committee",
+    "identifierLabel": "Username",
+    "identifierPlaceholder": "",
     "phoneExample": "Phone: enter with country and area code, e.g. +55 71 98342-0366 (spaces, parentheses and dashes are allowed).",
     "password": "Password",
     "signingIn": "Signing in...",
@@ -60,7 +60,20 @@
     "forgotPassword": "I forgot my password",
     "guestAccess": "Body of Elders and CO's wife access",
     "supportDev": "Support the Developer ☕",
-    "aboutApp": "About the App"
+    "aboutApp": "About the App",
+    "accountTitle": "Sign in with your account",
+    "codeQuestion": "Do you have an access code?",
+    "codeHelp": "For elders and the CO's wife",
+    "codePlaceholder": "Enter the code here",
+    "noCode": "No code? Ask the circuit overseer.",
+    "codeNotFound": "Code not found. Check the letters and try again.",
+    "fillAccount": "Fill in username and password, or the access code.",
+    "howGetCode": "How to get the code?",
+    "howGetCodeTitle": "Code to create a circuit overseer account",
+    "howGetCodeBody": "The sign-up code is sent by the app developer. Send an e-mail with your name and circuit to receive it.",
+    "requestByEmail": "Request by e-mail",
+    "emailSubject": "Sign-up code request - Visita SC",
+    "or": "or"
   },
   "profile": {
     "title": "My profile",
@@ -1268,7 +1281,9 @@
       "weekend": "Weekend meeting",
       "pioneer": "Meeting with Pioneers",
       "elders": "Body of Elders and Service Committee meeting",
-      "otherEvents": "Other events today"
+      "otherEvents": "Other events today",
+      "studies": "Today's studies",
+      "field": "Today's field service meeting"
     },
     "meal": {
       "lunch": "Lunch",
