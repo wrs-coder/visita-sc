@@ -85,7 +85,10 @@ export async function buildWsBackup(d: WsData): Promise<Blob> {
   return packBackupZip({
     manifest: { type: "visita_sc_backup_zip", version: 3, exportedAt: new Date().toISOString(), app: "visita-sc" },
     server: { scope: "guest-workspace" },
-    client: { indexedDB: {}, localStorage: { [DATA_KEY]: JSON.stringify(d) }, notes: [], folders: [], libraries: [], bibles: [] },
+    client: { indexedDB: {}, localStorage: {
+      [DATA_KEY]: JSON.stringify(d),
+      ...(typeof localStorage !== "undefined" && localStorage.getItem(HISTORY_KEY) ? { [HISTORY_KEY]: localStorage.getItem(HISTORY_KEY)! } : {}),
+    }, notes: [], folders: [], libraries: [], bibles: [] },
   });
 }
 
@@ -96,6 +99,8 @@ export async function readWsBackup(file: File): Promise<WsData> {
   if (file.name.toLowerCase().endsWith(".json")) return sanitizeWs(JSON.parse(await file.text()));
   const full = await unpackBackupZip(file);
   const raw = full.client?.localStorage?.[DATA_KEY];
+  const hist = full.client?.localStorage?.[HISTORY_KEY];
+  if (hist) { try { if (Array.isArray(JSON.parse(hist))) localStorage.setItem(HISTORY_KEY, hist.slice(0, 20000)); } catch { /* ignora */ } }
   if (!raw) throw new Error("no_workspace");
   return sanitizeWs(JSON.parse(raw));
 }
