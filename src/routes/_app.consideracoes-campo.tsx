@@ -1,3 +1,4 @@
+import { FieldNoteInfoButton } from "@/components/notes/FieldNoteInfoButton";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
