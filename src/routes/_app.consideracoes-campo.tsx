@@ -1639,16 +1639,36 @@ function Page() {
                           e.target.value = "";
                         }}
                       />
+                      <Button
+                        size="sm"
+                        variant={searchOpen ? "secondary" : "outline"}
+                        className="h-9 w-9 p-0 rounded-full shrink-0"
+                        aria-label={t("personalOutlines.search.open", { defaultValue: "Procurar esboço" })}
+                        onClick={() => {
+                          if (searchOpen) closeSearch();
+                          else setSearchOpen(true);
+                        }}
+                      >
+                        {searchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+                      </Button>
                     </div>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder={t("fieldConsiderations.search")}
-                        className="pl-8 h-10 rounded-full"
-                      />
-                    </div>
+                    {searchOpen && (
+                      <form
+                        className="flex gap-1.5"
+                        onSubmit={(e) => { e.preventDefault(); setSubmittedQuery(query.trim()); }}
+                      >
+                        <Input
+                          autoFocus
+                          value={query}
+                          onChange={(e) => { setQuery(e.target.value); if (!e.target.value.trim()) setSubmittedQuery(""); }}
+                          placeholder={t("personalOutlines.search.placeholder", { defaultValue: "Tema do esboço" })}
+                          className="h-9 rounded-full flex-1"
+                        />
+                        <Button type="submit" size="sm" className="h-9 rounded-full" disabled={!query.trim()}>
+                          {t("personalOutlines.search.submit", { defaultValue: "Procurar" })}
+                        </Button>
+                      </form>
+                    )}
                     {clipboardNoteIds.length > 0 && (
                       <div className="flex items-center gap-2 rounded-md border border-dashed border-primary/40 bg-primary/5 px-2 py-1.5 text-xs">
                         <Scissors className="h-3.5 w-3.5 text-primary shrink-0" />
