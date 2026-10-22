@@ -8,11 +8,18 @@ Hoje o cartão "Estudos e Campo do dia" junta duas coisas diferentes. Ele vira d
 Cada cartão some quando não houver nada para hoje. A mudança vale para os três lugares onde esse cartão aparece: o painel da esposa e o "Resumo da Semana" (comissão de anciãos e superintendente).
 
 ## 2. Tela de entrada mais elegante
-Na tela inicial, abaixo do cartão de login do superintendente/ancião, entra uma área "Outros acessos" com dois botões grandes e bem separados:
-- **Corpo de anciãos**: ícone de prédio, frase curta "Use o código da congregação".
-- **Esposa do superintendente**: ícone de coração, frase curta "Use o código criado no perfil do superintendente".
+Na tela inicial, abaixo do cartão de login, entra uma área com a pergunta simples **"Você tem um código de acesso?"** e dois botões bem grandes (fáceis de tocar), cada um com ícone grande, nome em letra maior e uma frase curta:
+- **Sou do corpo de anciãos** — "Recebi o código da congregação".
+- **Sou esposa do superintendente** — "Recebi o código do meu esposo".
 
-Os dois levam à tela do código, que passa a mostrar título, ícone e explicação de acordo com o acesso escolhido (um seletor no topo deixa trocar sem voltar). O código digitado continua o mesmo de hoje.
+Ao tocar, abre uma tela só com o necessário:
+- Título grande do acesso escolhido e passo explicado em linguagem simples: "Digite o código que você recebeu".
+- Um único campo grande, que já aceita letras minúsculas, espaços e traços (corrige sozinho), com exemplo de como o código parece.
+- Um botão grande "Entrar".
+- Ajuda "Não tem o código?" explicando, em uma frase, a quem pedir (anciãos: ao coordenador/superintendente; esposa: ao esposo, que cria em "Meu perfil").
+- Botão "Voltar" grande no topo e um aviso amigável se o código estiver errado ("Código não encontrado. Confira as letras e tente de novo.").
+
+Depois de entrar uma vez, o aparelho lembra o acesso (como já acontece hoje). O código continua o mesmo.
 
 No link "Novo superintendente? Criar conta", aparece um pequeno "Como obter o código?" que abre uma janela simples explicando que o código é enviado pelo desenvolvedor, com botão "Pedir por e-mail" (abre o e-mail para wrscircuito@gmail.com com assunto já preenchido). A mesma dica aparece na tela de cadastro do superintendente, junto ao campo do código.
 
