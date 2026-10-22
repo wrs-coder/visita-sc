@@ -3,6 +3,7 @@
 // superintendente. Aceita o mesmo shape de Snapshot e expõe export
 // PDF/PNG/WhatsApp via `saveBlob` (estabilidade nativa: nada de download
 // automático no navegador no APK).
+import { InfoList } from "./InfoList";
 import { formatWeekdayTime, formatAnchorWeekdayTime, anchorWeekday } from "@/components/visit-week/report-schedule";
 import type { VisitTemplateExtras } from "@/lib/visit-template-extras.shared";
 import { useCallback, useMemo, useRef, useState } from "react";
