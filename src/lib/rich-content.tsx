@@ -85,7 +85,12 @@ const KEEP_ATTRS = new Set([
 
 function isSafeHref(value: string): boolean {
   const v = value.trim().toLowerCase();
-  return v.startsWith("http://") || v.startsWith("https://") || v.startsWith("mailto:");
+  return v.startsWith("http://") || v.startsWith("https://") || v.startsWith("mailto:") || isInternalHref(value);
+}
+
+/** Link interno do espaço pessoal: #ws:<id>. */
+export function isInternalHref(value: string): boolean {
+  return /^#ws:[A-Za-z0-9-]{1,64}$/.test(value.trim());
 }
 
 function sanitizeElement(el: Element): void {
@@ -96,7 +101,9 @@ function sanitizeElement(el: Element): void {
       if (safe) el.setAttribute("style", safe);
       else el.removeAttribute("style");
     } else if (name === "href" && el.tagName === "A") {
-      if (isSafeHref(attr.value)) {
+      if (isInternalHref(attr.value)) {
+        /* link interno: sem nova aba */
+      } else if (isSafeHref(attr.value)) {
         el.setAttribute("rel", "noopener noreferrer");
         el.setAttribute("target", "_blank");
       } else {
@@ -466,8 +473,10 @@ function renderNode(node: Node, opts: RenderOpts, path: string, plan: CitationPl
     const href = el.getAttribute("href");
     if (href) {
       props.href = href;
-      props.target = "_blank";
-      props.rel = "noopener noreferrer";
+      if (!isInternalHref(href)) {
+        props.target = "_blank";
+        props.rel = "noopener noreferrer";
+      }
     }
     return React.createElement("a", props, children);
   }
