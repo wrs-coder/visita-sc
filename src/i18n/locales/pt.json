@@ -41,7 +41,8 @@
     "es": "Espanhol"
   },
   "login": {
-    "appTitle": "Visita SC ",
+    "appTitle": "Visita SC",
+    "appSubtitle": "Visita do Superintendente",
     "signIn": "Entrar",
     "identifierHelp": "Para SC e Comissão de Serviço",
     "identifierLabel": "Usuário",

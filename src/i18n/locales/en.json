@@ -41,7 +41,8 @@
     "es": "Spanish"
   },
   "login": {
-    "appTitle": "Circuit Overseer's Visit",
+    "appTitle": "Visita SC",
+    "appSubtitle": "Circuit Overseer's Visit",
     "signIn": "Sign in",
     "identifierHelp": "For CO and Service Committee",
     "identifierLabel": "Username",
