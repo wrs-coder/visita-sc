@@ -9,7 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { LogIn, Eye, Info, Mail, MessageCircle, UserCircle2, Coffee, Wifi } from "lucide-react";
+import { LogIn, Info, Mail, MessageCircle, UserCircle2, Coffee, Wifi, KeyRound } from "lucide-react";
+import { getGuestSnapshot } from "@/lib/guest.functions";
+import { saveGuestSession } from "@/lib/guest-session";
+import { HowToGetCode } from "@/components/auth/HowToGetCode";
 import { Logo } from "@/components/Logo";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -41,9 +44,13 @@ export function LoginForm() {
   const nav = useNavigate();
   const { t } = useTranslation();
   const resolveFn = useServerFn(resolveLoginIdentifier);
+  const guestFn = useServerFn(getGuestSnapshot);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [accessCode, setAccessCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const usingCode = accessCode.trim().length > 0;
+  const usingAccount = identifier.trim().length > 0 || password.length > 0;
   const [vault, setVault] = useState<VaultMeta | null>(null);
   const [usePassword, setUsePassword] = useState(false);
   const [pinSetupOpen, setPinSetupOpen] = useState(false);
@@ -95,9 +102,25 @@ export function LoginForm() {
     await redirectByRole(userId);
   };
 
+  const submitCode = async () => {
+    const c = accessCode.replace(/[\s-]/g, "").toUpperCase();
+    if (!/^[A-Z0-9]{4,12}\*?$/.test(c)) { toast.error(t("login.codeNotFound")); return; }
+    setBusy(true);
+    try {
+      const r = await guestFn({ data: { inviteCode: c } });
+      if (!r.ok) { toast.error(t("login.codeNotFound")); return; }
+      saveGuestSession(c);
+      nav({ to: "/visitante/painel" });
+    } catch {
+      toast.error(t("login.connectionError"));
+    } finally { setBusy(false); }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (offline) { toast.error(t("connection.firstLoginNeedsInternet")); return; }
+    if (usingCode && !usingAccount) { await submitCode(); return; }
+    if (!identifier.trim() || !password) { toast.error(t("login.fillAccount")); return; }
     setBusy(true);
     let stage: "identifier" | "authentication" | "role" = "identifier";
     try {
