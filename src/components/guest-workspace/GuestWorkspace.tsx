@@ -13,9 +13,10 @@ import { saveBlob } from "@/lib/share";
 import { createJsPdfCompat, slugify } from "@/lib/pdf/pdf-engine";
 import { cn } from "@/lib/utils";
 import {
-  loadWs, saveWs, emptyWs, buildWsBackup, readWsBackup, itemToText, WS_COLORS,
+  loadWs, saveWs, emptyWs, buildWsBackup, readWsBackup, itemToText, WS_COLORS, wsSessionKey,
   type WsData, type WsItem, type WsKind,
 } from "@/lib/guest-workspace-store";
+import { readGuestSession } from "@/lib/guest-session";
 
 export type GuestSection = "week" | "notes" | "study";
 const SECTION_KEY = "guest.workspace.section";
@@ -55,17 +56,42 @@ const colorDot: Record<string, string> = { primary: "bg-primary", accent: "bg-ac
 export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
   const { t } = useTranslation();
   const [data, setData] = useState<WsData>(emptyWs);
+  const [ready, setReady] = useState(false);
   const [studyTab, setStudyTab] = useState<"bible" | "research">("bible");
   const [openId, setOpenId] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
   const [folder, setFolder] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
+  const skRef = useRef("anon");
+  const pending = useRef<WsData | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+
+  const flush = () => {
+    window.clearTimeout(timer.current);
+    const d = pending.current; pending.current = null;
+    if (d) void saveWs(skRef.current, d);
+  };
 
   useEffect(() => {
-    setData(loadWs());
+    skRef.current = wsSessionKey(readGuestSession()?.code);
+    let alive = true;
+    void loadWs(skRef.current).then((d) => { if (alive) { setData(d); setReady(true); } });
     try { if (localStorage.getItem(STUDY_KEY) === "research") setStudyTab("research"); } catch { /* */ }
+    const onHide = () => { if (document.visibilityState === "hidden") flush(); };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", flush);
+    return () => { alive = false; flush(); document.removeEventListener("visibilitychange", onHide); window.removeEventListener("pagehide", flush); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const update = (fn: (d: WsData) => WsData) => setData((d) => { const n = fn(d); saveWs(n); return n; });
+  const update = (fn: (d: WsData) => WsData) => setData((d) => {
+    const n = fn(d);
+    pending.current = n;
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(flush, 400);
+    return n;
+  });
+
+  if (!ready) return <p className="py-10 text-center text-sm text-muted-foreground">{t("guestWs.loading", { defaultValue: "Carregando…" })}</p>;
 
   const kind: WsKind = section === "notes" ? "note" : studyTab;
   const list = data.items
