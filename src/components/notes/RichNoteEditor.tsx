@@ -232,7 +232,9 @@ export function RichNoteEditor({
         },
       },
       onUpdate: ({ editor }) => {
-        const html = editor.isEmpty ? "" : editor.getHTML();
+        if (editor.isDestroyed) return;
+        let html: string;
+        try { html = editor.isEmpty ? "" : editor.getHTML(); } catch { return; }
         lastEmittedRef.current = html;
         onChange(html);
         setTick((n) => (n + 1) % 1_000_000);
@@ -246,9 +248,10 @@ export function RichNoteEditor({
 
   // Sincroniza value externo (ex.: undo de outra fonte) sem recriar editor.
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
     if (value === lastEmittedRef.current) return;
-    const current = editor.getHTML();
+    let current: string;
+    try { current = editor.getHTML(); } catch { return; }
     if (current === value) return;
     if (!value && editor.isEmpty) return;
     editor.commands.setContent(value || "", { emitUpdate: false });

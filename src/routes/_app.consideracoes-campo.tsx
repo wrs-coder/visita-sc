@@ -1,3 +1,6 @@
+import { htmlToDocx, folderToDocxZip, safeFileName, DOCX_MIME, type DocxFolderEntry } from "@/lib/docx-export";
+import { saveBlob } from "@/lib/share";
+import { FieldNoteInfoButton } from "@/components/notes/FieldNoteInfoButton";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -6,6 +9,7 @@ import {
   Plus,
   Trash2,
   Search,
+  ChevronLeft,
   Save,
   
   Pencil,
@@ -33,6 +37,7 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   FileUp,
+  Clock,
 } from "lucide-react";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
@@ -107,6 +112,9 @@ import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
 import { RichOutlineContent, sanitizeNoteHtml } from "@/lib/rich-content";
+import { searchOutlines } from "@/lib/outline-search";
+import { readRecent, touchRecent } from "@/lib/recent-outlines";
+import { repairFolderTypes } from "@/lib/folder-type-repair";
 import { cn } from "@/lib/utils";
 import { appendPlainTextToNote } from "@/lib/note-content";
 import { useServerFn } from "@tanstack/react-start";
@@ -117,6 +125,8 @@ import {
   deleteCloudOutline,
 } from "@/lib/personal-outlines.functions";
 import { useOutlinesSync } from "@/hooks/use-outlines-sync";
+import { TalkOutlineFields, useTalkSync } from "@/components/notes/TalkOutlineFields";
+import { sanitizeTalk } from "@/lib/talk-outline-info";
 import {
   DndContext,
   MouseSensor,
@@ -131,6 +141,17 @@ import {
   type DragEndEvent,
   type DragOverEvent,
 } from "@dnd-kit/core";
+
+// Corrige uma vez por abertura pastas cujo tipo não bate com os esboços dentro.
+async function repairFolderTypesLocal() {
+  try {
+    const [fs, ns] = await Promise.all([listFoldersStore(), listNotes()]);
+    const real = fs.filter((f) => !isFixedFolder(f.id));
+    const r = repairFolderTypes(real, ns);
+    for (const f of r.folders) await saveFolder(f);
+    for (const n of r.notes) await persistNote(n);
+  } catch { /* silencioso */ }
+}
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
   validateSearch: (search: Record<string, unknown>): {
@@ -208,6 +229,11 @@ function Page() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [draft, setDraft] = useState<FieldNote | null>(null);
+  // Só apresentação: no celular alterna entre Biblioteca (lista) e Modo Foco (esboço).
+  const [showLibrary, setShowLibrary] = useState(true);
+  const [activePill, setActivePill] = useState<string | null>(null);
+  const [libCollapsed, setLibCollapsed] = useState(false);
+  useEffect(() => { if (draft) setShowLibrary(false); }, [draft?.id]);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
@@ -246,9 +272,24 @@ function Page() {
 
   // Multi-seleção
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Busca por tema, recentes e criação com pasta obrigatória
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [submittedQuery, setSubmittedQuery] = useState("");
+  const [recentIds, setRecentIds] = useState<string[]>([]);
+  const [pendingCreate, setPendingCreate] = useState<
+    null | { kind: "new" } | { kind: "docx"; title: string; html: string }
+  >(null);
+  function closeSearch() {
+    setSearchOpen(false);
+    setQuery("");
+    setSubmittedQuery("");
+  }
   // Limpa seleção/clipboard ao trocar de subaba
   useEffect(() => {
     setSelectedIds(new Set());
+    setActivePill(null);
+    closeSearch();
+    setRecentIds(activeType ? readRecent(activeType) : []);
     // "Anotações" é só edição — força modo edit ao entrar na subaba.
     if (activeType === "talk_notes") setMode("edit");
   }, [activeType]);
@@ -352,6 +393,7 @@ function Page() {
             assistants: draft.assistants ?? null,
             description: draft.description ?? null,
             content: draft.content ?? "",
+            talk: draft.talk ?? null,
             sort_order: draft.sort_order ?? null,
             event_date: draft.event_date ?? null,
             period: draft.period ?? null,
@@ -393,6 +435,7 @@ function Page() {
         assistants: typeof c.assistants === "string" ? c.assistants : "",
         description: typeof c.description === "string" ? c.description : "",
         content: typeof c.content === "string" ? c.content : "",
+        talk: sanitizeTalk(c.talk),
         sort_order: typeof c.sort_order === "number" ? c.sort_order : null,
         event_date: typeof c.event_date === "string" ? c.event_date : undefined,
         period: typeof c.period === "string" ? c.period : undefined,
@@ -463,6 +506,7 @@ function Page() {
       return;
     }
     (async () => {
+      await repairFolderTypesLocal();
       const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
       setFolders(fs);
       const filteredNs = ns.filter((n) => (n.type ?? "field_consideration") === activeType);
@@ -516,16 +560,32 @@ function Page() {
     setSelectedNoteId(n.id);
     setSelectedFolderId(n.folderId ?? null);
     setDraft(n);
+    setShowLibrary(false);
+    if (activeType) setRecentIds(touchRecent(activeType, n.id));
     // "Anotações" não tem modo Esboço — sempre abre direto no editor.
     setMode((n.type ?? activeType) === "talk_notes" ? "edit" : "outline");
   }
 
-  function handleNewNote() {
-    if (!activeType) return;
-    const n = emptyNote(activeType, selectedFolderId);
+  // Criação exige escolher a pasta antes.
+  function openNewWithFolder(folderId: string) {
+    if (!activeType || !pendingCreate) return;
+    const base = emptyNote(activeType, folderId);
+    const n = pendingCreate.kind === "docx"
+      ? { ...base, title: pendingCreate.title, content: pendingCreate.html }
+      : base;
+    setPendingCreate(null);
+    setSelectedFolderId(folderId);
+    setExpanded((s) => new Set(s).add(folderId));
     setDraft(n);
     setSelectedNoteId(n.id);
+    setShowLibrary(false);
+    setRecentIds(touchRecent(activeType, n.id));
     setMode("edit");
+  }
+
+  function handleNewNote() {
+    if (!activeType) return;
+    setPendingCreate({ kind: "new" });
   }
 
   async function handleImportDocx() {
@@ -535,10 +595,7 @@ function Page() {
     try {
       const { importDocx } = await import("@/lib/docx-import");
       const r = await importDocx(file);
-      const n = { ...emptyNote(activeType, selectedFolderId), title: r.title, content: sanitizeNoteHtml(r.html) };
-      setDraft(n);
-      setSelectedNoteId(n.id);
-      setMode("edit");
+      setPendingCreate({ kind: "docx", title: r.title, html: sanitizeNoteHtml(r.html) });
       toast.success(t("fieldConsiderations.docxImport.done"));
     } catch (e) {
       const code = (e as { code?: string })?.code ?? "not_docx";
@@ -670,6 +727,7 @@ function Page() {
             assistants: note.assistants ?? null,
             description: note.description ?? null,
             content: note.content ?? "",
+            talk: note.talk ?? null,
             sort_order: note.sort_order ?? null,
             event_date: note.event_date ?? null,
             period: note.period ?? null,
@@ -967,6 +1025,32 @@ function Page() {
 
 
 
+  async function handleExportFolderDocx(folder: NoteFolder) {
+    const entries: DocxFolderEntry[] = [];
+    const walk = (fid: string, path: string[]) => {
+      for (const n of notes) if (n.folderId === fid && !n.deleted_at) entries.push({ path, title: n.title || "Esboço", html: n.content ?? "" });
+      for (const f of folders) if (f.parentId === fid && !f.deleted_at) walk(f.id, [...path, f.name]);
+    };
+    walk(folder.id, [folder.name]);
+    if (!entries.length) { toast.info(t("personalOutlines.folders.emptyFolder", { defaultValue: "Esta pasta está vazia." })); return; }
+    try {
+      const blob = await folderToDocxZip(entries);
+      await saveBlob(blob, { filename: `${safeFileName(folder.name, "pasta")}.zip`, mimeType: "application/zip" });
+    } catch (e) {
+      toast.error(String(e instanceof Error ? e.message : e));
+    }
+  }
+
+  async function handleExportNoteDocx() {
+    if (!draft) return;
+    try {
+      const blob = await htmlToDocx(draft.title, draft.content ?? "");
+      await saveBlob(blob, { filename: `${safeFileName(draft.title)}.docx`, mimeType: DOCX_MIME });
+    } catch (e) {
+      toast.error(String(e instanceof Error ? e.message : e));
+    }
+  }
+
   async function handleExportFolder(folder: NoteFolder) {
     try {
       const payload = await exportFolderJSON(folder.id);
@@ -1016,9 +1100,12 @@ function Page() {
   const dateFmt = (ts: number) =>
     new Date(ts).toLocaleDateString(i18n.language, { day: "2-digit", month: "short", year: "numeric" });
 
-  // Árvore: pastas filhas de um parentId, filtradas por busca
-  const matchesQuery = (n: FieldNote) =>
-    !query.trim() || (n.title || "").toLowerCase().includes(query.trim().toLowerCase());
+  // A busca por tema mostra uma lista própria; a árvore não é filtrada.
+  const matchesQuery = (_n: FieldNote) => true;
+  const searchResults = submittedQuery ? searchOutlines(notes, submittedQuery) : [];
+  const recentNotes = recentIds
+    .map((id) => notes.find((n) => n.id === id))
+    .filter((n): n is FieldNote => !!n);
   // Ordena dentro da pasta por sort_order asc, fallback updated_at desc.
   const sortInFolder = (a: FieldNote, b: FieldNote) => {
     const ao = a.sort_order ?? Number.POSITIVE_INFINITY;
@@ -1136,6 +1223,7 @@ function Page() {
     if (s === "root") return { kind: "root" };
     if (s.startsWith("note:")) return { kind: "note", id: s.slice(5) };
     if (s.startsWith("folder:")) return { kind: "folder", id: s.slice(7) };
+    if (s.startsWith("pill:")) return { kind: "folder", id: s.slice(5) };
     return null;
   }
 
@@ -1192,6 +1280,28 @@ function Page() {
   }
 
 
+  function PillChip({ id, label }: { id: string | null; label: string }) {
+    const droppable = useDroppable({ id: id ? `pill:${id}` : "pill-all", disabled: !id });
+    const active = activePill === id;
+    return (
+      <button
+        type="button"
+        ref={droppable.setNodeRef}
+        onClick={() => {
+          setActivePill(id);
+          if (id) setExpanded((prev) => new Set(prev).add(id));
+        }}
+        className={cn(
+          "shrink-0 rounded-full border px-3 py-1 text-xs whitespace-nowrap transition max-w-[12rem] truncate",
+          active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted",
+          droppable.isOver && "ring-2 ring-ring",
+        )}
+      >
+        {label}
+      </button>
+    );
+  }
+
   function RootDropZone() {
     const droppable = useDroppable({ id: "root" });
     const isOver = dropHint?.kind === "root";
@@ -1206,7 +1316,7 @@ function Page() {
         onClick={() => setSelectedFolderId(null)}
       >
         <FolderOpen className="h-4 w-4" />
-        <span className="flex-1">{t("personalOutlines.folders.rootLabel")}</span>
+        <span className="flex-1 text-muted-foreground">{t("personalOutlines.folders.noFolder", { defaultValue: "Sem pasta" })}</span>
         {clipboardNoteIds.length > 0 && (
           <button
             type="button"
@@ -1332,6 +1442,10 @@ function Page() {
                 <Download className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.exportFolder")}
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportFolderDocx(folder)}>
+                <FileText className="h-4 w-4 mr-2" />
+                {t("personalOutlines.folders.exportFolderDocx", { defaultValue: "Exportar pasta (Word)" })}
+              </DropdownMenuItem>
               {!fixed && (
                 <>
                   <DropdownMenuSeparator />
@@ -1382,7 +1496,7 @@ function Page() {
         {...draggable.attributes}
         {...draggable.listeners}
         className={cn(
-          "cv-row group w-full flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm touch-none select-none",
+          "cv-row group w-full flex items-center gap-1.5 rounded-lg px-1.5 py-2 text-sm touch-none select-none",
           selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
           isClipped && "opacity-60 italic",
           hint === "before" && "border-t-2 border-primary",
@@ -1415,8 +1529,13 @@ function Page() {
           onClick={() => selectNote(note)}
           className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
         >
-          <FileText className="h-3.5 w-3.5 shrink-0 opacity-70" />
-          <span className="truncate flex-1">{note.title || t("fieldConsiderations.fields.title")}</span>
+          <FileText className="h-4 w-4 shrink-0 opacity-70" />
+          <span className="flex-1 min-w-0">
+            <span className="block truncate font-medium">{note.title || t("fieldConsiderations.fields.title")}</span>
+            {note.updated_at ? (
+              <span className="block truncate text-[11px] text-muted-foreground">{new Date(note.updated_at).toLocaleDateString()}</span>
+            ) : null}
+          </span>
         </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -1473,7 +1592,7 @@ function Page() {
   return (
     <>
       <div className="space-y-4 w-full max-w-full overflow-x-clip box-border min-w-0">
-        <header className="flex items-center gap-3">
+        <header className={cn("flex items-center gap-3", draft && !showLibrary && "hidden lg:flex")}>
           <div className="rounded-xl bg-primary/10 p-2 text-primary">
             <FileText className="h-5 w-5" />
           </div>
@@ -1487,7 +1606,7 @@ function Page() {
 
 
         {/* Seletor de tipo (obrigatório) */}
-        <Card>
+        <Card className={cn(draft && !showLibrary && "hidden lg:block")}>
           <CardContent className="p-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <span className="text-xs font-semibold text-muted-foreground">
               {t("personalOutlines.typePicker.label")}:
@@ -1535,10 +1654,36 @@ function Page() {
             </CardContent>
           </Card>
         ) : (
-          <div className="flex flex-col gap-4 w-full max-w-full min-w-0">
-
+          <>
+          {recentNotes.length > 0 && !submittedQuery && (
+            <Card className={cn("mb-4", draft && !showLibrary && "hidden lg:block")}>
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  {t("personalOutlines.recentTitle", { defaultValue: "Esboços recentes" })}
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none]">
+                  {recentNotes.map((n) => (
+                    <button
+                      key={n.id}
+                      type="button"
+                      onClick={() => selectNote(n)}
+                      className={cn(
+                        "shrink-0 w-40 rounded-xl border px-3 py-2 text-left transition-colors",
+                        selectedNoteId === n.id ? "border-primary bg-primary/10" : "bg-card hover:bg-muted",
+                      )}
+                    >
+                      <span className="block truncate text-sm font-medium">{n.title || t("fieldConsiderations.fields.title")}</span>
+                      <span className="block text-[11px] text-muted-foreground">{dateFmt(n.updated_at)}</span>
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          <div className={cn("flex flex-col gap-4 w-full max-w-full min-w-0 lg:grid lg:items-start", draft && libCollapsed ? "lg:grid-cols-1" : "lg:grid-cols-[18rem_minmax(0,1fr)]")}>
             {/* Sidebar: árvore de pastas */}
-            <Card className="h-fit">
+            <Card className={cn("h-fit", draft && !showLibrary && "hidden lg:block", draft && libCollapsed && "lg:hidden")}>
               <CardContent className="p-3 space-y-3">
                 <div className="flex items-center gap-2">
                   <Folder className="h-4 w-4 text-primary" />
@@ -1559,33 +1704,34 @@ function Page() {
                 {!foldersCollapsed && (
                   <>
                     <div className="flex gap-1.5">
-                      <Button size="sm" className="flex-1" onClick={handleNewNote}>
-                        <Plus className="h-4 w-4 mr-1" /> {t("fieldConsiderations.newNote")}
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={handleImportDocx} title={t("fieldConsiderations.docxImport.button")} aria-label={t("fieldConsiderations.docxImport.button")}>
-                        <FileUp className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleCreateFolder(null)} title={t("personalOutlines.folders.new")}>
-                        <FolderPlus className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        title={t("personalOutlines.folders.import")}
-                      >
-                        <Upload className="h-4 w-4" />
-                      </Button>
-                      {!isTalkNotes && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCloudOpen}
-                          title={t("personalOutlines.cloud.downloadButton", { defaultValue: "Baixar da nuvem" })}
-                        >
-                          <CloudDownload className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" className="flex-1 h-9 rounded-full">
+                            <Plus className="h-4 w-4 mr-1" /> {t("personalOutlines.list.new", { defaultValue: "Novo" })}
+                            <ChevronDown className="h-3.5 w-3.5 ml-1 opacity-80" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-56">
+                          <DropdownMenuItem onClick={handleNewNote}>
+                            <Plus className="h-4 w-4 mr-2" /> {t("fieldConsiderations.newNote")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleImportDocx}>
+                            <FileUp className="h-4 w-4 mr-2" /> {t("fieldConsiderations.docxImport.button")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleCreateFolder(null)}>
+                            <FolderPlus className="h-4 w-4 mr-2" /> {t("personalOutlines.folders.new")}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                            <Upload className="h-4 w-4 mr-2" /> {t("personalOutlines.folders.import")}
+                          </DropdownMenuItem>
+                          {!isTalkNotes && (
+                            <DropdownMenuItem onClick={handleCloudOpen}>
+                              <CloudDownload className="h-4 w-4 mr-2" /> {t("personalOutlines.cloud.downloadButton", { defaultValue: "Baixar da nuvem" })}
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -1597,16 +1743,36 @@ function Page() {
                           e.target.value = "";
                         }}
                       />
+                      <Button
+                        size="sm"
+                        variant={searchOpen ? "secondary" : "outline"}
+                        className="h-9 w-9 p-0 rounded-full shrink-0"
+                        aria-label={t("personalOutlines.search.open", { defaultValue: "Procurar esboço" })}
+                        onClick={() => {
+                          if (searchOpen) closeSearch();
+                          else setSearchOpen(true);
+                        }}
+                      >
+                        {searchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+                      </Button>
                     </div>
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder={t("fieldConsiderations.search")}
-                        className="pl-7 h-9"
-                      />
-                    </div>
+                    {searchOpen && (
+                      <form
+                        className="flex gap-1.5"
+                        onSubmit={(e) => { e.preventDefault(); setSubmittedQuery(query.trim()); }}
+                      >
+                        <Input
+                          autoFocus
+                          value={query}
+                          onChange={(e) => { setQuery(e.target.value); if (!e.target.value.trim()) setSubmittedQuery(""); }}
+                          placeholder={t("personalOutlines.search.placeholder", { defaultValue: "Tema do esboço" })}
+                          className="h-9 rounded-full flex-1"
+                        />
+                        <Button type="submit" size="sm" className="h-9 rounded-full" disabled={!query.trim()}>
+                          {t("personalOutlines.search.submit", { defaultValue: "Procurar" })}
+                        </Button>
+                      </form>
+                    )}
                     {clipboardNoteIds.length > 0 && (
                       <div className="flex items-center gap-2 rounded-md border border-dashed border-primary/40 bg-primary/5 px-2 py-1.5 text-xs">
                         <Scissors className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -1674,20 +1840,49 @@ function Page() {
                       onDragEnd={handleDndEnd}
                       onDragCancel={() => { setDragItem(null); setDropHint(null); }}
                     >
+                      {submittedQuery ? (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground px-1">
+                            {t("personalOutlines.search.results", { defaultValue: "{{n}} resultado(s) para \"{{q}}\"", n: searchResults.length, q: submittedQuery })}
+                          </p>
+                          {searchResults.length === 0 ? (
+                            <p className="text-xs text-muted-foreground text-center py-4">
+                              {t("personalOutlines.search.none", { defaultValue: "Nenhum esboço com esse tema." })}
+                            </p>
+                          ) : (
+                            <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
+                              {searchResults.map((n) => <NoteRow key={n.id} note={n} depth={0} />)}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                      <>
+                      {rootFolders.length > 0 && (
+                        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none]">
+                          <PillChip id={null} label={t("common.all", { defaultValue: "Todos" })} />
+                          {rootFolders.map((f) => (
+                            <PillChip key={f.id} id={f.id} label={f.name} />
+                          ))}
+                        </div>
+                      )}
                       <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
-                        <RootDropZone />
                         {rootFolders.length === 0 && rootNotes.length === 0 && (
                           <p className="text-xs text-muted-foreground text-center py-4">
                             {t("personalOutlines.folders.empty")}
                           </p>
                         )}
-                        {rootFolders.map((f) => (
-                          <FolderRow key={f.id} folder={f} depth={0} />
-                        ))}
-                        {rootNotes.map((n) => (
-                          <NoteRow key={n.id} note={n} depth={0} />
+                        {rootFolders
+                          .filter((f) => !activePill || f.id === activePill)
+                          .map((f) => (
+                            <FolderRow key={f.id} folder={f} depth={0} />
+                          ))}
+                        {!activePill && rootNotes.length > 0 && <RootDropZone />}
+                        {!activePill && rootNotes.map((n) => (
+                          <NoteRow key={n.id} note={n} depth={1} />
                         ))}
                       </div>
+                      </>
+                      )}
                       <DragOverlay dropAnimation={null}>
                         {dragItem ? (
                           <div className="rounded-md bg-primary text-primary-foreground px-2 py-1 text-xs shadow-lg">
@@ -1708,8 +1903,21 @@ function Page() {
 
 
             {/* Editor */}
-            <Card className="w-full max-w-full overflow-hidden min-w-0">
+            <Card className={cn("w-full max-w-full overflow-hidden min-w-0", (!draft || showLibrary) && "hidden lg:block")}>
               <CardContent className="p-5 space-y-4 w-full max-w-full overflow-x-hidden box-border min-w-0">
+                {draft && (
+                  <div className="flex items-center -ml-2 -mt-2">
+                    <Button variant="ghost" size="sm" className="lg:hidden h-8 px-2 text-primary" onClick={() => { setShowLibrary(true); window.scrollTo({ top: 0 }); }}>
+                      <ChevronLeft className="h-4 w-4 mr-1" /> {t("personalOutlines.list.back", { defaultValue: "Esboços" })}
+                    </Button>
+                    <Button variant="ghost" size="sm" className="hidden lg:inline-flex h-8 px-2 text-primary" onClick={() => setLibCollapsed((v) => !v)}>
+                      {libCollapsed ? <ChevronLeft className="h-4 w-4 mr-1" /> : <Maximize2 className="h-4 w-4 mr-1" />}
+                      {libCollapsed
+                        ? t("personalOutlines.list.show", { defaultValue: "Mostrar esboços" })
+                        : t("personalOutlines.list.expand", { defaultValue: "Expandir" })}
+                    </Button>
+                  </div>
+                )}
 
                 {!draft ? (
                   <p className="text-sm text-muted-foreground text-center py-12">
@@ -1728,6 +1936,7 @@ function Page() {
                     onSave={handleSave}
                     onDelete={handleDeleteNote}
                     onExport={handleExportNote}
+                    onExportDocx={handleExportNoteDocx}
                     onFullscreen={() => setFullscreen(true)}
                     onCloud={handleCloudOpen}
                     dateFmt={dateFmt}
@@ -1737,6 +1946,7 @@ function Page() {
               </CardContent>
             </Card>
           </div>
+          </>
         )}
       </div>
 
@@ -1805,6 +2015,36 @@ function Page() {
       </Dialog>
 
 
+      <Dialog open={!!pendingCreate} onOpenChange={(o) => { if (!o) setPendingCreate(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("personalOutlines.chooseFolder.title", { defaultValue: "Salvar em qual pasta?" })}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[50vh] overflow-y-auto space-y-1">
+            {folders.length === 0 && (
+              <p className="text-xs text-muted-foreground py-2">
+                {t("personalOutlines.chooseFolder.empty", { defaultValue: "Crie uma pasta para guardar o esboço." })}
+              </p>
+            )}
+            {folders.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => openNewWithFolder(f.id)}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-left hover:bg-muted"
+              >
+                <Folder className="h-4 w-4 text-primary shrink-0" />
+                <span className="truncate">{f.name}</span>
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => handleCreateFolder(null)}>
+              <FolderPlus className="h-4 w-4 mr-1" /> {t("personalOutlines.folders.new")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {moveTarget && (
         <MoveToDialog
           folders={folders}
@@ -1837,6 +2077,7 @@ interface EditorProps {
   onSave: () => void;
   onDelete: () => void;
   onExport: () => void;
+  onExportDocx: () => void;
   onFullscreen: () => void;
   onCloud: () => void;
   dateFmt: (ts: number) => string;
@@ -1845,7 +2086,7 @@ interface EditorProps {
 
 function NoteEditor({
   draft, mode, type, saving, activeBible, detected,
-  onPatch, onModeChange, onSave, onDelete, onExport, onFullscreen, onCloud, dateFmt, onInsertBibleText,
+  onPatch, onModeChange, onSave, onDelete, onExport, onExportDocx, onFullscreen, onCloud, dateFmt, onInsertBibleText,
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
@@ -1862,6 +2103,9 @@ function NoteEditor({
   }, [metaCollapsed]);
 
   const isWeekConsiderations = draft.folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS;
+  const isWeekOutline = type === "outline" && draft.folderId === FIXED_FOLDER_WEEK_OUTLINES;
+  const onTalk = (v: NonNullable<FieldNote["talk"]>) => onPatch("talk", v);
+  const talkSync = useTalkSync(visit?.id, draft.talk, onTalk);
   const canSync = isField && isWeekConsiderations && !!draft.event_date && !!draft.period && !!visit;
   const offline = isOfflineMode();
 
@@ -1962,6 +2206,21 @@ function NoteEditor({
         </div>
         <div className="flex items-center gap-2">
           <SavingIndicator saving={saving} />
+          {isField && (
+            <FieldNoteInfoButton
+              note={draft}
+              onSync={canSync && !offline ? handleSyncFromField : undefined}
+              syncing={syncing}
+            />
+          )}
+          {isWeekOutline && draft.talk?.kind && (
+            <FieldNoteInfoButton
+              note={draft}
+              onSync={talkSync.can ? talkSync.sync : undefined}
+              syncing={talkSync.syncing}
+            />
+          )}
+          {!(isField && mode === "outline") && (
           <Button
             variant="ghost"
             size="sm"
@@ -1971,7 +2230,13 @@ function NoteEditor({
               : t("personalOutlines.editor.collapseMeta", { defaultValue: "Minimizar cabeçalho" })}
           >
             {metaCollapsed ? <ChevronsUpDown className="h-4 w-4" /> : <ChevronsDownUp className="h-4 w-4" />}
+            {isField && (
+              <span className="ml-1 text-xs">
+                {t("fieldConsiderations.editDetails", { defaultValue: "Editar detalhes" })}
+              </span>
+            )}
           </Button>
+          )}
           {mode === "outline" && !isTalk && (
             <Button variant="outline" size="sm" onClick={onFullscreen}>
               <Maximize2 className="h-4 w-4 mr-1.5" /> {t("personalOutlines.fullscreen.enter")}
@@ -1983,7 +2248,7 @@ function NoteEditor({
 
 
       <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden max-h-[38vh] overflow-y-auto overflow-x-hidden pr-1">
-        {!metaCollapsed && (<>
+        {!metaCollapsed && !(isField && mode === "outline") && (<>
         {isField && (
           <div className="grid gap-3 sm:grid-cols-2 w-full max-w-full min-w-0">
             <div className="grid gap-1.5 min-w-0">
@@ -2023,6 +2288,10 @@ function NoteEditor({
               </Select>
             </div>
           </div>
+        )}
+
+        {isWeekOutline && mode === "edit" && (
+          <TalkOutlineFields talk={draft.talk} onChange={onTalk} visitId={visit?.id} />
         )}
 
         <div className="grid gap-1.5">
@@ -2108,19 +2377,7 @@ function NoteEditor({
             </div>
 
           </>
-        ) : (
-          <div className="grid gap-1.5 w-full max-w-full min-w-0">
-            <Label>{t("personalOutlines.fields.description")}</Label>
-            <Input
-              value={draft.description ?? ""}
-              onChange={(e) => onPatch("description", e.target.value)}
-              placeholder={t("personalOutlines.fields.descriptionPh")}
-              readOnly={mode === "outline"}
-              className="w-full max-w-full min-w-0"
-            />
-          </div>
-
-        )}
+        ) : null}
         </>)}
 
         {mode === "edit" && (
@@ -2194,7 +2451,8 @@ function NoteEditor({
                   className="rounded-md border"
                 />
               )}
-              <div className="flex-1 min-h-[22rem] max-h-[60vh] overflow-y-auto rounded-md border bg-background px-3 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
+              <div className="flex-1 min-h-[22rem] bg-background px-1 py-4 sm:px-6 text-[17px] leading-8 break-words [overflow-wrap:anywhere]">
+                <div className="max-w-[68ch] mx-auto">
                 {draft.content ? (
                   <RichOutlineContent html={draft.content} library={activeBible} onInsertVerse={onInsertBibleText} />
                 ) : (
@@ -2202,6 +2460,7 @@ function NoteEditor({
                     {t("fieldConsiderations.contentEmpty")}
                   </span>
                 )}
+                </div>
               </div>
             </>
           );
@@ -2219,6 +2478,9 @@ function NoteEditor({
         )}
         <Button variant="outline" size="sm" onClick={onExport} title={t("personalOutlines.folders.exportNote")}>
           <Download className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.folders.exportNote")}</span>
+        </Button>
+        <Button variant="outline" size="sm" onClick={onExportDocx} title={t("personalOutlines.folders.exportDocx", { defaultValue: "Word (.docx)" })}>
+          <FileText className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">Word</span>
         </Button>
         {!isTalk && (
           <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
@@ -2322,6 +2584,7 @@ function FullscreenOutline({
             </Button>
           </div>
 
+          {((note.type ?? "field_consideration") === "field_consideration" || !!note.talk?.kind) && <FieldNoteInfoButton note={note} />}
           <Button
             variant="ghost"
             size="icon"
@@ -2494,24 +2757,10 @@ function MoveToDialog({
               <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-2 pt-1">
                 {t("personalOutlines.typePicker.outline", { defaultValue: "Esboços" })}
               </div>
-              <Row
-                label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
-                depth={0}
-                folderId={null}
-                icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
-                targetType="outline"
-              />
               {renderTree(null, 0, "outline")}
               <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-2 pt-3">
                 {t("personalOutlines.typePicker.field", { defaultValue: "Consideração de Campo" })}
               </div>
-              <Row
-                label={t("personalOutlines.folders.root", { defaultValue: "📁 Raiz (sem pasta)" })}
-                depth={0}
-                folderId={null}
-                icon={<FolderOpen className="h-4 w-4 text-muted-foreground" />}
-                targetType="field_consideration"
-              />
               {renderTree(null, 0, "field_consideration")}
             </>
           ) : (

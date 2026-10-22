@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ShieldCheck, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { HowToGetCode } from "@/components/auth/HowToGetCode";
 
 export const Route = createFileRoute("/cadastro/superintendente")({
   component: Page,
@@ -77,6 +78,7 @@ function Page() {
               <div className="space-y-1.5">
                 <Label htmlFor="code">{t("registerSuper.code")}</Label>
                 <Input id="code" required value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+                <HowToGetCode />
               </div>
               <Button type="submit" className="w-full h-11 mt-2" disabled={busy}>
                 {busy ? t("registerSuper.creating") : t("registerSuper.submit")}

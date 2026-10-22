@@ -41,11 +41,12 @@
     "es": "Espanhol"
   },
   "login": {
-    "appTitle": "Visita do Superintendente",
+    "appTitle": "Visita SC",
+    "appSubtitle": "Visita do Superintendente",
     "signIn": "Entrar",
-    "identifierHelp": "Utilizador, e-mail, telefone ou ID do circuito",
-    "identifierLabel": "Utilizador / E-mail / Telefone / ID do Circuito",
-    "identifierPlaceholder": "ex: joao_silva, joao@email.com, +55 71 98342-0366 ou AGO-12",
+    "identifierHelp": "Para SC e Comissão de Serviço",
+    "identifierLabel": "Usuário",
+    "identifierPlaceholder": "",
     "phoneExample": "Telefone: digite com DDI e DDD, ex.: +55 71 98342-0366 (pode usar espaços, parênteses ou traços).",
     "password": "Senha",
     "signingIn": "Entrando...",
@@ -60,7 +61,20 @@
     "forgotPassword": "Esqueci minha senha",
     "guestAccess": "Acesso Corpo de anciãos e ESC",
     "supportDev": "Apoie o Desenvolvedor ☕",
-    "aboutApp": "Sobre o Aplicativo"
+    "aboutApp": "Sobre o Aplicativo",
+    "accountTitle": "Entrar com sua conta",
+    "codeQuestion": "Você tem um código de acesso?",
+    "codeHelp": "Para anciãos e esposa do superintendente",
+    "codePlaceholder": "Insira aqui o código",
+    "noCode": "Não tem o código? Peça ao superintendente.",
+    "codeNotFound": "Código não encontrado. Confira as letras e tente de novo.",
+    "fillAccount": "Preencha usuário e senha, ou o código de acesso.",
+    "howGetCode": "Como obter o código?",
+    "howGetCodeTitle": "Código para criar conta de superintendente",
+    "howGetCodeBody": "O código de cadastro é enviado pelo desenvolvedor do aplicativo. Envie um e-mail com seu nome e circuito para recebê-lo.",
+    "requestByEmail": "Pedir por e-mail",
+    "emailSubject": "Pedido de código de cadastro - Visita SC",
+    "or": "ou"
   },
   "profile": {
     "title": "Meu perfil",
@@ -1248,7 +1262,13 @@
       "publicTalk": "Discurso público",
       "finalTalk": "Discurso final",
       "theme": "Tema",
-      "leaders": "Dirigentes"
+      "leaders": "Dirigentes",
+      "location": "Local",
+      "phone": "Telefone de contato",
+      "notes": "Observações",
+      "meetingPoint": "Local de encontro",
+      "companionFor": "Acompanhante para",
+      "territoryLocation": "Local do território"
     },
     "today": {
       "summary": "Resumo do dia",
@@ -1263,7 +1283,9 @@
       "weekend": "Reunião do fim de semana",
       "pioneer": "Reunião com Pioneiros",
       "elders": "Reunião do Corpo de Anciãos e SM",
-      "otherEvents": "Outros eventos de hoje"
+      "otherEvents": "Outros eventos de hoje",
+      "studies": "Estudos do dia",
+      "field": "Reunião de campo do dia"
     },
     "meal": {
       "lunch": "Almoço",
@@ -1846,5 +1868,39 @@
     "expand": "Expandir",
     "collapseAll": "Recolher tudo",
     "expandAll": "Expandir tudo"
+  },
+  "talkOutline": {
+    "kindLabel": "Tipo de esboço",
+    "kindPh": "Escolha o tipo",
+    "kindNone": "Sem tipo",
+    "kinds": {
+      "public_talk": "Discurso Público",
+      "service_initial": "Discurso de Serviço – Inicial",
+      "pioneer_meeting": "Reunião – Pioneiros",
+      "elders_meeting": "Reunião – Anciãos",
+      "service_final": "Discurso de Serviço – Final",
+      "event_talk": "Discurso — Eventos"
+    },
+    "fields": {
+      "talk_title": "Título",
+      "song": "Cântico",
+      "opening_song": "Cântico inicial",
+      "prayer": "Oração",
+      "opening_prayer": "Oração inicial",
+      "closing_prayer": "Oração final",
+      "next_congregation": "Próxima congregação",
+      "next_theme": "Tema do próximo discurso",
+      "next_speaker": "Próximo orador"
+    },
+    "sync": {
+      "button": "Sincronizar de Reuniões e Discursos",
+      "success": "Informações sincronizadas.",
+      "empty": "Nada preenchido em Reuniões e Discursos para este tipo.",
+      "offline": "Sem internet",
+      "noVisit": "Nenhuma visita ativa"
+    },
+    "info": {
+      "title": "Detalhes do esboço"
+    }
   }
 }

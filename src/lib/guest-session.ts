@@ -48,7 +48,9 @@ export function readGuestSession(): GuestSession | null {
   if (!code) return null;
   if (isWifeCode(code)) {
     const stored = localStorage.getItem(KEY_WEEK);
-    if (stored !== currentWeekStartISO()) {
+    // Sem internet não dá para entrar de novo; mantém a sessão até voltar a rede.
+    const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+    if (stored !== currentWeekStartISO() && !offline) {
       clearGuestSession();
       return null;
     }

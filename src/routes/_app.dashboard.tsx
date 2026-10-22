@@ -281,8 +281,10 @@ function Dashboard() {
   }, [listCoupleFn, role, user]);
 
   useEffect(() => {
-    loadCouple();
-    return setVisibleInterval(loadCouple, 30_000);
+    // Recados não são urgentes na abertura: deixa a tela aparecer primeiro.
+    const first = window.setTimeout(() => void loadCouple(), 1500);
+    const stop = setVisibleInterval(loadCouple, 30_000);
+    return () => { window.clearTimeout(first); stop(); };
   }, [loadCouple]);
 
   // Eventos do circuito de hoje (escopos visíveis ao super = todos os próprios).

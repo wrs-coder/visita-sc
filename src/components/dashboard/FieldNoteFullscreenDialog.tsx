@@ -1,3 +1,4 @@
+import { FieldNoteInfoButton } from "@/components/notes/FieldNoteInfoButton";
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -163,6 +164,7 @@ export function FieldNoteFullscreenDialog({
               {note?.title ||
                 t("fieldConsiderations.fields.title", { defaultValue: "Nota" })}
             </DialogTitle>
+            {note && ((note.type ?? "field_consideration") === "field_consideration" || !!note.talk?.kind) && <FieldNoteInfoButton note={note} />}
 
             {/* Controles inline em telas >= sm */}
             <div className="hidden sm:flex items-center gap-2">
@@ -288,7 +290,7 @@ export function FieldNoteFullscreenDialog({
             </div>
           ) : (
             <div
-              className="max-w-3xl mx-auto leading-relaxed min-w-0 break-words [overflow-wrap:anywhere]"
+              className="max-w-[68ch] mx-auto leading-loose min-w-0 break-words [overflow-wrap:anywhere]"
               style={{ fontSize: `${scale}rem` }}
             >
               {note.content ? (

@@ -12,13 +12,19 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks, Compass, Share2, Image as ImageIcon, FileDown, MessageCircle, Sun, Mic, CloudDownload, Heart, Send, Plus, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks, Compass, Share2, Image as ImageIcon, FileDown, MessageCircle, Sun, Mic, CloudDownload, Heart, Send, Plus, ChevronLeft, ChevronRight, BookOpen, ChevronDown, Moon, MoreVertical } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useTheme } from "@/hooks/use-theme";
+import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
+import { cn } from "@/lib/utils";
 import { format, parseISO, addDays } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
 import { saveBlob } from "@/lib/share";
-import { saveSnapshot, loadSnapshot } from "@/lib/snapshot-cache";
+import { saveSnapshot, loadSnapshot, snapshotSavedAt } from "@/lib/snapshot-cache";
 import { GuestOfflineDialog } from "@/components/GuestOfflineDialog";
 import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 import { wifeListCoupleMessages, wifeCreateCoupleMessage, wifeMarkCoupleMessagesRead, type CoupleThread } from "@/lib/couple-messages.functions";
@@ -27,6 +33,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { type ElderProgramEvent } from "@/components/visit-summary/ElderProgramReadOnly";
 import { MeetingsTalksPanel, type MeetingsTalksSnap } from "@/components/visit-summary/MeetingsTalksPanel";
 import { ElderTabGate } from "@/components/visit-summary/ElderTabGate";
+import { GuestSectionNav, GuestWorkspace, useGuestSection } from "@/components/guest-workspace/GuestWorkspace";
+import { TodayStudyFieldCards } from "@/components/visit-summary/TodayStudyFieldCards";
+import { InfoList } from "@/components/visit-summary/InfoList";
 import { formatWeekdayTime, formatAnchorWeekdayTime, anchorWeekday } from "@/components/visit-week/report-schedule";
 
 
@@ -121,6 +130,7 @@ function isElderUnlocked(congregationId: string | undefined): boolean {
 function fmtTime(t: string | null) { return t ? t.slice(0, 5) : "—"; }
 
 function Page() {
+  const [guestSection, setGuestSection] = useGuestSection();
   const { t, i18n } = useTranslation();
   const dateLocale = getDateLocale(i18n.language);
   const nav = useNavigate();
@@ -150,6 +160,9 @@ function Page() {
     if (cached && !opts?.pickCurrent) {
       setSnap(cached);
       setLoading(false);
+      // Acabou de ser baixado na tela de entrada: não repete a consulta.
+      const at = snapshotSavedAt("guest", cacheKey);
+      if (at && Date.now() - at < 60_000) return;
     } else {
       setLoading(true);
     }
@@ -196,6 +209,8 @@ function Page() {
   const exit = () => { clearGuestSession(); nav({ to: "/" }); };
 
   const [shareOpen, setShareOpen] = useState(false);
+  const [themeMode, setThemeMode] = useTheme();
+  const headerHidden = useHideOnScroll();
   const previewRef = useRef<HTMLDivElement>(null);
   const availableSections = useMemo<SectionKey[]>(() => {
     const all: SectionKey[] = ["cron", "estudos", "campo", "reunioes", "ref", "trans"];
@@ -353,22 +368,63 @@ function Page() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm">
-        <div className="max-w-3xl mx-auto flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-2 min-w-0">
-            <Logo className="h-6 w-6 shrink-0" />
-            <div className="min-w-0">
-              <div className="font-semibold text-sm truncate">{snap.congregation.name}</div>
-              <div className="text-[11px] opacity-80">{snap.wifeMode ? t("guest.wifeMode") : t("guest.eldersMode")} • {t("guest.readOnlyTag")}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-white/10">
-                  <Share2 className="h-4 w-4 mr-1" /> {t("guest.share")}
+      <header className={cn("sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm transition-transform duration-200", headerHidden && "-translate-y-full")}>
+        <div className="max-w-3xl mx-auto flex items-center gap-2 px-3 h-12">
+          <Logo className="h-6 w-6 shrink-0" />
+          {snap.availableCongregations && snap.availableCongregations.length > 0 && code ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className="flex min-w-0 flex-1 items-center gap-1 rounded-md px-1 py-1 text-left text-sm font-semibold hover:bg-primary-foreground/10">
+                  <span className="truncate">{snap.congregation.name}</span><ChevronDown className="h-4 w-4 shrink-0 opacity-80" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-72 space-y-2">
+                <Label className="text-xs text-muted-foreground">{t("guest.congregationPicker.label")}</Label>
+              <select
+                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm text-foreground"
+                value={snap.selectedCongregationId ?? snap.congregation.id}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedCongregation(id);
+                  setWeekAnchor(null);
+                  if (code) load(code, id);
+                }}
+              >
+                {snap.availableCongregations.map((c) => (
+                  <option key={c.id} value={c.id} className="text-foreground">{c.name}</option>
+                ))}
+              </select>
+                <Button variant="outline" size="sm" className="w-full" onClick={() => { setWeekAnchor(null); if (code) load(code, null, { pickCurrent: true }); }}>
+                  <CalendarDays className="h-4 w-4 mr-1" />{t("guest.currentWeek")}
                 </Button>
-              </DialogTrigger>
+              </PopoverContent>
+            </Popover>
+          ) : <div className="min-w-0 flex-1 truncate text-sm font-semibold">{snap.congregation.name}</div>}
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+            aria-pressed={themeMode === "dark"} aria-label={t("theme.darkMode", { defaultValue: "Modo escuro" })}
+            onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}>
+            {themeMode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/10" aria-label={t("guest.menu", { defaultValue: "Menu" })}>
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{snap.wifeMode ? t("guest.wifeMode") : t("guest.eldersMode")} • {t("guest.readOnlyTag")}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShareOpen(true)}><Share2 className="h-4 w-4 mr-2" />{t("guest.share")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setOfflineOpen(true)}><CloudDownload className="h-4 w-4 mr-2" />{t("offline.activate")}</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <div className="px-2 py-1.5"><ThemeToggle /></div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={exit}><LogOut className="h-4 w-4 mr-2" />{t("guest.exit")}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+            <Dialog open={shareOpen} onOpenChange={setShareOpen}>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
                 <DialogHeader>
                   <DialogTitle>{t("guest.shareTitle")}</DialogTitle>
@@ -398,60 +454,14 @@ function Page() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setOfflineOpen(true)}
-              className="text-primary-foreground hover:bg-white/10"
-              title={t("offline.modeTitle")}
-            >
-              <CloudDownload className="h-4 w-4 md:mr-1" />
-              <span className="hidden md:inline">{t("offline.activate")}</span>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={exit} className="text-primary-foreground hover:bg-white/10">
-              <LogOut className="h-4 w-4 mr-1" /> {t("guest.exit")}
-            </Button>
-          </div>
-        </div>
-        {snap.availableCongregations && snap.availableCongregations.length > 0 && code && (
-          <div className="border-t border-white/10 bg-primary/95">
-            <div className="max-w-3xl mx-auto flex flex-wrap items-center gap-2 px-4 py-2">
-              <Label className="text-xs opacity-80 shrink-0">{t("guest.congregationPicker.label")}</Label>
-              <select
-                className="bg-white/10 text-primary-foreground text-sm rounded px-2 py-1 border border-white/20 flex-1 min-w-[160px]"
-                value={snap.selectedCongregationId ?? snap.congregation.id}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  setSelectedCongregation(id);
-                  setWeekAnchor(null);
-                  if (code) load(code, id);
-                }}
-              >
-                {snap.availableCongregations.map((c) => (
-                  <option key={c.id} value={c.id} className="text-foreground">{c.name}</option>
-                ))}
-              </select>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-primary-foreground hover:bg-white/10 shrink-0"
-                onClick={() => {
-                  setWeekAnchor(null);
-                  if (code) load(code, null, { pickCurrent: true });
-                }}
-              >
-                <CalendarDays className="h-4 w-4 mr-1" />
-                {t("guest.currentWeek")}
-              </Button>
-            </div>
-          </div>
-        )}
-      </header>
       <GuestOfflineDialog open={offlineOpen} onOpenChange={setOfflineOpen} />
 
 
       <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
-        {!snap.visit ? (
+        {snap.wifeMode && <GuestSectionNav value={guestSection} onChange={setGuestSection} />}
+        {snap.wifeMode && guestSection !== "week" ? (
+          <GuestWorkspace key={guestSection} section={guestSection} />
+        ) : !snap.visit ? (
           <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
             {t("guest.noActiveVisit")}
           </CardContent></Card>
@@ -497,9 +507,11 @@ function Page() {
                         <div><Clock className="inline h-3 w-3" /> {fmtTime(e.start_time)}</div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium">{e.title}</div>
-                        {e.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{e.location}</div>}
-                        {e.notes && <div className="text-xs text-muted-foreground mt-1">{e.notes}</div>}
+                        <div className="font-medium mb-1">{e.title}</div>
+                        <InfoList rows={[
+                          [t("guest.labels.location"), e.location],
+                          [t("guest.labels.notes"), e.notes],
+                        ]} />
                       </div>
                     </CardContent></Card>
                   ))}
@@ -513,10 +525,13 @@ function Page() {
                         <div className="font-medium text-sm">{fmtDate(f.event_date)} • {f.period}</div>
                         {f.meeting_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(f.meeting_time)}</span>}
                       </div>
-                      {f.meeting_point && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.meeting_point}</div>}
-                      {f.acompanhante && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.companion")}: </span>{f.acompanhante}{f.acompanhante_for ? ` (${t("guest.labels.withCompanion")} ${f.acompanhante_for})` : ""}</div>}
-                      {f.contact_phone && <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{f.contact_phone}</div>}
-                      {f.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{f.notes}</div>}
+                      <InfoList rows={[
+                        [t("guest.labels.meetingPoint"), f.meeting_point],
+                        [t("guest.labels.companion"), f.acompanhante],
+                        [t("guest.labels.companionFor"), f.acompanhante_for],
+                        [t("guest.labels.phone"), f.contact_phone],
+                        [t("guest.labels.notes"), f.notes],
+                      ]} />
                     </CardContent></Card>
                   ))}
               </TabsContent>
@@ -534,12 +549,14 @@ function Page() {
                         <div className="font-medium text-sm">{fmtDate(f.event_date)} • {f.period}</div>
                         {f.meeting_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(f.meeting_time)}</span>}
                       </div>
-                      {f.meeting_location && <div className="text-xs flex items-center gap-1"><MapPin className="h-3 w-3" />{f.meeting_location}</div>}
-                      <div className="text-xs text-muted-foreground">{t("guest.labels.modality")}: {f.modality}</div>
-                      {f.territory_number && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.territoryS13")}: </span>{f.territory_number}</div>}
-                      {f.territory_location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.territory_location}</div>}
-                      {f.auxiliary_leaders && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.auxLeaders")}: </span>{f.auxiliary_leaders}</div>}
-                      {f.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{f.closing_prayer}</div>}
+                      <InfoList rows={[
+                        [t("guest.labels.meetingPoint"), f.meeting_location],
+                        [t("guest.labels.modality"), f.modality],
+                        [t("guest.labels.territoryS13"), f.territory_number],
+                        [t("guest.labels.territoryLocation"), f.territory_location],
+                        [t("guest.labels.auxLeaders"), f.auxiliary_leaders],
+                        [t("guest.labels.closingPrayer"), f.closing_prayer],
+                      ]} />
                       {f.observations && f.observations.trim() && (
                         <div className="rounded-md border border-blue-500/30 bg-blue-500/5 px-2 py-1.5 mt-1">
                           <div className="text-[10px] uppercase tracking-wide font-medium text-blue-600 dark:text-blue-400 opacity-80">{t("meetingsTalks.fromTemplate.fieldObservations")}</div>
@@ -570,10 +587,12 @@ function Page() {
                               <div className="font-medium text-sm">{fmtDate(m.meal_date)} • {mealLabel(m.type)}</div>
                               {m.meal_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(m.meal_time)}</span>}
                             </div>
-                            {m.host_name && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.host")}: </span>{m.host_name}</div>}
-                            {m.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{m.location}</div>}
-                            {m.contact_phone && <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{m.contact_phone}</div>}
-                            {m.notes && <div className="text-xs text-muted-foreground">{m.notes}</div>}
+                            <InfoList rows={[
+                              [t("guest.labels.host"), m.host_name],
+                              [t("guest.labels.location"), m.location],
+                              [t("guest.labels.phone"), m.contact_phone],
+                              [t("guest.labels.notes"), m.notes],
+                            ]} />
                           </CardContent></Card>
                         ))}
                       </div>
@@ -677,9 +696,9 @@ function Page() {
           </>
         )}
 
-        <div className="text-center pt-4">
+        {(!snap.wifeMode || guestSection === "week") && <div className="text-center pt-4">
           <Button variant="outline" size="sm" onClick={() => code && load(code, snap?.selectedCongregationId ?? null)}>{t("guest.refresh")}</Button>
-        </div>
+        </div>}
       </main>
     </div>
   );
@@ -866,35 +885,7 @@ function TodayDashboard({
         </CardContent>
       </Card>
 
-      {(todayField.length > 0 || todayFieldMeetings.length > 0) && (
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center gap-2 font-semibold text-sm">
-              <Users className="h-4 w-4" /> {t("guest.today.studiesField")}
-            </div>
-            {todayField.map((f) => (
-              <div key={f.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
-                <div className="font-medium">{f.period} • {fmtTime(f.meeting_time)}</div>
-                {f.meeting_point && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.meeting_point}</div>}
-                {f.acompanhante && <div className="text-xs">{t("guest.labels.companion")}: {f.acompanhante}{f.acompanhante_for ? ` (${t("guest.labels.withCompanion")} ${f.acompanhante_for})` : ""}</div>}
-                {f.contact_phone && <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{f.contact_phone}</div>}
-                {f.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{f.notes}</div>}
-              </div>
-            ))}
-            {todayFieldMeetings.map((f) => (
-              <div key={f.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
-                <div className="font-medium">{f.period} • {fmtTime(f.meeting_time)} • {f.modality}</div>
-                {f.meeting_location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.meeting_location}</div>}
-                {f.territory_number && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.territoryS13")}: </span>{f.territory_number}</div>}
-                {f.territory_location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{f.territory_location}</div>}
-                {f.auxiliary_leaders && <div className="text-xs">{t("guest.labels.auxLeaders")}: {f.auxiliary_leaders}</div>}
-                {f.closing_prayer && <div className="text-xs"><span className="text-muted-foreground">{t("guest.labels.closingPrayer")}: </span>{f.closing_prayer}</div>}
-                {f.observations && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{f.observations}</div>}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      <TodayStudyFieldCards studies={todayField} fieldMeetings={todayFieldMeetings} fmtTime={fmtTime} />
 
       <Card>
         <CardContent className="p-4 space-y-3">

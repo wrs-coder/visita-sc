@@ -201,13 +201,21 @@ function Page() {
     setBusyBackup("restore");
     try {
       if (pendingRestore.kind === "v2") {
-        setBackupPhase(t("profile.backup.phaseServer"));
-        const r = await fnRestoreBackup({ data: { file: pendingRestore.full.server as never } });
-        if (!r.ok) { toast.error(t("profile.restoreFail"), { description: r.error }); return; }
+        // Restaura o aparelho primeiro: esboços, pastas e Bíblias nunca
+        // dependem do servidor responder sem erro.
         setBackupPhase(t("profile.backup.phaseClient"));
         const c = await restoreClientBackup(pendingRestore.full.client);
+        setBackupPhase(t("profile.backup.phaseServer"));
+        let serverCount = 0;
+        try {
+          const r = await fnRestoreBackup({ data: { file: pendingRestore.full.server as never } });
+          serverCount = r.restored ?? 0;
+          if (!r.ok) toast.warning(t("profile.restoreFail"), { description: r.error });
+        } catch (e) {
+          toast.warning(t("profile.restoreFail"), { description: (e as Error).message });
+        }
         toast.success(t("profile.backup.restoredFull", {
-          server: r.restored, notes: c.notes, libraries: c.libraries,
+          server: serverCount, notes: c.notes, libraries: c.libraries,
         }));
       } else {
         const r = await fnRestoreBackup({ data: { file: pendingRestore.payload as never } });
