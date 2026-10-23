@@ -179,11 +179,11 @@ export function LoginForm() {
           )}
           <LanguageSwitcher variant="inverted" />
         </div>
-        <div className="text-center text-primary-foreground mb-6">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center mb-4 overflow-hidden">
-            <Logo className="h-10 w-10" />
+        <div className="text-center text-primary-foreground mb-3">
+          <div className="mx-auto h-11 w-11 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center mb-2 overflow-hidden">
+            <Logo className="h-8 w-8" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("login.appTitle")}</h1>
+          <h1 className="text-xl font-bold tracking-tight">{t("login.appTitle")}</h1>
           <div className="mt-1 text-base leading-snug">
             <div>{t("login.appSubtitle")}</div>
             <div>Atos 15:36; Rom 1:11,12</div>
@@ -191,7 +191,7 @@ export function LoginForm() {
         </div>
 
         <Card className="shadow-elevated border-0">
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             {showPinPanel && vault ? (
               <PinUnlockPanel
                 meta={vault}
@@ -207,8 +207,8 @@ export function LoginForm() {
             <form onSubmit={submit} className="space-y-3">
               <fieldset className={`space-y-3 transition-opacity ${usingCode ? "opacity-40" : ""}`}>
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                    <UserCircle2 className="h-5 w-5" />
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <UserCircle2 className="h-4 w-4" />
                   </div>
                   <div>
                     <h2 className="font-semibold text-base leading-tight">{t("login.accountTitle")}</h2>
@@ -222,14 +222,14 @@ export function LoginForm() {
                     type="text"
                     required={!usingCode}
                     autoComplete="username"
-                    className="h-11"
+                    className="h-10"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="pwd">{t("login.password")}</Label>
-                  <Input id="pwd" type="password" required={!usingCode} autoComplete="current-password" className="h-11" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Input id="pwd" type="password" required={!usingCode} autoComplete="current-password" className="h-10" value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
               </fieldset>
 
