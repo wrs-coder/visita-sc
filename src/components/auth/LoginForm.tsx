@@ -270,10 +270,10 @@ export function LoginForm() {
               </>
             )}
 
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-3 text-center text-sm">
               <Link to="/cadastro" className="text-primary font-medium hover:underline">{t("login.createAccount2")}</Link>
             </div>
-            <div className="mt-4 pt-3 border-t flex items-center justify-center gap-2 text-[11px] text-muted-foreground whitespace-nowrap">
+            <div className="mt-3 pt-2 border-t flex items-center justify-center gap-2 text-[11px] text-muted-foreground whitespace-nowrap">
               <Link to="/politica-privacidade" className="hover:text-primary">{t("privacy.link")}</Link>
               <span className="opacity-50">·</span>
               <SupportDeveloperDialog trigger={<button type="button" className="hover:text-primary">{t("login.support")}</button>} />
