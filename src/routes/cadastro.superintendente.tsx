@@ -22,11 +22,12 @@ function Page() {
   const fn = useServerFn(registerSuperintendent);
   const [busy, setBusy] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", code: "" });
+  const [form, setForm] = useState({ fullName: "", email: "", password: "", code: "", circuit: "" });
+  const [fromLink, setFromLink] = useState(false);
 
   useEffect(() => {
     const c = new URLSearchParams(window.location.search).get("code");
-    if (c) setForm((f) => ({ ...f, code: c }));
+    if (c) { setForm((f) => ({ ...f, code: c })); setFromLink(true); }
   }, []);
 
   const submit = async (e: React.FormEvent) => {
@@ -72,6 +73,10 @@ function Page() {
                 <Input id="email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </div>
               <div className="space-y-1.5">
+                <Label htmlFor="circuit">Circuito</Label>
+                <Input id="circuit" required maxLength={60} placeholder="Ex.: SC-01" value={form.circuit} onChange={(e) => setForm({ ...form, circuit: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
                 <Label htmlFor="password">{t("registerSuper.passwordLabel")}</Label>
                 <div className="relative">
                   <Input id="password" type={showPwd ? "text" : "password"} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="pr-10" />
@@ -80,11 +85,13 @@ function Page() {
                   </button>
                 </div>
               </div>
+              {!fromLink && (
               <div className="space-y-1.5">
                 <Label htmlFor="code">{t("registerSuper.code")}</Label>
                 <Input id="code" required value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
                 <HowToGetCode />
               </div>
+              )}
               <Button type="submit" className="w-full h-11 mt-2" disabled={busy}>
                 {busy ? t("registerSuper.creating") : t("registerSuper.submit")}
               </Button>

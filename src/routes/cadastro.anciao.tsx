@@ -32,9 +32,10 @@ function Page() {
   const [codeError, setCodeError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
 
+  const [fromLink, setFromLink] = useState(false);
   useEffect(() => {
     const c = new URLSearchParams(window.location.search).get("code");
-    if (c) setForm((f) => ({ ...f, inviteCode: c.toUpperCase() }));
+    if (c) { setForm((f) => ({ ...f, inviteCode: c.toUpperCase() })); setFromLink(true); }
   }, []);
 
   const submit = async (e: React.FormEvent) => {
@@ -152,8 +153,10 @@ function Page() {
               <PasswordField value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
 
               <div className="space-y-1.5">
+                {!fromLink && (<>
                 <Label htmlFor="code">{t("registerElder.inviteCode")}</Label>
                 <Input id="code" required value={form.inviteCode} onChange={(e) => setForm({ ...form, inviteCode: e.target.value.toUpperCase() })} />
+                </>)}
                 {checking && <p className="text-[11px] text-muted-foreground">{t("registerElder.checking")}</p>}
                 {codeError && <p className="text-[11px] text-destructive">{codeError}</p>}
                 {allFilled && (
