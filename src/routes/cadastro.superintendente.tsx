@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { registerSuperintendent } from "@/lib/auth.functions";
@@ -23,6 +23,11 @@ function Page() {
   const [busy, setBusy] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [form, setForm] = useState({ fullName: "", email: "", password: "", code: "" });
+
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("code");
+    if (c) setForm((f) => ({ ...f, code: c }));
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

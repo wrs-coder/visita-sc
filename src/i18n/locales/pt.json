@@ -74,7 +74,18 @@
     "howGetCodeBody": "O código de cadastro é enviado pelo desenvolvedor do aplicativo. Envie um e-mail com seu nome e circuito para recebê-lo.",
     "requestByEmail": "Pedir por e-mail",
     "emailSubject": "Pedido de código de cadastro - Visita SC",
-    "or": "ou"
+    "or": "ou",
+    "createAccount2": "Criar conta",
+    "signupTitle": "Criar conta",
+    "signupHelp": "Digite o código que você recebeu",
+    "signupCodeLabel": "Código",
+    "continue": "Continuar",
+    "signupCodeInvalid": "Código não encontrado. Confira e tente de novo.",
+    "wrongPwdTitle": "Senha incorreta",
+    "wrongPwdBody": "Confira o usuário e a senha.",
+    "tryAgain": "Tentar de novo",
+    "about": "Sobre",
+    "support": "Apoie o desenvolvedor"
   },
   "profile": {
     "title": "Meu perfil",

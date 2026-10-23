@@ -32,6 +32,11 @@ function Page() {
   const [codeError, setCodeError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
 
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("code");
+    if (c) setForm((f) => ({ ...f, inviteCode: c.toUpperCase() }));
+  }, []);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.position) { toast.error(t("registerElder.selectPosition")); return; }

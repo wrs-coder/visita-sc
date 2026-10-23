@@ -74,7 +74,18 @@
     "howGetCodeBody": "The sign-up code is sent by the app developer. Send an e-mail with your name and circuit to receive it.",
     "requestByEmail": "Request by e-mail",
     "emailSubject": "Sign-up code request - Visita SC",
-    "or": "or"
+    "or": "or",
+    "createAccount2": "Create account",
+    "signupTitle": "Create account",
+    "signupHelp": "Enter the code you received",
+    "signupCodeLabel": "Code",
+    "continue": "Continue",
+    "signupCodeInvalid": "Code not found. Check it and try again.",
+    "wrongPwdTitle": "Wrong password",
+    "wrongPwdBody": "Check your username and password.",
+    "tryAgain": "Try again",
+    "about": "About",
+    "support": "Support the developer"
   },
   "profile": {
     "title": "My profile",
