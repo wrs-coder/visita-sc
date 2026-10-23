@@ -24,25 +24,13 @@ export const Route = createFileRoute("/cadastro/anciao")({
 const ALL_POSITIONS: ElderPosition[] = ["coordenador", "secretario", "sup_servico"];
 
 function Page() {
-  const { t } = useTranslation();
-  const nav = useNavigate();
   const search = Route.useSearch();
   const fromLink = Boolean(search.code);
-  const fn = useServerFn(registerElderByUsername);
-  const checkFn = useServerFn(getAvailableElderPositions);
-  const [busy, setBusy] = useState(false);
-  const [country, setCountry] = useState(DEFAULT_COUNTRY);
-  const [form, setForm] = useState<{
-    username: string;
-    phone: string;
-    password: string;
-    inviteCode: string;
-    position: ElderPosition | "";
-  }>({
+  const [form, setForm] = useState({
     username: "",
     phone: "",
     password: "",
-    inviteCode: (search.code || "").toUpperCase(),
+    inviteCode: search.code || "",
     position: "",
   });
 
@@ -50,9 +38,14 @@ function Page() {
   const [codeError, setCodeError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
 
-  const [available, setAvailable] = useState<ElderPosition[] | null>(null);
-  const [codeError, setCodeError] = useState<string | null>(null);
-  const [checking, setChecking] = useState(false);
+  const [fromLink, setFromLink] = useState(false);
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("code");
+    if (c) {
+      setForm((f) => ({ ...f, inviteCode: c.toUpperCase() }));
+      setFromLink(true);
+    }
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
