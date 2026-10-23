@@ -639,16 +639,18 @@ export const lookupRecoverableEmail = createServerFn({ method: "POST" })
     return { ok: true as const, email };
   });
 
-/** Descobre para qual cadastro o código leva, sem nunca devolver o código. */
+/** Descobre para qual cadastro o código leva, sem nunca devolver o código nem expor dados. */
 export const checkSignupCode = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ code: z.string().trim().min(1).max(40) }).parse(input))
   .handler(async ({ data }) => {
     const code = data.code.replace(/\s/g, "");
     if (code === getSuperCode()) return { kind: "super" as const };
-    const { data: cong } = await supabaseAdmin
-      .from("congregations")
-      .select("id")
-      .eq("invite_code", code.toUpperCase())
-      .maybeSingle();
-    return { kind: cong ? ("elder" as const) : ("none" as const) };
+
+    // Se estiver no padrão de código de congregação, direciona para o cadastro de ancião
+    // onde a existência e os cargos vagos são validados com segurança pelo fluxo de registro.
+    const cleanCongCode = code.toUpperCase();
+    if (/^[A-Z0-9-]{4,20}$/.test(cleanCongCode)) {
+      return { kind: "elder" as const };
+    }
+    return { kind: "none" as const };
   });
