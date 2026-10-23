@@ -241,8 +241,8 @@ export function LoginForm() {
 
               <fieldset className={`space-y-1.5 transition-opacity ${usingAccount ? "opacity-40" : ""}`}>
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                    <KeyRound className="h-5 w-5" />
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <KeyRound className="h-4 w-4" />
                   </div>
                   <Label htmlFor="access-code" className="font-semibold text-base leading-tight">{t("login.codeHelp")}</Label>
                 </div>
@@ -251,7 +251,7 @@ export function LoginForm() {
                   autoComplete="off"
                   autoCapitalize="characters"
                   maxLength={20}
-                  className="h-11 font-mono uppercase tracking-widest placeholder:font-sans placeholder:normal-case placeholder:tracking-normal"
+                  className="h-10 font-mono uppercase tracking-widest placeholder:font-sans placeholder:normal-case placeholder:tracking-normal"
                   placeholder={t("login.codePlaceholder")}
                   value={accessCode}
                   onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
