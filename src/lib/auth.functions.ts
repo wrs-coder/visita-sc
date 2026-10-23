@@ -29,6 +29,7 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
       email: z.string().trim().email().max(200),
       password: z.string().min(6).max(100),
       code: z.string().trim().min(1),
+      circuit: z.string().trim().max(60).optional(),
     }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -45,7 +46,7 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
       return { ok: false as const, error: signErr?.message ?? "Falha ao criar conta." };
     }
     const userId = created.user.id;
-    await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: data.fullName, email: data.email }, { onConflict: "id" });
+    await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: data.fullName, email: data.email, ...(data.circuit ? { circuit: data.circuit } : {}) }, { onConflict: "id" });
     const { data: existingRole } = await supabaseAdmin
       .from("user_roles").select("id").eq("user_id", userId).eq("role", "superintendent").maybeSingle();
     if (!existingRole) {
