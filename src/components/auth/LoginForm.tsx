@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { toast } from "sonner";
 import { LogIn, Info, Mail, MessageCircle, UserCircle2, Coffee, Wifi, KeyRound } from "lucide-react";
 import { getGuestSnapshot } from "@/lib/guest.functions";
-import { HowToGetCode } from "@/components/auth/HowToGetCode";
 import { Logo } from "@/components/Logo";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -54,6 +53,8 @@ export function LoginForm() {
   const [vault, setVault] = useState<VaultMeta | null>(null);
   const [usePassword, setUsePassword] = useState(false);
   const [pinSetupOpen, setPinSetupOpen] = useState(false);
+  const [wrongPwdOpen, setWrongPwdOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -133,7 +134,7 @@ export function LoginForm() {
       if ((error || !signIn.user) && trimmed && trimmed !== password) {
         ({ data: signIn, error } = await supabase.auth.signInWithPassword({ email: r.email, password: trimmed }));
       }
-      if (error || !signIn.user) { toast.error(t("login.invalidCredentials")); return; }
+      if (error || !signIn.user) { setWrongPwdOpen(true); return; }
       toast.success(t("login.welcome"));
       const existing = await getVaultMeta();
       const sameUser = existing?.userId === signIn.user.id;
@@ -273,45 +274,33 @@ export function LoginForm() {
               </>
             )}
 
-            <div className="mt-4 space-y-1 text-center text-sm">
-              <div>
-                {t("login.newElder")}{" "}
-                <Link to="/cadastro/anciao" className="text-primary font-medium hover:underline">{t("login.createAccessElder")}</Link>
-              </div>
-              <div>
-                {t("login.newSuper")}{" "}
-                <Link to="/cadastro/superintendente" className="text-primary font-medium hover:underline">{t("login.createAccount")}</Link>
-                <div><HowToGetCode /></div>
-              </div>
-              <div className="pt-1 flex items-center justify-center gap-2">
-                <Link to="/esqueci-senha" className="text-muted-foreground hover:text-primary text-[12px]">{t("login.forgotPassword")}</Link>
-                <span className="text-muted-foreground/50 text-[12px]">·</span>
-                <Link to="/politica-privacidade" className="text-muted-foreground hover:text-primary text-[12px]">{t("privacy.link")}</Link>
-              </div>
+            <div className="mt-4 text-center text-sm">
+              <Link to="/cadastro" className="text-primary font-medium hover:underline">{t("login.createAccount2")}</Link>
+            </div>
+            <div className="mt-4 pt-3 border-t flex items-center justify-center gap-2 text-[11px] text-muted-foreground whitespace-nowrap">
+              <Link to="/politica-privacidade" className="hover:text-primary">{t("privacy.link")}</Link>
+              <span className="opacity-50">·</span>
+              <SupportDeveloperDialog trigger={<button type="button" className="hover:text-primary">{t("login.support")}</button>} />
+              <span className="opacity-50">·</span>
+              <button type="button" className="hover:text-primary" onClick={() => setAboutOpen(true)}>{t("login.about")}</button>
             </div>
           </CardContent>
         </Card>
 
-        <SupportDeveloperDialog
-          trigger={
-            <button
-              type="button"
-              className="mt-1 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2"
-            >
-              <Coffee className="h-4 w-4" /> {t("login.supportDev")}
-            </button>
-          }
-        />
+        <Dialog open={wrongPwdOpen} onOpenChange={setWrongPwdOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{t("login.wrongPwdTitle")}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">{t("login.wrongPwdBody")}</p>
+            <div className="flex flex-col gap-2">
+              <Button onClick={() => setWrongPwdOpen(false)}>{t("login.tryAgain")}</Button>
+              <Button variant="outline" asChild><Link to="/esqueci-senha">{t("login.forgotPassword")}</Link></Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-        <Dialog>
-          <DialogTrigger asChild>
-            <button
-              type="button"
-              className="mt-1 w-full text-sm text-primary-foreground/90 hover:text-primary-foreground inline-flex items-center justify-center gap-2 py-2"
-            >
-              <Info className="h-4 w-4" /> {t("login.aboutApp")}
-            </button>
-          </DialogTrigger>
+        <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
