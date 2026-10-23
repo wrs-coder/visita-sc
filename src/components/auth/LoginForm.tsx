@@ -204,7 +204,7 @@ export function LoginForm() {
               />
             ) : (
               <>
-            <form onSubmit={submit} className="space-y-4">
+            <form onSubmit={submit} className="space-y-3">
               <fieldset className={`space-y-3 transition-opacity ${usingCode ? "opacity-40" : ""}`}>
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
@@ -244,10 +244,7 @@ export function LoginForm() {
                   <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                     <KeyRound className="h-5 w-5" />
                   </div>
-                  <div>
-                    <Label htmlFor="access-code" className="font-semibold text-base leading-tight">{t("login.codeQuestion")}</Label>
-                    <p className="text-xs text-muted-foreground">{t("login.codeHelp")}</p>
-                  </div>
+                  <Label htmlFor="access-code" className="font-semibold text-base leading-tight">{t("login.codeHelp")}</Label>
                 </div>
                 <Input
                   id="access-code"
@@ -259,7 +256,6 @@ export function LoginForm() {
                   value={accessCode}
                   onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                 />
-                <p className="text-[11px] text-muted-foreground">{t("login.noCode")}</p>
               </fieldset>
 
               <Button type="submit" className="w-full h-11" disabled={busy}>
