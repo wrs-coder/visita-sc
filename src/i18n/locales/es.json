@@ -74,7 +74,18 @@
     "howGetCodeBody": "El código de registro lo envía el desarrollador de la aplicación. Envíe un correo con su nombre y circuito para recibirlo.",
     "requestByEmail": "Pedir por correo",
     "emailSubject": "Solicitud de código de registro - Visita SC",
-    "or": "o"
+    "or": "o",
+    "createAccount2": "Crear cuenta",
+    "signupTitle": "Crear cuenta",
+    "signupHelp": "Escribe el código que recibiste",
+    "signupCodeLabel": "Código",
+    "continue": "Continuar",
+    "signupCodeInvalid": "Código no encontrado. Revísalo e intenta de nuevo.",
+    "wrongPwdTitle": "Contraseña incorrecta",
+    "wrongPwdBody": "Revisa el usuario y la contraseña.",
+    "tryAgain": "Intentar de nuevo",
+    "about": "Acerca de",
+    "support": "Apoya al desarrollador"
   },
   "profile": {
     "title": "Mi perfil",

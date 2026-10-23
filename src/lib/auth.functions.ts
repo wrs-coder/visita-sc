@@ -507,3 +507,14 @@ export const lookupRecoverableEmail = createServerFn({ method: "POST" })
     return { ok: true as const, email };
   });
 
+
+/** Descobre para qual cadastro o código leva, sem nunca devolver o código. */
+export const checkSignupCode = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ code: z.string().trim().min(1).max(40) }).parse(input))
+  .handler(async ({ data }) => {
+    const code = data.code.replace(/\s/g, "");
+    if (code === getSuperCode()) return { kind: "super" as const };
+    const { data: cong } = await supabaseAdmin.from("congregations")
+      .select("id").eq("invite_code", code.toUpperCase()).maybeSingle();
+    return { kind: cong ? ("elder" as const) : ("none" as const) };
+  });
