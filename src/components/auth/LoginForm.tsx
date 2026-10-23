@@ -160,7 +160,7 @@ export function LoginForm() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-primary-soft/40 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="flex justify-between items-center mb-2 gap-2">
+        <div className="flex justify-between items-center mb-1 gap-2">
           {offline ? (
             <button
               type="button"
@@ -204,8 +204,8 @@ export function LoginForm() {
               />
             ) : (
               <>
-            <form onSubmit={submit} className="space-y-3">
-              <fieldset className={`space-y-3 transition-opacity ${usingCode ? "opacity-40" : ""}`}>
+            <form onSubmit={submit} className="space-y-2">
+              <fieldset className={`space-y-2 transition-opacity ${usingCode ? "opacity-40" : ""}`}>
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                     <UserCircle2 className="h-4 w-4" />
@@ -270,10 +270,10 @@ export function LoginForm() {
               </>
             )}
 
-            <div className="mt-3 text-center text-sm">
+            <div className="mt-2 text-center text-sm">
               <Link to="/cadastro" className="text-primary font-medium hover:underline">{t("login.createAccount2")}</Link>
             </div>
-            <div className="mt-3 pt-2 border-t flex items-center justify-center gap-2 text-[11px] text-muted-foreground whitespace-nowrap">
+            <div className="mt-2 pt-1.5 border-t flex items-center justify-center gap-2 text-[11px] text-muted-foreground whitespace-nowrap">
               <Link to="/politica-privacidade" className="hover:text-primary">{t("privacy.link")}</Link>
               <span className="opacity-50">·</span>
               <SupportDeveloperDialog trigger={<button type="button" className="hover:text-primary">{t("login.support")}</button>} />
