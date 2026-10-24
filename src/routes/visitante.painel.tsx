@@ -1444,7 +1444,7 @@ function DayPillsStrip({ pills, viewedIso, todayIso, todayLabel, ariaLabel, onPi
     firstRun.current = false;
   }, [viewedIso, pills.length]);
   return (
-    <div ref={stripRef} className="relative flex gap-1.5 overflow-x-auto pb-1 pt-2 -mx-1 px-1" role="tablist" aria-label={ariaLabel}>
+    <div ref={stripRef} className="relative flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" role="tablist" aria-label={ariaLabel} title={todayLabel}>
       {pills.map((d) => {
         const active = d.iso === viewedIso;
         const isToday = d.iso === todayIso;
@@ -1465,11 +1465,6 @@ function DayPillsStrip({ pills, viewedIso, todayIso, todayLabel, ariaLabel, onPi
                   : "bg-background text-foreground border-border hover:bg-muted"
             }`}
           >
-            {isToday && (
-              <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-accent px-1.5 text-[9px] leading-4 font-semibold uppercase text-accent-foreground border border-border">
-                {todayLabel}
-              </span>
-            )}
             <div className="capitalize leading-tight">{d.weekday}</div>
             <div className="leading-tight opacity-80">{d.day}</div>
           </button>
