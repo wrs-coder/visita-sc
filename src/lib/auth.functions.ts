@@ -7,7 +7,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // Sem fallback hardcoded: se o secret não estiver configurado, o cadastro
 // recusa todas as tentativas (fail-closed) em vez de aceitar um valor
 // público conhecido no histórico do repositório.
-const getSuperCode = () => process.env.SUPER_REGISTRATION_CODE || "152832";
+const getSuperCode = () => process.env.SUPER_REGISTRATION_CODE ?? "";
 
 export function elderEmailFromPhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -644,7 +644,8 @@ export const checkSignupCode = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ code: z.string().trim().min(1).max(40) }).parse(input))
   .handler(async ({ data }) => {
     const code = data.code.replace(/\s/g, "");
-    if (code === getSuperCode()) return { kind: "super" as const };
+    const superCode = getSuperCode();
+    if (superCode && code === superCode) return { kind: "super" as const };
 
     // Se estiver no padrão de código de congregação, direciona para o cadastro de ancião
     // onde a existência e os cargos vagos são validados com segurança pelo fluxo de registro.
