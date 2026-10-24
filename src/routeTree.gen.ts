@@ -15,6 +15,7 @@ import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PoliticaPrivacidadeRouteImport } from './routes/politica-privacidade'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as TermosUsoRouteImport } from './routes/termos-uso'
 import { Route as VisitanteRouteImport } from './routes/visitante'
 import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
 import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist-modelos'
@@ -74,6 +75,11 @@ const PoliticaPrivacidadeRoute = PoliticaPrivacidadeRouteImport.update({
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosUsoRoute = TermosUsoRouteImport.update({
+  id: '/termos-uso',
+  path: '/termos-uso',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VisitanteRoute = VisitanteRouteImport.update({
@@ -241,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/termos-uso': typeof TermosUsoRoute
   '/visitante': typeof VisitanteRouteWithChildren
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
@@ -279,6 +286,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/termos-uso': typeof TermosUsoRoute
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
   '/comunicacao-casal': typeof AppComunicacaoCasalRoute
@@ -318,6 +326,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/termos-uso': typeof TermosUsoRoute
   '/visitante': typeof VisitanteRouteWithChildren
   '/_app/checklist': typeof AppChecklistRoute
   '/_app/checklist-modelos': typeof AppChecklistModelosRoute
@@ -358,6 +367,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/politica-privacidade'
     | '/redefinir-senha'
+    | '/termos-uso'
     | '/visitante'
     | '/checklist'
     | '/checklist-modelos'
@@ -396,6 +406,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/politica-privacidade'
     | '/redefinir-senha'
+    | '/termos-uso'
     | '/checklist'
     | '/checklist-modelos'
     | '/comunicacao-casal'
@@ -434,6 +445,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/politica-privacidade'
     | '/redefinir-senha'
+    | '/termos-uso'
     | '/visitante'
     | '/_app/checklist'
     | '/_app/checklist-modelos'
@@ -474,6 +486,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   PoliticaPrivacidadeRoute: typeof PoliticaPrivacidadeRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  TermosUsoRoute: typeof TermosUsoRoute
   VisitanteRoute: typeof VisitanteRouteWithChildren
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
   CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
@@ -524,6 +537,13 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos-uso': {
+      id: '/termos-uso'
+      path: '/termos-uso'
+      fullPath: '/termos-uso'
+      preLoaderRoute: typeof TermosUsoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/visitante': {
@@ -821,6 +841,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   PoliticaPrivacidadeRoute: PoliticaPrivacidadeRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  TermosUsoRoute: TermosUsoRoute,
   VisitanteRoute: VisitanteRouteWithChildren,
   CadastroAnciaoRoute: CadastroAnciaoRoute,
   CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,

@@ -33,6 +33,7 @@
     "@capacitor/browser": "^8.0.3",
     "@capacitor/core": "^8.5.2",
     "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/local-notifications": "^8",
     "@capacitor/share": "^8.0.1",
     "@capawesome-team/capacitor-file-opener": "^8.0.5",
     "@cloudflare/vite-plugin": "^1.25.5",

@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { EventReminderSync, ReminderSettingsCard } from "@/components/reminders/EventReminders";
+import type { TimelineSource } from "@/lib/today-timeline";
 import { setVisibleInterval } from "@/lib/visible-interval";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
@@ -494,8 +496,9 @@ function Page() {
               </TabsList>
 
 
-              <TabsContent value="hoje" className="mt-4">
+              <TabsContent value="hoje" className="mt-4 space-y-4">
                 <TodayDashboard snap={snap} dayOffset={dayOffset} setDayOffset={setDayOffset} code={code} onOpenCouple={() => setCurrentTab("couple")} />
+                {snap.wifeMode && code && <GuestReminders snap={snap} code={code} />}
               </TabsContent>
 
               <TabsContent value="cron" className="space-y-2 mt-4">
@@ -1374,5 +1377,24 @@ function WifeCouplePanel({ code }: { code: string }) {
         </Card>
       ))}
     </div>
+  );
+}
+
+function GuestReminders({ snap, code }: { snap: Snapshot; code: string }) {
+  const { t } = useTranslation();
+  const scope = `guest-${code.toUpperCase()}`;
+  const mealName = (type: string) => type === "lunch" ? t("guest.meal.lunch") : type === "dinner" ? t("guest.meal.dinner") : t("guest.meal.breakfast");
+  const items: TimelineSource[] = [
+    ...snap.schedule.map((e) => ({ id: `s-${e.id}`, kind: "schedule" as const, date: e.event_date, time: e.start_time, title: e.title, subtitle: e.location })),
+    ...snap.meals.map((m) => ({ id: `m-${m.id}`, kind: "meal" as const, date: m.meal_date, time: m.meal_time, title: `${mealName(m.type)}${m.host_name ? ` — ${m.host_name}` : ""}`, subtitle: m.location })),
+    ...snap.fieldMeetings.map((f) => ({ id: `f-${f.id}`, kind: "field" as const, date: f.event_date, time: f.meeting_time, title: t("guest.tabs.field"), subtitle: f.meeting_location ?? f.territory_location })),
+    ...snap.field.map((f) => ({ id: `a-${f.id}`, kind: "field" as const, date: f.event_date, time: f.meeting_time, title: t("guest.tabs.field"), subtitle: f.meeting_point })),
+    ...snap.transport.filter((tp) => tp.event_date).map((tp) => ({ id: `t-${tp.id}`, kind: "transport" as const, date: tp.event_date as string, time: tp.departure_time ?? null, title: `${t("guest.tabs.transport")} — ${tp.driver_name}`, subtitle: tp.description })),
+  ];
+  return (
+    <>
+      <EventReminderSync items={items} scope={scope} role="wife" />
+      <ReminderSettingsCard scope={scope} role="wife" />
+    </>
   );
 }
