@@ -34,7 +34,7 @@ export const registerSuperintendent = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    if (data.code !== getSuperCode()) {
+    if (!getSuperCode() || data.code !== getSuperCode()) {
       return { ok: false as const, error: "Código de superintendente inválido." };
     }
     const { data: created, error: signErr } = await supabaseAdmin.auth.admin.createUser({
@@ -373,7 +373,7 @@ export const linkAccount = createServerFn({ method: "POST" })
     const email = (claims.claims.email as string | undefined) ?? null;
 
     if (data.mode === "superintendent") {
-      if (data.code !== getSuperCode()) return { ok: false as const, error: "Código de superintendente inválido." };
+      if (!getSuperCode() || data.code !== getSuperCode()) return { ok: false as const, error: "Código de superintendente inválido." };
       await supabaseAdmin
         .from("profiles")
         .upsert({ id: userId, full_name: data.fullName ?? undefined, email }, { onConflict: "id" });
