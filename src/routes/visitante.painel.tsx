@@ -206,6 +206,8 @@ function Page() {
   // Mission 3: alternador "Hoje / Próximo dia" para o cartão do dia.
   const [dayOffset, setDayOffset] = useState(0);
   const [currentTab, setCurrentTab] = useState("hoje");
+  // Recolher/expandir dos cartões das abas, salvo no aparelho por código de acesso.
+  const tabFold = `guest:${code ?? "local"}:tabs`;
 
   const [offlineOpen, setOfflineOpen] = useState(false);
 
