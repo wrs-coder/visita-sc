@@ -37,6 +37,7 @@ import { MeetingsTalksPanel, type MeetingsTalksSnap } from "@/components/visit-s
 import { ElderTabGate } from "@/components/visit-summary/ElderTabGate";
 import { GuestSectionNav, GuestWorkspace, useGuestSection } from "@/components/guest-workspace/GuestWorkspace";
 import { TodayStudyFieldCards } from "@/components/visit-summary/TodayStudyFieldCards";
+import { FoldCard, FoldAllButton } from "@/components/visit-summary/FoldCard";
 import { InfoList } from "@/components/visit-summary/InfoList";
 import { formatWeekdayTime, formatAnchorWeekdayTime, anchorWeekday } from "@/components/visit-week/report-schedule";
 
@@ -768,6 +769,15 @@ function TodayDashboard({
     todayWeekend.length > 0 || todayPioneer.length > 0 || showMidweek || showElders;
 
   const fmtAt = (iso: string | null | undefined) => (iso ? format(parseISO(iso), "HH:mm") : "—");
+  // Recolher/expandir por cartão, salvo no aparelho e separado por código de acesso.
+  const foldScope = `guest:${code ?? "local"}:hoje`;
+  const foldIds = [
+    "meals", "transport", "meetings",
+    ...(todayField.length ? ["studies"] : []),
+    ...(todayFieldMeetings.length ? ["field"] : []),
+    ...(todaySchedule.length ? ["other"] : []),
+    ...(upcoming.length ? ["upcoming"] : []),
+  ].map((k) => `${foldScope}:${k}`);
 
   return (
     <div className="space-y-3">
@@ -782,12 +792,15 @@ function TodayDashboard({
                 <div className="font-semibold capitalize">{viewedLabel}</div>
               )}
             </div>
-            {dayOffset !== 0 && (
-              <Button size="sm" variant="ghost" onClick={() => setDayOffset(0)} className="h-7 px-2 shrink-0">
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                {t("dashboard.viewToday", { defaultValue: "Voltar para hoje" })}
-              </Button>
-            )}
+            <div className="flex items-center gap-1 shrink-0">
+              {dayOffset !== 0 && (
+                <Button size="sm" variant="ghost" onClick={() => setDayOffset(0)} className="h-7 px-2 shrink-0">
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  {t("dashboard.viewToday", { defaultValue: "Voltar para hoje" })}
+                </Button>
+              )}
+              <FoldAllButton ids={foldIds} />
+            </div>
           </div>
           {dayPills.length > 0 && (
             <DayPillsStrip
@@ -804,11 +817,7 @@ function TodayDashboard({
 
       {snap.wifeMode && code && <WifeCoupleSummaryCard code={code} onOpen={onOpenCouple} />}
 
-      <Card>
-        <CardContent className="p-4 space-y-2">
-          <div className="flex items-center gap-2 font-semibold text-sm">
-            <UtensilsCrossed className="h-4 w-4" /> {t("guest.today.meals")}
-          </div>
+      <FoldCard id={`${foldScope}:meals`} icon={<UtensilsCrossed className="h-4 w-4" />} title={t("guest.today.meals")}>
           {todayNote && (
             <div className="text-sm font-medium text-destructive whitespace-pre-wrap">{todayNote.notes}</div>
           )}
@@ -833,14 +842,9 @@ function TodayDashboard({
               {snap.templateExtras.program.general_observations}
             </div>
           )}
-        </CardContent>
-      </Card>
+      </FoldCard>
 
-      <Card>
-        <CardContent className="p-4 space-y-2">
-          <div className="flex items-center gap-2 font-semibold text-sm">
-            <Car className="h-4 w-4" /> {t("guest.today.transport")}
-          </div>
+      <FoldCard id={`${foldScope}:transport`} icon={<Car className="h-4 w-4" />} title={t("guest.today.transport")}>
           {todayTransport.length === 0 ? (
             <div className="text-xs text-muted-foreground">{t("guest.today.noTransport")}</div>
           ) : (
@@ -890,16 +894,11 @@ function TodayDashboard({
               );
             })
           )}
-        </CardContent>
-      </Card>
+      </FoldCard>
 
-      <TodayStudyFieldCards studies={todayField} fieldMeetings={todayFieldMeetings} fmtTime={fmtTime} />
+      <TodayStudyFieldCards studies={todayField} fieldMeetings={todayFieldMeetings} fmtTime={fmtTime} foldScope={foldScope} />
 
-      <Card>
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center gap-2 font-semibold text-sm">
-            <Mic className="h-4 w-4" /> {t("guest.today.meetings")}
-          </div>
+      <FoldCard id={`${foldScope}:meetings`} icon={<Mic className="h-4 w-4" />} title={t("guest.today.meetings")}>
           {!hasMeetings ? (
             <div className="text-xs text-muted-foreground">{t("guest.today.noMeetings")}</div>
           ) : (
@@ -958,15 +957,10 @@ function TodayDashboard({
               ))}
             </>
           )}
-        </CardContent>
-      </Card>
+      </FoldCard>
 
       {todaySchedule.length > 0 && (
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center gap-2 font-semibold text-sm">
-              <CalendarDays className="h-4 w-4" /> {t("guest.today.otherEvents")}
-            </div>
+        <FoldCard id={`${foldScope}:other`} icon={<CalendarDays className="h-4 w-4" />} title={t("guest.today.otherEvents")}>
             {todaySchedule.map((e) => (
               <div key={e.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
                 <div className="font-medium">
@@ -976,16 +970,11 @@ function TodayDashboard({
                 {e.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{e.notes}</div>}
               </div>
             ))}
-          </CardContent>
-        </Card>
+        </FoldCard>
       )}
 
       {upcoming.length > 0 && (
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center gap-2 font-semibold text-sm">
-              <CalendarDays className="h-4 w-4" /> {t("guest.today.upcoming", { defaultValue: "Próximos eventos da semana" })}
-            </div>
+        <FoldCard id={`${foldScope}:upcoming`} icon={<CalendarDays className="h-4 w-4" />} title={t("guest.today.upcoming", { defaultValue: "Próximos eventos da semana" })}>
             {upcoming.map((e) => (
               <button
                 key={e.id}
@@ -1000,8 +989,7 @@ function TodayDashboard({
                 {e.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{e.location}</div>}
               </button>
             ))}
-          </CardContent>
-        </Card>
+        </FoldCard>
       )}
     </div>
   );
