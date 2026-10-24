@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { TermsAcceptance } from "@/components/auth/TermsAcceptance";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/cadastro/superintendente")({
 });
 
 function Page() {
+  const [accepted, setAccepted] = useState(false);
   const { t } = useTranslation();
   const nav = useNavigate();
   const search = Route.useSearch();
@@ -145,7 +147,8 @@ function Page() {
                   <HowToGetCode />
                 </div>
               )}
-              <Button type="submit" className="w-full h-11 mt-2" disabled={busy}>
+              <TermsAcceptance checked={accepted} onChange={setAccepted} />
+              <Button type="submit" className="w-full h-11 mt-2" disabled={busy || !accepted}>
                 {busy ? t("registerSuper.creating") : t("registerSuper.submit")}
               </Button>
             </form>

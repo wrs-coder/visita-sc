@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { TermsAcceptance } from "@/components/auth/TermsAcceptance";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/cadastro/anciao")({
 const ALL_POSITIONS: ElderPosition[] = ["coordenador", "secretario", "sup_servico"];
 
 function Page() {
+  const [accepted, setAccepted] = useState(false);
   const { t } = useTranslation();
   const nav = useNavigate();
   const search = Route.useSearch();
@@ -124,7 +126,7 @@ function Page() {
 
   const dial = findCountry(country).dial;
   const allFilled = available !== null && available.length === 0 && !codeError;
-  const disableSubmit = busy || !!codeError || allFilled || !form.position || available === null;
+  const disableSubmit = !accepted || busy || !!codeError || allFilled || !form.position || available === null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary to-primary-soft/30 flex items-center justify-center p-4">
@@ -246,6 +248,7 @@ function Page() {
                 <p className="text-[11px] text-muted-foreground">{t("registerElder.positionHelp")}</p>
               </div>
 
+              <TermsAcceptance checked={accepted} onChange={setAccepted} />
               <Button type="submit" className="w-full h-11 mt-2" disabled={disableSubmit}>
                 {busy ? t("registerElder.creating") : t("registerElder.submit")}
               </Button>
