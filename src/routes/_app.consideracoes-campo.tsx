@@ -1941,13 +1941,14 @@ function Page() {
                     onCloud={handleCloudOpen}
                     dateFmt={dateFmt}
                     onInsertBibleText={handleInsertBibleText}
+                    onSyncInfo={setSyncInfo}
                   />
                 )}
               </CardContent>
             </Card>
-          </div>
-          </>
-        )}
+          )}
+        </div>
+      )}
       </div>
 
       {fullscreen && draft && (
@@ -1956,6 +1957,7 @@ function Page() {
           library={activeBible}
           onClose={() => setFullscreen(false)}
           onInsertBibleText={handleInsertBibleText}
+          syncInfo={syncInfo}
         />
       )}
 
@@ -2082,11 +2084,14 @@ interface EditorProps {
   onCloud: () => void;
   dateFmt: (ts: number) => string;
   onInsertBibleText: (text: string) => void | Promise<void>;
+  onSyncInfo?: (info: SyncInfo | null) => void;
 }
+
+type SyncInfo = { run: () => void | Promise<void>; syncing: boolean };
 
 function NoteEditor({
   draft, mode, type, saving, activeBible, detected,
-  onPatch, onModeChange, onSave, onDelete, onExport, onExportDocx, onFullscreen, onCloud, dateFmt, onInsertBibleText,
+  onPatch, onModeChange, onSave, onDelete, onExport, onExportDocx, onFullscreen, onCloud, dateFmt, onInsertBibleText, onSyncInfo,
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
@@ -2108,6 +2113,15 @@ function NoteEditor({
   const talkSync = useTalkSync(visit?.id, draft.talk, onTalk);
   const canSync = isField && isWeekConsiderations && !!draft.event_date && !!draft.period && !!visit;
   const offline = isOfflineMode();
+
+  // Expõe a sincronização para o popup de detalhes da tela cheia.
+  const syncFnRef = useRef<() => void | Promise<void>>(() => {});
+  const syncAvailable = isField ? canSync && !offline : isWeekOutline && !!draft.talk?.kind && talkSync.can;
+  const syncBusy = isField ? syncing : talkSync.syncing;
+  useEffect(() => {
+    onSyncInfo?.(syncAvailable ? { run: () => syncFnRef.current(), syncing: syncBusy } : null);
+  }, [syncAvailable, syncBusy, onSyncInfo]);
+  useEffect(() => () => onSyncInfo?.(null), [onSyncInfo]);
 
   const handleSyncFromField = async () => {
     if (!canSync || !visit) return;
@@ -2510,11 +2524,13 @@ function FullscreenOutline({
   library,
   onClose,
   onInsertBibleText,
+  syncInfo,
 }: {
   note: FieldNote;
   library: BibleLibrary | null;
   onClose: () => void;
   onInsertBibleText: (text: string) => void | Promise<void>;
+  syncInfo?: SyncInfo | null;
 }) {
   const { t } = useTranslation();
   const [scale, setScale] = useState<number>(() => {
@@ -2584,7 +2600,9 @@ function FullscreenOutline({
             </Button>
           </div>
 
-          {((note.type ?? "field_consideration") === "field_consideration" || !!note.talk?.kind) && <FieldNoteInfoButton note={note} />}
+          {((note.type ?? "field_consideration") === "field_consideration" || !!note.talk?.kind) && (
+            <FieldNoteInfoButton note={note} onSync={syncInfo?.run} syncing={syncInfo?.syncing} />
+          )}
           <Button
             variant="ghost"
             size="icon"
