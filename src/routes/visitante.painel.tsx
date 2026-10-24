@@ -503,22 +503,22 @@ function Page() {
 
 
               <TabsContent value="estudos" className="space-y-2 mt-4">
-                {snap.field.length === 0 ? <Empty text={t("guest.empty.studies")} /> :
-                  snap.field.map((f) => (
-                    <Card key={f.id}><CardContent className="p-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium text-sm">{fmtDate(f.event_date)} • {f.period}</div>
-                        {f.meeting_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(f.meeting_time)}</span>}
-                      </div>
-                      <InfoList rows={[
-                        [t("guest.labels.meetingPoint"), f.meeting_point],
-                        [t("guest.labels.companion"), f.acompanhante],
-                        [t("guest.labels.companionFor"), f.acompanhante_for],
-                        [t("guest.labels.phone"), f.contact_phone],
-                        [t("guest.labels.notes"), f.notes],
-                      ]} />
-                    </CardContent></Card>
-                  ))}
+                {snap.field.length === 0 ? <Empty text={t("guest.empty.studies")} /> : (
+                  <>
+                    <FoldAllRow ids={snap.field.map((f) => `${tabFold}:st:${f.id}`)} />
+                    {snap.field.map((f) => (
+                      <FoldCard key={f.id} id={`${tabFold}:st:${f.id}`} title={<span className="font-medium">{fmtDate(f.event_date)} • {f.period}{f.meeting_time ? ` • ${fmtTime(f.meeting_time)}` : ""}</span>}>
+                        <InfoList rows={[
+                          [t("guest.labels.meetingPoint"), f.meeting_point],
+                          [t("guest.labels.companion"), f.acompanhante],
+                          [t("guest.labels.companionFor"), f.acompanhante_for],
+                          [t("guest.labels.phone"), f.contact_phone],
+                          [t("guest.labels.notes"), f.notes],
+                        ]} />
+                      </FoldCard>
+                    ))}
+                  </>
+                )}
               </TabsContent>
 
               <TabsContent value="campo" className="space-y-2 mt-4">
@@ -527,29 +527,29 @@ function Page() {
                   value={snap.templateExtras?.field?.observations}
                   variant="blue"
                 />
-                {snap.fieldMeetings.length === 0 ? <Empty text={t("guest.empty.field")} /> :
-                  snap.fieldMeetings.map((f) => (
-                    <Card key={f.id}><CardContent className="p-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium text-sm">{fmtDate(f.event_date)} • {f.period}</div>
-                        {f.meeting_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(f.meeting_time)}</span>}
-                      </div>
-                      <InfoList rows={[
-                        [t("guest.labels.meetingPoint"), f.meeting_location],
-                        [t("guest.labels.modality"), f.modality],
-                        [t("guest.labels.territoryS13"), f.territory_number],
-                        [t("guest.labels.territoryLocation"), f.territory_location],
-                        [t("guest.labels.auxLeaders"), f.auxiliary_leaders],
-                        [t("guest.labels.closingPrayer"), f.closing_prayer],
-                      ]} />
-                      {f.observations && f.observations.trim() && (
-                        <div className="rounded-md border border-blue-500/30 bg-blue-500/5 px-2 py-1.5 mt-1">
-                          <div className="text-[10px] uppercase tracking-wide font-medium text-blue-600 dark:text-blue-400 opacity-80">{t("meetingsTalks.fromTemplate.fieldObservations")}</div>
-                          <div className="text-xs whitespace-pre-wrap text-blue-600 dark:text-blue-400">{f.observations}</div>
-                        </div>
-                      )}
-                    </CardContent></Card>
-                  ))}
+                {snap.fieldMeetings.length === 0 ? <Empty text={t("guest.empty.field")} /> : (
+                  <>
+                    <FoldAllRow ids={snap.fieldMeetings.map((f) => `${tabFold}:fm:${f.id}`)} />
+                    {snap.fieldMeetings.map((f) => (
+                      <FoldCard key={f.id} id={`${tabFold}:fm:${f.id}`} title={<span className="font-medium">{fmtDate(f.event_date)} • {f.period}{f.meeting_time ? ` • ${fmtTime(f.meeting_time)}` : ""}</span>}>
+                        <InfoList rows={[
+                          [t("guest.labels.meetingPoint"), f.meeting_location],
+                          [t("guest.labels.modality"), f.modality],
+                          [t("guest.labels.territoryS13"), f.territory_number],
+                          [t("guest.labels.territoryLocation"), f.territory_location],
+                          [t("guest.labels.auxLeaders"), f.auxiliary_leaders],
+                          [t("guest.labels.closingPrayer"), f.closing_prayer],
+                        ]} />
+                        {f.observations && f.observations.trim() && (
+                          <div className="rounded-md border border-blue-500/30 bg-blue-500/5 px-2 py-1.5 mt-1">
+                            <div className="text-[10px] uppercase tracking-wide font-medium text-blue-600 dark:text-blue-400 opacity-80">{t("meetingsTalks.fromTemplate.fieldObservations")}</div>
+                            <div className="text-xs whitespace-pre-wrap text-blue-600 dark:text-blue-400">{f.observations}</div>
+                          </div>
+                        )}
+                      </FoldCard>
+                    ))}
+                  </>
+                )}
               </TabsContent>
 
               <TabsContent value="ref" className="space-y-2 mt-4">
@@ -560,87 +560,100 @@ function Page() {
                 {snap.meals.length === 0 && snap.mealDayNotes.length === 0 ? <Empty text={t("guest.empty.meals")} /> : (() => {
                   const noteMap = new Map(snap.mealDayNotes.map((n) => [n.meal_date, n.notes]));
                   const dates = Array.from(new Set([...snap.meals.map((m) => m.meal_date), ...snap.mealDayNotes.map((n) => n.meal_date)])).sort();
-                  return dates.map((date) => {
-                    const note = noteMap.get(date);
-                    const dayMeals = snap.meals.filter((m) => m.meal_date === date);
-                    return (
-                      <div key={date} className="space-y-1">
-                        {note && <div className="text-sm font-medium text-destructive px-1 whitespace-pre-wrap">{note}</div>}
-                        {dayMeals.map((m) => (
-                          <Card key={m.id}><CardContent className="p-3 space-y-1">
-                            <div className="flex items-center justify-between">
-                              <div className="font-medium text-sm">{fmtDate(m.meal_date)} • {mealLabel(m.type)}</div>
-                              {m.meal_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(m.meal_time)}</span>}
-                            </div>
-                            <InfoList rows={[
-                              [t("guest.labels.host"), m.host_name],
-                              [t("guest.labels.location"), m.location],
-                              [t("guest.labels.phone"), m.contact_phone],
-                              [t("guest.labels.notes"), m.notes],
-                            ]} />
-                          </CardContent></Card>
-                        ))}
-                      </div>
-                    );
-                  });
+                  return (
+                    <>
+                      <FoldAllRow ids={snap.meals.map((m) => `${tabFold}:ml:${m.id}`)} />
+                      {dates.map((date) => {
+                        const note = noteMap.get(date);
+                        const dayMeals = snap.meals.filter((m) => m.meal_date === date);
+                        return (
+                          <div key={date} className="space-y-1">
+                            {note && <div className="text-sm font-medium text-destructive px-1 whitespace-pre-wrap">{note}</div>}
+                            {dayMeals.map((m) => (
+                              <FoldCard key={m.id} id={`${tabFold}:ml:${m.id}`} title={<span className="font-medium">{fmtDate(m.meal_date)} • {mealLabel(m.type)}{m.meal_time ? ` • ${fmtTime(m.meal_time)}` : ""}</span>}>
+                                <InfoList rows={[
+                                  [t("guest.labels.host"), m.host_name],
+                                  [t("guest.labels.location"), m.location],
+                                  [t("guest.labels.phone"), m.contact_phone],
+                                  [t("guest.labels.notes"), m.notes],
+                                ]} />
+                              </FoldCard>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </>
+                  );
                 })()}
               </TabsContent>
 
               <TabsContent value="trans" className="space-y-2 mt-4">
-                {snap.transport.length === 0 ? <Empty text={t("guest.empty.transport")} /> :
-                  groupTransport(snap.transport).map((g) => {
-                    const head = g.rows[0];
-                    return (
-                      <Card key={g.key}><CardContent className="p-3 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Car className="h-4 w-4 text-primary" />
-                          <div className="font-medium text-sm">{head.event_date ? fmtDate(head.event_date) : t("guest.labels.noDate")}</div>
-                          {head.all_day && (
-                            <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
-                              {t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}
-                            </span>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          {g.rows.map((r, idx) => {
-                            const showDriver = !head.all_day || idx === 0;
-                            const typeLbl = r.event_type ? t(`transport.eventType.${r.event_type}`, { defaultValue: r.event_type }) : null;
-                            const dirLbl = r.direction ? t(`transport.direction.${r.direction}`, { defaultValue: r.direction }) : null;
-                            return (
-                              <div key={r.id} className="rounded-md border bg-muted/20 p-2 space-y-1">
-                                {(typeLbl || dirLbl) && (
-                                  <div className="text-xs font-medium">
-                                    {typeLbl ?? t("transport.noDay")}
-                                    {dirLbl ? ` · ${dirLbl}` : ""}
-                                  </div>
+                {snap.transport.length === 0 ? <Empty text={t("guest.empty.transport")} /> : (() => {
+                  const groups = groupTransport(snap.transport);
+                  return (
+                    <>
+                      <FoldAllRow ids={groups.map((g) => `${tabFold}:tr:${g.key}`)} />
+                      {groups.map((g) => {
+                        const head = g.rows[0];
+                        return (
+                          <FoldCard
+                            key={g.key}
+                            id={`${tabFold}:tr:${g.key}`}
+                            icon={<Car className="h-4 w-4 text-primary" />}
+                            title={
+                              <span className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium">{head.event_date ? fmtDate(head.event_date) : t("guest.labels.noDate")}</span>
+                                {head.all_day && (
+                                  <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
+                                    {t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}
+                                  </span>
                                 )}
-                                {(r.departure_time || r.return_time) && (
-                                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {fmtTime(r.departure_time ?? null)}
-                                    {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
-                                  </div>
-                                )}
-                                {showDriver && (
-                                  <>
-                                    <div className="text-xs">
-                                      <span className="text-muted-foreground">{t("guest.labels.driver")}: </span>
-                                      {r.driver_name}
-                                    </div>
-                                    {r.contact_phone && (
-                                      <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{r.contact_phone}</div>
+                              </span>
+                            }
+                          >
+                            <div className="space-y-2">
+                              {g.rows.map((r, idx) => {
+                                const showDriver = !head.all_day || idx === 0;
+                                const typeLbl = r.event_type ? t(`transport.eventType.${r.event_type}`, { defaultValue: r.event_type }) : null;
+                                const dirLbl = r.direction ? t(`transport.direction.${r.direction}`, { defaultValue: r.direction }) : null;
+                                return (
+                                  <div key={r.id} className="rounded-md border bg-muted/20 p-2 space-y-1">
+                                    {(typeLbl || dirLbl) && (
+                                      <div className="text-xs font-medium">
+                                        {typeLbl ?? t("transport.noDay")}
+                                        {dirLbl ? ` · ${dirLbl}` : ""}
+                                      </div>
                                     )}
-                                    {r.description && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{r.description}</div>}
-                                    {r.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{r.notes}</div>}
-                                  </>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </CardContent></Card>
-                    );
-                  })}
+                                    {(r.departure_time || r.return_time) && (
+                                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {fmtTime(r.departure_time ?? null)}
+                                        {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
+                                      </div>
+                                    )}
+                                    {showDriver && (
+                                      <>
+                                        <div className="text-xs">
+                                          <span className="text-muted-foreground">{t("guest.labels.driver")}: </span>
+                                          {r.driver_name}
+                                        </div>
+                                        {r.contact_phone && (
+                                          <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{r.contact_phone}</div>
+                                        )}
+                                        {r.description && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{r.description}</div>}
+                                        {r.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{r.notes}</div>}
+                                      </>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </FoldCard>
+                        );
+                      })}
+                    </>
+                  );
+                })()}
               </TabsContent>
 
               {!snap.wifeMode && (
@@ -657,18 +670,27 @@ function Page() {
 
               {!snap.wifeMode && (
                 <TabsContent value="check" className="space-y-2 mt-4">
-                  {snap.checklist.length === 0 ? <Empty text={t("guest.empty.checklist")} /> :
-                    snap.checklist.map((c) => (
-                      <Card key={c.id}><CardContent className="p-3 space-y-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="font-medium text-sm break-words min-w-0 flex-1">{c.title}</div>
-                          <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-muted text-muted-foreground shrink-0">{c.status}</span>
-                        </div>
-                        {c.description && <div className="text-xs text-muted-foreground break-words">{c.description}</div>}
-                        {c.info_text && <div className="text-xs text-muted-foreground break-words">{c.info_text}</div>}
-                        {c.link_or_notes && <div className="text-xs break-words">{c.link_or_notes}</div>}
-                      </CardContent></Card>
-                    ))}
+                  {snap.checklist.length === 0 ? <Empty text={t("guest.empty.checklist")} /> : (
+                    <>
+                      <FoldAllRow ids={snap.checklist.map((c) => `${tabFold}:ck:${c.id}`)} />
+                      {snap.checklist.map((c) => (
+                        <FoldCard
+                          key={c.id}
+                          id={`${tabFold}:ck:${c.id}`}
+                          title={
+                            <span className="flex items-start justify-between gap-2">
+                              <span className="font-medium break-words min-w-0 flex-1">{c.title}</span>
+                              <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-muted text-muted-foreground shrink-0">{c.status}</span>
+                            </span>
+                          }
+                        >
+                          {c.description && <div className="text-xs text-muted-foreground break-words">{c.description}</div>}
+                          {c.info_text && <div className="text-xs text-muted-foreground break-words">{c.info_text}</div>}
+                          {c.link_or_notes && <div className="text-xs break-words">{c.link_or_notes}</div>}
+                        </FoldCard>
+                      ))}
+                    </>
+                  )}
                 </TabsContent>
               )}
 
