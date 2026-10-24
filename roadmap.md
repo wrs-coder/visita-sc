@@ -37,3 +37,6 @@
 - [x] Esboços premium — Rodada 2: botão "+ Novo" com menu, busca larga, pastas em pílulas, cartões mais legíveis.
 - [x] Esboços premium — Rodada 3: Biblioteca x Modo Foco (lista separada do esboço) e leitura tipo folha impressa.
 - [ ] (opcional, após aprovação no uso) Rodada 4: recolher campos da Consideração de Campo em "Editar detalhes".
+
+- [x] Recolher/expandir rodada 1: cartões do "Resumo do dia" da esposa e anciãos (individual + recolher tudo).
+- [ ] Recolher/expandir rodada 2: cartões das outras abas do painel por código e abas Reuniões e Discursos, Checklist, Cronograma e Comunicação do casal do superintendente.
