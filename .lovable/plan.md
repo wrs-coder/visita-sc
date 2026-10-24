@@ -7,7 +7,7 @@
 4. Login com usuário/senha, login com código da esposa, PIN e biometria não foram alterados nas últimas rodadas. A verificação de erros do app está limpa.
 
 ## Correções
-1. Guardar o código do superintendente numa configuração secreta do servidor e tirar o número do código. O 152832 continua valendo, e nenhum usuário atual é afetado.
+1. Esconder o código do superintendente: o número sai do código do app e fica guardado num cofre seguro do servidor. O código **não muda**: continua sendo 152832, e nenhum usuário atual é afetado.
 2. Trocar o recarregamento por navegação interna na tela "Criar conta".
 3. No cadastro de ancião, quando o servidor disser que o código não existe, mostrar logo "Código inválido" e não exibir cargos. Os cargos livres só caem para a lista completa se faltar conexão. O servidor continua conferindo tudo na gravação final.
 
