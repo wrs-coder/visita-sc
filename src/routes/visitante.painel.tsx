@@ -773,39 +773,31 @@ function TodayDashboard({
     <div className="space-y-3">
       <Card>
         <CardContent className="p-4 space-y-3">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">
-              {isTomorrow ? t("guest.today.summaryNext", { defaultValue: "Próximo dia" }) : t("guest.today.summary")}
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                {isTomorrow ? t("guest.today.summaryNext", { defaultValue: "Próximo dia" }) : t("guest.today.summary")}
+              </div>
+              {(dayPills.length === 0 || !inVisit) && (
+                <div className="font-semibold capitalize">{viewedLabel}</div>
+              )}
             </div>
-            <div className="font-semibold capitalize">{viewedLabel}</div>
+            {dayOffset !== 0 && (
+              <Button size="sm" variant="ghost" onClick={() => setDayOffset(0)} className="h-7 px-2 shrink-0">
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                {t("dashboard.viewToday", { defaultValue: "Voltar para hoje" })}
+              </Button>
+            )}
           </div>
           {dayPills.length > 0 && (
-            <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" role="tablist" aria-label={t("guest.today.days", { defaultValue: "Dias da visita" })}>
-              {dayPills.map((d) => {
-                const active = d.iso === viewedIso;
-                return (
-                  <button
-                    key={d.iso}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => goToIso(d.iso)}
-                    className={`shrink-0 min-w-[52px] rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${
-                      active ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-muted"
-                    }`}
-                  >
-                    <div className="capitalize leading-tight">{d.weekday}</div>
-                    <div className="leading-tight opacity-80">{d.day}</div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-          {dayOffset !== 0 && (
-            <Button size="sm" variant="outline" onClick={() => setDayOffset(0)} className="h-8">
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              {t("dashboard.viewToday", { defaultValue: "Voltar para hoje" })}
-            </Button>
+            <DayPillsStrip
+              pills={dayPills}
+              viewedIso={viewedIso}
+              todayIso={todayIso}
+              todayLabel={t("dashboard.today", { defaultValue: "Hoje" })}
+              ariaLabel={t("guest.today.days", { defaultValue: "Dias da visita" })}
+              onPick={goToIso}
+            />
           )}
         </CardContent>
       </Card>
