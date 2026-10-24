@@ -773,39 +773,31 @@ function TodayDashboard({
     <div className="space-y-3">
       <Card>
         <CardContent className="p-4 space-y-3">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">
-              {isTomorrow ? t("guest.today.summaryNext", { defaultValue: "Próximo dia" }) : t("guest.today.summary")}
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                {isTomorrow ? t("guest.today.summaryNext", { defaultValue: "Próximo dia" }) : t("guest.today.summary")}
+              </div>
+              {(dayPills.length === 0 || !inVisit) && (
+                <div className="font-semibold capitalize">{viewedLabel}</div>
+              )}
             </div>
-            <div className="font-semibold capitalize">{viewedLabel}</div>
+            {dayOffset !== 0 && (
+              <Button size="sm" variant="ghost" onClick={() => setDayOffset(0)} className="h-7 px-2 shrink-0">
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                {t("dashboard.viewToday", { defaultValue: "Voltar para hoje" })}
+              </Button>
+            )}
           </div>
           {dayPills.length > 0 && (
-            <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" role="tablist" aria-label={t("guest.today.days", { defaultValue: "Dias da visita" })}>
-              {dayPills.map((d) => {
-                const active = d.iso === viewedIso;
-                return (
-                  <button
-                    key={d.iso}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => goToIso(d.iso)}
-                    className={`shrink-0 min-w-[52px] rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${
-                      active ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-muted"
-                    }`}
-                  >
-                    <div className="capitalize leading-tight">{d.weekday}</div>
-                    <div className="leading-tight opacity-80">{d.day}</div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-          {dayOffset !== 0 && (
-            <Button size="sm" variant="outline" onClick={() => setDayOffset(0)} className="h-8">
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              {t("dashboard.viewToday", { defaultValue: "Voltar para hoje" })}
-            </Button>
+            <DayPillsStrip
+              pills={dayPills}
+              viewedIso={viewedIso}
+              todayIso={todayIso}
+              todayLabel={t("dashboard.today", { defaultValue: "Hoje" })}
+              ariaLabel={t("guest.today.days", { defaultValue: "Dias da visita" })}
+              onPick={goToIso}
+            />
           )}
         </CardContent>
       </Card>
@@ -1429,5 +1421,60 @@ function GuestReminders({ snap, code }: { snap: Snapshot; code: string }) {
       <EventReminderSync items={items} scope={scope} role="wife" />
       <ReminderSettingsCard scope={scope} role="wife" />
     </>
+  );
+}
+
+// Faixa de dias da visita: o dia escolhido desliza para o centro; "Hoje" leva um selo.
+function DayPillsStrip({ pills, viewedIso, todayIso, todayLabel, ariaLabel, onPick }: {
+  pills: Array<{ iso: string; weekday: string; day: string }>;
+  viewedIso: string;
+  todayIso: string;
+  todayLabel: string;
+  ariaLabel: string;
+  onPick: (iso: string) => void;
+}) {
+  const stripRef = useRef<HTMLDivElement>(null);
+  const firstRun = useRef(true);
+  useEffect(() => {
+    const strip = stripRef.current;
+    const el = strip?.querySelector<HTMLElement>(`[data-iso="${viewedIso}"]`);
+    if (!strip || !el) return;
+    const left = el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2;
+    strip.scrollTo({ left: Math.max(0, left), behavior: firstRun.current ? "auto" : "smooth" });
+    firstRun.current = false;
+  }, [viewedIso, pills.length]);
+  return (
+    <div ref={stripRef} className="relative flex gap-1.5 overflow-x-auto pb-1 pt-2 -mx-1 px-1" role="tablist" aria-label={ariaLabel}>
+      {pills.map((d) => {
+        const active = d.iso === viewedIso;
+        const isToday = d.iso === todayIso;
+        return (
+          <button
+            key={d.iso}
+            data-iso={d.iso}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            aria-current={isToday ? "date" : undefined}
+            onClick={() => onPick(d.iso)}
+            className={`relative shrink-0 min-w-[52px] rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${
+              active
+                ? "bg-primary text-primary-foreground border-primary"
+                : isToday
+                  ? "bg-background text-primary border-primary"
+                  : "bg-background text-foreground border-border hover:bg-muted"
+            }`}
+          >
+            {isToday && (
+              <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-accent px-1.5 text-[9px] leading-4 font-semibold uppercase text-accent-foreground border border-border">
+                {todayLabel}
+              </span>
+            )}
+            <div className="capitalize leading-tight">{d.weekday}</div>
+            <div className="leading-tight opacity-80">{d.day}</div>
+          </button>
+        );
+      })}
+    </div>
   );
 }
