@@ -110,9 +110,9 @@ function Page() {
           setAvailable(res.available as ElderPosition[]);
           setCodeError(null);
         } else {
-          // Fallback seguro: permite selecionar o cargo e validar na gravação final
-          setAvailable(["coordenador", "secretario", "sup_servico"]);
-          setCodeError(null);
+          // Código inexistente ou inativo: avisa já, sem oferecer cargos.
+          setAvailable([]);
+          setCodeError(res && "error" in res && res.error ? String(res.error) : t("login.signupCodeInvalid"));
         }
       } catch {
         setAvailable(["coordenador", "secretario", "sup_servico"]);
