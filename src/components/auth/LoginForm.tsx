@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { TermsDialog } from "@/components/auth/TermsDialog";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -276,7 +277,7 @@ export function LoginForm() {
             <div className="mt-2 pt-1.5 border-t flex items-center justify-center gap-2 text-[11px] text-muted-foreground whitespace-nowrap">
               <Link to="/politica-privacidade" className="hover:text-primary">{t("privacy.link")}</Link>
               <span className="opacity-50">·</span>
-              <Link to="/termos-uso" className="hover:text-primary">Termos</Link>
+              <TermsDialog trigger={(open) => (<button type="button" onClick={open} className="hover:text-primary">Termos</button>)} />
               <span className="opacity-50">·</span>
               <SupportDeveloperDialog trigger={<button type="button" className="hover:text-primary">{t("login.support")}</button>} />
               <span className="opacity-50">·</span>
