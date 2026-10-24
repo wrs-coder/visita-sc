@@ -2,7 +2,7 @@
 
 ## Resposta curta
 - **É possível?** Sim, nos cartões e eventos. As abas e subabas em si não fazem sentido recolher (são os botões de navegação); o que recolhe é o conteúdo dentro delas, com um botão "Recolher tudo / Expandir tudo" no topo de cada aba.
-- **É vantajoso?** Sim no celular: listas longas (refeições, transporte, campo, estudos) ficam curtas e a pessoa abre só o que precisa. No "Hoje" o ganho é menor, então lá tudo continua aberto por padrão.
+- **É vantajoso?** Sim no celular: listas longas (refeições, transporte, campo, estudos) ficam curtas e a pessoa abre só o que precisa. Isso vale também para o "Resumo do dia", que junta os cartões de todas as abas.
 - **Riscos:** baixos, porque é só visual (nada muda em dados, banco, login ou modo offline). Os principais: mais um toque para ver informação escondida; alguém pensar que "sumiu" algo recolhido; telas ficarem visualmente inconsistentes se feito pela metade.
 
 ## Situação atual
@@ -11,13 +11,14 @@ Ainda não têm: painel por código da **esposa** e dos **anciãos** (cerca de 2
 
 ## O que vou fazer
 1. **Painel da esposa e dos anciãos:** cada cartão ganha a setinha no título; em cada aba, botão "Recolher tudo / Expandir tudo". Eventos de cada dia (refeição, trajeto, saída de campo, reunião) recolhem mostrando uma linha curta "horário · título".
+   - **"Resumo do dia" incluído:** os cartões Refeições, Transporte, Campo, Estudos, Outros eventos e Próximos eventos recolhem, com "Recolher tudo / Expandir tudo" ao lado do título. A escolha vale para todos os dias da faixa, então ao trocar de dia o que você recolheu continua recolhido.
 2. **Abas do superintendente que faltam:** mesma setinha nos cartões e eventos de Reuniões e Discursos, Checklist, Cronograma e Comunicação do casal.
 3. **Regras iguais para todos:**
    - Tudo começa aberto, como hoje.
    - A escolha fica salva só neste aparelho, separada por pessoa/código.
    - Recolher nunca apaga o que está sendo digitado.
    - Funciona também em "somente visualização" e sem internet.
-4. **Fica de fora:** a faixa de dias e o resumo do "Hoje", o login e os editores de esboço (que já têm tópicos recolhíveis).
+4. **Fica de fora:** a faixa de dias, o login e os editores de esboço (que já têm tópicos recolhíveis).
 
 ## Detalhes técnicos
 - Reutilizar `CollapsibleCard` (cartões) e `collapsible-blocks.tsx` (`CollapseProvider`, `CollapseItem`, `CollapseAllButton`) já existentes; nada novo de estado.
