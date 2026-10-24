@@ -39,7 +39,11 @@ export function loadPrefs(scope: string, role: ReminderRole): ReminderPrefs {
 }
 
 export function savePrefs(scope: string, prefs: ReminderPrefs) {
-  try { localStorage.setItem(key(scope), JSON.stringify(prefs)); } catch { /* noop */ }
+  try {
+    localStorage.setItem(key(scope), JSON.stringify(prefs));
+  } catch {
+    /* noop */
+  }
 }
 
 function hashId(s: string): number {
@@ -81,12 +85,40 @@ export function planReminders(
   }
   return out.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, MAX_REMINDERS);
 }
+function isNative(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const w = window as unknown as {
+      Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
+      androidBridge?: unknown;
+    };
+    if (w.Capacitor?.isNativePlatform?.() === true) return true;
+    if (w.Capacitor?.getPlatform?.() && w.Capacitor.getPlatform() !== "web") return true;
+    if (w.androidBridge) return true;
+    if (typeof location !== "undefined" && (location.protocol === "capacitor:" || location.hostname === "localhost"))
+      return true;
+  } catch {
+    /* noop */
+  }
+  return false;
+}
 
 async function plugin() {
-  const { Capacitor } = await import("@capacitor/core");
-  if (!Capacitor.isNativePlatform()) return null;
-  const { LocalNotifications } = await import("@capacitor/local-notifications");
-  return LocalNotifications;
+  if (!isNative()) return null;
+  try {
+    const w =
+      typeof window !== "undefined"
+        ? (window as unknown as { Capacitor?: { Plugins?: { LocalNotifications?: any } } })
+        : null;
+    const globalLN = w?.Capacitor?.Plugins?.LocalNotifications;
+    if (globalLN) return globalLN;
+
+    const { LocalNotifications } = await import("@capacitor/local-notifications");
+    return LocalNotifications;
+  } catch (err) {
+    console.warn("[reminders] Falha ao obter plugin:", err);
+    return null;
+  }
 }
 
 export async function isRemindersSupported(): Promise<boolean> {
@@ -114,7 +146,9 @@ export async function applyReminders(list: PlannedReminder[]): Promise<void> {
     if ((await LN.checkPermissions()).display !== "granted") return;
     await LN.schedule({
       notifications: list.map((r) => ({
-        id: r.id, title: r.title, body: r.body,
+        id: r.id,
+        title: r.title,
+        body: r.body,
         schedule: { at: r.at, allowWhileIdle: true },
       })),
     });
@@ -127,7 +161,9 @@ export async function sendTestReminder(): Promise<boolean> {
   const LN = await plugin().catch(() => null);
   if (!LN || !(await requestReminderPermission())) return false;
   await LN.schedule({
-    notifications: [{ id: 1, title: "Visita SC", body: "Lembretes ativados ✓", schedule: { at: new Date(Date.now() + 3000) } }],
+    notifications: [
+      { id: 1, title: "Visita SC", body: "Lembretes ativados ✓", schedule: { at: new Date(Date.now() + 3000) } },
+    ],
   });
   return true;
 }
