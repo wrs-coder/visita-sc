@@ -241,6 +241,7 @@ function Dashboard() {
     | "field" | "studies" | "meals" | "meetings" | "transport" | "checklist"
     | "elder-pastoral" | "elder-encouragement" | "elder-recommendations" | "elder-local";
   const [openDetails, setOpenDetails] = useState<DetailsKey | null>(null);
+  const [selectedElderItem, setSelectedElderItem] = useState<ElderItemLike | null>(null);
   useEffect(() => subscribeQueue(setPendingCount), []);
   const [overdueVisits, setOverdueVisits] = useState<
     Array<{ id: string; title: string; end_date: string; congregation_id: string }>
@@ -1569,7 +1570,16 @@ function Dashboard() {
                         return (
                           <li
                             key={ev.id}
-                            className="flex items-start gap-2 p-2 rounded-md border bg-card min-w-0"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setSelectedElderItem(ev as unknown as ElderItemLike)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setSelectedElderItem(ev as unknown as ElderItemLike);
+                              }
+                            }}
+                            className="flex items-start gap-2 p-2 rounded-md border bg-card min-w-0 cursor-pointer hover:border-primary/50"
                           >
                             <Heart className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                             <div className="flex-1 min-w-0">
@@ -2166,6 +2176,23 @@ function Dashboard() {
                 )}
               </DayDetailsDialog>
             ))}
+            <DayDetailsDialog
+              open={!!selectedElderItem}
+              onOpenChange={(o) => !o && setSelectedElderItem(null)}
+              title={selectedElderItem ? elderItemView(selectedElderItem).heading : ""}
+              subtitle="Pastoreiem o Rebanho"
+            >
+              {selectedElderItem && (
+                <div className="space-y-2">
+                  {elderItemView(selectedElderItem).rows.map(([label, v]) => (
+                    <div key={label} className="text-sm whitespace-pre-wrap break-words">
+                      <span className="text-muted-foreground font-medium">{label}: </span>
+                      {v}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </DayDetailsDialog>
           </>
         );
       })()}
