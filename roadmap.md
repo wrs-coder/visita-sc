@@ -39,4 +39,5 @@
 - [ ] (opcional, após aprovação no uso) Rodada 4: recolher campos da Consideração de Campo em "Editar detalhes".
 
 - [x] Recolher/expandir rodada 1: cartões do "Resumo do dia" da esposa e anciãos (individual + recolher tudo).
-- [ ] Recolher/expandir rodada 2: cartões das outras abas do painel por código e abas Reuniões e Discursos, Checklist, Cronograma e Comunicação do casal do superintendente.
+- [x] Recolher/expandir rodada 2a: cartões das abas Estudos, Campo, Refeições, Transporte e Checklist do painel por código.
+- [ ] Recolher/expandir rodada 2b: abas Reuniões e Discursos, Checklist, Cronograma e Comunicação do casal do superintendente.
