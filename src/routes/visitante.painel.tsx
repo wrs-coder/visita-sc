@@ -203,7 +203,7 @@ function Page() {
   }, [load, nav]);
 
   // Mission 3: alternador "Hoje / Próximo dia" para o cartão do dia.
-  const [dayOffset, setDayOffset] = useState<0 | 1>(0);
+  const [dayOffset, setDayOffset] = useState(0);
   const [currentTab, setCurrentTab] = useState("hoje");
 
   const [offlineOpen, setOfflineOpen] = useState(false);
@@ -477,9 +477,8 @@ function Page() {
             </CardContent></Card>
 
             <Tabs value={currentTab} onValueChange={setCurrentTab}>
-              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-7" : "grid-cols-9"}`}>
+              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-8"}`}>
                 <TabsTrigger value="hoje"><Sun className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.today")}</span></TabsTrigger>
-                <TabsTrigger value="cron"><CalendarDays className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.schedule")}</span></TabsTrigger>
                 <TabsTrigger value="estudos"><Users className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.studies")}</span></TabsTrigger>
                 <TabsTrigger value="campo"><Compass className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.field")}</span></TabsTrigger>
                 <TabsTrigger value="ref"><UtensilsCrossed className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.meals")}</span></TabsTrigger>
@@ -501,24 +500,6 @@ function Page() {
                 {snap.wifeMode && code && <GuestReminders snap={snap} code={code} />}
               </TabsContent>
 
-              <TabsContent value="cron" className="space-y-2 mt-4">
-                {snap.schedule.length === 0 ? <Empty text={t("guest.empty.schedule")} /> :
-                  snap.schedule.map((e) => (
-                    <Card key={e.id}><CardContent className="p-3 flex gap-3">
-                      <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[70px] text-center">
-                        <div>{format(parseISO(e.event_date), "dd/MM")}</div>
-                        <div><Clock className="inline h-3 w-3" /> {fmtTime(e.start_time)}</div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium mb-1">{e.title}</div>
-                        <InfoList rows={[
-                          [t("guest.labels.location"), e.location],
-                          [t("guest.labels.notes"), e.notes],
-                        ]} />
-                      </div>
-                    </CardContent></Card>
-                  ))}
-              </TabsContent>
 
               <TabsContent value="estudos" className="space-y-2 mt-4">
                 {snap.field.length === 0 ? <Empty text={t("guest.empty.studies")} /> :
@@ -715,8 +696,8 @@ function TodayDashboard({
   onOpenCouple,
 }: {
   snap: Snapshot;
-  dayOffset: 0 | 1;
-  setDayOffset: (v: 0 | 1) => void;
+  dayOffset: number;
+  setDayOffset: (v: number) => void;
   code: string | null;
   onOpenCouple: () => void;
 }) {
@@ -726,6 +707,28 @@ function TodayDashboard({
   const viewedIso = format(viewedDate, "yyyy-MM-dd");
   const viewedLabel = format(viewedDate, "EEEE, d MMMM", { locale: dateLocale });
   const isTomorrow = dayOffset === 1;
+  const todayIso = format(new Date(), "yyyy-MM-dd");
+  const todayStart = parseISO(todayIso);
+  // Dias da visita como pílulas; tocar leva o resumo para aquele dia.
+  const dayPills = useMemo(() => {
+    if (!snap.visit) return [];
+    const out: Array<{ iso: string; weekday: string; day: string }> = [];
+    let d = parseISO(snap.visit.start_date);
+    const end = parseISO(snap.visit.end_date);
+    for (let i = 0; d <= end && i < 14; i++, d = addDays(d, 1)) {
+      out.push({ iso: format(d, "yyyy-MM-dd"), weekday: format(d, "EEE", { locale: dateLocale }), day: format(d, "dd/MM") });
+    }
+    return out;
+  }, [snap.visit, dateLocale]);
+  const goToIso = (iso: string) =>
+    setDayOffset(Math.round((parseISO(iso).getTime() - todayStart.getTime()) / 86_400_000));
+  // Eventos avulsos dos próximos dias (só na visão de hoje).
+  const upcoming = dayOffset === 0
+    ? snap.schedule
+        .filter((e) => e.event_date > todayIso)
+        .sort((a, b) => (a.event_date + (a.start_time ?? "")).localeCompare(b.event_date + (b.start_time ?? "")))
+        .slice(0, 8)
+    : [];
 
   const mealLabel = (type: string) => type === "lunch" ? t("guest.meal.lunch") : type === "dinner" ? t("guest.meal.dinner") : t("guest.meal.breakfast");
 
@@ -776,24 +779,34 @@ function TodayDashboard({
             </div>
             <div className="font-semibold capitalize">{viewedLabel}</div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {isTomorrow ? (
-              <>
-                <Button size="sm" variant="outline" onClick={() => setDayOffset(0)} className="h-8">
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  {t("dashboard.viewToday", { defaultValue: "Voltar para hoje" })}
-                </Button>
-                <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
-                  {t("dashboard.viewingTomorrow", { defaultValue: "Vendo: amanhã" })} · {format(viewedDate, "EEE, dd/MM", { locale: dateLocale })}
-                </span>
-              </>
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => setDayOffset(1)} className="h-8">
-                {t("dashboard.viewNextDay", { defaultValue: "Ver dia seguinte" })}
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            )}
-          </div>
+          {dayPills.length > 0 && (
+            <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" role="tablist" aria-label={t("guest.today.days", { defaultValue: "Dias da visita" })}>
+              {dayPills.map((d) => {
+                const active = d.iso === viewedIso;
+                return (
+                  <button
+                    key={d.iso}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => goToIso(d.iso)}
+                    className={`shrink-0 min-w-[52px] rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${
+                      active ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-muted"
+                    }`}
+                  >
+                    <div className="capitalize leading-tight">{d.weekday}</div>
+                    <div className="leading-tight opacity-80">{d.day}</div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {dayOffset !== 0 && (
+            <Button size="sm" variant="outline" onClick={() => setDayOffset(0)} className="h-8">
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              {t("dashboard.viewToday", { defaultValue: "Voltar para hoje" })}
+            </Button>
+          )}
         </CardContent>
       </Card>
 
@@ -975,9 +988,29 @@ function TodayDashboard({
         </Card>
       )}
 
-      <div className="text-center pt-2 text-xs text-muted-foreground">
-        {t("guest.openSchedule")} <span className="font-medium">{t("guest.scheduleTab")}</span>.
-      </div>
+      {upcoming.length > 0 && (
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              <CalendarDays className="h-4 w-4" /> {t("guest.today.upcoming", { defaultValue: "Próximos eventos da semana" })}
+            </div>
+            {upcoming.map((e) => (
+              <button
+                key={e.id}
+                type="button"
+                onClick={() => goToIso(e.event_date)}
+                className="w-full text-left text-sm border-l-2 border-primary/30 pl-2 py-1 rounded-r hover:bg-muted/50"
+              >
+                <div className="font-medium">
+                  <span className="capitalize text-primary">{format(parseISO(e.event_date), "EEE dd/MM", { locale: dateLocale })}</span>
+                  {e.start_time ? ` · ${fmtTime(e.start_time)}` : ""} — {e.title}
+                </div>
+                {e.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{e.location}</div>}
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
