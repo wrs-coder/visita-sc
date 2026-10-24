@@ -39,8 +39,8 @@ function Page() {
     setBusy(true);
     try {
       const r = await fn({ data: { code: c } });
-      if (r.kind === "super") window.location.assign(`/cadastro/superintendente?code=${encodeURIComponent(c)}`);
-      else if (r.kind === "elder") window.location.assign(`/cadastro/anciao?code=${encodeURIComponent(c.toUpperCase())}`);
+      if (r.kind === "super") nav({ to: "/cadastro/superintendente", search: { code: c } });
+      else if (r.kind === "elder") nav({ to: "/cadastro/anciao", search: { code: c.toUpperCase() } });
       else toast.error(t("login.signupCodeInvalid"));
     } catch {
       toast.error(t("login.connectionError"));
