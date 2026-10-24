@@ -228,6 +228,7 @@ function Page() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [syncInfo, setSyncInfo] = useState<SyncInfo | null>(null);
   const [draft, setDraft] = useState<FieldNote | null>(null);
   // Só apresentação: no celular alterna entre Biblioteca (lista) e Modo Foco (esboço).
   const [showLibrary, setShowLibrary] = useState(true);
@@ -516,6 +517,12 @@ function Page() {
       // Bootstrap por search param: abre direto a nota pedida (ex.: vindo do dashboard).
       if (search.noteId) {
         const target = sorted.find((n) => n.id === search.noteId);
+        // Esboço de outra subaba (ex.: vindo do dashboard): troca de subaba e reabre.
+        const other = target ? null : ns.find((n) => n.id === search.noteId);
+        if (other) {
+          setActiveType((other.type ?? "field_consideration") as NoteType);
+          return;
+        }
         if (target) {
           setSelectedNoteId(target.id);
           setSelectedFolderId(target.folderId ?? null);
@@ -1227,6 +1234,14 @@ function Page() {
     return null;
   }
 
+  function toggleSelected(id: string) {
+    setSelectedIds((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
   function handleDndStart(ev: DragStartEvent) {
     const p = parseDndId(ev.active.id);
     if (!p || p.kind === "root") return;
@@ -1246,6 +1261,12 @@ function Page() {
     const over = parseDndId(ev.over?.id);
     setDragItem(null);
     setDropHint(null);
+    // Pressionar e segurar sem mover (toque) = selecionar, como na galeria de fotos.
+    if (active?.kind === "note" && Math.hypot(ev.delta.x, ev.delta.y) < 8) {
+      toggleSelected(active.id);
+      try { navigator.vibrate?.(30); } catch { /* noop */ }
+      return;
+    }
     if (!active || active.kind === "root" || !over) return;
 
     // Move pasta
@@ -1526,7 +1547,14 @@ function Page() {
         />
         <button
           type="button"
-          onClick={() => selectNote(note)}
+          onClick={() => {
+            // Modo seleção no toque: toques marcam/desmarcam em vez de abrir.
+            if (selectedIds.size > 0 && window.matchMedia?.("(pointer: coarse)").matches) {
+              toggleSelected(note.id);
+              return;
+            }
+            selectNote(note);
+          }}
           className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
         >
           <FileText className="h-4 w-4 shrink-0 opacity-70" />
@@ -1946,9 +1974,9 @@ function Page() {
                 )}
               </CardContent>
             </Card>
-          )}
-        </div>
-      )}
+          </div>
+          </>
+        )}
       </div>
 
       {fullscreen && draft && (
