@@ -27,6 +27,7 @@ import { startLocalWriteReconciler } from "@/lib/local-write";
 import { startAutoSync } from "@/lib/local-auto-sync";
 import { ensureFreshSession } from "@/lib/session-ready";
 import { isOfflineMode } from "@/lib/connection-mode";
+import { installNativeBackButton } from "@/lib/native-back-button";
 import { toast } from "sonner";
 import "@/i18n";
 import "@/lib/theme";
@@ -245,6 +246,9 @@ function RootComponent() {
   }, [router, queryClient]);
 
   useEffect(() => { markAppMounted(); }, []);
+  useEffect(() => {
+    void installNativeBackButton(() => toast("Toque novamente para sair", { id: "exit-confirm", duration: 2000 }));
+  }, []);
 
   return (
     <ChunkErrorBoundary>
