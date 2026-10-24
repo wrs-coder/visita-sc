@@ -281,6 +281,8 @@ function Page() {
         <p className="text-sm text-muted-foreground mt-1">{t("profile.subtitle")}</p>
       </header>
 
+      {user && <ReminderSettingsCard scope={user.id} role={role === "elder" ? "elder" : "superintendent"} />}
+
       <Card className="shadow-card">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">

@@ -106,6 +106,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { DashboardPager } from "@/components/dashboard/DashboardPager";
 import { buildDayTimeline, groupByDate, resolveWeekdaySlot, type TimelineKind, type TimelineSource } from "@/lib/today-timeline";
+import { EventReminderSync } from "@/components/reminders/EventReminders";
 
 
 
@@ -1731,7 +1732,12 @@ function Dashboard() {
             ),
           },
         ];
-        return <DashboardPager pages={pages} unreadLabel={t("dashboard.pager.unreadMessages", { defaultValue: "Recados não lidos" })} />;
+        return (
+          <>
+            {user && <EventReminderSync items={sources} scope={user.id} role={role === "elder" ? "elder" : "superintendent"} />}
+            <DashboardPager pages={pages} unreadLabel={t("dashboard.pager.unreadMessages", { defaultValue: "Recados não lidos" })} />
+          </>
+        );
       })()}
 
 
