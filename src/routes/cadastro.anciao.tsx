@@ -42,7 +42,7 @@ function Page() {
     username: "",
     phone: "",
     password: "",
-    inviteCode: (search.code || "").toUpperCase(),
+    inviteCode: String(search.code ?? "").toUpperCase(),
     position: "",
   });
 
@@ -208,7 +208,7 @@ function Page() {
                       id="code"
                       required
                       value={form.inviteCode}
-                      onChange={(e) => setForm({ ...form, inviteCode: String(search.code ?? "").toUpperCase() })}
+                      onChange={(e) => setForm({ ...form, inviteCode: e.target.value.toUpperCase() })}
                     />
                   </>
                 )}
