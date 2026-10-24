@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ReminderSettingsCard } from "@/components/reminders/EventReminders";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -280,6 +281,8 @@ function Page() {
         <h1 className="text-2xl md:text-3xl font-bold">{t("profile.title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">{t("profile.subtitle")}</p>
       </header>
+
+      {user && <ReminderSettingsCard scope={user.id} role={role === "elder" ? "elder" : "superintendent"} />}
 
       <Card className="shadow-card">
         <CardHeader>

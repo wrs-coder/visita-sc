@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { BookOpen, Compass } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { InfoList } from "./InfoList";
+import { FoldCard } from "./FoldCard";
 
 type Str = string | null | undefined;
 export type TodayStudy = {
@@ -16,12 +17,14 @@ export type TodayFieldMeeting = {
 
 /** Dois cartões separados: Estudos do dia e Reunião de campo do dia. Cada um some se vazio. */
 export function TodayStudyFieldCards({
-  studies, fieldMeetings, fmtTime, plain = false,
+  studies, fieldMeetings, fmtTime, plain = false, foldScope,
 }: {
   studies: TodayStudy[];
   fieldMeetings: TodayFieldMeeting[];
   fmtTime: (v: string | null) => string;
   plain?: boolean;
+  /** Quando informado, cada cartão pode ser recolhido (estado salvo no aparelho). */
+  foldScope?: string;
 }) {
   const { t } = useTranslation();
   const head = (p: Str, time: Str, extra?: Str) => [p, fmtTime(time ?? null), extra].filter(Boolean).join(" • ");
@@ -67,6 +70,13 @@ export function TodayStudyFieldCards({
   return (
     <>
       {blocks.map((b) => {
+        if (foldScope) {
+          return (
+            <FoldCard key={b.key} id={`${foldScope}:${b.key}`} icon={b.icon} title={b.title}>
+              <div className="space-y-2">{b.items}</div>
+            </FoldCard>
+          );
+        }
         const body = (
           <>
             <div className="flex items-center gap-2 font-semibold text-sm">{b.icon} {b.title}</div>

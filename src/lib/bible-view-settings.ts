@@ -178,6 +178,13 @@ export function buildSegments(text: string, highlights: BibleHighlight[]): Verse
   return out;
 }
 
+/** Converte início/fim de uma seleção (offset do segmento + offset interno) num trecho válido do versículo. */
+export function selectionRange(a: number, b: number, textLength: number): { start: number; end: number } | null {
+  const start = Math.max(0, Math.min(a, b));
+  const end = Math.min(textLength, Math.max(a, b));
+  return end > start ? { start, end } : null;
+}
+
 /** Versículo vizinho dentro do capítulo carregado (null no início/fim). */
 export function neighborVerse(verses: number[], current: number, delta: -1 | 1): number | null {
   const sorted = [...verses].sort((a, b) => a - b);

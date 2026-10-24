@@ -69,3 +69,9 @@ describe("bible view settings", () => {
     expect(neighborVerse([1, 2, 3], 1, -1)).toBeNull();
   });
 });
+
+import { selectionRange as _sr } from "./bible-view-settings";
+describe("selectionRange", () => {
+  it("ordena e limita ao texto", () => { expect(_sr(10, 3, 8)).toEqual({ start: 3, end: 8 }); });
+  it("seleção vazia é nula", () => { expect(_sr(4, 4, 8)).toBeNull(); });
+});

@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { TermsAcceptance } from "@/components/auth/TermsAcceptance";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { registerSuperintendent } from "@/lib/auth.functions";
@@ -13,29 +14,51 @@ import { ShieldCheck, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { HowToGetCode } from "@/components/auth/HowToGetCode";
 
 export const Route = createFileRoute("/cadastro/superintendente")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    code: search.code != null ? String(search.code) : "",
+  }),
   component: Page,
 });
 
 function Page() {
+  const [accepted, setAccepted] = useState(false);
   const { t } = useTranslation();
   const nav = useNavigate();
+  const search = Route.useSearch();
   const fn = useServerFn(registerSuperintendent);
   const [busy, setBusy] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", code: "" });
+  const fromLink = Boolean(search.code);
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    code: String(search.code ?? ""),
+    circuit: "",
+  });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
       const res = await fn({ data: form });
-      if (!res.ok) { toast.error(t("registerSuper.registerError"), { description: res.error }); setBusy(false); return; }
+      if (!res.ok) {
+        toast.error(t("registerSuper.registerError"), { description: res.error });
+        setBusy(false);
+        return;
+      }
       const { error } = await supabase.auth.signInWithPassword({ email: form.email.trim(), password: form.password });
-      if (error) { toast.error(error.message); setBusy(false); return; }
+      if (error) {
+        toast.error(error.message);
+        setBusy(false);
+        return;
+      }
       toast.success(t("registerSuper.successTitle"), { description: t("registerSuper.successDesc") });
       nav({ to: "/congregacoes" });
     } catch (err: unknown) {
-      toast.error(t("registerSuper.unexpectedError"), { description: err instanceof Error ? err.message : String(err) });
+      toast.error(t("registerSuper.unexpectedError"), {
+        description: err instanceof Error ? err.message : String(err),
+      });
       setBusy(false);
     }
   };
@@ -43,7 +66,10 @@ function Page() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary to-primary-soft/30 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <Link to="/" className="inline-flex items-center text-sm text-primary-foreground/90 hover:text-primary-foreground mb-4">
+        <Link
+          to="/"
+          className="inline-flex items-center text-sm text-primary-foreground/90 hover:text-primary-foreground mb-4"
+        >
           <ArrowLeft className="mr-1 h-4 w-4" /> {t("registerSuper.back")}
         </Link>
         <Card className="shadow-elevated border-0">
@@ -60,27 +86,69 @@ function Page() {
             <form onSubmit={submit} className="space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="fullName">{t("registerSuper.fullName")}</Label>
-                <Input id="fullName" required value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
+                <Input
+                  id="fullName"
+                  required
+                  value={form.fullName}
+                  onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="email">{t("registerSuper.email")}</Label>
-                <Input id="email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="circuit">Circuito</Label>
+                <Input
+                  id="circuit"
+                  required
+                  maxLength={60}
+                  placeholder="Ex.: SC-01"
+                  value={form.circuit}
+                  onChange={(e) => setForm({ ...form, circuit: e.target.value })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password">{t("registerSuper.passwordLabel")}</Label>
                 <div className="relative">
-                  <Input id="password" type={showPwd ? "text" : "password"} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="pr-10" />
-                  <button type="button" onClick={() => setShowPwd((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground" aria-label={showPwd ? t("registerSuper.hidePassword") : t("registerSuper.showPassword")}>
+                  <Input
+                    id="password"
+                    type={showPwd ? "text" : "password"}
+                    required
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                    aria-label={showPwd ? t("registerSuper.hidePassword") : t("registerSuper.showPassword")}
+                  >
                     {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="code">{t("registerSuper.code")}</Label>
-                <Input id="code" required value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
-                <HowToGetCode />
-              </div>
-              <Button type="submit" className="w-full h-11 mt-2" disabled={busy}>
+              {!fromLink && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="code">{t("registerSuper.code")}</Label>
+                  <Input
+                    id="code"
+                    required
+                    value={form.code}
+                    onChange={(e) => setForm({ ...form, code: e.target.value })}
+                  />
+                  <HowToGetCode />
+                </div>
+              )}
+              <TermsAcceptance checked={accepted} onChange={setAccepted} />
+              <Button type="submit" className="w-full h-11 mt-2" disabled={busy || !accepted}>
                 {busy ? t("registerSuper.creating") : t("registerSuper.submit")}
               </Button>
             </form>

@@ -106,6 +106,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { DashboardPager } from "@/components/dashboard/DashboardPager";
 import { buildDayTimeline, groupByDate, resolveWeekdaySlot, type TimelineKind, type TimelineSource } from "@/lib/today-timeline";
+import { EventReminderSync } from "@/components/reminders/EventReminders";
 
 
 
@@ -240,6 +241,7 @@ function Dashboard() {
     | "field" | "studies" | "meals" | "meetings" | "transport" | "checklist"
     | "elder-pastoral" | "elder-encouragement" | "elder-recommendations" | "elder-local";
   const [openDetails, setOpenDetails] = useState<DetailsKey | null>(null);
+  const [selectedElderItem, setSelectedElderItem] = useState<ElderItemLike | null>(null);
   useEffect(() => subscribeQueue(setPendingCount), []);
   const [overdueVisits, setOverdueVisits] = useState<
     Array<{ id: string; title: string; end_date: string; congregation_id: string }>
@@ -1568,7 +1570,16 @@ function Dashboard() {
                         return (
                           <li
                             key={ev.id}
-                            className="flex items-start gap-2 p-2 rounded-md border bg-card min-w-0"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setSelectedElderItem(ev as unknown as ElderItemLike)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setSelectedElderItem(ev as unknown as ElderItemLike);
+                              }
+                            }}
+                            className="flex items-start gap-2 p-2 rounded-md border bg-card min-w-0 cursor-pointer hover:border-primary/50"
                           >
                             <Heart className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                             <div className="flex-1 min-w-0">
@@ -1731,7 +1742,12 @@ function Dashboard() {
             ),
           },
         ];
-        return <DashboardPager pages={pages} unreadLabel={t("dashboard.pager.unreadMessages", { defaultValue: "Recados não lidos" })} />;
+        return (
+          <>
+            {user && <EventReminderSync items={sources} scope={user.id} role={role === "elder" ? "elder" : "superintendent"} />}
+            <DashboardPager pages={pages} unreadLabel={t("dashboard.pager.unreadMessages", { defaultValue: "Recados não lidos" })} />
+          </>
+        );
       })()}
 
 
@@ -2160,6 +2176,23 @@ function Dashboard() {
                 )}
               </DayDetailsDialog>
             ))}
+            <DayDetailsDialog
+              open={!!selectedElderItem}
+              onOpenChange={(o) => !o && setSelectedElderItem(null)}
+              title={selectedElderItem ? elderItemView(selectedElderItem).heading : ""}
+              subtitle="Pastoreiem o Rebanho"
+            >
+              {selectedElderItem && (
+                <div className="space-y-2">
+                  {elderItemView(selectedElderItem).rows.map(([label, v]) => (
+                    <div key={label} className="text-sm whitespace-pre-wrap break-words">
+                      <span className="text-muted-foreground font-medium">{label}: </span>
+                      {v}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </DayDetailsDialog>
           </>
         );
       })()}
@@ -2347,3 +2380,25 @@ function OutlinePreviewRow({
   );
 }
 
+
+type ElderItemLike = { section: string } & Record<string, string | null | undefined>;
+
+function elderItemView(ev: ElderItemLike): { heading: string; rows: Array<[string, string]> } {
+  const heading =
+    ev.section === "pastoral" ? (ev.family_name || ev.slot_label || "Família")
+    : ev.section === "encouragement" ? (ev.person_name || "—")
+    : ev.section === "recommendations" ? (ev.full_name || "—")
+    : (ev.subject || "—");
+  const rows: Array<[string, string | null | undefined]> =
+    ev.section === "pastoral"
+      ? [["Slot", ev.slot_label], ["Acompanhante", ev.companion], ["Endereço", ev.address], ["Membros da família", ev.family_members], ["Informações espirituais", ev.spiritual_info]]
+      : ev.section === "encouragement"
+      ? [["Categoria", ev.category], ["Contato", ev.contact], ["Saúde", ev.health_info], ["Endereço", ev.address], ["Informações", ev.info]]
+      : ev.section === "recommendations"
+      ? [["Propósito", ev.purpose], ["Grupo de campo", ev.field_group], ["Informações", ev.info], ["Sugerido por", ev.suggested_by]]
+      : [["Sugerido por", ev.suggested_by], ["Informações", ev.info], ["Fontes", ev.sources]];
+  return {
+    heading,
+    rows: rows.filter((r): r is [string, string] => !!r[1] && String(r[1]).trim().length > 0),
+  };
+}

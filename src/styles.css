@@ -723,3 +723,12 @@ main [role="tabpanel"] [role="tab"][data-state="active"] {
   content-visibility: auto;
   contain-intrinsic-size: auto 32px;
 }
+
+/* Marca-texto dos esboços no escuro: letra escura sobre a cor do destaque. */
+.dark { --bible-hl-alpha: 0.85; }
+.dark mark,
+.dark mark *,
+.dark .bible-highlight,
+.dark .bible-highlight * {
+  color: var(--highlight-ink, oklch(0.18 0 0)) !important;
+}

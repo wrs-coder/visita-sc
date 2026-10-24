@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { EventReminderSync, ReminderSettingsCard } from "@/components/reminders/EventReminders";
+import type { TimelineSource } from "@/lib/today-timeline";
 import { setVisibleInterval } from "@/lib/visible-interval";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
@@ -35,6 +37,7 @@ import { MeetingsTalksPanel, type MeetingsTalksSnap } from "@/components/visit-s
 import { ElderTabGate } from "@/components/visit-summary/ElderTabGate";
 import { GuestSectionNav, GuestWorkspace, useGuestSection } from "@/components/guest-workspace/GuestWorkspace";
 import { TodayStudyFieldCards } from "@/components/visit-summary/TodayStudyFieldCards";
+import { FoldCard, FoldAllButton } from "@/components/visit-summary/FoldCard";
 import { InfoList } from "@/components/visit-summary/InfoList";
 import { formatWeekdayTime, formatAnchorWeekdayTime, anchorWeekday } from "@/components/visit-week/report-schedule";
 
@@ -201,8 +204,10 @@ function Page() {
   }, [load, nav]);
 
   // Mission 3: alternador "Hoje / Próximo dia" para o cartão do dia.
-  const [dayOffset, setDayOffset] = useState<0 | 1>(0);
+  const [dayOffset, setDayOffset] = useState(0);
   const [currentTab, setCurrentTab] = useState("hoje");
+  // Recolher/expandir dos cartões das abas, salvo no aparelho por código de acesso.
+  const tabFold = `guest:${code ?? "local"}:tabs`;
 
   const [offlineOpen, setOfflineOpen] = useState(false);
 
@@ -475,9 +480,8 @@ function Page() {
             </CardContent></Card>
 
             <Tabs value={currentTab} onValueChange={setCurrentTab}>
-              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-7" : "grid-cols-9"}`}>
+              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-8"}`}>
                 <TabsTrigger value="hoje"><Sun className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.today")}</span></TabsTrigger>
-                <TabsTrigger value="cron"><CalendarDays className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.schedule")}</span></TabsTrigger>
                 <TabsTrigger value="estudos"><Users className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.studies")}</span></TabsTrigger>
                 <TabsTrigger value="campo"><Compass className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.field")}</span></TabsTrigger>
                 <TabsTrigger value="ref"><UtensilsCrossed className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.meals")}</span></TabsTrigger>
@@ -494,46 +498,29 @@ function Page() {
               </TabsList>
 
 
-              <TabsContent value="hoje" className="mt-4">
+              <TabsContent value="hoje" className="mt-4 space-y-4">
                 <TodayDashboard snap={snap} dayOffset={dayOffset} setDayOffset={setDayOffset} code={code} onOpenCouple={() => setCurrentTab("couple")} />
+                {snap.wifeMode && code && <GuestReminders snap={snap} code={code} />}
               </TabsContent>
 
-              <TabsContent value="cron" className="space-y-2 mt-4">
-                {snap.schedule.length === 0 ? <Empty text={t("guest.empty.schedule")} /> :
-                  snap.schedule.map((e) => (
-                    <Card key={e.id}><CardContent className="p-3 flex gap-3">
-                      <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[70px] text-center">
-                        <div>{format(parseISO(e.event_date), "dd/MM")}</div>
-                        <div><Clock className="inline h-3 w-3" /> {fmtTime(e.start_time)}</div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium mb-1">{e.title}</div>
-                        <InfoList rows={[
-                          [t("guest.labels.location"), e.location],
-                          [t("guest.labels.notes"), e.notes],
-                        ]} />
-                      </div>
-                    </CardContent></Card>
-                  ))}
-              </TabsContent>
 
               <TabsContent value="estudos" className="space-y-2 mt-4">
-                {snap.field.length === 0 ? <Empty text={t("guest.empty.studies")} /> :
-                  snap.field.map((f) => (
-                    <Card key={f.id}><CardContent className="p-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium text-sm">{fmtDate(f.event_date)} • {f.period}</div>
-                        {f.meeting_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(f.meeting_time)}</span>}
-                      </div>
-                      <InfoList rows={[
-                        [t("guest.labels.meetingPoint"), f.meeting_point],
-                        [t("guest.labels.companion"), f.acompanhante],
-                        [t("guest.labels.companionFor"), f.acompanhante_for],
-                        [t("guest.labels.phone"), f.contact_phone],
-                        [t("guest.labels.notes"), f.notes],
-                      ]} />
-                    </CardContent></Card>
-                  ))}
+                {snap.field.length === 0 ? <Empty text={t("guest.empty.studies")} /> : (
+                  <>
+                    <FoldAllRow ids={snap.field.map((f) => `${tabFold}:st:${f.id}`)} />
+                    {snap.field.map((f) => (
+                      <FoldCard key={f.id} id={`${tabFold}:st:${f.id}`} title={<span className="font-medium">{fmtDate(f.event_date)} • {f.period}{f.meeting_time ? ` • ${fmtTime(f.meeting_time)}` : ""}</span>}>
+                        <InfoList rows={[
+                          [t("guest.labels.meetingPoint"), f.meeting_point],
+                          [t("guest.labels.companion"), f.acompanhante],
+                          [t("guest.labels.companionFor"), f.acompanhante_for],
+                          [t("guest.labels.phone"), f.contact_phone],
+                          [t("guest.labels.notes"), f.notes],
+                        ]} />
+                      </FoldCard>
+                    ))}
+                  </>
+                )}
               </TabsContent>
 
               <TabsContent value="campo" className="space-y-2 mt-4">
@@ -542,29 +529,29 @@ function Page() {
                   value={snap.templateExtras?.field?.observations}
                   variant="blue"
                 />
-                {snap.fieldMeetings.length === 0 ? <Empty text={t("guest.empty.field")} /> :
-                  snap.fieldMeetings.map((f) => (
-                    <Card key={f.id}><CardContent className="p-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium text-sm">{fmtDate(f.event_date)} • {f.period}</div>
-                        {f.meeting_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(f.meeting_time)}</span>}
-                      </div>
-                      <InfoList rows={[
-                        [t("guest.labels.meetingPoint"), f.meeting_location],
-                        [t("guest.labels.modality"), f.modality],
-                        [t("guest.labels.territoryS13"), f.territory_number],
-                        [t("guest.labels.territoryLocation"), f.territory_location],
-                        [t("guest.labels.auxLeaders"), f.auxiliary_leaders],
-                        [t("guest.labels.closingPrayer"), f.closing_prayer],
-                      ]} />
-                      {f.observations && f.observations.trim() && (
-                        <div className="rounded-md border border-blue-500/30 bg-blue-500/5 px-2 py-1.5 mt-1">
-                          <div className="text-[10px] uppercase tracking-wide font-medium text-blue-600 dark:text-blue-400 opacity-80">{t("meetingsTalks.fromTemplate.fieldObservations")}</div>
-                          <div className="text-xs whitespace-pre-wrap text-blue-600 dark:text-blue-400">{f.observations}</div>
-                        </div>
-                      )}
-                    </CardContent></Card>
-                  ))}
+                {snap.fieldMeetings.length === 0 ? <Empty text={t("guest.empty.field")} /> : (
+                  <>
+                    <FoldAllRow ids={snap.fieldMeetings.map((f) => `${tabFold}:fm:${f.id}`)} />
+                    {snap.fieldMeetings.map((f) => (
+                      <FoldCard key={f.id} id={`${tabFold}:fm:${f.id}`} title={<span className="font-medium">{fmtDate(f.event_date)} • {f.period}{f.meeting_time ? ` • ${fmtTime(f.meeting_time)}` : ""}</span>}>
+                        <InfoList rows={[
+                          [t("guest.labels.meetingPoint"), f.meeting_location],
+                          [t("guest.labels.modality"), f.modality],
+                          [t("guest.labels.territoryS13"), f.territory_number],
+                          [t("guest.labels.territoryLocation"), f.territory_location],
+                          [t("guest.labels.auxLeaders"), f.auxiliary_leaders],
+                          [t("guest.labels.closingPrayer"), f.closing_prayer],
+                        ]} />
+                        {f.observations && f.observations.trim() && (
+                          <div className="rounded-md border border-blue-500/30 bg-blue-500/5 px-2 py-1.5 mt-1">
+                            <div className="text-[10px] uppercase tracking-wide font-medium text-blue-600 dark:text-blue-400 opacity-80">{t("meetingsTalks.fromTemplate.fieldObservations")}</div>
+                            <div className="text-xs whitespace-pre-wrap text-blue-600 dark:text-blue-400">{f.observations}</div>
+                          </div>
+                        )}
+                      </FoldCard>
+                    ))}
+                  </>
+                )}
               </TabsContent>
 
               <TabsContent value="ref" className="space-y-2 mt-4">
@@ -575,87 +562,100 @@ function Page() {
                 {snap.meals.length === 0 && snap.mealDayNotes.length === 0 ? <Empty text={t("guest.empty.meals")} /> : (() => {
                   const noteMap = new Map(snap.mealDayNotes.map((n) => [n.meal_date, n.notes]));
                   const dates = Array.from(new Set([...snap.meals.map((m) => m.meal_date), ...snap.mealDayNotes.map((n) => n.meal_date)])).sort();
-                  return dates.map((date) => {
-                    const note = noteMap.get(date);
-                    const dayMeals = snap.meals.filter((m) => m.meal_date === date);
-                    return (
-                      <div key={date} className="space-y-1">
-                        {note && <div className="text-sm font-medium text-destructive px-1 whitespace-pre-wrap">{note}</div>}
-                        {dayMeals.map((m) => (
-                          <Card key={m.id}><CardContent className="p-3 space-y-1">
-                            <div className="flex items-center justify-between">
-                              <div className="font-medium text-sm">{fmtDate(m.meal_date)} • {mealLabel(m.type)}</div>
-                              {m.meal_time && <span className="text-xs"><Clock className="inline h-3 w-3" /> {fmtTime(m.meal_time)}</span>}
-                            </div>
-                            <InfoList rows={[
-                              [t("guest.labels.host"), m.host_name],
-                              [t("guest.labels.location"), m.location],
-                              [t("guest.labels.phone"), m.contact_phone],
-                              [t("guest.labels.notes"), m.notes],
-                            ]} />
-                          </CardContent></Card>
-                        ))}
-                      </div>
-                    );
-                  });
+                  return (
+                    <>
+                      <FoldAllRow ids={snap.meals.map((m) => `${tabFold}:ml:${m.id}`)} />
+                      {dates.map((date) => {
+                        const note = noteMap.get(date);
+                        const dayMeals = snap.meals.filter((m) => m.meal_date === date);
+                        return (
+                          <div key={date} className="space-y-1">
+                            {note && <div className="text-sm font-medium text-destructive px-1 whitespace-pre-wrap">{note}</div>}
+                            {dayMeals.map((m) => (
+                              <FoldCard key={m.id} id={`${tabFold}:ml:${m.id}`} title={<span className="font-medium">{fmtDate(m.meal_date)} • {mealLabel(m.type)}{m.meal_time ? ` • ${fmtTime(m.meal_time)}` : ""}</span>}>
+                                <InfoList rows={[
+                                  [t("guest.labels.host"), m.host_name],
+                                  [t("guest.labels.location"), m.location],
+                                  [t("guest.labels.phone"), m.contact_phone],
+                                  [t("guest.labels.notes"), m.notes],
+                                ]} />
+                              </FoldCard>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </>
+                  );
                 })()}
               </TabsContent>
 
               <TabsContent value="trans" className="space-y-2 mt-4">
-                {snap.transport.length === 0 ? <Empty text={t("guest.empty.transport")} /> :
-                  groupTransport(snap.transport).map((g) => {
-                    const head = g.rows[0];
-                    return (
-                      <Card key={g.key}><CardContent className="p-3 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Car className="h-4 w-4 text-primary" />
-                          <div className="font-medium text-sm">{head.event_date ? fmtDate(head.event_date) : t("guest.labels.noDate")}</div>
-                          {head.all_day && (
-                            <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
-                              {t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}
-                            </span>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          {g.rows.map((r, idx) => {
-                            const showDriver = !head.all_day || idx === 0;
-                            const typeLbl = r.event_type ? t(`transport.eventType.${r.event_type}`, { defaultValue: r.event_type }) : null;
-                            const dirLbl = r.direction ? t(`transport.direction.${r.direction}`, { defaultValue: r.direction }) : null;
-                            return (
-                              <div key={r.id} className="rounded-md border bg-muted/20 p-2 space-y-1">
-                                {(typeLbl || dirLbl) && (
-                                  <div className="text-xs font-medium">
-                                    {typeLbl ?? t("transport.noDay")}
-                                    {dirLbl ? ` · ${dirLbl}` : ""}
-                                  </div>
+                {snap.transport.length === 0 ? <Empty text={t("guest.empty.transport")} /> : (() => {
+                  const groups = groupTransport(snap.transport);
+                  return (
+                    <>
+                      <FoldAllRow ids={groups.map((g) => `${tabFold}:tr:${g.key}`)} />
+                      {groups.map((g) => {
+                        const head = g.rows[0];
+                        return (
+                          <FoldCard
+                            key={g.key}
+                            id={`${tabFold}:tr:${g.key}`}
+                            icon={<Car className="h-4 w-4 text-primary" />}
+                            title={
+                              <span className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium">{head.event_date ? fmtDate(head.event_date) : t("guest.labels.noDate")}</span>
+                                {head.all_day && (
+                                  <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-primary/15 text-primary">
+                                    {t("transport.allDay", { defaultValue: "Apoiar todos os eventos/horários" })}
+                                  </span>
                                 )}
-                                {(r.departure_time || r.return_time) && (
-                                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {fmtTime(r.departure_time ?? null)}
-                                    {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
-                                  </div>
-                                )}
-                                {showDriver && (
-                                  <>
-                                    <div className="text-xs">
-                                      <span className="text-muted-foreground">{t("guest.labels.driver")}: </span>
-                                      {r.driver_name}
-                                    </div>
-                                    {r.contact_phone && (
-                                      <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{r.contact_phone}</div>
+                              </span>
+                            }
+                          >
+                            <div className="space-y-2">
+                              {g.rows.map((r, idx) => {
+                                const showDriver = !head.all_day || idx === 0;
+                                const typeLbl = r.event_type ? t(`transport.eventType.${r.event_type}`, { defaultValue: r.event_type }) : null;
+                                const dirLbl = r.direction ? t(`transport.direction.${r.direction}`, { defaultValue: r.direction }) : null;
+                                return (
+                                  <div key={r.id} className="rounded-md border bg-muted/20 p-2 space-y-1">
+                                    {(typeLbl || dirLbl) && (
+                                      <div className="text-xs font-medium">
+                                        {typeLbl ?? t("transport.noDay")}
+                                        {dirLbl ? ` · ${dirLbl}` : ""}
+                                      </div>
                                     )}
-                                    {r.description && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{r.description}</div>}
-                                    {r.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{r.notes}</div>}
-                                  </>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </CardContent></Card>
-                    );
-                  })}
+                                    {(r.departure_time || r.return_time) && (
+                                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {fmtTime(r.departure_time ?? null)}
+                                        {r.return_time ? ` → ${fmtTime(r.return_time)}` : ""}
+                                      </div>
+                                    )}
+                                    {showDriver && (
+                                      <>
+                                        <div className="text-xs">
+                                          <span className="text-muted-foreground">{t("guest.labels.driver")}: </span>
+                                          {r.driver_name}
+                                        </div>
+                                        {r.contact_phone && (
+                                          <div className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{r.contact_phone}</div>
+                                        )}
+                                        {r.description && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{r.description}</div>}
+                                        {r.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{r.notes}</div>}
+                                      </>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </FoldCard>
+                        );
+                      })}
+                    </>
+                  );
+                })()}
               </TabsContent>
 
               {!snap.wifeMode && (
@@ -672,18 +672,27 @@ function Page() {
 
               {!snap.wifeMode && (
                 <TabsContent value="check" className="space-y-2 mt-4">
-                  {snap.checklist.length === 0 ? <Empty text={t("guest.empty.checklist")} /> :
-                    snap.checklist.map((c) => (
-                      <Card key={c.id}><CardContent className="p-3 space-y-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="font-medium text-sm break-words min-w-0 flex-1">{c.title}</div>
-                          <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-muted text-muted-foreground shrink-0">{c.status}</span>
-                        </div>
-                        {c.description && <div className="text-xs text-muted-foreground break-words">{c.description}</div>}
-                        {c.info_text && <div className="text-xs text-muted-foreground break-words">{c.info_text}</div>}
-                        {c.link_or_notes && <div className="text-xs break-words">{c.link_or_notes}</div>}
-                      </CardContent></Card>
-                    ))}
+                  {snap.checklist.length === 0 ? <Empty text={t("guest.empty.checklist")} /> : (
+                    <>
+                      <FoldAllRow ids={snap.checklist.map((c) => `${tabFold}:ck:${c.id}`)} />
+                      {snap.checklist.map((c) => (
+                        <FoldCard
+                          key={c.id}
+                          id={`${tabFold}:ck:${c.id}`}
+                          title={
+                            <span className="flex items-start justify-between gap-2">
+                              <span className="font-medium break-words min-w-0 flex-1">{c.title}</span>
+                              <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-muted text-muted-foreground shrink-0">{c.status}</span>
+                            </span>
+                          }
+                        >
+                          {c.description && <div className="text-xs text-muted-foreground break-words">{c.description}</div>}
+                          {c.info_text && <div className="text-xs text-muted-foreground break-words">{c.info_text}</div>}
+                          {c.link_or_notes && <div className="text-xs break-words">{c.link_or_notes}</div>}
+                        </FoldCard>
+                      ))}
+                    </>
+                  )}
                 </TabsContent>
               )}
 
@@ -712,8 +721,8 @@ function TodayDashboard({
   onOpenCouple,
 }: {
   snap: Snapshot;
-  dayOffset: 0 | 1;
-  setDayOffset: (v: 0 | 1) => void;
+  dayOffset: number;
+  setDayOffset: (v: number) => void;
   code: string | null;
   onOpenCouple: () => void;
 }) {
@@ -723,6 +732,28 @@ function TodayDashboard({
   const viewedIso = format(viewedDate, "yyyy-MM-dd");
   const viewedLabel = format(viewedDate, "EEEE, d MMMM", { locale: dateLocale });
   const isTomorrow = dayOffset === 1;
+  const todayIso = format(new Date(), "yyyy-MM-dd");
+  const todayStart = parseISO(todayIso);
+  // Dias da visita como pílulas; tocar leva o resumo para aquele dia.
+  const dayPills = useMemo(() => {
+    if (!snap.visit) return [];
+    const out: Array<{ iso: string; weekday: string; day: string }> = [];
+    let d = parseISO(snap.visit.start_date);
+    const end = parseISO(snap.visit.end_date);
+    for (let i = 0; d <= end && i < 14; i++, d = addDays(d, 1)) {
+      out.push({ iso: format(d, "yyyy-MM-dd"), weekday: format(d, "EEE", { locale: dateLocale }), day: format(d, "dd/MM") });
+    }
+    return out;
+  }, [snap.visit, dateLocale]);
+  const goToIso = (iso: string) =>
+    setDayOffset(Math.round((parseISO(iso).getTime() - todayStart.getTime()) / 86_400_000));
+  // Eventos avulsos dos próximos dias (só na visão de hoje).
+  const upcoming = dayOffset === 0
+    ? snap.schedule
+        .filter((e) => e.event_date > todayIso)
+        .sort((a, b) => (a.event_date + (a.start_time ?? "")).localeCompare(b.event_date + (b.start_time ?? "")))
+        .slice(0, 8)
+    : [];
 
   const mealLabel = (type: string) => type === "lunch" ? t("guest.meal.lunch") : type === "dinner" ? t("guest.meal.dinner") : t("guest.meal.breakfast");
 
@@ -762,45 +793,55 @@ function TodayDashboard({
     todayWeekend.length > 0 || todayPioneer.length > 0 || showMidweek || showElders;
 
   const fmtAt = (iso: string | null | undefined) => (iso ? format(parseISO(iso), "HH:mm") : "—");
+  // Recolher/expandir por cartão, salvo no aparelho e separado por código de acesso.
+  const foldScope = `guest:${code ?? "local"}:hoje`;
+  const foldIds = [
+    "meals", "transport", "meetings",
+    ...(todayField.length ? ["studies"] : []),
+    ...(todayFieldMeetings.length ? ["field"] : []),
+    ...(todaySchedule.length ? ["other"] : []),
+    ...(upcoming.length ? ["upcoming"] : []),
+  ].map((k) => `${foldScope}:${k}`);
 
   return (
     <div className="space-y-3">
       <Card>
         <CardContent className="p-4 space-y-3">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">
-              {isTomorrow ? t("guest.today.summaryNext", { defaultValue: "Próximo dia" }) : t("guest.today.summary")}
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                {isTomorrow ? t("guest.today.summaryNext", { defaultValue: "Próximo dia" }) : t("guest.today.summary")}
+              </div>
+              {(dayPills.length === 0 || !inVisit) && (
+                <div className="font-semibold capitalize">{viewedLabel}</div>
+              )}
             </div>
-            <div className="font-semibold capitalize">{viewedLabel}</div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {isTomorrow ? (
-              <>
-                <Button size="sm" variant="outline" onClick={() => setDayOffset(0)} className="h-8">
+            <div className="flex items-center gap-1 shrink-0">
+              {dayOffset !== 0 && (
+                <Button size="sm" variant="ghost" onClick={() => setDayOffset(0)} className="h-7 px-2 shrink-0">
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   {t("dashboard.viewToday", { defaultValue: "Voltar para hoje" })}
                 </Button>
-                <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
-                  {t("dashboard.viewingTomorrow", { defaultValue: "Vendo: amanhã" })} · {format(viewedDate, "EEE, dd/MM", { locale: dateLocale })}
-                </span>
-              </>
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => setDayOffset(1)} className="h-8">
-                {t("dashboard.viewNextDay", { defaultValue: "Ver dia seguinte" })}
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            )}
+              )}
+              <FoldAllButton ids={foldIds} />
+            </div>
           </div>
+          {dayPills.length > 0 && (
+            <DayPillsStrip
+              pills={dayPills}
+              viewedIso={viewedIso}
+              todayIso={todayIso}
+              todayLabel={t("dashboard.today", { defaultValue: "Hoje" })}
+              ariaLabel={t("guest.today.days", { defaultValue: "Dias da visita" })}
+              onPick={goToIso}
+            />
+          )}
         </CardContent>
       </Card>
 
       {snap.wifeMode && code && <WifeCoupleSummaryCard code={code} onOpen={onOpenCouple} />}
 
-      <Card>
-        <CardContent className="p-4 space-y-2">
-          <div className="flex items-center gap-2 font-semibold text-sm">
-            <UtensilsCrossed className="h-4 w-4" /> {t("guest.today.meals")}
-          </div>
+      <FoldCard id={`${foldScope}:meals`} icon={<UtensilsCrossed className="h-4 w-4" />} title={t("guest.today.meals")}>
           {todayNote && (
             <div className="text-sm font-medium text-destructive whitespace-pre-wrap">{todayNote.notes}</div>
           )}
@@ -825,14 +866,9 @@ function TodayDashboard({
               {snap.templateExtras.program.general_observations}
             </div>
           )}
-        </CardContent>
-      </Card>
+      </FoldCard>
 
-      <Card>
-        <CardContent className="p-4 space-y-2">
-          <div className="flex items-center gap-2 font-semibold text-sm">
-            <Car className="h-4 w-4" /> {t("guest.today.transport")}
-          </div>
+      <FoldCard id={`${foldScope}:transport`} icon={<Car className="h-4 w-4" />} title={t("guest.today.transport")}>
           {todayTransport.length === 0 ? (
             <div className="text-xs text-muted-foreground">{t("guest.today.noTransport")}</div>
           ) : (
@@ -882,16 +918,11 @@ function TodayDashboard({
               );
             })
           )}
-        </CardContent>
-      </Card>
+      </FoldCard>
 
-      <TodayStudyFieldCards studies={todayField} fieldMeetings={todayFieldMeetings} fmtTime={fmtTime} />
+      <TodayStudyFieldCards studies={todayField} fieldMeetings={todayFieldMeetings} fmtTime={fmtTime} foldScope={foldScope} />
 
-      <Card>
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center gap-2 font-semibold text-sm">
-            <Mic className="h-4 w-4" /> {t("guest.today.meetings")}
-          </div>
+      <FoldCard id={`${foldScope}:meetings`} icon={<Mic className="h-4 w-4" />} title={t("guest.today.meetings")}>
           {!hasMeetings ? (
             <div className="text-xs text-muted-foreground">{t("guest.today.noMeetings")}</div>
           ) : (
@@ -950,15 +981,10 @@ function TodayDashboard({
               ))}
             </>
           )}
-        </CardContent>
-      </Card>
+      </FoldCard>
 
       {todaySchedule.length > 0 && (
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center gap-2 font-semibold text-sm">
-              <CalendarDays className="h-4 w-4" /> {t("guest.today.otherEvents")}
-            </div>
+        <FoldCard id={`${foldScope}:other`} icon={<CalendarDays className="h-4 w-4" />} title={t("guest.today.otherEvents")}>
             {todaySchedule.map((e) => (
               <div key={e.id} className="text-sm border-l-2 border-primary/30 pl-2 py-1">
                 <div className="font-medium">
@@ -968,13 +994,27 @@ function TodayDashboard({
                 {e.notes && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{e.notes}</div>}
               </div>
             ))}
-          </CardContent>
-        </Card>
+        </FoldCard>
       )}
 
-      <div className="text-center pt-2 text-xs text-muted-foreground">
-        {t("guest.openSchedule")} <span className="font-medium">{t("guest.scheduleTab")}</span>.
-      </div>
+      {upcoming.length > 0 && (
+        <FoldCard id={`${foldScope}:upcoming`} icon={<CalendarDays className="h-4 w-4" />} title={t("guest.today.upcoming", { defaultValue: "Próximos eventos da semana" })}>
+            {upcoming.map((e) => (
+              <button
+                key={e.id}
+                type="button"
+                onClick={() => goToIso(e.event_date)}
+                className="w-full text-left text-sm border-l-2 border-primary/30 pl-2 py-1 rounded-r hover:bg-muted/50"
+              >
+                <div className="font-medium">
+                  <span className="capitalize text-primary">{format(parseISO(e.event_date), "EEE dd/MM", { locale: dateLocale })}</span>
+                  {e.start_time ? ` · ${fmtTime(e.start_time)}` : ""} — {e.title}
+                </div>
+                {e.location && <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{e.location}</div>}
+              </button>
+            ))}
+        </FoldCard>
+      )}
     </div>
   );
 }
@@ -1032,6 +1072,10 @@ function WifeCoupleSummaryCard({ code, onOpen }: { code: string; onOpen: () => v
       </CardContent>
     </Card>
   );
+}
+
+function FoldAllRow({ ids }: { ids: string[] }) {
+  return <div className="flex justify-end"><FoldAllButton ids={ids} /></div>;
 }
 
 function Empty({ text }: { text: string }) {
@@ -1373,6 +1417,75 @@ function WifeCouplePanel({ code }: { code: string }) {
           </CardContent>
         </Card>
       ))}
+    </div>
+  );
+}
+
+function GuestReminders({ snap, code }: { snap: Snapshot; code: string }) {
+  const { t } = useTranslation();
+  const scope = `guest-${code.toUpperCase()}`;
+  const mealName = (type: string) => type === "lunch" ? t("guest.meal.lunch") : type === "dinner" ? t("guest.meal.dinner") : t("guest.meal.breakfast");
+  const items: TimelineSource[] = [
+    ...snap.schedule.map((e) => ({ id: `s-${e.id}`, kind: "schedule" as const, date: e.event_date, time: e.start_time, title: e.title, subtitle: e.location })),
+    ...snap.meals.map((m) => ({ id: `m-${m.id}`, kind: "meal" as const, date: m.meal_date, time: m.meal_time, title: `${mealName(m.type)}${m.host_name ? ` — ${m.host_name}` : ""}`, subtitle: m.location })),
+    ...snap.fieldMeetings.map((f) => ({ id: `f-${f.id}`, kind: "field" as const, date: f.event_date, time: f.meeting_time, title: t("guest.tabs.field"), subtitle: f.meeting_location ?? f.territory_location })),
+    ...snap.field.map((f) => ({ id: `a-${f.id}`, kind: "field" as const, date: f.event_date, time: f.meeting_time, title: t("guest.tabs.field"), subtitle: f.meeting_point })),
+    ...snap.transport.filter((tp) => tp.event_date).map((tp) => ({ id: `t-${tp.id}`, kind: "transport" as const, date: tp.event_date as string, time: tp.departure_time ?? null, title: `${t("guest.tabs.transport")} — ${tp.driver_name}`, subtitle: tp.description })),
+  ];
+  return (
+    <>
+      <EventReminderSync items={items} scope={scope} role="wife" />
+      <ReminderSettingsCard scope={scope} role="wife" />
+    </>
+  );
+}
+
+// Faixa de dias da visita: o dia escolhido desliza para o centro; "Hoje" leva um selo.
+function DayPillsStrip({ pills, viewedIso, todayIso, todayLabel, ariaLabel, onPick }: {
+  pills: Array<{ iso: string; weekday: string; day: string }>;
+  viewedIso: string;
+  todayIso: string;
+  todayLabel: string;
+  ariaLabel: string;
+  onPick: (iso: string) => void;
+}) {
+  const stripRef = useRef<HTMLDivElement>(null);
+  const firstRun = useRef(true);
+  useEffect(() => {
+    const strip = stripRef.current;
+    const el = strip?.querySelector<HTMLElement>(`[data-iso="${viewedIso}"]`);
+    if (!strip || !el) return;
+    const left = el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2;
+    strip.scrollTo({ left: Math.max(0, left), behavior: firstRun.current ? "auto" : "smooth" });
+    firstRun.current = false;
+  }, [viewedIso, pills.length]);
+  return (
+    <div ref={stripRef} className="relative flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" role="tablist" aria-label={ariaLabel} title={todayLabel}>
+      {pills.map((d) => {
+        const active = d.iso === viewedIso;
+        const isToday = d.iso === todayIso;
+        return (
+          <button
+            key={d.iso}
+            data-iso={d.iso}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            aria-current={isToday ? "date" : undefined}
+            onClick={() => onPick(d.iso)}
+            className={`relative shrink-0 min-w-[52px] rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${
+              active
+                ? "bg-primary text-primary-foreground border-primary"
+                : isToday
+                  ? "bg-background text-primary border-primary"
+                  : "bg-background text-foreground border-border hover:bg-muted"
+            }`}
+          >
+            <div className="capitalize leading-tight">{d.weekday}</div>
+            <div className="leading-tight opacity-80">{d.day}</div>
+          </button>
+        );
+      })}
     </div>
   );
 }

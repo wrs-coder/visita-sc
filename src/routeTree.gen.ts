@@ -15,6 +15,7 @@ import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PoliticaPrivacidadeRouteImport } from './routes/politica-privacidade'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as TermosUsoRouteImport } from './routes/termos-uso'
 import { Route as VisitanteRouteImport } from './routes/visitante'
 import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
 import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist-modelos'
@@ -38,6 +39,7 @@ import { Route as AppResumoSemanaRouteImport } from './routes/_app.resumo-semana
 import { Route as AppReunioesDeCampoRouteImport } from './routes/_app.reunioes-de-campo'
 import { Route as AppReunioesDiscursosRouteImport } from './routes/_app.reunioes-discursos'
 import { Route as AppTransporteRouteImport } from './routes/_app.transporte'
+import { Route as CadastroIndexRouteImport } from './routes/cadastro.index'
 import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
 import { Route as VisitanteIndexRouteImport } from './routes/visitante.index'
@@ -73,6 +75,11 @@ const PoliticaPrivacidadeRoute = PoliticaPrivacidadeRouteImport.update({
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosUsoRoute = TermosUsoRouteImport.update({
+  id: '/termos-uso',
+  path: '/termos-uso',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VisitanteRoute = VisitanteRouteImport.update({
@@ -193,6 +200,11 @@ const AppTransporteRoute = AppTransporteRouteImport.update({
   path: '/transporte',
   getParentRoute: () => AppRoute,
 } as any)
+const CadastroIndexRoute = CadastroIndexRouteImport.update({
+  id: '/cadastro/',
+  path: '/cadastro/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CadastroAnciaoRoute = CadastroAnciaoRouteImport.update({
   id: '/cadastro/anciao',
   path: '/cadastro/anciao',
@@ -235,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/termos-uso': typeof TermosUsoRoute
   '/visitante': typeof VisitanteRouteWithChildren
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
@@ -261,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/visitante/painel': typeof VisitantePainelRoute
+  '/cadastro/': typeof CadastroIndexRoute
   '/visitante/': typeof VisitanteIndexRoute
   '/relatorio/$visitId': typeof AppRelatorioVisitIdRoute
   '/api/public/ping': typeof ApiPublicPingRoute
@@ -272,6 +286,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/termos-uso': typeof TermosUsoRoute
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
   '/comunicacao-casal': typeof AppComunicacaoCasalRoute
@@ -297,6 +312,7 @@ export interface FileRoutesByTo {
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/visitante/painel': typeof VisitantePainelRoute
+  '/cadastro': typeof CadastroIndexRoute
   '/visitante': typeof VisitanteIndexRoute
   '/relatorio/$visitId': typeof AppRelatorioVisitIdRoute
   '/api/public/ping': typeof ApiPublicPingRoute
@@ -310,6 +326,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/termos-uso': typeof TermosUsoRoute
   '/visitante': typeof VisitanteRouteWithChildren
   '/_app/checklist': typeof AppChecklistRoute
   '/_app/checklist-modelos': typeof AppChecklistModelosRoute
@@ -336,6 +353,7 @@ export interface FileRoutesById {
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/visitante/painel': typeof VisitantePainelRoute
+  '/cadastro/': typeof CadastroIndexRoute
   '/visitante/': typeof VisitanteIndexRoute
   '/_app/relatorio/$visitId': typeof AppRelatorioVisitIdRoute
   '/api/public/ping': typeof ApiPublicPingRoute
@@ -349,6 +367,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/politica-privacidade'
     | '/redefinir-senha'
+    | '/termos-uso'
     | '/visitante'
     | '/checklist'
     | '/checklist-modelos'
@@ -375,6 +394,7 @@ export interface FileRouteTypes {
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/visitante/painel'
+    | '/cadastro/'
     | '/visitante/'
     | '/relatorio/$visitId'
     | '/api/public/ping'
@@ -386,6 +406,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/politica-privacidade'
     | '/redefinir-senha'
+    | '/termos-uso'
     | '/checklist'
     | '/checklist-modelos'
     | '/comunicacao-casal'
@@ -411,6 +432,7 @@ export interface FileRouteTypes {
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/visitante/painel'
+    | '/cadastro'
     | '/visitante'
     | '/relatorio/$visitId'
     | '/api/public/ping'
@@ -423,6 +445,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/politica-privacidade'
     | '/redefinir-senha'
+    | '/termos-uso'
     | '/visitante'
     | '/_app/checklist'
     | '/_app/checklist-modelos'
@@ -449,6 +472,7 @@ export interface FileRouteTypes {
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/visitante/painel'
+    | '/cadastro/'
     | '/visitante/'
     | '/_app/relatorio/$visitId'
     | '/api/public/ping'
@@ -462,9 +486,11 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   PoliticaPrivacidadeRoute: typeof PoliticaPrivacidadeRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  TermosUsoRoute: typeof TermosUsoRoute
   VisitanteRoute: typeof VisitanteRouteWithChildren
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
   CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
+  CadastroIndexRoute: typeof CadastroIndexRoute
   ApiPublicPingRoute: typeof ApiPublicPingRoute
   ApiPublicVersionRoute: typeof ApiPublicVersionRoute
 }
@@ -511,6 +537,13 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos-uso': {
+      id: '/termos-uso'
+      path: '/termos-uso'
+      fullPath: '/termos-uso'
+      preLoaderRoute: typeof TermosUsoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/visitante': {
@@ -674,6 +707,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTransporteRouteImport
       parentRoute: typeof AppRoute
     }
+    '/cadastro/': {
+      id: '/cadastro/'
+      path: '/cadastro'
+      fullPath: '/cadastro/'
+      preLoaderRoute: typeof CadastroIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cadastro/anciao': {
       id: '/cadastro/anciao'
       path: '/cadastro/anciao'
@@ -801,9 +841,11 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   PoliticaPrivacidadeRoute: PoliticaPrivacidadeRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  TermosUsoRoute: TermosUsoRoute,
   VisitanteRoute: VisitanteRouteWithChildren,
   CadastroAnciaoRoute: CadastroAnciaoRoute,
   CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,
+  CadastroIndexRoute: CadastroIndexRoute,
   ApiPublicPingRoute: ApiPublicPingRoute,
   ApiPublicVersionRoute: ApiPublicVersionRoute,
 }
