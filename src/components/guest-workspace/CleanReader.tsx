@@ -9,7 +9,7 @@ import { getActiveLibrary, getChapterFromLibrary, type BibleVerseRecord } from "
 import { getLocalizedBookName } from "@/lib/bible-canon";
 import {
   HIGHLIGHT_COLORS, TEXT_SCALE_MAX, TEXT_SCALE_MIN, TEXT_SCALE_STEP, addHighlight, buildSegments, clampTextScale,
-  clearHighlights, getHighlights, highlightKey, loadSettings, saveSettings, type HighlightColor,
+  removeHighlightAt, selectionRange, clearHighlights, getHighlights, highlightKey, loadSettings, saveSettings, type HighlightColor,
 } from "@/lib/bible-view-settings";
 import { cn } from "@/lib/utils";
 
