@@ -50,10 +50,6 @@ function Page() {
   const [codeError, setCodeError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
 
-  const [available, setAvailable] = useState<ElderPosition[] | null>(null);
-  const [codeError, setCodeError] = useState<string | null>(null);
-  const [checking, setChecking] = useState(false);
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.position) {
