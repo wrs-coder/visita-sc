@@ -45,14 +45,39 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
   const selected = verses?.find((v) => v.verse === sel) ?? null;
   const key = (verse: number) => highlightKey(libId ?? "", book, ch, verse);
   const ref = selected ? `${title}:${selected.verse}` : title;
+  const [range, setRange] = useState<{ start: number; end: number } | null>(null);
+
+  // Offset de um ponto da seleção dentro do versículo (via data-start dos segmentos).
+  const offsetOf = (node: Node | null, off: number): number | null => {
+    const el = (node?.nodeType === 3 ? node.parentElement : (node as Element | null))?.closest?.("[data-start]");
+    if (!el) return null;
+    return Number(el.getAttribute("data-start")) + (node?.nodeType === 3 ? off : 0);
+  };
+  const pick = (v: BibleVerseRecord) => {
+    const s = window.getSelection?.();
+    if (s && !s.isCollapsed && s.anchorNode && s.focusNode) {
+      const a = offsetOf(s.anchorNode, s.anchorOffset);
+      const b = offsetOf(s.focusNode, s.focusOffset);
+      const r = a != null && b != null ? selectionRange(a, b, v.text.length) : null;
+      if (r) { setSel(v.verse); setRange(r); return; }
+    }
+    setRange(null);
+    setSel(sel === v.verse ? null : v.verse);
+  };
 
   const paint = (c: HighlightColor) => {
     if (!selected || !libId) return;
     setSettings(saveSettings({ highlightColor: c }));
-    addHighlight(key(selected.verse), { start: 0, end: selected.text.length, color: c });
+    addHighlight(key(selected.verse), { ...(range ?? { start: 0, end: selected.text.length }), color: c });
+    window.getSelection?.()?.removeAllRanges();
+    setRange(null);
     bump((n) => n + 1);
   };
-  const erase = () => { if (selected && libId) { clearHighlights(key(selected.verse)); bump((n) => n + 1); } };
+  const erase = () => {
+    if (!selected || !libId) return;
+    if (range) removeHighlightAt(key(selected.verse), range.start); else clearHighlights(key(selected.verse));
+    setRange(null); bump((n) => n + 1);
+  };
   const scale = (d: number) => setSettings(saveSettings({ textScale: clampTextScale(settings.textScale + d) }));
   const copy = async () => {
     if (!selected) return;
@@ -77,12 +102,12 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
             ) : verses.length === 0 ? <p className="text-sm text-muted-foreground">{t("guestWs.chapterMissing", { defaultValue: "Capítulo não encontrado na Bíblia importada." })}</p>
             : verses.map((v) => (
               <p key={v.key} role="button" tabIndex={0} aria-pressed={sel === v.verse}
-                onClick={() => setSel(sel === v.verse ? null : v.verse)}
+                onMouseUp={() => pick(v)} onTouchEnd={() => setTimeout(() => pick(v), 0)}
                 onKeyDown={(e) => { if (e.key === "Enter") setSel(sel === v.verse ? null : v.verse); }}
-                className={cn("mb-2 cursor-pointer rounded-sm", sel === v.verse && "underline decoration-primary decoration-2 underline-offset-4")}>
+                className={cn("mb-2 cursor-pointer rounded-sm select-text", sel === v.verse && "underline decoration-primary decoration-2 underline-offset-4")}>
                 <sup className="mr-1 text-xs text-muted-foreground">{v.verse}</sup>
                 {buildSegments(v.text, libId ? getHighlights(key(v.verse)) : []).map((s, i) => (
-                  <span key={i} className={s.highlighted ? `bible-highlight bible-hl-${s.color ?? "yellow"}` : undefined}>{s.text}</span>
+                  <span key={i} data-start={s.start} className={s.highlighted ? `bible-highlight bible-hl-${s.color ?? "yellow"}` : undefined}>{s.text}</span>
                 ))}
               </p>
             ))}
@@ -91,11 +116,11 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
       {selected && (
         <div role="toolbar" aria-label={t("guestWs.verseTools", { defaultValue: "Ferramentas do versículo" })}
           className="flex flex-wrap items-center gap-1 border-t bg-card px-3 py-2">
-          <span className="mr-1 text-xs font-medium">{ref}</span>
+          <span className="mr-1 text-xs font-medium">{ref}{range ? " · trecho" : ""}</span>
           <Highlighter className="h-4 w-4 text-muted-foreground" aria-hidden />
           {HIGHLIGHT_COLORS.map((c) => (
-            <button key={c} type="button" onClick={() => paint(c)} aria-label={t(`bibleVerse.highlightColors.${c}`, { defaultValue: c })}
-              className={cn("h-6 w-6 rounded-full border", `bible-hl-${c}`, settings.highlightColor === c && "ring-2 ring-primary ring-offset-1")} />
+            <button key={c} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => paint(c)} aria-label={t(`bibleVerse.highlightColors.${c}`, { defaultValue: c })}
+              className={cn("h-6 w-6 rounded-full border bible-hl-swatch", `bible-hl-${c}`, settings.highlightColor === c && "ring-2 ring-primary ring-offset-1")} />
           ))}
           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={erase} aria-label={t("bibleVerse.clear", { defaultValue: "Limpar destaque" })}><Eraser className="h-4 w-4" /></Button>
           <Button size="sm" variant="ghost" className="h-8 px-2" disabled={settings.textScale <= TEXT_SCALE_MIN} onClick={() => scale(-TEXT_SCALE_STEP)}>A-</Button>
