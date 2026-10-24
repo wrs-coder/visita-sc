@@ -16,7 +16,7 @@ import { ELDER_POSITION_LABELS, type ElderPosition } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/cadastro/anciao")({
   validateSearch: (search: Record<string, unknown>) => ({
-    code: (search.code as string) || "",
+    code: search.code != null ? String(search.code) : "",
   }),
   component: Page,
 });
@@ -208,7 +208,7 @@ function Page() {
                       id="code"
                       required
                       value={form.inviteCode}
-                      onChange={(e) => setForm({ ...form, inviteCode: e.target.value.toUpperCase() })}
+                      onChange={(e) => setForm({ ...form, inviteCode: String(search.code ?? "").toUpperCase() })}
                     />
                   </>
                 )}
