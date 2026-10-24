@@ -2150,6 +2150,7 @@ function NoteEditor({
     onSyncInfo?.(syncAvailable ? { run: () => syncFnRef.current(), syncing: syncBusy } : null);
   }, [syncAvailable, syncBusy, onSyncInfo]);
   useEffect(() => () => onSyncInfo?.(null), [onSyncInfo]);
+  syncFnRef.current = () => (isField ? handleSyncFromField() : talkSync.sync());
 
   const handleSyncFromField = async () => {
     if (!canSync || !visit) return;
