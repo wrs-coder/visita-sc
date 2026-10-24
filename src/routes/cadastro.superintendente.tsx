@@ -14,7 +14,7 @@ import { HowToGetCode } from "@/components/auth/HowToGetCode";
 
 export const Route = createFileRoute("/cadastro/superintendente")({
   validateSearch: (search: Record<string, unknown>) => ({
-    code: (search.code as string) || "",
+    code: search.code != null ? String(search.code) : "",
   }),
   component: Page,
 });
@@ -31,7 +31,7 @@ function Page() {
     fullName: "",
     email: "",
     password: "",
-    code: search.code || "",
+    code: String(search.code ?? ""),
     circuit: "",
   });
 
