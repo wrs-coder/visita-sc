@@ -140,7 +140,7 @@ export async function applyReminders(list: PlannedReminder[]): Promise<void> {
   try {
     const pending = await LN.getPending();
     if (pending.notifications.length) {
-      await LN.cancel({ notifications: pending.notifications.map((n) => ({ id: n.id })) });
+      await LN.cancel({ notifications: pending.notifications.map((n: { id: number }) => ({ id: n.id })) });
     }
     if (!list.length) return;
     if ((await LN.checkPermissions()).display !== "granted") return;
