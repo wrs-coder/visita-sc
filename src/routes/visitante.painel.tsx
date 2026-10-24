@@ -1072,6 +1072,10 @@ function WifeCoupleSummaryCard({ code, onOpen }: { code: string; onOpen: () => v
   );
 }
 
+function FoldAllRow({ ids }: { ids: string[] }) {
+  return <div className="flex justify-end"><FoldAllButton ids={ids} /></div>;
+}
+
 function Empty({ text }: { text: string }) {
   return <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{text}</CardContent></Card>;
 }
