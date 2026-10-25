@@ -1722,7 +1722,18 @@
       "onTime": "a tiempo",
       "late": "{{count}} min de retraso",
       "early": "{{count}} min adelantado",
-      "sumMismatch": "Los temas suman {{total}} min, pero el cronómetro está en {{target}} min."
+      "sumMismatch": "Los temas suman {{total}} min, pero el cronómetro está en {{target}} min.",
+      "settings": "Ajustes de la píldora de tiempo",
+      "size": "Tamaño",
+      "small": "P",
+      "medium": "M",
+      "large": "G",
+      "opacity": "Opacidad",
+      "position": "Posición",
+      "left": "Izquierda",
+      "center": "Centro",
+      "right": "Derecha",
+      "reset": "Restaurar"
     },
     "draft": {
       "found": "Hay cambios sin guardar de {{time}}.",

@@ -1719,6 +1719,19 @@
       "expand": "Expandir tópico",
       "collapseAll": "Recolher todos",
       "expandAll": "Expandir todos"
+    },
+    "topicTime": {
+      "settings": "Ajustes da pílula de tempo",
+      "size": "Tamanho",
+      "small": "P",
+      "medium": "M",
+      "large": "G",
+      "opacity": "Opacidade",
+      "position": "Posição",
+      "left": "Esquerda",
+      "center": "Centro",
+      "right": "Direita",
+      "reset": "Restaurar padrão"
     }
   },
   "bibleManager": {

@@ -15,6 +15,7 @@ import {
   type TopicSchedule,
 } from "@/lib/outline-schedule";
 import { cn } from "@/lib/utils";
+import { useBadgePrefs } from "@/lib/topic-badge-prefs";
 
 interface Ctx {
   outlineId: string;
@@ -58,6 +59,7 @@ export function TopicTimeBadge({ topicId, floating = false }: { topicId: string;
   const { t } = useTranslation();
   const ctx = useContext(TopicTimingContext);
   const slot = ctx?.schedule.slots[topicId];
+  const prefs = useBadgePrefs();
   if (!ctx || !slot) return null;
   const label = slot.expectedEnd !== null
     ? t("personalOutlines.topicTime.until", { time: fmtTime(slot.expectedEnd), defaultValue: "até {{time}}" })
@@ -75,13 +77,17 @@ export function TopicTimeBadge({ topicId, floating = false }: { topicId: string;
       aria-pressed={slot.done}
       aria-label={`${label} · ${aria}`}
       title={aria}
+      style={floating ? { opacity: (prefs.opacity / 100) * (slot.done ? 0.6 : 1) } : undefined}
       className={cn(
         "inline-flex shrink-0 items-center gap-1 rounded-full border tabular-nums transition",
         floating
-          ? "px-1.5 py-0 text-[10px] leading-4 border-transparent bg-background/60 backdrop-blur-sm shadow-sm"
+          ? cn(
+              "border-transparent bg-background/60 backdrop-blur-sm shadow-sm",
+              prefs.size === "lg" ? "px-2.5 py-0.5 text-sm" : prefs.size === "md" ? "px-2 py-0.5 text-xs" : "px-1.5 py-0 text-[10px] leading-4",
+            )
           : "px-2 py-0.5 text-[11px]",
         slot.done
-          ? "text-muted-foreground line-through opacity-60"
+          ? cn("text-muted-foreground line-through", !floating && "opacity-60")
           : slot.current
             ? cn("text-primary font-semibold", floating ? "bg-primary/10" : "border-primary bg-primary/10")
             : cn("text-muted-foreground", !floating && "border-border"),
@@ -123,4 +129,16 @@ export function TopicDeviationPill() {
       {text}
     </span>
   );
+}
+
+/** True quando este tópico tem tempo definido. */
+export function useTopicHasTime(topicId: string): boolean {
+  const ctx = useContext(TopicTimingContext);
+  return !!ctx?.schedule.slots[topicId];
+}
+
+/** True quando o esboço tem algum tópico com tempo. */
+export function useHasTimedTopics(): boolean {
+  const ctx = useContext(TopicTimingContext);
+  return !!ctx && Object.keys(ctx.schedule.slots).length > 0;
 }
