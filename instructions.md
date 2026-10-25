@@ -112,3 +112,28 @@ Antes de encerrar qualquer mudança que toque modelos, papéis ou visitas, confi
 - Toda mudança de versão altera, na mesma alteração: `package.json`, `APP_VERSION` em `src/components/auth/LoginForm.tsx` e `versionName`/`versionCode` em `android/app/build.gradle`.
 - `versionCode` sempre incrementa; `versionName` segue semver e é o número exibido na tela "Sobre".
 
+  ## 16. Diretrizes de Execução Cirúrgica e Blindagem contra Regressões
+
+- PROIBIÇÃO DE SUPOSIÇÃO DE DEPENDÊNCIAS: Jamais importar pacotes nativos (@capacitor/*) ou bibliotecas npm sem antes verificar se constam no `package.json` e se estão sincronizados na ponte Android. Se faltar pacote, instalar formalmente antes de usar.
+- BUSCA OBRIGATÓRIA DE CONSUMIDORES: Ao adicionar ou alterar propriedades em componentes compartilhados (como `FieldNoteInfoButton`, `FoldCard`, diálogos de tela cheia ou botões de resumo), fazer busca obrigatória em todo o projeto (`rg`) e garantir que todos os arquivos que os utilizam recebam as propriedades necessárias (ex.: `onSync`, `syncing`).
+- ISOLAMENTO DE ARQUIVOS VITAIS: Proibido alterar `src/routes/__root.tsx`, `src/lib/auth.functions.ts` ou provedores de sessão para atender pedidos de telas específicas, cartões ou ajustes visuais.
+- ALARMES E NOTIFICAÇÕES NÃO INTRUSIVOS: Proibido emitir avisos globais (como "Sessão expirada") em eventos de retorno de tela (`visibilitychange`/`resume`) sem antes verificar se o usuário é acesso por código (esposa/anciãos), se está offline intencional ou se a fila de sincronização está vazia (`queueSize() === 0`).
+- ESCOPO CIRÚRGICO: Limitar as edições estritamente aos arquivos e componentes citados no pedido. Proibido refatorar ou reorganizar código funcional adjacente.
+
+## 17. Padrões Visuais Premium e Sistema de Cores
+
+- ZERO CORES INLINE: Proibido o uso de códigos hexadecimais soltos ou utilitários hardcoded (`text-white`, `bg-[#...]`). Todas as cores devem seguir rigorosamente os tokens semânticos em `src/styles.css` (sistema de tokens da Onda 6.8).
+- MODO ESCURO E OLED: Todo texto em elementos de destaque (`mark`, `.bible-highlight`) deve manter contraste escuro legível (`--highlight-ink`), garantindo legibilidade perfeita nos dois modos escuros (grafite e preto puro).
+- SOBRIEDADE E ALINHAMENTO: Proibida poluição visual por informações redundantes (ex.: repetir no cabeçalho a data que já está nas pílulas de navegação). Manter silhuetas limpas e alturas uniformes.
+
+## 18. Plataforma Nativa e Dispositivos Móveis (Android / Capacitor)
+
+- DETECÇÃO NATIVA RESILIENTE: Sempre priorizar a detecção via `window.Capacitor?.isNativePlatform?.()` e ler diretamente os objetos nativos `window.Capacitor.Plugins.*` antes de recorrer a imports dinâmicos que possam falhar silenciosamente no WebView.
+- HIERARQUIA DO BOTÃO VOLTAR NATIVO: Ao pressionar o botão voltar no smartphone, a ordem de prioridade é obrigatória:
+  1. Fechar diálogos, modais, popups ou telas cheias abertas (via evento Escape).
+  2. Se nenhuma sobreposição estiver visível, navegar no histórico da rota (`router.history.back()`).
+  3. Somente na tela inicial do app, solicitar confirmação ("Toque novamente para sair") antes de fechar o aplicativo.
+
+## 19. Protocolo de Validação Obrigatória
+
+- Todo ciclo de alterações deve obrigatoriamente passar na checagem de tipos (`bunx tsgo --noEmit` ou `bunx tsc --noEmit`) e na suíte de testes (`bunx vitest run`) com 100% de aprovação antes de qualquer entrega.
