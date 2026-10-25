@@ -31,4 +31,18 @@ describe("convertHeadingsToTopics", () => {
     expect(html.indexOf("Frase forte")).toBeLessThan(html.indexOf("outline-topic"));
     editor.destroy();
   });
+
+  it("reconhece maiúsculas sem negrito e H2 com tempo; ignora frase comum", () => {
+    const editor = new Editor({
+      extensions: [StarterKit, OutlineTopic],
+      content: "<p>Leia por 4 min hoje</p><p>UM LEMBRETE AMOROSO (4 min)</p><p>a</p><h2>Conclusão (3 min.)</h2><p>b</p>",
+    });
+    expect(editor.commands.convertHeadingsToTopics()).toBe(true);
+    const html = editor.getHTML();
+    expect(html.match(/data-type="outline-topic"/g)?.length).toBe(2);
+    expect(html).toContain('data-minutes="4"');
+    expect(html).toContain('data-minutes="3"');
+    expect(html).toContain("<p>Leia por 4 min hoje</p>");
+    editor.destroy();
+  });
 });

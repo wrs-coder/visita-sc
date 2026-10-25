@@ -212,7 +212,7 @@ export function RichNoteToolbar({
       onClick={() => {
         if (!editor) return;
         const ok = editor.chain().focus().convertHeadingsToTopics().run();
-        if (!ok) window.alert(t("personalOutlines.topics.noHeadings", { defaultValue: "Nenhum subtítulo (H3) encontrado fora de tópicos." }));
+        if (!ok) window.alert(t("personalOutlines.topics.noHeadings", { defaultValue: "Nenhum subtítulo com tempo, como (4 min), foi encontrado." }));
       }}>
       <Timer className="h-4 w-4" />
     </Button>
