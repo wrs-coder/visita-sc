@@ -118,3 +118,29 @@ describe("formatMMSS", () => {
   it("um minuto e meio", () => expect(formatMMSS(90)).toBe("01:30"));
   it("clamp negativo", () => expect(formatMMSS(-5)).toBe("00:00"));
 });
+
+import { applyTarget, recoverSnapshot, STALE_RUNNING_MS } from "./use-outline-timer";
+
+describe("correções do cronômetro", () => {
+  it("diminuir o alvo não corta o tempo decorrido", () => {
+    const next = applyTarget(baseSnap({ elapsedSec: 600 }), 300, 2_000_000);
+    expect(next.elapsedSec).toBe(600);
+    expect(next.targetChosen).toBe(true);
+  });
+  it("cronômetro esquecido ligado por mais de 3 h é pausado ao reabrir", () => {
+    const snap = baseSnap({ elapsedSec: 120, lastTickAt: 0 });
+    const r = recoverSnapshot(snap, STALE_RUNNING_MS + 1);
+    expect(r.isRunning).toBe(false);
+    expect(r.elapsedSec).toBe(120);
+    expect(r.staleSince).toBe(0);
+  });
+  it("reabrir em poucos minutos soma o tempo passado", () => {
+    const r = recoverSnapshot(baseSnap({ elapsedSec: 10, lastTickAt: 0 }), 60_000);
+    expect(r.elapsedSec).toBe(70);
+    expect(r.isRunning).toBe(true);
+  });
+  it("modo progressivo para em alvo + 30 min", () => {
+    const snap = baseSnap({ mode: "countup", targetSec: 60, elapsedSec: 60 + 30 * 60 - 1, lastTickAt: 0 });
+    expect(computeTickAdvance(snap, 5_000)?.isRunning).toBe(false);
+  });
+});
