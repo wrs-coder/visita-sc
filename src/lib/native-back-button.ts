@@ -27,9 +27,13 @@ let installed = false;
 export async function installNativeBackButton(onConfirmExit: () => void): Promise<void> {
   if (installed || typeof window === "undefined") return;
   try {
-    const { Capacitor } = await import("@capacitor/core");
-    if (!Capacitor.isNativePlatform()) return;
-    const { App } = await import("@capacitor/app");
+    type AppPlugin = typeof import("@capacitor/app").App;
+    const w = window as unknown as {
+      Capacitor?: { isNativePlatform?: () => boolean; Plugins?: { App?: AppPlugin } };
+    };
+    if (w.Capacitor?.isNativePlatform?.() !== true) return;
+    // Usa primeiro o complemento já registrado pelo Android; senão importa.
+    const App: AppPlugin = w.Capacitor.Plugins?.App ?? (await import("@capacitor/app")).App;
     installed = true;
     let lastExitPressAt: number | null = null;
     await App.addListener("backButton", ({ canGoBack }) => {
@@ -54,7 +58,7 @@ export async function installNativeBackButton(onConfirmExit: () => void): Promis
         onConfirmExit();
       }
     });
-  } catch {
-    /* web: sem botão nativo */
+  } catch (err) {
+    console.warn("[native-back-button] botão voltar nativo indisponível:", err);
   }
 }
