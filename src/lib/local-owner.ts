@@ -25,6 +25,7 @@ const CLOUD_KEY_PREFIXES = [
 /** Chaves exatas de localStorage a apagar na troca de conta. */
 const CLOUD_KEYS = [
   "visita-sc:offline-queue", // mutações pendentes da conta anterior
+  "visita-sc:offline-queue-failed", // "Não enviados" da conta anterior
   "visita-sc:hidden-circuit-events",
   "visita-sc:outlines-last-sync",
   "visita-sc:last-warmup",
