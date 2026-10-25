@@ -60,3 +60,17 @@ export async function ensureFreshSession(): Promise<SessionReadyResult> {
 
   return inflight;
 }
+
+/**
+ * Regra do aviso "Sessão expirada": só avisa quando há alterações esperando
+ * envio, a pessoa entrou com conta (não por código) e há internet.
+ */
+export function shouldWarnSessionExpired(opts: {
+  reason?: SessionReadyResult["reason"];
+  queued: number;
+  isGuest: boolean;
+  online: boolean;
+}): boolean {
+  if (opts.reason !== "refresh-failed" && opts.reason !== "no-session") return false;
+  return opts.queued > 0 && !opts.isGuest && opts.online;
+}
