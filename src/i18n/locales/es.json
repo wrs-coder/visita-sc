@@ -302,10 +302,20 @@
       "mealsWeek": "Comidas de la semana",
       "transportWeek": "Transporte de la semana",
       "tabOutlines": "Bosquejos",
-      "unreadMessages": "Mensajes no leídos"
+      "unreadMessages": "Mensajes no leídos",
+      "tabAgenda": "Agenda",
+      "agendaDays": "Días de la agenda",
+      "backToToday": "Volver a hoy"
     },
     "recommendedCardTitle": "Notas del SC – Recomendados",
-    "openPage": "Abrir página"
+    "openPage": "Abrir página",
+    "couple": {
+      "title": "Mensajes",
+      "read": "Leído",
+      "reply": "Responder",
+      "empty": "No hay mensajes nuevos",
+      "readError": "No se pudo marcar como leído ahora."
+    }
   },
   "itinerary": {
     "title": "Itinerario",

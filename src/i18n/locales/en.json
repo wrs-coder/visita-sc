@@ -302,10 +302,20 @@
       "mealsWeek": "Meals this week",
       "transportWeek": "Transport this week",
       "tabOutlines": "Outlines",
-      "unreadMessages": "Unread messages"
+      "unreadMessages": "Unread messages",
+      "tabAgenda": "Agenda",
+      "agendaDays": "Agenda days",
+      "backToToday": "Back to today"
     },
     "recommendedCardTitle": "CO Notes – Recommended",
-    "openPage": "Open page"
+    "openPage": "Open page",
+    "couple": {
+      "title": "Messages",
+      "read": "Read",
+      "reply": "Reply",
+      "empty": "No new messages",
+      "readError": "Could not mark as read right now."
+    }
   },
   "itinerary": {
     "title": "Itinerary",
