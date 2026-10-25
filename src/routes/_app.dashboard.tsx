@@ -75,6 +75,8 @@ import { format, parseISO, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
 import { UpcomingVisitsButton } from "@/components/dashboard/UpcomingVisitsDialog";
+import { CoupleMessagesButton } from "@/components/dashboard/CoupleMessagesButton";
+import { DayPillsStrip } from "@/components/visit-summary/DayPillsStrip";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
 import { FullVisitReportDialog } from "@/components/visit-week/FullVisitReportDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
@@ -253,6 +255,8 @@ function Dashboard() {
   const viewedDate = addDays(new Date(), dayOffset);
   const viewedIso = format(viewedDate, "yyyy-MM-dd");
   const tomorrowIso = format(addDays(new Date(), 1), "yyyy-MM-dd");
+  // Aba "Agenda": dia escolhido nas pílulas (hoje por padrão).
+  const [agendaIso, setAgendaIso] = useState(today);
 
   // Mission 2: eventos do circuito (circuit_schedule_events) do dia vigente.
   const [circuitToday, setCircuitToday] = useState<Array<{
@@ -298,13 +302,14 @@ function Dashboard() {
         .from("circuit_schedule_events")
         .select("id, title, start_time, location, event_type, event_date")
         .eq("superintendent_id", user.id)
-        .in("event_date", [viewedIso, tomorrowIso])
+        .gte("event_date", agendaRange.from)
+        .lte("event_date", agendaRange.to)
         .neq("status", "completed")
         .order("start_time");
       if (!cancelled) setCircuitToday(data ?? []);
     })();
     return () => { cancelled = true; };
-  }, [role, user, viewedIso, tomorrowIso]);
+  }, [role, user, agendaRange.from, agendaRange.to]);
 
   // Mission: cartão "Esboços e Notas" — aba "Considerações de campo".
   // Mostra apenas notas locais da pasta fixa "Considerações da Semana".
@@ -888,6 +893,7 @@ function Dashboard() {
             </span>
           )}
           <div className="flex items-center gap-1.5 shrink-0">
+          {role === "superintendent" && <CoupleMessagesButton threads={coupleThreads} unread={coupleUnread} onChanged={loadCouple} />}
           {role === "superintendent" && <UpcomingVisitsButton congregations={congs} />}
           {visit && (
             <>
@@ -1361,9 +1367,28 @@ function Dashboard() {
         const pages = [
           {
             id: "hoje",
-            label: t("dashboard.pager.tabToday", { defaultValue: "Hoje" }),
+            label: t("dashboard.pager.tabAgenda", { defaultValue: "Agenda" }),
             content: (
               <>
+      {agendaPills.length > 1 && (
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex-1 min-w-0">
+            <DayPillsStrip
+              pills={agendaPills}
+              viewedIso={agendaIso}
+              todayIso={today}
+              todayLabel={t("dashboard.today", { defaultValue: "Hoje" })}
+              ariaLabel={t("dashboard.pager.agendaDays", { defaultValue: "Dias da agenda" })}
+              onPick={setAgendaIso}
+            />
+          </div>
+          {agendaIso !== today && (
+            <Button type="button" variant="outline" size="sm" className="shrink-0 h-8 text-xs" onClick={() => setAgendaIso(today)}>
+              {t("dashboard.pager.backToToday", { defaultValue: "Voltar para hoje" })}
+            </Button>
+          )}
+        </div>
+      )}
       {!visit && (
         <Card>
           <CardContent className="p-6">
@@ -1414,7 +1439,7 @@ function Dashboard() {
             </Card>
           );
         })()}
-                {renderTimeline(today, "super-today-circuit", t("dashboard.todayBlockTitle"))}
+                {renderTimeline(agendaIso, "super-today-circuit", t("dashboard.todayBlockTitle"))}
               </>
             ),
             badge: role === "superintendent" && coupleUnread > 0,
@@ -1683,64 +1708,6 @@ function Dashboard() {
                 ),
               }]
             : []),
-          {
-            id: "amanha",
-            label: t("dashboard.pager.tabTomorrow", { defaultValue: "Amanhã" }),
-            content: (
-              <>
-                {renderTimeline(tomorrowIso, "dashboard-tomorrow", t("dashboard.pager.tomorrowTitle", { defaultValue: "Cronograma de amanhã" }))}
-      {role === "superintendent" && (
-        <CollapsibleCard
-          id="super-couple"
-          accent="couple"
-          icon={<Heart className="h-4 w-4 text-primary" />}
-          title={
-            <span className="inline-flex items-center gap-2">
-              {t("dashboard.coupleCardTitle")}
-              {coupleUnread > 0 && (
-                <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-semibold">
-                  {t("dashboard.coupleCardUnread", { count: coupleUnread })}
-                </span>
-              )}
-            </span>
-          }
-          headerRight={
-            <Link to="/comunicacao-casal" className="text-primary text-xs font-medium inline-flex items-center hover:underline">
-              {t("dashboard.coupleCardOpen")} <ChevronRight className="h-3 w-3" />
-            </Link>
-          }
-        >
-          {coupleThreads.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("dashboard.coupleCardEmpty")}</p>
-          ) : (
-            <ul className="space-y-2">
-              {coupleThreads.slice(0, 3).map((th) => {
-                const last = th.replies[th.replies.length - 1] ?? th.root;
-                const isUnread = last.author === "wife" && !last.read_by_super;
-                return (
-                  <li key={th.root.id} className="p-2 rounded-md border bg-card">
-                    <div className="flex items-center gap-2">
-                      <div className="font-medium text-sm flex-1 min-w-0 truncate">
-                        {th.root.title}
-                      </div>
-                      {isUnread && <span className="h-2 w-2 rounded-full bg-primary shrink-0" />}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      <span className="font-medium">
-                        {last.author === "wife" ? t("couple.fromWife") : t("couple.fromSuper")}:
-                      </span>{" "}
-                      {last.body}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </CollapsibleCard>
-      )}
-              </>
-            ),
-          },
         ];
         return (
           <>
