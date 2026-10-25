@@ -24,8 +24,8 @@ import { guestLogin } from "@/lib/guest-login";
 import { localDbStats } from "@/lib/local-db";
 import { runFullSync } from "@/lib/local-auto-sync";
 
-const APP_VERSION = "5.0.1";
-const APP_BUILD = "2026.10.24";
+const APP_VERSION = "5.0.2";
+const APP_BUILD = "2026.10.25";
 const APP_UPDATED_AT = "24/10/2026";
 
 const PIN_PROMPT_SKIP_KEY = "visita-sc:pin-prompt-skipped-at";
