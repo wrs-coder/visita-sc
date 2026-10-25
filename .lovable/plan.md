@@ -13,6 +13,20 @@
 5. **Telas do menu abrem sem internet**: confirmar que todas as páginas do menu lateral estão guardadas no aparelho (lista de telas pré-carregadas) e incluir as que faltarem.
 6. **Teste automático** garantindo que a validade da cópia é de no mínimo 30 dias, para essa regressão não voltar.
 
+## Sincronização Offline (fila de alterações)
+Hoje: alterações feitas sem internet ficam numa fila no aparelho e são enviadas sozinhas quando a rede volta, com novas tentativas espaçadas.
+Melhorias:
+7. **Contador visível** "3 alterações aguardando envio" na barra de status, com toque para enviar agora.
+8. **Item com erro permanente não trava a fila**: após várias falhas, ele vai para uma lista "Não enviados" com opção de tentar de novo ou descartar (hoje fica tentando para sempre).
+9. **Mostrar a alteração na tela na hora**, mesmo antes de enviar (onde ainda não acontece), para não parecer que "não salvou".
+
+## Acesso sem Internet (PIN e biometria)
+Hoje: o cofre do PIN vale 30 dias desde o último acesso com internet; erros seguidos de PIN causam espera e, no limite, apagam o cofre. Sem mudança nessas regras de segurança.
+Melhorias (só aviso e apresentação, sem tocar na lógica do PIN/biometria):
+10. **Aviso antecipado de vencimento**: quando faltarem 5 dias ou menos, mostrar "Conecte-se à internet para renovar o acesso sem internet".
+11. **Ao entrar pelo PIN, abrir direto com os dados salvos** (ligado ao item 1), sem tela vazia.
+12. Mensagens claras de tentativas restantes e tempo de espera.
+
 ## Fora deste lote (podemos fazer depois, se quiser)
 - Tela "Dados disponíveis sem internet" no perfil, listando o que está salvo.
 - Aviso antes de entrar no Modo Offline caso o último download tenha falhado.
