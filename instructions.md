@@ -137,3 +137,38 @@ Antes de encerrar qualquer mudança que toque modelos, papéis ou visitas, confi
 ## 19. Protocolo de Validação Obrigatória
 
 - Todo ciclo de alterações deve obrigatoriamente passar na checagem de tipos (`bunx tsgo --noEmit` ou `bunx tsc --noEmit`) e na suíte de testes (`bunx vitest run`) com 100% de aprovação antes de qualquer entrega.
+
+## 20. Protocolo de Planeamento e Raciocínio (Anti-Alucinação)
+
+- **THINKING FIRST (Pensar Antes de Agir):** Antes de escrever ou alterar qualquer linha de código, listar explicitamente quais arquivos serão alterados, qual é a dependência entre eles e qual será o impacto dessa mudança no fluxo offline e no banco de dados.
+- **PROIBIÇÃO DE ALTERAÇÕES FANTASMAS:** É estritamente proibido refatorar, renomear ou reorganizar código, componentes ou funções que não estejam diretamente relacionados à tarefa solicitada. Se uma função adjacente funciona, não deve ser tocada.
+
+## 21. Tratamento de Erros e Fallbacks (Defesa de UI)
+
+- **FIM DOS CATCHES SILENCIOSOS:** É proibido usar blocos `catch { }` ou `catch (e) { return null; }` sem registrar o erro no console (ex: `console.error('[Módulo] Erro:', err)`) e sem tratar o estado da interface. Erros invisíveis dificultam o debug.
+- **MUTAÇÕES NÃO BLOQUEANTES:** Ao salvar dados locais ou remotos, a UI não pode "congelar". Utilizar atualizações otimistas (_Optimistic Updates_) do TanStack Query ou estados visuais claros de carregamento (`isPending`/`isSaving`).
+- **FALLBACK PARA FUNCIONALIDADES NATIVAS:** Qualquer chamada ao `window.Capacitor.Plugins` deve prever o cenário em que o plugin não carrega a tempo ou o usuário está na Web. A aplicação não pode quebrar; deve desativar a ação ou exibir um aviso amigável ("Função disponível apenas no aplicativo instalado").
+
+## 22. Integridade de Tipos e Zod (Blindagem de Dados)
+
+- **TOLERÂNCIA ZERO PARA `any` E `@ts-ignore`:** Não resolver erros de TypeScript mascarando o tipo. A interface, o schema do banco de dados ou o Zod Validator devem ser corrigidos na raiz.
+- **SINCRONIA TOTAL ZOD ↔ TYPESCRIPT:** Sempre que um Zod Schema (`z.object`) for alterado em um Server Function, o tipo TypeScript correspondente (`type MyModel = z.infer<typeof schema>`) deve ser atualizado e verificado em todos os componentes de UI que o consomem.
+
+## 23. Gestão de Estado e Re-renderizações
+
+- **USO ESTRITO DE HOOKS:** Proibido introduzir novos `useEffect` para sincronização de dados ou chamadas de API. Toda a gestão de estado assíncrona deve ser feita estritamente através do TanStack Query (`useQuery`, `useMutation`, `useSuspenseQuery`).
+- **INVALIDAÇÃO CIRÚRGICA:** Ao realizar um `mutation` (ex: apagar uma visita, atualizar um modelo), identificar exatamente quais chaves (QueryKeys) precisam de invalidação (`queryClient.invalidateQueries`) para evitar que a UI mostre dados fantasmas sem exigir o recarregamento da página.
+
+## 24. Prevenção de Código "Morno" (Half-baked features)
+
+- **ENTREGA DE PONTA A PONTA:** Uma nova funcionalidade só é considerada pronta se incluir obrigatoriamente:
+  1. Zod Schema e Tipagem estrita.
+  2. Função Server-side (ServerFn) ou lógica de persistência local adequada.
+  3. UI implementada com os tokens de cor do projeto (`src/styles.css`).
+  4. Chaves de tradução (i18n) configuradas em PT, EN e ES.
+  5. Tratamento de fallback para estado offline (sem internet).
+- **LIMITAÇÃO DE ESCOPO POR RESPOSTA:** Se a limitação do tamanho da resposta impedir a entrega completa, parar a geração, entregar a lógica de backend/dados e pedir permissão explícita para continuar a UI na próxima iteração.
+
+## 25. Gatilho Obrigatório de Interação (Workflow com IA)
+
+- **PARADA PARA APROVAÇÃO:** Em pedidos complexos que envolvam arquitetura, banco de dados ou alteração de modelos, revisar as regras 11, 16 e 20, gerar um plano de ação passo a passo e **aguardar a autorização do usuário** antes de gerar qualquer bloco de código.
