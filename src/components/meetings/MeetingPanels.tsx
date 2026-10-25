@@ -65,6 +65,7 @@ function FieldText({
   placeholder?: string;
   type?: string;
 }) {
+  const { t } = useTranslation();
   const [local, setLocal] = useState(value ?? "");
   useEffect(() => { setLocal(value ?? ""); }, [value]);
   return (
@@ -76,8 +77,7 @@ function FieldText({
       onChange={(e) => setLocal(e.target.value)}
       onBlur={() => { if (local !== (value ?? "")) onSave(local || null); }}
       className={cn("h-9 mt-0.5", pending && "border-timer-warn ring-1 ring-timer-warn/40")}
-      aria-describedby={pending ? "draft-pending-hint" : undefined}
-      title={pending ? "Alteração ainda não salva" : undefined}
+      title={pending ? t("meetingsTalks.draft.fieldPending", { defaultValue: "Alteração ainda não salva" }) : undefined}
     />
   );
 }
