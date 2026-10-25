@@ -15,3 +15,20 @@ export function shouldShowWhatsNew(opts: {
   if (opts.seen === opts.notesVersion) return false;
   return opts.hadPreviousUse;
 }
+
+/** Evento para abrir a janela de novidades sob pedido (Configurações). */
+export const OPEN_WHATS_NEW_EVENT = "visita-sc:open-whats-new";
+
+export function openWhatsNew(): void {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(OPEN_WHATS_NEW_EVENT));
+}
+
+/**
+ * Houve uso anterior do app no aparelho? Qualquer dado guardado pelo app
+ * (sessão, PIN, preferências, rascunhos…) conta; a própria marca da janela não.
+ */
+export function hasPreviousUse(keys: readonly string[]): boolean {
+  return keys.some(
+    (k) => k !== WHATS_NEW_KEY && (k.startsWith("visita-sc:") || k.startsWith("visita-sc.") || /^sb-.+-auth-token$/.test(k)),
+  );
+}

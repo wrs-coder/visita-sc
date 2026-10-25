@@ -15,3 +15,5 @@
 - Event reminders are device-local Capacitor local notifications planned from the same timeline items the dashboard/day summary show (event-reminders.ts), fully rescheduled on each data change with prefs in localStorage per user/guest code, because they must work offline without a push server.
 - Per-topic timing stores only minutes in the outline HTML (data-minutes on outline-topic); start time, completed topics and personal-outline drafts stay device-local in localStorage, because saved content and sync format must not change.
 - The per-topic time badge's visual preferences (size, opacity, position) live only in device localStorage (topic-badge-prefs.ts) and never enter outline HTML, because they are personal display settings.
+- Android packaging must go through scripts that rebuild dist-app and run check-shell-fresh.mjs (build-info.json stamp vs package.json/src mtime), because plain `cap copy` ships stale screens under a new version number.
+- Editor heights on the outline screen use the viewport height measured with the keyboard closed (use-stable-viewport-height.ts), because Android adjustResize shrinks dvh/vh when the keyboard opens.

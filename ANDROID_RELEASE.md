@@ -227,7 +227,14 @@ vão para os domínios publicados.
 
 ### Como empacotar
 
+> **Atenção:** `npx cap copy android` e `npx cap update android` sozinhos **não refazem as telas**.
+> Eles copiam o que já estiver em `dist-app/`, e o APK sai com o número novo e telas antigas.
+> Use `npm run android:copy` (ou os comandos `android:release:*`). O comando confere o carimbo
+> `dist-app/build-info.json` (versão + data) e para se as telas forem antigas. No aparelho,
+> Configurações → "Sobre este app" mostra "Telas: versão · data".
+
 ```bash
+npm run android:copy         # refaz as telas, confere e roda cap copy + cap update (depois: Android Studio)
 npm run app:package          # build + gera a casca local em dist-app/
 npm run android:release:apk  # APK de teste interno
 npm run android:release:aab  # AAB para a Play Store

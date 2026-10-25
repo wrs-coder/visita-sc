@@ -118,6 +118,8 @@ import { searchOutlines } from "@/lib/outline-search";
 import { readRecent, touchRecent } from "@/lib/recent-outlines";
 import { repairFolderTypes } from "@/lib/folder-type-repair";
 import { cn } from "@/lib/utils";
+import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
+import { useStableViewportHeight } from "@/hooks/use-stable-viewport-height";
 import { appendPlainTextToNote } from "@/lib/note-content";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -241,6 +243,7 @@ function Page() {
   const [saving, setSaving] = useState(false);
   const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
   const [mode, setMode] = useState<"edit" | "outline">("outline");
+  const kbVisible = useVirtualKeyboardVisible();
   const [fullscreen, setFullscreen] = useState(false);
   const [foldersCollapsed, setFoldersCollapsed] = useState<boolean>(() => {
     try {
@@ -1934,7 +1937,9 @@ function Page() {
 
 
             {/* Editor */}
-            <Card className={cn("w-full max-w-full overflow-clip min-w-0", (!draft || showLibrary) && "hidden lg:block")}>
+            {/* Edição: moldura como antes (overflow-hidden). Esboço: overflow-clip
+                para a pílula de tempo fixa (sticky) acompanhar a rolagem. */}
+            <Card className={cn("w-full max-w-full min-w-0", mode === "edit" ? "overflow-hidden" : "overflow-clip", (!draft || showLibrary) && "hidden lg:block")}>
               <CardContent className="p-5 space-y-4 w-full max-w-full overflow-x-hidden box-border min-w-0">
                 {draft && (
                   <div className="flex items-center -ml-2 -mt-2">
@@ -1956,12 +1961,16 @@ function Page() {
                   </p>
                 ) : (
                   <>
-                  <NoteDraftGuard
-                    draft={draft}
-                    saved={notes.find((n) => n.id === draft.id)}
-                    onRestore={(n) => setDraft(n)}
-                  />
-                  {mode === "edit" && <TopicTimeSumNotice outlineId={draft.id} html={draft.content} />}
+                  {/* Com o teclado aberto, os avisos somem para não roubar linhas do texto
+                      (o rascunho automático continua ativo: o componente segue montado). */}
+                  <div className={cn(kbVisible && "hidden")}>
+                    <NoteDraftGuard
+                      draft={draft}
+                      saved={notes.find((n) => n.id === draft.id)}
+                      onRestore={(n) => setDraft(n)}
+                    />
+                    {mode === "edit" && <TopicTimeSumNotice outlineId={draft.id} html={draft.content} />}
+                  </div>
                   <NoteEditor
                     draft={draft}
                     mode={mode}
@@ -2139,6 +2148,7 @@ function NoteEditor({
   const [syncing, setSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
   const META_COLLAPSED_KEY = "visita-sc:outline-meta-collapsed";
+  const stableVh = useStableViewportHeight();
   const [metaCollapsed, setMetaCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(META_COLLAPSED_KEY) === "1"; } catch { return false; }
   });
@@ -2477,8 +2487,20 @@ function NoteEditor({
           // Barra de anexos tem altura fixa de 5rem (h-20). Descontar do
           // cálculo da janela rígida para preservar o scroll interno.
           const attachRow = hasAttachments ? " - 5rem" : "";
-          const minH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "22rem";
-          const maxH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "60vh";
+          // Altura medida com o teclado FECHADO: abrir o teclado não encolhe a
+          // área de texto (antes caía para ~3 linhas no Android).
+          let minH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "22rem";
+          let maxH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "60vh";
+          if (stableVh) {
+            const rem = 16;
+            if (metaCollapsed) {
+              const px = Math.max(22 * rem, stableVh - 14 * rem - (hasAttachments ? 5 * rem : 0));
+              minH = `${px}px`;
+              maxH = `${px}px`;
+            } else {
+              maxH = `${Math.max(22 * rem, Math.round(stableVh * 0.6))}px`;
+            }
+          }
           return mode === "edit" ? (
             <React.Suspense fallback={<div className="flex-1 rounded-md border bg-muted/30" style={{ minHeight: minH }} aria-busy="true" />}>
             <RichNoteEditor

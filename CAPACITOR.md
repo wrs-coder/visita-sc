@@ -28,6 +28,9 @@ npm run cap:add:android
 
 ## Gerar / atualizar o APK
 
+> `npx cap copy` sozinho **não refaz as telas** — o APK sai com telas antigas.
+> Para copiar e abrir no Android Studio use `npm run android:copy`.
+
 ```bash
 # Faz o build web + sync para o Android
 npm run android:build

@@ -12,10 +12,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/use-auth";
 import { isNativeApp } from "@/lib/api-origin";
 import { getInstalledVersion } from "@/lib/app-update-check";
 import { RELEASE_NOTES, RELEASE_NOTES_VERSION } from "@/lib/release-notes";
-import { WHATS_NEW_KEY, shouldShowWhatsNew } from "@/lib/whats-new";
+import {
+  OPEN_WHATS_NEW_EVENT,
+  WHATS_NEW_KEY,
+  hasPreviousUse,
+  shouldShowWhatsNew,
+} from "@/lib/whats-new";
 
 function read(key: string): string | null {
   try {
@@ -25,23 +31,49 @@ function read(key: string): string | null {
   }
 }
 
+function storedKeys(): string[] {
+  try {
+    const out: string[] = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const k = localStorage.key(i);
+      if (k) out.push(k);
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
 export function WhatsNewDialog() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  // "Já usava o app" é medido na primeira montagem, antes de qualquer gravação nova.
+  const [previousUse] = useState(() =>
+    typeof window === "undefined" ? false : hasPreviousUse(storedKeys()),
+  );
 
+  // Abrir sob pedido (Configurações → Ver novidades).
   useEffect(() => {
-    if (!isNativeApp()) return;
+    const onOpen = () => setOpen(true);
+    window.addEventListener(OPEN_WHATS_NEW_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_WHATS_NEW_EVENT, onOpen);
+  }, []);
+
+  // Automático: só no app instalado e depois de entrar/desbloquear, para não
+  // ficar escondida atrás da tela de PIN/biometria.
+  const signedIn = !!user;
+  useEffect(() => {
+    if (!isNativeApp() || !signedIn) return;
     let cancelled = false;
     void (async () => {
       const installed = await getInstalledVersion();
       const seen = read(WHATS_NEW_KEY);
-      const hadPreviousUse =
-        !!read("visita-sc:last-auth-user") || !!read("visita-sc:last-update-check");
       const show = shouldShowWhatsNew({
         installed,
         notesVersion: RELEASE_NOTES_VERSION,
         seen,
-        hadPreviousUse,
+        hadPreviousUse: previousUse,
       });
       if (!show) {
         // Instalação nova: marca como visto para não aparecer depois.
@@ -55,7 +87,7 @@ export function WhatsNewDialog() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [signedIn, previousUse]);
 
   const close = (next: boolean) => {
     if (next) return;

@@ -437,6 +437,15 @@ try {
     }
   }
 
+  // Carimbo da versão das telas: conferido por check-shell-fresh.mjs antes do
+  // `cap copy` e exibido em Configurações no aparelho.
+  const pkgJson = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
+  await writeFile(
+    path.join(outDir, "build-info.json"),
+    JSON.stringify({ version: pkgJson.version, builtAt: new Date().toISOString() }),
+    "utf8",
+  );
+
   console.log(
     `✅ Casca local pronta em dist-app/ (origem: ${shell.source}, copiada de ${path.relative(
       root,

@@ -46,6 +46,7 @@ import { useTranslation } from "react-i18next";
 import { maskPhone } from "@/lib/masks";
 import { SavingIndicator } from "@/components/SavingIndicator";
 import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog";
+import { AppAboutCard } from "@/components/AppAboutCard";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
@@ -872,6 +873,8 @@ function Page() {
           }}
         />
       )}
+
+      <AppAboutCard />
 
       <div className="pt-2 pb-4 text-center">
         <Link
