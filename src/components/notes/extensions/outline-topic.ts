@@ -32,11 +32,20 @@ export interface OutlineTopicOptions {
   };
 }
 
-/** Subtítulo no formato JW importado: parágrafo todo em negrito com tempo escrito, ex. "UM LEMBRETE AMOROSO (4 min)". */
-export function isBoldTimedParagraph(node: PMNode): boolean {
-  if (node.type.name !== "paragraph") return false;
+const TRAILING_TIME = /\(\s*\d{1,3}\s*min(?:utos?)?\.?\s*\)\s*$/i;
+
+/**
+ * Subtítulo com tempo, ex. "UM LEMBRETE AMOROSO (4 min)": linha curta terminando
+ * em "(N min)" que seja título, negrito ou toda em maiúsculas.
+ */
+export function isTimedTitleBlock(node: PMNode): boolean {
+  const isHeading = node.type.name === "heading";
+  if (!isHeading && node.type.name !== "paragraph") return false;
   const text = node.textContent.trim();
-  if (!text || parseTopicMinutes(text) === null) return false;
+  if (!text || text.length > 120 || !TRAILING_TIME.test(text) || parseTopicMinutes(text) === null) return false;
+  if (isHeading) return true;
+  const words = text.replace(TRAILING_TIME, "");
+  if (/\p{L}/u.test(words) && words === words.toLocaleUpperCase("pt-BR")) return true;
   let allBold = true;
   node.descendants((n) => {
     if (n.isText && n.text?.trim() && !n.marks.some((m) => m.type.name === "bold")) allBold = false;
@@ -124,7 +133,7 @@ export const OutlineTopic = Node.create<OutlineTopicOptions>({
             group = null;
           };
           state.doc.forEach((child) => {
-            const isH3 = (child.type.name === "heading" && child.attrs.level === 3) || isBoldTimedParagraph(child);
+            const isH3 = (child.type.name === "heading" && child.attrs.level === 3) || isTimedTitleBlock(child);
             const isBoundary = child.type.name === "heading" && Number(child.attrs.level) <= 3;
             if (isH3) {
               flush();
