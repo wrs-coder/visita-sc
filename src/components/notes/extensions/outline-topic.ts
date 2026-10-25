@@ -5,6 +5,7 @@
  */
 import { Node, mergeAttributes } from "@tiptap/core";
 import { OUTLINE_TOPIC_TYPE, makeTopicId } from "@/lib/outline-topics";
+import { normalizeMinutes, parseTopicMinutes } from "@/lib/outline-schedule";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -12,12 +13,20 @@ declare module "@tiptap/core" {
       setOutlineTopic: (title: string) => ReturnType;
       unsetOutlineTopic: () => ReturnType;
       renameOutlineTopic: (title: string) => ReturnType;
+      setOutlineTopicMinutes: (minutes: number | null) => ReturnType;
     };
   }
 }
 
 export interface OutlineTopicOptions {
-  labels: { rename: string; remove: string; defaultTitle: string; titlePrompt: string };
+  labels: {
+    rename: string;
+    remove: string;
+    defaultTitle: string;
+    titlePrompt: string;
+    timeOff?: string;
+    minutesPrompt?: string;
+  };
 }
 
 export const OutlineTopic = Node.create<OutlineTopicOptions>({
@@ -44,6 +53,14 @@ export const OutlineTopic = Node.create<OutlineTopicOptions>({
         parseHTML: (el) => el.getAttribute("data-title") || "",
         renderHTML: (attrs) => ({ "data-title": String(attrs.title ?? "").slice(0, 120) }),
       },
+      minutes: {
+        default: null,
+        parseHTML: (el) => normalizeMinutes(el.getAttribute("data-minutes")),
+        renderHTML: (attrs) => {
+          const m = normalizeMinutes(attrs.minutes);
+          return m ? { "data-minutes": String(m) } : {};
+        },
+      },
     };
   },
 
@@ -69,6 +86,10 @@ export const OutlineTopic = Node.create<OutlineTopicOptions>({
         (title) =>
         ({ commands }) =>
           commands.updateAttributes(this.name, { title: title.slice(0, 120) }),
+      setOutlineTopicMinutes:
+        (minutes) =>
+        ({ commands }) =>
+          commands.updateAttributes(this.name, { minutes: normalizeMinutes(minutes) }),
     };
   },
 
@@ -117,13 +138,29 @@ export const OutlineTopic = Node.create<OutlineTopicOptions>({
         if (selectInside()) editor.commands.unsetOutlineTopic();
       });
 
-      header.append(titleEl, renameBtn, removeBtn);
+      // Controle de tempo do tópico: minutos usados nos modos esboço/tela cheia.
+      const timeBtn = mkBtn("", () => {
+        const currentMin = normalizeMinutes(current.attrs.minutes);
+        const suggested = currentMin ?? parseTopicMinutes(String(current.attrs.title ?? ""));
+        const next = window.prompt(
+          labels.minutesPrompt ?? "Minutos deste tópico (vazio = sem controle de tempo)",
+          suggested ? String(suggested) : "",
+        );
+        if (next === null) return;
+        if (selectInside()) editor.commands.setOutlineTopicMinutes(normalizeMinutes(next.trim()));
+      });
+
+      header.append(titleEl, timeBtn, renameBtn, removeBtn);
       const contentDOM = document.createElement("div");
       contentDOM.className = "px-2 py-1";
       dom.append(header, contentDOM);
 
       const paint = () => {
         titleEl.textContent = String(current.attrs.title || labels.defaultTitle);
+        const m = normalizeMinutes(current.attrs.minutes);
+        timeBtn.textContent = m ? `⏱ ${m} min` : `⏱ ${labels.timeOff ?? "tempo"}`;
+        timeBtn.classList.toggle("text-primary", !!m);
+        timeBtn.classList.toggle("font-semibold", !!m);
       };
       paint();
 

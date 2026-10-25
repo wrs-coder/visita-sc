@@ -207,6 +207,8 @@ export function RichNoteEditor({
             remove: t("personalOutlines.topics.remove", { defaultValue: "Remover tópico" }),
             defaultTitle: t("personalOutlines.topics.defaultTitle", { defaultValue: "Tópico" }),
             titlePrompt: t("personalOutlines.topics.titlePrompt", { defaultValue: "Título do tópico" }),
+            timeOff: t("personalOutlines.topics.timeOff", { defaultValue: "tempo" }),
+            minutesPrompt: t("personalOutlines.topics.minutesPrompt", { defaultValue: "Minutos deste tópico (vazio = sem controle de tempo)" }),
           },
         }),
         Placeholder.configure({
