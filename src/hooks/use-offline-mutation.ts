@@ -6,10 +6,11 @@
 // congregações via o seletor no header), `congregation_id` é injetado
 // automaticamente em inserts a partir da congregação ativa no momento
 // em que a mutação é DISPARADA — não no momento do flush.
-import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type UseMutationOptions } from "@tanstack/react-query";
 import { useActiveCongregation } from "./use-active-congregation";
 import { useAuth } from "./use-auth";
 import { enqueue, type QueuedMutation } from "@/lib/offline-queue";
+import { applyOptimisticWrite } from "@/lib/optimistic-cache";
 import { supabase } from "@/integrations/supabase/client";
 
 type OfflineWrite = Omit<QueuedMutation, "id" | "createdAt">;
