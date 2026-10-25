@@ -37,7 +37,12 @@
    - Se o orador já tinha escolhido um tempo para aquele esboço, ele aparece em destaque (botão grande "Iniciar 29 min"); as outras sugestões ficam menores ao lado. Sem tempo escolhido, continuam as sugestões de hoje.
    - Ao escolher o tempo, aparece a pergunta com duas opções: **Começar do zero** ou **Descontar o tempo decorrido**.
    - "Descontar" usa o tempo desde que o esboço foi aberto no modo esboço ou tela cheia até o toque na escolha (ex.: abriu às 19:30, tocou às 19:32 → o cronômetro já começa com 2 min passados dos 29).
-12. **Horário previsto em cada tópico:** quando o tópico ou subtítulo tiver o tempo escrito (ex.: "(5 min)", "5 min."), aparece ao lado um selo discreto "até 19:42", somando os tempos desde o início do cronômetro. Antes de iniciar, mostra os tempos acumulados ("+5", "+12"); ao iniciar, vira horário real. Tópico já passado fica esmaecido e o atual fica destacado. Se a soma dos tópicos for diferente do tempo escolhido, aparece um aviso discreto. Nada é gravado dentro do esboço.
+12. **Controle de tempo por tópico:**
+   - **No modo edição:** no cabeçalho de cada tópico há um botão pequeno de relógio para ligar o controle de tempo e informar os minutos daquele tópico. Se o título já tiver o tempo escrito (ex.: "(5 min)"), ele vem preenchido sozinho. Só os tópicos marcados entram no controle.
+   - **Nos modos esboço e tela cheia:** cada tópico marcado mostra um selo discreto "até 19:42". Antes de iniciar o cronômetro, mostra os tempos acumulados ("+5", "+12"); depois que inicia, mostra o horário real. O tópico atual fica destacado e os concluídos ficam esmaecidos com um visto.
+   - **Concluir tópico:** tocar no selo (ou no visto ao lado) marca o tópico como concluído. Os horários dos tópicos seguintes são recalculados a partir daquele momento, e uma pílula pequena junto ao cronômetro mostra "2 min atrasado" ou "1 min adiantado". Tocar de novo desfaz.
+   - Tudo fica discreto: sem janelas, sem avisos que cobrem o texto. As marcações de "concluído" ficam só no aparelho e somem ao zerar o cronômetro.
+   - Se a soma dos tópicos for diferente do tempo escolhido no cronômetro, aparece um aviso discreto no modo edição.
 13. Som curto opcional nos avisos (liga/desliga no menu do cronômetro, desligado por padrão para não atrapalhar no púlpito).
 
 ## Fora deste lote (se quiser depois)
@@ -49,6 +54,8 @@
 - `OutlineInactivitySensor.tsx`: troca do mapa de contagem por lista ordenada de instâncias com assinatura; ao sair o dono, a próxima vira dona. Dispensa em localStorage.
 - `use-outline-timer.ts`: `setTarget` preserva `elapsedSec`; `readSnapshot` detecta drift > 3 h → `isRunning:false` + flag `staleSince`; `computeTickAdvance` com teto para countup. Testes novos em `use-outline-timer.test.ts` para alvo, drift e teto.
 - Alerta: registrar `openedAt` por esboço (sessionStorage) quando o modo esboço/tela cheia monta; "descontar" chama `setTarget` + `start` com `elapsedSec = agora - openedAt`. Tempo prévio vem de nova flag `targetChosen` no snapshot (compatível com dados antigos).
-- Horário por tópico: funções puras `parseTopicMinutes` e `buildTopicSchedule` em `src/lib/outline-schedule.ts`, com testes; aplicadas só na exibição (decoração no modo esboço/tela cheia), sem alterar o HTML salvo.
+- Tempo por tópico: novo atributo opcional `minutes` no nó `outlineTopic` (`data-minutes`), editado no cabeçalho do modo edição. Esboços antigos continuam iguais (sem atributo = sem controle). Exportação DOCX e leitores ignoram o atributo.
+- Funções puras em `src/lib/outline-schedule.ts` (com testes): `parseTopicMinutes`, `buildTopicSchedule(tópicos, startAt, concluídos)` → horário previsto por tópico e desvio (atraso/adiantamento). Concluídos guardados no aparelho por esboço (`visita-sc:topic-done:<id>`), limpos no `reset` do cronômetro.
+- Selos e pílula de desvio renderizados na leitura (modo esboço / tela cheia) e no cabeçalho do `OutlineTimer`.
 - Som via WebAudio (bip curto), pref em `timer-theme`/localStorage.
 - Validação: `bunx tsgo --noEmit` e `bunx vitest run`; conferir no navegador o fluxo de rascunho (digitar, recarregar, recuperar).
