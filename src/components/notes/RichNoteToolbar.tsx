@@ -390,6 +390,7 @@ export function RichNoteToolbar({
         <ScrollRow>
         {/* Ações principais — sempre no começo da segunda fila. */}
         {topicButton(groupBtn(false))}
+        {convertHeadingsButton(groupBtn(false))}
         {onAddPhotoAttachment && (
           <Button type="button" variant="ghost" size="sm" className={groupBtn(false)}
             title={t("personalOutlines.attachments.addPhoto", { defaultValue: "Anexar imagem" })}
@@ -725,6 +726,7 @@ export function RichNoteToolbar({
       {row(
         <>
           {topicButton(iconBtn(false))}
+          {convertHeadingsButton(iconBtn(false))}
           {/* Anexos — imagens, vídeos e links (botões diretos) */}
           {(onAddPhotoAttachment || onAddLinkAttachment || onAddVideoAttachment) && (
             <>
