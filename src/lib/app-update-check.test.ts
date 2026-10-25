@@ -26,3 +26,14 @@ describe("compareVersions", () => {
     expect(compareVersions("4.2.x", "4.2.0")).toBe(0);
   });
 });
+
+import { normalizeReleaseNotes } from "@/lib/app-update-check";
+
+describe("normalizeReleaseNotes", () => {
+  it("descarta dados inválidos e seções vazias", () => {
+    expect(normalizeReleaseNotes("x")).toEqual([]);
+    expect(normalizeReleaseNotes([{ title: "A", items: [1, "ok"] }, { title: "B", items: [] }, null])).toEqual([
+      { title: "A", items: ["ok"] },
+    ]);
+  });
+});

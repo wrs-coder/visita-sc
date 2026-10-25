@@ -8,6 +8,13 @@ import { Download, X, AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   checkForAppUpdate,
   dismissUpdateForToday,
   isUpdateDismissedToday,
@@ -19,6 +26,7 @@ export function AppUpdatePrompt() {
   const { t } = useTranslation();
   const [result, setResult] = useState<UpdateCheckResult | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +83,11 @@ export function AppUpdatePrompt() {
                 )}
           </p>
         </div>
+        {result.notes.length > 0 && (
+          <Button size="sm" variant="outline" onClick={() => setNotesOpen(true)}>
+            {t("appUpdate.seeNews", "Novidades")}
+          </Button>
+        )}
         <Button size="sm" onClick={() => openPlayStore()}>
           {t("appUpdate.updateNow", "Atualizar")}
         </Button>
@@ -92,6 +105,35 @@ export function AppUpdatePrompt() {
           </Button>
         )}
       </div>
+      <Dialog open={notesOpen} onOpenChange={setNotesOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {t("appUpdate.newsTitle", "Novidades da versão {{latest}}", { latest: result.latest })}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {result.notes.map((s) => (
+              <section key={s.title}>
+                <h3 className="mb-1 text-sm font-semibold text-primary">{s.title}</h3>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                  {s.items.map((i) => (
+                    <li key={i}>{i}</li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setNotesOpen(false)}>
+              {t("appUpdate.later", "Agora não")}
+            </Button>
+            <Button onClick={() => openPlayStore()}>
+              {t("appUpdate.updatePlay", "Atualizar na Play Store")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

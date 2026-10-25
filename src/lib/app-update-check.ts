@@ -15,10 +15,34 @@ const DISMISS_KEY = "visita-sc:update-dismissed";
 const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 min — "Agora não" cobre o resto do dia
 const FETCH_TIMEOUT_MS = 8000;
 
+export type ReleaseNoteSection = { title: string; items: string[] };
+
+/** Aceita só seções bem formadas, com limites de tamanho. */
+export function normalizeReleaseNotes(raw: unknown): ReleaseNoteSection[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .slice(0, 10)
+    .filter(
+      (s): s is ReleaseNoteSection =>
+        !!s &&
+        typeof (s as ReleaseNoteSection).title === "string" &&
+        Array.isArray((s as ReleaseNoteSection).items),
+    )
+    .map((s) => ({
+      title: s.title.slice(0, 80),
+      items: s.items
+        .filter((i): i is string => typeof i === "string")
+        .slice(0, 12)
+        .map((i) => i.slice(0, 200)),
+    }))
+    .filter((s) => s.items.length > 0);
+}
+
 export type UpdateCheckResult = {
   latest: string;
   minSupported: string;
   current: string;
+  notes: ReleaseNoteSection[];
   /** true quando existe versão mais nova disponível. */
   updateAvailable: boolean;
   /** true quando a versão instalada ficou abaixo do mínimo suportado. */
@@ -91,7 +115,7 @@ export async function checkForAppUpdate(opts?: { force?: boolean }): Promise<Upd
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     const url = resolveApiUrl("/api/public/version");
-    type VersionPayload = { latest?: string; minSupported?: string };
+    type VersionPayload = { latest?: string; minSupported?: string; notes?: unknown };
     let payload: VersionPayload | null = null;
 
     if (isNativeApp()) {
@@ -121,6 +145,7 @@ export async function checkForAppUpdate(opts?: { force?: boolean }): Promise<Upd
       latest,
       minSupported,
       current,
+      notes: normalizeReleaseNotes(payload?.notes),
       updateAvailable: compareVersions(latest, current) > 0,
       belowMinimum: compareVersions(current, minSupported) < 0,
     };
