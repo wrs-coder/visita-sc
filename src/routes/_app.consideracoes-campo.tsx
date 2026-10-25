@@ -1934,7 +1934,7 @@ function Page() {
 
 
             {/* Editor */}
-            <Card className={cn("w-full max-w-full overflow-hidden min-w-0", (!draft || showLibrary) && "hidden lg:block")}>
+            <Card className={cn("w-full max-w-full overflow-clip min-w-0", (!draft || showLibrary) && "hidden lg:block")}>
               <CardContent className="p-5 space-y-4 w-full max-w-full overflow-x-hidden box-border min-w-0">
                 {draft && (
                   <div className="flex items-center -ml-2 -mt-2">

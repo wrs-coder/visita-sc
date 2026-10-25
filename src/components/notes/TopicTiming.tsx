@@ -54,7 +54,7 @@ export function TopicTimingProvider({
 }
 
 /** Selo do tópico: "+5" antes de iniciar; "até 19:42" depois; toque conclui. */
-export function TopicTimeBadge({ topicId }: { topicId: string }) {
+export function TopicTimeBadge({ topicId, floating = false }: { topicId: string; floating?: boolean }) {
   const { t } = useTranslation();
   const ctx = useContext(TopicTimingContext);
   const slot = ctx?.schedule.slots[topicId];
@@ -76,12 +76,16 @@ export function TopicTimeBadge({ topicId }: { topicId: string }) {
       aria-label={`${label} · ${aria}`}
       title={aria}
       className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] tabular-nums transition",
+        "inline-flex shrink-0 items-center gap-1 rounded-full border tabular-nums transition",
+        floating
+          ? "px-1.5 py-0 text-[10px] leading-4 border-transparent bg-background/60 backdrop-blur-sm shadow-sm"
+          : "px-2 py-0.5 text-[11px]",
         slot.done
-          ? "border-border text-muted-foreground line-through opacity-70"
+          ? "text-muted-foreground line-through opacity-60"
           : slot.current
-            ? "border-primary bg-primary/10 text-primary font-semibold"
-            : "border-border text-muted-foreground",
+            ? cn("text-primary font-semibold", floating ? "bg-primary/10" : "border-primary bg-primary/10")
+            : cn("text-muted-foreground", !floating && "border-border"),
+        slot.done && !floating && "border-border",
       )}
     >
       {slot.done && <Check className="h-3 w-3" />}

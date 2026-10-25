@@ -28,9 +28,14 @@ export function OutlineTopicBlock({
 
   return (
     <section data-topic-id={id} className={cn("my-2 rounded-md border border-border bg-muted/30 transition-opacity", done && "opacity-60")}>
-      <div className="sticky top-0 z-10 flex items-center gap-2 rounded-t-md bg-background/90 px-2 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+      {/* Linha de altura zero: só a pílula de tempo acompanha a rolagem dentro do tópico. */}
+      <div className="pointer-events-none sticky top-2 z-10 flex h-0 justify-end pr-11">
+        <div className="pointer-events-auto translate-y-2">
+          <TopicTimeBadge topicId={id} floating />
+        </div>
+      </div>
+      <div className="flex items-center gap-2 px-2 py-1.5 pr-24">
         <div className="flex-1 min-w-0 font-semibold text-foreground">{title}</div>
-        <TopicTimeBadge topicId={id} />
         <button
           type="button"
           onClick={(e) => {
