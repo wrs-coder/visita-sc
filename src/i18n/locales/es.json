@@ -649,6 +649,15 @@
       "theme": "Tema:",
       "openingPrayer": "Oración Inicial",
       "closingPrayer": "Oración Final"
+    },
+    "draft": {
+      "leaveConfirm": "Hay cambios sin guardar en esta pantalla. Salir sin \"Guardar datos\" mantiene el borrador local, pero el servidor no se actualizará. ¿Continuar?",
+      "discarded": "Borrador descartado",
+      "nothing": "Nada para guardar",
+      "saved": "Datos guardados",
+      "failed": "Error al guardar {{count}} cambio(s)",
+      "failedDesc": "Tablas afectadas: {{tables}}. Toque \"Guardar datos\" para intentar de nuevo — el borrador local se conservó.",
+      "since": "Borrador de {{time}} · {{count}} cambio(s)"
     }
   },
   "elderProgram": {
@@ -1631,7 +1640,16 @@
       "overtimeTitle_other": "Te pasaste {{count}} minutos",
       "overtimeDesc": "Ya superaste el tiempo elegido.",
       "showControls": "Mostrar botones",
-      "hideControls": "Ocultar botones"
+      "hideControls": "Ocultar botones",
+      "sensorStartChosen": "Iniciar {{min}} min",
+      "sensorHowStart": "Cronómetro de {{min}} min. ¿Cómo empezar?",
+      "sensorFromZero": "Empezar de cero",
+      "sensorDiscount": "Descontar {{time}} transcurridos",
+      "sound": "Sonido en los avisos",
+      "sensorReenable": "Reactivar aviso \"¿Olvidó iniciar?\"",
+      "staleNotice": "Estaba encendido desde {{time}} y se pausó.",
+      "continue": "Continuar",
+      "zero": "Poner a cero"
     },
     "editor": {
       "collapseMeta": "Minimizar encabezado",
@@ -1692,7 +1710,22 @@
       "collapse": "Contraer tema",
       "expand": "Expandir tema",
       "collapseAll": "Contraer todos",
-      "expandAll": "Expandir todos"
+      "expandAll": "Expandir todos",
+      "timeOff": "tiempo",
+      "minutesPrompt": "Minutos de este tema (vacío = sin control de tiempo)"
+    },
+    "topicTime": {
+      "until": "hasta {{time}}",
+      "undo": "Deshacer tema concluido",
+      "markDone": "Marcar tema como concluido",
+      "onTime": "a tiempo",
+      "late": "{{count}} min de retraso",
+      "early": "{{count}} min adelantado"
+    },
+    "draft": {
+      "found": "Hay cambios sin guardar de {{time}}.",
+      "restore": "Recuperar",
+      "discard": "Descartar"
     }
   },
   "bibleManager": {

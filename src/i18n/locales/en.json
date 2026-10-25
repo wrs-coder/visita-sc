@@ -674,6 +674,15 @@
       "theme": "Theme:",
       "openingPrayer": "Opening Prayer",
       "closingPrayer": "Closing Prayer"
+    },
+    "draft": {
+      "leaveConfirm": "There are unsaved changes on this screen. Leaving without \"Save data\" keeps the local draft, but the server will not be updated. Continue?",
+      "discarded": "Draft discarded",
+      "nothing": "Nothing to save",
+      "saved": "Data saved",
+      "failed": "Failed to save {{count}} change(s)",
+      "failedDesc": "Affected tables: {{tables}}. Tap \"Save data\" to try again — the local draft was kept.",
+      "since": "Draft from {{time}} · {{count}} change(s)"
     }
   },
   "elderProgram": {
@@ -1656,7 +1665,16 @@
       "overtimeTitle_other": "You are {{count}} minutes over",
       "overtimeDesc": "You have gone past the chosen time.",
       "showControls": "Show buttons",
-      "hideControls": "Hide buttons"
+      "hideControls": "Hide buttons",
+      "sensorStartChosen": "Start {{min}} min",
+      "sensorHowStart": "{{min}} min timer. How to start?",
+      "sensorFromZero": "Start from zero",
+      "sensorDiscount": "Subtract {{time}} elapsed",
+      "sound": "Sound on alerts",
+      "sensorReenable": "Re-enable \"Forgot to start?\" alert",
+      "staleNotice": "It was running since {{time}} and was paused.",
+      "continue": "Continue",
+      "zero": "Reset"
     },
     "editor": {
       "collapseMeta": "Collapse header",
@@ -1717,7 +1735,22 @@
       "collapse": "Collapse topic",
       "expand": "Expand topic",
       "collapseAll": "Collapse all",
-      "expandAll": "Expand all"
+      "expandAll": "Expand all",
+      "timeOff": "time",
+      "minutesPrompt": "Minutes for this topic (empty = no time control)"
+    },
+    "topicTime": {
+      "until": "until {{time}}",
+      "undo": "Undo completed topic",
+      "markDone": "Mark topic as done",
+      "onTime": "on time",
+      "late": "{{count}} min late",
+      "early": "{{count}} min early"
+    },
+    "draft": {
+      "found": "There are unsaved changes from {{time}}.",
+      "restore": "Restore",
+      "discard": "Discard"
     }
   },
   "bibleManager": {
