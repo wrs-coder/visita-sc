@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
-import { OutlineTopic } from "./outline-topic";
+import { OutlineTopic } from "@/components/notes/extensions/outline-topic";
 
 describe("convertHeadingsToTopics", () => {
   it("transforma cada H3 em tópico e lê os minutos do título", () => {
