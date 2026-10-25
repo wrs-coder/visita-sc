@@ -21,3 +21,8 @@ Banco, formato salvo, cronômetro, cálculo dos horários, recolher/expandir tó
 - `OutlineTopicBlock.tsx`: remover `sticky`/fundo do cabeçalho. O selo some do cabeçalho e passa para uma linha de altura zero no topo do `section`: `sticky top-2 z-10 h-0 flex justify-end pointer-events-none`. A pílula fica dentro, com `pointer-events-auto -translate-y-1/2`, e só aparece quando o tópico tem tempo.
 - `TopicTiming.tsx`: variante `floating` do `TopicTimeBadge`, com `text-[10px] px-1.5 py-0 bg-background/60 backdrop-blur-sm border-transparent` e as cores do estado atual/concluído mantidas por tokens.
 - `_app.consideracoes-campo.tsx` (linha ~1937): no `Card` do editor, trocar `overflow-hidden` por `overflow-x-clip`. `clip` não cria contêiner de rolagem, então o `sticky` volta a funcionar. O efeito visual é o mesmo.
+
+## Painel (Dashboard)
+- **Tela cheia do painel:** usa o mesmo leitor de esboço com tempo por tópico. Por isso recebe a pílula flutuante e o botão do relógio automaticamente.
+- **Modo esboço do painel:** abre a mesma tela de esboço da aba Esboços. A correção do corte de bordas vale para ela também.
+- A validação no navegador inclui abrir um esboço pelo painel nos dois modos.
