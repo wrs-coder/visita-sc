@@ -81,6 +81,80 @@ export function queueSize(): number {
   return read().length;
 }
 
+// ---------------------------------------------------------------------------
+// "Não enviados": itens que o servidor recusou de forma definitiva
+// (permissão, dado inválido, conflito) saem da fila principal após
+// MAX_PERMANENT_ATTEMPTS tentativas, para não tentar para sempre.
+// Falhas de rede/tempo esgotado NUNCA vão para cá: continuam na fila.
+// ---------------------------------------------------------------------------
+const FAILED_KEY = "visita-sc:offline-queue-failed";
+export const MAX_PERMANENT_ATTEMPTS = 5;
+const failedListeners = new Set<Listener>();
+
+/** True quando o erro veio do servidor (recusa real), não da rede. */
+export function isPermanentError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: unknown; status?: unknown; message?: unknown };
+  const msg = typeof e.message === "string" ? e.message.toLowerCase() : "";
+  if (msg.includes("timeout") || msg.includes("failed to fetch") || msg.includes("network")) return false;
+  if (typeof e.status === "number") return e.status >= 400 && e.status < 500 && e.status !== 401 && e.status !== 408 && e.status !== 429;
+  // Códigos do Postgres (ex.: 23505, 42501) e do PostgREST (PGRST...).
+  return typeof e.code === "string" && /^(\d{5}|PGRST\d+)$/.test(e.code) && !e.code.startsWith("08");
+}
+
+export function shouldQuarantine(err: unknown, attempts: number): boolean {
+  return attempts >= MAX_PERMANENT_ATTEMPTS && isPermanentError(err);
+}
+
+function readFailed(): QueuedMutation[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(FAILED_KEY);
+    return raw ? (JSON.parse(raw) as QueuedMutation[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeFailed(items: QueuedMutation[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(FAILED_KEY, JSON.stringify(items));
+  } catch {
+    /* quota */
+  }
+  failedListeners.forEach((l) => l(items.length));
+}
+
+export function listFailed(): QueuedMutation[] {
+  return readFailed();
+}
+
+export function subscribeFailed(fn: Listener): () => void {
+  failedListeners.add(fn);
+  fn(readFailed().length);
+  return () => { failedListeners.delete(fn); };
+}
+
+/** Devolve um item "Não enviado" para a fila e tenta enviar já. */
+export function retryFailed(id: string): boolean {
+  const items = readFailed();
+  const item = items.find((it) => it.id === id);
+  if (!item) return false;
+  writeFailed(items.filter((it) => it.id !== id));
+  write([...read(), { ...item, attempts: 0, nextAttemptAt: Date.now() }]);
+  void flushQueue();
+  return true;
+}
+
+/** Descarta definitivamente um item "Não enviado". */
+export function discardFailed(id: string): boolean {
+  const items = readFailed();
+  if (!items.some((it) => it.id === id)) return false;
+  writeFailed(items.filter((it) => it.id !== id));
+  return true;
+}
+
 /** Etapa C — lista detalhada das alterações pendentes (para o painel). */
 export function listPending(): QueuedMutation[] {
   return read();
@@ -240,6 +314,7 @@ export async function flushQueue(): Promise<FlushResult> {
   try {
     const now = Date.now();
     const remaining: QueuedMutation[] = [];
+    const quarantined: QueuedMutation[] = [];
     for (const m of queue) {
       // Respeita backoff.
       if (m.nextAttemptAt && m.nextAttemptAt > now) {
@@ -272,18 +347,25 @@ export async function flushQueue(): Promise<FlushResult> {
         const attempts = (m.attempts ?? 0) + 1;
         const wait = backoffFor(attempts);
         const message = err instanceof Error ? err.message : String(err);
-        console.warn(`[offline-queue] falha (tentativa ${attempts}, retry em ${wait}ms)`, m, err);
         failed++;
-        remaining.push({
+        const updated: QueuedMutation = {
           ...m,
           attempts,
           nextAttemptAt: Date.now() + wait,
           lastError: message.slice(0, 240),
-        });
+        };
+        if (shouldQuarantine(err, attempts)) {
+          console.warn(`[offline-queue] erro permanente após ${attempts} tentativas — movido para "Não enviados"`, m, err);
+          quarantined.push(updated);
+        } else {
+          console.warn(`[offline-queue] falha (tentativa ${attempts}, retry em ${wait}ms)`, m, err);
+          remaining.push(updated);
+        }
       }
       processed++;
       emitProgress({ total, done: processed });
     }
+    if (quarantined.length > 0) writeFailed([...readFailed(), ...quarantined]);
     write(remaining);
     return { sent, failed, remaining: remaining.length, deferred };
   } catch (err) {
