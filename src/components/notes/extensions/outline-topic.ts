@@ -32,6 +32,19 @@ export interface OutlineTopicOptions {
   };
 }
 
+/** Subtítulo no formato JW importado: parágrafo todo em negrito com tempo escrito, ex. "UM LEMBRETE AMOROSO (4 min)". */
+export function isBoldTimedParagraph(node: PMNode): boolean {
+  if (node.type.name !== "paragraph") return false;
+  const text = node.textContent.trim();
+  if (!text || parseTopicMinutes(text) === null) return false;
+  let allBold = true;
+  node.descendants((n) => {
+    if (n.isText && n.text?.trim() && !n.marks.some((m) => m.type.name === "bold")) allBold = false;
+    return allBold;
+  });
+  return allBold;
+}
+
 export const OutlineTopic = Node.create<OutlineTopicOptions>({
   name: "outlineTopic",
   group: "block",
@@ -111,7 +124,7 @@ export const OutlineTopic = Node.create<OutlineTopicOptions>({
             group = null;
           };
           state.doc.forEach((child) => {
-            const isH3 = child.type.name === "heading" && child.attrs.level === 3;
+            const isH3 = (child.type.name === "heading" && child.attrs.level === 3) || isBoldTimedParagraph(child);
             const isBoundary = child.type.name === "heading" && Number(child.attrs.level) <= 3;
             if (isH3) {
               flush();
