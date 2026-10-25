@@ -19,14 +19,12 @@ import {
   listAllNotesIncludingTrash,
   getActiveLibrary,
   saveNote,
+  FIXED_FOLDER_WEEK_CONSIDERATIONS,
+  FIXED_FOLDER_WEEK_OUTLINES,
   type FieldNote,
   type BibleLibrary,
 } from "@/lib/bible-notes-store";
 import { appendPlainTextToNote } from "@/lib/note-content";
-import {
-  FIXED_FOLDER_WEEK_CONSIDERATIONS,
-  FIXED_FOLDER_WEEK_OUTLINES,
-} from "@/lib/bible-notes-store";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useTalkSync } from "@/components/notes/TalkOutlineFields";
 import { fetchFieldNoteSync } from "@/lib/field-note-sync";
