@@ -33,7 +33,12 @@
 8. Corrigir a mudança de alvo: o tempo decorrido nunca é cortado; se passar do novo alvo, entra direto em "tempo excedido".
 9. Cronômetro esquecido: se ficou rodando mais de 3 horas sem a tela aberta, ele é pausado e aparece "Cronômetro estava ligado desde HH:MM — Continuar / Zerar". O modo progressivo para sozinho em alvo + 30 min, liberando a tela.
 10. "Não lembrar novamente" passa a valer de verdade para aquele esboço (guardado no aparelho), com opção de reativar no menu do cronômetro.
-11. Som curto opcional nos avisos (liga/desliga no menu do cronômetro, desligado por padrão para não atrapalhar no púlpito).
+11. **Alerta de esquecimento mais inteligente:**
+   - Se o orador já tinha escolhido um tempo para aquele esboço, ele aparece em destaque (botão grande "Iniciar 29 min"); as outras sugestões ficam menores ao lado. Sem tempo escolhido, continuam as sugestões de hoje.
+   - Ao escolher o tempo, aparece a pergunta com duas opções: **Começar do zero** ou **Descontar o tempo decorrido**.
+   - "Descontar" usa o tempo desde que o esboço foi aberto no modo esboço ou tela cheia até o toque na escolha (ex.: abriu às 19:30, tocou às 19:32 → o cronômetro já começa com 2 min passados dos 29).
+12. **Horário previsto em cada tópico:** quando o tópico ou subtítulo tiver o tempo escrito (ex.: "(5 min)", "5 min."), aparece ao lado um selo discreto "até 19:42", somando os tempos desde o início do cronômetro. Antes de iniciar, mostra os tempos acumulados ("+5", "+12"); ao iniciar, vira horário real. Tópico já passado fica esmaecido e o atual fica destacado. Se a soma dos tópicos for diferente do tempo escolhido, aparece um aviso discreto. Nada é gravado dentro do esboço.
+13. Som curto opcional nos avisos (liga/desliga no menu do cronômetro, desligado por padrão para não atrapalhar no púlpito).
 
 ## Fora deste lote (se quiser depois)
 - Aviso do cronômetro com a tela desligada (notificação do celular) — exige novo APK e mais testes.
@@ -43,5 +48,7 @@
 - `MeetingsDraftContext.tsx`: guardar `savedAt` junto do store (compatível com formato antigo), expor `isPending(table,id,field)`, strings via i18n.
 - `OutlineInactivitySensor.tsx`: troca do mapa de contagem por lista ordenada de instâncias com assinatura; ao sair o dono, a próxima vira dona. Dispensa em localStorage.
 - `use-outline-timer.ts`: `setTarget` preserva `elapsedSec`; `readSnapshot` detecta drift > 3 h → `isRunning:false` + flag `staleSince`; `computeTickAdvance` com teto para countup. Testes novos em `use-outline-timer.test.ts` para alvo, drift e teto.
+- Alerta: registrar `openedAt` por esboço (sessionStorage) quando o modo esboço/tela cheia monta; "descontar" chama `setTarget` + `start` com `elapsedSec = agora - openedAt`. Tempo prévio vem de nova flag `targetChosen` no snapshot (compatível com dados antigos).
+- Horário por tópico: funções puras `parseTopicMinutes` e `buildTopicSchedule` em `src/lib/outline-schedule.ts`, com testes; aplicadas só na exibição (decoração no modo esboço/tela cheia), sem alterar o HTML salvo.
 - Som via WebAudio (bip curto), pref em `timer-theme`/localStorage.
 - Validação: `bunx tsgo --noEmit` e `bunx vitest run`; conferir no navegador o fluxo de rascunho (digitar, recarregar, recuperar).
