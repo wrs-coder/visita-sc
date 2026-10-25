@@ -1,0 +1,122 @@
+/**
+ * Controle de tempo por tópico nos modos de leitura (esboço / tela cheia).
+ * Selo discreto "até HH:MM" por tópico, toque para concluir e pílula de
+ * atraso/adiantamento. Nada é gravado no esboço; concluídos ficam no aparelho.
+ */
+import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useOutlineTimer } from "@/hooks/use-outline-timer";
+import {
+  buildTopicSchedule,
+  toggleTopicDone,
+  useTopicsDone,
+  type TimedTopic,
+  type TopicSchedule,
+} from "@/lib/outline-schedule";
+import { cn } from "@/lib/utils";
+
+interface Ctx {
+  outlineId: string;
+  schedule: TopicSchedule;
+}
+
+const TopicTimingContext = createContext<Ctx | null>(null);
+
+function fmtTime(ms: number): string {
+  return new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: false }).format(ms);
+}
+
+export function TopicTimingProvider({
+  outlineId,
+  topics,
+  children,
+}: {
+  outlineId: string;
+  topics: TimedTopic[];
+  children: ReactNode;
+}) {
+  const timer = useOutlineTimer(outlineId);
+  const done = useTopicsDone(outlineId);
+  const started = timer.isRunning || timer.elapsedSec > 0;
+  // Início real = agora - decorrido. Arredondado ao segundo para estabilidade.
+  const startedAt = started ? Math.floor(Date.now() / 1000) * 1000 - timer.elapsedSec * 1000 : null;
+  const startedKey = startedAt === null ? null : Math.round(startedAt / 5000);
+  const schedule = useMemo(
+    () => buildTopicSchedule(topics, startedAt, done),
+    // startedKey evita recalcular a cada segundo por micro-variação.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [topics, startedKey, done],
+  );
+  const value = useMemo(() => ({ outlineId, schedule }), [outlineId, schedule]);
+  if (topics.length === 0) return <>{children}</>;
+  return <TopicTimingContext.Provider value={value}>{children}</TopicTimingContext.Provider>;
+}
+
+/** Selo do tópico: "+5" antes de iniciar; "até 19:42" depois; toque conclui. */
+export function TopicTimeBadge({ topicId }: { topicId: string }) {
+  const { t } = useTranslation();
+  const ctx = useContext(TopicTimingContext);
+  const slot = ctx?.schedule.slots[topicId];
+  if (!ctx || !slot) return null;
+  const label = slot.expectedEnd !== null
+    ? t("personalOutlines.topicTime.until", { time: fmtTime(slot.expectedEnd), defaultValue: "até {{time}}" })
+    : `+${slot.cumulative} min`;
+  const aria = slot.done
+    ? t("personalOutlines.topicTime.undo", { defaultValue: "Desfazer tópico concluído" })
+    : t("personalOutlines.topicTime.markDone", { defaultValue: "Marcar tópico como concluído" });
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        toggleTopicDone(ctx.outlineId, topicId);
+      }}
+      aria-pressed={slot.done}
+      aria-label={`${label} · ${aria}`}
+      title={aria}
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] tabular-nums transition",
+        slot.done
+          ? "border-border text-muted-foreground line-through opacity-70"
+          : slot.current
+            ? "border-primary bg-primary/10 text-primary font-semibold"
+            : "border-border text-muted-foreground",
+      )}
+    >
+      {slot.done && <Check className="h-3 w-3" />}
+      {label}
+    </button>
+  );
+}
+
+/** True quando o tópico já foi concluído (para esmaecer o bloco). */
+export function useTopicDone(topicId: string): boolean {
+  const ctx = useContext(TopicTimingContext);
+  return !!ctx?.schedule.slots[topicId]?.done;
+}
+
+/** Pílula "2 min atrasado / 1 min adiantado / no tempo". */
+export function TopicDeviationPill() {
+  const { t } = useTranslation();
+  const ctx = useContext(TopicTimingContext);
+  const dev = ctx?.schedule.deviationSec;
+  if (dev === null || dev === undefined) return null;
+  const min = Math.round(Math.abs(dev) / 60);
+  const text = min === 0
+    ? t("personalOutlines.topicTime.onTime", { defaultValue: "no tempo" })
+    : dev > 0
+      ? t("personalOutlines.topicTime.late", { count: min, defaultValue: "{{count}} min atrasado" })
+      : t("personalOutlines.topicTime.early", { count: min, defaultValue: "{{count}} min adiantado" });
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full border px-2.5 py-1 text-xs tabular-nums",
+        min === 0 ? "border-border text-muted-foreground" : dev > 0 ? "border-timer-over/50 text-timer-over" : "border-timer-ok/50 text-timer-ok",
+      )}
+      role="status"
+    >
+      {text}
+    </span>
+  );
+}
