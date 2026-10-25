@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getVisitWeekendThemes } from "@/lib/meeting-talk-templates.functions";
 import { setVisitTemplateOverride } from "@/lib/visit-template-extras.functions";
 import { useSingleRow } from "./SingleRowPanel";
+import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -54,9 +55,11 @@ function LoadingCard() {
 
 // Pequeno editor de campo: digita e salva no blur quando muda.
 function FieldText({
-  value, onSave, readOnly, placeholder, type = "text",
+  value, onSave, readOnly, placeholder, type = "text", pending = false,
 }: {
   value: string | null;
+  /** Campo com alteração ainda não salva no servidor (rascunho). */
+  pending?: boolean;
   onSave: (v: string | null) => void | Promise<void>;
   readOnly?: boolean;
   placeholder?: string;
@@ -72,7 +75,9 @@ function FieldText({
       placeholder={placeholder}
       onChange={(e) => setLocal(e.target.value)}
       onBlur={() => { if (local !== (value ?? "")) onSave(local || null); }}
-      className="h-9 mt-0.5"
+      className={cn("h-9 mt-0.5", pending && "border-timer-warn ring-1 ring-timer-warn/40")}
+      aria-describedby={pending ? "draft-pending-hint" : undefined}
+      title={pending ? "Alteração ainda não salva" : undefined}
     />
   );
 }
@@ -89,7 +94,7 @@ export function MidweekPanel() {
   const editAllowed = !isSuper || editEnabled;
   const showInputs = canEdit && editAllowed;
   const extras = useVisitTemplateExtras(visit?.id);
-  const { row, loading, save } = useSingleRow<MidweekRow>(
+  const { row, loading, save, pending } = useSingleRow<MidweekRow>(
     "midweek_meetings",
     "id,visit_id,meeting_at,service_talk_theme,chairman,closing_prayer",
     visit,
@@ -124,15 +129,15 @@ export function MidweekPanel() {
           />
           <div>
             <Label>{t("meetingsTalks.midweek.serviceTalk")}</Label>
-            <FieldText value={row.service_talk_theme} onSave={(v) => save({ service_talk_theme: v })} readOnly={!isSuper} />
+            <FieldText pending={pending.has("service_talk_theme")} value={row.service_talk_theme} onSave={(v) => save({ service_talk_theme: v })} readOnly={!isSuper} />
           </div>
           <div>
             <Label>{t("meetingsTalks.midweek.chairman")}</Label>
-            <FieldText value={row.chairman} onSave={(v) => save({ chairman: v })} placeholder={t("meetingsTalks.midweek.chairmanPlaceholder")} />
+            <FieldText pending={pending.has("chairman")} value={row.chairman} onSave={(v) => save({ chairman: v })} placeholder={t("meetingsTalks.midweek.chairmanPlaceholder")} />
           </div>
           <div>
             <Label>{t("meetingsTalks.midweek.closingPrayer")}</Label>
-            <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} placeholder={t("meetingsTalks.midweek.closingPrayerPlaceholder")} />
+            <FieldText pending={pending.has("closing_prayer")} value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} placeholder={t("meetingsTalks.midweek.closingPrayerPlaceholder")} />
           </div>
         </fieldset>
       ) : (
@@ -345,7 +350,7 @@ export function WeekendPanel() {
   const editAllowed = !isSuper || editEnabled;
   const showInputs = canEdit && editAllowed;
   const extras = useVisitTemplateExtras(visit?.id);
-  const { row, loading, save } = useSingleRow<WeekendRow>(
+  const { row, loading, save, pending } = useSingleRow<WeekendRow>(
     "weekend_meetings",
     "id,visit_id,meeting_at,talk_theme_id,talk_theme_title,public_talk_theme",
     visit,
@@ -478,7 +483,7 @@ export function PioneerPanel() {
   const editAllowed = !isSuper || editEnabled;
   const showInputs = canEdit && editAllowed;
   const extras = useVisitTemplateExtras(visit?.id);
-  const { row, loading, save } = useSingleRow<PioneerRow>(
+  const { row, loading, save, pending } = useSingleRow<PioneerRow>(
     "pioneer_meetings",
     "id,visit_id,theme,opening_prayer,closing_prayer,location,meeting_at,super_meeting_at",
     visit,
@@ -512,19 +517,19 @@ export function PioneerPanel() {
         <fieldset className="grid gap-3 border-0 p-0 m-0">
           <div>
             <Label>{t("meetingsTalks.pioneer.theme")}</Label>
-            <FieldText value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
+            <FieldText pending={pending.has("theme")} value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
           </div>
           <div>
             <Label>{t("meetingsTalks.pioneer.openingPrayer")}</Label>
-            <FieldText value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
+            <FieldText pending={pending.has("opening_prayer")} value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
           </div>
           <div>
             <Label>{t("meetingsTalks.pioneer.closingPrayer")}</Label>
-            <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
+            <FieldText pending={pending.has("closing_prayer")} value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
           </div>
           <div>
             <Label>{t("meetingsTalks.pioneer.location")}</Label>
-            <FieldText value={row.location} onSave={(v) => save({ location: v })} />
+            <FieldText pending={pending.has("location")} value={row.location} onSave={(v) => save({ location: v })} />
           </div>
         </fieldset>
       ) : (
@@ -559,7 +564,7 @@ export function EldersServantsPanel() {
   const editAllowed = !isSuper || editEnabled;
   const showInputs = canEdit && editAllowed;
   const extras = useVisitTemplateExtras(visit?.id);
-  const { row, loading, save } = useSingleRow<EldersRow>(
+  const { row, loading, save, pending } = useSingleRow<EldersRow>(
     "elders_servants_meetings",
     "id,visit_id,theme,opening_prayer,closing_prayer,location,meeting_at",
     visit,
@@ -592,19 +597,19 @@ export function EldersServantsPanel() {
         <fieldset className="grid gap-3 border-0 p-0 m-0">
           <div>
             <Label>{t("meetingsTalks.elders.theme")}</Label>
-            <FieldText value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
+            <FieldText pending={pending.has("theme")} value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
           </div>
           <div>
             <Label>{t("meetingsTalks.elders.openingPrayer")}</Label>
-            <FieldText value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
+            <FieldText pending={pending.has("opening_prayer")} value={row.opening_prayer} onSave={(v) => save({ opening_prayer: v })} />
           </div>
           <div>
             <Label>{t("meetingsTalks.elders.closingPrayer")}</Label>
-            <FieldText value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
+            <FieldText pending={pending.has("closing_prayer")} value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} />
           </div>
           <div>
             <Label>{t("meetingsTalks.elders.location", { defaultValue: t("meetingsTalks.pioneer.location") })}</Label>
-            <FieldText value={row.location} onSave={(v) => save({ location: v })} />
+            <FieldText pending={pending.has("location")} value={row.location} onSave={(v) => save({ location: v })} />
           </div>
         </fieldset>
       ) : (
