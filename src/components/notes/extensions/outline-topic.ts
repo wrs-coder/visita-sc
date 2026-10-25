@@ -4,6 +4,7 @@
  * formatação, recuo, alinhamento e textos bíblicos funcionam igual ao resto.
  */
 import { Node, mergeAttributes } from "@tiptap/core";
+import { Fragment, type Node as PMNode } from "@tiptap/pm/model";
 import { OUTLINE_TOPIC_TYPE, makeTopicId } from "@/lib/outline-topics";
 import { normalizeMinutes, parseTopicMinutes } from "@/lib/outline-schedule";
 
@@ -14,6 +15,8 @@ declare module "@tiptap/core" {
       unsetOutlineTopic: () => ReturnType;
       renameOutlineTopic: (title: string) => ReturnType;
       setOutlineTopicMinutes: (minutes: number | null) => ReturnType;
+      /** Transforma cada subtítulo (H3) do nível principal em tópico com controle de tempo. */
+      convertHeadingsToTopics: () => ReturnType;
     };
   }
 }
@@ -90,6 +93,47 @@ export const OutlineTopic = Node.create<OutlineTopicOptions>({
         (minutes) =>
         ({ commands }) =>
           commands.updateAttributes(this.name, { minutes: normalizeMinutes(minutes) }),
+      convertHeadingsToTopics:
+        () =>
+        ({ state, tr, dispatch }) => {
+          const topicType = state.schema.nodes[this.name];
+          const paragraph = state.schema.nodes.paragraph;
+          const out: PMNode[] = [];
+          let group: { title: string; blocks: PMNode[] } | null = null;
+          let converted = 0;
+          const flush = () => {
+            if (!group) return;
+            const blocks = group.blocks.length ? group.blocks : [paragraph.create()];
+            out.push(topicType.create(
+              { id: makeTopicId(), title: group.title.slice(0, 120), minutes: parseTopicMinutes(group.title) },
+              blocks,
+            ));
+            group = null;
+          };
+          state.doc.forEach((child) => {
+            const isH3 = child.type.name === "heading" && child.attrs.level === 3;
+            const isBoundary = child.type.name === "heading" && Number(child.attrs.level) <= 3;
+            if (isH3) {
+              flush();
+              group = { title: child.textContent.trim() || this.options.labels.defaultTitle, blocks: [] };
+              converted++;
+            } else if (isBoundary || child.type === topicType) {
+              flush();
+              out.push(child);
+            } else if (group) {
+              (group as { blocks: PMNode[] }).blocks.push(child);
+            } else {
+              out.push(child);
+            }
+          });
+          flush();
+          if (!converted) return false;
+          if (dispatch) {
+            tr.replaceWith(0, state.doc.content.size, Fragment.fromArray(out));
+            dispatch(tr);
+          }
+          return true;
+        },
     };
   },
 
