@@ -50,6 +50,6 @@
 - [x] Alerta de esquecimento: tempo escolhido em destaque + "Começar do zero / Descontar tempo decorrido".
 - [x] Rascunho dos Esboços pessoais: gravação automática no aparelho + recuperar/descartar.
 - [x] Rascunho Reuniões e Discursos: horário do rascunho e tradução.
-- [ ] (próxima rodada) Reuniões e Discursos: destacar cada campo pendente; aviso no modo edição quando a soma dos tópicos difere do tempo do cronômetro.
+- [x] Reuniões e Discursos: destacar cada campo pendente; aviso no modo edição quando a soma dos tópicos difere do tempo do cronômetro.
 - [x] Controle de tempo por tópico: minutos no modo edição, selos "até HH:MM", concluir tópico e atraso/adiantamento.
 - [x] Som opcional nos avisos do cronômetro.

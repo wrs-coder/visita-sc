@@ -66,6 +66,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SavingIndicator } from "@/components/SavingIndicator";
 import { NoteDraftGuard, clearNoteDraft } from "@/components/notes/NoteDraftGuard";
+import { TopicTimeSumNotice } from "@/components/notes/TopicTimeSumNotice";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -1960,6 +1961,7 @@ function Page() {
                     saved={notes.find((n) => n.id === draft.id)}
                     onRestore={(n) => setDraft(n)}
                   />
+                  {mode === "edit" && <TopicTimeSumNotice outlineId={draft.id} html={draft.content} />}
                   <NoteEditor
                     draft={draft}
                     mode={mode}

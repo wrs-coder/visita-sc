@@ -89,5 +89,6 @@ export function useSingleRow<T extends { id: string }>(
     else if (queued) toast.success(t("common.savedOffline"));
   }, [row, table, draftCtx, t]);
 
-  return { row: mergedRow, loading, save };
+  const pending = useMemo(() => new Set(Object.keys(draftPatch ?? {})), [draftPatch]);
+  return { row: mergedRow, loading, save, pending };
 }

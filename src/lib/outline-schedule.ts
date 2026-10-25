@@ -128,3 +128,12 @@ export function useTopicsDone(outlineId: string | null): Record<string, number> 
     () => EMPTY,
   );
 }
+
+/** Soma dos minutos (data-minutes) de todos os tópicos de um HTML salvo. */
+export function sumTopicMinutes(html: string): number {
+  let total = 0;
+  for (const m of (html ?? "").matchAll(/data-minutes="(\d{1,3})"/g)) {
+    total += normalizeMinutes(m[1]) ?? 0;
+  }
+  return total;
+}
