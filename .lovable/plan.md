@@ -1,28 +1,24 @@
-# Selo de tempo flutuante e discreto (modo esboço e tela cheia)
-
-## Causa
-- **Modo esboço:** o quadro que envolve o esboço tem um corte de bordas ("overflow hidden"). Isso impede qualquer item de ficar preso no topo durante a rolagem da página. Na tela cheia esse corte não existe, por isso lá funcionou.
-- **Atrapalhando o texto:** hoje o cabeçalho inteiro do tópico (título + fundo) fica preso no topo e cobre linhas do texto.
+# Ajustes da pílula de tempo (tamanho, opacidade, posição)
 
 ## O que muda
-1. **Só a pílula do tempo acompanha a rolagem.** O título do tópico volta a rolar normalmente com o texto. Uma pequena pílula ("até 19:42" ou "+4 min") flutua no canto superior direito enquanto você estiver dentro daquele tópico. Ao passar para o próximo, a pílula do próximo assume.
-2. **Visual mínimo:** pílula pequena, fundo quase transparente com leve desfoque, sem faixa nem borda larga, sem ocupar a linha do texto. A pílula do tópico atual mantém a cor de destaque suave. Os concluídos ficam apagados com visto.
-3. **Tocar na pílula continua concluindo o tópico.** Isso funciona igual nos dois modos.
-4. **Modo esboço:** o corte de bordas é trocado por um corte equivalente, que não bloqueia o "preso no topo". A aparência do quadro não muda.
+Um pequeno botão de ajustes aparece ao lado de "Recolher todos", na barra acima dos tópicos. Essa barra já aparece nos modos esboço e tela cheia, inclusive quando o esboço é aberto pelo painel. Ao tocar no botão, abre um balão com:
+- **Tamanho:** Pequeno, Médio ou Grande. O padrão é Pequeno, como hoje.
+- **Opacidade:** controle deslizante de 30% a 100%. O padrão é 60%.
+- **Posição:** Esquerda, Centro ou Direita. O padrão é Direita.
+- **Restaurar padrão.**
+
+As mudanças aparecem na hora em todas as pílulas do esboço. Ficam guardadas só neste aparelho e valem para todos os esboços.
 
 ## O que não muda
-Banco, formato salvo, cronômetro, cálculo dos horários, recolher/expandir tópicos e o modo edição.
+Banco, formato salvo do esboço, cálculo de horários, tocar na pílula para concluir, cronômetro e modo edição.
 
 ## Validação
-- Conferir no navegador, em tela de celular (393px), nos modos esboço e tela cheia: rolar o texto e ver a pílula acompanhar sem cobrir o texto.
+- Teste: os ajustes salvos são lidos corretamente, e valores inválidos voltam ao padrão (por exemplo, opacidade fora de 30–100).
 - `bunx tsgo --noEmit` e `bunx vitest run`.
 
 ## Detalhes técnicos
-- `OutlineTopicBlock.tsx`: remover `sticky`/fundo do cabeçalho. O selo some do cabeçalho e passa para uma linha de altura zero no topo do `section`: `sticky top-2 z-10 h-0 flex justify-end pointer-events-none`. A pílula fica dentro, com `pointer-events-auto -translate-y-1/2`, e só aparece quando o tópico tem tempo.
-- `TopicTiming.tsx`: variante `floating` do `TopicTimeBadge`, com `text-[10px] px-1.5 py-0 bg-background/60 backdrop-blur-sm border-transparent` e as cores do estado atual/concluído mantidas por tokens.
-- `_app.consideracoes-campo.tsx` (linha ~1937): no `Card` do editor, trocar `overflow-hidden` por `overflow-clip` (mesmo corte nas duas direções). `clip` não cria contêiner de rolagem, então o `sticky` volta a funcionar. O efeito visual é o mesmo.
-
-## Painel (Dashboard)
-- **Tela cheia do painel:** usa o mesmo leitor de esboço com tempo por tópico. Por isso recebe a pílula flutuante e o botão do relógio automaticamente.
-- **Modo esboço do painel:** abre a mesma tela de esboço da aba Esboços. A correção do corte de bordas vale para ela também.
-- A validação no navegador inclui abrir um esboço pelo painel nos dois modos.
+- Novo `src/lib/topic-badge-prefs.ts`: `{ size: "sm"|"md"|"lg", opacity: number, position: "left"|"center"|"right" }`. Fica no localStorage (`visita-sc:topic-badge-prefs`), com `useSyncExternalStore` e `normalizeBadgePrefs()`. Teste em `topic-badge-prefs.test.ts`.
+- `TopicTiming.tsx`: a variante `floating` lê as preferências. Tamanho por classes (`text-[10px]`, `text-xs`, `text-sm`) e opacidade por `style={{ opacity }}`. Os tópicos concluídos multiplicam por 0,6.
+- `OutlineTopicBlock.tsx`: a linha sticky usa `justify-start pl-2`, `justify-center` ou `justify-end pr-11` conforme a posição. O espaço reservado ao lado do título acompanha a posição.
+- `OutlineTopicsToolbar`: botão de ajustes com `Popover`, `ToggleGroup`, `Slider` e `Button` já existentes. Textos em PT, EN e ES.
+- Regra no AGENTS.md: as preferências visuais da pílula ficam só no aparelho e nunca entram no HTML do esboço.
