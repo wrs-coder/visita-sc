@@ -254,9 +254,24 @@ function Dashboard() {
   const dayOffset = 0;
   const viewedDate = addDays(new Date(), dayOffset);
   const viewedIso = format(viewedDate, "yyyy-MM-dd");
-  const tomorrowIso = format(addDays(new Date(), 1), "yyyy-MM-dd");
   // Aba "Agenda": dia escolhido nas pílulas (hoje por padrão).
   const [agendaIso, setAgendaIso] = useState(today);
+  // Dias da visita ativa; sem visita, os próximos 7 dias.
+  const agendaDays = useMemo(() => {
+    const from = visit?.start_date && visit.start_date < today ? visit.start_date : today;
+    const to = visit?.end_date && visit.end_date >= today ? visit.end_date : format(addDays(new Date(), 6), "yyyy-MM-dd");
+    const days: string[] = [];
+    for (let d = parseISO(from); format(d, "yyyy-MM-dd") <= to && days.length < 31; d = addDays(d, 1)) days.push(format(d, "yyyy-MM-dd"));
+    return days;
+  }, [visit?.start_date, visit?.end_date, today]);
+  const agendaRange = { from: agendaDays[0] ?? today, to: agendaDays[agendaDays.length - 1] ?? today };
+  const agendaPills = useMemo(
+    () => agendaDays.map((iso) => {
+      const d = parseISO(iso);
+      return { iso, weekday: format(d, "EEE", { locale: ptBR }).replace(".", ""), day: format(d, "dd/MM") };
+    }),
+    [agendaDays],
+  );
 
   // Mission 2: eventos do circuito (circuit_schedule_events) do dia vigente.
   const [circuitToday, setCircuitToday] = useState<Array<{
@@ -1442,7 +1457,6 @@ function Dashboard() {
                 {renderTimeline(agendaIso, "super-today-circuit", t("dashboard.todayBlockTitle"))}
               </>
             ),
-            badge: role === "superintendent" && coupleUnread > 0,
           },
           ...(role === "superintendent"
             ? [{
