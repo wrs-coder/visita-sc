@@ -41,3 +41,8 @@
 - [x] Recolher/expandir rodada 1: cartões do "Resumo do dia" da esposa e anciãos (individual + recolher tudo).
 - [x] Recolher/expandir rodada 2a: cartões das abas Estudos, Campo, Refeições, Transporte e Checklist do painel por código.
 - [ ] Recolher/expandir rodada 2b: abas Reuniões e Discursos, Checklist, Cronograma e Comunicação do casal do superintendente.
+- [x] Offline premium: dados guardados 30 dias, selo de idade, aviso de vencimento do PIN.
+- [x] Offline premium: lista "Não enviados" (recusas do servidor após 5 tentativas), tentar de novo/descartar no Perfil.
+- [x] Offline premium: todas as telas do menu lateral constam na pré-carga sem internet.
+- [x] Offline premium: alteração/exclusão aparece na tela na hora quando vai para a fila.
+- [ ] (usuário) Gerar novo APK e testar sem internet no celular.
