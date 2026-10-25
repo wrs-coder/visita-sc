@@ -19,10 +19,17 @@ import {
   listAllNotesIncludingTrash,
   getActiveLibrary,
   saveNote,
+  FIXED_FOLDER_WEEK_CONSIDERATIONS,
+  FIXED_FOLDER_WEEK_OUTLINES,
   type FieldNote,
   type BibleLibrary,
 } from "@/lib/bible-notes-store";
 import { appendPlainTextToNote } from "@/lib/note-content";
+import { useActiveVisit } from "@/hooks/use-active-visit";
+import { useTalkSync } from "@/components/notes/TalkOutlineFields";
+import { fetchFieldNoteSync } from "@/lib/field-note-sync";
+import { isOfflineMode } from "@/lib/connection-mode";
+import { toast } from "sonner";
 
 interface FieldNoteFullscreenDialogProps {
   noteId: string | null;
@@ -111,6 +118,51 @@ export function FieldNoteFullscreenDialog({
 
   const showTimer = note != null && (note.type ?? "field_consideration") !== "talk_notes";
 
+  // Sincronizar (mesma regra da tela de Esboços): Consideração de Campo da
+  // semana ou Esboço da semana com tipo de discurso.
+  const { visit } = useActiveVisit();
+  const [fieldSyncing, setFieldSyncing] = useState(false);
+  const persist = async (patch: Partial<FieldNote>) => {
+    if (!note) return;
+    const updated: FieldNote = { ...note, ...patch, updated_at: Date.now(), dirty: true };
+    await saveNote(updated);
+    setNote(updated);
+    onSaved?.(updated);
+  };
+  const talkSync = useTalkSync(visit?.id, note?.talk, (talk) => void persist({ talk }));
+  const noteType = note?.type ?? "field_consideration";
+  const canFieldSync =
+    noteType === "field_consideration" &&
+    note?.folderId === FIXED_FOLDER_WEEK_CONSIDERATIONS &&
+    !!note?.event_date && !!note?.period && !!visit && !isOfflineMode();
+  const canTalkSync =
+    noteType === "outline" && note?.folderId === FIXED_FOLDER_WEEK_OUTLINES && !!note?.talk?.kind && talkSync.can;
+  const handleFieldSync = async () => {
+    if (!note || !visit || !canFieldSync) return;
+    setFieldSyncing(true);
+    try {
+      const periodLabel =
+        note.period === "morning" ? t("meetingsTalks.field.morning")
+        : note.period === "afternoon" ? t("meetingsTalks.field.afternoon")
+        : note.period === "evening" ? t("meetingsTalks.field.evening", { defaultValue: "Noite" })
+        : String(note.period);
+      const res = await fetchFieldNoteSync({ visit, weekday: String(note.event_date), periodLabel });
+      if (!res) {
+        toast.info(t("fieldConsiderations.syncFromField.empty"));
+        return;
+      }
+      await persist(res);
+      toast.success(t("fieldConsiderations.syncFromField.success"));
+    } catch (err) {
+      console.error("[FieldNoteFullscreenDialog] Erro ao sincronizar:", err);
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setFieldSyncing(false);
+    }
+  };
+  const onSync = canFieldSync ? handleFieldSync : canTalkSync ? () => talkSync.sync() : undefined;
+  const syncing = canFieldSync ? fieldSyncing : talkSync.syncing;
+
   const insertVerse = async (text: string) => {
     if (!note) return;
     const updated: FieldNote = {
@@ -164,7 +216,7 @@ export function FieldNoteFullscreenDialog({
               {note?.title ||
                 t("fieldConsiderations.fields.title", { defaultValue: "Nota" })}
             </DialogTitle>
-            {note && ((note.type ?? "field_consideration") === "field_consideration" || !!note.talk?.kind) && <FieldNoteInfoButton note={note} />}
+            {note && ((note.type ?? "field_consideration") === "field_consideration" || !!note.talk?.kind) && <FieldNoteInfoButton note={note} onSync={onSync} syncing={syncing} />}
 
             {/* Controles inline em telas >= sm */}
             <div className="hidden sm:flex items-center gap-2">

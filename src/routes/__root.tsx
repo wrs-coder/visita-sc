@@ -22,10 +22,11 @@ import { AppUpdatePrompt } from "@/components/AppUpdatePrompt";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { armBootGuard, markAppMounted } from "@/lib/boot-guard";
 import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-persister";
-import { flushQueue, startOfflineQueueAutoRetry } from "@/lib/offline-queue";
+import { flushQueue, startOfflineQueueAutoRetry, queueSize } from "@/lib/offline-queue";
+import { readGuestSession } from "@/lib/guest-session";
 import { startLocalWriteReconciler } from "@/lib/local-write";
 import { startAutoSync } from "@/lib/local-auto-sync";
-import { ensureFreshSession } from "@/lib/session-ready";
+import { ensureFreshSession, shouldWarnSessionExpired } from "@/lib/session-ready";
 import { isOfflineMode } from "@/lib/connection-mode";
 import { installNativeBackButton } from "@/lib/native-back-button";
 import { toast } from "sonner";
@@ -188,8 +189,29 @@ function RootComponent() {
       try {
         const sess = await ensureFreshSession();
         if (!sess.ok) {
+          const warnNow = () =>
+            shouldWarnSessionExpired({
+              reason: sess.reason,
+              queued: queueSize(),
+              isGuest: !!readGuestSession(),
+              online: navigator.onLine !== false,
+            });
+          if (!warnNow() || sessionToastShown) return;
+          // Rede costuma demorar 1-2s ao acordar: tenta de novo antes de avisar.
+          await new Promise((r) => window.setTimeout(r, 3000));
+          const retry = await ensureFreshSession();
+          if (retry.ok) {
+            await flushQueue();
+            return;
+          }
+          console.warn("[session] sessão não renovada após nova tentativa:", label, retry.reason);
           if (
-            (sess.reason === "refresh-failed" || sess.reason === "no-session") &&
+            shouldWarnSessionExpired({
+              reason: retry.reason,
+              queued: queueSize(),
+              isGuest: !!readGuestSession(),
+              online: navigator.onLine !== false,
+            }) &&
             !sessionToastShown
           ) {
             sessionToastShown = true;
