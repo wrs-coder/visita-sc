@@ -1,41 +1,47 @@
-# Modo Offline, Sincronização e Acesso sem Internet — versão premium
+# Rascunhos e cronômetro — diagnóstico e melhorias
 
-## Diagnóstico (confirmado no código)
-- A cópia local das telas (agenda, visita, refeições, transporte, etc.) é guardada com validade de **24 horas** (`PERSIST_MAX_AGE`) e apagada da memória após 48h (`gcTime`). Passou desse tempo sem internet, o app joga fora a cópia ao abrir — por isso tudo sumiu.
-- Os **esboços** sobreviveram porque ficam num banco local próprio, sem validade. As demais telas dependem só dessa cópia com prazo.
-- O prazo vale mesmo quando a cópia nunca pôde ser renovada (sem rede), o que é o pior momento para descartar.
+## O que encontrei no código
 
-## O que será feito (sem mexer no servidor, banco, login, PIN ou biometria)
-1. **Cópia local sem prazo de expiração no aparelho**: validade da cópia salva passa para 30 dias e a memória nunca descarta dados por tempo enquanto não houver dados novos para substituir. Dados só são trocados quando a internet trouxer versão mais nova.
-2. **Nunca apagar dados por falha de rede**: se a renovação falhar, a tela continua mostrando a última cópia (hoje alguns cartões mostram vazio/erro).
-3. **Selo "Atualizado há X"** discreto na barra de status offline, para a pessoa saber a idade dos dados.
-4. **Download completo ao entrar com internet**: o pré-carregamento atual roda ao fazer login e também uma vez por dia em segundo plano (já existe; garantir que inclua todas as telas do menu e não só o painel).
-5. **Telas do menu abrem sem internet**: confirmar que todas as páginas do menu lateral estão guardadas no aparelho (lista de telas pré-carregadas) e incluir as que faltarem.
-6. **Teste automático** garantindo que a validade da cópia é de no mínimo 30 dias, para essa regressão não voltar.
+### Rascunho dos Esboços pessoais
+- O texto digitado fica só na memória da tela até tocar em "Salvar". Não há gravação automática nem aviso ao sair. Se o app fechar, o celular reiniciar ou a pessoa trocar de tela, o que foi escrito desde o último "Salvar" se perde.
 
-## Sincronização Offline (fila de alterações)
-Hoje: alterações feitas sem internet ficam numa fila no aparelho e são enviadas sozinhas quando a rede volta, com novas tentativas espaçadas.
-Melhorias:
-7. **Contador visível** "3 alterações aguardando envio" na barra de status, com toque para enviar agora.
-8. **Item com erro permanente não trava a fila**: após várias falhas, ele vai para uma lista "Não enviados" com opção de tentar de novo ou descartar (hoje fica tentando para sempre).
-9. **Mostrar a alteração na tela na hora**, mesmo antes de enviar (onde ainda não acontece), para não parecer que "não salvou".
+### Rascunho de Reuniões e Discursos
+- Funciona bem: guarda no aparelho, avisa ao sair e mantém o que falhou para tentar de novo.
+- Pontos fracos: não mostra quais campos estão pendentes, as mensagens estão fixas em português (sem tradução EN/ES), e um rascunho antigo esquecido continua aparecendo sem dizer de quando é.
 
-## Acesso sem Internet (PIN e biometria)
-Hoje: o cofre do PIN vale 30 dias desde o último acesso com internet; erros seguidos de PIN causam espera e, no limite, apagam o cofre. Sem mudança nessas regras de segurança.
-Melhorias (só aviso e apresentação, sem tocar na lógica do PIN/biometria):
-10. **Aviso antecipado de vencimento**: quando faltarem 5 dias ou menos, mostrar "Conecte-se à internet para renovar o acesso sem internet".
-11. **Ao entrar pelo PIN, abrir direto com os dados salvos** (ligado ao item 1), sem tela vazia.
-12. Mensagens claras de tentativas restantes e tempo de espera.
+### Cronômetro e alerta de "esqueceu de iniciar"
+1. **Falha confirmada — alerta pode sumir:** o aviso "Esqueceu de iniciar?" só aparece na primeira tela que abriu o esboço. Se ela fechar (ex.: sair da tela cheia) e outra continuar aberta, o aviso nunca mais aparece naquele esboço.
+2. **Falha confirmada — perder tempo ao mudar o alvo:** ao diminuir o tempo alvo com o cronômetro correndo (ex.: passou 10 min e escolhe 5 min), o tempo já decorrido é cortado para 5 min sem aviso.
+3. **Cronômetro esquecido ligado:** se ficou rodando e o esboço é reaberto no dia seguinte, aparece um tempo enorme (horas). No modo progressivo ele nunca para e mantém a tela acesa para sempre.
+4. **"Não lembrar novamente"** só vale até fechar o app; depois o aviso volta. O texto promete mais do que faz.
+5. Avisos de "falta 1 minuto / acabou / passou X min" usam só vibração e cor; sem som e sem aviso se a tela estiver desligada.
 
-## Fora deste lote (podemos fazer depois, se quiser)
-- Tela "Dados disponíveis sem internet" no perfil, listando o que está salvo.
-- Aviso antes de entrar no Modo Offline caso o último download tenha falhado.
+## O que será feito (sem mexer em banco, login ou formato dos esboços)
+
+### Esboços pessoais
+1. Gravação automática do rascunho no aparelho a cada pausa na digitação (cerca de 1,5 s) e ao sair do app.
+2. Ao reabrir um esboço com rascunho não salvo: faixa discreta "Há alterações não salvas de HH:MM — Recuperar / Descartar".
+3. Aviso ao trocar de esboço ou sair da tela com alterações não salvas.
+4. Indicador pequeno "Rascunho guardado" / "Salvo" ao lado do botão Salvar.
+
+### Reuniões e Discursos
+5. Mostrar "Rascunho de HH:MM, N alterações" e destacar os campos pendentes.
+6. Traduzir as mensagens do rascunho (PT/EN/ES).
+
+### Cronômetro
+7. Corrigir o alerta de esquecimento: quando a tela que mostrava o aviso fechar, outra tela aberta assume.
+8. Corrigir a mudança de alvo: o tempo decorrido nunca é cortado; se passar do novo alvo, entra direto em "tempo excedido".
+9. Cronômetro esquecido: se ficou rodando mais de 3 horas sem a tela aberta, ele é pausado e aparece "Cronômetro estava ligado desde HH:MM — Continuar / Zerar". O modo progressivo para sozinho em alvo + 30 min, liberando a tela.
+10. "Não lembrar novamente" passa a valer de verdade para aquele esboço (guardado no aparelho), com opção de reativar no menu do cronômetro.
+11. Som curto opcional nos avisos (liga/desliga no menu do cronômetro, desligado por padrão para não atrapalhar no púlpito).
+
+## Fora deste lote (se quiser depois)
+- Aviso do cronômetro com a tela desligada (notificação do celular) — exige novo APK e mais testes.
 
 ## Detalhes técnicos
-- `src/lib/query-persister.ts`: `PERSIST_MAX_AGE` = 30 dias; `PERSIST_BUSTER` mantido "v1" (não invalidar caches existentes).
-- `src/router.tsx`: `gcTime` = `Infinity` (ou 30 dias) para que queries persistidas não sejam coletadas; `retry` mantido.
-- Verificar consultas que usam `placeholderData`/`initialData` ausentes e onde `isError` substitui dados existentes por estado vazio; ajustar só a apresentação.
-- `src/lib/offline-shells.ts` / `offline-prefetch.ts`: conferir lista de rotas e passos contra rotas `_app.*`; adicionar faltantes.
-- `OfflineStatusBar.tsx`: exibir `getLastWarmupAt()` formatado.
-- Teste em `src/lib/query-persister.test.ts`.
-- Validação: `bunx tsgo --noEmit` e `bunx vitest run`. Aplicativo instalado precisa de novo APK para receber a mudança.
+- `consideracoes-campo.tsx`: rascunho em localStorage `visita-sc:note-draft:<noteId>` com debounce; limpar após `persistNote` com sucesso; `useBlocker` + `beforeunload` quando `draft` difere da nota salva; Capacitor `App` pause dispara gravação.
+- `MeetingsDraftContext.tsx`: guardar `savedAt` junto do store (compatível com formato antigo), expor `isPending(table,id,field)`, strings via i18n.
+- `OutlineInactivitySensor.tsx`: troca do mapa de contagem por lista ordenada de instâncias com assinatura; ao sair o dono, a próxima vira dona. Dispensa em localStorage.
+- `use-outline-timer.ts`: `setTarget` preserva `elapsedSec`; `readSnapshot` detecta drift > 3 h → `isRunning:false` + flag `staleSince`; `computeTickAdvance` com teto para countup. Testes novos em `use-outline-timer.test.ts` para alvo, drift e teto.
+- Som via WebAudio (bip curto), pref em `timer-theme`/localStorage.
+- Validação: `bunx tsgo --noEmit` e `bunx vitest run`; conferir no navegador o fluxo de rascunho (digitar, recarregar, recuperar).
