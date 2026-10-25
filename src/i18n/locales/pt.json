@@ -302,10 +302,20 @@
       "mealsWeek": "Refeições da semana",
       "transportWeek": "Transporte da semana",
       "tabOutlines": "Esboços",
-      "unreadMessages": "Recados não lidos"
+      "unreadMessages": "Recados não lidos",
+      "tabAgenda": "Agenda",
+      "agendaDays": "Dias da agenda",
+      "backToToday": "Voltar para hoje"
     },
     "recommendedCardTitle": "Notas do SC – Recomendados",
-    "openPage": "Abrir página"
+    "openPage": "Abrir página",
+    "couple": {
+      "title": "Recados",
+      "read": "Lido",
+      "reply": "Responder",
+      "empty": "Nenhum recado novo",
+      "readError": "Não foi possível marcar como lido agora."
+    }
   },
   "itinerary": {
     "title": "Itinerário",
