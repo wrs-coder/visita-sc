@@ -3,11 +3,16 @@
  * Setinha no título e no final do tópico; recolhido mostra só o título.
  */
 import type React from "react";
-import { ChevronDown, ChevronUp, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronsDownUp, ChevronsUpDown, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { setTopicsCollapsed, toggleTopic, useCollapsedTopics } from "@/lib/outline-topics";
-import { TopicDeviationPill, TopicTimeBadge, useTopicDone } from "@/components/notes/TopicTiming";
+import { TopicDeviationPill, TopicTimeBadge, useHasTimedTopics, useTopicDone, useTopicHasTime } from "@/components/notes/TopicTiming";
+import { resetBadgePrefs, setBadgePrefs, useBadgePrefs, type BadgePosition, type BadgeSize } from "@/lib/topic-badge-prefs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
 
 export function OutlineTopicBlock({
   id,
@@ -22,20 +27,36 @@ export function OutlineTopicBlock({
   const collapsedMap = useCollapsedTopics();
   const collapsed = !!collapsedMap[id];
   const done = useTopicDone(id);
+  const hasTime = useTopicHasTime(id);
+  const badgePrefs = useBadgePrefs();
   const label = collapsed
     ? t("personalOutlines.topics.expand", { defaultValue: "Expandir tópico" })
     : t("personalOutlines.topics.collapse", { defaultValue: "Recolher tópico" });
 
+  const pos = badgePrefs.position;
   return (
     <section data-topic-id={id} className={cn("my-2 rounded-md border border-border bg-muted/30 transition-opacity", done && "opacity-60")}>
       {/* Linha de altura zero: só a pílula de tempo acompanha a rolagem dentro do tópico. */}
-      <div className="pointer-events-none sticky top-2 z-10 flex h-0 justify-end pr-11">
+      <div
+        className={cn(
+          "pointer-events-none sticky top-2 z-10 flex h-0",
+          pos === "left" ? "justify-start pl-2" : pos === "center" ? "justify-center" : "justify-end pr-11",
+        )}
+      >
         <div className="pointer-events-auto translate-y-2">
           <TopicTimeBadge topicId={id} floating />
         </div>
       </div>
-      <div className="flex items-center gap-2 px-2 py-1.5">
-        <div className="flex-1 min-w-0 pr-20 font-semibold text-foreground">{title}</div>
+      <div className={cn("flex items-center gap-2 px-2 py-1.5", hasTime && pos === "center" && "pt-8")}>
+        <div
+          className={cn(
+            "flex-1 min-w-0 font-semibold text-foreground",
+            hasTime && pos === "right" && (badgePrefs.size === "lg" ? "pr-28" : "pr-20"),
+            hasTime && pos === "left" && (badgePrefs.size === "lg" ? "pl-28" : "pl-20"),
+          )}
+        >
+          {title}
+        </div>
         <button
           type="button"
           onClick={(e) => {
