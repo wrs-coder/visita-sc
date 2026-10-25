@@ -118,6 +118,8 @@ import { searchOutlines } from "@/lib/outline-search";
 import { readRecent, touchRecent } from "@/lib/recent-outlines";
 import { repairFolderTypes } from "@/lib/folder-type-repair";
 import { cn } from "@/lib/utils";
+import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
+import { useStableViewportHeight } from "@/hooks/use-stable-viewport-height";
 import { appendPlainTextToNote } from "@/lib/note-content";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -241,6 +243,7 @@ function Page() {
   const [saving, setSaving] = useState(false);
   const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
   const [mode, setMode] = useState<"edit" | "outline">("outline");
+  const kbVisible = useVirtualKeyboardVisible();
   const [fullscreen, setFullscreen] = useState(false);
   const [foldersCollapsed, setFoldersCollapsed] = useState<boolean>(() => {
     try {
@@ -1934,7 +1937,9 @@ function Page() {
 
 
             {/* Editor */}
-            <Card className={cn("w-full max-w-full overflow-clip min-w-0", (!draft || showLibrary) && "hidden lg:block")}>
+            {/* Edição: moldura como antes (overflow-hidden). Esboço: overflow-clip
+                para a pílula de tempo fixa (sticky) acompanhar a rolagem. */}
+            <Card className={cn("w-full max-w-full min-w-0", mode === "edit" ? "overflow-hidden" : "overflow-clip", (!draft || showLibrary) && "hidden lg:block")}>
               <CardContent className="p-5 space-y-4 w-full max-w-full overflow-x-hidden box-border min-w-0">
                 {draft && (
                   <div className="flex items-center -ml-2 -mt-2">
@@ -1956,12 +1961,16 @@ function Page() {
                   </p>
                 ) : (
                   <>
-                  <NoteDraftGuard
-                    draft={draft}
-                    saved={notes.find((n) => n.id === draft.id)}
-                    onRestore={(n) => setDraft(n)}
-                  />
-                  {mode === "edit" && <TopicTimeSumNotice outlineId={draft.id} html={draft.content} />}
+                  {/* Com o teclado aberto, os avisos somem para não roubar linhas do texto
+                      (o rascunho automático continua ativo: o componente segue montado). */}
+                  <div className={cn(kbVisible && "hidden")}>
+                    <NoteDraftGuard
+                      draft={draft}
+                      saved={notes.find((n) => n.id === draft.id)}
+                      onRestore={(n) => setDraft(n)}
+                    />
+                    {mode === "edit" && <TopicTimeSumNotice outlineId={draft.id} html={draft.content} />}
+                  </div>
                   <NoteEditor
                     draft={draft}
                     mode={mode}
