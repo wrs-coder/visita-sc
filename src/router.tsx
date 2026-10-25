@@ -10,7 +10,8 @@ export const getRouter = () => {
         // Combinado com o persister (PersistQueryClientProvider), as telas
         // abrem instantaneamente a partir do IndexedDB sem nova requisição.
         staleTime: 24 * 60 * 60 * 1000,
-        gcTime: 48 * 60 * 60 * 1000,
+        // Igual ao prazo da cópia salva: nada some da memória por idade.
+        gcTime: 30 * 24 * 60 * 60 * 1000,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         retry: 1,

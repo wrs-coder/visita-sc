@@ -60,7 +60,7 @@ export const queryPersister = createAsyncStoragePersister({
   throttleTime: 1000,
 });
 
-// 24h
-export const PERSIST_MAX_AGE = 24 * 60 * 60 * 1000;
+// 30 dias: sem internet, a cópia local não pode ser descartada por idade.
+export const PERSIST_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 // Bump para invalidar todo o cache em mudanças incompatíveis.
 export const PERSIST_BUSTER = "v1";
