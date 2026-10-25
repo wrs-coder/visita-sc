@@ -122,3 +122,53 @@ export function OutlineTopicsToolbar({ ids }: { ids: string[] }) {
     </div>
   );
 }
+
+/** Ajustes da pílula de tempo (tamanho, opacidade, posição) — só neste aparelho. */
+function TopicBadgeSettings() {
+  const { t } = useTranslation();
+  const prefs = useBadgePrefs();
+  const title = t("personalOutlines.topicTime.settings", { defaultValue: "Ajustes da pílula de tempo" });
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          onClick={(e) => e.stopPropagation()}
+          aria-label={title}
+          title={title}
+          className="h-7 w-7 inline-flex items-center justify-center rounded-full border text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 space-y-3" onClick={(e) => e.stopPropagation()}>
+        <p className="text-sm font-semibold">{title}</p>
+        <div className="space-y-1.5">
+          <p className="text-xs text-muted-foreground">{t("personalOutlines.topicTime.size", { defaultValue: "Tamanho" })}</p>
+          <ToggleGroup type="single" size="sm" variant="outline" value={prefs.size} onValueChange={(v) => v && setBadgePrefs({ size: v as BadgeSize })} className="justify-start">
+            <ToggleGroupItem value="sm">{t("personalOutlines.topicTime.small", { defaultValue: "P" })}</ToggleGroupItem>
+            <ToggleGroupItem value="md">{t("personalOutlines.topicTime.medium", { defaultValue: "M" })}</ToggleGroupItem>
+            <ToggleGroupItem value="lg">{t("personalOutlines.topicTime.large", { defaultValue: "G" })}</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-xs text-muted-foreground">
+            {t("personalOutlines.topicTime.opacity", { defaultValue: "Opacidade" })}: {prefs.opacity}%
+          </p>
+          <Slider min={30} max={100} step={5} value={[prefs.opacity]} onValueChange={([v]) => setBadgePrefs({ opacity: v })} />
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-xs text-muted-foreground">{t("personalOutlines.topicTime.position", { defaultValue: "Posição" })}</p>
+          <ToggleGroup type="single" size="sm" variant="outline" value={prefs.position} onValueChange={(v) => v && setBadgePrefs({ position: v as BadgePosition })} className="justify-start">
+            <ToggleGroupItem value="left">{t("personalOutlines.topicTime.left", { defaultValue: "Esquerda" })}</ToggleGroupItem>
+            <ToggleGroupItem value="center">{t("personalOutlines.topicTime.center", { defaultValue: "Centro" })}</ToggleGroupItem>
+            <ToggleGroupItem value="right">{t("personalOutlines.topicTime.right", { defaultValue: "Direita" })}</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        <Button type="button" variant="ghost" size="sm" className="w-full" onClick={resetBadgePrefs}>
+          {t("personalOutlines.topicTime.reset", { defaultValue: "Restaurar padrão" })}
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+}
