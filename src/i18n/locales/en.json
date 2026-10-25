@@ -1747,7 +1747,18 @@
       "onTime": "on time",
       "late": "{{count}} min late",
       "early": "{{count}} min early",
-      "sumMismatch": "Topics add up to {{total}} min, but the timer is set to {{target}} min."
+      "sumMismatch": "Topics add up to {{total}} min, but the timer is set to {{target}} min.",
+      "settings": "Time pill settings",
+      "size": "Size",
+      "small": "S",
+      "medium": "M",
+      "large": "L",
+      "opacity": "Opacity",
+      "position": "Position",
+      "left": "Left",
+      "center": "Center",
+      "right": "Right",
+      "reset": "Reset to default"
     },
     "draft": {
       "found": "There are unsaved changes from {{time}}.",
