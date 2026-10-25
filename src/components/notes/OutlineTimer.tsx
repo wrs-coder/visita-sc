@@ -48,6 +48,32 @@ import {
 } from "@/hooks/use-outline-timer";
 import { useTimerSize } from "@/lib/timer-size";
 import { TIMER_THEMES, useTimerTheme } from "@/lib/timer-theme";
+import { isSensorDismissed, resetSensorDismiss } from "@/components/notes/OutlineInactivitySensor";
+
+const SOUND_KEY = "visita-sc:timer-sound";
+
+/** Bip curto via WebAudio (sem arquivos). Falhas são ignoradas com aviso. */
+function playBeep(strong: boolean): void {
+  try {
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    const ctx = new AC();
+    const beeps = strong ? 3 : 2;
+    for (let i = 0; i < beeps; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = strong ? 880 : 660;
+      gain.gain.value = 0.15;
+      osc.connect(gain).connect(ctx.destination);
+      const t0 = ctx.currentTime + i * 0.3;
+      osc.start(t0);
+      osc.stop(t0 + 0.18);
+    }
+    window.setTimeout(() => { void ctx.close(); }, beeps * 300 + 300);
+  } catch (err) {
+    console.warn("[outline-timer] som indisponível", err);
+  }
+}
 
 interface OutlineTimerProps {
   outlineId: string;
@@ -96,9 +122,23 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
   );
   const lastTapRef = useRef<number>(0);
   const [controlsCollapsed, setControlsCollapsed] = useState(false);
+  const [soundOn, setSoundOn] = useState(false);
+  const [sensorOff, setSensorOff] = useState(false);
   useEffect(() => {
-    try { setControlsCollapsed(window.localStorage.getItem(CONTROLS_KEY) === "1"); } catch { /* noop */ }
+    try {
+      setControlsCollapsed(window.localStorage.getItem(CONTROLS_KEY) === "1");
+      setSoundOn(window.localStorage.getItem(SOUND_KEY) === "1");
+    } catch { /* noop */ }
   }, []);
+  useEffect(() => {
+    if (targetOpen) setSensorOff(isSensorDismissed(outlineId));
+  }, [targetOpen, outlineId]);
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    try { window.localStorage.setItem(SOUND_KEY, next ? "1" : "0"); } catch { /* noop */ }
+    if (next) playBeep(false);
+  };
   const toggleControls = () => {
     setControlsCollapsed((prev) => {
       const next = !prev;
@@ -166,6 +206,9 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
     // sozinho no limite de 5 minutos excedidos).
     if (!timer.isRunning && milestone < 6) return;
     setWarnMilestone(milestone);
+    try {
+      if (window.localStorage.getItem(SOUND_KEY) === "1") playBeep(milestone >= 1);
+    } catch { /* noop */ }
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       try {
         navigator.vibrate(
@@ -304,6 +347,26 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
             <Button type="button" size="sm" className="h-8" onClick={applyCustom}>
               {t("personalOutlines.timer.apply", { defaultValue: "OK" })}
             </Button>
+          </div>
+
+          <Separator className="my-3" />
+
+          <div className="space-y-1.5">
+            <label className="flex items-center justify-between gap-2 text-xs">
+              <span>{t("personalOutlines.timer.sound", { defaultValue: "Som nos avisos" })}</span>
+              <input type="checkbox" checked={soundOn} onChange={toggleSound} className="h-4 w-4 accent-primary" />
+            </label>
+            {sensorOff && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 w-full text-xs"
+                onClick={() => { resetSensorDismiss(outlineId); setSensorOff(false); }}
+              >
+                {t("personalOutlines.timer.sensorReenable", { defaultValue: "Reativar aviso \"Esqueceu de iniciar?\"" })}
+              </Button>
+            )}
           </div>
 
           <Separator className="my-3" />
@@ -471,6 +534,23 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
         <ZoomIn className={iconBtnSize} />
       </Button>
       </div>
+
+      {timer.staleSince !== null && (
+        <div className="flex w-full flex-wrap items-center justify-center gap-1.5 text-xs" role="status">
+          <span className="text-muted-foreground">
+            {t("personalOutlines.timer.staleNotice", {
+              time: new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: false }).format(timer.staleSince),
+              defaultValue: "Estava ligado desde {{time}} e foi pausado.",
+            })}
+          </span>
+          <Button type="button" size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={() => timer.start()}>
+            {t("personalOutlines.timer.continue", { defaultValue: "Continuar" })}
+          </Button>
+          <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => timer.reset()}>
+            {t("personalOutlines.timer.zero", { defaultValue: "Zerar" })}
+          </Button>
+        </div>
+      )}
 
       <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
         <AlertDialogContent className="z-[150]">

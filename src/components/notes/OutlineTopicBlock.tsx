@@ -7,6 +7,7 @@ import { ChevronDown, ChevronUp, ChevronsDownUp, ChevronsUpDown } from "lucide-r
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { setTopicsCollapsed, toggleTopic, useCollapsedTopics } from "@/lib/outline-topics";
+import { TopicDeviationPill, TopicTimeBadge, useTopicDone } from "@/components/notes/TopicTiming";
 
 export function OutlineTopicBlock({
   id,
@@ -20,14 +21,16 @@ export function OutlineTopicBlock({
   const { t } = useTranslation();
   const collapsedMap = useCollapsedTopics();
   const collapsed = !!collapsedMap[id];
+  const done = useTopicDone(id);
   const label = collapsed
     ? t("personalOutlines.topics.expand", { defaultValue: "Expandir tópico" })
     : t("personalOutlines.topics.collapse", { defaultValue: "Recolher tópico" });
 
   return (
-    <section data-topic-id={id} className="my-2 rounded-md border border-border bg-muted/30">
+    <section data-topic-id={id} className={cn("my-2 rounded-md border border-border bg-muted/30 transition-opacity", done && "opacity-60")}>
       <div className="flex items-center gap-2 px-2 py-1.5">
         <div className="flex-1 min-w-0 font-semibold text-foreground">{title}</div>
+        <TopicTimeBadge topicId={id} />
         <button
           type="button"
           onClick={(e) => {
@@ -74,7 +77,8 @@ export function OutlineTopicsToolbar({ ids }: { ids: string[] }) {
     ? t("personalOutlines.topics.expandAll", { defaultValue: "Expandir todos" })
     : t("personalOutlines.topics.collapseAll", { defaultValue: "Recolher todos" });
   return (
-    <div className="flex justify-end mb-1">
+    <div className="flex items-center justify-end gap-2 mb-1">
+      <TopicDeviationPill />
       <button
         type="button"
         onClick={(e) => {

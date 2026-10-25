@@ -7,6 +7,8 @@ import type { BibleLibrary } from "@/lib/bible-notes-store";
 import { RICH_NOTE_CONTENT_CLASS } from "@/lib/rich-note-styles";
 import { OUTLINE_TOPIC_TYPE } from "@/lib/outline-topics";
 import { OutlineTopicBlock, OutlineTopicsToolbar } from "@/components/notes/OutlineTopicBlock";
+import { TopicTimingProvider } from "@/components/notes/TopicTiming";
+import { normalizeMinutes, type TimedTopic } from "@/lib/outline-schedule";
 
 // ============================================================================
 // Sanitizer (whitelist mínima) — aceita apenas tags/atributos usados pelo
@@ -73,6 +75,7 @@ const KEEP_ATTRS = new Set([
   "data-type",
   "data-topic-id",
   "data-title",
+  "data-minutes",
   "data-checked",
   "data-align",
   "colspan",
@@ -505,8 +508,11 @@ function RichOutlineContentImpl({
   fontScale,
   emptyFallback,
   onInsertVerse,
+  outlineId,
 }: {
   html: string;
+  /** Liga o controle de tempo por tópico (modo esboço / tela cheia). */
+  outlineId?: string;
   library: BibleLibrary | null;
   fontScale?: number;
   emptyFallback?: React.ReactNode;
@@ -516,7 +522,9 @@ function RichOutlineContentImpl({
 
   // Todo o trabalho pesado (sanitização + DOMParser + varredura de citações)
   // acontece uma única vez por conteúdo/biblioteca, e não a cada render.
+  const timedTopics = React.useRef<TimedTopic[]>([]);
   const rendered = React.useMemo<React.ReactElement | null>(() => {
+    timedTopics.current = [];
     if (!html || !html.trim()) return null;
 
     if (!looksLikeHtml(html)) {
@@ -543,9 +551,14 @@ function RichOutlineContentImpl({
         {renderNode(n, opts, `n${i}`, plan)}
       </React.Fragment>
     ));
-    const topicIds = Array.from(root.querySelectorAll(`div[data-type="${OUTLINE_TOPIC_TYPE}"]`))
-      .map((d) => d.getAttribute("data-topic-id") || "")
-      .filter(Boolean);
+    const topicEls = Array.from(root.querySelectorAll(`div[data-type="${OUTLINE_TOPIC_TYPE}"]`));
+    const topicIds = topicEls.map((d) => d.getAttribute("data-topic-id") || "").filter(Boolean);
+    // Só entram no controle de tempo os tópicos com minutos definidos no modo edição.
+    timedTopics.current = topicEls.flatMap((d) => {
+      const id = d.getAttribute("data-topic-id") || "";
+      const minutes = normalizeMinutes(d.getAttribute("data-minutes"));
+      return id && minutes ? [{ id, minutes }] : [];
+    });
     return (
       <div className={RICH_NOTE_CONTENT_CLASS}>
         {topicIds.length > 0 && <OutlineTopicsToolbar ids={topicIds} />}
@@ -557,7 +570,12 @@ function RichOutlineContentImpl({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [html, libraryId, library?.books, fontScale, onInsertVerse]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const topics = React.useMemo(() => timedTopics.current, [rendered]);
   if (!rendered) return <>{emptyFallback ?? null}</>;
+  if (outlineId && topics.length > 0) {
+    return <TopicTimingProvider outlineId={outlineId} topics={topics}>{rendered}</TopicTimingProvider>;
+  }
   return rendered;
 }
 

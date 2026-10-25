@@ -65,6 +65,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SavingIndicator } from "@/components/SavingIndicator";
+import { NoteDraftGuard, clearNoteDraft } from "@/components/notes/NoteDraftGuard";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -622,6 +623,7 @@ function Page() {
     };
     try {
       await persistNote(updated);
+      clearNoteDraft(updated.id);
       setNotes((all) => {
         const idx = all.findIndex((n) => n.id === updated.id);
         const next = idx >= 0 ? [...all] : [updated, ...all];
@@ -1952,6 +1954,12 @@ function Page() {
                     {t("personalOutlines.folders.selectFolder")}
                   </p>
                 ) : (
+                  <>
+                  <NoteDraftGuard
+                    draft={draft}
+                    saved={notes.find((n) => n.id === draft.id)}
+                    onRestore={(n) => setDraft(n)}
+                  />
                   <NoteEditor
                     draft={draft}
                     mode={mode}
@@ -1971,6 +1979,7 @@ function Page() {
                     onInsertBibleText={handleInsertBibleText}
                     onSyncInfo={setSyncInfo}
                   />
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -2497,7 +2506,7 @@ function NoteEditor({
               <div className="flex-1 min-h-[22rem] bg-background px-1 py-4 sm:px-6 text-[17px] leading-8 break-words [overflow-wrap:anywhere]">
                 <div className="max-w-[68ch] mx-auto">
                 {draft.content ? (
-                  <RichOutlineContent html={draft.content} library={activeBible} onInsertVerse={onInsertBibleText} />
+                  <RichOutlineContent html={draft.content} outlineId={draft.id} library={activeBible} onInsertVerse={onInsertBibleText} />
                 ) : (
                   <span className="text-muted-foreground italic">
                     {t("fieldConsiderations.contentEmpty")}
@@ -2678,7 +2687,7 @@ function FullscreenOutline({
         >
           {note.content ? (
             <>
-              <RichOutlineContent html={note.content} library={library} fontScale={scale} onInsertVerse={onInsertBibleText} />
+              <RichOutlineContent html={note.content} outlineId={note.id} library={library} fontScale={scale} onInsertVerse={onInsertBibleText} />
               <div className="mt-5">
                 <BibleHistoryChips library={library} onInsert={onInsertBibleText} />
               </div>
