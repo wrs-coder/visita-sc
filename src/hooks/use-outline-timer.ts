@@ -12,6 +12,7 @@ import {
   acquireScreenWakeLock,
   releaseScreenWakeLock,
 } from "@/lib/wake-lock";
+import { clearTopicsDone } from "@/lib/outline-schedule";
 
 export type TimerMode = "countdown" | "countup";
 export type AlertLevel = "green" | "amber" | "red";
@@ -445,7 +446,7 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
   const reset = useCallback(() => {
     const cur = snapRef.current;
     commit({ ...cur, elapsedSec: 0, isRunning: false, lastTickAt: Date.now(), staleSince: undefined });
-    try { window.localStorage.removeItem(`visita-sc:topic-done:${safeId}`); } catch { /* noop */ }
+    if (safeId) clearTopicsDone(safeId);
   }, [commit, safeId]);
 
   const clearStale = useCallback(() => {

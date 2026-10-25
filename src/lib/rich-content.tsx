@@ -73,6 +73,7 @@ const KEEP_ATTRS = new Set([
   "data-type",
   "data-topic-id",
   "data-title",
+  "data-minutes",
   "data-checked",
   "data-align",
   "colspan",
