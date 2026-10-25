@@ -682,7 +682,8 @@
       "saved": "Data saved",
       "failed": "Failed to save {{count}} change(s)",
       "failedDesc": "Affected tables: {{tables}}. Tap \"Save data\" to try again — the local draft was kept.",
-      "since": "Draft from {{time}} · {{count}} change(s)"
+      "since": "Draft from {{time}} · {{count}} change(s)",
+      "fieldPending": "Change not saved yet"
     }
   },
   "elderProgram": {
@@ -1745,7 +1746,8 @@
       "markDone": "Mark topic as done",
       "onTime": "on time",
       "late": "{{count}} min late",
-      "early": "{{count}} min early"
+      "early": "{{count}} min early",
+      "sumMismatch": "Topics add up to {{total}} min, but the timer is set to {{target}} min."
     },
     "draft": {
       "found": "There are unsaved changes from {{time}}.",

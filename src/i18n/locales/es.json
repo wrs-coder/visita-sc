@@ -657,7 +657,8 @@
       "saved": "Datos guardados",
       "failed": "Error al guardar {{count}} cambio(s)",
       "failedDesc": "Tablas afectadas: {{tables}}. Toque \"Guardar datos\" para intentar de nuevo — el borrador local se conservó.",
-      "since": "Borrador de {{time}} · {{count}} cambio(s)"
+      "since": "Borrador de {{time}} · {{count}} cambio(s)",
+      "fieldPending": "Cambio aún no guardado"
     }
   },
   "elderProgram": {
@@ -1720,7 +1721,8 @@
       "markDone": "Marcar tema como concluido",
       "onTime": "a tiempo",
       "late": "{{count}} min de retraso",
-      "early": "{{count}} min adelantado"
+      "early": "{{count}} min adelantado",
+      "sumMismatch": "Los temas suman {{total}} min, pero el cronómetro está en {{target}} min."
     },
     "draft": {
       "found": "Hay cambios sin guardar de {{time}}.",

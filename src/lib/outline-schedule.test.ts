@@ -43,3 +43,11 @@ describe("buildTopicSchedule", () => {
     expect(s.deviationSec).toBe(-60);
   });
 });
+
+import { sumTopicMinutes } from "./outline-schedule";
+describe("sumTopicMinutes", () => {
+  it("soma só os tópicos com tempo", () => {
+    const html = '<div data-type="outline-topic" data-minutes="5"></div><div data-type="outline-topic"></div><div data-minutes="10"></div>';
+    expect(sumTopicMinutes(html)).toBe(15);
+  });
+});
