@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 
 /**
- * Detecta se o teclado virtual está aberto comparando a altura do
- * `visualViewport` com a altura da janela. Usado para esconder/mostrar
- * elementos flutuantes (toolbar de edição) no mobile.
+ * Detecta se o teclado virtual está aberto.
+ *
+ * Navegador comum: o teclado reduz só o `visualViewport` (innerHeight fica).
+ * App Android (adjustResize): a janela inteira encolhe, então innerHeight
+ * também cai. Por isso comparamos com a maior altura já vista para a largura
+ * atual (zerada em rotação), cobrindo os dois casos.
  */
 export function useVirtualKeyboardVisible(threshold = 150): boolean {
   const [visible, setVisible] = useState(false);
@@ -11,19 +14,27 @@ export function useVirtualKeyboardVisible(threshold = 150): boolean {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const vv = window.visualViewport;
-    if (!vv) return;
+    let width = window.innerWidth;
+    let fullHeight = window.innerHeight;
 
     const update = () => {
-      const diff = window.innerHeight - vv.height;
-      setVisible(diff > threshold);
+      if (window.innerWidth !== width) {
+        width = window.innerWidth;
+        fullHeight = window.innerHeight;
+      }
+      fullHeight = Math.max(fullHeight, window.innerHeight);
+      const current = vv ? vv.height : window.innerHeight;
+      setVisible(fullHeight - current > threshold);
     };
 
     update();
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    vv?.addEventListener("resize", update);
+    vv?.addEventListener("scroll", update);
     return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      vv?.removeEventListener("resize", update);
+      vv?.removeEventListener("scroll", update);
     };
   }, [threshold]);
 
