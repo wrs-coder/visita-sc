@@ -2148,6 +2148,7 @@ function NoteEditor({
   const [syncing, setSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
   const META_COLLAPSED_KEY = "visita-sc:outline-meta-collapsed";
+  const stableVh = useStableViewportHeight();
   const [metaCollapsed, setMetaCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(META_COLLAPSED_KEY) === "1"; } catch { return false; }
   });
@@ -2486,8 +2487,20 @@ function NoteEditor({
           // Barra de anexos tem altura fixa de 5rem (h-20). Descontar do
           // cálculo da janela rígida para preservar o scroll interno.
           const attachRow = hasAttachments ? " - 5rem" : "";
-          const minH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "22rem";
-          const maxH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "60vh";
+          // Altura medida com o teclado FECHADO: abrir o teclado não encolhe a
+          // área de texto (antes caía para ~3 linhas no Android).
+          let minH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "22rem";
+          let maxH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "60vh";
+          if (stableVh) {
+            const rem = 16;
+            if (metaCollapsed) {
+              const px = Math.max(22 * rem, stableVh - 14 * rem - (hasAttachments ? 5 * rem : 0));
+              minH = `${px}px`;
+              maxH = `${px}px`;
+            } else {
+              maxH = `${Math.max(22 * rem, Math.round(stableVh * 0.6))}px`;
+            }
+          }
           return mode === "edit" ? (
             <React.Suspense fallback={<div className="flex-1 rounded-md border bg-muted/30" style={{ minHeight: minH }} aria-busy="true" />}>
             <RichNoteEditor
