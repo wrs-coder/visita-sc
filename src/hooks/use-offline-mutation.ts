@@ -73,6 +73,7 @@ export function useOfflineMutation<TVars extends OfflineWrite>(
   const congregation = useActiveCongregation();
   const { user } = useAuth();
   const ctx = { congregationId: congregation?.id ?? null, userId: user?.id ?? null };
+  const queryClient = useQueryClient();
 
   return useMutation<{ queued: boolean }, Error, TVars>({
     ...options,
@@ -81,6 +82,7 @@ export function useOfflineMutation<TVars extends OfflineWrite>(
       const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
       if (isOffline) {
         enqueue(vars);
+        applyOptimisticWrite(queryClient, vars);
         return { queued: true };
       }
       try {
@@ -107,6 +109,7 @@ export function useOfflineMutation<TVars extends OfflineWrite>(
         // guarda-final no servidor.
         console.warn("[useOfflineMutation] falha — enfileirando", vars, err);
         enqueue(vars);
+        applyOptimisticWrite(queryClient, vars);
         return { queued: true };
       }
     },
