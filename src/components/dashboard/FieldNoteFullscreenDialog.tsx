@@ -349,6 +349,7 @@ export function FieldNoteFullscreenDialog({
                 <>
                   <RichOutlineContent
                     html={note.content}
+                    outlineId={note.id}
                     library={library}
                     fontScale={scale}
                     onInsertVerse={insertVerse}

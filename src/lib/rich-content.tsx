@@ -8,7 +8,7 @@ import { RICH_NOTE_CONTENT_CLASS } from "@/lib/rich-note-styles";
 import { OUTLINE_TOPIC_TYPE } from "@/lib/outline-topics";
 import { OutlineTopicBlock, OutlineTopicsToolbar } from "@/components/notes/OutlineTopicBlock";
 import { TopicTimingProvider } from "@/components/notes/TopicTiming";
-import { normalizeMinutes, parseTopicMinutes, type TimedTopic } from "@/lib/outline-schedule";
+import { normalizeMinutes, type TimedTopic } from "@/lib/outline-schedule";
 
 // ============================================================================
 // Sanitizer (whitelist mínima) — aceita apenas tags/atributos usados pelo

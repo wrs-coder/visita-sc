@@ -2497,7 +2497,7 @@ function NoteEditor({
               <div className="flex-1 min-h-[22rem] bg-background px-1 py-4 sm:px-6 text-[17px] leading-8 break-words [overflow-wrap:anywhere]">
                 <div className="max-w-[68ch] mx-auto">
                 {draft.content ? (
-                  <RichOutlineContent html={draft.content} library={activeBible} onInsertVerse={onInsertBibleText} />
+                  <RichOutlineContent html={draft.content} outlineId={draft.id} library={activeBible} onInsertVerse={onInsertBibleText} />
                 ) : (
                   <span className="text-muted-foreground italic">
                     {t("fieldConsiderations.contentEmpty")}
@@ -2678,7 +2678,7 @@ function FullscreenOutline({
         >
           {note.content ? (
             <>
-              <RichOutlineContent html={note.content} library={library} fontScale={scale} onInsertVerse={onInsertBibleText} />
+              <RichOutlineContent html={note.content} outlineId={note.id} library={library} fontScale={scale} onInsertVerse={onInsertBibleText} />
               <div className="mt-5">
                 <BibleHistoryChips library={library} onInsert={onInsertBibleText} />
               </div>
