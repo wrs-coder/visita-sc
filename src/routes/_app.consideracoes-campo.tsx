@@ -65,6 +65,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SavingIndicator } from "@/components/SavingIndicator";
+import { NoteDraftGuard, clearNoteDraft } from "@/components/notes/NoteDraftGuard";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -622,6 +623,7 @@ function Page() {
     };
     try {
       await persistNote(updated);
+      clearNoteDraft(updated.id);
       setNotes((all) => {
         const idx = all.findIndex((n) => n.id === updated.id);
         const next = idx >= 0 ? [...all] : [updated, ...all];
@@ -1952,6 +1954,12 @@ function Page() {
                     {t("personalOutlines.folders.selectFolder")}
                   </p>
                 ) : (
+                  <>
+                  <NoteDraftGuard
+                    draft={draft}
+                    saved={notes.find((n) => n.id === draft.id)}
+                    onRestore={(n) => setDraft(n)}
+                  />
                   <NoteEditor
                     draft={draft}
                     mode={mode}

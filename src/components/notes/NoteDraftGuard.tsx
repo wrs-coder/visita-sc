@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import type { FieldNote } from "@/lib/field-notes-store";
+import type { FieldNote } from "@/lib/bible-notes-store";
 
 const PREFIX = "visita-sc:note-draft:";
 const DEBOUNCE_MS = 1500;
