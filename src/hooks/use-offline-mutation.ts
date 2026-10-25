@@ -6,10 +6,11 @@
 // congregações via o seletor no header), `congregation_id` é injetado
 // automaticamente em inserts a partir da congregação ativa no momento
 // em que a mutação é DISPARADA — não no momento do flush.
-import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type UseMutationOptions } from "@tanstack/react-query";
 import { useActiveCongregation } from "./use-active-congregation";
 import { useAuth } from "./use-auth";
 import { enqueue, type QueuedMutation } from "@/lib/offline-queue";
+import { applyOptimisticWrite } from "@/lib/optimistic-cache";
 import { supabase } from "@/integrations/supabase/client";
 
 type OfflineWrite = Omit<QueuedMutation, "id" | "createdAt">;
@@ -72,6 +73,7 @@ export function useOfflineMutation<TVars extends OfflineWrite>(
   const congregation = useActiveCongregation();
   const { user } = useAuth();
   const ctx = { congregationId: congregation?.id ?? null, userId: user?.id ?? null };
+  const queryClient = useQueryClient();
 
   return useMutation<{ queued: boolean }, Error, TVars>({
     ...options,
@@ -80,6 +82,7 @@ export function useOfflineMutation<TVars extends OfflineWrite>(
       const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
       if (isOffline) {
         enqueue(vars);
+        applyOptimisticWrite(queryClient, vars);
         return { queued: true };
       }
       try {
@@ -106,6 +109,7 @@ export function useOfflineMutation<TVars extends OfflineWrite>(
         // guarda-final no servidor.
         console.warn("[useOfflineMutation] falha — enfileirando", vars, err);
         enqueue(vars);
+        applyOptimisticWrite(queryClient, vars);
         return { queued: true };
       }
     },

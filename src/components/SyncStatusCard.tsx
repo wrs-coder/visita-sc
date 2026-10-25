@@ -9,13 +9,23 @@ import {
   ListChecks,
   RefreshCcw,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { listPending, retryNow, subscribe as subscribeQueue, type QueuedMutation } from "@/lib/offline-queue";
+import {
+  discardFailed,
+  listFailed,
+  listPending,
+  retryFailed,
+  retryNow,
+  subscribe as subscribeQueue,
+  subscribeFailed,
+  type QueuedMutation,
+} from "@/lib/offline-queue";
 import {
   getAutoSyncState,
   runAutoSync,
@@ -58,11 +68,13 @@ export function SyncStatusCard() {
   const { t } = useTranslation();
   const [state, setState] = useState<AutoSyncState>(getAutoSyncState());
   const [pending, setPending] = useState<QueuedMutation[]>(() => listPending());
+  const [failedItems, setFailedItems] = useState<QueuedMutation[]>([]);
   const [showPending, setShowPending] = useState(false);
   const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null);
 
   useEffect(() => subscribeAutoSync(setState), []);
   useEffect(() => subscribeQueue(() => setPending(listPending())), []);
+  useEffect(() => subscribeFailed(() => setFailedItems(listFailed())), []);
 
   // Etapa C — estimativa de armazenamento do navegador/app (best-effort).
   useEffect(() => {
@@ -183,6 +195,36 @@ export function SyncStatusCard() {
               </li>
             ))}
           </ul>
+        )}
+
+        {failedItems.length > 0 && (
+          <div className="space-y-1.5 rounded-md border border-destructive/40 p-2">
+            <div className="text-xs font-medium text-destructive">
+              {t("sync.failedTitle", "Não enviados")} ({failedItems.length})
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t("sync.failedHint", "O servidor recusou estas alterações várias vezes. Tente de novo ou descarte.")}
+            </p>
+            <ul className="space-y-1.5">
+              {failedItems.map((it) => (
+                <li key={it.id} className="flex items-center justify-between gap-2 text-xs">
+                  <div className="min-w-0">
+                    <span className="font-medium">{it.table}</span>
+                    <span className="text-muted-foreground"> · {OP_LABELS[it.op]} · {formatDate(it.createdAt)}</span>
+                    {it.lastError && <div className="truncate text-destructive">{it.lastError}</div>}
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    <Button size="sm" variant="ghost" className="h-7 px-2" aria-label={t("sync.retryFailed", "Tentar de novo")} onClick={() => { if (retryFailed(it.id)) toast(t("sync.retry", "Tentando enviar novamente…")); }}>
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive" aria-label={t("sync.discard", "Descartar")} onClick={() => { if (window.confirm(t("sync.discardConfirm", "Descartar esta alteração? Ela não será enviada."))) discardFailed(it.id); }}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </CardContent>
     </Card>
