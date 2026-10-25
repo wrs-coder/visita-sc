@@ -46,3 +46,9 @@
 - [x] Offline premium: todas as telas do menu lateral constam na pré-carga sem internet.
 - [x] Offline premium: alteração/exclusão aparece na tela na hora quando vai para a fila.
 - [ ] (usuário) Gerar novo APK e testar sem internet no celular.
+- [ ] Cronômetro: corrigir alerta que some, alvo que corta tempo, cronômetro esquecido ligado, "não lembrar" permanente.
+- [ ] Alerta de esquecimento: tempo escolhido em destaque + "Começar do zero / Descontar tempo decorrido".
+- [ ] Rascunho dos Esboços pessoais: gravação automática no aparelho + recuperar/descartar.
+- [ ] Rascunho Reuniões e Discursos: horário do rascunho, campos pendentes, tradução.
+- [ ] Controle de tempo por tópico: minutos no modo edição, selos "até HH:MM", concluir tópico e atraso/adiantamento.
+- [ ] Som opcional nos avisos do cronômetro.
