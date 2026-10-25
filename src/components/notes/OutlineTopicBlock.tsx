@@ -34,8 +34,8 @@ export function OutlineTopicBlock({
           <TopicTimeBadge topicId={id} floating />
         </div>
       </div>
-      <div className="flex items-center gap-2 px-2 py-1.5 pr-24">
-        <div className="flex-1 min-w-0 font-semibold text-foreground">{title}</div>
+      <div className="flex items-center gap-2 px-2 py-1.5">
+        <div className="flex-1 min-w-0 pr-20 font-semibold text-foreground">{title}</div>
         <button
           type="button"
           onClick={(e) => {
