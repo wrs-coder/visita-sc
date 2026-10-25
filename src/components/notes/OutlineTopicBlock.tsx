@@ -97,6 +97,7 @@ export function OutlineTopicBlock({
 export function OutlineTopicsToolbar({ ids }: { ids: string[] }) {
   const { t } = useTranslation();
   const map = useCollapsedTopics();
+  const hasTimed = useHasTimedTopics();
   if (ids.length === 0) return null;
   const allCollapsed = ids.every((id) => map[id]);
   const label = allCollapsed
@@ -105,6 +106,7 @@ export function OutlineTopicsToolbar({ ids }: { ids: string[] }) {
   return (
     <div className="flex items-center justify-end gap-2 mb-1">
       <TopicDeviationPill />
+      {hasTimed && <TopicBadgeSettings />}
       <button
         type="button"
         onClick={(e) => {

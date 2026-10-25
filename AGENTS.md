@@ -14,3 +14,4 @@
 - DOCX export (notes and whole folders as zip) is built on-device in docx-export.ts with the existing JSZip, using 720 twips per 32px indent step so exported files re-import through docx-import.ts unchanged.
 - Event reminders are device-local Capacitor local notifications planned from the same timeline items the dashboard/day summary show (event-reminders.ts), fully rescheduled on each data change with prefs in localStorage per user/guest code, because they must work offline without a push server.
 - Per-topic timing stores only minutes in the outline HTML (data-minutes on outline-topic); start time, completed topics and personal-outline drafts stay device-local in localStorage, because saved content and sync format must not change.
+- The per-topic time badge's visual preferences (size, opacity, position) live only in device localStorage (topic-badge-prefs.ts) and never enter outline HTML, because they are personal display settings.
