@@ -22,7 +22,40 @@ export interface TimerSnapshot {
   elapsedSec: number;
   isRunning: boolean;
   lastTickAt: number; // ms epoch
+  /** True quando o orador escolheu o tempo alvo (não é o padrão). */
+  targetChosen?: boolean;
+  /** Epoch ms: estava rodando esquecido e foi pausado ao reabrir. */
+  staleSince?: number;
 }
+
+/** Acima disso sem nenhuma tela aberta, consideramos o cronômetro esquecido. */
+export const STALE_RUNNING_MS = 3 * 60 * 60 * 1000;
+/** Modo progressivo para sozinho em alvo + 30 min (libera a tela). */
+export const MAX_COUNTUP_OVERTIME_SEC = 30 * 60;
+
+/** Recupera o tempo após reabrir; pausa se ficou esquecido rodando. */
+export function recoverSnapshot(base: TimerSnapshot, now: number): TimerSnapshot {
+  if (!base.isRunning) return base;
+  const gapMs = Math.max(0, now - base.lastTickAt);
+  if (gapMs > STALE_RUNNING_MS) {
+    return { ...base, isRunning: false, staleSince: base.lastTickAt, lastTickAt: now };
+  }
+  return { ...base, elapsedSec: base.elapsedSec + Math.floor(gapMs / 1000), lastTickAt: now };
+}
+
+/** Novo alvo sem nunca cortar o tempo já decorrido. */
+export function applyTarget(cur: TimerSnapshot, targetSec: number, now: number): TimerSnapshot {
+  const finished =
+    !cur.isRunning && cur.mode === "countdown" && cur.elapsedSec >= cur.targetSec + MAX_OVERTIME_SEC_INTERNAL;
+  return {
+    ...cur,
+    targetSec,
+    targetChosen: true,
+    elapsedSec: finished ? 0 : cur.elapsedSec,
+    lastTickAt: now,
+  };
+}
+const MAX_OVERTIME_SEC_INTERNAL = 5 * 60;
 
 const STORAGE_PREFIX = "visita-sc:outline-timer:";
 const CHANNEL_NAME = "visita-sc:outline-timer";
@@ -61,15 +94,12 @@ function readSnapshot(outlineId: string): TimerSnapshot {
       elapsedSec: Math.max(0, Number(parsed.elapsedSec) || 0),
       isRunning: !!parsed.isRunning,
       lastTickAt: Number(parsed.lastTickAt) || Date.now(),
+      targetChosen: !!parsed.targetChosen,
+      staleSince: Number(parsed.staleSince) || undefined,
     };
-    // Drift recovery: se estava rodando, soma o tempo que passou desde o
-    // último tick gravado. Cobre reload, fechamento acidental, navegação.
-    if (base.isRunning) {
-      const drift = Math.max(0, Math.floor((Date.now() - base.lastTickAt) / 1000));
-      base.elapsedSec += drift;
-      base.lastTickAt = Date.now();
-    }
-    return base;
+    // Drift recovery: soma o tempo desde o último tick (reload, navegação),
+    // mas pausa se ficou esquecido rodando por horas.
+    return recoverSnapshot(base, Date.now());
   } catch {
     return defaultSnapshot();
   }
@@ -149,8 +179,8 @@ export function computeTickAdvance(cur: TimerSnapshot, now: number): TimerSnapsh
   if (!cur.isRunning) return null;
   const deltaSec = Math.floor((now - cur.lastTickAt) / 1000);
   if (deltaSec < 1) return null;
-  const limit = cur.targetSec + MAX_OVERTIME_SEC;
-  const reachedLimit = cur.mode === "countdown" && cur.elapsedSec + deltaSec >= limit;
+  const limit = cur.targetSec + (cur.mode === "countdown" ? MAX_OVERTIME_SEC : MAX_COUNTUP_OVERTIME_SEC);
+  const reachedLimit = cur.elapsedSec + deltaSec >= limit;
   return {
     ...cur,
     elapsedSec: reachedLimit ? Math.max(cur.elapsedSec, limit) : cur.elapsedSec + deltaSec,
@@ -215,6 +245,11 @@ export interface UseOutlineTimerResult {
   reset: () => void;
   toggleMode: () => void;
   setTarget: (seconds: number) => void;
+  /** Define alvo e inicia já com `elapsedSec` decorridos. */
+  startWith: (targetSec: number, elapsedSec: number) => void;
+  targetChosen: boolean;
+  staleSince: number | null;
+  clearStale: () => void;
 }
 
 const NOOP_RESULT: UseOutlineTimerResult = {
@@ -231,6 +266,10 @@ const NOOP_RESULT: UseOutlineTimerResult = {
   reset: () => {},
   toggleMode: () => {},
   setTarget: () => {},
+  startWith: () => {},
+  targetChosen: false,
+  staleSince: null,
+  clearStale: () => {},
 };
 
 export function useOutlineTimer(outlineId: string | null | undefined): UseOutlineTimerResult {
@@ -389,7 +428,7 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
       cur.mode === "countdown" && cur.elapsedSec >= cur.targetSec + MAX_OVERTIME_SEC
         ? 0
         : cur.elapsedSec;
-    commit({ ...cur, elapsedSec: elapsed, isRunning: true, lastTickAt: Date.now() });
+    commit({ ...cur, elapsedSec: elapsed, isRunning: true, lastTickAt: Date.now(), staleSince: undefined });
   }, [commit]);
 
   const pause = useCallback(() => {
@@ -405,8 +444,29 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
 
   const reset = useCallback(() => {
     const cur = snapRef.current;
-    commit({ ...cur, elapsedSec: 0, isRunning: false, lastTickAt: Date.now() });
+    commit({ ...cur, elapsedSec: 0, isRunning: false, lastTickAt: Date.now(), staleSince: undefined });
+    try { window.localStorage.removeItem(`visita-sc:topic-done:${safeId}`); } catch { /* noop */ }
+  }, [commit, safeId]);
+
+  const clearStale = useCallback(() => {
+    commit({ ...snapRef.current, staleSince: undefined });
   }, [commit]);
+
+  const startWith = useCallback(
+    (seconds: number, elapsed: number) => {
+      const target = clampTarget(seconds);
+      commit({
+        ...snapRef.current,
+        targetSec: target,
+        targetChosen: true,
+        elapsedSec: Math.max(0, Math.floor(elapsed)),
+        isRunning: true,
+        lastTickAt: Date.now(),
+        staleSince: undefined,
+      });
+    },
+    [commit],
+  );
 
   const toggleMode = useCallback(() => {
     const cur = snapRef.current;
@@ -419,18 +479,7 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
 
   const setTarget = useCallback(
     (seconds: number) => {
-      const cur = snapRef.current;
-      const target = clampTarget(seconds);
-      commit({
-        ...cur,
-        targetSec: target,
-        // Se já tinha estourado em countdown, "destrava" e zera para o novo alvo.
-        elapsedSec:
-          cur.mode === "countdown" && cur.elapsedSec >= cur.targetSec
-            ? 0
-            : Math.min(cur.elapsedSec, target),
-        lastTickAt: Date.now(),
-      });
+      commit(applyTarget(snapRef.current, clampTarget(seconds), Date.now()));
     },
     [commit],
   );
@@ -458,6 +507,10 @@ export function useOutlineTimer(outlineId: string | null | undefined): UseOutlin
     reset,
     toggleMode,
     setTarget,
+    startWith,
+    targetChosen: !!snap.targetChosen,
+    staleSince: snap.staleSince ?? null,
+    clearStale,
   };
 }
 
