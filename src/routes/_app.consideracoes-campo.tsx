@@ -1979,6 +1979,7 @@ function Page() {
                     onInsertBibleText={handleInsertBibleText}
                     onSyncInfo={setSyncInfo}
                   />
+                  </>
                 )}
               </CardContent>
             </Card>
