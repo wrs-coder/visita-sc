@@ -17,4 +17,18 @@ describe("convertHeadingsToTopics", () => {
     expect(html).toContain("<p>Intro</p>");
     editor.destroy();
   });
+
+  it("reconhece subtítulo JW em negrito com tempo e ignora negrito sem tempo", () => {
+    const editor = new Editor({
+      extensions: [StarterKit, OutlineTopic],
+      content: "<p><b>Frase forte</b></p><p><strong>UM LEMBRETE AMOROSO (4 min)</strong></p><p>a</p><p><b>Destaque</b></p>",
+    });
+    expect(editor.commands.convertHeadingsToTopics()).toBe(true);
+    const html = editor.getHTML();
+    expect(html.match(/data-type="outline-topic"/g)?.length).toBe(1);
+    expect(html).toContain('data-minutes="4"');
+    expect(html).toContain('data-title="UM LEMBRETE AMOROSO (4 min)"');
+    expect(html.indexOf("Frase forte")).toBeLessThan(html.indexOf("outline-topic"));
+    editor.destroy();
+  });
 });

@@ -28,7 +28,7 @@ export function OutlineTopicBlock({
 
   return (
     <section data-topic-id={id} className={cn("my-2 rounded-md border border-border bg-muted/30 transition-opacity", done && "opacity-60")}>
-      <div className="flex items-center gap-2 px-2 py-1.5">
+      <div className="sticky top-0 z-10 flex items-center gap-2 rounded-t-md bg-background/90 px-2 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-background/75">
         <div className="flex-1 min-w-0 font-semibold text-foreground">{title}</div>
         <TopicTimeBadge topicId={id} />
         <button
