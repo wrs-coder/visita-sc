@@ -35,6 +35,7 @@ import {
   Type,
   Focus,
   ListCollapse,
+  Timer,
   ImagePlus,
   Video,
   Link as LinkExternalIcon,
@@ -200,6 +201,20 @@ export function RichNoteToolbar({
         ).run();
       }}>
       <ListCollapse className="h-4 w-4" />
+    </Button>
+  );
+
+  const convertHeadingsButton = (cls: string) => (
+    <Button type="button" variant="ghost" size="sm" className={cls}
+      title={t("personalOutlines.topics.convertHeadings", { defaultValue: "Converter subtítulos em tópicos com tempo" })}
+      aria-label={t("personalOutlines.topics.convertHeadings", { defaultValue: "Converter subtítulos em tópicos com tempo" })}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => {
+        if (!editor) return;
+        const ok = editor.chain().focus().convertHeadingsToTopics().run();
+        if (!ok) window.alert(t("personalOutlines.topics.noHeadings", { defaultValue: "Nenhum subtítulo (H3) encontrado fora de tópicos." }));
+      }}>
+      <Timer className="h-4 w-4" />
     </Button>
   );
 
