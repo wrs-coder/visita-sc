@@ -21,6 +21,7 @@ import { offlineUpdate } from "@/lib/local-write";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
+import i18n from "@/i18n";
 
 type DraftPatch = Record<string, unknown>;
 type DraftStore = Record<string, DraftPatch>; // key = `${table}:${rowId}`
@@ -37,6 +38,8 @@ interface DraftCtx {
   pendingCount: number;
   lastSyncedAt: Date | null;
   lastFailedTables: string[];
+  /** Epoch ms da primeira alteração não salva (null = sem rascunho). */
+  draftSince: number | null;
 }
 
 const Ctx = createContext<DraftCtx | null>(null);
@@ -57,6 +60,7 @@ export function MeetingsDraftProvider({
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [lastFailedTables, setLastFailedTables] = useState<string[]>([]);
   const hydratedRef = useRef(false);
+  const [draftSince, setDraftSince] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   // Hidrata do localStorage sempre que muda o escopo (utilizador/congregação).
@@ -65,8 +69,11 @@ export function MeetingsDraftProvider({
     try {
       const raw = localStorage.getItem(storageKey);
       setDrafts(raw ? (JSON.parse(raw) as DraftStore) : {});
+      const since = Number(localStorage.getItem(`${storageKey}:since`));
+      setDraftSince(raw && since > 0 ? since : raw ? Date.now() : null);
     } catch {
       setDrafts({});
+      setDraftSince(null);
     }
     hydratedRef.current = true;
   }, [storageKey]);
@@ -75,8 +82,18 @@ export function MeetingsDraftProvider({
   useEffect(() => {
     if (typeof window === "undefined" || !hydratedRef.current) return;
     try {
-      if (Object.keys(drafts).length === 0) localStorage.removeItem(storageKey);
-      else localStorage.setItem(storageKey, JSON.stringify(drafts));
+      if (Object.keys(drafts).length === 0) {
+        localStorage.removeItem(storageKey);
+        localStorage.removeItem(`${storageKey}:since`);
+        setDraftSince(null);
+      } else {
+        localStorage.setItem(storageKey, JSON.stringify(drafts));
+        if (!localStorage.getItem(`${storageKey}:since`)) {
+          const now = Date.now();
+          localStorage.setItem(`${storageKey}:since`, String(now));
+          setDraftSince(now);
+        }
+      }
     } catch {
       /* ignora cota / modo privado */
     }
@@ -100,7 +117,9 @@ export function MeetingsDraftProvider({
     shouldBlockFn: () => {
       if (!dirty) return false;
       return !window.confirm(
-        "Há um rascunho com alterações não salvas nesta tela. Sair sem clicar em \"Salvar dados\" mantém o rascunho local, mas o servidor não será atualizado. Continuar?",
+        i18n.t("meetingsTalks.draft.leaveConfirm", {
+          defaultValue: "Há um rascunho com alterações não salvas nesta tela. Sair sem clicar em \"Salvar dados\" mantém o rascunho local, mas o servidor não será atualizado. Continuar?",
+        }),
       );
     },
     enableBeforeUnload: false,
@@ -126,7 +145,7 @@ export function MeetingsDraftProvider({
   const discardAll = useCallback(() => {
     setDrafts({});
     try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
-    toast.success("Rascunho descartado");
+    toast.success(i18n.t("meetingsTalks.draft.discarded", { defaultValue: "Rascunho descartado" }));
   }, [storageKey]);
 
   const flush = useCallback(async () => {
@@ -134,7 +153,7 @@ export function MeetingsDraftProvider({
       ([, p]) => p && Object.keys(p).length > 0,
     );
     if (entries.length === 0) {
-      toast.info("Nada para salvar");
+      toast.info(i18n.t("meetingsTalks.draft.nothing", { defaultValue: "Nada para salvar" }));
       return;
     }
     setSaving(true);
@@ -179,7 +198,7 @@ export function MeetingsDraftProvider({
         );
       }
       if (failedKeys.length === 0) {
-        toast.success("Dados salvos");
+        toast.success(i18n.t("meetingsTalks.draft.saved", { defaultValue: "Dados salvos" }));
         setDrafts({});
         setLastSyncedAt(new Date());
         setLastFailedTables([]);
@@ -195,9 +214,12 @@ export function MeetingsDraftProvider({
         });
         setLastFailedTables(Array.from(failedTables));
         toast.error(
-          `Falha ao salvar ${failedKeys.length} alteraç${failedKeys.length === 1 ? "ão" : "ões"}`,
+          i18n.t("meetingsTalks.draft.failed", { count: failedKeys.length, defaultValue: "Falha ao salvar {{count}} alteração(ões)" }),
           {
-            description: `Tabelas afetadas: ${Array.from(failedTables).join(", ")}. Clique em "Salvar dados" para tentar novamente — o rascunho local foi preservado.`,
+            description: i18n.t("meetingsTalks.draft.failedDesc", {
+              tables: Array.from(failedTables).join(", "),
+              defaultValue: "Tabelas afetadas: {{tables}}. Clique em \"Salvar dados\" para tentar novamente — o rascunho local foi preservado.",
+            }),
           },
         );
       }
@@ -220,8 +242,9 @@ export function MeetingsDraftProvider({
       pendingCount: Object.keys(drafts).length,
       lastSyncedAt,
       lastFailedTables,
+      draftSince,
     }),
-    [drafts, queue, clearRow, discardAll, flush, dirty, saving, progress, lastSyncedAt, lastFailedTables],
+    [drafts, queue, clearRow, discardAll, flush, dirty, saving, progress, lastSyncedAt, lastFailedTables, draftSince],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

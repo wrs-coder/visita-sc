@@ -202,6 +202,7 @@ function SaveDraftButton() {
   const { canEdit } = useAuth();
   if (!draft || !canEdit) return null;
   return (
+    <>
     <Button
       onClick={() => void draft.flush()}
       disabled={!draft.dirty || draft.saving}
@@ -213,6 +214,15 @@ function SaveDraftButton() {
         <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-destructive" aria-label={t("meetingsTalks.pendingChangesAria")} />
       )}
     </Button>
+    {draft.dirty && draft.draftSince && !draft.saving && (
+      <span className="text-xs text-muted-foreground whitespace-nowrap">
+        {t("meetingsTalks.draft.since", {
+          time: new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(draft.draftSince),
+          count: draft.pendingCount,
+          defaultValue: "Rascunho de {{time}} · {{count}} alteração(ões)",
+        })}
+      </span>
+    )}
   );
 }
 
