@@ -5,7 +5,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle2, CloudOff, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
-import { subscribe as subscribeQueue, subscribeFlushProgress } from "@/lib/offline-queue";
+import { subscribe as subscribeQueue, subscribeFlushProgress, flushQueue } from "@/lib/offline-queue";
+import { getLastWarmupAt } from "@/lib/offline-prefetch";
+import { getVaultMeta } from "@/lib/offline-credentials";
 import { cn } from "@/lib/utils";
 
 type Status = "synced" | "syncing" | "pending" | "error" | "session";
@@ -19,6 +21,18 @@ export function OfflineStatusBar() {
   const [progress, setProgress] = useState<{ total: number; done: number } | null>(null);
   const [sessionExpired] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [lastAt, setLastAt] = useState<number | null>(null);
+  const [vaultDaysLeft, setVaultDaysLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    setLastAt(getLastWarmupAt());
+    void getVaultMeta()
+      .then((m) => {
+        if (!m) return;
+        setVaultDaysLeft(Math.ceil((m.expiresAt - Date.now()) / 86_400_000));
+      })
+      .catch(() => undefined);
+  }, [online]);
 
   useEffect(() => {
     const on = () => setOnline(true);
@@ -90,7 +104,9 @@ export function OfflineStatusBar() {
       icon: online ? <RefreshCw className="h-3.5 w-3.5" /> : <CloudOff className="h-3.5 w-3.5" />,
       label: online
         ? t("offline.status.pending", "{{n}} pendente(s)", { n: pending })
-        : t("offline.status.offlinePending", "Offline — {{n}} pendente(s)", { n: pending }),
+        : pending > 0
+          ? t("offline.status.offlinePending", "Offline — {{n}} pendente(s)", { n: pending })
+          : `Sem internet${lastAt ? ` — dados de ${ageLabel(lastAt)}` : ""}`,
     },
     error: {
       bg: "bg-destructive/10 text-destructive border-destructive/30",
@@ -104,20 +120,33 @@ export function OfflineStatusBar() {
     },
   };
   const s = styles[status];
+  const canSend = online && pending > 0 && status === "pending";
+  const vaultWarn = !online && vaultDaysLeft !== null && vaultDaysLeft <= 5 && vaultDaysLeft >= 0;
 
   return (
     <div
       role="status"
       aria-live="polite"
+      onClick={canSend ? () => void flushQueue() : undefined}
       className={cn(
-        "fixed top-[max(0.5rem,env(safe-area-inset-top,0px))] left-1/2 -translate-x-1/2 z-[60] pointer-events-none",
+        "fixed top-[max(0.5rem,env(safe-area-inset-top,0px))] left-1/2 -translate-x-1/2 z-[60]",
+        canSend ? "pointer-events-auto cursor-pointer" : "pointer-events-none",
         "flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium",
         "shadow-sm backdrop-blur-sm transition-opacity",
         s.bg,
       )}
     >
       {s.icon}
-      <span>{s.label}</span>
+      <span>{s.label}{canSend ? " · tocar para enviar" : ""}</span>
+      {vaultWarn && <span>· acesso sem internet vence em {vaultDaysLeft} dia(s)</span>}
     </div>
   );
+}
+
+function ageLabel(at: number): string {
+  const min = Math.max(0, Math.round((Date.now() - at) / 60_000));
+  if (min < 60) return `${min} min atrás`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `${h} h atrás`;
+  return `${Math.round(h / 24)} dia(s) atrás`;
 }
