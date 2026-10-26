@@ -92,7 +92,7 @@ function Page() {
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div><h1 className="text-2xl md:text-3xl font-bold">{t("checklistPage.title")}</h1><p className="text-sm text-muted-foreground mt-1">{t("checklistPage.subtitle")}</p></div>
         <div className="flex gap-2 flex-wrap">
-          <VisitWeekReportButton onClick={() => setReportOpen(true)} />
+          <VisitWeekReportButton variant="icon" onClick={() => setReportOpen(true)} />
           {canManage && (
             <Button variant="outline" onClick={() => exportCsv(items, visit.title, t)}>
               <Download className="h-4 w-4 mr-1" />{t("checklistPage.exportSheet")}

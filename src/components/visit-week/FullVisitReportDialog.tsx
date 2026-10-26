@@ -47,6 +47,8 @@ interface Props {
   visitId: string;
   visitTitle: string;
   congregationName?: string;
+  /** Título alternativo (ex.: "Programação geral" no Resumo da semana). */
+  title?: string;
 }
 
 export function FullVisitReportDialog({
@@ -55,6 +57,7 @@ export function FullVisitReportDialog({
   visitId,
   visitTitle,
   congregationName,
+  title,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [sections, setSections] = useState<ReportSection[]>([]);
@@ -302,6 +305,8 @@ export function FullVisitReportDialog({
       sections={sections}
       showAdditionalInfoToggle
       loading={loading}
+      dialogTitle={title}
+      additionalInfoLabel={title ? "Incluir observações do superintendente" : undefined}
     />
   );
 }

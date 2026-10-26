@@ -257,9 +257,10 @@ function Page() {
         <p className="text-sm text-muted-foreground mt-1">
           Semana da Visita — {visit.title}
         </p>
-        <div className="mt-3">
-          <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
-            <FileDown className="h-4 w-4 mr-1" /> Relatório executivo
+        <div className="mt-2">
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground"
+            onClick={() => setReportOpen(true)} aria-label="Relatório executivo" title="Relatório executivo">
+            <FileDown className="h-5 w-5" />
           </Button>
         </div>
       </div>
