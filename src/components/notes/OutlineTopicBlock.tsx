@@ -74,7 +74,8 @@ export function OutlineTopicBlock({
       {!collapsed && (
         <>
           <div className="px-2 pb-1">{children}</div>
-          <div className="flex justify-end px-2 pb-1.5">
+          <div className="flex items-center justify-end gap-2 px-2 pb-1.5">
+            <TopicTimeBadge topicId={id} />
             <button
               type="button"
               onClick={(e) => {
@@ -94,7 +95,7 @@ export function OutlineTopicBlock({
   );
 }
 
-export function OutlineTopicsToolbar({ ids }: { ids: string[] }) {
+export function OutlineTopicsToolbar({ ids, inline = false }: { ids: string[]; inline?: boolean }) {
   const { t } = useTranslation();
   const map = useCollapsedTopics();
   const hasTimed = useHasTimedTopics();
@@ -104,7 +105,7 @@ export function OutlineTopicsToolbar({ ids }: { ids: string[] }) {
     ? t("personalOutlines.topics.expandAll", { defaultValue: "Expandir todos" })
     : t("personalOutlines.topics.collapseAll", { defaultValue: "Recolher todos" });
   return (
-    <div className="flex items-center justify-end gap-2 mb-1">
+    <div className={cn("flex items-center gap-2", inline ? "shrink-0" : "justify-end mb-1")}>
       <TopicDeviationPill />
       {hasTimed && <TopicBadgeSettings />}
       <button

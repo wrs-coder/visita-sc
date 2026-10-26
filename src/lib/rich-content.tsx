@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import React from "react";
 import { findCitations, findUnknownCitations, type BookInfo } from "@/lib/bible-refs";
 import { VerseLink } from "@/components/bible/BibleVersePopover";
@@ -509,8 +510,11 @@ function RichOutlineContentImpl({
   emptyFallback,
   onInsertVerse,
   outlineId,
+  toolbarSlot,
 }: {
   html: string;
+  /** Quando informado, a barra de tópicos (desvio, ajustes, recolher todos) é desenhada nesse elemento fixo. */
+  toolbarSlot?: HTMLElement | null;
   /** Liga o controle de tempo por tópico (modo esboço / tela cheia). */
   outlineId?: string;
   library: BibleLibrary | null;
@@ -523,7 +527,7 @@ function RichOutlineContentImpl({
   // Todo o trabalho pesado (sanitização + DOMParser + varredura de citações)
   // acontece uma única vez por conteúdo/biblioteca, e não a cada render.
   const timedTopics = React.useRef<TimedTopic[]>([]);
-  const rendered = React.useMemo<React.ReactElement | null>(() => {
+  let rendered = React.useMemo<React.ReactElement | null>(() => {
     timedTopics.current = [];
     if (!html || !html.trim()) return null;
 
@@ -561,7 +565,7 @@ function RichOutlineContentImpl({
     });
     return (
       <div className={RICH_NOTE_CONTENT_CLASS}>
-        {topicIds.length > 0 && <OutlineTopicsToolbar ids={topicIds} />}
+        {topicIds.length > 0 && <TopicsToolbarSlot ids={topicIds} />}
         {nodes}
       </div>
     );
@@ -573,6 +577,7 @@ function RichOutlineContentImpl({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const topics = React.useMemo(() => timedTopics.current, [rendered]);
   if (!rendered) return <>{emptyFallback ?? null}</>;
+  rendered = <ToolbarSlotContext.Provider value={toolbarSlot}>{rendered}</ToolbarSlotContext.Provider>;
   if (outlineId && topics.length > 0) {
     return <TopicTimingProvider outlineId={outlineId} topics={topics}>{rendered}</TopicTimingProvider>;
   }
@@ -583,5 +588,15 @@ function RichOutlineContentImpl({
  * Memoizado: só re-renderiza quando o HTML, a biblioteca ativa ou a escala
  * mudam. Evita reprocessar notas longas a cada atualização de estado do pai.
  */
+const ToolbarSlotContext = React.createContext<HTMLElement | null | undefined>(undefined);
+
+/** Desenha a barra de tópicos no topo fixo da tela quando há um local reservado. */
+function TopicsToolbarSlot({ ids }: { ids: string[] }) {
+  const slot = React.useContext(ToolbarSlotContext);
+  if (slot === undefined) return <OutlineTopicsToolbar ids={ids} />;
+  if (!slot) return null;
+  return createPortal(<OutlineTopicsToolbar ids={ids} inline />, slot);
+}
+
 export const RichOutlineContent = React.memo(RichOutlineContentImpl);
 
