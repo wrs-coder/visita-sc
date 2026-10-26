@@ -1014,6 +1014,39 @@ export type Database = {
           },
         ]
       }
+      itinerary_weeks: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          notes: string | null
+          start_date: string
+          superintendent_id: string
+          updated_at: string
+          week_type: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          start_date: string
+          superintendent_id?: string
+          updated_at?: string
+          week_type: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          start_date?: string
+          superintendent_id?: string
+          updated_at?: string
+          week_type?: string
+        }
+        Relationships: []
+      }
       meal_day_notes: {
         Row: {
           created_at: string
