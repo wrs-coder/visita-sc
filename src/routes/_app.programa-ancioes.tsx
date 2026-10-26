@@ -1,7 +1,7 @@
 import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { ChecklistPanel } from "@/components/visit-week/ChecklistPanel";
 import { slotDay, slotDays } from "@/lib/slot-day";
-import { slotState, nextEventWithoutSlot } from "@/lib/pastoral-slots";
+import { slotState, nextEventWithoutSlot, pickElderSlot, NO_SLOT } from "@/lib/pastoral-slots";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
@@ -52,18 +52,18 @@ export const Route = createFileRoute("/_app/programa-ancioes")({
 type ElderTab = "questions" | "pastoral" | "encouragement" | "recommendations" | "local";
 const ELDER_TABS: ElderTab[] = ["questions", "pastoral", "encouragement", "recommendations", "local"];
 const ELDER_TAB_LABELS: Record<ElderTab, string> = {
-  questions: "Perguntas do SC", pastoral: "PASTOREIO", encouragement: "ENCORAJAMENTO",
-  recommendations: "RECOMENDAÇÕES", local: "ASSUNTOS LOCAIS",
+  questions: "Perguntas do SC", pastoral: "Pastoreio", encouragement: "Encorajamento",
+  recommendations: "Recomendações", local: "Assuntos locais",
 };
 const ELDER_TAB_PREF = "visita-sc:elder-tab";
 
 type Section = "pastoral" | "encouragement" | "recommendations" | "local";
 
 const SECTION_TITLES: Record<Section, string> = {
-  pastoral: "VISITAS DE PASTOREIO",
-  encouragement: "ENCORAJAMENTO — INATIVOS, DOENTES, PRIVILÉGIOS ESPECIAIS",
-  recommendations: "RECOMENDAÇÕES PARA ANCIÃOS E SERVOS MINISTERIAIS/CANCELAMENTOS",
-  local: "ASSUNTOS LOCAIS DEFINIDOS PELO CORPO DE ANCIÃOS",
+  pastoral: "Pastoreio",
+  encouragement: "Inativos, doentes e privilégios especiais",
+  recommendations: "Anciãos e servos ministeriais, incluindo cancelamentos",
+  local: "Definidos pelo corpo de anciãos",
 };
 
 const SECTIONS: Section[] = ["pastoral", "encouragement", "recommendations", "local"];
@@ -226,6 +226,11 @@ function Page() {
   const [pDay, setPDay] = useState<string>("__all__");
   useEffect(() => { if (pDay !== "__all__" && !pastoralDays.includes(pDay)) setPDay("__all__"); }, [pastoralDays.join(","), pDay]);
 
+  const elderUsed = slots.filter((s) => pastoral.some((p) => p.slot_label === s));
+  const unslotted = pastoral.filter((p) => !p.slot_label || !slots.includes(p.slot_label));
+  const [elderSlotRaw, setElderSlot] = useState<string | null>(null);
+  const elderSlot = pickElderSlot(elderUsed, elderSlotRaw, unslotted.length > 0);
+
   if (visitLoading) return <LoadingPanel />;
   if (!visit) {
     return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa.</CardContent></Card>;
@@ -330,21 +335,25 @@ function Page() {
                             return (
                               <button key={s} type="button" disabled={off} aria-pressed={on}
                                 onClick={() => {
-                                  if (on) {
-                                    const ev = pastoral.find((p) => p.slot_label === s);
-                                    if (ev) document.getElementById(`pev-${ev.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                    return;
-                                  }
+                                  if (on) { setElderSlot(s); return; }
                                   const ev = nextEventWithoutSlot(slots, pastoral);
-                                  if (ev) saveField(ev, { slot_label: s });
+                                  if (ev) { saveField(ev, { slot_label: s }); setElderSlot(s); }
                                 }}
                                 className={cn("rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                                  on ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-muted",
+                                  on && elderSlot === s ? "bg-primary text-primary-foreground border-primary"
+                                    : on ? "bg-secondary text-secondary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-muted",
                                   off && "opacity-40 cursor-not-allowed hover:bg-background")}>
                                 {s}{on && " ✓"}
                               </button>
                             );
                           })}
+                          {unslotted.length > 0 && (
+                            <button type="button" aria-pressed={elderSlot === NO_SLOT} onClick={() => setElderSlot(NO_SLOT)}
+                              className={cn("rounded-full border border-dashed px-3 py-1.5 text-xs font-medium transition-colors",
+                                elderSlot === NO_SLOT ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:bg-muted")}>
+                              Sem dia ({unslotted.length})
+                            </button>
+                          )}
                         </div>
                         <p className="rounded-lg bg-muted px-3 py-2 text-[11px] text-muted-foreground">
                           {st.total === 0
@@ -368,7 +377,7 @@ function Page() {
                     </div>
                   )}
                   <div className="flex min-w-0 items-center justify-between gap-2">
-                    <h2 className="truncate font-bold text-sm uppercase tracking-wide text-primary">{SECTION_TITLES[section]}</h2>
+                    <p className="min-w-0 text-xs text-muted-foreground">{section === "pastoral" ? "" : SECTION_TITLES[section]}</p>
                     <CollapseIdToggle id={`sec:${section}`} />
                   </div>
                   <CollapseBody id={`sec:${section}`} className="space-y-4">
@@ -392,7 +401,9 @@ function Page() {
                             )
                           : new Set<string>();
                         return (
-                          <div key={ev.id} id={`pev-${ev.id}`} className="scroll-mt-4">
+                          <div key={ev.id} id={`pev-${ev.id}`} className={cn("scroll-mt-4",
+                            section === "pastoral" && !isSuper && slots.length > 0 &&
+                              (elderSlot === NO_SLOT ? !!ev.slot_label && slots.includes(ev.slot_label) : ev.slot_label !== elderSlot) && "hidden")}>
                           <CollapseItem id={`ev:${ev.id}`} summary={[ev.slot_label, ev.family_name ?? ev.person_name].filter(Boolean).join(" · ") || SECTION_TITLES[section]}>
                           <EventCard
                             ev={ev}

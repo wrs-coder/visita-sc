@@ -12,3 +12,10 @@ export function slotState(slots: string[], events: SlotEvent[]) {
 export function nextEventWithoutSlot<T extends SlotEvent>(slots: string[], events: T[]): T | undefined {
   return events.find((e) => !e.slot_label || !slots.includes(e.slot_label));
 }
+
+export const NO_SLOT = "__none__";
+/** Qual pastoreio mostrar (um dia por vez): mantém o atual se ainda existir. */
+export function pickElderSlot(used: string[], current: string | null, hasUnslotted: boolean): string {
+  if (current && (used.includes(current) || (current === NO_SLOT && hasUnslotted))) return current;
+  return used[0] ?? NO_SLOT;
+}
