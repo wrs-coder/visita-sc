@@ -29,3 +29,14 @@ describe("migração dos pacotes para o servidor", () => {
   it("não duplica os que já estão no servidor", () => expect(decideInitialSync([p("a")], [p("a"), p("b")], false).upload.map((x) => x.id)).toEqual(["b"]));
   it("depois de migrado, vale o servidor", () => expect(decideInitialSync([p("a")], [p("b")], true)).toEqual({ list: [p("a")], upload: [] }));
 });
+
+import { mergePending } from "./visit-packages";
+describe("mergePending", () => {
+  it("acumula exclusões pendentes sem repetir", () => {
+    expect(mergePending({ removed: ["a"] }, ["a", "b"], []).removed.sort()).toEqual(["a", "b"]);
+  });
+  it("não exclui pacote que voltou a existir", () => {
+    const p = { id: "a", name: "x", template_id: "", checklist_template_id: "", field_template_id: "", meeting_talk_template_id: "", elder_program_template_id: "" };
+    expect(mergePending({ removed: ["a"] }, [], [p]).removed).toEqual([]);
+  });
+});

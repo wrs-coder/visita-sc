@@ -166,22 +166,3 @@ export async function pushPackages(userId: string | null | undefined, prev: Visi
   markPending(userId, removedIds, next);
   return flushPendingPackages(userId);
 }
-
-/** @deprecated envio direto mantido só para referência. */
-async function _pushDirect(userId: string, prev: VisitPackage[], next: VisitPackage[]): Promise<boolean> {
-  try {
-    const { supabase } = await import("@/integrations/supabase/client");
-    if (next.length) {
-      const { error } = await supabase.from("visit_packages").upsert(next.map((p) => toRow(userId, p)));
-      if (error) return false;
-    }
-    const removed = prev.filter((p) => !next.some((n) => n.id === p.id)).map((p) => p.id);
-    if (removed.length) {
-      const { error } = await supabase.from("visit_packages").delete().in("id", removed);
-      if (error) return false;
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
