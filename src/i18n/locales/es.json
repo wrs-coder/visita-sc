@@ -901,6 +901,11 @@
       "cartas": "Cartas",
       "telefone_cartas": "Teléfono + Cartas",
       "grupo_de_campo": "Grupo de campo"
+    },
+    "dayPills": {
+      "title": "Días de la visita",
+      "monday": "Lunes",
+      "sections": "Secciones de la plantilla"
     }
   },
   "notes": {

@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, FileStack, Save, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
+import { DayPills, SectionPills, useTemplateDays } from "@/components/templates/DayPills";
+import { MONDAY_OFFSET, readPref, writePref } from "@/lib/template-day-pills";
 
 export const Route = createFileRoute("/_app/modelos")({ component: Page });
 
@@ -91,6 +93,16 @@ function Page() {
 
   useEffect(() => { load(); }, [load]);
 
+  const [section, setSectionState] = useState<Kind>("study");
+  useEffect(() => { setSectionState(readPref<Kind>("tpl-program:section", "study")); }, []);
+  const setSection = (k: Kind) => { setSectionState(k); writePref("tpl-program:section", k); };
+  const activeTpl = tpls.find((tp) => tp.slot === Number(activeSlot));
+  const activeItems = activeTpl ? (itemsByTpl[activeTpl.id] ?? []) : [];
+  const dayState = useTemplateDays(
+    `tpl-program:${activeSlot}`,
+    activeItems.some((it) => it.day_offset === MONDAY_OFFSET),
+  );
+
   if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">{t("templates.restricted")}</CardContent></Card>;
 
   const ensureTemplate = async (slot: number): Promise<string | null> => {
@@ -149,7 +161,7 @@ function Page() {
     }));
   };
 
-  const addItem = async (slot: number, kind: Kind) => {
+  const addItem = async (slot: number, kind: Kind, day = 0) => {
     const id = await ensureTemplate(slot);
     if (!id) return;
     const defaults: Payload =
@@ -161,7 +173,7 @@ function Page() {
             { event_type: "field_service", event_type_other: "", direction: "round_trip", departure_time: "", return_time: "", driver_name: "", contact_phone: "", notes: "" },
           ]),
         };
-    setItemsByTpl((m) => ({ ...m, [id]: [...(m[id] ?? []), { kind, day_offset: 0, payload: defaults, sort_order: (m[id]?.length ?? 0) }] }));
+    setItemsByTpl((m) => ({ ...m, [id]: [...(m[id] ?? []), { kind, day_offset: day, payload: defaults, sort_order: (m[id]?.length ?? 0) }] }));
   };
 
   const removeItem = (tplId: string, idx: number) => {
@@ -255,7 +267,29 @@ function Page() {
                   <Input className="mt-1" value={namesBySlot[slot] ?? ""} onChange={(e) => setNamesBySlot({ ...namesBySlot, [slot]: e.target.value })} onBlur={(e) => renameSlot(slot, e.target.value)} />
                 </div>
 
-                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL}
+                <SectionPills<Kind>
+                  ariaLabel={t("templates.dayPills.sections")}
+                  value={section}
+                  onChange={setSection}
+                  options={[
+                    { value: "study", label: t("templates.program.studiesTitle") },
+                    { value: "meal", label: t("templates.program.mealsTitle") },
+                    { value: "transport", label: t("templates.program.transportTitle") },
+                  ]}
+                />
+                <DayPills
+                  days={dayState.days}
+                  activeDay={dayState.activeDay}
+                  onPick={dayState.setActiveDay}
+                  dayLabel={DAY_LABEL}
+                  hasItems={(d) => items.some((it) => it.kind === section && it.day_offset === d)}
+                  showMonday={dayState.showMonday}
+                  mondayLocked={dayState.mondayLocked}
+                  onToggleMonday={dayState.setShowMonday}
+                />
+
+                {section === "study" && (<>
+                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
                   dayExtra={(d) => (
                     <Input
                       className="h-9"
@@ -286,8 +320,10 @@ function Page() {
                     <p className="text-xs text-muted-foreground mt-1">Aparecem em vermelho no topo da aba Estudos e Revisitas dos anciãos.</p>
                   </div>
                 </div>
+                </>)}
 
-                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL}
+                {section === "meal" && (<>
+                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
                   dayExtra={(d) => (
                     <Input
                       className="h-9"
@@ -318,8 +354,11 @@ function Page() {
                     <p className="text-xs text-muted-foreground mt-1">{t("templates.program.generalObservationsHint")}</p>
                   </div>
                 </div>
+                </>)}
 
-                <KindBlock title={t("templates.program.transportTitle")} kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
+                {section === "transport" && (
+                <KindBlock title={t("templates.program.transportTitle")} kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days} />
+                )}
 
                 <Button className="w-full" onClick={() => saveItems(slot)} disabled={busy}>
                   <Save className="h-4 w-4 mr-1" /> {t("templates.program.saveTemplate")}
@@ -342,17 +381,20 @@ function summarize(kind: Kind, p: Payload, t: (k: string) => string): string {
   return [v("driver_name"), time("departure_time")].filter(Boolean).join(" · ");
 }
 
-function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLabel, dayExtra }: {
+function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLabel, dayExtra, onlyDay, dayOptions = DAY_OPTS }: {
   title: string; kind: Kind; tplId: string | undefined; items: ItemDraft[];
   onAdd: () => void;
   onUpdate: (tplId: string, idx: number, patch: Partial<ItemDraft>) => void;
   onRemove: (tplId: string, idx: number) => void;
   dayLabel: Record<number, string>;
   dayExtra?: (d: number) => React.ReactNode;
+  /** Quando informado, mostra só este dia (escolhido nas pílulas). */
+  onlyDay?: number;
+  dayOptions?: number[];
 }) {
   const { t } = useTranslation();
   const filtered = items.map((it, i) => ({ it, i })).filter(({ it }) => it.kind === kind);
-  const days = DAY_OPTS.filter((d) => dayExtra || filtered.some(({ it }) => it.day_offset === d));
+  const days = onlyDay !== undefined ? [onlyDay] : DAY_OPTS.filter((d) => dayExtra || filtered.some(({ it }) => it.day_offset === d));
   return (
     <div className="border rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
