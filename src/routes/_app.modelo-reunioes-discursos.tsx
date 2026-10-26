@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { SectionPills } from "@/components/templates/DayPills";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Trash2, Copy, Pencil, Save, AlertCircle, Layers } from "lucide-react";
@@ -319,37 +320,20 @@ function Page() {
             </CardContent></Card>
           ) : (
             <>
-              <Card><CardContent className="p-4 flex items-center justify-between gap-2 flex-wrap">
-                {isSuper ? (
-                  <div className="flex gap-2 flex-wrap ml-auto items-center">
-                    <Button size="sm" onClick={handleSave} disabled={busy}>
-                      <Save className="h-3.5 w-3.5 mr-1" />{t("templates.meetingTalk.saveTemplate")}
-                    </Button>
-                    <SavingIndicator saving={busy} />
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">{t("templates.viewOnly")}</span>
-                )}
-              </CardContent></Card>
+              {!isSuper && <p className="text-xs text-muted-foreground">{t("templates.viewOnly")}</p>}
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <div className="sm:hidden">
-                  <Select value={activeTab} onValueChange={setActiveTab}>
-                    <SelectTrigger className="w-full"><SelectValue placeholder={t("templates.meetingTalk.subTabPlaceholder")} /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="meio">{t("templates.meetingTalk.tabMidweek")}</SelectItem>
-                      <SelectItem value="fim">{t("templates.meetingTalk.tabWeekend")}</SelectItem>
-                      <SelectItem value="pio">{t("templates.meetingTalk.tabPioneers")}</SelectItem>
-                      <SelectItem value="anc">{t("templates.meetingTalk.tabElders")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <TabsList className="hidden sm:grid grid-cols-4 w-full h-auto gap-1 bg-transparent p-1">
-                  <TabsTrigger value="meio" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t("templates.meetingTalk.tabMidweek")}</TabsTrigger>
-                  <TabsTrigger value="fim" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t("templates.meetingTalk.tabWeekend")}</TabsTrigger>
-                  <TabsTrigger value="pio" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t("templates.meetingTalk.tabPioneers")}</TabsTrigger>
-                  <TabsTrigger value="anc" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t("templates.meetingTalk.tabEldersShort")}</TabsTrigger>
-                </TabsList>
+                <SectionPills<string>
+                  ariaLabel={t("templates.meetingTalk.subTabPlaceholder")}
+                  value={activeTab}
+                  onChange={setActiveTab}
+                  options={[
+                    { value: "meio", label: t("templates.meetingTalk.tabMidweek") },
+                    { value: "fim", label: t("templates.meetingTalk.tabWeekend") },
+                    { value: "pio", label: t("templates.meetingTalk.tabPioneers") },
+                    { value: "anc", label: t("templates.meetingTalk.tabEldersShort") },
+                  ]}
+                />
 
                 <TabsContent value="meio" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
@@ -574,6 +558,14 @@ function Page() {
                   </CardContent></Card>
                 </TabsContent>
               </Tabs>
+              {isSuper && (
+                <div className="flex items-center justify-end gap-2">
+                  <SavingIndicator saving={busy} />
+                  <Button className="rounded-full" onClick={handleSave} disabled={busy}>
+                    <Save className="h-4 w-4 mr-1" />{t("templates.meetingTalk.saveTemplate")}
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </div>
