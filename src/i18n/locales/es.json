@@ -518,8 +518,8 @@
     "description": "Descripción"
   },
   "checklistPage": {
-    "title": "Lista de tareas de la Congregación",
-    "subtitle": "Datos necesarios para la visita",
+    "title": "Información adicional",
+    "subtitle": "Responde las preguntas siguientes sobre la congregación.",
     "exportSheet": "Exportar planilla",
     "newItem": "Nuevo elemento",
     "newItemDialogTitle": "Nuevo elemento de la lista",

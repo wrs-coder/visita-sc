@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { BookOpen, Users, MapPin, UtensilsCrossed, Car, ListChecks } from "lucide-react";
+import { BookOpen, Users, MapPin, UtensilsCrossed, Car } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { writePref } from "@/lib/template-day-pills";
@@ -11,11 +11,10 @@ export const VISIT_PROGRAM_TABS = [
   { to: "/reunioes-discursos", key: "meetings", label: "Reuniões", icon: MapPin },
   { to: "/refeicoes", key: "meals", label: "Refeições", icon: UtensilsCrossed },
   { to: "/transporte", key: "transport", label: "Transporte", icon: Car },
-  { to: "/checklist", key: "checklist", label: "Checklist", icon: ListChecks },
 ] as const;
 
 export const VISIT_PROGRAM_PREF = "visita-sc:visit-program-tab";
-export const VISIT_PROGRAM_PATHS: string[] = VISIT_PROGRAM_TABS.map((t) => t.to);
+export const VISIT_PROGRAM_PATHS: string[] = [...VISIT_PROGRAM_TABS.map((t) => t.to), "/checklist"];
 
 /** Pílulas da aba única "Programa da visita". */
 export function VisitProgramTabs() {
