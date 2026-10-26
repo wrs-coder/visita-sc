@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -220,6 +221,7 @@ function Page() {
 
   return (
     <div className="space-y-5 max-w-full overflow-x-hidden">
+      <TemplatesTabs />
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
