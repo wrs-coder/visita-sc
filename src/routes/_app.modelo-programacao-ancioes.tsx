@@ -16,6 +16,7 @@ import {
   type ElderProgramEventDTO,
 } from "@/lib/elder-program-templates.functions";
 import { exportElderProgramTemplate, importElderProgramTemplate } from "@/lib/template-io.functions";
+import { useTranslation } from "react-i18next";
 import { TemplateHeaderRow, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
 
 import { Button } from "@/components/ui/button";
@@ -87,6 +88,7 @@ function emptyEvent(section: ElderSection): ElderProgramEventDTO {
 }
 
 function Page() {
+  const { t } = useTranslation();
   const { role } = useAuth();
   const fnList = useServerFn(listElderProgramTemplates);
   const fnGet = useServerFn(getElderProgramTemplate);

@@ -16,7 +16,7 @@ import {
   importMeetingTalkTemplate,
   WEEKDAY_LABELS,
 } from "@/lib/meeting-talk-templates.functions";
-import { TemplateIOButtons } from "@/components/TemplateIOButtons";
+import { TemplateHeaderRow } from "@/components/templates/TemplateChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -265,21 +265,12 @@ function Page() {
             <Layers className="h-6 w-6" />{t("templates.meetingTalk.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {t("templates.meetingTalk.subtitle", { n: tpls.length, max: MAX })}
+            {t("templates.meetingTalk.subtitle")}
           </p>
         </div>
         {isSuper && (
           <div className="flex items-center gap-2 flex-wrap">
-            <TemplateIOButtons
-              filenameBase={active?.name ?? t("templates.exportMeetingTalk")}
-              disabled={!active}
-              onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: t("templates.selectTemplate") }}
-              onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await loadList(); return r; }}
-            />
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger asChild>
-                <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />{t("templates.newTemplate")}</Button>
-              </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader><DialogTitle>{t("templates.meetingTalk.newDialogTitle")}</DialogTitle></DialogHeader>
                 <div className="space-y-3">
@@ -302,19 +293,25 @@ function Page() {
         )}
       </div>
 
-      <div className="grid md:grid-cols-[260px_1fr] gap-4">
-        <Card><CardContent className="p-3 space-y-1">
-          {tpls.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-3 text-center">{t("templates.noTemplates")}</div>
-          ) : tpls.map((tp) => (
-            <button key={tp.id}
-              onClick={() => setActiveId(tp.id)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === tp.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-              <div className="truncate">{tp.name}</div>
-            </button>
-          ))}
-        </CardContent></Card>
+      <TemplateHeaderRow
+        items={tpls}
+        activeId={activeId}
+        onPick={setActiveId}
+        onNew={() => setCreateOpen(true)}
+        newDisabled={!isSuper || tpls.length >= MAX}
+        disabled={busy}
+        onRename={isSuper && active ? () => { setRenameVal(active.name); setRenameOpen(true); } : undefined}
+        onDuplicate={isSuper ? handleDuplicate : undefined}
+        duplicateDisabled={tpls.length >= MAX}
+        onDelete={isSuper ? handleDelete : undefined}
+        io={isSuper ? {
+          filenameBase: active?.name ?? t("templates.exportMeetingTalk"),
+          onExport: async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: t("templates.selectTemplate") },
+          onImport: async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await loadList(); return r; },
+        } : undefined}
+      />
 
+      <div className="grid gap-4">
         <div className="space-y-4">
           {!active ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
@@ -323,18 +320,8 @@ function Page() {
           ) : (
             <>
               <Card><CardContent className="p-4 flex items-center justify-between gap-2 flex-wrap">
-                <div className="font-semibold truncate">{active.name}</div>
                 {isSuper ? (
-                  <div className="flex gap-2 flex-wrap">
-                    <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" />{t("common.rename")}
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
-                      <Copy className="h-3.5 w-3.5 mr-1" />{t("common.duplicate")}
-                    </Button>
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
-                      <Trash2 className="h-3.5 w-3.5 mr-1" />{t("common.delete")}
-                    </Button>
+                  <div className="flex gap-2 flex-wrap ml-auto items-center">
                     <Button size="sm" onClick={handleSave} disabled={busy}>
                       <Save className="h-3.5 w-3.5 mr-1" />{t("templates.meetingTalk.saveTemplate")}
                     </Button>

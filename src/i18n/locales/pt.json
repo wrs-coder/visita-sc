@@ -739,8 +739,8 @@
       "6": "Seg"
     },
     "program": {
-      "title": "Modelos de Programação Pessoal",
-      "subtitle": "Crie até 10 modelos reutilizáveis. Use-os ao criar uma visita para uma congregação específica.",
+      "title": "Programação pessoal",
+      "subtitle": "Organize a sua disponibilidade para Estudos e Revisitas, Refeições e solicitação de transporte.",
       "templateLabel": "Modelo",
       "templateName": "Nome do modelo",
       "studiesTitle": "Estudos e Revisitas",
@@ -821,8 +821,8 @@
       "fixErrors": "Corrija os campos destacados antes de salvar."
     },
     "field": {
-      "title": "Modelo Reuniões de Campo",
-      "subtitle": "Programe vários turnos por semana, cada um com sua modalidade, e vincule o modelo a uma congregação. {{n}}/{{max}} modelos.",
+      "title": "Reuniões de campo",
+      "subtitle": "Organize as reuniões de campo de acordo com horários e modalidades.",
       "newDialogTitle": "Novo modelo de reuniões de campo",
       "shiftsTitle": "Turnos do modelo",
       "addShift": "Turno",
@@ -841,8 +841,8 @@
       "observationsHint": "Apenas o superintendente edita; os anciãos veem como leitura na aba Reuniões de Campo."
     },
     "meetingTalk": {
-      "title": "Modelos de Reunião e Discurso",
-      "subtitle": "Crie modelos reutilizáveis com Meio de Semana, Fim de Semana (vários temas), Pioneiros e Anciãos/Servos. {{n}}/{{max}} modelos.",
+      "title": "Reuniões e Discursos",
+      "subtitle": "Organize as reuniões do Meio de Semana, Fim de Semana, Pioneiros e Anciãos/Servos.",
       "newDialogTitle": "Novo modelo",
       "saveTemplate": "Salvar modelo",
       "restricted": "Acesso restrito.",
@@ -925,6 +925,15 @@
       "title": "Dias da visita",
       "monday": "Segunda",
       "sections": "Seções do modelo"
+    },
+    "elder": {
+      "title": "Programação Anciãos",
+      "subtitle": "Organize a sua disponibilidade para visitas de pastoreio, encorajamentos especiais e colete informações referentes à reunião com os anciãos."
+    },
+    "chrome": {
+      "new": "Novo",
+      "newTemplate": "Novo modelo",
+      "limitReached": "Limite de modelos atingido"
     }
   },
   "notes": {

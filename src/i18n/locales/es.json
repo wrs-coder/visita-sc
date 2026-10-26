@@ -724,8 +724,8 @@
       "6": "Lun"
     },
     "program": {
-      "title": "Plantillas de Programación Personal",
-      "subtitle": "Crea hasta 10 plantillas reutilizables. Úsalas al crear una visita para una congregación específica.",
+      "title": "Programación personal",
+      "subtitle": "Organice su disponibilidad para Estudios y Revisitas, Comidas y solicitud de transporte.",
       "templateLabel": "Plantilla",
       "templateName": "Nombre de la plantilla",
       "studiesTitle": "Estudios y Revisitas",
@@ -806,8 +806,8 @@
       "fixErrors": "Corrige los campos destacados antes de guardar."
     },
     "field": {
-      "title": "Plantilla Reuniones de Campo",
-      "subtitle": "Programa varios turnos por semana, cada uno con su modalidad, y vincula la plantilla a una congregación. {{n}}/{{max}} plantillas.",
+      "title": "Reuniones de campo",
+      "subtitle": "Organice las reuniones de campo según horarios y modalidades.",
       "newDialogTitle": "Nueva plantilla de reuniones de campo",
       "shiftsTitle": "Turnos de la plantilla",
       "addShift": "Turno",
@@ -826,8 +826,8 @@
       "observationsHint": "Solo el superintendente edita; los ancianos lo ven en solo lectura en la pestaña Reuniones de Campo."
     },
     "meetingTalk": {
-      "title": "Plantillas de Reunión y Discurso",
-      "subtitle": "Crea plantillas reutilizables con Entre Semana, Fin de Semana (varios temas), Precursores y Ancianos/Siervos. {{n}}/{{max}} plantillas.",
+      "title": "Reuniones y Discursos",
+      "subtitle": "Organice las reuniones de Entre Semana, Fin de Semana, Precursores y Ancianos/Siervos.",
       "newDialogTitle": "Nueva plantilla",
       "saveTemplate": "Guardar plantilla",
       "restricted": "Acceso restringido.",
@@ -910,6 +910,15 @@
       "title": "Días de la visita",
       "monday": "Lunes",
       "sections": "Secciones de la plantilla"
+    },
+    "elder": {
+      "title": "Programación Ancianos",
+      "subtitle": "Organice su disponibilidad para visitas de pastoreo y ánimo especial, y reúna información para la reunión con los ancianos."
+    },
+    "chrome": {
+      "new": "Nuevo",
+      "newTemplate": "Nueva plantilla",
+      "limitReached": "Límite de plantillas alcanzado"
     }
   },
   "notes": {
