@@ -14,9 +14,11 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { prefetchRouteShells } from "@/lib/offline-shells";
+import { upsertRows } from "@/lib/local-db";
 
 export const OFFLINE_READY_KEY = "visita-sc:offline-ready";
 export const LAST_WARMUP_KEY = "visita-sc:last-warmup";
+export const MIRROR_SEEDED_KEY = "visita-sc:mirror-seeded";
 
 export type ProgressEvent = {
   step: number;
@@ -114,8 +116,13 @@ export async function prefetchAllForOffline(opts: PrefetchOpts): Promise<{
 
   // Se trocou de usuário ou congregação ativa, descarta o estado salvo.
   const stored = readWarmupState();
+  // O espelho local (lido pelo Painel sem internet) precisa de uma carga completa
+  // na primeira vez, mesmo que o cache de freshness diga que está tudo em dia.
+  const mirrorKey = `${MIRROR_SEEDED_KEY}:${userId}`;
+  let mirrorSeeded = false;
+  try { mirrorSeeded = localStorage.getItem(mirrorKey) === "1"; } catch { /* ignore */ }
   const baseTables: Record<string, string | null> =
-    stored.userId === userId && stored.congId === congregationId && !force
+    stored.userId === userId && stored.congId === congregationId && !force && mirrorSeeded
       ? { ...stored.tables }
       : {};
   const newMaxes: Record<string, string | null> = {};
@@ -136,7 +143,14 @@ export async function prefetchAllForOffline(opts: PrefetchOpts): Promise<{
     const q: any = apply(supabase.from(table as never));
     const { data, error } = await q;
     if (error) throw error;
-    return (data ?? []) as T[];
+    const rows = (data ?? []) as T[];
+    // Copia também para o espelho local usado pelas telas quando não há internet.
+    if (rows.length) {
+      void upsertRows(table, rows as Record<string, unknown>[]).catch((e) =>
+        console.warn("[offline-prefetch] espelho falhou", table, e),
+      );
+    }
+    return rows;
   };
 
   const visitIds: string[] = [];
