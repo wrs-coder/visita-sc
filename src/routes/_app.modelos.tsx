@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { listTemplates, upsertTemplate, replaceTemplateItems } from "@/lib/templates.functions";
 import { exportProgramTemplate, importProgramTemplate } from "@/lib/template-io.functions";
-import { TemplateActionsMenu, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
+import { TemplateHeaderRow, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,7 +57,6 @@ function Page() {
   const [studyGenObsBySlot, setStudyGenObsBySlot] = useState<Record<number, string>>({});
   const [activeSlot, setActiveSlot] = useState("1");
   const [busy, setBusy] = useState(false);
-  const [dupSlot, setDupSlot] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const r = await fnList();
@@ -106,6 +105,22 @@ function Page() {
 
   if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">{t("templates.restricted")}</CardContent></Card>;
 
+  const createdSlots = useMemo(() => [...tpls].sort((a, b) => a.slot - b.slot), [tpls]);
+  const freeSlot = SLOTS.find((s) => !tpls.some((tp) => tp.slot === s)) ?? null;
+  useEffect(() => {
+    if (createdSlots.length && !createdSlots.some((tp) => String(tp.slot) === activeSlot)) setActiveSlot(String(createdSlots[0].slot));
+  }, [createdSlots, activeSlot]);
+  const handleNew = async () => {
+    if (!freeSlot) return;
+    const v = window.prompt(t("templates.chrome.newTemplate", { defaultValue: "Novo modelo" }), t("templates.templateNumber", { n: freeSlot }));
+    if (!v || !v.trim()) return;
+    setBusy(true);
+    const r = await fnUpsert({ data: { slot: freeSlot, name: v.trim() } });
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    await load();
+    setActiveSlot(String(freeSlot));
+  };
   const ensureTemplate = async (slot: number): Promise<string | null> => {
     const existing = tpls.find((t) => t.slot === slot);
     if (existing) return existing.id;
@@ -150,7 +165,6 @@ function Page() {
     setBusy(false);
     if (!r2.ok) { toast.error(r2.error); return; }
     toast.success(t("templates.program.duplicated", { defaultValue: "Modelo duplicado" }));
-    setDupSlot(null);
     setActiveSlot(String(toSlot));
     await load();
   };
@@ -211,43 +225,34 @@ function Page() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <Label className="hidden sm:block text-xs uppercase tracking-wide text-muted-foreground">{t("templates.program.templateLabel")}</Label>
-        <Select value={activeSlot} onValueChange={setActiveSlot}>
-          <SelectTrigger className="h-10 flex-1 min-w-0 sm:flex-none sm:w-64 rounded-xl bg-muted/40 font-medium"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || t("templates.templateNumber", { n: s })}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <TemplateActionsMenu
-          disabled={busy}
-          onDuplicate={() => setDupSlot(activeSlot)}
-          io={{
-            filenameBase: namesBySlot[Number(activeSlot)] ?? t("templates.exportProgram", { n: activeSlot }),
-            onExport: async () => {
-              const tpl = tpls.find((tp) => tp.slot === Number(activeSlot));
-              if (!tpl) return { ok: false, error: t("templates.exportFirst") };
-              return fnExport({ data: { id: tpl.id } });
-            },
-            onImport: async (file) => { const r = await fnImport({ data: { file: file as never, slot: Number(activeSlot) } }); if (r.ok) await load(); return r; },
-          }}
-        />
-        {dupSlot !== null && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{t("templates.program.duplicateTo", { defaultValue: "Copiar para" })}</span>
-            <Select value={String(dupSlot)} onValueChange={(v) => setDupSlot(v)}>
-              <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || t("templates.templateNumber", { n: s })}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button size="sm" variant="default" onClick={() => duplicateSlot(Number(activeSlot), Number(dupSlot))} disabled={dupSlot === activeSlot || busy}>
-              <Check className="h-4 w-4 mr-1" /> {t("common.duplicate", { defaultValue: "Duplicar" })}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setDupSlot(null)}>{t("common.cancel", { defaultValue: "Cancelar" })}</Button>
-          </div>
-        )}
-      </div>
+      <TemplateHeaderRow
+        items={createdSlots.map((tp) => ({ id: String(tp.slot), name: namesBySlot[tp.slot] || tp.name }))}
+        activeId={activeSlot}
+        onPick={setActiveSlot}
+        onNew={handleNew}
+        newDisabled={!freeSlot}
+        disabled={busy}
+        onRename={() => {
+          const v = window.prompt(t("common.rename", { defaultValue: "Renomear" }), namesBySlot[Number(activeSlot)] ?? "");
+          if (v && v.trim()) { setNamesBySlot({ ...namesBySlot, [Number(activeSlot)]: v.trim() }); renameSlot(Number(activeSlot), v.trim()); }
+        }}
+        onDuplicate={() => { if (freeSlot) duplicateSlot(Number(activeSlot), freeSlot); }}
+        duplicateDisabled={!freeSlot}
+        io={{
+          filenameBase: namesBySlot[Number(activeSlot)] ?? t("templates.exportProgram", { n: activeSlot }),
+          onExport: async () => {
+            const tpl = tpls.find((tp) => tp.slot === Number(activeSlot));
+            if (!tpl) return { ok: false, error: t("templates.exportFirst") };
+            return fnExport({ data: { id: tpl.id } });
+          },
+          onImport: async (file) => {
+            const target = activeTpl ? Number(activeSlot) : (freeSlot ?? Number(activeSlot));
+            const r = await fnImport({ data: { file: file as never, slot: target } });
+            if (r.ok) { await load(); setActiveSlot(String(target)); }
+            return r;
+          },
+        }}
+      />
 
       <Tabs value={activeSlot} onValueChange={setActiveSlot}>
         {SLOTS.map((slot) => {
@@ -264,11 +269,6 @@ function Page() {
                 ])} />
               </div>
               <Card><CardContent className="p-4 space-y-3">
-                <div>
-                  <Label>{t("templates.program.templateName")}</Label>
-                  <Input className="mt-1" value={namesBySlot[slot] ?? ""} onChange={(e) => setNamesBySlot({ ...namesBySlot, [slot]: e.target.value })} onBlur={(e) => renameSlot(slot, e.target.value)} />
-                </div>
-
                 <SectionPills<Kind>
                   ariaLabel={t("templates.dayPills.sections")}
                   value={section}
@@ -291,18 +291,7 @@ function Page() {
                 />
 
                 {section === "study" && (<>
-                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
-                  dayExtra={(d) => (
-                    <Input
-                      className="h-9"
-                      placeholder="Informações adicionais do superintendente"
-                      value={(studyNotesBySlot[slot] ?? {})[String(d)] ?? ""}
-                      onChange={(e) => setStudyNotesBySlot({ ...studyNotesBySlot, [slot]: { ...(studyNotesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
-                      onBlur={(e) => saveStudyNote(slot, String(d), e.target.value)}
-                    />
-                  )} />
-
-                <InfoDisclosure label="Informações gerais — Estudos e Revisitas" filled={!!(studyGenObsBySlot[slot] ?? "").trim()}>
+                <InfoDisclosure label="Informações adicionais do superintendente" filled={!!(studyGenObsBySlot[slot] ?? "").trim()}>
                   <p className="text-xs text-muted-foreground">Observações exibidas aos anciãos junto da programação de Estudos e Revisitas.</p>
                   <div>
                     <Label className="text-xs">Informações adicionais do superintendente (gerais)</Label>
@@ -321,20 +310,21 @@ function Page() {
                     <p className="text-xs text-muted-foreground mt-1">Aparecem em vermelho no topo da aba Estudos e Revisitas dos anciãos.</p>
                   </div>
                 </InfoDisclosure>
-                </>)}
 
-                {section === "meal" && (<>
-                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
+                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
                   dayExtra={(d) => (
                     <Input
                       className="h-9"
-                      placeholder={t("templates.program.mealNotesPlaceholder")}
-                      value={notes[String(d)] ?? ""}
-                      onChange={(e) => setNotesBySlot({ ...notesBySlot, [slot]: { ...(notesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
-                      onBlur={(e) => saveMealNote(slot, String(d), e.target.value)}
+                      placeholder="Informações adicionais do superintendente"
+                      value={(studyNotesBySlot[slot] ?? {})[String(d)] ?? ""}
+                      onChange={(e) => setStudyNotesBySlot({ ...studyNotesBySlot, [slot]: { ...(studyNotesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
+                      onBlur={(e) => saveStudyNote(slot, String(d), e.target.value)}
                     />
                   )} />
 
+                </>)}
+
+                {section === "meal" && (<>
                 <InfoDisclosure label={t("templates.program.mealNotesTitle")} filled={!!(genObsBySlot[slot] ?? "").trim()}>
                   <p className="text-xs text-muted-foreground">{t("templates.program.mealNotesHelp")}</p>
                   <div>
@@ -354,6 +344,18 @@ function Page() {
                     <p className="text-xs text-muted-foreground mt-1">{t("templates.program.generalObservationsHint")}</p>
                   </div>
                 </InfoDisclosure>
+
+                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
+                  dayExtra={(d) => (
+                    <Input
+                      className="h-9"
+                      placeholder={t("templates.program.mealNotesPlaceholder")}
+                      value={notes[String(d)] ?? ""}
+                      onChange={(e) => setNotesBySlot({ ...notesBySlot, [slot]: { ...(notesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
+                      onBlur={(e) => saveMealNote(slot, String(d), e.target.value)}
+                    />
+                  )} />
+
                 </>)}
 
                 {section === "transport" && (

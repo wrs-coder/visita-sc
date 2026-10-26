@@ -5,7 +5,7 @@
  */
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Copy, Download, Loader2, MoreHorizontal, Pencil, Trash2, Upload } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Plus, Download, Loader2, MoreHorizontal, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -146,6 +146,71 @@ export function TemplateFooterBar({ children }: { children: ReactNode }) {
   return (
     <div className="sticky bottom-0 z-20 -mx-1 mt-2 flex items-center gap-2 rounded-t-2xl border-t bg-background/90 px-3 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] backdrop-blur-md shadow-[0_-4px_16px_-8px_hsl(var(--foreground)/0.15)]">
       {children}
+    </div>
+  );
+}
+
+/** Pílula "+ Novo" com Novo modelo / Exportar / Importar. */
+export function TemplateNewMenu({ onNew, newDisabled, io, exportDisabled }: {
+  onNew: () => void; newDisabled?: boolean; io?: TemplateIO; exportDisabled?: boolean;
+}) {
+  const { t } = useTranslation();
+  const { busy, doExport, doImport } = useTemplateIO(io);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="sm" variant="secondary" className="h-10 shrink-0 rounded-full px-3 gap-1 font-medium">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          {t("templates.chrome.new", { defaultValue: "Novo" })}
+          <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-52 rounded-xl">
+        <DropdownMenuItem disabled={newDisabled} onSelect={onNew}>
+          <Plus className="h-4 w-4 mr-2" />
+          {newDisabled ? t("templates.chrome.limitReached", { defaultValue: "Limite de modelos atingido" }) : t("templates.chrome.newTemplate", { defaultValue: "Novo modelo" })}
+        </DropdownMenuItem>
+        {io && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={exportDisabled || busy !== null} onSelect={doExport}><Download className="h-4 w-4 mr-2" />{t("templateIO.export")}</DropdownMenuItem>
+            <DropdownMenuItem disabled={busy !== null} onSelect={doImport}><Upload className="h-4 w-4 mr-2" />{t("templateIO.import")}</DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** Linha única: + Novo · seletor · ⋮ (igual em todas as telas de modelos). */
+export function TemplateHeaderRow({
+  items, activeId, onPick, onNew, newDisabled, io, onRename, onDuplicate, onDelete, duplicateDisabled, disabled,
+}: {
+  items: { id: string; name: string }[];
+  activeId: string | null;
+  onPick: (id: string) => void;
+  onNew: () => void;
+  newDisabled?: boolean;
+  io?: TemplateIO;
+  onRename?: () => void;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
+  duplicateDisabled?: boolean;
+  disabled?: boolean;
+}) {
+  const { t } = useTranslation();
+  const hasActive = !!activeId && items.some((i) => i.id === activeId);
+  return (
+    <div className="flex items-center gap-2">
+      <TemplateNewMenu onNew={onNew} newDisabled={newDisabled} io={io} exportDisabled={!hasActive} />
+      {items.length > 0 ? (
+        <TemplatePicker items={items} activeId={hasActive ? activeId : null} onPick={onPick} />
+      ) : (
+        <div className="h-10 flex-1 min-w-0 flex items-center px-3 rounded-xl bg-muted/40 text-sm text-muted-foreground truncate">{t("templates.noTemplates")}</div>
+      )}
+      {hasActive && (onRename || onDuplicate || onDelete) && (
+        <TemplateActionsMenu disabled={disabled} onRename={onRename} onDuplicate={onDuplicate} onDelete={onDelete} duplicateDisabled={duplicateDisabled} />
+      )}
     </div>
   );
 }

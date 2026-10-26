@@ -749,8 +749,8 @@
       "6": "Mon"
     },
     "program": {
-      "title": "Personal Schedule Templates",
-      "subtitle": "Create up to 10 reusable templates. Use them when creating a visit for a specific congregation.",
+      "title": "Personal schedule",
+      "subtitle": "Organize your availability for Studies and Return Visits, Meals and transportation requests.",
       "templateLabel": "Template",
       "templateName": "Template name",
       "studiesTitle": "Studies & Return Visits",
@@ -818,7 +818,7 @@
     },
     "checklist": {
       "title": "Checklist Templates",
-      "subtitle": "Create checklists and apply them to each visit via Itinerary. {{n}}/{{max}} templates.",
+      "subtitle": "Create checklists and apply them to each visit via Itinerary.",
       "newDialogTitle": "New checklist template",
       "itemsTitle": "Checklist items",
       "noItemsHelp": "No items. Add questions or topics for this checklist.",
@@ -831,8 +831,8 @@
       "fixErrors": "Fix the highlighted fields before saving."
     },
     "field": {
-      "title": "Field Meeting Template",
-      "subtitle": "Plan several shifts per week, each with its own modality, and link the template to a congregation. {{n}}/{{max}} templates.",
+      "title": "Field service meetings",
+      "subtitle": "Organize field service meetings by time and modality.",
       "newDialogTitle": "New field meetings template",
       "shiftsTitle": "Template shifts",
       "addShift": "Shift",
@@ -851,8 +851,8 @@
       "observationsHint": "Only the circuit overseer edits; elders see this as read-only on the Field Meetings tab."
     },
     "meetingTalk": {
-      "title": "Meeting & Talk Templates",
-      "subtitle": "Create reusable templates with Midweek, Weekend (multiple themes), Pioneers and Elders/Ministerial Servants. {{n}}/{{max}} templates.",
+      "title": "Meetings and Talks",
+      "subtitle": "Organize Midweek, Weekend, Pioneer and Elders/Servants meetings.",
       "newDialogTitle": "New template",
       "saveTemplate": "Save template",
       "restricted": "Restricted access.",
@@ -935,6 +935,15 @@
       "title": "Visit days",
       "monday": "Monday",
       "sections": "Template sections"
+    },
+    "elder": {
+      "title": "Elders schedule",
+      "subtitle": "Organize your availability for shepherding visits and special encouragement, and gather information for the meeting with the elders."
+    },
+    "chrome": {
+      "new": "New",
+      "newTemplate": "New template",
+      "limitReached": "Template limit reached"
     }
   },
   "notes": {
