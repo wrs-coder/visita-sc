@@ -16,7 +16,7 @@ import {
   type ElderProgramEventDTO,
 } from "@/lib/elder-program-templates.functions";
 import { exportElderProgramTemplate, importElderProgramTemplate } from "@/lib/template-io.functions";
-import { TemplateActionsMenu, TemplatePicker, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
+import { TemplateHeaderRow, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -225,16 +225,13 @@ function Page() {
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <BookOpen className="h-6 w-6" /> Modelo Programação Anciãos
+            <BookOpen className="h-6 w-6" /> {t("templates.elder.title", { defaultValue: "Programação Anciãos" })}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {tpls.length} / {MAX} modelos
+            {t("templates.elder.subtitle", { defaultValue: "Organize a sua disponibilidade para visitas de pastoreio, encorajamentos especiais e colete informações referentes à reunião com os anciãos." })}
           </p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />Novo modelo</Button>
-          </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader><DialogTitle>Novo modelo</DialogTitle></DialogHeader>
             <div className="space-y-3">
@@ -248,18 +245,29 @@ function Page() {
         </Dialog>
       </div>
 
-      <div className="grid md:grid-cols-[260px_1fr] gap-4">
-        <Card className="hidden md:block"><CardContent className="p-3 space-y-1">
-          {tpls.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-3 text-center">Nenhum modelo</div>
-          ) : tpls.map((tp) => (
-            <button key={tp.id} onClick={() => setActiveId(tp.id)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === tp.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-              <div className="truncate">{tp.name}</div>
-            </button>
-          ))}
-        </CardContent></Card>
+      <TemplateHeaderRow
+        items={tpls}
+        activeId={activeId}
+        onPick={setActiveId}
+        onNew={() => setCreateOpen(true)}
+        newDisabled={tpls.length >= MAX}
+        disabled={busy}
+        onRename={active ? () => { setRenameVal(active.name); setRenameOpen(true); } : undefined}
+        onDuplicate={handleDuplicate}
+        duplicateDisabled={tpls.length >= MAX}
+        onDelete={handleDelete}
+        io={{
+          filenameBase: active?.name || "programacao-ancioes",
+          onExport: async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: "Selecione um modelo" },
+          onImport: async (file) => {
+            const r = await fnImport({ data: { file: file as never } });
+            if (r.ok && r.id) { await loadList(); setActiveId(r.id); }
+            return r;
+          },
+        }}
+      />
 
+      <div className="grid gap-4">
         <div className="space-y-4">
           {!active ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
@@ -267,32 +275,6 @@ function Page() {
             </CardContent></Card>
           ) : (
             <>
-              <Card><CardContent className="p-3 flex items-center gap-2">
-                <div className="flex-1 min-w-0 md:hidden">
-                  <TemplatePicker items={tpls} activeId={activeId} onPick={setActiveId} />
-                </div>
-                <div className="hidden md:block flex-1 font-semibold truncate">{active.name}</div>
-                <TemplateActionsMenu
-                  disabled={busy}
-                  onRename={() => { setRenameVal(active.name); setRenameOpen(true); }}
-                  onDuplicate={handleDuplicate}
-                  duplicateDisabled={tpls.length >= MAX}
-                  onDelete={handleDelete}
-                  io={{
-                    filenameBase: active.name || "programacao-ancioes",
-                    onExport: () => fnExport({ data: { id: active.id } }),
-                    onImport: async (file) => {
-                      const r = await fnImport({ data: { file: file as never } });
-                      if (r.ok && r.id) {
-                        await loadList();
-                        setActiveId(r.id);
-                      }
-                      return r;
-                    },
-                  }}
-                />
-              </CardContent></Card>
-
               <CollapseProvider scope="tpl-elder" visitId={activeId ?? null} closedByDefault={["ev:"]}>
               <div className="flex justify-end">
                 <CollapseAllButton ids={[...SECTIONS.map((s) => `sec:${s}`), ...events.map((e) => `ev:${e.id}`)]} />
