@@ -9,7 +9,7 @@ export const Route = createFileRoute("/")({
 });
 
 function HomeRoute() {
-  const { loading, user, needsOnboarding, role, elderPosition } = useAuth();
+  const { loading, user, needsOnboarding, role } = useAuth();
   const [guestCode, setGuestCode] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
@@ -19,9 +19,8 @@ function HomeRoute() {
   if (loading || guestCode === undefined) return <FullLoader />;
   if (user) {
     if (needsOnboarding) return <Navigate to="/onboarding" />;
-    const goDashboard =
-      role === "superintendent" ||
-      (role === "elder" && (elderPosition === "coordenador" || elderPosition === "secretario" || elderPosition === "sup_servico"));
+    // Superintendente e todo ancião cadastrado abrem no Painel (com ou sem internet).
+    const goDashboard = role === "superintendent" || role === "elder";
     return <Navigate to={goDashboard ? "/dashboard" : "/cronograma"} />;
   }
   if (guestCode) return <Navigate to="/visitante/painel" />;

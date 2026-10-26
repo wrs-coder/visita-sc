@@ -558,6 +558,9 @@ export async function prefetchAllForOffline(opts: PrefetchOpts): Promise<{
       userId,
       tables: { ...baseTables, ...newMaxes },
     });
+    if (errors === 0) {
+      try { localStorage.setItem(mirrorKey, "1"); } catch { /* quota */ }
+    }
   }
   try {
     await queryClient.getQueryCache().getAll();
