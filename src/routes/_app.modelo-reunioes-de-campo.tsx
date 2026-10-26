@@ -25,6 +25,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Trash2, Copy, Pencil, MapPin, AlertCircle, Save } from "lucide-react";
 import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
+import { DayPills, useTemplateDays } from "@/components/templates/DayPills";
+import { MONDAY_OFFSET } from "@/lib/template-day-pills";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -114,12 +116,17 @@ function Page() {
 
   useEffect(() => { load(); }, [load]);
 
+  const items = activeId ? itemsByTpl[activeId] ?? [] : [];
+  const dayState = useTemplateDays(
+    `tpl-field:${activeId ?? "none"}`,
+    items.some((it) => it.day_offset === MONDAY_OFFSET),
+  );
+
   if (role !== "superintendent") {
     return <Card><CardContent className="p-6 text-sm">{t("templates.restricted")}</CardContent></Card>;
   }
 
   const active = tpls.find((tp) => tp.id === activeId) ?? null;
-  const items = activeId ? itemsByTpl[activeId] ?? [] : [];
 
   const setItems = (next: ItemDraft[]) => {
     if (!activeId) return;
@@ -182,7 +189,7 @@ function Page() {
     await load();
   };
 
-  const addItem = () => setItems([...items, { day_offset: 0, period: "Manhã", modality: "casa_em_casa", meeting_time: "", territory_number: "", territory_location: "", auxiliary_leaders: "", closing_prayer: "", observations: "" }]);
+  const addItem = () => setItems([...items, { day_offset: dayState.activeDay, period: "Manhã", modality: "casa_em_casa", meeting_time: "", territory_number: "", territory_location: "", auxiliary_leaders: "", closing_prayer: "", observations: "" }]);
   const updateItem = (idx: number, patch: Partial<ItemDraft>) =>
     setItems(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
@@ -327,7 +334,17 @@ function Page() {
                     <Button size="sm" onClick={handleSaveItems} disabled={busy}><Save className="h-3.5 w-3.5 mr-1" />{t("common.save")}</Button>
                   </div>
                 </div>
-                {items.length === 0 ? (
+                <DayPills
+                  days={dayState.days}
+                  activeDay={dayState.activeDay}
+                  onPick={dayState.setActiveDay}
+                  dayLabel={DAY_LABEL}
+                  hasItems={(d) => items.some((it) => it.day_offset === d)}
+                  showMonday={dayState.showMonday}
+                  mondayLocked={dayState.mondayLocked}
+                  onToggleMonday={dayState.setShowMonday}
+                />
+                {!items.some((it) => it.day_offset === dayState.activeDay) ? (
                   <div className="text-sm text-muted-foreground text-center py-6">
                     {t("templates.field.noShifts")}
                   </div>
@@ -337,7 +354,7 @@ function Page() {
                     <CollapseAllButton ids={[...DAY_OPTS.map((d) => `day:${d}`), ...items.map((_, i) => `ev:${i}`)]} />
                   </div>
                   <div className="space-y-3">
-                    {DAY_OPTS.filter((d) => items.some((it) => it.day_offset === d)).map((d) => (
+                    {[dayState.activeDay].map((d) => (
                     <section key={d}>
                       <div className="flex items-center gap-1 mb-1">
                         <CollapseIdToggle id={`day:${d}`} />
