@@ -470,6 +470,52 @@ function LoadingPanel() {
   );
 }
 
+function ElderSlotSwap({ current, free, readOnly, onPick }: {
+  current: string | null; free: string[]; readOnly: boolean; onPick: (s: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/60 px-3 py-2">
+      <div className="text-xs">
+        <span className="text-muted-foreground">Dia/Horário: </span>
+        <span className="font-semibold">{current ?? "Ainda não escolhido"}</span>
+      </div>
+      {current && !readOnly && (
+        <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setOpen(true)}>
+          ⇄ Trocar o dia/hora do pastoreio
+        </Button>
+      )}
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Trocar o dia/hora do pastoreio</AlertDialogTitle>
+            <AlertDialogDescription>Atual: {current}</AlertDialogDescription>
+          </AlertDialogHeader>
+          {free.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Não há outros dias disponíveis.</p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">Dias disponíveis:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {free.map((s) => (
+                  <button key={s} type="button" onClick={() => { setOpen(false); onPick(s); }}
+                    className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted">
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground">As informações vão para o novo dia e “{current}” fica livre.</p>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 function EventCard({
   ev, slots, usedSlots, readOnly, canDelete, onChange, onDelete,
   onScheduleInCronograma, onSaveToPrivateNotes,
@@ -511,6 +557,10 @@ function EventCard({
 
         {ev.section === "pastoral" && (
           <>
+            {!isSuperintendent && (
+              <ElderSlotSwap current={ev.slot_label} free={slots.filter((s) => !usedSlots.has(s) && s !== ev.slot_label)} readOnly={readOnly} onPick={(s) => onChange({ slot_label: s })} />
+            )}
+            <div className={isSuperintendent ? "" : "hidden"}>
             <FieldRow label="Dia/Horário">
               <Select
                 value={ev.slot_label ?? "__none__"}
@@ -568,6 +618,7 @@ function EventCard({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+            </div>
             <DebouncedText label="Ancião/S.M acompanhante" value={ev.companion} onSave={(v) => onChange({ companion: v })} readOnly={readOnly} />
             <DebouncedText label="Família/Irmão(ã)" value={ev.family_name} onSave={(v) => onChange({ family_name: v })} readOnly={readOnly} />
             <DebouncedText label="Endereço" value={ev.address} onSave={(v) => onChange({ address: v })} readOnly={readOnly} />
