@@ -62,4 +62,4 @@
 - [x] Etapa 3 — Aba única "Modelos" e Pacotes da visita
 - [x] Visual enxuto nos modelos: seletor no celular, menu ⋮, informações recolhíveis, itens fechados, barra fixa Adicionar/Salvar, "Mais detalhes"
 - [x] Resumo da semana liberado (somente leitura) para comissão/anciãos
-- [ ] Programação geral (⤓) no Resumo da semana com escolha de partes e observações
+- [x] Programação geral (⤓) no Resumo da semana com escolha de partes e observações
