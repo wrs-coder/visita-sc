@@ -1,3 +1,4 @@
+import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -87,6 +88,7 @@ function Page() {
 
   return (
     <div className="space-y-5">
+      <VisitProgramTabs />
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div><h1 className="text-2xl md:text-3xl font-bold">{t("checklistPage.title")}</h1><p className="text-sm text-muted-foreground mt-1">{t("checklistPage.subtitle")}</p></div>
         <div className="flex gap-2 flex-wrap">

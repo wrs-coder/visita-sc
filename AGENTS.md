@@ -20,3 +20,4 @@
 - Itinerary weeks without a congregation (pioneer/free) live in their own superintendent-only table itinerary_weeks, never in visits, so elder/guest access, dashboard and visit templates stay untouched.
 - Visit packages (combinations of the 5 template ids) are stored only on-device in localStorage per user (visit-packages.ts) and only prefill the itinerary form, because template choice per visit stays mandatory and server schema is unchanged.
 - The daily 'visit without templates' reminder is device-local (once per day per user in localStorage, visit-template-reminder.ts) and reads existing visit template columns, because templates are optional and no server schema change is needed.
+- The visit-week screens stay separate routes joined by VisitProgramTabs pills (/programa-visita redirects to the last one), and day pills only hide non-active day sections, because old links, reminders and unsaved inputs must keep working.

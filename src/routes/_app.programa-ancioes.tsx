@@ -1,3 +1,4 @@
+import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
@@ -245,6 +246,7 @@ function Page() {
 
   return (
     <div className="space-y-5 max-w-full overflow-x-hidden">
+      <VisitProgramTabs />
       <div>
         <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
           <BookOpen className="h-6 w-6" /> Pastoreios, Recomendações e outros
