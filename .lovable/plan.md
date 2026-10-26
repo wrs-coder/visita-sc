@@ -1,38 +1,70 @@
-# Visual mais enxuto nos modelos (Programação, Reuniões de campo, Anciãos)
+# Menu lateral, Meu perfil em abas e visitas sem modelo
 
-## Por que não foi feito
-Na reorganização econômica, os pedidos viraram 3 etapas: pílulas de dias, semanas sem congregação e aba única com pacotes. Este item ("Visual mais enxuto") ficou fora das 3 etapas e não entrou na lista de tarefas, por isso foi esquecido. Conferido no código: as três telas ainda têm a coluna de modelos ao lado, nenhum menu de três pontinhos, nenhuma barra fixa no rodapé e os itens começam abertos.
+## (01) Menu lateral — "Modelos e Configurações"
 
-## Como fica no celular
+```text
++---------------------------+
+| MODELOS E CONFIGURAÇÕES v |
+|  [=] Modelos Visitas      |  -> abre a tela única (pílulas
+|  (o) Meu perfil           |     Programação…Anciãos/Pacotes)
+|  [c] Apoiar desenvolvedor |
++---------------------------+
+```
+- Sai a sanfona "Modelos de Base"; fica um link direto "Modelos Visitas" (só superintendente) e "Meu perfil". O botão de apoio continua onde está. Só visual.
+
+## (02) Meu perfil em abas (pílulas)
 
 ```text
 +-----------------------------------------+
-| (Programação)(Campo)(Anciãos)(Pacotes)  |
+| Meu perfil                              |
+| Wanderson · Superintendente             |
 +-----------------------------------------+
-| Modelo: [ Visita padrão         v ] [⋮] |  <- ⋮ = Renomear, Duplicar,
-+-----------------------------------------+     Excluir, Exportar, Importar
-| (Ter)(Qua)(Qui)(Sex)(Sáb)(Dom)          |
-| > Informações adicionais                |  <- fechada até tocar
-| > Manhã · 08:30 · Casa em casa      [x] |  <- itens começam fechados
-| > Tarde · 15:00 · Testemunho        [x] |
-|   (aberto) ... campos principais        |
-|   > Mais detalhes (observações, oração) |
+| (Dados pessoais)(Recursos)(Configurações)|  <- pílulas fixas no topo
 +-----------------------------------------+
-| [+ Adicionar]             [ Salvar ]    |  <- barra fixa no rodapé
+| ┌─────────────────────────────────────┐ |
+| │ Circuito                            │ |
+| └─────────────────────────────────────┘ |
+| ┌ Acesso da esposa ───────────────────┐ |
+| ┌ Dados pessoais ─────────────────────┐ |
+| ┌ E-mail (recuperação de senha) ──────┐ |
+| ┌ Alterar senha ──────────────────────┐ |
 +-----------------------------------------+
+ Recursos:      Gerenciar Bíblias · Acesso sem internet (PIN) · Sincronização offline
+ Configurações: Lembretes de eventos · Idioma do aplicativo · Backup e restauração
 ```
+- Cartões com cantos arredondados e títulos discretos (estilo iOS/One UI). A aba escolhida fica lembrada no aparelho.
+- Os cartões só mudam de lugar; nada do que eles fazem muda. Para ancião/convidado, cartões que hoje não aparecem continuam ocultos; abas vazias somem.
 
-- No computador, a lista de modelos continua na coluna ao lado.
-- Itens começam fechados mostrando o resumo; um toque abre. O que você abrir fica lembrado no aparelho, como hoje.
-- "Adicionar" cria no dia escolhido. "Salvar" faz o mesmo de hoje.
+## (03) Visita sem modelo no Itinerário
 
-## O que não muda
-Dados salvos, regras de gravação, importar/exportar, propagação para visitas, acessos (só o superintendente edita modelos; anciãos, comissão e esposa não são afetados).
+```text
++-----------------------------------------+
+| Itinerário                              |
+| ┌─────────────────────────────────────┐ |
+| │ Cong. Central       10–15 nov       │ |
+| │ (!) Sem modelos                     │ |  <- selo âmbar
+| └─────────────────────────────────────┘ |
+| ┌ Cong. Norte   17–22 nov ───────────┐  |
++-----------------------------------------+
+
+      +-------------------------------+
+      |  (calendário)                 |
+      |  Visita em 2 meses            |
+      |  Cong. Central · 10 nov 2026  |
+      |  Ainda sem modelo ou pacote.  |
+      |                               |
+      |  [ Me leve para a visita ]    |
+      |  [          Ok           ]    |
+      +-------------------------------+
+```
+- Criar/editar visita não exige mais nenhum modelo (removo as 4 travas). Se nada for escolhido, a visita é criada normalmente, sem aplicar modelo.
+- Selo "Sem modelos" quando a visita não tem nenhum dos 5 modelos.
+- Aviso: aparece em qualquer tela, no máximo 1x por dia, para visitas que começam dentro de 2 meses (60 dias ou menos, ainda não iniciadas) e sem nenhum modelo. Se houver ao menos um modelo, não aparece. Só para o superintendente.
+- "Me leve para a visita" abre o Itinerário já com essa visita no modo editar. "Ok" fecha.
 
 ## Detalhes técnicos
-- `CollapseProvider` ganha opção `defaultCollapsed` (só presentação, localStorage como hoje); usada nas três telas de modelos.
-- Componente compartilhado `TemplatePickerBar`: `Select` + `DropdownMenu` (⋮) visível em `md:hidden`; coluna lateral mantém `hidden md:block`.
-- Componente `TemplateFooterBar`: `sticky bottom-0` com tokens `bg-background/95 border-t`, respeitando a área segura do Android.
-- "Mais detalhes": `Collapsible` dentro do editor do item para observações/oração final.
-- i18n pt/en/es; validar com `bunx tsgo --noEmit`, `bunx vitest run` e captura em 393px.
-- Item entra no roadmap.
+- `_app.tsx`: seção `modelos` sem Collapsible; item `/modelos` com rótulo `sidebar.visitTemplates`.
+- `_app.perfil.tsx`: `Tabs` shadcn com pílulas; cartões existentes movidos sem alterar lógica; aba em `localStorage` (`visita-sc:profile-tab`), lida em `useEffect` (SSR seguro).
+- `_app.configuracoes.tsx`: remover validações das linhas 294–297; selo calculado pelos campos template já carregados; aceitar `?edit=<visitId>` via `validateSearch` para abrir o formulário de edição.
+- Novo `src/lib/visit-template-reminder.ts` (função pura `pickVisitsNeedingTemplates(visits, hoje)` + chave diária por usuário em localStorage) com teste vitest; `VisitTemplateReminder.tsx` montado em `_app.tsx`, usando dados de visitas já em cache (offline).
+- Banco e regras de acesso inalterados. i18n pt/en/es. Validar com `bunx tsgo --noEmit`, `bunx vitest run` e captura 393px.
