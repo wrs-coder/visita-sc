@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, FileStack, Save, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
+import { DayPills, SectionPills, useTemplateDays } from "@/components/templates/DayPills";
+import { MONDAY_OFFSET, readPref, writePref } from "@/lib/template-day-pills";
 
 export const Route = createFileRoute("/_app/modelos")({ component: Page });
 
@@ -91,6 +93,16 @@ function Page() {
 
   useEffect(() => { load(); }, [load]);
 
+  const [section, setSectionState] = useState<Kind>("study");
+  useEffect(() => { setSectionState(readPref<Kind>("tpl-program:section", "study")); }, []);
+  const setSection = (k: Kind) => { setSectionState(k); writePref("tpl-program:section", k); };
+  const activeTpl = tpls.find((tp) => tp.slot === Number(activeSlot));
+  const activeItems = activeTpl ? (itemsByTpl[activeTpl.id] ?? []) : [];
+  const dayState = useTemplateDays(
+    `tpl-program:${activeSlot}`,
+    activeItems.some((it) => it.day_offset === MONDAY_OFFSET),
+  );
+
   if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">{t("templates.restricted")}</CardContent></Card>;
 
   const ensureTemplate = async (slot: number): Promise<string | null> => {
@@ -149,7 +161,7 @@ function Page() {
     }));
   };
 
-  const addItem = async (slot: number, kind: Kind) => {
+  const addItem = async (slot: number, kind: Kind, day = 0) => {
     const id = await ensureTemplate(slot);
     if (!id) return;
     const defaults: Payload =
@@ -161,7 +173,7 @@ function Page() {
             { event_type: "field_service", event_type_other: "", direction: "round_trip", departure_time: "", return_time: "", driver_name: "", contact_phone: "", notes: "" },
           ]),
         };
-    setItemsByTpl((m) => ({ ...m, [id]: [...(m[id] ?? []), { kind, day_offset: 0, payload: defaults, sort_order: (m[id]?.length ?? 0) }] }));
+    setItemsByTpl((m) => ({ ...m, [id]: [...(m[id] ?? []), { kind, day_offset: day, payload: defaults, sort_order: (m[id]?.length ?? 0) }] }));
   };
 
   const removeItem = (tplId: string, idx: number) => {
