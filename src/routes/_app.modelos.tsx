@@ -267,7 +267,29 @@ function Page() {
                   <Input className="mt-1" value={namesBySlot[slot] ?? ""} onChange={(e) => setNamesBySlot({ ...namesBySlot, [slot]: e.target.value })} onBlur={(e) => renameSlot(slot, e.target.value)} />
                 </div>
 
-                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL}
+                <SectionPills<Kind>
+                  ariaLabel={t("templates.dayPills.sections")}
+                  value={section}
+                  onChange={setSection}
+                  options={[
+                    { value: "study", label: t("templates.program.studiesTitle") },
+                    { value: "meal", label: t("templates.program.mealsTitle") },
+                    { value: "transport", label: t("templates.program.transportTitle") },
+                  ]}
+                />
+                <DayPills
+                  days={dayState.days}
+                  activeDay={dayState.activeDay}
+                  onPick={dayState.setActiveDay}
+                  dayLabel={DAY_LABEL}
+                  hasItems={(d) => items.some((it) => it.kind === section && it.day_offset === d)}
+                  showMonday={dayState.showMonday}
+                  mondayLocked={dayState.mondayLocked}
+                  onToggleMonday={dayState.setShowMonday}
+                />
+
+                {section === "study" && (<>
+                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
                   dayExtra={(d) => (
                     <Input
                       className="h-9"
@@ -298,8 +320,10 @@ function Page() {
                     <p className="text-xs text-muted-foreground mt-1">Aparecem em vermelho no topo da aba Estudos e Revisitas dos anciãos.</p>
                   </div>
                 </div>
+                </>)}
 
-                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL}
+                {section === "meal" && (<>
+                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
                   dayExtra={(d) => (
                     <Input
                       className="h-9"
@@ -330,8 +354,11 @@ function Page() {
                     <p className="text-xs text-muted-foreground mt-1">{t("templates.program.generalObservationsHint")}</p>
                   </div>
                 </div>
+                </>)}
 
-                <KindBlock title={t("templates.program.transportTitle")} kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
+                {section === "transport" && (
+                <KindBlock title={t("templates.program.transportTitle")} kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days} />
+                )}
 
                 <Button className="w-full" onClick={() => saveItems(slot)} disabled={busy}>
                   <Save className="h-4 w-4 mr-1" /> {t("templates.program.saveTemplate")}
