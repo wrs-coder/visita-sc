@@ -80,7 +80,7 @@ interface Cong {
 }
 
 function Page() {
-  const { congregation, role, profile } = useAuth();
+  const { congregation, role, profile, user } = useAuth();
   const { t } = useTranslation();
   const fnList = useServerFn(listMyCongregations);
   const fnTpls = useServerFn(listTemplates);
