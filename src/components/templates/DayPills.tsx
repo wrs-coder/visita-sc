@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { MONDAY_OFFSET, TUESDAY_OFFSET, clampActiveDay, readPref, visibleTemplateDays, writePref } from "@/lib/template-day-pills";
@@ -7,11 +8,11 @@ import { MONDAY_OFFSET, TUESDAY_OFFSET, clampActiveDay, readPref, visibleTemplat
 /** Estado do dia ativo + chave "Segunda", lembrado no aparelho por tela/modelo. */
 export function useTemplateDays(prefKey: string, hasMondayItems: boolean, hasTuesdayItems = false) {
   const [showMonday, setShowMondayState] = useState(false);
-  const [showTuesday, setShowTuesdayState] = useState(false);
+  const [showTuesday, setShowTuesdayState] = useState<boolean | null>(null);
   const [day, setDayState] = useState(1);
   useEffect(() => {
     setShowMondayState(readPref(`${prefKey}:monday`, false));
-    setShowTuesdayState(readPref(`${prefKey}:tuesday`, false));
+    setShowTuesdayState(readPref<boolean | null>(`${prefKey}:tuesday`, null));
     setDayState(readPref(`${prefKey}:day`, 1));
   }, [prefKey]);
   const days = visibleTemplateDays(showMonday, hasMondayItems, showTuesday, hasTuesdayItems);
@@ -21,15 +22,15 @@ export function useTemplateDays(prefKey: string, hasMondayItems: boolean, hasTue
     activeDay,
     showMonday: showMonday || hasMondayItems,
     mondayLocked: hasMondayItems,
-    showTuesday: showTuesday || hasTuesdayItems,
-    tuesdayLocked: hasTuesdayItems,
+    showTuesday: showTuesday ?? hasTuesdayItems,
+    tuesdayHasItems: hasTuesdayItems,
     setShowTuesday: (v: boolean) => { setShowTuesdayState(v); writePref(`${prefKey}:tuesday`, v); },
     setShowMonday: (v: boolean) => { setShowMondayState(v); writePref(`${prefKey}:monday`, v); },
     setActiveDay: (d: number) => { setDayState(d); writePref(`${prefKey}:day`, d); },
   };
 }
 
-export function DayPills({ days, activeDay, onPick, dayLabel, hasItems, showMonday, mondayLocked, onToggleMonday, showTuesday = false, tuesdayLocked = false, onToggleTuesday }: {
+export function DayPills({ days, activeDay, onPick, dayLabel, hasItems, showMonday, mondayLocked, onToggleMonday, showTuesday = false, tuesdayHasItems = false, onToggleTuesday }: {
   days: number[];
   activeDay: number;
   onPick: (d: number) => void;
@@ -39,19 +40,36 @@ export function DayPills({ days, activeDay, onPick, dayLabel, hasItems, showMond
   mondayLocked: boolean;
   onToggleMonday: (v: boolean) => void;
   showTuesday?: boolean;
-  tuesdayLocked?: boolean;
+  tuesdayHasItems?: boolean;
   onToggleTuesday?: (v: boolean) => void;
 }) {
   const { t } = useTranslation();
+  const [confirmHide, setConfirmHide] = useState(false);
+  const toggleTuesday = (v: boolean) => {
+    if (!v && tuesdayHasItems) { setConfirmHide(true); return; }
+    onToggleTuesday?.(v);
+  };
   return (
     <div className="space-y-2">
+      <AlertDialog open={confirmHide} onOpenChange={setConfirmHide}>
+        <AlertDialogContent className="max-w-sm rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("templates.dayPills.hideTuesdayTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("templates.dayPills.hideTuesdayBody")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction className="rounded-full" onClick={() => onToggleTuesday?.(false)}>{t("templates.dayPills.hideTuesdayConfirm")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("templates.dayPills.title")}</span>
         <div className="flex items-center gap-3">
         {onToggleTuesday && (
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
             {t("templates.dayPills.tuesday")}
-            <Switch checked={showTuesday} disabled={tuesdayLocked} onCheckedChange={onToggleTuesday} aria-label={t("templates.dayPills.tuesday")} />
+            <Switch checked={showTuesday} onCheckedChange={toggleTuesday} aria-label={t("templates.dayPills.tuesday")} />
           </label>
         )}
         <label className="flex items-center gap-2 text-xs text-muted-foreground">

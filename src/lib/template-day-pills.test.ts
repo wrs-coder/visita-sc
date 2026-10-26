@@ -14,8 +14,11 @@ describe("pílulas de dias dos modelos", () => {
   it("terça aparece no início quando o usuário ativa", () => {
     expect(visibleTemplateDays(false, false, true, false)[0]).toBe(0);
   });
-  it("terça aparece quando o modelo já tem itens nela", () => {
-    expect(visibleTemplateDays(false, false, false, true)).toContain(0);
+  it("terça aparece com itens quando o usuário nunca escolheu", () => {
+    expect(visibleTemplateDays(false, false, null, true)).toContain(0);
+  });
+  it("terça desligada pelo usuário fica escondida mesmo com itens", () => {
+    expect(visibleTemplateDays(false, false, false, true)).not.toContain(0);
   });
   it("dia escolhido volta para quarta se a terça sumir", () => {
     expect(clampActiveDay(0, [1, 2, 3, 4, 5])).toBe(1);

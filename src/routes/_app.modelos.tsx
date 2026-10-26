@@ -292,7 +292,7 @@ function Page() {
                   mondayLocked={dayState.mondayLocked}
                   onToggleMonday={dayState.setShowMonday}
                   showTuesday={dayState.showTuesday}
-                  tuesdayLocked={dayState.tuesdayLocked}
+                  tuesdayHasItems={dayState.tuesdayHasItems}
                   onToggleTuesday={dayState.setShowTuesday}
                 />
 
