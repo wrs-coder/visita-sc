@@ -70,3 +70,22 @@ Banco, campos salvos, importar/exportar, duplicar, botão Salvar, propagação p
 - `_app.modelo-reunioes-de-campo.tsx`: filtrar a lista pelo dia escolhido; `addItem` usa o dia ativo.
 - `_app.modelos.tsx`: `ToggleGroup` de seções; `KindBlock` renderiza só o dia ativo; `dayExtra` (notas por dia) continua igual; Transporte mantido sem dias se não tiver campo de dia.
 - Rótulos novos em pt/en/es. Validar com `bunx tsgo --noEmit`, `bunx vitest run`, teste do helper de visibilidade da Segunda, e captura em 393px.
+
+## Ordem de execução (econômica) e acessos
+
+Os pedidos foram juntados em 3 etapas, da mais barata e segura para a mais pesada. Cada etapa é entregue, testada e só depois a próxima começa.
+
+1. **Etapa 1 — Pílulas de seções e dias (este plano).** Só visual, sem banco. Reaproveita o desenho das pílulas que já existe no painel. Custo baixo.
+2. **Etapa 2 — Semanas sem congregação no Itinerário** ("Semana de pioneiro" e "Semana livre"). Precisa de um campo novo no banco e de ajustes no painel, na agenda e nos lembretes para essas semanas não quebrarem nada. Custo médio.
+3. **Etapa 3 — Aba única "Modelos" e "Pacotes da visita".** Junta as telas de modelos numa só e cria os pacotes. É a maior mudança; fica por último, já aproveitando as pílulas da Etapa 1. Custo maior; antes dela mostro o mockup em texto para você aprovar.
+
+A prévia visual separada (`/previa-modelos`) foi cancelada: os mockups em texto dos planos substituem ela e economizam créditos.
+
+### Acessos de cada perfil (conferidos no código)
+- **Superintendente de circuito:** único que abre e edita os modelos hoje (as duas telas recusam outros perfis). Continua assim.
+- **Comissão de serviço e corpo de anciãos:** não veem as telas de modelos; continuam recebendo os dados nas abas da congregação como hoje. As etapas não mudam nada para eles.
+- **Esposa do superintendente:** usa o acesso por código e o espaço pessoal no aparelho; nenhuma etapa toca nisso.
+- Na Etapa 2, as semanas sem congregação não liberam nenhuma congregação para anciãos nem para a esposa.
+
+### Roadmap
+Ao iniciar a execução, as 3 etapas entram no roadmap como tarefas separadas.
