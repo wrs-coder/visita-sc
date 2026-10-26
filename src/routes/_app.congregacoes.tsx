@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Building2, Trash2, Pencil, KeyRound, Copy, Users, UserCog, Eye, EyeOff, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { CircuitHeader } from "@/components/circuit/CircuitHeader";
 import { useTranslation } from "react-i18next";
 
 // Pequeno cartão para o superintendente visualizar/copiar a senha que um ancião
@@ -244,10 +245,11 @@ function Page() {
 
   return (
     <div className="space-y-5">
+      <CircuitHeader />
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <Building2 className="h-6 w-6" /> {t("congregations.title")}
+          <h1 className="text-lg font-semibold flex items-center gap-2">
+            <Building2 className="h-5 w-5" /> {t("congregations.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {activeCount === 1
