@@ -172,3 +172,11 @@ Antes de encerrar qualquer mudança que toque modelos, papéis ou visitas, confi
 ## 25. Gatilho Obrigatório de Interação (Workflow com IA)
 
 - **PARADA PARA APROVAÇÃO:** Em pedidos complexos que envolvam arquitetura, banco de dados ou alteração de modelos, revisar as regras 11, 16 e 20, gerar um plano de ação passo a passo e **aguardar a autorização do usuário** antes de gerar qualquer bloco de código.
+
+## 26. Diretrizes de Prototipagem e Referência Visual (Zero Gasto de Créditos)
+
+- **MOCKUP VISUAL EM TEXTO (ASCII/ESQUEMA):** Sempre que for solicitada uma prévia visual de nova tela ou alteração de layout, a IA deve apresentar o esboço estritamente no chat usando diagramas de texto/ASCII simulando a tela do celular (ex.: 393px).
+- **ESTRUTURA DUPLA DA RESPOSTA:**
+  1. **Texto Explicativo:** Apresentar a hierarquia, a lógica de UX, as pílulas/botões e os estados de cada elemento.
+  2. **Diagrama ASCII:** Desenhar o layout textual da tela mostrando exatamente onde cada botão, seletor, lista e barra fixa ficarão posicionados.
+- **PARADA PARA APROVAÇÃO:** A IA deve aguardar a validação explícita do usuário sobre o esboço em texto antes de aplicar qualquer alteração de código na aplicação real.
