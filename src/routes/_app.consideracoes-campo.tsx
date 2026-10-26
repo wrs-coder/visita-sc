@@ -2149,6 +2149,7 @@ function NoteEditor({
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
   const META_COLLAPSED_KEY = "visita-sc:outline-meta-collapsed";
   const stableVh = useStableViewportHeight();
+  const [outlineSlot, setOutlineSlot] = useState<HTMLDivElement | null>(null);
   const [metaCollapsed, setMetaCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(META_COLLAPSED_KEY) === "1"; } catch { return false; }
   });
