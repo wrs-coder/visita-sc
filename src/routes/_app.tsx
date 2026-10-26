@@ -1,3 +1,4 @@
+import { VISIT_PROGRAM_PATHS } from "@/components/visit-week/VisitProgramTabs";
 import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
@@ -159,8 +160,12 @@ function AppLayout() {
       label: t("sidebar.sectionPrincipal"),
       items: [
         { to: "/dashboard", label: t("sidebar.home"), icon: LayoutDashboard },
-        { to: "/cronograma", label: t("sidebar.schedule"), icon: CalendarDays },
-        { to: "/configuracoes", label: t("sidebar.itinerary"), icon: Plane },
+        ...(role === "superintendent"
+          ? [
+              { to: "/cronograma", label: t("sidebar.schedule"), icon: CalendarDays },
+              { to: "/configuracoes", label: t("sidebar.itinerary"), icon: Plane },
+            ]
+          : []),
         ...(role === "superintendent"
           ? [
               { to: "/congregacoes", label: t("sidebar.congregations"), icon: Building2 },
@@ -180,12 +185,7 @@ function AppLayout() {
               { to: "/comunicacao-casal", label: t("sidebar.coupleMessages"), icon: Heart },
             ]
           : []),
-        { to: "/programa-ancioes", label: t("sidebar.elderProgram", { defaultValue: "Pastoreios, Recomendações e outros" }), icon: BookOpen },
-        { to: "/escala", label: t("sidebar.fieldStudies"), icon: Users },
-        { to: "/reunioes-discursos", label: t("sidebar.meetingsTalks"), icon: MapPin },
-        { to: "/refeicoes", label: t("sidebar.meals"), icon: UtensilsCrossed },
-        { to: "/transporte", label: t("sidebar.transport"), icon: Car },
-        { to: "/checklist", label: t("sidebar.checklist"), icon: ListChecks },
+        { to: "/programa-visita", label: t("sidebar.visitProgram", { defaultValue: "Programa da visita" }), icon: BookOpen },
       ],
     },
 
@@ -205,7 +205,8 @@ function AppLayout() {
   ].filter((s) => s.items.length > 0);
 
   const isActiveLink = (to: string) =>
-    location.pathname === to || (to !== "/dashboard" && location.pathname.startsWith(to));
+    location.pathname === to ||
+    (to === "/programa-visita" && VISIT_PROGRAM_PATHS.includes(location.pathname)) || (to !== "/dashboard" && location.pathname.startsWith(to));
 
   const LinkItem = ({ it, onClick }: { it: NavItem; onClick?: () => void }) => {
     const active = isActiveLink(it.to);

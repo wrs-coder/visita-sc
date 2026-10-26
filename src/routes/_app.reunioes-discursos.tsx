@@ -1,3 +1,4 @@
+import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -282,6 +283,7 @@ function Page() {
   return (
     <MeetingsDraftProvider scopeKey={scopeKey}>
       <MeetingsEditModeProvider isSuper={isSuper}>
+        <VisitProgramTabs />
         <TabsGuarded
           currentTab={currentTab}
           setCurrentTab={setCurrentTab}
