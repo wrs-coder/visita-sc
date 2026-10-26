@@ -47,6 +47,7 @@ import { maskPhone } from "@/lib/masks";
 import { SavingIndicator } from "@/components/SavingIndicator";
 import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog";
 import { AppAboutCard } from "@/components/AppAboutCard";
+import { ItineraryWeeks } from "@/components/itinerary/ItineraryWeeks";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
@@ -738,6 +739,8 @@ function Page() {
           </Dialog>
         )}
       </div>
+
+      {isSuper && <ItineraryWeeks />}
 
       <div className="space-y-4">
         {visits.length === 0 && (
