@@ -195,11 +195,7 @@ function AppLayout() {
       items: [
         ...(role === "superintendent"
           ? [
-              { to: "/modelos", label: t("sidebar.scheduleTemplates"), icon: FileStack },
-              { to: "/checklist-modelos", label: t("sidebar.checklistTemplates"), icon: ListChecks },
-              { to: "/modelo-reunioes-de-campo", label: t("sidebar.fieldMeetingTemplate"), icon: MapPin },
-              { to: "/modelo-reunioes-discursos", label: t("sidebar.meetingTalkTemplates"), icon: Layers },
-              { to: "/modelo-programacao-ancioes", label: t("sidebar.elderProgramTemplate", { defaultValue: "Modelo Programação Anciãos" }), icon: BookOpen },
+              { to: "/modelos", label: t("sidebar.sectionModelos"), icon: FileStack },
             ]
           : []),
         { to: "/perfil", label: t("sidebar.myProfile"), icon: UserCircle },

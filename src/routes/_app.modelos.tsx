@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
@@ -202,6 +203,7 @@ function Page() {
 
   return (
     <div className="space-y-5">
+      <TemplatesTabs />
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><FileStack className="h-6 w-6" /> {t("templates.program.title")}</h1>
