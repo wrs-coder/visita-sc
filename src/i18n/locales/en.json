@@ -817,8 +817,8 @@
       }
     },
     "checklist": {
-      "title": "Checklist Templates",
-      "subtitle": "Create checklists and apply them to each visit via Itinerary.",
+      "title": "Questions for the elders",
+      "subtitle": "Add questions you would like the body of elders to answer",
       "newDialogTitle": "New checklist template",
       "itemsTitle": "Checklist items",
       "noItemsHelp": "No items. Add questions or topics for this checklist.",

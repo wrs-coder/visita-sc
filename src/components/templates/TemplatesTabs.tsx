@@ -3,12 +3,12 @@ import { FileStack, ListChecks, MapPin, Layers, BookOpen, Package } from "lucide
 import { cn } from "@/lib/utils";
 
 export const TEMPLATE_TABS = [
-  { to: "/modelos", label: "Programação", icon: FileStack },
-  { to: "/checklist-modelos", label: "Checklist", icon: ListChecks },
-  { to: "/modelo-reunioes-de-campo", label: "Campo", icon: MapPin },
-  { to: "/modelo-reunioes-discursos", label: "Discursos", icon: Layers },
-  { to: "/modelo-programacao-ancioes", label: "Anciãos", icon: BookOpen },
   { to: "/pacotes-visita", label: "Pacotes", icon: Package },
+  { to: "/modelos", label: "Programação", icon: FileStack },
+  { to: "/modelo-reunioes-de-campo", label: "Campo", icon: MapPin },
+  { to: "/modelo-reunioes-discursos", label: "Reuniões", icon: Layers },
+  { to: "/modelo-programacao-ancioes", label: "Anciãos", icon: BookOpen },
+  { to: "/checklist-modelos", label: "Perguntas", icon: ListChecks },
 ] as const;
 
 /** Pílulas da aba única "Modelos": troca entre os tipos de modelo. */

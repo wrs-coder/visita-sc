@@ -807,8 +807,8 @@
       }
     },
     "checklist": {
-      "title": "Modelos de Checklist",
-      "subtitle": "Crie checklists e aplique a cada visita pelo Itinerário.",
+      "title": "Perguntas para os anciãos",
+      "subtitle": "Adicione perguntas que gostaria de saber a resposta do corpo de anciãos",
       "newDialogTitle": "Novo modelo de checklist",
       "itemsTitle": "Itens da checklist",
       "noItemsHelp": "Nenhum item. Adicione perguntas ou tópicos para esta checklist.",
