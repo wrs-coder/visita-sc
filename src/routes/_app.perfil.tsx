@@ -10,6 +10,7 @@ import { dumpClientBackup, restoreClientBackup } from "@/lib/backup-client";
 import { packBackupZip, unpackBackupZip, looksLikeZip } from "@/lib/backup-package";
 import { saveBlob, readJsonFile, pickFile } from "@/lib/share";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,6 +59,18 @@ function Page() {
   const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
   const [wifeCode, setWifeCode] = useState("");
   const [busyWife, setBusyWife] = useState(false);
+  // Aba escolhida fica lembrada no aparelho (só apresentação).
+  const [tab, setTab] = useState("personal");
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem("visita-sc:profile-tab");
+      if (v === "personal" || v === "features" || v === "settings") setTab(v);
+    } catch { /* ignore */ }
+  }, []);
+  const changeTab = (v: string) => {
+    setTab(v);
+    try { localStorage.setItem("visita-sc:profile-tab", v); } catch { /* quota */ }
+  };
   const [username, setUsername] = useState("");
   const [usernameLoaded, setUsernameLoaded] = useState(false);
   const [busyUsername, setBusyUsername] = useState(false);
@@ -281,68 +294,13 @@ function Page() {
         <h1 className="text-2xl md:text-3xl font-bold">{t("profile.title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">{t("profile.subtitle")}</p>
       </header>
-
-      {user && <ReminderSettingsCard scope={user.id} role={role === "elder" ? "elder" : "superintendent"} />}
-
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Globe className="h-4 w-4 text-primary" /> {t("profile.language")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <LanguageSwitcher />
-          <p className="text-xs text-muted-foreground">{t("profile.languageHelp")}</p>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-card">
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary" /> {t("profile.personalData")}</CardTitle></CardHeader>
-        <CardContent>
-          <form onSubmit={saveName} className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">{t("profile.fullName")}</Label>
-              <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={120} placeholder={t("profile.fullNamePlaceholder")} />
-              <p className="text-xs text-muted-foreground">{t("profile.fullNameHelp")}</p>
-            </div>
-            <Button type="submit" disabled={busyName}>{t("profile.saveName")}</Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {role === "elder" && (
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <UserCircle2 className="h-4 w-4 text-primary" /> {t("profile.usernameSection.title")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={saveUsername} className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="username">{t("profile.usernameSection.label")}</Label>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, "").slice(0, 30))}
-                  placeholder={t("profile.usernameSection.placeholder")}
-                  maxLength={30}
-                  minLength={3}
-                  autoComplete="username"
-                  disabled={!usernameLoaded}
-                />
-                <p className="text-xs text-muted-foreground">{t("profile.usernameSection.help")}</p>
-                <p className="text-xs text-amber-600 dark:text-amber-400">{t("profile.usernameSection.loginNote")}</p>
-              </div>
-              <Button type="submit" disabled={busyUsername || !usernameLoaded}>{t("profile.usernameSection.save")}</Button>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-
-
-
+      <Tabs value={tab} onValueChange={changeTab} className="space-y-4">
+        <TabsList className="sticky top-14 md:top-0 z-10 w-full h-auto p-1 rounded-full bg-muted/80 backdrop-blur grid grid-cols-3">
+          <TabsTrigger value="personal" className="rounded-full text-xs sm:text-sm py-1.5">{t("profile.tabPersonal")}</TabsTrigger>
+          <TabsTrigger value="features" className="rounded-full text-xs sm:text-sm py-1.5">{t("profile.tabFeatures")}</TabsTrigger>
+          <TabsTrigger value="settings" className="rounded-full text-xs sm:text-sm py-1.5">{t("profile.tabSettings")}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="personal" forceMount className="space-y-4 mt-0 data-[state=inactive]:hidden">
       {role === "superintendent" && (
         <Card className="shadow-card">
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> {t("profile.circuit")}</CardTitle></CardHeader>
@@ -358,7 +316,6 @@ function Page() {
           </CardContent>
         </Card>
       )}
-
       {role === "superintendent" && (
         <Card className="shadow-card">
           <CardHeader>
@@ -399,8 +356,48 @@ function Page() {
           </CardContent>
         </Card>
       )}
-
-
+      <Card className="shadow-card">
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary" /> {t("profile.personalData")}</CardTitle></CardHeader>
+        <CardContent>
+          <form onSubmit={saveName} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="name">{t("profile.fullName")}</Label>
+              <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={120} placeholder={t("profile.fullNamePlaceholder")} />
+              <p className="text-xs text-muted-foreground">{t("profile.fullNameHelp")}</p>
+            </div>
+            <Button type="submit" disabled={busyName}>{t("profile.saveName")}</Button>
+          </form>
+        </CardContent>
+      </Card>
+      {role === "elder" && (
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserCircle2 className="h-4 w-4 text-primary" /> {t("profile.usernameSection.title")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={saveUsername} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="username">{t("profile.usernameSection.label")}</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, "").slice(0, 30))}
+                  placeholder={t("profile.usernameSection.placeholder")}
+                  maxLength={30}
+                  minLength={3}
+                  autoComplete="username"
+                  disabled={!usernameLoaded}
+                />
+                <p className="text-xs text-muted-foreground">{t("profile.usernameSection.help")}</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400">{t("profile.usernameSection.loginNote")}</p>
+              </div>
+              <Button type="submit" disabled={busyUsername || !usernameLoaded}>{t("profile.usernameSection.save")}</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
       <Card className="shadow-card">
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> {t("profile.email")}</CardTitle></CardHeader>
         <CardContent>
@@ -414,8 +411,6 @@ function Page() {
           </form>
         </CardContent>
       </Card>
-
-
       <Card className="shadow-card">
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><KeyRound className="h-4 w-4 text-primary" /> {t("profile.changePassword")}</CardTitle></CardHeader>
         <CardContent>
@@ -432,12 +427,8 @@ function Page() {
           </form>
         </CardContent>
       </Card>
-
-      <OfflinePinCard />
-      <SyncStatusCard />
-
-
-
+        </TabsContent>
+        <TabsContent value="features" forceMount className="space-y-4 mt-0 data-[state=inactive]:hidden">
       {role === "superintendent" && (
         <>
           <Card className="shadow-card border-primary/30">
@@ -465,7 +456,22 @@ function Page() {
           <BibleManagerDialog open={bibleOpen} onOpenChange={setBibleOpen} onChanged={refreshActiveBible} />
         </>
       )}
-
+      <OfflinePinCard />
+      <SyncStatusCard />
+        </TabsContent>
+        <TabsContent value="settings" forceMount className="space-y-4 mt-0 data-[state=inactive]:hidden">
+      {user && <ReminderSettingsCard scope={user.id} role={role === "elder" ? "elder" : "superintendent"} />}
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Globe className="h-4 w-4 text-primary" /> {t("profile.language")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <LanguageSwitcher />
+          <p className="text-xs text-muted-foreground">{t("profile.languageHelp")}</p>
+        </CardContent>
+      </Card>
       {role === "superintendent" && (
         <Card className="shadow-card border-primary/30">
           <CardHeader>
@@ -503,6 +509,8 @@ function Page() {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+      </Tabs>
 
       <Card className="shadow-card border-primary/30">
         <CardHeader>
