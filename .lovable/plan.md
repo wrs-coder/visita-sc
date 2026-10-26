@@ -1,97 +1,72 @@
-# Mockup visual: aba única Modelos, Pacotes da visita e semanas sem congregação
+# Pílulas de dias e de seções nos modelos
 
-Primeira etapa: apenas telas de apresentação com dados fictícios. Nenhum botão salva nada (só registra o toque para teste), nada muda no banco nem nas telas atuais. Depois da sua aprovação visual, a lógica real vira um plano separado.
+Só muda a aparência e a navegação. Nenhum dado salvo, campo ou regra de gravação muda.
 
-## Onde ver
-Uma página de prévia separada, **"Prévia dos Modelos"**, acessível pelo endereço `/previa-modelos` (sem item novo na barra lateral). Ela tem 4 abas internas para alternar entre os mockups abaixo. As telas reais continuam intactas.
+## O que existe hoje (conferido)
+- Os dois modelos usam os mesmos 7 dias da visita: Ter (1º dia), Qua, Qui, Sex, Sáb, Dom e **Seg** (Segunda já existe como último dia).
+- "Modelos de Programação Pessoal" mostra Estudos, o bloco "Informações adicionais do superintendente", Refeições e Transporte empilhados numa página longa.
+- "Modelo Reuniões de Campo" mostra todos os dias empilhados.
 
-## Tela A — Aba única "Modelos" (celular 393px)
-
-```text
-+-----------------------------------------+
-| Modelos                                 |
-| [Programação][Checklist][Campo]         |  <- pílulas roláveis
-| [Discursos][Anciãos][Pacotes]           |
-+-----------------------------------------+
-| Modelo: [ Visita padrão         v ] ... |  <- seletor + menu 3 pontos
-|         (Renomear/Duplicar/Excluir/     |
-|          Exportar/Importar)             |
-| > Informações adicionais (recolhido)    |
-+-----------------------------------------+
-| [Recolher tudo]                         |
-| v SEGUNDA                               |
-|   > Manhã · 08:30 · Casa em casa    [x] |
-|   > Tarde · 15:00 · Testemunho      [x] |
-| > TERÇA (2 itens)                       |
-| > QUARTA (1 item)                       |
-+-----------------------------------------+
-| [+ Adicionar]          [ Salvar modelo ]|  <- barra fixa no rodapé
-+-----------------------------------------+
-```
-
-- Item aberto mostra os campos principais (dia, turno, hora, modalidade, território) e um "Mais detalhes" recolhido para observações e oração.
-- No computador, a lista de modelos fica numa coluna estreita à esquerda e o editor à direita.
-- Mesma silhueta aplicada a Programação, Reuniões de campo e Anciãos (seções e eventos no lugar de dias).
-
-## Tela B — Pacotes da visita (pílula "Pacotes")
+## (01) Pílulas de dias — Reuniões de Campo (celular 393px)
 
 ```text
 +-----------------------------------------+
-| Pacotes da visita      [Importar][+ Novo]|
+| Modelo: [ Campo 2 turnos        v ] ... |
 +-----------------------------------------+
-| [Pacote] Visita de primavera        ... |
-|  Programação ......... Visita padrão    |
-|  Checklist ........... Checklist base   |
-|  Reuniões de campo ... Campo 2 turnos   |
-|  Reuniões/discursos .. Semana normal    |
-|  Anciãos ............. (vazio)          |
-|  [Editar]  [Exportar]                   |
+| Dias da visita          [ ] Segunda     |  <- chave para mostrar Seg
+| (Ter)(Qua)(Qui)(Sex)                    |
+| (Sáb)(Dom)                              |  <- quebra em 2 linhas, sem rolar
+|   ^ Ter selecionada (cor primária)      |
+|   pílula com ponto = dia com itens      |
 +-----------------------------------------+
-| [Pacote] Visita com congresso       ... |
-|  5 de 5 modelos · "1 não encontrado" !  |
+| TERÇA (1º dia) · 2 turnos               |
+|  > Manhã · 08:30 · Casa em casa     [x] |
+|  > Tarde · 15:00 · Testemunho       [x] |
+|  [+ Adicionar turno nesta terça]        |
++-----------------------------------------+
+|                       [ Salvar modelo ] |
 +-----------------------------------------+
 ```
 
-- "Editar" abre uma janela com 5 seletores (um por tipo de modelo) e o nome do pacote.
-- Aviso discreto em âmbar quando um modelo do pacote não existe mais.
-- Rodapé da tela: "Guardado só neste aparelho · use Exportar para levar a outro".
+- Só o dia escolhido aparece; os outros ficam guardados, nada se perde.
+- Pílulas em grade que quebra linha (cabe na largura do celular, sem rolagem lateral). Cada pílula mostra um pontinho quando o dia tem itens.
+- **Segunda:** chave "Segunda" desligada por padrão. Ligada, a pílula "Seg" aparece no fim. Se o modelo já tiver itens na segunda, a chave já vem ligada (para nada ficar escondido).
+- "Adicionar" cria o item já no dia selecionado.
 
-## Tela C — Itinerário: escolher pacote na visita
+## (02) Programação Pessoal — seção primeiro, depois dias
 
 ```text
 +-----------------------------------------+
-| Nova visita                             |
-| Congregação [ Central            v ]    |
-| Datas       [ 03/11 ] a [ 09/11 ]       |
-| Pacote da visita [ Visita de primavera v]|
-|  "Preenche os 5 modelos abaixo"         |
-| > Modelos individuais (5 escolhidos)    |  <- recolhido
-|              [Cancelar] [Salvar]        |
+| Modelo: [ Visita padrão         v ] ... |
+| Nome do modelo [ Visita padrão       ]  |
++-----------------------------------------+
+| (Estudos e Revisitas)(Refeições)        |
+| (Transporte)                            |  <- pílulas de seção
++-----------------------------------------+
+| Dias da visita          [ ] Segunda     |
+| (Ter)(Qua)(Qui)(Sex)(Sáb)(Dom)          |
++-----------------------------------------+
+| ESTUDOS E REVISITAS · QUARTA            |
+|  Informações adicionais do superint.    |
+|  [ ......................... ]          |
+|  > Manhã · 09:00 · João Silva       [x] |
+|  [+ Adicionar nesta quarta]             |
++-----------------------------------------+
+| > Informações gerais (recolhido)        |  <- só em Estudos e Revisitas
 +-----------------------------------------+
 ```
 
-## Tela D — Itinerário: semanas sem visita
+- Pílulas de seção: "Estudos e Revisitas" (inclui as Informações adicionais do superintendente por dia e as gerais), "Refeições" (inclui a observação do dia) e "Transporte".
+- Depois de escolher a seção, aparecem as pílulas de dias, com a mesma chave "Segunda".
+- **Transporte:** hoje é uma lista de eventos sem dia fixo da visita. Se não houver dia ligado a cada evento, a seção Transporte mostra a lista como hoje (sem pílulas de dias). Isso será confirmado na leitura do código antes de mexer.
+- A seção e o dia escolhidos ficam lembrados no aparelho ao voltar à tela.
 
-```text
-+-----------------------------------------+
-| Itinerário        [+ Visita][+ Semana]  |
-+-----------------------------------------+
-| 27/10–02/11  Congregação Central        |
-| 03/11–09/11  [Semana de pioneiro]       |  <- selo próprio, sem congregação
-| 10/11–16/11  Congregação Norte          |
-| 17/11–23/11  [Semana livre]             |
-+-----------------------------------------+
-```
-
-- "+ Semana" abre janela curta: tipo (Semana de pioneiro / Semana livre) e data de início; nenhuma congregação.
-
-## Estilo
-- Cores e bordas só dos tokens existentes (cartões, `section-accent`, `primary`, `muted`); selos de semana com cores de destaque já usadas na Agenda.
-- Ícones Lucide: FileStack, ListChecks, MapPin, Layers, BookOpen, Package, CalendarOff, Sun.
-- Sem imagens geradas.
+## O que não muda
+Banco, campos salvos, importar/exportar, duplicar, botão Salvar, propagação para visitas, telas dos anciãos e painel.
 
 ## Detalhes técnicos
-- Nova rota estática `src/routes/_app.previa-modelos.tsx` com `head()` próprio; componentes em `src/components/mockups/` (`TemplatesHubMockup`, `PackagesMockup`, `ItineraryPackageMockup`, `ItineraryWeeksMockup`) com arrays fictícios locais e handlers `console.log`.
-- Reutiliza `Card`, `Button`, `Select`, `Dialog`, `DropdownMenu`, `Badge`, `Collapsible` do shadcn; pílulas com `ToggleGroup` ou botões arredondados com rolagem horizontal.
-- Nenhuma alteração em rotas existentes, server functions, banco ou sidebar. Validar com `bunx tsgo --noEmit` e captura no navegador em 393px e 1280px.
-- Na execução, registrar no roadmap: "Mockup visual dos Modelos/Pacotes/Semanas — aguardando validação".
+- Novo componente compartilhado `src/components/templates/DayPills.tsx`: grade `flex flex-wrap gap-1.5`, pílulas no estilo de `DayPillsStrip` (tokens `primary`/`border`/`muted`), ponto indicando dia com itens, `Switch` "Segunda" (day_offset 6).
+- Preferências (seção, dia, Segunda visível) em localStorage por tela e por modelo; Segunda forçada visível quando existir item com `day_offset === 6`.
+- `_app.modelo-reunioes-de-campo.tsx`: filtrar a lista pelo dia escolhido; `addItem` usa o dia ativo.
+- `_app.modelos.tsx`: `ToggleGroup` de seções; `KindBlock` renderiza só o dia ativo; `dayExtra` (notas por dia) continua igual; Transporte mantido sem dias se não tiver campo de dia.
+- Rótulos novos em pt/en/es. Validar com `bunx tsgo --noEmit`, `bunx vitest run`, teste do helper de visibilidade da Segunda, e captura em 393px.
