@@ -1,10 +1,19 @@
 // Dias dos modelos: 0=Ter (1º dia) … 5=Dom, 6=Seg (dia extra, opcional).
 export const MONDAY_OFFSET = 6;
-export const BASE_DAYS = [0, 1, 2, 3, 4, 5];
+export const TUESDAY_OFFSET = 0;
+export const BASE_DAYS = [1, 2, 3, 4, 5];
 
-/** Segunda aparece se o usuário ligou a chave ou se o modelo já tem itens nela. */
-export function visibleTemplateDays(showMonday: boolean, hasMondayItems: boolean): number[] {
-  return showMonday || hasMondayItems ? [...BASE_DAYS, MONDAY_OFFSET] : [...BASE_DAYS];
+/** Terça e Segunda são opcionais: aparecem se o usuário ligou a chave ou se o modelo já tem itens nelas. */
+export function visibleTemplateDays(
+  showMonday: boolean,
+  hasMondayItems: boolean,
+  showTuesday = false,
+  hasTuesdayItems = false,
+): number[] {
+  const days = [...BASE_DAYS];
+  if (showTuesday || hasTuesdayItems) days.unshift(TUESDAY_OFFSET);
+  if (showMonday || hasMondayItems) days.push(MONDAY_OFFSET);
+  return days;
 }
 
 /** Mantém o dia escolhido válido quando a Segunda some. */

@@ -101,6 +101,9 @@ function Page() {
   const dayState = useTemplateDays(
     `tpl-program:${activeSlot}`,
     activeItems.some((it) => it.day_offset === MONDAY_OFFSET),
+    activeItems.some((it) => it.day_offset === 0)
+      || !!(notesBySlot[Number(activeSlot)]?.["0"] ?? "").trim()
+      || !!(studyNotesBySlot[Number(activeSlot)]?.["0"] ?? "").trim(),
   );
 
   if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">{t("templates.restricted")}</CardContent></Card>;
@@ -288,6 +291,9 @@ function Page() {
                   showMonday={dayState.showMonday}
                   mondayLocked={dayState.mondayLocked}
                   onToggleMonday={dayState.setShowMonday}
+                  showTuesday={dayState.showTuesday}
+                  tuesdayLocked={dayState.tuesdayLocked}
+                  onToggleTuesday={dayState.setShowTuesday}
                 />
 
                 {section === "study" && (<>
@@ -427,7 +433,7 @@ function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLa
                       <div className="flex items-center gap-2">
                         <Select value={String(it.day_offset)} onValueChange={(v) => tplId && onUpdate(tplId, i, { day_offset: Number(v) })}>
                           <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
-                          <SelectContent>{DAY_OPTS.map((dd) => <SelectItem key={dd} value={String(dd)}>{dayLabel[dd]}</SelectItem>)}</SelectContent>
+                          <SelectContent>{DAY_OPTS.filter((dd) => dayOptions.includes(dd) || dd === it.day_offset).map((dd) => <SelectItem key={dd} value={String(dd)}>{dayLabel[dd]}</SelectItem>)}</SelectContent>
                         </Select>
                         <div className="flex-1" />
                         <Button size="icon" variant="ghost" onClick={() => tplId && onRemove(tplId, i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>

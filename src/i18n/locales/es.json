@@ -908,6 +908,7 @@
     },
     "dayPills": {
       "title": "Días de la visita",
+      "tuesday": "Martes",
       "monday": "Lunes",
       "sections": "Secciones de la plantilla"
     },
