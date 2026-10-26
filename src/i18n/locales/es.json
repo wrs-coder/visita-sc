@@ -792,8 +792,8 @@
       }
     },
     "checklist": {
-      "title": "Plantillas de Lista de tareas",
-      "subtitle": "Crea listas de tareas y aplícalas a cada visita por el Itinerario.",
+      "title": "Preguntas para los ancianos",
+      "subtitle": "Agrega preguntas que te gustaría que el cuerpo de ancianos respondiera",
       "newDialogTitle": "Nueva plantilla de lista de tareas",
       "itemsTitle": "Ítems de la lista de tareas",
       "noItemsHelp": "Sin ítems. Agrega preguntas o temas para esta lista.",

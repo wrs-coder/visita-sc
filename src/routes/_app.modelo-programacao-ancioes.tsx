@@ -116,7 +116,11 @@ function Page() {
 
   const loadList = useCallback(async () => {
     const r = await fnList();
-    if (r.ok) setTpls(r.templates as TemplateRow[]);
+    if (r.ok) {
+      const list = r.templates as TemplateRow[];
+      setTpls(list);
+      setActiveId((cur) => (cur && list.some((x) => x.id === cur) ? cur : list[0]?.id ?? null));
+    }
   }, [fnList]);
 
   const loadActive = useCallback(async (id: string) => {
