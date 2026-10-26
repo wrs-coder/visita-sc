@@ -165,7 +165,6 @@ function Page() {
     setBusy(false);
     if (!r2.ok) { toast.error(r2.error); return; }
     toast.success(t("templates.program.duplicated", { defaultValue: "Modelo duplicado" }));
-    setDupSlot(null);
     setActiveSlot(String(toSlot));
     await load();
   };
