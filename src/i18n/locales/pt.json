@@ -970,7 +970,8 @@
       "searchPlaceholder": "Digite para filtrar...",
       "from": "De",
       "to": "Até",
-      "clear": "Limpar"
+      "clear": "Limpar",
+      "close": "Fechar"
     },
     "categories": {
       "free": {
@@ -1072,7 +1073,8 @@
     },
     "whatsapp": {
       "header": "*Notas Privadas — Confidencial*"
-    }
+    },
+    "newButton": "Novo"
   },
   "report": {
     "loading": "A carregar relatório…",
@@ -1964,5 +1966,16 @@
     "body": "Esta visita ainda não tem nenhum modelo ou pacote escolhido.",
     "go": "Me leve para a visita",
     "badge": "Sem modelos"
+  },
+  "circuit": {
+    "fallbackTitle": "Meu circuito",
+    "openCalendar": "Abrir calendário",
+    "month": "Mês",
+    "week": "Semana",
+    "today": "Hoje",
+    "prevMonth": "Mês anterior",
+    "nextMonth": "Próximo mês",
+    "visitLegend": "Visita",
+    "eventLegend": "Evento"
   }
 }

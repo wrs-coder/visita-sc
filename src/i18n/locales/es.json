@@ -955,7 +955,8 @@
       "searchPlaceholder": "Escribe para filtrar...",
       "from": "Desde",
       "to": "Hasta",
-      "clear": "Limpiar"
+      "clear": "Limpiar",
+      "close": "Cerrar"
     },
     "categories": {
       "free": {
@@ -1057,7 +1058,8 @@
     },
     "whatsapp": {
       "header": "*Notas Privadas — Confidencial*"
-    }
+    },
+    "newButton": "Nuevo"
   },
   "report": {
     "loading": "Cargando informe…",
@@ -1971,5 +1973,16 @@
     "body": "Esta visita aún no tiene ninguna plantilla o paquete elegido.",
     "go": "Llévame a la visita",
     "badge": "Sin plantillas"
+  },
+  "circuit": {
+    "fallbackTitle": "Mi circuito",
+    "openCalendar": "Abrir calendario",
+    "month": "Mes",
+    "week": "Semana",
+    "today": "Hoy",
+    "prevMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente",
+    "visitLegend": "Visita",
+    "eventLegend": "Evento"
   }
 }

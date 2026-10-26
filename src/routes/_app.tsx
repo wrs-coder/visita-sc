@@ -164,13 +164,11 @@ function AppLayout() {
         { to: "/dashboard", label: t("sidebar.home"), icon: LayoutDashboard },
         ...(role === "superintendent"
           ? [
-              { to: "/cronograma", label: t("sidebar.schedule"), icon: CalendarDays },
-              { to: "/configuracoes", label: t("sidebar.itinerary"), icon: Plane },
+              { to: "/configuracoes", label: profile?.circuit?.trim() || t("circuit.fallbackTitle"), icon: CalendarDays },
             ]
           : []),
         ...(role === "superintendent"
           ? [
-              { to: "/congregacoes", label: t("sidebar.congregations"), icon: Building2 },
               { to: "/consideracoes-campo", label: t("sidebar.personalOutlines"), icon: FileText },
               { to: "/notas", label: t("sidebar.privateNotes"), icon: Lock },
             ]
@@ -208,7 +206,8 @@ function AppLayout() {
 
   const isActiveLink = (to: string) =>
     location.pathname === to ||
-    (to === "/programa-visita" && VISIT_PROGRAM_PATHS.includes(location.pathname)) || (to !== "/dashboard" && location.pathname.startsWith(to));
+    (to === "/programa-visita" && VISIT_PROGRAM_PATHS.includes(location.pathname)) ||
+    (to === "/configuracoes" && (location.pathname.startsWith("/congregacoes") || location.pathname.startsWith("/cronograma"))) || (to !== "/dashboard" && location.pathname.startsWith(to));
 
   const LinkItem = ({ it, onClick }: { it: NavItem; onClick?: () => void }) => {
     const active = isActiveLink(it.to);

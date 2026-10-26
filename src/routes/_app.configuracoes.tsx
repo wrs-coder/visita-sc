@@ -48,6 +48,7 @@ import { maskPhone } from "@/lib/masks";
 import { SavingIndicator } from "@/components/SavingIndicator";
 import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog";
 import { AppAboutCard } from "@/components/AppAboutCard";
+import { CircuitHeader } from "@/components/circuit/CircuitHeader";
 import { ItineraryWeeks } from "@/components/itinerary/ItineraryWeeks";
 import { loadPackages, fetchPackages, missingFields, packageToForm, type VisitPackage } from "@/lib/visit-packages";
 
@@ -431,7 +432,8 @@ function Page() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl md:text-3xl font-bold">{t("itinerary.title")}</h1>
+      <CircuitHeader />
+      {!isSuper && <h1 className="text-2xl md:text-3xl font-bold">{t("itinerary.title")}</h1>}
 
       <Card>
         <CardContent className="p-5">
