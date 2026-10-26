@@ -916,6 +916,11 @@
       "cartas": "Cartas",
       "telefone_cartas": "Telefone + Cartas",
       "grupo_de_campo": "Grupo de campo"
+    },
+    "dayPills": {
+      "title": "Dias da visita",
+      "monday": "Segunda",
+      "sections": "Seções do modelo"
     }
   },
   "notes": {

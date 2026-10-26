@@ -926,6 +926,11 @@
       "cartas": "Letters",
       "telefone_cartas": "Phone + Letters",
       "grupo_de_campo": "Field group"
+    },
+    "dayPills": {
+      "title": "Visit days",
+      "monday": "Monday",
+      "sections": "Template sections"
     }
   },
   "notes": {

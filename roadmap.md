@@ -55,3 +55,8 @@
 - [x] Reuniões e Discursos: destacar cada campo pendente; aviso no modo edição quando a soma dos tópicos difere do tempo do cronômetro.
 - [x] Controle de tempo por tópico: minutos no modo edição, selos "até HH:MM", concluir tópico e atraso/adiantamento.
 - [x] Som opcional nos avisos do cronômetro.
+
+## Modelos e Itinerário (26/10)
+- [x] Etapa 1 — Pílulas de seções e dias nos modelos (Segunda opcional)
+- [ ] Etapa 2 — Semanas de pioneiro/livre no Itinerário (aguardando aprovação do plano)
+- [ ] Etapa 3 — Aba única "Modelos" e Pacotes da visita (aguardando mockup aprovado)

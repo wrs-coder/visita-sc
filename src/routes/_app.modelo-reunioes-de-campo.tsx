@@ -367,7 +367,7 @@ function Page() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <Select value={String(it.day_offset)} onValueChange={(v) => updateItem(idx, { day_offset: Number(v) })}>
                             <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
-                            <SelectContent>{DAY_OPTS.map((d) => <SelectItem key={d} value={String(d)}>{DAY_LABEL[d]}</SelectItem>)}</SelectContent>
+                            <SelectContent>{dayState.days.map((d) => <SelectItem key={d} value={String(d)}>{DAY_LABEL[d]}</SelectItem>)}</SelectContent>
                           </Select>
                           <Select value={it.period} onValueChange={(v) => updateItem(idx, { period: v })}>
                             <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
