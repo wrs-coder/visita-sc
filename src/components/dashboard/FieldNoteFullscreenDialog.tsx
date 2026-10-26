@@ -65,6 +65,7 @@ export function FieldNoteFullscreenDialog({
   const [library, setLibrary] = useState<BibleLibrary | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [fsSlot, setFsSlot] = useState<HTMLDivElement | null>(null);
   const [scale, setScale] = useState<number>(() => {
     if (typeof window === "undefined") return 1;
     try {
