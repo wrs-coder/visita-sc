@@ -50,7 +50,11 @@ import { AppAboutCard } from "@/components/AppAboutCard";
 import { ItineraryWeeks } from "@/components/itinerary/ItineraryWeeks";
 import { loadPackages, missingFields, packageToForm, type VisitPackage } from "@/lib/visit-packages";
 
-export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
+export const Route = createFileRoute("/_app/configuracoes")({
+  component: Page,
+  validateSearch: (s: Record<string, unknown>): { edit?: string } =>
+    typeof s.edit === "string" && s.edit ? { edit: s.edit } : {},
+});
 
 const VISIT_TITLE_OPTIONS = [
   "Visita",
@@ -289,13 +293,8 @@ function Page() {
     if (!form.congregation_id) { toast.error("Selecione a congregação"); return; }
     if (!form.title || !form.start_date || !form.end_date) { toast.error("Preencha todos os campos"); return; }
     if (form.end_date < form.start_date) { toast.error("A data final não pode ser anterior à inicial"); return; }
-    const isScs = form.title === "Visita SCS";
-    if (!editId && !isScs) {
-      if (!form.template_id) { toast.error("Selecione o Modelo de Programação"); return; }
-      if (!form.checklist_template_id) { toast.error("Selecione o Modelo de Checklist"); return; }
-      if (!form.field_template_id) { toast.error("Selecione o Modelo de Reuniões de Campo"); return; }
-      if (!form.meeting_talk_template_id) { toast.error("Selecione o Modelo de Reunião e Discurso"); return; }
-    }
+    // Modelos e pacotes são opcionais: a visita pode ser criada sem nenhum.
+
 
     setSubmitting(true);
     try {
