@@ -58,6 +58,7 @@ Regras:
 - Programação pessoal — título "Programação pessoal"; frase "Organize a sua disponibilidade para Estudos e Revisitas, Refeições e solicitação de transporte."
 - Reuniões de campo — título "Reuniões de campo"; frase "Organize as reuniões de campo de acordo com horários e modalidades." Remover o aviso "Cada turno tem sua própria modalidade…".
 - Reuniões e Discursos — título "Reuniões e Discursos"; frase "Organize as reuniões do Meio de Semana, Fim de Semana, Pioneiros e Anciãos/Servos."
+- Programação Anciãos — título "Programação Anciãos"; frase "Organize a sua disponibilidade para visitas de pastoreio, encorajamentos especiais e colete informações referentes à reunião com os anciãos."
 - Contadores "4/24 modelos" saem do subtítulo.
 
 ## Reuniões de campo — "Mais detalhes"
@@ -69,10 +70,10 @@ Regras:
 | Dirigente [ ............ ]        |
 | Local de saída [ ........ ]       |
 | > Mais detalhes               •   |
+|   Observações [ ... ]             |
 |   Nº território S-13 [ ... ]      |
 |   Localização território [ ... ]  |
 |   Dirigentes auxiliares [ ... ]   |
-|   Observações [ ... ]             |
 |   Oração final [ ... ]            |
 +-----------------------------------+
 ```
