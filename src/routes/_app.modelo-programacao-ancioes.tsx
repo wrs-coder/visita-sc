@@ -249,7 +249,7 @@ function Page() {
       </div>
 
       <div className="grid md:grid-cols-[260px_1fr] gap-4">
-        <Card><CardContent className="p-3 space-y-1">
+        <Card className="hidden md:block"><CardContent className="p-3 space-y-1">
           {tpls.length === 0 ? (
             <div className="text-sm text-muted-foreground p-3 text-center">Nenhum modelo</div>
           ) : tpls.map((tp) => (
@@ -267,38 +267,33 @@ function Page() {
             </CardContent></Card>
           ) : (
             <>
-              <Card><CardContent className="p-4 flex items-center justify-between gap-2 flex-wrap">
-                <div className="font-semibold truncate">{active.name}</div>
-                <div className="flex gap-2 flex-wrap items-center">
-                  <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
-                    <Pencil className="h-3.5 w-3.5 mr-1" />Renomear
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
-                    <Copy className="h-3.5 w-3.5 mr-1" />Duplicar
-                  </Button>
-                  <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
-                    <Trash2 className="h-3.5 w-3.5 mr-1" />Excluir
-                  </Button>
-                  <Button size="sm" onClick={handleSave} disabled={busy}>
-                    <Save className="h-3.5 w-3.5 mr-1" />Salvar
-                  </Button>
-                  <TemplateIOButtons
-                    filenameBase={active.name || "programacao-ancioes"}
-                    onExport={() => fnExport({ data: { id: active.id } })}
-                    onImport={async (file) => {
+              <Card><CardContent className="p-3 flex items-center gap-2">
+                <div className="flex-1 min-w-0 md:hidden">
+                  <TemplatePicker items={tpls} activeId={activeId} onPick={setActiveId} />
+                </div>
+                <div className="hidden md:block flex-1 font-semibold truncate">{active.name}</div>
+                <TemplateActionsMenu
+                  disabled={busy}
+                  onRename={() => { setRenameVal(active.name); setRenameOpen(true); }}
+                  onDuplicate={handleDuplicate}
+                  duplicateDisabled={tpls.length >= MAX}
+                  onDelete={handleDelete}
+                  io={{
+                    filenameBase: active.name || "programacao-ancioes",
+                    onExport: () => fnExport({ data: { id: active.id } }),
+                    onImport: async (file) => {
                       const r = await fnImport({ data: { file: file as never } });
                       if (r.ok && r.id) {
                         await loadList();
                         setActiveId(r.id);
                       }
                       return r;
-                    }}
-                    disabled={busy}
-                  />
-                </div>
+                    },
+                  }}
+                />
               </CardContent></Card>
 
-              <CollapseProvider scope="tpl-elder" visitId={activeId ?? null}>
+              <CollapseProvider scope="tpl-elder" visitId={activeId ?? null} closedByDefault={["ev:"]}>
               <div className="flex justify-end">
                 <CollapseAllButton ids={[...SECTIONS.map((s) => `sec:${s}`), ...events.map((e) => `ev:${e.id}`)]} />
               </div>
@@ -310,15 +305,14 @@ function Page() {
                       <h2 className="font-bold text-sm uppercase tracking-wide text-primary">{SECTION_TITLES[section]}</h2>
                     </div>
                     <CollapseBody id={`sec:${section}`} className="space-y-4">
-                    <div>
-                      <Label className="text-xs">Informações adicionais do superintendente</Label>
+                    <InfoDisclosure label="Informações adicionais do superintendente" filled={!!sections[section]?.trim()}>
                       <CharCounterTextarea
-                        className="mt-1 min-h-[80px]"
+                        className="min-h-[80px]"
                         value={sections[section]}
                         max={4000}
                         onValueChange={(v) => setSections({ ...sections, [section]: v })}
                       />
-                    </div>
+                    </InfoDisclosure>
 
                     {section === "pastoral" && (
                       <div className="border rounded-md p-3 space-y-2 bg-muted/30">
