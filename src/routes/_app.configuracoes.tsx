@@ -435,7 +435,7 @@ function Page() {
       <CircuitHeader />
       {!isSuper && <h1 className="text-2xl md:text-3xl font-bold">{t("itinerary.title")}</h1>}
 
-      <Card>
+      <Card hidden={isSuper}>
         <CardContent className="p-5">
           {isSuper ? (
             <>

@@ -139,6 +139,14 @@ function Page() {
   const [busy, setBusy] = useState(false);
 
   const isSuper = role === "superintendent";
+  const [section, setSection] = useState<"congregations" | "elders">("congregations");
+  useEffect(() => {
+    try { if (localStorage.getItem("visita-sc:circuit-section") === "elders") setSection("elders"); } catch { /* noop */ }
+  }, []);
+  const pickSection = (v: "congregations" | "elders") => {
+    setSection(v);
+    try { localStorage.setItem("visita-sc:circuit-section", v); } catch { /* noop */ }
+  };
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -246,6 +254,19 @@ function Page() {
   return (
     <div className="space-y-5">
       <CircuitHeader />
+      <div className="flex gap-2 overflow-x-auto no-scrollbar">
+        {(["congregations", "elders"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => pickSection(k)}
+            className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium border transition ${section === k ? "bg-primary/15 text-primary border-primary/40" : "bg-muted/40 text-foreground border-transparent"}`}
+          >
+            {k === "congregations" ? t("circuit.sectionCongregations") : t("circuit.sectionElders")}
+          </button>
+        ))}
+      </div>
+      <div hidden={section !== "congregations"} className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold flex items-center gap-2">
@@ -366,8 +387,10 @@ function Page() {
         })}
       </div>
 
+      </div>
+
       {/* ----- Anciãos cadastrados ----- */}
-      <div className="pt-2">
+      <div className="pt-2" hidden={section !== "elders"}>
         <div className="flex items-center gap-2 mb-2">
           <Users className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">{t("congregations.eldersRegistered")}</h2>

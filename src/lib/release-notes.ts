@@ -5,6 +5,16 @@ export const RELEASE_NOTES_VERSION = "5.0.3";
 // Novidades exibidas no botão "Ver novidades" do aviso. Atualizar a cada release.
 export const RELEASE_NOTES: { title: string; items: string[] }[] = [
   {
+    title: "Circuito e idioma",
+    items: [
+      "O app abre no idioma do celular (Português, Inglês ou Espanhol); a escolha feita no app sempre vale.",
+      "Aba do circuito mais limpa: o card repetido com o nome do circuito saiu.",
+      "Pílula \"Circuito\" com duas partes: Congregações e Anciãos do circuito.",
+      "Calendário do mês no estilo agenda, com visitas e eventos.",
+      "Notas privadas numa linha só: congregação, + Novo e lupa.",
+    ],
+  },
+  {
     title: "Corpo de Anciãos",
     items: [
       "Aba Anciãos em pílulas: Perguntas do SC, Pastoreio, Encorajamento, Recomendações e Assuntos locais.",

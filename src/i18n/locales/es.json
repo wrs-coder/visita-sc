@@ -1983,6 +1983,9 @@
     "prevMonth": "Mes anterior",
     "nextMonth": "Mes siguiente",
     "visitLegend": "Visita",
-    "eventLegend": "Evento"
+    "eventLegend": "Evento",
+    "pillCircuit": "Circuito",
+    "sectionCongregations": "Congregaciones",
+    "sectionElders": "Ancianos del circuito"
   }
 }
