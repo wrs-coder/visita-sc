@@ -14,3 +14,11 @@ describe("pílulas de pastoreio", () => {
     expect(nextEventWithoutSlot(slots, ev)?.id).toBe("b");
   });
 });
+
+import { pickElderSlot, NO_SLOT } from "./pastoral-slots";
+describe("um dia por vez", () => {
+  it("abre no 1º dia escolhido", () => expect(pickElderSlot(["Qua", "Sáb"], null, true)).toBe("Qua"));
+  it("sem dias escolhidos mostra os sem dia", () => expect(pickElderSlot([], null, true)).toBe(NO_SLOT));
+  it("dia liberado volta ao 1º", () => expect(pickElderSlot(["Sáb"], "Qua", false)).toBe("Sáb"));
+  it("mantém o atual", () => expect(pickElderSlot(["Qua", "Sáb"], "Sáb", false)).toBe("Sáb"));
+});
