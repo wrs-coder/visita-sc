@@ -17,3 +17,4 @@
 - The per-topic time badge's visual preferences (size, opacity, position) live only in device localStorage (topic-badge-prefs.ts) and never enter outline HTML, because they are personal display settings.
 - Android packaging must go through scripts that rebuild dist-app and run check-shell-fresh.mjs (build-info.json stamp vs package.json/src mtime), because plain `cap copy` ships stale screens under a new version number.
 - Editor heights on the outline screen use the viewport height measured with the keyboard closed (use-stable-viewport-height.ts), because Android adjustResize shrinks dvh/vh when the keyboard opens.
+- Itinerary weeks without a congregation (pioneer/free) live in their own superintendent-only table itinerary_weeks, never in visits, so elder/guest access, dashboard and visit templates stay untouched.

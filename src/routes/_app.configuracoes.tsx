@@ -47,6 +47,7 @@ import { maskPhone } from "@/lib/masks";
 import { SavingIndicator } from "@/components/SavingIndicator";
 import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog";
 import { AppAboutCard } from "@/components/AppAboutCard";
+import { ItineraryWeeks } from "@/components/itinerary/ItineraryWeeks";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
@@ -467,6 +468,8 @@ function Page() {
           </CardContent>
         </Card>
       )}
+
+      {isSuper && <ItineraryWeeks />}
 
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">

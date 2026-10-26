@@ -58,5 +58,5 @@
 
 ## Modelos e Itinerário (26/10)
 - [x] Etapa 1 — Pílulas de seções e dias nos modelos (Segunda opcional)
-- [ ] Etapa 2 — Semanas de pioneiro/livre no Itinerário (aguardando aprovação do plano)
+- [x] Etapa 2 — Semanas de pioneiro/livre no Itinerário
 - [ ] Etapa 3 — Aba única "Modelos" e Pacotes da visita (aguardando mockup aprovado)
