@@ -2,29 +2,34 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { MONDAY_OFFSET, clampActiveDay, readPref, visibleTemplateDays, writePref } from "@/lib/template-day-pills";
+import { MONDAY_OFFSET, TUESDAY_OFFSET, clampActiveDay, readPref, visibleTemplateDays, writePref } from "@/lib/template-day-pills";
 
 /** Estado do dia ativo + chave "Segunda", lembrado no aparelho por tela/modelo. */
-export function useTemplateDays(prefKey: string, hasMondayItems: boolean) {
+export function useTemplateDays(prefKey: string, hasMondayItems: boolean, hasTuesdayItems = false) {
   const [showMonday, setShowMondayState] = useState(false);
-  const [day, setDayState] = useState(0);
+  const [showTuesday, setShowTuesdayState] = useState(false);
+  const [day, setDayState] = useState(1);
   useEffect(() => {
     setShowMondayState(readPref(`${prefKey}:monday`, false));
-    setDayState(readPref(`${prefKey}:day`, 0));
+    setShowTuesdayState(readPref(`${prefKey}:tuesday`, false));
+    setDayState(readPref(`${prefKey}:day`, 1));
   }, [prefKey]);
-  const days = visibleTemplateDays(showMonday, hasMondayItems);
+  const days = visibleTemplateDays(showMonday, hasMondayItems, showTuesday, hasTuesdayItems);
   const activeDay = clampActiveDay(day, days);
   return {
     days,
     activeDay,
     showMonday: showMonday || hasMondayItems,
     mondayLocked: hasMondayItems,
+    showTuesday: showTuesday || hasTuesdayItems,
+    tuesdayLocked: hasTuesdayItems,
+    setShowTuesday: (v: boolean) => { setShowTuesdayState(v); writePref(`${prefKey}:tuesday`, v); },
     setShowMonday: (v: boolean) => { setShowMondayState(v); writePref(`${prefKey}:monday`, v); },
     setActiveDay: (d: number) => { setDayState(d); writePref(`${prefKey}:day`, d); },
   };
 }
 
-export function DayPills({ days, activeDay, onPick, dayLabel, hasItems, showMonday, mondayLocked, onToggleMonday }: {
+export function DayPills({ days, activeDay, onPick, dayLabel, hasItems, showMonday, mondayLocked, onToggleMonday, showTuesday = false, tuesdayLocked = false, onToggleTuesday }: {
   days: number[];
   activeDay: number;
   onPick: (d: number) => void;
@@ -33,16 +38,27 @@ export function DayPills({ days, activeDay, onPick, dayLabel, hasItems, showMond
   showMonday: boolean;
   mondayLocked: boolean;
   onToggleMonday: (v: boolean) => void;
+  showTuesday?: boolean;
+  tuesdayLocked?: boolean;
+  onToggleTuesday?: (v: boolean) => void;
 }) {
   const { t } = useTranslation();
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("templates.dayPills.title")}</span>
+        <div className="flex items-center gap-3">
+        {onToggleTuesday && (
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            {t("templates.dayPills.tuesday")}
+            <Switch checked={showTuesday} disabled={tuesdayLocked} onCheckedChange={onToggleTuesday} aria-label={t("templates.dayPills.tuesday")} />
+          </label>
+        )}
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
           {t("templates.dayPills.monday")}
           <Switch checked={showMonday} disabled={mondayLocked} onCheckedChange={onToggleMonday} aria-label={t("templates.dayPills.monday")} />
         </label>
+        </div>
       </div>
       <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={t("templates.dayPills.title")}>
         {days.map((d) => {
@@ -57,7 +73,7 @@ export function DayPills({ days, activeDay, onPick, dayLabel, hasItems, showMond
               className={cn(
                 "relative min-w-[52px] rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
                 active ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-muted",
-                d === MONDAY_OFFSET && !active && "border-dashed",
+                (d === MONDAY_OFFSET || (d === TUESDAY_OFFSET && !!onToggleTuesday)) && !active && "border-dashed",
               )}
             >
               {dayLabel[d]}

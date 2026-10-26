@@ -933,6 +933,7 @@
     },
     "dayPills": {
       "title": "Visit days",
+      "tuesday": "Tuesday",
       "monday": "Monday",
       "sections": "Template sections"
     },

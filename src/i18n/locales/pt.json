@@ -923,6 +923,7 @@
     },
     "dayPills": {
       "title": "Dias da visita",
+      "tuesday": "Terça",
       "monday": "Segunda",
       "sections": "Seções do modelo"
     },

@@ -121,6 +121,7 @@ function Page() {
   const dayState = useTemplateDays(
     `tpl-field:${activeId ?? "none"}`,
     items.some((it) => it.day_offset === MONDAY_OFFSET),
+    items.some((it) => it.day_offset === 0),
   );
 
   if (role !== "superintendent") {
@@ -314,6 +315,9 @@ function Page() {
                   showMonday={dayState.showMonday}
                   mondayLocked={dayState.mondayLocked}
                   onToggleMonday={dayState.setShowMonday}
+                  showTuesday={dayState.showTuesday}
+                  tuesdayLocked={dayState.tuesdayLocked}
+                  onToggleTuesday={dayState.setShowTuesday}
                 />
                 {!items.some((it) => it.day_offset === dayState.activeDay) ? (
                   <div className="text-sm text-muted-foreground text-center py-6">
