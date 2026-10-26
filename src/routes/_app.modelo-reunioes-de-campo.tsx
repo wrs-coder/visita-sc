@@ -24,7 +24,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { CharCounterTextarea } from "@/components/ui/char-counter-textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Pencil, MapPin, AlertCircle, Save } from "lucide-react";
+import { Plus, Trash2, MapPin, AlertCircle, Save } from "lucide-react";
+import { TemplateActionsMenu, TemplatePicker, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
 import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { DayPills, useTemplateDays } from "@/components/templates/DayPills";
 import { MONDAY_OFFSET } from "@/lib/template-day-pills";
@@ -235,12 +236,14 @@ function Page() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <TemplateIOButtons
-            filenameBase={active?.name ?? t("templates.exportField")}
-            disabled={!active}
-            onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: t("templates.selectTemplate") }}
-            onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await load(); return r; }}
-          />
+          {!active && (
+            <TemplateIOButtons
+              filenameBase={t("templates.exportField")}
+              disabled
+              onExport={async () => ({ ok: false, error: t("templates.selectTemplate") })}
+              onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await load(); return r; }}
+            />
+          )}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />{t("templates.newTemplate")}</Button>
@@ -267,7 +270,7 @@ function Page() {
       </div>
 
       <div className="grid md:grid-cols-[260px_1fr] gap-4">
-        <Card><CardContent className="p-3 space-y-1">
+        <Card className="hidden md:block"><CardContent className="p-3 space-y-1">
           {tpls.length === 0 ? (
             <div className="text-sm text-muted-foreground p-3 text-center">{t("templates.noTemplates")}</div>
           ) : tpls.map((tp) => (
@@ -287,29 +290,32 @@ function Page() {
           ) : (
             <>
               <Card><CardContent className="p-4 space-y-3">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="font-semibold truncate">{active.name}</div>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" />{t("common.rename")}
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
-                      <Copy className="h-3.5 w-3.5 mr-1" />{t("common.duplicate")}
-                    </Button>
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
-                      <Trash2 className="h-3.5 w-3.5 mr-1" />{t("common.delete")}
-                    </Button>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0 md:hidden">
+                    <TemplatePicker items={tpls} activeId={activeId} onPick={setActiveId} />
                   </div>
+                  <div className="hidden md:block flex-1 font-semibold truncate">{active.name}</div>
+                  <TemplateActionsMenu
+                    disabled={busy}
+                    onRename={() => { setRenameVal(active.name); setRenameOpen(true); }}
+                    onDuplicate={handleDuplicate}
+                    duplicateDisabled={tpls.length >= MAX}
+                    onDelete={handleDelete}
+                    io={{
+                      filenameBase: active.name,
+                      onExport: () => fnExport({ data: { id: active.id } }),
+                      onImport: async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await load(); return r; },
+                    }}
+                  />
                 </div>
 
                 <p className="text-xs text-muted-foreground">
                   {t("templates.field.hint")}
                 </p>
 
-                <div>
-                  <Label>Informações adicionais do superintendente</Label>
+                <InfoDisclosure label="Informações adicionais do superintendente" filled={!!(genObsByTpl[active.id] ?? "").trim()}>
                   <CharCounterTextarea
-                    className="mt-1 min-h-[80px]"
+                    className="min-h-[80px]"
                     value={genObsByTpl[active.id] ?? ""}
                     max={4000}
                     onValueChange={(v) => setGenObsByTpl((m) => ({ ...m, [active.id]: v }))}
@@ -322,20 +328,14 @@ function Page() {
                       setTpls((prev) => prev.map((tp) => tp.id === active.id ? { ...tp, observations: val } : tp));
                     }}
                   />
-                </div>
+                </InfoDisclosure>
 
               </CardContent></Card>
 
 
 
               <Card><CardContent className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold">{t("templates.field.shiftsTitle")}</div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" />{t("templates.field.addShift")}</Button>
-                    <Button size="sm" onClick={handleSaveItems} disabled={busy}><Save className="h-3.5 w-3.5 mr-1" />{t("common.save")}</Button>
-                  </div>
-                </div>
+                <div className="font-semibold">{t("templates.field.shiftsTitle")}</div>
                 <DayPills
                   days={dayState.days}
                   activeDay={dayState.activeDay}
@@ -351,7 +351,7 @@ function Page() {
                     {t("templates.field.noShifts")}
                   </div>
                 ) : (
-                  <CollapseProvider scope="tpl-field" visitId={active?.id ?? null}>
+                  <CollapseProvider scope="tpl-field" visitId={active?.id ?? null} closedByDefault={["ev:"]}>
                   <div className="flex justify-end">
                     <CollapseAllButton ids={[...DAY_OPTS.map((d) => `day:${d}`), ...items.map((_, i) => `ev:${i}`)]} />
                   </div>
@@ -385,16 +385,6 @@ function Page() {
                           </Button>
                         </div>
                         <div>
-                          <Label className="text-xs">{t("templates.field.observations")}</Label>
-                          <Textarea
-                            className="mt-1 text-blue-600 dark:text-blue-400 min-h-[60px]"
-                            placeholder={t("templates.field.observationsPlaceholder")}
-                            value={it.observations}
-                            maxLength={4000}
-                            onChange={(e) => updateItem(idx, { observations: e.target.value })}
-                          />
-                        </div>
-                        <div>
                           <Label className="text-xs">{t("templates.field.modality")}</Label>
                           <Select value={it.modality} onValueChange={(v) => updateItem(idx, { modality: v as Modality })}>
                             <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
@@ -414,7 +404,19 @@ function Page() {
                             <Input placeholder={t("templates.field.auxiliaryLeaders")} value={it.auxiliary_leaders} onChange={(e) => updateItem(idx, { auxiliary_leaders: e.target.value })} className="h-8" />
                           </>
                         )}
-                        <Input placeholder={t("templates.field.closingPrayer")} value={it.closing_prayer} onChange={(e) => updateItem(idx, { closing_prayer: e.target.value })} className="h-8" />
+                        <InfoDisclosure className="bg-background" label={t("templates.chrome.moreDetails", { defaultValue: "Mais detalhes" })} filled={!!(it.observations || it.closing_prayer)}>
+                          <div>
+                            <Label className="text-xs">{t("templates.field.observations")}</Label>
+                            <Textarea
+                              className="mt-1 text-blue-600 dark:text-blue-400 min-h-[60px]"
+                              placeholder={t("templates.field.observationsPlaceholder")}
+                              value={it.observations}
+                              maxLength={4000}
+                              onChange={(e) => updateItem(idx, { observations: e.target.value })}
+                            />
+                          </div>
+                          <Input placeholder={t("templates.field.closingPrayer")} value={it.closing_prayer} onChange={(e) => updateItem(idx, { closing_prayer: e.target.value })} className="h-8" />
+                        </InfoDisclosure>
                       </div>
                       </CollapseItem>
                     ))}
@@ -425,6 +427,10 @@ function Page() {
                   </CollapseProvider>
                 )}
               </CardContent></Card>
+              <TemplateFooterBar>
+                <Button variant="outline" className="flex-1 rounded-full" onClick={addItem}><Plus className="h-4 w-4 mr-1" />{t("templates.field.addShift")}</Button>
+                <Button className="flex-1 rounded-full" onClick={handleSaveItems} disabled={busy}><Save className="h-4 w-4 mr-1" />{t("common.save")}</Button>
+              </TemplateFooterBar>
             </>
           )}
         </div>
