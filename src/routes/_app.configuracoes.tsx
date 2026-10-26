@@ -469,6 +469,8 @@ function Page() {
         </Card>
       )}
 
+      {isSuper && <ItineraryWeeks />}
+
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Calendar className="h-4 w-4" /> {t("itinerary.visits")}
@@ -739,8 +741,6 @@ function Page() {
           </Dialog>
         )}
       </div>
-
-      {isSuper && <ItineraryWeeks />}
 
       <div className="space-y-4">
         {visits.length === 0 && (
