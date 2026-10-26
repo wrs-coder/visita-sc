@@ -48,7 +48,7 @@ const FIELD_LABEL: Record<PackageField, string> = {
 const pickList = (r: unknown): Opt[] =>
   ((r as { ok?: boolean; templates?: Opt[] })?.ok ? (r as { templates?: Opt[] }).templates ?? [] : []).map((t) => ({ id: t.id, name: t.name }));
 
-export function useAllTemplateOptions(enabled: boolean) {
+function useAllTemplateOptions(enabled: boolean) {
   const f1 = useServerFn(listTemplates);
   const f2 = useServerFn(listChecklistTemplates);
   const f3 = useServerFn(listFieldMeetingTemplates);

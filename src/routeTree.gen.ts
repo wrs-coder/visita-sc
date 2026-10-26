@@ -32,6 +32,7 @@ import { Route as AppModeloReunioesDeCampoRouteImport } from './routes/_app.mode
 import { Route as AppModeloReunioesDiscursosRouteImport } from './routes/_app.modelo-reunioes-discursos'
 import { Route as AppModelosRouteImport } from './routes/_app.modelos'
 import { Route as AppNotasRouteImport } from './routes/_app.notas'
+import { Route as AppPacotesVisitaRouteImport } from './routes/_app.pacotes-visita'
 import { Route as AppPerfilRouteImport } from './routes/_app.perfil'
 import { Route as AppProgramaAncioesRouteImport } from './routes/_app.programa-ancioes'
 import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
@@ -165,6 +166,11 @@ const AppNotasRoute = AppNotasRouteImport.update({
   path: '/notas',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPacotesVisitaRoute = AppPacotesVisitaRouteImport.update({
+  id: '/pacotes-visita',
+  path: '/pacotes-visita',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPerfilRoute = AppPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -264,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
+  '/pacotes-visita': typeof AppPacotesVisitaRoute
   '/perfil': typeof AppPerfilRoute
   '/programa-ancioes': typeof AppProgramaAncioesRoute
   '/refeicoes': typeof AppRefeicoesRoute
@@ -302,6 +309,7 @@ export interface FileRoutesByTo {
   '/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
+  '/pacotes-visita': typeof AppPacotesVisitaRoute
   '/perfil': typeof AppPerfilRoute
   '/programa-ancioes': typeof AppProgramaAncioesRoute
   '/refeicoes': typeof AppRefeicoesRoute
@@ -343,6 +351,7 @@ export interface FileRoutesById {
   '/_app/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/_app/modelos': typeof AppModelosRoute
   '/_app/notas': typeof AppNotasRoute
+  '/_app/pacotes-visita': typeof AppPacotesVisitaRoute
   '/_app/perfil': typeof AppPerfilRoute
   '/_app/programa-ancioes': typeof AppProgramaAncioesRoute
   '/_app/refeicoes': typeof AppRefeicoesRoute
@@ -384,6 +393,7 @@ export interface FileRouteTypes {
     | '/modelo-reunioes-discursos'
     | '/modelos'
     | '/notas'
+    | '/pacotes-visita'
     | '/perfil'
     | '/programa-ancioes'
     | '/refeicoes'
@@ -422,6 +432,7 @@ export interface FileRouteTypes {
     | '/modelo-reunioes-discursos'
     | '/modelos'
     | '/notas'
+    | '/pacotes-visita'
     | '/perfil'
     | '/programa-ancioes'
     | '/refeicoes'
@@ -462,6 +473,7 @@ export interface FileRouteTypes {
     | '/_app/modelo-reunioes-discursos'
     | '/_app/modelos'
     | '/_app/notas'
+    | '/_app/pacotes-visita'
     | '/_app/perfil'
     | '/_app/programa-ancioes'
     | '/_app/refeicoes'
@@ -658,6 +670,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNotasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/pacotes-visita': {
+      id: '/_app/pacotes-visita'
+      path: '/pacotes-visita'
+      fullPath: '/pacotes-visita'
+      preLoaderRoute: typeof AppPacotesVisitaRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/perfil': {
       id: '/_app/perfil'
       path: '/perfil'
@@ -782,6 +801,7 @@ interface AppRouteChildren {
   AppModeloReunioesDiscursosRoute: typeof AppModeloReunioesDiscursosRoute
   AppModelosRoute: typeof AppModelosRoute
   AppNotasRoute: typeof AppNotasRoute
+  AppPacotesVisitaRoute: typeof AppPacotesVisitaRoute
   AppPerfilRoute: typeof AppPerfilRoute
   AppProgramaAncioesRoute: typeof AppProgramaAncioesRoute
   AppRefeicoesRoute: typeof AppRefeicoesRoute
@@ -808,6 +828,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppModeloReunioesDiscursosRoute: AppModeloReunioesDiscursosRoute,
   AppModelosRoute: AppModelosRoute,
   AppNotasRoute: AppNotasRoute,
+  AppPacotesVisitaRoute: AppPacotesVisitaRoute,
   AppPerfilRoute: AppPerfilRoute,
   AppProgramaAncioesRoute: AppProgramaAncioesRoute,
   AppRefeicoesRoute: AppRefeicoesRoute,
