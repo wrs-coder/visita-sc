@@ -214,6 +214,17 @@ function Page() {
 
   useEffect(() => { reload(); }, [reload]);
 
+  const search = Route.useSearch();
+  const [tab, setTab] = useState<ElderTab>(search.tab ?? "pastoral");
+  useEffect(() => {
+    if (search.tab) { setTab(search.tab); return; }
+    try { const v = localStorage.getItem(ELDER_TAB_PREF) as ElderTab | null; if (v && ELDER_TABS.includes(v)) setTab(v); } catch { /* ignore */ }
+  }, [search.tab]);
+  const pickTab = (k: ElderTab) => { setTab(k); try { localStorage.setItem(ELDER_TAB_PREF, k); } catch { /* ignore */ } };
+  const pastoralDays = slotDays(pastoral.map((p) => p.slot_label));
+  const [pDay, setPDay] = useState<string>("__all__");
+  useEffect(() => { if (pDay !== "__all__" && !pastoralDays.includes(pDay)) setPDay("__all__"); }, [pastoralDays.join(","), pDay]);
+
   if (visitLoading) return <LoadingPanel />;
   if (!visit) {
     return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa.</CardContent></Card>;
