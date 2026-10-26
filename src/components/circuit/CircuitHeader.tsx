@@ -20,7 +20,7 @@ export function CircuitHeader() {
   if (role !== "superintendent") return null;
   const pills = [
     { to: "/configuracoes" as const, label: t("sidebar.itinerary") },
-    { to: "/congregacoes" as const, label: t("sidebar.congregations") },
+    { to: "/congregacoes" as const, label: t("circuit.pillCircuit") },
   ];
   const onCalendar = pathname.startsWith("/cronograma");
   return (

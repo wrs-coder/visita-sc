@@ -2008,6 +2008,9 @@
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
     "visitLegend": "Visit",
-    "eventLegend": "Event"
+    "eventLegend": "Event",
+    "pillCircuit": "Circuit",
+    "sectionCongregations": "Congregations",
+    "sectionElders": "Circuit elders"
   }
 }

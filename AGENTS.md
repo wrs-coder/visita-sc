@@ -23,3 +23,4 @@
 - The visit-week screens stay separate routes joined by VisitProgramTabs pills (/programa-visita redirects to the last one), and day pills only hide non-active day sections, because old links, reminders and unsaved inputs must keep working.
 - The offline warm-up (offline-prefetch.ts) also writes every fetched row into the local-db mirror and forces one full run per user until that mirror is seeded, because dashboard reads fall back to the mirror, not to the query cache, when offline.
 - The circuit area keeps Itinerário (/configuracoes), Congregações (/congregacoes) and Cronograma (/cronograma) as separate routes joined by CircuitHeader pills and a calendar icon (month view via ?view=month), because old links, deep links and unsaved inputs must keep working.
+- The app language follows the device (pickDeviceLanguage) until the user picks one; only an explicit choice is stored, because device language is the default.
