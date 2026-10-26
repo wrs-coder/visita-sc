@@ -1,39 +1,97 @@
-# Modelos numa aba só, Pacotes da visita e semanas sem congregação
+# Mockup visual: aba única Modelos, Pacotes da visita e semanas sem congregação
 
-Nada muda no banco, no login nem no que os modelos geram nas visitas.
+Primeira etapa: apenas telas de apresentação com dados fictícios. Nenhum botão salva nada (só registra o toque para teste), nada muda no banco nem nas telas atuais. Depois da sua aprovação visual, a lógica real vira um plano separado.
 
-## 1. Aba única "Modelos"
-- A barra lateral passa a ter um só item **Modelos** no lugar dos 5 atuais.
-- No topo da aba, pílulas para escolher o tipo: **Programação · Checklist · Reuniões de campo · Reuniões e discursos · Anciãos · Pacotes**. A escolha fica no endereço da página, então voltar/atualizar mantém a pílula.
-- Os endereços antigos continuam funcionando e abrem a aba única já na pílula certa (atalhos e links salvos não quebram).
+## Onde ver
+Uma página de prévia separada, **"Prévia dos Modelos"**, acessível pelo endereço `/previa-modelos` (sem item novo na barra lateral). Ela tem 4 abas internas para alternar entre os mockups abaixo. As telas reais continuam intactas.
 
-## 2. Visual mais enxuto (Programação, Reuniões de campo, Anciãos)
-- Lista de modelos vira um **seletor compacto** no topo (no celular) em vez de uma coluna inteira; no computador continua ao lado.
-- Ações Renomear / Duplicar / Excluir / Exportar / Importar vão para um **menu de três pontinhos**.
-- "Informações adicionais" vira uma linha recolhível (abre só quando tocada).
-- Itens já começam **recolhidos mostrando o resumo** (ex.: "Manhã · 08:30 · Casa em casa"); abrir um item é um toque. Grupos por dia continuam.
-- Barra fixa no rodapé com **Adicionar** e **Salvar**, sempre à mão, sem precisar rolar até o fim.
-- Campos menos usados (observações, oração final) ficam numa área "Mais detalhes" dentro do item.
+## Tela A — Aba única "Modelos" (celular 393px)
 
-## 3. Pacotes da visita (pílula "Pacotes")
-- Criar, renomear, duplicar e excluir pacotes.
-- Em cada pacote, escolher um modelo de cada tipo: Programação, Checklist, Reuniões de campo, Reuniões e discursos, Anciãos (cada campo pode ficar vazio). Um mesmo modelo pode estar em vários pacotes.
-- Guardados **só neste aparelho**, separados por usuário.
-- **Exportar/Importar** pacote no mesmo esquema dos modelos atuais: o arquivo leva o pacote **e os modelos dele**; ao importar em outro aparelho Visita SC, os modelos são criados e o pacote passa a apontar para eles.
-- Se um modelo do pacote for excluído, o pacote mostra "modelo não encontrado" naquele campo, sem quebrar.
+```text
++-----------------------------------------+
+| Modelos                                 |
+| [Programação][Checklist][Campo]         |  <- pílulas roláveis
+| [Discursos][Anciãos][Pacotes]           |
++-----------------------------------------+
+| Modelo: [ Visita padrão         v ] ... |  <- seletor + menu 3 pontos
+|         (Renomear/Duplicar/Excluir/     |
+|          Exportar/Importar)             |
+| > Informações adicionais (recolhido)    |
++-----------------------------------------+
+| [Recolher tudo]                         |
+| v SEGUNDA                               |
+|   > Manhã · 08:30 · Casa em casa    [x] |
+|   > Tarde · 15:00 · Testemunho      [x] |
+| > TERÇA (2 itens)                       |
+| > QUARTA (1 item)                       |
++-----------------------------------------+
+| [+ Adicionar]          [ Salvar modelo ]|  <- barra fixa no rodapé
++-----------------------------------------+
+```
 
-## 4. Itinerário: usar pacote
-- Ao criar/editar uma visita, novo seletor **"Pacote da visita"** acima dos seletores de modelo. Escolher um pacote preenche todos os seletores de uma vez; ainda dá para trocar um modelo isolado depois. Salvar segue exatamente o fluxo atual.
+- Item aberto mostra os campos principais (dia, turno, hora, modalidade, território) e um "Mais detalhes" recolhido para observações e oração.
+- No computador, a lista de modelos fica numa coluna estreita à esquerda e o editor à direita.
+- Mesma silhueta aplicada a Programação, Reuniões de campo e Anciãos (seções e eventos no lugar de dias).
 
-## 5. Itinerário: Semana de pioneiro / Semana livre
-- Botão **"Semana sem visita"** no Itinerário com as opções Semana de pioneiro e Semana livre e a data de início.
-- Cria o evento correspondente na Agenda (esses tipos já existem lá), sem congregação, com escopo pessoal.
-- Essas semanas aparecem intercaladas na lista do Itinerário com um selo próprio, e podem ser editadas/excluídas ali.
+## Tela B — Pacotes da visita (pílula "Pacotes")
+
+```text
++-----------------------------------------+
+| Pacotes da visita      [Importar][+ Novo]|
++-----------------------------------------+
+| [Pacote] Visita de primavera        ... |
+|  Programação ......... Visita padrão    |
+|  Checklist ........... Checklist base   |
+|  Reuniões de campo ... Campo 2 turnos   |
+|  Reuniões/discursos .. Semana normal    |
+|  Anciãos ............. (vazio)          |
+|  [Editar]  [Exportar]                   |
++-----------------------------------------+
+| [Pacote] Visita com congresso       ... |
+|  5 de 5 modelos · "1 não encontrado" !  |
++-----------------------------------------+
+```
+
+- "Editar" abre uma janela com 5 seletores (um por tipo de modelo) e o nome do pacote.
+- Aviso discreto em âmbar quando um modelo do pacote não existe mais.
+- Rodapé da tela: "Guardado só neste aparelho · use Exportar para levar a outro".
+
+## Tela C — Itinerário: escolher pacote na visita
+
+```text
++-----------------------------------------+
+| Nova visita                             |
+| Congregação [ Central            v ]    |
+| Datas       [ 03/11 ] a [ 09/11 ]       |
+| Pacote da visita [ Visita de primavera v]|
+|  "Preenche os 5 modelos abaixo"         |
+| > Modelos individuais (5 escolhidos)    |  <- recolhido
+|              [Cancelar] [Salvar]        |
++-----------------------------------------+
+```
+
+## Tela D — Itinerário: semanas sem visita
+
+```text
++-----------------------------------------+
+| Itinerário        [+ Visita][+ Semana]  |
++-----------------------------------------+
+| 27/10–02/11  Congregação Central        |
+| 03/11–09/11  [Semana de pioneiro]       |  <- selo próprio, sem congregação
+| 10/11–16/11  Congregação Norte          |
+| 17/11–23/11  [Semana livre]             |
++-----------------------------------------+
+```
+
+- "+ Semana" abre janela curta: tipo (Semana de pioneiro / Semana livre) e data de início; nenhuma congregação.
+
+## Estilo
+- Cores e bordas só dos tokens existentes (cartões, `section-accent`, `primary`, `muted`); selos de semana com cores de destaque já usadas na Agenda.
+- Ícones Lucide: FileStack, ListChecks, MapPin, Layers, BookOpen, Package, CalendarOff, Sun.
+- Sem imagens geradas.
 
 ## Detalhes técnicos
-- Nova rota `src/routes/_app.modelos-base.tsx` (ou reaproveitar `/modelos`) com `validateSearch` `{ tipo }`; cada editor atual é extraído para um componente (`ProgramTemplatesEditor`, `FieldTemplatesEditor`, etc.) mantendo estado, server functions e handlers sem mudança. Rotas antigas viram `beforeLoad` com `redirect` para a pílula correspondente. Sidebar em `_app.tsx` reduzida a um item.
-- Editores carregados com `React.lazy` por pílula, para abrir rápido.
-- Pacotes: `src/lib/visit-packages.ts` em localStorage `visita-sc:packages:<userId>` (`{id,name,program,checklist,field,meetingTalk,elder}`), `useSyncExternalStore`. Exportação reutiliza as server functions de export/import já existentes de cada modelo, empacotadas num zip (JSZip) com `package.json` + arquivos de cada modelo; importação chama os imports existentes e regrava os ids.
-- Itinerário (`_app.configuracoes.tsx`): seletor de pacote apenas faz `setForm` dos campos `template_id`, `checklist_template_id`, `field_template_id`, `meeting_talk_template_id`, `elder_program_template_id`.
-- Semanas: inserção em `circuit_schedule_events` via `offlineInsert` já usado em `_app.cronograma.tsx`, `event_type` `pioneer_week`/`free_week`, `scope: "personal"`, `congregation_ids: []`, data inicial a +6 dias; lista do Itinerário lê esses eventos.
-- Testes: `visit-packages.test.ts` (criar, remover modelo ausente, importar remapeando ids). Validar com `bunx tsgo --noEmit`, `bunx vitest run` e conferir no navegador em 393px.
+- Nova rota estática `src/routes/_app.previa-modelos.tsx` com `head()` próprio; componentes em `src/components/mockups/` (`TemplatesHubMockup`, `PackagesMockup`, `ItineraryPackageMockup`, `ItineraryWeeksMockup`) com arrays fictícios locais e handlers `console.log`.
+- Reutiliza `Card`, `Button`, `Select`, `Dialog`, `DropdownMenu`, `Badge`, `Collapsible` do shadcn; pílulas com `ToggleGroup` ou botões arredondados com rolagem horizontal.
+- Nenhuma alteração em rotas existentes, server functions, banco ou sidebar. Validar com `bunx tsgo --noEmit` e captura no navegador em 393px e 1280px.
+- Na execução, registrar no roadmap: "Mockup visual dos Modelos/Pacotes/Semanas — aguardando validação".
