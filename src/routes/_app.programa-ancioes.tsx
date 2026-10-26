@@ -1,6 +1,7 @@
 import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { ChecklistPanel } from "@/components/visit-week/ChecklistPanel";
 import { slotDay, slotDays } from "@/lib/slot-day";
+import { slotState, nextEventWithoutSlot } from "@/lib/pastoral-slots";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
@@ -317,7 +318,45 @@ function Page() {
             return (
               <Card key={section} className={tab === section ? "" : "hidden"}>
                 <CardContent className="p-4 space-y-4">
-                  {section === "pastoral" && pastoralDays.length > 0 && (
+                  {section === "pastoral" && !isSuper && slots.length > 0 && (() => {
+                    const st = slotState(slots, pastoral);
+                    return (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">Escolha os dias para pastoreio</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {slots.map((s) => {
+                            const on = st.used.includes(s);
+                            const off = !on && (st.full || !canEdit);
+                            return (
+                              <button key={s} type="button" disabled={off} aria-pressed={on}
+                                onClick={() => {
+                                  if (on) {
+                                    const ev = pastoral.find((p) => p.slot_label === s);
+                                    if (ev) document.getElementById(`pev-${ev.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                    return;
+                                  }
+                                  const ev = nextEventWithoutSlot(slots, pastoral);
+                                  if (ev) saveField(ev, { slot_label: s });
+                                }}
+                                className={cn("rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                                  on ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-muted",
+                                  off && "opacity-40 cursor-not-allowed hover:bg-background")}>
+                                {s}{on && " ✓"}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p className="rounded-lg bg-muted px-3 py-2 text-[11px] text-muted-foreground">
+                          {st.total === 0
+                            ? "O superintendente ainda não criou pastoreios."
+                            : st.full
+                              ? `O superintendente tem ${st.total} ${st.total === 1 ? "pastoreio disponível" : "pastoreios disponíveis"}, e ${st.total === 1 ? "ele já foi marcado" : "todos já foram marcados"}. Para usar outro dia, troque um dos dias escolhidos.`
+                              : `Restam ${st.remaining} de ${st.total} pastoreios para escolher o dia.`}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                  {section === "pastoral" && isSuper && pastoralDays.length > 0 && (
                     <div role="tablist" className="flex flex-wrap gap-1.5">
                       {[...pastoralDays, "__all__"].map((d) => (
                         <button key={d} type="button" role="tab" aria-selected={pDay === d} onClick={() => setPDay(d)}
@@ -353,7 +392,8 @@ function Page() {
                             )
                           : new Set<string>();
                         return (
-                          <CollapseItem key={ev.id} id={`ev:${ev.id}`} summary={[ev.slot_label, ev.family_name ?? ev.person_name].filter(Boolean).join(" · ") || SECTION_TITLES[section]}>
+                          <div key={ev.id} id={`pev-${ev.id}`} className="scroll-mt-4">
+                          <CollapseItem id={`ev:${ev.id}`} summary={[ev.slot_label, ev.family_name ?? ev.person_name].filter(Boolean).join(" · ") || SECTION_TITLES[section]}>
                           <EventCard
                             ev={ev}
                             slots={slots}
@@ -369,6 +409,7 @@ function Page() {
                             alreadySavedToNotes={dispatchedIds.has(`notas:${ev.id}`)}
                           />
                           </CollapseItem>
+                          </div>
 
                         );
                       })}
@@ -429,6 +470,52 @@ function LoadingPanel() {
   );
 }
 
+function ElderSlotSwap({ current, free, readOnly, onPick }: {
+  current: string | null; free: string[]; readOnly: boolean; onPick: (s: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/60 px-3 py-2">
+      <div className="text-xs">
+        <span className="text-muted-foreground">Dia/Horário: </span>
+        <span className="font-semibold">{current ?? "Ainda não escolhido"}</span>
+      </div>
+      {current && !readOnly && (
+        <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setOpen(true)}>
+          ⇄ Trocar o dia/hora do pastoreio
+        </Button>
+      )}
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Trocar o dia/hora do pastoreio</AlertDialogTitle>
+            <AlertDialogDescription>Atual: {current}</AlertDialogDescription>
+          </AlertDialogHeader>
+          {free.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Não há outros dias disponíveis.</p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">Dias disponíveis:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {free.map((s) => (
+                  <button key={s} type="button" onClick={() => { setOpen(false); onPick(s); }}
+                    className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted">
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground">As informações vão para o novo dia e “{current}” fica livre.</p>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 function EventCard({
   ev, slots, usedSlots, readOnly, canDelete, onChange, onDelete,
   onScheduleInCronograma, onSaveToPrivateNotes,
@@ -470,6 +557,10 @@ function EventCard({
 
         {ev.section === "pastoral" && (
           <>
+            {!isSuperintendent && (
+              <ElderSlotSwap current={ev.slot_label} free={slots.filter((s) => !usedSlots.has(s) && s !== ev.slot_label)} readOnly={readOnly} onPick={(s) => onChange({ slot_label: s })} />
+            )}
+            <div className={isSuperintendent ? "" : "hidden"}>
             <FieldRow label="Dia/Horário">
               <Select
                 value={ev.slot_label ?? "__none__"}
@@ -527,6 +618,7 @@ function EventCard({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+            </div>
             <DebouncedText label="Ancião/S.M acompanhante" value={ev.companion} onSave={(v) => onChange({ companion: v })} readOnly={readOnly} />
             <DebouncedText label="Família/Irmão(ã)" value={ev.family_name} onSave={(v) => onChange({ family_name: v })} readOnly={readOnly} />
             <DebouncedText label="Endereço" value={ev.address} onSave={(v) => onChange({ address: v })} readOnly={readOnly} />
