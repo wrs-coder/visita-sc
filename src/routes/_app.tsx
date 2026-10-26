@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
+import { startPackageAutoSync } from "@/lib/visit-packages";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -126,6 +127,7 @@ function AppLayout() {
   }, [location.pathname]);
 
   // Mantém o contexto ativo global em sincronia para a fila offline.
+  useEffect(() => (role === "superintendent" ? startPackageAutoSync(user?.id) : undefined), [role, user?.id]);
   useEffect(() => {
     setActiveContext({ congregationId: activeCong?.id ?? null, userId: user?.id ?? null });
   }, [activeCong?.id, user?.id]);
