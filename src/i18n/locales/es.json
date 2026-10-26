@@ -908,6 +908,9 @@
     },
     "dayPills": {
       "title": "Días de la visita",
+      "hideTuesdayTitle": "¿Ocultar el martes?",
+      "hideTuesdayBody": "Esta plantilla ya tiene información el martes. No se borrará: solo queda oculta aquí y vuelve cuando activas el interruptor de nuevo.",
+      "hideTuesdayConfirm": "Ocultar",
       "tuesday": "Martes",
       "monday": "Lunes",
       "sections": "Secciones de la plantilla"

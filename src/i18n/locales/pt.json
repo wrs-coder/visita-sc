@@ -923,6 +923,9 @@
     },
     "dayPills": {
       "title": "Dias da visita",
+      "hideTuesdayTitle": "Ocultar a terça-feira?",
+      "hideTuesdayBody": "Este modelo já tem informações na terça. Elas não serão apagadas: só ficam escondidas aqui e voltam quando você ligar a chave de novo.",
+      "hideTuesdayConfirm": "Ocultar",
       "tuesday": "Terça",
       "monday": "Segunda",
       "sections": "Seções do modelo"

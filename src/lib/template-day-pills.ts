@@ -7,11 +7,12 @@ export const BASE_DAYS = [1, 2, 3, 4, 5];
 export function visibleTemplateDays(
   showMonday: boolean,
   hasMondayItems: boolean,
-  showTuesday = false,
+  showTuesday: boolean | null = false,
   hasTuesdayItems = false,
 ): number[] {
   const days = [...BASE_DAYS];
-  if (showTuesday || hasTuesdayItems) days.unshift(TUESDAY_OFFSET);
+  // Terça: escolha explícita do usuário vence; sem escolha (null), aparece se houver itens.
+  if (showTuesday ?? hasTuesdayItems) days.unshift(TUESDAY_OFFSET);
   if (showMonday || hasMondayItems) days.push(MONDAY_OFFSET);
   return days;
 }

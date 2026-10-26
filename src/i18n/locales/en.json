@@ -933,6 +933,9 @@
     },
     "dayPills": {
       "title": "Visit days",
+      "hideTuesdayTitle": "Hide Tuesday?",
+      "hideTuesdayBody": "This template already has information on Tuesday. It will not be deleted: it is only hidden here and comes back when you turn the switch on again.",
+      "hideTuesdayConfirm": "Hide",
       "tuesday": "Tuesday",
       "monday": "Monday",
       "sections": "Template sections"
