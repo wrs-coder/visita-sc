@@ -21,3 +21,11 @@ describe("pacotes da visita", () => {
     });
   });
 });
+
+import { decideInitialSync } from "./visit-packages";
+describe("migração dos pacotes para o servidor", () => {
+  const p = (id: string) => ({ id, name: id, template_id: "", checklist_template_id: "", field_template_id: "", meeting_talk_template_id: "", elder_program_template_id: "" });
+  it("servidor vazio: sobe os do aparelho", () => expect(decideInitialSync([], [p("a")], false).upload.map((x) => x.id)).toEqual(["a"]));
+  it("não duplica os que já estão no servidor", () => expect(decideInitialSync([p("a")], [p("a"), p("b")], false).upload.map((x) => x.id)).toEqual(["b"]));
+  it("depois de migrado, vale o servidor", () => expect(decideInitialSync([p("a")], [p("b")], true)).toEqual({ list: [p("a")], upload: [] }));
+});

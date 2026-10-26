@@ -49,7 +49,7 @@ import { SavingIndicator } from "@/components/SavingIndicator";
 import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog";
 import { AppAboutCard } from "@/components/AppAboutCard";
 import { ItineraryWeeks } from "@/components/itinerary/ItineraryWeeks";
-import { loadPackages, missingFields, packageToForm, type VisitPackage } from "@/lib/visit-packages";
+import { loadPackages, fetchPackages, missingFields, packageToForm, type VisitPackage } from "@/lib/visit-packages";
 
 export const Route = createFileRoute("/_app/configuracoes")({
   component: Page,
@@ -127,7 +127,7 @@ function Page() {
   });
   const isSuper = role === "superintendent";
   const [packages, setPackages] = useState<VisitPackage[]>([]);
-  useEffect(() => { if (open) setPackages(loadPackages(user?.id)); }, [open, user?.id]);
+  useEffect(() => { if (open) { setPackages(loadPackages(user?.id)); fetchPackages(user?.id).then(setPackages); } }, [open, user?.id]);
 
   const loadCongs = useCallback(async () => {
     if (!isSuper) return;

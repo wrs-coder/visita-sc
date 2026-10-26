@@ -1862,6 +1862,45 @@ export type Database = {
           },
         ]
       }
+      visit_packages: {
+        Row: {
+          checklist_template_id: string
+          created_at: string
+          elder_program_template_id: string
+          field_template_id: string
+          id: string
+          meeting_talk_template_id: string
+          name: string
+          superintendent_id: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          checklist_template_id?: string
+          created_at?: string
+          elder_program_template_id?: string
+          field_template_id?: string
+          id?: string
+          meeting_talk_template_id?: string
+          name?: string
+          superintendent_id?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Update: {
+          checklist_template_id?: string
+          created_at?: string
+          elder_program_template_id?: string
+          field_template_id?: string
+          id?: string
+          meeting_talk_template_id?: string
+          name?: string
+          superintendent_id?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       visit_pending_updates: {
         Row: {
           backup_pdf_path: string | null
