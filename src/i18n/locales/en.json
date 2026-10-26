@@ -980,7 +980,8 @@
       "searchPlaceholder": "Type to filter...",
       "from": "From",
       "to": "To",
-      "clear": "Clear"
+      "clear": "Clear",
+      "close": "Close"
     },
     "categories": {
       "free": {
@@ -1082,7 +1083,8 @@
     },
     "whatsapp": {
       "header": "*Private Notes — Confidential*"
-    }
+    },
+    "newButton": "New"
   },
   "report": {
     "loading": "Loading report…",
@@ -1996,5 +1998,16 @@
     "body": "This visit has no template or package selected yet.",
     "go": "Take me to the visit",
     "badge": "No templates"
+  },
+  "circuit": {
+    "fallbackTitle": "My circuit",
+    "openCalendar": "Open calendar",
+    "month": "Month",
+    "week": "Week",
+    "today": "Today",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "visitLegend": "Visit",
+    "eventLegend": "Event"
   }
 }
