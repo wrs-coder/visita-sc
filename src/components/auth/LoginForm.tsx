@@ -77,8 +77,8 @@ export function LoginForm() {
       .order("created_at", { ascending: true });
     if (error) throw error;
     const roles = (data ?? []).map((r) => r.role);
-    const isSuper = roles.includes("superintendent");
-    nav({ to: isSuper ? "/dashboard" : "/cronograma" });
+    const toDashboard = roles.includes("superintendent") || roles.includes("elder");
+    nav({ to: toDashboard ? "/dashboard" : "/cronograma" });
   };
 
   const mode = useConnectionMode();
