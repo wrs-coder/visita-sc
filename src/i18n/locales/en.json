@@ -818,7 +818,7 @@
     },
     "checklist": {
       "title": "Checklist Templates",
-      "subtitle": "Create checklists and apply them to each visit via Itinerary. {{n}}/{{max}} templates.",
+      "subtitle": "Create checklists and apply them to each visit via Itinerary.",
       "newDialogTitle": "New checklist template",
       "itemsTitle": "Checklist items",
       "noItemsHelp": "No items. Add questions or topics for this checklist.",

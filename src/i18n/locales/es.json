@@ -793,7 +793,7 @@
     },
     "checklist": {
       "title": "Plantillas de Lista de tareas",
-      "subtitle": "Crea listas de tareas y aplícalas a cada visita por el Itinerario. {{n}}/{{max}} plantillas.",
+      "subtitle": "Crea listas de tareas y aplícalas a cada visita por el Itinerario.",
       "newDialogTitle": "Nueva plantilla de lista de tareas",
       "itemsTitle": "Ítems de la lista de tareas",
       "noItemsHelp": "Sin ítems. Agrega preguntas o temas para esta lista.",
