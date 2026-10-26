@@ -47,6 +47,7 @@ import { useOfflineWarmup } from "@/hooks/use-offline-warmup";
 import { OfflineReadyBadge } from "@/components/OfflineReadyBadge";
 import { RouteAnnouncer } from "@/components/RouteAnnouncer";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { VisitTemplateReminder } from "@/components/VisitTemplateReminder";
 
 
 export const Route = createFileRoute("/_app")({
@@ -195,12 +196,11 @@ function AppLayout() {
       items: [
         ...(role === "superintendent"
           ? [
-              { to: "/modelos", label: t("sidebar.sectionModelos"), icon: FileStack },
+              { to: "/modelos", label: t("sidebar.visitTemplates"), icon: FileStack },
             ]
           : []),
         { to: "/perfil", label: t("sidebar.myProfile"), icon: UserCircle },
       ],
-      collapsible: role === "superintendent",
     },
   ].filter((s) => s.items.length > 0);
 
@@ -462,6 +462,7 @@ function AppLayout() {
       </div>
       <SupportDeveloperDialog open={supportOpen} onOpenChange={setSupportOpen} />
       <CommandPalette />
+      <VisitTemplateReminder userId={user?.id ?? null} enabled={role === "superintendent"} />
     </div>
   );
 }

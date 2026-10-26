@@ -167,7 +167,10 @@
       "copied": "Code copied",
       "errorFormat": "Use 4 to 12 characters (uppercase letters and numbers only).",
       "errorTaken": "This code is already in use. Choose another."
-    }
+    },
+    "tabPersonal": "Personal data",
+    "tabFeatures": "App features",
+    "tabSettings": "Settings"
   },
   "commandPalette": {
     "open": "Open quick search",
@@ -221,7 +224,8 @@
     "menu": "Menu",
     "logout": "Sign out",
     "blockedTitle": "Nothing new yet",
-    "blockedDesc": "Please wait until the Circuit Overseer schedules a visit."
+    "blockedDesc": "Please wait until the Circuit Overseer schedules a visit.",
+    "visitTemplates": "Visit Templates"
   },
   "dashboard": {
     "greeting": "Hello, {{name}}!",
@@ -1973,5 +1977,11 @@
     "info": {
       "title": "Outline details"
     }
+  },
+  "visitReminder": {
+    "title": "Visit in 2 months",
+    "body": "This visit has no template or package selected yet.",
+    "go": "Take me to the visit",
+    "badge": "No templates"
   }
 }

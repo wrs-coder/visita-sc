@@ -37,7 +37,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone } from "lucide-react";
+import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone, AlertTriangle } from "lucide-react";
+import { hasAnyTemplate } from "@/lib/visit-template-reminder";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -50,7 +51,11 @@ import { AppAboutCard } from "@/components/AppAboutCard";
 import { ItineraryWeeks } from "@/components/itinerary/ItineraryWeeks";
 import { loadPackages, missingFields, packageToForm, type VisitPackage } from "@/lib/visit-packages";
 
-export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
+export const Route = createFileRoute("/_app/configuracoes")({
+  component: Page,
+  validateSearch: (s: Record<string, unknown>): { edit?: string } =>
+    typeof s.edit === "string" && s.edit ? { edit: s.edit } : {},
+});
 
 const VISIT_TITLE_OPTIONS = [
   "Visita",
@@ -69,6 +74,8 @@ interface Visit {
   checklist_template_id?: string | null;
   field_meeting_template_id?: string | null;
   template_id?: string | null;
+  meeting_talk_template_id?: string | null;
+  elder_program_template_id?: string | null;
   substitute_name?: string | null;
   substitute_phone?: string | null;
 }
@@ -284,18 +291,26 @@ function Page() {
     setOpen(true);
   };
 
+  // Abre a visita no modo editar quando chega via ?edit=<id> (pop-up de lembrete).
+  const search = Route.useSearch();
+  const routeNav = Route.useNavigate();
+  useEffect(() => {
+    if (!search.edit || !isSuper) return;
+    const v = visits.find((x) => x.id === search.edit);
+    if (!v) return;
+    openEdit(v);
+    routeNav({ search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.edit, visits, isSuper]);
+
   const submit = async () => {
     if (submitting) return;
     if (!form.congregation_id) { toast.error("Selecione a congregação"); return; }
     if (!form.title || !form.start_date || !form.end_date) { toast.error("Preencha todos os campos"); return; }
     if (form.end_date < form.start_date) { toast.error("A data final não pode ser anterior à inicial"); return; }
     const isScs = form.title === "Visita SCS";
-    if (!editId && !isScs) {
-      if (!form.template_id) { toast.error("Selecione o Modelo de Programação"); return; }
-      if (!form.checklist_template_id) { toast.error("Selecione o Modelo de Checklist"); return; }
-      if (!form.field_template_id) { toast.error("Selecione o Modelo de Reuniões de Campo"); return; }
-      if (!form.meeting_talk_template_id) { toast.error("Selecione o Modelo de Reunião e Discurso"); return; }
-    }
+    // Modelos e pacotes são opcionais: a visita pode ser criada sem nenhum.
+
 
     setSubmitting(true);
     try {
@@ -828,6 +843,11 @@ function Page() {
                           <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium mt-1 truncate">
                             {v.title}
                           </div>
+                          {isSuper && !hasAnyTemplate(v) && (
+                            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+                              <AlertTriangle className="h-3 w-3" /> {t("visitReminder.badge")}
+                            </div>
+                          )}
                           {v.title === "Visita SCS" && (v.substitute_name || v.substitute_phone) && (
                             <div
                               className="mt-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2"
