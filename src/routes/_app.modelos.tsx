@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { listTemplates, upsertTemplate, replaceTemplateItems } from "@/lib/templates.functions";
 import { exportProgramTemplate, importProgramTemplate } from "@/lib/template-io.functions";
-import { TemplateIOButtons } from "@/components/TemplateIOButtons";
+import { TemplateActionsMenu, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, FileStack, Save, Copy, Check } from "lucide-react";
+import { Plus, Trash2, FileStack, Save, Check } from "lucide-react";
 import { toast } from "sonner";
 import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { DayPills, SectionPills, useTemplateDays } from "@/components/templates/DayPills";
@@ -209,30 +209,30 @@ function Page() {
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><FileStack className="h-6 w-6" /> {t("templates.program.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t("templates.program.subtitle")}</p>
         </div>
-        <TemplateIOButtons
-          filenameBase={namesBySlot[Number(activeSlot)] ?? t("templates.exportProgram", { n: activeSlot })}
-          onExport={async () => {
-            const tpl = tpls.find((tp) => tp.slot === Number(activeSlot));
-            if (!tpl) return { ok: false, error: t("templates.exportFirst") };
-            return fnExport({ data: { id: tpl.id } });
-          }}
-          onImport={async (file) => { const r = await fnImport({ data: { file: file as never, slot: Number(activeSlot) } }); if (r.ok) await load(); return r; }}
-        />
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t("templates.program.templateLabel")}</Label>
+        <Label className="hidden sm:block text-xs uppercase tracking-wide text-muted-foreground">{t("templates.program.templateLabel")}</Label>
         <Select value={activeSlot} onValueChange={setActiveSlot}>
-          <SelectTrigger className="h-9 max-w-xs"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-10 flex-1 min-w-0 sm:flex-none sm:w-64 rounded-xl bg-muted/40 font-medium"><SelectValue /></SelectTrigger>
           <SelectContent>
             {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || t("templates.templateNumber", { n: s })}</SelectItem>)}
           </SelectContent>
         </Select>
-        {dupSlot === null ? (
-          <Button size="sm" variant="outline" onClick={() => setDupSlot(activeSlot)}>
-            <Copy className="h-4 w-4 mr-1" /> {t("templates.program.duplicateTemplate", { defaultValue: "Duplicar modelo" })}
-          </Button>
-        ) : (
+        <TemplateActionsMenu
+          disabled={busy}
+          onDuplicate={() => setDupSlot(activeSlot)}
+          io={{
+            filenameBase: namesBySlot[Number(activeSlot)] ?? t("templates.exportProgram", { n: activeSlot }),
+            onExport: async () => {
+              const tpl = tpls.find((tp) => tp.slot === Number(activeSlot));
+              if (!tpl) return { ok: false, error: t("templates.exportFirst") };
+              return fnExport({ data: { id: tpl.id } });
+            },
+            onImport: async (file) => { const r = await fnImport({ data: { file: file as never, slot: Number(activeSlot) } }); if (r.ok) await load(); return r; },
+          }}
+        />
+        {dupSlot !== null && (
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{t("templates.program.duplicateTo", { defaultValue: "Copiar para" })}</span>
             <Select value={String(dupSlot)} onValueChange={(v) => setDupSlot(v)}>
@@ -256,7 +256,7 @@ function Page() {
           const notes = notesBySlot[slot] ?? {};
           return (
             <TabsContent key={slot} value={String(slot)} className="space-y-4">
-              <CollapseProvider scope="tpl-program" visitId={`tpl:${slot}`}>
+              <CollapseProvider scope="tpl-program" visitId={`tpl:${slot}`} closedByDefault={["study:ev:", "meal:ev:", "transport:ev:"]}>
               <div className="flex justify-end">
                 <CollapseAllButton ids={(["study", "meal", "transport"] as Kind[]).flatMap((k) => [
                   ...DAY_OPTS.map((d) => `${k}:day:${d}`),
@@ -302,8 +302,7 @@ function Page() {
                     />
                   )} />
 
-                <div className="border rounded-lg p-3 space-y-2">
-                  <h3 className="text-sm font-semibold">Informações adicionais do superintendente — Estudos e Revisitas por dia</h3>
+                <InfoDisclosure label="Informações gerais — Estudos e Revisitas" filled={!!(studyGenObsBySlot[slot] ?? "").trim()}>
                   <p className="text-xs text-muted-foreground">Observações exibidas aos anciãos junto da programação de Estudos e Revisitas.</p>
                   <div>
                     <Label className="text-xs">Informações adicionais do superintendente (gerais)</Label>
@@ -321,7 +320,7 @@ function Page() {
                     />
                     <p className="text-xs text-muted-foreground mt-1">Aparecem em vermelho no topo da aba Estudos e Revisitas dos anciãos.</p>
                   </div>
-                </div>
+                </InfoDisclosure>
                 </>)}
 
                 {section === "meal" && (<>
@@ -336,8 +335,7 @@ function Page() {
                     />
                   )} />
 
-                <div className="border rounded-lg p-3 space-y-2">
-                  <h3 className="text-sm font-semibold">{t("templates.program.mealNotesTitle")}</h3>
+                <InfoDisclosure label={t("templates.program.mealNotesTitle")} filled={!!(genObsBySlot[slot] ?? "").trim()}>
                   <p className="text-xs text-muted-foreground">{t("templates.program.mealNotesHelp")}</p>
                   <div>
                     <Label className="text-xs">{t("templates.program.generalObservations")}</Label>
@@ -355,17 +353,22 @@ function Page() {
                     />
                     <p className="text-xs text-muted-foreground mt-1">{t("templates.program.generalObservationsHint")}</p>
                   </div>
-                </div>
+                </InfoDisclosure>
                 </>)}
 
                 {section === "transport" && (
                 <KindBlock title={t("templates.program.transportTitle")} kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days} />
                 )}
 
-                <Button className="w-full" onClick={() => saveItems(slot)} disabled={busy}>
-                  <Save className="h-4 w-4 mr-1" /> {t("templates.program.saveTemplate")}
-                </Button>
               </CardContent></Card>
+              <TemplateFooterBar>
+                <Button variant="outline" className="flex-1 rounded-full" onClick={() => addItem(slot, section, dayState.activeDay)} disabled={busy}>
+                  <Plus className="h-4 w-4 mr-1" /> {t("templates.chrome.add", { defaultValue: "Adicionar" })}
+                </Button>
+                <Button className="flex-1 rounded-full" onClick={() => saveItems(slot)} disabled={busy}>
+                  <Save className="h-4 w-4 mr-1" /> {t("common.save", { defaultValue: "Salvar" })}
+                </Button>
+              </TemplateFooterBar>
               </CollapseProvider>
             </TabsContent>
           );

@@ -30,9 +30,16 @@ function readStore(key: string): Store {
   }
 }
 
-export function CollapseProvider({ scope, visitId, children }: { scope: string; visitId?: string | null; children: ReactNode }) {
+export function CollapseProvider({ scope, visitId, children, closedByDefault }: {
+  scope: string;
+  visitId?: string | null;
+  children: ReactNode;
+  /** Prefixos de id que começam recolhidos; para eles a marca guardada significa "aberto". */
+  closedByDefault?: string[];
+}) {
   const { user } = useAuth();
-  const key = `visita-sc:collapse:v1:${user?.id ?? "anon"}:${visitId ?? "none"}:${scope}`;
+  const invKey = (closedByDefault ?? []).join("|");
+  const key = `visita-sc:collapse:${invKey ? "v2d" : "v1"}:${user?.id ?? "anon"}:${visitId ?? "none"}:${scope}`;
   const [collapsed, setCollapsed] = useState<Store>({});
 
   useEffect(() => {
@@ -50,9 +57,13 @@ export function CollapseProvider({ scope, visitId, children }: { scope: string; 
     [key],
   );
 
-  const value = useMemo<Ctx>(
-    () => ({
-      isOpen: (id) => !collapsed[id],
+  const value = useMemo<Ctx>(() => {
+    const prefixes = invKey ? invKey.split("|") : [];
+    const isInv = (id: string) => prefixes.some((p) => id.startsWith(p));
+    // Marca guardada = recolhido (padrão) ou aberto (ids recolhidos por padrão).
+    const isOpen = (id: string) => (isInv(id) ? !!collapsed[id] : !collapsed[id]);
+    return {
+      isOpen,
       toggle: (id) =>
         setCollapsed((prev) => {
           const next = { ...prev };
@@ -65,15 +76,15 @@ export function CollapseProvider({ scope, visitId, children }: { scope: string; 
         setCollapsed((prev) => {
           const next = { ...prev };
           for (const id of ids) {
-            if (open) delete next[id];
-            else next[id] = true;
+            const mark = isInv(id) ? open : !open;
+            if (mark) next[id] = true;
+            else delete next[id];
           }
           persist(next);
           return next;
         }),
-    }),
-    [collapsed, persist],
-  );
+    };
+  }, [collapsed, persist, invKey]);
 
   return <CollapseCtx.Provider value={value}>{children}</CollapseCtx.Provider>;
 }
