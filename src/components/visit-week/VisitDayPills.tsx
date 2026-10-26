@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { useDateLocale } from "@/lib/date-locale";
+import { useTranslation } from "react-i18next";
+import { getDateLocale } from "@/lib/date-locale";
 import { pickInitialVisitDay } from "@/lib/visit-day-pills";
 
 /** Dia escolhido nas pílulas da semana da visita (abre em hoje, senão no 1º dia). */
@@ -23,7 +24,8 @@ export function VisitDayPills({ days, active, onPick, hasItems }: {
   onPick: (key: string) => void;
   hasItems: (key: string) => boolean;
 }) {
-  const locale = useDateLocale();
+  const { i18n } = useTranslation();
+  const locale = getDateLocale(i18n.language);
   return (
     <div role="tablist" className="flex flex-wrap gap-1.5">
       {days.map((d) => {
