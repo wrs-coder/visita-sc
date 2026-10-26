@@ -49,9 +49,10 @@ function Page() {
   const [hiddenBump, setHiddenBump] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
 
-  // Redireciona se não for superintendente — esta tela é exclusiva do super.
+  // Superintendente edita; anciãos/comissão só leem; demais perfis voltam ao início.
+  const isSuper = role === "superintendent";
   useEffect(() => {
-    if (role && role !== "superintendent") nav({ to: "/dashboard" });
+    if (role && role !== "superintendent" && role !== "elder") nav({ to: "/dashboard" });
   }, [role, nav]);
 
   const load = useCallback(
@@ -197,12 +198,12 @@ function Page() {
             {filteredSnap.congregation.name} • {t("weekSummary.subtitle")}
           </p>
         </div>
-        {filteredSnap.visit && <VisitWeekReportButton onClick={() => setReportOpen(true)} />}
+        {isSuper && filteredSnap.visit && <VisitWeekReportButton onClick={() => setReportOpen(true)} />}
       </div>
       <VisitSummaryView
         snap={filteredSnap}
         onRefresh={() => activeCong?.id && load(activeCong.id)}
-        onEditEvent={handleEditEvent}
+        onEditEvent={isSuper ? handleEditEvent : undefined}
       />
 
       <AlertDialog open={!!corruptId} onOpenChange={(o) => !o && setCorruptId(null)}>

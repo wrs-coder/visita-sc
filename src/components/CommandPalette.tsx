@@ -116,7 +116,7 @@ export function CommandPalette() {
     { to: "/notas", label: t("sidebar.privateNotes"), icon: Lock, group: "principal" as const, superOnly: true },
     { to: "/lixeira", label: t("sidebar.trash", { defaultValue: "Lixeira" }), icon: Trash2, group: "principal" as const, superOnly: true },
 
-    { to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList, group: "visita" as const, superOnly: true },
+    { to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList, group: "visita" as const },
     { to: "/comunicacao-casal", label: t("sidebar.coupleMessages"), icon: Heart, group: "visita" as const, superOnly: true },
     { to: "/programa-ancioes", label: t("sidebar.elderProgram", { defaultValue: "Pastoreios, Recomendações e outros" }), icon: BookOpen, group: "visita" as const },
     { to: "/escala", label: t("sidebar.fieldStudies"), icon: Users, group: "visita" as const },

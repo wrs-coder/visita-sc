@@ -61,3 +61,4 @@
 - [x] Etapa 2 — Semanas de pioneiro/livre no Itinerário
 - [x] Etapa 3 — Aba única "Modelos" e Pacotes da visita
 - [x] Visual enxuto nos modelos: seletor no celular, menu ⋮, informações recolhíveis, itens fechados, barra fixa Adicionar/Salvar, "Mais detalhes"
+- [x] Resumo da semana liberado (somente leitura) para comissão/anciãos

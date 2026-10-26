@@ -26,7 +26,17 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Congregação não encontrada." };
     }
     if (cong.superintendent_id !== userId) {
-      return { ok: false as const, error: "Acesso negado." };
+      // Comissão / anciãos da própria congregação: leitura apenas (RLS continua valendo).
+      const { data: elderRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "elder")
+        .eq("congregation_id", cong.id)
+        .maybeSingle();
+      if (!elderRole) {
+        return { ok: false as const, error: "Acesso negado." };
+      }
     }
 
     const { data: visits } = await supabase
