@@ -1,38 +1,33 @@
-# Pacotes da visita: no aparelho ou no banco?
+# Anciãos: abrir no Painel e ver tudo sem internet
 
-## Situação atual
-Os pacotes ficam só no aparelho de quem os criou e não vão para o servidor. Os modelos que eles agrupam já ficam no banco, e o pacote serve apenas para preencher os 5 modelos ao criar uma visita.
+## O que encontrei
+- Ao abrir o app, só o superintendente e os anciãos com cargo (coordenador, secretário, sup. de serviço) vão para o Painel. Os demais anciãos caem em "Cronograma". O mesmo acontece logo depois do login.
+- O Painel já guarda no aparelho uma cópia do que mostra (visita, cronograma, reuniões, programação dos anciãos), mas só **depois que essa tela foi aberta com internet**. O download automático em segundo plano guarda os dados em outro lugar, que o Painel não consulta. Resultado: um ancião que nunca abriu o Painel com internet vê os cartões vazios quando está sem sinal.
+- Alguns cartões (refeições, transporte, designações, reuniões de campo, extras dos modelos) precisam ser conferidos um a um para garantir que todos tenham a cópia de reserva.
 
-## Deixar no aparelho (como está)
-**Prós**
-- Não exige mudança no banco nem nas permissões, então o risco é zero.
-- Funciona sem internet e abre na hora.
+## O que muda (para o ancião)
 
-**Contras**
-- Os pacotes se perdem se o aparelho for trocado, se o app for reinstalado ou se os dados forem limpos. Hoje, o backup só os salva se você exportar manualmente.
-- O que é criado no celular não aparece no computador, e o contrário também.
-- O pacote pode apontar para um modelo que já foi apagado. Hoje só aparece um aviso.
+```text
++-----------------------------+
+| ( sem internet )    ⟳  ✉    |   <- faixa discreta "Sem conexão"
+|  Painel                     |
+|  [Agenda] Esboços  Visita.. |   <- mesmas 4 telas de sempre
+|  +-----------------------+  |
+|  | Hoje · Qua 28         |  |
+|  | 10:30 Pastoreio ...   |  |   <- dados guardados no aparelho
+|  | 12:00 Refeição ...    |  |
+|  +-----------------------+  |
+|  Próximos eventos ...       |
++-----------------------------+
+```
 
-## Levar para o banco (como os modelos)
-**Prós**
-- O mesmo pacote aparece em todos os seus aparelhos e sobrevive à troca de celular e à reinstalação.
-- Fica igual aos modelos: mesmo lugar, mesmas regras e mesmo backup.
-- Quando um modelo for apagado, o banco limpa sozinho a ligação dele com o pacote.
-
-**Contras**
-- Exige uma tabela nova com regras de acesso, mas é pouco trabalho.
-- Sem internet, a mudança feita no pacote fica na fila e sobe depois. É assim que os modelos já funcionam hoje.
-
-## Recomendação
-**Levar para o banco.** Para o superintendente, o pacote é algo de longo prazo, como os modelos, e perdê-lo numa troca de celular é o maior risco. O app já tem a fila sem internet, então nada piora fora da rede.
-
-## O que seria feito (só após sua aprovação)
-- Criar uma tabela de pacotes ligada ao superintendente. Só ele vê e edita os próprios pacotes; anciãos, comissão e esposa não têm acesso.
-- Na primeira abertura, os pacotes que já estão no aparelho sobem automaticamente para o servidor, uma única vez, e nenhum se perde.
-- A tela Pacotes e o seletor no itinerário continuam iguais visualmente. Exportar e importar continuam funcionando.
-- A escolha dos modelos de cada visita continua igual, e as visitas já criadas não mudam.
+1. Todo ancião cadastrado abre direto no Painel, com ou sem internet (também logo após o login). O "Cronograma" continua no menu.
+2. Todas as informações do Painel ficam disponíveis sem internet, mesmo que o ancião não tenha aberto essa tela antes, desde que o aparelho tenha entrado com internet pelo menos uma vez.
+3. Nada muda no visual, nas permissões ou no que cada um pode editar. Com internet, o comportamento continua o mesmo.
 
 ## Detalhes técnicos
-- Migração `visit_packages` (`id`, `superintendent_id`, `name`, 5 colunas `*_template_id` uuid nulas com `ON DELETE SET NULL` para as tabelas de modelos, timestamps), RLS `superintendent_id = auth.uid()` + papel superintendent, e GRANTs.
-- `visit-packages.ts` passa a ler e gravar pelo cliente com `offlineInsert/Update/Delete`. O localStorage vira cache e origem da migração única (flag `visit-packages:migrated:<userId>`).
-- Teste da migração local→servidor (sem duplicar). Atualizar a regra correspondente no AGENTS.md.
+- `src/routes/index.tsx` e `LoginForm.tsx`: qualquer `role === "elder"` (onboarding concluído) navega para `/dashboard`; superintendente sem mudança.
+- Auditoria do `_app.dashboard.tsx` e de `useActiveVisit` / `useVisitTemplateExtras`: toda leitura passa por `readWithMirror` / `readOneWithMirror` / `readFnWithMirrorSafe`; as que ainda chamam o servidor direto ganham a reserva local, sem mudar a consulta online.
+- `offline-prefetch.ts`: os passos já existentes (visitas, cronograma, refeições, transporte, designações, reuniões, programação dos anciãos) também gravam as linhas no espelho local (`upsertRows` do `local-db`), na mesma chave que o Painel lê. Continua só leitura do servidor.
+- Sem mudança de banco, RLS, login, PIN ou biometria.
+- Testes: ancião sem cargo vai para `/dashboard`; prefetch preenche o espelho para a visita do ancião; leitura do Painel com servidor indisponível devolve os dados do espelho. Validar com `bunx tsgo --noEmit` e `bunx vitest run`, e Playwright offline (contexto `offline=True`) com sessão de ancião.
