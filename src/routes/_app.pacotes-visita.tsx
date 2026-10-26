@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  PACKAGE_FIELDS, isPackage, loadPackages, missingFields, savePackages,
+  PACKAGE_FIELDS, isPackage, loadPackages, missingFields, fetchPackages, pushPackages,
   type PackageField, type VisitPackage,
 } from "@/lib/visit-packages";
 
@@ -80,8 +80,18 @@ function Page() {
   const [edit, setEdit] = useState<VisitPackage | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setList(loadPackages(user?.id)); }, [user?.id]);
-  const persist = useCallback((next: VisitPackage[]) => { setList(next); savePackages(user?.id, next); }, [user?.id]);
+  useEffect(() => {
+    let alive = true;
+    setList(loadPackages(user?.id));
+    fetchPackages(user?.id).then((l) => { if (alive) setList(l); });
+    return () => { alive = false; };
+  }, [user?.id]);
+  const persist = useCallback((next: VisitPackage[]) => {
+    setList((prev) => {
+      pushPackages(user?.id, prev, next).then((ok) => { if (!ok) toast.message("Pacote salvo neste aparelho. Ele será enviado quando houver internet."); });
+      return next;
+    });
+  }, [user?.id]);
 
   const available = useMemo(
     () => Object.fromEntries(PACKAGE_FIELDS.map((f) => [f, opts[f].map((o) => o.id)])) as Record<PackageField, string[]>,
