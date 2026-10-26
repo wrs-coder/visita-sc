@@ -167,7 +167,10 @@
       "copied": "Código copiado",
       "errorFormat": "Usa de 4 a 12 caracteres (solo letras mayúsculas y números).",
       "errorTaken": "Este código ya está en uso. Elige otro."
-    }
+    },
+    "tabPersonal": "Datos personales",
+    "tabFeatures": "Recursos de la aplicación",
+    "tabSettings": "Configuración"
   },
   "commandPalette": {
     "open": "Abrir búsqueda rápida",
@@ -221,7 +224,8 @@
     "menu": "Menú",
     "logout": "Salir",
     "blockedTitle": "Aún no hay novedades",
-    "blockedDesc": "Por favor, espera a que el Superintendente programe una visita."
+    "blockedDesc": "Por favor, espera a que el Superintendente programe una visita.",
+    "visitTemplates": "Plantillas de Visitas"
   },
   "dashboard": {
     "greeting": "¡Hola, {{name}}!",
@@ -1948,5 +1952,11 @@
     "info": {
       "title": "Detalles del bosquejo"
     }
+  },
+  "visitReminder": {
+    "title": "Visita en 2 meses",
+    "body": "Esta visita aún no tiene ninguna plantilla o paquete elegido.",
+    "go": "Llévame a la visita",
+    "badge": "Sin plantillas"
   }
 }

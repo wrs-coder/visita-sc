@@ -167,7 +167,10 @@
       "copied": "Código copiado",
       "errorFormat": "Use 4 a 12 caracteres (apenas letras maiúsculas e números).",
       "errorTaken": "Este código já está em uso. Escolha outro."
-    }
+    },
+    "tabPersonal": "Dados pessoais",
+    "tabFeatures": "Recursos do aplicativo",
+    "tabSettings": "Configurações"
   },
   "commandPalette": {
     "open": "Abrir busca rápida",
@@ -221,7 +224,8 @@
     "menu": "Menu",
     "logout": "Sair",
     "blockedTitle": "Ainda não há novidades",
-    "blockedDesc": "Por favor, aguarde até que o Superintendente disponibilize um agendamento de visita."
+    "blockedDesc": "Por favor, aguarde até que o Superintendente disponibilize um agendamento de visita.",
+    "visitTemplates": "Modelos Visitas"
   },
   "dashboard": {
     "greeting": "Olá, {{name}}!",
@@ -1941,5 +1945,11 @@
     "info": {
       "title": "Detalhes do esboço"
     }
+  },
+  "visitReminder": {
+    "title": "Visita em 2 meses",
+    "body": "Esta visita ainda não tem nenhum modelo ou pacote escolhido.",
+    "go": "Me leve para a visita",
+    "badge": "Sem modelos"
   }
 }

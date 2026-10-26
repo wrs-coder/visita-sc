@@ -843,7 +843,7 @@ function Page() {
                             {v.title}
                           </div>
                           {isSuper && !hasAnyTemplate(v) && (
-                            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-2.5 py-0.5 text-[11px] font-semibold text-warning-foreground">
+                            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
                               <AlertTriangle className="h-3 w-3" /> {t("visitReminder.badge")}
                             </div>
                           )}
