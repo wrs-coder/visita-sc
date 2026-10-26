@@ -1,38 +1,76 @@
-# "Programação geral" no Resumo da semana
+# Aba "Anciãos" com pílulas e "Perguntas do SC" dentro dela
 
-## Resposta curta
-Sim, faz mais sentido. Hoje cada aba do "Programa da visita" tem seu próprio botão "Relatório executivo", e a comissão precisa gerar vários PDFs separados. O app já tem um relatório completo da visita (hoje usado no Início do superintendente) que junta tudo num PDF só. Ele passa a ficar no "Resumo da semana" com o nome **Programação geral**.
+Só aparência e navegação. Nenhum dado salvo, campo, permissão ou regra de senha muda.
 
-## O que muda
-1. **Resumo da semana**: um ícone discreto ⤓ no canto do título (rótulo de acessibilidade "Programação geral"), para superintendente e comissão.
-2. Ao tocar, abre a janela "Programação geral" com caixas para escolher o que entra no PDF:
-   Identificação, Cronograma, Refeições, Transporte, Designações, Reuniões de campo, Meio de semana, Fim de semana, Pioneiros, Anciãos, Checklist. Também há "Marcar todos" e "Desmarcar todos".
-3. Uma chave nova: **"Incluir observações do superintendente"**, ligada por padrão. Se você desligar, o PDF sai sem as observações dos modelos.
-4. O relatório atual do Resumo (só cronograma) continua disponível para o superintendente, num menu junto do ícone.
-5. Nas abas do "Programa da visita", o botão grande "Relatório executivo" vira o mesmo ícone discreto ⤓. Nada é removido.
-6. Cada ancião só vê no PDF o que já pode ver hoje.
+## Nova tela "Anciãos"
 
 ```text
-┌─────────────────────────────┐
-│ Resumo da semana         ⤓  │
-│ Congregação X • semana      │
-└─────────────────────────────┘
-
-┌─ Programação geral ─────────┐
-│ [x] Identificação           │
-│ [x] Cronograma              │
-│ [x] Refeições  [x] Transp.  │
-│ [x] Reuniões   [x] Anciãos  │
-│ ...                         │
-│ ─────────────────────────── │
-│ Incluir observações    (ON) │
-│                             │
-│ [ Cancelar ]  [ Gerar PDF ] │
-└─────────────────────────────┘
++-----------------------------------------+
+| (Anciãos)(Estudos)(Reuniões)(Refeições) |
+| (Transporte)                            |  <- "Checklist" sai daqui
++-----------------------------------------+
+| Corpo de Anciãos                    (⤓) |
+| Insira as informações referentes a      |
+| pastoreio, encorajamento, recomendações,|
+| assuntos locais e responda as perguntas |
+| adicionais do superintendente de        |
+| circuito.                               |
++-----------------------------------------+
+| [🔒 Acesso Restrito              ⌄ ]    |  <- recolhido (só anciãos)
++-----------------------------------------+
+| (Perguntas do SC)(PASTOREIO)            |
+| (ENCORAJAMENTO)(RECOMENDAÇÕES)          |
+| (ASSUNTOS LOCAIS)                       |  <- quebra linha, sem rolar
++-----------------------------------------+
+|  conteúdo da pílula escolhida           |
++-----------------------------------------+
 ```
 
+### Pílula PASTOREIO com dias
+
+```text
+| (PASTOREIO) selecionada                 |
+| (Ter•)(Qua)(Qui•)(Sex)(Todos)           |
+|  • = dia com pastoreio marcado          |
+| > Ter 09:00 · Família Souza             |
+| > Ter 15:00 · Irmão Lima                |
+```
+- Os dias saem do campo "Dia/Horário" já preenchido. Só aparecem pílulas de dias quando houver dias marcados.
+- A pílula "Todos" mostra também os pastoreios ainda sem dia, então nenhum item fica escondido.
+
+### Pílula Perguntas do SC
+
+```text
+| (Perguntas do SC) selecionada           |
+| Informações adicionais                  |
+| Responda as perguntas abaixo referentes |
+| à congregação.                          |
+| Progresso  3/8 (37%)                    |
+| [✓] Pergunta 1 ...                 ⌄    |
+```
+- É o mesmo conteúdo da tela Checklist atual (marcar, responder, adicionar, exportar, relatório).
+
+### Card Acesso Restrito (aberto)
+
+```text
+| 🔒 Acesso Restrito                ⌃     |
+| Se desejar, poderá definir uma senha    |
+| para aumentar a confidencialidade das   |
+| informações abaixo. Não esqueça de      |
+| partilhar a senha com os outros anciãos.|
+| [ senha .......... ] [Salvar]           |
+```
+- Começa recolhido e só abre ao tocar.
+
+## O que continua funcionando
+- O endereço antigo da Checklist (atalhos, lembretes, relatório) abre a tela Anciãos já na pílula "Perguntas do SC".
+- A pílula escolhida fica lembrada no aparelho.
+- Senha da aba, quem pode criar ou alterar e a tela de bloqueio dos visitantes continuam iguais.
+
 ## Detalhes técnicos
-- `_app.resumo-semana.tsx`: botão ghost size icon (`FileDown`, aria-label "Programação geral"). Ele abre `FullVisitReportDialog`; para o superintendente, um DropdownMenu com "Programação geral" e "Só cronograma" (`WeekSummaryReportDialog`).
-- `FullVisitReportDialog`: prop de título "Programação geral"; estado `includeObs` repassado ao `VisitWeekReportDialog` por meio de um novo slot `extraOptions`. Ao gerar, se `includeObs` estiver desligado, as seções saem sem `additionalInfo`. A escolha de seções que já existe é reaproveitada.
-- `VisitWeekReportButton` ganha variante `icon`, aplicada às abas do programa e a `programa-ancioes`.
-- Sem mudança de banco nem de regras de acesso. Validar com tsgo e vitest. Registrar a tarefa em roadmap.md.
+- Extrair o corpo de `_app.checklist.tsx` para `components/visit-week/ChecklistPanel.tsx` (sem `VisitProgramTabs`, com o novo título/subtítulo); `/checklist` passa a redirecionar para `/programa-ancioes?tab=questions`.
+- `_app.programa-ancioes.tsx`: `validateSearch` com `tab`; `SectionPills` (questions, pastoral, encouragement, recommendations, local); as seções inativas ficam `hidden` (sem desmontar, os rascunhos são mantidos). O título e o subtítulo vão para o i18n.
+- Pastoreio: extrair o prefixo do dia de `slot_label` com um helper puro (`slot-day.ts` + teste) e mostrar as pílulas no estilo `VisitDayPills`, com a opção "Todos".
+- `ElderTabPasswordCard`: envolver em um recolhível fechado por padrão e trocar os textos.
+- `VisitProgramTabs`: remover Checklist; o item "Programa da visita" na barra lateral segue ativo em `/checklist`.
+- Rótulos novos no i18n pt/en/es. Validar com `bunx tsgo --noEmit`, `bunx vitest run` e uma captura em 393px.
