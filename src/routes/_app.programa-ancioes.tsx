@@ -1,4 +1,6 @@
 import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
+import { ChecklistPanel } from "@/components/visit-week/ChecklistPanel";
+import { slotDay, slotDays } from "@/lib/slot-day";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
@@ -38,7 +40,21 @@ import { toast } from "sonner";
 import { ElderTabPasswordCard } from "@/components/elder-program/ElderTabPasswordCard";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
-export const Route = createFileRoute("/_app/programa-ancioes")({ component: Page });
+export const Route = createFileRoute("/_app/programa-ancioes")({
+  validateSearch: (s: Record<string, unknown>): { tab?: ElderTab } => {
+    const v = s.tab;
+    return typeof v === "string" && (ELDER_TABS as string[]).includes(v) ? { tab: v as ElderTab } : {};
+  },
+  component: Page,
+});
+
+type ElderTab = "questions" | "pastoral" | "encouragement" | "recommendations" | "local";
+const ELDER_TABS: ElderTab[] = ["questions", "pastoral", "encouragement", "recommendations", "local"];
+const ELDER_TAB_LABELS: Record<ElderTab, string> = {
+  questions: "Perguntas do SC", pastoral: "PASTOREIO", encouragement: "ENCORAJAMENTO",
+  recommendations: "RECOMENDAÇÕES", local: "ASSUNTOS LOCAIS",
+};
+const ELDER_TAB_PREF = "visita-sc:elder-tab";
 
 type Section = "pastoral" | "encouragement" | "recommendations" | "local";
 
@@ -198,6 +214,17 @@ function Page() {
 
   useEffect(() => { reload(); }, [reload]);
 
+  const search = Route.useSearch();
+  const [tab, setTab] = useState<ElderTab>(search.tab ?? "pastoral");
+  useEffect(() => {
+    if (search.tab) { setTab(search.tab); return; }
+    try { const v = localStorage.getItem(ELDER_TAB_PREF) as ElderTab | null; if (v && ELDER_TABS.includes(v)) setTab(v); } catch { /* ignore */ }
+  }, [search.tab]);
+  const pickTab = (k: ElderTab) => { setTab(k); try { localStorage.setItem(ELDER_TAB_PREF, k); } catch { /* ignore */ } };
+  const pastoralDays = slotDays(pastoral.map((p) => p.slot_label));
+  const [pDay, setPDay] = useState<string>("__all__");
+  useEffect(() => { if (pDay !== "__all__" && !pastoralDays.includes(pDay)) setPDay("__all__"); }, [pastoralDays.join(","), pDay]);
+
   if (visitLoading) return <LoadingPanel />;
   if (!visit) {
     return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa.</CardContent></Card>;
@@ -249,13 +276,10 @@ function Page() {
       <VisitProgramTabs />
       <div>
         <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-          <BookOpen className="h-6 w-6" /> Pastoreios, Recomendações e outros
+          <BookOpen className="h-6 w-6" /> Corpo de Anciãos
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {isSuper ? t("elderProgram.subtitleSuper") : t("elderProgram.subtitleElder")}
-        </p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Semana da Visita — {visit.title}
+          Insira as informações referentes a pastoreio, encorajamento, recomendações, assuntos locais e responda as perguntas adicionais do superintendente de circuito.
         </p>
         <div className="mt-2">
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground"
@@ -275,12 +299,35 @@ function Page() {
           {!isSuper && (
             <ElderTabPasswordCard congregationId={visit.congregation_id} />
           )}
+          <div role="tablist" className="flex flex-wrap gap-1.5">
+            {ELDER_TABS.map((k) => (
+              <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => pickTab(k)}
+                className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold tracking-wide transition-colors",
+                  tab === k ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:bg-muted")}>
+                {ELDER_TAB_LABELS[k]}
+              </button>
+            ))}
+          </div>
+          <div className={tab === "questions" ? "" : "hidden"}><ChecklistPanel /></div>
           {SECTIONS.map((section) => {
-            const events = listFor(section);
+            const events = section === "pastoral" && pDay !== "__all__"
+              ? listFor(section).filter((e) => slotDay(e.slot_label) === pDay)
+              : listFor(section);
             const canAddManual = section === "recommendations" && canEdit;
             return (
-              <Card key={section}>
+              <Card key={section} className={tab === section ? "" : "hidden"}>
                 <CardContent className="p-4 space-y-4">
+                  {section === "pastoral" && pastoralDays.length > 0 && (
+                    <div role="tablist" className="flex flex-wrap gap-1.5">
+                      {[...pastoralDays, "__all__"].map((d) => (
+                        <button key={d} type="button" role="tab" aria-selected={pDay === d} onClick={() => setPDay(d)}
+                          className={cn("min-w-[52px] rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                            pDay === d ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-muted")}>
+                          {d === "__all__" ? "Todos" : d}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex min-w-0 items-center justify-between gap-2">
                     <h2 className="truncate font-bold text-sm uppercase tracking-wide text-primary">{SECTION_TITLES[section]}</h2>
                     <CollapseIdToggle id={`sec:${section}`} />

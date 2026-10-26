@@ -543,8 +543,8 @@
     "description": "Descrição"
   },
   "checklistPage": {
-    "title": "Checklist da Congregação",
-    "subtitle": "Dados necessários para a visita",
+    "title": "Informações adicionais",
+    "subtitle": "Responda as perguntas abaixo referentes à congregação.",
     "exportSheet": "Exportar planilha",
     "newItem": "Novo item",
     "newItemDialogTitle": "Novo item da checklist",
