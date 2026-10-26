@@ -179,11 +179,11 @@ function AppLayout() {
       id: "visita",
       label: t("sidebar.sectionVisita"),
       items: [
+        ...(role === "superintendent" || role === "elder"
+          ? [{ to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList }]
+          : []),
         ...(role === "superintendent"
-          ? [
-              { to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList },
-              { to: "/comunicacao-casal", label: t("sidebar.coupleMessages"), icon: Heart },
-            ]
+          ? [{ to: "/comunicacao-casal", label: t("sidebar.coupleMessages"), icon: Heart }]
           : []),
         { to: "/programa-visita", label: t("sidebar.visitProgram", { defaultValue: "Programa da visita" }), icon: BookOpen },
       ],
