@@ -16,7 +16,7 @@ import {
   type ElderProgramEventDTO,
 } from "@/lib/elder-program-templates.functions";
 import { exportElderProgramTemplate, importElderProgramTemplate } from "@/lib/template-io.functions";
-import { TemplateIOButtons } from "@/components/TemplateIOButtons";
+import { TemplateActionsMenu, TemplatePicker, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Pencil, Save, BookOpen } from "lucide-react";
+import { Plus, Trash2, Save, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { CharCounterTextarea } from "@/components/ui/char-counter-textarea";
@@ -361,6 +361,11 @@ function Page() {
                 </Card>
               ))}
               </CollapseProvider>
+              <TemplateFooterBar>
+                <Button className="flex-1 rounded-full" onClick={handleSave} disabled={busy}>
+                  <Save className="h-4 w-4 mr-1" />Salvar modelo
+                </Button>
+              </TemplateFooterBar>
             </>
           )}
         </div>
