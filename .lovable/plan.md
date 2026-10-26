@@ -1,27 +1,31 @@
-# Resumo da semana para comissão / anciãos
+# Relatório executivo no "Resumo da semana" para a comissão
 
-## O que aconteceu (explicação)
-- Nesta última mudança, eu **não tirei** "Resumo da semana" dos anciãos. Antes dela, o menu já mostrava esse item só para o superintendente; isso continua igual.
-- A própria tela "Resumo da semana" manda de volta para o Início quem não é superintendente. Por isso hoje um ancião não consegue abri-la, nem pelo menu, nem pelo endereço direto.
-- O que eu tirei do menu da comissão foram só "Cronograma" e "Itinerário".
-- Se vocês já viram os anciãos usando essa tela, provavelmente era outro recurso parecido, como o relatório do resumo que o superintendente compartilha. Também pode ter sido uma versão mais antiga do app.
+## Resposta curta
+Sim, faz mais sentido. Hoje cada aba do "Programa da visita" tem seu próprio botão "Relatório executivo" (Anciãos, Refeições, Reuniões, Transporte...). Para a comissão, isso obriga a gerar 5 ou 6 PDFs separados. O app já tem um **relatório completo da visita** (usado no Início do superintendente) que junta tudo num PDF só. O lugar natural dele é o "Resumo da semana".
 
-## Proposta (se você quiser liberar)
-Liberar "Resumo da semana" **só para leitura** para a comissão de serviço (anciãos):
-1. Mostrar o item no menu "Semana da visita" para a comissão, acima de "Programa da visita".
-2. A comissão vê o resumo da visita da sua congregação, mas sem botões de editar, desativar ou mudar status.
-3. Superintendente e esposa: nada muda.
+## O que muda
+1. **Resumo da semana** ganha um botão "Relatório completo" no topo, para superintendente e comissão. Gera um único PDF com todas as seções da visita.
+2. O relatório atual do Resumo (só cronograma) continua para o superintendente, dentro do mesmo menu.
+3. Nas abas do "Programa da visita", o botão grande vira um ícone discreto de PDF ao lado do título (padrão iOS/One UI). Nada é removido, quem quiser só uma seção ainda consegue.
+4. O que cada ancião vê no PDF continua limitado ao que ele já pode ver hoje.
 
 ```text
 ┌─────────────────────────────┐
-│ Semana da visita            │
-│  • Resumo da semana   (novo)│
-│  • Programa da visita       │
+│ Resumo da semana       [PDF]│  <- Relatório completo
+│ Congregação X • semana      │
+├─────────────────────────────┤
+│ Cronograma ...              │
+│ Estudos ...                 │
+└─────────────────────────────┘
+
+┌─────────────────────────────┐
+│ Anciãos                  ⤓  │  <- ícone discreto (só esta aba)
+│ [Anciãos][Estudos][Reuniões]│
 └─────────────────────────────┘
 ```
 
 ## Detalhes técnicos
-- Primeiro passo: confirmar se os dados do resumo vêm de uma função do servidor que só aceita superintendente. Se for assim, criar uma leitura separada, só de consulta, limitada à visita da congregação do ancião, sem mudar as regras atuais do banco.
-- Trocar o redirecionamento em `_app.resumo-semana.tsx` por um modo somente leitura quando `role !== "superintendent"`.
-- Adicionar o item no menu de `_app.tsx` e em `CommandPalette` (`superOnly` → comissão também).
-- Testes: o superintendente continua editando; a comissão só vê; a esposa não vê a tela.
+- `_app.resumo-semana.tsx`: botão abre `FullVisitReportDialog` (já existente) com `visitId` do snapshot; para super, um menu com "Completo" e "Só cronograma" (`WeekSummaryReportDialog`).
+- `VisitWeekReportButton` ganha variante `icon` (Button ghost size icon + aria-label); aplicada em `programa-ancioes`, `refeicoes` e demais abas que o usam.
+- Sem mudança de banco nem de regras de acesso; o PDF lê com a mesma permissão do usuário.
+- Validar com tsgo e vitest.
