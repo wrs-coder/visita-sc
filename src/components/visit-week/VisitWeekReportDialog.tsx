@@ -34,6 +34,10 @@ interface Props {
   showAdditionalInfoToggle?: boolean;
   /** Loading state externo (a aba ainda está montando os dados). */
   loading?: boolean;
+  /** Título do diálogo e do PDF (padrão: "Relatório executivo"). */
+  dialogTitle?: string;
+  /** Texto do toggle de observações (padrão: Informações adicionais). */
+  additionalInfoLabel?: string;
 }
 
 export function VisitWeekReportDialog({
@@ -46,6 +50,8 @@ export function VisitWeekReportDialog({
   sections,
   showAdditionalInfoToggle = false,
   loading = false,
+  dialogTitle = "Relatório executivo",
+  additionalInfoLabel = "Incluir “Informações adicionais do superintendente” em cada seção",
 }: Props) {
   const sectionIds = useMemo(() => sections.map((s) => s.id), [sections]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
@@ -74,7 +80,7 @@ export function VisitWeekReportDialog({
     try {
       const filtered = sections.filter((s) => selected[s.id]);
       const blob = await generateVisitWeekPdf({
-        reportTitle: `Relatório executivo — ${tabLabel}`,
+        reportTitle: dialogTitle === "Relatório executivo" ? `Relatório executivo — ${tabLabel}` : dialogTitle,
         visitTitle,
         subtitle,
         sections: filtered,
@@ -102,7 +108,7 @@ export function VisitWeekReportDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileDown className="h-5 w-5" /> Relatório executivo
+            <FileDown className="h-5 w-5" /> {dialogTitle}
           </DialogTitle>
         </DialogHeader>
 
@@ -122,6 +128,18 @@ export function VisitWeekReportDialog({
               </p>
             ) : (
               <div className="space-y-2">
+                {sections.length > 2 && (
+                  <div className="flex gap-2 pb-1">
+                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs"
+                      onClick={() => setSelected(Object.fromEntries(sectionIds.map((id) => [id, true])))}>
+                      Marcar todos
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs"
+                      onClick={() => setSelected(Object.fromEntries(sectionIds.map((id) => [id, false])))}>
+                      Desmarcar todos
+                    </Button>
+                  </div>
+                )}
                 {sections.map((s) => (
                   <label key={s.id} className="flex items-start gap-2 cursor-pointer">
                     <Checkbox
@@ -138,9 +156,7 @@ export function VisitWeekReportDialog({
                       checked={includeInfo}
                       onCheckedChange={(v) => setIncludeInfo(!!v)}
                     />
-                    <span className="text-sm leading-tight">
-                      Incluir “Informações adicionais do superintendente” em cada seção
-                    </span>
+                    <span className="text-sm leading-tight">{additionalInfoLabel}</span>
                   </label>
                 )}
               </div>
@@ -174,7 +190,23 @@ export function VisitWeekReportDialog({
 }
 
 /** Botão padrão "Relatório executivo" para ser reutilizado nas abas. */
-export function VisitWeekReportButton({ onClick }: { onClick: () => void }) {
+export function VisitWeekReportButton({
+  onClick,
+  variant = "button",
+  label = "Relatório executivo",
+}: {
+  onClick: () => void;
+  variant?: "button" | "icon";
+  label?: string;
+}) {
+  if (variant === "icon") {
+    return (
+      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground"
+        onClick={onClick} aria-label={label} title={label}>
+        <FileDown className="h-5 w-5" />
+      </Button>
+    );
+  }
   return (
     <Button variant="outline" size="sm" onClick={onClick}>
       <FileDown className="h-4 w-4 mr-1" /> Relatório executivo
