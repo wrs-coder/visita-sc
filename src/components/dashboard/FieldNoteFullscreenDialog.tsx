@@ -299,6 +299,7 @@ export function FieldNoteFullscreenDialog({
               <Plus className="h-4 w-4" />
             </Button>
 
+            <div ref={setFsSlot} className="flex items-center" />
             {note && (
               <Button asChild variant="outline" size="sm" className="ml-auto h-8">
                 <Link
@@ -353,6 +354,7 @@ export function FieldNoteFullscreenDialog({
                     library={library}
                     fontScale={scale}
                     onInsertVerse={insertVerse}
+                    toolbarSlot={fsSlot}
                   />
                   <div className="mt-5">
                     <BibleHistoryChips library={library} onInsert={insertVerse} />
