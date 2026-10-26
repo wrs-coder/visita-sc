@@ -57,7 +57,6 @@ function Page() {
   const [studyGenObsBySlot, setStudyGenObsBySlot] = useState<Record<number, string>>({});
   const [activeSlot, setActiveSlot] = useState("1");
   const [busy, setBusy] = useState(false);
-  const [dupSlot, setDupSlot] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const r = await fnList();
@@ -293,18 +292,7 @@ function Page() {
                 />
 
                 {section === "study" && (<>
-                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
-                  dayExtra={(d) => (
-                    <Input
-                      className="h-9"
-                      placeholder="Informações adicionais do superintendente"
-                      value={(studyNotesBySlot[slot] ?? {})[String(d)] ?? ""}
-                      onChange={(e) => setStudyNotesBySlot({ ...studyNotesBySlot, [slot]: { ...(studyNotesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
-                      onBlur={(e) => saveStudyNote(slot, String(d), e.target.value)}
-                    />
-                  )} />
-
-                <InfoDisclosure label="Informações gerais — Estudos e Revisitas" filled={!!(studyGenObsBySlot[slot] ?? "").trim()}>
+                <InfoDisclosure label="Informações adicionais do superintendente" filled={!!(studyGenObsBySlot[slot] ?? "").trim()}>
                   <p className="text-xs text-muted-foreground">Observações exibidas aos anciãos junto da programação de Estudos e Revisitas.</p>
                   <div>
                     <Label className="text-xs">Informações adicionais do superintendente (gerais)</Label>
@@ -323,20 +311,21 @@ function Page() {
                     <p className="text-xs text-muted-foreground mt-1">Aparecem em vermelho no topo da aba Estudos e Revisitas dos anciãos.</p>
                   </div>
                 </InfoDisclosure>
-                </>)}
 
-                {section === "meal" && (<>
-                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
+                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
                   dayExtra={(d) => (
                     <Input
                       className="h-9"
-                      placeholder={t("templates.program.mealNotesPlaceholder")}
-                      value={notes[String(d)] ?? ""}
-                      onChange={(e) => setNotesBySlot({ ...notesBySlot, [slot]: { ...(notesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
-                      onBlur={(e) => saveMealNote(slot, String(d), e.target.value)}
+                      placeholder="Informações adicionais do superintendente"
+                      value={(studyNotesBySlot[slot] ?? {})[String(d)] ?? ""}
+                      onChange={(e) => setStudyNotesBySlot({ ...studyNotesBySlot, [slot]: { ...(studyNotesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
+                      onBlur={(e) => saveStudyNote(slot, String(d), e.target.value)}
                     />
                   )} />
 
+                </>)}
+
+                {section === "meal" && (<>
                 <InfoDisclosure label={t("templates.program.mealNotesTitle")} filled={!!(genObsBySlot[slot] ?? "").trim()}>
                   <p className="text-xs text-muted-foreground">{t("templates.program.mealNotesHelp")}</p>
                   <div>
@@ -356,6 +345,18 @@ function Page() {
                     <p className="text-xs text-muted-foreground mt-1">{t("templates.program.generalObservationsHint")}</p>
                   </div>
                 </InfoDisclosure>
+
+                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
+                  dayExtra={(d) => (
+                    <Input
+                      className="h-9"
+                      placeholder={t("templates.program.mealNotesPlaceholder")}
+                      value={notes[String(d)] ?? ""}
+                      onChange={(e) => setNotesBySlot({ ...notesBySlot, [slot]: { ...(notesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
+                      onBlur={(e) => saveMealNote(slot, String(d), e.target.value)}
+                    />
+                  )} />
+
                 </>)}
 
                 {section === "transport" && (
