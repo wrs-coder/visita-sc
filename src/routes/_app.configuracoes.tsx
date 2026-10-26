@@ -48,6 +48,7 @@ import { SavingIndicator } from "@/components/SavingIndicator";
 import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog";
 import { AppAboutCard } from "@/components/AppAboutCard";
 import { ItineraryWeeks } from "@/components/itinerary/ItineraryWeeks";
+import { loadPackages, missingFields, packageToForm, type VisitPackage } from "@/lib/visit-packages";
 
 export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
 
@@ -118,6 +119,8 @@ function Page() {
     substitute_phone: "",
   });
   const isSuper = role === "superintendent";
+  const [packages, setPackages] = useState<VisitPackage[]>([]);
+  useEffect(() => { if (open) setPackages(loadPackages(user?.id)); }, [open, user?.id]);
 
   const loadCongs = useCallback(async () => {
     if (!isSuper) return;
@@ -593,6 +596,34 @@ function Page() {
                 </div>
                 {form.title !== "Visita SCS" && (
                 <>
+
+                {packages.length > 0 && (
+                  <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
+                    <Label>Pacote da visita</Label>
+                    <Select
+                      value=""
+                      onValueChange={(id) => {
+                        const pkg = packages.find((p) => p.id === id);
+                        if (!pkg) return;
+                        const available = {
+                          template_id: tpls.map((x) => x.id),
+                          checklist_template_id: checklistTpls.map((x) => x.id),
+                          field_template_id: fieldTpls.map((x) => x.id),
+                          meeting_talk_template_id: meetingTalkTpls.map((x) => x.id),
+                          elder_program_template_id: elderProgramTpls.map((x) => x.id),
+                        };
+                        setForm((f) => ({ ...f, ...packageToForm(pkg, available) }));
+                        const miss = missingFields(pkg, available).length;
+                        if (miss) toast.warning(`${miss} modelo(s) do pacote não existem mais; escolha abaixo.`);
+                        else toast.success(`Pacote "${pkg.name}" aplicado.`);
+                      }}
+                    >
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Escolher pacote…" /></SelectTrigger>
+                      <SelectContent>{packages.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground mt-1">Preenche os 5 modelos abaixo; você ainda pode trocar cada um.</p>
+                  </div>
+                )}
 
                 <div>
                   <Label>Modelo de Programação *</Label>
