@@ -168,7 +168,7 @@ function Page() {
                   ))}
                 </dl>
                 {missing.length > 0 && (
-                  <div className="flex items-center gap-1.5 text-xs text-warning-foreground bg-warning/15 border border-warning/40 rounded-md px-2 py-1">
+                  <div className="flex items-center gap-1.5 text-xs text-foreground bg-warning/15 border border-warning/40 rounded-md px-2 py-1">
                     <AlertTriangle className="h-3.5 w-3.5" />
                     {missing.length === 1 ? "1 modelo não encontrado" : `${missing.length} modelos não encontrados`}
                   </div>
