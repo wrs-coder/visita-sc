@@ -353,7 +353,7 @@ function TabsGuarded({
         </div>
         <div className="flex flex-col items-end gap-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <VisitWeekReportButton onClick={() => setReportOpen(true)} />
+            <VisitWeekReportButton variant="icon" onClick={() => setReportOpen(true)} />
             <DiscardDraftButton />
             <SaveDraftButton />
           </div>

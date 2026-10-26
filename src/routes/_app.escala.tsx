@@ -114,7 +114,7 @@ function Page() {
             {isSuper ? t("fieldStudies.subtitleSuper") : t("fieldStudies.subtitleElder")}
           </p>
         </div>
-        <VisitWeekReportButton onClick={() => setReportOpen(true)} />
+        <VisitWeekReportButton variant="icon" onClick={() => setReportOpen(true)} />
       </div>
 
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}

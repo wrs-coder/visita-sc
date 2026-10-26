@@ -24,6 +24,15 @@ import { getHiddenEventIds, hideEventId } from "@/lib/hidden-events";
 import { loadSnapshot, saveSnapshot } from "@/lib/snapshot-cache";
 import { WeekSummaryReportDialog } from "@/components/visit-week/WeekSummaryReportDialog";
 import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
+import { FullVisitReportDialog } from "@/components/visit-week/FullVisitReportDialog";
+import { Button } from "@/components/ui/button";
+import { FileDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_app/resumo-semana")({ component: Page });
 
@@ -48,6 +57,7 @@ function Page() {
   // Bump força reaplicação do filtro de IDs ocultos sem refetch.
   const [hiddenBump, setHiddenBump] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
+  const [generalOpen, setGeneralOpen] = useState(false);
 
   // Superintendente edita; anciãos/comissão só leem; demais perfis voltam ao início.
   const isSuper = role === "superintendent";
@@ -198,7 +208,23 @@ function Page() {
             {filteredSnap.congregation.name} • {t("weekSummary.subtitle")}
           </p>
         </div>
-        {isSuper && filteredSnap.visit && <VisitWeekReportButton onClick={() => setReportOpen(true)} />}
+        {filteredSnap.visit &&
+          (isSuper ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground"
+                  aria-label="Programação geral" title="Programação geral">
+                  <FileDown className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setGeneralOpen(true)}>Programação geral</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setReportOpen(true)}>Só cronograma</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <VisitWeekReportButton variant="icon" label="Programação geral" onClick={() => setGeneralOpen(true)} />
+          ))}
       </div>
       <VisitSummaryView
         snap={filteredSnap}
@@ -221,6 +247,16 @@ function Page() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {filteredSnap.visit && (
+        <FullVisitReportDialog
+          open={generalOpen}
+          onOpenChange={setGeneralOpen}
+          visitId={filteredSnap.visit.id}
+          visitTitle={filteredSnap.visit.title}
+          congregationName={filteredSnap.congregation.name}
+          title="Programação geral"
+        />
+      )}
       {filteredSnap.visit && (
         <WeekSummaryReportDialog
           open={reportOpen}
