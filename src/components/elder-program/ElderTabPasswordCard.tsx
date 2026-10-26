@@ -20,7 +20,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Lock, LockOpen, Loader2, Copy, Check, ShieldAlert } from "lucide-react";
+import { Eye, EyeOff, Lock, LockOpen, Loader2, Copy, Check, ShieldAlert, ChevronDown } from "lucide-react";
 
 export function ElderTabPasswordCard({ congregationId }: { congregationId: string }) {
   const { user } = useAuth();
@@ -40,6 +40,7 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
   const [showCurrent, setShowCurrent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -153,22 +154,22 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
   return (
     <Card>
       <CardContent className="p-4 space-y-3">
-        <div className="flex items-center gap-2">
+        <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex w-full items-center gap-2 text-left">
           {isSet ? (
             <Lock className="h-4 w-4 text-primary" />
           ) : (
             <LockOpen className="h-4 w-4 text-muted-foreground" />
           )}
           <h2 className="font-bold text-sm uppercase tracking-wide text-primary">
-            Senha de acesso — aba "Anciãos" (visitantes)
+            Acesso Restrito
           </h2>
-        </div>
+          <ChevronDown className={`ml-auto h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && (<>
 
         <p className="text-xs text-muted-foreground">
-          Defina a senha que os visitantes (Corpo de Anciãos / ESC) precisam digitar
-          para abrir esta aba. Qualquer ancião cadastrado pode criar a primeira senha;
-          depois disso, apenas o ancião que criou ou o superintendente podem
-          atualizá-la ou removê-la. Deixe em branco para liberar a aba para todos.
+          Se desejar, poderá definir uma senha para aumentar a confidencialidade das
+          informações abaixo. Não esqueça de partilhar a senha com os outros anciãos.
         </p>
 
         {loading ? (
@@ -301,6 +302,7 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
             )}
           </>
         )}
+        </>)}
       </CardContent>
     </Card>
   );

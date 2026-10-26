@@ -37,7 +37,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone } from "lucide-react";
+import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone, AlertTriangle } from "lucide-react";
+import { hasAnyTemplate } from "@/lib/visit-template-reminder";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -47,8 +48,15 @@ import { maskPhone } from "@/lib/masks";
 import { SavingIndicator } from "@/components/SavingIndicator";
 import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog";
 import { AppAboutCard } from "@/components/AppAboutCard";
+import { CircuitHeader } from "@/components/circuit/CircuitHeader";
+import { ItineraryWeeks } from "@/components/itinerary/ItineraryWeeks";
+import { loadPackages, fetchPackages, missingFields, packageToForm, type VisitPackage } from "@/lib/visit-packages";
 
-export const Route = createFileRoute("/_app/configuracoes")({ component: Page });
+export const Route = createFileRoute("/_app/configuracoes")({
+  component: Page,
+  validateSearch: (s: Record<string, unknown>): { edit?: string } =>
+    typeof s.edit === "string" && s.edit ? { edit: s.edit } : {},
+});
 
 const VISIT_TITLE_OPTIONS = [
   "Visita",
@@ -67,6 +75,8 @@ interface Visit {
   checklist_template_id?: string | null;
   field_meeting_template_id?: string | null;
   template_id?: string | null;
+  meeting_talk_template_id?: string | null;
+  elder_program_template_id?: string | null;
   substitute_name?: string | null;
   substitute_phone?: string | null;
 }
@@ -78,7 +88,7 @@ interface Cong {
 }
 
 function Page() {
-  const { congregation, role, profile } = useAuth();
+  const { congregation, role, profile, user } = useAuth();
   const { t } = useTranslation();
   const fnList = useServerFn(listMyCongregations);
   const fnTpls = useServerFn(listTemplates);
@@ -117,6 +127,8 @@ function Page() {
     substitute_phone: "",
   });
   const isSuper = role === "superintendent";
+  const [packages, setPackages] = useState<VisitPackage[]>([]);
+  useEffect(() => { if (open) { setPackages(loadPackages(user?.id)); fetchPackages(user?.id).then(setPackages); } }, [open, user?.id]);
 
   const loadCongs = useCallback(async () => {
     if (!isSuper) return;
@@ -280,18 +292,26 @@ function Page() {
     setOpen(true);
   };
 
+  // Abre a visita no modo editar quando chega via ?edit=<id> (pop-up de lembrete).
+  const search = Route.useSearch();
+  const routeNav = Route.useNavigate();
+  useEffect(() => {
+    if (!search.edit || !isSuper) return;
+    const v = visits.find((x) => x.id === search.edit);
+    if (!v) return;
+    openEdit(v);
+    routeNav({ search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.edit, visits, isSuper]);
+
   const submit = async () => {
     if (submitting) return;
     if (!form.congregation_id) { toast.error("Selecione a congregação"); return; }
     if (!form.title || !form.start_date || !form.end_date) { toast.error("Preencha todos os campos"); return; }
     if (form.end_date < form.start_date) { toast.error("A data final não pode ser anterior à inicial"); return; }
     const isScs = form.title === "Visita SCS";
-    if (!editId && !isScs) {
-      if (!form.template_id) { toast.error("Selecione o Modelo de Programação"); return; }
-      if (!form.checklist_template_id) { toast.error("Selecione o Modelo de Checklist"); return; }
-      if (!form.field_template_id) { toast.error("Selecione o Modelo de Reuniões de Campo"); return; }
-      if (!form.meeting_talk_template_id) { toast.error("Selecione o Modelo de Reunião e Discurso"); return; }
-    }
+    // Modelos e pacotes são opcionais: a visita pode ser criada sem nenhum.
+
 
     setSubmitting(true);
     try {
@@ -412,9 +432,10 @@ function Page() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl md:text-3xl font-bold">{t("itinerary.title")}</h1>
+      <CircuitHeader />
+      {!isSuper && <h1 className="text-2xl md:text-3xl font-bold">{t("itinerary.title")}</h1>}
 
-      <Card>
+      <Card hidden={isSuper}>
         <CardContent className="p-5">
           {isSuper ? (
             <>
@@ -467,6 +488,8 @@ function Page() {
           </CardContent>
         </Card>
       )}
+
+      {isSuper && <ItineraryWeeks />}
 
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -590,6 +613,34 @@ function Page() {
                 </div>
                 {form.title !== "Visita SCS" && (
                 <>
+
+                {packages.length > 0 && (
+                  <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
+                    <Label>Pacote da visita</Label>
+                    <Select
+                      value=""
+                      onValueChange={(id) => {
+                        const pkg = packages.find((p) => p.id === id);
+                        if (!pkg) return;
+                        const available = {
+                          template_id: tpls.map((x) => x.id),
+                          checklist_template_id: checklistTpls.map((x) => x.id),
+                          field_template_id: fieldTpls.map((x) => x.id),
+                          meeting_talk_template_id: meetingTalkTpls.map((x) => x.id),
+                          elder_program_template_id: elderProgramTpls.map((x) => x.id),
+                        };
+                        setForm((f) => ({ ...f, ...packageToForm(pkg, available) }));
+                        const miss = missingFields(pkg, available).length;
+                        if (miss) toast.warning(`${miss} modelo(s) do pacote não existem mais; escolha abaixo.`);
+                        else toast.success(`Pacote "${pkg.name}" aplicado.`);
+                      }}
+                    >
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Escolher pacote…" /></SelectTrigger>
+                      <SelectContent>{packages.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground mt-1">Preenche os 5 modelos abaixo; você ainda pode trocar cada um.</p>
+                  </div>
+                )}
 
                 <div>
                   <Label>Modelo de Programação *</Label>
@@ -794,6 +845,11 @@ function Page() {
                           <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium mt-1 truncate">
                             {v.title}
                           </div>
+                          {isSuper && !hasAnyTemplate(v) && (
+                            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+                              <AlertTriangle className="h-3 w-3" /> {t("visitReminder.badge")}
+                            </div>
+                          )}
                           {v.title === "Visita SCS" && (v.substitute_name || v.substitute_phone) && (
                             <div
                               className="mt-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2"

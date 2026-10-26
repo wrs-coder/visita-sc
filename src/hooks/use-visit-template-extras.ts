@@ -1,3 +1,4 @@
+import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -26,7 +27,10 @@ export function useVisitTemplateExtras(visitId: string | null | undefined): Visi
     queryKey: key,
     enabled: !!visitId,
     queryFn: async () => {
-      const res = await fn({ data: { visitId: visitId! } });
+      // Offline: devolve a última resposta guardada neste aparelho.
+      const { data: res } = await readFnWithMirrorSafe(`visit-template-extras:${visitId}`, () =>
+        fn({ data: { visitId: visitId! } }),
+      );
       if (!res?.ok) return { extras: EMPTY, templateExtras: EMPTY };
       const templateExtras =
         (res as { templateExtras?: VisitTemplateExtras }).templateExtras ?? res.extras;

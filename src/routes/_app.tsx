@@ -1,3 +1,4 @@
+import { VISIT_PROGRAM_PATHS } from "@/components/visit-week/VisitProgramTabs";
 import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
@@ -27,6 +28,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
+import { startPackageAutoSync } from "@/lib/visit-packages";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -47,6 +49,7 @@ import { useOfflineWarmup } from "@/hooks/use-offline-warmup";
 import { OfflineReadyBadge } from "@/components/OfflineReadyBadge";
 import { RouteAnnouncer } from "@/components/RouteAnnouncer";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { VisitTemplateReminder } from "@/components/VisitTemplateReminder";
 
 
 export const Route = createFileRoute("/_app")({
@@ -124,6 +127,7 @@ function AppLayout() {
   }, [location.pathname]);
 
   // Mantém o contexto ativo global em sincronia para a fila offline.
+  useEffect(() => (role === "superintendent" ? startPackageAutoSync(user?.id) : undefined), [role, user?.id]);
   useEffect(() => {
     setActiveContext({ congregationId: activeCong?.id ?? null, userId: user?.id ?? null });
   }, [activeCong?.id, user?.id]);
@@ -158,11 +162,13 @@ function AppLayout() {
       label: t("sidebar.sectionPrincipal"),
       items: [
         { to: "/dashboard", label: t("sidebar.home"), icon: LayoutDashboard },
-        { to: "/cronograma", label: t("sidebar.schedule"), icon: CalendarDays },
-        { to: "/configuracoes", label: t("sidebar.itinerary"), icon: Plane },
         ...(role === "superintendent"
           ? [
-              { to: "/congregacoes", label: t("sidebar.congregations"), icon: Building2 },
+              { to: "/configuracoes", label: profile?.circuit?.trim() || t("circuit.fallbackTitle"), icon: CalendarDays },
+            ]
+          : []),
+        ...(role === "superintendent"
+          ? [
               { to: "/consideracoes-campo", label: t("sidebar.personalOutlines"), icon: FileText },
               { to: "/notas", label: t("sidebar.privateNotes"), icon: Lock },
             ]
@@ -173,18 +179,13 @@ function AppLayout() {
       id: "visita",
       label: t("sidebar.sectionVisita"),
       items: [
-        ...(role === "superintendent"
-          ? [
-              { to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList },
-              { to: "/comunicacao-casal", label: t("sidebar.coupleMessages"), icon: Heart },
-            ]
+        ...(role === "superintendent" || role === "elder"
+          ? [{ to: "/resumo-semana", label: t("sidebar.weekSummary"), icon: ClipboardList }]
           : []),
-        { to: "/programa-ancioes", label: t("sidebar.elderProgram", { defaultValue: "Pastoreios, Recomendações e outros" }), icon: BookOpen },
-        { to: "/escala", label: t("sidebar.fieldStudies"), icon: Users },
-        { to: "/reunioes-discursos", label: t("sidebar.meetingsTalks"), icon: MapPin },
-        { to: "/refeicoes", label: t("sidebar.meals"), icon: UtensilsCrossed },
-        { to: "/transporte", label: t("sidebar.transport"), icon: Car },
-        { to: "/checklist", label: t("sidebar.checklist"), icon: ListChecks },
+        ...(role === "superintendent"
+          ? [{ to: "/comunicacao-casal", label: t("sidebar.coupleMessages"), icon: Heart }]
+          : []),
+        { to: "/programa-visita", label: t("sidebar.visitProgram", { defaultValue: "Programa da visita" }), icon: BookOpen },
       ],
     },
 
@@ -195,21 +196,18 @@ function AppLayout() {
       items: [
         ...(role === "superintendent"
           ? [
-              { to: "/modelos", label: t("sidebar.scheduleTemplates"), icon: FileStack },
-              { to: "/checklist-modelos", label: t("sidebar.checklistTemplates"), icon: ListChecks },
-              { to: "/modelo-reunioes-de-campo", label: t("sidebar.fieldMeetingTemplate"), icon: MapPin },
-              { to: "/modelo-reunioes-discursos", label: t("sidebar.meetingTalkTemplates"), icon: Layers },
-              { to: "/modelo-programacao-ancioes", label: t("sidebar.elderProgramTemplate", { defaultValue: "Modelo Programação Anciãos" }), icon: BookOpen },
+              { to: "/modelos", label: t("sidebar.visitTemplates"), icon: FileStack },
             ]
           : []),
         { to: "/perfil", label: t("sidebar.myProfile"), icon: UserCircle },
       ],
-      collapsible: role === "superintendent",
     },
   ].filter((s) => s.items.length > 0);
 
   const isActiveLink = (to: string) =>
-    location.pathname === to || (to !== "/dashboard" && location.pathname.startsWith(to));
+    location.pathname === to ||
+    (to === "/programa-visita" && VISIT_PROGRAM_PATHS.includes(location.pathname)) ||
+    (to === "/configuracoes" && (location.pathname.startsWith("/congregacoes") || location.pathname.startsWith("/cronograma"))) || (to !== "/dashboard" && location.pathname.startsWith(to));
 
   const LinkItem = ({ it, onClick }: { it: NavItem; onClick?: () => void }) => {
     const active = isActiveLink(it.to);
@@ -466,6 +464,7 @@ function AppLayout() {
       </div>
       <SupportDeveloperDialog open={supportOpen} onOpenChange={setSupportOpen} />
       <CommandPalette />
+      <VisitTemplateReminder userId={user?.id ?? null} enabled={role === "superintendent"} />
     </div>
   );
 }

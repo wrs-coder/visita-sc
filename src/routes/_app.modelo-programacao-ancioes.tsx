@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,7 +16,8 @@ import {
   type ElderProgramEventDTO,
 } from "@/lib/elder-program-templates.functions";
 import { exportElderProgramTemplate, importElderProgramTemplate } from "@/lib/template-io.functions";
-import { TemplateIOButtons } from "@/components/TemplateIOButtons";
+import { useTranslation } from "react-i18next";
+import { TemplateHeaderRow, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +26,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Pencil, Save, BookOpen } from "lucide-react";
+import { Plus, Trash2, Save, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { CharCounterTextarea } from "@/components/ui/char-counter-textarea";
@@ -86,6 +88,7 @@ function emptyEvent(section: ElderSection): ElderProgramEventDTO {
 }
 
 function Page() {
+  const { t } = useTranslation();
   const { role } = useAuth();
   const fnList = useServerFn(listElderProgramTemplates);
   const fnGet = useServerFn(getElderProgramTemplate);
@@ -113,7 +116,11 @@ function Page() {
 
   const loadList = useCallback(async () => {
     const r = await fnList();
-    if (r.ok) setTpls(r.templates as TemplateRow[]);
+    if (r.ok) {
+      const list = r.templates as TemplateRow[];
+      setTpls(list);
+      setActiveId((cur) => (cur && list.some((x) => x.id === cur) ? cur : list[0]?.id ?? null));
+    }
   }, [fnList]);
 
   const loadActive = useCallback(async (id: string) => {
@@ -220,19 +227,17 @@ function Page() {
 
   return (
     <div className="space-y-5 max-w-full overflow-x-hidden">
+      <TemplatesTabs />
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <BookOpen className="h-6 w-6" /> Modelo Programação Anciãos
+            <BookOpen className="h-6 w-6" /> {t("templates.elder.title", { defaultValue: "Programação Anciãos" })}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {tpls.length} / {MAX} modelos
+            {t("templates.elder.subtitle", { defaultValue: "Organize a sua disponibilidade para visitas de pastoreio, encorajamentos especiais e colete informações referentes à reunião com os anciãos." })}
           </p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />Novo modelo</Button>
-          </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader><DialogTitle>Novo modelo</DialogTitle></DialogHeader>
             <div className="space-y-3">
@@ -246,18 +251,29 @@ function Page() {
         </Dialog>
       </div>
 
-      <div className="grid md:grid-cols-[260px_1fr] gap-4">
-        <Card><CardContent className="p-3 space-y-1">
-          {tpls.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-3 text-center">Nenhum modelo</div>
-          ) : tpls.map((tp) => (
-            <button key={tp.id} onClick={() => setActiveId(tp.id)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === tp.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-              <div className="truncate">{tp.name}</div>
-            </button>
-          ))}
-        </CardContent></Card>
+      <TemplateHeaderRow
+        items={tpls}
+        activeId={activeId}
+        onPick={setActiveId}
+        onNew={() => setCreateOpen(true)}
+        newDisabled={tpls.length >= MAX}
+        disabled={busy}
+        onRename={active ? () => { setRenameVal(active.name); setRenameOpen(true); } : undefined}
+        onDuplicate={handleDuplicate}
+        duplicateDisabled={tpls.length >= MAX}
+        onDelete={handleDelete}
+        io={{
+          filenameBase: active?.name || "programacao-ancioes",
+          onExport: async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: "Selecione um modelo" },
+          onImport: async (file) => {
+            const r = await fnImport({ data: { file: file as never } });
+            if (r.ok && r.id) { await loadList(); setActiveId(r.id); }
+            return r;
+          },
+        }}
+      />
 
+      <div className="grid gap-4">
         <div className="space-y-4">
           {!active ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
@@ -265,38 +281,7 @@ function Page() {
             </CardContent></Card>
           ) : (
             <>
-              <Card><CardContent className="p-4 flex items-center justify-between gap-2 flex-wrap">
-                <div className="font-semibold truncate">{active.name}</div>
-                <div className="flex gap-2 flex-wrap items-center">
-                  <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
-                    <Pencil className="h-3.5 w-3.5 mr-1" />Renomear
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
-                    <Copy className="h-3.5 w-3.5 mr-1" />Duplicar
-                  </Button>
-                  <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
-                    <Trash2 className="h-3.5 w-3.5 mr-1" />Excluir
-                  </Button>
-                  <Button size="sm" onClick={handleSave} disabled={busy}>
-                    <Save className="h-3.5 w-3.5 mr-1" />Salvar
-                  </Button>
-                  <TemplateIOButtons
-                    filenameBase={active.name || "programacao-ancioes"}
-                    onExport={() => fnExport({ data: { id: active.id } })}
-                    onImport={async (file) => {
-                      const r = await fnImport({ data: { file: file as never } });
-                      if (r.ok && r.id) {
-                        await loadList();
-                        setActiveId(r.id);
-                      }
-                      return r;
-                    }}
-                    disabled={busy}
-                  />
-                </div>
-              </CardContent></Card>
-
-              <CollapseProvider scope="tpl-elder" visitId={activeId ?? null}>
+              <CollapseProvider scope="tpl-elder" visitId={activeId ?? null} closedByDefault={["ev:"]}>
               <div className="flex justify-end">
                 <CollapseAllButton ids={[...SECTIONS.map((s) => `sec:${s}`), ...events.map((e) => `ev:${e.id}`)]} />
               </div>
@@ -308,15 +293,14 @@ function Page() {
                       <h2 className="font-bold text-sm uppercase tracking-wide text-primary">{SECTION_TITLES[section]}</h2>
                     </div>
                     <CollapseBody id={`sec:${section}`} className="space-y-4">
-                    <div>
-                      <Label className="text-xs">Informações adicionais do superintendente</Label>
+                    <InfoDisclosure label="Informações adicionais do superintendente" filled={!!sections[section]?.trim()}>
                       <CharCounterTextarea
-                        className="mt-1 min-h-[80px]"
+                        className="min-h-[80px]"
                         value={sections[section]}
                         max={4000}
                         onValueChange={(v) => setSections({ ...sections, [section]: v })}
                       />
-                    </div>
+                    </InfoDisclosure>
 
                     {section === "pastoral" && (
                       <div className="border rounded-md p-3 space-y-2 bg-muted/30">
@@ -365,6 +349,11 @@ function Page() {
                 </Card>
               ))}
               </CollapseProvider>
+              <TemplateFooterBar>
+                <Button className="flex-1 rounded-full" onClick={handleSave} disabled={busy}>
+                  <Save className="h-4 w-4 mr-1" />Salvar modelo
+                </Button>
+              </TemplateFooterBar>
             </>
           )}
         </div>

@@ -32,8 +32,10 @@ import { Route as AppModeloReunioesDeCampoRouteImport } from './routes/_app.mode
 import { Route as AppModeloReunioesDiscursosRouteImport } from './routes/_app.modelo-reunioes-discursos'
 import { Route as AppModelosRouteImport } from './routes/_app.modelos'
 import { Route as AppNotasRouteImport } from './routes/_app.notas'
+import { Route as AppPacotesVisitaRouteImport } from './routes/_app.pacotes-visita'
 import { Route as AppPerfilRouteImport } from './routes/_app.perfil'
 import { Route as AppProgramaAncioesRouteImport } from './routes/_app.programa-ancioes'
+import { Route as AppProgramaVisitaRouteImport } from './routes/_app.programa-visita'
 import { Route as AppRefeicoesRouteImport } from './routes/_app.refeicoes'
 import { Route as AppResumoSemanaRouteImport } from './routes/_app.resumo-semana'
 import { Route as AppReunioesDeCampoRouteImport } from './routes/_app.reunioes-de-campo'
@@ -165,6 +167,11 @@ const AppNotasRoute = AppNotasRouteImport.update({
   path: '/notas',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPacotesVisitaRoute = AppPacotesVisitaRouteImport.update({
+  id: '/pacotes-visita',
+  path: '/pacotes-visita',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPerfilRoute = AppPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -173,6 +180,11 @@ const AppPerfilRoute = AppPerfilRouteImport.update({
 const AppProgramaAncioesRoute = AppProgramaAncioesRouteImport.update({
   id: '/programa-ancioes',
   path: '/programa-ancioes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProgramaVisitaRoute = AppProgramaVisitaRouteImport.update({
+  id: '/programa-visita',
+  path: '/programa-visita',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRefeicoesRoute = AppRefeicoesRouteImport.update({
@@ -264,8 +276,10 @@ export interface FileRoutesByFullPath {
   '/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
+  '/pacotes-visita': typeof AppPacotesVisitaRoute
   '/perfil': typeof AppPerfilRoute
   '/programa-ancioes': typeof AppProgramaAncioesRoute
+  '/programa-visita': typeof AppProgramaVisitaRoute
   '/refeicoes': typeof AppRefeicoesRoute
   '/resumo-semana': typeof AppResumoSemanaRoute
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
@@ -302,8 +316,10 @@ export interface FileRoutesByTo {
   '/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
+  '/pacotes-visita': typeof AppPacotesVisitaRoute
   '/perfil': typeof AppPerfilRoute
   '/programa-ancioes': typeof AppProgramaAncioesRoute
+  '/programa-visita': typeof AppProgramaVisitaRoute
   '/refeicoes': typeof AppRefeicoesRoute
   '/resumo-semana': typeof AppResumoSemanaRoute
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
@@ -343,8 +359,10 @@ export interface FileRoutesById {
   '/_app/modelo-reunioes-discursos': typeof AppModeloReunioesDiscursosRoute
   '/_app/modelos': typeof AppModelosRoute
   '/_app/notas': typeof AppNotasRoute
+  '/_app/pacotes-visita': typeof AppPacotesVisitaRoute
   '/_app/perfil': typeof AppPerfilRoute
   '/_app/programa-ancioes': typeof AppProgramaAncioesRoute
+  '/_app/programa-visita': typeof AppProgramaVisitaRoute
   '/_app/refeicoes': typeof AppRefeicoesRoute
   '/_app/resumo-semana': typeof AppResumoSemanaRoute
   '/_app/reunioes-de-campo': typeof AppReunioesDeCampoRoute
@@ -384,8 +402,10 @@ export interface FileRouteTypes {
     | '/modelo-reunioes-discursos'
     | '/modelos'
     | '/notas'
+    | '/pacotes-visita'
     | '/perfil'
     | '/programa-ancioes'
+    | '/programa-visita'
     | '/refeicoes'
     | '/resumo-semana'
     | '/reunioes-de-campo'
@@ -422,8 +442,10 @@ export interface FileRouteTypes {
     | '/modelo-reunioes-discursos'
     | '/modelos'
     | '/notas'
+    | '/pacotes-visita'
     | '/perfil'
     | '/programa-ancioes'
+    | '/programa-visita'
     | '/refeicoes'
     | '/resumo-semana'
     | '/reunioes-de-campo'
@@ -462,8 +484,10 @@ export interface FileRouteTypes {
     | '/_app/modelo-reunioes-discursos'
     | '/_app/modelos'
     | '/_app/notas'
+    | '/_app/pacotes-visita'
     | '/_app/perfil'
     | '/_app/programa-ancioes'
+    | '/_app/programa-visita'
     | '/_app/refeicoes'
     | '/_app/resumo-semana'
     | '/_app/reunioes-de-campo'
@@ -658,6 +682,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNotasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/pacotes-visita': {
+      id: '/_app/pacotes-visita'
+      path: '/pacotes-visita'
+      fullPath: '/pacotes-visita'
+      preLoaderRoute: typeof AppPacotesVisitaRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/perfil': {
       id: '/_app/perfil'
       path: '/perfil'
@@ -670,6 +701,13 @@ declare module '@tanstack/react-router' {
       path: '/programa-ancioes'
       fullPath: '/programa-ancioes'
       preLoaderRoute: typeof AppProgramaAncioesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/programa-visita': {
+      id: '/_app/programa-visita'
+      path: '/programa-visita'
+      fullPath: '/programa-visita'
+      preLoaderRoute: typeof AppProgramaVisitaRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/refeicoes': {
@@ -782,8 +820,10 @@ interface AppRouteChildren {
   AppModeloReunioesDiscursosRoute: typeof AppModeloReunioesDiscursosRoute
   AppModelosRoute: typeof AppModelosRoute
   AppNotasRoute: typeof AppNotasRoute
+  AppPacotesVisitaRoute: typeof AppPacotesVisitaRoute
   AppPerfilRoute: typeof AppPerfilRoute
   AppProgramaAncioesRoute: typeof AppProgramaAncioesRoute
+  AppProgramaVisitaRoute: typeof AppProgramaVisitaRoute
   AppRefeicoesRoute: typeof AppRefeicoesRoute
   AppResumoSemanaRoute: typeof AppResumoSemanaRoute
   AppReunioesDeCampoRoute: typeof AppReunioesDeCampoRoute
@@ -808,8 +848,10 @@ const AppRouteChildren: AppRouteChildren = {
   AppModeloReunioesDiscursosRoute: AppModeloReunioesDiscursosRoute,
   AppModelosRoute: AppModelosRoute,
   AppNotasRoute: AppNotasRoute,
+  AppPacotesVisitaRoute: AppPacotesVisitaRoute,
   AppPerfilRoute: AppPerfilRoute,
   AppProgramaAncioesRoute: AppProgramaAncioesRoute,
+  AppProgramaVisitaRoute: AppProgramaVisitaRoute,
   AppRefeicoesRoute: AppRefeicoesRoute,
   AppResumoSemanaRoute: AppResumoSemanaRoute,
   AppReunioesDeCampoRoute: AppReunioesDeCampoRoute,

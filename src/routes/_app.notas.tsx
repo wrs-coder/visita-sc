@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import {
   Lock, Plus, Trash2, Loader2, Check, HeartHandshake, FileText,
@@ -92,6 +93,7 @@ function Page() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [tab, setTab] = useState<NoteType>(search.tab ?? "free");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -277,6 +279,16 @@ function Page() {
     }
   };
 
+  const toggleAllInTab = () => {
+    const ids = filtered.map((n) => n.id);
+    setSelected((s) => {
+      const next = new Set(s);
+      const allOn = ids.every((id) => next.has(id));
+      if (allOn) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
+      return next;
+    });
+  };
   const toggleSelect = (id: string) => setSelected((s) => {
     const next = new Set(s);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -448,64 +460,52 @@ function Page() {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-3 flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-primary shrink-0" />
-          <div className="flex-1 min-w-0">
-            <Label className="text-xs text-muted-foreground">{t("notes.congregationLabel")}</Label>
-            <Select value={congId ?? ""} onValueChange={(v) => setCongId(v)}>
-              <SelectTrigger><SelectValue placeholder={t("notes.congregationPlaceholder")} /></SelectTrigger>
-              <SelectContent>
-                {congs.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-primary/40">
-        <CardContent className="p-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-sm">
-            <FileDown className="h-4 w-4 text-primary" />
-            <span className="font-medium">{t("notes.export.title")}</span>
-            <span className="text-muted-foreground">
-              {t("notes.export.selectedCount", { count: selected.size })}{selected.size > 0 ? t("notes.export.includesMultiple") : ""}
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm" variant="outline"
-              onClick={() => {
-                const ids = filtered.map((n) => n.id);
-                setSelected((s) => {
-                  const next = new Set(s);
-                  const allOn = ids.every((id) => next.has(id));
-                  if (allOn) ids.forEach((id) => next.delete(id));
-                  else ids.forEach((id) => next.add(id));
-                  return next;
-                });
-              }}
-              disabled={filtered.length === 0}
-            >
-              <Check className="h-3.5 w-3.5 mr-1" />
+      {/* Linha única: congregação, + Novo e lupa (iOS / One UI). */}
+      <div className="flex items-center gap-2">
+        <Select value={congId ?? ""} onValueChange={(v) => setCongId(v)}>
+          <SelectTrigger className="flex-1 min-w-0 h-10 rounded-full" aria-label={t("notes.congregationLabel")}>
+            <Building2 className="h-4 w-4 text-primary shrink-0 mr-1" />
+            <SelectValue placeholder={t("notes.congregationPlaceholder")} />
+          </SelectTrigger>
+          <SelectContent>
+            {congs.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="h-10 rounded-full shrink-0"><Plus className="h-4 w-4 mr-1" />{t("notes.newButton")}</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-60">
+            <DropdownMenuItem onClick={() => add(tab)}><Plus className="h-4 w-4 mr-2" />{catAdd(tab)}</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={exportPdf}><FileDown className="h-4 w-4 mr-2" />{t("notes.export.pdf")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={shareWhatsapp}><Share2 className="h-4 w-4 mr-2" />{t("notes.export.whatsapp")}</DropdownMenuItem>
+            <DropdownMenuItem disabled={filtered.length === 0} onClick={toggleAllInTab}>
+              <Check className="h-4 w-4 mr-2" />
               {filtered.length > 0 && filtered.every((n) => selected.has(n.id)) ? t("notes.export.unselectFromTab") : t("notes.export.selectFromTab")}
-            </Button>
-            {selected.size > 0 && (
-              <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
-                <X className="h-3.5 w-3.5 mr-1" />{t("notes.export.clear")}
-              </Button>
-            )}
-            <Button size="sm" variant="outline" onClick={exportPdf}>
-              <FileDown className="h-3.5 w-3.5 mr-1" />{t("notes.export.pdf")}
-            </Button>
-            <Button size="sm" onClick={shareWhatsapp}>
-              <Share2 className="h-3.5 w-3.5 mr-1" />{t("notes.export.whatsapp")}
-            </Button>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button
+          variant={searchOpen ? "default" : "outline"} size="icon" className="h-10 w-10 rounded-full shrink-0"
+          aria-label={t("notes.filters.search")} aria-expanded={searchOpen}
+          onClick={() => setSearchOpen((o) => !o)}
+        >
+          <Search className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {selected.size > 0 && (
+        <div className="flex items-center justify-between gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-sm">
+          <span className="font-medium text-primary">{t("notes.export.selectedCount", { count: selected.size })}</span>
+          <div className="flex gap-1">
+            <Button size="sm" variant="ghost" className="h-8" onClick={exportPdf}><FileDown className="h-3.5 w-3.5 mr-1" />{t("notes.export.pdf")}</Button>
+            <Button size="sm" variant="ghost" className="h-8" onClick={() => setSelected(new Set())}><X className="h-3.5 w-3.5 mr-1" />{t("notes.export.clear")}</Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as NoteType)}>
         <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full h-auto">
@@ -524,13 +524,14 @@ function Page() {
           })}
         </TabsList>
 
+        {searchOpen && (
         <Card className="mt-3">
           <CardContent className="p-3 grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-2 items-end">
             <div>
               <Label className="text-xs">{t("notes.filters.search")}</Label>
               <div className="relative">
                 <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("notes.filters.searchPlaceholder")} className="pl-7" />
+                <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("notes.filters.searchPlaceholder")} className="pl-7" />
               </div>
             </div>
             <div>
@@ -541,17 +542,15 @@ function Page() {
               <Label className="text-xs">{t("notes.filters.to")}</Label>
               <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
             </div>
-            {(query || dateFrom || dateTo) && (
-              <Button variant="ghost" size="sm" onClick={() => { setQuery(""); setDateFrom(""); setDateTo(""); }}>
-                <X className="h-3.5 w-3.5 mr-1" />{t("notes.filters.clear")}
-              </Button>
-            )}
+            <Button variant="ghost" size="sm" onClick={() => { setQuery(""); setDateFrom(""); setDateTo(""); setSearchOpen(false); }}>
+              <X className="h-3.5 w-3.5 mr-1" />{t("notes.filters.close")}
+            </Button>
           </CardContent>
         </Card>
+        )}
 
         {CATEGORY_DEFS.map((c) => (
           <TabsContent key={c.value} value={c.value} className="space-y-3 mt-3 list-optimized">
-            <Button onClick={() => add(c.value)} variant="outline" className="w-full"><Plus className="h-4 w-4 mr-1" />{catAdd(c.value)}</Button>
             {filtered.length === 0 && tab === c.value && (
               <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{catEmpty(c.value)}</CardContent></Card>
             )}

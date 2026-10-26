@@ -1,3 +1,4 @@
+import { VisitDayPills, useVisitDay } from "@/components/visit-week/VisitDayPills";
 import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useActiveVisit } from "@/hooks/use-active-visit";
@@ -98,9 +99,12 @@ export function FieldMeetingsPanel() {
     if (error) toast.error(error.message);
   };
 
+  const dayKeys = visit ? eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) }).map((d) => format(d, "yyyy-MM-dd")) : [];
+  const [activeDay, setActiveDay] = useVisitDay(dayKeys);
   if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">{t("meetingsTalks.field.noActiveVisit")}</CardContent></Card>;
 
   const days = eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) });
+
   const morning = t("meetingsTalks.field.morning");
   const afternoon = t("meetingsTalks.field.afternoon");
 
@@ -130,6 +134,7 @@ export function FieldMeetingsPanel() {
         onSaved={extras.reload}
       />
 
+      <VisitDayPills days={days} active={activeDay} onPick={setActiveDay} hasItems={(k) => rows.some((r) => r.event_date === k)} />
       <div className="flex justify-end"><CollapseAllButton ids={collapseIds} /></div>
 
       {superEditing || !isSuper ? (
@@ -138,7 +143,7 @@ export function FieldMeetingsPanel() {
             const key = format(d, "yyyy-MM-dd");
             const dayRows = rows.filter((r) => r.event_date === key);
             return (
-              <section key={key}>
+              <section key={key} hidden={key !== activeDay}>
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex min-w-0 items-center gap-1">
                     <CollapseIdToggle id={`day:${key}`} />
@@ -172,7 +177,7 @@ export function FieldMeetingsPanel() {
             const key = format(d, "yyyy-MM-dd");
             const dayRows = rows.filter((r) => r.event_date === key);
             return (
-              <section key={key}>
+              <section key={key} hidden={key !== activeDay}>
                 <div className="flex min-w-0 items-center gap-1 mb-2">
                   <CollapseIdToggle id={`day:${key}`} />
                   <h2 className="truncate text-sm font-semibold uppercase tracking-wide text-muted-foreground">{format(d, "EEEE, d MMM", { locale: dateLocale })}</h2>

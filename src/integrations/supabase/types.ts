@@ -1014,6 +1014,39 @@ export type Database = {
           },
         ]
       }
+      itinerary_weeks: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          notes: string | null
+          start_date: string
+          superintendent_id: string
+          updated_at: string
+          week_type: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          start_date: string
+          superintendent_id?: string
+          updated_at?: string
+          week_type: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          start_date?: string
+          superintendent_id?: string
+          updated_at?: string
+          week_type?: string
+        }
+        Relationships: []
+      }
       meal_day_notes: {
         Row: {
           created_at: string
@@ -1828,6 +1861,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      visit_packages: {
+        Row: {
+          checklist_template_id: string
+          created_at: string
+          elder_program_template_id: string
+          field_template_id: string
+          id: string
+          meeting_talk_template_id: string
+          name: string
+          superintendent_id: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          checklist_template_id?: string
+          created_at?: string
+          elder_program_template_id?: string
+          field_template_id?: string
+          id?: string
+          meeting_talk_template_id?: string
+          name?: string
+          superintendent_id?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Update: {
+          checklist_template_id?: string
+          created_at?: string
+          elder_program_template_id?: string
+          field_template_id?: string
+          id?: string
+          meeting_talk_template_id?: string
+          name?: string
+          superintendent_id?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       visit_pending_updates: {
         Row: {

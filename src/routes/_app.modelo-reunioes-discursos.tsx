@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
@@ -15,13 +16,14 @@ import {
   importMeetingTalkTemplate,
   WEEKDAY_LABELS,
 } from "@/lib/meeting-talk-templates.functions";
-import { TemplateIOButtons } from "@/components/TemplateIOButtons";
+import { TemplateHeaderRow } from "@/components/templates/TemplateChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { SectionPills } from "@/components/templates/DayPills";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Trash2, Copy, Pencil, Save, AlertCircle, Layers } from "lucide-react";
@@ -257,27 +259,19 @@ function Page() {
 
   return (
     <div className="space-y-5 max-w-full overflow-x-hidden">
+      <TemplatesTabs />
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
             <Layers className="h-6 w-6" />{t("templates.meetingTalk.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {t("templates.meetingTalk.subtitle", { n: tpls.length, max: MAX })}
+            {t("templates.meetingTalk.subtitle")}
           </p>
         </div>
         {isSuper && (
           <div className="flex items-center gap-2 flex-wrap">
-            <TemplateIOButtons
-              filenameBase={active?.name ?? t("templates.exportMeetingTalk")}
-              disabled={!active}
-              onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: t("templates.selectTemplate") }}
-              onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await loadList(); return r; }}
-            />
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger asChild>
-                <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />{t("templates.newTemplate")}</Button>
-              </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader><DialogTitle>{t("templates.meetingTalk.newDialogTitle")}</DialogTitle></DialogHeader>
                 <div className="space-y-3">
@@ -300,19 +294,25 @@ function Page() {
         )}
       </div>
 
-      <div className="grid md:grid-cols-[260px_1fr] gap-4">
-        <Card><CardContent className="p-3 space-y-1">
-          {tpls.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-3 text-center">{t("templates.noTemplates")}</div>
-          ) : tpls.map((tp) => (
-            <button key={tp.id}
-              onClick={() => setActiveId(tp.id)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === tp.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-              <div className="truncate">{tp.name}</div>
-            </button>
-          ))}
-        </CardContent></Card>
+      <TemplateHeaderRow
+        items={tpls}
+        activeId={activeId}
+        onPick={setActiveId}
+        onNew={() => setCreateOpen(true)}
+        newDisabled={!isSuper || tpls.length >= MAX}
+        disabled={busy}
+        onRename={isSuper && active ? () => { setRenameVal(active.name); setRenameOpen(true); } : undefined}
+        onDuplicate={isSuper ? handleDuplicate : undefined}
+        duplicateDisabled={tpls.length >= MAX}
+        onDelete={isSuper ? handleDelete : undefined}
+        io={isSuper ? {
+          filenameBase: active?.name ?? t("templates.exportMeetingTalk"),
+          onExport: async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: t("templates.selectTemplate") },
+          onImport: async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await loadList(); return r; },
+        } : undefined}
+      />
 
+      <div className="grid gap-4">
         <div className="space-y-4">
           {!active ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
@@ -320,47 +320,20 @@ function Page() {
             </CardContent></Card>
           ) : (
             <>
-              <Card><CardContent className="p-4 flex items-center justify-between gap-2 flex-wrap">
-                <div className="font-semibold truncate">{active.name}</div>
-                {isSuper ? (
-                  <div className="flex gap-2 flex-wrap">
-                    <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" />{t("common.rename")}
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
-                      <Copy className="h-3.5 w-3.5 mr-1" />{t("common.duplicate")}
-                    </Button>
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
-                      <Trash2 className="h-3.5 w-3.5 mr-1" />{t("common.delete")}
-                    </Button>
-                    <Button size="sm" onClick={handleSave} disabled={busy}>
-                      <Save className="h-3.5 w-3.5 mr-1" />{t("templates.meetingTalk.saveTemplate")}
-                    </Button>
-                    <SavingIndicator saving={busy} />
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">{t("templates.viewOnly")}</span>
-                )}
-              </CardContent></Card>
+              {!isSuper && <p className="text-xs text-muted-foreground">{t("templates.viewOnly")}</p>}
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <div className="sm:hidden">
-                  <Select value={activeTab} onValueChange={setActiveTab}>
-                    <SelectTrigger className="w-full"><SelectValue placeholder={t("templates.meetingTalk.subTabPlaceholder")} /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="meio">{t("templates.meetingTalk.tabMidweek")}</SelectItem>
-                      <SelectItem value="fim">{t("templates.meetingTalk.tabWeekend")}</SelectItem>
-                      <SelectItem value="pio">{t("templates.meetingTalk.tabPioneers")}</SelectItem>
-                      <SelectItem value="anc">{t("templates.meetingTalk.tabElders")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <TabsList className="hidden sm:grid grid-cols-4 w-full h-auto gap-1 bg-transparent p-1">
-                  <TabsTrigger value="meio" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t("templates.meetingTalk.tabMidweek")}</TabsTrigger>
-                  <TabsTrigger value="fim" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t("templates.meetingTalk.tabWeekend")}</TabsTrigger>
-                  <TabsTrigger value="pio" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t("templates.meetingTalk.tabPioneers")}</TabsTrigger>
-                  <TabsTrigger value="anc" className="min-w-0 whitespace-normal rounded-full border border-border/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t("templates.meetingTalk.tabEldersShort")}</TabsTrigger>
-                </TabsList>
+                <SectionPills<string>
+                  ariaLabel={t("templates.meetingTalk.subTabPlaceholder")}
+                  value={activeTab}
+                  onChange={setActiveTab}
+                  options={[
+                    { value: "meio", label: t("templates.meetingTalk.tabMidweek") },
+                    { value: "fim", label: t("templates.meetingTalk.tabWeekend") },
+                    { value: "pio", label: t("templates.meetingTalk.tabPioneers") },
+                    { value: "anc", label: t("templates.meetingTalk.tabEldersShort") },
+                  ]}
+                />
 
                 <TabsContent value="meio" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
@@ -585,6 +558,14 @@ function Page() {
                   </CardContent></Card>
                 </TabsContent>
               </Tabs>
+              {isSuper && (
+                <div className="flex items-center justify-end gap-2">
+                  <SavingIndicator saving={busy} />
+                  <Button className="rounded-full" onClick={handleSave} disabled={busy}>
+                    <Save className="h-4 w-4 mr-1" />{t("templates.meetingTalk.saveTemplate")}
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </div>

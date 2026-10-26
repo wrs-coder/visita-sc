@@ -1,3 +1,5 @@
+import { VisitDayPills, useVisitDay } from "@/components/visit-week/VisitDayPills";
+import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -121,11 +123,15 @@ function Page() {
     if (error) toast.error(error.message);
   };
 
+  const dayKeys = visit ? eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) }).map((d) => format(d, "yyyy-MM-dd")) : [];
+  const [activeDay, setActiveDay] = useVisitDay(dayKeys);
   if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">{t("meals.noActiveVisit")}</CardContent></Card>;
   const days = eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) });
 
+
   return (
     <div className="space-y-5">
+      <VisitProgramTabs />
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">{t("meals.title")}</h1>
@@ -133,7 +139,7 @@ function Page() {
             {isSuper ? t("meals.subtitleSuper") : t("meals.subtitleElder")}
           </p>
         </div>
-        <VisitWeekReportButton onClick={() => setReportOpen(true)} />
+        <VisitWeekReportButton variant="icon" onClick={() => setReportOpen(true)} />
       </div>
 
       {isSuper && <SupervisorEditToggle enabled={editEnabled} onChange={setEditEnabled} />}
@@ -144,6 +150,7 @@ function Page() {
       />
 
       <CollapseProvider scope="meals" visitId={visit.id}>
+      <VisitDayPills days={days} active={activeDay} onPick={setActiveDay} hasItems={(k) => meals.some((r) => r.meal_date === k)} />
       <div className="flex justify-end">
         <CollapseAllButton ids={[...days.map((d) => `day:${format(d, "yyyy-MM-dd")}`), ...meals.map((m) => `ev:${m.id}`)]} />
       </div>
@@ -153,7 +160,7 @@ function Page() {
           const dayMeals = meals.filter((m) => m.meal_date === key);
           const dayNote = dayNotes[key] ?? "";
           return (
-            <section key={key}>
+            <section key={key} hidden={key !== activeDay}>
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex min-w-0 items-center gap-1">
                   <CollapseIdToggle id={`day:${key}`} />

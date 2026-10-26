@@ -24,7 +24,7 @@ import { guestLogin } from "@/lib/guest-login";
 import { localDbStats } from "@/lib/local-db";
 import { runFullSync } from "@/lib/local-auto-sync";
 
-const APP_VERSION = "5.0.2";
+const APP_VERSION = "5.0.3";
 const APP_BUILD = "2026.10.25";
 const APP_UPDATED_AT = "24/10/2026";
 
@@ -77,8 +77,8 @@ export function LoginForm() {
       .order("created_at", { ascending: true });
     if (error) throw error;
     const roles = (data ?? []).map((r) => r.role);
-    const isSuper = roles.includes("superintendent");
-    nav({ to: isSuper ? "/dashboard" : "/cronograma" });
+    const toDashboard = roles.includes("superintendent") || roles.includes("elder");
+    nav({ to: toDashboard ? "/dashboard" : "/cronograma" });
   };
 
   const mode = useConnectionMode();

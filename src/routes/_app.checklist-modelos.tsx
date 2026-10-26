@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
@@ -12,7 +13,7 @@ import {
   replaceChecklistTemplateItems,
 } from "@/lib/checklist-templates.functions";
 import { exportChecklistTemplate, importChecklistTemplate } from "@/lib/template-io.functions";
-import { TemplateIOButtons } from "@/components/TemplateIOButtons";
+import { TemplateHeaderRow } from "@/components/templates/TemplateChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -205,28 +206,17 @@ function Page() {
 
   return (
     <div className="space-y-5">
+      <TemplatesTabs />
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
             <ListChecks className="h-6 w-6" />{t("templates.checklist.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {t("templates.checklist.subtitle", { n: tpls.length, max: MAX })}
+            {t("templates.checklist.subtitle")}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {role === "superintendent" && (
-            <TemplateIOButtons
-              filenameBase={active?.name ?? t("templates.exportChecklist")}
-              disabled={!active}
-              onExport={async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: t("templates.selectTemplate") }}
-              onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await load(); return r; }}
-            />
-          )}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />{t("templates.newTemplate")}</Button>
-          </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader><DialogTitle>{t("templates.checklist.newDialogTitle")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
@@ -246,24 +236,27 @@ function Page() {
             </div>
           </DialogContent>
         </Dialog>
-        </div>
       </div>
 
-      <div className="grid md:grid-cols-[260px_1fr] gap-4">
-        <Card><CardContent className="p-3 space-y-1">
-          {tpls.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-3 text-center">{t("templates.noTemplates")}</div>
-          ) : tpls.map((tp) => {
-            return (
-              <button key={tp.id}
-                onClick={() => setActiveId(tp.id)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === tp.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-                <div className="truncate">{tp.name}</div>
-              </button>
-            );
-          })}
-        </CardContent></Card>
+      <TemplateHeaderRow
+        items={tpls}
+        activeId={activeId}
+        onPick={setActiveId}
+        onNew={() => setCreateOpen(true)}
+        newDisabled={tpls.length >= MAX}
+        disabled={busy}
+        onRename={active ? () => { setRenameVal(active.name); setRenameOpen(true); } : undefined}
+        onDuplicate={handleDuplicate}
+        duplicateDisabled={tpls.length >= MAX}
+        onDelete={handleDelete}
+        io={role === "superintendent" ? {
+          filenameBase: active?.name ?? t("templates.exportChecklist"),
+          onExport: async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: t("templates.selectTemplate") },
+          onImport: async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await load(); return r; },
+        } : undefined}
+      />
 
+      <div className="grid gap-4">
         <div className="space-y-4">
           {!active ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
@@ -272,20 +265,6 @@ function Page() {
           ) : (
             <>
               <Card><CardContent className="p-4 space-y-3">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="font-semibold truncate">{active.name}</div>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button size="sm" variant="outline" onClick={() => { setRenameVal(active.name); setRenameOpen(true); }}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" />{t("common.rename")}
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={busy || tpls.length >= MAX}>
-                      <Copy className="h-3.5 w-3.5 mr-1" />{t("common.duplicate")}
-                    </Button>
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={busy}>
-                      <Trash2 className="h-3.5 w-3.5 mr-1" />{t("common.delete")}
-                    </Button>
-                  </div>
-                </div>
                 <p className="text-xs text-muted-foreground">
                   {t("templates.checklist.applyHint")}
                 </p>

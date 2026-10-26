@@ -1,3 +1,7 @@
+import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
+import { ChecklistPanel } from "@/components/visit-week/ChecklistPanel";
+import { slotDay, slotDays } from "@/lib/slot-day";
+import { slotState, nextEventWithoutSlot, pickElderSlot, NO_SLOT } from "@/lib/pastoral-slots";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
@@ -37,15 +41,29 @@ import { toast } from "sonner";
 import { ElderTabPasswordCard } from "@/components/elder-program/ElderTabPasswordCard";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
-export const Route = createFileRoute("/_app/programa-ancioes")({ component: Page });
+export const Route = createFileRoute("/_app/programa-ancioes")({
+  validateSearch: (s: Record<string, unknown>): { tab?: ElderTab } => {
+    const v = s.tab;
+    return typeof v === "string" && (ELDER_TABS as string[]).includes(v) ? { tab: v as ElderTab } : {};
+  },
+  component: Page,
+});
+
+type ElderTab = "questions" | "pastoral" | "encouragement" | "recommendations" | "local";
+const ELDER_TABS: ElderTab[] = ["questions", "pastoral", "encouragement", "recommendations", "local"];
+const ELDER_TAB_LABELS: Record<ElderTab, string> = {
+  questions: "Perguntas do SC", pastoral: "Pastoreio", encouragement: "Encorajamento",
+  recommendations: "Recomendações", local: "Assuntos locais",
+};
+const ELDER_TAB_PREF = "visita-sc:elder-tab";
 
 type Section = "pastoral" | "encouragement" | "recommendations" | "local";
 
 const SECTION_TITLES: Record<Section, string> = {
-  pastoral: "VISITAS DE PASTOREIO",
-  encouragement: "ENCORAJAMENTO — INATIVOS, DOENTES, PRIVILÉGIOS ESPECIAIS",
-  recommendations: "RECOMENDAÇÕES PARA ANCIÃOS E SERVOS MINISTERIAIS/CANCELAMENTOS",
-  local: "ASSUNTOS LOCAIS DEFINIDOS PELO CORPO DE ANCIÃOS",
+  pastoral: "Pastoreio",
+  encouragement: "Inativos, doentes e privilégios especiais",
+  recommendations: "Anciãos e servos ministeriais, incluindo cancelamentos",
+  local: "Definidos pelo corpo de anciãos",
 };
 
 const SECTIONS: Section[] = ["pastoral", "encouragement", "recommendations", "local"];
@@ -197,6 +215,22 @@ function Page() {
 
   useEffect(() => { reload(); }, [reload]);
 
+  const search = Route.useSearch();
+  const [tab, setTab] = useState<ElderTab>(search.tab ?? "pastoral");
+  useEffect(() => {
+    if (search.tab) { setTab(search.tab); return; }
+    try { const v = localStorage.getItem(ELDER_TAB_PREF) as ElderTab | null; if (v && ELDER_TABS.includes(v)) setTab(v); } catch { /* ignore */ }
+  }, [search.tab]);
+  const pickTab = (k: ElderTab) => { setTab(k); try { localStorage.setItem(ELDER_TAB_PREF, k); } catch { /* ignore */ } };
+  const pastoralDays = slotDays(pastoral.map((p) => p.slot_label));
+  const [pDay, setPDay] = useState<string>("__all__");
+  useEffect(() => { if (pDay !== "__all__" && !pastoralDays.includes(pDay)) setPDay("__all__"); }, [pastoralDays.join(","), pDay]);
+
+  const elderUsed = slots.filter((s) => pastoral.some((p) => p.slot_label === s));
+  const unslotted = pastoral.filter((p) => !p.slot_label || !slots.includes(p.slot_label));
+  const [elderSlotRaw, setElderSlot] = useState<string | null>(null);
+  const elderSlot = pickElderSlot(elderUsed, elderSlotRaw, unslotted.length > 0);
+
   if (visitLoading) return <LoadingPanel />;
   if (!visit) {
     return <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma visita ativa.</CardContent></Card>;
@@ -245,19 +279,18 @@ function Page() {
 
   return (
     <div className="space-y-5 max-w-full overflow-x-hidden">
+      <VisitProgramTabs />
       <div>
         <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-          <BookOpen className="h-6 w-6" /> Pastoreios, Recomendações e outros
+          <BookOpen className="h-6 w-6" /> Corpo de Anciãos
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {isSuper ? t("elderProgram.subtitleSuper") : t("elderProgram.subtitleElder")}
+          Insira as informações referentes a pastoreio, encorajamento, recomendações, assuntos locais e responda as perguntas adicionais do superintendente de circuito.
         </p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Semana da Visita — {visit.title}
-        </p>
-        <div className="mt-3">
-          <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
-            <FileDown className="h-4 w-4 mr-1" /> Relatório executivo
+        <div className="mt-2">
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground"
+            onClick={() => setReportOpen(true)} aria-label="Relatório executivo" title="Relatório executivo">
+            <FileDown className="h-5 w-5" />
           </Button>
         </div>
       </div>
@@ -272,14 +305,79 @@ function Page() {
           {!isSuper && (
             <ElderTabPasswordCard congregationId={visit.congregation_id} />
           )}
+          <div role="tablist" className="flex flex-wrap gap-1.5">
+            {ELDER_TABS.map((k) => (
+              <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => pickTab(k)}
+                className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold tracking-wide transition-colors",
+                  tab === k ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:bg-muted")}>
+                {ELDER_TAB_LABELS[k]}
+              </button>
+            ))}
+          </div>
+          <div className={tab === "questions" ? "" : "hidden"}><ChecklistPanel /></div>
           {SECTIONS.map((section) => {
-            const events = listFor(section);
+            const events = section === "pastoral" && pDay !== "__all__"
+              ? listFor(section).filter((e) => slotDay(e.slot_label) === pDay)
+              : listFor(section);
             const canAddManual = section === "recommendations" && canEdit;
             return (
-              <Card key={section}>
+              <Card key={section} className={tab === section ? "" : "hidden"}>
                 <CardContent className="p-4 space-y-4">
+                  {section === "pastoral" && !isSuper && slots.length > 0 && (() => {
+                    const st = slotState(slots, pastoral);
+                    return (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">Escolha os dias para pastoreio</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {slots.map((s) => {
+                            const on = st.used.includes(s);
+                            const off = !on && (st.full || !canEdit);
+                            return (
+                              <button key={s} type="button" disabled={off} aria-pressed={on}
+                                onClick={() => {
+                                  if (on) { setElderSlot(s); return; }
+                                  const ev = nextEventWithoutSlot(slots, pastoral);
+                                  if (ev) { saveField(ev, { slot_label: s }); setElderSlot(s); }
+                                }}
+                                className={cn("rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                                  on && elderSlot === s ? "bg-primary text-primary-foreground border-primary"
+                                    : on ? "bg-secondary text-secondary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-muted",
+                                  off && "opacity-40 cursor-not-allowed hover:bg-background")}>
+                                {s}{on && " ✓"}
+                              </button>
+                            );
+                          })}
+                          {unslotted.length > 0 && (
+                            <button type="button" aria-pressed={elderSlot === NO_SLOT} onClick={() => setElderSlot(NO_SLOT)}
+                              className={cn("rounded-full border border-dashed px-3 py-1.5 text-xs font-medium transition-colors",
+                                elderSlot === NO_SLOT ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:bg-muted")}>
+                              Sem dia ({unslotted.length})
+                            </button>
+                          )}
+                        </div>
+                        <p className="rounded-lg bg-muted px-3 py-2 text-[11px] text-muted-foreground">
+                          {st.total === 0
+                            ? "O superintendente ainda não criou pastoreios."
+                            : st.full
+                              ? `O superintendente tem ${st.total} ${st.total === 1 ? "pastoreio disponível" : "pastoreios disponíveis"}, e ${st.total === 1 ? "ele já foi marcado" : "todos já foram marcados"}. Para usar outro dia, troque um dos dias escolhidos.`
+                              : `Restam ${st.remaining} de ${st.total} pastoreios para escolher o dia.`}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                  {section === "pastoral" && isSuper && pastoralDays.length > 0 && (
+                    <div role="tablist" className="flex flex-wrap gap-1.5">
+                      {[...pastoralDays, "__all__"].map((d) => (
+                        <button key={d} type="button" role="tab" aria-selected={pDay === d} onClick={() => setPDay(d)}
+                          className={cn("min-w-[52px] rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                            pDay === d ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-muted")}>
+                          {d === "__all__" ? "Todos" : d}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex min-w-0 items-center justify-between gap-2">
-                    <h2 className="truncate font-bold text-sm uppercase tracking-wide text-primary">{SECTION_TITLES[section]}</h2>
+                    <p className="min-w-0 text-xs text-muted-foreground">{section === "pastoral" ? "" : SECTION_TITLES[section]}</p>
                     <CollapseIdToggle id={`sec:${section}`} />
                   </div>
                   <CollapseBody id={`sec:${section}`} className="space-y-4">
@@ -303,7 +401,10 @@ function Page() {
                             )
                           : new Set<string>();
                         return (
-                          <CollapseItem key={ev.id} id={`ev:${ev.id}`} summary={[ev.slot_label, ev.family_name ?? ev.person_name].filter(Boolean).join(" · ") || SECTION_TITLES[section]}>
+                          <div key={ev.id} id={`pev-${ev.id}`} className={cn("scroll-mt-4",
+                            section === "pastoral" && !isSuper && slots.length > 0 &&
+                              (elderSlot === NO_SLOT ? !!ev.slot_label && slots.includes(ev.slot_label) : ev.slot_label !== elderSlot) && "hidden")}>
+                          <CollapseItem id={`ev:${ev.id}`} summary={[ev.slot_label, ev.family_name ?? ev.person_name].filter(Boolean).join(" · ") || SECTION_TITLES[section]}>
                           <EventCard
                             ev={ev}
                             slots={slots}
@@ -319,6 +420,7 @@ function Page() {
                             alreadySavedToNotes={dispatchedIds.has(`notas:${ev.id}`)}
                           />
                           </CollapseItem>
+                          </div>
 
                         );
                       })}
@@ -379,6 +481,52 @@ function LoadingPanel() {
   );
 }
 
+function ElderSlotSwap({ current, free, readOnly, onPick }: {
+  current: string | null; free: string[]; readOnly: boolean; onPick: (s: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/60 px-3 py-2">
+      <div className="text-xs">
+        <span className="text-muted-foreground">Dia/Horário: </span>
+        <span className="font-semibold">{current ?? "Ainda não escolhido"}</span>
+      </div>
+      {current && !readOnly && (
+        <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setOpen(true)}>
+          ⇄ Trocar o dia/hora do pastoreio
+        </Button>
+      )}
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Trocar o dia/hora do pastoreio</AlertDialogTitle>
+            <AlertDialogDescription>Atual: {current}</AlertDialogDescription>
+          </AlertDialogHeader>
+          {free.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Não há outros dias disponíveis.</p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">Dias disponíveis:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {free.map((s) => (
+                  <button key={s} type="button" onClick={() => { setOpen(false); onPick(s); }}
+                    className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted">
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground">As informações vão para o novo dia e “{current}” fica livre.</p>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 function EventCard({
   ev, slots, usedSlots, readOnly, canDelete, onChange, onDelete,
   onScheduleInCronograma, onSaveToPrivateNotes,
@@ -420,6 +568,10 @@ function EventCard({
 
         {ev.section === "pastoral" && (
           <>
+            {!isSuperintendent && (
+              <ElderSlotSwap current={ev.slot_label} free={slots.filter((s) => !usedSlots.has(s) && s !== ev.slot_label)} readOnly={readOnly} onPick={(s) => onChange({ slot_label: s })} />
+            )}
+            <div className={isSuperintendent ? "" : "hidden"}>
             <FieldRow label="Dia/Horário">
               <Select
                 value={ev.slot_label ?? "__none__"}
@@ -477,6 +629,7 @@ function EventCard({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+            </div>
             <DebouncedText label="Ancião/S.M acompanhante" value={ev.companion} onSave={(v) => onChange({ companion: v })} readOnly={readOnly} />
             <DebouncedText label="Família/Irmão(ã)" value={ev.family_name} onSave={(v) => onChange({ family_name: v })} readOnly={readOnly} />
             <DebouncedText label="Endereço" value={ev.address} onSave={(v) => onChange({ address: v })} readOnly={readOnly} />

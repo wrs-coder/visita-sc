@@ -167,7 +167,10 @@
       "copied": "Código copiado",
       "errorFormat": "Use 4 a 12 caracteres (apenas letras maiúsculas e números).",
       "errorTaken": "Este código já está em uso. Escolha outro."
-    }
+    },
+    "tabPersonal": "Dados pessoais",
+    "tabFeatures": "Recursos do aplicativo",
+    "tabSettings": "Configurações"
   },
   "commandPalette": {
     "open": "Abrir busca rápida",
@@ -221,7 +224,8 @@
     "menu": "Menu",
     "logout": "Sair",
     "blockedTitle": "Ainda não há novidades",
-    "blockedDesc": "Por favor, aguarde até que o Superintendente disponibilize um agendamento de visita."
+    "blockedDesc": "Por favor, aguarde até que o Superintendente disponibilize um agendamento de visita.",
+    "visitTemplates": "Modelos Visitas"
   },
   "dashboard": {
     "greeting": "Olá, {{name}}!",
@@ -539,8 +543,8 @@
     "description": "Descrição"
   },
   "checklistPage": {
-    "title": "Checklist da Congregação",
-    "subtitle": "Dados necessários para a visita",
+    "title": "Informações adicionais",
+    "subtitle": "Responda as perguntas abaixo referentes à congregação.",
     "exportSheet": "Exportar planilha",
     "newItem": "Novo item",
     "newItemDialogTitle": "Novo item da checklist",
@@ -735,8 +739,8 @@
       "6": "Seg"
     },
     "program": {
-      "title": "Modelos de Programação Pessoal",
-      "subtitle": "Crie até 10 modelos reutilizáveis. Use-os ao criar uma visita para uma congregação específica.",
+      "title": "Programação pessoal",
+      "subtitle": "Organize a sua disponibilidade para Estudos e Revisitas, Refeições e solicitação de transporte.",
       "templateLabel": "Modelo",
       "templateName": "Nome do modelo",
       "studiesTitle": "Estudos e Revisitas",
@@ -803,8 +807,8 @@
       }
     },
     "checklist": {
-      "title": "Modelos de Checklist",
-      "subtitle": "Crie checklists e aplique a cada visita pelo Itinerário. {{n}}/{{max}} modelos.",
+      "title": "Perguntas para os anciãos",
+      "subtitle": "Adicione perguntas que gostaria de saber a resposta do corpo de anciãos",
       "newDialogTitle": "Novo modelo de checklist",
       "itemsTitle": "Itens da checklist",
       "noItemsHelp": "Nenhum item. Adicione perguntas ou tópicos para esta checklist.",
@@ -817,8 +821,8 @@
       "fixErrors": "Corrija os campos destacados antes de salvar."
     },
     "field": {
-      "title": "Modelo Reuniões de Campo",
-      "subtitle": "Programe vários turnos por semana, cada um com sua modalidade, e vincule o modelo a uma congregação. {{n}}/{{max}} modelos.",
+      "title": "Reuniões de campo",
+      "subtitle": "Organize as reuniões de campo de acordo com horários e modalidades.",
       "newDialogTitle": "Novo modelo de reuniões de campo",
       "shiftsTitle": "Turnos do modelo",
       "addShift": "Turno",
@@ -837,8 +841,8 @@
       "observationsHint": "Apenas o superintendente edita; os anciãos veem como leitura na aba Reuniões de Campo."
     },
     "meetingTalk": {
-      "title": "Modelos de Reunião e Discurso",
-      "subtitle": "Crie modelos reutilizáveis com Meio de Semana, Fim de Semana (vários temas), Pioneiros e Anciãos/Servos. {{n}}/{{max}} modelos.",
+      "title": "Reuniões e Discursos",
+      "subtitle": "Organize as reuniões do Meio de Semana, Fim de Semana, Pioneiros e Anciãos/Servos.",
       "newDialogTitle": "Novo modelo",
       "saveTemplate": "Salvar modelo",
       "restricted": "Acesso restrito.",
@@ -916,6 +920,24 @@
       "cartas": "Cartas",
       "telefone_cartas": "Telefone + Cartas",
       "grupo_de_campo": "Grupo de campo"
+    },
+    "dayPills": {
+      "title": "Dias da visita",
+      "hideTuesdayTitle": "Ocultar a terça-feira?",
+      "hideTuesdayBody": "Este modelo já tem informações na terça. Elas não serão apagadas: só ficam escondidas aqui e voltam quando você ligar a chave de novo.",
+      "hideTuesdayConfirm": "Ocultar",
+      "tuesday": "Terça",
+      "monday": "Segunda",
+      "sections": "Seções do modelo"
+    },
+    "elder": {
+      "title": "Programação Anciãos",
+      "subtitle": "Organize a sua disponibilidade para visitas de pastoreio, encorajamentos especiais e colete informações referentes à reunião com os anciãos."
+    },
+    "chrome": {
+      "new": "Novo",
+      "newTemplate": "Novo modelo",
+      "limitReached": "Limite de modelos atingido"
     }
   },
   "notes": {
@@ -948,7 +970,8 @@
       "searchPlaceholder": "Digite para filtrar...",
       "from": "De",
       "to": "Até",
-      "clear": "Limpar"
+      "clear": "Limpar",
+      "close": "Fechar"
     },
     "categories": {
       "free": {
@@ -1050,7 +1073,8 @@
     },
     "whatsapp": {
       "header": "*Notas Privadas — Confidencial*"
-    }
+    },
+    "newButton": "Novo"
   },
   "report": {
     "loading": "A carregar relatório…",
@@ -1936,5 +1960,25 @@
     "info": {
       "title": "Detalhes do esboço"
     }
+  },
+  "visitReminder": {
+    "title": "Visita em 2 meses",
+    "body": "Esta visita ainda não tem nenhum modelo ou pacote escolhido.",
+    "go": "Me leve para a visita",
+    "badge": "Sem modelos"
+  },
+  "circuit": {
+    "fallbackTitle": "Meu circuito",
+    "openCalendar": "Abrir calendário",
+    "month": "Mês",
+    "week": "Semana",
+    "today": "Hoje",
+    "prevMonth": "Mês anterior",
+    "nextMonth": "Próximo mês",
+    "visitLegend": "Visita",
+    "eventLegend": "Evento",
+    "pillCircuit": "Circuito",
+    "sectionCongregations": "Congregações",
+    "sectionElders": "Anciãos do circuito"
   }
 }

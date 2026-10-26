@@ -167,7 +167,10 @@
       "copied": "Code copied",
       "errorFormat": "Use 4 to 12 characters (uppercase letters and numbers only).",
       "errorTaken": "This code is already in use. Choose another."
-    }
+    },
+    "tabPersonal": "Personal data",
+    "tabFeatures": "App features",
+    "tabSettings": "Settings"
   },
   "commandPalette": {
     "open": "Open quick search",
@@ -221,7 +224,8 @@
     "menu": "Menu",
     "logout": "Sign out",
     "blockedTitle": "Nothing new yet",
-    "blockedDesc": "Please wait until the Circuit Overseer schedules a visit."
+    "blockedDesc": "Please wait until the Circuit Overseer schedules a visit.",
+    "visitTemplates": "Visit Templates"
   },
   "dashboard": {
     "greeting": "Hello, {{name}}!",
@@ -539,8 +543,8 @@
     "description": "Description"
   },
   "checklistPage": {
-    "title": "Congregation Checklist",
-    "subtitle": "Data needed for the visit",
+    "title": "Additional information",
+    "subtitle": "Answer the questions below about the congregation.",
     "exportSheet": "Export spreadsheet",
     "newItem": "New item",
     "newItemDialogTitle": "New checklist item",
@@ -745,8 +749,8 @@
       "6": "Mon"
     },
     "program": {
-      "title": "Personal Schedule Templates",
-      "subtitle": "Create up to 10 reusable templates. Use them when creating a visit for a specific congregation.",
+      "title": "Personal schedule",
+      "subtitle": "Organize your availability for Studies and Return Visits, Meals and transportation requests.",
       "templateLabel": "Template",
       "templateName": "Template name",
       "studiesTitle": "Studies & Return Visits",
@@ -813,8 +817,8 @@
       }
     },
     "checklist": {
-      "title": "Checklist Templates",
-      "subtitle": "Create checklists and apply them to each visit via Itinerary. {{n}}/{{max}} templates.",
+      "title": "Questions for the elders",
+      "subtitle": "Add questions you would like the body of elders to answer",
       "newDialogTitle": "New checklist template",
       "itemsTitle": "Checklist items",
       "noItemsHelp": "No items. Add questions or topics for this checklist.",
@@ -827,8 +831,8 @@
       "fixErrors": "Fix the highlighted fields before saving."
     },
     "field": {
-      "title": "Field Meeting Template",
-      "subtitle": "Plan several shifts per week, each with its own modality, and link the template to a congregation. {{n}}/{{max}} templates.",
+      "title": "Field service meetings",
+      "subtitle": "Organize field service meetings by time and modality.",
       "newDialogTitle": "New field meetings template",
       "shiftsTitle": "Template shifts",
       "addShift": "Shift",
@@ -847,8 +851,8 @@
       "observationsHint": "Only the circuit overseer edits; elders see this as read-only on the Field Meetings tab."
     },
     "meetingTalk": {
-      "title": "Meeting & Talk Templates",
-      "subtitle": "Create reusable templates with Midweek, Weekend (multiple themes), Pioneers and Elders/Ministerial Servants. {{n}}/{{max}} templates.",
+      "title": "Meetings and Talks",
+      "subtitle": "Organize Midweek, Weekend, Pioneer and Elders/Servants meetings.",
       "newDialogTitle": "New template",
       "saveTemplate": "Save template",
       "restricted": "Restricted access.",
@@ -926,6 +930,24 @@
       "cartas": "Letters",
       "telefone_cartas": "Phone + Letters",
       "grupo_de_campo": "Field group"
+    },
+    "dayPills": {
+      "title": "Visit days",
+      "hideTuesdayTitle": "Hide Tuesday?",
+      "hideTuesdayBody": "This template already has information on Tuesday. It will not be deleted: it is only hidden here and comes back when you turn the switch on again.",
+      "hideTuesdayConfirm": "Hide",
+      "tuesday": "Tuesday",
+      "monday": "Monday",
+      "sections": "Template sections"
+    },
+    "elder": {
+      "title": "Elders schedule",
+      "subtitle": "Organize your availability for shepherding visits and special encouragement, and gather information for the meeting with the elders."
+    },
+    "chrome": {
+      "new": "New",
+      "newTemplate": "New template",
+      "limitReached": "Template limit reached"
     }
   },
   "notes": {
@@ -958,7 +980,8 @@
       "searchPlaceholder": "Type to filter...",
       "from": "From",
       "to": "To",
-      "clear": "Clear"
+      "clear": "Clear",
+      "close": "Close"
     },
     "categories": {
       "free": {
@@ -1060,7 +1083,8 @@
     },
     "whatsapp": {
       "header": "*Private Notes — Confidential*"
-    }
+    },
+    "newButton": "New"
   },
   "report": {
     "loading": "Loading report…",
@@ -1968,5 +1992,25 @@
     "info": {
       "title": "Outline details"
     }
+  },
+  "visitReminder": {
+    "title": "Visit in 2 months",
+    "body": "This visit has no template or package selected yet.",
+    "go": "Take me to the visit",
+    "badge": "No templates"
+  },
+  "circuit": {
+    "fallbackTitle": "My circuit",
+    "openCalendar": "Open calendar",
+    "month": "Month",
+    "week": "Week",
+    "today": "Today",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "visitLegend": "Visit",
+    "eventLegend": "Event",
+    "pillCircuit": "Circuit",
+    "sectionCongregations": "Congregations",
+    "sectionElders": "Circuit elders"
   }
 }

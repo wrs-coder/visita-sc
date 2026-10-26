@@ -69,6 +69,8 @@ import { cn } from "@/lib/utils";
 import { offlineUpdate, offlineInsert, offlineDelete } from "@/lib/local-write";
 import { getHiddenEventIds } from "@/lib/hidden-events";
 import { dayAccentStyle } from "@/lib/day-accent";
+import { CircuitHeader } from "@/components/circuit/CircuitHeader";
+import { MonthCalendar, type MonthVisit } from "@/components/circuit/MonthCalendar";
 
 export const Route = createFileRoute("/_app/cronograma")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -81,6 +83,7 @@ export const Route = createFileRoute("/_app/cronograma")({
       notes: s("notes"),
       companion: s("companion"),
       congId: s("congId"),
+      view: search.view === "month" ? ("month" as const) : undefined,
     };
   },
   component: Page,
@@ -149,6 +152,21 @@ function Page() {
     startOfWeek(new Date(), { weekStartsOn: 1 }),
   );
   const [calOpen, setCalOpen] = useState(false);
+  // Visualização de mês (estilo Google Agenda), aberta pelo ícone do circuito.
+  const [view, setView] = useState<"week" | "month">(search.view === "month" ? "month" : "week");
+  useEffect(() => { if (search.view === "month") setView("month"); }, [search.view]);
+  const [month, setMonth] = useState<Date>(() => new Date());
+  const [selectedDay, setSelectedDay] = useState<string>(() => format(new Date(), "yyyy-MM-dd"));
+  const [visits, setVisits] = useState<MonthVisit[]>([]);
+  useEffect(() => {
+    if (!userId || !canEdit) return;
+    let cancelled = false;
+    void readWithMirror<MonthVisit & Record<string, unknown>>({
+      table: "visits",
+      remote: () => supabase.from("visits").select("id,title,start_date,end_date") as never,
+    }).then((res) => { if (!cancelled) setVisits(res.rows as MonthVisit[]); }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [userId, canEdit]);
 
   // Load events + congregations
   useEffect(() => {
@@ -388,9 +406,10 @@ function Page() {
 
   return (
     <div className="space-y-5">
+      <CircuitHeader />
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">{t("schedule.title")}</h1>
+          <h1 className={cn(canEdit ? "text-lg font-semibold" : "text-2xl md:text-3xl font-bold")}>{t("schedule.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {format(weekStart, "d MMM", { locale })} – {format(weekEnd, "d MMM", { locale })}
           </p>
@@ -430,7 +449,7 @@ function Page() {
                 <Button
                   onClick={() =>
                     setEditing({
-                      event_date: format(new Date(), "yyyy-MM-dd"),
+                      event_date: view === "month" ? selectedDay : format(new Date(), "yyyy-MM-dd"),
                       event_type: "other",
                       scope: "personal",
                       congregation_ids: [],
@@ -454,6 +473,62 @@ function Page() {
         </div>
       </div>
 
+      <div className="inline-flex rounded-full bg-muted p-1" role="tablist">
+        {(["month", "week"] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            role="tab"
+            aria-selected={view === v}
+            onClick={() => setView(v)}
+            className={cn("rounded-full px-4 py-1 text-sm font-medium transition", view === v ? "bg-background shadow-sm" : "text-muted-foreground")}
+          >
+            {v === "month" ? t("circuit.month") : t("circuit.week")}
+          </button>
+        ))}
+      </div>
+
+      {view === "month" && (
+        <div className="space-y-3">
+          <MonthCalendar
+            month={month}
+            onMonthChange={setMonth}
+            selected={selectedDay}
+            onSelect={setSelectedDay}
+            events={events}
+            visits={visits}
+            locale={locale}
+          />
+          <section className="space-y-2">
+            <h2 className="text-sm font-semibold capitalize text-muted-foreground">
+              {format(parseISO(selectedDay), "EEEE, d MMM", { locale })}
+            </h2>
+            {visits.filter((v) => v.start_date <= selectedDay && selectedDay <= v.end_date).map((v) => (
+              <div key={v.id} className="rounded-xl bg-primary/10 px-3 py-2 text-sm font-medium text-primary">{v.title}</div>
+            ))}
+            {events.filter((e) => e.event_date === selectedDay).length === 0 ? (
+              <Card><CardContent className="p-3 text-sm text-muted-foreground">{t("schedule.noEvents")}</CardContent></Card>
+            ) : (
+              <div className="grid gap-2">
+                {events.filter((e) => e.event_date === selectedDay).map((e) => (
+                  <EventCard
+                    key={e.id}
+                    e={e}
+                    canEdit={canEdit}
+                    congregations={congregations}
+                    onEdit={() => { setEditing(e); setOpen(true); }}
+                    onComplete={() => complete(e.id)}
+                    onPostpone={() => setPostponeFor(e)}
+                    onDelete={() => setDeleteFor(e)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      <div className={cn("space-y-5", view === "month" && "hidden")}>
       <div className="flex items-center justify-between gap-2">
         <Button variant="outline" size="sm" onClick={() => setWeekStart((w) => addWeeks(w, -1))}>
           <ChevronLeft className="h-4 w-4 mr-1" />
@@ -555,7 +630,7 @@ function Page() {
           );
         })}
       </div>
-
+      </div>
 
       {/* Postpone dialog */}
       <Dialog open={!!postponeFor} onOpenChange={(o) => !o && setPostponeFor(null)}>

@@ -167,7 +167,10 @@
       "copied": "Código copiado",
       "errorFormat": "Usa de 4 a 12 caracteres (solo letras mayúsculas y números).",
       "errorTaken": "Este código ya está en uso. Elige otro."
-    }
+    },
+    "tabPersonal": "Datos personales",
+    "tabFeatures": "Recursos de la aplicación",
+    "tabSettings": "Configuración"
   },
   "commandPalette": {
     "open": "Abrir búsqueda rápida",
@@ -221,7 +224,8 @@
     "menu": "Menú",
     "logout": "Salir",
     "blockedTitle": "Aún no hay novedades",
-    "blockedDesc": "Por favor, espera a que el Superintendente programe una visita."
+    "blockedDesc": "Por favor, espera a que el Superintendente programe una visita.",
+    "visitTemplates": "Plantillas de Visitas"
   },
   "dashboard": {
     "greeting": "¡Hola, {{name}}!",
@@ -514,8 +518,8 @@
     "description": "Descripción"
   },
   "checklistPage": {
-    "title": "Lista de tareas de la Congregación",
-    "subtitle": "Datos necesarios para la visita",
+    "title": "Información adicional",
+    "subtitle": "Responde las preguntas siguientes sobre la congregación.",
     "exportSheet": "Exportar planilla",
     "newItem": "Nuevo elemento",
     "newItemDialogTitle": "Nuevo elemento de la lista",
@@ -720,8 +724,8 @@
       "6": "Lun"
     },
     "program": {
-      "title": "Plantillas de Programación Personal",
-      "subtitle": "Crea hasta 10 plantillas reutilizables. Úsalas al crear una visita para una congregación específica.",
+      "title": "Programación personal",
+      "subtitle": "Organice su disponibilidad para Estudios y Revisitas, Comidas y solicitud de transporte.",
       "templateLabel": "Plantilla",
       "templateName": "Nombre de la plantilla",
       "studiesTitle": "Estudios y Revisitas",
@@ -788,8 +792,8 @@
       }
     },
     "checklist": {
-      "title": "Plantillas de Lista de tareas",
-      "subtitle": "Crea listas de tareas y aplícalas a cada visita por el Itinerario. {{n}}/{{max}} plantillas.",
+      "title": "Preguntas para los ancianos",
+      "subtitle": "Agrega preguntas que te gustaría que el cuerpo de ancianos respondiera",
       "newDialogTitle": "Nueva plantilla de lista de tareas",
       "itemsTitle": "Ítems de la lista de tareas",
       "noItemsHelp": "Sin ítems. Agrega preguntas o temas para esta lista.",
@@ -802,8 +806,8 @@
       "fixErrors": "Corrige los campos destacados antes de guardar."
     },
     "field": {
-      "title": "Plantilla Reuniones de Campo",
-      "subtitle": "Programa varios turnos por semana, cada uno con su modalidad, y vincula la plantilla a una congregación. {{n}}/{{max}} plantillas.",
+      "title": "Reuniones de campo",
+      "subtitle": "Organice las reuniones de campo según horarios y modalidades.",
       "newDialogTitle": "Nueva plantilla de reuniones de campo",
       "shiftsTitle": "Turnos de la plantilla",
       "addShift": "Turno",
@@ -822,8 +826,8 @@
       "observationsHint": "Solo el superintendente edita; los ancianos lo ven en solo lectura en la pestaña Reuniones de Campo."
     },
     "meetingTalk": {
-      "title": "Plantillas de Reunión y Discurso",
-      "subtitle": "Crea plantillas reutilizables con Entre Semana, Fin de Semana (varios temas), Precursores y Ancianos/Siervos. {{n}}/{{max}} plantillas.",
+      "title": "Reuniones y Discursos",
+      "subtitle": "Organice las reuniones de Entre Semana, Fin de Semana, Precursores y Ancianos/Siervos.",
       "newDialogTitle": "Nueva plantilla",
       "saveTemplate": "Guardar plantilla",
       "restricted": "Acceso restringido.",
@@ -901,6 +905,24 @@
       "cartas": "Cartas",
       "telefone_cartas": "Teléfono + Cartas",
       "grupo_de_campo": "Grupo de campo"
+    },
+    "dayPills": {
+      "title": "Días de la visita",
+      "hideTuesdayTitle": "¿Ocultar el martes?",
+      "hideTuesdayBody": "Esta plantilla ya tiene información el martes. No se borrará: solo queda oculta aquí y vuelve cuando activas el interruptor de nuevo.",
+      "hideTuesdayConfirm": "Ocultar",
+      "tuesday": "Martes",
+      "monday": "Lunes",
+      "sections": "Secciones de la plantilla"
+    },
+    "elder": {
+      "title": "Programación Ancianos",
+      "subtitle": "Organice su disponibilidad para visitas de pastoreo y ánimo especial, y reúna información para la reunión con los ancianos."
+    },
+    "chrome": {
+      "new": "Nuevo",
+      "newTemplate": "Nueva plantilla",
+      "limitReached": "Límite de plantillas alcanzado"
     }
   },
   "notes": {
@@ -933,7 +955,8 @@
       "searchPlaceholder": "Escribe para filtrar...",
       "from": "Desde",
       "to": "Hasta",
-      "clear": "Limpiar"
+      "clear": "Limpiar",
+      "close": "Cerrar"
     },
     "categories": {
       "free": {
@@ -1035,7 +1058,8 @@
     },
     "whatsapp": {
       "header": "*Notas Privadas — Confidencial*"
-    }
+    },
+    "newButton": "Nuevo"
   },
   "report": {
     "loading": "Cargando informe…",
@@ -1943,5 +1967,25 @@
     "info": {
       "title": "Detalles del bosquejo"
     }
+  },
+  "visitReminder": {
+    "title": "Visita en 2 meses",
+    "body": "Esta visita aún no tiene ninguna plantilla o paquete elegido.",
+    "go": "Llévame a la visita",
+    "badge": "Sin plantillas"
+  },
+  "circuit": {
+    "fallbackTitle": "Mi circuito",
+    "openCalendar": "Abrir calendario",
+    "month": "Mes",
+    "week": "Semana",
+    "today": "Hoy",
+    "prevMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente",
+    "visitLegend": "Visita",
+    "eventLegend": "Evento",
+    "pillCircuit": "Circuito",
+    "sectionCongregations": "Congregaciones",
+    "sectionElders": "Ancianos del circuito"
   }
 }

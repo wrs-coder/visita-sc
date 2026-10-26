@@ -1,3 +1,4 @@
+import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -282,6 +283,7 @@ function Page() {
   return (
     <MeetingsDraftProvider scopeKey={scopeKey}>
       <MeetingsEditModeProvider isSuper={isSuper}>
+        <VisitProgramTabs />
         <TabsGuarded
           currentTab={currentTab}
           setCurrentTab={setCurrentTab}
@@ -351,7 +353,7 @@ function TabsGuarded({
         </div>
         <div className="flex flex-col items-end gap-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <VisitWeekReportButton onClick={() => setReportOpen(true)} />
+            <VisitWeekReportButton variant="icon" onClick={() => setReportOpen(true)} />
             <DiscardDraftButton />
             <SaveDraftButton />
           </div>

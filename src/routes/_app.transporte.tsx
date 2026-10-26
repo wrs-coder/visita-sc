@@ -1,3 +1,5 @@
+import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
+import { useVisitDay, VisitDayPills } from "@/components/visit-week/VisitDayPills";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -115,6 +117,14 @@ function Page() {
     return Array.from(map.entries()).map(([key, rows]) => ({ key, rows }));
   }, [items]);
 
+  const dayKeys = visit
+    ? eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) }).map((d) => format(d, "yyyy-MM-dd"))
+    : [];
+  const noDayCount = groups.filter((g) => g.key.startsWith("__none__")).reduce((n, g) => n + g.rows.length, 0);
+  const pillKeys = noDayCount > 0 ? [...dayKeys, "__none__"] : dayKeys;
+  const [activeDay, setActiveDay] = useVisitDay(pillKeys);
+  const groupVisible = (key: string) => (key.startsWith("__none__") ? activeDay === "__none__" : key === activeDay);
+
   if (!visit)
     return (
       <Card>
@@ -162,6 +172,7 @@ function Page() {
         return;
       }
       toast.success(t("common.saved"));
+      setActiveDay(payload.event_date ?? "__none__");
       setOpen(false);
       setEditing(null);
     } finally {
@@ -198,13 +209,14 @@ function Page() {
 
   return (
     <div className="space-y-5">
+      <VisitProgramTabs />
       <div className="flex justify-between items-start gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">{t("transport.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t("transport.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <VisitWeekReportButton onClick={() => setReportOpen(true)} />
+          <VisitWeekReportButton variant="icon" onClick={() => setReportOpen(true)} />
           {canEdit && (
           <Dialog
             open={open}
@@ -375,6 +387,17 @@ function Page() {
       <div className="flex justify-end">
         <CollapseAllButton ids={[...groups.map((g) => `day:${g.key}`), ...groups.flatMap((g) => g.rows.map((r) => `ev:${r.id}`))]} />
       </div>
+      {groups.length > 0 && (
+        <div className="space-y-1.5">
+          <VisitDayPills days={days} active={activeDay} onPick={setActiveDay} hasItems={(k) => groups.some((g) => g.key === k)} />
+          {noDayCount > 0 && (
+            <button type="button" aria-pressed={activeDay === "__none__"} onClick={() => setActiveDay("__none__")}
+              className={`rounded-full border border-dashed px-3 py-1.5 text-xs font-medium transition-colors ${activeDay === "__none__" ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:bg-muted"}`}>
+              {t("transport.noDay")} ({noDayCount})
+            </button>
+          )}
+        </div>
+      )}
       <fieldset
         disabled={!editAllowed}
         className="grid gap-3 disabled:opacity-70 min-w-0 border-0 p-0 m-0"
@@ -390,7 +413,7 @@ function Page() {
           const head = rows[0];
           const allActive = rows.every((r) => r.is_active);
           return (
-            <Card key={key} className={`shadow-card ${!allActive ? "opacity-60" : ""}`}>
+            <Card key={key} className={`shadow-card ${!allActive ? "opacity-60" : ""} ${groupVisible(key) ? "" : "hidden"}`}>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-start gap-3">
                   <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">

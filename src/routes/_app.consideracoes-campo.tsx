@@ -2149,6 +2149,7 @@ function NoteEditor({
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
   const META_COLLAPSED_KEY = "visita-sc:outline-meta-collapsed";
   const stableVh = useStableViewportHeight();
+  const [outlineSlot, setOutlineSlot] = useState<HTMLDivElement | null>(null);
   const [metaCollapsed, setMetaCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(META_COLLAPSED_KEY) === "1"; } catch { return false; }
   });
@@ -2470,14 +2471,20 @@ function NoteEditor({
 
       <div className="flex-1 min-h-[22rem] flex flex-col gap-1.5 w-full max-w-full min-w-0">
 
-        <div className="shrink-0 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-background border-b flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <Label>{t("fieldConsiderations.fields.content")}</Label>
-          {!isTalk && mode === "outline" && (
-            <div className="w-full sm:w-auto overflow-x-auto">
-              <OutlineTimer outlineId={draft.id} variant="toolbar" />
-            </div>
-          )}
-        </div>
+        {mode === "outline" ? (
+          <div className="sticky top-0 z-20 shrink-0 -mx-3 sm:-mx-5 px-3 sm:px-5 py-1.5 bg-background/95 backdrop-blur border-b flex flex-wrap items-center gap-2">
+            {!isTalk && (
+              <div className="min-w-0 overflow-x-auto">
+                <OutlineTimer outlineId={draft.id} variant="toolbar" />
+              </div>
+            )}
+            <div ref={setOutlineSlot} className="ml-auto flex items-center" />
+          </div>
+        ) : (
+          <div className="shrink-0 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-background border-b">
+            <Label>{t("fieldConsiderations.fields.content")}</Label>
+          </div>
+        )}
         {!isTalk && mode === "outline" && (
           <OutlineInactivitySensor outlineId={draft.id} />
         )}
@@ -2530,7 +2537,7 @@ function NoteEditor({
               <div className="flex-1 min-h-[22rem] bg-background px-1 py-4 sm:px-6 text-[17px] leading-8 break-words [overflow-wrap:anywhere]">
                 <div className="max-w-[68ch] mx-auto">
                 {draft.content ? (
-                  <RichOutlineContent html={draft.content} outlineId={draft.id} library={activeBible} onInsertVerse={onInsertBibleText} />
+                  <RichOutlineContent html={draft.content} outlineId={draft.id} library={activeBible} onInsertVerse={onInsertBibleText} toolbarSlot={outlineSlot} />
                 ) : (
                   <span className="text-muted-foreground italic">
                     {t("fieldConsiderations.contentEmpty")}
@@ -2627,6 +2634,7 @@ function FullscreenOutline({
   }, []);
 
   const showTimer = (note.type ?? "field_consideration") !== "talk_notes";
+  const [fsSlot, setFsSlot] = useState<HTMLDivElement | null>(null);
 
   return (
     <div data-back-closable className="webkit-stable-layer fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none safe-top safe-bottom safe-x">
@@ -2640,27 +2648,6 @@ function FullscreenOutline({
           <h2 className="text-sm font-semibold truncate flex-1 min-w-0">
             {note.title || t("fieldConsiderations.fields.title")}
           </h2>
-
-          {/* Controles inline em telas >= sm */}
-          <div className="hidden sm:flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setScale((s) => Math.max(FS_MIN, +(s - FS_STEP).toFixed(2)))}
-              title={t("personalOutlines.fullscreen.fontDown")}
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <span className="text-xs tabular-nums w-10 text-center">{Math.round(scale * 100)}%</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setScale((s) => Math.min(FS_MAX, +(s + FS_STEP).toFixed(2)))}
-              title={t("personalOutlines.fullscreen.fontUp")}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
 
           {((note.type ?? "field_consideration") === "field_consideration" || !!note.talk?.kind) && (
             <FieldNoteInfoButton note={note} onSync={syncInfo?.run} syncing={syncInfo?.syncing} />
@@ -2677,8 +2664,8 @@ function FullscreenOutline({
           </Button>
         </div>
 
-        {/* Linha 2 (apenas mobile): zoom */}
-        <div className="flex sm:hidden items-center gap-1 mt-2">
+        {/* Linha 2 fixa: zoom + desvio + ajustes da pílula + recolher todos */}
+        <div className="flex items-center gap-1 mt-2 overflow-x-auto [scrollbar-width:none]">
           <Button
             variant="ghost"
             size="sm"
@@ -2698,6 +2685,7 @@ function FullscreenOutline({
           >
             <Plus className="h-4 w-4" />
           </Button>
+          <div ref={setFsSlot} className="ml-auto flex items-center" />
         </div>
       </div>
 
@@ -2711,7 +2699,7 @@ function FullscreenOutline({
         >
           {note.content ? (
             <>
-              <RichOutlineContent html={note.content} outlineId={note.id} library={library} fontScale={scale} onInsertVerse={onInsertBibleText} />
+              <RichOutlineContent html={note.content} outlineId={note.id} library={library} fontScale={scale} onInsertVerse={onInsertBibleText} toolbarSlot={fsSlot} />
               <div className="mt-5">
                 <BibleHistoryChips library={library} onInsert={onInsertBibleText} />
               </div>

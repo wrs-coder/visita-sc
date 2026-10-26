@@ -1135,7 +1135,7 @@ function Dashboard() {
               icon={<CalendarDays className="h-4 w-4 text-primary" />}
               title={`${title} · ${format(parseISO(dateIso), "EEE, dd/MM", { locale: ptBR })}`}
               headerRight={
-                <Link to="/cronograma" search={{ event: undefined, action: undefined, title: undefined, location: undefined, notes: undefined, companion: undefined, congId: undefined }} className="text-primary text-xs font-medium inline-flex items-center hover:underline shrink-0">
+                <Link to="/cronograma" search={{ event: undefined, action: undefined, title: undefined, location: undefined, notes: undefined, companion: undefined, congId: undefined, view: undefined }} className="text-primary text-xs font-medium inline-flex items-center hover:underline shrink-0">
                   {t("common.viewAll")} <ChevronRight className="h-3 w-3" />
                 </Link>
               }

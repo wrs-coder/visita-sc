@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { listTemplates, upsertTemplate, replaceTemplateItems } from "@/lib/templates.functions";
 import { exportProgramTemplate, importProgramTemplate } from "@/lib/template-io.functions";
-import { TemplateIOButtons } from "@/components/TemplateIOButtons";
+import { TemplateHeaderRow, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,9 +14,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, FileStack, Save, Copy, Check } from "lucide-react";
+import { Plus, Trash2, FileStack, Save, Check } from "lucide-react";
 import { toast } from "sonner";
 import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
+import { DayPills, SectionPills, useTemplateDays } from "@/components/templates/DayPills";
+import { MONDAY_OFFSET, readPref, writePref } from "@/lib/template-day-pills";
 
 export const Route = createFileRoute("/_app/modelos")({ component: Page });
 
@@ -54,7 +57,6 @@ function Page() {
   const [studyGenObsBySlot, setStudyGenObsBySlot] = useState<Record<number, string>>({});
   const [activeSlot, setActiveSlot] = useState("1");
   const [busy, setBusy] = useState(false);
-  const [dupSlot, setDupSlot] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const r = await fnList();
@@ -91,8 +93,39 @@ function Page() {
 
   useEffect(() => { load(); }, [load]);
 
+  const [section, setSectionState] = useState<Kind>("study");
+  useEffect(() => { setSectionState(readPref<Kind>("tpl-program:section", "study")); }, []);
+  const setSection = (k: Kind) => { setSectionState(k); writePref("tpl-program:section", k); };
+  const activeTpl = tpls.find((tp) => tp.slot === Number(activeSlot));
+  const activeItems = activeTpl ? (itemsByTpl[activeTpl.id] ?? []) : [];
+  const dayState = useTemplateDays(
+    `tpl-program:${activeSlot}:${section}`,
+    activeItems.some((it) => it.kind === section && it.day_offset === MONDAY_OFFSET)
+      || (section === "study" && !!(studyNotesBySlot[Number(activeSlot)]?.[String(MONDAY_OFFSET)] ?? "").trim())
+      || (section === "meal" && !!(notesBySlot[Number(activeSlot)]?.[String(MONDAY_OFFSET)] ?? "").trim()),
+    activeItems.some((it) => it.kind === section && it.day_offset === 0)
+      || (section === "study" && !!(studyNotesBySlot[Number(activeSlot)]?.["0"] ?? "").trim())
+      || (section === "meal" && !!(notesBySlot[Number(activeSlot)]?.["0"] ?? "").trim()),
+  );
+
   if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">{t("templates.restricted")}</CardContent></Card>;
 
+  const createdSlots = useMemo(() => [...tpls].sort((a, b) => a.slot - b.slot), [tpls]);
+  const freeSlot = SLOTS.find((s) => !tpls.some((tp) => tp.slot === s)) ?? null;
+  useEffect(() => {
+    if (createdSlots.length && !createdSlots.some((tp) => String(tp.slot) === activeSlot)) setActiveSlot(String(createdSlots[0].slot));
+  }, [createdSlots, activeSlot]);
+  const handleNew = async () => {
+    if (!freeSlot) return;
+    const v = window.prompt(t("templates.chrome.newTemplate", { defaultValue: "Novo modelo" }), t("templates.templateNumber", { n: freeSlot }));
+    if (!v || !v.trim()) return;
+    setBusy(true);
+    const r = await fnUpsert({ data: { slot: freeSlot, name: v.trim() } });
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    await load();
+    setActiveSlot(String(freeSlot));
+  };
   const ensureTemplate = async (slot: number): Promise<string | null> => {
     const existing = tpls.find((t) => t.slot === slot);
     if (existing) return existing.id;
@@ -137,7 +170,6 @@ function Page() {
     setBusy(false);
     if (!r2.ok) { toast.error(r2.error); return; }
     toast.success(t("templates.program.duplicated", { defaultValue: "Modelo duplicado" }));
-    setDupSlot(null);
     setActiveSlot(String(toSlot));
     await load();
   };
@@ -149,7 +181,7 @@ function Page() {
     }));
   };
 
-  const addItem = async (slot: number, kind: Kind) => {
+  const addItem = async (slot: number, kind: Kind, day = 0) => {
     const id = await ensureTemplate(slot);
     if (!id) return;
     const defaults: Payload =
@@ -161,7 +193,7 @@ function Page() {
             { event_type: "field_service", event_type_other: "", direction: "round_trip", departure_time: "", return_time: "", driver_name: "", contact_phone: "", notes: "" },
           ]),
         };
-    setItemsByTpl((m) => ({ ...m, [id]: [...(m[id] ?? []), { kind, day_offset: 0, payload: defaults, sort_order: (m[id]?.length ?? 0) }] }));
+    setItemsByTpl((m) => ({ ...m, [id]: [...(m[id] ?? []), { kind, day_offset: day, payload: defaults, sort_order: (m[id]?.length ?? 0) }] }));
   };
 
   const removeItem = (tplId: string, idx: number) => {
@@ -190,50 +222,42 @@ function Page() {
 
   return (
     <div className="space-y-5">
+      <TemplatesTabs />
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2"><FileStack className="h-6 w-6" /> {t("templates.program.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t("templates.program.subtitle")}</p>
         </div>
-        <TemplateIOButtons
-          filenameBase={namesBySlot[Number(activeSlot)] ?? t("templates.exportProgram", { n: activeSlot })}
-          onExport={async () => {
+      </div>
+
+      <TemplateHeaderRow
+        items={createdSlots.map((tp) => ({ id: String(tp.slot), name: namesBySlot[tp.slot] || tp.name }))}
+        activeId={activeSlot}
+        onPick={setActiveSlot}
+        onNew={handleNew}
+        newDisabled={!freeSlot}
+        disabled={busy}
+        onRename={() => {
+          const v = window.prompt(t("common.rename", { defaultValue: "Renomear" }), namesBySlot[Number(activeSlot)] ?? "");
+          if (v && v.trim()) { setNamesBySlot({ ...namesBySlot, [Number(activeSlot)]: v.trim() }); renameSlot(Number(activeSlot), v.trim()); }
+        }}
+        onDuplicate={() => { if (freeSlot) duplicateSlot(Number(activeSlot), freeSlot); }}
+        duplicateDisabled={!freeSlot}
+        io={{
+          filenameBase: namesBySlot[Number(activeSlot)] ?? t("templates.exportProgram", { n: activeSlot }),
+          onExport: async () => {
             const tpl = tpls.find((tp) => tp.slot === Number(activeSlot));
             if (!tpl) return { ok: false, error: t("templates.exportFirst") };
             return fnExport({ data: { id: tpl.id } });
-          }}
-          onImport={async (file) => { const r = await fnImport({ data: { file: file as never, slot: Number(activeSlot) } }); if (r.ok) await load(); return r; }}
-        />
-      </div>
-
-      <div className="flex items-center gap-2 flex-wrap">
-        <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t("templates.program.templateLabel")}</Label>
-        <Select value={activeSlot} onValueChange={setActiveSlot}>
-          <SelectTrigger className="h-9 max-w-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || t("templates.templateNumber", { n: s })}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        {dupSlot === null ? (
-          <Button size="sm" variant="outline" onClick={() => setDupSlot(activeSlot)}>
-            <Copy className="h-4 w-4 mr-1" /> {t("templates.program.duplicateTemplate", { defaultValue: "Duplicar modelo" })}
-          </Button>
-        ) : (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{t("templates.program.duplicateTo", { defaultValue: "Copiar para" })}</span>
-            <Select value={String(dupSlot)} onValueChange={(v) => setDupSlot(v)}>
-              <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {SLOTS.map((s) => <SelectItem key={s} value={String(s)}>{namesBySlot[s] || t("templates.templateNumber", { n: s })}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button size="sm" variant="default" onClick={() => duplicateSlot(Number(activeSlot), Number(dupSlot))} disabled={dupSlot === activeSlot || busy}>
-              <Check className="h-4 w-4 mr-1" /> {t("common.duplicate", { defaultValue: "Duplicar" })}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setDupSlot(null)}>{t("common.cancel", { defaultValue: "Cancelar" })}</Button>
-          </div>
-        )}
-      </div>
+          },
+          onImport: async (file) => {
+            const target = activeTpl ? Number(activeSlot) : (freeSlot ?? Number(activeSlot));
+            const r = await fnImport({ data: { file: file as never, slot: target } });
+            if (r.ok) { await load(); setActiveSlot(String(target)); }
+            return r;
+          },
+        }}
+      />
 
       <Tabs value={activeSlot} onValueChange={setActiveSlot}>
         {SLOTS.map((slot) => {
@@ -242,7 +266,7 @@ function Page() {
           const notes = notesBySlot[slot] ?? {};
           return (
             <TabsContent key={slot} value={String(slot)} className="space-y-4">
-              <CollapseProvider scope="tpl-program" visitId={`tpl:${slot}`}>
+              <CollapseProvider scope="tpl-program" visitId={`tpl:${slot}`} closedByDefault={["study:ev:", "meal:ev:", "transport:ev:"]}>
               <div className="flex justify-end">
                 <CollapseAllButton ids={(["study", "meal", "transport"] as Kind[]).flatMap((k) => [
                   ...DAY_OPTS.map((d) => `${k}:day:${d}`),
@@ -250,24 +274,32 @@ function Page() {
                 ])} />
               </div>
               <Card><CardContent className="p-4 space-y-3">
-                <div>
-                  <Label>{t("templates.program.templateName")}</Label>
-                  <Input className="mt-1" value={namesBySlot[slot] ?? ""} onChange={(e) => setNamesBySlot({ ...namesBySlot, [slot]: e.target.value })} onBlur={(e) => renameSlot(slot, e.target.value)} />
-                </div>
+                <SectionPills<Kind>
+                  ariaLabel={t("templates.dayPills.sections")}
+                  value={section}
+                  onChange={setSection}
+                  options={[
+                    { value: "study", label: t("templates.program.studiesTitle") },
+                    { value: "meal", label: t("templates.program.mealsTitle") },
+                    { value: "transport", label: t("templates.program.transportTitle") },
+                  ]}
+                />
+                <DayPills
+                  days={dayState.days}
+                  activeDay={dayState.activeDay}
+                  onPick={dayState.setActiveDay}
+                  dayLabel={DAY_LABEL}
+                  hasItems={(d) => items.some((it) => it.kind === section && it.day_offset === d)}
+                  showMonday={dayState.showMonday}
+                  mondayLocked={dayState.mondayLocked}
+                  onToggleMonday={dayState.setShowMonday}
+                  showTuesday={dayState.showTuesday}
+                  tuesdayHasItems={dayState.tuesdayHasItems}
+                  onToggleTuesday={dayState.setShowTuesday}
+                />
 
-                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL}
-                  dayExtra={(d) => (
-                    <Input
-                      className="h-9"
-                      placeholder="Informações adicionais do superintendente"
-                      value={(studyNotesBySlot[slot] ?? {})[String(d)] ?? ""}
-                      onChange={(e) => setStudyNotesBySlot({ ...studyNotesBySlot, [slot]: { ...(studyNotesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
-                      onBlur={(e) => saveStudyNote(slot, String(d), e.target.value)}
-                    />
-                  )} />
-
-                <div className="border rounded-lg p-3 space-y-2">
-                  <h3 className="text-sm font-semibold">Informações adicionais do superintendente — Estudos e Revisitas por dia</h3>
+                {section === "study" && (<>
+                <InfoDisclosure label="Informações adicionais do superintendente" filled={!!(studyGenObsBySlot[slot] ?? "").trim()}>
                   <p className="text-xs text-muted-foreground">Observações exibidas aos anciãos junto da programação de Estudos e Revisitas.</p>
                   <div>
                     <Label className="text-xs">Informações adicionais do superintendente (gerais)</Label>
@@ -285,21 +317,23 @@ function Page() {
                     />
                     <p className="text-xs text-muted-foreground mt-1">Aparecem em vermelho no topo da aba Estudos e Revisitas dos anciãos.</p>
                   </div>
-                </div>
+                </InfoDisclosure>
 
-                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL}
+                <KindBlock title={t("templates.program.studiesTitle")} kind="study" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "study", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
                   dayExtra={(d) => (
                     <Input
                       className="h-9"
-                      placeholder={t("templates.program.mealNotesPlaceholder")}
-                      value={notes[String(d)] ?? ""}
-                      onChange={(e) => setNotesBySlot({ ...notesBySlot, [slot]: { ...(notesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
-                      onBlur={(e) => saveMealNote(slot, String(d), e.target.value)}
+                      placeholder="Informações adicionais do superintendente"
+                      value={(studyNotesBySlot[slot] ?? {})[String(d)] ?? ""}
+                      onChange={(e) => setStudyNotesBySlot({ ...studyNotesBySlot, [slot]: { ...(studyNotesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
+                      onBlur={(e) => saveStudyNote(slot, String(d), e.target.value)}
                     />
                   )} />
 
-                <div className="border rounded-lg p-3 space-y-2">
-                  <h3 className="text-sm font-semibold">{t("templates.program.mealNotesTitle")}</h3>
+                </>)}
+
+                {section === "meal" && (<>
+                <InfoDisclosure label={t("templates.program.mealNotesTitle")} filled={!!(genObsBySlot[slot] ?? "").trim()}>
                   <p className="text-xs text-muted-foreground">{t("templates.program.mealNotesHelp")}</p>
                   <div>
                     <Label className="text-xs">{t("templates.program.generalObservations")}</Label>
@@ -317,14 +351,34 @@ function Page() {
                     />
                     <p className="text-xs text-muted-foreground mt-1">{t("templates.program.generalObservationsHint")}</p>
                   </div>
-                </div>
+                </InfoDisclosure>
 
-                <KindBlock title={t("templates.program.transportTitle")} kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport")} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} />
+                <KindBlock title={t("templates.program.mealsTitle")} kind="meal" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "meal", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days}
+                  dayExtra={(d) => (
+                    <Input
+                      className="h-9"
+                      placeholder={t("templates.program.mealNotesPlaceholder")}
+                      value={notes[String(d)] ?? ""}
+                      onChange={(e) => setNotesBySlot({ ...notesBySlot, [slot]: { ...(notesBySlot[slot] ?? {}), [String(d)]: e.target.value } })}
+                      onBlur={(e) => saveMealNote(slot, String(d), e.target.value)}
+                    />
+                  )} />
 
-                <Button className="w-full" onClick={() => saveItems(slot)} disabled={busy}>
-                  <Save className="h-4 w-4 mr-1" /> {t("templates.program.saveTemplate")}
-                </Button>
+                </>)}
+
+                {section === "transport" && (
+                <KindBlock title={t("templates.program.transportTitle")} kind="transport" tplId={tpl?.id} items={items} onAdd={() => addItem(slot, "transport", dayState.activeDay)} onUpdate={updateDraft} onRemove={removeItem} dayLabel={DAY_LABEL} onlyDay={dayState.activeDay} dayOptions={dayState.days} />
+                )}
+
               </CardContent></Card>
+              <TemplateFooterBar>
+                <Button variant="outline" className="flex-1 rounded-full" onClick={() => addItem(slot, section, dayState.activeDay)} disabled={busy}>
+                  <Plus className="h-4 w-4 mr-1" /> {t("templates.chrome.add", { defaultValue: "Adicionar" })}
+                </Button>
+                <Button className="flex-1 rounded-full" onClick={() => saveItems(slot)} disabled={busy}>
+                  <Save className="h-4 w-4 mr-1" /> {t("common.save", { defaultValue: "Salvar" })}
+                </Button>
+              </TemplateFooterBar>
               </CollapseProvider>
             </TabsContent>
           );
@@ -342,17 +396,20 @@ function summarize(kind: Kind, p: Payload, t: (k: string) => string): string {
   return [v("driver_name"), time("departure_time")].filter(Boolean).join(" · ");
 }
 
-function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLabel, dayExtra }: {
+function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLabel, dayExtra, onlyDay, dayOptions = DAY_OPTS }: {
   title: string; kind: Kind; tplId: string | undefined; items: ItemDraft[];
   onAdd: () => void;
   onUpdate: (tplId: string, idx: number, patch: Partial<ItemDraft>) => void;
   onRemove: (tplId: string, idx: number) => void;
   dayLabel: Record<number, string>;
   dayExtra?: (d: number) => React.ReactNode;
+  /** Quando informado, mostra só este dia (escolhido nas pílulas). */
+  onlyDay?: number;
+  dayOptions?: number[];
 }) {
   const { t } = useTranslation();
   const filtered = items.map((it, i) => ({ it, i })).filter(({ it }) => it.kind === kind);
-  const days = DAY_OPTS.filter((d) => dayExtra || filtered.some(({ it }) => it.day_offset === d));
+  const days = onlyDay !== undefined ? [onlyDay] : DAY_OPTS.filter((d) => dayExtra || filtered.some(({ it }) => it.day_offset === d));
   return (
     <div className="border rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
@@ -378,7 +435,7 @@ function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLa
                       <div className="flex items-center gap-2">
                         <Select value={String(it.day_offset)} onValueChange={(v) => tplId && onUpdate(tplId, i, { day_offset: Number(v) })}>
                           <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
-                          <SelectContent>{DAY_OPTS.map((dd) => <SelectItem key={dd} value={String(dd)}>{dayLabel[dd]}</SelectItem>)}</SelectContent>
+                          <SelectContent>{DAY_OPTS.filter((dd) => dayOptions.includes(dd) || dd === it.day_offset).map((dd) => <SelectItem key={dd} value={String(dd)}>{dayLabel[dd]}</SelectItem>)}</SelectContent>
                         </Select>
                         <div className="flex-1" />
                         <Button size="icon" variant="ghost" onClick={() => tplId && onRemove(tplId, i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
