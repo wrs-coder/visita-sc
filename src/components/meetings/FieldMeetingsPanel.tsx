@@ -99,12 +99,12 @@ export function FieldMeetingsPanel() {
     if (error) toast.error(error.message);
   };
 
+  const dayKeys = visit ? eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) }).map((d) => format(d, "yyyy-MM-dd")) : [];
+  const [activeDay, setActiveDay] = useVisitDay(dayKeys);
   if (!visit) return <Card><CardContent className="p-6 text-sm text-muted-foreground">{t("meetingsTalks.field.noActiveVisit")}</CardContent></Card>;
 
   const days = eachDayOfInterval({ start: parseISO(visit.start_date), end: parseISO(visit.end_date) });
 
-  const dayKeys = days.map((d) => format(d, "yyyy-MM-dd"));
-  const [activeDay, setActiveDay] = useVisitDay(dayKeys);
   const morning = t("meetingsTalks.field.morning");
   const afternoon = t("meetingsTalks.field.afternoon");
 
