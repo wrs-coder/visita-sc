@@ -99,11 +99,13 @@ function Page() {
   const activeTpl = tpls.find((tp) => tp.slot === Number(activeSlot));
   const activeItems = activeTpl ? (itemsByTpl[activeTpl.id] ?? []) : [];
   const dayState = useTemplateDays(
-    `tpl-program:${activeSlot}`,
-    activeItems.some((it) => it.day_offset === MONDAY_OFFSET),
-    activeItems.some((it) => it.day_offset === 0)
-      || !!(notesBySlot[Number(activeSlot)]?.["0"] ?? "").trim()
-      || !!(studyNotesBySlot[Number(activeSlot)]?.["0"] ?? "").trim(),
+    `tpl-program:${activeSlot}:${section}`,
+    activeItems.some((it) => it.kind === section && it.day_offset === MONDAY_OFFSET)
+      || (section === "study" && !!(studyNotesBySlot[Number(activeSlot)]?.[String(MONDAY_OFFSET)] ?? "").trim())
+      || (section === "meal" && !!(notesBySlot[Number(activeSlot)]?.[String(MONDAY_OFFSET)] ?? "").trim()),
+    activeItems.some((it) => it.kind === section && it.day_offset === 0)
+      || (section === "study" && !!(studyNotesBySlot[Number(activeSlot)]?.["0"] ?? "").trim())
+      || (section === "meal" && !!(notesBySlot[Number(activeSlot)]?.["0"] ?? "").trim()),
   );
 
   if (role !== "superintendent") return <Card><CardContent className="p-6 text-sm">{t("templates.restricted")}</CardContent></Card>;
