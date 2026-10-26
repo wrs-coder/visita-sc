@@ -381,17 +381,20 @@ function summarize(kind: Kind, p: Payload, t: (k: string) => string): string {
   return [v("driver_name"), time("departure_time")].filter(Boolean).join(" · ");
 }
 
-function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLabel, dayExtra }: {
+function KindBlock({ title, kind, tplId, items, onAdd, onUpdate, onRemove, dayLabel, dayExtra, onlyDay, dayOptions = DAY_OPTS }: {
   title: string; kind: Kind; tplId: string | undefined; items: ItemDraft[];
   onAdd: () => void;
   onUpdate: (tplId: string, idx: number, patch: Partial<ItemDraft>) => void;
   onRemove: (tplId: string, idx: number) => void;
   dayLabel: Record<number, string>;
   dayExtra?: (d: number) => React.ReactNode;
+  /** Quando informado, mostra só este dia (escolhido nas pílulas). */
+  onlyDay?: number;
+  dayOptions?: number[];
 }) {
   const { t } = useTranslation();
   const filtered = items.map((it, i) => ({ it, i })).filter(({ it }) => it.kind === kind);
-  const days = DAY_OPTS.filter((d) => dayExtra || filtered.some(({ it }) => it.day_offset === d));
+  const days = onlyDay !== undefined ? [onlyDay] : DAY_OPTS.filter((d) => dayExtra || filtered.some(({ it }) => it.day_offset === d));
   return (
     <div className="border rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
