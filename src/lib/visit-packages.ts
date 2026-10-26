@@ -71,9 +71,68 @@ const toRow = (userId: string, p: VisitPackage) => ({
   meeting_talk_template_id: p.meeting_talk_template_id, elder_program_template_id: p.elder_program_template_id,
 });
 
+// ---- Alterações pendentes (feitas sem internet) ----
+const pendingKey = (userId: string) => `visit-packages:pending:${userId}`;
+export interface PendingPackages { removed: string[] }
+
+export function loadPending(userId: string): PendingPackages | null {
+  try {
+    const raw = localStorage.getItem(pendingKey(userId));
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    return { removed: Array.isArray(o?.removed) ? o.removed.filter((x: unknown) => typeof x === "string") : [] };
+  } catch { return null; }
+}
+
+/** Junta exclusões pendentes antigas com as novas, sem repetir. */
+export function mergePending(old: PendingPackages | null, removed: string[], current: VisitPackage[]): PendingPackages {
+  const all = new Set([...(old?.removed ?? []), ...removed]);
+  for (const p of current) all.delete(p.id);
+  return { removed: [...all] };
+}
+
+function markPending(userId: string, removed: string[], current: VisitPackage[]) {
+  try { localStorage.setItem(pendingKey(userId), JSON.stringify(mergePending(loadPending(userId), removed, current))); } catch { /* ignore */ }
+}
+function clearPending(userId: string) {
+  try { localStorage.removeItem(pendingKey(userId)); } catch { /* ignore */ }
+}
+
+/** Envia ao servidor o que ficou pendente no aparelho. Retorna true se não há mais nada pendente. */
+export async function flushPendingPackages(userId: string | null | undefined): Promise<boolean> {
+  if (!userId) return false;
+  const pending = loadPending(userId);
+  if (!pending) return true;
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const local = loadPackages(userId);
+    if (local.length) {
+      const { error } = await supabase.from("visit_packages").upsert(local.map((p) => toRow(userId, p)));
+      if (error) return false;
+    }
+    if (pending.removed.length) {
+      const { error } = await supabase.from("visit_packages").delete().in("id", pending.removed);
+      if (error) return false;
+    }
+    clearPending(userId);
+    return true;
+  } catch { return false; }
+}
+
+/** Sobe as alterações pendentes ao abrir e sempre que a internet voltar. */
+export function startPackageAutoSync(userId: string | null | undefined): () => void {
+  if (!userId || typeof window === "undefined") return () => {};
+  const run = () => { if (loadPending(userId)) void flushPendingPackages(userId); };
+  run();
+  window.addEventListener("online", run);
+  return () => window.removeEventListener("online", run);
+}
+
 export async function fetchPackages(userId: string | null | undefined): Promise<VisitPackage[]> {
   const local = loadPackages(userId);
   if (!userId) return local;
+  // Alterações offline ainda não enviadas: o aparelho é a fonte de verdade até subirem.
+  if (loadPending(userId) && !(await flushPendingPackages(userId))) return local;
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data, error } = await supabase.from("visit_packages").select("*").order("created_at");
@@ -102,6 +161,14 @@ export async function fetchPackages(userId: string | null | undefined): Promise<
 export async function pushPackages(userId: string | null | undefined, prev: VisitPackage[], next: VisitPackage[]): Promise<boolean> {
   savePackages(userId, next);
   if (!userId) return false;
+  const removedIds = prev.filter((p) => !next.some((n) => n.id === p.id)).map((p) => p.id);
+  // Marca como pendente antes de enviar; só limpa se tudo subir.
+  markPending(userId, removedIds, next);
+  return flushPendingPackages(userId);
+}
+
+/** @deprecated envio direto mantido só para referência. */
+async function _pushDirect(userId: string, prev: VisitPackage[], next: VisitPackage[]): Promise<boolean> {
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     if (next.length) {
