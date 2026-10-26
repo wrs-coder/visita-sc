@@ -18,3 +18,4 @@
 - Android packaging must go through scripts that rebuild dist-app and run check-shell-fresh.mjs (build-info.json stamp vs package.json/src mtime), because plain `cap copy` ships stale screens under a new version number.
 - Editor heights on the outline screen use the viewport height measured with the keyboard closed (use-stable-viewport-height.ts), because Android adjustResize shrinks dvh/vh when the keyboard opens.
 - Itinerary weeks without a congregation (pioneer/free) live in their own superintendent-only table itinerary_weeks, never in visits, so elder/guest access, dashboard and visit templates stay untouched.
+- Visit packages (combinations of the 5 template ids) are stored only on-device in localStorage per user (visit-packages.ts) and only prefill the itinerary form, because template choice per visit stays mandatory and server schema is unchanged.
