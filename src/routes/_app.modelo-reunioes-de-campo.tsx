@@ -25,7 +25,7 @@ import { CharCounterTextarea } from "@/components/ui/char-counter-textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Trash2, MapPin, AlertCircle, Save } from "lucide-react";
-import { TemplateActionsMenu, TemplatePicker, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
+import { TemplateHeaderRow, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
 import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { DayPills, useTemplateDays } from "@/components/templates/DayPills";
 import { MONDAY_OFFSET } from "@/lib/template-day-pills";
@@ -232,22 +232,10 @@ function Page() {
             <MapPin className="h-6 w-6" />{t("templates.field.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {t("templates.field.subtitle", { n: tpls.length, max: MAX })}
+            {t("templates.field.subtitle")}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {!active && (
-            <TemplateIOButtons
-              filenameBase={t("templates.exportField")}
-              disabled
-              onExport={async () => ({ ok: false, error: t("templates.selectTemplate") })}
-              onImport={async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await load(); return r; }}
-            />
-          )}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={tpls.length >= MAX}><Plus className="h-4 w-4 mr-1" />{t("templates.newTemplate")}</Button>
-          </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader><DialogTitle>{t("templates.field.newDialogTitle")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
@@ -266,22 +254,27 @@ function Page() {
             </div>
           </DialogContent>
         </Dialog>
-        </div>
       </div>
 
-      <div className="grid md:grid-cols-[260px_1fr] gap-4">
-        <Card className="hidden md:block"><CardContent className="p-3 space-y-1">
-          {tpls.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-3 text-center">{t("templates.noTemplates")}</div>
-          ) : tpls.map((tp) => (
-            <button key={tp.id}
-              onClick={() => setActiveId(tp.id)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm transition ${activeId === tp.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}>
-              <div className="truncate">{tp.name}</div>
-            </button>
-          ))}
-        </CardContent></Card>
+      <TemplateHeaderRow
+        items={tpls}
+        activeId={activeId}
+        onPick={setActiveId}
+        onNew={() => setCreateOpen(true)}
+        newDisabled={tpls.length >= MAX}
+        disabled={busy}
+        onRename={active ? () => { setRenameVal(active.name); setRenameOpen(true); } : undefined}
+        onDuplicate={handleDuplicate}
+        duplicateDisabled={tpls.length >= MAX}
+        onDelete={handleDelete}
+        io={{
+          filenameBase: active?.name ?? t("templates.exportField"),
+          onExport: async () => active ? fnExport({ data: { id: active.id } }) : { ok: false, error: t("templates.selectTemplate") },
+          onImport: async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await load(); return r; },
+        }}
+      />
 
+      <div className="grid gap-4">
         <div className="space-y-4">
           {!active ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
@@ -290,29 +283,6 @@ function Page() {
           ) : (
             <>
               <Card><CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 min-w-0 md:hidden">
-                    <TemplatePicker items={tpls} activeId={activeId} onPick={setActiveId} />
-                  </div>
-                  <div className="hidden md:block flex-1 font-semibold truncate">{active.name}</div>
-                  <TemplateActionsMenu
-                    disabled={busy}
-                    onRename={() => { setRenameVal(active.name); setRenameOpen(true); }}
-                    onDuplicate={handleDuplicate}
-                    duplicateDisabled={tpls.length >= MAX}
-                    onDelete={handleDelete}
-                    io={{
-                      filenameBase: active.name,
-                      onExport: () => fnExport({ data: { id: active.id } }),
-                      onImport: async (file) => { const r = await fnImport({ data: { file: file as never } }); if (r.ok) await load(); return r; },
-                    }}
-                  />
-                </div>
-
-                <p className="text-xs text-muted-foreground">
-                  {t("templates.field.hint")}
-                </p>
-
                 <InfoDisclosure label="Informações adicionais do superintendente" filled={!!(genObsByTpl[active.id] ?? "").trim()}>
                   <CharCounterTextarea
                     className="min-h-[80px]"
@@ -395,16 +365,7 @@ function Page() {
                             </SelectContent>
                           </Select>
                         </div>
-                        {it.modality === "casa_em_casa" && (
-                          <>
-                            <div className="grid grid-cols-2 gap-2">
-                              <Input placeholder={t("templates.field.territoryNumber")} value={it.territory_number} onChange={(e) => updateItem(idx, { territory_number: e.target.value })} className="h-8" />
-                              <Input placeholder={t("templates.field.territoryLocation")} value={it.territory_location} onChange={(e) => updateItem(idx, { territory_location: e.target.value })} className="h-8" />
-                            </div>
-                            <Input placeholder={t("templates.field.auxiliaryLeaders")} value={it.auxiliary_leaders} onChange={(e) => updateItem(idx, { auxiliary_leaders: e.target.value })} className="h-8" />
-                          </>
-                        )}
-                        <InfoDisclosure className="bg-background" label={t("templates.chrome.moreDetails", { defaultValue: "Mais detalhes" })} filled={!!(it.observations || it.closing_prayer)}>
+                        <InfoDisclosure className="bg-background" label={t("templates.chrome.moreDetails", { defaultValue: "Mais detalhes" })} filled={!!(it.observations || it.closing_prayer || it.territory_number || it.territory_location || it.auxiliary_leaders)}>
                           <div>
                             <Label className="text-xs">{t("templates.field.observations")}</Label>
                             <Textarea
@@ -415,6 +376,15 @@ function Page() {
                               onChange={(e) => updateItem(idx, { observations: e.target.value })}
                             />
                           </div>
+                        {it.modality === "casa_em_casa" && (
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input placeholder={t("templates.field.territoryNumber")} value={it.territory_number} onChange={(e) => updateItem(idx, { territory_number: e.target.value })} className="h-8" />
+                              <Input placeholder={t("templates.field.territoryLocation")} value={it.territory_location} onChange={(e) => updateItem(idx, { territory_location: e.target.value })} className="h-8" />
+                            </div>
+                            <Input placeholder={t("templates.field.auxiliaryLeaders")} value={it.auxiliary_leaders} onChange={(e) => updateItem(idx, { auxiliary_leaders: e.target.value })} className="h-8" />
+                          </>
+                        )}
                           <Input placeholder={t("templates.field.closingPrayer")} value={it.closing_prayer} onChange={(e) => updateItem(idx, { closing_prayer: e.target.value })} className="h-8" />
                         </InfoDisclosure>
                       </div>
