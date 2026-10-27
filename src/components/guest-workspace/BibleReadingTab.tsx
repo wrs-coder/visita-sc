@@ -1,7 +1,7 @@
 // Aba "Leitura da Bíblia": meta, progresso, capítulos, pontos altos e leitura limpa.
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, Sparkles, Play, Settings2 } from "lucide-react";
+import { ChevronDown, Sparkles, Play, Settings2, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -30,6 +30,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   const [drawer, setDrawer] = useState(false);
   const [preset, setPreset] = useState<string | undefined>();
   const [bibleOpen, setBibleOpen] = useState(false);
+  const [bottomTab, setBottomTab] = useState<"notes" | "highlights">("notes");
 
     const seq = chapterSequence(plan, custom);
   const total = plan === "custom" ? seq.length : TOTAL_CHAPTERS;
@@ -78,7 +79,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   }
 
   return (
-    <div className="space-y-4 pb-16">
+    <div className="space-y-4 pb-6">
       <div className="grid grid-cols-4 gap-1 rounded-xl border bg-card p-1" role="radiogroup" aria-label={t("guestWs.goal", { defaultValue: "Meta de leitura" })}>
         {([["canon", t("guestWs.planCanon", { defaultValue: "Ordem dos livros" })], ["chrono", t("guestWs.planChrono", { defaultValue: "Cronológica" })], ["year", t("guestWs.planYear", { defaultValue: "1 ano" })], ["custom", t("guestWs.planCustom", { defaultValue: "Personalizada" })]] as const).map(([id, l]) => (
           <button key={id} type="button" role="radio" aria-checked={plan === id} onClick={() => setPlan(id)}
@@ -178,15 +179,37 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
       </ul>}
 
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.readingNotes", { defaultValue: "Anotações de leitura" })}</h3>
-        {notes}
+        <div className="flex gap-1.5" role="tablist">
+          {([["notes", t("guestWs.readingNotes", { defaultValue: "Anotações de leitura" })], ["highlights", `${t("guestWs.highlights", { defaultValue: "Pontos altos" })} · ${data.highlights.length}`]] as const).map(([id, l]) => (
+            <button key={id} type="button" role="tab" aria-selected={bottomTab === id} onClick={() => setBottomTab(id)}
+              className={cn("rounded-full border px-3 py-1.5 text-xs font-medium", bottomTab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent/60")}>
+              {id === "highlights" && <Sparkles className="mr-1 inline h-3.5 w-3.5" />}{l}
+            </button>
+          ))}
+        </div>
+        {bottomTab === "notes" ? notes : (
+          <div className="space-y-2">
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => { setPreset(undefined); setDrawer(true); }}>
+              <Plus className="h-4 w-4" />{t("guestWs.newHighlight", { defaultValue: "Novo ponto alto" })}
+            </Button>
+            {data.highlights.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">{t("guestWs.noHighlights", { defaultValue: "Nenhum ponto alto ainda." })}</p>
+            ) : (
+              <ul className="divide-y rounded-xl border bg-card">
+                {[...data.highlights].sort((x, y) => y.date.localeCompare(x.date)).slice(0, 20).map((h) => (
+                  <li key={h.id}>
+                    <button type="button" onClick={() => { setPreset(undefined); setDrawer(true); }} className="w-full px-4 py-2.5 text-left hover:bg-accent/40">
+                      <p className="text-sm font-semibold">{h.ref || "—"}</p>
+                      {h.text && <p className="line-clamp-2 text-xs text-muted-foreground">{h.text}</p>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </section>
 
-      <div className="fixed inset-x-0 bottom-3 z-40 flex justify-center pointer-events-none">
-        <Button className="pointer-events-auto gap-1 rounded-full shadow-lg" onClick={() => { setPreset(undefined); setDrawer(true); }}>
-          <Sparkles className="h-4 w-4" />{t("guestWs.highlights", { defaultValue: "Pontos altos" })} · {data.highlights.length}
-        </Button>
-      </div>
       {drawerEl}
     </div>
   );

@@ -1074,7 +1074,11 @@
     "whatsapp": {
       "header": "*Notas Privadas — Confidencial*"
     },
-    "newButton": "Novo"
+    "newButton": "Novo",
+    "toolbar": {
+      "show": "Ferramentas",
+      "hide": "Recolher ferramentas"
+    }
   },
   "report": {
     "loading": "A carregar relatório…",
@@ -1980,5 +1984,13 @@
     "pillCircuit": "Circuito",
     "sectionCongregations": "Congregações",
     "sectionElders": "Anciãos do circuito"
+  },
+  "guestWs": {
+    "more": "Mais opções",
+    "addNoteBox": "Inserir quadro de observação",
+    "addLinkTo": "Ligar a outra anotação",
+    "addLinkHint": "Cria um atalho no fim do texto para abrir a anotação escolhida.",
+    "versesPanel": "Versículos",
+    "newHighlight": "Novo ponto alto"
   }
 }
