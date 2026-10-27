@@ -20,9 +20,9 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   const { plan, done: doneList, startDate } = data.reading;
   const done = useMemo(() => new Set(doneList), [doneList]);
   const [openBooks, setOpenBooks] = useState<Set<string>>(new Set());
-  const [listOpen, setListOpen] = useState(true);
+  const [listOpen, setListOpen] = useState(false);
   const [cfgOpen, setCfgOpen] = useState(false);
-  useEffect(() => { try { if (localStorage.getItem(BOOKS_OPEN_KEY) === "0") setListOpen(false); } catch { /* */ } }, []);
+  useEffect(() => { try { if (localStorage.getItem(BOOKS_OPEN_KEY) === "1") setListOpen(true); } catch { /* */ } }, []);
   const toggleList = () => { const n = !listOpen; setListOpen(n); try { localStorage.setItem(BOOKS_OPEN_KEY, n ? "1" : "0"); } catch { /* */ } };
   const custom: CustomPlan = data.reading.custom ?? { books: ALL_BOOKS, perDay: null, endDate: null };
   const [reading, setReading] = useState<string | null>(null);
@@ -117,7 +117,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
         </div>
       )}
 
-      <div className="space-y-2 rounded-xl border bg-card p-4">
+      <div className="sticky top-0 z-20 space-y-2 rounded-xl border bg-card/95 p-3 backdrop-blur">
         <div className="flex items-baseline justify-between text-sm">
           <span className="font-semibold">{percent}%</span>
           <span className="text-muted-foreground">{t("guestWs.chaptersDone", { defaultValue: "{{n}} de {{total}} capítulos", n: doneIn, total: total.toLocaleString(i18n.language) })}</span>
