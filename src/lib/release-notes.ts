@@ -1,9 +1,28 @@
 // Novidades da versão atual — embutidas no app (offline) e servidas pelo endpoint de versão.
 // Atualizar a cada release, junto com RELEASE_NOTES_VERSION.
-export const RELEASE_NOTES_VERSION = "5.0.3";
+export const RELEASE_NOTES_VERSION = "5.0.4";
 
 // Novidades exibidas no botão "Ver novidades" do aviso. Atualizar a cada release.
 export const RELEASE_NOTES: { title: string; items: string[] }[] = [
+  {
+    title: "Esboços e anotações com mais espaço",
+    items: [
+      "Ao escrever, a barra do topo vira uma linha única com voltar, modo, salvar e mais opções.",
+      "Ferramentas de texto recolhidas: abra só quando precisar; o app lembra sua escolha.",
+      "Oração, Território e Ajudantes começam recolhidos, com botão rápido para abrir.",
+      "A palavra \"Conteúdo\" saiu: o campo mostra \"Escreva aqui…\" até você começar.",
+      "Botão 📖 flutuante com os versículos encontrados; arraste para onde preferir.",
+    ],
+  },
+  {
+    title: "Espaço da esposa",
+    items: [
+      "Anotações e Estudo pessoal com tela limpa, linha única no topo e botão 📖.",
+      "Pastas em pílulas deslizantes, busca na lupa e datas como \"há 2 dias\".",
+      "Leitura da Bíblia com pílula \"Pontos altos\" e progresso compacto.",
+      "Configurações reorganizadas, com o backup em destaque.",
+    ],
+  },
   {
     title: "Circuito e idioma",
     items: [
