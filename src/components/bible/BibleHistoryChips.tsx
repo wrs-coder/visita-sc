@@ -18,9 +18,12 @@ import { VerseLink } from "./BibleVersePopover";
 export function BibleHistoryChips({
   library,
   onInsert,
+  onPick,
 }: {
   library: BibleLibrary | null;
   onInsert?: (text: string) => void | Promise<void>;
+  /** Quando presente, os chips só avisam a escolha (quem chama abre o versículo). */
+  onPick?: (m: CitationMatch) => void;
 }) {
   const { t, i18n } = useTranslation();
   const [items, setItems] = useState<BibleHistoryEntry[]>([]);
@@ -64,7 +67,10 @@ export function BibleHistoryChips({
         </button>
       </div>
       <div className="flex flex-wrap gap-1.5 max-w-full min-w-0">
-        {items.slice(0, 12).map((e) => (
+        {items.slice(0, 12).map((e) => onPick ? (
+          <button key={`${e.bookId}-${e.chapter}-${e.verse}-${e.at}`} type="button" onClick={() => onPick(toMatch(e))}
+            className="rounded-full border px-2.5 py-0.5 text-xs text-primary hover:bg-accent/60">{toMatch(e).raw}</button>
+        ) : (
           <VerseLink
             key={`${e.bookId}-${e.chapter}-${e.verse}-${e.at}`}
             match={toMatch(e)}
