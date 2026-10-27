@@ -26,7 +26,7 @@ Vale para as abas **Anotações** e **Estudo Pessoal** (Leitura da Bíblia e Pes
 │      do superintendente)        │
 │                                 │
 │                                 │
-│                       812/4000  │
+│                                 │
 │ ─────────────────────────────── │
 │ [Aa ▸ Ferramentas]              │  ← recolhida ao abrir
 │                          ( 📖2 )│  ← botão flutuante
@@ -35,8 +35,8 @@ Vale para as abas **Anotações** e **Estudo Pessoal** (Leitura da Bíblia e Pes
 
 - **Linha de cima**: voltar, escolher a pasta (em formato de pílula com menu), Ler/Editar, Salvar e o menu "⋯". O menu "⋯" junta Exportar (txt, md, PDF, Word), Inserir quadro de observação, Ligar a outra anotação e Excluir (com a pergunta de confirmação de hoje).
 - **Barra de ferramentas**: começa **recolhida** e mostra só "Aa Ferramentas". Um toque abre a barra completa. A escolha fica salva neste aparelho.
-- **Área de escrita**: grande como a edição do esboço, com contador **n/4000** discreto. Ao passar de 4000 o contador fica laranja e aparece um aviso. As anotações antigas maiores que isso não são cortadas.
-- **Versículos detectados + Consultas recentes**: saem do rodapé e viram um **botão flutuante 📖** com o número de versículos encontrados. Um toque abre um painel por baixo, que pode ser recolhido.
+- **Área de escrita**: grande como a edição do esboço, com espaço amplo (cerca de 4000 caracteres à vista). Não tem limite nem contador: dá para escrever o quanto quiser.
+- **Versículos detectados + Consultas recentes**: saem do rodapé e viram um **botão flutuante 📖** com o número de versículos encontrados. Um toque abre um painel por baixo, que pode ser recolhido. **Ao tocar numa referência, o painel fecha e o texto do versículo abre na tela.**
 
 ```text
 │                    ( 📖 2 )  ← arrastar move    │
@@ -72,9 +72,9 @@ Vale para as abas **Anotações** e **Estudo Pessoal** (Leitura da Bíblia e Pes
 
 ## Detalhes técnicos
 
-- Arquivos: `GuestWorkspace.tsx` (FocusEditor, cabeçalho, menu "⋯", contador), `BibleReadingTab.tsx` (pílulas, lista de pontos altos usando `HighlightsDrawer` para editar), novo `FloatingVersePanel.tsx` (arrastar por eventos de toque, preso às bordas da área visível, posição em localStorage `guestWs.versePanel.pos`).
+- Arquivos: `GuestWorkspace.tsx` (FocusEditor, cabeçalho, menu "⋯"), `BibleReadingTab.tsx` (pílulas, lista de pontos altos usando `HighlightsDrawer` para editar), novo `FloatingVersePanel.tsx` (arrastar por eventos de toque, preso às bordas da área visível, posição em localStorage `guestWs.versePanel.pos`; ao tocar num `VerseLink` o painel fecha antes de abrir o versículo).
 - O `RichNoteEditor`/`RichNoteToolbar` ganha uma opção para recolher a barra (desligada por padrão, ligada só aqui), com o estado em localStorage `guestWs.toolbarOpen`. O esboço do superintendente não muda.
-- A altura do editor usa `use-stable-viewport-height`, igual ao esboço. O contador vem do texto puro (`htmlToPlain`). O limite de 4000 é só um aviso.
+- A altura do editor usa `use-stable-viewport-height`, igual ao esboço. Não há contador nem limite de caracteres.
 - Refs/notas já inseridas continuam aparecendo na leitura (`refHtml`/`noteBlockHtml` não mudam).
-- Os textos novos entram em pt/en/es. Depois: `bunx tsgo --noEmit` e `bunx vitest run`, e um teste para o limite do contador (4000).
+- Os textos novos entram em pt/en/es. Depois: `bunx tsgo --noEmit` e `bunx vitest run`.
 - Os itens da seção 3 só são feitos se você aprovar.
