@@ -419,6 +419,9 @@ function WorkspaceSheet({ kind, open, onOpenChange, data, update, folder, setFol
     try {
       const blob = await buildWsBackup(data);
       await saveBlob(blob, { filename: `visita-sc-pessoal-${new Date().toISOString().slice(0, 10)}.zip`, mimeType: "application/zip" });
+      const now = new Date().toISOString();
+      try { localStorage.setItem(LAST_BACKUP_KEY, now); } catch { /* */ }
+      setLastBackup(now);
     } catch { toast.error(t("guestWs.backupFail", { defaultValue: "Não foi possível gerar o backup." })); }
   };
   const doRestore = async (file: File, mode: "replace" | "merge") => {
