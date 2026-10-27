@@ -72,9 +72,9 @@ Vale para as abas **Anotações** e **Estudo Pessoal** (Leitura da Bíblia e Pes
 
 ## Detalhes técnicos
 
-- Arquivos: `GuestWorkspace.tsx` (FocusEditor, cabeçalho, menu "⋯", contador), `BibleReadingTab.tsx` (pílulas, lista de pontos altos usando `HighlightsDrawer` para editar), novo `FloatingVersePanel.tsx` (arrastar por eventos de toque, preso às bordas da área visível, posição em localStorage `guestWs.versePanel.pos`).
+- Arquivos: `GuestWorkspace.tsx` (FocusEditor, cabeçalho, menu "⋯"), `BibleReadingTab.tsx` (pílulas, lista de pontos altos usando `HighlightsDrawer` para editar), novo `FloatingVersePanel.tsx` (arrastar por eventos de toque, preso às bordas da área visível, posição em localStorage `guestWs.versePanel.pos`; ao tocar num `VerseLink` o painel fecha antes de abrir o versículo).
 - O `RichNoteEditor`/`RichNoteToolbar` ganha uma opção para recolher a barra (desligada por padrão, ligada só aqui), com o estado em localStorage `guestWs.toolbarOpen`. O esboço do superintendente não muda.
-- A altura do editor usa `use-stable-viewport-height`, igual ao esboço. O contador vem do texto puro (`htmlToPlain`). O limite de 4000 é só um aviso.
+- A altura do editor usa `use-stable-viewport-height`, igual ao esboço. Não há contador nem limite de caracteres.
 - Refs/notas já inseridas continuam aparecendo na leitura (`refHtml`/`noteBlockHtml` não mudam).
-- Os textos novos entram em pt/en/es. Depois: `bunx tsgo --noEmit` e `bunx vitest run`, e um teste para o limite do contador (4000).
+- Os textos novos entram em pt/en/es. Depois: `bunx tsgo --noEmit` e `bunx vitest run`.
 - Os itens da seção 3 só são feitos se você aprovar.
