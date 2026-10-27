@@ -187,33 +187,46 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
       </div>
 
       {(() => { const block = (<div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-1.5">
-        <FolderOpen className="h-4 w-4 text-muted-foreground" aria-hidden />
-        <button type="button" onClick={() => setFolder(null)} className={cn("rounded-full border px-3 py-1 text-xs", !folder ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
-        {kindFolders.map((f) => (
-          <button key={f.id} type="button" onClick={() => setFolder(f.id)} className={cn("rounded-full border px-3 py-1 text-xs", folder === f.id ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{f.name} <span className="opacity-70">{data.items.filter((i) => i.kind === kind && i.folderId === f.id).length}</span></button>
-        ))}
-        {kind === "research" && !data.folders.some((f) => f.kind === "research") && THEME_SUGGESTIONS.map((n) => (
-          <button key={n} type="button" onClick={() => addFolder(n)} className="rounded-full border border-dashed px-3 py-1 text-xs text-muted-foreground hover:bg-accent/60">+ {n}</button>
-        ))}
-        <Button type="button" size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => addFolder()}><Plus className="h-3.5 w-3.5" />{t("guestWs.folder", { defaultValue: "Pasta" })}</Button>
-        {folder && <>
-          <Button type="button" size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => exportFolderDocx(folder)}><Download className="h-3.5 w-3.5" />Word</Button>
-          <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => renameFolder(folder)}>{t("guestWs.rename", { defaultValue: "Renomear" })}</Button>
-          <Button type="button" size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => deleteFolder(folder)}>{t("guestWs.delete", { defaultValue: "Apagar" })}</Button>
-        </>}
-      </div>
-      <div className="sticky top-0 z-10 -mx-1 bg-background px-1 py-1">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("guestWs.searchKw", { defaultValue: "Buscar no título ou no texto…" })} className="h-9 pl-8 pr-8" aria-label={t("guestWs.search", { defaultValue: "Pesquisar" })} />
-          {query && <button type="button" onClick={() => setQuery("")} aria-label={t("guestWs.clear", { defaultValue: "Limpar" })} className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground hover:bg-accent"><X className="h-4 w-4" /></button>}
+      <div className="flex items-center gap-1.5">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+          <button type="button" onClick={() => setFolder(null)} className={cn("shrink-0 rounded-full border px-3 py-1 text-xs", !folder ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
+          {kindFolders.map((f) => (
+            <button key={f.id} type="button" onClick={() => setFolder(f.id)} className={cn("shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs", folder === f.id ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{f.name} <span className="opacity-70">{data.items.filter((i) => i.kind === kind && i.folderId === f.id).length}</span></button>
+          ))}
+          {kind === "research" && kindFolders.length === 0 && THEME_SUGGESTIONS.map((n) => (
+            <button key={n} type="button" onClick={() => addFolder(n)} className="shrink-0 whitespace-nowrap rounded-full border border-dashed px-3 py-1 text-xs text-muted-foreground hover:bg-accent/60">+ {n}</button>
+          ))}
+          <button type="button" onClick={() => addFolder()} aria-label={t("guestWs.newFolder", { defaultValue: "Nova pasta" })} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-dashed text-muted-foreground hover:bg-accent/60"><Plus className="h-3.5 w-3.5" /></button>
         </div>
-        {q && <p className="pt-1 text-xs text-muted-foreground">{t("guestWs.found", { defaultValue: "{{count}} encontrada(s)", count: list.length })}</p>}
+        {folder && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 rounded-full" aria-label={t("guestWs.folderMenu", { defaultValue: "Opções da pasta" })}><MoreHorizontal className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => renameFolder(folder)}>{t("guestWs.rename", { defaultValue: "Renomear" })}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportFolderDocx(folder)}><Download className="mr-2 h-4 w-4" />Word</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive" onClick={() => deleteFolder(folder)}><Trash2 className="mr-2 h-4 w-4" />{t("guestWs.delete", { defaultValue: "Apagar" })}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
-      <Button onClick={create} variant="outline" className="w-full justify-start gap-2 border-dashed">
-        <Plus className="h-4 w-4" />{t("guestWs.new", { defaultValue: "Nova" })}
-      </Button>
+      <div className="sticky top-0 z-10 -mx-1 flex items-center gap-2 bg-background px-1 py-1">
+        {searchOpen || query ? (
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
+            <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("guestWs.searchKw", { defaultValue: "Buscar no título ou no texto…" })} className="h-9 pl-8 pr-8" aria-label={t("guestWs.search", { defaultValue: "Pesquisar" })} />
+            <button type="button" onClick={() => { setQuery(""); setSearchOpen(false); }} aria-label={t("guestWs.clear", { defaultValue: "Limpar" })} className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground hover:bg-accent"><X className="h-4 w-4" /></button>
+          </div>
+        ) : (
+          <Button onClick={create} variant="outline" className="h-9 flex-1 justify-start gap-2 border-dashed">
+            <Plus className="h-4 w-4" />{t("guestWs.new", { defaultValue: "Nova" })}
+          </Button>
+        )}
+        {!(searchOpen || query) && <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" aria-label={t("guestWs.search", { defaultValue: "Pesquisar" })} onClick={() => setSearchOpen(true)}><Search className="h-4 w-4" /></Button>}
+      </div>
+      {q && <p className="text-xs text-muted-foreground">{t("guestWs.found", { defaultValue: "{{count}} encontrada(s)", count: list.length })}</p>}
 
       {list.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">{t("guestWs.empty", { defaultValue: "Nada por aqui ainda. Toque em “Nova” para começar." })}</p>
