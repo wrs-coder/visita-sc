@@ -2,13 +2,16 @@ import { htmlToDocx, folderToDocxZip, safeFileName } from "@/lib/docx-export";
 // Seções Anotações e Estudo Pessoal da esposa, com Modo Foco e gaveta.
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Download, FileText, FolderOpen, Plus, Settings2, Trash2, Upload, BookOpen, Search, X, Save, Eye, PenLine, BookMarked, StickyNote, Link2 } from "lucide-react";
+import { ArrowLeft, Download, FileText, FolderOpen, Plus, Settings2, Trash2, Upload, BookOpen, Search, X, Save, Eye, PenLine, StickyNote, Link2, MoreHorizontal, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useStableViewportHeight } from "@/hooks/use-stable-viewport-height";
+import { FloatingVersePanel } from "./FloatingVersePanel";
 import { BibleManagerDialog } from "@/components/bible/BibleManagerDialog";
 import { saveBlob } from "@/lib/share";
 import { createJsPdfCompat, slugify } from "@/lib/pdf/pdf-engine";
@@ -22,11 +25,9 @@ import { BibleReadingTab } from "./BibleReadingTab";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RichOutlineContent } from "@/lib/rich-content";
 import { findCitations, stripHtmlForDetection } from "@/lib/bible-refs";
-import { VerseLink } from "@/components/bible/BibleVersePopover";
-import { BibleHistoryChips } from "@/components/bible/BibleHistoryChips";
 import { appendPlainTextToNote } from "@/lib/note-content";
 import { getActiveLibrary, type BibleLibrary } from "@/lib/bible-notes-store";
-import { refHtml, noteBlockHtml, internalLinkHtml, filterWsItems } from "@/lib/guest-workspace-store";
+import { noteBlockHtml, internalLinkHtml, filterWsItems } from "@/lib/guest-workspace-store";
 
 const THEME_SUGGESTIONS = ["Qualidades Cristãs", "História Bíblica", "Adoração Matinal"];
 function Mark({ text, q }: { text: string; q: string }) {
@@ -77,8 +78,23 @@ export function GuestSectionNav({ value, onChange }: { value: GuestSection; onCh
 
 const colorDot: Record<string, string> = { primary: "bg-primary", accent: "bg-accent", secondary: "bg-secondary", muted: "bg-muted-foreground" };
 
+export function relTime(iso: string, lang: string, now = Date.now()): string {
+  const diff = (new Date(iso).getTime() - now) / 1000;
+  if (!Number.isFinite(diff)) return "";
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
+  const a = Math.abs(diff);
+  if (a < 60) return rtf.format(0, "minute");
+  if (a < 3600) return rtf.format(Math.round(diff / 60), "minute");
+  if (a < 86400) return rtf.format(Math.round(diff / 3600), "hour");
+  if (a < 86400 * 30) return rtf.format(Math.round(diff / 86400), "day");
+  if (a < 86400 * 365) return rtf.format(Math.round(diff / (86400 * 30)), "month");
+  return rtf.format(Math.round(diff / (86400 * 365)), "year");
+}
+
+const LAST_BACKUP_KEY = "guestWs.lastBackup";
+
 export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [data, setData] = useState<WsData>(emptyWs);
   const [ready, setReady] = useState(false);
   const [studyTab, setStudyTab] = useState<"bible" | "research">("bible");
@@ -88,6 +104,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
   const [folder, setFolder] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const skRef = useRef("anon");
   const pending = useRef<WsData | null>(null);
   const timer = useRef<number | undefined>(undefined);
@@ -186,33 +203,46 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
       </div>
 
       {(() => { const block = (<div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-1.5">
-        <FolderOpen className="h-4 w-4 text-muted-foreground" aria-hidden />
-        <button type="button" onClick={() => setFolder(null)} className={cn("rounded-full border px-3 py-1 text-xs", !folder ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
-        {kindFolders.map((f) => (
-          <button key={f.id} type="button" onClick={() => setFolder(f.id)} className={cn("rounded-full border px-3 py-1 text-xs", folder === f.id ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{f.name} <span className="opacity-70">{data.items.filter((i) => i.kind === kind && i.folderId === f.id).length}</span></button>
-        ))}
-        {kind === "research" && !data.folders.some((f) => f.kind === "research") && THEME_SUGGESTIONS.map((n) => (
-          <button key={n} type="button" onClick={() => addFolder(n)} className="rounded-full border border-dashed px-3 py-1 text-xs text-muted-foreground hover:bg-accent/60">+ {n}</button>
-        ))}
-        <Button type="button" size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => addFolder()}><Plus className="h-3.5 w-3.5" />{t("guestWs.folder", { defaultValue: "Pasta" })}</Button>
-        {folder && <>
-          <Button type="button" size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => exportFolderDocx(folder)}><Download className="h-3.5 w-3.5" />Word</Button>
-          <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => renameFolder(folder)}>{t("guestWs.rename", { defaultValue: "Renomear" })}</Button>
-          <Button type="button" size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => deleteFolder(folder)}>{t("guestWs.delete", { defaultValue: "Apagar" })}</Button>
-        </>}
-      </div>
-      <div className="sticky top-0 z-10 -mx-1 bg-background px-1 py-1">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("guestWs.searchKw", { defaultValue: "Buscar no título ou no texto…" })} className="h-9 pl-8 pr-8" aria-label={t("guestWs.search", { defaultValue: "Pesquisar" })} />
-          {query && <button type="button" onClick={() => setQuery("")} aria-label={t("guestWs.clear", { defaultValue: "Limpar" })} className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground hover:bg-accent"><X className="h-4 w-4" /></button>}
+      <div className="flex items-center gap-1.5">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+          <button type="button" onClick={() => setFolder(null)} className={cn("shrink-0 rounded-full border px-3 py-1 text-xs", !folder ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
+          {kindFolders.map((f) => (
+            <button key={f.id} type="button" onClick={() => setFolder(f.id)} className={cn("shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs", folder === f.id ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{f.name} <span className="opacity-70">{data.items.filter((i) => i.kind === kind && i.folderId === f.id).length}</span></button>
+          ))}
+          {kind === "research" && kindFolders.length === 0 && THEME_SUGGESTIONS.map((n) => (
+            <button key={n} type="button" onClick={() => addFolder(n)} className="shrink-0 whitespace-nowrap rounded-full border border-dashed px-3 py-1 text-xs text-muted-foreground hover:bg-accent/60">+ {n}</button>
+          ))}
+          <button type="button" onClick={() => addFolder()} aria-label={t("guestWs.newFolder", { defaultValue: "Nova pasta" })} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-dashed text-muted-foreground hover:bg-accent/60"><Plus className="h-3.5 w-3.5" /></button>
         </div>
-        {q && <p className="pt-1 text-xs text-muted-foreground">{t("guestWs.found", { defaultValue: "{{count}} encontrada(s)", count: list.length })}</p>}
+        {folder && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 rounded-full" aria-label={t("guestWs.folderMenu", { defaultValue: "Opções da pasta" })}><MoreHorizontal className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => renameFolder(folder)}>{t("guestWs.rename", { defaultValue: "Renomear" })}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportFolderDocx(folder)}><Download className="mr-2 h-4 w-4" />Word</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive" onClick={() => deleteFolder(folder)}><Trash2 className="mr-2 h-4 w-4" />{t("guestWs.delete", { defaultValue: "Apagar" })}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
-      <Button onClick={create} variant="outline" className="w-full justify-start gap-2 border-dashed">
-        <Plus className="h-4 w-4" />{t("guestWs.new", { defaultValue: "Nova" })}
-      </Button>
+      <div className="sticky top-0 z-10 -mx-1 flex items-center gap-2 bg-background px-1 py-1">
+        {searchOpen || query ? (
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
+            <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("guestWs.searchKw", { defaultValue: "Buscar no título ou no texto…" })} className="h-9 pl-8 pr-8" aria-label={t("guestWs.search", { defaultValue: "Pesquisar" })} />
+            <button type="button" onClick={() => { setQuery(""); setSearchOpen(false); }} aria-label={t("guestWs.clear", { defaultValue: "Limpar" })} className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground hover:bg-accent"><X className="h-4 w-4" /></button>
+          </div>
+        ) : (
+          <Button onClick={create} variant="outline" className="h-9 flex-1 justify-start gap-2 border-dashed">
+            <Plus className="h-4 w-4" />{t("guestWs.new", { defaultValue: "Nova" })}
+          </Button>
+        )}
+        {!(searchOpen || query) && <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" aria-label={t("guestWs.search", { defaultValue: "Pesquisar" })} onClick={() => setSearchOpen(true)}><Search className="h-4 w-4" /></Button>}
+      </div>
+      {q && <p className="text-xs text-muted-foreground">{t("guestWs.found", { defaultValue: "{{count}} encontrada(s)", count: list.length })}</p>}
 
       {list.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">{t("guestWs.empty", { defaultValue: "Nada por aqui ainda. Toque em “Nova” para começar." })}</p>
@@ -228,6 +258,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
                     {i.folderId && <span className="mr-1 rounded bg-muted px-1">{data.folders.find((f) => f.id === i.folderId)?.name}</span>}
                     <Mark text={snippet(htmlToPlain(i.body), q) || "—"} q={q} />
                   </span>
+                  <span className="block text-[11px] text-muted-foreground/80">{relTime(i.updatedAt, i18n.language)}</span>
                 </span>
               </button>
             </li>
@@ -252,9 +283,9 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
   const [mode, setMode] = useState<"read" | "edit">(startEdit ? "edit" : "read");
   const [library, setLibrary] = useState<BibleLibrary | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
+  const vh = useStableViewportHeight();
   useEffect(() => { void getActiveLibrary().then(setLibrary).catch(() => null); }, []);
   const append = (html: string) => { onChange({ body: toNoteHtml(item.body) + html }); };
-  const addRef = () => { const r = window.prompt(t("guestWs.refPrompt", { defaultValue: "Referência (ex.: Jo 3:16)" }))?.trim(); if (r) append(refHtml(r)); };
   const addNote = () => { const n = window.prompt(t("guestWs.notePrompt", { defaultValue: "Nota explicativa" }))?.trim(); if (n) append(noteBlockHtml(n)); };
   const detected = useMemo(() => (library ? findCitations(library.books, stripHtmlForDetection(item.body)) : []), [library, item.body]);
   const insertVerse = (text: string) => onChange({ body: appendPlainTextToNote(toNoteHtml(item.body), text) });
@@ -281,54 +312,70 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
     }
     await saveBlob(blob, { filename: `${name}.${fmt}`, mimeType: blob.type });
   };
+  const folders = data.folders.filter((f) => f.kind === item.kind);
+  const folderName = folders.find((f) => f.id === item.folderId)?.name ?? t("guestWs.noFolder", { defaultValue: "Sem pasta" });
+  const editorH = vh ? `${Math.max(320, vh - 150)}px` : "70vh";
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
       <div className="flex items-center gap-1 px-2 py-2">
-        <Button variant="ghost" size="sm" onClick={onClose} className="gap-1 text-muted-foreground"><ArrowLeft className="h-4 w-4" />{t("guestWs.back", { defaultValue: "Voltar" })}</Button>
-        <div className="flex-1" />
-        <div className="flex rounded-full border p-0.5" role="radiogroup">
-          <button type="button" role="radio" aria-checked={mode === "read"} onClick={() => setMode("read")} className={cn("flex items-center gap-1 rounded-full px-2.5 py-1 text-xs", mode === "read" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}><Eye className="h-3.5 w-3.5" />{t("guestWs.readMode", { defaultValue: "Ler" })}</button>
-          <button type="button" role="radio" aria-checked={mode === "edit"} onClick={() => setMode("edit")} className={cn("flex items-center gap-1 rounded-full px-2.5 py-1 text-xs", mode === "edit" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}><PenLine className="h-3.5 w-3.5" />{t("guestWs.editMode", { defaultValue: "Editar" })}</button>
-        </div>
-        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={onSave} aria-label={t("guestWs.save", { defaultValue: "Salvar" })}><Save className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" onClick={onClose} className="h-9 w-9 shrink-0 rounded-full text-muted-foreground" aria-label={t("guestWs.back", { defaultValue: "Voltar" })}><ArrowLeft className="h-4 w-4" /></Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" aria-label={t("guestWs.export", { defaultValue: "Exportar" })}><Download className="h-4 w-4" /></Button>
+            <button type="button" aria-label={t("guestWs.moveFolder", { defaultValue: "Pasta" })} className="flex min-w-0 max-w-[9rem] items-center gap-1 rounded-full border px-2.5 py-1 text-xs">
+              <FolderOpen className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{folderName}</span><ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => exportAs("txt")}>Texto (.txt)</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => exportAs("md")}>Markdown (.md)</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => exportAs("pdf")}>PDF</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => exportAs("docx")}>Word (.docx)</DropdownMenuItem>
+          <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
+            <DropdownMenuItem onClick={() => onChange({ folderId: null })}>{t("guestWs.noFolder", { defaultValue: "Sem pasta" })}</DropdownMenuItem>
+            {folders.map((f) => <DropdownMenuItem key={f.id} onClick={() => onChange({ folderId: f.id })}>{f.name}</DropdownMenuItem>)}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground" aria-label={t("guestWs.delete", { defaultValue: "Apagar" })}
-          onClick={() => { if (window.confirm(t("guestWs.confirmDelete", { defaultValue: "Apagar este item?" }))) onDelete(); }}>
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <div className="flex-1" />
+        <div className="flex shrink-0 rounded-full border p-0.5" role="radiogroup">
+          <button type="button" role="radio" aria-checked={mode === "read"} aria-label={t("guestWs.readMode", { defaultValue: "Ler" })} onClick={() => setMode("read")} className={cn("rounded-full px-2 py-1", mode === "read" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}><Eye className="h-3.5 w-3.5" /></button>
+          <button type="button" role="radio" aria-checked={mode === "edit"} aria-label={t("guestWs.editMode", { defaultValue: "Editar" })} onClick={() => setMode("edit")} className={cn("rounded-full px-2 py-1", mode === "edit" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}><PenLine className="h-3.5 w-3.5" /></button>
+        </div>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-full" onClick={onSave} aria-label={t("guestWs.save", { defaultValue: "Salvar" })}><Save className="h-4 w-4" /></Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-full" aria-label={t("guestWs.more", { defaultValue: "Mais opções" })}><MoreHorizontal className="h-4 w-4" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
+            <DropdownMenuLabel className="text-xs text-muted-foreground">{t("guestWs.export", { defaultValue: "Exportar" })}</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => exportAs("txt")}><Download className="mr-2 h-4 w-4" />Texto (.txt)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportAs("md")}><Download className="mr-2 h-4 w-4" />Markdown (.md)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportAs("pdf")}><Download className="mr-2 h-4 w-4" />PDF</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportAs("docx")}><Download className="mr-2 h-4 w-4" />Word (.docx)</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={addNote}><StickyNote className="mr-2 h-4 w-4" />{t("guestWs.addNoteBox", { defaultValue: "Inserir quadro de observação" })}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setLinkOpen(true)}><Link2 className="mr-2 h-4 w-4" />{t("guestWs.addLinkTo", { defaultValue: "Ligar a outra anotação" })}</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive" onClick={() => { if (window.confirm(t("guestWs.confirmDelete", { defaultValue: "Apagar este item?" }))) onDelete(); }}>
+              <Trash2 className="mr-2 h-4 w-4" />{t("guestWs.delete", { defaultValue: "Apagar" })}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-      <div className={cn("mx-auto flex w-full flex-1 flex-col overflow-y-auto px-5 pb-6", data.settings.width === "wide" ? "max-w-4xl" : "max-w-2xl")}>
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("guestWs.addLinkTo", { defaultValue: "Ligar a outra anotação" })}</DialogTitle>
+            <DialogDescription>{t("guestWs.addLinkHint", { defaultValue: "Cria um atalho no fim do texto para abrir a anotação escolhida." })}</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-72 space-y-1 overflow-y-auto">
+            {others.length === 0 ? <p className="text-sm text-muted-foreground">{t("guestWs.noOthers", { defaultValue: "Nenhuma outra pesquisa ou anotação" })}</p>
+              : others.map((o) => (
+                <button key={o.id} type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-accent/60"
+                  onClick={() => { append(internalLinkHtml(o.id, o.title || t("guestWs.untitled", { defaultValue: "Sem título" }))); setLinkOpen(false); }}>
+                  {o.title || t("guestWs.untitled", { defaultValue: "Sem título" })}
+                </button>))}
+          </div>
+        </DialogContent>
+      </Dialog>
+      <div className={cn("mx-auto flex w-full flex-1 flex-col overflow-y-auto px-4 pb-6", data.settings.width === "wide" ? "max-w-4xl" : "max-w-2xl")}>
         <input value={item.title} onChange={(e) => onChange({ title: e.target.value })} autoFocus={!item.title}
           placeholder={t("guestWs.titlePh", { defaultValue: "Título" })}
           className="w-full bg-transparent py-2 text-2xl font-semibold outline-none placeholder:text-muted-foreground/50" />
-        <select value={item.folderId ?? ""} onChange={(e) => onChange({ folderId: e.target.value || null })}
-          aria-label={t("guestWs.moveFolder", { defaultValue: "Pasta" })} className="mb-2 h-8 w-fit rounded-md border bg-background px-2 text-xs">
-          <option value="">{t("guestWs.noFolder", { defaultValue: "Sem pasta" })}</option>
-          {data.folders.filter((f) => f.kind === item.kind).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-        </select>
-        {mode === "edit" && (
-          <div className="mb-2 flex flex-wrap gap-1.5">
-            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={addRef}><BookMarked className="h-3.5 w-3.5" />{t("guestWs.addRef", { defaultValue: "Referência" })}</Button>
-            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={addNote}><StickyNote className="h-3.5 w-3.5" />{t("guestWs.addNote", { defaultValue: "Nota" })}</Button>
-            <DropdownMenu open={linkOpen} onOpenChange={setLinkOpen}>
-              <DropdownMenuTrigger asChild><Button size="sm" variant="outline" className="h-7 gap-1 text-xs"><Link2 className="h-3.5 w-3.5" />{t("guestWs.addLink", { defaultValue: "Link interno" })}</Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
-                {others.length === 0 ? <DropdownMenuItem disabled>{t("guestWs.noOthers", { defaultValue: "Nenhuma outra pesquisa ou anotação" })}</DropdownMenuItem>
-                  : others.map((o) => <DropdownMenuItem key={o.id} onClick={() => append(internalLinkHtml(o.id, o.title || t("guestWs.untitled", { defaultValue: "Sem título" })))}>{o.title || t("guestWs.untitled", { defaultValue: "Sem título" })}</DropdownMenuItem>)}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
         {mode === "read" ? (
           <div className={cn("flex-1 py-2", size)} onClickCapture={(e) => {
             const a = (e.target as HTMLElement).closest("a");
@@ -341,17 +388,12 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
         ) : <div className={cn("flex-1", size)}>
           <Suspense fallback={<p className="text-sm text-muted-foreground">{t("guestWs.loading", { defaultValue: "Carregando…" })}</p>}>
             <RichNoteEditor value={toNoteHtml(item.body)} onChange={(html) => onChange({ body: html })} noteId={item.id}
-              placeholder={t("guestWs.bodyPh", { defaultValue: "Comece a escrever…" })} minHeight="50vh" maxHeight="none" />
+              placeholder={t("guestWs.bodyPh", { defaultValue: "Comece a escrever…" })} minHeight={editorH} maxHeight="none"
+              collapsibleToolbarKey="guestWs.toolbarOpen" className="border-0" />
           </Suspense>
-          <div className="mt-3 w-full min-w-0 space-y-2 overflow-hidden break-words rounded-lg border bg-muted/30 p-3">
-            <div className="flex items-center gap-2 text-xs font-semibold"><BookOpen className="h-3.5 w-3.5 text-primary" />{t("fieldConsiderations.detected", { defaultValue: "Versículos detectados" })}</div>
-            {!library ? <p className="text-xs text-muted-foreground">{t("guestWs.noBibleDetect", { defaultValue: "Importe a Bíblia (EPUB) na gaveta de configurações para ver os versículos." })}</p>
-              : detected.length === 0 ? <p className="text-xs text-muted-foreground">{t("fieldConsiderations.detectedEmpty", { defaultValue: "Digite uma citação (ex.: João 3:16) para visualizar." })}</p>
-              : <div className="flex min-w-0 max-w-full flex-wrap gap-1.5">{detected.map((m, i) => <VerseLink key={`${m.index}-${i}`} match={m} libraryId={library.id} onInsert={insertVerse} />)}</div>}
-            <BibleHistoryChips library={library} onInsert={insertVerse} />
-          </div>
         </div>}
       </div>
+      {mode === "edit" && <FloatingVersePanel library={library} detected={detected} onInsert={insertVerse} />}
     </div>
   );
 }
@@ -360,19 +402,26 @@ function WorkspaceSheet({ kind, open, onOpenChange, data, update, folder, setFol
   kind: WsKind; open: boolean; onOpenChange: (o: boolean) => void; data: WsData; update: (fn: (d: WsData) => WsData) => void;
   folder: string | null; setFolder: (f: string | null) => void; color: string | null; setColor: (c: string | null) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [lastBackup, setLastBackup] = useState<string | null>(null);
+  useEffect(() => { try { setLastBackup(localStorage.getItem(LAST_BACKUP_KEY)); } catch { /* */ } }, [open]);
   const [newFolder, setNewFolder] = useState("");
   const [bibleOpen, setBibleOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const planRef = useRef<HTMLInputElement>(null);
   const setSetting = <K extends keyof WsData["settings"]>(k: K, v: WsData["settings"][K]) =>
     update((d) => ({ ...d, settings: { ...d.settings, [k]: v } }));
+  const group = "divide-y overflow-hidden rounded-2xl border bg-card";
+  const row = "flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm hover:bg-accent/40";
   const chip = (active: boolean) => cn("rounded-full border px-3 py-1 text-xs", active ? "bg-primary text-primary-foreground" : "hover:bg-accent/60");
 
   const doBackup = async () => {
     try {
       const blob = await buildWsBackup(data);
       await saveBlob(blob, { filename: `visita-sc-pessoal-${new Date().toISOString().slice(0, 10)}.zip`, mimeType: "application/zip" });
+      const now = new Date().toISOString();
+      try { localStorage.setItem(LAST_BACKUP_KEY, now); } catch { /* */ }
+      setLastBackup(now);
     } catch { toast.error(t("guestWs.backupFail", { defaultValue: "Não foi possível gerar o backup." })); }
   };
   const doRestore = async (file: File, mode: "replace" | "merge") => {
@@ -398,57 +447,64 @@ function WorkspaceSheet({ kind, open, onOpenChange, data, update, folder, setFol
           <SheetTitle>{t("guestWs.drawer", { defaultValue: "Pastas e configurações" })}</SheetTitle>
           <SheetDescription className="sr-only">{t("guestWs.drawer", { defaultValue: "Pastas e configurações" })}</SheetDescription>
         </SheetHeader>
-        <div className="space-y-6 px-4 pb-6">
-          <section className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.appearance", { defaultValue: "Aparência" })}</h3>
-            <ThemeToggle />
-          </section>
-          <section className="space-y-2">
-            <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-muted-foreground"><FolderOpen className="h-3.5 w-3.5" />{t("guestWs.folders", { defaultValue: "Pastas" })} · {kind === "note" ? t("guestWs.notes", { defaultValue: "Anotações" }) : kind === "bible" ? t("guestWs.bible", { defaultValue: "Leitura da Bíblia" }) : t("guestWs.research", { defaultValue: "Pesquisas Pessoais" })}</h3>
-            <div className="flex flex-wrap gap-1.5">
-              <button className={chip(!folder)} onClick={() => setFolder(null)}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
-              {data.folders.filter((f) => f.kind === kind).map((f) => <button key={f.id} className={chip(folder === f.id)} onClick={() => setFolder(f.id)}>{f.name}</button>)}
+        <div className="space-y-5 px-4 pb-6">
+          <section className="space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+            <h3 className="text-xs font-semibold uppercase text-primary">{t("guestWs.backup", { defaultValue: "Backup e Dados" })}</h3>
+            <p className="text-xs text-muted-foreground">{lastBackup
+              ? t("guestWs.lastBackup", { defaultValue: "Último backup: {{when}}", when: relTime(lastBackup, i18n.language) })
+              : t("guestWs.noBackupYet", { defaultValue: "Nenhum backup feito neste aparelho ainda." })}</p>
+            <Button size="sm" className="w-full justify-start gap-2" onClick={doBackup}><Download className="h-4 w-4" />{t("guestWs.makeBackup", { defaultValue: "Gerar backup" })}</Button>
+            <div className={group}>
+              <button type="button" className={row} onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4 text-muted-foreground" />{t("guestWs.restore", { defaultValue: "Restaurar backup" })}</button>
+              <button type="button" className={row} onClick={() => planRef.current?.click()}><FileText className="h-4 w-4 text-muted-foreground" />{t("guestWs.importPlan", { defaultValue: "Importar plano (.json/.zip)" })}</button>
             </div>
-            <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const name = newFolder.trim(); if (!name) return;
-              update((d) => ({ ...d, folders: [...d.folders, { id: crypto.randomUUID(), name, kind }] })); setNewFolder(""); }}>
-              <Input value={newFolder} onChange={(e) => setNewFolder(e.target.value)} placeholder={t("guestWs.newFolder", { defaultValue: "Nova pasta" })} className="h-8" />
-              <Button type="submit" size="sm" variant="outline"><Plus className="h-4 w-4" /></Button>
-            </form>
-          </section>
-
-          <section className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.colors", { defaultValue: "Cores" })}</h3>
-            <div className="flex gap-2">
-              <button className={chip(!color)} onClick={() => setColor(null)}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
-              {WS_COLORS.map((c) => (
-                <button key={c} aria-label={c} aria-pressed={color === c} onClick={() => setColor(c)}
-                  className={cn("h-7 w-7 rounded-full border-2", colorDot[c], color === c ? "border-foreground" : "border-transparent")} />
-              ))}
-            </div>
-          </section>
-
-          <section className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.settings", { defaultValue: "Configurações" })}</h3>
-            <div className="flex gap-1.5">
-              {(["sm", "md", "lg"] as const).map((s) => <button key={s} className={chip(data.settings.fontSize === s)} onClick={() => setSetting("fontSize", s)}>{{ sm: "A-", md: "A", lg: "A+" }[s]}</button>)}
-            </div>
-            <div className="flex gap-1.5">
-              <button className={chip(data.settings.width === "narrow")} onClick={() => setSetting("width", "narrow")}>{t("guestWs.narrow", { defaultValue: "Texto estreito" })}</button>
-              <button className={chip(data.settings.width === "wide")} onClick={() => setSetting("width", "wide")}>{t("guestWs.wide", { defaultValue: "Texto largo" })}</button>
-            </div>
-          </section>
-
-          <section className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.backup", { defaultValue: "Backup e Dados" })}</h3>
-            <p className="text-xs text-muted-foreground">{t("guestWs.backupHint", { defaultValue: "Funciona sem internet. Os arquivos ficam no seu aparelho." })}</p>
-            <div className="grid gap-2">
-              <Button variant="outline" size="sm" className="justify-start gap-2" onClick={doBackup}><Download className="h-4 w-4" />{t("guestWs.makeBackup", { defaultValue: "Gerar backup" })}</Button>
-              <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4" />{t("guestWs.restore", { defaultValue: "Restaurar backup" })}</Button>
-              <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => planRef.current?.click()}><FileText className="h-4 w-4" />{t("guestWs.importPlan", { defaultValue: "Importar plano (.json/.zip)" })}</Button>
-              <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => setBibleOpen(true)}><BookOpen className="h-4 w-4" />{t("guestWs.importBible", { defaultValue: "Importar Bíblia (EPUB)" })}</Button>
-            </div>
+            <p className="text-[11px] text-muted-foreground">{t("guestWs.backupHint", { defaultValue: "Funciona sem internet. Os arquivos ficam no seu aparelho." })}</p>
             <input ref={fileRef} type="file" accept=".zip,application/zip" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doRestore(f, "replace"); }} />
             <input ref={planRef} type="file" accept=".json,.zip,application/json,application/zip" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doRestore(f, "merge"); }} />
+          </section>
+
+          <section className="space-y-1.5">
+            <h3 className="px-1 text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.appearance", { defaultValue: "Aparência" })}</h3>
+            <div className="space-y-3 rounded-2xl border bg-card p-3">
+              <ThemeToggle />
+              <div className="flex gap-1.5">
+                {(["sm", "md", "lg"] as const).map((s) => <button key={s} className={chip(data.settings.fontSize === s)} onClick={() => setSetting("fontSize", s)}>{{ sm: "A-", md: "A", lg: "A+" }[s]}</button>)}
+              </div>
+              <div className="flex gap-1.5">
+                <button className={chip(data.settings.width === "narrow")} onClick={() => setSetting("width", "narrow")}>{t("guestWs.narrow", { defaultValue: "Texto estreito" })}</button>
+                <button className={chip(data.settings.width === "wide")} onClick={() => setSetting("width", "wide")}>{t("guestWs.wide", { defaultValue: "Texto largo" })}</button>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-1.5">
+            <h3 className="flex items-center gap-1.5 px-1 text-xs font-semibold uppercase text-muted-foreground"><FolderOpen className="h-3.5 w-3.5" />{t("guestWs.folders", { defaultValue: "Pastas" })} · {kind === "note" ? t("guestWs.notes", { defaultValue: "Anotações" }) : kind === "bible" ? t("guestWs.bible", { defaultValue: "Leitura da Bíblia" }) : t("guestWs.research", { defaultValue: "Pesquisas Pessoais" })}</h3>
+            <div className="space-y-3 rounded-2xl border bg-card p-3">
+              <div className="flex flex-wrap gap-1.5">
+                <button className={chip(!folder)} onClick={() => setFolder(null)}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
+                {data.folders.filter((f) => f.kind === kind).map((f) => <button key={f.id} className={chip(folder === f.id)} onClick={() => setFolder(f.id)}>{f.name}</button>)}
+              </div>
+              <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const name = newFolder.trim(); if (!name) return;
+                update((d) => ({ ...d, folders: [...d.folders, { id: crypto.randomUUID(), name, kind }] })); setNewFolder(""); }}>
+                <Input value={newFolder} onChange={(e) => setNewFolder(e.target.value)} placeholder={t("guestWs.newFolder", { defaultValue: "Nova pasta" })} className="h-8" />
+                <Button type="submit" size="sm" variant="outline"><Plus className="h-4 w-4" /></Button>
+              </form>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{t("guestWs.colors", { defaultValue: "Cores" })}</span>
+                <button className={chip(!color)} onClick={() => setColor(null)}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
+                {WS_COLORS.map((c) => (
+                  <button key={c} aria-label={c} aria-pressed={color === c} onClick={() => setColor(c)}
+                    className={cn("h-7 w-7 rounded-full border-2", colorDot[c], color === c ? "border-foreground" : "border-transparent")} />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-1.5">
+            <h3 className="px-1 text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.bibleGroup", { defaultValue: "Bíblia" })}</h3>
+            <div className={group}>
+              <button type="button" className={row} onClick={() => setBibleOpen(true)}><BookOpen className="h-4 w-4 text-muted-foreground" />{t("guestWs.importBible", { defaultValue: "Importar Bíblia (EPUB)" })}</button>
+            </div>
           </section>
         </div>
         <BibleManagerDialog open={bibleOpen} onOpenChange={setBibleOpen} />

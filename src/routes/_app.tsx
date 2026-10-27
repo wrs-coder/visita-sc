@@ -50,6 +50,7 @@ import { OfflineReadyBadge } from "@/components/OfflineReadyBadge";
 import { RouteAnnouncer } from "@/components/RouteAnnouncer";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { VisitTemplateReminder } from "@/components/VisitTemplateReminder";
+import { useFocusChrome } from "@/lib/focus-chrome";
 
 
 export const Route = createFileRoute("/_app")({
@@ -64,6 +65,7 @@ function AppLayout() {
   const activeCong = useActiveCongregation();
   const nav = useNavigate();
   const location = useLocation();
+  const focusChrome = useFocusChrome();
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
@@ -320,7 +322,7 @@ function AppLayout() {
       {/* Onda 7.9 — Anunciador SR-only de mudança de rota. */}
       <RouteAnnouncer pathname={location.pathname} />
       {/* Mobile top bar */}
-      <header className="md:hidden sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm safe-top safe-x">
+      <header className={cn("md:hidden sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm safe-top safe-x", focusChrome && "hidden")}>
         <div className="flex items-center justify-between px-3 h-14">
           <div className="flex items-center gap-2">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>

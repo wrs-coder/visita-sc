@@ -38,7 +38,10 @@ import {
   ChevronsUpDown,
   FileUp,
   Clock,
+  MoreHorizontal,
 } from "lucide-react";
+import { FloatingVersePanel } from "@/components/guest-workspace/FloatingVersePanel";
+import { useFocusChromeWhile } from "@/lib/focus-chrome";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { isOfflineMode } from "@/lib/connection-mode";
@@ -559,6 +562,8 @@ function Page() {
     return () => window.removeEventListener("visita-sc:outlines-synced", handler);
   }, [activeType]);
 
+  // Esboço aberto no celular: a linha do editor substitui a barra superior do app.
+  useFocusChromeWhile(!!draft && !showLibrary);
   const detected: CitationMatch[] = useMemo(
     () => (draft && activeBible ? findCitations(activeBible.books, stripHtmlForDetection(draft.content)) : []),
     [draft, activeBible],
@@ -1939,13 +1944,10 @@ function Page() {
             {/* Editor */}
             {/* Edição: moldura como antes (overflow-hidden). Esboço: overflow-clip
                 para a pílula de tempo fixa (sticky) acompanhar a rolagem. */}
-            <Card className={cn("w-full max-w-full min-w-0", mode === "edit" ? "overflow-hidden" : "overflow-clip", (!draft || showLibrary) && "hidden lg:block")}>
-              <CardContent className="p-5 space-y-4 w-full max-w-full overflow-x-hidden box-border min-w-0">
+            <Card className={cn("w-full max-w-full min-w-0 overflow-clip max-lg:border-0 max-lg:shadow-none max-lg:bg-transparent", (!draft || showLibrary) && "hidden lg:block")}>
+              <CardContent className="p-5 max-lg:pt-0 space-y-4 w-full max-w-full overflow-x-clip box-border min-w-0">
                 {draft && (
-                  <div className="flex items-center -ml-2 -mt-2">
-                    <Button variant="ghost" size="sm" className="lg:hidden h-8 px-2 text-primary" onClick={() => { setShowLibrary(true); window.scrollTo({ top: 0 }); }}>
-                      <ChevronLeft className="h-4 w-4 mr-1" /> {t("personalOutlines.list.back", { defaultValue: "Esboços" })}
-                    </Button>
+                  <div className="hidden lg:flex items-center -ml-2 -mt-2">
                     <Button variant="ghost" size="sm" className="hidden lg:inline-flex h-8 px-2 text-primary" onClick={() => setLibCollapsed((v) => !v)}>
                       {libCollapsed ? <ChevronLeft className="h-4 w-4 mr-1" /> : <Maximize2 className="h-4 w-4 mr-1" />}
                       {libCollapsed
@@ -1989,6 +1991,7 @@ function Page() {
                     dateFmt={dateFmt}
                     onInsertBibleText={handleInsertBibleText}
                     onSyncInfo={setSyncInfo}
+                    onBack={() => { setShowLibrary(true); window.scrollTo({ top: 0 }); }}
                   />
                   </>
                 )}
@@ -2133,13 +2136,14 @@ interface EditorProps {
   dateFmt: (ts: number) => string;
   onInsertBibleText: (text: string) => void | Promise<void>;
   onSyncInfo?: (info: SyncInfo | null) => void;
+  onBack?: () => void;
 }
 
 type SyncInfo = { run: () => void | Promise<void>; syncing: boolean };
 
 function NoteEditor({
   draft, mode, type, saving, activeBible, detected,
-  onPatch, onModeChange, onSave, onDelete, onExport, onExportDocx, onFullscreen, onCloud, dateFmt, onInsertBibleText, onSyncInfo,
+  onPatch, onModeChange, onSave, onDelete, onExport, onExportDocx, onFullscreen, onCloud, dateFmt, onInsertBibleText, onSyncInfo, onBack,
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
@@ -2150,8 +2154,9 @@ function NoteEditor({
   const META_COLLAPSED_KEY = "visita-sc:outline-meta-collapsed";
   const stableVh = useStableViewportHeight();
   const [outlineSlot, setOutlineSlot] = useState<HTMLDivElement | null>(null);
+  // Detalhes começam recolhidos (mais espaço para escrever); a escolha fica salva.
   const [metaCollapsed, setMetaCollapsed] = useState<boolean>(() => {
-    try { return localStorage.getItem(META_COLLAPSED_KEY) === "1"; } catch { return false; }
+    try { return localStorage.getItem(META_COLLAPSED_KEY) !== "0"; } catch { return true; }
   });
   useEffect(() => {
     try { localStorage.setItem(META_COLLAPSED_KEY, metaCollapsed ? "1" : "0"); } catch { /* noop */ }
@@ -2238,9 +2243,14 @@ function NoteEditor({
 
   return (
     <div className="w-full max-w-full overflow-x-clip box-border min-w-0 [overflow-wrap:anywhere] break-words flex flex-col min-h-[calc(100dvh-8rem)]">
-      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 w-full max-w-full min-w-0 mb-3">
+      <div className="sticky top-0 z-30 shrink-0 -mx-5 px-3 sm:px-5 py-2 mb-3 bg-background/95 backdrop-blur border-b safe-top flex flex-wrap items-center justify-between gap-2 w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)] min-w-0">
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          {onBack && (
+            <Button variant="ghost" size="sm" className="lg:hidden h-8 px-1.5 text-primary" onClick={onBack}>
+              <ChevronLeft className="h-4 w-4" /> {t("personalOutlines.list.back", { defaultValue: "Esboços" })}
+            </Button>
+          )}
           {!isTalk && (
             <div className="inline-flex rounded-md border bg-background p-0.5">
               <button
@@ -2265,7 +2275,7 @@ function NoteEditor({
               </button>
             </div>
           )}
-          <span className="text-[11px] text-muted-foreground">
+          <span className="hidden sm:inline text-[11px] text-muted-foreground">
             {t("fieldConsiderations.updatedAt")}: {dateFmt(draft.updated_at)}
           </span>
         </div>
@@ -2302,9 +2312,38 @@ function NoteEditor({
             )}
           </Button>
           )}
-          {mode === "outline" && !isTalk && (
-            <Button variant="outline" size="sm" onClick={onFullscreen}>
-              <Maximize2 className="h-4 w-4 mr-1.5" /> {t("personalOutlines.fullscreen.enter")}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={t("personalOutlines.editor.moreActions", { defaultValue: "Mais ações" })}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {mode === "outline" && !isTalk && (
+                <DropdownMenuItem onClick={onFullscreen}>
+                  <Maximize2 className="h-4 w-4 mr-2" /> {t("personalOutlines.fullscreen.enter")}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={onExport}>
+                <Download className="h-4 w-4 mr-2" /> {t("personalOutlines.folders.exportNote")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onExportDocx}>
+                <FileText className="h-4 w-4 mr-2" /> Word (.docx)
+              </DropdownMenuItem>
+              {!isTalk && (
+                <DropdownMenuItem onClick={onCloud}>
+                  <Cloud className="h-4 w-4 mr-2" /> {t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+                <Trash2 className="h-4 w-4 mr-2" /> {t("fieldConsiderations.delete")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {mode === "edit" && (
+            <Button size="sm" className="h-8" onClick={onSave} disabled={saving} title={t("fieldConsiderations.save")}>
+              <Save className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.save")}</span>
             </Button>
           )}
         </div>
@@ -2446,25 +2485,12 @@ function NoteEditor({
         </>)}
 
         {mode === "edit" && (
-          <div className="rounded-lg border bg-muted/30 p-3 space-y-2 w-full max-w-full min-w-0 overflow-hidden break-words">
-            <div className="flex items-center gap-2 text-xs font-semibold">
-              <BookOpen className="h-3.5 w-3.5 text-primary" />
-              {t("fieldConsiderations.detected")}
-            </div>
-            {detected.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                {t("fieldConsiderations.detectedEmpty")}
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5 max-w-full min-w-0">
-                {detected.map((m, i) => (
-                  <VerseLink key={`${m.index}-${i}`} match={m} libraryId={activeBible?.id ?? null} onInsert={onInsertBibleText} />
-                ))}
-              </div>
-            )}
-            <BibleHistoryChips library={activeBible} onInsert={onInsertBibleText} />
-          </div>
-
+          <FloatingVersePanel
+            library={activeBible}
+            detected={detected}
+            onInsert={(text) => { void onInsertBibleText(text); }}
+            storageKey="outlines.versePanel.pos"
+          />
         )}
       </div>
 
@@ -2480,11 +2506,7 @@ function NoteEditor({
             )}
             <div ref={setOutlineSlot} className="ml-auto flex items-center" />
           </div>
-        ) : (
-          <div className="shrink-0 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-background border-b">
-            <Label>{t("fieldConsiderations.fields.content")}</Label>
-          </div>
-        )}
+        ) : null}
         {!isTalk && mode === "outline" && (
           <OutlineInactivitySensor outlineId={draft.id} />
         )}
@@ -2518,6 +2540,7 @@ function NoteEditor({
               minHeight={minH}
               maxHeight={maxH}
               className="flex-1 min-h-0"
+              collapsibleToolbarKey="outlines.toolbarOpen"
               // Missão 01: sem cronômetro embutido no modo edição.
               outlineId={undefined}
               compact={metaCollapsed}
@@ -2552,33 +2575,6 @@ function NoteEditor({
       </div>
 
 
-      {/* Action bar — sempre visível no rodapé do editor (flex item, não sticky) */}
-      <div className="shrink-0 mt-3 -mx-5 px-3 sm:px-5 py-3 bg-background/95 backdrop-blur border-t flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)]">
-        {mode === "outline" && (
-          <Button variant="outline" size="sm" onClick={() => onModeChange("edit")} title={t("fieldConsiderations.edit")}>
-            <Pencil className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.edit")}</span>
-          </Button>
-        )}
-        <Button variant="outline" size="sm" onClick={onExport} title={t("personalOutlines.folders.exportNote")}>
-          <Download className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.folders.exportNote")}</span>
-        </Button>
-        <Button variant="outline" size="sm" onClick={onExportDocx} title={t("personalOutlines.folders.exportDocx", { defaultValue: "Word (.docx)" })}>
-          <FileText className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">Word</span>
-        </Button>
-        {!isTalk && (
-          <Button variant="outline" size="sm" onClick={onCloud} title={t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}>
-            <Cloud className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}</span>
-          </Button>
-        )}
-        <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive" title={t("fieldConsiderations.delete")}>
-          <Trash2 className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.delete")}</span>
-        </Button>
-        {mode === "edit" && (
-          <Button size="sm" onClick={onSave} disabled={saving} title={t("fieldConsiderations.save")}>
-            <Save className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.save")}</span>
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

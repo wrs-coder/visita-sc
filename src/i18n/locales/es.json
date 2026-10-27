@@ -1059,7 +1059,11 @@
     "whatsapp": {
       "header": "*Notas Privadas — Confidencial*"
     },
-    "newButton": "Nuevo"
+    "newButton": "Nuevo",
+    "toolbar": {
+      "show": "Herramientas",
+      "hide": "Ocultar herramientas"
+    }
   },
   "report": {
     "loading": "Cargando informe…",
@@ -1524,7 +1528,7 @@
       "assistants": "Dirigentes auxiliares",
       "assistantsPh": "Nombres separados por comas",
       "content": "Contenido",
-      "contentPh": "Escribe tus consideraciones..."
+      "contentPh": "Escribe aquí…"
     },
     "createdAt": "Creada el",
     "updatedAt": "Actualizada el",
@@ -1987,5 +1991,17 @@
     "pillCircuit": "Circuito",
     "sectionCongregations": "Congregaciones",
     "sectionElders": "Ancianos del circuito"
+  },
+  "guestWs": {
+    "more": "Más opciones",
+    "addNoteBox": "Insertar cuadro de observación",
+    "addLinkTo": "Vincular a otra nota",
+    "addLinkHint": "Crea un acceso al final del texto que abre la nota elegida.",
+    "versesPanel": "Versículos",
+    "newHighlight": "Nuevo punto destacado",
+    "folderMenu": "Opciones de la carpeta",
+    "lastBackup": "Última copia: {{when}}",
+    "noBackupYet": "Aún no se ha hecho ninguna copia en este dispositivo.",
+    "bibleGroup": "Biblia"
   }
 }

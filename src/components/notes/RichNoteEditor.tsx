@@ -51,6 +51,8 @@ interface RichNoteEditorProps {
   attachments?: NoteAttachment[];
   /** Callback para atualizar a lista de anexos (opcional). */
   onAttachmentsChange?: (next: NoteAttachment[]) => void;
+  /** Quando presente, a barra pode ser recolhida; a escolha fica neste aparelho sob esta chave (inicia recolhida). */
+  collapsibleToolbarKey?: string;
 }
 
 
@@ -153,7 +155,18 @@ export function RichNoteEditor({
   compact = false,
   attachments,
   onAttachmentsChange,
+  collapsibleToolbarKey,
 }: RichNoteEditorProps) {
+  const [toolbarOpen, setToolbarOpen] = useState(false);
+  useEffect(() => {
+    if (!collapsibleToolbarKey) return;
+    try { setToolbarOpen(localStorage.getItem(collapsibleToolbarKey) === "1"); } catch { /* */ }
+  }, [collapsibleToolbarKey]);
+  const toggleToolbar = () => setToolbarOpen((v) => {
+    const n = !v;
+    try { if (collapsibleToolbarKey) localStorage.setItem(collapsibleToolbarKey, n ? "1" : "0"); } catch { /* */ }
+    return n;
+  });
 
   const { t } = useTranslation();
   const [focused, setFocused] = useState(false);
@@ -289,7 +302,18 @@ export function RichNoteEditor({
       style={{ minHeight, maxHeight: maxHeight === "none" ? undefined : maxHeight }}
       onClick={() => editor?.chain().focus().run()}
     >
-      <RichNoteToolbar
+      {collapsibleToolbarKey && (
+        <button type="button" aria-expanded={toolbarOpen}
+          onClick={(e) => { e.stopPropagation(); toggleToolbar(); }}
+          className="sticky top-0 z-20 flex w-full items-center gap-1.5 border-b bg-background/95 px-3 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
+          <span className="font-semibold">Aa</span>
+          {toolbarOpen
+            ? t("notes.toolbar.hide", { defaultValue: "Recolher ferramentas" })
+            : t("notes.toolbar.show", { defaultValue: "Ferramentas" })}
+          <span aria-hidden className={cn("ml-auto transition-transform", toolbarOpen && "rotate-90")}>›</span>
+        </button>
+      )}
+      {(!collapsibleToolbarKey || toolbarOpen) && <RichNoteToolbar
         editor={editor}
         visible={toolbarVisible}
         focusMode={focusMode}
@@ -299,7 +323,7 @@ export function RichNoteEditor({
         onAddPhotoAttachment={onAttachmentsChange ? () => setAttachDialog("photo") : undefined}
         onAddVideoAttachment={onAttachmentsChange ? () => setAttachDialog("videoFile") : undefined}
         onAddLinkAttachment={onAttachmentsChange ? () => setAttachDialog("link") : undefined}
-      />
+      />}
 
       {onAttachmentsChange && attachments && attachments.length > 0 && (
         <OutlineAttachmentsBar

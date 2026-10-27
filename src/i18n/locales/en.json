@@ -1084,7 +1084,11 @@
     "whatsapp": {
       "header": "*Private Notes — Confidential*"
     },
-    "newButton": "New"
+    "newButton": "New",
+    "toolbar": {
+      "show": "Tools",
+      "hide": "Hide tools"
+    }
   },
   "report": {
     "loading": "Loading report…",
@@ -1549,7 +1553,7 @@
       "assistants": "Assistant chairmen",
       "assistantsPh": "Names separated by commas",
       "content": "Content",
-      "contentPh": "Write your considerations..."
+      "contentPh": "Write here…"
     },
     "createdAt": "Created on",
     "updatedAt": "Updated on",
@@ -2012,5 +2016,17 @@
     "pillCircuit": "Circuit",
     "sectionCongregations": "Congregations",
     "sectionElders": "Circuit elders"
+  },
+  "guestWs": {
+    "more": "More options",
+    "addNoteBox": "Insert note box",
+    "addLinkTo": "Link to another note",
+    "addLinkHint": "Adds a shortcut at the end of the text that opens the chosen note.",
+    "versesPanel": "Verses",
+    "newHighlight": "New highlight",
+    "folderMenu": "Folder options",
+    "lastBackup": "Last backup: {{when}}",
+    "noBackupYet": "No backup made on this device yet.",
+    "bibleGroup": "Bible"
   }
 }
