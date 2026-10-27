@@ -10,12 +10,14 @@ import type { CitationMatch } from "@/lib/bible-refs";
 import type { BibleLibrary } from "@/lib/bible-notes-store";
 import { cn } from "@/lib/utils";
 
-const POS_KEY = "guestWs.versePanel.pos";
 type Pos = { side: "left" | "right"; y: number };
 
-export function FloatingVersePanel({ library, detected, onInsert }: {
+export function FloatingVersePanel({ library, detected, onInsert, storageKey = "guestWs.versePanel.pos" }: {
   library: BibleLibrary | null; detected: CitationMatch[]; onInsert: (text: string) => void;
+  /** Chave da posição salva neste aparelho (cada tela guarda a sua). */
+  storageKey?: string;
 }) {
+  const POS_KEY = storageKey;
   const { t } = useTranslation();
   const [pos, setPos] = useState<Pos>({ side: "right", y: 0.7 });
   const [open, setOpen] = useState(false);

@@ -38,7 +38,10 @@ import {
   ChevronsUpDown,
   FileUp,
   Clock,
+  MoreHorizontal,
 } from "lucide-react";
+import { FloatingVersePanel } from "@/components/guest-workspace/FloatingVersePanel";
+import { useFocusChromeWhile } from "@/lib/focus-chrome";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { isOfflineMode } from "@/lib/connection-mode";
