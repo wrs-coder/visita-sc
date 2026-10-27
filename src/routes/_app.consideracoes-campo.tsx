@@ -562,6 +562,8 @@ function Page() {
     return () => window.removeEventListener("visita-sc:outlines-synced", handler);
   }, [activeType]);
 
+  // Esboço aberto no celular: a linha do editor substitui a barra superior do app.
+  useFocusChromeWhile(!!draft && !showLibrary);
   const detected: CitationMatch[] = useMemo(
     () => (draft && activeBible ? findCitations(activeBible.books, stripHtmlForDetection(draft.content)) : []),
     [draft, activeBible],

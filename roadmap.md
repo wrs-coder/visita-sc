@@ -63,3 +63,4 @@
 - [x] Visual enxuto nos modelos: seletor no celular, menu ⋮, informações recolhíveis, itens fechados, barra fixa Adicionar/Salvar, "Mais detalhes"
 - [x] Resumo da semana liberado (somente leitura) para comissão/anciãos
 - [x] Programação geral (⤓) no Resumo da semana com escolha de partes e observações
+- [x] Esboços Pessoais: modo foco (📖 flutuante, ferramentas recolhíveis, linha única no topo)
