@@ -1,86 +1,39 @@
-# Esboços Pessoais: modo foco para escrever e ler
+# Esboços Pessoais: campo de texto mais limpo
 
-## É seguro?
-Sim. As três mudanças afetam só a aparência e a posição dos botões. Continuam iguais:
-- o texto salvo e a sincronização com a nuvem
-- o rascunho automático e o aviso de rascunho
-- o cronômetro e o tempo por tópico
-- os anexos e a exportação em Word e PDF
+## (01) Qual forma é melhor: "Modo edição" ou "Anotações"?
+O campo de digitação é o mesmo nos dois lugares. Ele usa o mesmo editor, a mesma barra "[Aa] Ferramentas", o mesmo botão 📖 e o mesmo salvamento. As diferenças são estas:
+- **Modo edição (esboços):** tem a escolha Edição/Esboço. Assim você escreve e depois lê o esboço com o cronômetro.
+- **Anotações:** abre direto para escrever, sem a escolha de modo, porque anotação não tem cronômetro.
 
-O botão 📖 já existe no acesso da esposa e já foi testado lá. A barra azul do topo só some enquanto um esboço está aberto. Quando você volta para a lista, ela reaparece com a congregação, o Wi-Fi, a sincronização, a lixeira e o botão de sair.
+**Recomendação:** manter o mesmo campo nos dois. Para quem usa, isso é o mais vantajoso, porque aprende uma vez e usa igual em todo lugar. Pelo padrão iOS e One UI, um campo de escrita deve ser igual em toda a tela. O que muda de um lugar para o outro são só os botões ao redor, e isso já está assim hoje. Não vou alterar nada aqui.
 
-## Como fica a tela (celular)
-
-Modo edição: a barra de ferramentas começa fechada.
+## (02) Tirar a palavra "Conteúdo"
+Antes:
 ```text
+| < Esboços [Edição|Esboço] ⇕  ⋯ [💾] |
 +-------------------------------------+
-| < Esboços  [Editar|Esboço]  ⋯  [💾] |  <- substitui a barra azul
-+-------------------------------------+
-| ▸ Detalhes (oração, território...)  |
+| Conteúdo                            |  <- linha só com o título
+|-------------------------------------|
 | [Aa Ferramentas ▾]                  |
-|                                     |
-|  Texto do esboço ocupando quase     |
-|  toda a altura da tela...           |
-|                                     |
-|                                 (📖3)|  <- arrastável, encaixa na borda
-|                                     |
-+-------------------------------------+
+| Escreva suas considerações...       |
 ```
-
-Quando você toca em "⋯":
+Depois:
 ```text
-                 +--------------------+
-                 | ⤓ Exportar PDF     |
-                 | W  Word (.docx)    |
-                 | ☁  Nuvem           |
-                 | ⛶  Tela cheia      |
-                 | ─────────────────  |
-                 | 🗑 Excluir  (vermelho)|
-                 +--------------------+
+| < Esboços [Edição|Esboço] ⇕  ⋯ [💾] |
++-------------------------------------+
+| [Aa Ferramentas ▾]                  |
+| Escreva aqui...       (cinza claro) |  <- some quando você digita
+|                                     |
+|  (cerca de 1 linha a mais de texto) |
+|                                 (📖)|
 ```
-
-Quando você toca em 📖, o painel abre por baixo:
-```text
-+-------------------------------------+
-| Versículos detectados        [ˇ]    |
-| [Jo 3:16] [Sl 23:1] [Mt 5:9]        |
-| Consultas recentes                  |
-| [Is 41:10] [Rm 8:28]                |
-+-------------------------------------+
-```
-Quando você toca numa referência, o painel fecha e o versículo abre na tela.
-
-Modo esboço (leitura):
-```text
-+-------------------------------------+
-| < Esboços  [Editar|Esboço]  ⋯       |
-+-------------------------------------+
-| ⏱ 00:12:30  ▶  ⏸        [tópicos]   |  <- cronômetro como hoje
-|  Texto em leitura...                |
-+-------------------------------------+
-```
-O botão "Salvar" só aparece no modo edição, como hoje. No modo esboço, o "⋯" não mostra a opção Excluir na mesma linha, para evitar toques acidentais.
-
-## O que muda
-1. **Botão 📖 flutuante (só no modo edição).** O quadro fixo "Versículos detectados" e as consultas recentes saem do meio da tela. Eles passam para o botão 📖, que mostra o número de versículos encontrados. A posição do botão fica guardada no aparelho.
-2. **Barra de ferramentas recolhível.** Ela começa fechada. O botão "[Aa] Ferramentas" abre e fecha a barra, e o aparelho guarda a sua escolha.
-3. **Linha única no topo.** Ela traz "< Esboços", a escolha Editar/Esboço, o menu "⋯" (Exportar, Word, Nuvem, Tela cheia, Excluir) e "Salvar". Ela fica presa no topo e ocupa o lugar da barra azul do app enquanto um esboço está aberto no celular. Com isso, a barra de botões do rodapé deixa de existir.
-   - Botão "voltar": "< Esboços" já faz esse papel. Por isso não incluí um "voltar" separado, que seria duplicado.
-
-## Outras sugestões (incluídas no plano)
-4. **Detalhes recolhidos.** No modo edição, os campos Oração, Território e Ajudantes ficam recolhidos em "▸ Detalhes" por padrão. A tela já tem esse recurso de recolher. O plano só faz a tela abrir com ele fechado e guarda a sua escolha.
-5. **Avisos menores.** Os avisos de rascunho e de soma de tempo passam a ocupar uma linha discreta. Eles continuam sumindo quando o teclado abre.
-6. **Moldura menor no celular.** O cartão em volta do texto perde a borda e as margens grandes no celular. Assim o texto ganha a largura toda da tela.
-7. **Mais altura para o texto.** Com a barra azul e o rodapé fora da tela, o espaço para escrever cresce cerca de 7rem, mais ou menos 5 linhas.
-
-No computador, o layout continua como hoje, com a barra lateral e a lista ao lado. Só o botão 📖 e a barra de ferramentas recolhível valem também para o computador.
+- A linha "Conteúdo" sai do modo edição e das Anotações.
+- Dentro do campo vazio aparece em cinza claro "Escreva aqui…". Esse texto não é salvo junto com a anotação. Ele some assim que você começa a digitar e volta se o campo ficar vazio. É assim que funcionam as Notas do iPhone e do Samsung.
+- O modo esboço (leitura) não muda.
+- Nada muda no que já está salvo. Os esboços existentes continuam iguais.
 
 ## Detalhes técnicos
-- `FloatingVersePanel` (guest-workspace) ganha props genéricas: uma `storageKey` para a posição e um `renderPick` opcional. A tela de esboços passa `detected`, `activeBible` e `onInsertBibleText`, e usa `storageKey="outlines.versePanel.pos"`. O comportamento no acesso da esposa não muda.
-- `RichNoteEditor` usa a prop `collapsibleToolbarKey="outlines.toolbarOpen"`, que já existe.
-- Novo módulo pequeno `src/lib/focus-chrome.ts` (useSyncExternalStore): `setFocusChrome(bool)` e `useFocusChrome()`. `_app.tsx` aplica `hidden` no header mobile quando ele está ativo (só classe, sem desmontar, para preservar Sheet/estado). `_app.consideracoes-campo.tsx` liga quando `draft && !showLibrary` e desliga no unmount ou ao voltar.
-- `NoteEditor`: a action bar do rodapé é substituída por uma topbar sticky (`top-0`, `safe-top`) com DropdownMenu. Os mesmos handlers continuam: onSave, onDelete, onExport, onExportDocx, onCloud, onFullscreen. O bloco "detected" é removido do fluxo.
-- `metaCollapsed` passa a ter default `true` no modo edição, persistido em localStorage. O cálculo de `minH`/`maxH` desconta a nova topbar (cerca de 3rem) em vez do header e do rodapé.
-- i18n pt/en/es para os novos rótulos ("Mais ações", "Detalhes").
-- Uma regra no AGENTS.md: o header mobile pode ser ocultado por telas de foco via `focus-chrome`, sem desmontar.
-- Validação: `bunx tsgo --noEmit`, `bunx vitest run` e captura Playwright em 393x733 nos modos edição e esboço.
+- `_app.consideracoes-campo.tsx`: remove o bloco `<Label>{fields.content}</Label>` do ramo `mode !== "outline"`. Para leitores de tela, o editor recebe `aria-label` com o mesmo texto, se o RichNoteEditor aceitar; senão, fica só o placeholder.
+- i18n pt/en/es: `fieldConsiderations.fields.contentPh` passa a ser "Escreva aqui…", "Write here…" e "Escribe aquí…". A chave só é usada nessa tela.
+- O placeholder já vem da extensão Placeholder do TipTap (só visual). Não precisa de código novo.
+- Validação: `bunx tsgo --noEmit` e `bunx vitest run`.
