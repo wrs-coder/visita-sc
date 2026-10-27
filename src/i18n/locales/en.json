@@ -1084,7 +1084,11 @@
     "whatsapp": {
       "header": "*Private Notes — Confidential*"
     },
-    "newButton": "New"
+    "newButton": "New",
+    "toolbar": {
+      "show": "Tools",
+      "hide": "Hide tools"
+    }
   },
   "report": {
     "loading": "Loading report…",
@@ -2012,5 +2016,13 @@
     "pillCircuit": "Circuit",
     "sectionCongregations": "Congregations",
     "sectionElders": "Circuit elders"
+  },
+  "guestWs": {
+    "more": "More options",
+    "addNoteBox": "Insert note box",
+    "addLinkTo": "Link to another note",
+    "addLinkHint": "Adds a shortcut at the end of the text that opens the chosen note.",
+    "versesPanel": "Verses",
+    "newHighlight": "New highlight"
   }
 }

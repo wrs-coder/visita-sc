@@ -1059,7 +1059,11 @@
     "whatsapp": {
       "header": "*Notas Privadas — Confidencial*"
     },
-    "newButton": "Nuevo"
+    "newButton": "Nuevo",
+    "toolbar": {
+      "show": "Herramientas",
+      "hide": "Ocultar herramientas"
+    }
   },
   "report": {
     "loading": "Cargando informe…",
@@ -1987,5 +1991,13 @@
     "pillCircuit": "Circuito",
     "sectionCongregations": "Congregaciones",
     "sectionElders": "Ancianos del circuito"
+  },
+  "guestWs": {
+    "more": "Más opciones",
+    "addNoteBox": "Insertar cuadro de observación",
+    "addLinkTo": "Vincular a otra nota",
+    "addLinkHint": "Crea un acceso al final del texto que abre la nota elegida.",
+    "versesPanel": "Versículos",
+    "newHighlight": "Nuevo punto destacado"
   }
 }
