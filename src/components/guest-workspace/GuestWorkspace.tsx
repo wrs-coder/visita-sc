@@ -78,8 +78,23 @@ export function GuestSectionNav({ value, onChange }: { value: GuestSection; onCh
 
 const colorDot: Record<string, string> = { primary: "bg-primary", accent: "bg-accent", secondary: "bg-secondary", muted: "bg-muted-foreground" };
 
+export function relTime(iso: string, lang: string, now = Date.now()): string {
+  const diff = (new Date(iso).getTime() - now) / 1000;
+  if (!Number.isFinite(diff)) return "";
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
+  const a = Math.abs(diff);
+  if (a < 60) return rtf.format(0, "minute");
+  if (a < 3600) return rtf.format(Math.round(diff / 60), "minute");
+  if (a < 86400) return rtf.format(Math.round(diff / 3600), "hour");
+  if (a < 86400 * 30) return rtf.format(Math.round(diff / 86400), "day");
+  if (a < 86400 * 365) return rtf.format(Math.round(diff / (86400 * 30)), "month");
+  return rtf.format(Math.round(diff / (86400 * 365)), "year");
+}
+
+const LAST_BACKUP_KEY = "guestWs.lastBackup";
+
 export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [data, setData] = useState<WsData>(emptyWs);
   const [ready, setReady] = useState(false);
   const [studyTab, setStudyTab] = useState<"bible" | "research">("bible");
@@ -89,6 +104,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
   const [folder, setFolder] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const skRef = useRef("anon");
   const pending = useRef<WsData | null>(null);
   const timer = useRef<number | undefined>(undefined);
@@ -187,33 +203,46 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
       </div>
 
       {(() => { const block = (<div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-1.5">
-        <FolderOpen className="h-4 w-4 text-muted-foreground" aria-hidden />
-        <button type="button" onClick={() => setFolder(null)} className={cn("rounded-full border px-3 py-1 text-xs", !folder ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
-        {kindFolders.map((f) => (
-          <button key={f.id} type="button" onClick={() => setFolder(f.id)} className={cn("rounded-full border px-3 py-1 text-xs", folder === f.id ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{f.name} <span className="opacity-70">{data.items.filter((i) => i.kind === kind && i.folderId === f.id).length}</span></button>
-        ))}
-        {kind === "research" && !data.folders.some((f) => f.kind === "research") && THEME_SUGGESTIONS.map((n) => (
-          <button key={n} type="button" onClick={() => addFolder(n)} className="rounded-full border border-dashed px-3 py-1 text-xs text-muted-foreground hover:bg-accent/60">+ {n}</button>
-        ))}
-        <Button type="button" size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => addFolder()}><Plus className="h-3.5 w-3.5" />{t("guestWs.folder", { defaultValue: "Pasta" })}</Button>
-        {folder && <>
-          <Button type="button" size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => exportFolderDocx(folder)}><Download className="h-3.5 w-3.5" />Word</Button>
-          <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => renameFolder(folder)}>{t("guestWs.rename", { defaultValue: "Renomear" })}</Button>
-          <Button type="button" size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => deleteFolder(folder)}>{t("guestWs.delete", { defaultValue: "Apagar" })}</Button>
-        </>}
-      </div>
-      <div className="sticky top-0 z-10 -mx-1 bg-background px-1 py-1">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("guestWs.searchKw", { defaultValue: "Buscar no título ou no texto…" })} className="h-9 pl-8 pr-8" aria-label={t("guestWs.search", { defaultValue: "Pesquisar" })} />
-          {query && <button type="button" onClick={() => setQuery("")} aria-label={t("guestWs.clear", { defaultValue: "Limpar" })} className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground hover:bg-accent"><X className="h-4 w-4" /></button>}
+      <div className="flex items-center gap-1.5">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+          <button type="button" onClick={() => setFolder(null)} className={cn("shrink-0 rounded-full border px-3 py-1 text-xs", !folder ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
+          {kindFolders.map((f) => (
+            <button key={f.id} type="button" onClick={() => setFolder(f.id)} className={cn("shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs", folder === f.id ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>{f.name} <span className="opacity-70">{data.items.filter((i) => i.kind === kind && i.folderId === f.id).length}</span></button>
+          ))}
+          {kind === "research" && kindFolders.length === 0 && THEME_SUGGESTIONS.map((n) => (
+            <button key={n} type="button" onClick={() => addFolder(n)} className="shrink-0 whitespace-nowrap rounded-full border border-dashed px-3 py-1 text-xs text-muted-foreground hover:bg-accent/60">+ {n}</button>
+          ))}
+          <button type="button" onClick={() => addFolder()} aria-label={t("guestWs.newFolder", { defaultValue: "Nova pasta" })} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-dashed text-muted-foreground hover:bg-accent/60"><Plus className="h-3.5 w-3.5" /></button>
         </div>
-        {q && <p className="pt-1 text-xs text-muted-foreground">{t("guestWs.found", { defaultValue: "{{count}} encontrada(s)", count: list.length })}</p>}
+        {folder && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 rounded-full" aria-label={t("guestWs.folderMenu", { defaultValue: "Opções da pasta" })}><MoreHorizontal className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => renameFolder(folder)}>{t("guestWs.rename", { defaultValue: "Renomear" })}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportFolderDocx(folder)}><Download className="mr-2 h-4 w-4" />Word</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive" onClick={() => deleteFolder(folder)}><Trash2 className="mr-2 h-4 w-4" />{t("guestWs.delete", { defaultValue: "Apagar" })}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
-      <Button onClick={create} variant="outline" className="w-full justify-start gap-2 border-dashed">
-        <Plus className="h-4 w-4" />{t("guestWs.new", { defaultValue: "Nova" })}
-      </Button>
+      <div className="sticky top-0 z-10 -mx-1 flex items-center gap-2 bg-background px-1 py-1">
+        {searchOpen || query ? (
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
+            <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("guestWs.searchKw", { defaultValue: "Buscar no título ou no texto…" })} className="h-9 pl-8 pr-8" aria-label={t("guestWs.search", { defaultValue: "Pesquisar" })} />
+            <button type="button" onClick={() => { setQuery(""); setSearchOpen(false); }} aria-label={t("guestWs.clear", { defaultValue: "Limpar" })} className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground hover:bg-accent"><X className="h-4 w-4" /></button>
+          </div>
+        ) : (
+          <Button onClick={create} variant="outline" className="h-9 flex-1 justify-start gap-2 border-dashed">
+            <Plus className="h-4 w-4" />{t("guestWs.new", { defaultValue: "Nova" })}
+          </Button>
+        )}
+        {!(searchOpen || query) && <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" aria-label={t("guestWs.search", { defaultValue: "Pesquisar" })} onClick={() => setSearchOpen(true)}><Search className="h-4 w-4" /></Button>}
+      </div>
+      {q && <p className="text-xs text-muted-foreground">{t("guestWs.found", { defaultValue: "{{count}} encontrada(s)", count: list.length })}</p>}
 
       {list.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">{t("guestWs.empty", { defaultValue: "Nada por aqui ainda. Toque em “Nova” para começar." })}</p>
@@ -229,6 +258,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
                     {i.folderId && <span className="mr-1 rounded bg-muted px-1">{data.folders.find((f) => f.id === i.folderId)?.name}</span>}
                     <Mark text={snippet(htmlToPlain(i.body), q) || "—"} q={q} />
                   </span>
+                  <span className="block text-[11px] text-muted-foreground/80">{relTime(i.updatedAt, i18n.language)}</span>
                 </span>
               </button>
             </li>
@@ -372,19 +402,26 @@ function WorkspaceSheet({ kind, open, onOpenChange, data, update, folder, setFol
   kind: WsKind; open: boolean; onOpenChange: (o: boolean) => void; data: WsData; update: (fn: (d: WsData) => WsData) => void;
   folder: string | null; setFolder: (f: string | null) => void; color: string | null; setColor: (c: string | null) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [lastBackup, setLastBackup] = useState<string | null>(null);
+  useEffect(() => { try { setLastBackup(localStorage.getItem(LAST_BACKUP_KEY)); } catch { /* */ } }, [open]);
   const [newFolder, setNewFolder] = useState("");
   const [bibleOpen, setBibleOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const planRef = useRef<HTMLInputElement>(null);
   const setSetting = <K extends keyof WsData["settings"]>(k: K, v: WsData["settings"][K]) =>
     update((d) => ({ ...d, settings: { ...d.settings, [k]: v } }));
+  const group = "divide-y overflow-hidden rounded-2xl border bg-card";
+  const row = "flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm hover:bg-accent/40";
   const chip = (active: boolean) => cn("rounded-full border px-3 py-1 text-xs", active ? "bg-primary text-primary-foreground" : "hover:bg-accent/60");
 
   const doBackup = async () => {
     try {
       const blob = await buildWsBackup(data);
       await saveBlob(blob, { filename: `visita-sc-pessoal-${new Date().toISOString().slice(0, 10)}.zip`, mimeType: "application/zip" });
+      const now = new Date().toISOString();
+      try { localStorage.setItem(LAST_BACKUP_KEY, now); } catch { /* */ }
+      setLastBackup(now);
     } catch { toast.error(t("guestWs.backupFail", { defaultValue: "Não foi possível gerar o backup." })); }
   };
   const doRestore = async (file: File, mode: "replace" | "merge") => {
@@ -410,57 +447,64 @@ function WorkspaceSheet({ kind, open, onOpenChange, data, update, folder, setFol
           <SheetTitle>{t("guestWs.drawer", { defaultValue: "Pastas e configurações" })}</SheetTitle>
           <SheetDescription className="sr-only">{t("guestWs.drawer", { defaultValue: "Pastas e configurações" })}</SheetDescription>
         </SheetHeader>
-        <div className="space-y-6 px-4 pb-6">
-          <section className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.appearance", { defaultValue: "Aparência" })}</h3>
-            <ThemeToggle />
-          </section>
-          <section className="space-y-2">
-            <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-muted-foreground"><FolderOpen className="h-3.5 w-3.5" />{t("guestWs.folders", { defaultValue: "Pastas" })} · {kind === "note" ? t("guestWs.notes", { defaultValue: "Anotações" }) : kind === "bible" ? t("guestWs.bible", { defaultValue: "Leitura da Bíblia" }) : t("guestWs.research", { defaultValue: "Pesquisas Pessoais" })}</h3>
-            <div className="flex flex-wrap gap-1.5">
-              <button className={chip(!folder)} onClick={() => setFolder(null)}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
-              {data.folders.filter((f) => f.kind === kind).map((f) => <button key={f.id} className={chip(folder === f.id)} onClick={() => setFolder(f.id)}>{f.name}</button>)}
+        <div className="space-y-5 px-4 pb-6">
+          <section className="space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+            <h3 className="text-xs font-semibold uppercase text-primary">{t("guestWs.backup", { defaultValue: "Backup e Dados" })}</h3>
+            <p className="text-xs text-muted-foreground">{lastBackup
+              ? t("guestWs.lastBackup", { defaultValue: "Último backup: {{when}}", when: relTime(lastBackup, i18n.language) })
+              : t("guestWs.noBackupYet", { defaultValue: "Nenhum backup feito neste aparelho ainda." })}</p>
+            <Button size="sm" className="w-full justify-start gap-2" onClick={doBackup}><Download className="h-4 w-4" />{t("guestWs.makeBackup", { defaultValue: "Gerar backup" })}</Button>
+            <div className={group}>
+              <button type="button" className={row} onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4 text-muted-foreground" />{t("guestWs.restore", { defaultValue: "Restaurar backup" })}</button>
+              <button type="button" className={row} onClick={() => planRef.current?.click()}><FileText className="h-4 w-4 text-muted-foreground" />{t("guestWs.importPlan", { defaultValue: "Importar plano (.json/.zip)" })}</button>
             </div>
-            <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const name = newFolder.trim(); if (!name) return;
-              update((d) => ({ ...d, folders: [...d.folders, { id: crypto.randomUUID(), name, kind }] })); setNewFolder(""); }}>
-              <Input value={newFolder} onChange={(e) => setNewFolder(e.target.value)} placeholder={t("guestWs.newFolder", { defaultValue: "Nova pasta" })} className="h-8" />
-              <Button type="submit" size="sm" variant="outline"><Plus className="h-4 w-4" /></Button>
-            </form>
-          </section>
-
-          <section className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.colors", { defaultValue: "Cores" })}</h3>
-            <div className="flex gap-2">
-              <button className={chip(!color)} onClick={() => setColor(null)}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
-              {WS_COLORS.map((c) => (
-                <button key={c} aria-label={c} aria-pressed={color === c} onClick={() => setColor(c)}
-                  className={cn("h-7 w-7 rounded-full border-2", colorDot[c], color === c ? "border-foreground" : "border-transparent")} />
-              ))}
-            </div>
-          </section>
-
-          <section className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.settings", { defaultValue: "Configurações" })}</h3>
-            <div className="flex gap-1.5">
-              {(["sm", "md", "lg"] as const).map((s) => <button key={s} className={chip(data.settings.fontSize === s)} onClick={() => setSetting("fontSize", s)}>{{ sm: "A-", md: "A", lg: "A+" }[s]}</button>)}
-            </div>
-            <div className="flex gap-1.5">
-              <button className={chip(data.settings.width === "narrow")} onClick={() => setSetting("width", "narrow")}>{t("guestWs.narrow", { defaultValue: "Texto estreito" })}</button>
-              <button className={chip(data.settings.width === "wide")} onClick={() => setSetting("width", "wide")}>{t("guestWs.wide", { defaultValue: "Texto largo" })}</button>
-            </div>
-          </section>
-
-          <section className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.backup", { defaultValue: "Backup e Dados" })}</h3>
-            <p className="text-xs text-muted-foreground">{t("guestWs.backupHint", { defaultValue: "Funciona sem internet. Os arquivos ficam no seu aparelho." })}</p>
-            <div className="grid gap-2">
-              <Button variant="outline" size="sm" className="justify-start gap-2" onClick={doBackup}><Download className="h-4 w-4" />{t("guestWs.makeBackup", { defaultValue: "Gerar backup" })}</Button>
-              <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4" />{t("guestWs.restore", { defaultValue: "Restaurar backup" })}</Button>
-              <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => planRef.current?.click()}><FileText className="h-4 w-4" />{t("guestWs.importPlan", { defaultValue: "Importar plano (.json/.zip)" })}</Button>
-              <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => setBibleOpen(true)}><BookOpen className="h-4 w-4" />{t("guestWs.importBible", { defaultValue: "Importar Bíblia (EPUB)" })}</Button>
-            </div>
+            <p className="text-[11px] text-muted-foreground">{t("guestWs.backupHint", { defaultValue: "Funciona sem internet. Os arquivos ficam no seu aparelho." })}</p>
             <input ref={fileRef} type="file" accept=".zip,application/zip" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doRestore(f, "replace"); }} />
             <input ref={planRef} type="file" accept=".json,.zip,application/json,application/zip" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doRestore(f, "merge"); }} />
+          </section>
+
+          <section className="space-y-1.5">
+            <h3 className="px-1 text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.appearance", { defaultValue: "Aparência" })}</h3>
+            <div className="space-y-3 rounded-2xl border bg-card p-3">
+              <ThemeToggle />
+              <div className="flex gap-1.5">
+                {(["sm", "md", "lg"] as const).map((s) => <button key={s} className={chip(data.settings.fontSize === s)} onClick={() => setSetting("fontSize", s)}>{{ sm: "A-", md: "A", lg: "A+" }[s]}</button>)}
+              </div>
+              <div className="flex gap-1.5">
+                <button className={chip(data.settings.width === "narrow")} onClick={() => setSetting("width", "narrow")}>{t("guestWs.narrow", { defaultValue: "Texto estreito" })}</button>
+                <button className={chip(data.settings.width === "wide")} onClick={() => setSetting("width", "wide")}>{t("guestWs.wide", { defaultValue: "Texto largo" })}</button>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-1.5">
+            <h3 className="flex items-center gap-1.5 px-1 text-xs font-semibold uppercase text-muted-foreground"><FolderOpen className="h-3.5 w-3.5" />{t("guestWs.folders", { defaultValue: "Pastas" })} · {kind === "note" ? t("guestWs.notes", { defaultValue: "Anotações" }) : kind === "bible" ? t("guestWs.bible", { defaultValue: "Leitura da Bíblia" }) : t("guestWs.research", { defaultValue: "Pesquisas Pessoais" })}</h3>
+            <div className="space-y-3 rounded-2xl border bg-card p-3">
+              <div className="flex flex-wrap gap-1.5">
+                <button className={chip(!folder)} onClick={() => setFolder(null)}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
+                {data.folders.filter((f) => f.kind === kind).map((f) => <button key={f.id} className={chip(folder === f.id)} onClick={() => setFolder(f.id)}>{f.name}</button>)}
+              </div>
+              <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const name = newFolder.trim(); if (!name) return;
+                update((d) => ({ ...d, folders: [...d.folders, { id: crypto.randomUUID(), name, kind }] })); setNewFolder(""); }}>
+                <Input value={newFolder} onChange={(e) => setNewFolder(e.target.value)} placeholder={t("guestWs.newFolder", { defaultValue: "Nova pasta" })} className="h-8" />
+                <Button type="submit" size="sm" variant="outline"><Plus className="h-4 w-4" /></Button>
+              </form>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{t("guestWs.colors", { defaultValue: "Cores" })}</span>
+                <button className={chip(!color)} onClick={() => setColor(null)}>{t("guestWs.all", { defaultValue: "Todas" })}</button>
+                {WS_COLORS.map((c) => (
+                  <button key={c} aria-label={c} aria-pressed={color === c} onClick={() => setColor(c)}
+                    className={cn("h-7 w-7 rounded-full border-2", colorDot[c], color === c ? "border-foreground" : "border-transparent")} />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-1.5">
+            <h3 className="px-1 text-xs font-semibold uppercase text-muted-foreground">{t("guestWs.bibleGroup", { defaultValue: "Bíblia" })}</h3>
+            <div className={group}>
+              <button type="button" className={row} onClick={() => setBibleOpen(true)}><BookOpen className="h-4 w-4 text-muted-foreground" />{t("guestWs.importBible", { defaultValue: "Importar Bíblia (EPUB)" })}</button>
+            </div>
           </section>
         </div>
         <BibleManagerDialog open={bibleOpen} onOpenChange={setBibleOpen} />

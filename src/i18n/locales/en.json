@@ -2023,6 +2023,10 @@
     "addLinkTo": "Link to another note",
     "addLinkHint": "Adds a shortcut at the end of the text that opens the chosen note.",
     "versesPanel": "Verses",
-    "newHighlight": "New highlight"
+    "newHighlight": "New highlight",
+    "folderMenu": "Folder options",
+    "lastBackup": "Last backup: {{when}}",
+    "noBackupYet": "No backup made on this device yet.",
+    "bibleGroup": "Bible"
   }
 }

@@ -20,9 +20,9 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   const { plan, done: doneList, startDate } = data.reading;
   const done = useMemo(() => new Set(doneList), [doneList]);
   const [openBooks, setOpenBooks] = useState<Set<string>>(new Set());
-  const [listOpen, setListOpen] = useState(true);
+  const [listOpen, setListOpen] = useState(false);
   const [cfgOpen, setCfgOpen] = useState(false);
-  useEffect(() => { try { if (localStorage.getItem(BOOKS_OPEN_KEY) === "0") setListOpen(false); } catch { /* */ } }, []);
+  useEffect(() => { try { if (localStorage.getItem(BOOKS_OPEN_KEY) === "1") setListOpen(true); } catch { /* */ } }, []);
   const toggleList = () => { const n = !listOpen; setListOpen(n); try { localStorage.setItem(BOOKS_OPEN_KEY, n ? "1" : "0"); } catch { /* */ } };
   const custom: CustomPlan = data.reading.custom ?? { books: ALL_BOOKS, perDay: null, endDate: null };
   const [reading, setReading] = useState<string | null>(null);
@@ -117,18 +117,13 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
         </div>
       )}
 
-      <div className="space-y-2 rounded-xl border bg-card p-4">
-        <div className="flex items-baseline justify-between text-sm">
-          <span className="font-semibold">{percent}%</span>
-          <span className="text-muted-foreground">{t("guestWs.chaptersDone", { defaultValue: "{{n}} de {{total}} capítulos", n: doneIn, total: total.toLocaleString(i18n.language) })}</span>
+      <div className="sticky top-0 z-20 space-y-1.5 rounded-xl border bg-card/95 p-3 backdrop-blur" title={today && today.keys.length > 0 ? t("guestWs.todayPlan", { defaultValue: "Dia {{d}} — hoje: {{from}} a {{to}}", d: today.day, from: label(today.keys[0]), to: label(today.keys[today.keys.length - 1]) }) : undefined}>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold">{percent}%</span>
+          <Progress value={percent} className="h-1.5 flex-1" />
+          {next && <Button size="sm" className="h-8 gap-1 rounded-full" onClick={() => setReading(today?.keys.find((k) => !done.has(k)) ?? next)}><Play className="h-3.5 w-3.5" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {label(today?.keys.find((k) => !done.has(k)) ?? next)}</Button>}
         </div>
-        <Progress value={percent} />
-        {today && today.keys.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            {t("guestWs.todayPlan", { defaultValue: "Dia {{d}} — hoje: {{from}} a {{to}}", d: today.day, from: label(today.keys[0]), to: label(today.keys[today.keys.length - 1]) })}
-          </p>
-        )}
-        {next && <Button size="sm" className="mt-1 gap-1" onClick={() => setReading(today?.keys.find((k) => !done.has(k)) ?? next)}><Play className="h-4 w-4" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {label(today?.keys.find((k) => !done.has(k)) ?? next)}</Button>}
+        <p className="text-[11px] text-muted-foreground">{t("guestWs.chaptersDone", { defaultValue: "{{n}} de {{total}} capítulos", n: doneIn, total: total.toLocaleString(i18n.language) })}</p>
       </div>
 
       <div className="flex items-center gap-1">
