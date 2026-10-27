@@ -25,8 +25,6 @@ import { BibleReadingTab } from "./BibleReadingTab";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RichOutlineContent } from "@/lib/rich-content";
 import { findCitations, stripHtmlForDetection } from "@/lib/bible-refs";
-import { VerseLink } from "@/components/bible/BibleVersePopover";
-import { BibleHistoryChips } from "@/components/bible/BibleHistoryChips";
 import { appendPlainTextToNote } from "@/lib/note-content";
 import { getActiveLibrary, type BibleLibrary } from "@/lib/bible-notes-store";
 import { noteBlockHtml, internalLinkHtml, filterWsItems } from "@/lib/guest-workspace-store";
