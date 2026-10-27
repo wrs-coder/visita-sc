@@ -169,9 +169,6 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
     try {
       const blob = await folderToDocxZip(items.map((i) => ({ path: [f.name], title: i.title || "Anotação", html: toNoteHtml(i.body) })));
       await saveBlob(blob, { filename: `${safeFileName(f.name, "pasta")}.zip`, mimeType: "application/zip" });
-      const now = new Date().toISOString();
-      try { localStorage.setItem(LAST_BACKUP_KEY, now); } catch { /* */ }
-      setLastBackup(now);
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
   };
   const deleteFolder = (id: string) => {
