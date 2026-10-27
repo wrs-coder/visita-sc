@@ -1991,6 +1991,10 @@
     "addLinkTo": "Ligar a outra anotação",
     "addLinkHint": "Cria um atalho no fim do texto para abrir a anotação escolhida.",
     "versesPanel": "Versículos",
-    "newHighlight": "Novo ponto alto"
+    "newHighlight": "Novo ponto alto",
+    "folderMenu": "Opções da pasta",
+    "lastBackup": "Último backup: {{when}}",
+    "noBackupYet": "Nenhum backup feito neste aparelho ainda.",
+    "bibleGroup": "Bíblia"
   }
 }

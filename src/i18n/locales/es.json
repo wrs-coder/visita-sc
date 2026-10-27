@@ -1998,6 +1998,10 @@
     "addLinkTo": "Vincular a otra nota",
     "addLinkHint": "Crea un acceso al final del texto que abre la nota elegida.",
     "versesPanel": "Versículos",
-    "newHighlight": "Nuevo punto destacado"
+    "newHighlight": "Nuevo punto destacado",
+    "folderMenu": "Opciones de la carpeta",
+    "lastBackup": "Última copia: {{when}}",
+    "noBackupYet": "Aún no se ha hecho ninguna copia en este dispositivo.",
+    "bibleGroup": "Biblia"
   }
 }
