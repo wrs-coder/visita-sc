@@ -489,7 +489,7 @@ function Page() {
         </Card>
       )}
 
-      {isSuper && <ItineraryWeeks />}
+      {isSuper && <ItineraryWeeks visits={visits} />}
 
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
