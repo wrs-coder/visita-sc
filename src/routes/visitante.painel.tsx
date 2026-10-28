@@ -161,12 +161,12 @@ function Page() {
     // Hidrata imediatamente do cache local para funcionar offline.
     const cacheKey = congregationId ? `${c}:${congregationId}` : c;
     const cached = loadSnapshot<Snapshot>("guest", cacheKey);
-    if (cached && !opts?.pickCurrent) {
+    if (cached) {
       setSnap(cached);
       setLoading(false);
       // Acabou de ser baixado na tela de entrada: não repete a consulta.
       const at = snapshotSavedAt("guest", cacheKey);
-      if (at && Date.now() - at < 60_000) return;
+      if (!opts?.pickCurrent && at && Date.now() - at < 60_000) return;
     } else {
       setLoading(true);
     }
@@ -201,7 +201,8 @@ function Page() {
     // Carrega o cache e, em paralelo, pede ao servidor para escolher a
     // congregação cuja visita ativa cobre a semana atual (apenas na primeira
     // sessão sem congregação salva — preserva escolha manual posterior).
-    load(session.code, session.congregationId, { pickCurrent: !session.congregationId });
+    // Sempre abre na congregação agendada para a semana atual (mostra o cache enquanto isso).
+    load(session.code, session.congregationId, { pickCurrent: true });
   }, [load, nav]);
 
   // Mission 3: alternador "Hoje / Próximo dia" para o cartão do dia.
@@ -473,12 +474,9 @@ function Page() {
           </CardContent></Card>
         ) : (
           <>
-            <Card><CardContent className="p-4">
-              <h1 className="font-semibold">{snap.visit.title}</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {fmtDate(snap.visit.start_date)} — {fmtDate(snap.visit.end_date)}
-              </p>
-            </CardContent></Card>
+            <p className="px-1 text-xs text-muted-foreground truncate">
+              <span className="font-medium text-foreground">{snap.visit.title}</span> · {fmtDate(snap.visit.start_date)} — {fmtDate(snap.visit.end_date)}
+            </p>
 
             <Tabs value={currentTab} onValueChange={setCurrentTab}>
               <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-8"}`}>
