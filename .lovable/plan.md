@@ -33,7 +33,7 @@ Resposta curta: os três pedidos são viáveis e produtivos. Nenhum exige mudar 
 1. **Seleção da semana igual a "Criar visita":** ao escolher o primeiro dia, o último dia daquela semana é marcado sozinho (pode ser ajustado).
 2. **Sugestões automáticas:** para cada mês que já tem pelo menos uma visita marcada, lista as semanas daquele mês sem visita e sem semana já criada. Aparecem em cinza tracejado, misturadas em ordem de data com as já criadas, com um "+" para criar rapidamente.
 3. **Tipo "Outro":** além de "Semana de pioneiro" e "Semana livre", a opção "Outro" abre um campo para escrever o nome (ex.: "Assembleia", "Férias").
-4. **Semanas livres somem sozinhas:** a partir da primeira segunda-feira depois da data final, deixam de aparecer na lista. Elas ficam ocultas, não apagadas.
+4. **Semanas livres são apagadas sozinhas:** a partir da primeira segunda-feira depois da data final, são apagadas de vez (sem recuperação) quando a tela de itinerário abre.
 
 ```text
 +-------------------------------+
@@ -55,6 +55,6 @@ Resposta curta: os três pedidos são viáveis e produtivos. Nenhum exige mudar 
 ## Detalhes técnicos
 - Semana da visita: escolha do dia inicial via `useVisitDay` com padrão = hoje se dentro do intervalo; remover cabeçalho nas rotas `visitante.*` e na aba da esposa.
 - Deslize: componente `SwipeToSync` com pointer events (sem nova lib), chamando a função de push já existente para o esboço; ignora pastas sem sync.
-- `ItineraryWeeks.tsx`: helper puro `suggestFreeWeeks(visits, weeks)` (semanas seg–dom dos meses com visita, excluindo sobreposições) + `isExpiredFreeWeek(week, today)`; ambos com testes. "Outro" grava o texto em `week_type` (coluna já é texto livre); se houver restrição no banco, grava `other` e o nome em `notes`.
+- `ItineraryWeeks.tsx`: helper puro `suggestFreeWeeks(visits, weeks)` (semanas seg–dom dos meses com visita, excluindo sobreposições) + `isExpiredFreeWeek(week, today)`; ambos com testes. Semanas livres expiradas são removidas com delete pelo próprio superintendente (RLS existente) ao carregar a lista. "Outro" grava o texto em `week_type` (coluna já é texto livre); se houver restrição no banco, grava `other` e o nome em `notes`.
 - Seleção do intervalo reutiliza a mesma lógica de "Criar visita".
 - i18n pt/en/es; validar com `tsgo` e `vitest`.
