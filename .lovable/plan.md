@@ -59,7 +59,7 @@ Fica só como pílula em "Circuito", sem atalho no menu lateral.
 - **Informações adicionais:** um campo por evento (horário de chegada, traje, endereço etc.) que vai em todos os convites.
 - **PIN:** você digita um PIN de 4 a 6 números ou deixa o app gerar um. "Novo PIN" troca o código e o anterior deixa de funcionar.
 - **Informar o nome do próximo orador?:** uma caixinha em cada parte. Marcada, o convite também traz o nome do orador da parte seguinte.
-- **Copiar convite:** copia uma mensagem pronta para WhatsApp ou e-mail com todos os dados do evento e da parte, as informações adicionais, o link pessoal e o PIN.
+- **Copiar convite:** copia uma mensagem pronta para WhatsApp ou e-mail com todos os dados do evento e da parte, as informações adicionais, o link do evento e o PIN do orador.
 - **Exportar convites (Word):** gera um arquivo Word com todos os convites do evento, um por página e no mesmo texto da mensagem.
 - **Status ao vivo:** Aguardando, Confirmado (com data e hora) ou Recusado (com o motivo). Muda sozinho quando o orador responde.
 
@@ -88,9 +88,10 @@ Página do orador (sem login)
 +-----------------------------+    +-----------------------------+
 ```
 
-- Cada orador recebe um link próprio, para que a resposta dele vá direto para a parte dele.
-- A página só mostra os dados depois do PIN certo. Depois de 5 erros, o link fica bloqueado até você criar um novo PIN.
-- O orador vê só a parte dele, as informações adicionais e o nome do próximo orador quando você marcou a caixinha. Não aparecem dados das congregações.
+- **Um único link por evento.** Todos os oradores recebem o mesmo link, e o PIN de cada um abre só a designação dele. Você pode até postar o link num grupo e mandar só o PIN no privado.
+- Os PINs não se repetem dentro do mesmo evento. Se você digitar um PIN que já está em uso, o app avisa.
+- Proteção: como o link é o mesmo para todos, depois de 10 PINs errados seguidos no mesmo aparelho a página espera 15 minutos. Também há um limite de tentativas por evento. Recomendo PIN de 6 números para designações importantes.
+- O orador vê só a parte dele, as informações adicionais e o nome do próximo orador quando você marcou a caixinha. Não aparecem dados das congregações nem de outros oradores.
 
 ## 3. Itinerário: recolher e expandir
 
