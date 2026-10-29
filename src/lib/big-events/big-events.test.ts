@@ -60,3 +60,32 @@ describe("próximo orador no convite", () => {
     expect(buildInviteText(ev, { ...parts[0], show_next_speaker: false }, parts, "1234", "https://x")).not.toContain("Próximo orador");
   });
 });
+
+import { recomputeTimes } from "./invite";
+describe("edição de partes e modo de link", () => {
+  const p = (id: string, o: number, dur: number, mode = "auto", t: string | null = null) => ({ id, sort_order: o, duration_min: dur, time_mode: mode, part_time: t });
+  it("automático soma a parte anterior a partir do início", () => {
+    expect(recomputeTimes("09:40", [p("a", 0, 15), p("b", 1, 10), p("c", 2, 5)]).map((x) => x.part_time)).toEqual(["09:40", "09:55", "10:05"]);
+  });
+  it("manual mantém a hora e vira nova base", () => {
+    expect(recomputeTimes("09:40", [p("a", 0, 15), p("b", 1, 10, "manual", "11:00"), p("c", 2, 5)]).map((x) => x.part_time)).toEqual(["09:40", "11:00", "11:10"]);
+  });
+  const ev = { name: "AC", event_date: null, location: null, extra_info: null, public_token: "EVT" };
+  const part = { id: "a", sort_order: 0, part_time: null, duration_min: null, theme: "T", outline_number: null, instructions: "Traga o esboço",
+    part_type_label: "Discurso", assigned_to: "speaker", speaker_name: "João", speaker_congregation: "Central", show_next_speaker: true, personal_token: "PERS" };
+  const next = { ...part, id: "b", sort_order: 1, speaker_name: "Pedro", speaker_congregation: "Vila Nova", instructions: null };
+  it("convite leva congregação, info individual e congregação do próximo orador", () => {
+    const t = buildInviteText(ev, part, [part, next], "1234", "https://x");
+    expect(t).toContain("Orador: João — Central");
+    expect(t).toContain("Traga o esboço");
+    expect(t).toContain("Próximo orador: Pedro — Vila Nova");
+    expect(t).toContain("https://x/confirmar/EVT");
+    expect(t).toContain("PIN: 1234");
+  });
+  it("modo link pessoal usa o link do orador e não envia PIN", () => {
+    const t = buildInviteText({ ...ev, link_mode: "personal" }, part, [part], "1234", "https://x");
+    expect(t).toContain("https://x/confirmar/PERS");
+    expect(t).not.toContain("PIN");
+    expect(t).not.toContain("/confirmar/EVT");
+  });
+});
