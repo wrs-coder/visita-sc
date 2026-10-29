@@ -1,84 +1,54 @@
-# Importar itinerário (.ics / .csv) — avaliação e plano
+# Importar notas bíblicas do JW Library para "Pontos altos"
 
-## Avaliação do plano enviado
+## Avaliação do plano anexado
 
-Funciona e é estável, com quatro ajustes importantes:
+Funciona de forma estável, com 5 ajustes:
 
-1. **Sem `ical.js` / `node-ical`**: `node-ical` não roda no aparelho, e `ical.js` é pesado para o que precisamos. Um leitor pequeno próprio cobre o necessário (SUMMARY, DTSTART, DTEND, linhas quebradas, eventos de dia inteiro, fuso) e funciona offline.
-2. **Datas de dia inteiro no .ics**: o DTEND é "exclusivo" (uma visita de seg a dom vem com fim na segunda seguinte). Sem esse ajuste, toda visita importada ganharia um dia a mais.
-3. **CSV brasileiro**: o Excel em português salva com `;` e datas `dd/mm/aaaa`. O leitor detecta `;` ou `,`, aceita `dd/mm/aaaa` e `aaaa-mm-dd`, e reconhece os títulos das colunas com ou sem acento ("Congregacao", "Inicio").
-4. **Semelhança de nomes**: o `fuse.js` já está instalado, então não é preciso nada novo. Antes de comparar, os nomes são limpos (tira "Cong.", "Congregação", acentos e maiúsculas). Assim "Cong. Central do Sequele" casa com "Central" sem cair em 🟡.
+1. **Arquivo de teste chegou vazio (0 bytes).** Antes de fechar, preciso de um novo envio do `.jwlibrary` para validar com dados reais.
+2. **O versículo não fica em `Location`.** Em `Note`, o campo `BlockType = 2` e `BlockIdentifier` dão o versículo. Notas presas só ao capítulo entram como "Gn 12". Faixas (12:1-3) vêm de `UserMark` + `BlockRange`, quando houver.
+3. **Filtro mais seguro:** além de livro 1-66, exigir `Location.KeySymbol` de Bíblia (nwt, nwtsty, etc.) e `IssueTagNumber = 0`. Assim notas de revistas que citam um livro não entram.
+4. **Só notas com texto.** As marcações coloridas sem nota não trazem o texto do versículo, então não entram. Isso respeita a regra "só TNM via EPUB".
+5. **Sem duplicar:** cada nota usa o `Guid` do JW Library como identificador. Se você importar o mesmo backup de novo, o app atualiza a nota em vez de repetir.
 
-## Melhorias que sugiro
+Sugestão melhor: o botão fica dentro do próprio "Pontos altos" (ícone ⤒ Importar), e não em uma tela separada. Funciona igual para você e para a esposa.
 
-- **Conflitos**: avisar quando a semana já tem visita ou semana livre no itinerário ("Já existe: Central 12/10"). Essas linhas vêm desmarcadas.
-- **Marcar/desmarcar cada linha**: importar só o que quiser.
-- **Pacote de modelos opcional**: um seletor "Aplicar pacote" no topo. Ele aplica os modelos exatamente como o formulário de nova visita já faz.
-- **Lembrar nomes corrigidos**: se você trocar "Esperanca II" por "Nova Esperança", o aparelho lembra e na próxima importação já vem 🟢.
-- **"Semana livre / Pioneiros"** como opção no seletor da linha, para itinerários que trazem semanas sem visita.
-- **Precisa de internet só no "Confirmar"**: a leitura e a revisão funcionam offline. O botão avisa se estiver sem conexão, em vez de salvar pela metade.
-
-## Refinamentos a partir dos seus arquivos reais
-
-Os dois arquivos vêm do Circuit Assistant. Por isso o importador terá um modo próprio para esse formato, mais preciso que a semelhança genérica.
-
-**.ics (19 eventos)**
-- O nome vem embutido: `(Visita à Congregação) - Cidade do Sequele 09 - Sequele,, I.B (20398)`. O app recorta só "Cidade do Sequele 09" antes de comparar; o número entre parênteses é ignorado. A variante "(Visita à Congregação - Treinando SCS)" também é reconhecida.
-- Só o que é **visita à congregação** vai para "Visitas", criando a visita apenas com o que o app exige hoje: congregação, data de início e data de fim (mais o pacote, se você escolher um).
-- **Qualquer outro evento** vai para "Semanas sem visita": `Semana de Pioneiro` vira **Semana de pioneiro**; os demais (ex.: `Assembleia de Circuito…`, `Escola do Ministério do Reino`) viram **Semana livre** com o nome do evento (o mesmo "Outro" que já existe).
-- O fim é exclusivo: 27/10 → 02/11 significa terça 27/10 a domingo 01/11. O app corrige sozinho.
-- A descrição (temas de discursos, horários de reunião e de campo) **não** é importada.
-
-**.csv (19 semanas)**
-- Separador `;`. Datas por extenso: "13 a 18 de outubro de 2026", "27 de outubro a 01 de novembro de 2026" e também "29/12/2026 a 03/01/2027". As três formas são entendidas.
-- Coluna "Tipo": Visita Regular → visita; Semana de Pioneiro → semana de pioneiro; outros (ex.: "Assembleia com Rep. Betel") → semana livre com esse nome.
-- Coluna "Esquema" (ex.: "Treinando: Alberto Luvumba Silva") vai como observação da semana.
-- Colunas de avisos/despesas/concluída são ignoradas.
-- Números são comparados sem zero à esquerda: "Mayé-Mayé 1" casa com "Mayé-Mayé 01" como 🟢.
-
-**Reimportar com segurança**: semanas já cadastradas (mesma data e congregação, ou semana livre/pioneiro nas mesmas datas) aparecem como "Já existe" e desmarcadas. Importar o mesmo arquivo de novo não duplica nada.
-
-## Mockup
+## Como fica a tela
 
 ```text
-+-------------------------------------+
-| Itinerário   [Importar ⤒] [+ Nova]  |
-+-------------------------------------+
-
-+------ Importar itinerário ----------+
-| itinerario_2027.csv · 4 semanas     |
-| Pacote: [ Nenhum            ▾ ]     |
-|-------------------------------------|
-| ☑ 12/10 – 18/10              🟢     |
-|   "Cong. Central do Sequele"        |
-|   [ Central                 ▾ ]     |
-| ☑ 19/10 – 25/10              🟡     |
-|   "Esperanca II"                    |
-|   [ Nova Esperança          ▾ ]     |
-| ☐ 26/10 – 01/11              🔴     |
-|   "Bairro da Luz"                   |
-|   [ Selecionar…             ▾ ]     |
-| ☐ 02/11 – 08/11              ⚠      |
-|   Já existe: Central 02/11          |
-|-------------------------------------|
-| [Cancelar]   [Importar 2 visitas]   |
-+-------------------------------------+
++-----------------------------------+
+| < Pontos altos           ⤒  [+]  |
++-----------------------------------+
+| Importar do JW Library            |
+| [ Escolher backup .jwlibrary ]    |
+| Backup_2026-10-29 · 1,4 MB        |
+|-----------------------------------|
+| 38 notas bíblicas · 3 já existem  |
+| [x] Todas                         |
+| > Gênesis (12)            [x]     |
+|   Gn 12:1-3 Promessa...           |
+| > Salmos (18)             [x]     |
+| > Mateus (8)              [x]     |
+|-----------------------------------|
+|  [ Importar 35 novas ]            |
++-----------------------------------+
+  depois: "35 notas salvas" -> lista
+  já filtrada no primeiro livro
 ```
 
-Legenda: 🟢 vinculada sozinha · 🟡 sugestão, confira · 🔴 escolha manual · ⚠ conflito.
+## O que muda
 
-## Fica igual
-
-Formulário de nova visita, modelos, pacotes, banco de dados e regras de acesso. Também continua valendo o limite de congregações ativas. A importação só cria visitas pelo mesmo caminho do formulário.
+- Nova leitura do backup só no aparelho, offline, sem enviar nada ao servidor.
+- Prévia por livro, com marcar/desmarcar livro ou nota.
+- As notas entram no "Pontos altos" já existente (mesmo formato de hoje: referência, livro, texto, data). Nada que já existe é alterado.
+- Funciona no superintendente (Estudo e Anotações) e na esposa, porque os dois usam a mesma tela.
 
 ## Detalhes técnicos
 
-- `src/lib/itinerary-import.ts` (puro e testável):
-  - `parseIcs` (desdobra as linhas, trata VALUE=DATE com fim exclusivo menos 1 dia e DATE-TIME com fuso local);
-  - `parseCsv` (detecta o separador, entende aspas e mapeia os títulos das colunas, inclusive "Semana" em `dd/mm–dd/mm`);
-  - `normalizeName` e `matchCongregation` com Fuse (pontuação de 0 a 100, cortes em 85/50);
-  - `findConflicts` contra visitas e `itinerary_weeks`.
-- `src/components/itinerary/ImportItineraryDialog.tsx`: tela de revisão; nomes corrigidos ficam no localStorage por usuário (`itineraryImport.aliases.<userId>`).
-- `_app.configuracoes.tsx`: botão "Importar" e a criação de cada linha reaproveitando a função existente de salvar visita + aplicar o pacote. As linhas são processadas uma a uma, com um resumo de sucesso ou falha no fim.
-- Testes: dia inteiro no .ics (fim exclusivo), CSV com `;` e `dd/mm/aaaa`, "Cong. X" casando com 🟢, cortes 85/50, detecção de conflito.
-- Validação com `bunx tsgo --noEmit` e `bunx vitest run`.
+- `src/lib/jwlibrary-import.ts`: JSZip abre o zip; checagem de tamanho (≤ 50 MB zip, ≤ 200 MB descompactado), `manifest.json` e `userData.db` obrigatórios.
+- `sql.js` com WASM servido localmente (asset do app, sem CDN), carregado sob demanda via `import()` só ao abrir o importador, para não pesar a abertura do app nem o SSR.
+- Query: `Note JOIN Location` com `BookNumber 1-66`, `ChapterNumber` válido, `KeySymbol LIKE 'nwt%'`, `IssueTagNumber=0`, `Content` ou `Title` não vazio. Versículo por `BlockIdentifier`; faixa por `UserMark/BlockRange` se ligada.
+- Conversão: `BookNumber` -> `B01..B66`; `ref` com a abreviação já usada no app; `text` = Título + Conteúdo em texto simples (sem HTML); `date` = `LastModified`; `id` = `jw-<Guid>`.
+- Upsert por `id` no `highlights` da área de trabalho local; respeita o limite atual de 5000.
+- Tolerância a versões do esquema: se uma coluna faltar, a consulta cai para a versão mínima (sem faixa).
+- Testes: conversão de livros, referência com/sem versículo, filtro de não-Bíblia, deduplicação, arquivo inválido. Validar com `bunx tsgo --noEmit` e `bunx vitest run`.
+- Nenhuma mudança no banco de dados nem em login.
