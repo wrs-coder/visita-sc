@@ -13,6 +13,7 @@ import type { WsData } from "@/lib/guest-workspace-store";
 import { cn } from "@/lib/utils";
 import { HighlightsDrawer } from "./HighlightsDrawer";
 import { CleanReader } from "./CleanReader";
+import { JwLibraryPanel } from "./JwLibraryPanel";
 
 const BOOKS_OPEN_KEY = "guest.workspace.booksOpen";
 
@@ -31,7 +32,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   const [drawer, setDrawer] = useState(false);
   const [preset, setPreset] = useState<string | undefined>();
   const [bibleOpen, setBibleOpen] = useState(false);
-  const [bottomTab, setBottomTab] = useState<"notes" | "highlights">("notes");
+  const [bottomTab, setBottomTab] = useState<"notes" | "highlights" | "jw">("notes");
 
     const seq = chapterSequence(plan, custom);
   const total = plan === "custom" ? seq.length : TOTAL_CHAPTERS;
@@ -176,15 +177,15 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
       </ul>}
 
       <section className="space-y-2">
-        <div className="flex gap-1.5" role="tablist">
-          {([["notes", t("guestWs.readingNotes", { defaultValue: "Anotações de leitura" })], ["highlights", `${t("guestWs.highlights", { defaultValue: "Pontos altos" })} · ${data.highlights.length}`]] as const).map(([id, l]) => (
+        <div className="flex flex-wrap gap-1.5" role="tablist">
+          {([["notes", t("guestWs.readingNotes", { defaultValue: "Anotações de leitura" })], ["highlights", `${t("guestWs.highlights", { defaultValue: "Pontos altos" })} · ${data.highlights.length}`], ["jw", `JW Library${data.jwNotes.length ? ` · ${data.jwNotes.length}` : ""}`]] as const).map(([id, l]) => (
             <button key={id} type="button" role="tab" aria-selected={bottomTab === id} onClick={() => setBottomTab(id)}
               className={cn("rounded-full border px-3 py-1.5 text-xs font-medium", bottomTab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent/60")}>
               {id === "highlights" && <Sparkles className="mr-1 inline h-3.5 w-3.5" />}{l}
             </button>
           ))}
         </div>
-        {bottomTab === "notes" ? notes : (
+        {bottomTab === "notes" ? notes : bottomTab === "jw" ? <JwLibraryPanel data={data} update={update} /> : (
           <div className="space-y-2">
             <Button size="sm" variant="outline" className="gap-1" onClick={() => { setPreset(undefined); setDrawer(true); }}>
               <Plus className="h-4 w-4" />{t("guestWs.newHighlight", { defaultValue: "Novo ponto alto" })}
