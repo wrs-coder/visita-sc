@@ -51,6 +51,7 @@ const ROUTE_MAP: Array<[string, AccentKey]> = [
   ["/modelo-programacao-ancioes", "elder"],
   ["/notas", "notes"],
   ["/consideracoes-campo", "notes"],
+  ["/estudo-pessoal", "notes"],
   ["/lixeira", "admin"],
   ["/modelos", "admin"],
   ["/configuracoes", "admin"],

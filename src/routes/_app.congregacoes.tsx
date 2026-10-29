@@ -36,8 +36,9 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Building2, Trash2, Pencil, KeyRound, Copy, Users, UserCog, Eye, EyeOff, Lock } from "lucide-react";
+import { Plus, Building2, Trash2, Pencil, KeyRound, Copy, Users, UserCog, Eye, EyeOff, Lock, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { BigEvents } from "@/components/circuit/BigEvents";
 import { CircuitHeader } from "@/components/circuit/CircuitHeader";
 import { useTranslation } from "react-i18next";
 
@@ -139,11 +140,18 @@ function Page() {
   const [busy, setBusy] = useState(false);
 
   const isSuper = role === "superintendent";
-  const [section, setSection] = useState<"congregations" | "elders">("congregations");
+  const [section, setSection] = useState<"congregations" | "events">("congregations");
+  const [openCong, setOpenCong] = useState<Set<string>>(new Set());
   useEffect(() => {
-    try { if (localStorage.getItem("visita-sc:circuit-section") === "elders") setSection("elders"); } catch { /* noop */ }
+    try { if (localStorage.getItem("visita-sc:circuit-section") === "events") setSection("events"); } catch { /* noop */ }
+    try { const raw = localStorage.getItem("visita-sc:circuit-open"); if (raw) setOpenCong(new Set(JSON.parse(raw) as string[])); } catch { /* noop */ }
   }, []);
-  const pickSection = (v: "congregations" | "elders") => {
+  const toggleCong = (id: string) => setOpenCong((prev) => {
+    const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id);
+    try { localStorage.setItem("visita-sc:circuit-open", JSON.stringify([...n])); } catch { /* noop */ }
+    return n;
+  });
+  const pickSection = (v: "congregations" | "events") => {
     setSection(v);
     try { localStorage.setItem("visita-sc:circuit-section", v); } catch { /* noop */ }
   };
@@ -255,14 +263,14 @@ function Page() {
     <div className="space-y-5">
       <CircuitHeader />
       <div className="flex gap-2 overflow-x-auto no-scrollbar">
-        {(["congregations", "elders"] as const).map((k) => (
+        {(["congregations", "events"] as const).map((k) => (
           <button
             key={k}
             type="button"
             onClick={() => pickSection(k)}
             className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium border transition ${section === k ? "bg-primary/15 text-primary border-primary/40" : "bg-muted/40 text-foreground border-transparent"}`}
           >
-            {k === "congregations" ? t("circuit.sectionCongregations") : t("circuit.sectionElders")}
+            {k === "congregations" ? t("circuit.sectionCongregations") : t("circuit.sectionEvents", { defaultValue: "Grandes Eventos" })}
           </button>
         ))}
       </div>
@@ -345,9 +353,19 @@ function Page() {
       <div className="space-y-2 list-optimized-sm">
         {list.map((c) => {
           const isActive = c.is_active !== false;
+          const group = elders.filter((e) => e.congregation_id === c.id);
+          const isOpen = openCong.has(c.id);
           return (
             <Card key={c.id} className={`shadow-card ${!isActive ? "opacity-60" : ""}`}>
-              <CardContent className="p-4 flex items-center gap-3">
+              <button type="button" onClick={() => toggleCong(c.id)} aria-expanded={isOpen}
+                className="flex w-full items-center gap-2 px-4 py-3 text-left">
+                <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "" : "-rotate-90"}`} />
+                <span className="flex-1 truncate font-semibold">{c.name}</span>
+                {!isActive && <span className="text-[10px] uppercase font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{t("congregations.inactive")}</span>}
+                <span className="text-xs text-muted-foreground">{t("circuit.eldersCount", { count: group.length, defaultValue: "{{count}} anc." })}</span>
+              </button>
+              <div hidden={!isOpen}>
+              <CardContent className="p-4 pt-0 flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                   <Building2 className="h-5 w-5" />
                 </div>
@@ -382,38 +400,10 @@ function Page() {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      </div>
-
-      {/* ----- Anciãos cadastrados ----- */}
-      <div className="pt-2" hidden={section !== "elders"}>
-        <div className="flex items-center gap-2 mb-2">
-          <Users className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">{t("congregations.eldersRegistered")}</h2>
-          <span className="text-xs text-muted-foreground">({elders.length})</span>
-        </div>
-        {elders.length === 0 ? (
-          <Card>
-            <CardContent className="p-4 text-sm text-muted-foreground">
-              {t("congregations.noElders")}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {list.map((c) => {
-              const group = elders.filter((e) => e.congregation_id === c.id);
-              if (group.length === 0) return null;
-              return (
-                <Card key={`elders-${c.id}`} className="shadow-card">
-                  <CardContent className="p-4">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                      {c.name}
-                    </div>
-                    <div className="space-y-2">
+              <div className="px-4 pb-4">
+                <div className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">{t("congregations.eldersRegistered")} ({group.length})</div>
+                {group.length === 0 ? <p className="text-xs text-muted-foreground">{t("congregations.noElders")}</p> : (
+                  <div className="space-y-2">
                       {group.map((e) => (
                         <div
                           key={e.user_id}
@@ -520,13 +510,20 @@ function Page() {
 
                         </div>
                       ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                  </div>
+                )}
+              </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      </div>
+
+
+      <div hidden={section !== "events"}>
+        <BigEvents elders={elders.map((e) => ({ name: e.full_name ?? "", congregation: list.find((c) => c.id === e.congregation_id)?.name ?? "" }))} />
       </div>
 
       {/* Edit elder dialog */}

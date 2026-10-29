@@ -5,6 +5,7 @@ import { ChevronDown, Sparkles, Play, Settings2, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { BibleManagerDialog } from "@/components/bible/BibleManagerDialog";
 import { getLocalizedBookName } from "@/lib/bible-canon";
 import { ALL_BOOKS, bookOrder, chapterSequence, chaptersOf, customPlanDay, yearPlanDay, TOTAL_CHAPTERS, type CustomPlan, type ReadingPlan } from "@/lib/bible-chapters";
@@ -12,6 +13,7 @@ import type { WsData } from "@/lib/guest-workspace-store";
 import { cn } from "@/lib/utils";
 import { HighlightsDrawer } from "./HighlightsDrawer";
 import { CleanReader } from "./CleanReader";
+import { JwLibraryPanel } from "./JwLibraryPanel";
 
 const BOOKS_OPEN_KEY = "guest.workspace.booksOpen";
 
@@ -30,7 +32,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   const [drawer, setDrawer] = useState(false);
   const [preset, setPreset] = useState<string | undefined>();
   const [bibleOpen, setBibleOpen] = useState(false);
-  const [bottomTab, setBottomTab] = useState<"notes" | "highlights">("notes");
+  const [bottomTab, setBottomTab] = useState<"notes" | "highlights" | "jw">("notes");
 
     const seq = chapterSequence(plan, custom);
   const total = plan === "custom" ? seq.length : TOTAL_CHAPTERS;
@@ -153,19 +155,20 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
                 <div className="space-y-2 px-4 pb-3">
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-1.5">
                     {Array.from({ length: n }, (_, i) => `${b}:${i + 1}`).map((k, i) => (
-                      <button key={k} type="button" aria-pressed={pick === k} onClick={() => setPick(k)}
-                        className={cn("h-9 rounded-md border text-xs font-medium", done.has(k) ? "bg-primary text-primary-foreground" : "hover:bg-accent/60", pick === k && "ring-2 ring-ring ring-offset-2 ring-offset-background")}>{i + 1}</button>
+                      <Popover key={k} open={pick === k} onOpenChange={(o) => setPick(o ? k : null)}>
+                        <PopoverTrigger asChild>
+                          <button type="button" aria-pressed={pick === k}
+                            className={cn("h-9 rounded-md border text-xs font-medium", done.has(k) ? "bg-primary text-primary-foreground" : "hover:bg-accent/60", pick === k && "ring-2 ring-ring ring-offset-2 ring-offset-background")}>{i + 1}</button>
+                        </PopoverTrigger>
+                        <PopoverContent side="top" className="w-auto rounded-xl p-1">
+                          <div className="flex flex-col">
+                            <Button size="sm" variant="ghost" className="justify-start gap-2" onClick={() => { setPick(null); setReading(k); }}><Play className="h-3.5 w-3.5" />{t("guestWs.startReading", { defaultValue: "Começar a ler" })}</Button>
+                            <Button size="sm" variant="ghost" className="justify-start" onClick={() => { setPick(null); toggle(k); }}>{done.has(k) ? t("guestWs.unmark", { defaultValue: "Desmarcar" }) : t("guestWs.mark", { defaultValue: "Marcar como lido" })}</Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     ))}
                   </div>
-                  {(() => {
-                    const k = pick?.startsWith(`${b}:`) ? pick : Array.from({ length: n }, (_, i) => `${b}:${i + 1}`).find((x) => !done.has(x)) ?? `${b}:1`;
-                    return (
-                      <div className="flex flex-wrap gap-1.5">
-                        <Button size="sm" onClick={() => setReading(k)}>{t("guestWs.read", { defaultValue: "Ler" })} {label(k)}</Button>
-                        <Button size="sm" variant="outline" onClick={() => toggle(k)}>{done.has(k) ? t("guestWs.unmark", { defaultValue: "Desmarcar" }) : t("guestWs.mark", { defaultValue: "Marcar como lido" })}</Button>
-                      </div>
-                    );
-                  })()}
                 </div>
               )}
             </li>
@@ -174,15 +177,15 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
       </ul>}
 
       <section className="space-y-2">
-        <div className="flex gap-1.5" role="tablist">
-          {([["notes", t("guestWs.readingNotes", { defaultValue: "Anotações de leitura" })], ["highlights", `${t("guestWs.highlights", { defaultValue: "Pontos altos" })} · ${data.highlights.length}`]] as const).map(([id, l]) => (
+        <div className="flex flex-wrap gap-1.5" role="tablist">
+          {([["notes", t("guestWs.readingNotes", { defaultValue: "Anotações de leitura" })], ["highlights", `${t("guestWs.highlights", { defaultValue: "Pontos altos" })} · ${data.highlights.length}`], ["jw", `JW Library${data.jwNotes.length ? ` · ${data.jwNotes.length}` : ""}`]] as const).map(([id, l]) => (
             <button key={id} type="button" role="tab" aria-selected={bottomTab === id} onClick={() => setBottomTab(id)}
               className={cn("rounded-full border px-3 py-1.5 text-xs font-medium", bottomTab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent/60")}>
               {id === "highlights" && <Sparkles className="mr-1 inline h-3.5 w-3.5" />}{l}
             </button>
           ))}
         </div>
-        {bottomTab === "notes" ? notes : (
+        {bottomTab === "notes" ? notes : bottomTab === "jw" ? <JwLibraryPanel data={data} update={update} /> : (
           <div className="space-y-2">
             <Button size="sm" variant="outline" className="gap-1" onClick={() => { setPreset(undefined); setDrawer(true); }}>
               <Plus className="h-4 w-4" />{t("guestWs.newHighlight", { defaultValue: "Novo ponto alto" })}

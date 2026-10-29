@@ -213,7 +213,7 @@
     "weekSummary": "Week Summary",
     "coupleMessages": "Couple chat",
     "fieldConsiderations": "Personal Outlines",
-    "personalOutlines": "Personal Outlines",
+    "personalOutlines": "Outlines",
     "supportDev": "Support the Developer ☕",
     "appName": "CO's Visit",
     "active": "Active",
@@ -225,7 +225,8 @@
     "logout": "Sign out",
     "blockedTitle": "Nothing new yet",
     "blockedDesc": "Please wait until the Circuit Overseer schedules a visit.",
-    "visitTemplates": "Visit Templates"
+    "visitTemplates": "Visit Templates",
+    "studyNotes": "Study & Notes"
   },
   "dashboard": {
     "greeting": "Hello, {{name}}!",
@@ -2015,7 +2016,9 @@
     "eventLegend": "Event",
     "pillCircuit": "Circuit",
     "sectionCongregations": "Congregations",
-    "sectionElders": "Circuit elders"
+    "sectionElders": "Circuit elders",
+    "sectionEvents": "Major events",
+    "eldersCount": "{{count}} eld."
   },
   "guestWs": {
     "more": "More options",
@@ -2027,6 +2030,12 @@
     "folderMenu": "Folder options",
     "lastBackup": "Last backup: {{when}}",
     "noBackupYet": "No backup made on this device yet.",
-    "bibleGroup": "Bible"
+    "bibleGroup": "Bible",
+    "startReading": "Start reading"
+  },
+  "studyPersonal": {
+    "bible": "Bible",
+    "research": "Research",
+    "notes": "Notes"
   }
 }

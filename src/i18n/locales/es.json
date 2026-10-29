@@ -213,7 +213,7 @@
     "weekSummary": "Resumen de la Semana",
     "coupleMessages": "Comunicación de la pareja",
     "fieldConsiderations": "Bosquejos Personales",
-    "personalOutlines": "Bosquejos Personales",
+    "personalOutlines": "Bosquejos",
     "supportDev": "Apoya al Desarrollador ☕",
     "appName": "Visita del SC",
     "active": "Activa",
@@ -225,7 +225,8 @@
     "logout": "Salir",
     "blockedTitle": "Aún no hay novedades",
     "blockedDesc": "Por favor, espera a que el Superintendente programe una visita.",
-    "visitTemplates": "Plantillas de Visitas"
+    "visitTemplates": "Plantillas de Visitas",
+    "studyNotes": "Estudio y notas"
   },
   "dashboard": {
     "greeting": "¡Hola, {{name}}!",
@@ -1990,7 +1991,9 @@
     "eventLegend": "Evento",
     "pillCircuit": "Circuito",
     "sectionCongregations": "Congregaciones",
-    "sectionElders": "Ancianos del circuito"
+    "sectionElders": "Ancianos del circuito",
+    "sectionEvents": "Grandes eventos",
+    "eldersCount": "{{count}} anc."
   },
   "guestWs": {
     "more": "Más opciones",
@@ -2002,6 +2005,12 @@
     "folderMenu": "Opciones de la carpeta",
     "lastBackup": "Última copia: {{when}}",
     "noBackupYet": "Aún no se ha hecho ninguna copia en este dispositivo.",
-    "bibleGroup": "Biblia"
+    "bibleGroup": "Biblia",
+    "startReading": "Empezar a leer"
+  },
+  "studyPersonal": {
+    "bible": "Biblia",
+    "research": "Investigación",
+    "notes": "Notas"
   }
 }

@@ -29,6 +29,20 @@
       "when": 1793028555380,
       "tag": "0003_create_visit_packages",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793305732171,
+      "tag": "0004_circuit_big_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793309334334,
+      "tag": "0005_big_events_edit_and_link_mode",
+      "breakpoints": true
     }
   ]
 }
