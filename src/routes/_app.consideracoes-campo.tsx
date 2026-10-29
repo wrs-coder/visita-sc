@@ -132,6 +132,7 @@ import {
   deleteCloudOutline,
 } from "@/lib/personal-outlines.functions";
 import { useOutlinesSync } from "@/hooks/use-outlines-sync";
+import { SwipeToSync } from "@/components/notes/SwipeToSync";
 import { TalkOutlineFields, useTalkSync } from "@/components/notes/TalkOutlineFields";
 import { sanitizeTalk } from "@/lib/talk-outline-info";
 import {
@@ -365,6 +366,20 @@ function Page() {
     const result = await syncOutlines();
     if (!result.ok) console.warn("[personal-outlines] sync skipped", result.error);
     return result;
+  }
+
+  /** Swipe-to-sync: marks the note as changed so the regular sync pushes it now, or as soon as the internet returns. */
+  async function swipeSyncNote(note: FieldNote) {
+    const marked = { ...note, dirty: true };
+    await persistNote(marked);
+    setNotes((all) => all.map((n) => (n.id === marked.id ? marked : n)));
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      toast(t("personalOutlines.swipeSyncQueued", { defaultValue: "Sem internet: envia sozinho quando a conexão voltar." }));
+      return;
+    }
+    const r = await syncOutlinesIfOnline();
+    if (r && !r.ok) { toast.error(t("personalOutlines.swipeSyncFail", { defaultValue: "Não foi possível sincronizar agora." })); return; }
+    toast.success(t("personalOutlines.swipeSyncDone", { defaultValue: "Enviado para os outros aparelhos." }));
   }
 
   async function refreshCloudList() {
@@ -1523,6 +1538,11 @@ function Page() {
         ? selectedIds.size
         : null;
     return (
+      <SwipeToSync
+        enabled={activeType !== "talk_notes" && isAutoSyncFolder(note.folderId, folders)}
+        label={t("personalOutlines.swipeSync", { defaultValue: "Sincronizar" })}
+        onSync={() => swipeSyncNote(note)}
+      >
       <div
         ref={setRefs}
         {...draggable.attributes}
@@ -1620,6 +1640,7 @@ function Page() {
             </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      </SwipeToSync>
     );
   }
 
