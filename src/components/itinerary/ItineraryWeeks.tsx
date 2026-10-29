@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { CalendarOff, PenLine, Plus, Sun, Trash2 } from "lucide-react";
+import { CalendarOff, ChevronDown, PenLine, Plus, Sun, Trash2 } from "lucide-react";
+import { currentMonthKey, isMonthOpen, useOpenMap } from "@/lib/open-months";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +27,7 @@ type Row =
 /** Semanas do itinerário sem congregação (só o superintendente vê e edita). */
 export function ItineraryWeeks({ visits = [] }: { visits?: VisitLike[] }) {
   const [weeks, setWeeks] = useState<Week[]>([]);
+  const [weeksOpen, setWeeksOpen] = useOpenMap("itin.open.freeWeeks");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [type, setType] = useState<WeekType>("pioneer");
@@ -141,11 +143,13 @@ export function ItineraryWeeks({ visits = [] }: { visits?: VisitLike[] }) {
                     </Card>
                   );
                 })()}
+                </div>
               </div>
             );
           })}
         </div>
       )}
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm">

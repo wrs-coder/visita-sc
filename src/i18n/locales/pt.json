@@ -1984,7 +1984,9 @@
     "eventLegend": "Evento",
     "pillCircuit": "Circuito",
     "sectionCongregations": "Congregações",
-    "sectionElders": "Anciãos do circuito"
+    "sectionElders": "Anciãos do circuito",
+    "sectionEvents": "Grandes Eventos",
+    "eldersCount": "{{count}} anc."
   },
   "guestWs": {
     "more": "Mais opções",

@@ -1991,7 +1991,9 @@
     "eventLegend": "Evento",
     "pillCircuit": "Circuito",
     "sectionCongregations": "Congregaciones",
-    "sectionElders": "Ancianos del circuito"
+    "sectionElders": "Ancianos del circuito",
+    "sectionEvents": "Grandes eventos",
+    "eldersCount": "{{count}} anc."
   },
   "guestWs": {
     "more": "Más opciones",
