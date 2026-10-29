@@ -1,14 +1,12 @@
-# Circuito e Itinerário: congregações unificadas, Eventos do Circuito e recolher/expandir
+# Circuito e Itinerário: congregações unificadas, Grandes Eventos e recolher/expandir
 
-Observação: o anexo sobre "Eventos do circuito" não chegou nesta conversa. O plano abaixo usa os campos que você escolheu (nome, tipo, data, local, partes com orador e tempo, observações). Se o anexo pedir algo diferente (por exemplo, o ancião confirmar pelo app), envie de novo que eu ajusto só essa parte.
-
-## 1. Circuito: pílulas "Congregações" e "Eventos do Circuito"
+## 1. Circuito: pílulas "Congregações" e "Grandes Eventos"
 
 ```text
 +-------------------------------------+
 | Circuito IBE-01                 📅  |
 | [ Itinerário ][ Circuito ]          |
-| ( Congregações )( Eventos do Circ.) |
+| ( Congregações )( Grandes Eventos ) |
 +-------------------------------------+
 | ▸ Central                    3 anc. |   <- recolhida: só o nome
 | ▾ Jardim Paulista            2 anc. |   <- expandida
@@ -23,32 +21,55 @@ Observação: o anexo sobre "Eventos do circuito" não chegou nesta conversa. O 
 +-------------------------------------+
 ```
 
-- A pílula "Anciãos do circuito" deixa de existir. A lista de anciãos aparece dentro de cada congregação.
-- Por privacidade, cada congregação começa recolhida, mostrando só o nome e o número de anciãos. Tocar no nome expande e mostra o código, a senha, os botões e os anciãos.
-- O aparelho lembra quais congregações ficaram abertas. Os dados não mudam.
+- A pílula "Anciãos do circuito" sai. Os anciãos de cada congregação passam a aparecer dentro dela.
+- Por privacidade, cada congregação começa recolhida, mostrando só o nome e quantos anciãos tem. Tocando no nome, ela se abre com o código, a senha, os botões e os anciãos.
+- O aparelho lembra quais congregações ficaram abertas.
 
-## 2. Nova pílula "Eventos do Circuito"
+## 2. Grandes Eventos (assembleias e reuniões especiais)
+
+Os Grandes Eventos aparecem como pílula em "Circuito" e também como atalho no menu lateral. Os dois levam ao mesmo lugar.
 
 ```text
+App do SC
 +-------------------------------------+
-| ( Congregações )(•Eventos do Circ.) |
-|                        [ + Evento ] |
-| ▾ Assembleia de circuito            |
-|   Sáb 14/03 · Salão de Assembleias  |
-|   Partes                 2/3 conf.  |
-|   ✓ 09:40 Discurso A  João  15 min  |
-|   ✓ 10:00 Simpósio    Pedro 10 min  |
-|   ○ 11:00 Discurso B  Mário 20 min  |  <- tocar alterna confirmado
-|   Obs.: chegar 30 min antes         |
-|   [ + Parte ]          [ ⋯ ]        |
-| ▸ Reunião especial — 22/05     1/1  |
+| ( Congregações )(•Grandes Eventos ) |
+|       [ ⤒ Importar .etim ][ + Novo ]|
+| ▾ Assembleia de circuito  14/03     |
+|   Confirmadas 5/8 · Recusadas 1     |
+|   09:40 Nº12 Discurso A    15 min   |
+|     João Silva    ✓ Confirmado      |
+|   10:00 Simpósio parte 1   10 min   |
+|     Pedro Lima    ✕ Recusado  [ i ] |  <- vê o motivo
+|   11:00 Nº27 Discurso B    20 min   |
+|     [ Escolher orador ▾ ]           |
+|   11:30 Nº30 Discurso C    30 min   |
+|     Mário Reis    ○ Aguardando      |
+|     [ ⧉ Copiar convite ][ ↻ Novo PIN]|
+| ▸ Reunião especial  22/05     1/1   |
 +-------------------------------------+
 ```
 
-- O evento tem nome, tipo (Assembleia, Reunião especial, Outro), data, local e observações.
-- Cada parte tem horário, tema, orador (você digita ou escolhe um ancião cadastrado), tempo em minutos e um marcador "confirmado".
-- Os eventos ficam recolhidos, mostrando só o nome, a data e o contador de confirmações. Os passados vão para "Anteriores", que também começa recolhido.
-- Só você vê e edita esses eventos. Eles ficam guardados na sua conta e aparecem em todos os seus aparelhos.
+- **Importar .etim:** você escolhe o arquivo do programa, e o app lê as partes (horário, tempo, tema, número do esboço, instruções, tipo e simpósio) e monta o evento. Também é possível criar um evento à mão.
+- **Orador:** você digita o nome ou escolhe um ancião já cadastrado.
+- **Copiar convite:** o app cria um link pessoal e um PIN de 6 números e copia uma mensagem pronta para WhatsApp ou e-mail. O botão "Novo PIN" troca o código e cancela o anterior.
+- **Status ao vivo:** cada parte mostra Aguardando, Confirmado (com data e hora) ou Recusado (com o motivo). O status muda sozinho quando o orador responde.
+
+```text
+Página do orador (sem login)
++-----------------------------+    +-----------------------------+
+|  Visita SC · Designação     |    | Assembleia · 14/03          |
+|  Digite o PIN que você      |    | Parte Nº 27 · 11:00 · 20min |
+|  recebeu na mensagem:       | -> | Tema: "Discurso B"          |
+|      [ _ _ _ _ _ _ ]        |    | Instruções: ...             |
+|       [ Continuar ]         |    | [ Confirmar ] [ Recusar ]   |
+|                             |    | Recusar: "Explique o motivo |
+|                             |    |  da recusa" (obrigatório)   |
++-----------------------------+    +-----------------------------+
+```
+
+- A página só mostra os dados depois que o PIN certo é digitado. Com 5 erros, o link é bloqueado até você gerar um novo PIN.
+- O orador vê apenas a parte dele, sem nomes de outros oradores e sem dados das congregações.
+- Depois de responder, aparece "Obrigado". Se ele precisar mudar a resposta, você gera um novo PIN.
 
 ## 3. Itinerário: recolher e expandir
 
@@ -66,16 +87,17 @@ Observação: o anexo sobre "Eventos do circuito" não chegou nesta conversa. O 
 +-------------------------------------+
 ```
 
-- Cada mês das visitas agendadas recolhe e expande. O mês atual começa aberto e os outros começam fechados.
-- O bloco "Semanas sem visita" e cada mês dentro dele também recolhem e expandem.
-- O aparelho lembra o que ficou aberto. As visitas e as semanas não mudam.
+- Cada mês de visitas agendadas pode ser recolhido ou expandido. O mês atual começa aberto e os outros começam fechados.
+- O bloco "Semanas sem visita" e cada mês dentro dele também podem ser recolhidos ou expandidos. O aparelho lembra o que ficou aberto.
 
 ## O que não muda
-Os códigos de convite, as senhas, a ativação de congregações, o cadastro de anciãos e as visitas continuam iguais. As semanas sem visita, inclusive a limpeza automática das semanas livres vencidas, também continuam iguais. O que está escondido fica apenas oculto na tela, então campos que você estiver editando não se perdem.
+Continuam iguais: códigos de convite, senhas, ativação de congregações, cadastro de anciãos, visitas, semanas sem visita (inclusive a limpeza automática das semanas livres vencidas) e o cronograma. O que fica recolhido só é escondido na tela, então nada do que você estiver digitando se perde.
 
 ## Detalhes técnicos
-- `_app.congregacoes.tsx`: o tipo da seção passa a ser `"congregations" | "events"`, e o valor salvo antigo `"elders"` vira `"congregations"`. Cada card de congregação usa um `Collapsible` com o cabeçalho (nome e número de anciãos de `elders.filter(congregation_id)`). O corpo mostra o conteúdo atual do card e o grupo de anciãos que hoje está na seção de anciãos. O estado aberto fica em localStorage (`visita-sc:circuit-open`), e o corpo é escondido com `hidden`, sem desmontar.
-- Nova tabela `circuit_speaker_events` com `id`, `superintendent_id`, `name`, `event_type`, `event_date`, `location`, `notes`, `parts jsonb` (lista de `{id, time, theme, speaker, minutes, confirmed}`) e timestamps. Recebe GRANT para authenticated/service_role, RLS só para o dono (`superintendent_id = auth.uid()` e role superintendent) e o trigger `touch_updated_at`. Não toca em nenhuma tabela existente.
-- Novo componente `src/components/circuit/CircuitSpeakerEvents.tsx` com o CRUD pelo cliente do navegador (RLS), leitura com `readFnWithMirrorSafe` para funcionar sem internet e salvamento com espera de 600 ms ao editar as partes.
-- `_app.configuracoes.tsx` (meses das visitas) e `ItineraryWeeks.tsx` (bloco e meses): cabeçalhos colapsáveis com estado em localStorage (`itin.open.*`). O mês atual começa aberto.
-- Textos em i18n pt/en/es, regra nova no `AGENTS.md` e testes para a regra "mês atual aberto por padrão" e para o contador de confirmações. A validação usa `bunx tsgo --noEmit` e `bunx vitest run`.
+- `_app.congregacoes.tsx`: a seção passa a ser `"congregations" | "events"`, e o valor antigo `"elders"` salvo no aparelho passa a abrir `"congregations"`. Cada card vira um `Collapsible`, com o cabeçalho mostrando o nome e o número de anciãos. O corpo reúne o conteúdo atual e os anciãos de `elders.filter(congregation_id)`. O estado de aberto/fechado fica em localStorage, e o conteúdo é escondido com `hidden`, sem ser desmontado.
+- Banco: só tabelas novas, nenhuma das existentes muda. `circuit_big_events` (`superintendent_id`, `name`, `event_type`, `event_date`, `location`, `notes`) e `circuit_big_event_parts` (`event_id`, `sort_order`, `part_time`, `duration_min`, `theme`, `outline_number`, `instructions`, `part_type_id`, `part_type_label`, `symposium`, `talk_includes`, `speaker_name`, `status pending|confirmed|declined`, `responded_at`, `decline_reason`, `token uuid unique`, `pin_hash`, `pin_attempts`, `email_sent`). GRANT para authenticated e service_role, RLS só para o superintendente dono e nenhum acesso anon. Realtime em `circuit_big_event_parts`, filtrado pela RLS do dono.
+- Página pública `src/routes/confirmar.$token.tsx` (`noindex`). As server functions `getAssignment({token,pin})` e `respondAssignment({token,pin,action,reason})` validam com zod, comparam o PIN por hash SHA-256 (com o token como sal) e contam as tentativas. Só depois disso usam o cliente admin, carregado dentro do handler, e devolvem apenas os campos daquela parte. Na recusa o motivo é obrigatório, com até 1000 caracteres.
+- `src/lib/etim-import.ts`: um parser tolerante. Aceita um array ou um objeto com `circuitEventPart`, valida cada parte, limita o tamanho do arquivo e ignora campos desconhecidos. Como nenhum `.etim` de exemplo veio junto, ele segue os campos descritos no anexo.
+- `src/components/circuit/BigEvents.tsx` cuida da lista, importação, escolha de orador, cópia do convite e atualização ao vivo. O PIN em claro aparece só no momento da cópia e nunca é salvo. A rota `/grandes-eventos` reaproveita esse componente para o atalho do menu.
+- `_app.configuracoes.tsx` (meses das visitas) e `ItineraryWeeks.tsx` (bloco e meses): cabeçalhos que recolhem e expandem, com o estado em localStorage. O mês atual começa aberto.
+- i18n em pt/en/es e regra no `AGENTS.md`. Testes para: mês atual aberto por padrão, parser `.etim`, hash e validação do PIN, e bloqueio após 5 tentativas. Validação com `bunx tsgo --noEmit` e `bunx vitest run`.
