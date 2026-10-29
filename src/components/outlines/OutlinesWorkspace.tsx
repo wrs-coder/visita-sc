@@ -1,7 +1,7 @@
 import { htmlToDocx, folderToDocxZip, safeFileName, DOCX_MIME, type DocxFolderEntry } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
 import { FieldNoteInfoButton } from "@/components/notes/FieldNoteInfoButton";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -161,32 +161,6 @@ async function repairFolderTypesLocal() {
   } catch { /* silencioso */ }
 }
 
-export const Route = createFileRoute("/_app/consideracoes-campo")({
-  validateSearch: (search: Record<string, unknown>): {
-    noteId?: string;
-    mode?: "edit" | "outline";
-  } => {
-    const noteId = typeof search.noteId === "string" ? search.noteId : undefined;
-    const mode = search.mode === "edit" || search.mode === "outline" ? search.mode : undefined;
-    return { noteId, mode };
-  },
-  beforeLoad: async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-      const isSuper = (roles ?? []).some((r) => r.role === "superintendent");
-      if (!isSuper) throw redirect({ to: "/dashboard" });
-    } catch (e) {
-      if (e && typeof e === "object" && "to" in e) throw e;
-    }
-  },
-  component: Page,
-});
-
 const FONT_SCALE_KEY = "esboco:fontScale";
 const FS_MIN = 0.85;
 const FS_MAX = 1.6;
@@ -223,13 +197,21 @@ function slugify(s: string): string {
     .slice(0, 60) || "sem-titulo";
 }
 
-function Page() {
+export interface OutlinesWorkspaceProps {
+  /** Quando definido, a tela fica presa a este tipo (sem seletor nem cabeçalho). */
+  lockedType?: NoteType;
+  search: { noteId?: string; mode?: "edit" | "outline" };
+  onSearchConsumed: () => void;
+  /** Nota pedida pertence a um tipo que não é desta tela. */
+  onForeignNote?: (note: FieldNote) => void;
+  /** Avisa quando um esboço/anotação está aberto (modo foco). */
+  onFocusChange?: (focused: boolean) => void;
+}
+
+export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onForeignNote, onFocusChange }: OutlinesWorkspaceProps) {
   const { t, i18n } = useTranslation();
-  const search = Route.useSearch();
-  const navigate = useNavigate();
   const [activeType, setActiveType] = useState<NoteType | null>(
-    // Se chegamos por link com noteId, já assume field_consideration imediatamente.
-    search.noteId ? "field_consideration" : null,
+    lockedType ?? (search.noteId ? "field_consideration" : null),
   );
   const [folders, setFolders] = useState<NoteFolder[]>([]);
   const [notes, setNotes] = useState<FieldNote[]>([]);
@@ -543,7 +525,13 @@ function Page() {
         // Esboço de outra subaba (ex.: vindo do dashboard): troca de subaba e reabre.
         const other = target ? null : ns.find((n) => n.id === search.noteId);
         if (other) {
-          setActiveType((other.type ?? "field_consideration") as NoteType);
+          const otherType = (other.type ?? "field_consideration") as NoteType;
+          if (otherType === "talk_notes" || lockedType) {
+            onSearchConsumed();
+            if (otherType !== lockedType) onForeignNote?.(other);
+            return;
+          }
+          setActiveType(otherType);
           return;
         }
         if (target) {
@@ -556,10 +544,11 @@ function Page() {
           setMode(search.mode ?? "outline");
         }
         // Limpa o search param para não re-disparar se o usuário navegar internamente.
-        navigate({ to: "/consideracoes-campo", search: {}, replace: true });
+        onSearchConsumed();
       }
     })();
-  }, [activeType, search.noteId, search.mode, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeType, search.noteId, search.mode]);
 
   // Recarrega pastas/notas quando o sync global termina (cobre APK pós-login,
   // resume e online novamente — disparado por useOutlinesSync).
@@ -1652,7 +1641,7 @@ function Page() {
   return (
     <>
       <div className="space-y-4 w-full max-w-full overflow-x-clip box-border min-w-0">
-        <header className={cn("flex items-center gap-3", draft && !showLibrary && "hidden lg:flex")}>
+        <header className={cn("flex items-center gap-3", (lockedType || (draft && !showLibrary)) && "hidden", !lockedType && draft && !showLibrary && "lg:flex")}>
           <div className="rounded-xl bg-primary/10 p-2 text-primary">
             <FileText className="h-5 w-5" />
           </div>
@@ -1666,7 +1655,7 @@ function Page() {
 
 
         {/* Seletor de tipo (obrigatório) */}
-        <Card className={cn(draft && !showLibrary && "hidden lg:block")}>
+        <Card className={cn((lockedType || (draft && !showLibrary)) && "hidden", !lockedType && draft && !showLibrary && "lg:block")}>
           <CardContent className="p-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <span className="text-xs font-semibold text-muted-foreground">
               {t("personalOutlines.typePicker.label")}:
@@ -1692,17 +1681,7 @@ function Page() {
               >
                 {t("personalOutlines.typePicker.outline")}
               </button>
-              <button
-                type="button"
-                onClick={() => setActiveType("talk_notes")}
-                className={cn(
-                  "flex-1 sm:flex-none inline-flex items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs rounded-sm transition",
-                  isTalkNotes ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-                )}
-              >
-                <NotebookPen className="h-3.5 w-3.5 shrink-0" />
-                {t("personalOutlines.typePicker.talkNotes")}
-              </button>
+              {/* "Anotações" mudou para Estudo e Anotações */}
             </div>
           </CardContent>
         </Card>
