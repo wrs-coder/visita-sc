@@ -3,6 +3,7 @@
 // código de convite. Nada vai para o servidor.
 import { get as idbGet, set as idbSet } from "idb-keyval";
 import { packBackupZip, unpackBackupZip } from "./backup-package";
+import type { JwNote } from "./jwlibrary-import";
 import { isValidChapterKey, chaptersOf, type ReadingPlan, type Highlight, type CustomPlan } from "./bible-chapters";
 
 export type WsKind = "note" | "bible" | "research";
@@ -10,7 +11,7 @@ export interface WsItem { id: string; kind: WsKind; title: string; body: string;
 export interface WsFolder { id: string; name: string; kind?: WsKind }
 export interface WsSettings { fontSize: "sm" | "md" | "lg"; width: "narrow" | "wide" }
 export interface WsReading { plan: ReadingPlan; startDate: string; done: string[]; custom?: CustomPlan }
-export interface WsData { items: WsItem[]; folders: WsFolder[]; settings: WsSettings; reading: WsReading; highlights: Highlight[] }
+export interface WsData { items: WsItem[]; folders: WsFolder[]; settings: WsSettings; reading: WsReading; highlights: Highlight[]; jwNotes: JwNote[] }
 
 export const WS_PREFIX = "guest.workspace.";
 const DATA_KEY = `${WS_PREFIX}data`; // chave antiga (migração) e nome no backup
@@ -19,7 +20,7 @@ export const WS_COLORS = ["primary", "accent", "secondary", "muted"] as const;
 
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 export const emptyWs = (): WsData => ({ items: [], folders: [], settings: { fontSize: "md", width: "narrow" },
-  reading: { plan: "canon", startDate: todayIso(), done: [] }, highlights: [] });
+  reading: { plan: "canon", startDate: todayIso(), done: [] }, highlights: [], jwNotes: [] });
 
 /** Impressão digital do código de convite (o código não fica gravado em claro). */
 export function wsSessionKey(code: string | null | undefined): string {
@@ -110,10 +111,19 @@ export function sanitizeWs(raw: unknown): WsData {
     const b = typeof o.bookId === "string" && /^B\d\d$/.test(o.bookId) && chaptersOf(o.bookId) > 0 ? o.bookId : null;
     return [{ id: str(o.id, 64), ref: str(o.ref, 120), bookId: b, text: str(o.text, 20_000), date: str(o.date, 40) || new Date().toISOString() }];
   }) : [];
+  const jwNotes = Array.isArray(r.jwNotes) ? r.jwNotes.slice(0, 5000).flatMap((x): JwNote[] => {
+    const o = x as Record<string, unknown>;
+    if (!o || typeof o.id !== "string" || typeof o.bookId !== "string" || !/^B\d\d$/.test(o.bookId) || chaptersOf(o.bookId) === 0) return [];
+    const ch = typeof o.chapter === "number" && Number.isInteger(o.chapter) && o.chapter >= 1 && o.chapter <= chaptersOf(o.bookId) ? o.chapter : null;
+    if (!ch) return [];
+    const v = typeof o.verse === "number" && Number.isInteger(o.verse) && o.verse > 0 && o.verse < 200 ? o.verse : null;
+    const tags = Array.isArray(o.tags) ? o.tags.filter((t): t is string => typeof t === "string").slice(0, 20).map((t) => t.slice(0, 80)) : [];
+    return [{ id: str(o.id, 64), bookId: o.bookId, chapter: ch, verse: v, title: str(o.title, 500), text: str(o.text, 20_000), tags, date: str(o.date, 40) || new Date().toISOString() }];
+  }) : [];
   return { items, folders, settings: {
     fontSize: s.fontSize === "sm" || s.fontSize === "lg" ? s.fontSize : "md",
     width: s.width === "wide" ? "wide" : "narrow",
-  }, reading: { plan, done, startDate: /^\d{4}-\d\d-\d\d$/.test(sd) ? sd : base.reading.startDate, ...(custom ? { custom } : {}) }, highlights };
+  }, reading: { plan, done, startDate: /^\d{4}-\d\d-\d\d$/.test(sd) ? sd : base.reading.startDate, ...(custom ? { custom } : {}) }, highlights, jwNotes };
 }
 
 export async function buildWsBackup(d: WsData): Promise<Blob> {
