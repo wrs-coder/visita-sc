@@ -1,87 +1,64 @@
-# Grandes Eventos — edição completa de partes e convites
+# Importar itinerário (.ics / .csv) — avaliação e plano
 
-## Mockup (celular)
+## Avaliação do plano enviado
+
+Funciona e é estável, com quatro ajustes importantes:
+
+1. **Sem `ical.js` / `node-ical`**: `node-ical` não roda no aparelho, e `ical.js` é pesado para o que precisamos. Um leitor pequeno próprio cobre o necessário (SUMMARY, DTSTART, DTEND, linhas quebradas, eventos de dia inteiro, fuso) e funciona offline.
+2. **Datas de dia inteiro no .ics**: o DTEND é "exclusivo" (uma visita de seg a dom vem com fim na segunda seguinte). Sem esse ajuste, toda visita importada ganharia um dia a mais.
+3. **CSV brasileiro**: o Excel em português salva com `;` e datas `dd/mm/aaaa`. O leitor detecta `;` ou `,`, aceita `dd/mm/aaaa` e `aaaa-mm-dd`, e reconhece os títulos das colunas com ou sem acento ("Congregacao", "Inicio").
+4. **Semelhança de nomes**: o `fuse.js` já está instalado, então não é preciso nada novo. Antes de comparar, os nomes são limpos (tira "Cong.", "Congregação", acentos e maiúsculas). Assim "Cong. Central do Sequele" casa com "Central" sem cair em 🟡.
+
+## Melhorias que sugiro
+
+- **Conflitos**: avisar quando a semana já tem visita ou semana livre no itinerário ("Já existe: Central 12/10"). Essas linhas vêm desmarcadas.
+- **Marcar/desmarcar cada linha**: importar só o que quiser.
+- **Pacote de modelos opcional**: um seletor "Aplicar pacote" no topo. Ele aplica os modelos exatamente como o formulário de nova visita já faz.
+- **Lembrar nomes corrigidos**: se você trocar "Esperanca II" por "Nova Esperança", o aparelho lembra e na próxima importação já vem 🟢.
+- **"Semana livre / Pioneiros"** como opção no seletor da linha, para itinerários que trazem semanas sem visita.
+- **Precisa de internet só no "Confirmar"**: a leitura e a revisão funcionam offline. O botão avisa se estiver sem conexão, em vez de salvar pela metade.
+
+## Mockup
 
 ```text
 +-------------------------------------+
-| Assembleia de Circuito 2027    ⌄    |
-| 14/03/2027 · Salão X      12/18 ✓   |
-|-------------------------------------|
-| [ 14/03/2027 ] [ Local          ]   |
-| Início do programa  [ 09:40 ]  ↻    |  <- recalcula horários
-| Informações adicionais (todos)      |
-| [______________________________]    |
-| [⤓ Word] [Faltam 6] [Recusas 1] ··· |  <- filtros rápidos
-|-------------------------------------|
-| 09:40 Nº1  Tema da parte       ✎ ⋮  |
-|        Discurso · 15 min            |
-|   Orador [ João Silva        ]      |
-|   Congreg.[ Central          ]      |  <- auto ao escolher ancião
-|   Info. só deste convite  ⌄         |
-|   PIN [123456] ↻ Novo PIN           |
-|   ☑ Informar o nome do próximo orador? |
-|   [Copiar convite]  ● Aguardando    |
-|-------------------------------------|
-| 09:55 Nº2  ...                 ✎ ⋮  |
-|            [ + Nova parte ]         |
+| Itinerário   [Importar ⤒] [+ Nova]  |
 +-------------------------------------+
 
-  ⋮ da parte: Editar · Subir · Descer · Excluir
-
-+-------- Nova parte / Editar --------+
-| Tema   [_________________________]  |
-| Nº [ 3 ]   Tipo [ Discurso      ▾]  |
-|  Discurso · Entrevistas · Simpósio  |
-|  A Sentinela · Discurso Batismo ·   |
-|  Discurso Público · Outro [____]    |
-| Tempo [ 15 ] min                    |
-| Horário inicial                     |
-|  (•) Automático (após anterior) 10:10|
-|  ( ) Manual [ __:__ ]               |
-| Designado: (Orador)(SC)(Filial)(—)  |
-|          [Cancelar]   [Salvar]      |
++------ Importar itinerário ----------+
+| itinerario_2027.csv · 4 semanas     |
+| Pacote: [ Nenhum            ▾ ]     |
+|-------------------------------------|
+| ☑ 12/10 – 18/10              🟢     |
+|   "Cong. Central do Sequele"        |
+|   [ Central                 ▾ ]     |
+| ☑ 19/10 – 25/10              🟡     |
+|   "Esperanca II"                    |
+|   [ Nova Esperança          ▾ ]     |
+| ☐ 26/10 – 01/11              🔴     |
+|   "Bairro da Luz"                   |
+|   [ Selecionar…             ▾ ]     |
+| ☐ 02/11 – 08/11              ⚠      |
+|   Já existe: Central 02/11          |
+|-------------------------------------|
+| [Cancelar]   [Importar 2 visitas]   |
 +-------------------------------------+
 ```
 
-## O que muda
+Legenda: 🟢 vinculada sozinha · 🟡 sugestão, confira · 🔴 escolha manual · ⚠ conflito.
 
-1. **Editar partes importadas ou criadas**: ícone ✎ abre a mesma janela da "Nova parte" com todos os campos preenchidos. Menu ⋮ permite subir/descer e **excluir** (com confirmação; aviso extra se o orador já confirmou).
-2. **Hora inicial do evento**: campo "Início do programa". Botão ↻ recalcula o horário de todas as partes em modo automático somando os tempos anteriores; partes com horário manual ficam como estão e servem de nova base para as seguintes.
-3. **Informações adicionais individuais**: campo recolhível em cada parte, enviado só no convite daquele orador, depois das informações gerais do evento.
-4. **Congregação do orador**: campo ao lado do nome; preenchido sozinho ao escolher um ancião da lista (editável). Aparece no convite ("Orador: João — Central") e também na linha "Próximo orador: Pedro — Vila Nova" quando a caixa estiver marcada.
-5. **Nova parte** com Tema, Nº, Tipo (lista pedida + "Outro" com texto livre), Tempo, Horário inicial automático ou manual, e a quem está designada. Entra no fim da lista (ou depois da parte escolhida no ⋮).
+## Fica igual
 
-## Sugestões extras (incluídas)
-
-- Filtros rápidos "Faltam confirmar" e "Recusas" para achar pendências sem rolar.
-- Aviso discreto quando o horário de uma parte manual se sobrepõe à anterior.
-- "Duplicar evento" no menu ⋮ do evento (copia partes e tempos, sem oradores/PINs) — útil para o mesmo programa em outro dia/local.
-- Exportação Word e convites passam a incluir congregação e informações individuais.
-
-## Forma do link e PIN (escolhida por evento)
-
-```text
-+-------- Novo evento / Importar -----+
-| Como os oradores vão confirmar?     |
-| (•) Link único + PIN                |
-|     Um link para todos; cada orador |
-|     digita seu PIN.                 |
-| ( ) Link pessoal                    |
-|     Cada orador recebe o seu link,  |
-|     sem digitar PIN.                |
-+-------------------------------------+
-```
-
-- Escolha feita ao criar/importar e alterável depois no evento (aviso: ao trocar, convites já enviados deixam de valer e precisam ser reenviados).
-- Link pessoal: cada orador ganha um link próprio com código longo e imprevisível; PIN e "Novo PIN" dão lugar a "Novo link" (cancela o anterior). Convite e Word levam o link pessoal, sem PIN.
-- Link único + PIN: funciona como hoje. Bloqueios contra tentativas valem nos dois modos.
-
-Fica igual: bloqueios, página pública de confirmação, importação .etim.
+Formulário de nova visita, modelos, pacotes, banco de dados e regras de acesso. Também continua valendo o limite de congregações ativas. A importação só cria visitas pelo mesmo caminho do formulário.
 
 ## Detalhes técnicos
 
-- Banco (aditivo, sem mexer em RLS): `circuit_big_event_parts` ganha `speaker_congregation text`, `time_mode text default 'auto'`, `personal_token uuid unique` (nulo no modo PIN); `circuit_big_events` ganha `start_time text` e `link_mode text default 'pin'` ('pin'|'personal'). A coluna existente `instructions` guarda as informações individuais; `part_type_label` guarda o tipo (incluindo texto de "Outro").
-- `invite.ts`: `buildInviteText` inclui congregação, `instructions`, congregação do próximo orador e usa link pessoal sem PIN quando o modo for pessoal; nova função pura `recomputeTimes(start, parts)` (auto soma, manual reancora).
-- `BigEvents.tsx`: novo `PartEditorDialog`, menu ⋮ por parte (editar/mover/excluir), campo início + ↻, filtros, duplicar evento, escolha do modo de link; congregação auto via lista `elders`.
-- `confirm.functions.ts`: aceita token do evento + PIN, ou token pessoal sozinho (só se o evento estiver em modo pessoal); `/confirmar/$token` detecta o tipo e pula a tela de PIN; exibe a congregação.
-- Testes em `big-events.test.ts`: recálculo de horários (auto/manual), convite com congregação e info individual, próximo orador com congregação. Validar com `bunx tsgo --noEmit` e `bunx vitest run`.
+- `src/lib/itinerary-import.ts` (puro e testável):
+  - `parseIcs` (desdobra as linhas, trata VALUE=DATE com fim exclusivo menos 1 dia e DATE-TIME com fuso local);
+  - `parseCsv` (detecta o separador, entende aspas e mapeia os títulos das colunas, inclusive "Semana" em `dd/mm–dd/mm`);
+  - `normalizeName` e `matchCongregation` com Fuse (pontuação de 0 a 100, cortes em 85/50);
+  - `findConflicts` contra visitas e `itinerary_weeks`.
+- `src/components/itinerary/ImportItineraryDialog.tsx`: tela de revisão; nomes corrigidos ficam no localStorage por usuário (`itineraryImport.aliases.<userId>`).
+- `_app.configuracoes.tsx`: botão "Importar" e a criação de cada linha reaproveitando a função existente de salvar visita + aplicar o pacote. As linhas são processadas uma a uma, com um resumo de sucesso ou falha no fim.
+- Testes: dia inteiro no .ics (fim exclusivo), CSV com `;` e `dd/mm/aaaa`, "Cong. X" casando com 🟢, cortes 85/50, detecção de conflito.
+- Validação com `bunx tsgo --noEmit` e `bunx vitest run`.
