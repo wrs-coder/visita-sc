@@ -62,6 +62,7 @@ export function htmlToDocxBody(title: string, html: string): string {
     const c = cssColor(style);
     if (c) nf.color = c;
     if (tag === "br") { ensure(leftPx).runs.push("<w:r><w:br/></w:r>"); return; }
+    if (tag === "hr" && el.hasAttribute("data-page-break")) { ensure(leftPx).runs.push('<w:r><w:br w:type="page"/></w:r>'); return; }
     if (tag === "img" || tag === "video" || tag === "audio") {
       const n = el.getAttribute("alt") || el.getAttribute("title") || el.getAttribute("data-name");
       if (n) ensure(leftPx).runs.push(run(`[${n}]`, { i: true }));
