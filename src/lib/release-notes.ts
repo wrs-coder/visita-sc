@@ -1,9 +1,12 @@
 // Novidades da versão atual — embutidas no app (offline) e servidas pelo endpoint de versão.
 // Atualizar a cada release, junto com RELEASE_NOTES_VERSION.
-export const RELEASE_NOTES_VERSION = "5.0.4";
+// Novidades separadas por versão. A primeira é a atual; as demais formam o histórico.
+// A cada release: acrescentar uma nova entrada no topo e atualizar RELEASE_NOTES_VERSION.
+export type ReleaseSection = { title: string; items: string[] };
+export type ReleaseEntry = { version: string; sections: ReleaseSection[] };
 
-// Novidades exibidas no botão "Ver novidades" do aviso. Atualizar a cada release.
-export const RELEASE_NOTES: { title: string; items: string[] }[] = [
+// 5.0.4
+const OLD_SECTIONS: ReleaseSection[] = [] }[] = [
   {
     title: "Esboços e anotações com mais espaço",
     items: [
@@ -100,3 +103,52 @@ export const RELEASE_NOTES: { title: string; items: string[] }[] = [
     ],
   },
 ];
+
+export const RELEASE_NOTES_VERSION = "5.0.5";
+
+export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "5.0.5",
+    sections: [
+      {
+        title: "Grandes Eventos do Circuito",
+        items: [
+          "Importe programas de assembleias e reuniões especiais (.etim).",
+          "Edite partes: tema, tipo, tempo, e horários recalculados automaticamente.",
+          "Escolha por evento: link único com PIN ou link pessoal para cada orador.",
+          "Congregação do orador preenchida sozinha e convites exportados em Word.",
+        ],
+      },
+      {
+        title: "Importar itinerário (.ics e .csv)",
+        items: [
+          "Importe o arquivo do Circuit Assistant ou uma planilha, com revisão antes de salvar.",
+          "Visitas vão para Visitas; os demais eventos viram Semanas sem visita.",
+          "Aviso de datas em conflito e sugestão da congregação certa.",
+        ],
+      },
+      {
+        title: "Notas do JW Library",
+        items: [
+          "Nova pílula JW Library na Leitura da Bíblia (superintendente e esposa).",
+          "Importação do backup feita só no celular, sem enviar para a nuvem.",
+          "Busca por texto, referência e etiqueta; copie notas para Pontos altos.",
+        ],
+      },
+      {
+        title: "Estudo e Anotações",
+        items: [
+          "Nova tela no menu com Leitura da Bíblia, Pesquisas e Anotações.",
+          "Toque num capítulo para \"Começar a ler\" ou \"Marcar como lido\".",
+        ],
+      },
+    ],
+  },
+  {
+    version: "5.0.4",
+    sections: OLD_SECTIONS,
+  },
+];
+
+/** Novidades da versão atual (mantido para o aviso de atualização e o endpoint). */
+export const RELEASE_NOTES: ReleaseSection[] = RELEASE_HISTORY[0].sections;
