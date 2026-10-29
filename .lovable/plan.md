@@ -24,9 +24,10 @@ Os dois arquivos vêm do Circuit Assistant. Por isso o importador terá um modo 
 
 **.ics (19 eventos)**
 - O nome vem embutido: `(Visita à Congregação) - Cidade do Sequele 09 - Sequele,, I.B (20398)`. O app recorta só "Cidade do Sequele 09" antes de comparar; o número entre parênteses é ignorado. A variante "(Visita à Congregação - Treinando SCS)" também é reconhecida.
-- `Serviço de Circuito: Semana de Pioneiro` vira **Semana de pioneiro** no itinerário. `Assembleia de Circuito…` e `Escola do Ministério do Reino` viram **Semana livre** com o nome do evento (o mesmo "Outro" que já existe).
+- Só o que é **visita à congregação** vai para "Visitas", criando a visita apenas com o que o app exige hoje: congregação, data de início e data de fim (mais o pacote, se você escolher um).
+- **Qualquer outro evento** vai para "Semanas sem visita": `Semana de Pioneiro` vira **Semana de pioneiro**; os demais (ex.: `Assembleia de Circuito…`, `Escola do Ministério do Reino`) viram **Semana livre** com o nome do evento (o mesmo "Outro" que já existe).
 - O fim é exclusivo: 27/10 → 02/11 significa terça 27/10 a domingo 01/11. O app corrige sozinho.
-- A descrição traz o tema do discurso de serviço e do discurso público. Opção marcável "Trazer temas dos discursos" para preencher esses dois campos da visita. Horários de reunião e de campo **não** são importados: os modelos/pacotes já cuidam disso e evitamos sobrescrever.
+- A descrição (temas de discursos, horários de reunião e de campo) **não** é importada.
 
 **.csv (19 semanas)**
 - Separador `;`. Datas por extenso: "13 a 18 de outubro de 2026", "27 de outubro a 01 de novembro de 2026" e também "29/12/2026 a 03/01/2027". As três formas são entendidas.
