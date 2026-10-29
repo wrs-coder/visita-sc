@@ -15,7 +15,31 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { isNativeApp } from "@/lib/api-origin";
 import { getInstalledVersion } from "@/lib/app-update-check";
-import { RELEASE_NOTES, RELEASE_NOTES_VERSION } from "@/lib/release-notes";
+import {
+  RELEASE_HISTORY,
+  RELEASE_NOTES_VERSION,
+  type ReleaseSection,
+} from "@/lib/release-notes";
+
+const current = RELEASE_HISTORY[0];
+const older = RELEASE_HISTORY.slice(1);
+
+function ReleaseSections({ sections }: { sections: ReleaseSection[] }) {
+  return (
+    <div className="space-y-3">
+      {sections.map((s) => (
+        <section key={s.title}>
+          <h3 className="mb-1 text-sm font-semibold text-primary">{s.title}</h3>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+            {s.items.map((i) => (
+              <li key={i}>{i}</li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
 import {
   OPEN_WHATS_NEW_EVENT,
   WHATS_NEW_KEY,
@@ -108,16 +132,29 @@ export function WhatsNewDialog() {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          {RELEASE_NOTES.map((s) => (
-            <section key={s.title}>
-              <h3 className="mb-1 text-sm font-semibold text-primary">{s.title}</h3>
-              <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                {s.items.map((i) => (
-                  <li key={i}>{i}</li>
+          <p className="inline-block rounded-full bg-primary/10 px-3 py-0.5 text-xs font-semibold text-primary">
+            {t("whatsNew.current", "Versão {{v}} (atual)", { v: current.version })}
+          </p>
+          <ReleaseSections sections={current.sections} />
+          {older.length > 0 && (
+            <details className="rounded-lg border border-border">
+              <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-muted-foreground">
+                {t("whatsNew.history", "Ver versões anteriores")}
+              </summary>
+              <div className="space-y-2 px-3 pb-3">
+                {older.map((r) => (
+                  <details key={r.version} className="rounded-md bg-muted/40">
+                    <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">
+                      {t("whatsNew.version", "Versão {{v}}", { v: r.version })}
+                    </summary>
+                    <div className="px-3 pb-3">
+                      <ReleaseSections sections={r.sections} />
+                    </div>
+                  </details>
                 ))}
-              </ul>
-            </section>
-          ))}
+              </div>
+            </details>
+          )}
         </div>
         <DialogFooter>
           <Button onClick={() => close(false)}>{t("whatsNew.ok", "Entendi")}</Button>
