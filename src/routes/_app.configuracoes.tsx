@@ -907,7 +907,7 @@ function Page() {
                 })}
               </div>
             </section>
-          ));
+          ); });
         })()}
       </div>
 
