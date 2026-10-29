@@ -83,7 +83,7 @@ export function readNotes(db: Database): JwNote[] {
 
 let sqlPromise: Promise<SqlJsStatic> | null = null;
 function loadSql(): Promise<SqlJsStatic> {
-  if (!sqlPromise) sqlPromise = import("sql.js").then((m) => m.default({ locateFile: () => `${import.meta.env.BASE_URL ?? "/"}sql-wasm.wasm` }));
+  if (!sqlPromise) sqlPromise = import("sql.js").then((m) => m.default({ locateFile: () => `${import.meta.env?.BASE_URL ?? "/"}sql-wasm.wasm` }));
   return sqlPromise;
 }
 
