@@ -814,9 +814,10 @@ function Page() {
             }
             g.items.push(v);
           }
-          return groups.map((g) => (
+          return groups.map((g) => { const gOpen = isMonthOpen(visitMonthsOpen, g.key, currentMonthKey()); return (
             <section key={g.key} className="space-y-2">
-              <div className="flex items-center gap-3 px-1">
+              <button type="button" aria-expanded={gOpen} onClick={() => setVisitMonthOpen(g.key, !gOpen)} className="flex w-full items-center gap-3 px-1 text-left">
+                <ChevronDown className={`h-4 w-4 shrink-0 text-primary transition-transform ${gOpen ? "" : "-rotate-90"}`} />
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
                   {g.label}
                 </h3>
@@ -824,8 +825,8 @@ function Page() {
                 <span className="text-[11px] text-muted-foreground font-medium">
                   {g.items.length} {g.items.length === 1 ? "visita" : "visitas"}
                 </span>
-              </div>
-              <div className="space-y-2">
+              </button>
+              <div className="space-y-2" hidden={!gOpen}>
                 {g.items.map((v) => {
                   const cong = congs.find((c) => c.id === v.congregation_id);
                   return (
