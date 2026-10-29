@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
@@ -37,7 +37,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone, AlertTriangle, ChevronDown } from "lucide-react";
+import { ImportItineraryDialog } from "@/components/itinerary/ImportItineraryDialog";
+import { parseItineraryFile, type ImportRow } from "@/lib/itinerary-import";
+import { Plus, Upload, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone, AlertTriangle, ChevronDown } from "lucide-react";
 import { currentMonthKey, isMonthOpen, useOpenMap } from "@/lib/open-months";
 import { hasAnyTemplate } from "@/lib/visit-template-reminder";
 import { toast } from "sonner";
@@ -129,6 +131,9 @@ function Page() {
     substitute_phone: "",
   });
   const isSuper = role === "superintendent";
+  const [importing, setImporting] = useState<{ name: string; rows: ImportRow[]; packages: VisitPackage[] } | null>(null);
+  const [weeksKey, setWeeksKey] = useState(0);
+  const importRef = useRef<HTMLInputElement>(null);
   const [packages, setPackages] = useState<VisitPackage[]>([]);
   useEffect(() => { if (open) { setPackages(loadPackages(user?.id)); fetchPackages(user?.id).then(setPackages); } }, [open, user?.id]);
 
@@ -413,6 +418,37 @@ function Page() {
     }
   };
 
+  const onImportFile = async (f: File | undefined) => {
+    if (importRef.current) importRef.current.value = "";
+    if (!f) return;
+    if (f.size > 2_000_000) { toast.error("Arquivo muito grande."); return; }
+    try {
+      const rows = parseItineraryFile(f.name, await f.text());
+      if (!rows.length) { toast.error("Nenhuma semana encontrada no arquivo."); return; }
+      let pk = loadPackages(user?.id);
+      try { pk = await fetchPackages(user?.id); } catch { /* usa o cache */ }
+      setImporting({ name: f.name, rows, packages: pk });
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível ler o arquivo."); }
+  };
+
+  /** Cria uma visita importada pelo mesmo caminho do formulário e aplica o pacote escolhido. */
+  const createImportedVisit = async (payload: { title: string; start_date: string; end_date: string; congregation_id: string }, pkg: VisitPackage | null) => {
+    const { data, error } = await supabase.from("visits").insert({
+      ...payload, substitute_name: null, substitute_phone: null,
+      ...(pkg?.meeting_talk_template_id ? { meeting_talk_template_id: pkg.meeting_talk_template_id } : {}),
+    }).select().single();
+    if (error || !data) return false;
+    if (pkg) {
+      const id = data.id;
+      if (pkg.template_id) await fnApply({ data: { visitId: id, templateId: pkg.template_id } }).catch(() => null);
+      if (pkg.checklist_template_id) await fnApplyChecklist({ data: { visitId: id, templateId: pkg.checklist_template_id } }).catch(() => null);
+      if (pkg.field_template_id) await fnApplyField({ data: { visitId: id, templateId: pkg.field_template_id } }).catch(() => null);
+      if (pkg.meeting_talk_template_id) await fnApplyMeetingTalk({ data: { visitId: id, templateId: pkg.meeting_talk_template_id } }).catch(() => null);
+      if (pkg.elder_program_template_id) await fnApplyElderProgram({ data: { visitId: id, templateId: pkg.elder_program_template_id } }).catch(() => null);
+    }
+    return true;
+  };
+
   const removeById = async (id: string) => {
     try {
       const res = await offlineDelete("visits", { id });
@@ -491,13 +527,23 @@ function Page() {
         </Card>
       )}
 
-      {isSuper && <ItineraryWeeks visits={visits} />}
+      {isSuper && <ItineraryWeeks key={weeksKey} visits={visits} />}
+      {importing && user && (
+        <ImportItineraryDialog fileName={importing.name} rows={importing.rows} congs={congs} visits={visits}
+          packages={importing.packages} userId={user.id} onClose={() => setImporting(null)}
+          onCreateVisit={createImportedVisit} onDone={() => { setImporting(null); setWeeksKey((k) => k + 1); }} />
+      )}
 
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Calendar className="h-4 w-4" /> {t("itinerary.visits")}
         </h2>
         {isSuper && (
+          <div className="flex items-center gap-2">
+          <input ref={importRef} type="file" accept=".ics,.csv,text/calendar,text/csv" className="hidden" onChange={(e) => onImportFile(e.target.files?.[0])} />
+          <Button variant="outline" onClick={() => importRef.current?.click()} aria-label="Importar itinerário (.ics ou .csv)">
+            <Upload className="h-4 w-4 mr-1" />Importar
+          </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <Button onClick={openNew}>
               <Plus className="h-4 w-4 mr-1" />
@@ -789,6 +835,7 @@ function Page() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         )}
       </div>
 
