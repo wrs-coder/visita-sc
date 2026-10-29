@@ -18,6 +18,25 @@ Funciona e é estável, com quatro ajustes importantes:
 - **"Semana livre / Pioneiros"** como opção no seletor da linha, para itinerários que trazem semanas sem visita.
 - **Precisa de internet só no "Confirmar"**: a leitura e a revisão funcionam offline. O botão avisa se estiver sem conexão, em vez de salvar pela metade.
 
+## Refinamentos a partir dos seus arquivos reais
+
+Os dois arquivos vêm do Circuit Assistant. Por isso o importador terá um modo próprio para esse formato, mais preciso que a semelhança genérica.
+
+**.ics (19 eventos)**
+- O nome vem embutido: `(Visita à Congregação) - Cidade do Sequele 09 - Sequele,, I.B (20398)`. O app recorta só "Cidade do Sequele 09" antes de comparar; o número entre parênteses é ignorado. A variante "(Visita à Congregação - Treinando SCS)" também é reconhecida.
+- `Serviço de Circuito: Semana de Pioneiro` vira **Semana de pioneiro** no itinerário. `Assembleia de Circuito…` e `Escola do Ministério do Reino` viram **Semana livre** com o nome do evento (o mesmo "Outro" que já existe).
+- O fim é exclusivo: 27/10 → 02/11 significa terça 27/10 a domingo 01/11. O app corrige sozinho.
+- A descrição traz o tema do discurso de serviço e do discurso público. Opção marcável "Trazer temas dos discursos" para preencher esses dois campos da visita. Horários de reunião e de campo **não** são importados: os modelos/pacotes já cuidam disso e evitamos sobrescrever.
+
+**.csv (19 semanas)**
+- Separador `;`. Datas por extenso: "13 a 18 de outubro de 2026", "27 de outubro a 01 de novembro de 2026" e também "29/12/2026 a 03/01/2027". As três formas são entendidas.
+- Coluna "Tipo": Visita Regular → visita; Semana de Pioneiro → semana de pioneiro; outros (ex.: "Assembleia com Rep. Betel") → semana livre com esse nome.
+- Coluna "Esquema" (ex.: "Treinando: Alberto Luvumba Silva") vai como observação da semana.
+- Colunas de avisos/despesas/concluída são ignoradas.
+- Números são comparados sem zero à esquerda: "Mayé-Mayé 1" casa com "Mayé-Mayé 01" como 🟢.
+
+**Reimportar com segurança**: semanas já cadastradas (mesma data e congregação, ou semana livre/pioneiro nas mesmas datas) aparecem como "Já existe" e desmarcadas. Importar o mesmo arquivo de novo não duplica nada.
+
 ## Mockup
 
 ```text
