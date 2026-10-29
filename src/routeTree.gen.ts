@@ -22,6 +22,7 @@ import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist
 import { Route as AppComunicacaoCasalRouteImport } from './routes/_app.comunicacao-casal'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
 import { Route as AppCongregacoesRouteImport } from './routes/_app.congregacoes'
+import { Route as AppConsideracoesCampoRouteImport } from './routes/_app.consideracoes-campo'
 import { Route as AppCronogramaRouteImport } from './routes/_app.cronograma'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppEscalaRouteImport } from './routes/_app.escala'
@@ -111,6 +112,11 @@ const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
 const AppCongregacoesRoute = AppCongregacoesRouteImport.update({
   id: '/congregacoes',
   path: '/congregacoes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppConsideracoesCampoRoute = AppConsideracoesCampoRouteImport.update({
+  id: '/consideracoes-campo',
+  path: '/consideracoes-campo',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCronogramaRoute = AppCronogramaRouteImport.update({
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/comunicacao-casal': typeof AppComunicacaoCasalRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/congregacoes': typeof AppCongregacoesRoute
+  '/consideracoes-campo': typeof AppConsideracoesCampoRoute
   '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
@@ -299,6 +306,7 @@ export interface FileRoutesByTo {
   '/comunicacao-casal': typeof AppComunicacaoCasalRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/congregacoes': typeof AppCongregacoesRoute
+  '/consideracoes-campo': typeof AppConsideracoesCampoRoute
   '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
@@ -341,6 +349,7 @@ export interface FileRoutesById {
   '/_app/comunicacao-casal': typeof AppComunicacaoCasalRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/congregacoes': typeof AppCongregacoesRoute
+  '/_app/consideracoes-campo': typeof AppConsideracoesCampoRoute
   '/_app/cronograma': typeof AppCronogramaRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/escala': typeof AppEscalaRoute
@@ -383,6 +392,7 @@ export interface FileRouteTypes {
     | '/comunicacao-casal'
     | '/configuracoes'
     | '/congregacoes'
+    | '/consideracoes-campo'
     | '/cronograma'
     | '/dashboard'
     | '/escala'
@@ -422,6 +432,7 @@ export interface FileRouteTypes {
     | '/comunicacao-casal'
     | '/configuracoes'
     | '/congregacoes'
+    | '/consideracoes-campo'
     | '/cronograma'
     | '/dashboard'
     | '/escala'
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '/_app/comunicacao-casal'
     | '/_app/configuracoes'
     | '/_app/congregacoes'
+    | '/_app/consideracoes-campo'
     | '/_app/cronograma'
     | '/_app/dashboard'
     | '/_app/escala'
@@ -598,6 +610,13 @@ declare module '@tanstack/react-router' {
       path: '/congregacoes'
       fullPath: '/congregacoes'
       preLoaderRoute: typeof AppCongregacoesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/consideracoes-campo': {
+      id: '/_app/consideracoes-campo'
+      path: '/consideracoes-campo'
+      fullPath: '/consideracoes-campo'
+      preLoaderRoute: typeof AppConsideracoesCampoRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/cronograma': {
@@ -791,6 +810,7 @@ interface AppRouteChildren {
   AppComunicacaoCasalRoute: typeof AppComunicacaoCasalRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppCongregacoesRoute: typeof AppCongregacoesRoute
+  AppConsideracoesCampoRoute: typeof AppConsideracoesCampoRoute
   AppCronogramaRoute: typeof AppCronogramaRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppEscalaRoute: typeof AppEscalaRoute
@@ -818,6 +838,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppComunicacaoCasalRoute: AppComunicacaoCasalRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppCongregacoesRoute: AppCongregacoesRoute,
+  AppConsideracoesCampoRoute: AppConsideracoesCampoRoute,
   AppCronogramaRoute: AppCronogramaRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppEscalaRoute: AppEscalaRoute,
