@@ -58,12 +58,30 @@
 - "Duplicar evento" no menu ⋮ do evento (copia partes e tempos, sem oradores/PINs) — útil para o mesmo programa em outro dia/local.
 - Exportação Word e convites passam a incluir congregação e informações individuais.
 
-Fica igual: link único por evento + PIN, bloqueios, página pública de confirmação, importação .etim.
+## Forma do link e PIN (escolhida por evento)
+
+```text
++-------- Novo evento / Importar -----+
+| Como os oradores vão confirmar?     |
+| (•) Link único + PIN                |
+|     Um link para todos; cada orador |
+|     digita seu PIN.                 |
+| ( ) Link pessoal                    |
+|     Cada orador recebe o seu link,  |
+|     sem digitar PIN.                |
++-------------------------------------+
+```
+
+- Escolha feita ao criar/importar e alterável depois no evento (aviso: ao trocar, convites já enviados deixam de valer e precisam ser reenviados).
+- Link pessoal: cada orador ganha um link próprio com código longo e imprevisível; PIN e "Novo PIN" dão lugar a "Novo link" (cancela o anterior). Convite e Word levam o link pessoal, sem PIN.
+- Link único + PIN: funciona como hoje. Bloqueios contra tentativas valem nos dois modos.
+
+Fica igual: bloqueios, página pública de confirmação, importação .etim.
 
 ## Detalhes técnicos
 
-- Banco (aditivo, sem mexer em RLS): `circuit_big_event_parts` ganha `speaker_congregation text`, `time_mode text default 'auto'`; `circuit_big_events` ganha `start_time text`. A coluna existente `instructions` passa a guardar as informações individuais; `part_type_label` guarda o tipo (incluindo texto de "Outro").
-- `invite.ts`: `buildInviteText` inclui congregação, `instructions` e congregação do próximo orador; nova função pura `recomputeTimes(start, parts)` (auto soma, manual reancora).
-- `BigEvents.tsx`: novo `PartEditorDialog`, menu ⋮ por parte (editar/mover/excluir), campo início + ↻, filtros, duplicar evento; congregação auto via lista `elders`.
-- Página pública `/confirmar/$token` e `confirm.functions.ts`: sem mudança de regras; apenas exibem a congregação se presente.
+- Banco (aditivo, sem mexer em RLS): `circuit_big_event_parts` ganha `speaker_congregation text`, `time_mode text default 'auto'`, `personal_token uuid unique` (nulo no modo PIN); `circuit_big_events` ganha `start_time text` e `link_mode text default 'pin'` ('pin'|'personal'). A coluna existente `instructions` guarda as informações individuais; `part_type_label` guarda o tipo (incluindo texto de "Outro").
+- `invite.ts`: `buildInviteText` inclui congregação, `instructions`, congregação do próximo orador e usa link pessoal sem PIN quando o modo for pessoal; nova função pura `recomputeTimes(start, parts)` (auto soma, manual reancora).
+- `BigEvents.tsx`: novo `PartEditorDialog`, menu ⋮ por parte (editar/mover/excluir), campo início + ↻, filtros, duplicar evento, escolha do modo de link; congregação auto via lista `elders`.
+- `confirm.functions.ts`: aceita token do evento + PIN, ou token pessoal sozinho (só se o evento estiver em modo pessoal); `/confirmar/$token` detecta o tipo e pula a tela de PIN; exibe a congregação.
 - Testes em `big-events.test.ts`: recálculo de horários (auto/manual), convite com congregação e info individual, próximo orador com congregação. Validar com `bunx tsgo --noEmit` e `bunx vitest run`.
