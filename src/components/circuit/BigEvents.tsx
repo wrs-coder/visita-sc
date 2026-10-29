@@ -344,7 +344,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
               const prev = evParts[evParts.findIndex((x) => x.id === p.id) - 1];
               const overlap = !!prev && p.time_mode === "manual" && toMin(prev.part_time) != null && toMin(p.part_time) != null
                 && (toMin(prev.part_time)! + (prev.duration_min ?? 0)) > toMin(p.part_time)!;
-              return <PartItem key={p.id} ev={ev} part={p} overlap={overlap} first={i === 0} last={i === shown.length - 1}
+              return <PartItem key={p.id} ev={ev} elders={elders} part={p} overlap={overlap} first={i === 0} last={i === shown.length - 1}
                 onPatch={patchPart} onSetPin={setPin} onNewPin={newPin} onCopy={copyInvite} onNewLink={newLink}
                 onEdit={() => setEditor({ ev, part: p, afterOrder: null })} onAddAfter={() => setEditor({ ev, part: null, afterOrder: p.sort_order })}
                 onMove={(d) => movePart(ev, p, d)} onDelete={() => deletePart(ev, p)} />;
@@ -502,8 +502,8 @@ function PartEditorDialog({ part, prevEnd, nextNumber, onCancel, onSave }: {
   );
 }
 
-function PartItem({ ev, part, overlap, first, last, onPatch, onSetPin, onNewPin, onCopy, onNewLink, onEdit, onAddAfter, onMove, onDelete }: {
-  ev: EventRow; part: PartRow; overlap: boolean; first: boolean; last: boolean;
+function PartItem({ ev, elders, part, overlap, first, last, onPatch, onSetPin, onNewPin, onCopy, onNewLink, onEdit, onAddAfter, onMove, onDelete }: {
+  ev: EventRow; elders: Array<{ name: string; congregation: string }>; part: PartRow; overlap: boolean; first: boolean; last: boolean;
   onNewLink: (p: PartRow) => Promise<void>; onEdit: () => void; onAddAfter: () => void;
   onMove: (d: -1 | 1) => void; onDelete: () => void;
   onPatch: (id: string, p: Partial<PartRow>) => Promise<boolean>;
