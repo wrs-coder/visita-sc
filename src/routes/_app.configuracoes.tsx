@@ -37,7 +37,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone, AlertTriangle, ChevronDown } from "lucide-react";
+import { currentMonthKey, isMonthOpen, useOpenMap } from "@/lib/open-months";
 import { hasAnyTemplate } from "@/lib/visit-template-reminder";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -102,6 +103,7 @@ function Page() {
   const fnListElderProgram = useServerFn(listElderProgramTemplates);
   const fnApplyElderProgram = useServerFn(applyElderProgramTemplateToVisit);
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [visitMonthsOpen, setVisitMonthOpen] = useOpenMap("itin.open.visitMonths");
   const [congs, setCongs] = useState<Cong[]>([]);
   const [tpls, setTpls] = useState<{ id: string; slot: number; name: string }[]>([]);
   const [checklistTpls, setChecklistTpls] = useState<{ id: string; name: string }[]>([]);
@@ -814,9 +816,10 @@ function Page() {
             }
             g.items.push(v);
           }
-          return groups.map((g) => (
+          return groups.map((g) => { const gOpen = isMonthOpen(visitMonthsOpen, g.key, currentMonthKey()); return (
             <section key={g.key} className="space-y-2">
-              <div className="flex items-center gap-3 px-1">
+              <button type="button" aria-expanded={gOpen} onClick={() => setVisitMonthOpen(g.key, !gOpen)} className="flex w-full items-center gap-3 px-1 text-left">
+                <ChevronDown className={`h-4 w-4 shrink-0 text-primary transition-transform ${gOpen ? "" : "-rotate-90"}`} />
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
                   {g.label}
                 </h3>
@@ -824,8 +827,8 @@ function Page() {
                 <span className="text-[11px] text-muted-foreground font-medium">
                   {g.items.length} {g.items.length === 1 ? "visita" : "visitas"}
                 </span>
-              </div>
-              <div className="space-y-2">
+              </button>
+              <div className="space-y-2" hidden={!gOpen}>
                 {g.items.map((v) => {
                   const cong = congs.find((c) => c.id === v.congregation_id);
                   return (
@@ -906,7 +909,7 @@ function Page() {
                 })}
               </div>
             </section>
-          ));
+          ); });
         })()}
       </div>
 

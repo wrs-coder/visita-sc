@@ -2016,7 +2016,9 @@
     "eventLegend": "Event",
     "pillCircuit": "Circuit",
     "sectionCongregations": "Congregations",
-    "sectionElders": "Circuit elders"
+    "sectionElders": "Circuit elders",
+    "sectionEvents": "Major events",
+    "eldersCount": "{{count}} eld."
   },
   "guestWs": {
     "more": "More options",

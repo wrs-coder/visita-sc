@@ -129,6 +129,140 @@ export type Database = {
         }
         Relationships: []
       }
+      circuit_big_event_parts: {
+        Row: {
+          assigned_to: string
+          created_at: string
+          decline_reason: string | null
+          duration_min: number | null
+          email_sent: boolean
+          event_id: string
+          id: string
+          instructions: string | null
+          outline_number: string | null
+          part_time: string | null
+          part_type_id: string | null
+          part_type_label: string | null
+          pin_hash: string | null
+          responded_at: string | null
+          show_next_speaker: boolean
+          sort_order: number
+          speaker_name: string | null
+          status: string
+          superintendent_id: string
+          symposium: boolean
+          talk_includes: Json
+          theme: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string
+          created_at?: string
+          decline_reason?: string | null
+          duration_min?: number | null
+          email_sent?: boolean
+          event_id: string
+          id?: string
+          instructions?: string | null
+          outline_number?: string | null
+          part_time?: string | null
+          part_type_id?: string | null
+          part_type_label?: string | null
+          pin_hash?: string | null
+          responded_at?: string | null
+          show_next_speaker?: boolean
+          sort_order?: number
+          speaker_name?: string | null
+          status?: string
+          superintendent_id: string
+          symposium?: boolean
+          talk_includes?: Json
+          theme?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string
+          created_at?: string
+          decline_reason?: string | null
+          duration_min?: number | null
+          email_sent?: boolean
+          event_id?: string
+          id?: string
+          instructions?: string | null
+          outline_number?: string | null
+          part_time?: string | null
+          part_type_id?: string | null
+          part_type_label?: string | null
+          pin_hash?: string | null
+          responded_at?: string | null
+          show_next_speaker?: boolean
+          sort_order?: number
+          speaker_name?: string | null
+          status?: string
+          superintendent_id?: string
+          symposium?: boolean
+          talk_includes?: Json
+          theme?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circuit_big_event_parts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "circuit_big_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circuit_big_events: {
+        Row: {
+          created_at: string
+          event_date: string | null
+          event_type: string
+          extra_info: string | null
+          failed_attempts: number
+          id: string
+          location: string | null
+          locked_until: string | null
+          name: string
+          notes: string | null
+          public_token: string
+          superintendent_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_date?: string | null
+          event_type?: string
+          extra_info?: string | null
+          failed_attempts?: number
+          id?: string
+          location?: string | null
+          locked_until?: string | null
+          name: string
+          notes?: string | null
+          public_token?: string
+          superintendent_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_date?: string | null
+          event_type?: string
+          extra_info?: string | null
+          failed_attempts?: number
+          id?: string
+          location?: string | null
+          locked_until?: string | null
+          name?: string
+          notes?: string | null
+          public_token?: string
+          superintendent_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       circuit_schedule_events: {
         Row: {
           companion: string | null

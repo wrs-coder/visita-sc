@@ -45,6 +45,7 @@ import { Route as AppTransporteRouteImport } from './routes/_app.transporte'
 import { Route as CadastroIndexRouteImport } from './routes/cadastro.index'
 import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
+import { Route as ConfirmarTokenRouteImport } from './routes/confirmar.$token'
 import { Route as VisitanteIndexRouteImport } from './routes/visitante.index'
 import { Route as VisitantePainelRouteImport } from './routes/visitante.painel'
 import { Route as AppRelatorioVisitIdRouteImport } from './routes/_app.relatorio.$visitId'
@@ -233,6 +234,11 @@ const CadastroSuperintendenteRoute = CadastroSuperintendenteRouteImport.update({
   path: '/cadastro/superintendente',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfirmarTokenRoute = ConfirmarTokenRouteImport.update({
+  id: '/confirmar/$token',
+  path: '/confirmar/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VisitanteIndexRoute = VisitanteIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -294,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
+  '/confirmar/$token': typeof ConfirmarTokenRoute
   '/visitante/painel': typeof VisitantePainelRoute
   '/cadastro/': typeof CadastroIndexRoute
   '/visitante/': typeof VisitanteIndexRoute
@@ -335,6 +342,7 @@ export interface FileRoutesByTo {
   '/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
+  '/confirmar/$token': typeof ConfirmarTokenRoute
   '/visitante/painel': typeof VisitantePainelRoute
   '/cadastro': typeof CadastroIndexRoute
   '/visitante': typeof VisitanteIndexRoute
@@ -379,6 +387,7 @@ export interface FileRoutesById {
   '/_app/transporte': typeof AppTransporteRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
+  '/confirmar/$token': typeof ConfirmarTokenRoute
   '/visitante/painel': typeof VisitantePainelRoute
   '/cadastro/': typeof CadastroIndexRoute
   '/visitante/': typeof VisitanteIndexRoute
@@ -423,6 +432,7 @@ export interface FileRouteTypes {
     | '/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
+    | '/confirmar/$token'
     | '/visitante/painel'
     | '/cadastro/'
     | '/visitante/'
@@ -464,6 +474,7 @@ export interface FileRouteTypes {
     | '/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
+    | '/confirmar/$token'
     | '/visitante/painel'
     | '/cadastro'
     | '/visitante'
@@ -507,6 +518,7 @@ export interface FileRouteTypes {
     | '/_app/transporte'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
+    | '/confirmar/$token'
     | '/visitante/painel'
     | '/cadastro/'
     | '/visitante/'
@@ -526,6 +538,7 @@ export interface RootRouteChildren {
   VisitanteRoute: typeof VisitanteRouteWithChildren
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
   CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
+  ConfirmarTokenRoute: typeof ConfirmarTokenRoute
   CadastroIndexRoute: typeof CadastroIndexRoute
   ApiPublicPingRoute: typeof ApiPublicPingRoute
   ApiPublicVersionRoute: typeof ApiPublicVersionRoute
@@ -785,6 +798,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CadastroSuperintendenteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/confirmar/$token': {
+      id: '/confirmar/$token'
+      path: '/confirmar/$token'
+      fullPath: '/confirmar/$token'
+      preLoaderRoute: typeof ConfirmarTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/visitante/': {
       id: '/visitante/'
       path: '/'
@@ -908,6 +928,7 @@ const rootRouteChildren: RootRouteChildren = {
   VisitanteRoute: VisitanteRouteWithChildren,
   CadastroAnciaoRoute: CadastroAnciaoRoute,
   CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,
+  ConfirmarTokenRoute: ConfirmarTokenRoute,
   CadastroIndexRoute: CadastroIndexRoute,
   ApiPublicPingRoute: ApiPublicPingRoute,
   ApiPublicVersionRoute: ApiPublicVersionRoute,
