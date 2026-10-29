@@ -143,16 +143,19 @@ export type Database = {
           part_time: string | null
           part_type_id: string | null
           part_type_label: string | null
+          personal_token: string | null
           pin_hash: string | null
           responded_at: string | null
           show_next_speaker: boolean
           sort_order: number
+          speaker_congregation: string | null
           speaker_name: string | null
           status: string
           superintendent_id: string
           symposium: boolean
           talk_includes: Json
           theme: string
+          time_mode: string
           updated_at: string
         }
         Insert: {
@@ -168,16 +171,19 @@ export type Database = {
           part_time?: string | null
           part_type_id?: string | null
           part_type_label?: string | null
+          personal_token?: string | null
           pin_hash?: string | null
           responded_at?: string | null
           show_next_speaker?: boolean
           sort_order?: number
+          speaker_congregation?: string | null
           speaker_name?: string | null
           status?: string
           superintendent_id: string
           symposium?: boolean
           talk_includes?: Json
           theme?: string
+          time_mode?: string
           updated_at?: string
         }
         Update: {
@@ -193,16 +199,19 @@ export type Database = {
           part_time?: string | null
           part_type_id?: string | null
           part_type_label?: string | null
+          personal_token?: string | null
           pin_hash?: string | null
           responded_at?: string | null
           show_next_speaker?: boolean
           sort_order?: number
+          speaker_congregation?: string | null
           speaker_name?: string | null
           status?: string
           superintendent_id?: string
           symposium?: boolean
           talk_includes?: Json
           theme?: string
+          time_mode?: string
           updated_at?: string
         }
         Relationships: [
@@ -223,11 +232,13 @@ export type Database = {
           extra_info: string | null
           failed_attempts: number
           id: string
+          link_mode: string
           location: string | null
           locked_until: string | null
           name: string
           notes: string | null
           public_token: string
+          start_time: string | null
           superintendent_id: string
           updated_at: string
         }
@@ -238,11 +249,13 @@ export type Database = {
           extra_info?: string | null
           failed_attempts?: number
           id?: string
+          link_mode?: string
           location?: string | null
           locked_until?: string | null
           name: string
           notes?: string | null
           public_token?: string
+          start_time?: string | null
           superintendent_id: string
           updated_at?: string
         }
@@ -253,11 +266,13 @@ export type Database = {
           extra_info?: string | null
           failed_attempts?: number
           id?: string
+          link_mode?: string
           location?: string | null
           locked_until?: string | null
           name?: string
           notes?: string | null
           public_token?: string
+          start_time?: string | null
           superintendent_id?: string
           updated_at?: string
         }
