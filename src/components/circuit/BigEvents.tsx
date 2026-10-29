@@ -132,7 +132,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     if (!isValidPin(pin)) { toast.error("O PIN precisa ter de 4 a 6 números."); return null; }
     const hash = await hashPin(pin, ev.public_token);
     if (parts.some((p) => p.event_id === ev.id && p.id !== part.id && p.pin_hash === hash)) { toast.error("Este PIN já está em uso neste evento."); return null; }
-    const ok = await patchPart(part.id, { pin_hash: hash, status: "pending", responded_at: null, decline_reason: null });
+    const ok = await patchPart(part.id, { pin_hash: hash });
     if (!ok) return null;
     writePin(part.id, pin);
     return pin;
