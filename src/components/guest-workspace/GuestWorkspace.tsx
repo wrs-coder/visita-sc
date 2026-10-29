@@ -406,6 +406,7 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
 }
 
 function WorkspaceSheet({ backupKey, kind, open, onOpenChange, data, update, folder, setFolder, color, setColor }: {
+  backupKey: string;
   kind: WsKind; open: boolean; onOpenChange: (o: boolean) => void; data: WsData; update: (fn: (d: WsData) => WsData) => void;
   folder: string | null; setFolder: (f: string | null) => void; color: string | null; setColor: (c: string | null) => void;
 }) {
