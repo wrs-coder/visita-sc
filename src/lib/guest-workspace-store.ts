@@ -28,6 +28,8 @@ export function wsSessionKey(code: string | null | undefined): string {
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
   return s ? (h >>> 0).toString(36) : "anon";
 }
+/** Chave do estudo pessoal do superintendente (nunca colide com a da esposa). */
+export function wsUserKey(userId: string): string { return `user.${userId}`; }
 const keyFor = (sk: string) => `${WS_PREFIX}${sk}.data`;
 
 async function rawGet(k: string): Promise<string | undefined> {
@@ -43,7 +45,7 @@ export async function loadWs(sk: string): Promise<WsData> {
   try {
     const raw = await rawGet(keyFor(sk));
     if (raw) return sanitizeWs(JSON.parse(raw));
-    const legacy = typeof localStorage !== "undefined" ? localStorage.getItem(DATA_KEY) : null;
+    const legacy = typeof localStorage !== "undefined" && !sk.startsWith("user.") ? localStorage.getItem(DATA_KEY) : null;
     if (legacy) {
       const d = sanitizeWs(JSON.parse(legacy));
       await rawSet(keyFor(sk), JSON.stringify(d));
