@@ -213,7 +213,7 @@
     "weekSummary": "Resumo da Semana",
     "coupleMessages": "Comunicação do casal",
     "fieldConsiderations": "Esboços Pessoais",
-    "personalOutlines": "Esboços Pessoais",
+    "personalOutlines": "Esboços",
     "supportDev": "Apoie o Desenvolvedor ☕",
     "appName": "Visita do SC",
     "active": "Ativa",
@@ -225,7 +225,8 @@
     "logout": "Sair",
     "blockedTitle": "Ainda não há novidades",
     "blockedDesc": "Por favor, aguarde até que o Superintendente disponibilize um agendamento de visita.",
-    "visitTemplates": "Modelos Visitas"
+    "visitTemplates": "Modelos Visitas",
+    "studyNotes": "Estudo e Anotações"
   },
   "dashboard": {
     "greeting": "Olá, {{name}}!",
@@ -1995,6 +1996,12 @@
     "folderMenu": "Opções da pasta",
     "lastBackup": "Último backup: {{when}}",
     "noBackupYet": "Nenhum backup feito neste aparelho ainda.",
-    "bibleGroup": "Bíblia"
+    "bibleGroup": "Bíblia",
+    "startReading": "Começar a ler"
+  },
+  "studyPersonal": {
+    "bible": "Bíblia",
+    "research": "Pesquisas",
+    "notes": "Anotações"
   }
 }
