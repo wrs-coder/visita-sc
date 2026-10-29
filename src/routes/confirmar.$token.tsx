@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,18 @@ function ConfirmPage() {
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState("");
   const [done, setDone] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  // Link pessoal abre direto; link do evento cai na tela do PIN.
+  useEffect(() => {
+    let alive = true;
+    get({ data: { token } })
+      .then((r) => { if (!alive) return; if (r.ok) setPart(r.part); else if (r.error !== "needpin") setError(errMsg(r.error)); })
+      .catch(() => { /* mostra o PIN */ })
+      .finally(() => alive && setChecking(false));
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const errMsg = (e: string) => e === "locked" ? "Muitas tentativas. Aguarde 15 minutos e tente de novo."
     : e === "notfound" ? "Este link não existe mais. Peça um novo convite." : "PIN incorreto.";
@@ -66,7 +78,7 @@ function ConfirmPage() {
     if (action === "decline" && !reason.trim()) { setError("Explique o motivo da recusa."); return; }
     setBusy(true); setError(null);
     try {
-      const r = await respond({ data: { token, pin, action, reason: action === "decline" ? reason.trim() : undefined } });
+      const r = await respond({ data: { token, pin: pin || undefined, action, reason: action === "decline" ? reason.trim() : undefined } });
       if (r.ok) { setPart(r.part); setDone(true); } else setError(errMsg(r.error));
     } catch { setError("Não foi possível enviar agora. Tente novamente."); }
     setBusy(false);
@@ -76,7 +88,9 @@ function ConfirmPage() {
     <main className="min-h-dvh bg-background px-4 py-10">
       <div className="mx-auto max-w-md space-y-4">
         <p className="text-center text-sm font-semibold text-muted-foreground">Visita SC · Designação</p>
-        {!part ? (
+        {checking ? (
+          <p className="text-center text-sm text-muted-foreground">Carregando…</p>
+        ) : !part ? (
           <Card><CardContent className="space-y-4 p-6">
             <h1 className="text-lg font-semibold">Digite o PIN que você recebeu na mensagem</h1>
             <Input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={pin}
@@ -93,10 +107,10 @@ function ConfirmPage() {
               <p className="text-sm text-muted-foreground">{[formatEventDate(part.event_date), part.location].filter(Boolean).join(" · ")}</p>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
-              {part.speaker_name && <p><b>Orador:</b> {part.speaker_name}</p>}
+              {part.speaker_name && <p><b>Orador:</b> {part.speaker_name}{part.speaker_congregation ? ` — ${part.speaker_congregation}` : ""}</p>}
               <p><b>{part.outline_number ? `Parte Nº ${part.outline_number}` : part.part_type_label}</b>{part.part_time ? ` · ${part.part_time}` : ""}{part.duration_min ? ` · ${part.duration_min} min` : ""}</p>
               {part.theme && <p><b>Tema:</b> {part.theme}</p>}
-              {part.instructions && <p><b>Instruções:</b> {part.instructions}</p>}
+              {part.instructions && <p className="whitespace-pre-wrap"><b>Informações para você:</b> {part.instructions}</p>}
               {part.next_speaker && <p><b>Próximo orador:</b> {part.next_speaker}</p>}
               {part.extra_info && <p className="whitespace-pre-wrap"><b>Informações:</b> {part.extra_info}</p>}
             </div>
