@@ -18,7 +18,12 @@ Ajustes ao plano anexado:
 5. **Sem duplicar:** cada nota usa o `Guid` do JW Library. Importar o mesmo backup de novo atualiza em vez de repetir.
 6. Fotos e mídias do backup são ignoradas.
 
-Sugestão melhor: o botão fica dentro do próprio "Pontos altos" (ícone ⤒ Importar), e não em uma tela separada. Funciona igual para você e para a esposa.
+Decisão: as notas importadas ficam numa **pílula própria "JW Library"**, ao lado de "Anotações de leitura" e "Pontos altos". Vantagens:
+- Seus pontos altos atuais nunca se misturam nem são alterados.
+- As 113 notas só com título aparecem marcadas como "trecho" (título em itálico, sem texto), sem poluir a lista.
+- Botão "Remover importação" apaga só o que veio do JW Library.
+- Mesma lista por livro e busca que já existem; cada nota tem "Copiar para Pontos altos" se quiser trazê-la.
+Funciona igual para você e para a esposa.
 
 ## Como fica a tela
 
@@ -47,7 +52,7 @@ Sugestão melhor: o botão fica dentro do próprio "Pontos altos" (ícone ⤒ Im
 
 - Nova leitura do backup só no aparelho, offline, sem enviar nada ao servidor.
 - Prévia por livro, com marcar/desmarcar livro ou nota.
-- As notas entram no "Pontos altos" já existente (mesmo formato de hoje: referência, livro, texto, data). Nada que já existe é alterado.
+- As notas entram na nova pílula "JW Library", com lista por livro, busca e "Remover importação". Os "Pontos altos" atuais não são alterados.
 - Funciona no superintendente (Estudo e Anotações) e na esposa, porque os dois usam a mesma tela.
 
 ## Detalhes técnicos
@@ -56,7 +61,7 @@ Sugestão melhor: o botão fica dentro do próprio "Pontos altos" (ícone ⤒ Im
 - `sql.js` com WASM servido localmente (asset do app, sem CDN), carregado sob demanda via `import()` só ao abrir o importador, para não pesar a abertura do app nem o SSR.
 - Query: `Note JOIN Location` com `BookNumber 1-66`, `ChapterNumber` válido, `KeySymbol LIKE 'nwt%'`, `IssueTagNumber=0`, `Content` ou `Title` não vazio. Versículo por `BlockIdentifier`; faixa por `UserMark/BlockRange` se ligada.
 - Conversão: `BookNumber` -> `B01..B66`; `ref` com a abreviação já usada no app; `text` = Título + Conteúdo em texto simples (sem HTML); `date` = `LastModified`; `id` = `jw-<Guid>`.
-- Upsert por `id` no `highlights` da área de trabalho local; respeita o limite atual de 5000.
+- Nova lista local separada `jwNotes` (campo opcional na área de trabalho, mesma validação; backups antigos seguem abrindo), upsert por `id`, limite 5000. `highlights` fica intocado; "Copiar para Pontos altos" cria uma cópia normal.
 - Tolerância a versões do esquema: se uma coluna faltar, a consulta cai para a versão mínima (sem faixa).
 - Testes: conversão de livros, referência com/sem versículo, filtro de não-Bíblia, deduplicação, arquivo inválido. Validar com `bunx tsgo --noEmit` e `bunx vitest run`.
 - Nenhuma mudança no banco de dados nem em login.
