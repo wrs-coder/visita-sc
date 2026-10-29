@@ -93,11 +93,18 @@ export function relTime(iso: string, lang: string, now = Date.now()): string {
 
 const LAST_BACKUP_KEY = "guestWs.lastBackup";
 
-export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
+export function GuestWorkspace({ section, storageKey, fixedStudyTab }: {
+  section: "notes" | "study";
+  /** Chave própria (ex.: superintendente por usuário). Sem ela: código de convite da esposa. */
+  storageKey?: string;
+  /** Fixa a pílula de estudo e esconde as abas internas (controle externo). */
+  fixedStudyTab?: "bible" | "research";
+}) {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<WsData>(emptyWs);
   const [ready, setReady] = useState(false);
-  const [studyTab, setStudyTab] = useState<"bible" | "research">("bible");
+  const [studyTabState, setStudyTab] = useState<"bible" | "research">("bible");
+  const studyTab = fixedStudyTab ?? studyTabState;
   const [openId, setOpenId] = useState<string | null>(null);
   const [freshId, setFreshId] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
@@ -116,7 +123,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
   };
 
   useEffect(() => {
-    skRef.current = wsSessionKey(readGuestSession()?.code);
+    skRef.current = storageKey ?? wsSessionKey(readGuestSession()?.code);
     let alive = true;
     void loadWs(skRef.current).then((d) => { if (alive) { setData(d); setReady(true); } });
     try { if (localStorage.getItem(STUDY_KEY) === "research") setStudyTab("research"); } catch { /* */ }
@@ -189,7 +196,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        {section === "study" ? (
+        {section === "study" && fixedStudyTab ? <div className="flex-1" /> : section === "study" ? (
           <Tabs value={studyTab} onValueChange={(v) => { setStudyTab(v as "bible" | "research"); setFolder(null); try { localStorage.setItem(STUDY_KEY, v); } catch { /* */ } }} className="flex-1">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="bible">{t("guestWs.bible", { defaultValue: "Leitura da Bíblia" })}</TabsTrigger>
@@ -269,7 +276,7 @@ export function GuestWorkspace({ section }: { section: "notes" | "study" }) {
       return section === "study" && studyTab === "bible"
         ? <BibleReadingTab data={data} update={update} notes={block} onNote={createFromVerse} /> : block; })()}
 
-      <WorkspaceSheet kind={kind} open={sheet} onOpenChange={setSheet} data={data} update={update}
+      <WorkspaceSheet backupKey={storageKey ? `${LAST_BACKUP_KEY}.${storageKey}` : LAST_BACKUP_KEY} kind={kind} open={sheet} onOpenChange={setSheet} data={data} update={update}
         folder={folder} setFolder={setFolder} color={color} setColor={setColor} />
     </div>
   );
@@ -398,13 +405,14 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
   );
 }
 
-function WorkspaceSheet({ kind, open, onOpenChange, data, update, folder, setFolder, color, setColor }: {
+function WorkspaceSheet({ backupKey, kind, open, onOpenChange, data, update, folder, setFolder, color, setColor }: {
+  backupKey: string;
   kind: WsKind; open: boolean; onOpenChange: (o: boolean) => void; data: WsData; update: (fn: (d: WsData) => WsData) => void;
   folder: string | null; setFolder: (f: string | null) => void; color: string | null; setColor: (c: string | null) => void;
 }) {
   const { t, i18n } = useTranslation();
   const [lastBackup, setLastBackup] = useState<string | null>(null);
-  useEffect(() => { try { setLastBackup(localStorage.getItem(LAST_BACKUP_KEY)); } catch { /* */ } }, [open]);
+  useEffect(() => { try { setLastBackup(localStorage.getItem(backupKey)); } catch { /* */ } }, [open]);
   const [newFolder, setNewFolder] = useState("");
   const [bibleOpen, setBibleOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -420,7 +428,7 @@ function WorkspaceSheet({ kind, open, onOpenChange, data, update, folder, setFol
       const blob = await buildWsBackup(data);
       await saveBlob(blob, { filename: `visita-sc-pessoal-${new Date().toISOString().slice(0, 10)}.zip`, mimeType: "application/zip" });
       const now = new Date().toISOString();
-      try { localStorage.setItem(LAST_BACKUP_KEY, now); } catch { /* */ }
+      try { localStorage.setItem(backupKey, now); } catch { /* */ }
       setLastBackup(now);
     } catch { toast.error(t("guestWs.backupFail", { defaultValue: "Não foi possível gerar o backup." })); }
   };

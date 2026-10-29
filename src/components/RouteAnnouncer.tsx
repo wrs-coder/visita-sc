@@ -12,6 +12,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/configuracoes": "sidebar.itinerary",
   "/congregacoes": "sidebar.congregations",
   "/consideracoes-campo": "sidebar.personalOutlines",
+  "/estudo-pessoal": "sidebar.studyNotes",
   "/notas": "sidebar.privateNotes",
   "/lixeira": "sidebar.trash",
   "/resumo-semana": "sidebar.weekSummary",

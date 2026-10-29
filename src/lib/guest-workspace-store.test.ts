@@ -66,3 +66,11 @@ describe("pastas por aba", () => {
     expect(d.folders.find((f) => f.id === "f2")?.kind).toBe("note");
   });
 });
+
+describe("wsUserKey", () => {
+  it("separa o estudo do superintendente do da esposa", async () => {
+    const { wsUserKey, wsSessionKey } = await import("./guest-workspace-store");
+    expect(wsUserKey("abc")).toBe("user.abc");
+    expect(wsUserKey("abc")).not.toBe(wsSessionKey("abc"));
+  });
+});

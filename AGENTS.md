@@ -25,3 +25,4 @@
 - The circuit area keeps Itinerário (/configuracoes), Congregações (/congregacoes) and Cronograma (/cronograma) as separate routes joined by CircuitHeader pills and a calendar icon (month view via ?view=month), because old links, deep links and unsaved inputs must keep working.
 - The app language follows the device (pickDeviceLanguage) until the user picks one; only an explicit choice is stored, because device language is the default.
 - The mobile app header can be hidden (never unmounted) by focus screens via src/lib/focus-chrome.ts, so writing screens get the full height without losing header state.
+- The superintendent's "Estudo e Anotações" (/estudo-pessoal) reuses GuestWorkspace with storageKey user.<userId> (never the wife's invite-code key, no legacy migration) and OutlinesWorkspace locked to talk_notes; /consideracoes-campo only hosts field considerations and outlines and forwards talk_notes links, because note data and formats must stay unchanged.

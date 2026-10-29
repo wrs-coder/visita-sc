@@ -27,6 +27,7 @@ export const OFFLINE_ROUTES = [
   "/modelo-programacao-ancioes",
   "/programa-ancioes",
   "/consideracoes-campo",
+  "/estudo-pessoal",
   "/comunicacao-casal",
   "/notas",
   "/lixeira",

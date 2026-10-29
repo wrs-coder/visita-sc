@@ -26,6 +26,7 @@ import { Route as AppConsideracoesCampoRouteImport } from './routes/_app.conside
 import { Route as AppCronogramaRouteImport } from './routes/_app.cronograma'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppEscalaRouteImport } from './routes/_app.escala'
+import { Route as AppEstudoPessoalRouteImport } from './routes/_app.estudo-pessoal'
 import { Route as AppLixeiraRouteImport } from './routes/_app.lixeira'
 import { Route as AppModeloProgramacaoAncioesRouteImport } from './routes/_app.modelo-programacao-ancioes'
 import { Route as AppModeloReunioesDeCampoRouteImport } from './routes/_app.modelo-reunioes-de-campo'
@@ -132,6 +133,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
 const AppEscalaRoute = AppEscalaRouteImport.update({
   id: '/escala',
   path: '/escala',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEstudoPessoalRoute = AppEstudoPessoalRouteImport.update({
+  id: '/estudo-pessoal',
+  path: '/estudo-pessoal',
   getParentRoute: () => AppRoute,
 } as any)
 const AppLixeiraRoute = AppLixeiraRouteImport.update({
@@ -270,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
+  '/estudo-pessoal': typeof AppEstudoPessoalRoute
   '/lixeira': typeof AppLixeiraRoute
   '/modelo-programacao-ancioes': typeof AppModeloProgramacaoAncioesRoute
   '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
@@ -310,6 +317,7 @@ export interface FileRoutesByTo {
   '/cronograma': typeof AppCronogramaRoute
   '/dashboard': typeof AppDashboardRoute
   '/escala': typeof AppEscalaRoute
+  '/estudo-pessoal': typeof AppEstudoPessoalRoute
   '/lixeira': typeof AppLixeiraRoute
   '/modelo-programacao-ancioes': typeof AppModeloProgramacaoAncioesRoute
   '/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
@@ -353,6 +361,7 @@ export interface FileRoutesById {
   '/_app/cronograma': typeof AppCronogramaRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/escala': typeof AppEscalaRoute
+  '/_app/estudo-pessoal': typeof AppEstudoPessoalRoute
   '/_app/lixeira': typeof AppLixeiraRoute
   '/_app/modelo-programacao-ancioes': typeof AppModeloProgramacaoAncioesRoute
   '/_app/modelo-reunioes-de-campo': typeof AppModeloReunioesDeCampoRoute
@@ -396,6 +405,7 @@ export interface FileRouteTypes {
     | '/cronograma'
     | '/dashboard'
     | '/escala'
+    | '/estudo-pessoal'
     | '/lixeira'
     | '/modelo-programacao-ancioes'
     | '/modelo-reunioes-de-campo'
@@ -436,6 +446,7 @@ export interface FileRouteTypes {
     | '/cronograma'
     | '/dashboard'
     | '/escala'
+    | '/estudo-pessoal'
     | '/lixeira'
     | '/modelo-programacao-ancioes'
     | '/modelo-reunioes-de-campo'
@@ -478,6 +489,7 @@ export interface FileRouteTypes {
     | '/_app/cronograma'
     | '/_app/dashboard'
     | '/_app/escala'
+    | '/_app/estudo-pessoal'
     | '/_app/lixeira'
     | '/_app/modelo-programacao-ancioes'
     | '/_app/modelo-reunioes-de-campo'
@@ -638,6 +650,13 @@ declare module '@tanstack/react-router' {
       path: '/escala'
       fullPath: '/escala'
       preLoaderRoute: typeof AppEscalaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/estudo-pessoal': {
+      id: '/_app/estudo-pessoal'
+      path: '/estudo-pessoal'
+      fullPath: '/estudo-pessoal'
+      preLoaderRoute: typeof AppEstudoPessoalRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/lixeira': {
@@ -814,6 +833,7 @@ interface AppRouteChildren {
   AppCronogramaRoute: typeof AppCronogramaRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppEscalaRoute: typeof AppEscalaRoute
+  AppEstudoPessoalRoute: typeof AppEstudoPessoalRoute
   AppLixeiraRoute: typeof AppLixeiraRoute
   AppModeloProgramacaoAncioesRoute: typeof AppModeloProgramacaoAncioesRoute
   AppModeloReunioesDeCampoRoute: typeof AppModeloReunioesDeCampoRoute
@@ -842,6 +862,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCronogramaRoute: AppCronogramaRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppEscalaRoute: AppEscalaRoute,
+  AppEstudoPessoalRoute: AppEstudoPessoalRoute,
   AppLixeiraRoute: AppLixeiraRoute,
   AppModeloProgramacaoAncioesRoute: AppModeloProgramacaoAncioesRoute,
   AppModeloReunioesDeCampoRoute: AppModeloReunioesDeCampoRoute,

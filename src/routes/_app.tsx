@@ -40,7 +40,7 @@ import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 import { ConnectionModeToggle } from "@/components/ConnectionModeToggle";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { CommandPalette } from "@/components/CommandPalette";
-import { Coffee } from "lucide-react";
+import { Coffee, GraduationCap } from "lucide-react";
 import { setActiveContext } from "@/lib/active-context";
 import { useOutlinesSync } from "@/hooks/use-outlines-sync";
 import { accentForPath, accentStyle } from "@/lib/route-accent";
@@ -172,6 +172,7 @@ function AppLayout() {
         ...(role === "superintendent"
           ? [
               { to: "/consideracoes-campo", label: t("sidebar.personalOutlines"), icon: FileText },
+              { to: "/estudo-pessoal", label: t("sidebar.studyNotes", { defaultValue: "Estudo e Anotações" }), icon: GraduationCap },
               { to: "/notas", label: t("sidebar.privateNotes"), icon: Lock },
             ]
           : []),

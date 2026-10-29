@@ -16,8 +16,7 @@ import {
   LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock,
   Building2, Car, FileStack, MapPin, UserCircle, Plane, ClipboardList,
   BookOpen, FileText, Heart, Trash2, Layers, Search, RefreshCw, Sun, Moon,
-  Languages, LogOut, Coffee, Clock,
-} from "lucide-react";
+  Languages, LogOut, Coffee, Clock, GraduationCap } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
@@ -113,6 +112,7 @@ export function CommandPalette() {
     { to: "/configuracoes", label: t("sidebar.itinerary"), icon: Plane, group: "principal" as const },
     { to: "/congregacoes", label: t("sidebar.congregations"), icon: Building2, group: "principal" as const, superOnly: true },
     { to: "/consideracoes-campo", label: t("sidebar.personalOutlines"), icon: FileText, group: "principal" as const, superOnly: true },
+    { to: "/estudo-pessoal", label: t("sidebar.studyNotes", { defaultValue: "Estudo e Anotações" }), icon: GraduationCap, group: "principal" as const, superOnly: true },
     { to: "/notas", label: t("sidebar.privateNotes"), icon: Lock, group: "principal" as const, superOnly: true },
     { to: "/lixeira", label: t("sidebar.trash", { defaultValue: "Lixeira" }), icon: Trash2, group: "principal" as const, superOnly: true },
 
