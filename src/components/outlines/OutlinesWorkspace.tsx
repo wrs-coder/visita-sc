@@ -568,6 +568,8 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
 
   // Esboço aberto no celular: a linha do editor substitui a barra superior do app.
   useFocusChromeWhile(!!draft && !showLibrary);
+  const focused = !!draft && !showLibrary;
+  useEffect(() => { onFocusChange?.(focused); }, [focused, onFocusChange]);
   const detected: CitationMatch[] = useMemo(
     () => (draft && activeBible ? findCitations(activeBible.books, stripHtmlForDetection(draft.content)) : []),
     [draft, activeBible],
