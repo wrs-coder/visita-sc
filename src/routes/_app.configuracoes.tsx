@@ -37,7 +37,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone, AlertTriangle, ChevronDown } from "lucide-react";
+import { currentMonthKey, isMonthOpen, useOpenMap } from "@/lib/open-months";
 import { hasAnyTemplate } from "@/lib/visit-template-reminder";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -102,6 +103,7 @@ function Page() {
   const fnListElderProgram = useServerFn(listElderProgramTemplates);
   const fnApplyElderProgram = useServerFn(applyElderProgramTemplateToVisit);
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [visitMonthsOpen, setVisitMonthOpen] = useOpenMap("itin.open.visitMonths");
   const [congs, setCongs] = useState<Cong[]>([]);
   const [tpls, setTpls] = useState<{ id: string; slot: number; name: string }[]>([]);
   const [checklistTpls, setChecklistTpls] = useState<{ id: string; name: string }[]>([]);
