@@ -43,7 +43,7 @@ function levenshtein(a: string, b: string): number {
   return prev[b.length];
 }
 
-/** Semelhança 0–100 entre dois nomes já normalizados. Números diferentes ("Funda 1" x "Funda 2") nunca passam de 60. */
+/** Semelhança 0–100 entre dois nomes já normalizados. Números diferentes ("Funda 1" x "Funda 2") nunca passam de 40. */
 export function similarity(a: string, b: string): number {
   if (!a || !b) return 0;
   if (a === b) return 100;
@@ -52,7 +52,7 @@ export function similarity(a: string, b: string): number {
   let score = Math.round((1 - levenshtein(a, b) / Math.max(a.length, b.length)) * 100);
   const wa = a.split(" "), wb = b.split(" ");
   if (numsA === numsB && (wa.every((w) => wb.includes(w)) || wb.every((w) => wa.includes(w)))) score = Math.max(score, 90);
-  if (numsA !== numsB) score = Math.min(score, 60);
+  if (numsA !== numsB) score = Math.min(score, 40);
   return score;
 }
 
@@ -189,7 +189,7 @@ export function parseCsv(text: string): ImportRow[] {
     const cong = (c[iCong] ?? "").trim();
     const scheme = iScheme >= 0 ? (c[iScheme] ?? "").trim() : "";
     const isVisit = type ? /visita/i.test(type) : !!cong;
-    if (isVisit && cong) rows.push({ kind: "visit", ...range, label: cong, training: /trein/i.test(scheme) || /trein/i.test(type), note: scheme || undefined });
+    if (isVisit) rows.push({ kind: "visit", ...range, label: cong, training: /trein/i.test(scheme) || /trein/i.test(type), note: scheme || undefined });
     else if (/pioneir/i.test(type)) rows.push({ kind: "pioneer", ...range, label: "Semana de pioneiro", note: scheme || undefined });
     else rows.push({ kind: "free", ...range, label: type || cong || "Semana livre", note: scheme || undefined });
   }
