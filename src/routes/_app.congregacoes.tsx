@@ -36,7 +36,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Building2, Trash2, Pencil, KeyRound, Copy, Users, UserCog, Eye, EyeOff, Lock } from "lucide-react";
+import { Plus, Building2, Trash2, Pencil, KeyRound, Copy, Users, UserCog, Eye, EyeOff, Lock, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { BigEvents } from "@/components/circuit/BigEvents";
 import { CircuitHeader } from "@/components/circuit/CircuitHeader";
