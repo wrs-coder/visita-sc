@@ -1,12 +1,10 @@
-// Novidades da versão atual — embutidas no app (offline) e servidas pelo endpoint de versão.
-// Atualizar a cada release, junto com RELEASE_NOTES_VERSION.
 // Novidades separadas por versão. A primeira é a atual; as demais formam o histórico.
 // A cada release: acrescentar uma nova entrada no topo e atualizar RELEASE_NOTES_VERSION.
 export type ReleaseSection = { title: string; items: string[] };
 export type ReleaseEntry = { version: string; sections: ReleaseSection[] };
 
-// 5.0.4
-const OLD_SECTIONS: ReleaseSection[] = [] }[] = [
+// Novidades da 5.0.4 (histórico).
+const OLD_SECTIONS: ReleaseSection[] = [
   {
     title: "Esboços e anotações com mais espaço",
     items: [
