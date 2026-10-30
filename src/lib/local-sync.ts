@@ -36,10 +36,42 @@ export type PullResult = { table: string; rows: number; ok: boolean; error?: str
  * Baixa incrementalmente uma tabela e grava no espelho local.
  * O cursor só avança quando a gravação local foi bem-sucedida.
  */
-export async function pullTable(table: string, pull: PullFn, full = false): Promise<PullResult> {
+/** Texto legível de qualquer erro (o backend devolve objetos, não Error). */
+export function describeSyncError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object") {
+    const o = err as { message?: unknown; code?: unknown; details?: unknown };
+    const parts = [o.message, o.code, o.details].filter((v) => typeof v === "string" && v);
+    if (parts.length) return parts.join(" · ");
+    try { return JSON.stringify(err); } catch { /* noop */ }
+  }
+  return String(err);
+}
+
+const RETRY_DELAYS_MS = [800, 2500];
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Tenta de novo só a tabela que falhou, com espera crescente. */
+async function pullWithRetry(pull: PullFn, args: { table: string; since: string | null }, delays: number[]) {
+  for (let i = 0; ; i++) {
+    try {
+      return await pull(args);
+    } catch (err) {
+      if (i >= delays.length) throw err;
+      await wait(delays[i]);
+    }
+  }
+}
+
+export async function pullTable(
+  table: string,
+  pull: PullFn,
+  full = false,
+  retryDelays: number[] = RETRY_DELAYS_MS,
+): Promise<PullResult> {
   try {
     const since = full ? null : await getCursor(table);
-    const rows = await pull({ table, since });
+    const rows = await pullWithRetry(pull, { table, since }, retryDelays);
     if (rows.length) {
       await upsertRows(table, rows);
       // Cursor avança para o maior updated_at recebido (somente após gravar).
@@ -52,7 +84,7 @@ export async function pullTable(table: string, pull: PullFn, full = false): Prom
     }
     return { table, rows: rows.length, ok: true };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = describeSyncError(err);
     console.warn("[local-sync] falha ao baixar", table, message);
     return { table, rows: 0, ok: false, error: message };
   }
