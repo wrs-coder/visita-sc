@@ -8,9 +8,10 @@ Não. Na 5.0.7 o ajuste entrou só nas telas cheias: leitura da Bíblia, editor 
 - o espaço da barra do celular somado a esse vazio.
 
 O que vou mudar, seguindo o padrão do iOS e da One UI:
-- Laterais de 12 px no celular (16 px a partir de tablet). Os cartões chegam mais perto da borda, como na One UI.
-- O espaço no fim da página passa a ser só a altura da barra do celular mais 12 px.
-- O cabeçalho continua igual. Ele já se afasta só o necessário da barra de status.
+- Laterais de 12 px em celulares estreitos (até 400 px, como o A72) e de 16 px nos maiores. A One UI usa cerca de 12 dp entre os cartões e a borda. O iOS usa 16 pt.
+- Os cartões ficam a 10–12 px um do outro, com cantos bem arredondados (cerca de 20–24 px), como na One UI 6/7.
+- O espaço no fim da página passa a ser só a altura da barra do celular mais 12 px. Isso segue o iOS e a One UI: o conteúdo rola por baixo da barra de gestos.
+- O cabeçalho encolhe ao rolar a página para baixo e volta ao rolar para cima, como o título grande do iOS e a área de leitura da One UI. Ele nunca sai da tela. Isso libera mais ou menos 56 px durante a leitura do painel.
 - Tablet e computador ficam como estão.
 
 ```text
