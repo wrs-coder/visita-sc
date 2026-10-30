@@ -1,4 +1,5 @@
 import { VISIT_PROGRAM_PATHS } from "@/components/visit-week/VisitProgramTabs";
+import { useHideOnScroll } from "@/lib/use-hide-on-scroll";
 import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveCongregation } from "@/hooks/use-active-congregation";
@@ -314,6 +315,7 @@ function AppLayout() {
     </nav>
   );
 
+  const headerHidden = useHideOnScroll(mobileMenuOpen);
   return (
     <div className="min-h-screen bg-background">
       {/* Onda 6.6 — Skip-to-content (WCAG 2.4.1). */}
@@ -323,7 +325,7 @@ function AppLayout() {
       {/* Onda 7.9 — Anunciador SR-only de mudança de rota. */}
       <RouteAnnouncer pathname={location.pathname} />
       {/* Mobile top bar */}
-      <header className={cn("md:hidden sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm safe-top safe-x", focusChrome && "hidden")}>
+      <header className={cn("md:hidden sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm safe-top safe-x transition-transform duration-200 will-change-transform", headerHidden && "-translate-y-full", focusChrome && "hidden")}>
         <div className="flex items-center justify-between px-3 h-14">
           <div className="flex items-center gap-2">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -439,7 +441,7 @@ function AppLayout() {
           className="flex-1 md:ml-72 min-w-0 max-w-full overflow-x-hidden focus:outline-none"
           style={accentStyle(accentForPath(location.pathname))}
         >
-          <div className="max-w-5xl mx-auto p-4 md:p-8 safe-bottom-extra safe-x min-w-0">
+          <div className="max-w-5xl mx-auto px-3 pt-3 min-[400px]:px-4 md:p-8 safe-bottom-content safe-x min-w-0">
 
             {blocked ? (
               <div className="min-h-[60vh] flex items-center justify-center">
