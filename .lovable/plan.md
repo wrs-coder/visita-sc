@@ -19,7 +19,9 @@ O ajuste anterior colocou o "espaço de segurança" na tela inteira (em cima, em
 2. **Editor da esposa, tela cheia do esboço e anotação de campo em tela cheia**: mesma regra — recuo só no cabeçalho e no rodapé reais, nunca na tela inteira; laterais só com recorte.
 3. **Aviso de atualização** já está correto (fundo até a borda, recuo só no conteúdo) — mantém.
 4. **Recuo sem exagero**: o valor vem do próprio Android, usando o maior entre os dois que ele informa (nunca a soma), sem mínimo extra nas telas cheias. Celular com 3 botões, com gestos ou sem barra: cada um recebe só o necessário.
-5. Versão 5.0.7 com nota "Leitura em tela cheia aproveita mais a tela".
+5. **"Ponto alto" e "Concluído" sobem para a linha do topo**, junto de "Voltar" e "Livro capítulo · %". O rodapé deixa de existir — o texto ganha toda essa altura. Visual estilo iOS/One UI: Voltar (seta) à esquerda, título central encurtado, à direita um botão de ícone "+ Ponto alto" e o botão "Concluído" em formato pílula compacto (vira "Lido · próximo" quando já lido). Em telas estreitas o título encurta com reticências, nunca empurra os botões.
+6. **Barra de destaque menos sensível**: só abre com um toque firme no versículo, nunca ao arrastar a tela. Regras: se o dedo se mover mais de ~10 px ou a página rolar durante o toque, é rolagem e nada abre; toque que dura mais de ~600 ms sem seleção de texto também não abre. Selecionar um trecho com o dedo (seleção de texto) continua abrindo a barra para aquele trecho. Com a barra aberta, rolar não a fecha; o X continua fechando.
+7. Versão 5.0.7 com nota "Leitura em tela cheia aproveita mais a tela; botões no topo; destaque não abre ao rolar".
 
 ## Detalhes técnicos
 - `src/styles.css`: novas utilidades `bar-top` / `bar-bottom` (padding = `max(env(safe-area-inset-*), var(--safe-area-inset-*))`, sem piso de 0.5rem) e `safe-x-landscape` (só em `orientation: landscape`). Mantém as atuais para não quebrar outras telas.
