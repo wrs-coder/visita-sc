@@ -1,6 +1,6 @@
 // Leitura limpa de um capítulo (Modo Foco) com a barra do balão bíblico:
 // destacar (mesmas cores e mesmos destaques do balão), letra A-/A+, copiar e anotar.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Check, Plus, Highlighter, Eraser, Copy, NotebookPen, X } from "lucide-react";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import {
   removeHighlightAt, selectionRange, clearHighlights, getHighlights, highlightKey, loadSettings, saveSettings, type HighlightColor,
 } from "@/lib/bible-view-settings";
 import { cn } from "@/lib/utils";
+import { isRealTap, type TapStart } from "@/lib/tap-guard";
 
 export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDone, onHighlight, onImport, onNote }: {
   chapterKey: string; done: boolean; percent: number; fontClass: string;
@@ -28,6 +29,8 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
   const [sel, setSel] = useState<number | null>(null);
   const [settings, setSettings] = useState(loadSettings);
   const [, bump] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const tapStart = useRef<TapStart | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -85,12 +88,19 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background safe-top safe-bottom safe-x">
-      <div className="flex items-center gap-2 px-2 py-2">
-        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 text-muted-foreground"><ArrowLeft className="h-4 w-4" />{t("guestWs.back", { defaultValue: "Voltar" })}</Button>
-        <span className="ml-auto pr-2 text-xs text-muted-foreground">{title} · {percent}%</span>
+    <div className="fixed inset-0 z-50 flex flex-col bg-background safe-x-landscape">
+      <div className="bar-top shrink-0 border-b bg-background/95 backdrop-blur">
+        <div className="flex h-12 items-center gap-1 px-1.5">
+          <Button variant="ghost" size="icon" onClick={onBack} className="h-10 w-10 shrink-0 rounded-full text-muted-foreground" aria-label={t("guestWs.back", { defaultValue: "Voltar" })}><ArrowLeft className="h-5 w-5" /></Button>
+          <div className="min-w-0 flex-1 leading-tight">
+            <p className="truncate text-sm font-semibold">{title}</p>
+            <p className="text-[11px] text-muted-foreground">{percent}%</p>
+          </div>
+          <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 rounded-full" onClick={() => onHighlight(selected ? ref : `${title}:`)} aria-label={t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}><Plus className="h-5 w-5" /></Button>
+          <Button size="sm" className="h-9 shrink-0 gap-1 rounded-full px-3" variant={done ? "secondary" : "default"} onClick={onDone}><Check className="h-4 w-4" /><span className="max-w-[7rem] truncate">{done ? t("guestWs.doneNext", { defaultValue: "Lido · próximo" }) : t("guestWs.markDone", { defaultValue: "Concluído" })}</span></Button>
+        </div>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className={cn("flex-1 overflow-y-auto", !selected && "bar-bottom")}>
         <article className={cn("mx-auto max-w-2xl px-5 pb-8 leading-relaxed", fontClass)} style={{ fontSize: settings.textScale !== 1 ? `${settings.textScale}em` : undefined }}>
           <h1 className="py-3 text-2xl font-semibold">{title}</h1>
           {verses === null ? <p className="text-sm text-muted-foreground">{t("guestWs.loading", { defaultValue: "Carregando…" })}</p>
@@ -102,7 +112,16 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
             ) : verses.length === 0 ? <p className="text-sm text-muted-foreground">{t("guestWs.chapterMissing", { defaultValue: "Capítulo não encontrado na Bíblia importada." })}</p>
             : verses.map((v) => (
               <p key={v.key} role="button" tabIndex={0} aria-pressed={sel === v.verse}
-                onMouseUp={() => pick(v)} onTouchEnd={() => setTimeout(() => pick(v), 0)}
+                onPointerDown={(e) => { tapStart.current = { x: e.clientX, y: e.clientY, t: Date.now(), scroll: scrollRef.current?.scrollTop ?? 0 }; }}
+                onPointerCancel={() => { tapStart.current = null; }}
+                onPointerUp={(e) => {
+                  const start = tapStart.current; tapStart.current = null;
+                  const x = e.clientX, y = e.clientY, t0 = Date.now(), scroll = scrollRef.current?.scrollTop ?? 0;
+                  setTimeout(() => {
+                    const s = window.getSelection?.();
+                    if (isRealTap(start, { x, y, t: t0, scroll, hasSelection: !!s && !s.isCollapsed })) pick(v);
+                  }, 0);
+                }}
                 onKeyDown={(e) => { if (e.key === "Enter") setSel(sel === v.verse ? null : v.verse); }}
                 className={cn("mb-2 cursor-pointer rounded-sm select-text", sel === v.verse && "underline decoration-primary decoration-2 underline-offset-4")}>
                 <sup className="mr-1 text-xs text-muted-foreground">{v.verse}</sup>
@@ -115,7 +134,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
       </div>
       {selected && (
         <div role="toolbar" aria-label={t("guestWs.verseTools", { defaultValue: "Ferramentas do versículo" })}
-          className="flex flex-wrap items-center gap-1 border-t bg-card px-3 py-2">
+          className="bar-bottom flex shrink-0 flex-wrap items-center gap-1 border-t bg-card px-3 pt-2">
           <span className="mr-1 text-xs font-medium">{ref}{range ? " · trecho" : ""}</span>
           <Highlighter className="h-4 w-4 text-muted-foreground" aria-hidden />
           {HIGHLIGHT_COLORS.map((c) => (
@@ -130,10 +149,6 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
           <Button size="icon" variant="ghost" className="ml-auto h-8 w-8" onClick={() => setSel(null)} aria-label={t("guestWs.close", { defaultValue: "Fechar" })}><X className="h-4 w-4" /></Button>
         </div>
       )}
-      <div className="flex gap-2 border-t bg-background p-3">
-        <Button variant="outline" className="flex-1 gap-1" onClick={() => onHighlight(selected ? ref : `${title}:`)}><Plus className="h-4 w-4" />{t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}</Button>
-        <Button className="flex-1 gap-1" variant={done ? "secondary" : "default"} onClick={onDone}><Check className="h-4 w-4" />{done ? t("guestWs.doneNext", { defaultValue: "Lido · próximo" }) : t("guestWs.markDone", { defaultValue: "Concluído" })}</Button>
-      </div>
     </div>
   );
 }
