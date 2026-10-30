@@ -135,6 +135,9 @@ export function WhatsNewDialog() {
           <p className="inline-block rounded-full bg-primary/10 px-3 py-0.5 text-xs font-semibold text-primary">
             {t("whatsNew.current", "Versão {{v}} (atual)", { v: current.version })}
           </p>
+          {current.subtitle && (
+            <p className="text-sm text-muted-foreground -mt-2">{current.subtitle}</p>
+          )}
           <ReleaseSections sections={current.sections} />
           {older.length > 0 && (
             <details className="rounded-lg border border-border">

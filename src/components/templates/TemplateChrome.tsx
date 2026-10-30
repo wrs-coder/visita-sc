@@ -42,7 +42,7 @@ export function useTemplateIO(io?: TemplateIO) {
   };
   const doImport = async () => {
     if (!io) return;
-    const f = await pickFile("application/json,.json");
+    const f = await pickFile("application/json,.json,application/octet-stream");
     if (!f) return;
     setBusy("import");
     try {

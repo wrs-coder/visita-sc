@@ -1,5 +1,6 @@
 import { htmlToDocx, folderToDocxZip, safeFileName } from "@/lib/docx-export";
 // Seções Anotações e Estudo Pessoal da esposa, com Modo Foco e gaveta.
+import { useImmersiveWhile } from "@/lib/immersive";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Download, FileText, FolderOpen, Plus, Settings2, Trash2, Upload, BookOpen, Search, X, Save, Eye, PenLine, StickyNote, Link2, MoreHorizontal, ChevronDown } from "lucide-react";
@@ -322,6 +323,7 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
   const folders = data.folders.filter((f) => f.kind === item.kind);
   const folderName = folders.find((f) => f.id === item.folderId)?.name ?? t("guestWs.noFolder", { defaultValue: "Sem pasta" });
   const editorH = vh ? `${Math.max(320, vh - 150)}px` : "70vh";
+  useImmersiveWhile(true);
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background bar-bottom safe-x-landscape">
       <div className="bar-top flex items-center gap-1 px-2 pb-2 pt-2">
@@ -467,8 +469,8 @@ function WorkspaceSheet({ backupKey, kind, open, onOpenChange, data, update, fol
               <button type="button" className={row} onClick={() => planRef.current?.click()}><FileText className="h-4 w-4 text-muted-foreground" />{t("guestWs.importPlan", { defaultValue: "Importar plano (.json/.zip)" })}</button>
             </div>
             <p className="text-[11px] text-muted-foreground">{t("guestWs.backupHint", { defaultValue: "Funciona sem internet. Os arquivos ficam no seu aparelho." })}</p>
-            <input ref={fileRef} type="file" accept=".zip,application/zip" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doRestore(f, "replace"); }} />
-            <input ref={planRef} type="file" accept=".json,.zip,application/json,application/zip" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doRestore(f, "merge"); }} />
+            <input ref={fileRef} type="file" accept=".zip,application/zip,application/octet-stream" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doRestore(f, "replace"); }} />
+            <input ref={planRef} type="file" accept=".json,.zip,application/json,application/zip,application/octet-stream" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doRestore(f, "merge"); }} />
           </section>
 
           <section className="space-y-1.5">

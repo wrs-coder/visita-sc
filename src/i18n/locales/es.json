@@ -170,7 +170,10 @@
     },
     "tabPersonal": "Datos personales",
     "tabFeatures": "Recursos de la aplicación",
-    "tabSettings": "Configuración"
+    "tabSettings": "Configuración",
+    "immersiveTitle": "Pantalla",
+    "immersiveLabel": "Pantalla completa en lectura y bosquejo",
+    "immersiveHelp": "Oculta la barra de hora y batería en la Biblia, el bosquejo a pantalla completa y el editor. Desliza desde arriba para verla."
   },
   "commandPalette": {
     "open": "Abrir búsqueda rápida",
