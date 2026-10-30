@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { parseEtim, type EtimPart } from "@/lib/big-events/etim-import";
+import { parseProgramFile, parseCircuitManagerCsv, decodeText, ETIM_MAX_BYTES, type EtimPart } from "@/lib/big-events/etim-import";
 import { buildInviteText, formatEventDate, generatePin, hashPin, isValidPin, recomputeTimes, toMin, fromMin, PART_TYPES } from "@/lib/big-events/invite";
 import { htmlToDocx, safeFileName, DOCX_MIME } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
@@ -81,10 +81,15 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const onFile = async (f: File | undefined) => {
     if (!f) return;
     try {
-      const ps = parseEtim(await f.text());
-      setForm({ name: f.name.replace(/\.etim$/i, "").replace(/_/g, " "), event_type: "assembly", event_date: "", location: "", link_mode: "pin" });
-      setDialog({ parts: ps });
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Arquivo inválido."); }
+      // Android informa .etim como binário (.bin); conferimos nome e tamanho aqui.
+      if (!/\.(etim|json|csv)$/i.test(f.name)) throw new Error(`"${f.name}" não é um programa. Escolha um .etim ou o arquivo do Circuito Manager (.json ou .csv).`);
+      if (f.size > ETIM_MAX_BYTES) throw new Error("Arquivo muito grande (máx. 1 MB).");
+      const text = decodeText(await f.arrayBuffer());
+      const res = /\.csv$/i.test(f.name) ? { title: null, parts: parseCircuitManagerCsv(text) } : parseProgramFile(text);
+      const name = res.title ?? f.name.replace(/\.(etim|json|csv)$/i, "").replace(/_/g, " ");
+      setForm({ name, event_type: "assembly", event_date: "", location: "", link_mode: "pin" });
+      setDialog({ parts: res.parts });
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Este arquivo não é um programa válido."); }
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -363,12 +368,12 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
         {elders.filter((e) => e.name).map((e) => <option key={`${e.name}-${e.congregation}`} value={e.name}>{e.congregation}</option>)}
       </datalist>
       <div className="flex items-center justify-end gap-2">
-        <input ref={fileRef} type="file" accept=".etim,application/json" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
-        <Button size="sm" variant="outline" className="gap-1" onClick={() => fileRef.current?.click()}><Upload className="h-3.5 w-3.5" />Importar .etim</Button>
+        <input ref={fileRef} type="file" accept="*/*" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+        <Button size="sm" variant="outline" className="gap-1" onClick={() => fileRef.current?.click()}><Upload className="h-3.5 w-3.5" />Importar programa</Button>
         <Button size="sm" className="gap-1" onClick={() => { setForm({ name: "", event_type: "special", event_date: "", location: "", link_mode: "pin" }); setDialog({ parts: null }); }}><Plus className="h-3.5 w-3.5" />Novo</Button>
       </div>
       {loading ? <p className="text-sm text-muted-foreground">Carregando…</p>
-        : !events.length ? <Card className="p-6 text-center text-sm text-muted-foreground">Nenhum evento ainda. Importe o programa (.etim) ou crie um evento.</Card>
+        : !events.length ? <Card className="p-6 text-center text-sm text-muted-foreground">Nenhum evento ainda. Importe o programa (.etim, .json ou .csv) ou crie um evento.</Card>
         : <div className="space-y-2">{upcoming.map(renderEvent)}</div>}
       {past.length > 0 && (
         <div>

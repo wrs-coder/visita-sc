@@ -227,6 +227,14 @@ vão para os domínios publicados.
 
 ### Como empacotar
 
+> **Passo a passo rápido (GitHub + VS Code, APK de teste):**
+> 1. No VS Code, terminal na pasta do projeto: `git pull` (traz o código mais recente do GitHub).
+> 2. `npm install` (só se o package.json mudou).
+> 3. `npm run android:build` (refaz as telas, confere o carimbo e sincroniza o Android).
+> 4. `cd android` e `gradlew.bat assembleDebug` (Windows) ou `./gradlew assembleDebug` (Mac/Linux).
+> 5. Instale `android/app/build/outputs/apk/debug/app-debug.apk` e confira em Configurações → "Sobre este app" a versão e a data de hoje.
+> Não existe o comando `npm run build:app`.
+
 > **Atenção:** `npx cap copy android` e `npx cap update android` sozinhos **não refazem as telas**.
 > Eles copiam o que já estiver em `dist-app/`, e o APK sai com o número novo e telas antigas.
 > Use `npm run android:copy` (ou os comandos `android:release:*`). O comando confere o carimbo

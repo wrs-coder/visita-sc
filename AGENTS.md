@@ -30,3 +30,4 @@
 
 - Itinerary import (.ics/.csv) is parsed and reviewed only on the device (itinerary-import.ts); congregation visits go through the same visits insert + package apply as the form, every other event becomes an itinerary_weeks row, and corrected name aliases live in localStorage per user, because no schema change is needed and re-imports must not duplicate.
 - JW Library backups (.jwlibrary) are parsed only on the device (jwlibrary-import.ts: JSZip + lazily loaded sql.js with the WASM served from public/, WAL merged before reading) and stored in a separate jwNotes list of the local workspace, never in highlights, so imports can be removed without touching the user's own Pontos altos and no Bible text is embedded.
+- Terms acceptance is device-local (localStorage, TERMS_VERSION in terms-acceptance.ts); bumping the version forces one re-accept via TermsUpdateDialog for accounts and invite-code access, because no schema change is wanted.

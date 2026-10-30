@@ -1,67 +1,93 @@
-# Importar notas bíblicas do JW Library para "Pontos altos"
+# Termos de Uso do Visita SC: o que vale a pena incluir
 
-## Avaliação do plano anexado
+## Avaliação de cada ponto
 
-Funciona de forma estável, com ajustes. Testado com o seu backup do Samsung (9,9 MB):
+| Ponto | Incluir? | Por quê / ajuste |
+|---|---|---|
+| 1. Aceitação e titular | **Sim** | Hoje os termos não dizem quem responde pelo app nem como entrar em contato. Incluir o nome "desenvolvedor individual independente" e o e-mail wrscircuito@gmail.com. |
+| 2. Ferramenta não oficial, sem afiliação | **Sim, é o mais importante** | O app cita JW Library, Tradução do Novo Mundo e importa arquivos dessas fontes. Deixar claro que não tem ligação com a organização protege você e evita confusão. |
+| 3. Finalidade | **Sim, juntando com a seção 1 atual** | Corrigir "para fazer organizar" e manter quem usa o app: superintendente, anciãos e esposa. Manter a frase "não fornece conteúdo doutrinário nem substitui publicações oficiais". |
+| 4. Conteúdos de terceiros | **Sim, com um ajuste** | Acrescentar que a Bíblia e as anotações do JW Library **vêm de arquivos que o próprio usuário importa no aparelho**, e que o app não distribui nem inclui esses textos. Isso corresponde ao funcionamento real e reforça a proteção. |
+| 10. Uso permitido | **Sim, junto com a seção 4 atual (Uso adequado)** | Acrescentar a proibição de copiar em massa ou redistribuir os textos exibidos. |
+| 11. Garantias e responsabilidade | **Sim, junto com a seção 6 atual (Disponibilidade)** | Tom equilibrado e respeita o Código de Defesa do Consumidor. Acrescentar: "faça backups; o desenvolvedor não responde por perda de dados guardados só no aparelho". |
+| 12. Alterações | **Sim, em versão simples** | Hoje o app não pede um novo aceite quando os termos mudam. Proposta: avisar as mudanças importantes no "O que há de novo" e mostrar a data da versão em vigor no topo da página. Um novo aceite obrigatório pode ficar para depois, se você quiser. |
+| 13. Lei aplicável e foro | **Sim** | Lei brasileira, sem arbitragem obrigatória, e o consumidor mantém os direitos do lugar onde mora. Isso é adequado também para usuários de Angola e de outros países. |
 
-- 1.339 notas no total; **504 são da Bíblia** (nwtsty 499, nwt 5). As outras (mwb, w, it, be...) ficam de fora.
-- 113 das 504 não têm texto escrito, só título (que costuma ser o próprio trecho do versículo). Entram com o título como texto.
-- 499 estão presas a um versículo; 5 só ao capítulo.
-- 268 têm etiquetas do JW Library; podem virar uma linha "#etiqueta" no texto.
+Observação: o texto que você enviou pula da seção 4 para a 10. Na versão final, a numeração fica corrida.
 
-Ajustes ao plano anexado:
-
-1. **O versículo não fica em `Location`.** Vem de `Note.BlockType = 2` + `BlockIdentifier`. Notas só de capítulo entram como "Nm 20".
-2. **Filtro seguro:** livro 1-66 **e** `KeySymbol` começando com `nwt`. Assim notas de revistas ou guias que apontam para um livro não entram.
-3. **Ponto crítico de estabilidade:** o backup traz um arquivo extra (`userData.db-wal`) com as alterações mais recentes. Se ele for ignorado, notas recentes somem na importação. O leitor vai juntar esse arquivo antes de ler; se não conseguir, avisa em vez de importar pela metade.
-4. **Só notas.** Marcações coloridas sem nota (14 mil no seu backup) não têm texto próprio e não entram, o que respeita a regra de usar só o EPUB da TNM.
-5. **Sem duplicar:** cada nota usa o `Guid` do JW Library. Importar o mesmo backup de novo atualiza em vez de repetir.
-6. Fotos e mídias do backup são ignoradas.
-
-Decisão: as notas importadas ficam numa **pílula própria "JW Library"**, ao lado de "Anotações de leitura" e "Pontos altos". Vantagens:
-- Seus pontos altos atuais nunca se misturam nem são alterados.
-- As 113 notas só com título aparecem marcadas como "trecho" (título em itálico, sem texto), sem poluir a lista.
-- Botão "Remover importação" apaga só o que veio do JW Library.
-- Mesma lista por livro e busca que já existem; cada nota tem "Copiar para Pontos altos" se quiser trazê-la.
-Funciona igual para você e para a esposa.
-
-## Como fica a tela
+## Estrutura final proposta (12 seções)
 
 ```text
-+-----------------------------------+
-| < Pontos altos           ⤒  [+]  |
-+-----------------------------------+
-| Importar do JW Library            |
-| [ Escolher backup .jwlibrary ]    |
-| Backup_2026-10-29 · 1,4 MB        |
-|-----------------------------------|
-| 38 notas bíblicas · 3 já existem  |
-| [x] Todas                         |
-| > Gênesis (12)            [x]     |
-|   Gn 12:1-3 Promessa...           |
-| > Salmos (18)             [x]     |
-| > Mateus (8)              [x]     |
-|-----------------------------------|
-|  [ Importar 35 novas ]            |
-+-----------------------------------+
-  depois: "35 notas salvas" -> lista
-  já filtrada no primeiro livro
+1.  Quem somos e aceitação            (novo: titular + contato)
+2.  Ferramenta independente           (novo: sem afiliação, marcas)
+3.  Finalidade                        (atual 1 + ponto 3)
+4.  Sua conta                         (atual 2, sem mudança)
+5.  Dados de outras pessoas           (atual 3, sem mudança)
+6.  Uso adequado                      (atual 4 + ponto 10)
+7.  Conteúdo pessoal e backups        (atual 5, sem mudança)
+8.  Conteúdos de terceiros            (novo: ponto 4 + arquivos importados pelo usuário)
+9.  Disponibilidade e responsabilidade(atual 6 + ponto 11)
+10. Privacidade                       (atual 7, sem mudança)
+11. Alterações                        (atual 8 + aviso no app e data da versão)
+12. Lei aplicável                     (novo: ponto 13)
+     "Última atualização: 30/10/2026"
 ```
 
-## O que muda
+## Prévia na tela (celular)
 
-- Nova leitura do backup só no aparelho, offline, sem enviar nada ao servidor.
-- Prévia por livro, com marcar/desmarcar livro ou nota.
-- As notas entram na nova pílula "JW Library", com lista por livro, busca e "Remover importação". Os "Pontos altos" atuais não são alterados.
-- Funciona no superintendente (Estudo e Anotações) e na esposa, porque os dois usam a mesma tela.
+```text
+┌────────────────────────────┐
+│ ✕                 Visita SC│
+│ 📄 Termos de Uso           │
+│ Última atualização 30/10/26│
+│                            │
+│ 1. Quem somos e aceitação  │
+│ O Visita SC é desenvolvido │
+│ por um desenvolvedor inde- │
+│ pendente. Contato: wrs...  │
+│                            │
+│ 2. Ferramenta independente │
+│ Não é afiliado à Watch     │
+│ Tower... nem a entidade    │
+│ ligada às Testemunhas...   │
+│ ...                        │
+└────────────────────────────┘
+```
+
+## O que não muda
+- Telas de login, cadastro e aceite: o mesmo texto aparece onde já aparece hoje.
+- Política de Privacidade: continua separada, só é mencionada nos termos.
+- Nenhum dado, conta ou banco de dados é alterado.
 
 ## Detalhes técnicos
+- Atualizar só `TERMS_SECTIONS` em `src/components/auth/terms-content.tsx` e acrescentar uma linha com a data de atualização em `TermsContent`. A página `/termos-uso` e os outros lugares que usam o componente passam a mostrar o novo texto automaticamente.
+- Ajustar a descrição em `head()` de `/termos-uso` para mencionar o aviso de ferramenta não oficial.
+- Opcional: incluir uma linha no "O que há de novo" da próxima versão: "Termos de Uso atualizados".
+- Teste simples: confirmar que os termos contêm o e-mail de contato e a cláusula de não afiliação.
 
-- `src/lib/jwlibrary-import.ts`: JSZip abre o zip; checagem de tamanho (≤ 50 MB zip, ≤ 200 MB descompactado), `manifest.json` e `userData.db` obrigatórios.
-- `sql.js` com WASM servido localmente (asset do app, sem CDN), carregado sob demanda via `import()` só ao abrir o importador, para não pesar a abertura do app nem o SSR.
-- Query: `Note JOIN Location` com `BookNumber 1-66`, `ChapterNumber` válido, `KeySymbol LIKE 'nwt%'`, `IssueTagNumber=0`, `Content` ou `Title` não vazio. Versículo por `BlockIdentifier`; faixa por `UserMark/BlockRange` se ligada.
-- Conversão: `BookNumber` -> `B01..B66`; `ref` com a abreviação já usada no app; `text` = Título + Conteúdo em texto simples (sem HTML); `date` = `LastModified`; `id` = `jw-<Guid>`.
-- Nova lista local separada `jwNotes` (campo opcional na área de trabalho, mesma validação; backups antigos seguem abrindo), upsert por `id`, limite 5000. `highlights` fica intocado; "Copiar para Pontos altos" cria uma cópia normal.
-- Tolerância a versões do esquema: se uma coluna faltar, a consulta cai para a versão mínima (sem faixa).
-- Testes: conversão de livros, referência com/sem versículo, filtro de não-Bíblia, deduplicação, arquivo inválido. Validar com `bunx tsgo --noEmit` e `bunx vitest run`.
-- Nenhuma mudança no banco de dados nem em login.
+## Aceite obrigatório dos termos (resposta à sua pergunta)
+
+Sim. O Google Play espera que, quando o app cria conta e guarda dados, o usuário veja e aceite os termos e a privacidade antes de usar. Situação atual:
+
+- **Cadastro de superintendente e de ancião:** já exige marcar "Li e aceito os Termos de Uso e a Política de Privacidade". Está correto.
+- **Acesso por código (esposa e anciãos visitantes):** entra sem aceite. **Esta é a lacuna a fechar.**
+- **Quem já tem conta:** aceitou a versão antiga e não precisa aceitar a nova.
+
+### O que será acrescentado
+1. **Acesso por código:** na primeira entrada aparece a mesma caixa "Li e aceito…", e o botão Entrar só funciona depois de marcar. O aceite fica guardado no aparelho e não é pedido de novo.
+2. **Novo aceite quando os termos mudarem de forma importante:** cada versão dos termos ganha uma data (ex.: 30/10/2026). Quem aceitou uma versão anterior vê uma janela uma única vez, com o resumo das mudanças e os botões "Ler termos" e "Aceitar e continuar". Isso vale para superintendente, anciãos e esposa, e funciona sem internet.
+3. **Ajustes simples não pedem novo aceite.** Para correções de texto, basta não trocar a data.
+
+```text
+┌────────────────────────────┐
+│ Termos de Uso atualizados  │
+│ Versão de 30/10/2026       │
+│ • Quem desenvolve o app    │
+│ • Ferramenta não oficial   │
+│ • Conteúdos de terceiros   │
+│ [ Ler termos ]             │
+│ [ Aceitar e continuar ]    │
+└────────────────────────────┘
+```
+
+Técnico: `TERMS_VERSION` em `terms-content.tsx`; aceite guardado só no aparelho (localStorage por usuário ou por código de convite); banco de dados sem mudança; a janela aparece depois do login ou do desbloqueio e antes do "O que há de novo"; testes da regra "versão antiga → pede aceite; versão atual → não pede".

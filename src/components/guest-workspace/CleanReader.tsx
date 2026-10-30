@@ -85,7 +85,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+    <div className="fixed inset-0 z-50 flex flex-col bg-background safe-top safe-bottom safe-x">
       <div className="flex items-center gap-2 px-2 py-2">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 text-muted-foreground"><ArrowLeft className="h-4 w-4" />{t("guestWs.back", { defaultValue: "Voltar" })}</Button>
         <span className="ml-auto pr-2 text-xs text-muted-foreground">{title} · {percent}%</span>

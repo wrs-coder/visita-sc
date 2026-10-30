@@ -4,10 +4,10 @@ import { APP_VERSION } from "./app-update-check";
 import pkg from "../../package.json";
 
 describe("release notes por versão", () => {
-  it("a versão atual é 5.0.5 em todos os lugares", () => {
-    expect(RELEASE_NOTES_VERSION).toBe("5.0.5");
-    expect(APP_VERSION).toBe("5.0.5");
-    expect(pkg.version).toBe("5.0.5");
+  it("a versão atual é 5.0.6 em todos os lugares", () => {
+    expect(RELEASE_NOTES_VERSION).toBe("5.0.6");
+    expect(APP_VERSION).toBe("5.0.6");
+    expect(pkg.version).toBe("5.0.6");
   });
   it("a primeira entrada do histórico é a versão atual", () => {
     expect(RELEASE_HISTORY[0].version).toBe(RELEASE_NOTES_VERSION);

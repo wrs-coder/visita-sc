@@ -11,6 +11,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Eye, ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
+import { useEffect } from "react";
+import { TermsAcceptance } from "@/components/auth/TermsAcceptance";
+import { hasAcceptedCurrentTerms } from "@/lib/terms-acceptance";
 
 export const Route = createFileRoute("/visitante/")({ component: Page });
 
@@ -20,9 +23,13 @@ function Page() {
   const fn = useServerFn(getGuestSnapshot);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [accepted, setAccepted] = useState(false);
+  const [alreadyAccepted, setAlreadyAccepted] = useState(false);
+  useEffect(() => { const ok = hasAcceptedCurrentTerms(); setAlreadyAccepted(ok); if (ok) setAccepted(true); }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!accepted) { toast.error("Marque que leu e aceita os Termos de Uso."); return; }
     const c = code.trim().toUpperCase();
     if (!/^[A-Z0-9]{4,12}\*?$/.test(c)) { toast.error(t("guest.invalidCode")); return; }
     setBusy(true);
@@ -60,7 +67,8 @@ function Page() {
                 <Input id="code" className="mt-1 font-mono uppercase tracking-widest" maxLength={13}
                   value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder={t("guest.codePlaceholder")} />
               </div>
-              <Button type="submit" className="w-full h-11" disabled={busy}>
+              {!alreadyAccepted && <TermsAcceptance checked={accepted} onChange={setAccepted} />}
+              <Button type="submit" className="w-full h-11" disabled={busy || !accepted}>
                 <Eye className="mr-2 h-4 w-4" /> {t("guest.access")}
               </Button>
             </form>
