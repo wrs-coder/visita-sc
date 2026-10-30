@@ -65,3 +65,7 @@
 - [x] Programação geral (⤓) no Resumo da semana com escolha de partes e observações
 - [x] Esboços Pessoais: modo foco (📖 flutuante, ferramentas recolhíveis, linha única no topo)
 - [x] Importar notas bíblicas de backup do JW Library para a pílula própria "JW Library" (superintendente e esposa).
+
+- [x] Importar .etim no Android (seletor aceita qualquer arquivo) e CSV do Circuito Manager
+- [x] Botões da leitura do capítulo acima da barra do Android (S22 Ultra)
+- [x] Versão 5.0.6 / versionCode 35
