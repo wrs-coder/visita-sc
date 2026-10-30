@@ -64,7 +64,35 @@ Se a data em "Sobre" não for a de hoje, o APK ainda está com telas antigas.
 - Formato das partes salvas, convites, links/PIN, banco de dados e regras de acesso.
 - Importação do JW Library e do itinerário.
 
+## Novo: importar o CSV de designações do Circuito Manager
+
+Arquivo analisado: "Designações do Programa da Assembleia.csv" (separador `;`, colunas Número, Designação, Início, Turno, Duração, Designado, Participação...).
+
+- O botão Importar de Grandes Eventos passa a aceitar também `.csv`.
+- Mesmas regras do .json do Circuito Manager: Manhã, Tarde e Música viram títulos (não são partes); "Cântico e oração" entra sem orador; "Série de discursos: X" + linhas com "•" viram Simpósio; Batismo, Discurso Público e A Sentinela são reconhecidos pelo tema.
+- Horário "10:16:50.1" vira 10:16; duração em minutos.
+- **Vantagem do CSV:** a coluna "Designado" já preenche o nome do orador (ex.: parte 1 → Alberto Luvumba Silva). "Notificado/Aceito" não são importados; as confirmações continuam pelo app.
+- Arquivo lido só no aparelho, com limite de tamanho; acentos e aspas curvas preservados.
+
+## Novo: botões escondidos atrás da barra do celular (S22 Ultra)
+
+Causa confirmada no código: a tela de leitura do capítulo ocupa a tela inteira, e a linha "+ Ponto alto / Concluído" não reserva espaço para a barra de navegação do Android. No Android 15 (One UI 7), o app desenha até a borda da tela, então os botões ficam por baixo da barra.
+
+- Leitura do capítulo (esposa e superintendente): a linha de botões e a barra de ferramentas do versículo ganham um espaço de segurança embaixo.
+- Revisar as outras telas cheias com botões no rodapé (diálogos de tela cheia, tela cheia do esboço) e aplicar o mesmo espaço.
+- O espaço é calculado pelo próprio Android (funciona com gestos ou com 3 botões); em celulares sem barra, nada muda.
+
+```text
+Antes                         Depois
+│ ...texto do capítulo...  │  │ ...texto do capítulo...  │
+│[+ Ponto alto][Concluído] │  │[+ Ponto alto][Concluído] │
+│▒▒▒ ◁   ○   ▢ ▒▒▒▒▒▒▒▒▒▒▒ │  │                          │
+  (botões cobertos)           │▒▒▒ ◁   ○   ▢ ▒▒▒▒▒▒▒▒▒▒▒ │
+```
+
 ## Detalhes técnicos
+- Classe `pb-safe-nav` = `max(env(safe-area-inset-bottom), var(--safe-area-inset-bottom, 0px))` (o Capacitor 8 injeta a variável), aplicada em `CleanReader.tsx` (rodapé e barra do versículo) e nos demais `fixed inset-0` com rodapé.
+- `parseCircuitManagerCsv` em `etim-import.ts`, reaproveitando as regras do .json, preenchendo `speaker_name` com "Designado"; teste com o seu CSV.
 - `BigEvents.tsx`: `accept` passa a omitir o filtro restritivo (ou `*/*`), mantendo a validação por extensão + `parseProgramFile`; erro inclui `f.name`.
 - `etim-import.ts`: textos de erro genéricos; lógica de detecção inalterada.
 - Versão 5.0.6 em `package.json`, `android/app/build.gradle` (versionCode 35), `app-update-check`, `api/public/version.ts`, `LoginForm.tsx`, notas de versão agrupadas.
