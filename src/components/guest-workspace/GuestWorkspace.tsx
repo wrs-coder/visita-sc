@@ -323,8 +323,8 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
   const folderName = folders.find((f) => f.id === item.folderId)?.name ?? t("guestWs.noFolder", { defaultValue: "Sem pasta" });
   const editorH = vh ? `${Math.max(320, vh - 150)}px` : "70vh";
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background safe-top safe-bottom safe-x">
-      <div className="flex items-center gap-1 px-2 py-2">
+    <div className="fixed inset-0 z-50 flex flex-col bg-background bar-bottom safe-x-landscape">
+      <div className="bar-top flex items-center gap-1 px-2 pb-2 pt-2">
         <Button variant="ghost" size="icon" onClick={onClose} className="h-9 w-9 shrink-0 rounded-full text-muted-foreground" aria-label={t("guestWs.back", { defaultValue: "Voltar" })}><ArrowLeft className="h-4 w-4" /></Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

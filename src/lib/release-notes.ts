@@ -102,9 +102,29 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.0.6";
+export const RELEASE_NOTES_VERSION = "5.0.7";
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "5.0.7",
+    sections: [
+      {
+        title: "Leitura da Bíblia com mais tela",
+        items: [
+          "\"Ponto alto\" e \"Concluído\" agora ficam na linha do topo, ao lado de Voltar.",
+          "O texto usa quase toda a tela, sem faixas vazias em cima e embaixo.",
+          "Botões nunca ficam por baixo da barra do celular (gestos ou 3 botões).",
+        ],
+      },
+      {
+        title: "Destaque mais tranquilo",
+        items: [
+          "A barra de destaque não abre mais ao arrastar a tela; só com um toque no versículo.",
+          "Selecionar um trecho com o dedo continua abrindo a barra para aquele trecho.",
+        ],
+      },
+    ],
+  },
   {
     version: "5.0.6",
     sections: [

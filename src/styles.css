@@ -322,6 +322,15 @@
   padding-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
   padding-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
 }
+/* Telas cheias (padrão iOS/One UI): o fundo vai até a borda; só a barra real recebe o recuo. */
+.bar-top { padding-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px)); }
+.bar-bottom { padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)); }
+@media (orientation: landscape) {
+  .safe-x-landscape {
+    padding-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+    padding-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  }
+}
 .safe-bottom-extra { padding-bottom: calc(6rem + max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px))); }
 
 /* Transição CSS-only de 150 ms para o toggle de "Modo edição". */

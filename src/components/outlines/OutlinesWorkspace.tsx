@@ -2635,7 +2635,7 @@ function FullscreenOutline({
   const [fsSlot, setFsSlot] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div data-back-closable className="webkit-stable-layer fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none safe-top safe-bottom safe-x">
+    <div data-back-closable className="webkit-stable-layer fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none bar-top bar-bottom safe-x-landscape">
       {showTimer && <OutlineTimer outlineId={note.id} variant="fullscreen" />}
       {showTimer && <OutlineInactivitySensor outlineId={note.id} />}
       <div className="border-b px-4 py-2 min-w-0 shrink-0">
