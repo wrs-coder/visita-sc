@@ -42,6 +42,8 @@ import {
 } from "lucide-react";
 import { FloatingVersePanel } from "@/components/guest-workspace/FloatingVersePanel";
 import { useFocusChromeWhile } from "@/lib/focus-chrome";
+import { useImmersiveWhile } from "@/lib/immersive";
+import { describeLocalSaveError } from "@/lib/save-errors";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { isOfflineMode } from "@/lib/connection-mode";
@@ -613,7 +615,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
 
   async function handleImportDocx() {
     if (!activeType) return;
-    const file = await pickFile(".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    const file = await pickFile(".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/octet-stream");
     if (!file) return;
     try {
       const { importDocx } = await import("@/lib/docx-import");
@@ -638,6 +640,13 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
     };
     try {
       await persistNote(updated);
+    } catch (e) {
+      // Falha real ao gravar no aparelho: mantém o rascunho e explica o motivo.
+      toast.error(describeLocalSaveError(e));
+      setTimeout(() => setSaving(false), 300);
+      return;
+    }
+    try {
       clearNoteDraft(updated.id);
       setNotes((all) => {
         const idx = all.findIndex((n) => n.id === updated.id);
@@ -660,7 +669,10 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
       }
       toast.success(t("fieldConsiderations.saved"));
     } catch {
-      toast.error(t("common.errorGeneric", { defaultValue: "Erro" }));
+      // Já está salvo no aparelho; só o envio/atualização falhou.
+      toast.success(t("fieldConsiderations.saved"), {
+        description: "Salvo no aparelho. Será sincronizado quando a conexão voltar.",
+      });
     } finally {
       setTimeout(() => setSaving(false), 300);
     }
@@ -1776,7 +1788,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept="application/json"
+                        accept="application/json,.json,application/octet-stream"
                         className="hidden"
                         onChange={(e) => {
                           const f = e.target.files?.[0];
@@ -2633,6 +2645,7 @@ function FullscreenOutline({
 
   const showTimer = (note.type ?? "field_consideration") !== "talk_notes";
   const [fsSlot, setFsSlot] = useState<HTMLDivElement | null>(null);
+  useImmersiveWhile(true);
 
   return (
     <div data-back-closable className="webkit-stable-layer fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none bar-top bar-bottom safe-x-landscape">

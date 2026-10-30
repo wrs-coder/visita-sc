@@ -7,12 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { APP_VERSION } from "@/lib/app-update-check";
 import { openWhatsNew } from "@/lib/whats-new";
+import { Switch } from "@/components/ui/switch";
+import { setImmersivePref, useImmersivePref } from "@/lib/immersive";
 
 type BuildInfo = { version?: string; builtAt?: string };
 
 export function AppAboutCard() {
   const { t } = useTranslation();
   const [info, setInfo] = useState<BuildInfo | null>(null);
+  const immersive = useImmersivePref();
 
   useEffect(() => {
     // build-info.json só existe dentro do APK (gerado com as telas).
@@ -49,6 +52,15 @@ export function AppAboutCard() {
           <Sparkles className="h-4 w-4 mr-1.5" aria-hidden />
           {t("about.whatsNew", "Ver novidades")}
         </Button>
+        <label className="w-full flex items-center justify-between gap-3 border-t pt-3 text-sm">
+          <span>
+            {t("about.immersive", "Tela cheia na leitura e no esboço")}
+            <span className="block text-[11px] text-muted-foreground">
+              {t("about.immersiveHint", "Puxe do topo para ver a barra do celular.")}
+            </span>
+          </span>
+          <Switch checked={immersive} onCheckedChange={setImmersivePref} />
+        </label>
       </CardContent>
     </Card>
   );

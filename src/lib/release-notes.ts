@@ -1,7 +1,7 @@
 // Novidades separadas por versão. A primeira é a atual; as demais formam o histórico.
 // A cada release: acrescentar uma nova entrada no topo e atualizar RELEASE_NOTES_VERSION.
 export type ReleaseSection = { title: string; items: string[] };
-export type ReleaseEntry = { version: string; sections: ReleaseSection[] };
+export type ReleaseEntry = { version: string; subtitle?: string; sections: ReleaseSection[] };
 
 // Novidades da 5.0.4 (histórico).
 const OLD_SECTIONS: ReleaseSection[] = [
@@ -102,88 +102,57 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.0.7";
+export const RELEASE_NOTES_VERSION = "5.0.8";
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
   {
-    version: "5.0.7",
-    sections: [
-      {
-        title: "Leitura da Bíblia com mais tela",
-        items: [
-          "\"Ponto alto\" e \"Concluído\" agora ficam na linha do topo, ao lado de Voltar.",
-          "O texto usa quase toda a tela, sem faixas vazias em cima e embaixo.",
-          "Botões nunca ficam por baixo da barra do celular (gestos ou 3 botões).",
-        ],
-      },
-      {
-        title: "Destaque mais tranquilo",
-        items: [
-          "A barra de destaque não abre mais ao arrastar a tela; só com um toque no versículo.",
-          "Selecionar um trecho com o dedo continua abrindo a barra para aquele trecho.",
-        ],
-      },
-    ],
-  },
-  {
-    version: "5.0.6",
-    sections: [
-      {
-        title: "Grandes Eventos: importar programa",
-        items: [
-          "O arquivo .etim agora pode ser escolhido no Android.",
-          "Importe também o programa do Circuito Manager (.json ou .csv).",
-          "Pelo .csv, os oradores já designados entram com o nome preenchido.",
-        ],
-      },
-      {
-        title: "Botões sempre visíveis",
-        items: [
-          "Na leitura do capítulo, \"Ponto alto\" e \"Concluído\" não ficam mais escondidos atrás da barra do celular.",
-        ],
-      },
-      {
-        title: "Termos de Uso atualizados",
-        items: [
-          "Novos termos: quem desenvolve o app, ferramenta não oficial e conteúdos de terceiros.",
-          "O acesso por código também pede o aceite dos termos.",
-        ],
-      },
-    ],
-  },
-  {
-    version: "5.0.5",
+    version: "5.0.8",
+    subtitle: "Edição especial — reúne as novidades das versões 5.0.5 a 5.0.8.",
     sections: [
       {
         title: "Grandes Eventos do Circuito",
         items: [
-          "Importe programas de assembleias e reuniões especiais (.etim).",
-          "Edite partes: tema, tipo, tempo, e horários recalculados automaticamente.",
-          "Escolha por evento: link único com PIN ou link pessoal para cada orador.",
-          "Congregação do orador preenchida sozinha e convites exportados em Word.",
+          "Crie o evento, as partes e os oradores na pílula Circuito.",
+          "Escolha um link com PIN para todos ou um link pessoal para cada orador.",
+          "Importe o programa do .etim ou do Circuito Manager (.json e .csv), também em celulares que mostram o arquivo como \".bin\".",
         ],
       },
       {
-        title: "Importar itinerário (.ics e .csv)",
+        title: "Importações",
         items: [
-          "Importe o arquivo do Circuit Assistant ou uma planilha, com revisão antes de salvar.",
-          "Visitas vão para Visitas; os demais eventos viram Semanas sem visita.",
-          "Aviso de datas em conflito e sugestão da congregação certa.",
-        ],
-      },
-      {
-        title: "Notas do JW Library",
-        items: [
-          "Nova pílula JW Library na Leitura da Bíblia (superintendente e esposa).",
-          "Importação do backup feita só no celular, sem enviar para a nuvem.",
-          "Busca por texto, referência e etiqueta; copie notas para Pontos altos.",
+          "Itinerário importado de arquivos .ics e .csv, com revisão antes de salvar.",
+          "Notas e destaques do backup do JW Library em uma lista separada.",
+          "Backups, modelos, DOCX e JSON também aceitos quando o celular os marca como \".bin\".",
         ],
       },
       {
         title: "Estudo e Anotações",
         items: [
-          "Nova tela no menu com Leitura da Bíblia, Pesquisas e Anotações.",
-          "Toque num capítulo para \"Começar a ler\" ou \"Marcar como lido\".",
+          "Leitura da Bíblia, Pesquisas e Anotações reunidas em uma tela.",
+          "Na leitura, \"Ponto alto\" e \"Concluído\" ficam no topo, ao lado do capítulo.",
+          "O destaque não abre mais por acidente ao rolar o texto.",
+        ],
+      },
+      {
+        title: "Tela e uso diário",
+        items: [
+          "Painel com margens menores e cabeçalho que se esconde ao rolar para baixo.",
+          "Botões sempre longe da barra do celular.",
+          "Tela cheia na leitura, no esboço e no editor: puxe do topo para ver a barra do celular. Desligue em Perfil, em \"Sobre este app\".",
+        ],
+      },
+      {
+        title: "Salvar e exportar",
+        items: [
+          "Ao salvar um esboço sem internet, aparece \"Salvo no aparelho\", e não mais \"Erro\".",
+          "Arquivos grandes são exportados sem falhar.",
+          "Avisos claros quando falta espaço no aparelho.",
+        ],
+      },
+      {
+        title: "Termos de Uso",
+        items: [
+          "Texto novo e mais claro, com aceite também para quem entra por código de convite.",
         ],
       },
     ],

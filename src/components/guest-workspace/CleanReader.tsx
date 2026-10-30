@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Check, Plus, Highlighter, Eraser, Copy, NotebookPen, X } from "lucide-react";
 import { toast } from "sonner";
+import { useImmersiveWhile } from "@/lib/immersive";
 import { Button } from "@/components/ui/button";
 import { getActiveLibrary, getChapterFromLibrary, type BibleVerseRecord } from "@/lib/bible-notes-store";
 import { getLocalizedBookName } from "@/lib/bible-canon";
@@ -87,6 +88,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
     try { await navigator.clipboard.writeText(`${ref} ${selected.text}`); toast.success(t("guestWs.copied", { defaultValue: "Copiado." })); } catch { /* */ }
   };
 
+  useImmersiveWhile(true);
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background safe-x-landscape">
       <div className="bar-top shrink-0 border-b bg-background/95 backdrop-blur">
