@@ -367,7 +367,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
         {elders.filter((e) => e.name).map((e) => <option key={`${e.name}-${e.congregation}`} value={e.name}>{e.congregation}</option>)}
       </datalist>
       <div className="flex items-center justify-end gap-2">
-        <input ref={fileRef} type="file" accept=".etim,application/json" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+        <input ref={fileRef} type="file" accept=".etim,.json,application/json,application/octet-stream,text/plain" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
         <Button size="sm" variant="outline" className="gap-1" onClick={() => fileRef.current?.click()}><Upload className="h-3.5 w-3.5" />Importar .etim</Button>
         <Button size="sm" className="gap-1" onClick={() => { setForm({ name: "", event_type: "special", event_date: "", location: "", link_mode: "pin" }); setDialog({ parts: null }); }}><Plus className="h-3.5 w-3.5" />Novo</Button>
       </div>
