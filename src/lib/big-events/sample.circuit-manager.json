@@ -1,0 +1,260 @@
+﻿{
+  "Tema": "“Feliz É Aquele Que Confia em Jeová”",
+  "AnoInicial": 2026,
+  "AnoFinal": 2027,
+  "Texto": "PROVÉRBIOS 16:20",
+  "Representante": false,
+  "Programas": [
+    {
+      "Numero": 0,
+      "Inicio": "09:40:00",
+      "Duracao": 0,
+      "Tema": "Manhã",
+      "Exibir": true,
+      "Destacar": true,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 0,
+      "Inicio": "09:40:01",
+      "Duracao": 0,
+      "Tema": "Música",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 0,
+      "Inicio": "09:50:00",
+      "Duracao": 0,
+      "Tema": "Cântico 31 e oração",
+      "Participacao": "O",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 1,
+      "Inicio": "10:00:00",
+      "Duracao": 14,
+      "Tema": "Por que ‘confiar em Jeová de todo o seu coração’?",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 0,
+      "Inicio": "10:15:00",
+      "Duracao": 0,
+      "Tema": "Série de discursos: Imite aqueles que confiaram em Jeová!",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 2,
+      "Inicio": "10:16:50.1000000",
+      "Duracao": 16,
+      "Tema": "• Baraque",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 3,
+      "Inicio": "10:32:00",
+      "Duracao": 15,
+      "Tema": "• A mulher sunamita",
+      "Participacao": "ENT",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 4,
+      "Inicio": "10:48:00",
+      "Duracao": 16,
+      "Tema": "• Daniel, Hananias, Misael e Azarias",
+      "Participacao": "ENT",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 0,
+      "Inicio": "11:05:00",
+      "Duracao": 0,
+      "Tema": "Cântico 57 e anúncios",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 5,
+      "Inicio": "11:15:00",
+      "Duracao": 19,
+      "Tema": "Ajude as pessoas a confiar no “Deus vivente e verdadeiro”",
+      "Participacao": "DE",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 6,
+      "Inicio": "11:35:00",
+      "Duracao": 29,
+      "Tema": "Batismo: “Seu Pai, que observa em secreto, o recompensará”",
+      "Participacao": "ENT",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 0,
+      "Inicio": "12:05:00",
+      "Duracao": 0,
+      "Tema": "Cântico 29",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 0,
+      "Inicio": "13:20:00",
+      "Duracao": 0,
+      "Tema": "Tarde",
+      "Exibir": true,
+      "Destacar": true,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 0,
+      "Inicio": "13:20:01",
+      "Duracao": 0,
+      "Tema": "Música",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 0,
+      "Inicio": "13:30:00",
+      "Duracao": 0,
+      "Tema": "Cântico 8 e oração",
+      "Participacao": "O",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 7,
+      "Inicio": "13:35:00",
+      "Duracao": 29,
+      "Tema": "Discurso para o público: Em quem você realmente pode confiar?",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 8,
+      "Inicio": "14:05:00",
+      "Duracao": 29,
+      "Tema": "Resumo de A Sentinela",
+      "Participacao": "PA",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 0,
+      "Inicio": "14:35:00",
+      "Duracao": 0,
+      "Tema": "Cântico 135 e anúncios",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 0,
+      "Inicio": "14:45:00",
+      "Duracao": 0,
+      "Tema": "Série de discursos: Confie na sabedoria de Jeová",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 9,
+      "Inicio": "14:45:01",
+      "Duracao": 14,
+      "Tema": "• Ao orientar seus filhos",
+      "Participacao": "DE",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 10,
+      "Inicio": "15:00:00",
+      "Duracao": 14,
+      "Tema": "• Ao fazer planos para o futuro",
+      "Participacao": "ENT",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 11,
+      "Inicio": "15:14:00",
+      "Duracao": 14,
+      "Tema": "• Ao enfrentar tentações",
+      "Participacao": "DE",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 12,
+      "Inicio": "15:30:00",
+      "Duracao": 29,
+      "Tema": "“Feliz é aquele que confia em Jeová\"",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    },
+    {
+      "Numero": 0,
+      "Inicio": "16:00:00",
+      "Duracao": 0,
+      "Tema": "Cântico 54 e oração",
+      "Participacao": "O",
+      "Exibir": true,
+      "Destacar": false,
+      "ExibirDetalhes": false,
+      "ExibirHora": true
+    }
+  ]
+}
