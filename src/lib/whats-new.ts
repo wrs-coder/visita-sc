@@ -16,6 +16,22 @@ export function shouldShowWhatsNew(opts: {
   return opts.hadPreviousUse;
 }
 
+/**
+ * Abre a janela sozinha nesta versão? Ajustes pequenos não merecem aviso;
+ * o conteúdo continua acessível em Configurações → Ver novidades.
+ */
+export function shouldAutoOpenWhatsNew(
+  opts: {
+    installed: string;
+    notesVersion: string;
+    seen: string | null;
+    hadPreviousUse: boolean;
+  },
+  autoShow: boolean,
+): boolean {
+  return autoShow && shouldShowWhatsNew(opts);
+}
+
 /** Evento para abrir a janela de novidades sob pedido (Configurações). */
 export const OPEN_WHATS_NEW_EVENT = "visita-sc:open-whats-new";
 
