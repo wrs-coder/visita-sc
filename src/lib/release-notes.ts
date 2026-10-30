@@ -102,9 +102,28 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.0.5";
+export const RELEASE_NOTES_VERSION = "5.0.6";
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "5.0.6",
+    sections: [
+      {
+        title: "Grandes Eventos: importar programa",
+        items: [
+          "O arquivo .etim agora pode ser escolhido no Android.",
+          "Importe também o programa do Circuito Manager (.json ou .csv).",
+          "Pelo .csv, os oradores já designados entram com o nome preenchido.",
+        ],
+      },
+      {
+        title: "Botões sempre visíveis",
+        items: [
+          "Na leitura do capítulo, \"Ponto alto\" e \"Concluído\" não ficam mais escondidos atrás da barra do celular.",
+        ],
+      },
+    ],
+  },
   {
     version: "5.0.5",
     sections: [
