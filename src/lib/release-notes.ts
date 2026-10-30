@@ -122,6 +122,13 @@ export const RELEASE_HISTORY: ReleaseEntry[] = [
           "Na leitura do capítulo, \"Ponto alto\" e \"Concluído\" não ficam mais escondidos atrás da barra do celular.",
         ],
       },
+      {
+        title: "Termos de Uso atualizados",
+        items: [
+          "Novos termos: quem desenvolve o app, ferramenta não oficial e conteúdos de terceiros.",
+          "O acesso por código também pede o aceite dos termos.",
+        ],
+      },
     ],
   },
   {
