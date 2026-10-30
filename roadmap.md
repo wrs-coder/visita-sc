@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] 5.0.8: painel com margens One UI/iOS e cabeçalho que encolhe ao rolar; salvar esboço sem "Erro" falso; exportar em partes; importar aceita ".bin"; tela cheia na leitura/esboço; sync registra motivo e tenta de novo; "O que há de novo" especial 5.0.5→5.0.8.
+
 - [x] 5.0.7: telas cheias aproveitam a tela (recuo só nas barras), botões do leitor no topo, destaque não abre ao rolar.
 
 - [x] 5.0.2 no aparelho: comando android:copy com conferência das telas, "Sobre este app" em Configurações, novidades mais confiáveis e área de texto estável com o teclado aberto.
