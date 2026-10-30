@@ -55,7 +55,7 @@ export function AppUpdatePrompt() {
   return (
     <div
       role="alert"
-      className="fixed inset-x-0 bottom-0 z-[140] border-t border-border bg-card/95 px-4 py-3 backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-[140] border-t border-border bg-card/95 px-4 pt-3 pb-safe backdrop-blur"
     >
       <div className="mx-auto flex max-w-md items-center gap-3">
         {firm ? (
