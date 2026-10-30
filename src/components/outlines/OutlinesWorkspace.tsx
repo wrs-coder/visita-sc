@@ -43,6 +43,7 @@ import {
 import { FloatingVersePanel } from "@/components/guest-workspace/FloatingVersePanel";
 import { useFocusChromeWhile } from "@/lib/focus-chrome";
 import { useImmersiveWhile } from "@/lib/immersive";
+import { describeLocalSaveError } from "@/lib/save-errors";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { isOfflineMode } from "@/lib/connection-mode";
@@ -639,6 +640,13 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
     };
     try {
       await persistNote(updated);
+    } catch (e) {
+      // Falha real ao gravar no aparelho: mantém o rascunho e explica o motivo.
+      toast.error(describeLocalSaveError(e));
+      setTimeout(() => setSaving(false), 300);
+      return;
+    }
+    try {
       clearNoteDraft(updated.id);
       setNotes((all) => {
         const idx = all.findIndex((n) => n.id === updated.id);
@@ -661,7 +669,10 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
       }
       toast.success(t("fieldConsiderations.saved"));
     } catch {
-      toast.error(t("common.errorGeneric", { defaultValue: "Erro" }));
+      // Já está salvo no aparelho; só o envio/atualização falhou.
+      toast.success(t("fieldConsiderations.saved"), {
+        description: "Salvo no aparelho. Será sincronizado quando a conexão voltar.",
+      });
     } finally {
       setTimeout(() => setSaving(false), 300);
     }

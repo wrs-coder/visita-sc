@@ -202,11 +202,8 @@ function lsAll(): FieldNote[] {
   }
 }
 function lsWrite(all: FieldNote[]) {
-  try {
-    localStorage.setItem(LS_FALLBACK_KEY, JSON.stringify(all));
-  } catch {
-    /* quota */
-  }
+  // Sem engolir falta de espaço: quem salva precisa saber que não gravou.
+  localStorage.setItem(LS_FALLBACK_KEY, JSON.stringify(all));
 }
 
 /** Lista todas as notas NÃO excluídas. Para a lixeira, use listTrashedNotes(). */
