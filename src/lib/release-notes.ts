@@ -104,6 +104,13 @@ const OLD_SECTIONS: ReleaseSection[] = [
 
 export const RELEASE_NOTES_VERSION = "5.0.9";
 
+/**
+ * Aviso automático "O que há de novo" nesta versão: desligado a pedido.
+ * O texto continua em Configurações → Ver novidades e no aviso de atualização.
+ * Troque para true para voltar a abrir sozinho na primeira abertura após atualizar.
+ */
+export const WHATS_NEW_AUTO_SHOW = false;
+
 export const RELEASE_HISTORY: ReleaseEntry[] = [
   {
     version: "5.0.9",
