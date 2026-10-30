@@ -615,7 +615,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
 
   async function handleImportDocx() {
     if (!activeType) return;
-    const file = await pickFile(".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    const file = await pickFile(".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/octet-stream");
     if (!file) return;
     try {
       const { importDocx } = await import("@/lib/docx-import");
@@ -1788,7 +1788,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept="application/json"
+                        accept="application/json,.json,application/octet-stream"
                         className="hidden"
                         onChange={(e) => {
                           const f = e.target.files?.[0];

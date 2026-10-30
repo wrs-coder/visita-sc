@@ -469,8 +469,8 @@ function WorkspaceSheet({ backupKey, kind, open, onOpenChange, data, update, fol
               <button type="button" className={row} onClick={() => planRef.current?.click()}><FileText className="h-4 w-4 text-muted-foreground" />{t("guestWs.importPlan", { defaultValue: "Importar plano (.json/.zip)" })}</button>
             </div>
             <p className="text-[11px] text-muted-foreground">{t("guestWs.backupHint", { defaultValue: "Funciona sem internet. Os arquivos ficam no seu aparelho." })}</p>
-            <input ref={fileRef} type="file" accept=".zip,application/zip" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doRestore(f, "replace"); }} />
-            <input ref={planRef} type="file" accept=".json,.zip,application/json,application/zip" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doRestore(f, "merge"); }} />
+            <input ref={fileRef} type="file" accept=".zip,application/zip,application/octet-stream" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doRestore(f, "replace"); }} />
+            <input ref={planRef} type="file" accept=".json,.zip,application/json,application/zip,application/octet-stream" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) doRestore(f, "merge"); }} />
           </section>
 
           <section className="space-y-1.5">

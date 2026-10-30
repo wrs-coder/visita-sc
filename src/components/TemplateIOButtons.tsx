@@ -47,7 +47,7 @@ export function TemplateIOButtons({ filenameBase, onExport, onImport, disabled }
   };
 
   const triggerImport = async () => {
-    const f = await pickFile("application/json,.json");
+    const f = await pickFile("application/json,.json,application/octet-stream");
     if (f) doImport(f);
   };
 

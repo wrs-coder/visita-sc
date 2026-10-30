@@ -140,7 +140,7 @@ function Page() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4 mr-1" />Importar</Button>
           <Button size="sm" onClick={() => setEdit(emptyPkg())}><Plus className="h-4 w-4 mr-1" />Novo</Button>
-          <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importFile(f); e.target.value = ""; }} />
+          <input ref={fileRef} type="file" accept="application/json,.json,application/octet-stream" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importFile(f); e.target.value = ""; }} />
         </div>
       </div>
 

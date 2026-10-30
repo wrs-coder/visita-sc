@@ -493,7 +493,7 @@ function Page() {
               <Button
                 variant="outline"
                 onClick={async () => {
-                  const f = await pickFile("application/zip,application/json,.zip,.json");
+                  const f = await pickFile("application/zip,application/json,.zip,.json,application/octet-stream");
                   if (f) pickRestoreFile(f);
                 }}
                 disabled={busyBackup !== null}
