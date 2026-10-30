@@ -2,7 +2,15 @@
 // A barra de status do celular some e volta por alguns segundos ao puxar do topo.
 // Só presentação: preferência fica no aparelho; no navegador nada acontece.
 import { useEffect, useSyncExternalStore } from "react";
-import { isCapacitorNative } from "@/lib/platform";
+
+function isCapacitorNative(): boolean {
+  try {
+    const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
+    return !!w.Capacitor?.isNativePlatform?.();
+  } catch {
+    return false;
+  }
+}
 
 const KEY = "visitasc.immersive.enabled";
 const listeners = new Set<() => void>();

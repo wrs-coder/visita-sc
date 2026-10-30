@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { FloatingVersePanel } from "@/components/guest-workspace/FloatingVersePanel";
 import { useFocusChromeWhile } from "@/lib/focus-chrome";
+import { useImmersiveWhile } from "@/lib/immersive";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { isOfflineMode } from "@/lib/connection-mode";
@@ -2633,6 +2634,7 @@ function FullscreenOutline({
 
   const showTimer = (note.type ?? "field_consideration") !== "talk_notes";
   const [fsSlot, setFsSlot] = useState<HTMLDivElement | null>(null);
+  useImmersiveWhile(true);
 
   return (
     <div data-back-closable className="webkit-stable-layer fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none bar-top bar-bottom safe-x-landscape">
