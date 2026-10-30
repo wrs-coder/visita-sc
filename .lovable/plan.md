@@ -38,16 +38,21 @@ O que vou mudar, seguindo o padrão do iOS e da One UI:
 
 ## (02) Erro ao salvar, exportar e importar
 
-O que encontrei: no app instalado, o "Salvar/Exportar" grava o arquivo inteiro de uma só vez no celular. Arquivos grandes, como um backup completo, um esboço com anexos ou um zip de pasta, passam do limite de envio entre o app e o Android e dão erro. Os anexos já foram corrigidos com gravação em partes. Essa rotina geral ficou de fora.
+**A. "Erro" ao salvar no editor da aba Esboços (o caso que você viu)**
+
+O que encontrei: o Salvar primeiro grava o esboço no aparelho e depois tenta enviá-lo para a nuvem. As duas etapas compartilham o mesmo aviso de erro. Se só o envio falhar, por exemplo com internet fraca, aparece "Erro" mesmo com o esboço já gravado. Hoje há falhas de sincronização desse tipo nos registros. A mensagem também não diz o motivo. E, se o app precisar usar a reserva interna e faltar espaço, o problema é ignorado sem aviso.
 
 O que vou fazer:
-1. Gravar o arquivo exportado em partes, do mesmo jeito que os anexos já fazem.
-2. Primeiro tentar a pasta "Documentos/VisitaSC". Se ela falhar, usar a pasta do app. Se o compartilhamento não abrir, mostrar "Arquivo salvo em ..." em vez de um erro.
-3. Trocar a mensagem técnica por uma clara: "Não foi possível salvar. Tente novamente ou escolha Compartilhar."
-4. Importar: o seletor passa a aceitar arquivos que o celular marca como ".bin", conferindo depois pelo nome e pelo conteúdo, como já foi feito nos Grandes Eventos. Vale para backup, DOCX e .jwlibrary.
-5. Testes automáticos para a gravação em partes e para o caminho de reserva.
+1. Separar as etapas. Se gravou no aparelho, mostrar "Salvo". Se o envio falhar: "Salvo no aparelho. Será sincronizado quando a conexão voltar."
+2. Só mostrar erro quando a gravação no aparelho falhar de fato, com o motivo claro (por exemplo, "Espaço do aparelho cheio"). O rascunho fica guardado.
+3. A reserva interna passa a avisar quando faltar espaço.
+4. Testes automáticos para esses dois casos.
 
-Ainda não sei: qual mensagem apareceu e em qual tela. Se puder, envie uma foto do erro. Assim confirmo que é este problema e não outro.
+**B. Exportar e salvar arquivos no celular**
+O app instalado grava o arquivo exportado inteiro de uma vez. Arquivos grandes (backup, esboço com anexos, zip) podem passar do limite do Android. Vou gravar em partes, como os anexos já fazem. Se a pasta "Documentos/VisitaSC" falhar, uso a pasta do app. As mensagens ficam claras.
+
+**C. Importar**
+O seletor aceita arquivos que o celular marca como ".bin" e confere depois pelo nome e pelo conteúdo. Vale para backup, DOCX e .jwlibrary.
 
 ## (03) Tela cheia com barra escondida (puxar para baixo)
 
