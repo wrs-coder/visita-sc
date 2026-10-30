@@ -102,13 +102,20 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.0.8";
+export const RELEASE_NOTES_VERSION = "5.0.9";
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
   {
-    version: "5.0.8",
-    subtitle: "Edição especial — reúne as novidades das versões 5.0.5 a 5.0.8.",
+    version: "5.0.9",
+    subtitle: "Edição especial — reúne as novidades das versões 5.0.5 a 5.0.9.",
     sections: [
+      {
+        title: "Painel com mais espaço",
+        items: [
+          "O cabeçalho some ao rolar o painel para baixo e volta ao rolar para cima, como no iOS e na One UI.",
+          "Perto do topo, ao digitar ou ao trocar de tela, ele fica sempre visível.",
+        ],
+      },
       {
         title: "Grandes Eventos do Circuito",
         items: [

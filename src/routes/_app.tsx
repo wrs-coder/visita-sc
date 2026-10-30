@@ -146,7 +146,7 @@ function AppLayout() {
     if (redirectTo) nav({ to: redirectTo });
   }, [redirectTo, nav]);
 
-  const headerHidden = useHideOnScroll(mobileMenuOpen);
+  const headerHidden = useHideOnScroll(mobileMenuOpen, location.pathname);
 
   if (loading || redirectTo) {
     return (
