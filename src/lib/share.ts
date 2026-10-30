@@ -79,6 +79,15 @@ function isCapacitorNative(): boolean {
   return Boolean((window as unknown as { androidBridge?: unknown }).androidBridge);
 }
 
+/** Fatias múltiplas de 3 bytes, para o Base64 de cada parte poder ser concatenado. */
+export const BRIDGE_CHUNK_BYTES = 3 * 174_762; // ~512 KB
+export function splitBlobForBridge(blob: Blob, size = BRIDGE_CHUNK_BYTES): Blob[] {
+  if (blob.size <= size) return [blob];
+  const out: Blob[] = [];
+  for (let off = 0; off < blob.size; off += size) out.push(blob.slice(off, off + size));
+  return out;
+}
+
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -104,22 +113,27 @@ async function saveViaCapacitor(blob: Blob, filename: string): Promise<SaveOutco
     import("@capacitor/filesystem"),
     import("@capacitor/share"),
   ]);
-  const data = await blobToBase64(blob);
   const safeFilename =
     filename.replace(/[\\/:*?"<>|]+/g, "-").replace(/^\.+/, "file") || "export.dat";
   const path = `VisitaSC/${safeFilename}`;
+  // Grava em partes: um único Base64 grande estoura a ponte do Capacitor.
+  const writeChunked = async (directory: (typeof Directory)[keyof typeof Directory]) => {
+    const parts = splitBlobForBridge(blob);
+    for (let i = 0; i < parts.length; i++) {
+      const data = await blobToBase64(parts[i]);
+      if (i === 0) await Filesystem.writeFile({ path, data, directory, recursive: true });
+      else await Filesystem.appendFile({ path, data, directory });
+    }
+  };
   let directory = Directory.Documents;
-
   try {
-    await Filesystem.writeFile({ path, data, directory, recursive: true });
-  } catch (documentsError) {
-    directory = Directory.External;
+    await writeChunked(directory);
+  } catch {
+    directory = Directory.Data;
     try {
-      await Filesystem.writeFile({ path, data, directory, recursive: true });
-    } catch (externalError) {
-      throw new Error(
-        `Não foi possível salvar o arquivo no armazenamento nativo. ${(externalError as Error)?.message || (documentsError as Error)?.message || ""}`.trim(),
-      );
+      await writeChunked(directory);
+    } catch {
+      throw new Error("Não foi possível salvar o arquivo. Tente de novo ou libere espaço no aparelho.");
     }
   }
 
@@ -133,7 +147,10 @@ async function saveViaCapacitor(blob: Blob, filename: string): Promise<SaveOutco
   } catch (err) {
     const name = (err as Error)?.name ?? "";
     const msg = (err as Error)?.message ?? "";
-    if (!/cancel/i.test(name) && !/cancel/i.test(msg)) throw err;
+    if (!/cancel/i.test(name) && !/cancel/i.test(msg)) {
+      // O arquivo já está salvo; só o compartilhamento não abriu.
+      return "saved";
+    }
   }
   return "shared";
 }
