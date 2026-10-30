@@ -146,6 +146,8 @@ function AppLayout() {
     if (redirectTo) nav({ to: redirectTo });
   }, [redirectTo, nav]);
 
+  const headerHidden = useHideOnScroll(mobileMenuOpen);
+
   if (loading || redirectTo) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -315,7 +317,6 @@ function AppLayout() {
     </nav>
   );
 
-  const headerHidden = useHideOnScroll(mobileMenuOpen);
   return (
     <div className="min-h-screen bg-background">
       {/* Onda 6.6 — Skip-to-content (WCAG 2.4.1). */}
