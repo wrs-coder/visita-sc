@@ -18,6 +18,7 @@ import { getInstalledVersion } from "@/lib/app-update-check";
 import {
   RELEASE_HISTORY,
   RELEASE_NOTES_VERSION,
+  WHATS_NEW_AUTO_SHOW,
   type ReleaseSection,
 } from "@/lib/release-notes";
 
@@ -44,7 +45,7 @@ import {
   OPEN_WHATS_NEW_EVENT,
   WHATS_NEW_KEY,
   hasPreviousUse,
-  shouldShowWhatsNew,
+  shouldAutoOpenWhatsNew,
 } from "@/lib/whats-new";
 
 function read(key: string): string | null {
@@ -93,12 +94,15 @@ export function WhatsNewDialog() {
     void (async () => {
       const installed = await getInstalledVersion();
       const seen = read(WHATS_NEW_KEY);
-      const show = shouldShowWhatsNew({
-        installed,
-        notesVersion: RELEASE_NOTES_VERSION,
-        seen,
-        hadPreviousUse: previousUse,
-      });
+      const show = shouldAutoOpenWhatsNew(
+        {
+          installed,
+          notesVersion: RELEASE_NOTES_VERSION,
+          seen,
+          hadPreviousUse: previousUse,
+        },
+        WHATS_NEW_AUTO_SHOW,
+      );
       if (!show) {
         // Instalação nova: marca como visto para não aparecer depois.
         if (installed === RELEASE_NOTES_VERSION && seen !== RELEASE_NOTES_VERSION) {
