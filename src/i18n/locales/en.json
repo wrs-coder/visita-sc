@@ -170,7 +170,10 @@
     },
     "tabPersonal": "Personal data",
     "tabFeatures": "App features",
-    "tabSettings": "Settings"
+    "tabSettings": "Settings",
+    "immersiveTitle": "Display",
+    "immersiveLabel": "Full screen while reading and in outlines",
+    "immersiveHelp": "Hides the clock and battery bar in the Bible, full-screen outline and editor. Swipe down from the top to see it."
   },
   "commandPalette": {
     "open": "Open quick search",

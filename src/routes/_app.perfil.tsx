@@ -19,7 +19,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee, Globe, Languages, UserCircle2 } from "lucide-react";
+import { User as UserIcon, Mail, KeyRound, ShieldCheck, Download, Upload, Loader2, Coffee, Globe, Languages, UserCircle2, Maximize2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { setImmersivePref, useImmersivePref } from "@/lib/immersive";
 import { SupportDeveloperContent } from "@/components/SupportDeveloper";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
@@ -472,6 +474,7 @@ function Page() {
           <p className="text-xs text-muted-foreground">{t("profile.languageHelp")}</p>
         </CardContent>
       </Card>
+      <ImmersiveSettingsCard />
       {role === "superintendent" && (
         <Card className="shadow-card border-primary/30">
           <CardHeader>
@@ -542,5 +545,26 @@ function Page() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+function ImmersiveSettingsCard() {
+  const { t } = useTranslation();
+  const on = useImmersivePref();
+  return (
+    <Card className="shadow-card">
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Maximize2 className="h-4 w-4 text-primary" /> {t("profile.immersiveTitle")}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <Label htmlFor="immersive-pref" className="text-sm font-medium">{t("profile.immersiveLabel")}</Label>
+          <Switch id="immersive-pref" checked={on} onCheckedChange={setImmersivePref} />
+        </div>
+        <p className="text-xs text-muted-foreground">{t("profile.immersiveHelp")}</p>
+      </CardContent>
+    </Card>
   );
 }

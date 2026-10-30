@@ -170,7 +170,10 @@
     },
     "tabPersonal": "Dados pessoais",
     "tabFeatures": "Recursos do aplicativo",
-    "tabSettings": "Configurações"
+    "tabSettings": "Configurações",
+    "immersiveTitle": "Tela",
+    "immersiveLabel": "Tela cheia na leitura e no esboço",
+    "immersiveHelp": "Esconde a barra de hora e bateria na Bíblia, no esboço em tela cheia e no editor. Puxe do topo para ver."
   },
   "commandPalette": {
     "open": "Abrir busca rápida",
