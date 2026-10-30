@@ -82,6 +82,12 @@ Como funcionaria nessas telas:
 - Uma opção em Configurações: "Tela cheia na leitura e no esboço" (ligada por padrão), salva só no aparelho.
 - Na versão web nada muda.
 
+## (04) Outras falhas encontradas
+
+- **Cópia sem internet de algumas listas**: hoje a cópia das reuniões (meio de semana, fim de semana, pioneiros, anciãos e servos) e dos temas de discurso não foi baixada. Nada se perde, mas o app não registra o motivo. Essas listas estão corretas no servidor. A causa ainda não está confirmada; pode ser conexão ou tempo esgotado. Vou registrar o motivo real e tentar baixar de novo só a lista que falhou, com uma espera maior a cada tentativa.
+- **Avisos de "inputValidator"**: não quebram nada. Ficam como estão, como combinamos.
+- O app compila sem erros. Os registros não mostram outros erros nas telas.
+
 ## Versão e "O que há de novo" especial
 Subir para 5.0.8 (próximo versionCode). As versões 5.0.5, 5.0.6 e 5.0.7 não chegaram ao site nem à Play Store. Por isso, o aviso desta vez será uma edição especial que junta tudo em grupos por assunto, sem uma lista por versão:
 
