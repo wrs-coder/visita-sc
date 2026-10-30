@@ -116,7 +116,7 @@ export interface ProgramImport { format: "etim" | "circuit-manager"; title: stri
 
 /** Detecta o formato (.etim ou Circuito Manager) e devolve as partes. */
 export function parseProgramFile(text: string): ProgramImport {
-  const clean = text.replace(/^\uFEFF/, "");
+  const clean = text.replace(/^\uFEFF+/, "");
   if (clean.length > ETIM_MAX_BYTES) throw new Error("Arquivo muito grande (máx. 1 MB).");
   let data: unknown;
   try { data = JSON.parse(clean); } catch { throw new Error("Este arquivo não é um programa válido."); }
