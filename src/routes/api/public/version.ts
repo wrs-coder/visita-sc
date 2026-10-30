@@ -7,7 +7,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { RELEASE_NOTES } from "@/lib/release-notes";
 import { corsHeaders, isAllowedOrigin } from "@/lib/cors";
 
-export const LATEST_APP_VERSION = "5.0.8";
+export const LATEST_APP_VERSION = "5.0.9";
 export const MIN_SUPPORTED_APP_VERSION = "4.2.0";
 
 export { RELEASE_NOTES };

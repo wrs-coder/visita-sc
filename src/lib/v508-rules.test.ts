@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shouldHide } from "./use-hide-on-scroll";
+import { shouldHide, pageScrollY } from "./use-hide-on-scroll";
 import { splitBlobForBridge, BRIDGE_CHUNK_BYTES } from "./share";
 import { describeLocalSaveError } from "./save-errors";
 import { describeSyncError, pullTable } from "./local-sync";
@@ -29,8 +29,12 @@ describe("5.0.8", () => {
     expect(n).toBe(2);
   });
   it("novidades especiais reúnem 5.0.5 a 5.0.8 em uma entrada", () => {
-    expect(RELEASE_HISTORY[0].version).toBe("5.0.8");
+    expect(RELEASE_HISTORY[0].version).toBe("5.0.9");
     expect(RELEASE_HISTORY.map((r) => r.version)).not.toContain("5.0.7");
     expect(RELEASE_HISTORY[1].version).toBe("5.0.4");
+  });
+  it("lê a rolagem do body quando a janela fica parada (Android)", () => {
+    expect(pageScrollY({ windowY: 0, htmlTop: 0, bodyTop: 320 })).toBe(320);
+    expect(pageScrollY({ windowY: 150, htmlTop: 0, bodyTop: 0 })).toBe(150);
   });
 });

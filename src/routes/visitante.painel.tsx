@@ -21,7 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/hooks/use-theme";
-import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
+import { useHideOnScroll } from "@/lib/use-hide-on-scroll";
 import { cn } from "@/lib/utils";
 import { format, parseISO, addDays } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
