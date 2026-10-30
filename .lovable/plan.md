@@ -64,3 +64,30 @@ Observação: o texto que você enviou pula da seção 4 para a 10. Na versão f
 - Ajustar a descrição em `head()` de `/termos-uso` para mencionar o aviso de ferramenta não oficial.
 - Opcional: incluir uma linha no "O que há de novo" da próxima versão: "Termos de Uso atualizados".
 - Teste simples: confirmar que os termos contêm o e-mail de contato e a cláusula de não afiliação.
+
+## Aceite obrigatório dos termos (resposta à sua pergunta)
+
+Sim. O Google Play espera que, quando o app cria conta e guarda dados, o usuário veja e aceite os termos e a privacidade antes de usar. Situação atual:
+
+- **Cadastro de superintendente e de ancião:** já exige marcar "Li e aceito os Termos de Uso e a Política de Privacidade". Está correto.
+- **Acesso por código (esposa e anciãos visitantes):** entra sem aceite. **Esta é a lacuna a fechar.**
+- **Quem já tem conta:** aceitou a versão antiga e não precisa aceitar a nova.
+
+### O que será acrescentado
+1. **Acesso por código:** na primeira entrada aparece a mesma caixa "Li e aceito…", e o botão Entrar só funciona depois de marcar. O aceite fica guardado no aparelho e não é pedido de novo.
+2. **Novo aceite quando os termos mudarem de forma importante:** cada versão dos termos ganha uma data (ex.: 30/10/2026). Quem aceitou uma versão anterior vê uma janela uma única vez, com o resumo das mudanças e os botões "Ler termos" e "Aceitar e continuar". Isso vale para superintendente, anciãos e esposa, e funciona sem internet.
+3. **Ajustes simples não pedem novo aceite.** Para correções de texto, basta não trocar a data.
+
+```text
+┌────────────────────────────┐
+│ Termos de Uso atualizados  │
+│ Versão de 30/10/2026       │
+│ • Quem desenvolve o app    │
+│ • Ferramenta não oficial   │
+│ • Conteúdos de terceiros   │
+│ [ Ler termos ]             │
+│ [ Aceitar e continuar ]    │
+└────────────────────────────┘
+```
+
+Técnico: `TERMS_VERSION` em `terms-content.tsx`; aceite guardado só no aparelho (localStorage por usuário ou por código de convite); banco de dados sem mudança; a janela aparece depois do login ou do desbloqueio e antes do "O que há de novo"; testes da regra "versão antiga → pede aceite; versão atual → não pede".
