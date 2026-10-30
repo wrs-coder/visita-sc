@@ -82,8 +82,50 @@ Como funcionaria nessas telas:
 - Uma opção em Configurações: "Tela cheia na leitura e no esboço" (ligada por padrão), salva só no aparelho.
 - Na versão web nada muda.
 
-## Versão
-Subir para 5.0.8 (versionCode 37 ou o próximo número), com as novidades dessa versão no "O que há de novo".
+## Versão e "O que há de novo" especial
+Subir para 5.0.8 (próximo versionCode). As versões 5.0.5, 5.0.6 e 5.0.7 não chegaram ao site nem à Play Store. Por isso, o aviso desta vez será uma edição especial que junta tudo em grupos por assunto, sem uma lista por versão:
+
+```text
++---------------------------+
+|  ✦ Novidades da 5.0.8     |
+|  Edição especial — reúne  |
+|  as versões 5.0.5 a 5.0.8 |
+|---------------------------|
+| 🗓 Grandes Eventos        |
+|  • Criar evento e partes  |
+|  • Link com PIN ou link   |
+|    pessoal por orador     |
+|  • Importar .etim e       |
+|    Circuito Manager       |
+|    (.json e .csv)         |
+| 📥 Importações            |
+|  • Itinerário .ics / .csv |
+|  • Notas do JW Library    |
+| 📖 Estudo e Anotações     |
+|  • Bíblia, Pesquisa e     |
+|    Anotações em um lugar  |
+|  • Leitura com mais tela, |
+|    botões no topo e       |
+|    destaque sem toques    |
+|    acidentais             |
+| 📱 Tela e uso diário      |
+|  • Painel com mais espaço |
+|  • Botões longe da barra  |
+|    do celular             |
+|  • Tela cheia na leitura  |
+|  • Salvar esboço sem      |
+|    "Erro" falso           |
+| 📄 Termos de Uso          |
+|  • Novo texto e aceite    |
+|---------------------------|
+|  ▸ Versões anteriores     |
+|        [ Entendi ]        |
++---------------------------+
+```
+
+- A edição especial aparece uma vez para todos que atualizarem, inclusive para quem já viu o aviso de alguma versão entre 5.0.5 e 5.0.7.
+- No histórico ("Versões anteriores"), as versões 5.0.5 a 5.0.7 saem da lista. O conteúdo delas passa a fazer parte desta edição, e a lista começa na 5.0.4.
+- Os testes de versão continuam valendo: a primeira entrada é a versão atual e não há números repetidos.
 
 ## Detalhes técnicos
 - `src/routes/_app.tsx`: troca `p-4 safe-bottom-extra` por `px-3 pt-3 sm:p-4` mais um novo utilitário `.safe-bottom-content` (`calc(0.75rem + inset-bottom)`). `safe-bottom-extra` fica no CSS para não quebrar outros usos.
