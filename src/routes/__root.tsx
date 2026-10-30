@@ -20,6 +20,7 @@ import { OfflineStatusBar } from "@/components/OfflineStatusBar";
 import { AppOriginDiagnostics } from "@/components/AppOriginDiagnostics";
 import { AppUpdatePrompt } from "@/components/AppUpdatePrompt";
 import { WhatsNewDialog } from "@/components/WhatsNewDialog";
+import { TermsUpdateDialog } from "@/components/auth/TermsUpdateDialog";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { armBootGuard, markAppMounted } from "@/lib/boot-guard";
 import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-persister";
@@ -294,6 +295,7 @@ function RootComponent() {
         <AppOriginDiagnostics />
         <AppUpdatePrompt />
         <WhatsNewDialog />
+        <TermsUpdateDialog />
         <Outlet />
         <Toaster richColors position="top-center" />
       </AuthProvider>

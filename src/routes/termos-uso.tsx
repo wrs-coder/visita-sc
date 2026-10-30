@@ -10,7 +10,7 @@ export const Route = createFileRoute("/termos-uso")({
   head: () => ({
     meta: [
       { title: "Termos de Uso — Visita SC" },
-      { name: "description", content: "Regras de uso do Visita SC: responsabilidades da conta, uso adequado dos dados da congregação e limites do serviço." },
+      { name: "description", content: "Termos de Uso do Visita SC, ferramenta independente e não oficial: conta, uso adequado, conteúdos de terceiros e responsabilidades." },
       { property: "og:title", content: "Termos de Uso — Visita SC" },
       { property: "og:description", content: "Condições para usar o Visita SC na organização das visitas do superintendente de circuito." },
       { property: "og:type", content: "article" },

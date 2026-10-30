@@ -69,3 +69,4 @@
 - [x] Importar .etim no Android (seletor aceita qualquer arquivo) e CSV do Circuito Manager
 - [x] Botões da leitura do capítulo acima da barra do Android (S22 Ultra)
 - [x] Versão 5.0.6 / versionCode 35
+- [x] Termos de Uso novos + aceite no acesso por código + reaceite por versão
