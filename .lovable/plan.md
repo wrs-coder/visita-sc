@@ -1,93 +1,31 @@
-# Termos de Uso do Visita SC: o que vale a pena incluir
+# Telas cheias: usar o máximo da tela sem esconder botões (padrão iOS / One UI)
 
-## Avaliação de cada ponto
+## O que está errado hoje
+O ajuste anterior colocou o "espaço de segurança" na tela inteira (em cima, embaixo e nas laterais) da leitura do capítulo, do editor da esposa, da tela cheia do esboço e da anotação de campo. Resultado: aparecem faixas vazias de fundo acima do cabeçalho, abaixo dos botões e nas bordas — no A72 isso soma muito espaço perdido. Além disso, a linha "Ponto alto / Concluído" e a barra do versículo são altas (bordas e margens generosas).
 
-| Ponto | Incluir? | Por quê / ajuste |
-|---|---|---|
-| 1. Aceitação e titular | **Sim** | Hoje os termos não dizem quem responde pelo app nem como entrar em contato. Incluir o nome "desenvolvedor individual independente" e o e-mail wrscircuito@gmail.com. |
-| 2. Ferramenta não oficial, sem afiliação | **Sim, é o mais importante** | O app cita JW Library, Tradução do Novo Mundo e importa arquivos dessas fontes. Deixar claro que não tem ligação com a organização protege você e evita confusão. |
-| 3. Finalidade | **Sim, juntando com a seção 1 atual** | Corrigir "para fazer organizar" e manter quem usa o app: superintendente, anciãos e esposa. Manter a frase "não fornece conteúdo doutrinário nem substitui publicações oficiais". |
-| 4. Conteúdos de terceiros | **Sim, com um ajuste** | Acrescentar que a Bíblia e as anotações do JW Library **vêm de arquivos que o próprio usuário importa no aparelho**, e que o app não distribui nem inclui esses textos. Isso corresponde ao funcionamento real e reforça a proteção. |
-| 10. Uso permitido | **Sim, junto com a seção 4 atual (Uso adequado)** | Acrescentar a proibição de copiar em massa ou redistribuir os textos exibidos. |
-| 11. Garantias e responsabilidade | **Sim, junto com a seção 6 atual (Disponibilidade)** | Tom equilibrado e respeita o Código de Defesa do Consumidor. Acrescentar: "faça backups; o desenvolvedor não responde por perda de dados guardados só no aparelho". |
-| 12. Alterações | **Sim, em versão simples** | Hoje o app não pede um novo aceite quando os termos mudam. Proposta: avisar as mudanças importantes no "O que há de novo" e mostrar a data da versão em vigor no topo da página. Um novo aceite obrigatório pode ficar para depois, se você quiser. |
-| 13. Lei aplicável e foro | **Sim** | Lei brasileira, sem arbitragem obrigatória, e o consumidor mantém os direitos do lugar onde mora. Isso é adequado também para usuários de Angola e de outros países. |
+## Como iOS e One UI fazem
+- O fundo das barras (topo e rodapé) se estende até a borda física da tela, por baixo da barra de status e da barra de gestos.
+- Só o conteúdo clicável é empurrado para dentro, exatamente o tamanho da barra do sistema — nada a mais.
+- Laterais só recebem espaço quando existe recorte real (celular deitado).
+- Barras de ação compactas (cerca de 44–48 px de toque).
 
-Observação: o texto que você enviou pula da seção 4 para a 10. Na versão final, a numeração fica corrida.
-
-## Estrutura final proposta (12 seções)
-
-```text
-1.  Quem somos e aceitação            (novo: titular + contato)
-2.  Ferramenta independente           (novo: sem afiliação, marcas)
-3.  Finalidade                        (atual 1 + ponto 3)
-4.  Sua conta                         (atual 2, sem mudança)
-5.  Dados de outras pessoas           (atual 3, sem mudança)
-6.  Uso adequado                      (atual 4 + ponto 10)
-7.  Conteúdo pessoal e backups        (atual 5, sem mudança)
-8.  Conteúdos de terceiros            (novo: ponto 4 + arquivos importados pelo usuário)
-9.  Disponibilidade e responsabilidade(atual 6 + ponto 11)
-10. Privacidade                       (atual 7, sem mudança)
-11. Alterações                        (atual 8 + aviso no app e data da versão)
-12. Lei aplicável                     (novo: ponto 13)
-     "Última atualização: 30/10/2026"
-```
-
-## Prévia na tela (celular)
-
-```text
-┌────────────────────────────┐
-│ ✕                 Visita SC│
-│ 📄 Termos de Uso           │
-│ Última atualização 30/10/26│
-│                            │
-│ 1. Quem somos e aceitação  │
-│ O Visita SC é desenvolvido │
-│ por um desenvolvedor inde- │
-│ pendente. Contato: wrs...  │
-│                            │
-│ 2. Ferramenta independente │
-│ Não é afiliado à Watch     │
-│ Tower... nem a entidade    │
-│ ligada às Testemunhas...   │
-│ ...                        │
-└────────────────────────────┘
-```
-
-## O que não muda
-- Telas de login, cadastro e aceite: o mesmo texto aparece onde já aparece hoje.
-- Política de Privacidade: continua separada, só é mencionada nos termos.
-- Nenhum dado, conta ou banco de dados é alterado.
+## O que vou mudar
+1. **Leitura do capítulo (esposa e superintendente)**
+   - Tirar o espaço da tela inteira.
+   - Cabeçalho "Voltar" pinta o fundo até o topo; só ele recebe o recuo da barra de status.
+   - Rodapé "Ponto alto / Concluído": fundo vai até a borda inferior, botões ficam logo acima da barra de gestos; altura reduzida (botões 40 px, margens menores).
+   - Quando a barra do versículo estiver aberta, ela fica colada ao rodapé sem borda dupla; o recuo inferior é aplicado uma vez só, na última barra.
+   - Texto do capítulo usa toda a altura restante.
+2. **Editor da esposa, tela cheia do esboço e anotação de campo em tela cheia**: mesma regra — recuo só no cabeçalho e no rodapé reais, nunca na tela inteira; laterais só com recorte.
+3. **Aviso de atualização** já está correto (fundo até a borda, recuo só no conteúdo) — mantém.
+4. **Recuo sem exagero**: o valor vem do próprio Android, usando o maior entre os dois que ele informa (nunca a soma), sem mínimo extra nas telas cheias. Celular com 3 botões, com gestos ou sem barra: cada um recebe só o necessário.
+5. **"Ponto alto" e "Concluído" sobem para a linha do topo**, junto de "Voltar" e "Livro capítulo · %". O rodapé deixa de existir — o texto ganha toda essa altura. Visual estilo iOS/One UI: Voltar (seta) à esquerda, título central encurtado, à direita um botão de ícone "+ Ponto alto" e o botão "Concluído" em formato pílula compacto (vira "Lido · próximo" quando já lido). Em telas estreitas o título encurta com reticências, nunca empurra os botões.
+6. **Barra de destaque menos sensível**: só abre com um toque firme no versículo, nunca ao arrastar a tela. Regras: se o dedo se mover mais de ~10 px ou a página rolar durante o toque, é rolagem e nada abre; toque que dura mais de ~600 ms sem seleção de texto também não abre. Selecionar um trecho com o dedo (seleção de texto) continua abrindo a barra para aquele trecho. Com a barra aberta, rolar não a fecha; o X continua fechando.
+7. Versão 5.0.7 com nota "Leitura em tela cheia aproveita mais a tela; botões no topo; destaque não abre ao rolar".
 
 ## Detalhes técnicos
-- Atualizar só `TERMS_SECTIONS` em `src/components/auth/terms-content.tsx` e acrescentar uma linha com a data de atualização em `TermsContent`. A página `/termos-uso` e os outros lugares que usam o componente passam a mostrar o novo texto automaticamente.
-- Ajustar a descrição em `head()` de `/termos-uso` para mencionar o aviso de ferramenta não oficial.
-- Opcional: incluir uma linha no "O que há de novo" da próxima versão: "Termos de Uso atualizados".
-- Teste simples: confirmar que os termos contêm o e-mail de contato e a cláusula de não afiliação.
-
-## Aceite obrigatório dos termos (resposta à sua pergunta)
-
-Sim. O Google Play espera que, quando o app cria conta e guarda dados, o usuário veja e aceite os termos e a privacidade antes de usar. Situação atual:
-
-- **Cadastro de superintendente e de ancião:** já exige marcar "Li e aceito os Termos de Uso e a Política de Privacidade". Está correto.
-- **Acesso por código (esposa e anciãos visitantes):** entra sem aceite. **Esta é a lacuna a fechar.**
-- **Quem já tem conta:** aceitou a versão antiga e não precisa aceitar a nova.
-
-### O que será acrescentado
-1. **Acesso por código:** na primeira entrada aparece a mesma caixa "Li e aceito…", e o botão Entrar só funciona depois de marcar. O aceite fica guardado no aparelho e não é pedido de novo.
-2. **Novo aceite quando os termos mudarem de forma importante:** cada versão dos termos ganha uma data (ex.: 30/10/2026). Quem aceitou uma versão anterior vê uma janela uma única vez, com o resumo das mudanças e os botões "Ler termos" e "Aceitar e continuar". Isso vale para superintendente, anciãos e esposa, e funciona sem internet.
-3. **Ajustes simples não pedem novo aceite.** Para correções de texto, basta não trocar a data.
-
-```text
-┌────────────────────────────┐
-│ Termos de Uso atualizados  │
-│ Versão de 30/10/2026       │
-│ • Quem desenvolve o app    │
-│ • Ferramenta não oficial   │
-│ • Conteúdos de terceiros   │
-│ [ Ler termos ]             │
-│ [ Aceitar e continuar ]    │
-└────────────────────────────┘
-```
-
-Técnico: `TERMS_VERSION` em `terms-content.tsx`; aceite guardado só no aparelho (localStorage por usuário ou por código de convite); banco de dados sem mudança; a janela aparece depois do login ou do desbloqueio e antes do "O que há de novo"; testes da regra "versão antiga → pede aceite; versão atual → não pede".
+- `src/styles.css`: novas utilidades `bar-top` / `bar-bottom` (padding = `max(env(safe-area-inset-*), var(--safe-area-inset-*))`, sem piso de 0.5rem) e `safe-x-landscape` (só em `orientation: landscape`). Mantém as atuais para não quebrar outras telas.
+- `CleanReader.tsx`, `GuestWorkspace.tsx`, `OutlinesWorkspace.tsx` (camada fixa ~2638), `FieldNoteFullscreenDialog.tsx`: remover `safe-top safe-bottom safe-x` do contêiner; aplicar `bar-top` no cabeçalho, `bar-bottom` só na última barra visível; rodapé do leitor `px-3 pt-2` + botões `h-10`.
+- Sem mudança em dados, banco, login ou formato salvo.
+- Antes de fechar: conferir em navegador simulando inset inferior de 48 px e 0 px (screenshots) e rodar `bunx tsgo --noEmit` e `bunx vitest run`. Não consigo testar no A72/S22 real — o teste final no aparelho fica com você.
+- Bump 5.0.6 → 5.0.7 / versionCode 36 nos mesmos arquivos de versão + nota no histórico.

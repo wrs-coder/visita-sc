@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] 5.0.7: telas cheias aproveitam a tela (recuo só nas barras), botões do leitor no topo, destaque não abre ao rolar.
+
 - [x] 5.0.2 no aparelho: comando android:copy com conferência das telas, "Sobre este app" em Configurações, novidades mais confiáveis e área de texto estável com o teclado aberto.
 
 - [ ] Produzir manual externo PDF e Markdown nos sete módulos aprovados, com capturas reais de smartphone anonimizadas e revisão visual de todas as páginas.
