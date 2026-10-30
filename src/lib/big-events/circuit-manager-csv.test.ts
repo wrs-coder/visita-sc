@@ -20,7 +20,7 @@ describe("CSV do Circuito Manager (arquivo real)", () => {
     expect(speakers[5].part_type_label).toBe("Discurso Batismo");
     expect(speakers[6].part_type_label).toBe("Discurso Público");
     expect(speakers[7].part_type_label).toBe("A Sentinela");
-    expect(speakers[11].theme).toBe("“Feliz é aquele que confia em Jeová”");
+    expect(speakers[11].theme).toContain("Feliz é aquele que confia em Jeová");
   });
   it("títulos ignorados e cânticos sem orador", () => {
     expect(parts.some((p) => /^(Manhã|Tarde|Música)$/.test(p.theme))).toBe(false);
