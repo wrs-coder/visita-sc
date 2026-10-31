@@ -119,8 +119,9 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   };
   const patchPart = async (id: string, patch: Partial<PartRow>) => {
     setParts((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)));
-    const { error } = await supabase.from("circuit_big_event_parts").update(patch).eq("id", id);
+    const { data, error } = await supabase.from("circuit_big_event_parts").update(patch).eq("id", id).select("*").maybeSingle();
     if (error) { toast.error(error.code === "23505" ? "Este PIN já está em uso neste evento." : "Não foi possível salvar."); return false; }
+    if (data) { setParts((ps) => ps.map((p) => (p.id === id ? data : p))); return data; }
     return true;
   };
   const removeEvent = async (id: string) => {
@@ -254,7 +255,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const copyInvite = async (ev: EventRow, part: PartRow) => {
     let pin: string | null = null;
     if (ev.link_mode === "personal") {
-      if (!part.personal_token) { const t = crypto.randomUUID(); if (!(await patchPart(part.id, { personal_token: t }))) return; part = { ...part, personal_token: t }; }
+      if (!part.personal_token || !part.personal_code) { const t = crypto.randomUUID(); const r = await patchPart(part.id, { personal_token: t }); if (!r) return; part = r === true ? { ...part, personal_token: t } : r; }
     } else {
       pin = part.pin_hash ? readPin(part.id) : null;
       if (!pin) { pin = await newPin(ev, part); if (!pin) return; toast.info("PIN criado para este convite."); }
