@@ -507,6 +507,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
           onCancel={() => setEditor(null)}
           onSave={async (d) => { if (await savePart(editor.ev, d, editor.part, editor.afterOrder)) setEditor(null); }} />
       )}
+      </div>
     </div>
   );
 }
