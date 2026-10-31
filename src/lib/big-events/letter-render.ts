@@ -44,7 +44,8 @@ export function loadLetterFonts(): Promise<LetterFontBytes | null> {
     fontCache = (async () => {
       try {
         const entries = await Promise.all(Object.entries(FONT_FILES).map(async ([k, f]) => {
-          const r = await fetch(`/fonts/letter/${f}`);
+          let r = await fetch(`/fonts/letter/${f}`).catch(() => null);
+          if (!r?.ok) r = await fetch(`/fonts/letter/${f}`, { cache: "reload" });
           if (!r.ok) throw new Error(f);
           return [k, await r.arrayBuffer()] as const;
         }));
@@ -178,18 +179,24 @@ async function renderLetter(m: LetterModel, bytes: LetterFontBytes | null, lv: F
   text(t.opening, { align: "justify", indent: INDENT, gap: G(12) });
 
   // Quadro da designação (automático, compacto). Medido antes de desenhar: nada transborda.
-  const PADX = 12, PADY = 9, LABW = 74, VALW = CW - PADX * 2 - LABW, RL = 13.5, VS = 10;
+  // Coluna do rótulo cabe no maior rótulo curto; rótulo longo vai numa linha própria, acima do texto.
+  const PADX = 12, PADY = 9, RL = 13.5, VS = 10, LS = 7.5, LAB_MAX = 100, STACK_H = 11;
   const [titleLine, ...rest] = m.box;
   const titleLines = wrapP(titleLine ?? "", F.serifBold, 11.5, CW - PADX * 2, clean);
-  const rows = rest.map((l) => {
+  const raw = rest.map((l) => {
     const k = l.indexOf(": ");
-    const label = k > 0 && k < 26 ? l.slice(0, k) : "";
-    const val = label ? l.slice(k + 2) : l;
-    return { label: label.toUpperCase(), lines: wrapP(val, F.serifBold, VS, label ? VALW : CW - PADX * 2, clean) };
+    const label = k > 0 && k < 40 ? clean(l.slice(0, k).toUpperCase()) : "";
+    return { label, val: label ? l.slice(k + 2) : l, lw: label ? F.serifBold.widthOfTextAtSize(label, LS) : 0 };
+  });
+  const LABW = Math.min(LAB_MAX, Math.max(40, ...raw.filter((r) => r.lw <= LAB_MAX).map((r) => r.lw))) + 10;
+  const FULLW = CW - PADX * 2;
+  const rows = raw.map((r) => {
+    const stacked = !!r.label && r.lw > LAB_MAX;
+    return { label: r.label, stacked, lines: wrapP(r.val, F.serifBold, VS, r.label && !stacked ? FULLW - LABW : FULLW, clean) };
   });
   const pinLines = m.pinLine ? wrapP(m.pinLine, F.serif, 9, CW - PADX * 2, clean) : [];
   const bh = 20;
-  const boxH = PADY + titleLines.length * 15 + 6 + rows.reduce((a, r) => a + r.lines.length * RL + 1, 0) + 6 + bh + (pinLines.length ? 4 + pinLines.length * 12 : 0) + PADY;
+  const boxH = PADY + titleLines.length * 15 + 6 + rows.reduce((a, r) => a + (r.stacked ? STACK_H : 0) + r.lines.length * RL + 1, 0) + 6 + bh + (pinLines.length ? 4 + pinLines.length * 12 : 0) + PADY;
   ensure(boxH);
   const top = y;
   page.drawSvgPath(roundRect(CW, boxH, 8), { x: M, y: top, color: WARM, borderColor: GOLD, borderWidth: 0.8 });
@@ -197,8 +204,9 @@ async function renderLetter(m: LetterModel, bytes: LetterFontBytes | null, lv: F
   for (const l of titleLines) { page.drawText(l.text, { x: M + PADX, y: y - 11.5, size: 11.5, font: F.serifBold, color: ACCENT }); y -= 15; }
   y -= 2; rule(GOLD, M + PADX, W - M - PADX, 0.4); y -= 4;
   for (const r of rows) {
-    if (r.label) page.drawText(clean(r.label), { x: M + PADX, y: y - 9.5, size: 7.5, font: F.serifBold, color: MUTED });
-    const vx = r.label ? M + PADX + LABW : M + PADX;
+    if (r.label) page.drawText(r.label, { x: M + PADX, y: y - 9.5, size: LS, font: F.serifBold, color: MUTED });
+    if (r.stacked) y -= STACK_H;
+    const vx = r.label && !r.stacked ? M + PADX + LABW : M + PADX;
     for (const l of r.lines) { page.drawText(l.text, { x: vx, y: y - VS, size: VS, font: F.serifBold, color: INK }); y -= RL; }
     y -= 1;
   }
