@@ -23,9 +23,9 @@ Passos:
 
 ## 2. Carta em PDF
 
-- **Parágrafos:** texto justificado, com recuo de cerca de 12 mm na primeira linha. A última linha de cada parágrafo fica alinhada à esquerda.
+- **Parágrafos:** texto justificado, com recuo de 1,25 cm na primeira linha (o padrão usado em cartas e documentos no Brasil). A última linha de cada parágrafo fica alinhada à esquerda.
 - **Uma fonte só:** todo o texto usa a mesma fonte com serifa, exceto o cabeçalho e a assinatura. O itálico fica só no campo de observações (nota do ensaio). A saudação e o fecho deixam de ser itálicos.
-- **Uma página:** antes de salvar, o app mede a altura da carta. Se passar de uma página, primeiro reduz um pouco os espaços e a fonte (até um limite). Se ainda não couber, avisa: "A carta de <orador> passou de 1 página — encurte os lembretes no modelo". A carta continua sendo gerada.
+- **Uma página:** antes de salvar, o app mede a altura da carta. Se passar de uma página, ele compacta aos poucos, nesta ordem: espaços entre blocos, margens de cima e de baixo, margens laterais (no mínimo cerca de 1,8 cm) e, por último, a fonte do texto (até no mínimo 11). Se ainda não couber, avisa: "A carta de <orador> passou de 1 página — encurte os lembretes no modelo". A carta continua sendo gerada.
 - **Sem texto sobreposto:** o título de cada faixa ("INFORMAÇÕES PARA VOCÊ") tem a altura reservada antes de desenhar o conteúdo. Uma faixa nunca fica dividida entre duas páginas.
 - **Caixa "INFORMAÇÕES & LEMBRETES" mais compacta:** menos margem interna, rótulo e valor na mesma linha (por exemplo "Parte: Discurso nº 13 · 10:15") e linhas mais próximas.
 
@@ -53,7 +53,7 @@ Passos:
 Dos dois arquivos enviados, o **.rtf** é o mais confiável. Ele traz em texto as linhas com horário e título (9:40 Música, 10:00 "Encontre a mais plena alegria...", 1:20 Música da tarde, e assim por diante), o título do tema e as seções Manhã/Tarde.
 
 - O PDF perde a ordem do texto ao ser lido.
-- O JWPUB é um arquivo fechado da JW Library. Pela regra do projeto, ele não é usado.
+- O JWPUB guarda o texto da publicação criptografado. O backup da JW Library é diferente: nele as suas anotações ficam abertas. Abrir o JWPUB exigiria quebrar essa proteção, então ele fica de fora.
 
 Como vai funcionar:
 - O RTF é lido no próprio aparelho. Os horários da tarde (1:20 e seguintes) viram 13:20.
