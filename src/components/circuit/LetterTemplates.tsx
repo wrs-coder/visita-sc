@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { defaultTemplate, buildLetterModel, type LetterTemplate } from "@/lib/big-events/letter-template";
 import { letterPdf } from "@/lib/big-events/letter-render";
 import { saveBlob } from "@/lib/share";
+import type { SyncState } from "@/lib/big-events/letter-template-sync";
 
 type Field = { key: keyof LetterTemplate; label: string; rows?: number };
 const GROUPS: Array<{ title: string; fields: Field[] }> = [
