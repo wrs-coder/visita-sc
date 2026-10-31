@@ -16,7 +16,7 @@ import { CleanReader } from "./CleanReader";
 import { JwLibraryPanel } from "./JwLibraryPanel";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { TrackPills, WeekdayCard, MeetingWeekCard, CommentCard, CommentMode, newWeekday } from "./BibleTrackExtras";
-import { commentList, filterByTrack, meetingWeekKeys, weekdayAdvance, weekdayCurrent, type Track } from "@/lib/bible-tracks";
+import { commentList, filterByTrack, meetingWeekKeys, weekdayAdvance, weekdayNextUnread, type Track } from "@/lib/bible-tracks";
 import type { WsReading } from "@/lib/guest-workspace-store";
 
 const TRACK_KEY = "guest.workspace.track";
@@ -32,6 +32,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   useEffect(() => { try { const v = localStorage.getItem(TRACK_KEY); if (v === "family" || v === "meeting") setTrackState(v); } catch { /* */ } }, []);
   const setTrack = (v: Track) => { setTrackState(v); try { localStorage.setItem(TRACK_KEY, v); } catch { /* */ } };
   const rdata = getReading(data, track);
+  const wdOn = !!rdata.weekday?.enabled;
   const { plan, done: doneList, startDate } = rdata;
   const [readingDay, setReadingDay] = useState<number | null>(null);
   const [hlFilter, setHlFilter] = useState<Track | null>(null);
@@ -100,7 +101,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
             if (readingDay !== null && rdata.weekday) {
               const wp = weekdayAdvance(rdata.weekday, readingDay, reading);
               setReadingState({ weekday: wp });
-              setReading(weekdayCurrent(wp, readingDay)); return;
+              setReading(weekdayNextUnread(wp, readingDay, new Set([...done, reading]))); return;
             }
             if (track === "meeting" && meetingKeys.includes(reading)) { const n = meetingKeys.find((k) => k !== reading && !done.has(k)); setReading(n ?? null); return; }
             const i = seq.indexOf(reading); const n = seq.slice(i + 1).find((k) => !done.has(k)); setReading(n ?? null);
@@ -148,9 +149,8 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
       {wdOn && <WeekdayCard plan={rdata.weekday!} label={label} done={done} onChange={(wp) => setReadingState({ weekday: wp })}
         onMark={(keys, on) => update((d) => { const r = getReading(d, track); const s = new Set(r.done); keys.forEach((k) => on ? s.add(k) : s.delete(k)); return putReading(d, track, { ...r, done: [...s] }); })}
         onRead={(k, d) => { setReadingDay(d); setReading(k); }} />}
-      {!wdOn && <>
 
-      {plan === "custom" && (
+      {!wdOn && plan === "custom" && (
         <div className="space-y-3 rounded-xl border bg-card p-4">
           <button type="button" onClick={() => setCfgOpen(!cfgOpen)} aria-expanded={cfgOpen} className="flex w-full items-center gap-2 text-left text-sm font-medium">
             <Settings2 className="h-4 w-4" /><span className="flex-1">{t("guestWs.customCfg", { defaultValue: "Minha programação ({{n}} livros)", n: custom.books.length })}</span>
@@ -182,6 +182,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
       </div>
       </CollapsibleSection>
 
+      {!wdOn && <>
       <div className="sticky top-0 z-20 space-y-1.5 rounded-xl border bg-card/95 p-3 backdrop-blur" title={today && today.keys.length > 0 ? t("guestWs.todayPlan", { defaultValue: "Dia {{d}} — hoje: {{from}} a {{to}}", d: today.day, from: label(today.keys[0]), to: label(today.keys[today.keys.length - 1]) }) : undefined}>
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">{percent}%</span>
