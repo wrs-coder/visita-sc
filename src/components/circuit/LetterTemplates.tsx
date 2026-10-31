@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { defaultTemplate, buildLetterModel, type LetterTemplate } from "@/lib/big-events/letter-template";
-import { letterPdf } from "@/lib/big-events/letter-render";
 import { saveBlob } from "@/lib/share";
 import type { SyncState } from "@/lib/big-events/letter-template-sync";
 
@@ -50,7 +49,7 @@ export function LetterTemplates({ list, onChange, sync }: { list: LetterTemplate
     const m = buildLetterModel(t, { name: "Assembleia de circuito", event_date: new Date().toISOString().slice(0, 10), location: "Salão de Assembleias", extra_info: null, public_token: "exemplo", public_code: "exemplo1", link_mode: "pin" },
       { id: "x", sort_order: 0, part_time: "09:40", duration_min: 15, theme: "Tema de exemplo", outline_number: "7", instructions: null, part_type_label: "Discurso", assigned_to: "speaker", speaker_name: "Nome do orador", speaker_congregation: "Congregação", show_next_speaker: false },
       [], "123456");
-    const bytes = await letterPdf(m);
+    const bytes = await (await import("@/lib/big-events/letter-render")).letterPdf(m);
     await saveBlob(new Blob([bytes as BlobPart], { type: "application/pdf" }), { filename: "Previa do modelo.pdf", mimeType: "application/pdf" });
   };
 

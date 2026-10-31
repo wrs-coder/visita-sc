@@ -22,7 +22,6 @@ import JSZip from "jszip";
 import { LetterTemplates } from "./LetterTemplates";
 import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
 import { fetchLetterTemplates, pushLetterTemplates, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
-import { assignmentsListHtml, letterPdfFit } from "@/lib/big-events/letter-render";
 import type { Database } from "@/integrations/supabase/types";
 
 type EventRow = Database["public"]["Tables"]["circuit_big_events"]["Row"];
@@ -328,7 +327,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
         let name = letterFileBase(i.part); let n = 2;
         while (used.has(name)) name = `${letterFileBase(i.part)} (${n++})`;
         used.add(name);
-        const r = await letterPdfFit(i.model);
+        const r = await (await import("@/lib/big-events/letter-render")).letterPdfFit(i.model);
         if (r.pages > 1) over.push(i.model.recipientName || name);
         zip.file(`${name}.pdf`, r.bytes);
       }
