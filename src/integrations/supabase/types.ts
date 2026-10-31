@@ -1202,6 +1202,36 @@ export type Database = {
         }
         Relationships: []
       }
+      letter_templates: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          name: string
+          sort_order: number
+          superintendent_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id: string
+          name?: string
+          sort_order?: number
+          superintendent_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          name?: string
+          sort_order?: number
+          superintendent_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       meal_day_notes: {
         Row: {
           created_at: string
