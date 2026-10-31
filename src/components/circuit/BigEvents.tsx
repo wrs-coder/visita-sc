@@ -19,7 +19,8 @@ import { htmlToDocx, safeFileName, DOCX_MIME } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
 import JSZip from "jszip";
 import { LetterTemplates } from "./LetterTemplates";
-import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, saveTemplates, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
+import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
+import { fetchLetterTemplates, pushLetterTemplates, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
 import { letterHtml, letterPdf } from "@/lib/big-events/letter-render";
 import type { Database } from "@/integrations/supabase/types";
 
