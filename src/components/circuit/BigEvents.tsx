@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { parseProgramFile, parseCircuitManagerCsv, decodeText, ETIM_MAX_BYTES, type EtimPart } from "@/lib/big-events/etim-import";
+import { parseRtfProgram } from "@/lib/big-events/rtf-program-import";
 import { buildInviteText, formatEventDate, generatePin, hashPin, isValidPin, recomputeTimes, toMin, fromMin, PART_TYPES } from "@/lib/big-events/invite";
 import { htmlToDocx, safeFileName, DOCX_MIME } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
@@ -107,11 +108,12 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     if (!f) return;
     try {
       // Android informa .etim como binário (.bin); conferimos nome e tamanho aqui.
-      if (!/\.(etim|json|csv)$/i.test(f.name)) throw new Error(`"${f.name}" não é um programa. Escolha um .etim ou o arquivo do Circuito Manager (.json ou .csv).`);
+      if (!/\.(etim|json|csv|rtf)$/i.test(f.name)) throw new Error(`"${f.name}" não é um programa. Escolha um .etim, .rtf (programa do jw.org) ou o arquivo do Circuito Manager (.json ou .csv).`);
       if (f.size > ETIM_MAX_BYTES) throw new Error("Arquivo muito grande (máx. 1 MB).");
       const text = decodeText(await f.arrayBuffer());
-      const res = /\.csv$/i.test(f.name) ? { title: null, parts: parseCircuitManagerCsv(text) } : parseProgramFile(text);
-      const name = res.title ?? f.name.replace(/\.(etim|json|csv)$/i, "").replace(/_/g, " ");
+      const res = /\.csv$/i.test(f.name) ? { title: null, parts: parseCircuitManagerCsv(text) }
+        : /\.rtf$/i.test(f.name) || text.trimStart().startsWith("{\\rtf") ? parseRtfProgram(text) : parseProgramFile(text);
+      const name = res.title ?? f.name.replace(/\.(etim|json|csv|rtf)$/i, "").replace(/_/g, " ");
       setForm({ name, event_type: "assembly", event_date: "", location: "", link_mode: "pin" });
       setDialog({ parts: res.parts });
     } catch (e) { toast.error(e instanceof Error ? e.message : "Este arquivo não é um programa válido."); }
