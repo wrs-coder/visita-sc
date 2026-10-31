@@ -85,7 +85,7 @@ export const LETTER_FIT_LEVELS = [
   { gap: 0.55, side: 54, top: 36, bottom: 34, size: 11.25 },
   { gap: 0.5, side: 51, top: 32, bottom: 30, size: 11 },
 ] as const;
-type FitLevel = (typeof LETTER_FIT_LEVELS)[number];
+type FitLevel = { gap: number; side: number; top: number; bottom: number; size: number };
 /** Recuo da primeira linha dos parágrafos: 1,25 cm. */
 const INDENT = 35.4;
 
