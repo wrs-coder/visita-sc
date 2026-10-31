@@ -17,6 +17,10 @@ import { parseProgramFile, parseCircuitManagerCsv, decodeText, ETIM_MAX_BYTES, t
 import { buildInviteText, formatEventDate, generatePin, hashPin, isValidPin, recomputeTimes, toMin, fromMin, PART_TYPES } from "@/lib/big-events/invite";
 import { htmlToDocx, safeFileName, DOCX_MIME } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
+import JSZip from "jszip";
+import { LetterTemplates } from "./LetterTemplates";
+import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, saveTemplates, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
+import { letterHtml, letterPdf } from "@/lib/big-events/letter-render";
 import type { Database } from "@/integrations/supabase/types";
 
 type EventRow = Database["public"]["Tables"]["circuit_big_events"]["Row"];
@@ -26,7 +30,6 @@ const OPEN_KEY = "bigEvents.open";
 const pinKey = (partId: string) => `bigEvents.pin.${partId}`;
 const readPin = (id: string) => { try { return localStorage.getItem(pinKey(id)); } catch { return null; } };
 const writePin = (id: string, pin: string) => { try { localStorage.setItem(pinKey(id), pin); } catch { /* */ } };
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const origin = () => (typeof window !== "undefined" && /^https?:/.test(window.location.origin) ? window.location.origin : "https://visitasc.com.br");
 
 export function BigEvents({ elders }: { elders: Array<{ name: string; congregation: string }> }) {
@@ -41,6 +44,16 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const [editor, setEditor] = useState<{ ev: EventRow; part: PartRow | null; afterOrder: number | null } | null>(null);
   const [filter, setFilter] = useState<Record<string, "all" | "pending" | "declined">>({});
   const fileRef = useRef<HTMLInputElement>(null);
+  const [view, setView] = useState<"events" | "templates">("events");
+  const [templates, setTemplates] = useState<LetterTemplate[]>([]);
+  const [tplChoice, setTplChoice] = useState<Record<string, string>>({});
+  const [exportFor, setExportFor] = useState<EventRow | null>(null);
+  const [exporting, setExporting] = useState(false);
+  useEffect(() => { if (user) { setTemplates(loadTemplates(user.id)); setTplChoice(loadEventChoice(user.id)); } }, [user]);
+  const updateTemplates = (l: LetterTemplate[]) => { setTemplates(l); if (user) saveTemplates(user.id, l); };
+  const chooseTemplate = (eventId: string, tplId: string) => {
+    const next = { ...tplChoice, [eventId]: tplId }; setTplChoice(next); if (user) saveEventChoice(user.id, next);
+  };
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -266,21 +279,51 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     if (!part.email_sent) void patchPart(part.id, { email_sent: true });
   };
 
-  const exportDocx = async (ev: EventRow) => {
-    const evParts = parts.filter((p) => p.event_id === ev.id && p.assigned_to === "speaker" && p.speaker_name?.trim());
-    if (!evParts.length) { toast.info("Nenhuma parte com orador definido."); return; }
+  const letterModels = async (ev: EventRow) => {
+    const evParts = parts.filter((p) => p.event_id === ev.id && p.assigned_to === "speaker" && p.speaker_name?.trim()).sort((a, b) => a.sort_order - b.sort_order);
     const all = parts.filter((p) => p.event_id === ev.id);
-    const blocks: string[] = [];
-    for (const p of evParts) {
+    const tpl = templateForEvent(templates, tplChoice, ev.id);
+    const out: Array<{ part: PartRow; model: ReturnType<typeof buildLetterModel> }> = [];
+    for (let p of evParts) {
       let pin: string | null = null;
-      if (ev.link_mode !== "personal") { pin = p.pin_hash ? readPin(p.id) : null; if (!pin) pin = await newPin(ev, p); }
-      const txt = buildInviteText(ev, p, all, pin, origin());
-      blocks.push(`<p><b>${esc(p.speaker_name ?? "")}</b></p>` + txt.split("\n").map((l) => `<p>${esc(l)}</p>`).join(""));
+      if (ev.link_mode === "personal") {
+        if (!p.personal_token || !p.personal_code) { const r = await patchPart(p.id, { personal_token: crypto.randomUUID() }); if (r && r !== true) p = r; }
+      } else { pin = p.pin_hash ? readPin(p.id) : null; if (!pin) pin = await newPin(ev, p); }
+      out.push({ part: p, model: buildLetterModel(tpl, ev, p, all, pin) });
     }
+    return out;
+  };
+
+  const exportDocx = async (ev: EventRow) => {
+    const items = await letterModels(ev);
+    if (!items.length) { toast.info("Nenhuma parte com orador definido."); return; }
     try {
-      const blob = await htmlToDocx(ev.name, blocks.join('<hr data-page-break="1">'));
+      const blob = await htmlToDocx(ev.name, items.map((i) => letterHtml(i.model)).join('<hr data-page-break="1">'));
       await saveBlob(blob, { filename: `${safeFileName(`Convites ${ev.name}`, "convites")}.docx`, mimeType: DOCX_MIME });
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
+  };
+
+  const exportPdfs = async (ev: EventRow) => {
+    const items = await letterModels(ev);
+    if (!items.length) { toast.info("Nenhuma parte com orador definido."); return; }
+    try {
+      const zip = new JSZip();
+      const used = new Set<string>();
+      for (const i of items) {
+        let name = letterFileBase(i.part); let n = 2;
+        while (used.has(name)) name = `${letterFileBase(i.part)} (${n++})`;
+        used.add(name);
+        zip.file(`${name}.pdf`, await letterPdf(i.model));
+      }
+      const blob = await zip.generateAsync({ type: "blob", mimeType: "application/zip" });
+      await saveBlob(blob, { filename: `${safeFileName(`Convites PDF ${ev.name}`, "convites")}.zip`, mimeType: "application/zip" });
+    } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
+  };
+
+  const runExport = async (kind: "docx" | "pdf") => {
+    const ev = exportFor; if (!ev) return;
+    setExporting(true);
+    try { await (kind === "docx" ? exportDocx(ev) : exportPdfs(ev)); } finally { setExporting(false); setExportFor(null); }
   };
 
   const renderEvent = (ev: EventRow) => {
@@ -332,7 +375,14 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
               onBlur={(e) => e.target.value !== (ev.extra_info ?? "") && patchEvent(ev.id, { extra_info: e.target.value.trim() || null })} />
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" className="gap-1" onClick={() => exportDocx(ev)}><Download className="h-3.5 w-3.5" />Word</Button>
+            <Label className="shrink-0 text-xs">Modelo de carta</Label>
+            <select className="h-8 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm" value={templateForEvent(templates, tplChoice, ev.id).id}
+              onChange={(e) => chooseTemplate(ev.id, e.target.value)} aria-label="Modelo de carta">
+              {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setExportFor(ev)}><Download className="h-3.5 w-3.5" />Exportar</Button>
             {pendingN > 0 && chip("pending", `Faltam ${pendingN}`)}
             {decl > 0 && chip("declined", `Recusas ${decl}`)}
             <span className="flex-1" />
@@ -365,6 +415,28 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
 
   return (
     <div className="space-y-3">
+      <div className="flex gap-1 rounded-full bg-muted p-1" role="tablist">
+        {([["events", "Eventos"], ["templates", "Modelos de carta"]] as const).map(([v, l]) => (
+          <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)}
+            className={`h-9 flex-1 rounded-full text-sm font-medium transition-colors ${view === v ? "bg-background shadow-sm" : "text-muted-foreground"}`}>{l}</button>
+        ))}
+      </div>
+      {view === "templates" && <LetterTemplates list={templates} onChange={updateTemplates} />}
+      <div hidden={view !== "events"} className="space-y-3">
+      <Dialog open={!!exportFor} onOpenChange={(o) => { if (!o && !exporting) setExportFor(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Exportar convites</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Button variant="outline" className="h-auto w-full justify-start py-3 text-left" disabled={exporting} onClick={() => runExport("docx")}>
+              <span><span className="block font-semibold">Word (um arquivo)</span><span className="block text-xs text-muted-foreground">Todas as cartas juntas</span></span>
+            </Button>
+            <Button variant="outline" className="h-auto w-full justify-start py-3 text-left" disabled={exporting} onClick={() => runExport("pdf")}>
+              <span><span className="block font-semibold">PDF individuais (.zip)</span><span className="block text-xs text-muted-foreground">Uma carta por orador, com "Clique aqui" ativo</span></span>
+            </Button>
+            {exporting && <p className="text-center text-xs text-muted-foreground">Gerando…</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
       <datalist id="big-events-elders">
         {elders.filter((e) => e.name).map((e) => <option key={`${e.name}-${e.congregation}`} value={e.name}>{e.congregation}</option>)}
       </datalist>
@@ -434,6 +506,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
           onCancel={() => setEditor(null)}
           onSave={async (d) => { if (await savePart(editor.ev, d, editor.part, editor.afterOrder)) setEditor(null); }} />
       )}
+      </div>
     </div>
   );
 }
