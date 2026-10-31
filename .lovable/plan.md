@@ -147,31 +147,79 @@ Na tela da Bíblia aparecem três pílulas: Pessoal, Família e Reunião. Cada u
 - Pontos altos e anotações ficam juntos, cada um com uma etiqueta (P/F/R). O filtro mostra todos ou só os de uma leitura. Os antigos ficam como "Pessoal".
 - Vale igual para o superintendente (Estudo e Anotações) e para a esposa.
 
-### Leitura da reunião da semana
+### Leitura por dias da semana (opção em qualquer leitura)
 
-Abrir sozinho a leitura da semana puxando do wol.jw.org não é recomendado. Os termos do site não permitem coleta automática do conteúdo, e o site pode mudar e quebrar o recurso. Proposta segura:
+Em cada leitura (Pessoal, Família, Reunião) você pode escolher "Por dias da semana" e definir que sequência de livros ler em cada dia. Cada dia guarda onde parou.
 
 ```text
 +--------------------------------+
 | (Pessoal) (Família) (Reunião)  |
 |--------------------------------|
-| Semana 3-9 de novembro         |
-| Leitura: ISAÍAS 58-59          |
-|  [ Ler Isaías 58 ]             |
-|  [ Ver na wol.jw.org ↗ ]       |
+| [Seg][Ter][QUA][Qui][Sex][Sáb] |  pílulas roláveis,
+|        ●                       |  hoje destacado
 |--------------------------------|
-| Apostila nov-dez importada ✓   |
-|  10/11  Isaías 60-62           |
-|  17/11  Isaías 63-64           |
-|  [ Importar apostila (EPUB) ]  |
+| Quarta · Profetas              |
+| Isaías → Jeremias → Ezequiel   |
+| Parou em: Isaías 58            |
+|  [ Continuar Isaías 58 ]       |
+|--------------------------------|
+| [✎ Editar dias]                |
++--------------------------------+
+
+Editar dias:
++--------------------------------+
+| < Dias da semana          [OK] |
+| Seg  Evangelhos          [ > ] |
+| Ter  Salmos, Provérbios  [ > ] |
+| Qua  Profetas            [ > ] |
+| Qui  —  (sem leitura)    [ > ] |
+| Dom  Atos, Cartas        [ > ] |
 +--------------------------------+
 ```
 
-- Automático pela apostila: a cada bimestre você baixa a Apostila Vida e Ministério em EPUB no jw.org e importa no app, como já faz com a Bíblia. O app lê só o cabeçalho de cada semana (datas + "ISAÍAS 58-59") e guarda apenas data e referência. Nenhum texto da apostila fica salvo.
-- A semana troca sozinha na segunda-feira. Quando faltarem 2 semanas para acabar a apostila, aparece um aviso: "Importe a próxima apostila".
-- Opção manual de reserva: colar ou digitar a programação, se não tiver o EPUB.
-- Na pílula Reunião, o app abre sozinho na semana atual e pula para o próximo capítulo não lido.
-- O botão "Ver na wol.jw.org" abre a página da reunião no navegador, sem copiar nada do site.
+- Ao abrir, a pílula do dia de hoje já vem selecionada. Tocar em outro dia leva direto para onde parou naquele dia.
+- Dias sem leitura ficam apagados. Ao terminar a sequência de um dia, ela recomeça do primeiro livro.
+
+### Leitura da reunião (automática, sem importar nada)
+
+Puxar a programação do wol.jw.org automaticamente não é seguro: os termos do site não permitem coleta automática, e o site muda e quebraria o recurso. Sem importação, a forma automática é esta:
+
+- Na primeira vez você informa só o ponto de partida (ex.: "esta semana: Isaías 58-59"). Depois o app avança sozinho toda segunda-feira, no mesmo ritmo de capítulos.
+- Se a reunião pular ou repetir capítulos, um toque em "Ajustar esta semana" corrige, e o app segue dali.
+- O botão "Ver programa na wol.jw.org ↗" abre a página da semana no navegador para conferir.
+
+### Pontos altos para comentar na reunião
+
+```text
++--------------------------------+
+| (Pessoal) (Família) (Reunião)  |
+|--------------------------------|
+| Semana · Isaías 58-59          |
+|  [ Ler ]                       |
+|--------------------------------|
+| ★ Para comentar (3)   [Modo ▶] |
+|  Isa 58:6  "Soltar as cordas.."|
+|   minha nota: ajudar...        |
+|  Isa 58:13 nota: sábado...     |
++--------------------------------+
+
+Modo comentário (tela cheia):
++--------------------------------+
+| ✕                       1 de 3 |
+|                                |
+|  ISAÍAS 58:6                   |
+|  minha nota em letra grande,   |
+|  fácil de ler ao levantar a    |
+|  mão na reunião.               |
+|                                |
+|   ‹ anterior      próximo ›    |
++--------------------------------+
+```
+
+- Ao marcar um ponto alto na leitura da reunião, ele entra sozinho em "Para comentar" da semana. Também dá para marcar ★ em qualquer ponto alto de outra leitura.
+- O cartão fica no topo da pílula Reunião e também na tela inicial durante a semana da reunião.
+- Modo comentário: letra grande, tela sempre acesa, deslizar para o próximo.
+- Na semana seguinte, os cartões vão para o histórico e continuam no filtro "Reunião".
 - Tudo funciona sem internet. A Bíblia continua sendo só a TNM importada por você.
 
 ## Detalhes técnicos
