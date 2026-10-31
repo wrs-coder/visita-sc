@@ -42,6 +42,12 @@ export function rtfToText(rtf: string): string {
 }
 
 const NO_SPEAKER = /^(m[uú]sica|c[aâ]ntico|an[uú]ncios|ora[cç][aã]o|intervalo)/i;
+const cleanQuotes = (s: string) => {
+  let t = s.replace(/^["“”‘’']+|["“”‘’']+$/g, "").trim();
+  const open = (t.match(/[“‘]/g) ?? []).length, close = (t.match(/[”’]/g) ?? []).length;
+  if (open !== close) t = t.replace(/[“”‘’"]/g, "");
+  return t.trim();
+};
 const TIME = /^(\d{1,2}):(\d{2})\s*(.+)$/;
 
 /** Partes do programa: horário, tema e quem faz (cânticos e música sem orador). */
@@ -57,14 +63,14 @@ export function parseRtfProgram(rtf: string): ProgramImport {
     const m = TIME.exec(l);
     if (!m) {
       if (!started && !parts.length && titleLines.length < 2 && !l.startsWith("[")) titleLines.push(l);
-      else if (parts.length && started) { const p = parts[parts.length - 1]; if (p.assigned_to !== "none" && p.talk_includes.length < 10) p.talk_includes.push(l.slice(0, 200)); }
+      else if (parts.length && started) { const p = parts[parts.length - 1]; if (p.assigned_to !== "none" && p.talk_includes.length < 10) p.talk_includes.push(l.replace(/^[•·\-–]\s*/, "").slice(0, 200)); }
       continue;
     }
     started = true;
     let h = Number(m[1]); const mi = Number(m[2]);
     if (h > 23 || mi > 59) continue;
     if ((afternoon || h < 7) && h < 12) h += 12;
-    const theme = m[3].replace(/^["“”']+|["“”']+$/g, "").trim().slice(0, 300);
+    const theme = cleanQuotes(m[3]).slice(0, 300);
     if (!theme) continue;
     const none = NO_SPEAKER.test(theme);
     parts.push({
@@ -77,7 +83,7 @@ export function parseRtfProgram(rtf: string): ProgramImport {
     if (parts.length > 80) break;
   }
   if (!parts.length) throw new Error("Não encontrei horários neste arquivo .rtf.");
-  for (let i = 0; i < parts.length - 1; i++) { const d = parts[i + 1].min - parts[i].min; if (d > 0 && d < 180) parts[i].duration_min = d; }
+  for (let i = 0; i < parts.length - 1; i++) { const d = parts[i + 1].min - parts[i].min; if (d > 0 && d <= 60) parts[i].duration_min = d; }
   const title = (titleLines[1] ?? titleLines[0] ?? "").split(/ — | - /)[0].replace(/^["“”']+|["“”']+$/g, "").trim().slice(0, 200) || null;
   return { format: "etim", title, parts: parts.map(({ min: _m, ...p }) => p) };
 }

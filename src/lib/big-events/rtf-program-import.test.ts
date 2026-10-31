@@ -15,7 +15,7 @@ describe("importar programa .rtf", () => {
     expect(r.parts[0].assigned_to).toBe("none");
     expect(r.parts[1].assigned_to).toBe("none");
     expect(r.parts[2].assigned_to).toBe("speaker");
-    expect(r.parts[2].duration_min).toBeNull();
+    expect(r.parts[2].duration_min).toBeNull(); // almoço
     expect(r.parts[0].duration_min).toBe(10);
     expect(r.parts[4].talk_includes).toEqual(["Um estilo de vida simples"]);
     expect(r.title).toBe("Encontre a Mais Plena Alegria em Jeová");
