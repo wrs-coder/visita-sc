@@ -95,3 +95,14 @@ export function sanitizeMeetingWeek(raw: unknown): MeetingWeek | undefined {
   if (!n) return undefined;
   return { anchorMonday: o.anchorMonday, startKey: o.startKey, perWeek: n };
 }
+
+/** Primeiro capítulo do dia ainda não lido (null = dia vazio ou tudo lido). */
+export function weekdayNextUnread(plan: WeekdayPlan, day: number, read: Set<string>): string | null {
+  return weekdaySeq(plan, day).find((k) => !read.has(k)) ?? null;
+}
+
+/** Dia com leitura e todos os capítulos marcados. */
+export function weekdayDayDone(plan: WeekdayPlan, day: number, read: Set<string>): boolean {
+  const seq = weekdaySeq(plan, day);
+  return seq.length > 0 && seq.every((k) => read.has(k));
+}

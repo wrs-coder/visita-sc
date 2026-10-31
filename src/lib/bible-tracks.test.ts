@@ -32,3 +32,19 @@ describe("bible tracks", () => {
     expect(d.readings?.family?.done).toEqual(["B40:5"]);
   });
 });
+
+import { weekdayNextUnread, weekdayDayDone, emptyWeekday as _ew } from "./bible-tracks";
+describe("weekday read marks", () => {
+  const p = { ..._ew(), enabled: true, days: _ew().days.map((_, i) => (i === 1 ? ["RUT"] : [])) };
+  it("next unread skips marked chapters", () => {
+    expect(weekdayNextUnread(p, 1, new Set(["RUT:1", "RUT:2"]))).toBe("RUT:3");
+  });
+  it("day done when all marked", () => {
+    expect(weekdayDayDone(p, 1, new Set(["RUT:1", "RUT:2", "RUT:3", "RUT:4"]))).toBe(true);
+    expect(weekdayNextUnread(p, 1, new Set(["RUT:1", "RUT:2", "RUT:3", "RUT:4"]))).toBeNull();
+  });
+  it("switching goal keeps weekday days", () => {
+    const off = { ...p, enabled: false };
+    expect(off.days[1]).toEqual(["RUT"]);
+  });
+});
