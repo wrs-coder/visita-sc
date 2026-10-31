@@ -2,13 +2,13 @@
 // reunião, "Para comentar" e modo comentário em tela cheia.
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Play, Pencil, Star, X, ChevronLeft, ChevronRight, ExternalLink, Maximize2 } from "lucide-react";
+import { Play, Pencil, Star, X, ChevronLeft, ChevronRight, ExternalLink, Maximize2, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { getLocalizedBookName } from "@/lib/bible-canon";
 import { ALL_BOOKS, chaptersOf, type Highlight } from "@/lib/bible-chapters";
-import { emptyWeekday, weekdayCurrent, type MeetingWeek, type Track, type WeekdayPlan, mondayOf } from "@/lib/bible-tracks";
+import { emptyWeekday, weekdayNextUnread, weekdayDayDone, weekdaySeq, type MeetingWeek, type Track, type WeekdayPlan, mondayOf } from "@/lib/bible-tracks";
 import { cn } from "@/lib/utils";
 
 const pill = (on: boolean) => cn("min-h-9 rounded-full px-3 text-xs font-medium transition-colors", on ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/60");
