@@ -21,7 +21,7 @@ import JSZip from "jszip";
 import { LetterTemplates } from "./LetterTemplates";
 import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
 import { fetchLetterTemplates, pushLetterTemplates, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
-import { letterHtml, letterPdf } from "@/lib/big-events/letter-render";
+import { assignmentsListHtml, letterPdf } from "@/lib/big-events/letter-render";
 import type { Database } from "@/integrations/supabase/types";
 
 type EventRow = Database["public"]["Tables"]["circuit_big_events"]["Row"];
@@ -310,8 +310,8 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     const items = await letterModels(ev);
     if (!items.length) { toast.info("Nenhuma parte com orador definido."); return; }
     try {
-      const blob = await htmlToDocx(ev.name, items.map((i) => letterHtml(i.model)).join('<hr data-page-break="1">'));
-      await saveBlob(blob, { filename: `${safeFileName(`Convites ${ev.name}`, "convites")}.docx`, mimeType: DOCX_MIME });
+      const blob = await htmlToDocx(ev.name, assignmentsListHtml(ev, items));
+      await saveBlob(blob, { filename: `${safeFileName(`Designações ${ev.name}`, "designacoes")}.docx`, mimeType: DOCX_MIME });
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
   };
 

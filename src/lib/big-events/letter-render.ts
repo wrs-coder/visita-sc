@@ -31,20 +31,6 @@ export function winAnsi(s: string): string {
     .replace(/[^\u0009\u000A\u0020-\u007E\u00A0-\u00FF\u2013\u2014\u2018\u2019\u201C\u201D\u2022\u2026\u20AC]/g, "");
 }
 
-function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
-  const out: string[] = [];
-  for (const para of winAnsi(text).split("\n")) {
-    let line = "";
-    for (const w of para.split(/\s+/).filter(Boolean)) {
-      const tryLine = line ? `${line} ${w}` : w;
-      if (font.widthOfTextAtSize(tryLine, size) <= width) line = tryLine;
-      else { if (line) out.push(line); line = w; }
-    }
-    out.push(line);
-  }
-  return out;
-}
-
 export interface LetterFontBytes { serif: ArrayBuffer | Uint8Array; serifBold: ArrayBuffer | Uint8Array; serifItalic: ArrayBuffer | Uint8Array; sans: ArrayBuffer | Uint8Array; sansBold: ArrayBuffer | Uint8Array; sansItalic: ArrayBuffer | Uint8Array }
 
 const FONT_FILES: Record<keyof LetterFontBytes, string> = {
