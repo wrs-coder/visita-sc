@@ -28,17 +28,21 @@ function useDayNames() {
   return Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 7 + i).toLocaleDateString(i18n.language, { weekday: "short" }).replace(".", ""));
 }
 
-export function WeekdayCard({ plan, onChange, onRead, label }: { plan: WeekdayPlan; onChange: (p: WeekdayPlan) => void; onRead: (key: string, day: number) => void; label: (k: string) => string }) {
+export function WeekdayCard({ plan, onChange, onRead, label, done, onMark }: { plan: WeekdayPlan; onChange: (p: WeekdayPlan) => void; onRead: (key: string, day: number) => void; label: (k: string) => string; done: Set<string>; onMark: (keys: string[], on: boolean) => void }) {
   const { t, i18n } = useTranslation();
   const names = useDayNames();
   const [day, setDay] = useState(() => new Date().getDay());
   const [edit, setEdit] = useState(false);
+  const [mark, setMark] = useState(false);
+  const [last, setLast] = useState<string | null>(null);
   const today = new Date().getDay();
-  const cur = weekdayCurrent(plan, day);
+  const seq = weekdaySeq(plan, day);
+  const allDone = weekdayDayDone(plan, day, done);
+  const cur = weekdayNextUnread(plan, day, done);
   const books = plan.days[day] ?? [];
   const bn = (b: string) => getLocalizedBookName(b, i18n.language) ?? b;
   return (
-    <div className="space-y-3 rounded-2xl border bg-card p-3">
+    <div className="space-y-3">
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5" role="tablist">
         {[1, 2, 3, 4, 5, 6, 0].map((d) => {
           const empty = !(plan.days[d] ?? []).length;
@@ -53,14 +57,48 @@ export function WeekdayCard({ plan, onChange, onRead, label }: { plan: WeekdayPl
       </div>
       {cur ? (
         <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">{books.map(bn).join(" → ")}</p>
+          <p className="text-xs text-muted-foreground">{books.map(bn).join(" → ")} · {seq.filter((k) => done.has(k)).length}/{seq.length}</p>
           <Button className="h-11 w-full gap-2 rounded-xl" onClick={() => onRead(cur, day)}><Play className="h-4 w-4" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {label(cur)}</Button>
         </div>
+      ) : allDone ? (
+        <div className="space-y-2 text-center">
+          <p className="py-1 text-sm font-medium text-primary">{t("guestWs.dayDone", { defaultValue: "Concluído ✓" })}</p>
+          <Button size="sm" variant="outline" onClick={() => onMark(seq, false)}>{t("guestWs.restart", { defaultValue: "Recomeçar" })}</Button>
+        </div>
       ) : <p className="py-2 text-center text-sm text-muted-foreground">{t("guestWs.noDayReading", { defaultValue: "Sem leitura neste dia." })}</p>}
-      <div className="flex justify-between">
+      <div className="flex flex-wrap justify-between gap-1">
         <Button size="sm" variant="ghost" className="gap-1" onClick={() => setEdit(true)}><Pencil className="h-3.5 w-3.5" />{t("guestWs.editDays", { defaultValue: "Editar dias" })}</Button>
-        <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={() => onChange({ ...plan, enabled: false })}>{t("guestWs.weekdayOff", { defaultValue: "Voltar à meta" })}</Button>
+        {seq.length > 0 && <Button size="sm" variant="ghost" className="gap-1" onClick={() => { setLast(null); setMark(true); }}><CheckSquare className="h-3.5 w-3.5" />{t("guestWs.markRead", { defaultValue: "Marcar capítulos lidos" })}</Button>}
       </div>
+      <Drawer open={mark} onOpenChange={setMark}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader><DrawerTitle><span className="capitalize">{names[day]}</span> · {t("guestWs.readChapters", { defaultValue: "capítulos lidos" })}</DrawerTitle>
+            <DrawerDescription>{t("guestWs.markHint", { defaultValue: "Toque nos capítulos que você já leu." })}</DrawerDescription></DrawerHeader>
+          <div className="mx-auto w-full max-w-2xl space-y-4 overflow-y-auto px-4 pb-6">
+            {books.map((b) => {
+              const n = chaptersOf(b);
+              const cnt = Array.from({ length: n }, (_, i) => `${b}:${i + 1}`).filter((k) => done.has(k)).length;
+              return (
+                <div key={b} className="space-y-2">
+                  <div className="flex justify-between text-sm"><span className="font-medium">{bn(b)}</span><span className="text-muted-foreground">{cnt} / {n}</span></div>
+                  <div className="grid grid-cols-8 gap-1.5">
+                    {Array.from({ length: n }, (_, i) => {
+                      const k = `${b}:${i + 1}`; const on = done.has(k);
+                      return <button key={k} type="button" aria-pressed={on} onClick={() => { setLast(k); onMark([k], !on); }}
+                        className={cn("h-9 rounded-lg border text-xs", on ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent/60", last === k && "ring-2 ring-ring")}>{i + 1}</button>;
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" disabled={!last} onClick={() => last && onMark(seq.slice(0, seq.indexOf(last) + 1), true)}>{t("guestWs.markUpTo", { defaultValue: "Marcar até aqui" })}</Button>
+              <Button variant="outline" className="flex-1" onClick={() => onMark(seq, false)}>{t("guestWs.clear", { defaultValue: "Limpar" })}</Button>
+            </div>
+            <Button className="w-full" onClick={() => setMark(false)}>{t("guestWs.finish", { defaultValue: "Concluir" })}</Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
       <Drawer open={edit} onOpenChange={setEdit}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader><DrawerTitle>{t("guestWs.weekdays", { defaultValue: "Dias da semana" })} · <span className="capitalize">{names[day]}</span></DrawerTitle>
