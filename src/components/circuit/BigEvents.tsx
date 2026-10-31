@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { parseProgramFile, parseCircuitManagerCsv, decodeText, ETIM_MAX_BYTES, type EtimPart } from "@/lib/big-events/etim-import";
+import { parseRtfProgram } from "@/lib/big-events/rtf-program-import";
 import { buildInviteText, formatEventDate, generatePin, hashPin, isValidPin, recomputeTimes, toMin, fromMin, PART_TYPES } from "@/lib/big-events/invite";
 import { htmlToDocx, safeFileName, DOCX_MIME } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
@@ -21,7 +22,6 @@ import JSZip from "jszip";
 import { LetterTemplates } from "./LetterTemplates";
 import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
 import { fetchLetterTemplates, pushLetterTemplates, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
-import { assignmentsListHtml, letterPdf } from "@/lib/big-events/letter-render";
 import type { Database } from "@/integrations/supabase/types";
 
 type EventRow = Database["public"]["Tables"]["circuit_big_events"]["Row"];
@@ -107,11 +107,12 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     if (!f) return;
     try {
       // Android informa .etim como binário (.bin); conferimos nome e tamanho aqui.
-      if (!/\.(etim|json|csv)$/i.test(f.name)) throw new Error(`"${f.name}" não é um programa. Escolha um .etim ou o arquivo do Circuito Manager (.json ou .csv).`);
+      if (!/\.(etim|json|csv|rtf)$/i.test(f.name)) throw new Error(`"${f.name}" não é um programa. Escolha um .etim, .rtf (programa do jw.org) ou o arquivo do Circuito Manager (.json ou .csv).`);
       if (f.size > ETIM_MAX_BYTES) throw new Error("Arquivo muito grande (máx. 1 MB).");
       const text = decodeText(await f.arrayBuffer());
-      const res = /\.csv$/i.test(f.name) ? { title: null, parts: parseCircuitManagerCsv(text) } : parseProgramFile(text);
-      const name = res.title ?? f.name.replace(/\.(etim|json|csv)$/i, "").replace(/_/g, " ");
+      const res = /\.csv$/i.test(f.name) ? { title: null, parts: parseCircuitManagerCsv(text) }
+        : /\.rtf$/i.test(f.name) || text.trimStart().startsWith("{\\rtf") ? parseRtfProgram(text) : parseProgramFile(text);
+      const name = res.title ?? f.name.replace(/\.(etim|json|csv|rtf)$/i, "").replace(/_/g, " ");
       setForm({ name, event_type: "assembly", event_date: "", location: "", link_mode: "pin" });
       setDialog({ parts: res.parts });
     } catch (e) { toast.error(e instanceof Error ? e.message : "Este arquivo não é um programa válido."); }
@@ -310,7 +311,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     const items = await letterModels(ev);
     if (!items.length) { toast.info("Nenhuma parte com orador definido."); return; }
     try {
-      const blob = await htmlToDocx(ev.name, assignmentsListHtml(ev, items));
+      const blob = await htmlToDocx(ev.name, (await import("@/lib/big-events/letter-render")).assignmentsListHtml(ev, items));
       await saveBlob(blob, { filename: `${safeFileName(`Designações ${ev.name}`, "designacoes")}.docx`, mimeType: DOCX_MIME });
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
   };
@@ -321,12 +322,16 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     try {
       const zip = new JSZip();
       const used = new Set<string>();
+      const over: string[] = [];
       for (const i of items) {
         let name = letterFileBase(i.part); let n = 2;
         while (used.has(name)) name = `${letterFileBase(i.part)} (${n++})`;
         used.add(name);
-        zip.file(`${name}.pdf`, await letterPdf(i.model));
+        const r = await (await import("@/lib/big-events/letter-render")).letterPdfFit(i.model);
+        if (r.pages > 1) over.push(i.model.recipientName || name);
+        zip.file(`${name}.pdf`, r.bytes);
       }
+      if (over.length) toast.warning(`A carta de ${over.join(", ")} passou de 1 página — encurte os lembretes no modelo.`, { duration: 8000 });
       const blob = await zip.generateAsync({ type: "blob", mimeType: "application/zip" });
       await saveBlob(blob, { filename: `${safeFileName(`Convites PDF ${ev.name}`, "convites")}.zip`, mimeType: "application/zip" });
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
@@ -458,7 +463,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
         <Button size="sm" className="gap-1" onClick={() => { setForm({ name: "", event_type: "special", event_date: "", location: "", link_mode: "pin" }); setDialog({ parts: null }); }}><Plus className="h-3.5 w-3.5" />Novo</Button>
       </div>
       {loading ? <p className="text-sm text-muted-foreground">Carregando…</p>
-        : !events.length ? <Card className="p-6 text-center text-sm text-muted-foreground">Nenhum evento ainda. Importe o programa (.etim, .json ou .csv) ou crie um evento.</Card>
+        : !events.length ? <Card className="p-6 text-center text-sm text-muted-foreground">Nenhum evento ainda. Importe o programa (.etim, .rtf, .json ou .csv) ou crie um evento.</Card>
         : <div className="space-y-2">{upcoming.map(renderEvent)}</div>}
       {past.length > 0 && (
         <div>

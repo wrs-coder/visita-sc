@@ -131,6 +131,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
       </>)}
       {commentOpen && <CommentMode list={toComment} onClose={() => setCommentOpen(false)} />}
 
+      {track !== "meeting" && <>
       <CollapsibleSection id={`${track}.goal`} title={t("guestWs.goal", { defaultValue: "Meta de leitura" })}
         summary={wdOn
           ? `${t("guestWs.planDays", { defaultValue: "Dias" })}${(() => { const k = weekdayNextUnread(rdata.weekday!, new Date().getDay(), done); return k ? ` · ${label(k)}` : ""; })()}`
@@ -189,7 +190,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
           <Progress value={percent} className="h-1.5 flex-1" />
           {next && <Button size="sm" className="h-8 gap-1 rounded-full" onClick={() => setReading(today?.keys.find((k) => !done.has(k)) ?? next)}><Play className="h-3.5 w-3.5" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {label(today?.keys.find((k) => !done.has(k)) ?? next)}</Button>}
         </div>
-        <p className="text-[11px] text-muted-foreground">{t("guestWs.chaptersDone", { defaultValue: "{{n}} de {{total}} capítulos", n: doneIn, total: total.toLocaleString(i18n.language) })}</p>
+        <p className="text-[11px] text-muted-foreground">{track === "family" ? t("guestWs.trackFamily", { defaultValue: "Família" }) : t("guestWs.trackPersonal", { defaultValue: "Pessoal" })} · {t("guestWs.chaptersDone", { defaultValue: "{{n}} de {{total}} capítulos", n: doneIn, total: total.toLocaleString(i18n.language) })}</p>
       </div>
 
       </>}
@@ -241,6 +242,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
           );
         })}
       </ul>}
+      </>}
 
       <CollapsibleSection id={`${track}.bottom`} title={`${t("guestWs.readingNotes", { defaultValue: "Anotações de leitura" })} · ${t("guestWs.highlights", { defaultValue: "Pontos altos" })}`}
         summary={`★ ${data.highlights.length}`}>
