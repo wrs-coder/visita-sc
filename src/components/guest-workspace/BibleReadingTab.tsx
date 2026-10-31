@@ -130,29 +130,25 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
       </>)}
       {commentOpen && <CommentMode list={toComment} onClose={() => setCommentOpen(false)} />}
 
-      {rdata.weekday?.enabled ? (
-        <CollapsibleSection id={`${track}.weekday`} title={t("guestWs.weekdays", { defaultValue: "Dias da semana" })}
-          summary={(() => { const k = weekdayCurrent(rdata.weekday!, new Date().getDay()); return k ? label(k) : "—"; })()}>
-        <WeekdayCard plan={rdata.weekday} label={label} onChange={(wp) => setReadingState({ weekday: wp })}
-          onRead={(k, d) => { setReadingDay(d); setReading(k); }} />
-        </CollapsibleSection>
-      ) : (
-        <button type="button" onClick={() => setReadingState({ weekday: rdata.weekday ? { ...rdata.weekday, enabled: true } : newWeekday() })}
-          className="w-full rounded-full border border-dashed py-2 text-xs font-medium text-muted-foreground hover:bg-accent/60">
-          {t("guestWs.byWeekday", { defaultValue: "Ler por dias da semana" })}
-        </button>
-      )}
-
-      {!rdata.weekday?.enabled && <>
       <CollapsibleSection id={`${track}.goal`} title={t("guestWs.goal", { defaultValue: "Meta de leitura" })}
-        summary={{ canon: t("guestWs.planCanon", { defaultValue: "Ordem dos livros" }), chrono: t("guestWs.planChrono", { defaultValue: "Cronológica" }), year: t("guestWs.planYear", { defaultValue: "1 ano" }), custom: t("guestWs.planCustom", { defaultValue: "Personalizada" }) }[plan]}>
+        summary={wdOn
+          ? `${t("guestWs.planDays", { defaultValue: "Dias" })}${(() => { const k = weekdayNextUnread(rdata.weekday!, new Date().getDay(), done); return k ? ` · ${label(k)}` : ""; })()}`
+          : { canon: t("guestWs.planCanon", { defaultValue: "Ordem dos livros" }), chrono: t("guestWs.planChrono", { defaultValue: "Cronológica" }), year: t("guestWs.planYear", { defaultValue: "1 ano" }), custom: t("guestWs.planCustom", { defaultValue: "Personalizada" }) }[plan]}>
       <div className="space-y-3">
-      <div className="grid grid-cols-4 gap-1 rounded-xl border bg-card p-1" role="radiogroup" aria-label={t("guestWs.goal", { defaultValue: "Meta de leitura" })}>
-        {([["canon", t("guestWs.planCanon", { defaultValue: "Ordem dos livros" })], ["chrono", t("guestWs.planChrono", { defaultValue: "Cronológica" })], ["year", t("guestWs.planYear", { defaultValue: "1 ano" })], ["custom", t("guestWs.planCustom", { defaultValue: "Personalizada" })]] as const).map(([id, l]) => (
-          <button key={id} type="button" role="radio" aria-checked={plan === id} onClick={() => setPlan(id)}
-            className={cn("min-h-9 rounded-lg px-1 text-xs font-medium", plan === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent/60")}>{l}</button>
-        ))}
+      <div className="grid grid-cols-6 gap-1 rounded-xl border bg-card p-1" role="radiogroup" aria-label={t("guestWs.goal", { defaultValue: "Meta de leitura" })}>
+        {([["canon", t("guestWs.planCanon", { defaultValue: "Ordem dos livros" }), "col-span-3"], ["chrono", t("guestWs.planChrono", { defaultValue: "Cronológica" }), "col-span-3"], ["year", t("guestWs.planYear", { defaultValue: "1 ano" }), "col-span-2"], ["weekday", t("guestWs.planDays", { defaultValue: "Dias" }), "col-span-2"], ["custom", t("guestWs.planCustomShort", { defaultValue: "Pers." }), "col-span-2"]] as const).map(([id, l, span]) => {
+          const on = id === "weekday" ? wdOn : !wdOn && plan === id;
+          return (
+          <button key={id} type="button" role="radio" aria-checked={on}
+            onClick={() => { if (id === "weekday") setReadingState({ weekday: { ...(rdata.weekday ?? newWeekday()), enabled: true } }); else { if (wdOn) setReadingState({ weekday: { ...rdata.weekday!, enabled: false } }); setPlan(id); } }}
+            className={cn("min-h-9 rounded-lg px-1 text-xs font-medium", span, on ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent/60")}>{l}</button>
+          );
+        })}
       </div>
+      {wdOn && <WeekdayCard plan={rdata.weekday!} label={label} done={done} onChange={(wp) => setReadingState({ weekday: wp })}
+        onMark={(keys, on) => update((d) => { const r = getReading(d, track); const s = new Set(r.done); keys.forEach((k) => on ? s.add(k) : s.delete(k)); return putReading(d, track, { ...r, done: [...s] }); })}
+        onRead={(k, d) => { setReadingDay(d); setReading(k); }} />}
+      {!wdOn && <>
 
       {plan === "custom" && (
         <div className="space-y-3 rounded-xl border bg-card p-4">
