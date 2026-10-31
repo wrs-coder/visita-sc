@@ -30,7 +30,6 @@ const OPEN_KEY = "bigEvents.open";
 const pinKey = (partId: string) => `bigEvents.pin.${partId}`;
 const readPin = (id: string) => { try { return localStorage.getItem(pinKey(id)); } catch { return null; } };
 const writePin = (id: string, pin: string) => { try { localStorage.setItem(pinKey(id), pin); } catch { /* */ } };
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const origin = () => (typeof window !== "undefined" && /^https?:/.test(window.location.origin) ? window.location.origin : "https://visitasc.com.br");
 
 export function BigEvents({ elders }: { elders: Array<{ name: string; congregation: string }> }) {
