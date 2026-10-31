@@ -222,6 +222,27 @@ Modo comentário (tela cheia):
 - Na semana seguinte, os cartões vão para o histórico e continuam no filtro "Reunião".
 - Tudo funciona sem internet. A Bíblia continua sendo só a TNM importada por você.
 
+## Ordem de execução (sem quebrar o app)
+
+Cada etapa é independente, fecha com verificação de erros + todos os testes, e não mexe no banco nem no login.
+
+```text
+Etapa 1  Link curto /c/      menor risco, links antigos seguem
+Etapa 2  Modelos de carta    nova pílula, nada existente muda
+Etapa 3  Exportar Word/PDF   usa os modelos da etapa 2
+Etapa 4  Bíblia: 3 leituras  migração local que só adiciona
+Etapa 5  Dias da semana      opção extra; padrão segue igual
+Etapa 6  Reunião + comentar  usa as etapas 4 e 5
+```
+
+Garantias:
+- Links `/confirmar/...` já enviados continuam abrindo.
+- Sua leitura atual, pontos altos e notas JW Library viram "Pessoal" sem perder nada. Se a migração falhar, o app usa os dados antigos.
+- Backup e restauração aceitam o formato antigo e o novo.
+- Botão "Exportar Word" continua no mesmo lugar e passa a abrir a escolha Word/PDF.
+- Telas no padrão iOS/One UI: pílulas, cartões de cantos arredondados, botões de 44px, respeitando a barra do celular.
+- Sem subir versão agora; fecha-se a versão quando você pedir.
+
 ## Detalhes técnicos
 
 - Bíblia: `WsData.reading` continua (vira a leitura pessoal); novo `readings.family` e `readings.meeting` no mesmo armazenamento local, com migração automática que só adiciona campos. Highlight/JwNote ganham `track?: "personal"|"family"|"meeting"` (ausente = pessoal). Programação da reunião: lista local `{weekStart, ref}` com parser de referências pt/en/es testado. Superintendente usa a mesma loja via GuestWorkspace (storageKey user.<id>). Nada muda no servidor.
