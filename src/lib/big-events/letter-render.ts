@@ -199,16 +199,24 @@ export async function letterPdf(m: LetterModel, fontBytes?: LetterFontBytes | nu
     text(t.remindersTitle, { font: F.serifBold, size: 11.5, color: ACCENT, lead: 15 });
     y -= 2; rule(GOLD, M, M + 40, 1); y -= 10;
   }
+  // Faixa com barra lateral; quebra entre páginas linha a linha (sem buracos).
   const band = (s: string, fill: RGB, bar: RGB, font: PDFFont) => {
     if (!s.trim()) return;
-    const ls = wrapP(s, font, 9.8, CW - 26, clean);
-    const lead = 14.5, h = ls.length * lead + 16 + ls.filter((l) => l.last).length * 3;
-    ensure(h);
-    page.drawRectangle({ x: M, y: y - h, width: CW, height: h, color: fill });
-    page.drawRectangle({ x: M, y: y - h, width: 3, height: h, color: bar });
-    y -= 8;
-    for (const l of ls) { page.drawText(l.text, { x: M + 16, y: y - 9.8, size: 9.8, font, color: INK }); y -= lead + (l.last ? 3 : 0); }
-    y -= 8 + 12;
+    let ls = wrapP(s, font, 9.8, CW - 26, clean);
+    const lead = 14.5, hOf = (c: WLine[]) => c.length * lead + 16 + c.filter((l) => l.last).length * 3;
+    while (ls.length) {
+      let n = 0;
+      while (n < ls.length && hOf(ls.slice(0, n + 1)) <= y - 56) n++;
+      if (n < Math.min(2, ls.length)) { page = doc.addPage([W, H]); y = H - 60; continue; }
+      const chunk = ls.slice(0, n); ls = ls.slice(n);
+      const h = hOf(chunk);
+      page.drawRectangle({ x: M, y: y - h, width: CW, height: h, color: fill });
+      page.drawRectangle({ x: M, y: y - h, width: 3, height: h, color: bar });
+      y -= 8;
+      for (const l of chunk) { page.drawText(l.text, { x: M + 16, y: y - 9.8, size: 9.8, font, color: INK }); y -= lead + (l.last ? 3 : 0); }
+      y -= 8;
+    }
+    y -= 12;
   };
   band(t.highlight, TINT_GOLD, GOLD, F.sansBold);
   band(t.reminders, TINT_ACCENT, ACCENT, F.sans);
