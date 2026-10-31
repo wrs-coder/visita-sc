@@ -122,7 +122,58 @@ Carta gerada (Word/PDF, A4):
 - No evento, campo "Modelo de carta" (padrão pré-selecionado). Sem modelo, usa o texto atual.
 - Copiar convite (WhatsApp) continua em texto curto, com o link.
 
+## 4. Bíblia: três tipos de leitura (superintendente e esposa)
+
+Na tela da Bíblia aparecem três pílulas: Pessoal, Família e Reunião. Cada uma tem seu próprio progresso (capítulos lidos, plano, data de início). A leitura que você já tem hoje vira a "Pessoal", sem perder nada.
+
+```text
++--------------------------------+
+| Bíblia                    [⋯]  |
+| (Pessoal) (Família) (Reunião)  |
+|--------------------------------|
+| Leitura em Família             |
+| ▓▓▓▓▓▓░░░░░░  38%              |
+| Próximo: Mateus 6              |
+|  [ Continuar leitura ]         |
+|--------------------------------|
+| Pontos altos e anotações       |
+| (Todas)(Pessoal)(Família)(Reun)|
+|  • Mat 5:3 — "Felizes..."  [F] |
+|  • Sal 23:1 — nota...      [P] |
++--------------------------------+
+```
+
+- Ao ler um capítulo, "Concluído" marca só a leitura que está aberta.
+- Pontos altos e anotações ficam juntos, cada um com uma etiqueta (P/F/R). O filtro mostra todos ou só os de uma leitura. Os antigos ficam como "Pessoal".
+- Vale igual para o superintendente (Estudo e Anotações) e para a esposa.
+
+### Leitura da reunião da semana
+
+Abrir sozinho a leitura da semana puxando do wol.jw.org não é recomendado. Os termos do site não permitem coleta automática do conteúdo, e o site pode mudar e quebrar o recurso. Proposta segura:
+
+```text
++--------------------------------+
+| (Pessoal) (Família) (Reunião)  |
+|--------------------------------|
+| Semana 3-9 de novembro         |
+| Leitura: ISAÍAS 58-59          |
+|  [ Ler Isaías 58 ]             |
+|  [ Ver na wol.jw.org ↗ ]       |
+|--------------------------------|
+| Programação de leitura   [✎]   |
+|  10/11  Isaías 60-62           |
+|  17/11  Isaías 63-64           |
++--------------------------------+
+```
+
+- Você cola uma vez a programação do bimestre (ex.: "3 nov Isaías 58-59"), ou digita semana a semana. O app reconhece livro e capítulos e abre direto na Bíblia que você já tem no aparelho.
+- Na pílula Reunião, o app abre sozinho na semana atual e pula para o próximo capítulo não lido.
+- O botão "Ver na wol.jw.org" abre a página da reunião no navegador, sem copiar nada do site.
+- Tudo funciona sem internet. A Bíblia continua sendo só a TNM importada por você.
+
 ## Detalhes técnicos
+
+- Bíblia: `WsData.reading` continua (vira a leitura pessoal); novo `readings.family` e `readings.meeting` no mesmo armazenamento local, com migração automática que só adiciona campos. Highlight/JwNote ganham `track?: "personal"|"family"|"meeting"` (ausente = pessoal). Programação da reunião: lista local `{weekStart, ref}` com parser de referências pt/en/es testado. Superintendente usa a mesma loja via GuestWorkspace (storageKey user.<id>). Nada muda no servidor.
 
 - `src/lib/big-events/short-code.ts`: `newShortCode(8)` com `crypto.getRandomValues` e alfabeto de 31 chars; testes de tamanho/alfabeto.
 - `invite.ts`: `inviteLink()` passa a usar constante `OFFICIAL_ORIGIN = "https://visitasc.com.br"` e caminho `/c/`; o `origin()` local em BigEvents.tsx deixa de ser usado para convites.
