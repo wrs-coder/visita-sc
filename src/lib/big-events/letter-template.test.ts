@@ -32,3 +32,29 @@ describe("carta convite", () => {
     expect(raw).toContain("visitasc.com.br/c/k7m9p2xa");
   });
 });
+
+describe("carta PDF elegante e Word em lista", () => {
+  it("PDF embute Lora e Lato quando as fontes estão disponíveis", async () => {
+    const { readFileSync } = await import("node:fs");
+    const f = (n: string) => readFileSync(`public/fonts/letter/${n}`);
+    const bytes = await letterPdf(buildLetterModel(defaultTemplate(), ev, part, [part], "079382"), {
+      serif: f("Lora-Regular.ttf"), serifBold: f("Lora-Bold.ttf"), serifItalic: f("Lora-Italic.ttf"),
+      sans: f("Lato-Regular.ttf"), sansBold: f("Lato-Bold.ttf"), sansItalic: f("Lato-Italic.ttf"),
+    });
+    const raw = Buffer.from(bytes).toString("latin1");
+    expect(raw).toMatch(/Lora-Bold/);
+    expect(raw).toMatch(/Lato-Regular/);
+    expect(raw).toContain("visitasc.com.br/c/k7m9p2xa");
+  });
+  it("Word lista uma designação por bloco, com link e sem textos da carta", async () => {
+    const { assignmentsListHtml } = await import("./letter-render");
+    const p2 = { ...part, id: "b", part_time: "09:20", outline_number: null, part_type_label: "Oração", speaker_name: "Ciclano", personal_code: "zzzz2345" };
+    const items = [part, p2].map((p) => ({ part: p, model: buildLetterModel(defaultTemplate(), ev, p, [part, p2], "079382") }));
+    const html = assignmentsListHtml(ev, items);
+    expect(html.match(/<hr>/g)).toHaveLength(2);
+    expect(html.indexOf("Ciclano")).toBeLessThan(html.indexOf("Gonçalves"));
+    expect(html).toContain("Link: https://visitasc.com.br/c/k7m9p2xa");
+    expect(html).not.toContain("Amado irmão");
+    expect(html).not.toContain("Seu irmão");
+  });
+});
