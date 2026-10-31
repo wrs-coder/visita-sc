@@ -512,7 +512,7 @@ function PartItem({ ev, elders, part, overlap, first, last, onPatch, onSetPin, o
   ev: EventRow; elders: Array<{ name: string; congregation: string }>; part: PartRow; overlap: boolean; first: boolean; last: boolean;
   onNewLink: (p: PartRow) => Promise<void>; onEdit: () => void; onAddAfter: () => void;
   onMove: (d: -1 | 1) => void; onDelete: () => void;
-  onPatch: (id: string, p: Partial<PartRow>) => Promise<boolean>;
+  onPatch: (id: string, p: Partial<PartRow>) => Promise<unknown>;
   onSetPin: (ev: EventRow, p: PartRow, pin: string) => Promise<string | null>;
   onNewPin: (ev: EventRow, p: PartRow) => Promise<string | null>;
   onCopy: (ev: EventRow, p: PartRow) => Promise<void>;
