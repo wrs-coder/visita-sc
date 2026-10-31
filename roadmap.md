@@ -83,3 +83,5 @@
 - [ ] Etapa 4: Bíblia com leituras Pessoal/Família/Reunião + filtro de pontos altos.
 - [ ] Etapa 5: leitura por dias da semana.
 - [ ] Etapa 6: leitura da reunião automática + "Para comentar" e modo comentário.
+- [x] Grandes Eventos etapas 1–3: link curto /c/, modelos de carta, exportar Word/PDF individuais.
+- [x] Bíblia etapas 4–6: leituras Pessoal/Família/Reunião, leitura por dias da semana, semana da reunião automática, "Para comentar" e modo comentário.
