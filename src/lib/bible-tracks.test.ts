@@ -35,16 +35,16 @@ describe("bible tracks", () => {
 
 import { weekdayNextUnread, weekdayDayDone, emptyWeekday as _ew } from "./bible-tracks";
 describe("weekday read marks", () => {
-  const p = { ..._ew(), enabled: true, days: _ew().days.map((_, i) => (i === 1 ? ["RUT"] : [])) };
+  const p = { ..._ew(), enabled: true, days: _ew().days.map((_, i) => (i === 1 ? ["B08"] : [])) };
   it("next unread skips marked chapters", () => {
-    expect(weekdayNextUnread(p, 1, new Set(["RUT:1", "RUT:2"]))).toBe("RUT:3");
+    expect(weekdayNextUnread(p, 1, new Set(["B08:1", "B08:2"]))).toBe("B08:3");
   });
   it("day done when all marked", () => {
-    expect(weekdayDayDone(p, 1, new Set(["RUT:1", "RUT:2", "RUT:3", "RUT:4"]))).toBe(true);
-    expect(weekdayNextUnread(p, 1, new Set(["RUT:1", "RUT:2", "RUT:3", "RUT:4"]))).toBeNull();
+    expect(weekdayDayDone(p, 1, new Set(["B08:1", "B08:2", "B08:3", "B08:4"]))).toBe(true);
+    expect(weekdayNextUnread(p, 1, new Set(["B08:1", "B08:2", "B08:3", "B08:4"]))).toBeNull();
   });
   it("switching goal keeps weekday days", () => {
     const off = { ...p, enabled: false };
-    expect(off.days[1]).toEqual(["RUT"]);
+    expect(off.days[1]).toEqual(["B08"]);
   });
 });
