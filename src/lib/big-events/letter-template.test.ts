@@ -53,6 +53,13 @@ describe("carta PDF elegante e Word em lista", () => {
     const long = { ...m, tpl: { ...m.tpl, reminders: "Lembrete muito longo para encher a página. ".repeat(120) } };
     expect((await letterPdfFit(long, null)).pages).toBeGreaterThan(1);
   });
+  it("rótulo longo na caixa fica em linha própria, sem sobrepor o texto", async () => {
+    const { letterPdfFit } = await import("./letter-render");
+    const m = buildLetterModel(defaultTemplate(), ev, part, [part], "079382");
+    const long = { ...m, box: [...m.box, "Informações para você: Não é necessário ler todos os textos citados."] };
+    const r = await letterPdfFit(long, null);
+    expect(r.pages).toBe(1);
+  });
   it("Word lista uma designação por bloco, com link e sem textos da carta", async () => {
     const { assignmentsListHtml } = await import("./letter-render");
     const p2 = { ...part, id: "b", part_time: "09:20", outline_number: null, part_type_label: "Oração", speaker_name: "Ciclano", personal_code: "zzzz2345" };
