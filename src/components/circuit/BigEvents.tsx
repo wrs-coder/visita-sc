@@ -19,7 +19,8 @@ import { htmlToDocx, safeFileName, DOCX_MIME } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
 import JSZip from "jszip";
 import { LetterTemplates } from "./LetterTemplates";
-import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, saveTemplates, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
+import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
+import { fetchLetterTemplates, pushLetterTemplates, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
 import { letterHtml, letterPdf } from "@/lib/big-events/letter-render";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -49,8 +50,19 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const [tplChoice, setTplChoice] = useState<Record<string, string>>({});
   const [exportFor, setExportFor] = useState<EventRow | null>(null);
   const [exporting, setExporting] = useState(false);
-  useEffect(() => { if (user) { setTemplates(loadTemplates(user.id)); setTplChoice(loadEventChoice(user.id)); } }, [user]);
-  const updateTemplates = (l: LetterTemplate[]) => { setTemplates(l); if (user) saveTemplates(user.id, l); };
+  const [tplSync, setTplSync] = useState<SyncState>("local");
+  useEffect(() => {
+    if (!user) return;
+    setTemplates(loadTemplates(user.id)); setTplChoice(loadEventChoice(user.id));
+    let alive = true;
+    void fetchLetterTemplates(user.id).then((r) => { if (alive) { setTemplates(r.list); setTplSync(r.state); } });
+    const stop = startLetterAutoSync(user.id, (s) => { if (alive) setTplSync(s); });
+    return () => { alive = false; stop(); };
+  }, [user]);
+  const updateTemplates = (l: LetterTemplate[]) => {
+    const prev = templates; setTemplates(l);
+    if (user) { setTplSync("pending"); void pushLetterTemplates(user.id, prev, l).then(setTplSync); }
+  };
   const chooseTemplate = (eventId: string, tplId: string) => {
     const next = { ...tplChoice, [eventId]: tplId }; setTplChoice(next); if (user) saveEventChoice(user.id, next);
   };

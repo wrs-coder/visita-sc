@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { defaultTemplate, buildLetterModel, type LetterTemplate } from "@/lib/big-events/letter-template";
 import { letterPdf } from "@/lib/big-events/letter-render";
 import { saveBlob } from "@/lib/share";
+import type { SyncState } from "@/lib/big-events/letter-template-sync";
 
 type Field = { key: keyof LetterTemplate; label: string; rows?: number };
 const GROUPS: Array<{ title: string; fields: Field[] }> = [
@@ -30,7 +31,7 @@ const GROUPS: Array<{ title: string; fields: Field[] }> = [
   ] },
 ];
 
-export function LetterTemplates({ list, onChange }: { list: LetterTemplate[]; onChange: (l: LetterTemplate[]) => void }) {
+export function LetterTemplates({ list, onChange, sync }: { list: LetterTemplate[]; onChange: (l: LetterTemplate[]) => void; sync?: SyncState }) {
   const [editing, setEditing] = useState<LetterTemplate | null>(null);
 
   const save = () => {
@@ -95,6 +96,11 @@ export function LetterTemplates({ list, onChange }: { list: LetterTemplate[]; on
         <p className="flex-1 text-sm text-muted-foreground">Modelos de carta convite. O primeiro é o padrão dos eventos.</p>
         <Button size="sm" className="gap-1" onClick={() => setEditing({ ...(list[0] ?? defaultTemplate()), id: crypto.randomUUID(), name: "Novo modelo" })}><Plus className="h-3.5 w-3.5" />Novo</Button>
       </div>
+      {sync && (
+        <p className="text-xs text-muted-foreground">
+          {sync === "synced" ? "☁ Sincronizado entre seus aparelhos" : sync === "pending" ? "⟳ Salvo no aparelho · aguardando internet" : "Salvo no aparelho"}
+        </p>
+      )}
       {list.map((t, i) => (
         <Card key={t.id} className="flex items-center gap-2 p-3">
           <button type="button" className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => setEditing({ ...t })}>
