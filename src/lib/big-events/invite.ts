@@ -72,7 +72,10 @@ export function formatEventDate(iso: string | null): string {
   return `${wd} ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
 }
 
-export function inviteLink(origin: string, token: string) { return `${origin}/confirmar/${token}`; }
+/** Links de convite sempre usam o domínio oficial, mesmo no APK ou no preview. */
+export const OFFICIAL_ORIGIN = "https://visitasc.com.br";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function inviteLink(_origin: string, token: string) { return `${OFFICIAL_ORIGIN}/c/${token}`; }
 
 export function buildInviteText(ev: InviteEvent, part: InvitePart, all: InvitePart[], pin: string | null, origin: string): string {
   const lines: string[] = [];
