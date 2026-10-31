@@ -311,7 +311,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     const items = await letterModels(ev);
     if (!items.length) { toast.info("Nenhuma parte com orador definido."); return; }
     try {
-      const blob = await htmlToDocx(ev.name, assignmentsListHtml(ev, items));
+      const blob = await htmlToDocx(ev.name, (await import("@/lib/big-events/letter-render")).assignmentsListHtml(ev, items));
       await saveBlob(blob, { filename: `${safeFileName(`Designações ${ev.name}`, "designacoes")}.docx`, mimeType: DOCX_MIME });
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
   };
