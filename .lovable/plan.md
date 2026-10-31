@@ -160,13 +160,16 @@ Abrir sozinho a leitura da semana puxando do wol.jw.org não é recomendado. Os 
 |  [ Ler Isaías 58 ]             |
 |  [ Ver na wol.jw.org ↗ ]       |
 |--------------------------------|
-| Programação de leitura   [✎]   |
+| Apostila nov-dez importada ✓   |
 |  10/11  Isaías 60-62           |
 |  17/11  Isaías 63-64           |
+|  [ Importar apostila (EPUB) ]  |
 +--------------------------------+
 ```
 
-- Você cola uma vez a programação do bimestre (ex.: "3 nov Isaías 58-59"), ou digita semana a semana. O app reconhece livro e capítulos e abre direto na Bíblia que você já tem no aparelho.
+- Automático pela apostila: a cada bimestre você baixa a Apostila Vida e Ministério em EPUB no jw.org e importa no app, como já faz com a Bíblia. O app lê só o cabeçalho de cada semana (datas + "ISAÍAS 58-59") e guarda apenas data e referência. Nenhum texto da apostila fica salvo.
+- A semana troca sozinha na segunda-feira. Quando faltarem 2 semanas para acabar a apostila, aparece um aviso: "Importe a próxima apostila".
+- Opção manual de reserva: colar ou digitar a programação, se não tiver o EPUB.
 - Na pílula Reunião, o app abre sozinho na semana atual e pula para o próximo capítulo não lido.
 - O botão "Ver na wol.jw.org" abre a página da reunião no navegador, sem copiar nada do site.
 - Tudo funciona sem internet. A Bíblia continua sendo só a TNM importada por você.
