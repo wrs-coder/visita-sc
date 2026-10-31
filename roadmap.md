@@ -85,3 +85,6 @@
 - [ ] Etapa 6: leitura da reunião automática + "Para comentar" e modo comentário.
 - [x] Grandes Eventos etapas 1–3: link curto /c/, modelos de carta, exportar Word/PDF individuais.
 - [x] Bíblia etapas 4–6: leituras Pessoal/Família/Reunião, leitura por dias da semana, semana da reunião automática, "Para comentar" e modo comentário.
+- [x] Leitura da Bíblia: recolher/expandir nas caixas das abas Pessoal/Família/Reunião (progresso fica sempre visível)
+- [x] Carta PDF elegante (Lora + Lato, margens amplas, justificado, data à direita, papel branco, barras laterais nos lembretes)
+- [x] Exportar Word vira lista de designações para conferir e copiar

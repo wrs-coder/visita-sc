@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { HighlightsDrawer } from "./HighlightsDrawer";
 import { CleanReader } from "./CleanReader";
 import { JwLibraryPanel } from "./JwLibraryPanel";
+import { CollapsibleSection } from "./CollapsibleSection";
 import { TrackPills, WeekdayCard, MeetingWeekCard, CommentCard, CommentMode, newWeekday } from "./BibleTrackExtras";
 import { commentList, filterByTrack, meetingWeekKeys, weekdayAdvance, weekdayCurrent, type Track } from "@/lib/bible-tracks";
 import type { WsReading } from "@/lib/guest-workspace-store";
@@ -117,16 +118,24 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
       <TrackPills value={track} onChange={(v) => { setTrack(v); setReadingDay(null); }} />
 
       {track === "meeting" && (<>
+        <CollapsibleSection id="meeting.week" title={t("guestWs.meetingWeek", { defaultValue: "Leitura da semana" })}
+          summary={meetingKeys.length ? `${meetingKeys.length === 1 ? label(meetingKeys[0]) : `${label(meetingKeys[0])}–${meetingKeys[meetingKeys.length - 1].split(":")[1]}`} · ${meetingKeys.filter((k) => done.has(k)).length}/${meetingKeys.length}` : undefined}>
         <MeetingWeekCard key={rdata.meetingWeek?.anchorMonday ?? "new"} mw={rdata.meetingWeek} keys={meetingKeys} done={done} label={label}
           onSet={(m) => setReadingState({ meetingWeek: m })} onRead={(k) => setReading(k)} />
+        </CollapsibleSection>
+        <CollapsibleSection id="meeting.comment" title={t("guestWs.toComment", { defaultValue: "Para comentar" })} summary={String(toComment.length)}>
         <CommentCard list={toComment} onOpen={() => setCommentOpen(true)}
           onStar={(id) => update((d) => ({ ...d, highlights: d.highlights.map((h) => h.id === id ? { ...h, star: !h.star } : h) }))} />
+        </CollapsibleSection>
       </>)}
       {commentOpen && <CommentMode list={toComment} onClose={() => setCommentOpen(false)} />}
 
       {rdata.weekday?.enabled ? (
+        <CollapsibleSection id={`${track}.weekday`} title={t("guestWs.weekdays", { defaultValue: "Dias da semana" })}
+          summary={(() => { const k = weekdayCurrent(rdata.weekday!, new Date().getDay()); return k ? label(k) : "—"; })()}>
         <WeekdayCard plan={rdata.weekday} label={label} onChange={(wp) => setReadingState({ weekday: wp })}
           onRead={(k, d) => { setReadingDay(d); setReading(k); }} />
+        </CollapsibleSection>
       ) : (
         <button type="button" onClick={() => setReadingState({ weekday: rdata.weekday ? { ...rdata.weekday, enabled: true } : newWeekday() })}
           className="w-full rounded-full border border-dashed py-2 text-xs font-medium text-muted-foreground hover:bg-accent/60">
@@ -135,6 +144,9 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
       )}
 
       {!rdata.weekday?.enabled && <>
+      <CollapsibleSection id={`${track}.goal`} title={t("guestWs.goal", { defaultValue: "Meta de leitura" })}
+        summary={{ canon: t("guestWs.planCanon", { defaultValue: "Ordem dos livros" }), chrono: t("guestWs.planChrono", { defaultValue: "Cronológica" }), year: t("guestWs.planYear", { defaultValue: "1 ano" }), custom: t("guestWs.planCustom", { defaultValue: "Personalizada" }) }[plan]}>
+      <div className="space-y-3">
       <div className="grid grid-cols-4 gap-1 rounded-xl border bg-card p-1" role="radiogroup" aria-label={t("guestWs.goal", { defaultValue: "Meta de leitura" })}>
         {([["canon", t("guestWs.planCanon", { defaultValue: "Ordem dos livros" })], ["chrono", t("guestWs.planChrono", { defaultValue: "Cronológica" })], ["year", t("guestWs.planYear", { defaultValue: "1 ano" })], ["custom", t("guestWs.planCustom", { defaultValue: "Personalizada" })]] as const).map(([id, l]) => (
           <button key={id} type="button" role="radio" aria-checked={plan === id} onClick={() => setPlan(id)}
@@ -171,6 +183,8 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
           </>)}
         </div>
       )}
+      </div>
+      </CollapsibleSection>
 
       <div className="sticky top-0 z-20 space-y-1.5 rounded-xl border bg-card/95 p-3 backdrop-blur" title={today && today.keys.length > 0 ? t("guestWs.todayPlan", { defaultValue: "Dia {{d}} — hoje: {{from}} a {{to}}", d: today.day, from: label(today.keys[0]), to: label(today.keys[today.keys.length - 1]) }) : undefined}>
         <div className="flex items-center gap-2">
@@ -231,6 +245,8 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
         })}
       </ul>}
 
+      <CollapsibleSection id={`${track}.bottom`} title={`${t("guestWs.readingNotes", { defaultValue: "Anotações de leitura" })} · ${t("guestWs.highlights", { defaultValue: "Pontos altos" })}`}
+        summary={`★ ${data.highlights.length}`}>
       <section className="space-y-2">
         <div className="flex flex-wrap gap-1.5" role="tablist">
           {([["notes", t("guestWs.readingNotes", { defaultValue: "Anotações de leitura" })], ["highlights", `${t("guestWs.highlights", { defaultValue: "Pontos altos" })} · ${data.highlights.length}`], ["jw", `JW Library${data.jwNotes.length ? ` · ${data.jwNotes.length}` : ""}`]] as const).map(([id, l]) => (
@@ -268,6 +284,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
           </div>
         )}
       </section>
+      </CollapsibleSection>
 
       {drawerEl}
     </div>
