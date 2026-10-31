@@ -1,6 +1,6 @@
 # Grandes Eventos — link curto, PDF individual e modelo de carta
 
-Observação: o modelo de carta citado não chegou anexado nesta mensagem. O plano abaixo usa um timbre padrão editável; ao receber o modelo, ajusto o desenho da carta a ele antes de executar.
+A carta segue o modelo enviado (Nº 13 Gonçalves Da Justino): timbre, destinatário, Ref., abertura, quadro da designação preenchido automaticamente pelo evento, lembretes e assinatura.
 
 ## 1. Link curto `visitasc.com.br/c/k7m9p2`
 
@@ -83,25 +83,41 @@ Editor do modelo:
 Carta gerada (Word/PDF, A4):
 
 ```text
-+--------------------------------+
-| WANDERSON P. R. SANTOS         |
-| Superintendente de Circuito    |
-| Circuito XX · tel · e-mail     |
-|________________________________|
-|                     30/10/2026 |
-| Ao irmão João Silva            |
-| Congregação Central            |
-|                                |
-| Designação: Discurso nº 7      |
-| Tema: "Confie em Jeová"        |
-| Dia 14/03, 09:40 · 15 min      |
-|                                |
-| Para confirmar, clique aqui.   |
-|                                |
-| Seu irmão,                     |
-| Wanderson                      |
-+--------------------------------+
++----------------------------------------+
+|        WANDERSON RODRIGUES             |  timbre (modelo)
+|              IBE-01                    |
+|  Rua 1, Bl 03 ... Angola · Tel ...     |
+|----------------------------------------|
+|                 31 de outubro de 2026  |  data automática
+| Gonçalves Da Justino                   |  orador (auto)
+| C.Funda 01                             |  congregação (auto)
+| Ref:. DESIGNAÇÃO — Escola ... 2027     |  modelo
+| Amado irmão:                           |
+|  Por ser um exemplo... (texto livre)   |  modelo
+|  ┌──────────────────────────────────┐  |
+|  │ Assembleia ... — sáb 07/11/2026  │  |  TUDO AUTOMÁTICO
+|  │ Local: SAV                       │  |  vindo do evento
+|  │ Orador: nome — congregação       │  |
+|  │ Sua designação: Discurso nº 7    │  |
+|  │   · 09:40 · 15 min               │  |
+|  │ Tema: ...                        │  |
+|  │ Próximo orador: ... (se ativo)   │  |
+|  │ Aceitar/recusar: [Clique aqui!]  │  |  link ativo no PDF
+|  │ PIN: 079382 (só no modo PIN)     │  |
+|  └──────────────────────────────────┘  |
+|        INFORMAÇÕES & LEMBRETES:        |  blocos do modelo
+|  [faixa cinza] O esboço e os vídeos... |
+|  [faixa verde] Preparação/Participação |
+|  • Data e Local do Ensaio: ...         |
+|  Torne sua participação ... oração     |
+|                     Seu irmão,         |
+|           Wanderson Rodrigues, SC      |  assinatura cursiva
++----------------------------------------+
 ```
+
+- O superintendente edita timbre, Ref., abertura, lembretes, ensaio e assinatura. O quadro da designação não é editável: vem do evento e da parte.
+- Linhas vazias somem (sem local, sem próximo orador, sem PIN no modo link pessoal).
+- Já deixo um modelo inicial com o texto da sua carta, para você só revisar.
 
 - No evento, campo "Modelo de carta" (padrão pré-selecionado). Sem modelo, usa o texto atual.
 - Copiar convite (WhatsApp) continua em texto curto, com o link.
