@@ -34,3 +34,29 @@ Se as fontes da carta não carregarem, o app tenta de novo antes de gerar as car
 - `letter-render.ts` (quadro): medir os rótulos com `widthOfTextAtSize`. `LABW = min(max(rótulos ≤ 100pt) + 10, 100)`. Rótulos acima de 100pt viram linha "stacked": rótulo com altura de 11pt e valor com largura total. A altura do quadro é calculada pelas mesmas linhas.
 - Teste: um rótulo longo não sobrepõe o texto (o x do valor fica maior ou igual à largura do rótulo, ou o rótulo fica em linha própria), e a carta continua em 1 página.
 - Conferir `loadLetterFonts` (caminho `/fonts/letter` no app Android) e incluir as fontes no aquecimento para uso sem internet.
+
+---
+
+# Barra de progresso na meta "Dias"
+
+## O que acontece
+Hoje a barra de progresso fica escondida quando a meta é "Dias". Ela só aparece nas outras metas.
+
+## Solução
+Na meta "Dias", a barra também aparece nas abas Pessoal e Família:
+- Ela conta os capítulos lidos dentro dos livros escolhidos para os dias da semana. Se nenhum livro foi escolhido, conta a Bíblia inteira.
+- O botão "Continuar" abre o próximo capítulo não lido do dia de hoje.
+- A aba Reunião continua sem barra.
+
+```text
+┌──────────────────────────┐
+│ ▾ Meta de leitura · Dias │
+│  [Dom][Seg][Ter]...      │
+│ Pessoal · 23%  ━━━──── ▶ │
+│ 58 de 250 capítulos      │
+└──────────────────────────┘
+```
+
+## Detalhes técnicos
+- `BibleReadingTab.tsx`: retirar a condição `!wdOn` da barra fixa. Com `wdOn`, o total vem de `weekdaySeq` (a união dos livros de todos os dias) e o próximo capítulo vem de `weekdayNextUnread(dia de hoje)`.
+- Teste do cálculo de porcentagem no modo "Dias".
