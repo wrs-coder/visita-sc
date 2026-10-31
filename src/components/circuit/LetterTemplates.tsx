@@ -30,7 +30,7 @@ const GROUPS: Array<{ title: string; fields: Field[] }> = [
   ] },
 ];
 
-export function LetterTemplates({ list, onChange }: { list: LetterTemplate[]; onChange: (l: LetterTemplate[]) => void }) {
+export function LetterTemplates({ list, onChange, sync }: { list: LetterTemplate[]; onChange: (l: LetterTemplate[]) => void; sync?: SyncState }) {
   const [editing, setEditing] = useState<LetterTemplate | null>(null);
 
   const save = () => {
