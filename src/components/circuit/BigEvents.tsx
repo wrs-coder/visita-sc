@@ -440,7 +440,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
           <DialogHeader><DialogTitle>Exportar convites</DialogTitle></DialogHeader>
           <div className="space-y-2">
             <Button variant="outline" className="h-auto w-full justify-start py-3 text-left" disabled={exporting} onClick={() => runExport("docx")}>
-              <span><span className="block font-semibold">Word (um arquivo)</span><span className="block text-xs text-muted-foreground">Todas as cartas juntas</span></span>
+              <span><span className="block font-semibold">Word (lista de designações)</span><span className="block text-xs text-muted-foreground">Para conferir e copiar os convites</span></span>
             </Button>
             <Button variant="outline" className="h-auto w-full justify-start py-3 text-left" disabled={exporting} onClick={() => runExport("pdf")}>
               <span><span className="block font-semibold">PDF individuais (.zip)</span><span className="block text-xs text-muted-foreground">Uma carta por orador, com "Clique aqui" ativo</span></span>
