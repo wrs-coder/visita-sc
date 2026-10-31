@@ -1,11 +1,11 @@
 // Texto do convite (o mesmo para copiar no WhatsApp/e-mail e para o Word) e regras do PIN.
 
-export interface InviteEvent { name: string; event_date: string | null; location: string | null; extra_info: string | null; public_token: string; link_mode?: string | null }
+export interface InviteEvent { name: string; event_date: string | null; location: string | null; extra_info: string | null; public_token: string; public_code?: string | null; link_mode?: string | null }
 export interface InvitePart {
   id: string; sort_order: number; part_time: string | null; duration_min: number | null; theme: string;
   outline_number: string | null; instructions: string | null; part_type_label: string | null;
   assigned_to: string; speaker_name: string | null; show_next_speaker: boolean;
-  speaker_congregation?: string | null; personal_token?: string | null;
+  speaker_congregation?: string | null; personal_token?: string | null; personal_code?: string | null;
 }
 
 export const PART_TYPES = ["Discurso", "Entrevistas", "Simpósio", "A Sentinela", "Discurso Batismo", "Discurso Público"] as const;
@@ -92,9 +92,9 @@ export function buildInviteText(ev: InviteEvent, part: InvitePart, all: InvitePa
   }
   if (ev.extra_info) lines.push(`Informações: ${ev.extra_info}`);
   if (ev.link_mode === "personal" && part.personal_token) {
-    lines.push(`Confirme aqui: ${inviteLink(origin, part.personal_token)}`);
+    lines.push(`Confirme aqui: ${inviteLink(origin, part.personal_code || part.personal_token)}`);
   } else {
-    lines.push(`Confirme aqui: ${inviteLink(origin, ev.public_token)}`);
+    lines.push(`Confirme aqui: ${inviteLink(origin, ev.public_code || ev.public_token)}`);
     if (pin) lines.push(`PIN: ${pin}`);
   }
   return lines.join("\n");
