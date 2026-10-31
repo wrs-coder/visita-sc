@@ -34,7 +34,7 @@ describe("carta convite", () => {
 });
 
 describe("carta PDF elegante e Word em lista", () => {
-  it("PDF embute Lora e Lato quando as fontes estão disponíveis", async () => {
+  it("PDF usa só Lora no texto quando as fontes estão disponíveis", async () => {
     const { readFileSync } = await import("node:fs");
     const f = (n: string) => readFileSync(`public/fonts/letter/${n}`);
     const bytes = await letterPdf(buildLetterModel(defaultTemplate(), ev, part, [part], "079382"), {
@@ -43,8 +43,15 @@ describe("carta PDF elegante e Word em lista", () => {
     });
     const raw = Buffer.from(bytes).toString("latin1");
     expect(raw).toMatch(/Lora-Bold/);
-    expect(raw).toMatch(/Lato-Regular/);
+    expect(raw).not.toMatch(/Lato-Regular/);
     expect(raw).toContain("visitasc.com.br/c/k7m9p2xa");
+  });
+  it("carta padrão cabe em 1 página e avisa quando não cabe", async () => {
+    const { letterPdfFit } = await import("./letter-render");
+    const m = buildLetterModel(defaultTemplate(), ev, part, [part], "079382");
+    expect((await letterPdfFit(m, null)).pages).toBe(1);
+    const long = { ...m, tpl: { ...m.tpl, reminders: "Lembrete muito longo para encher a página. ".repeat(120) } };
+    expect((await letterPdfFit(long, null)).pages).toBeGreaterThan(1);
   });
   it("Word lista uma designação por bloco, com link e sem textos da carta", async () => {
     const { assignmentsListHtml } = await import("./letter-render");
