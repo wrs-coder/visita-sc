@@ -16,7 +16,7 @@ import { CleanReader } from "./CleanReader";
 import { JwLibraryPanel } from "./JwLibraryPanel";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { TrackPills, WeekdayCard, MeetingWeekCard, CommentCard, CommentMode, newWeekday } from "./BibleTrackExtras";
-import { commentList, filterByTrack, meetingWeekKeys, weekdayAdvance, weekdayNextUnread, type Track } from "@/lib/bible-tracks";
+import { commentList, filterByTrack, meetingWeekKeys, weekdayAdvance, weekdayNextUnread, weekdayProgress, type Track } from "@/lib/bible-tracks";
 import type { WsReading } from "@/lib/guest-workspace-store";
 
 const TRACK_KEY = "guest.workspace.track";
@@ -56,8 +56,9 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
     const seq = chapterSequence(plan, custom);
   const total = plan === "custom" ? seq.length : TOTAL_CHAPTERS;
   const doneIn = plan === "custom" ? seq.filter((k) => done.has(k)).length : done.size;
-  const percent = total ? Math.round((doneIn / total) * 100) : 0;
-  const next = seq.find((k) => !done.has(k)) ?? null;
+  const wdp = wdOn ? weekdayProgress(rdata.weekday!, done, TOTAL_CHAPTERS) : null;
+  const percent = wdp ? wdp.percent : total ? Math.round((doneIn / total) * 100) : 0;
+  const next = wdOn ? weekdayNextUnread(rdata.weekday!, new Date().getDay(), done) : seq.find((k) => !done.has(k)) ?? null;
   const today = plan === "year" ? yearPlanDay(startDate, new Date()) : plan === "custom" ? customPlanDay(custom, startDate, new Date()) : null;
   const name = (b: string) => getLocalizedBookName(b, i18n.language) ?? b;
   const label = (k: string) => { const [b, c] = k.split(":"); return `${name(b)} ${c}`; };
@@ -183,14 +184,14 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
       </div>
       </CollapsibleSection>
 
-      {!wdOn && <>
+      {<>
       <div className="sticky top-0 z-20 space-y-1.5 rounded-xl border bg-card/95 p-3 backdrop-blur" title={today && today.keys.length > 0 ? t("guestWs.todayPlan", { defaultValue: "Dia {{d}} — hoje: {{from}} a {{to}}", d: today.day, from: label(today.keys[0]), to: label(today.keys[today.keys.length - 1]) }) : undefined}>
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">{percent}%</span>
           <Progress value={percent} className="h-1.5 flex-1" />
-          {next && <Button size="sm" className="h-8 gap-1 rounded-full" onClick={() => setReading(today?.keys.find((k) => !done.has(k)) ?? next)}><Play className="h-3.5 w-3.5" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {label(today?.keys.find((k) => !done.has(k)) ?? next)}</Button>}
+          {next && <Button size="sm" className="h-8 gap-1 rounded-full" onClick={() => { const k = wdOn ? next : today?.keys.find((x) => !done.has(x)) ?? next; if (wdOn) setReadingDay(new Date().getDay()); setReading(k); }}><Play className="h-3.5 w-3.5" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {label(wdOn ? next : today?.keys.find((k) => !done.has(k)) ?? next)}</Button>}
         </div>
-        <p className="text-[11px] text-muted-foreground">{track === "family" ? t("guestWs.trackFamily", { defaultValue: "Família" }) : t("guestWs.trackPersonal", { defaultValue: "Pessoal" })} · {t("guestWs.chaptersDone", { defaultValue: "{{n}} de {{total}} capítulos", n: doneIn, total: total.toLocaleString(i18n.language) })}</p>
+        <p className="text-[11px] text-muted-foreground">{track === "family" ? t("guestWs.trackFamily", { defaultValue: "Família" }) : t("guestWs.trackPersonal", { defaultValue: "Pessoal" })} · {t("guestWs.chaptersDone", { defaultValue: "{{n}} de {{total}} capítulos", n: wdp ? wdp.done : doneIn, total: (wdp ? wdp.total : total).toLocaleString(i18n.language) })}</p>
       </div>
 
       </>}
