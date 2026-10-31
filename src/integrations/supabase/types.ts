@@ -143,6 +143,7 @@ export type Database = {
           part_time: string | null
           part_type_id: string | null
           part_type_label: string | null
+          personal_code: string | null
           personal_token: string | null
           pin_hash: string | null
           responded_at: string | null
@@ -171,6 +172,7 @@ export type Database = {
           part_time?: string | null
           part_type_id?: string | null
           part_type_label?: string | null
+          personal_code?: string | null
           personal_token?: string | null
           pin_hash?: string | null
           responded_at?: string | null
@@ -199,6 +201,7 @@ export type Database = {
           part_time?: string | null
           part_type_id?: string | null
           part_type_label?: string | null
+          personal_code?: string | null
           personal_token?: string | null
           pin_hash?: string | null
           responded_at?: string | null
@@ -237,6 +240,7 @@ export type Database = {
           locked_until: string | null
           name: string
           notes: string | null
+          public_code: string | null
           public_token: string
           start_time: string | null
           superintendent_id: string
@@ -254,6 +258,7 @@ export type Database = {
           locked_until?: string | null
           name: string
           notes?: string | null
+          public_code?: string | null
           public_token?: string
           start_time?: string | null
           superintendent_id: string
@@ -271,6 +276,7 @@ export type Database = {
           locked_until?: string | null
           name?: string
           notes?: string | null
+          public_code?: string | null
           public_token?: string
           start_time?: string | null
           superintendent_id?: string
@@ -2303,6 +2309,7 @@ export type Database = {
         Args: { _congregation_id: string }
         Returns: boolean
       }
+      gen_short_code: { Args: { _len?: number }; Returns: string }
       get_elder_tab_password: {
         Args: { _congregation_id: string }
         Returns: string
