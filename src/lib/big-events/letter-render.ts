@@ -80,7 +80,7 @@ export async function letterPdf(m: LetterModel): Promise<Uint8Array> {
   // Quadro da designação (automático)
   const lines = m.box.flatMap((l) => wrap(l, bold, 9.5, CW - 20));
   const linkLabel = "Para aceitar/recusar a designação: ";
-  const boxH = (lines.length + 1 + (m.pinLine ? wrap(m.pinLine, bold, 9.5, CW - 20).length : 0)) * 12.5 + 16;
+  const boxH = (lines.length + 1 + (m.pinLine ? wrap(m.pinLine, bold, 9.5, CW - 20).length : 0)) * 12.5 + 6;
   ensure(boxH);
   const top = y;
   page.drawRectangle({ x: M, y: top - boxH, width: CW, height: boxH, borderColor: rgb(0.15, 0.15, 0.15), borderWidth: 1.2 });
@@ -119,5 +119,5 @@ export async function letterPdf(m: LetterModel): Promise<Uint8Array> {
   if (t.closing) text(t.closing, { size: 10, gap: 4 });
   if (t.signoff) text(t.signoff, { size: 10, align: "center", gap: 2 });
   if (t.signature) text(t.signature, { font: sig, size: 12, align: "right" });
-  return doc.save();
+  return doc.save({ useObjectStreams: false });
 }
