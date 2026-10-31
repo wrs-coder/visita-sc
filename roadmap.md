@@ -74,3 +74,12 @@
 - [x] Botões da leitura do capítulo acima da barra do Android (S22 Ultra)
 - [x] Versão 5.0.6 / versionCode 35
 - [x] Termos de Uso novos + aceite no acesso por código + reaceite por versão
+
+## Grandes Eventos + Bíblia (plano 31/10)
+- [x] Etapa 1a: convites sempre com https://visitasc.com.br/c/<código>; /c/ abre a confirmação; /confirmar/ segue valendo.
+- [ ] Etapa 1b: código curto de 8 caracteres — bloqueado: as colunas do link no banco só aceitam o formato longo; precisa da autorização do usuário para mudar o banco.
+- [ ] Etapa 2: pílula Modelos de carta (no aparelho, modelo inicial da carta Nº 13).
+- [ ] Etapa 3: exportar Word ou PDF individuais (.zip) com "Clique aqui" ativo.
+- [ ] Etapa 4: Bíblia com leituras Pessoal/Família/Reunião + filtro de pontos altos.
+- [ ] Etapa 5: leitura por dias da semana.
+- [ ] Etapa 6: leitura da reunião automática + "Para comentar" e modo comentário.

@@ -79,13 +79,13 @@ describe("edição de partes e modo de link", () => {
     expect(t).toContain("Orador: João — Central");
     expect(t).toContain("Traga o esboço");
     expect(t).toContain("Próximo orador: Pedro — Vila Nova");
-    expect(t).toContain("https://x/confirmar/EVT");
+    expect(t).toContain("https://visitasc.com.br/c/EVT");
     expect(t).toContain("PIN: 1234");
   });
   it("modo link pessoal usa o link do orador e não envia PIN", () => {
     const t = buildInviteText({ ...ev, link_mode: "personal" }, part, [part], "1234", "https://x");
-    expect(t).toContain("https://x/confirmar/PERS");
+    expect(t).toContain("https://visitasc.com.br/c/PERS");
     expect(t).not.toContain("PIN");
-    expect(t).not.toContain("/confirmar/EVT");
+    expect(t).not.toContain("/c/EVT");
   });
 });

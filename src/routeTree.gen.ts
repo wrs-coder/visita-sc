@@ -42,6 +42,7 @@ import { Route as AppResumoSemanaRouteImport } from './routes/_app.resumo-semana
 import { Route as AppReunioesDeCampoRouteImport } from './routes/_app.reunioes-de-campo'
 import { Route as AppReunioesDiscursosRouteImport } from './routes/_app.reunioes-discursos'
 import { Route as AppTransporteRouteImport } from './routes/_app.transporte'
+import { Route as CCodeRouteImport } from './routes/c.$code'
 import { Route as CadastroIndexRouteImport } from './routes/cadastro.index'
 import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
@@ -219,6 +220,11 @@ const AppTransporteRoute = AppTransporteRouteImport.update({
   path: '/transporte',
   getParentRoute: () => AppRoute,
 } as any)
+const CCodeRoute = CCodeRouteImport.update({
+  id: '/c/$code',
+  path: '/c/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CadastroIndexRoute = CadastroIndexRouteImport.update({
   id: '/cadastro/',
   path: '/cadastro/',
@@ -298,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
   '/reunioes-discursos': typeof AppReunioesDiscursosRoute
   '/transporte': typeof AppTransporteRoute
+  '/c/$code': typeof CCodeRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
@@ -340,6 +347,7 @@ export interface FileRoutesByTo {
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
   '/reunioes-discursos': typeof AppReunioesDiscursosRoute
   '/transporte': typeof AppTransporteRoute
+  '/c/$code': typeof CCodeRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
@@ -385,6 +393,7 @@ export interface FileRoutesById {
   '/_app/reunioes-de-campo': typeof AppReunioesDeCampoRoute
   '/_app/reunioes-discursos': typeof AppReunioesDiscursosRoute
   '/_app/transporte': typeof AppTransporteRoute
+  '/c/$code': typeof CCodeRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
@@ -430,6 +439,7 @@ export interface FileRouteTypes {
     | '/reunioes-de-campo'
     | '/reunioes-discursos'
     | '/transporte'
+    | '/c/$code'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
@@ -472,6 +482,7 @@ export interface FileRouteTypes {
     | '/reunioes-de-campo'
     | '/reunioes-discursos'
     | '/transporte'
+    | '/c/$code'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
@@ -516,6 +527,7 @@ export interface FileRouteTypes {
     | '/_app/reunioes-de-campo'
     | '/_app/reunioes-discursos'
     | '/_app/transporte'
+    | '/c/$code'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
@@ -536,6 +548,7 @@ export interface RootRouteChildren {
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   TermosUsoRoute: typeof TermosUsoRoute
   VisitanteRoute: typeof VisitanteRouteWithChildren
+  CCodeRoute: typeof CCodeRoute
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
   CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
   ConfirmarTokenRoute: typeof ConfirmarTokenRoute
@@ -777,6 +790,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTransporteRouteImport
       parentRoute: typeof AppRoute
     }
+    '/c/$code': {
+      id: '/c/$code'
+      path: '/c/$code'
+      fullPath: '/c/$code'
+      preLoaderRoute: typeof CCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cadastro/': {
       id: '/cadastro/'
       path: '/cadastro'
@@ -926,6 +946,7 @@ const rootRouteChildren: RootRouteChildren = {
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   TermosUsoRoute: TermosUsoRoute,
   VisitanteRoute: VisitanteRouteWithChildren,
+  CCodeRoute: CCodeRoute,
   CadastroAnciaoRoute: CadastroAnciaoRoute,
   CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,
   ConfirmarTokenRoute: ConfirmarTokenRoute,
