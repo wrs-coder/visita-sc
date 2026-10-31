@@ -22,7 +22,7 @@ import JSZip from "jszip";
 import { LetterTemplates } from "./LetterTemplates";
 import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
 import { fetchLetterTemplates, pushLetterTemplates, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
-import { assignmentsListHtml, letterPdf } from "@/lib/big-events/letter-render";
+import { assignmentsListHtml, letterPdfFit } from "@/lib/big-events/letter-render";
 import type { Database } from "@/integrations/supabase/types";
 
 type EventRow = Database["public"]["Tables"]["circuit_big_events"]["Row"];
@@ -323,12 +323,16 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     try {
       const zip = new JSZip();
       const used = new Set<string>();
+      const over: string[] = [];
       for (const i of items) {
         let name = letterFileBase(i.part); let n = 2;
         while (used.has(name)) name = `${letterFileBase(i.part)} (${n++})`;
         used.add(name);
-        zip.file(`${name}.pdf`, await letterPdf(i.model));
+        const r = await letterPdfFit(i.model);
+        if (r.pages > 1) over.push(i.model.recipientName || name);
+        zip.file(`${name}.pdf`, r.bytes);
       }
+      if (over.length) toast.warning(`A carta de ${over.join(", ")} passou de 1 página — encurte os lembretes no modelo.`, { duration: 8000 });
       const blob = await zip.generateAsync({ type: "blob", mimeType: "application/zip" });
       await saveBlob(blob, { filename: `${safeFileName(`Convites PDF ${ev.name}`, "convites")}.zip`, mimeType: "application/zip" });
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
@@ -460,7 +464,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
         <Button size="sm" className="gap-1" onClick={() => { setForm({ name: "", event_type: "special", event_date: "", location: "", link_mode: "pin" }); setDialog({ parts: null }); }}><Plus className="h-3.5 w-3.5" />Novo</Button>
       </div>
       {loading ? <p className="text-sm text-muted-foreground">Carregando…</p>
-        : !events.length ? <Card className="p-6 text-center text-sm text-muted-foreground">Nenhum evento ainda. Importe o programa (.etim, .json ou .csv) ou crie um evento.</Card>
+        : !events.length ? <Card className="p-6 text-center text-sm text-muted-foreground">Nenhum evento ainda. Importe o programa (.etim, .rtf, .json ou .csv) ou crie um evento.</Card>
         : <div className="space-y-2">{upcoming.map(renderEvent)}</div>}
       {past.length > 0 && (
         <div>
