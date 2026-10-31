@@ -106,3 +106,12 @@ export function weekdayDayDone(plan: WeekdayPlan, day: number, read: Set<string>
   const seq = weekdaySeq(plan, day);
   return seq.length > 0 && seq.every((k) => read.has(k));
 }
+
+/** Progresso da meta "Dias": capítulos de todos os livros dos dias (sem livros = Bíblia toda). */
+export function weekdayProgress(plan: WeekdayPlan, read: Set<string>, totalBible: number): { done: number; total: number; percent: number } {
+  const keys = new Set<string>();
+  for (let d = 0; d < 7; d++) for (const k of weekdaySeq(plan, d)) keys.add(k);
+  const total = keys.size || totalBible;
+  const done = keys.size ? [...keys].filter((k) => read.has(k)).length : read.size;
+  return { done, total, percent: total ? Math.round((done / total) * 100) : 0 };
+}

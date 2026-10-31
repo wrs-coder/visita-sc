@@ -48,3 +48,14 @@ describe("weekday read marks", () => {
     expect(off.days[1]).toEqual(["B08"]);
   });
 });
+
+import { weekdayProgress as wdp, emptyWeekday as ewd } from "./bible-tracks";
+describe("progresso da meta Dias", () => {
+  it("conta só os livros escolhidos nos dias", () => {
+    const p = { ...ewd(), enabled: true, days: [["B08"], [], [], [], [], [], ["B08"]] };
+    expect(wdp(p, new Set(["B08:1", "B08:2", "B01:1"]), 1189)).toEqual({ done: 2, total: 4, percent: 50 });
+  });
+  it("sem livros escolhidos usa a Bíblia toda", () => {
+    expect(wdp(ewd(), new Set(["B01:1"]), 1189).total).toBe(1189);
+  });
+});
