@@ -77,7 +77,7 @@
 
 ## Grandes Eventos + Bíblia (plano 31/10)
 - [x] Etapa 1a: convites sempre com https://visitasc.com.br/c/<código>; /c/ abre a confirmação; /confirmar/ segue valendo.
-- [ ] Etapa 1b: código curto de 8 caracteres — bloqueado: as colunas do link no banco só aceitam o formato longo; precisa da autorização do usuário para mudar o banco.
+- [x] Etapa 1b: código curto de 8 caracteres (public_code/personal_code), links longos antigos continuam valendo.
 - [ ] Etapa 2: pílula Modelos de carta (no aparelho, modelo inicial da carta Nº 13).
 - [ ] Etapa 3: exportar Word ou PDF individuais (.zip) com "Clique aqui" ativo.
 - [ ] Etapa 4: Bíblia com leituras Pessoal/Família/Reunião + filtro de pontos altos.
