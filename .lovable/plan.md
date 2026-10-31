@@ -83,7 +83,32 @@ O conteúdo e a ordem do seu modelo Nº 13 são mantidos. Mudanças só de acaba
 2. **Faixas coloridas cheias** dos lembretes viram barra lateral fina (acima).
 3. **Texto justificado** no corpo; os lembretes em lista ficam alinhados à esquerda (justificar listas cria espaços feios).
 
-O Word continua como está (o Word usa as fontes do próprio computador); só o PDF muda.
+## 3. Exportar em Word: lista de conferência (não é carta)
+
+O Word deixa de ser carta. Vira um documento simples para você conferir rápido e copiar cada convite para enviar por WhatsApp, e-mail etc. Sem timbre, lembretes ou assinatura.
+
+```text
+┌──────────────────────────────┐
+│ Assembleia de Circuito       │
+│ 08/11/2026 · Salão X         │
+│ 12 designações               │
+│──────────────────────────────│
+│ Nº 07 · 09:30 · 15 min       │
+│ Orador: Fulano               │
+│ Congregação: Central         │
+│ Tema: ...                    │
+│ Próximo: Beltrano            │
+│ Link: visitasc.com.br/c/AB3K │
+│ PIN: 4821 (só no modo PIN)   │
+│──────────────────────────────│
+│ Oração · 09:20               │
+│ Orador: Ciclano ...          │
+└──────────────────────────────┘
+```
+
+- Uma designação por bloco, separadas por linha, na ordem dos horários.
+- Os dados vêm do evento (os mesmos da caixa da carta), então batem sempre com o PDF.
+- O botão "Exportar" continua com as duas opções: "Word (lista de designações)" e "PDF individuais (cartas)".
 
 ## Ordem de execução
 1. Recolher/expandir (só tela, sem mudar dados).
