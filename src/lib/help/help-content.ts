@@ -80,3 +80,6 @@ export function searchHelp(
     return normalizeHelp(hay).includes(q);
   });
 }
+
+/** Evento que abre a busca geral (telas e ações) a partir da tela de Ajuda. */
+export const OPEN_PALETTE_EVENT = "visitasc:open-command-palette";

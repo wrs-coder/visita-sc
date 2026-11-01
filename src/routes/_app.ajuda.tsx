@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound } from "lucide-react";
-import { HELP_TOPICS, searchHelp, type HelpTopic } from "@/lib/help/help-content";
+import { HELP_TOPICS, OPEN_PALETTE_EVENT, searchHelp, type HelpTopic } from "@/lib/help/help-content";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/ajuda")({
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_app/ajuda")({
   component: HelpPage,
 });
 
-export const OPEN_PALETTE_EVENT = "visitasc:open-command-palette";
+
 
 function PreviewCircuit() {
   const { t } = useTranslation();
