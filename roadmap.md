@@ -11,3 +11,7 @@
 - [x] Ajuda: tema Meu Perfil + texto do link curto em Grandes Eventos
 - [x] Lembretes: segundo aviso, antecedência por tipo, resumo do dia, horário de silêncio, adiar 10 min
 - [ ] Lembretes de Grandes Eventos e de ensaio do esboço (adiado)
+- [x] Itinerário: retirar "Tela cheia" (fica só em Configurações)
+- [x] Nova/Editar visita: botões fixos + "Modelos da visita" recolhível
+- [x] Painel: calendário na Agenda para ver qualquer semana
+- [ ] Vídeo: preencher como ancião Wao a visita TESTE (23–28 fev 2027)

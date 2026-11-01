@@ -131,6 +131,11 @@ function Page() {
     substitute_phone: "",
   });
   const isSuper = role === "superintendent";
+  // Seção "Modelos da visita": recolhida por padrão, mas abre sozinha se faltar modelo obrigatório.
+  const [tplOpen, setTplOpen] = useState(false);
+  const tplChosen = [form.template_id, form.checklist_template_id, form.field_template_id, form.meeting_talk_template_id, form.elder_program_template_id].filter(Boolean).length;
+  const tplMissing = !form.template_id || !form.checklist_template_id || !form.field_template_id || !form.meeting_talk_template_id;
+  const tplSectionOpen = tplOpen || tplMissing;
   const [importing, setImporting] = useState<{ name: string; rows: ImportRow[]; packages: VisitPackage[] } | null>(null);
   const [weeksKey, setWeeksKey] = useState(0);
   const importRef = useRef<HTMLInputElement>(null);
@@ -549,14 +554,14 @@ function Page() {
               <Plus className="h-4 w-4 mr-1" />
               {t("itinerary.newVisit")}
             </Button>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
+            <DialogContent className="max-w-md max-h-[90dvh] flex flex-col gap-3">
+              <DialogHeader className="shrink-0">
                 <DialogTitle className="flex items-center gap-2">
                   {editId ? t("itinerary.editVisit") : t("itinerary.newVisit")}
                   <SavingIndicator saving={submitting} />
                 </DialogTitle>
               </DialogHeader>
-              <div className="space-y-3">
+              <div className="space-y-3 flex-1 min-h-0 overflow-y-auto -mx-6 px-6 pb-1">
                 <div>
                   <Label>{t("itinerary.congregation")}</Label>
                   <Select
@@ -690,6 +695,20 @@ function Page() {
                   </div>
                 )}
 
+                <div className="rounded-2xl border bg-card">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm font-medium"
+                    aria-expanded={tplSectionOpen}
+                    onClick={() => setTplOpen((o) => !o)}
+                  >
+                    <span>Modelos da visita</span>
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {tplChosen} de 5 escolhidos{tplMissing ? "" : " ✓"}
+                      <ChevronDown className={`h-4 w-4 transition-transform ${tplSectionOpen ? "rotate-180" : ""}`} />
+                    </span>
+                  </button>
+                  <div hidden={!tplSectionOpen} className="space-y-3 px-3 pb-3">
                 <div>
                   <Label>Modelo de Programação *</Label>
                   <Select
@@ -805,8 +824,12 @@ function Page() {
                     </p>
                   )}
                 </div>
+                  </div>
+                </div>
                 </>
                 )}
+              </div>
+              <div className="shrink-0 border-t pt-3 pb-[env(safe-area-inset-bottom)]">
                 {editId ? (
                   <div className="flex flex-col gap-2 pt-1">
                     <Button className="w-full" onClick={submit} disabled={submitting}>
