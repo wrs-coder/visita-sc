@@ -29,9 +29,9 @@ describe("5.0.8", () => {
     expect(n).toBe(2);
   });
   it("novidades especiais reúnem 5.0.5 a 5.0.8 em uma entrada", () => {
-    expect(RELEASE_HISTORY[0].version).toBe("5.0.9");
+    expect(RELEASE_HISTORY[0].version).toBe("5.1.0");
     expect(RELEASE_HISTORY.map((r) => r.version)).not.toContain("5.0.7");
-    expect(RELEASE_HISTORY[1].version).toBe("5.0.4");
+    expect(RELEASE_HISTORY[1].version).toBe("5.0.9");
   });
   it("lê a rolagem do body quando a janela fica parada (Android)", () => {
     expect(pageScrollY({ windowY: 0, htmlTop: 0, bodyTop: 320 })).toBe(320);
