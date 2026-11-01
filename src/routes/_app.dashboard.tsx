@@ -1030,6 +1030,20 @@ function Dashboard() {
           rows
             .filter(([, v]) => v != null && String(v).trim())
             .map(([label, value]) => ({ label: label.replace(/:$/, ""), value: String(value) }));
+        const brief = (...parts: Array<[string, string | null | undefined] | string | null | undefined>) => {
+          const out: string[] = [];
+          for (const p of parts) {
+            if (!p) continue;
+            if (typeof p === "string") { if (p.trim()) out.push(p.trim()); continue; }
+            const [l, v] = p; if (v && String(v).trim()) out.push(`${l}: ${String(v).trim()}`);
+          }
+          return out.slice(0, 2);
+        };
+        const join = (...xs: Array<string | null | undefined>) => xs.filter((x) => x && x.trim()).join(" · ") || null;
+        const meetingLines = (mt: MeetingTodayItem): string[] =>
+          mt.kind === "weekend" ? brief(mt.public_talk_theme ? `1) ${mt.public_talk_theme}` : null, mt.final_talk ? `2) ${mt.final_talk}` : null, ["Presidente", mt.chairman])
+          : mt.kind === "midweek" ? brief(["Presidente", mt.chairman], ["Oração final", mt.closing_prayer])
+          : brief(["Oração inicial", mt.opening_prayer], ["Oração final", mt.closing_prayer]);
         const meetingDetailRows = (mt: MeetingTodayItem): Array<[string, string | null | undefined]> =>
           mt.kind === "midweek" ? [
             [L("meetingsTalks.midweek.chairman", "Presidente da Reunião"), mt.chairman],
@@ -1065,6 +1079,7 @@ function Dashboard() {
             id: `f-${f.id}`, kind: "field" as const, date: f.event_date, time: f.meeting_time,
             title: `${t("dashboard.fieldMeeting")} · ${modalityLabel(f.modality)}`,
             subtitle: f.meeting_location,
+            lines: brief(join(f.territory_number ? `Território ${f.territory_number}` : null, f.territory_location), join(f.auxiliary_leaders ? `Dirige: ${f.auxiliary_leaders}` : null, f.closing_prayer ? `Oração: ${f.closing_prayer}` : null)),
             details: toDetails([
               [L("meetingsTalks.field.location", "Local da Reunião de Campo"), f.meeting_location],
               [`${L("dashboard.territory", "Território")} S-13`, f.territory_number],
@@ -1089,6 +1104,7 @@ function Dashboard() {
             id: `m-${m.id}`, kind: "meal" as const, date: m.meal_date, time: m.meal_time,
             title: `${mealLabel(m.type)}${m.host_name ? ` · ${m.host_name}` : ""}`,
             subtitle: m.location,
+            lines: brief(["Telefone", m.contact_phone]),
             details: toDetails([
               [L("meals.host", "Anfitrião"), m.host_name],
               [L("schedule.location", "Local"), m.location],
@@ -1100,12 +1116,14 @@ function Dashboard() {
             id: `r-${mt.kind}`, kind: "meeting" as const, date: mt.date, time: meetingTime(mt.meeting_at),
             title: `${meetingLabels[mt.kind]}${mt.theme ? ` · ${mt.theme}` : ""}`,
             subtitle: mt.location,
+            lines: meetingLines(mt),
             details: toDetails(meetingDetailRows(mt)),
           })),
           ...transportsWeek.map((tr) => ({
             id: `t-${tr.id}`, kind: "transport" as const, date: tr.event_date, time: tr.departure_time,
             title: `${t("sidebar.transport")} · ${tr.driver_name}`,
             subtitle: tr.description,
+            lines: brief(join(tr.departure_time ? `Saída ${tr.departure_time.slice(0, 5)}` : null, tr.return_time ? `Retorno ${tr.return_time.slice(0, 5)}` : null), ["Telefone", tr.contact_phone]),
             details: toDetails([
               [L("transport.driver", "Motorista"), tr.driver_name],
               [L("transport.departure", "Saída"), tr.departure_time?.slice(0, 5)],
@@ -1167,6 +1185,9 @@ function Dashboard() {
                                 <span className="whitespace-pre-wrap">{it.subtitle}</span>
                               </div>
                             )}
+                            {it.lines?.map((ln, i) => (
+                              <div key={i} className="text-xs text-muted-foreground line-clamp-1">{ln}</div>
+                            ))}
                           </div>
                         </button>
                       </li>

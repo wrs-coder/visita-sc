@@ -17,6 +17,8 @@ export type TimelineItem = {
   time: string | null;
   title: string;
   subtitle?: string | null;
+  /** Até 2 linhas curtas com o principal (oração, território, temas), mostradas na lista. */
+  lines?: string[];
   /** Detalhes somente leitura exibidos ao tocar no evento. */
   details?: Array<{ label: string; value: string }>;
 };
