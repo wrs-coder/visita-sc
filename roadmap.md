@@ -7,4 +7,7 @@
 - [x] Leitura: barra de progresso também na meta "Dias"
 
 - [x] Ajuda etapa 1: botão ?, tela /ajuda, busca, temas Entrada e segurança + Circuito e visitas
-- [ ] Ajuda etapa 2: demais temas (aguarda revisão do usuário)
+- [x] Ajuda etapa 2: demais temas
+- [x] Ajuda: tema Meu Perfil + texto do link curto em Grandes Eventos
+- [x] Lembretes: segundo aviso, antecedência por tipo, resumo do dia, horário de silêncio, adiar 10 min
+- [ ] Lembretes de Grandes Eventos e de ensaio do esboço (adiado)
