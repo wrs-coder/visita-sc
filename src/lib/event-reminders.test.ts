@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planReminders, type ReminderPrefs } from "./event-reminders";
+import { inQuiet, planReminders, type ReminderPrefs } from "./event-reminders";
 import type { TimelineSource } from "./today-timeline";
 
 const now = new Date(2026, 9, 24, 8, 0);
@@ -29,5 +29,31 @@ describe("planReminders", () => {
   });
   it("nothing when disabled", () => {
     expect(planReminders([item({})], { ...on, enabled: false }, "superintendent", now)).toHaveLength(0);
+  });
+});
+
+describe("planReminders – extra options", () => {
+  it("uses the per-type lead when set", () => {
+    const [r] = planReminders([item({})], { ...on, leadByKind: { meal: 15 } }, "superintendent", now);
+    expect(r.at.getMinutes()).toBe(15);
+  });
+  it("adds a second reminder", () => {
+    const list = planReminders([item({ date: "2026-10-26" })], { ...on, second: 1440 }, "superintendent", now);
+    expect(list.map((r) => r.at.getDate())).toEqual([25, 26]);
+  });
+  it("skips reminders inside quiet hours (across midnight)", () => {
+    const quiet = { on: true, from: "22:00", to: "06:00" };
+    expect(planReminders([item({ date: "2026-10-25", time: "06:15" })], { ...on, quiet }, "superintendent", now)).toHaveLength(0);
+    expect(inQuiet(new Date(2026, 9, 24, 12, 0), quiet)).toBe(false);
+  });
+  it("creates one daily summary at the chosen time", () => {
+    const list = planReminders(
+      [item({ date: "2026-10-25" }), item({ id: "m", kind: "meeting", date: "2026-10-25", time: "19:30" })],
+      { ...on, digest: { on: true, time: "07:00" } }, "superintendent", now,
+    );
+    const d = list.filter((r) => r.kind === "digest");
+    expect(d).toHaveLength(1);
+    expect(d[0].at.getHours()).toBe(7);
+    expect(d[0].title).toBe("Hoje: 2 compromissos");
   });
 });
