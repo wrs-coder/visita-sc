@@ -1,31 +1,40 @@
-# Manual do Superintendente (tutorial) — plano guardado de 07/10/2026
+# Tela de Ajuda dentro do aplicativo (sugerida em 07/10/2026)
 
-O plano continua guardado. Ele previa um manual fora do app (PDF e Markdown), sem tela de ajuda dentro do aplicativo.
+Essa ideia foi sugerida em 07/10, mas na época você escolheu fazer só o manual em PDF. Ela nunca virou um plano salvo. Esta é a versão econômica: só texto e ícones, sem capturas de tela, para gastar poucos créditos.
 
-## O que foi combinado
-- Formatos: PDF e Markdown, entregues como arquivos para baixar.
-- Capturas reais de tela de celular, com destaques e setas.
-- Dados pessoais e confidenciais ocultados nas capturas.
-- Só recursos que já existem, sem prometer recursos futuros.
+## Como fica
 
-## Sete módulos aprovados
-1. Primeiros passos e segurança (login, PIN, biometria, acesso sem internet)
-2. Preparação da visita (itinerário, congregações, pacotes, modelos)
-3. Rotina diária (painel, agenda, pastoreio, transporte, lembretes)
-4. Esboços, anotações e textos bíblicos (editor, Word, tempo por tópico, Bíblia)
-5. Reuniões especiais (Grandes Eventos)
-6. Encerramento e relatórios
-7. Perguntas frequentes
+```text
+┌─────────────────────────────┐
+│ ‹  Ajuda                    │
+│ ┌─────────────────────────┐ │
+│ │ 🔍 Buscar (ex.: PIN)     │ │
+│ └─────────────────────────┘ │
+│ ▸ Primeiros passos e PIN    │
+│ ▾ Preparação da visita      │
+│   1. Abra Circuito ›        │
+│      Itinerário             │
+│   2. Toque em + Visita ...  │
+│ ▸ Rotina diária             │
+│ ▸ Esboços e Bíblia          │
+│ ▸ Grandes Eventos           │
+│ ▸ Encerramento e relatórios │
+│ ▸ Perguntas frequentes      │
+└─────────────────────────────┘
+```
 
-## Atualização proposta (recursos criados depois de 07/10)
-- Módulo 4: leitura Pessoal/Família/Reunião, meta "Dias", "Para comentar", importação do JW Library, Estudo e Anotações.
-- Módulo 5: links curtos, PIN ou link pessoal, modelos de carta, PDF das cartas, lista em Word, importação .rtf/.etim/.csv.
-- Módulo 1: termos de uso, modo tela cheia, idioma.
+- Novo item "Ajuda" (ícone ?) no menu lateral.
+- Os mesmos 7 temas do manual, como blocos que abrem e fecham.
+- Uma busca no topo filtra os passos enquanto você digita.
+- Funciona sem internet, porque o texto vem junto com o app.
+- Acesso só para o superintendente. A esposa e os anciãos não veem essa tela por enquanto.
 
-## Como será feito
-1. Abrir cada tela no tamanho de celular e capturar com dados de exemplo.
-2. Marcar os destaques nas imagens.
-3. Escrever o texto de cada módulo em linguagem simples.
-4. Gerar o Markdown e o PDF e conferir cada página.
+## O que não muda
+- Nenhuma tela que já existe muda, exceto o novo item no menu.
+- Nenhuma mudança no banco de dados.
+- Não sobe a versão e o aviso "O que há de novo" fica desligado.
 
-Nada no aplicativo muda.
+## Detalhes técnicos
+- Nova rota `/ajuda` dentro da área do superintendente, com conteúdo em um arquivo de dados (`help-content.ts`), em pt.
+- Usa o mesmo componente de bloco recolhível que já existe, busca simples em texto sem acentos.
+- Um teste pequeno para a busca, por exemplo: "pin" encontra o tema de segurança.
