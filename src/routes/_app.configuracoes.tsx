@@ -131,6 +131,11 @@ function Page() {
     substitute_phone: "",
   });
   const isSuper = role === "superintendent";
+  // Seção "Modelos da visita": recolhida por padrão, mas abre sozinha se faltar modelo obrigatório.
+  const [tplOpen, setTplOpen] = useState(false);
+  const tplChosen = [form.template_id, form.checklist_template_id, form.field_template_id, form.meeting_talk_template_id, form.elder_program_template_id].filter(Boolean).length;
+  const tplMissing = !form.template_id || !form.checklist_template_id || !form.field_template_id || !form.meeting_talk_template_id;
+  const tplSectionOpen = tplOpen || tplMissing;
   const [importing, setImporting] = useState<{ name: string; rows: ImportRow[]; packages: VisitPackage[] } | null>(null);
   const [weeksKey, setWeeksKey] = useState(0);
   const importRef = useRef<HTMLInputElement>(null);
