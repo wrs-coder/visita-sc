@@ -19,6 +19,10 @@ import {
   RELEASE_HISTORY,
   RELEASE_NOTES_VERSION,
   WHATS_NEW_AUTO_SHOW,
+  AUDIENCE_LABEL,
+  sectionAudience,
+  splitByAudience,
+  type ReleaseAudience,
   type ReleaseSection,
 } from "@/lib/release-notes";
 
@@ -30,7 +34,17 @@ function ReleaseSections({ sections }: { sections: ReleaseSection[] }) {
     <div className="space-y-3">
       {sections.map((s) => (
         <section key={s.title}>
-          <h3 className="mb-1 text-sm font-semibold text-primary">{s.title}</h3>
+          <h3 className="text-sm font-semibold text-primary">{s.title}</h3>
+          <div className="mb-1 mt-0.5 flex flex-wrap gap-1">
+            {sectionAudience(s).map((a) => (
+              <span
+                key={a}
+                className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                {AUDIENCE_LABEL[a]}
+              </span>
+            ))}
+          </div>
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             {s.items.map((i) => (
               <li key={i}>{i}</li>
@@ -71,7 +85,10 @@ function storedKeys(): string[] {
 
 export function WhatsNewDialog() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const viewer: ReleaseAudience | null =
+    role === "superintendent" ? "super" : role === "elder" ? "elder" : null;
+  const { mine, others } = splitByAudience(current.sections, viewer);
   const [open, setOpen] = useState(false);
   // "Já usava o app" é medido na primeira montagem, antes de qualquer gravação nova.
   const [previousUse] = useState(() =>
@@ -142,7 +159,17 @@ export function WhatsNewDialog() {
           {current.subtitle && (
             <p className="text-sm text-muted-foreground -mt-2">{current.subtitle}</p>
           )}
-          <ReleaseSections sections={current.sections} />
+          <ReleaseSections sections={mine} />
+          {others.length > 0 && (
+            <details className="rounded-lg border border-border">
+              <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-muted-foreground">
+                {t("whatsNew.otherProfiles", "Outros perfis ({{n}})", { n: others.length })}
+              </summary>
+              <div className="px-3 pb-3">
+                <ReleaseSections sections={others} />
+              </div>
+            </details>
+          )}
           {older.length > 0 && (
             <details className="rounded-lg border border-border">
               <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-muted-foreground">
