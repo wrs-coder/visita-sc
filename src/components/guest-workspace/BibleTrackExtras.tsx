@@ -133,8 +133,10 @@ export function MeetingWeekCard({ mw, keys, onSet, onRead, label, done }: { mw?:
   const { t, i18n } = useTranslation();
   const [edit, setEdit] = useState(!mw);
   const [book, setBook] = useState(keys[0]?.split(":")[0] ?? "B23");
-  const [ch, setCh] = useState(Number(keys[0]?.split(":")[1] ?? 1));
-  const [per, setPer] = useState(mw?.perWeek ?? 2);
+  const [chTxt, setChTxt] = useState(String(keys[0]?.split(":")[1] ?? 1));
+  const [perTxt, setPerTxt] = useState(String(mw?.perWeek ?? 2));
+  const clampCh = (s: string) => Math.min(chaptersOf(book), Math.max(1, parseInt(s, 10) || 1));
+  const clampPer = (s: string) => Math.min(20, Math.max(1, parseInt(s, 10) || 1));
   const bn = (b: string) => getLocalizedBookName(b, i18n.language) ?? b;
   const next = keys.find((k) => !done.has(k)) ?? keys[0];
   const range = keys.length ? (keys.length === 1 ? label(keys[0]) : `${label(keys[0])}–${keys[keys.length - 1].split(":")[1]}`) : "—";
@@ -151,17 +153,17 @@ export function MeetingWeekCard({ mw, keys, onSet, onRead, label, done }: { mw?:
       {edit ? (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">{t("guestWs.meetingHint", { defaultValue: "Informe a leitura desta semana. O app avança sozinho toda segunda-feira." })}</p>
-          <div className="grid grid-cols-[1fr_4.5rem] gap-2">
-            <select value={book} onChange={(e) => { setBook(e.target.value); setCh(1); }} className="h-10 rounded-md border bg-background px-2 text-sm">
+          <div className="grid grid-cols-[1fr_5rem] gap-2">
+            <select value={book} onChange={(e) => { setBook(e.target.value); setChTxt("1"); }} className="h-11 rounded-md border bg-background px-2 text-base">
               {ALL_BOOKS.map((b) => <option key={b} value={b}>{bn(b)}</option>)}
             </select>
-            <Input type="number" min={1} max={chaptersOf(book)} value={ch} onChange={(e) => setCh(Math.min(chaptersOf(book), Math.max(1, Math.round(Number(e.target.value)) || 1)))} className="h-10" aria-label={t("guestWs.chapter", { defaultValue: "Capítulo" })} />
+            <Input type="text" inputMode="numeric" pattern="[0-9]*" value={chTxt} onChange={(e) => setChTxt(e.target.value.replace(/\D/g, "").slice(0, 3))} onBlur={() => setChTxt(String(clampCh(chTxt)))} className="h-11 text-base" aria-label={t("guestWs.chapter", { defaultValue: "Capítulo" })} />
           </div>
           <label className="flex items-center gap-2 text-sm"><span className="flex-1 text-muted-foreground">{t("guestWs.perWeek", { defaultValue: "Capítulos por semana" })}</span>
-            <Input type="number" min={1} max={20} value={per} onChange={(e) => setPer(Math.min(20, Math.max(1, Math.round(Number(e.target.value)) || 1)))} className="h-10 w-20" /></label>
+            <Input type="text" inputMode="numeric" pattern="[0-9]*" value={perTxt} onChange={(e) => setPerTxt(e.target.value.replace(/\D/g, "").slice(0, 2))} onBlur={() => setPerTxt(String(clampPer(perTxt)))} className="h-11 w-20 text-base" /></label>
           <div className="flex gap-2">
             {mw && <Button variant="ghost" className="flex-1" onClick={() => setEdit(false)}>{t("common.cancel", { defaultValue: "Cancelar" })}</Button>}
-            <Button className="flex-1" onClick={() => { onSet({ anchorMonday: mondayOf(new Date()), startKey: `${book}:${ch}`, perWeek: per }); setEdit(false); }}>{t("common.save", { defaultValue: "Salvar" })}</Button>
+            <Button className="flex-1" onClick={() => { const c = clampCh(chTxt), p = clampPer(perTxt); setChTxt(String(c)); setPerTxt(String(p)); onSet({ anchorMonday: mondayOf(new Date()), startKey: `${book}:${c}`, perWeek: p }); setEdit(false); }}>{t("common.save", { defaultValue: "Salvar" })}</Button>
           </div>
         </div>
       ) : <Button size="sm" variant="ghost" className="gap-1" onClick={() => setEdit(true)}><Pencil className="h-3.5 w-3.5" />{t("guestWs.adjustWeek", { defaultValue: "Ajustar esta semana" })}</Button>}
