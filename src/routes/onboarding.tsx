@@ -46,7 +46,7 @@ function Page() {
       setBusy(false);
       toast.success(t("onboarding.superCreated"));
       await refresh();
-      nav({ to: "/congregacoes" });
+      nav({ to: afterSuperSignupRoute() });
       return;
     }
 
