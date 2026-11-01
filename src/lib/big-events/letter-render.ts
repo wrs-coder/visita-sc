@@ -1,7 +1,7 @@
 // Monta a carta convite em Word (HTML → docx existente) e em PDF (pdf-lib) com link ativo.
 import { PDFDocument, PDFName, PDFString, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import type { LetterModel } from "./letter-template";
+import { resolveLetterColors, type LetterModel, type RGB3 } from "./letter-template";
 import type { InviteEvent, InvitePart } from "./invite";
 import { formatEventDate } from "./invite";
 
