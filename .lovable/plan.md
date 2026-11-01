@@ -122,3 +122,24 @@ Proposta: a folga no fim de todas as telas passa a ser a **altura da barra do An
 - Essa classe já é aplicada no contêiner principal de `_app.tsx`, então uma única mudança cobre todas as rotas.
 - Rodapés de Dialog/Drawer que usam `pb-[env(safe-area-inset-bottom)]` ou `.pb-safe` passam a ter um piso de 1rem extra.
 - O teclado e a altura estável do editor não mudam.
+
+## 5. Exportação Word: convites bem separados
+Cada convite da lista de conferência ganha uma separação clara. Entre um convite e outro haverá uma linha horizontal, um espaço maior e o número e horário do convite em negrito no topo de cada bloco. Os textos continuam fáceis de copiar.
+
+```text
+ Convite 1 · 09:40
+ Discurso nº 13 — João Silva
+ Congregação Centro
+ Link: visitasc.com.br/c/ab12cd34
+ ─────────────────────────────────
+ Convite 2 · 10:10
+ Oração — Pedro Lima
+ Congregação Norte
+ Link: visitasc.com.br/c/ef56gh78
+ ─────────────────────────────────
+```
+
+Técnico: em `assignmentsListHtml`, cada bloco recebe um título numerado e um `<hr>` com borda sólida entre os blocos, que o conversor de Word já transforma em linha. O formato de importação não muda.
+
+## Complemento do item 4: menu lateral
+A mesma folga vale para o menu lateral (aberto pelo ☰). Assim, o último item, "Apoie o Desenvolvedor ☕", fica sempre acima da barra do Android. Técnico: a área rolável do menu (`SheetContent` em `_app.tsx`) recebe a mesma classe `.safe-bottom-content`. A regra continua única.
