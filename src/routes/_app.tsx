@@ -41,7 +41,7 @@ import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 import { ConnectionModeToggle } from "@/components/ConnectionModeToggle";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { CommandPalette } from "@/components/CommandPalette";
-import { Coffee, GraduationCap } from "lucide-react";
+import { Coffee, GraduationCap, HelpCircle } from "lucide-react";
 import { setActiveContext } from "@/lib/active-context";
 import { useOutlinesSync } from "@/hooks/use-outlines-sync";
 import { accentForPath, accentStyle } from "@/lib/route-accent";
