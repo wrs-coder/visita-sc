@@ -42,6 +42,19 @@ describe("help content fidelity", () => {
     for (const w of ["Anciãos", "Estudos e Revisitas", "Reuniões", "Refeições", "Transporte"]) expect(vt).toContain(w);
   });
 
+  it("profile topic names match the real profile screen", () => {
+    const pf = readFileSync("src/routes/_app.perfil.tsx", "utf8");
+    for (const k of ["profile.circuit", "profile.wifeAccess.title", "profile.personalData", "profile.usernameSection.title", "profile.changePassword", "bibleManager.manage", "profile.language", "profile.backupSection", "support.title"])
+      expect(pf).toContain(`t("${k}")`);
+    for (const c of ["<OfflinePinCard", "<SyncStatusCard", "<ReminderSettingsCard", "<ImmersiveSettingsCard"]) expect(pf).toContain(c);
+    expect(readFileSync("src/components/reminders/EventReminders.tsx", "utf8")).toContain("Lembretes de eventos");
+    expect(lookup("profile.immersiveLabel")).toBe("Tela cheia na leitura e no esboço");
+    expect(lookup("profile.generateBackup")).toBe("Gerar arquivo de backup");
+    expect(lookup("profile.restoreBackup")).toBe("Restaurar backup");
+    const big = HELP_TOPICS.find((t) => t.id === "big-events")!;
+    expect(big.steps.some((s) => s.before.includes("podendo ter um PIN") && s.before.includes("aparece na hora"))).toBe(true);
+  });
+
   it("search ignores accents and finds the security topic for 'pin'", () => {
     const tr = (k: string) => lookup(k) ?? k;
     expect(searchHelp(HELP_TOPICS, "pin", tr).map((t) => t.id)).toContain("security");
