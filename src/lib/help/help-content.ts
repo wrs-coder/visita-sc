@@ -249,6 +249,86 @@ export const HELP_ORDER = ["profile", "visit-templates", "circuit", "dashboard",
 
 export const HELP_TOPICS: HelpTopic[] = HELP_ORDER.map((id) => RAW_TOPICS.find((t) => t.id === id)!).filter(Boolean);
 
+/** Temas do Corpo de Anciãos: só telas que o ancião acessa. */
+export const ELDER_HELP_TOPICS: HelpTopic[] = [
+  {
+    id: "elder-dashboard",
+    title: "Painel inicial",
+    icon: "dashboard",
+    route: "/dashboard",
+    keywords: ["painel", "agenda", "hoje", "semana", "visita"],
+    steps: [
+      { before: "O Painel abre ao entrar e mostra a semana da visita do superintendente à sua congregação." },
+      { before: "Em ", labelKey: "dashboard.pager.tabAgenda", after: ", toque nos dias para ver cada compromisso. “Mais detalhes” mostra oração, território e temas." },
+      { before: "Deslize para o lado para ver as outras telas do painel." },
+    ],
+  },
+  {
+    id: "elder-program",
+    title: "Programa da visita",
+    icon: "week",
+    route: "/programa-visita",
+    keywords: ["refeicoes", "transporte", "campo", "reunioes", "programa"],
+    steps: [
+      { before: "No menu lateral, abra o programa da visita." },
+      { before: "Use as pílulas do topo para preencher refeições, saídas de campo, transporte e reuniões." },
+      { before: "Os quadros podem ser recolhidos e expandidos; o que você digitou não se perde." },
+      { before: "Sem internet, tudo fica salvo no aparelho e é enviado depois." },
+    ],
+  },
+  {
+    id: "elder-pastoral",
+    title: "Perguntas e pastoreio",
+    icon: "event",
+    route: "/programa-visita",
+    keywords: ["perguntas", "pastoreio", "encorajamento", "recomendacoes", "assuntos locais"],
+    steps: [
+      { before: "Na pílula “Anciãos” ficam Perguntas do SC, Pastoreio, Encorajamento, Recomendações e Assuntos locais." },
+      { before: "Responda as perguntas e indique as famílias para pastoreio antes da semana da visita." },
+      { before: "Recomendações e assuntos locais são vistos só pelo superintendente e pelo corpo de anciãos." },
+    ],
+  },
+  {
+    id: "elder-summary",
+    title: "Resumo e PDF",
+    icon: "report",
+    route: "/resumo-semana",
+    keywords: ["resumo", "pdf", "imprimir", "compartilhar"],
+    steps: [
+      { before: "No menu lateral, ", labelKey: "sidebar.weekSummary", after: " mostra a semana inteira em uma tela." },
+      { before: "Gere o PDF para imprimir ou enviar aos irmãos." },
+    ],
+  },
+  {
+    id: "elder-security",
+    title: "Entrada e segurança",
+    icon: "lock",
+    route: "/perfil",
+    keywords: ["pin", "digital", "biometria", "offline", "sem internet"],
+    steps: [
+      { before: "Abra o menu lateral e toque em ", labelKey: "sidebar.myProfile", after: "." },
+      { before: "No cartão ", labelKey: "offlinePin.manageTitle", after: ", crie um PIN (com internet na primeira vez)." },
+      { before: "Sem internet, entre com o PIN ou a digital, por exemplo no Salão do Reino." },
+    ],
+  },
+  {
+    id: "elder-faq",
+    title: "Perguntas frequentes",
+    icon: "faq",
+    route: "/dashboard",
+    keywords: ["duvida", "offline", "internet"],
+    steps: [
+      { before: "Funciona sem internet? Sim. O que você salvar é enviado quando a conexão voltar." },
+      { before: "Vejo outras congregações? Não. O acesso mostra só a visita da sua congregação." },
+    ],
+  },
+];
+
+/** Temas exibidos na Ajuda conforme o perfil. */
+export function helpTopicsFor(role: string | null | undefined): HelpTopic[] {
+  return role === "elder" ? ELDER_HELP_TOPICS : HELP_TOPICS;
+}
+
 
 export function normalizeHelp(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
