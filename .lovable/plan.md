@@ -51,7 +51,32 @@ c) **Seção recolhível "Modelos da visita":** junta os 5 modelos (Programaçã
 ```
 O preenchimento, os pacotes, as validações e o salvamento não mudam. Quando a seção está recolhida, os campos ficam só escondidos, sem perder o que já foi escolhido.
 
+## 4. Painel: escolher um dia e ver aquela semana inteira
+Sim, é possível. Hoje as pílulas da Agenda só mostram os dias perto de hoje, e as telas Esboços, Visita e Pastoreio sempre mostram a semana atual.
+
+Como vai ficar:
+- Um ícone de calendário ao lado das pílulas abre um seletor de data.
+- Ao escolher um dia, o Painel inteiro passa a mostrar aquela semana: a visita que cobre essa data, as pílulas de segunda a domingo e os cartões das 4 telas.
+- Aparece uma faixa "Vendo semana de 22/02 – 28/02" com o botão "Voltar para hoje".
+- A escolha vale só enquanto o Painel está aberto. Ao reabrir o aplicativo, ele volta para hoje.
+- Sem internet, o Painel mostra o que já estiver guardado no aparelho.
+
+```text
+┌──────────────────────────────┐
+│ Agenda  Esboços Visita Past. │
+│ ┌──────────────────────────┐ │
+│ │ Vendo semana 22–28/02    │ │
+│ │          [Voltar p/ hoje]│ │
+│ └──────────────────────────┘ │
+│ (Seg 22)(Ter 23)(Qua 24) [📅]│
+│ ─ Terça, 23 fev ──────────── │
+│  19:30 Reunião – TESTE       │
+│  Refeição: Família Silva     │
+└──────────────────────────────┘
+```
+
 ## Detalhes técnicos
+- Item 4: em `_app.dashboard.tsx`, novo estado `refIso` (o padrão é `today`). A busca da visita (startOfWeek/endOfWeek, covering/upcoming), `agendaDays` e os cartões semanais passam a usar `refIso` no lugar de `new Date()`/`today`. O destaque "Hoje" continua usando a data real. O seletor de data usa o Calendar do projeto dentro de um Popover. A data escolhida não é salva.
 - Item 1: `lovable auth-session --user <id do Wao>` (com a sua aprovação) e preenchimento via Playwright na interface. Sem migrações nem SQL de escrita.
 - Item 2: remover o Switch de imersivo de `AppAboutCard.tsx` (usado só em /configuracoes). O `ImmersiveSettingsCard` em /perfil fica como está.
 - Item 3: em `_app.configuracoes.tsx`, `DialogContent` vira `flex flex-col max-h-[90dvh]`, com corpo `overflow-y-auto` e rodapé fixo com `pb-[env(safe-area-inset-bottom)]`. Os 5 Selects ficam dentro de `CollapsibleSection`, escondidos sem desmontar. A seção abre sozinha quando falta um modelo obrigatório.
