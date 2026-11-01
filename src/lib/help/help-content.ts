@@ -14,11 +14,11 @@ export type HelpStep = {
 export type HelpTopic = {
   id: string;
   title: string;
-  icon: "lock" | "calendar" | "week" | "book" | "event" | "report" | "faq" | "profile";
+  icon: "lock" | "calendar" | "week" | "book" | "event" | "report" | "faq" | "profile" | "dashboard" | "templates" | "outline";
   /** Tela real aberta pelo botão "Abrir esta tela". */
   route: string;
   /** Miniatura desenhada com as peças reais do app. */
-  preview?: "circuit-pills" | "pin-card" | "visit-pills" | "reading-pills" | "event-pills" | "backup-card" | "profile-pills";
+  preview?: "circuit-pills" | "pin-card" | "visit-pills" | "reading-pills" | "event-pills" | "backup-card" | "profile-pills" | "dashboard-pills" | "templates-pills" | "outline-pills";
   steps: HelpStep[];
   /** Palavras extras para a busca. */
   keywords?: string[];
@@ -43,6 +43,24 @@ export const HELP_TOPICS: HelpTopic[] = [
     ],
   },
   {
+    id: "dashboard",
+    title: "Painel inicial",
+    icon: "dashboard",
+    route: "/dashboard",
+    preview: "dashboard-pills",
+    keywords: ["painel", "inicio", "agenda", "hoje", "pastoreio", "recados", "cartoes"],
+    steps: [
+      { before: "O Painel abre ao entrar no aplicativo. No menu lateral ele se chama ", labelKey: "sidebar.home", after: "." },
+      { before: "Ele tem 4 telas: ", labelKey: "dashboard.pager.tabAgenda", after: ", “Esboços”, “Visita” e “Pastoreio”. Deslize para o lado ou toque no nome da tela." },
+      { before: "Em ", labelKey: "dashboard.pager.tabAgenda", after: ", as pílulas dos dias mostram os compromissos de cada dia. “Voltar para hoje” volta ao dia atual." },
+      { before: "Em ", labelKey: "dashboard.pager.tabOutlines", after: ", ficam as notas de “Considerações da Semana” e “Esboços da Semana”, prontas para abrir." },
+      { before: "Em ", labelKey: "dashboard.pager.tabVisit", after: ", aparecem as reuniões, refeições e transporte da semana da visita ativa." },
+      { before: "Em ", labelKey: "dashboard.pager.tabPastoral", after: ", ficam os estudos, revisitas e o checklist da congregação." },
+      { before: "O ícone de ", labelKey: "dashboard.couple.title", after: " no topo mostra as mensagens da sua esposa." },
+      { before: "Os cartões podem ser recolhidos e expandidos. Se algo ficou guardado sem internet, toque em ↻ no topo para enviar." },
+    ],
+  },
+  {
     id: "circuit",
     title: "Circuito e visitas",
     icon: "calendar",
@@ -55,6 +73,24 @@ export const HELP_TOPICS: HelpTopic[] = [
       { before: "Para trazer o itinerário de outro aplicativo, toque em “Importar” e escolha um arquivo .ics ou .csv. Você revisa tudo antes de salvar." },
       { before: "Na pílula “Circuito” ficam as congregações, os anciãos do circuito e os Grandes Eventos." },
       { before: "O ícone de calendário, ao lado do nome do circuito, abre o mês inteiro." },
+    ],
+  },
+  {
+    id: "visit-templates",
+    title: "Modelos de visita",
+    icon: "templates",
+    route: "/modelos",
+    preview: "templates-pills",
+    keywords: ["modelo", "programacao", "estudos", "refeicoes", "transporte", "pacote", "checklist", "duplicar", "exportar"],
+    steps: [
+      { before: "No menu lateral, na seção ", labelKey: "sidebar.sectionModelos", after: ", abra ", },
+      { before: "", labelKey: "sidebar.visitTemplates", after: ": é a sua programação pessoal, usada para preencher cada visita." },
+      { before: "Escolha um modelo numerado no topo ou toque em ", labelKey: "templates.newTemplate", after: ". Você pode renomear, duplicar e exportar." },
+      { before: "Preencha as partes ", labelKey: "templates.program.studiesTitle", after: ", “Refeições” e “Transporte”, dia por dia." },
+      { before: "Toque em ", labelKey: "templates.program.saveTemplate", after: " para guardar." },
+      { before: "Em ", labelKey: "sidebar.baseTemplates", after: " ficam os outros modelos: checklist, reuniões de campo e reunião e discurso." },
+      { before: "Os pacotes de visita juntam vários modelos para preencher uma visita nova de uma vez." },
+      { before: "Ao cadastrar uma visita, escolha os modelos. Se uma visita ficar sem modelos, o aplicativo avisa uma vez por dia." },
     ],
   },
   {
@@ -73,8 +109,31 @@ export const HELP_TOPICS: HelpTopic[] = [
     ],
   },
   {
-    id: "outlines-bible",
-    title: "Esboços e Bíblia",
+    id: "outlines",
+    title: "Esboços",
+    icon: "outline",
+    route: "/consideracoes-campo",
+    preview: "outline-pills",
+    keywords: ["esboco", "discurso", "consideracao", "campo", "pasta", "topico", "tempo", "cronometro", "word", "docx", "anexo", "foto", "video", "nuvem"],
+    steps: [
+      { before: "No menu lateral, abra ", labelKey: "sidebar.personalOutlines", after: "." },
+      { before: "No topo, escolha o tipo: ", labelKey: "personalOutlines.typePicker.field", after: " ou “Esboço”." },
+      { before: "Organize tudo em pastas com ", labelKey: "personalOutlines.folders.new", after: ". As pastas “Considerações da Semana” e “Esboços da Semana” são fixas e aparecem no Painel." },
+      { before: "Para mudar uma nota de lugar, use ", labelKey: "personalOutlines.folders.cut", after: " e depois “Colar aqui” na pasta de destino." },
+      { before: "No editor, o botão “Tópico” cria uma parte do esboço que pode ser recolhida e expandida. Use ", labelKey: "personalOutlines.topics.collapseAll", after: " para ver só os títulos." },
+      { before: "Cada tópico pode ter seus minutos. Durante o discurso, a pílula de tempo mostra o horário previsto e você marca os tópicos concluídos." },
+      { before: "Em ", labelKey: "personalOutlines.topicTime.settings", after: " você muda tamanho, opacidade e posição da pílula." },
+      { before: "O ", labelKey: "personalOutlines.timer.label", after: " conta o tempo do discurso, em contagem crescente ou regressiva." },
+      { before: "“Modo foco” e ", labelKey: "personalOutlines.fullscreen.enter", after: " deixam só o texto na tela, com fonte maior ou menor." },
+      { before: "Textos bíblicos escritos no esboço viram atalhos que abrem a sua Bíblia importada." },
+      { before: "Em “Anexos do esboço”, junte fotos e vídeos. Eles ficam só neste aparelho." },
+      { before: "Ao colar do Word, os recuos são mantidos. Você também pode importar e exportar em Word, uma nota ou a pasta inteira." },
+      { before: "O botão “Salvar” grava no aparelho na hora. Com internet, o esboço vai para a ", labelKey: "personalOutlines.cloud.button", after: "." },
+    ],
+  },
+  {
+    id: "bible",
+    title: "Bíblia e anotações",
     icon: "book",
     route: "/estudo-pessoal",
     preview: "reading-pills",
@@ -85,7 +144,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       { before: "Em “Meta de leitura”, a opção “Dias” define livros para cada dia da semana. Use “Marcar capítulos lidos” para atualizar a programação." },
       { before: "Toque em “Continuar” para abrir o próximo capítulo não lido." },
       { before: "Marque pontos altos “Para comentar” e abra o “Modo comentário” na reunião." },
-      { before: "Os esboços de discurso ficam em ", labelKey: "sidebar.personalOutlines", after: ", com importação e exportação em Word." },
+      { before: "Use o filtro dos pontos altos e das anotações para ver uma leitura só ou todas juntas." },
+      { before: "Você pode trazer as anotações do JW Library escolhendo o arquivo de backup (.jwlibrary). Elas ficam separadas dos seus pontos altos." },
       { before: "A Bíblia usada é só a que você importou (EPUB). Sem ela, a leitura não mostra o texto." },
     ],
   },
