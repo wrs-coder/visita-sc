@@ -51,3 +51,20 @@ describe("release notes por versão", () => {
     ).toBe(true);
   });
 });
+
+import { splitByAudience as _split } from "./release-notes";
+describe("novidades por perfil", () => {
+  const secs = [
+    { title: "A", items: [], audience: ["super" as const] },
+    { title: "B", items: [], audience: ["elder" as const] },
+    { title: "C", items: [] },
+  ];
+  it("ancião vê as suas e as de todos primeiro", () => {
+    const r = _split(secs, "elder");
+    expect(r.mine.map((s) => s.title)).toEqual(["B", "C"]);
+    expect(r.others.map((s) => s.title)).toEqual(["A"]);
+  });
+  it("sem perfil mostra tudo", () => {
+    expect(_split(secs, null).others).toEqual([]);
+  });
+});

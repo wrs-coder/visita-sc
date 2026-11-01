@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { BibleRefChips } from "@/components/bible/BibleRefText";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
@@ -700,6 +701,7 @@ function FreeNoteCard({ note, savingId, update, remove, checked, onToggleSelect 
         <CardHeader checked={checked} onToggleSelect={onToggleSelect} onRemove={() => remove(note.id)} />
         <Input value={title} onChange={(e) => setTitle(e.target.value)} className="font-semibold border-0 px-0 focus-visible:ring-0 shadow-none" placeholder={t("notes.titlePlaceholder")} />
         <Textarea rows={4} value={content} onChange={(e) => setContent(e.target.value)} placeholder={t("notes.free.contentPlaceholder")} />
+        <BibleRefChips text={content} />
         <div className="flex justify-end">
           <Button size="sm" disabled={!dirty || savingId === note.id} onClick={handleSave}>
             {savingId === note.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
@@ -736,7 +738,7 @@ function PastoralNoteCard({ note, savingId, update, remove, checked, onToggleSel
           <div><Label className="text-xs">{t("notes.pastoral.dateLabel")}</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
           <div><Label className="text-xs">{t("notes.pastoral.companion")}</Label><Input value={companion} onChange={(e) => setCompanion(e.target.value)} placeholder={t("notes.pastoral.companionPlaceholder")} /></div>
           <div><Label className="text-xs">{t("notes.pastoral.involved")}</Label><Input value={involved} onChange={(e) => setInvolved(e.target.value)} placeholder={t("notes.pastoral.involvedPlaceholder")} /></div>
-          <div><Label className="text-xs">{t("notes.pastoral.additional")}</Label><Textarea rows={4} value={additional} onChange={(e) => setAdditional(e.target.value)} placeholder={t("notes.pastoral.additionalPlaceholder")} /></div>
+          <div><Label className="text-xs">{t("notes.pastoral.additional")}</Label><Textarea rows={4} value={additional} onChange={(e) => setAdditional(e.target.value)} placeholder={t("notes.pastoral.additionalPlaceholder")} /><BibleRefChips text={additional} className="mt-1" /></div>
         </div>
         <div className="flex justify-end">
           <Button size="sm" disabled={!dirty || savingId === note.id} onClick={handleSave}>

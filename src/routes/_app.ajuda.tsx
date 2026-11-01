@@ -17,8 +17,9 @@ function usePtT() {
   return ptLabel;
 }
 import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound, ClipboardList, BookOpen, Mic, FileText, HelpCircle, Download, Upload, ShieldCheck, UserCircle2, LayoutDashboard, FileStack, NotebookPen } from "lucide-react";
-import { HELP_TOPICS, OPEN_PALETTE_EVENT, searchHelp, type HelpTopic } from "@/lib/help/help-content";
+import { helpTopicsFor, OPEN_PALETTE_EVENT, searchHelp, type HelpTopic } from "@/lib/help/help-content";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 import { VISIT_PROGRAM_TABS } from "@/components/visit-week/VisitProgramTabs";
 
 export const Route = createFileRoute("/_app/ajuda")({
@@ -148,9 +149,10 @@ function TopicCard({ topic, open, onToggle }: { topic: HelpTopic; open: boolean;
 
 function HelpPage() {
   const t = usePtT();
+  const { role } = useAuth();
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
-  const topics = useMemo(() => searchHelp(HELP_TOPICS, query, (k) => t(k)), [query, t]);
+  const topics = useMemo(() => searchHelp(helpTopicsFor(role), query, (k) => t(k)), [query, t, role]);
   const searching = query.trim().length > 0;
 
   return (

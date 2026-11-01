@@ -1,6 +1,8 @@
 // Novidades separadas por versão. A primeira é a atual; as demais formam o histórico.
 // A cada release: acrescentar uma nova entrada no topo e atualizar RELEASE_NOTES_VERSION.
-export type ReleaseSection = { title: string; items: string[] };
+/** A quem a novidade afeta. Ausente = todos. */
+export type ReleaseAudience = "super" | "elder" | "wife" | "all";
+export type ReleaseSection = { title: string; items: string[]; audience?: ReleaseAudience[] };
 export type ReleaseEntry = { version: string; subtitle?: string; sections: ReleaseSection[] };
 
 // Novidades da 5.0.4 (histórico).
@@ -117,14 +119,14 @@ export const RELEASE_HISTORY: ReleaseEntry[] = [
     subtitle: "Edição especial — reúne as novidades das versões 5.0.5 a 5.0.9.",
     sections: [
       {
-        title: "Painel com mais espaço",
+        title: "Painel com mais espaço", audience: ["super", "elder"],
         items: [
           "O cabeçalho some ao rolar o painel para baixo e volta ao rolar para cima, como no iOS e na One UI.",
           "Perto do topo, ao digitar ou ao trocar de tela, ele fica sempre visível.",
         ],
       },
       {
-        title: "Grandes Eventos do Circuito",
+        title: "Grandes Eventos do Circuito", audience: ["super"],
         items: [
           "Crie o evento, as partes e os oradores na pílula Circuito.",
           "Escolha um link com PIN para todos ou um link pessoal para cada orador.",
@@ -132,7 +134,7 @@ export const RELEASE_HISTORY: ReleaseEntry[] = [
         ],
       },
       {
-        title: "Importações",
+        title: "Importações", audience: ["super"],
         items: [
           "Itinerário importado de arquivos .ics e .csv, com revisão antes de salvar.",
           "Notas e destaques do backup do JW Library em uma lista separada.",
@@ -140,7 +142,7 @@ export const RELEASE_HISTORY: ReleaseEntry[] = [
         ],
       },
       {
-        title: "Estudo e Anotações",
+        title: "Estudo e Anotações", audience: ["super"],
         items: [
           "Leitura da Bíblia, Pesquisas e Anotações reunidas em uma tela.",
           "Na leitura, \"Ponto alto\" e \"Concluído\" ficam no topo, ao lado do capítulo.",
@@ -148,7 +150,7 @@ export const RELEASE_HISTORY: ReleaseEntry[] = [
         ],
       },
       {
-        title: "Tela e uso diário",
+        title: "Tela e uso diário", audience: ["all"],
         items: [
           "Painel com margens menores e cabeçalho que se esconde ao rolar para baixo.",
           "Botões sempre longe da barra do celular.",
@@ -156,7 +158,7 @@ export const RELEASE_HISTORY: ReleaseEntry[] = [
         ],
       },
       {
-        title: "Salvar e exportar",
+        title: "Salvar e exportar", audience: ["super", "wife"],
         items: [
           "Ao salvar um esboço sem internet, aparece \"Salvo no aparelho\", e não mais \"Erro\".",
           "Arquivos grandes são exportados sem falhar.",
@@ -164,7 +166,7 @@ export const RELEASE_HISTORY: ReleaseEntry[] = [
         ],
       },
       {
-        title: "Termos de Uso",
+        title: "Termos de Uso", audience: ["all"],
         items: [
           "Texto novo e mais claro, com aceite também para quem entra por código de convite.",
         ],
@@ -179,3 +181,29 @@ export const RELEASE_HISTORY: ReleaseEntry[] = [
 
 /** Novidades da versão atual (mantido para o aviso de atualização e o endpoint). */
 export const RELEASE_NOTES: ReleaseSection[] = RELEASE_HISTORY[0].sections;
+
+export const AUDIENCE_LABEL: Record<ReleaseAudience, string> = {
+  super: "SC",
+  elder: "Anciãos",
+  wife: "Esposa",
+  all: "Todos",
+};
+
+export function sectionAudience(s: ReleaseSection): ReleaseAudience[] {
+  return s.audience && s.audience.length ? s.audience : ["all"];
+}
+
+/** Separa as seções do perfil atual (primeiro) das de outros perfis. */
+export function splitByAudience(
+  sections: ReleaseSection[],
+  viewer: ReleaseAudience | null,
+): { mine: ReleaseSection[]; others: ReleaseSection[] } {
+  if (!viewer || viewer === "all") return { mine: sections, others: [] };
+  const mine: ReleaseSection[] = [];
+  const others: ReleaseSection[] = [];
+  for (const s of sections) {
+    const a = sectionAudience(s);
+    (a.includes("all") || a.includes(viewer) ? mine : others).push(s);
+  }
+  return { mine, others };
+}

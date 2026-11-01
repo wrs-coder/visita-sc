@@ -1,4 +1,5 @@
 // Gaveta de rodapé com os pontos altos da leitura.
+import { BibleRefText } from "@/components/bible/BibleRefText";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pencil, Trash2 } from "lucide-react";
@@ -69,7 +70,7 @@ export function HighlightsDrawer({ open, onOpenChange, highlights, onSave, onDel
                 <li key={h.id} className="rounded-xl border bg-card p-3">
                   <div className="flex items-start gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">{h.ref || "—"}</p>
+                      {h.ref ? <BibleRefText text={h.ref} className="text-sm font-semibold" /> : <p className="text-sm font-semibold">—</p>}
                       <p className="text-xs text-muted-foreground">{new Date(h.date).toLocaleDateString(i18n.language)}</p>
                     </div>
                     <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("guestWs.edit", { defaultValue: "Editar" })}
@@ -77,7 +78,7 @@ export function HighlightsDrawer({ open, onOpenChange, highlights, onSave, onDel
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label={t("guestWs.delete", { defaultValue: "Apagar" })}
                       onClick={() => { if (window.confirm(t("guestWs.confirmDelete", { defaultValue: "Apagar este item?" }))) onDelete(h.id); }}><Trash2 className="h-4 w-4" /></Button>
                   </div>
-                  {h.text && <p className="mt-1 whitespace-pre-wrap text-sm">{h.text}</p>}
+                  {h.text && <BibleRefText text={h.text} className="mt-1 text-sm" />}
                 </li>
               ))}
             </ul>
