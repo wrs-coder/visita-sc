@@ -16,13 +16,14 @@ export function assignmentsListHtml(ev: InviteEvent, items: { part: InvitePart; 
     p([ev.event_date ? formatEventDate(ev.event_date) : "", ev.location ?? ""].filter(Boolean).join(" · ")),
     p(`${sorted.length} ${sorted.length === 1 ? "designação" : "designações"}`),
   ];
-  const blocks = sorted.map(({ model: m }) => [
-    "<hr>",
+  const blocks = sorted.map(({ model: m, part }, i) => [
+    '<hr data-divider="1">',
+    `<h3>Convite ${i + 1}${part.part_time ? ` · ${esc(part.part_time.slice(0, 5))}` : ""}</h3>`,
     ...m.box.slice(1).map((l, i) => p(l, i === 0 || l.startsWith("Sua designação"))),
     p(`Link: ${m.linkUrl}`),
     m.pinLine ? p(m.pinLine) : "",
   ].join(""));
-  return [...head, ...blocks].join("");
+  return [...head, ...blocks, sorted.length ? '<hr data-divider="1">' : ""].join("");
 }
 
 // Fontes padrão do PDF usam WinAnsi: troca o que não cabe nele.
