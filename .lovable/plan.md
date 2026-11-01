@@ -1,65 +1,66 @@
-# Agenda: temas abaixo do nome da reunião + expandir/recolher detalhes
+# Novidades por perfil + Ajuda para o Corpo de Anciãos
 
-## O que muda
-1. O título do cartão de reunião mostra só o tipo (ex.: "Fim de Semana"). Os temas aparecem nas linhas de baixo, com a mesma letra pequena e cinza das outras informações.
-2. Os cartões da agenda passam a mostrar 2 linhas de detalhes. Quando houver mais, aparece um botão "Mais detalhes ▾" para mostrar tudo e "Menos ▴" para recolher.
+## 1. "O que há de novo" com etiqueta de perfil
 
-## Antes
+Cada grupo de novidades ganha uma etiqueta colorida dizendo a quem afeta. Quem abre a janela vê primeiro o que é do seu perfil; o resto fica em "Outros perfis" (recolhido).
+
 ```text
-┌─────────────────────────────────────┐
-│ 09:00  ⌂ Fim de Semana · Quem       │
-│          realmente governa o mundo? │
-│          📍 Salão do Reino          │
-│          1) Quem realmente governa..│
-│          2) Continue vigilante      │
-└─────────────────────────────────────┘
++-------------------------------+
+|  O que há de novo   v5.1.0  X |
+|-------------------------------|
+|  [Para você]                  |
+|  Agenda com mais detalhes     |
+|  (SC) (Anciãos)               |
+|  • Temas abaixo da reunião    |
+|  • "Mais detalhes" expande    |
+|                               |
+|  Lembretes de leitura         |
+|  (SC) (Esposa)                |
+|  • Escolha o horário          |
+|-------------------------------|
+|  > Outros perfis (2)          |
+|-------------------------------|
+|        [   Entendi   ]        |
++-------------------------------+
 ```
 
-## Depois (recolhido)
-```text
-┌─────────────────────────────────────┐
-│ 09:00  ⌂ Fim de Semana              │
-│          📍 Salão do Reino          │
-│          1) Quem realmente governa  │
-│             o mundo?                │
-│          2) Continue vigilante      │
-│          Mais detalhes ▾            │
-└─────────────────────────────────────┘
-```
+- Etiquetas: SC (azul), Anciãos (verde), Esposa (rosa), Todos (cinza) — cores dos tokens existentes.
+- Grupos antigos sem etiqueta aparecem como "Todos" (nada quebra).
+- O histórico em Configurações → Ver novidades segue igual, só com as etiquetas.
 
-## Depois (expandido)
-```text
-┌─────────────────────────────────────┐
-│ 09:00  ⌂ Fim de Semana              │
-│          📍 Salão do Reino          │
-│          1) Quem realmente governa  │
-│             o mundo?                │
-│          2) Continue vigilante      │
-│          Presidente: João Lima      │
-│          Cântico inicial: 12        │
-│          Cântico final: 45          │
-│          Menos ▴                    │
-└─────────────────────────────────────┘
-┌─────────────────────────────────────┐
-│ 19:30  ⌂ Meio de Semana             │
-│          📍 Salão do Reino          │
-│          Tema: Sejam vigilantes     │
-│          Presidente: Carlos Souza   │
-│          Mais detalhes ▾            │
-└─────────────────────────────────────┘
-```
+## 2. Ajuda no acesso do Corpo de Anciãos
 
-## Regras
-- Vale para as 4 reuniões: Meio de Semana, Fim de Semana, Pioneiros e Anciãos e Servos.
-- Fim de semana: os dois discursos (1 e 2) primeiro, depois presidente, cânticos.
-- Meio de semana / Pioneiros / Anciãos: "Tema: ..." primeiro, depois presidente, orações, cânticos.
-- O expandir/recolher vale para todos os cartões da agenda (campo, refeição, transporte também), mostrando todas as informações disponíveis.
-- Os temas não são mais cortados com "…": quebram em várias linhas.
-- Tocar no botão "Mais detalhes" só abre/fecha; tocar no resto do cartão continua abrindo a tela de detalhes como hoje.
-- Começa sempre recolhido; nenhuma informação salva muda.
+Sim, recomendo: o ancião usa o app poucas vezes por ano e esquece onde fica cada coisa.
+
+- O ícone "?" aparece no topo também para o ancião (hoje já existe no topo do SC).
+- A tela Ajuda mostra só os tópicos daquele perfil; o ancião não vê Circuito, Grandes Eventos nem Notas Privadas.
+- Tópicos do ancião (novos, curtos):
+  1. Painel inicial (agenda da semana da visita)
+  2. Programa da visita (refeições, saídas de campo, transporte, reuniões)
+  3. Perguntas do SC, Pastoreio, Encorajamento, Recomendações, Assuntos locais
+  4. Resumo da semana e PDF
+  5. Entrada e segurança (PIN/digital, uso sem internet)
+  6. Perguntas frequentes
+- "Abrir esta tela" leva só a telas que o ancião realmente acessa.
+
+```text
++-------------------------------+
+| <  Ajuda               🔍     |
+|-------------------------------|
+|  Corpo de Anciãos             |
+|  [📅] Painel inicial        > |
+|  [🗓] Programa da visita    > |
+|  [👥] Perguntas e pastoreio > |
+|  [📄] Resumo e PDF          > |
+|  [🔒] Entrada e segurança   > |
+|  [?]  Perguntas frequentes  > |
++-------------------------------+
+```
 
 ## Detalhes técnicos
-- `src/routes/_app.dashboard.tsx`: título da reunião = `meetingLabels[mt.kind]`.
-- `meetingLines` inclui `["Tema", mt.theme]` em midweek/pioneer/elders e mais campos (cânticos, local, orações); `brief` deixa de cortar em 2 — a lista inteira vai em `lines`.
-- Renderização: mostra `lines.slice(0,2)` e, com estado local por item (`Set` de ids expandidos), as restantes; botão separado (fora do `<button>` do cartão, para não aninhar botões), alvo de toque 44px, `aria-expanded`. Remove `line-clamp-1`, usa `break-words`.
-- Sem mudança de banco ou de dados.
+
+- `release-notes.ts`: `ReleaseSection` ganha `audience?: ("super"|"elder"|"wife"|"all")[]`; ausente = all. Marcar as seções da versão atual. `WhatsNewDialog` lê o perfil atual (role / acesso por código) e ordena + recolhe.
+- `help-content.ts`: `HelpTopic` ganha `audience`; tópicos atuais = super; novos tópicos do ancião. `_app.ajuda.tsx` filtra por role. Busca respeita o filtro.
+- `_app.tsx`: liberar o ícone de Ajuda para role elder (sem tocar nas outras telas).
+- Testes: estender `help-content.test.ts` (rotas do ancião existem e estão permitidas ao ancião; chaves de rótulo existem) e `release-notes.test.ts` (audience válido; filtro por perfil).
+- Sem mudança de banco, sem bump de versão, `WHATS_NEW_AUTO_SHOW` continua false.
