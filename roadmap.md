@@ -5,3 +5,6 @@
 - [x] Fluidez: geração de carta/Word carregada só quando usada (medição no aparelho pendente)
 - [x] Carta: rótulos longos na caixa sem sobrepor + fontes com nova tentativa
 - [x] Leitura: barra de progresso também na meta "Dias"
+
+- [x] Ajuda etapa 1: botão ?, tela /ajuda, busca, temas Entrada e segurança + Circuito e visitas
+- [ ] Ajuda etapa 2: demais temas (aguarda revisão do usuário)

@@ -17,6 +17,7 @@ import { Route as PoliticaPrivacidadeRouteImport } from './routes/politica-priva
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as TermosUsoRouteImport } from './routes/termos-uso'
 import { Route as VisitanteRouteImport } from './routes/visitante'
+import { Route as AppAjudaRouteImport } from './routes/_app.ajuda'
 import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
 import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist-modelos'
 import { Route as AppComunicacaoCasalRouteImport } from './routes/_app.comunicacao-casal'
@@ -91,6 +92,11 @@ const VisitanteRoute = VisitanteRouteImport.update({
   id: '/visitante',
   path: '/visitante',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppAjudaRoute = AppAjudaRouteImport.update({
+  id: '/ajuda',
+  path: '/ajuda',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppChecklistRoute = AppChecklistRouteImport.update({
   id: '/checklist',
@@ -279,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos-uso': typeof TermosUsoRoute
   '/visitante': typeof VisitanteRouteWithChildren
+  '/ajuda': typeof AppAjudaRoute
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
   '/comunicacao-casal': typeof AppComunicacaoCasalRoute
@@ -322,6 +329,7 @@ export interface FileRoutesByTo {
   '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos-uso': typeof TermosUsoRoute
+  '/ajuda': typeof AppAjudaRoute
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
   '/comunicacao-casal': typeof AppComunicacaoCasalRoute
@@ -368,6 +376,7 @@ export interface FileRoutesById {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos-uso': typeof TermosUsoRoute
   '/visitante': typeof VisitanteRouteWithChildren
+  '/_app/ajuda': typeof AppAjudaRoute
   '/_app/checklist': typeof AppChecklistRoute
   '/_app/checklist-modelos': typeof AppChecklistModelosRoute
   '/_app/comunicacao-casal': typeof AppComunicacaoCasalRoute
@@ -414,6 +423,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/termos-uso'
     | '/visitante'
+    | '/ajuda'
     | '/checklist'
     | '/checklist-modelos'
     | '/comunicacao-casal'
@@ -457,6 +467,7 @@ export interface FileRouteTypes {
     | '/politica-privacidade'
     | '/redefinir-senha'
     | '/termos-uso'
+    | '/ajuda'
     | '/checklist'
     | '/checklist-modelos'
     | '/comunicacao-casal'
@@ -502,6 +513,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/termos-uso'
     | '/visitante'
+    | '/_app/ajuda'
     | '/_app/checklist'
     | '/_app/checklist-modelos'
     | '/_app/comunicacao-casal'
@@ -614,6 +626,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/visitante'
       preLoaderRoute: typeof VisitanteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/ajuda': {
+      id: '/_app/ajuda'
+      path: '/ajuda'
+      fullPath: '/ajuda'
+      preLoaderRoute: typeof AppAjudaRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/checklist': {
       id: '/_app/checklist'
@@ -864,6 +883,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppAjudaRoute: typeof AppAjudaRoute
   AppChecklistRoute: typeof AppChecklistRoute
   AppChecklistModelosRoute: typeof AppChecklistModelosRoute
   AppComunicacaoCasalRoute: typeof AppComunicacaoCasalRoute
@@ -893,6 +913,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAjudaRoute: AppAjudaRoute,
   AppChecklistRoute: AppChecklistRoute,
   AppChecklistModelosRoute: AppChecklistModelosRoute,
   AppComunicacaoCasalRoute: AppComunicacaoCasalRoute,
