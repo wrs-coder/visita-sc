@@ -16,9 +16,10 @@ function ptLabel(key: string): string {
 function usePtT() {
   return ptLabel;
 }
-import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound, ClipboardList, BookOpen, Mic, FileText, HelpCircle, Download, Upload, ShieldCheck } from "lucide-react";
 import { HELP_TOPICS, OPEN_PALETTE_EVENT, searchHelp, type HelpTopic } from "@/lib/help/help-content";
 import { cn } from "@/lib/utils";
+import { VISIT_PROGRAM_TABS } from "@/components/visit-week/VisitProgramTabs";
 
 export const Route = createFileRoute("/_app/ajuda")({
   head: () => ({
@@ -68,9 +69,34 @@ function PreviewPin() {
   );
 }
 
+const ICONS = { lock: Lock, calendar: CalendarDays, week: ClipboardList, book: BookOpen, event: Mic, report: FileText, faq: HelpCircle } as const;
+
+function Pills({ items, active = 0 }: { items: string[]; active?: number }) {
+  return (
+    <div aria-hidden className="rounded-2xl border bg-background p-3 flex flex-wrap gap-1.5">
+      {items.map((x, i) => (
+        <span key={x} className={cn("rounded-full border px-3 py-1 text-xs font-medium", i === active ? "bg-primary text-primary-foreground border-primary" : "text-muted-foreground")}>{x}</span>
+      ))}
+    </div>
+  );
+}
+
+function PreviewBackup() {
+  const t = usePtT();
+  return (
+    <div aria-hidden className="rounded-2xl border bg-background p-3 space-y-2">
+      <div className="flex items-center gap-2 font-semibold text-sm"><ShieldCheck className="h-4 w-4 text-primary" />{t("profile.backupSection")}</div>
+      <div className="flex flex-wrap gap-2">
+        <span className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1 text-xs text-primary-foreground"><Download className="h-3 w-3" />{t("profile.generateBackup")}</span>
+        <span className="inline-flex items-center gap-1 rounded-md border px-3 py-1 text-xs"><Upload className="h-3 w-3" />{t("profile.restoreBackup")}</span>
+      </div>
+    </div>
+  );
+}
+
 function TopicCard({ topic, open, onToggle }: { topic: HelpTopic; open: boolean; onToggle: () => void }) {
   const t = usePtT();
-  const Icon = topic.icon === "lock" ? Lock : CalendarDays;
+  const Icon = ICONS[topic.icon];
   return (
     <div className="border-b last:border-b-0">
       <button
@@ -88,6 +114,10 @@ function TopicCard({ topic, open, onToggle }: { topic: HelpTopic; open: boolean;
       <div className={cn("px-4 pb-4 space-y-3", !open && "hidden")}>
         {topic.preview === "circuit-pills" && <PreviewCircuit />}
         {topic.preview === "pin-card" && <PreviewPin />}
+        {topic.preview === "visit-pills" && <Pills items={VISIT_PROGRAM_TABS.map((x) => x.label)} />}
+        {topic.preview === "reading-pills" && <Pills items={["Pessoal", "Família", "Reunião"]} />}
+        {topic.preview === "event-pills" && <Pills items={["Eventos", "Modelos de carta"]} />}
+        {topic.preview === "backup-card" && <PreviewBackup />}
         <ol className="space-y-2 text-sm">
           {topic.steps.map((s, i) => (
             <li key={i} className="flex gap-2">
