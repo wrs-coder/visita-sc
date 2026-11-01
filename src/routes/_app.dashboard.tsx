@@ -72,6 +72,7 @@ import {
   getActiveCongregationOverride,
 } from "@/hooks/use-active-congregation";
 import { format, parseISO, startOfWeek, endOfWeek, addDays } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { PwaInstallButton } from "@/components/PwaInstall";
 import { UpcomingVisitsButton } from "@/components/dashboard/UpcomingVisitsDialog";
@@ -256,14 +257,17 @@ function Dashboard() {
   const viewedIso = format(viewedDate, "yyyy-MM-dd");
   // Aba "Agenda": dia escolhido nas pílulas (hoje por padrão).
   const [agendaIso, setAgendaIso] = useState(today);
+  // Data de referência do Painel (calendário da Agenda). Não é salva: ao reabrir volta para hoje.
+  const [refIso, setRefIso] = useState(today);
+  const pickRef = (iso: string) => { setRefIso(iso); setAgendaIso(iso); };
   // Dias da visita ativa; sem visita, os próximos 7 dias.
   const agendaDays = useMemo(() => {
-    const from = visit?.start_date && visit.start_date < today ? visit.start_date : today;
-    const to = visit?.end_date && visit.end_date >= today ? visit.end_date : format(addDays(new Date(), 6), "yyyy-MM-dd");
+    const from = visit?.start_date && visit.start_date < refIso ? visit.start_date : refIso;
+    const to = visit?.end_date && visit.end_date >= refIso ? visit.end_date : format(addDays(parseISO(refIso), 6), "yyyy-MM-dd");
     const days: string[] = [];
     for (let d = parseISO(from); format(d, "yyyy-MM-dd") <= to && days.length < 31; d = addDays(d, 1)) days.push(format(d, "yyyy-MM-dd"));
     return days;
-  }, [visit?.start_date, visit?.end_date, today]);
+  }, [visit?.start_date, visit?.end_date, refIso]);
   const agendaRange = { from: agendaDays[0] ?? today, to: agendaDays[agendaDays.length - 1] ?? today };
   const agendaPills = useMemo(
     () => agendaDays.map((iso) => {
@@ -490,7 +494,8 @@ function Dashboard() {
   // o botão "Ver dia seguinte" não interfere na congregação ativa.
   useEffect(() => {
     if (role !== "superintendent" || !user) return;
-    const now = new Date();
+    const now = parseISO(refIso);
+    const isToday = refIso === today;
     const weekStart = format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
     const weekEnd = format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
     let cancelled = false;
@@ -513,12 +518,12 @@ function Dashboard() {
       });
       if (cancelled) return;
       // 1º) visita que cobre HOJE; 2º) próxima a começar na semana.
-      const covering = list.find((v) => v.start_date <= today && v.end_date >= today);
-      const upcoming = list.find((v) => v.start_date >= today) ?? list[0];
+      const covering = list.find((v) => v.start_date <= refIso && v.end_date >= refIso);
+      const upcoming = list.find((v) => v.start_date >= refIso) ?? list[0];
       const match = (covering ?? upcoming)?.congregation_id ?? null;
       if (match) {
         setSelected(match);
-        setActiveCongregationOverride(match);
+        if (isToday) setActiveCongregationOverride(match);
       } else {
         // Sem visita na semana: antecipa a PRÓXIMA visita agendada (evita
         // cair na 1ª congregação alfabética e criar "Programação geral").
@@ -534,7 +539,7 @@ function Dashboard() {
         const nextCong = (next as { congregation_id?: string } | null)?.congregation_id ?? null;
         if (nextCong) {
           setSelected(nextCong);
-          setActiveCongregationOverride(nextCong);
+          if (isToday) setActiveCongregationOverride(nextCong);
         } else {
           setSelected(getActiveCongregationOverride());
         }
@@ -543,7 +548,7 @@ function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [role, user, today]);
+  }, [role, user, today, refIso]);
 
   const handleSelectCong = (id: string) => {
     if (id === NO_CURRENT_VISIT_VALUE) {
@@ -1385,7 +1390,17 @@ function Dashboard() {
             label: t("dashboard.pager.tabAgenda", { defaultValue: "Agenda" }),
             content: (
               <>
-      {agendaPills.length > 1 && (
+      {refIso !== today && (
+        <div className="flex items-center justify-between gap-2 rounded-2xl border border-primary/30 bg-primary/5 px-3 py-2">
+          <span className="text-xs font-medium">
+            Vendo semana de {format(startOfWeek(parseISO(refIso), { weekStartsOn: 1 }), "dd/MM")} – {format(endOfWeek(parseISO(refIso), { weekStartsOn: 1 }), "dd/MM")}
+          </span>
+          <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => pickRef(today)}>
+            {t("dashboard.pager.backToToday", { defaultValue: "Voltar para hoje" })}
+          </Button>
+        </div>
+      )}
+      {(
         <div className="flex items-center gap-2 min-w-0">
           <div className="flex-1 min-w-0">
             <DayPillsStrip
@@ -1397,7 +1412,24 @@ function Dashboard() {
               onPick={setAgendaIso}
             />
           </div>
-          {agendaIso !== today && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" size="icon" className="shrink-0 h-8 w-8" aria-label="Escolher data">
+                <CalendarDays className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                locale={ptBR}
+                selected={parseISO(refIso)}
+                onSelect={(d) => d && pickRef(format(d, "yyyy-MM-dd"))}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          {agendaIso !== today && refIso === today && (
             <Button type="button" variant="outline" size="sm" className="shrink-0 h-8 text-xs" onClick={() => setAgendaIso(today)}>
               {t("dashboard.pager.backToToday", { defaultValue: "Voltar para hoje" })}
             </Button>

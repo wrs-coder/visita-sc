@@ -40,7 +40,7 @@ export function yearPlanDay(startDate: string, today: Date): { day: number; keys
   return { day, keys: seq.slice(from, to) };
 }
 
-export interface Highlight { id: string; ref: string; bookId: string | null; text: string; date: string }
+export interface Highlight { id: string; ref: string; bookId: string | null; text: string; date: string; track?: "personal" | "family" | "meeting"; star?: boolean }
 
 export function filterHighlights(list: Highlight[], book: string | null, q: string): Highlight[] {
   const s = q.trim().toLowerCase();

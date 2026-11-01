@@ -1,0 +1,257 @@
+# Grandes Eventos — link curto, PDF individual e modelo de carta
+
+A carta segue o modelo enviado (Nº 13 Gonçalves Da Justino): timbre, destinatário, Ref., abertura, quadro da designação preenchido automaticamente pelo evento, lembretes e assinatura.
+
+## 1. Link curto `visitasc.com.br/c/k7m9p2`
+
+- Novo endereço público `/c/<código>`. O antigo `/confirmar/<código>` continua funcionando (links já enviados não quebram).
+- Código de 8 caracteres, letras minúsculas e números sem os confusos (0/o, 1/l): ~1 trilhão de combinações, gerado com sorteio seguro do aparelho.
+- Vale para novos eventos e para links pessoais novos/regerados. Eventos antigos mantêm o link longo até você tocar em "Gerar novo link".
+- "Copiar convite", Word e PDF usam sempre `https://visitasc.com.br/c/...`, mesmo no APK ou no preview.
+- Proteções atuais (PIN, bloqueio por tentativas, link pessoal só da própria parte) seguem iguais.
+
+## 2. Exportar convites: Word ou PDF
+
+Botão "Exportar" abre escolha:
+
+```text
++--------------------------------+
+| Exportar convites              |
+|                                |
+|  [W]  Word (um arquivo)        |
+|       todos os convites juntos |
+|                                |
+|  [P]  PDF individuais (.zip)   |
+|       uma carta por orador     |
+|                                |
+|        [ Cancelar ]            |
++--------------------------------+
+```
+
+- Word: como hoje, mas já no formato carta (item 3).
+- PDF: um arquivo por parte, entregues num .zip. Nome do arquivo:
+  - Discurso: `07 - Joao Silva - Central.pdf` (número do esboço)
+  - Oração/Presidência: `Oracao - Joao Silva - Central.pdf`
+- Na carta em PDF, "clique aqui" é um link ativo ao toque, abrindo `/c/<código>`.
+
+## 3. Modelos de carta convite (nova pílula)
+
+Recomendação: pílula "Modelos" dentro de Grandes Eventos. Você cria 1 ou mais modelos e cada evento escolhe qual usar (com um modelo padrão).
+
+```text
++--------------------------------+
+| < Circuito                     |
+| (Eventos) (Modelos)            |
+|--------------------------------|
+| Modelos de carta         [ + ] |
+|  ┌──────────────────────────┐  |
+|  │ Assembleia de circuito ★ │  |
+|  │ Padrão · editado 30/10   │  |
+|  └──────────────────────────┘  |
+|  ┌──────────────────────────┐  |
+|  │ Congresso regional       │  |
+|  └──────────────────────────┘  |
++--------------------------------+
+```
+
+Editor do modelo:
+
+```text
++--------------------------------+
+| < Modelo          [Prévia][OK] |
+|--------------------------------|
+| Timbre                         |
+|  Nome: Wanderson P. R. Santos  |
+|  Cargo: Superintendente Circ.  |
+|  Circuito / Contato / Cidade   |
+|--------------------------------|
+| Texto da carta (editor)        |
+| Prezado irmão {orador},        |
+| Você foi designado para        |
+| {parte} - "{tema}" no dia      |
+| {data} às {hora}, em {local}.  |
+| Para confirmar, {clique aqui}. |
+|--------------------------------|
+| Campos: {orador} {congregacao} |
+| {parte} {tema} {esboco} {data} |
+| {hora} {duracao} {local} {pin} |
+|--------------------------------|
+| Assinatura: [nome]  Fechamento |
++--------------------------------+
+```
+
+Carta gerada (Word/PDF, A4):
+
+```text
++----------------------------------------+
+|        WANDERSON RODRIGUES             |  timbre (modelo)
+|              IBE-01                    |
+|  Rua 1, Bl 03 ... Angola · Tel ...     |
+|----------------------------------------|
+|                 31 de outubro de 2026  |  data automática
+| Gonçalves Da Justino                   |  orador (auto)
+| C.Funda 01                             |  congregação (auto)
+| Ref:. DESIGNAÇÃO — Escola ... 2027     |  modelo
+| Amado irmão:                           |
+|  Por ser um exemplo... (texto livre)   |  modelo
+|  ┌──────────────────────────────────┐  |
+|  │ Assembleia ... — sáb 07/11/2026  │  |  TUDO AUTOMÁTICO
+|  │ Local: SAV                       │  |  vindo do evento
+|  │ Orador: nome — congregação       │  |
+|  │ Sua designação: Discurso nº 7    │  |
+|  │   · 09:40 · 15 min               │  |
+|  │ Tema: ...                        │  |
+|  │ Próximo orador: ... (se ativo)   │  |
+|  │ Aceitar/recusar: [Clique aqui!]  │  |  link ativo no PDF
+|  │ PIN: 079382 (só no modo PIN)     │  |
+|  └──────────────────────────────────┘  |
+|        INFORMAÇÕES & LEMBRETES:        |  blocos do modelo
+|  [faixa cinza] O esboço e os vídeos... |
+|  [faixa verde] Preparação/Participação |
+|  • Data e Local do Ensaio: ...         |
+|  Torne sua participação ... oração     |
+|                     Seu irmão,         |
+|           Wanderson Rodrigues, SC      |  assinatura cursiva
++----------------------------------------+
+```
+
+- O superintendente edita timbre, Ref., abertura, lembretes, ensaio e assinatura. O quadro da designação não é editável: vem do evento e da parte.
+- Linhas vazias somem (sem local, sem próximo orador, sem PIN no modo link pessoal).
+- Já deixo um modelo inicial com o texto da sua carta, para você só revisar.
+
+- No evento, campo "Modelo de carta" (padrão pré-selecionado). Sem modelo, usa o texto atual.
+- Copiar convite (WhatsApp) continua em texto curto, com o link.
+
+## 4. Bíblia: três tipos de leitura (superintendente e esposa)
+
+Na tela da Bíblia aparecem três pílulas: Pessoal, Família e Reunião. Cada uma tem seu próprio progresso (capítulos lidos, plano, data de início). A leitura que você já tem hoje vira a "Pessoal", sem perder nada.
+
+```text
++--------------------------------+
+| Bíblia                    [⋯]  |
+| (Pessoal) (Família) (Reunião)  |
+|--------------------------------|
+| Leitura em Família             |
+| ▓▓▓▓▓▓░░░░░░  38%              |
+| Próximo: Mateus 6              |
+|  [ Continuar leitura ]         |
+|--------------------------------|
+| Pontos altos e anotações       |
+| (Todas)(Pessoal)(Família)(Reun)|
+|  • Mat 5:3 — "Felizes..."  [F] |
+|  • Sal 23:1 — nota...      [P] |
++--------------------------------+
+```
+
+- Ao ler um capítulo, "Concluído" marca só a leitura que está aberta.
+- Pontos altos e anotações ficam juntos, cada um com uma etiqueta (P/F/R). O filtro mostra todos ou só os de uma leitura. Os antigos ficam como "Pessoal".
+- Vale igual para o superintendente (Estudo e Anotações) e para a esposa.
+
+### Leitura por dias da semana (opção em qualquer leitura)
+
+Em cada leitura (Pessoal, Família, Reunião) você pode escolher "Por dias da semana" e definir que sequência de livros ler em cada dia. Cada dia guarda onde parou.
+
+```text
++--------------------------------+
+| (Pessoal) (Família) (Reunião)  |
+|--------------------------------|
+| [Seg][Ter][QUA][Qui][Sex][Sáb] |  pílulas roláveis,
+|        ●                       |  hoje destacado
+|--------------------------------|
+| Quarta · Profetas              |
+| Isaías → Jeremias → Ezequiel   |
+| Parou em: Isaías 58            |
+|  [ Continuar Isaías 58 ]       |
+|--------------------------------|
+| [✎ Editar dias]                |
++--------------------------------+
+
+Editar dias:
++--------------------------------+
+| < Dias da semana          [OK] |
+| Seg  Evangelhos          [ > ] |
+| Ter  Salmos, Provérbios  [ > ] |
+| Qua  Profetas            [ > ] |
+| Qui  —  (sem leitura)    [ > ] |
+| Dom  Atos, Cartas        [ > ] |
++--------------------------------+
+```
+
+- Ao abrir, a pílula do dia de hoje já vem selecionada. Tocar em outro dia leva direto para onde parou naquele dia.
+- Dias sem leitura ficam apagados. Ao terminar a sequência de um dia, ela recomeça do primeiro livro.
+
+### Leitura da reunião (automática, sem importar nada)
+
+Puxar a programação do wol.jw.org automaticamente não é seguro: os termos do site não permitem coleta automática, e o site muda e quebraria o recurso. Sem importação, a forma automática é esta:
+
+- Na primeira vez você informa só o ponto de partida (ex.: "esta semana: Isaías 58-59"). Depois o app avança sozinho toda segunda-feira, no mesmo ritmo de capítulos.
+- Se a reunião pular ou repetir capítulos, um toque em "Ajustar esta semana" corrige, e o app segue dali.
+- O botão "Ver programa na wol.jw.org ↗" abre a página da semana no navegador para conferir.
+
+### Pontos altos para comentar na reunião
+
+```text
++--------------------------------+
+| (Pessoal) (Família) (Reunião)  |
+|--------------------------------|
+| Semana · Isaías 58-59          |
+|  [ Ler ]                       |
+|--------------------------------|
+| ★ Para comentar (3)   [Modo ▶] |
+|  Isa 58:6  "Soltar as cordas.."|
+|   minha nota: ajudar...        |
+|  Isa 58:13 nota: sábado...     |
++--------------------------------+
+
+Modo comentário (tela cheia):
++--------------------------------+
+| ✕                       1 de 3 |
+|                                |
+|  ISAÍAS 58:6                   |
+|  minha nota em letra grande,   |
+|  fácil de ler ao levantar a    |
+|  mão na reunião.               |
+|                                |
+|   ‹ anterior      próximo ›    |
++--------------------------------+
+```
+
+- Ao marcar um ponto alto na leitura da reunião, ele entra sozinho em "Para comentar" da semana. Também dá para marcar ★ em qualquer ponto alto de outra leitura.
+- O cartão fica no topo da pílula Reunião e também na tela inicial durante a semana da reunião.
+- Modo comentário: letra grande, tela sempre acesa, deslizar para o próximo.
+- Na semana seguinte, os cartões vão para o histórico e continuam no filtro "Reunião".
+- Tudo funciona sem internet. A Bíblia continua sendo só a TNM importada por você.
+
+## Ordem de execução (sem quebrar o app)
+
+Cada etapa é independente, fecha com verificação de erros + todos os testes, e não mexe no banco nem no login.
+
+```text
+Etapa 1  Link curto /c/      menor risco, links antigos seguem
+Etapa 2  Modelos de carta    nova pílula, nada existente muda
+Etapa 3  Exportar Word/PDF   usa os modelos da etapa 2
+Etapa 4  Bíblia: 3 leituras  migração local que só adiciona
+Etapa 5  Dias da semana      opção extra; padrão segue igual
+Etapa 6  Reunião + comentar  usa as etapas 4 e 5
+```
+
+Garantias:
+- Links `/confirmar/...` já enviados continuam abrindo.
+- Sua leitura atual, pontos altos e notas JW Library viram "Pessoal" sem perder nada. Se a migração falhar, o app usa os dados antigos.
+- Backup e restauração aceitam o formato antigo e o novo.
+- Botão "Exportar Word" continua no mesmo lugar e passa a abrir a escolha Word/PDF.
+- Telas no padrão iOS/One UI: pílulas, cartões de cantos arredondados, botões de 44px, respeitando a barra do celular.
+- Sem subir versão agora; fecha-se a versão quando você pedir.
+
+## Detalhes técnicos
+
+- Bíblia: `WsData.reading` continua (vira a leitura pessoal); novo `readings.family` e `readings.meeting` no mesmo armazenamento local, com migração automática que só adiciona campos. Highlight/JwNote ganham `track?: "personal"|"family"|"meeting"` (ausente = pessoal). Programação da reunião: lista local `{weekStart, ref}` com parser de referências pt/en/es testado. Superintendente usa a mesma loja via GuestWorkspace (storageKey user.<id>). Nada muda no servidor.
+
+- `src/lib/big-events/short-code.ts`: `newShortCode(8)` com `crypto.getRandomValues` e alfabeto de 31 chars; testes de tamanho/alfabeto.
+- `invite.ts`: `inviteLink()` passa a usar constante `OFFICIAL_ORIGIN = "https://visitasc.com.br"` e caminho `/c/`; o `origin()` local em BigEvents.tsx deixa de ser usado para convites.
+- `BigEvents.tsx`: troca `crypto.randomUUID()` por `newShortCode()` em personal_token e no public_token de eventos novos (colunas já são texto; sem mudança no banco). Busca por token no servidor não muda.
+- Nova rota `src/routes/c.$code.tsx` reaproveitando o componente da página de confirmação (extraído de `confirmar.$token.tsx`), com head noindex.
+- PDF via pdf-lib (`src/lib/pdf/pdf-engine.ts`), com anotação de link no "clique aqui"; zip com JSZip existente; salvar via `share.ts` em blocos.
+- Modelos: sem alterar banco (regra permanente). Guardados no aparelho por usuário (`bigEvents.letterTemplates.<userId>`) e incluídos no backup existente; escolha do modelo por evento também no aparelho. Se preferir que sincronize entre aparelhos, isso exigiria tabela nova — só com sua autorização.
+- Placeholders substituídos por função pura `renderLetter(template, part, event)` com testes; Word reaproveita `htmlToDocx`.
+- Sem subir versão agora (lote de testes), conforme combinado.

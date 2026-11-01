@@ -1,3 +1,4 @@
+import { afterSuperSignupRoute } from "@/lib/first-run";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -46,7 +47,7 @@ function Page() {
       setBusy(false);
       toast.success(t("onboarding.superCreated"));
       await refresh();
-      nav({ to: "/congregacoes" });
+      nav({ to: afterSuperSignupRoute() });
       return;
     }
 

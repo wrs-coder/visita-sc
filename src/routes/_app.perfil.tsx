@@ -1,4 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { isFirstRunPending, finishFirstRun } from "@/lib/first-run";
+import { CheckCircle2, Circle, ArrowRight } from "lucide-react";
 import { ReminderSettingsCard } from "@/components/reminders/EventReminders";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -33,6 +35,38 @@ import { getActiveLibrary, type BibleLibrary } from "@/lib/bible-notes-store";
 import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/_app/perfil")({ component: Page });
+
+function WelcomeCard({ circuitOk, nameOk, onGoFeatures }: { circuitOk: boolean; nameOk: boolean; onGoFeatures: () => void }) {
+  const nav = useNavigate();
+  const [show, setShow] = useState(false);
+  useEffect(() => { setShow(isFirstRunPending()); }, []);
+  if (!show) return null;
+  const Item = ({ ok, label, onClick }: { ok: boolean; label: string; onClick?: () => void }) => (
+    <li className="flex items-center gap-2 text-sm">
+      {ok ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
+      {onClick ? <button type="button" onClick={onClick} className="underline-offset-2 hover:underline text-left">{label}</button> : <span className={ok ? "text-muted-foreground line-through" : ""}>{label}</span>}
+    </li>
+  );
+  return (
+    <Card className="border-primary/30 bg-primary/5">
+      <CardContent className="p-4 space-y-3">
+        <div>
+          <p className="font-semibold">Bem-vindo! 👋</p>
+          <p className="text-sm text-muted-foreground">Complete seus dados para começar a usar o aplicativo.</p>
+        </div>
+        <ul className="space-y-1.5">
+          <Item ok={circuitOk} label="Circuito" />
+          <Item ok={nameOk} label="Nome completo" />
+          <Item ok={false} label="PIN offline (aba Recursos do aplicativo)" onClick={onGoFeatures} />
+        </ul>
+        <Button className="w-full rounded-full" onClick={() => { finishFirstRun(); setShow(false); nav({ to: "/dashboard" }); }}>
+          Ir para o Painel <ArrowRight className="h-4 w-4 ml-1" />
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function Page() {
   const { user, profile, refresh, role } = useAuth();
@@ -296,6 +330,7 @@ function Page() {
         <h1 className="text-2xl md:text-3xl font-bold">{t("profile.title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">{t("profile.subtitle")}</p>
       </header>
+      <WelcomeCard circuitOk={!!profile?.circuit} nameOk={!!profile?.full_name?.trim()} onGoFeatures={() => changeTab("features")} />
       <Tabs value={tab} onValueChange={changeTab} className="space-y-4">
         <TabsList className="sticky top-14 md:top-0 z-10 w-full h-auto p-1 rounded-full bg-muted/80 backdrop-blur grid grid-cols-3">
           <TabsTrigger value="personal" className="rounded-full text-xs sm:text-sm py-1.5">{t("profile.tabPersonal")}</TabsTrigger>

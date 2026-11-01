@@ -15,7 +15,7 @@ import {
 import {
   LayoutDashboard, CalendarDays, Users, UtensilsCrossed, ListChecks, Lock,
   Building2, Car, FileStack, MapPin, UserCircle, Plane, ClipboardList,
-  BookOpen, FileText, Heart, Trash2, Layers, Search, RefreshCw, Sun, Moon,
+  BookOpen, FileText, Heart, Trash2, Layers, HelpCircle, RefreshCw, Sun, Moon,
   Languages, LogOut, Coffee, Clock, GraduationCap } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
@@ -25,6 +25,7 @@ import { prefetchAllForOffline } from "@/lib/offline-prefetch";
 import { changeLanguage, type SupportedLanguage } from "@/i18n";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 import { toast } from "sonner";
+import { OPEN_PALETTE_EVENT } from "@/lib/help/help-content";
 
 type NavEntry = {
   to: string;
@@ -96,8 +97,13 @@ export function CommandPalette() {
         setOpen((v) => !v);
       }
     };
+    const onOpen = () => setOpen(true);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener(OPEN_PALETTE_EVENT, onOpen);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener(OPEN_PALETTE_EVENT, onOpen);
+    };
   }, []);
 
   // Recents: registra navegações do utilizador.
@@ -184,11 +190,11 @@ export function CommandPalette() {
       {/* Botão flutuante discreto (mobile e desktop) */}
       <button
         type="button"
-        aria-label={t("commandPalette.open")}
-        onClick={() => setOpen(true)}
+        aria-label="Ajuda"
+        onClick={() => navigate({ to: "/ajuda" })}
         className="fixed bottom-4 right-4 z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
-        <Search className="h-5 w-5" />
+        <HelpCircle className="h-6 w-6" />
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>

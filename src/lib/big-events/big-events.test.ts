@@ -79,13 +79,26 @@ describe("edição de partes e modo de link", () => {
     expect(t).toContain("Orador: João — Central");
     expect(t).toContain("Traga o esboço");
     expect(t).toContain("Próximo orador: Pedro — Vila Nova");
-    expect(t).toContain("https://x/confirmar/EVT");
+    expect(t).toContain("https://visitasc.com.br/c/EVT");
     expect(t).toContain("PIN: 1234");
   });
   it("modo link pessoal usa o link do orador e não envia PIN", () => {
     const t = buildInviteText({ ...ev, link_mode: "personal" }, part, [part], "1234", "https://x");
-    expect(t).toContain("https://x/confirmar/PERS");
+    expect(t).toContain("https://visitasc.com.br/c/PERS");
     expect(t).not.toContain("PIN");
-    expect(t).not.toContain("/confirmar/EVT");
+    expect(t).not.toContain("/c/EVT");
+  });
+});
+
+describe("link curto", () => {
+  const ev = { name: "AC", event_date: null, location: null, extra_info: null, public_token: "11111111-1111-1111-1111-111111111111", public_code: "k7m9p2xa" };
+  const part = { id: "a", sort_order: 0, part_time: null, duration_min: null, theme: "T", outline_number: null, instructions: null,
+    part_type_label: "Discurso", assigned_to: "speaker", speaker_name: "João", speaker_congregation: null, show_next_speaker: false,
+    personal_token: "22222222-2222-2222-2222-222222222222", personal_code: "abcd2345" };
+  it("modo PIN usa o código curto do evento no domínio oficial", () => {
+    expect(buildInviteText(ev, part, [part], "1234", "http://localhost")).toContain("https://visitasc.com.br/c/k7m9p2xa");
+  });
+  it("modo pessoal usa o código curto do orador", () => {
+    expect(buildInviteText({ ...ev, link_mode: "personal" }, part, [part], null, "x")).toContain("https://visitasc.com.br/c/abcd2345");
   });
 });

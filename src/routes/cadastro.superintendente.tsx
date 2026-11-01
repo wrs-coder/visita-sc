@@ -1,3 +1,4 @@
+import { afterSuperSignupRoute } from "@/lib/first-run";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { TermsAcceptance } from "@/components/auth/TermsAcceptance";
 import { useEffect, useState } from "react";
@@ -54,7 +55,7 @@ function Page() {
         return;
       }
       toast.success(t("registerSuper.successTitle"), { description: t("registerSuper.successDesc") });
-      nav({ to: "/congregacoes" });
+      nav({ to: afterSuperSignupRoute() });
     } catch (err: unknown) {
       toast.error(t("registerSuper.unexpectedError"), {
         description: err instanceof Error ? err.message : String(err),

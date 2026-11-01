@@ -4,14 +4,15 @@
 import { get as idbGet, set as idbSet } from "idb-keyval";
 import { packBackupZip, unpackBackupZip } from "./backup-package";
 import type { JwNote } from "./jwlibrary-import";
+import { sanitizeWeekday, sanitizeMeetingWeek, type WeekdayPlan, type MeetingWeek } from "./bible-tracks";
 import { isValidChapterKey, chaptersOf, type ReadingPlan, type Highlight, type CustomPlan } from "./bible-chapters";
 
 export type WsKind = "note" | "bible" | "research";
 export interface WsItem { id: string; kind: WsKind; title: string; body: string; folderId: string | null; color: string | null; updatedAt: string }
 export interface WsFolder { id: string; name: string; kind?: WsKind }
 export interface WsSettings { fontSize: "sm" | "md" | "lg"; width: "narrow" | "wide" }
-export interface WsReading { plan: ReadingPlan; startDate: string; done: string[]; custom?: CustomPlan }
-export interface WsData { items: WsItem[]; folders: WsFolder[]; settings: WsSettings; reading: WsReading; highlights: Highlight[]; jwNotes: JwNote[] }
+export interface WsReading { plan: ReadingPlan; startDate: string; done: string[]; custom?: CustomPlan; weekday?: WeekdayPlan; meetingWeek?: MeetingWeek }
+export interface WsData { items: WsItem[]; folders: WsFolder[]; settings: WsSettings; reading: WsReading; highlights: Highlight[]; jwNotes: JwNote[]; readings?: { family?: WsReading; meeting?: WsReading } }
 
 export const WS_PREFIX = "guest.workspace.";
 const DATA_KEY = `${WS_PREFIX}data`; // chave antiga (migração) e nome no backup
@@ -63,6 +64,23 @@ export function saveWs(sk: string, d: WsData): Promise<void> {
 
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
 
+
+function sanitizeReading(raw: unknown, fallbackStart: string): WsReading {
+  const rd = (raw ?? {}) as Record<string, unknown>;
+  const plan: ReadingPlan = rd.plan === "chrono" || rd.plan === "year" || rd.plan === "custom" ? rd.plan : "canon";
+  const done = Array.isArray(rd.done) ? [...new Set(rd.done.filter((k): k is string => typeof k === "string" && isValidChapterKey(k)))] : [];
+  const sd = str(rd.startDate, 10);
+  const cu = (rd.custom ?? null) as Record<string, unknown> | null;
+  const custom: CustomPlan | undefined = cu && typeof cu === "object" ? {
+    books: Array.isArray(cu.books) ? [...new Set(cu.books.filter((b): b is string => typeof b === "string" && /^B\d\d$/.test(b) && chaptersOf(b) > 0))] : [],
+    perDay: typeof cu.perDay === "number" && Number.isInteger(cu.perDay) && cu.perDay >= 1 && cu.perDay <= 50 ? cu.perDay : null,
+    endDate: typeof cu.endDate === "string" && /^\d{4}-\d\d-\d\d$/.test(cu.endDate) ? cu.endDate : null,
+  } : undefined;
+  const weekday = sanitizeWeekday(rd.weekday);
+  const meetingWeek = sanitizeMeetingWeek(rd.meetingWeek);
+  return { plan, done, startDate: /^\d{4}-\d\d-\d\d$/.test(sd) ? sd : fallbackStart, ...(custom ? { custom } : {}), ...(weekday ? { weekday } : {}), ...(meetingWeek ? { meetingWeek } : {}) };
+}
+
 export function sanitizeWs(raw: unknown): WsData {
   const base = emptyWs();
   if (!raw || typeof raw !== "object") return base;
@@ -95,21 +113,15 @@ export function sanitizeWs(raw: unknown): WsData {
     }
   }
   const s = (r.settings ?? {}) as Record<string, unknown>;
-  const rd = (r.reading ?? {}) as Record<string, unknown>;
-  const plan: ReadingPlan = rd.plan === "chrono" || rd.plan === "year" || rd.plan === "custom" ? rd.plan : "canon";
-  const done = Array.isArray(rd.done) ? [...new Set(rd.done.filter((k): k is string => typeof k === "string" && isValidChapterKey(k)))] : [];
-  const sd = str(rd.startDate, 10);
-  const cu = (rd.custom ?? null) as Record<string, unknown> | null;
-  const custom: CustomPlan | undefined = cu && typeof cu === "object" ? {
-    books: Array.isArray(cu.books) ? [...new Set(cu.books.filter((b): b is string => typeof b === "string" && /^B\d\d$/.test(b) && chaptersOf(b) > 0))] : [],
-    perDay: typeof cu.perDay === "number" && Number.isInteger(cu.perDay) && cu.perDay >= 1 && cu.perDay <= 50 ? cu.perDay : null,
-    endDate: typeof cu.endDate === "string" && /^\d{4}-\d\d-\d\d$/.test(cu.endDate) ? cu.endDate : null,
-  } : undefined;
+  const reading = sanitizeReading(r.reading, base.reading.startDate);
+  const rr = (r.readings ?? {}) as Record<string, unknown>;
+  const readings = { ...(rr.family ? { family: sanitizeReading(rr.family, base.reading.startDate) } : {}), ...(rr.meeting ? { meeting: sanitizeReading(rr.meeting, base.reading.startDate) } : {}) };
   const highlights = Array.isArray(r.highlights) ? r.highlights.slice(0, 5000).flatMap((x): Highlight[] => {
     const o = x as Record<string, unknown>;
     if (!o || typeof o.id !== "string") return [];
     const b = typeof o.bookId === "string" && /^B\d\d$/.test(o.bookId) && chaptersOf(o.bookId) > 0 ? o.bookId : null;
-    return [{ id: str(o.id, 64), ref: str(o.ref, 120), bookId: b, text: str(o.text, 20_000), date: str(o.date, 40) || new Date().toISOString() }];
+    const tr = o.track === "family" || o.track === "meeting" ? { track: o.track as "family" | "meeting" } : {};
+    return [{ id: str(o.id, 64), ref: str(o.ref, 120), bookId: b, text: str(o.text, 20_000), date: str(o.date, 40) || new Date().toISOString(), ...tr, ...(o.star === true ? { star: true } : {}) }];
   }) : [];
   const jwNotes = Array.isArray(r.jwNotes) ? r.jwNotes.slice(0, 5000).flatMap((x): JwNote[] => {
     const o = x as Record<string, unknown>;
@@ -123,7 +135,7 @@ export function sanitizeWs(raw: unknown): WsData {
   return { items, folders, settings: {
     fontSize: s.fontSize === "sm" || s.fontSize === "lg" ? s.fontSize : "md",
     width: s.width === "wide" ? "wide" : "narrow",
-  }, reading: { plan, done, startDate: /^\d{4}-\d\d-\d\d$/.test(sd) ? sd : base.reading.startDate, ...(custom ? { custom } : {}) }, highlights, jwNotes };
+  }, reading, highlights, jwNotes, ...(Object.keys(readings).length ? { readings } : {}) };
 }
 
 export async function buildWsBackup(d: WsData): Promise<Blob> {

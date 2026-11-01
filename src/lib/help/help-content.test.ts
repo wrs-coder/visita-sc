@@ -1,0 +1,79 @@
+import { describe, expect, it } from "vitest";
+import { readFileSync, existsSync } from "node:fs";
+import pt from "@/i18n/locales/pt.json";
+import { HELP_ORDER, HELP_TOPICS, searchHelp } from "./help-content";
+
+function lookup(key: string): string | undefined {
+  let cur: unknown = pt;
+  for (const part of key.split(".")) {
+    if (cur && typeof cur === "object" && part in (cur as Record<string, unknown>)) {
+      cur = (cur as Record<string, unknown>)[part];
+    } else return undefined;
+  }
+  return typeof cur === "string" ? cur : undefined;
+}
+
+describe("help content fidelity", () => {
+  it("every topic route has a real screen file", () => {
+    for (const tp of HELP_TOPICS) {
+      const file = `src/routes/_app${tp.route.replace(/\//g, ".")}.tsx`;
+      expect(existsSync(file), file).toBe(true);
+    }
+  });
+
+  it("every cited label exists in the app translations", () => {
+    for (const tp of HELP_TOPICS)
+      for (const s of tp.steps)
+        if (s.labelKey) expect(lookup(s.labelKey), s.labelKey).toBeTypeOf("string");
+  });
+
+  it("quoted button names exist in the screen source", () => {
+    expect(readFileSync("src/routes/_app.configuracoes.tsx", "utf8")).toContain("Importar");
+    expect(lookup("itinerary.newVisit")).toBe("Nova visita");
+    expect(lookup("offlinePin.create")).toBe("Criar PIN");
+    expect(lookup("circuit.pillCircuit")).toBe("Circuito");
+    const ev = readFileSync("src/components/circuit/BigEvents.tsx", "utf8");
+    for (const w of ["Novo evento", "Importar programa", "Modelos de carta", "Exportar"]) expect(ev).toContain(w);
+    const bt = readFileSync("src/components/guest-workspace/BibleTrackExtras.tsx", "utf8");
+    for (const w of ["Marcar capítulos lidos", "Para comentar", "Modo comentário"]) expect(bt).toContain(w);
+    const br = readFileSync("src/components/guest-workspace/BibleReadingTab.tsx", "utf8");
+    for (const w of ["Pessoal", "Família", "Reunião", "Dias", "Continuar", "Meta de leitura"]) expect(br).toContain(w);
+    const vt = readFileSync("src/components/visit-week/VisitProgramTabs.tsx", "utf8");
+    for (const w of ["Anciãos", "Estudos e Revisitas", "Reuniões", "Refeições", "Transporte"]) expect(vt).toContain(w);
+  });
+
+  it("profile topic names match the real profile screen", () => {
+    const pf = readFileSync("src/routes/_app.perfil.tsx", "utf8");
+    for (const k of ["profile.circuit", "profile.wifeAccess.title", "profile.personalData", "profile.usernameSection.title", "profile.changePassword", "bibleManager.manage", "profile.language", "profile.backupSection", "support.title"])
+      expect(pf).toContain(`t("${k}")`);
+    for (const c of ["<OfflinePinCard", "<SyncStatusCard", "<ReminderSettingsCard", "<ImmersiveSettingsCard"]) expect(pf).toContain(c);
+    expect(readFileSync("src/components/reminders/EventReminders.tsx", "utf8")).toContain("Lembretes de eventos");
+    expect(lookup("profile.immersiveLabel")).toBe("Tela cheia na leitura e no esboço");
+    expect(lookup("profile.generateBackup")).toBe("Gerar arquivo de backup");
+    expect(lookup("profile.restoreBackup")).toBe("Restaurar backup");
+    const big = HELP_TOPICS.find((t) => t.id === "big-events")!;
+    expect(big.steps.some((s) => s.before.includes("podendo ter um PIN") && s.before.includes("aparece na hora"))).toBe(true);
+  });
+
+  it("search ignores accents and finds the security topic for 'pin'", () => {
+    const tr = (k: string) => lookup(k) ?? k;
+    expect(searchHelp(HELP_TOPICS, "pin", tr).map((t) => t.id)).toContain("security");
+    expect(searchHelp(HELP_TOPICS, "itinerário", tr).map((t) => t.id)).toEqual(["circuit"]);
+  });
+});
+
+describe("new help topics", () => {
+  it("includes Painel, Modelos de visita, Esboços and Bíblia as separate topics", () => {
+    const ids = HELP_TOPICS.map((t) => t.id);
+    for (const id of ["dashboard", "visit-templates", "outlines", "bible"]) expect(ids).toContain(id);
+    expect(ids).not.toContain("outlines-bible");
+  });
+  it("quoted outline tools exist in the editor", () => {
+    expect(readFileSync("src/components/notes/RichNoteToolbar.tsx", "utf8")).toContain("Modo foco");
+    expect(readFileSync("src/components/notes/OutlineAttachmentsBar.tsx", "utf8")).toContain("Anexos do esboço");
+  });
+  it("mostra os 12 temas na ordem pedida", () => {
+    expect(HELP_TOPICS.map((t) => t.title)).toEqual(["Meu Perfil", "Modelos de visita", "Circuito e visitas", "Painel inicial", "Esboços", "Grandes Eventos", "Bíblia e anotações", "Notas Privadas", "Semana da visita", "Relatórios e backup", "Entrada e segurança", "Perguntas frequentes"]);
+    expect(HELP_ORDER).toHaveLength(12);
+  });
+});

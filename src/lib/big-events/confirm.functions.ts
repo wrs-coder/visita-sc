@@ -7,7 +7,9 @@ import { z } from "zod";
 import { hashPin, nextSpeakerName, PIN_RE, type InvitePart } from "./invite";
 import { isLocked, nextAttemptState } from "./lockout";
 
-const base = z.object({ token: z.string().uuid(), pin: z.string().regex(PIN_RE).optional() });
+export const SHORT_CODE_RE = /^[a-hj-km-np-z2-9]{8}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const base = z.object({ token: z.string().refine((t) => UUID_RE.test(t) || SHORT_CODE_RE.test(t)), pin: z.string().regex(PIN_RE).optional() });
 
 type Result =
   | { ok: true; part: PublicPart }
@@ -27,7 +29,8 @@ const PART_COLS = "id,sort_order,part_time,duration_min,theme,outline_number,ins
 async function resolve(token: string, pin: string | undefined) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const db = supabaseAdmin;
-  const { data: ev0 } = await db.from("circuit_big_events").select(EV_COLS).eq("public_token", token).maybeSingle();
+  const isUuid = UUID_RE.test(token);
+  const { data: ev0 } = await db.from("circuit_big_events").select(EV_COLS).eq(isUuid ? "public_token" : "public_code", token).maybeSingle();
 
   let ev = ev0;
   let parts: Array<Record<string, unknown>> | null = null;
@@ -35,7 +38,7 @@ async function resolve(token: string, pin: string | undefined) {
 
   if (!ev) {
     // Link pessoal: o token é da própria parte.
-    const { data: p } = await db.from("circuit_big_event_parts").select(`${PART_COLS},event_id`).eq("personal_token", token).maybeSingle();
+    const { data: p } = await db.from("circuit_big_event_parts").select(`${PART_COLS},event_id`).eq(isUuid ? "personal_token" : "personal_code", token).maybeSingle();
     if (!p) return { db, error: "notfound" as const };
     const { data: e } = await db.from("circuit_big_events").select(EV_COLS).eq("id", p.event_id).maybeSingle();
     if (!e || e.link_mode !== "personal" || p.assigned_to !== "speaker") return { db, error: "notfound" as const };

@@ -17,6 +17,7 @@ import { Route as PoliticaPrivacidadeRouteImport } from './routes/politica-priva
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as TermosUsoRouteImport } from './routes/termos-uso'
 import { Route as VisitanteRouteImport } from './routes/visitante'
+import { Route as AppAjudaRouteImport } from './routes/_app.ajuda'
 import { Route as AppChecklistRouteImport } from './routes/_app.checklist'
 import { Route as AppChecklistModelosRouteImport } from './routes/_app.checklist-modelos'
 import { Route as AppComunicacaoCasalRouteImport } from './routes/_app.comunicacao-casal'
@@ -42,6 +43,7 @@ import { Route as AppResumoSemanaRouteImport } from './routes/_app.resumo-semana
 import { Route as AppReunioesDeCampoRouteImport } from './routes/_app.reunioes-de-campo'
 import { Route as AppReunioesDiscursosRouteImport } from './routes/_app.reunioes-discursos'
 import { Route as AppTransporteRouteImport } from './routes/_app.transporte'
+import { Route as CCodeRouteImport } from './routes/c.$code'
 import { Route as CadastroIndexRouteImport } from './routes/cadastro.index'
 import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
@@ -90,6 +92,11 @@ const VisitanteRoute = VisitanteRouteImport.update({
   id: '/visitante',
   path: '/visitante',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppAjudaRoute = AppAjudaRouteImport.update({
+  id: '/ajuda',
+  path: '/ajuda',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppChecklistRoute = AppChecklistRouteImport.update({
   id: '/checklist',
@@ -219,6 +226,11 @@ const AppTransporteRoute = AppTransporteRouteImport.update({
   path: '/transporte',
   getParentRoute: () => AppRoute,
 } as any)
+const CCodeRoute = CCodeRouteImport.update({
+  id: '/c/$code',
+  path: '/c/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CadastroIndexRoute = CadastroIndexRouteImport.update({
   id: '/cadastro/',
   path: '/cadastro/',
@@ -273,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos-uso': typeof TermosUsoRoute
   '/visitante': typeof VisitanteRouteWithChildren
+  '/ajuda': typeof AppAjudaRoute
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
   '/comunicacao-casal': typeof AppComunicacaoCasalRoute
@@ -298,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
   '/reunioes-discursos': typeof AppReunioesDiscursosRoute
   '/transporte': typeof AppTransporteRoute
+  '/c/$code': typeof CCodeRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
@@ -315,6 +329,7 @@ export interface FileRoutesByTo {
   '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos-uso': typeof TermosUsoRoute
+  '/ajuda': typeof AppAjudaRoute
   '/checklist': typeof AppChecklistRoute
   '/checklist-modelos': typeof AppChecklistModelosRoute
   '/comunicacao-casal': typeof AppComunicacaoCasalRoute
@@ -340,6 +355,7 @@ export interface FileRoutesByTo {
   '/reunioes-de-campo': typeof AppReunioesDeCampoRoute
   '/reunioes-discursos': typeof AppReunioesDiscursosRoute
   '/transporte': typeof AppTransporteRoute
+  '/c/$code': typeof CCodeRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
@@ -360,6 +376,7 @@ export interface FileRoutesById {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos-uso': typeof TermosUsoRoute
   '/visitante': typeof VisitanteRouteWithChildren
+  '/_app/ajuda': typeof AppAjudaRoute
   '/_app/checklist': typeof AppChecklistRoute
   '/_app/checklist-modelos': typeof AppChecklistModelosRoute
   '/_app/comunicacao-casal': typeof AppComunicacaoCasalRoute
@@ -385,6 +402,7 @@ export interface FileRoutesById {
   '/_app/reunioes-de-campo': typeof AppReunioesDeCampoRoute
   '/_app/reunioes-discursos': typeof AppReunioesDiscursosRoute
   '/_app/transporte': typeof AppTransporteRoute
+  '/c/$code': typeof CCodeRoute
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
@@ -405,6 +423,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/termos-uso'
     | '/visitante'
+    | '/ajuda'
     | '/checklist'
     | '/checklist-modelos'
     | '/comunicacao-casal'
@@ -430,6 +449,7 @@ export interface FileRouteTypes {
     | '/reunioes-de-campo'
     | '/reunioes-discursos'
     | '/transporte'
+    | '/c/$code'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
@@ -447,6 +467,7 @@ export interface FileRouteTypes {
     | '/politica-privacidade'
     | '/redefinir-senha'
     | '/termos-uso'
+    | '/ajuda'
     | '/checklist'
     | '/checklist-modelos'
     | '/comunicacao-casal'
@@ -472,6 +493,7 @@ export interface FileRouteTypes {
     | '/reunioes-de-campo'
     | '/reunioes-discursos'
     | '/transporte'
+    | '/c/$code'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
@@ -491,6 +513,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/termos-uso'
     | '/visitante'
+    | '/_app/ajuda'
     | '/_app/checklist'
     | '/_app/checklist-modelos'
     | '/_app/comunicacao-casal'
@@ -516,6 +539,7 @@ export interface FileRouteTypes {
     | '/_app/reunioes-de-campo'
     | '/_app/reunioes-discursos'
     | '/_app/transporte'
+    | '/c/$code'
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
@@ -536,6 +560,7 @@ export interface RootRouteChildren {
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   TermosUsoRoute: typeof TermosUsoRoute
   VisitanteRoute: typeof VisitanteRouteWithChildren
+  CCodeRoute: typeof CCodeRoute
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
   CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
   ConfirmarTokenRoute: typeof ConfirmarTokenRoute
@@ -601,6 +626,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/visitante'
       preLoaderRoute: typeof VisitanteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/ajuda': {
+      id: '/_app/ajuda'
+      path: '/ajuda'
+      fullPath: '/ajuda'
+      preLoaderRoute: typeof AppAjudaRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/checklist': {
       id: '/_app/checklist'
@@ -777,6 +809,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTransporteRouteImport
       parentRoute: typeof AppRoute
     }
+    '/c/$code': {
+      id: '/c/$code'
+      path: '/c/$code'
+      fullPath: '/c/$code'
+      preLoaderRoute: typeof CCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cadastro/': {
       id: '/cadastro/'
       path: '/cadastro'
@@ -844,6 +883,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppAjudaRoute: typeof AppAjudaRoute
   AppChecklistRoute: typeof AppChecklistRoute
   AppChecklistModelosRoute: typeof AppChecklistModelosRoute
   AppComunicacaoCasalRoute: typeof AppComunicacaoCasalRoute
@@ -873,6 +913,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAjudaRoute: AppAjudaRoute,
   AppChecklistRoute: AppChecklistRoute,
   AppChecklistModelosRoute: AppChecklistModelosRoute,
   AppComunicacaoCasalRoute: AppComunicacaoCasalRoute,
@@ -926,6 +967,7 @@ const rootRouteChildren: RootRouteChildren = {
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   TermosUsoRoute: TermosUsoRoute,
   VisitanteRoute: VisitanteRouteWithChildren,
+  CCodeRoute: CCodeRoute,
   CadastroAnciaoRoute: CadastroAnciaoRoute,
   CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,
   ConfirmarTokenRoute: ConfirmarTokenRoute,
