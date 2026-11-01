@@ -96,3 +96,29 @@ Campos vazios não aparecem. Se faltar espaço, a linha termina com "…".
 - **Item 3:** um campo opcional `lines?: string[]` no item da agenda, preenchido no mesmo `map` que já monta `details`. A renderização usa `line-clamp-1` por linha, no máximo 2 linhas. Os lembretes e o resumo do dia não mudam.
 - **Testes:** cores padrão quando o modelo não tem `colors`; rótulos em português para cada valor interno; `humanizeCode("grupo_de_campo") === "Grupo de campo"`.
 - Validar com `bunx tsgo --noEmit` e `bunx vitest run`. Não precisa de plugin nem de nova versão do app.
+
+## 4. Folga no fim da rolagem (botões sob a barra do Android)
+É uma boa solução e a mais segura: não mexe na sobreposição das telas, só acrescenta espaço vazio no final do conteúdo. Hoje o fim de cada tela tem uma folga de cerca de 12px mais a altura da barra do Android, mas em alguns aparelhos (navegação por 3 botões) o sistema não informa essa altura corretamente. Por isso o último botão às vezes fica escondido.
+
+Proposta: a folga no fim de todas as telas passa a ser a **altura da barra do Android + cerca de 1,5 linha (≈ 72px)**. Também haverá um mínimo garantido de 56px, mesmo quando o aparelho não informa a barra. Nos computadores continua igual.
+
+```text
+┌───────────────────────────────┐
+│  ...último campo...           │
+│  [        Salvar         ]    │
+│                               │  ← folga extra (≈ 1,5 linha)
+│                               │
+├───────────────────────────────┤
+│    ◁      ○      ▢            │  ← barra do Android
+└───────────────────────────────┘
+```
+
+- Vale para todas as telas internas, numa única regra. Nenhuma tela precisa ser alterada uma a uma.
+- Também vale para as janelas que rolam por dentro, como Nova/Editar visita e as folhas inferiores. Nesses casos, os botões fixos no rodapé ganham a mesma folga.
+- Telas de leitura e de escrita em modo foco também recebem a folga, para o último parágrafo nunca ficar escondido.
+
+### Detalhes técnicos (item 4)
+- Em `styles.css`, a classe `.safe-bottom-content` passa a usar `calc(4.5rem + max(env(safe-area-inset-bottom), var(--safe-area-inset-bottom), 3.5rem - 4.5rem))`, ou seja, inset + 72px com piso de 56px. O breakpoint `md` continua em 2rem.
+- Essa classe já é aplicada no contêiner principal de `_app.tsx`, então uma única mudança cobre todas as rotas.
+- Rodapés de Dialog/Drawer que usam `pb-[env(safe-area-inset-bottom)]` ou `.pb-safe` passam a ter um piso de 1rem extra.
+- O teclado e a altura estável do editor não mudam.
