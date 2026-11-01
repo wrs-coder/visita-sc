@@ -61,3 +61,15 @@ describe("help content fidelity", () => {
     expect(searchHelp(HELP_TOPICS, "itinerário", tr).map((t) => t.id)).toEqual(["circuit"]);
   });
 });
+
+describe("new help topics", () => {
+  it("includes Painel, Modelos de visita, Esboços and Bíblia as separate topics", () => {
+    const ids = HELP_TOPICS.map((t) => t.id);
+    for (const id of ["dashboard", "visit-templates", "outlines", "bible"]) expect(ids).toContain(id);
+    expect(ids).not.toContain("outlines-bible");
+  });
+  it("quoted outline tools exist in the editor", () => {
+    expect(readFileSync("src/components/notes/RichNoteToolbar.tsx", "utf8")).toContain("Modo foco");
+    expect(readFileSync("src/components/notes/OutlineAttachmentsBar.tsx", "utf8")).toContain("Anexos do esboço");
+  });
+});

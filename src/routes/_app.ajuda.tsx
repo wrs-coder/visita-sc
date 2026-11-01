@@ -16,7 +16,7 @@ function ptLabel(key: string): string {
 function usePtT() {
   return ptLabel;
 }
-import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound, ClipboardList, BookOpen, Mic, FileText, HelpCircle, Download, Upload, ShieldCheck, UserCircle2 } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound, ClipboardList, BookOpen, Mic, FileText, HelpCircle, Download, Upload, ShieldCheck, UserCircle2, LayoutDashboard, FileStack, NotebookPen } from "lucide-react";
 import { HELP_TOPICS, OPEN_PALETTE_EVENT, searchHelp, type HelpTopic } from "@/lib/help/help-content";
 import { cn } from "@/lib/utils";
 import { VISIT_PROGRAM_TABS } from "@/components/visit-week/VisitProgramTabs";
@@ -69,7 +69,7 @@ function PreviewPin() {
   );
 }
 
-const ICONS = { lock: Lock, calendar: CalendarDays, week: ClipboardList, book: BookOpen, event: Mic, report: FileText, faq: HelpCircle, profile: UserCircle2 } as const;
+const ICONS = { lock: Lock, calendar: CalendarDays, week: ClipboardList, book: BookOpen, event: Mic, report: FileText, faq: HelpCircle, profile: UserCircle2, dashboard: LayoutDashboard, templates: FileStack, outline: NotebookPen } as const;
 
 function Pills({ items, active = 0 }: { items: string[]; active?: number }) {
   return (
@@ -118,6 +118,9 @@ function TopicCard({ topic, open, onToggle }: { topic: HelpTopic; open: boolean;
         {topic.preview === "reading-pills" && <Pills items={["Pessoal", "Família", "Reunião"]} />}
         {topic.preview === "event-pills" && <Pills items={["Eventos", "Modelos de carta"]} />}
         {topic.preview === "backup-card" && <PreviewBackup />}
+        {topic.preview === "dashboard-pills" && <Pills items={[t("dashboard.pager.tabAgenda"), t("dashboard.pager.tabOutlines"), t("dashboard.pager.tabVisit"), t("dashboard.pager.tabPastoral")]} />}
+        {topic.preview === "templates-pills" && <Pills items={[t("templates.program.studiesTitle"), t("templates.program.mealsTitle"), t("templates.program.transportTitle")]} />}
+        {topic.preview === "outline-pills" && <Pills items={[t("personalOutlines.typePicker.field"), t("personalOutlines.typePicker.outline")]} />}
         {topic.preview === "profile-pills" && <Pills items={[t("profile.tabPersonal"), t("profile.tabFeatures"), t("profile.tabSettings")]} />}
         <ol className="space-y-2 text-sm">
           {topic.steps.map((s, i) => (
