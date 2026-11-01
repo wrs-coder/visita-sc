@@ -64,3 +64,35 @@ Sim, recomendo: o ancião usa o app poucas vezes por ano e esquece onde fica cad
 - `_app.tsx`: liberar o ícone de Ajuda para role elder (sem tocar nas outras telas).
 - Testes: estender `help-content.test.ts` (rotas do ancião existem e estão permitidas ao ancião; chaves de rótulo existem) e `release-notes.test.ts` (audience válido; filtro por perfil).
 - Sem mudança de banco, sem bump de versão, `WHATS_NEW_AUTO_SHOW` continua false.
+
+## 3. Textos bíblicos em azul viram link (abre a Bíblia em janela)
+
+Hoje isso já funciona na leitura dos esboços. A ideia é usar a mesma peça nas outras telas que mostram texto, começando por:
+- Pontos altos
+- Notas Privadas
+- Notas importadas do JW Library
+- Depois: anotações, considerações de campo, detalhes da visita e textos da Agenda.
+
+```text
++-------------------------------+
+| <  Pontos altos               |
+|-------------------------------|
+|  Gênesis 1                    |
+|  "Leia [João 3:16] e compare  |
+|   com [Rom 5:8]."  (azul)     |
+|-------------------------------|
+|   toque em João 3:16          |
+|   v                           |
+|  +-------------------------+  |
+|  | João 3:16           X   |  |
+|  | Pois Deus amou tanto... |  |
+|  | [Abrir na Bíblia]       |  |
+|  +-------------------------+  |
++-------------------------------+
+```
+
+- Só leitura: o texto salvo não muda; o link é criado na hora de mostrar.
+- Sem Bíblia importada: mostra o aviso atual para importar o EPUB (TNM).
+- Referência que o app não reconhece continua como texto normal.
+
+Técnico: extrair do `RichOutlineContent` um componente leve `BibleRefText` (detecção de `bible-refs.ts` + `BibleVersePopover`) e aplicá-lo na exibição de highlights, notas privadas e jwNotes. Teste: referência vira link; texto sem referência fica igual; conteúdo salvo intocado.
