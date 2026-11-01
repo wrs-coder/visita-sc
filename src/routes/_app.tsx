@@ -370,6 +370,9 @@ function AppLayout() {
           <div className="flex items-center gap-1">
             <OfflineReadyBadge />
             <SyncButton onSync={syncOutlines} />
+            <Link to="/ajuda" className="p-2 rounded-md hover:bg-white/10" aria-label="Ajuda" title="Ajuda">
+              <HelpCircle className="h-5 w-5" />
+            </Link>
             {role === "superintendent" && (
               <Link
                 to="/lixeira"
