@@ -14,11 +14,11 @@ export type HelpStep = {
 export type HelpTopic = {
   id: string;
   title: string;
-  icon: "lock" | "calendar" | "week" | "book" | "event" | "report" | "faq";
+  icon: "lock" | "calendar" | "week" | "book" | "event" | "report" | "faq" | "profile";
   /** Tela real aberta pelo botão "Abrir esta tela". */
   route: string;
   /** Miniatura desenhada com as peças reais do app. */
-  preview?: "circuit-pills" | "pin-card" | "visit-pills" | "reading-pills" | "event-pills" | "backup-card";
+  preview?: "circuit-pills" | "pin-card" | "visit-pills" | "reading-pills" | "event-pills" | "backup-card" | "profile-pills";
   steps: HelpStep[];
   /** Palavras extras para a busca. */
   keywords?: string[];
@@ -99,7 +99,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     steps: [
       { before: "Abra a área do circuito, toque na pílula ", labelKey: "circuit.pillCircuit", after: " e desça até " },
       { before: "Seção ", labelKey: "circuit.sectionEvents", after: ": use “Novo evento” ou “Importar programa” (arquivo .rtf, .etim, .json ou .csv)." },
-      { before: "Cada orador recebe um link curto para confirmar a designação." },
+      { before: "Cada orador recebe um link curto (podendo ter um PIN) para confirmar a designação, e a confirmação aparece na hora para o superintendente." },
       { before: "Na pílula “Modelos de carta” você prepara o papel timbrado; cada evento escolhe o seu modelo." },
       { before: "Toque em “Exportar”: o Word traz a lista das designações para conferir; o PDF gera uma carta por designação, com link ativo." },
       { before: "Se a carta não couber em uma página, o app reduz espaços e fonte e avisa quando não for possível." },
@@ -119,6 +119,34 @@ export const HELP_TOPICS: HelpTopic[] = [
       { before: "O cartão ", labelKey: "profile.backupSection", after: "." },
       { before: "Toque em ", labelKey: "profile.generateBackup", after: " para salvar um arquivo .zip com todos os seus dados." },
       { before: "Para recuperar em outro aparelho, use ", labelKey: "profile.restoreBackup", after: "." },
+    ],
+  },
+  {
+    id: "profile",
+    title: "Meu Perfil",
+    icon: "profile",
+    route: "/perfil",
+    preview: "profile-pills",
+    keywords: ["perfil", "esposa", "convite", "senha", "usuario", "email", "idioma", "lembretes", "tela cheia", "imersivo", "sincronizacao", "apoie"],
+    steps: [
+      { before: "Abra o menu lateral e toque em ", labelKey: "sidebar.myProfile", after: ". No alto ficam três abas; o app lembra a última que você abriu." },
+      { before: "Aba ", labelKey: "profile.tabPersonal", after: ":" },
+      { before: "Em ", labelKey: "profile.circuit", after: ", digite o circuito que você serve. O circuito fica ligado à sua conta, e o nome do circuito permite entrar na conta." },
+      { before: "Em ", labelKey: "profile.wifeAccess.title", after: ", gere o código de convite e envie para sua esposa. Com ele, ela entra no aplicativo e usa o próprio espaço de estudo e anotações, separado do seu." },
+      { before: "Em ", labelKey: "profile.personalData", after: ", confira e atualize seu nome e telefone." },
+      { before: "Em ", labelKey: "profile.usernameSection.title", after: ", escolha o nome que você pode usar para entrar." },
+      { before: "Em ", labelKey: "profile.email", after: ", veja o e-mail da sua conta." },
+      { before: "Em ", labelKey: "profile.changePassword", after: ", digite a nova senha e confirme." },
+      { before: "Aba ", labelKey: "profile.tabFeatures", after: ":" },
+      { before: "Em ", labelKey: "bibleManager.manage", after: ", importe ou troque o arquivo EPUB da Tradução do Novo Mundo. A Bíblia fica no aparelho e funciona sem internet. Baixe a Bíblia no site jw.org." },
+      { before: "Em ", labelKey: "offlinePin.manageTitle", after: ", configure o PIN e a biometria para entrar sem internet." },
+      { before: "Em ", labelKey: "sync.title", after: ", veja se seus dados já foram enviados para a nuvem." },
+      { before: "Aba ", labelKey: "profile.tabSettings", after: ":" },
+      { before: "Em “Lembretes de eventos”, ligue os avisos da agenda e escolha a antecedência, um segundo aviso, a antecedência por tipo, o resumo do dia e o horário de silêncio." },
+      { before: "Em ", labelKey: "profile.language", after: ", escolha o idioma do aplicativo. Se você não escolher, ele segue o idioma do celular." },
+      { before: "Em ", labelKey: "profile.immersiveTitle", after: ", ative “Tela cheia na leitura e no esboço” para esconder a barra de hora e bateria. Para vê-la de novo, puxe do topo." },
+      { before: "Em ", labelKey: "profile.backupSection", after: ", toque em “Gerar arquivo de backup” para salvar uma cópia dos seus dados, ou em “Restaurar backup” para recuperar uma cópia salva." },
+      { before: "No fim da tela, ", labelKey: "support.title", after: " mostra como ajudar a manter o aplicativo." },
     ],
   },
   {
