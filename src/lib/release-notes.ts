@@ -104,16 +104,67 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.0.9";
+export const RELEASE_NOTES_VERSION = "5.1.0";
 
 /**
  * Aviso automático "O que há de novo" nesta versão: desligado a pedido.
  * O texto continua em Configurações → Ver novidades e no aviso de atualização.
  * Troque para true para voltar a abrir sozinho na primeira abertura após atualizar.
  */
-export const WHATS_NEW_AUTO_SHOW = false;
+export const WHATS_NEW_AUTO_SHOW = true;
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "5.1.0",
+    sections: [
+      {
+        title: "Textos bíblicos com um toque", audience: ["all"],
+        items: [
+          "Referências em azul abrem a Bíblia numa janela, sem sair da tela.",
+          "Vale em Pontos altos, Notas Privadas, notas do JW Library, Para comentar e Modo comentário.",
+        ],
+      },
+      {
+        title: "Agenda do painel mais completa", audience: ["super", "elder"],
+        items: [
+          "Temas dos dois discursos do fim de semana, presidente, orações e território.",
+          "Botão \"Mais detalhes\" para expandir e recolher as informações.",
+          "Termos como \"sick\" ou \"grupo_de_campo\" agora aparecem em português.",
+        ],
+      },
+      {
+        title: "Cartas de Grandes Eventos", audience: ["super"],
+        items: [
+          "Cores da carta configuráveis: título, caixa da designação e informações.",
+          "Grupos do modelo com expandir e recolher.",
+          "No Word, uma linha separa cada convite.",
+        ],
+      },
+      {
+        title: "Leitura da Bíblia e lembretes", audience: ["all"],
+        items: [
+          "Lembrete com horário para a Leitura pessoal e a Leitura em família.",
+          "Aviso vermelho quando a leitura do dia ainda não foi feita.",
+          "Antecedência livre: minutos, horas, dias ou semanas.",
+          "Leitura da Reunião: agora dá para digitar o capítulo.",
+        ],
+      },
+      {
+        title: "Ajuda e novidades por perfil", audience: ["all"],
+        items: [
+          "Botão de Ajuda no topo da tela.",
+          "Ajuda própria para o Corpo de Anciãos.",
+          "Cada novidade mostra a quem se aplica: SC, Anciãos, Esposa ou Todos.",
+        ],
+      },
+      {
+        title: "Tela e rolagem", audience: ["all"],
+        items: [
+          "Todas as telas e o menu lateral rolam além da última linha; nada fica sob a barra do Android.",
+        ],
+      },
+    ],
+  },
   {
     version: "5.0.9",
     subtitle: "Edição especial — reúne as novidades das versões 5.0.5 a 5.0.9.",
