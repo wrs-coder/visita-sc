@@ -341,6 +341,7 @@ function Dashboard() {
     congregation_id: string;
   };
   const [outlinesPreview, setOutlinesPreview] = useState<OutlinePreview[]>([]);
+  const [expandedAgenda, setExpandedAgenda] = useState<Set<string>>(() => new Set());
   const [weekOutlinesPreview, setWeekOutlinesPreview] = useState<OutlinePreview[]>([]);
   const [recomendadosPreview, setRecomendadosPreview] = useState<RecomendadoPreview[]>([]);
   const [recomendadoOpen, setRecomendadoOpen] = useState<RecomendadoPreview | null>(null);
@@ -1037,13 +1038,17 @@ function Dashboard() {
             if (typeof p === "string") { if (p.trim()) out.push(p.trim()); continue; }
             const [l, v] = p; if (v && String(v).trim()) out.push(`${l}: ${String(v).trim()}`);
           }
-          return out.slice(0, 2);
+          return out;
         };
         const join = (...xs: Array<string | null | undefined>) => xs.filter((x) => x && x.trim()).join(" · ") || null;
+        // Temas sempre primeiro; o cartão mostra 2 linhas e o resto em "Mais detalhes".
         const meetingLines = (mt: MeetingTodayItem): string[] =>
-          mt.kind === "weekend" ? brief(mt.public_talk_theme ? `1) ${mt.public_talk_theme}` : null, mt.final_talk ? `2) ${mt.final_talk}` : null, ["Presidente", mt.chairman])
-          : mt.kind === "midweek" ? brief(["Presidente", mt.chairman], ["Oração final", mt.closing_prayer])
-          : brief(["Oração inicial", mt.opening_prayer], ["Oração final", mt.closing_prayer]);
+          mt.kind === "weekend" ? brief(
+            mt.public_talk_theme || mt.theme ? `1) ${mt.public_talk_theme || mt.theme}` : null,
+            mt.final_talk ? `2) ${mt.final_talk}` : null,
+            ["Presidente", mt.chairman], ["Cântico inicial", mt.opening_song], ["Cântico final", mt.closing_song])
+          : mt.kind === "midweek" ? brief(["Tema", mt.theme], ["Presidente", mt.chairman], ["Cântico final", mt.final_song], ["Oração final", mt.closing_prayer])
+          : brief(["Tema", mt.theme], ["Oração inicial", mt.opening_prayer], ["Oração final", mt.closing_prayer]);
         const meetingDetailRows = (mt: MeetingTodayItem): Array<[string, string | null | undefined]> =>
           mt.kind === "midweek" ? [
             [L("meetingsTalks.midweek.chairman", "Presidente da Reunião"), mt.chairman],
@@ -1114,7 +1119,7 @@ function Dashboard() {
           })),
           ...meetingsWeek.map((mt) => ({
             id: `r-${mt.kind}`, kind: "meeting" as const, date: mt.date, time: meetingTime(mt.meeting_at),
-            title: `${meetingLabels[mt.kind]}${mt.theme ? ` · ${mt.theme}` : ""}`,
+            title: meetingLabels[mt.kind],
             subtitle: mt.location,
             lines: meetingLines(mt),
             details: toDetails(meetingDetailRows(mt)),
@@ -1171,7 +1176,8 @@ function Dashboard() {
                             {t("dashboard.pager.noTime", { defaultValue: "Sem horário" })}
                           </div>
                         )}
-                        <button type="button" onClick={() => setEventDetail({ item: it, to: meta.to })} className="w-full text-left flex items-start gap-3 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors">
+                        <div className="rounded-md border bg-card">
+                        <button type="button" onClick={() => setEventDetail({ item: it, to: meta.to })} className="w-full text-left flex items-start gap-3 p-2 rounded-md hover:bg-accent/40 transition-colors">
                           <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[58px] text-center">
                             <Clock className="inline h-3 w-3 mr-0.5" />
                             {it.time ?? "—"}
@@ -1185,11 +1191,28 @@ function Dashboard() {
                                 <span className="whitespace-pre-wrap">{it.subtitle}</span>
                               </div>
                             )}
-                            {it.lines?.map((ln, i) => (
-                              <div key={i} className="text-xs text-muted-foreground line-clamp-1">{ln}</div>
+                            {(expandedAgenda.has(it.id) ? it.lines : it.lines?.slice(0, 2))?.map((ln, i) => (
+                              <div key={i} className="text-xs text-muted-foreground break-words">{ln}</div>
                             ))}
                           </div>
                         </button>
+                        {(it.lines?.length ?? 0) > 2 && (
+                          <button
+                            type="button"
+                            aria-expanded={expandedAgenda.has(it.id)}
+                            onClick={() => setExpandedAgenda((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(it.id)) next.delete(it.id); else next.add(it.id);
+                              return next;
+                            })}
+                            className="w-full min-h-[44px] pl-[104px] pr-2 text-left text-xs font-medium text-primary inline-flex items-center gap-1 border-t"
+                          >
+                            {expandedAgenda.has(it.id)
+                              ? <>{t("common.less", { defaultValue: "Menos" })} <ChevronUp className="h-3 w-3" /></>
+                              : <>{t("common.moreDetails", { defaultValue: "Mais detalhes" })} <ChevronDown className="h-3 w-3" /></>}
+                          </button>
+                        )}
+                        </div>
                       </li>
                     );
                   })}
