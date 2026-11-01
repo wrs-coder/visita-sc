@@ -43,11 +43,11 @@ export function BibleRefChips({ text, className }: { text: string; className?: s
   const matches = useMemo(() => (library ? findCitations(library.books, text) : []), [library, text]);
   if (!library || matches.length === 0) return null;
   const seen = new Set<string>();
-  const unique = matches.filter((m) => (seen.has(m.text) ? false : (seen.add(m.text), true)));
+  const unique = matches.filter((m) => (seen.has(m.raw) ? false : (seen.add(m.raw), true)));
   return (
     <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 text-sm", className)}>
       <BookOpen className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
-      {unique.map((m, i) => <VerseLink key={`${m.text}-${i}`} match={m} libraryId={library.id} />)}
+      {unique.map((m, i) => <VerseLink key={`${m.raw}-${i}`} match={m} libraryId={library.id} />)}
     </div>
   );
 }

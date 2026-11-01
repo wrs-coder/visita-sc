@@ -77,3 +77,18 @@ describe("new help topics", () => {
     expect(HELP_ORDER).toHaveLength(12);
   });
 });
+
+import { ELDER_HELP_TOPICS, helpTopicsFor } from "./help-content";
+describe("ajuda do ancião", () => {
+  it("só abre telas que o ancião acessa", () => {
+    const allowed = ["/dashboard", "/programa-visita", "/resumo-semana", "/perfil"];
+    for (const tp of ELDER_HELP_TOPICS) expect(allowed).toContain(tp.route);
+  });
+  it("chaves citadas existem", () => {
+    for (const tp of ELDER_HELP_TOPICS) for (const s of tp.steps) if (s.labelKey) expect(lookup(s.labelKey), s.labelKey).toBeTypeOf("string");
+  });
+  it("perfil escolhe os temas", () => {
+    expect(helpTopicsFor("elder")).toBe(ELDER_HELP_TOPICS);
+    expect(helpTopicsFor("superintendent").some((t) => t.id === "big-events")).toBe(true);
+  });
+});
