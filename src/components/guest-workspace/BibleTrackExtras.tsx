@@ -1,5 +1,6 @@
 // Partes extras da leitura: pílulas das leituras, dias da semana, semana da
 // reunião, "Para comentar" e modo comentário em tela cheia.
+import { BibleRefText } from "@/components/bible/BibleRefText";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Play, Pencil, Star, X, ChevronLeft, ChevronRight, ExternalLink, Maximize2, CheckSquare } from "lucide-react";
@@ -184,7 +185,7 @@ export function CommentCard({ list, onStar, onOpen }: { list: Highlight[]; onSta
         <ul className="divide-y">
           {list.map((h) => (
             <li key={h.id} className="flex items-start gap-2 py-2">
-              <div className="min-w-0 flex-1"><p className="text-sm font-semibold">{h.ref || "—"}</p>{h.text && <p className="line-clamp-2 text-xs text-muted-foreground">{h.text}</p>}</div>
+              <div className="min-w-0 flex-1">{h.ref ? <BibleRefText text={h.ref} className="text-sm font-semibold" /> : <p className="text-sm font-semibold">—</p>}{h.text && <BibleRefText text={h.text} className="line-clamp-2 text-xs text-muted-foreground" />}</div>
               <button type="button" aria-label={t("guestWs.star", { defaultValue: "Para comentar" })} aria-pressed={!!h.star} onClick={() => onStar(h.id)} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-accent/60">
                 <Star className={cn("h-4 w-4", h.star ? "fill-primary text-primary" : "text-muted-foreground")} />
               </button>
@@ -211,14 +212,14 @@ export function CommentMode({ list, onClose }: { list: Highlight[]; onClose: () 
   const go = (d: number) => setI((v) => Math.min(list.length - 1, Math.max(0, v + d)));
   return (
     <div className="fixed inset-0 z-[80] flex flex-col bg-background pt-[env(safe-area-inset-top)] pb-safe"
-      onTouchStart={(e) => setX0(e.touches[0].clientX)} onTouchEnd={(e) => { if (x0 !== null) { const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); } setX0(null); }}>
+      onTouchStart={(e) => setX0((e.target as HTMLElement).closest("button,a,[role=button]") ? null : e.touches[0].clientX)} onTouchEnd={(e) => { if (x0 !== null) { const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); } setX0(null); }}>
       <div className="flex items-center justify-between px-3 py-2">
         <Button variant="ghost" size="icon" className="h-11 w-11" aria-label={t("common.close", { defaultValue: "Fechar" })} onClick={onClose}><X className="h-5 w-5" /></Button>
         <span className="text-sm text-muted-foreground">{i + 1} {t("guestWs.of", { defaultValue: "de" })} {list.length}</span>
       </div>
       <div className="flex-1 overflow-y-auto px-6 py-4">
-        <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-primary">{h.ref || "—"}</p>
-        <p className="whitespace-pre-wrap text-2xl leading-relaxed">{h.text}</p>
+        {h.ref ? <BibleRefText text={h.ref} className="mb-4 text-sm font-semibold uppercase tracking-wide text-primary" /> : <p className="mb-4 text-sm font-semibold text-primary">—</p>}
+        {h.text && <BibleRefText text={h.text} className="text-2xl leading-relaxed" />}
       </div>
       <div className="flex gap-2 px-4 pb-4">
         <Button variant="outline" className="h-12 flex-1 gap-1" disabled={i === 0} onClick={() => go(-1)}><ChevronLeft className="h-4 w-4" />{t("guestWs.prev", { defaultValue: "anterior" })}</Button>

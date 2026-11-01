@@ -46,7 +46,7 @@ export function HighlightsDrawer({ open, onOpenChange, highlights, onSave, onDel
           <DrawerTitle>{t("guestWs.highlights", { defaultValue: "Pontos altos" })}</DrawerTitle>
           <DrawerDescription className="sr-only">{t("guestWs.highlights", { defaultValue: "Pontos altos" })}</DrawerDescription>
         </DrawerHeader>
-        <div className="mx-auto w-full max-w-2xl space-y-4 overflow-y-auto px-4 pb-6">
+        <div className="mx-auto w-full max-w-2xl space-y-4 overflow-y-auto px-4 safe-bottom-content">
           <div className="space-y-2 rounded-xl border bg-card p-3">
             <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder={t("guestWs.refPh", { defaultValue: "Referência (ex.: Salmo 23:1)" })} />
             <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} placeholder={t("guestWs.meditationPh", { defaultValue: "Meditação" })} />
