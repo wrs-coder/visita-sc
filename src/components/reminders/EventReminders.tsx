@@ -6,15 +6,36 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import type { TimelineKind, TimelineSource } from "@/lib/today-timeline";
 import {
-  applyReminders, isRemindersSupported, kindsForRole, LEAD_OPTIONS, SECOND_OPTIONS, loadPrefs, planReminders,
-  requestReminderPermission, savePrefs, sendTestReminder, type ReminderPrefs, type ReminderRole,
+  applyReminders, isRemindersSupported, kindsForRole, LEAD_OPTIONS, LEAD_UNITS, leadLabel, leadToMinutes, loadPrefs, planReminders,
+  requestReminderPermission, savePrefs, sendTestReminder, splitLead, type LeadUnit, type ReadingKind, type ReminderPrefs, type ReminderRole,
 } from "@/lib/event-reminders";
+import { lastReadDay } from "@/lib/reading-day-log";
 
 const KIND_LABEL: Record<TimelineKind, string> = {
   schedule: "Cronograma", field: "Campo", study: "Estudos", meal: "Refeições",
   meeting: "Reuniões", transport: "Transporte",
 };
-const LEAD_LABEL: Record<number, string> = { 0: "Não", 15: "15 min", 30: "30 min", 60: "1 hora", 1440: "1 dia" };
+const UNIT_LABEL: Record<LeadUnit, string> = { min: "minutos", h: "horas", d: "dias", w: "semanas" };
+const DAY_LETTERS = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+/** Antecedência livre: número + unidade, com atalhos rápidos. */
+function LeadInput({ value, onChange, label }: { value: number; onChange: (min: number) => void; label: string }) {
+  const init = splitLead(value);
+  const [txt, setTxt] = useState(String(init.n));
+  const [unit, setUnit] = useState<LeadUnit>(init.unit);
+  useEffect(() => { const s = splitLead(value); setTxt(String(s.n)); setUnit(s.unit); }, [value]);
+  const commit = (t: string, u: LeadUnit) => { const m = leadToMinutes(parseInt(t, 10) || 1, u); onChange(m); };
+  return (
+    <div className="flex items-center gap-2">
+      <input type="text" inputMode="numeric" pattern="[0-9]*" aria-label={`${label}: quantidade`} className={`${timeCls} h-10 w-16 text-base text-center`}
+        value={txt} onChange={(e) => setTxt(e.target.value.replace(/\D/g, "").slice(0, 3))} onBlur={() => commit(txt, unit)} />
+      <select aria-label={`${label}: unidade`} className={`${timeCls} h-10 text-base`} value={unit}
+        onChange={(e) => { const u = e.target.value as LeadUnit; setUnit(u); commit(txt, u); }}>
+        {LEAD_UNITS.map(([u]) => <option key={u} value={u}>{UNIT_LABEL[u]}</option>)}
+      </select>
+    </div>
+  );
+}
 const timeCls = "h-8 rounded-lg border border-input bg-background px-2 text-sm tabular-nums";
 const CHANGED = "visita-sc:reminders-changed";
 
@@ -29,7 +50,7 @@ export function EventReminderSync({ items, scope, role }: { items: TimelineSourc
   const sig = items.map((i) => `${i.id}${i.date}${i.time}${i.title}`).join("|");
   useEffect(() => {
     const h = setTimeout(() => {
-      void applyReminders(planReminders(items, loadPrefs(scope, role), role));
+      void applyReminders(planReminders(items, loadPrefs(scope, role), role, new Date(), { personal: lastReadDay("personal"), family: lastReadDay("family") }));
     }, 1500);
     return () => clearTimeout(h);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,10 +98,11 @@ export function ReminderSettingsCard({ scope, role }: { scope: string; role: Rem
               <>
                 <div className="space-y-1.5">
                   <div className="text-xs text-muted-foreground">Antecedência</div>
+                  <LeadInput label="Antecedência" value={prefs.lead} onChange={(m) => update({ ...prefs, lead: m })} />
                   <div className="flex flex-wrap gap-2">
                     {LEAD_OPTIONS.map((l) => (
                       <Button key={l} size="sm" variant={prefs.lead === l ? "default" : "outline"} onClick={() => update({ ...prefs, lead: l })}>
-                        {LEAD_LABEL[l]}
+                        {leadLabel(l)}
                       </Button>
                     ))}
                   </div>
@@ -101,12 +123,9 @@ export function ReminderSettingsCard({ scope, role }: { scope: string; role: Rem
                 </div>
                 <div className="space-y-1.5">
                   <div className="text-xs text-muted-foreground">Segundo aviso</div>
-                  <div className="flex flex-wrap gap-2">
-                    {SECOND_OPTIONS.map((l) => (
-                      <Button key={l} size="sm" variant={(prefs.second ?? 0) === l ? "default" : "outline"} onClick={() => update({ ...prefs, second: l })}>
-                        {LEAD_LABEL[l]}
-                      </Button>
-                    ))}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Switch aria-label="Segundo aviso" checked={!!prefs.second} onCheckedChange={(v) => update({ ...prefs, second: v ? 15 : 0 })} />
+                    {!!prefs.second && <LeadInput label="Segundo aviso" value={prefs.second} onChange={(m) => update({ ...prefs, second: m })} />}
                   </div>
                 </div>
                 {prefs.kinds.length > 0 && (
@@ -116,20 +135,13 @@ export function ReminderSettingsCard({ scope, role }: { scope: string; role: Rem
                       {prefs.kinds.map((k) => (
                         <label key={k} className="flex items-center justify-between gap-3 px-3 py-2">
                           <span className="text-sm">{KIND_LABEL[k]}</span>
-                          <select
-                            className={timeCls}
-                            aria-label={`Antecedência: ${KIND_LABEL[k]}`}
-                            value={prefs.leadByKind?.[k] ?? ""}
-                            onChange={(e) => {
-                              const next = { ...(prefs.leadByKind ?? {}) };
-                              if (e.target.value) next[k] = Number(e.target.value);
-                              else delete next[k];
-                              update({ ...prefs, leadByKind: next });
-                            }}
-                          >
-                            <option value="">Padrão ({LEAD_LABEL[prefs.lead]})</option>
-                            {LEAD_OPTIONS.map((l) => <option key={l} value={l}>{LEAD_LABEL[l]}</option>)}
-                          </select>
+                          <div className="flex items-center gap-2">
+                            {prefs.leadByKind?.[k] != null
+                              ? <LeadInput label={`Antecedência: ${KIND_LABEL[k]}`} value={prefs.leadByKind[k]!} onChange={(m) => update({ ...prefs, leadByKind: { ...prefs.leadByKind, [k]: m } })} />
+                              : <span className="text-xs text-muted-foreground">Padrão ({leadLabel(prefs.lead)})</span>}
+                            <Switch aria-label={`Antecedência própria: ${KIND_LABEL[k]}`} checked={prefs.leadByKind?.[k] != null}
+                              onCheckedChange={(v) => { const next = { ...(prefs.leadByKind ?? {}) }; if (v) next[k] = prefs.lead; else delete next[k]; update({ ...prefs, leadByKind: next }); }} />
+                          </div>
                         </label>
                       ))}
                     </div>
@@ -171,6 +183,46 @@ export function ReminderSettingsCard({ scope, role }: { scope: string; role: Rem
                   Testar lembrete
                 </Button>
               </>
+            )}
+            {role !== "elder" && (
+              <div className="space-y-1.5">
+                <div className="text-xs text-muted-foreground">Leitura da Bíblia</div>
+                <div className="rounded-xl border divide-y">
+                  {(["personal", "family"] as ReadingKind[]).map((k) => {
+                    const r = prefs.reading?.[k] ?? { on: false, time: k === "personal" ? "06:30" : "20:00", days: [0, 1, 2, 3, 4, 5, 6] };
+                    const set = (patch: Partial<typeof r>) => update({ ...prefs, reading: { ...prefs.reading, [k]: { ...r, ...patch } } });
+                    return (
+                      <div key={k} className="space-y-2 px-3 py-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-sm">{k === "personal" ? "Leitura pessoal" : "Leitura em família"}</span>
+                          <Switch aria-label={k === "personal" ? "Leitura pessoal" : "Leitura em família"} checked={r.on}
+                            onCheckedChange={async (v) => {
+                              if (v && !(await requestReminderPermission())) { toast.error("Permita as notificações do Visita SC nas configurações do celular."); return; }
+                              set({ on: v });
+                            }} />
+                        </div>
+                        {r.on && (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <input type="time" aria-label="Horário da leitura" className={`${timeCls} h-10 text-base`} value={r.time}
+                              onChange={(e) => e.target.value && set({ time: e.target.value })} />
+                            <div className="flex gap-1">
+                              {DAY_LETTERS.map((l, d) => {
+                                const on = r.days.includes(d);
+                                return (
+                                  <button key={d} type="button" aria-pressed={on} aria-label={`Dia ${d}`}
+                                    onClick={() => set({ days: on ? r.days.filter((x) => x !== d) : [...r.days, d].sort() })}
+                                    className={`h-8 w-8 rounded-full text-xs font-medium ${on ? "bg-primary text-primary-foreground" : "border text-muted-foreground"}`}>{l}</button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">Se a leitura do dia já foi marcada, o aviso de hoje não aparece.</p>
+              </div>
             )}
           </>
         )}
