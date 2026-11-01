@@ -1,98 +1,55 @@
-# Novidades por perfil + Ajuda para o Corpo de Anciãos
+# Textos bíblicos em azul (faltantes) + folga em Pontos altos
 
-## 1. "O que há de novo" com etiqueta de perfil
+## O que muda
 
-Cada grupo de novidades ganha uma etiqueta colorida dizendo a quem afeta. Quem abre a janela vê primeiro o que é do seu perfil; o resto fica em "Outros perfis" (recolhido).
-
-```text
-+-------------------------------+
-|  O que há de novo   v5.1.0  X |
-|-------------------------------|
-|  [Para você]                  |
-|  Agenda com mais detalhes     |
-|  (SC) (Anciãos)               |
-|  • Temas abaixo da reunião    |
-|  • "Mais detalhes" expande    |
-|                               |
-|  Lembretes de leitura         |
-|  (SC) (Esposa)                |
-|  • Escolha o horário          |
-|-------------------------------|
-|  > Outros perfis (2)          |
-|-------------------------------|
-|        [   Entendi   ]        |
-+-------------------------------+
-```
-
-- Etiquetas: SC (azul), Anciãos (verde), Esposa (rosa), Todos (cinza) — cores dos tokens existentes.
-- Grupos antigos sem etiqueta aparecem como "Todos" (nada quebra).
-- O histórico em Configurações → Ver novidades segue igual, só com as etiquetas.
-
-## 2. Ajuda no acesso do Corpo de Anciãos
-
-Sim, recomendo: o ancião usa o app poucas vezes por ano e esquece onde fica cada coisa.
-
-- O ícone "?" aparece no topo também para o ancião (hoje já existe no topo do SC).
-- A tela Ajuda mostra só os tópicos daquele perfil; o ancião não vê Circuito, Grandes Eventos nem Notas Privadas.
-- Tópicos do ancião (novos, curtos):
-  1. Painel inicial (agenda da semana da visita)
-  2. Programa da visita (refeições, saídas de campo, transporte, reuniões)
-  3. Perguntas do SC, Pastoreio, Encorajamento, Recomendações, Assuntos locais
-  4. Resumo da semana e PDF
-  5. Entrada e segurança (PIN/digital, uso sem internet)
-  6. Perguntas frequentes
-- "Abrir esta tela" leva só a telas que o ancião realmente acessa.
+### 01 · Aba JW Library — referência do título vira link
+Hoje o "João 3:16" no topo de cada nota é só texto azul. Passa a ser um link que abre a Bíblia em janela. O título da nota (quando cita textos) também fica linkado.
 
 ```text
-+-------------------------------+
-| <  Ajuda               🔍     |
-|-------------------------------|
-|  Corpo de Anciãos             |
-|  [📅] Painel inicial        > |
-|  [🗓] Programa da visita    > |
-|  [👥] Perguntas e pastoreio > |
-|  [📄] Resumo e PDF          > |
-|  [🔒] Entrada e segurança   > |
-|  [?]  Perguntas frequentes  > |
-+-------------------------------+
+┌──────────────────────────────┐
+│ JW Library          🔍        │
+├──────────────────────────────┤
+│ ┌──────────────────────────┐ │
+│ │ João 3:16  ← toque=Bíblia │ │
+│ │ Amor de Deus              │ │
+│ │ Ver também Rom 5:8 ← link │ │
+│ └──────────────────────────┘ │
+└──────────────────────────────┘
 ```
+
+### 02 · "Para comentar" e "Modo comentário"
+A referência e os textos citados na nota ficam azuis e tocáveis. No Modo comentário (tela cheia), a janela da Bíblia abre por cima, e ao fechar você volta ao mesmo comentário. O deslizar para o lado continua mudando de comentário; tocar no link não troca de página.
+
+```text
+┌──────────────────────────────┐
+│ ✕                    2 de 5   │
+│                              │
+│ SALMO 23:1  ← toque=Bíblia    │
+│                              │
+│ Jeová cuida de mim como      │
+│ pastor (veja Isa 40:11)      │
+│                 └─ link      │
+│                              │
+│ [‹ anterior ] [ próximo › ]   │
+└──────────────────────────────┘
+```
+
+### 03 · Folga no fim de "Pontos altos"
+A janela que sobe de baixo para cima passa a rolar além do último item, para que nada fique sob a barra do Android. Mesma regra já usada nas outras telas.
+
+```text
+│ ...último ponto alto          │
+│                              │
+│   (espaço extra)             │
+╞══════ barra do Android ══════╡
+```
+
+## O que não muda
+- Nada salvo é alterado: os links são criados só na hora de mostrar.
+- Estrela, editar, apagar, pesquisa e deslizar seguem iguais.
 
 ## Detalhes técnicos
-
-- `release-notes.ts`: `ReleaseSection` ganha `audience?: ("super"|"elder"|"wife"|"all")[]`; ausente = all. Marcar as seções da versão atual. `WhatsNewDialog` lê o perfil atual (role / acesso por código) e ordena + recolhe.
-- `help-content.ts`: `HelpTopic` ganha `audience`; tópicos atuais = super; novos tópicos do ancião. `_app.ajuda.tsx` filtra por role. Busca respeita o filtro.
-- `_app.tsx`: liberar o ícone de Ajuda para role elder (sem tocar nas outras telas).
-- Testes: estender `help-content.test.ts` (rotas do ancião existem e estão permitidas ao ancião; chaves de rótulo existem) e `release-notes.test.ts` (audience válido; filtro por perfil).
-- Sem mudança de banco, sem bump de versão, `WHATS_NEW_AUTO_SHOW` continua false.
-
-## 3. Textos bíblicos em azul viram link (abre a Bíblia em janela)
-
-Hoje isso já funciona na leitura dos esboços. A ideia é usar a mesma peça nas outras telas que mostram texto, começando por:
-- Pontos altos
-- Notas Privadas
-- Notas importadas do JW Library
-- Depois: anotações, considerações de campo, detalhes da visita e textos da Agenda.
-
-```text
-+-------------------------------+
-| <  Pontos altos               |
-|-------------------------------|
-|  Gênesis 1                    |
-|  "Leia [João 3:16] e compare  |
-|   com [Rom 5:8]."  (azul)     |
-|-------------------------------|
-|   toque em João 3:16          |
-|   v                           |
-|  +-------------------------+  |
-|  | João 3:16           X   |  |
-|  | Pois Deus amou tanto... |  |
-|  | [Abrir na Bíblia]       |  |
-|  +-------------------------+  |
-+-------------------------------+
-```
-
-- Só leitura: o texto salvo não muda; o link é criado na hora de mostrar.
-- Sem Bíblia importada: mostra o aviso atual para importar o EPUB (TNM).
-- Referência que o app não reconhece continua como texto normal.
-
-Técnico: extrair do `RichOutlineContent` um componente leve `BibleRefText` (detecção de `bible-refs.ts` + `BibleVersePopover`) e aplicá-lo na exibição de highlights, notas privadas e jwNotes. Teste: referência vira link; texto sem referência fica igual; conteúdo salvo intocado.
+- `JwLibraryPanel.tsx`: trocar o `<p>{ref(n)}</p>` por `BibleRefText text={ref(n)}` e o título por `BibleRefText`.
+- `BibleTrackExtras.tsx` `CommentCard`: `h.ref` e `h.text` via `BibleRefText` (mantendo `line-clamp-2`); envolver links com `stopPropagation` não necessário (li não é clicável). `CommentMode`: ref e texto via `BibleRefText`; ignorar swipe quando o toque começa num link (checar `closest('button,a')` no `onTouchStart`). Popover já usa z-[110] > z-[80] do modo.
+- `HighlightsDrawer.tsx`: lista rolável recebe `safe-bottom-content` no lugar de `pb-6`.
+- Validar com `bunx tsgo --noEmit` e `bunx vitest run`.
