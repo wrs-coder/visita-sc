@@ -1,5 +1,6 @@
 // Partes extras da leitura: pílulas das leituras, dias da semana, semana da
 // reunião, "Para comentar" e modo comentário em tela cheia.
+import { BibleRefText } from "@/components/bible/BibleRefText";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Play, Pencil, Star, X, ChevronLeft, ChevronRight, ExternalLink, Maximize2, CheckSquare } from "lucide-react";
