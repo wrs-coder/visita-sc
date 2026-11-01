@@ -20,8 +20,64 @@ export interface LetterTemplate {
   closing: string;
   signoff: string;
   signature: string;
+  /** Cores decorativas da carta em PDF (ausente = paleta Clássica). */
+  colors?: LetterColors;
   updatedAt: string;
 }
+
+// ---------- Cores da carta ----------
+export type LetterPart = "title" | "box" | "info" | "rule";
+export interface LetterColors { title: string; box: string; info: string; rule: string; boxFill: "tint" | "none" }
+/** Cores testadas para impressão (id → nome e RGB 0–1). */
+export const LETTER_PALETTE: Record<string, { name: string; rgb: [number, number, number] }> = {
+  petroleo: { name: "Verde-petróleo", rgb: [0.1, 0.31, 0.38] },
+  ouro: { name: "Dourado", rgb: [0.72, 0.6, 0.38] },
+  marinho: { name: "Azul-marinho", rgb: [0.11, 0.2, 0.4] },
+  azul: { name: "Azul", rgb: [0.16, 0.36, 0.6] },
+  vinho: { name: "Vinho", rgb: [0.45, 0.13, 0.2] },
+  terracota: { name: "Terracota", rgb: [0.66, 0.33, 0.22] },
+  oliva: { name: "Verde-oliva", rgb: [0.33, 0.4, 0.22] },
+  esmeralda: { name: "Esmeralda", rgb: [0.1, 0.42, 0.31] },
+  ameixa: { name: "Ameixa", rgb: [0.36, 0.2, 0.4] },
+  grafite: { name: "Grafite", rgb: [0.25, 0.27, 0.3] },
+  cinza: { name: "Cinza", rgb: [0.55, 0.57, 0.6] },
+  prata: { name: "Prata", rgb: [0.68, 0.7, 0.72] },
+};
+export const LETTER_PRESETS: { id: string; name: string; colors: LetterColors }[] = [
+  { id: "classica", name: "Clássica", colors: { title: "petroleo", box: "petroleo", info: "petroleo", rule: "ouro", boxFill: "tint" } },
+  { id: "marinho", name: "Azul-marinho", colors: { title: "marinho", box: "marinho", info: "azul", rule: "prata", boxFill: "tint" } },
+  { id: "vinho", name: "Vinho", colors: { title: "vinho", box: "vinho", info: "vinho", rule: "ouro", boxFill: "tint" } },
+  { id: "grafite", name: "Grafite", colors: { title: "grafite", box: "grafite", info: "grafite", rule: "cinza", boxFill: "tint" } },
+  { id: "semcor", name: "Sem cor", colors: { title: "grafite", box: "grafite", info: "cinza", rule: "cinza", boxFill: "none" } },
+];
+export const DEFAULT_LETTER_COLORS: LetterColors = LETTER_PRESETS[0].colors;
+
+/** Descarta ids desconhecidos; o que faltar usa a paleta Clássica. */
+export function sanitizeLetterColors(c: unknown): LetterColors {
+  const o = (c ?? {}) as Partial<LetterColors>;
+  const ok = (v: unknown, fb: string) => (typeof v === "string" && LETTER_PALETTE[v] ? v : fb);
+  const d = DEFAULT_LETTER_COLORS;
+  return { title: ok(o.title, d.title), box: ok(o.box, d.box), info: ok(o.info, d.info), rule: ok(o.rule, d.rule), boxFill: o.boxFill === "none" ? "none" : "tint" };
+}
+export function presetOf(c: LetterColors | undefined): string | null {
+  const s = sanitizeLetterColors(c);
+  return LETTER_PRESETS.find((p) => (["title", "box", "info", "rule", "boxFill"] as const).every((k) => p.colors[k] === s[k]))?.id ?? null;
+}
+export type RGB3 = [number, number, number];
+const mix = (c: RGB3, a: number): RGB3 => c.map((v) => +(v * (1 - a) + a).toFixed(3)) as RGB3;
+/** Cores finais da carta (incluindo os fundos claros derivados). */
+export function resolveLetterColors(c: LetterColors | undefined): { title: RGB3; box: RGB3; info: RGB3; rule: RGB3; boxFill: RGB3 | null; ruleTint: RGB3; infoTint: RGB3 } {
+  const s = sanitizeLetterColors(c);
+  const g = (id: string) => LETTER_PALETTE[id].rgb;
+  const classic = (k: "rule" | "info", id: string) => (k === "rule" && id === "ouro") || (k === "info" && id === "petroleo");
+  return {
+    title: g(s.title), box: g(s.box), info: g(s.info), rule: g(s.rule),
+    boxFill: s.boxFill === "none" ? null : s.rule === "ouro" ? [0.988, 0.976, 0.953] : mix(g(s.rule), 0.95),
+    ruleTint: classic("rule", s.rule) ? [0.985, 0.965, 0.93] : mix(g(s.rule), 0.92),
+    infoTint: classic("info", s.info) ? [0.94, 0.965, 0.965] : mix(g(s.info), 0.93),
+  };
+}
+export const rgbCss = (c: RGB3) => `rgb(${c.map((v) => Math.round(v * 255)).join(",")})`;
 
 export const DEFAULT_TEMPLATE_ID = "modelo-padrao";
 
@@ -60,7 +116,7 @@ export function loadTemplates(userId: string): LetterTemplate[] {
     const raw = JSON.parse(localStorage.getItem(listKey(userId)) ?? "null");
     if (Array.isArray(raw) && raw.length) {
       const base = defaultTemplate();
-      return raw.filter((t) => t && typeof t.id === "string").map((t) => ({ ...base, ...t }));
+      return raw.filter((t) => t && typeof t.id === "string").map((t) => ({ ...base, ...t, ...(t.colors ? { colors: sanitizeLetterColors(t.colors) } : {}) }));
     }
   } catch { /* usa padrão */ }
   return [defaultTemplate()];

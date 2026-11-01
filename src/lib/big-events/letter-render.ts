@@ -57,8 +57,7 @@ export function loadLetterFonts(): Promise<LetterFontBytes | null> {
   return fontCache;
 }
 
-const INK = rgb(0.15, 0.16, 0.19), MUTED = rgb(0.42, 0.44, 0.48), ACCENT = rgb(0.1, 0.31, 0.38), GOLD = rgb(0.72, 0.6, 0.38);
-const WARM = rgb(0.988, 0.976, 0.953), TINT_GOLD = rgb(0.985, 0.965, 0.93), TINT_ACCENT = rgb(0.94, 0.965, 0.965), WHITE = rgb(1, 1, 1);
+const INK = rgb(0.15, 0.16, 0.19), MUTED = rgb(0.42, 0.44, 0.48), WHITE = rgb(1, 1, 1);
 
 interface WLine { text: string; last: boolean; first: boolean }
 function wrapP(text: string, font: PDFFont, size: number, width: number, clean: (s: string) => string, indent = 0): WLine[] {
@@ -114,6 +113,10 @@ export async function letterPdfFit(m: LetterModel, fontBytes?: LetterFontBytes |
  */
 async function renderLetter(m: LetterModel, bytes: LetterFontBytes | null, lv: FitLevel): Promise<PDFDocument> {
   const t = m.tpl;
+  const pal = resolveLetterColors(t.colors);
+  const C = (c: RGB3) => rgb(c[0], c[1], c[2]);
+  const ACCENT = C(pal.title), BOXC = C(pal.box), INFO = C(pal.info), GOLD = C(pal.rule);
+  const TINT_GOLD = C(pal.ruleTint), TINT_ACCENT = C(pal.infoTint);
   const doc = await PDFDocument.create();
   doc.setTitle(`Convite — ${m.recipientName}`);
   let F: { serif: PDFFont; serifBold: PDFFont; serifItalic: PDFFont };
@@ -201,9 +204,9 @@ async function renderLetter(m: LetterModel, bytes: LetterFontBytes | null, lv: F
   const boxH = PADY + titleLines.length * 15 + 6 + rows.reduce((a, r) => a + (r.stacked ? STACK_H : 0) + r.lines.length * RL + 1, 0) + 6 + bh + (pinLines.length ? 4 + pinLines.length * 12 : 0) + PADY;
   ensure(boxH);
   const top = y;
-  page.drawSvgPath(roundRect(CW, boxH, 8), { x: M, y: top, color: WARM, borderColor: GOLD, borderWidth: 0.8 });
+  page.drawSvgPath(roundRect(CW, boxH, 8), { x: M, y: top, ...(pal.boxFill ? { color: C(pal.boxFill) } : {}), borderColor: GOLD, borderWidth: 0.8 });
   y -= PADY;
-  for (const l of titleLines) { page.drawText(l.text, { x: M + PADX, y: y - 11.5, size: 11.5, font: F.serifBold, color: ACCENT }); y -= 15; }
+  for (const l of titleLines) { page.drawText(l.text, { x: M + PADX, y: y - 11.5, size: 11.5, font: F.serifBold, color: BOXC }); y -= 15; }
   y -= 2; rule(GOLD, M + PADX, W - M - PADX, 0.4); y -= 4;
   for (const r of rows) {
     if (r.label) page.drawText(r.label, { x: M + PADX, y: y - 9.5, size: LS, font: F.serifBold, color: MUTED });
@@ -218,7 +221,7 @@ async function renderLetter(m: LetterModel, bytes: LetterFontBytes | null, lv: F
   const pw = F.serif.widthOfTextAtSize(clean(prompt), 9.5);
   const rowW = pw + 10 + bw, px = M + (CW - rowW) / 2, bx = px + pw + 10;
   page.drawText(clean(prompt), { x: px, y: y - bh / 2 - 3.5, size: 9.5, font: F.serif, color: INK });
-  page.drawSvgPath(roundRect(bw, bh, bh / 2), { x: bx, y, color: ACCENT });
+  page.drawSvgPath(roundRect(bw, bh, bh / 2), { x: bx, y, color: BOXC });
   page.drawText(label, { x: bx + 16, y: y - bh / 2 - 3.8, size: 10.5, font: F.serifBold, color: WHITE });
   annots.push(doc.context.register(doc.context.obj({
     Type: "Annot", Subtype: "Link", Rect: [bx, y - bh, bx + bw, y], Border: [0, 0, 0],
@@ -256,7 +259,7 @@ async function renderLetter(m: LetterModel, bytes: LetterFontBytes | null, lv: F
     y -= 2; rule(GOLD, M, M + 40, 1); y -= 10;
   }
   band(hl, TINT_GOLD, GOLD, F.serifBold);
-  band(rm, TINT_ACCENT, ACCENT, F.serif);
+  band(rm, TINT_ACCENT, INFO, F.serif);
   text(t.rehearsal, { font: F.serifBold, gap: 0 });
   text(t.rehearsalNote, { font: F.serifItalic, size: B - 1.5, color: MUTED, gap: G(12) });
   text(t.closing, { align: "justify", indent: INDENT, gap: G(12) });
