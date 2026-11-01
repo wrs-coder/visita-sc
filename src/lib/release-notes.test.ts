@@ -23,7 +23,7 @@ describe("release notes por versão", () => {
     const v = RELEASE_HISTORY.map((r) => r.version);
     expect(new Set(v).size).toBe(v.length);
   });
-  it("o aviso automático de novidades fica desligado nesta versão", () => {
+  it("o aviso automático de novidades abre nesta versão (5.1.0)", () => {
     expect(WHATS_NEW_AUTO_SHOW).toBe(true);
     // Mesmo aparelho atualizado, sem a janela vista e com uso anterior: não abre.
     expect(
@@ -36,7 +36,7 @@ describe("release notes por versão", () => {
         },
         WHATS_NEW_AUTO_SHOW,
       ),
-    ).toBe(false);
+    ).toBe(true);
     // Com a chave ligada, a mesma situação abriria (a regra continua viva).
     expect(
       shouldAutoOpenWhatsNew(
