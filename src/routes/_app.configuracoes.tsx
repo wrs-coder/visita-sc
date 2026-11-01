@@ -829,7 +829,7 @@ function Page() {
                 </>
                 )}
               </div>
-              <div className="shrink-0 border-t pt-3 pb-[env(safe-area-inset-bottom)]">
+              <div className="shrink-0 border-t pt-3 pb-safe">
                 {editId ? (
                   <div className="flex flex-col gap-2 pt-1">
                     <Button className="w-full" onClick={submit} disabled={submitting}>

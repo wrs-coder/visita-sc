@@ -210,7 +210,7 @@ export function CommentMode({ list, onClose }: { list: Highlight[]; onClose: () 
   if (!h) return null;
   const go = (d: number) => setI((v) => Math.min(list.length - 1, Math.max(0, v + d)));
   return (
-    <div className="fixed inset-0 z-[80] flex flex-col bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
+    <div className="fixed inset-0 z-[80] flex flex-col bg-background pt-[env(safe-area-inset-top)] pb-safe"
       onTouchStart={(e) => setX0(e.touches[0].clientX)} onTouchEnd={(e) => { if (x0 !== null) { const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); } setX0(null); }}>
       <div className="flex items-center justify-between px-3 py-2">
         <Button variant="ghost" size="icon" className="h-11 w-11" aria-label={t("common.close", { defaultValue: "Fechar" })} onClick={onClose}><X className="h-5 w-5" /></Button>
