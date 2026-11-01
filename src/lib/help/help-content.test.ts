@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
 import pt from "@/i18n/locales/pt.json";
-import { HELP_TOPICS, searchHelp } from "./help-content";
+import { HELP_ORDER, HELP_TOPICS, searchHelp } from "./help-content";
 
 function lookup(key: string): string | undefined {
   let cur: unknown = pt;
@@ -71,5 +71,9 @@ describe("new help topics", () => {
   it("quoted outline tools exist in the editor", () => {
     expect(readFileSync("src/components/notes/RichNoteToolbar.tsx", "utf8")).toContain("Modo foco");
     expect(readFileSync("src/components/notes/OutlineAttachmentsBar.tsx", "utf8")).toContain("Anexos do esboço");
+  });
+  it("mostra os 12 temas na ordem pedida", () => {
+    expect(HELP_TOPICS.map((t) => t.title)).toEqual(["Meu Perfil", "Modelos de visita", "Circuito e visitas", "Painel inicial", "Esboços", "Grandes Eventos", "Bíblia e anotações", "Notas Privadas", "Semana da visita", "Relatórios e backup", "Entrada e segurança", "Perguntas frequentes"]);
+    expect(HELP_ORDER).toHaveLength(12);
   });
 });

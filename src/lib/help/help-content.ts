@@ -18,13 +18,34 @@ export type HelpTopic = {
   /** Tela real aberta pelo botão "Abrir esta tela". */
   route: string;
   /** Miniatura desenhada com as peças reais do app. */
-  preview?: "circuit-pills" | "pin-card" | "visit-pills" | "reading-pills" | "event-pills" | "backup-card" | "profile-pills" | "dashboard-pills" | "templates-pills" | "outline-pills";
+  preview?: "circuit-pills" | "pin-card" | "visit-pills" | "reading-pills" | "event-pills" | "backup-card" | "profile-pills" | "dashboard-pills" | "templates-pills" | "outline-pills" | "notes-tabs";
   steps: HelpStep[];
   /** Palavras extras para a busca. */
   keywords?: string[];
 };
 
-export const HELP_TOPICS: HelpTopic[] = [
+const RAW_TOPICS: HelpTopic[] = [
+  {
+    id: "private-notes",
+    title: "Notas Privadas",
+    icon: "lock",
+    route: "/notas",
+    preview: "notes-tabs",
+    keywords: ["notas", "privadas", "confidencial", "pastoreio", "s-303", "oradores", "recomendados", "peticoes"],
+    steps: [
+      { before: "No menu lateral, toque em ", labelKey: "sidebar.privateNotes", after: "." },
+      { before: "Elas são ", labelKey: "notes.subtitle", after: "." },
+      { before: "Em ", labelKey: "notes.congregationLabel", after: ", escolha a congregação das notas." },
+      { before: "As notas ficam em 6 abas: ", labelKey: "notes.categories.free.label", after: ", “Pastoreio”, “S-303”, “Oradores”, “Recomendados” e “Petições”." },
+      { before: "Em cada aba, toque no botão de nova nota, por exemplo ", labelKey: "notes.categories.free.add", after: ", “Nova visita de pastoreio” ou “Novo registro S-303”." },
+      { before: "Em “Pastoreio”, preencha ", labelKey: "notes.pastoral.dateLabel", after: ", “Acompanhante”, “Nome dos envolvidos” e “Informações adicionais”." },
+      { before: "Em “S-303”, registre ", labelKey: "notes.structured.s303.positivos", after: ", “Pontos para encorajar (Atos 11:23)” e “Pontos preocupantes (Tito 1:5)”." },
+      { before: "Use ", labelKey: "notes.filters.search", after: " e as datas “De” e “Até” para filtrar." },
+      { before: "Para exportar, marque as notas (ou “Selecionar desta aba”) e toque em ", labelKey: "notes.export.pdf", after: " ou “WhatsApp”. O PDF sai como “Notas Privadas — Confidencial”." },
+      { before: "Sem internet, a nota é criada no aparelho e enviada depois. Ao encerrar uma visita, as Notas Privadas são preservadas." },
+    ],
+  },
+
   {
     id: "security",
     title: "Entrada e segurança",
@@ -55,7 +76,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       { before: "Em ", labelKey: "dashboard.pager.tabAgenda", after: ", as pílulas dos dias mostram os compromissos de cada dia. “Voltar para hoje” volta ao dia atual." },
       { before: "Em ", labelKey: "dashboard.pager.tabOutlines", after: ", ficam as notas de “Considerações da Semana” e “Esboços da Semana”, prontas para abrir." },
       { before: "Em ", labelKey: "dashboard.pager.tabVisit", after: ", aparecem as reuniões, refeições e transporte da semana da visita ativa." },
-      { before: "Em ", labelKey: "dashboard.pager.tabPastoral", after: ", ficam os estudos, revisitas e o checklist da congregação." },
+      { before: "Em ", labelKey: "dashboard.pager.tabPastoral", after: ", ficam os pastoreios e encorajamento agendados, as recomendações, assuntos locais e o checklist da congregação." },
       { before: "O ícone de ", labelKey: "dashboard.couple.title", after: " no topo mostra as mensagens da sua esposa." },
       { before: "Os cartões podem ser recolhidos e expandidos. Se algo ficou guardado sem internet, toque em ↻ no topo para enviar." },
     ],
@@ -223,6 +244,11 @@ export const HELP_TOPICS: HelpTopic[] = [
     ],
   },
 ];
+
+export const HELP_ORDER = ["profile", "visit-templates", "circuit", "dashboard", "outlines", "big-events", "bible", "private-notes", "visit-week", "reports-backup", "security", "faq"];
+
+export const HELP_TOPICS: HelpTopic[] = HELP_ORDER.map((id) => RAW_TOPICS.find((t) => t.id === id)!).filter(Boolean);
+
 
 export function normalizeHelp(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();

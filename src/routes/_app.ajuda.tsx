@@ -121,6 +121,7 @@ function TopicCard({ topic, open, onToggle }: { topic: HelpTopic; open: boolean;
         {topic.preview === "dashboard-pills" && <Pills items={[t("dashboard.pager.tabAgenda"), t("dashboard.pager.tabOutlines"), t("dashboard.pager.tabVisit"), t("dashboard.pager.tabPastoral")]} />}
         {topic.preview === "templates-pills" && <Pills items={[t("templates.program.studiesTitle"), t("templates.program.mealsTitle"), t("templates.program.transportTitle")]} />}
         {topic.preview === "outline-pills" && <Pills items={[t("personalOutlines.typePicker.field"), t("personalOutlines.typePicker.outline")]} />}
+        {topic.preview === "notes-tabs" && <Pills items={["free", "pastoral", "s303", "oradores", "recomendados", "peticoes"].map((k) => t(`notes.categories.${k}.label`))} />}
         {topic.preview === "profile-pills" && <Pills items={[t("profile.tabPersonal"), t("profile.tabFeatures"), t("profile.tabSettings")]} />}
         <ol className="space-y-2 text-sm">
           {topic.steps.map((s, i) => (
