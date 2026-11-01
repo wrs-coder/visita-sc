@@ -13,12 +13,12 @@ import { cn } from "@/lib/utils";
 
 const pill = (on: boolean) => cn("min-h-9 rounded-full px-3 text-xs font-medium transition-colors", on ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/60");
 
-export function TrackPills({ value, onChange }: { value: Track; onChange: (t: Track) => void }) {
+export function TrackPills({ value, onChange, alert = [] }: { value: Track; onChange: (t: Track) => void; alert?: readonly Track[] }) {
   const { t } = useTranslation();
   const items: [Track, string][] = [["personal", t("guestWs.trackPersonal", { defaultValue: "Pessoal" })], ["family", t("guestWs.trackFamily", { defaultValue: "Família" })], ["meeting", t("guestWs.trackMeeting", { defaultValue: "Reunião" })]];
   return (
     <div className="grid grid-cols-3 gap-1 rounded-full border bg-card p-1" role="tablist" aria-label={t("guestWs.tracks", { defaultValue: "Tipo de leitura" })}>
-      {items.map(([id, l]) => <button key={id} type="button" role="tab" aria-selected={value === id} onClick={() => onChange(id)} className={pill(value === id)}>{l}</button>)}
+      {items.map(([id, l]) => <button key={id} type="button" role="tab" aria-selected={value === id} onClick={() => onChange(id)} className={cn(pill(value === id), "relative")}>{l}{alert.includes(id) && <span className="absolute right-2 top-1.5 h-2 w-2 rounded-full bg-destructive" aria-label={t("guestWs.pendingToday", { defaultValue: "Leitura de hoje pendente" })} />}</button>)}
     </div>
   );
 }
@@ -28,7 +28,7 @@ function useDayNames() {
   return Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 7 + i).toLocaleDateString(i18n.language, { weekday: "short" }).replace(".", ""));
 }
 
-export function WeekdayCard({ plan, onChange, onRead, label, done, onMark }: { plan: WeekdayPlan; onChange: (p: WeekdayPlan) => void; onRead: (key: string, day: number) => void; label: (k: string) => string; done: Set<string>; onMark: (keys: string[], on: boolean) => void }) {
+export function WeekdayCard({ plan, onChange, onRead, label, done, onMark, pending = false }: { pending?: boolean; plan: WeekdayPlan; onChange: (p: WeekdayPlan) => void; onRead: (key: string, day: number) => void; label: (k: string) => string; done: Set<string>; onMark: (keys: string[], on: boolean) => void }) {
   const { t, i18n } = useTranslation();
   const names = useDayNames();
   const [day, setDay] = useState(() => new Date().getDay());
@@ -58,7 +58,7 @@ export function WeekdayCard({ plan, onChange, onRead, label, done, onMark }: { p
       {cur ? (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">{books.map(bn).join(" → ")} · {seq.filter((k) => done.has(k)).length}/{seq.length}</p>
-          <Button className="h-11 w-full gap-2 rounded-xl" onClick={() => onRead(cur, day)}><Play className="h-4 w-4" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {label(cur)}</Button>
+          <Button className={cn("h-11 w-full gap-2 rounded-xl", pending && day === new Date().getDay() && "ring-2 ring-destructive ring-offset-2 ring-offset-background")} onClick={() => onRead(cur, day)}><Play className="h-4 w-4" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {label(cur)}</Button>
         </div>
       ) : allDone ? (
         <div className="space-y-2 text-center">
