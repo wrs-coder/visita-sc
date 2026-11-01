@@ -4,9 +4,17 @@ import { useTranslation } from "react-i18next";
 
 // O texto da Ajuda é em português; os rótulos citados vêm sempre do português
 // para não misturar idiomas.
+import pt from "@/i18n/locales/pt.json";
+function ptLabel(key: string): string {
+  let cur: unknown = pt;
+  for (const part of key.split(".")) {
+    if (cur && typeof cur === "object" && part in (cur as Record<string, unknown>)) cur = (cur as Record<string, unknown>)[part];
+    else return key;
+  }
+  return typeof cur === "string" ? cur : key;
+}
 function usePtT() {
-  const { i18n } = useTranslation();
-  return useMemo(() => i18n.getFixedT("pt"), [i18n]);
+  return ptLabel;
 }
 import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound } from "lucide-react";
 import { HELP_TOPICS, OPEN_PALETTE_EVENT, searchHelp, type HelpTopic } from "@/lib/help/help-content";
