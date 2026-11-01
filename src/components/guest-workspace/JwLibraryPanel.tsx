@@ -1,4 +1,5 @@
 // Pílula "JW Library": notas bíblicas importadas de um backup .jwlibrary.
+import { BibleRefText } from "@/components/bible/BibleRefText";
 // Ficam separadas dos Pontos altos; podem ser copiadas para lá uma a uma.
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -108,7 +109,7 @@ export function JwLibraryPanel({ data, update }: { data: WsData; update: (fn: (d
                         <button type="button" onClick={() => copyToHighlights(n)} className="text-muted-foreground hover:text-primary" aria-label={t("jw.copy", { defaultValue: "Copiar para Pontos altos" })}><Sparkles className="h-3.5 w-3.5" /></button>
                       </div>
                       {n.title && <p className={cn("text-sm", !n.text && "italic text-muted-foreground")}>{n.title}</p>}
-                      {n.text && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{n.text}</p>}
+                      {n.text && <BibleRefText text={n.text} className="text-sm text-muted-foreground" />}
                       {n.tags.length > 0 && <p className="mt-1 text-[11px] text-muted-foreground">{n.tags.map((x) => `#${x}`).join(" ")}</p>}
                     </li>
                   ))}
