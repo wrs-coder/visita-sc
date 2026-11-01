@@ -18,7 +18,7 @@ Cada passo cita o nome exato da tela (pela chave de tradução), e o teste autom
 **Como abrir:** Toque em "Meu Perfil" no menu lateral. No alto da tela aparecem as abas "Pessoal", "Recursos" e "Configurações".
 
 **Aba "Pessoal"**
-1. Em "Circuito", veja o circuito ligado à sua conta.
+1. Em "Circuito", digite o circuito que você serve. O circuito fica ligado à sua conta, e o nome do circuito permite entrar na conta.
 2. Em "Acesso da esposa", gere o código de convite e envie para sua esposa. Com ele, ela entra no aplicativo e usa o próprio espaço de estudo e anotações, separado do seu.
 3. Em "Dados pessoais", confira e atualize seu nome e telefone.
 4. Em "Nome de usuário", escolha o nome que você pode usar para entrar.
@@ -26,7 +26,7 @@ Cada passo cita o nome exato da tela (pela chave de tradução), e o teste autom
 6. Em "Alterar senha", digite a nova senha e confirme.
 
 **Aba "Recursos"**
-7. Em "Bíblia", toque em "Gerenciar Bíblia" para importar ou trocar o arquivo EPUB da Tradução do Novo Mundo. A Bíblia fica no aparelho e funciona sem internet.
+7. Em "Bíblia", toque em "Gerenciar Bíblia" para importar ou trocar o arquivo EPUB da Tradução do Novo Mundo. A Bíblia fica no aparelho e funciona sem internet. Baixe a Bíblia no site jw.org.
 8. Em "Apoiar o desenvolvedor", veja como ajudar a manter o aplicativo.
 
 **Aba "Configurações"**
