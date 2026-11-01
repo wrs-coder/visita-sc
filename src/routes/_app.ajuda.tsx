@@ -16,7 +16,7 @@ function ptLabel(key: string): string {
 function usePtT() {
   return ptLabel;
 }
-import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound, ClipboardList, BookOpen, Mic, FileText, HelpCircle, Download, Upload, ShieldCheck, UserCircle2 } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound, ClipboardList, BookOpen, Mic, FileText, HelpCircle, Download, Upload, ShieldCheck, UserCircle2, LayoutDashboard, FileStack, NotebookPen } from "lucide-react";
 import { HELP_TOPICS, OPEN_PALETTE_EVENT, searchHelp, type HelpTopic } from "@/lib/help/help-content";
 import { cn } from "@/lib/utils";
 import { VISIT_PROGRAM_TABS } from "@/components/visit-week/VisitProgramTabs";
@@ -69,7 +69,7 @@ function PreviewPin() {
   );
 }
 
-const ICONS = { lock: Lock, calendar: CalendarDays, week: ClipboardList, book: BookOpen, event: Mic, report: FileText, faq: HelpCircle, profile: UserCircle2 } as const;
+const ICONS = { lock: Lock, calendar: CalendarDays, week: ClipboardList, book: BookOpen, event: Mic, report: FileText, faq: HelpCircle, profile: UserCircle2, dashboard: LayoutDashboard, templates: FileStack, outline: NotebookPen } as const;
 
 function Pills({ items, active = 0 }: { items: string[]; active?: number }) {
   return (
