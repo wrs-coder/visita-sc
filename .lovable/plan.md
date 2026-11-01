@@ -4,7 +4,7 @@
 Sim, é possível. A conta "Wao" (ancião) já existe.
 
 Como farei:
-1. Confirmo qual congregação o Wao atende e qual visita dela está agendada.
+1. Congregação "TESTE", visita de 23 a 28 de fevereiro de 2027 (confirmo que o Wao está ligado a ela).
 2. Entro no aplicativo como Wao. O sistema vai pedir a sua aprovação nesse momento.
 3. Preencho pela própria tela do ancião, como um ancião real faria: programação, refeições, transporte, reuniões de campo e checklist.
 4. Uso nomes e horários de exemplo, com cara realista e sem pessoas reais. Antes de gravar, mostro a lista do que preenchi.
@@ -12,7 +12,6 @@ Como farei:
 Observações:
 - Só entram dados normais da visita. Nada muda na estrutura do aplicativo nem nas permissões.
 - Depois do vídeo, posso apagar esses dados de exemplo, se você quiser.
-- Se a visita agendada for a de "09 Cidade do Sequele", ela é a mais provável. Se for outra, me diga.
 
 ## 2. Tirar "Tela cheia na leitura e no esboço" do Itinerário
 Hoje esse botão aparece no cartão "Sobre o aplicativo", no fim de Circuito > Itinerário. Ele também existe em Meu Perfil > Configurações > "Modo imersivo".
@@ -28,7 +27,8 @@ Itinerário (antes)            Itinerário (depois)
 └──────────────────────┘      └──────────────────────┘
 ```
 
-## 3. Painel "Nova visita" grande demais
+## 3. Painéis "Nova visita" e "Editar visita" grandes demais
+O ajuste vale para os dois, porque usam o mesmo painel. Em "Editar visita", os botões fixos são os que já existem lá.
 Sua ideia (recolher/expandir) é boa. A minha sugestão junta três coisas, no padrão iOS/One UI:
 
 a) **Botões fixos embaixo:** "Criar visita" e "Cancelar" ficam sempre visíveis, mesmo com a tela pequena ou o teclado aberto.
