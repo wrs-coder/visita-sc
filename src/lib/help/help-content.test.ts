@@ -32,6 +32,14 @@ describe("help content fidelity", () => {
     expect(lookup("itinerary.newVisit")).toBe("Nova visita");
     expect(lookup("offlinePin.create")).toBe("Criar PIN");
     expect(lookup("circuit.pillCircuit")).toBe("Circuito");
+    const ev = readFileSync("src/components/circuit/BigEvents.tsx", "utf8");
+    for (const w of ["Novo evento", "Importar programa", "Modelos de carta", "Exportar"]) expect(ev).toContain(w);
+    const bt = readFileSync("src/components/guest-workspace/BibleTrackExtras.tsx", "utf8");
+    for (const w of ["Marcar capítulos lidos", "Para comentar", "Modo comentário"]) expect(bt).toContain(w);
+    const br = readFileSync("src/components/guest-workspace/BibleReadingTab.tsx", "utf8");
+    for (const w of ["Pessoal", "Família", "Reunião", "Dias", "Continuar", "Meta de leitura"]) expect(br).toContain(w);
+    const vt = readFileSync("src/components/visit-week/VisitProgramTabs.tsx", "utf8");
+    for (const w of ["Anciãos", "Estudos e Revisitas", "Reuniões", "Refeições", "Transporte"]) expect(vt).toContain(w);
   });
 
   it("search ignores accents and finds the security topic for 'pin'", () => {
