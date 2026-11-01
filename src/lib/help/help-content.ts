@@ -83,8 +83,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     preview: "templates-pills",
     keywords: ["modelo", "programacao", "estudos", "refeicoes", "transporte", "pacote", "checklist", "duplicar", "exportar"],
     steps: [
-      { before: "No menu lateral, na seção ", labelKey: "sidebar.sectionModelos", after: ", abra ", },
-      { before: "", labelKey: "sidebar.visitTemplates", after: ": é a sua programação pessoal, usada para preencher cada visita." },
+      { before: "No menu lateral, abra ", labelKey: "sidebar.visitTemplates", after: ": é a sua programação pessoal, usada para preencher cada visita." },
       { before: "Escolha um modelo numerado no topo ou toque em ", labelKey: "templates.newTemplate", after: ". Você pode renomear, duplicar e exportar." },
       { before: "Preencha as partes ", labelKey: "templates.program.studiesTitle", after: ", “Refeições” e “Transporte”, dia por dia." },
       { before: "Toque em ", labelKey: "templates.program.saveTemplate", after: " para guardar." },
