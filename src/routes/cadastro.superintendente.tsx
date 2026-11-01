@@ -1,3 +1,4 @@
+import { afterSuperSignupRoute } from "@/lib/first-run";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { TermsAcceptance } from "@/components/auth/TermsAcceptance";
 import { useEffect, useState } from "react";

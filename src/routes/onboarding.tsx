@@ -1,3 +1,4 @@
+import { afterSuperSignupRoute } from "@/lib/first-run";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
