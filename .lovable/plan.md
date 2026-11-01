@@ -10,6 +10,37 @@ Conferido na tela atual (/perfil): 3 abas — **Pessoal**, **Recursos**, **Confi
 
 Cada passo cita o nome exato da tela (pela chave de tradução), e o teste automático da Ajuda passa a conferir também esses nomes. "Abrir esta tela" leva a /perfil já na aba certa.
 
+### Texto que será inserido (para sua revisão)
+
+**Título:** Meu Perfil
+**Resumo:** Seus dados, o acesso da esposa, a Bíblia, o idioma, o backup e as preferências do aparelho, organizados em três abas.
+
+**Como abrir:** Toque em "Meu Perfil" no menu lateral. No alto da tela aparecem as abas "Pessoal", "Recursos" e "Configurações".
+
+**Aba "Pessoal"**
+1. Em "Circuito", veja o circuito ligado à sua conta.
+2. Em "Acesso da esposa", gere o código de convite e envie para sua esposa. Com ele, ela entra no aplicativo e usa o próprio espaço de estudo e anotações, separado do seu.
+3. Em "Dados pessoais", confira e atualize seu nome e telefone.
+4. Em "Nome de usuário", escolha o nome que você pode usar para entrar.
+5. Em "E-mail", veja o e-mail da sua conta.
+6. Em "Alterar senha", digite a nova senha e confirme.
+
+**Aba "Recursos"**
+7. Em "Bíblia", toque em "Gerenciar Bíblia" para importar ou trocar o arquivo EPUB da Tradução do Novo Mundo. A Bíblia fica no aparelho e funciona sem internet.
+8. Em "Apoiar o desenvolvedor", veja como ajudar a manter o aplicativo.
+
+**Aba "Configurações"**
+9. Em "Idioma", escolha o idioma do aplicativo. Se você não escolher, ele segue o idioma do celular.
+10. Em "Backup", toque em "Gerar backup" para salvar uma cópia dos seus dados, ou em "Restaurar backup" para recuperar uma cópia salva.
+11. Em "Sincronização", veja se seus dados já foram enviados para a nuvem.
+12. Em "PIN offline", configure o PIN e a biometria para entrar sem internet.
+13. Em "Lembretes", ligue os avisos dos compromissos da agenda e escolha com quanta antecedência quer ser avisado.
+14. Em "Modo imersivo", esconda a barra de status nas telas de leitura e escrita. Para vê-la de novo, deslize de cima para baixo.
+
+**Dica:** O aplicativo lembra a última aba que você abriu.
+
+Observação: os nomes entre aspas vêm do aplicativo e serão conferidos pelo teste automático. Se algum estiver diferente na tela (por exemplo, "Dados pessoais"), o teste falha e eu corrijo o texto antes de entregar.
+
 ```text
 ┌───────────────────────────────┐
 │ ‹  Ajuda                      │
