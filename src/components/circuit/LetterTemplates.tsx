@@ -7,7 +7,90 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { defaultTemplate, buildLetterModel, type LetterTemplate } from "@/lib/big-events/letter-template";
+import { defaultTemplate, buildLetterModel, type LetterTemplate, type LetterColors, type LetterPart, LETTER_PALETTE, LETTER_PRESETS, DEFAULT_LETTER_COLORS, sanitizeLetterColors, presetOf, resolveLetterColors, rgbCss } from "@/lib/big-events/letter-template";
+import { CollapsibleSection } from "@/components/guest-workspace/CollapsibleSection";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { cn } from "@/lib/utils";
+
+const PART_LABEL: Record<LetterPart, string> = { title: "Título e cabeçalho", box: "Caixa de designação", info: "Informações e lembretes", rule: "Filete decorativo" };
+
+/** Seção "Cores da carta": paletas prontas, ajuste por parte e prévia em miniatura. */
+function LetterColorsEditor({ value, onChange }: { value?: LetterColors; onChange: (c: LetterColors) => void }) {
+  const c = sanitizeLetterColors(value);
+  const pal = resolveLetterColors(c);
+  const [part, setPart] = useState<LetterPart | null>(null);
+  const preset = presetOf(c);
+  const sw = (id: string) => rgbCss(LETTER_PALETTE[id].rgb);
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground">Paleta</p>
+        <div className="grid grid-cols-2 gap-2">
+          {LETTER_PRESETS.map((p) => (
+            <button key={p.id} type="button" aria-pressed={preset === p.id} onClick={() => onChange({ ...p.colors })}
+              className={cn("flex min-h-11 items-center gap-2 rounded-xl border px-3 text-left text-sm", preset === p.id && "border-primary bg-primary/10 font-semibold")}>
+              <span className="flex -space-x-1">{[p.colors.title, p.colors.info, p.colors.rule].map((id, i) => <span key={i} className="h-4 w-4 rounded-full border border-background" style={{ background: sw(id) }} />)}</span>
+              {p.name}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground">Ajustar por parte</p>
+        <div className="divide-y rounded-xl border">
+          {(Object.keys(PART_LABEL) as LetterPart[]).map((k) => (
+            <button key={k} type="button" onClick={() => setPart(k)} className="flex min-h-11 w-full items-center gap-3 px-3 text-left text-sm active:bg-accent/40">
+              <span className="flex-1">{PART_LABEL[k]}</span>
+              <span className="h-5 w-5 rounded-full border" style={{ background: sw(c[k]) }} aria-label={LETTER_PALETTE[c[k]].name} />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground">Prévia</p>
+        <div className="space-y-2 rounded-xl border bg-card p-3 text-[10px]" style={{ color: "rgb(38,41,48)" }}>
+          <p className="text-center font-serif text-sm font-bold" style={{ color: rgbCss(pal.title) }}>Nome do superintendente</p>
+          <div className="mx-auto h-px w-3/5" style={{ background: rgbCss(pal.rule) }} />
+          <div className="rounded-lg border p-2" style={{ borderColor: rgbCss(pal.rule), background: pal.boxFill ? rgbCss(pal.boxFill) : "transparent" }}>
+            <p className="font-serif font-bold" style={{ color: rgbCss(pal.box) }}>DESIGNAÇÃO</p>
+            <p>Discurso nº 13 · 09:40</p>
+            <span className="mt-1 inline-block rounded-full px-2 py-0.5 font-bold" style={{ background: rgbCss(pal.box), color: "rgb(255,255,255)" }}>Clique aqui!</span>
+          </div>
+          <div className="flex rounded" style={{ background: rgbCss(pal.infoTint) }}>
+            <span className="w-[3px] shrink-0" style={{ background: rgbCss(pal.info) }} />
+            <p className="p-1.5">Informações e lembretes…</p>
+          </div>
+        </div>
+      </div>
+      <Button variant="ghost" size="sm" className="w-full" onClick={() => onChange({ ...DEFAULT_LETTER_COLORS })}>Restaurar cores padrão</Button>
+      <Drawer open={part !== null} onOpenChange={(o) => !o && setPart(null)}>
+        <DrawerContent>
+          <DrawerHeader><DrawerTitle>{part ? PART_LABEL[part] : ""}</DrawerTitle></DrawerHeader>
+          {part && (
+            <div className="space-y-4 px-4 pb-safe">
+              <div className="grid grid-cols-6 gap-3">
+                {Object.entries(LETTER_PALETTE).map(([id, p]) => (
+                  <button key={id} type="button" aria-label={p.name} aria-pressed={c[part] === id} onClick={() => onChange({ ...c, [part]: id })}
+                    className={cn("aspect-square rounded-full border-2", c[part] === id ? "border-foreground" : "border-transparent")} style={{ background: sw(id) }} />
+                ))}
+              </div>
+              {part === "box" && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="flex-1">Fundo da caixa</span>
+                  {(["tint", "none"] as const).map((f) => (
+                    <Button key={f} size="sm" variant={c.boxFill === f ? "default" : "outline"} onClick={() => onChange({ ...c, boxFill: f })}>{f === "tint" ? "Claro" : "Sem fundo"}</Button>
+                  ))}
+                </div>
+              )}
+              <Button className="w-full" onClick={() => setPart(null)}>Pronto</Button>
+            </div>
+          )}
+        </DrawerContent>
+      </Drawer>
+    </div>
+  );
+}
 import { saveBlob } from "@/lib/share";
 import type { SyncState } from "@/lib/big-events/letter-template-sync";
 
@@ -70,8 +153,9 @@ export function LetterTemplates({ list, onChange, sync }: { list: LetterTemplate
           O quadro da designação (evento, data, local, orador, parte, horário, tema, próximo orador, link e PIN) é preenchido sozinho com os dados de cada evento.
         </Card>
         {GROUPS.map((g) => (
-          <Card key={g.title} className="space-y-3 p-4">
-            <p className="text-sm font-semibold">{g.title}</p>
+          <Card key={g.title} className="p-3">
+          <CollapsibleSection id={`letter.${g.title}`} title={g.title} defaultOpen={false}>
+          <div className="space-y-3 px-1 pt-1">
             {g.fields.map((f) => (
               <div key={f.key} className="space-y-1">
                 <Label className="text-xs">{f.label}</Label>
@@ -82,8 +166,16 @@ export function LetterTemplates({ list, onChange, sync }: { list: LetterTemplate
                 )}
               </div>
             ))}
+          </div>
+          </CollapsibleSection>
           </Card>
         ))}
+        <Card className="p-3">
+          <CollapsibleSection id="letter.colors" title="Cores da carta" defaultOpen={false}
+            summary={LETTER_PRESETS.find((p) => p.id === presetOf(editing.colors))?.name ?? "Personalizada"}>
+            <div className="px-1 pt-1"><LetterColorsEditor value={editing.colors} onChange={(colors) => setEditing({ ...editing, colors })} /></div>
+          </CollapsibleSection>
+        </Card>
         <Button className="w-full" onClick={save}>Salvar modelo</Button>
       </div>
     );

@@ -41,7 +41,7 @@ import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
 import { ConnectionModeToggle } from "@/components/ConnectionModeToggle";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { CommandPalette } from "@/components/CommandPalette";
-import { Coffee, GraduationCap } from "lucide-react";
+import { Coffee, GraduationCap, HelpCircle } from "lucide-react";
 import { setActiveContext } from "@/lib/active-context";
 import { useOutlinesSync } from "@/hooks/use-outlines-sync";
 import { accentForPath, accentStyle } from "@/lib/route-accent";
@@ -355,7 +355,7 @@ function AppLayout() {
                   <ConnectionModeToggle compact />
                   <ThemeToggle variant="sidebar" />
                 </div>
-                <div className="p-3 flex-1 overflow-y-auto overscroll-contain">
+                <div className="p-3 flex-1 overflow-y-auto overscroll-contain safe-bottom-content">
                   <Nav onClick={() => setMobileMenuOpen(false)} />
                 </div>
               </SheetContent>
@@ -370,6 +370,9 @@ function AppLayout() {
           <div className="flex items-center gap-1">
             <OfflineReadyBadge />
             <SyncButton onSync={syncOutlines} />
+            <Link to="/ajuda" className="p-2 rounded-md hover:bg-white/10" aria-label="Ajuda" title="Ajuda">
+              <HelpCircle className="h-5 w-5" />
+            </Link>
             {role === "superintendent" && (
               <Link
                 to="/lixeira"

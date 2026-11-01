@@ -192,7 +192,7 @@ export function CommandPalette() {
         type="button"
         aria-label="Ajuda"
         onClick={() => navigate({ to: "/ajuda" })}
-        className="fixed bottom-4 right-4 z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="hidden md:flex fixed bottom-4 right-4 z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg items-center justify-center hover:scale-105 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <HelpCircle className="h-6 w-6" />
       </button>

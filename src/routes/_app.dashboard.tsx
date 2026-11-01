@@ -97,7 +97,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Maximize2, PencilLine, MoreVertical, Printer as PrinterIcon, Flag as FlagIcon } from "lucide-react";
+import { Maximize2, PencilLine, MoreVertical, Printer as PrinterIcon, Flag as FlagIcon, ChevronUp, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -109,6 +109,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { DashboardPager } from "@/components/dashboard/DashboardPager";
 import { buildDayTimeline, groupByDate, resolveWeekdaySlot, type TimelineKind, type TimelineSource } from "@/lib/today-timeline";
+import { encouragementCategoryLabel, modalityLabel, recommendationPurposeLabel } from "@/lib/enum-labels";
 import { EventReminderSync } from "@/components/reminders/EventReminders";
 
 
@@ -197,14 +198,6 @@ interface MeetingTodayItem {
   closing_song?: string | null;
 }
 
-const MODALITY_LABEL: Record<string, string> = {
-  casa_em_casa: "Casa em Casa",
-  cartas: "Cartas",
-  telefone: "Telefone",
-  testemunho_publico: "Testemunho Público",
-  revisitas: "Revisitas",
-  estudos: "Estudos Bíblicos",
-};
 
 const ACOMPANHANTE_FOR_LABEL: Record<string, string> = {
   superintendente: "Superintendente",
@@ -348,6 +341,7 @@ function Dashboard() {
     congregation_id: string;
   };
   const [outlinesPreview, setOutlinesPreview] = useState<OutlinePreview[]>([]);
+  const [expandedAgenda, setExpandedAgenda] = useState<Set<string>>(() => new Set());
   const [weekOutlinesPreview, setWeekOutlinesPreview] = useState<OutlinePreview[]>([]);
   const [recomendadosPreview, setRecomendadosPreview] = useState<RecomendadoPreview[]>([]);
   const [recomendadoOpen, setRecomendadoOpen] = useState<RecomendadoPreview | null>(null);
@@ -1037,6 +1031,24 @@ function Dashboard() {
           rows
             .filter(([, v]) => v != null && String(v).trim())
             .map(([label, value]) => ({ label: label.replace(/:$/, ""), value: String(value) }));
+        const brief = (...parts: Array<[string, string | null | undefined] | string | null | undefined>) => {
+          const out: string[] = [];
+          for (const p of parts) {
+            if (!p) continue;
+            if (typeof p === "string") { if (p.trim()) out.push(p.trim()); continue; }
+            const [l, v] = p; if (v && String(v).trim()) out.push(`${l}: ${String(v).trim()}`);
+          }
+          return out;
+        };
+        const join = (...xs: Array<string | null | undefined>) => xs.filter((x) => x && x.trim()).join(" · ") || null;
+        // Temas sempre primeiro; o cartão mostra 2 linhas e o resto em "Mais detalhes".
+        const meetingLines = (mt: MeetingTodayItem): string[] =>
+          mt.kind === "weekend" ? brief(
+            mt.public_talk_theme || mt.theme ? `1) ${mt.public_talk_theme || mt.theme}` : null,
+            mt.final_talk ? `2) ${mt.final_talk}` : null,
+            ["Presidente", mt.chairman], ["Cântico inicial", mt.opening_song], ["Cântico final", mt.closing_song])
+          : mt.kind === "midweek" ? brief(["Tema", mt.theme], ["Presidente", mt.chairman], ["Cântico final", mt.final_song], ["Oração final", mt.closing_prayer])
+          : brief(["Tema", mt.theme], ["Oração inicial", mt.opening_prayer], ["Oração final", mt.closing_prayer]);
         const meetingDetailRows = (mt: MeetingTodayItem): Array<[string, string | null | undefined]> =>
           mt.kind === "midweek" ? [
             [L("meetingsTalks.midweek.chairman", "Presidente da Reunião"), mt.chairman],
@@ -1070,8 +1082,9 @@ function Dashboard() {
               }))),
           ...fieldMeetingsWeek.map((f) => ({
             id: `f-${f.id}`, kind: "field" as const, date: f.event_date, time: f.meeting_time,
-            title: `${t("dashboard.fieldMeeting")} · ${MODALITY_LABEL[f.modality] ?? f.modality}`,
+            title: `${t("dashboard.fieldMeeting")} · ${modalityLabel(f.modality)}`,
             subtitle: f.meeting_location,
+            lines: brief(join(f.territory_number ? `Território ${f.territory_number}` : null, f.territory_location), join(f.auxiliary_leaders ? `Dirige: ${f.auxiliary_leaders}` : null, f.closing_prayer ? `Oração: ${f.closing_prayer}` : null)),
             details: toDetails([
               [L("meetingsTalks.field.location", "Local da Reunião de Campo"), f.meeting_location],
               [`${L("dashboard.territory", "Território")} S-13`, f.territory_number],
@@ -1096,6 +1109,7 @@ function Dashboard() {
             id: `m-${m.id}`, kind: "meal" as const, date: m.meal_date, time: m.meal_time,
             title: `${mealLabel(m.type)}${m.host_name ? ` · ${m.host_name}` : ""}`,
             subtitle: m.location,
+            lines: brief(["Telefone", m.contact_phone]),
             details: toDetails([
               [L("meals.host", "Anfitrião"), m.host_name],
               [L("schedule.location", "Local"), m.location],
@@ -1105,14 +1119,16 @@ function Dashboard() {
           })),
           ...meetingsWeek.map((mt) => ({
             id: `r-${mt.kind}`, kind: "meeting" as const, date: mt.date, time: meetingTime(mt.meeting_at),
-            title: `${meetingLabels[mt.kind]}${mt.theme ? ` · ${mt.theme}` : ""}`,
+            title: meetingLabels[mt.kind],
             subtitle: mt.location,
+            lines: meetingLines(mt),
             details: toDetails(meetingDetailRows(mt)),
           })),
           ...transportsWeek.map((tr) => ({
             id: `t-${tr.id}`, kind: "transport" as const, date: tr.event_date, time: tr.departure_time,
             title: `${t("sidebar.transport")} · ${tr.driver_name}`,
             subtitle: tr.description,
+            lines: brief(join(tr.departure_time ? `Saída ${tr.departure_time.slice(0, 5)}` : null, tr.return_time ? `Retorno ${tr.return_time.slice(0, 5)}` : null), ["Telefone", tr.contact_phone]),
             details: toDetails([
               [L("transport.driver", "Motorista"), tr.driver_name],
               [L("transport.departure", "Saída"), tr.departure_time?.slice(0, 5)],
@@ -1160,7 +1176,8 @@ function Dashboard() {
                             {t("dashboard.pager.noTime", { defaultValue: "Sem horário" })}
                           </div>
                         )}
-                        <button type="button" onClick={() => setEventDetail({ item: it, to: meta.to })} className="w-full text-left flex items-start gap-3 p-2 rounded-md border bg-card hover:bg-accent/40 transition-colors">
+                        <div className="rounded-md border bg-card">
+                        <button type="button" onClick={() => setEventDetail({ item: it, to: meta.to })} className="w-full text-left flex items-start gap-3 p-2 rounded-md hover:bg-accent/40 transition-colors">
                           <div className="text-xs font-semibold text-primary px-2 py-1 rounded bg-primary/10 min-w-[58px] text-center">
                             <Clock className="inline h-3 w-3 mr-0.5" />
                             {it.time ?? "—"}
@@ -1174,8 +1191,28 @@ function Dashboard() {
                                 <span className="whitespace-pre-wrap">{it.subtitle}</span>
                               </div>
                             )}
+                            {(expandedAgenda.has(it.id) ? it.lines : it.lines?.slice(0, 2))?.map((ln, i) => (
+                              <div key={i} className="text-xs text-muted-foreground break-words">{ln}</div>
+                            ))}
                           </div>
                         </button>
+                        {(it.lines?.length ?? 0) > 2 && (
+                          <button
+                            type="button"
+                            aria-expanded={expandedAgenda.has(it.id)}
+                            onClick={() => setExpandedAgenda((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(it.id)) next.delete(it.id); else next.add(it.id);
+                              return next;
+                            })}
+                            className="w-full min-h-[44px] pl-[104px] pr-2 text-left text-xs font-medium text-primary inline-flex items-center gap-1 border-t"
+                          >
+                            {expandedAgenda.has(it.id)
+                              ? <>{t("common.less", { defaultValue: "Menos" })} <ChevronUp className="h-3 w-3" /></>
+                              : <>{t("common.moreDetails", { defaultValue: "Mais detalhes" })} <ChevronDown className="h-3 w-3" /></>}
+                          </button>
+                        )}
+                        </div>
                       </li>
                     );
                   })}
@@ -1284,7 +1321,7 @@ function Dashboard() {
                   return (
                     <li key={f.id} className="text-sm space-y-1.5 pb-2 border-b border-border/50 last:border-b-0 last:pb-0">
                       <span className="inline-flex px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
-                        {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""} · {MODALITY_LABEL[f.modality] ?? f.modality}
+                        {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""} · {modalityLabel(f.modality)}
                       </span>
                       {filled.length > 0 && (
                         <dl className="grid grid-cols-1 gap-y-1 sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)] sm:gap-x-3">
@@ -1634,9 +1671,9 @@ function Dashboard() {
                           ev.section === "pastoral"
                             ? [ev.slot_label, ev.address].filter(Boolean).join(" · ")
                             : ev.section === "encouragement"
-                            ? [ev.category, ev.contact].filter(Boolean).join(" · ")
+                            ? [encouragementCategoryLabel(ev.category), ev.contact].filter(Boolean).join(" · ")
                             : ev.section === "recommendations"
-                            ? [ev.purpose, ev.field_group, ev.info].filter(Boolean).join(" · ")
+                            ? [recommendationPurposeLabel(ev.purpose), ev.field_group, ev.info].filter(Boolean).join(" · ")
                             : [ev.suggested_by, ev.info].filter(Boolean).join(" · ");
                         return (
                           <li
@@ -1786,7 +1823,7 @@ function Dashboard() {
                         {f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""}
                         {" · "}
                         <span className="text-xs text-muted-foreground">
-                          {MODALITY_LABEL[f.modality] ?? f.modality}
+                          {modalityLabel(f.modality)}
                         </span>
                       </div>
                       {f.meeting_location && (
@@ -2151,7 +2188,7 @@ function Dashboard() {
                             ]
                           : ev.section === "encouragement"
                           ? [
-                              ["Categoria", ev.category],
+                              ["Categoria", encouragementCategoryLabel(ev.category)],
                               ["Contato", ev.contact],
                               ["Saúde", ev.health_info],
                               ["Endereço", ev.address],
@@ -2159,7 +2196,7 @@ function Dashboard() {
                             ]
                           : ev.section === "recommendations"
                           ? [
-                              ["Propósito", ev.purpose],
+                              ["Propósito", recommendationPurposeLabel(ev.purpose)],
                               ["Grupo de campo", ev.field_group],
                               ["Informações", ev.info],
                               ["Sugerido por", ev.suggested_by],
@@ -2406,9 +2443,9 @@ function elderItemView(ev: ElderItemLike): { heading: string; rows: Array<[strin
     ev.section === "pastoral"
       ? [["Slot", ev.slot_label], ["Acompanhante", ev.companion], ["Endereço", ev.address], ["Membros da família", ev.family_members], ["Informações espirituais", ev.spiritual_info]]
       : ev.section === "encouragement"
-      ? [["Categoria", ev.category], ["Contato", ev.contact], ["Saúde", ev.health_info], ["Endereço", ev.address], ["Informações", ev.info]]
+      ? [["Categoria", encouragementCategoryLabel(ev.category)], ["Contato", ev.contact], ["Saúde", ev.health_info], ["Endereço", ev.address], ["Informações", ev.info]]
       : ev.section === "recommendations"
-      ? [["Propósito", ev.purpose], ["Grupo de campo", ev.field_group], ["Informações", ev.info], ["Sugerido por", ev.suggested_by]]
+      ? [["Propósito", recommendationPurposeLabel(ev.purpose)], ["Grupo de campo", ev.field_group], ["Informações", ev.info], ["Sugerido por", ev.suggested_by]]
       : [["Sugerido por", ev.suggested_by], ["Informações", ev.info], ["Fontes", ev.sources]];
   return {
     heading,

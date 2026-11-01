@@ -57,3 +57,23 @@ describe("planReminders – extra options", () => {
     expect(d[0].title).toBe("Hoje: 2 compromissos");
   });
 });
+
+import { leadToMinutes, splitLead, planReadingReminders } from "./event-reminders";
+describe("lead units and reading reminders", () => {
+  it("converts free lead with units", () => {
+    expect(leadToMinutes(2, "h")).toBe(120);
+    expect(leadToMinutes(3, "d")).toBe(4320);
+    expect(leadToMinutes(1, "w")).toBe(10080);
+    expect(splitLead(4320)).toEqual({ n: 3, unit: "d" });
+    expect(splitLead(45)).toEqual({ n: 45, unit: "min" });
+  });
+  it("schedules reading at chosen time and skips today when already read", () => {
+    const now = new Date(2026, 10, 2, 5, 0); // segunda
+    const p = { enabled: false, lead: 30, kinds: [], reading: { personal: { on: true, time: "06:30", days: [0,1,2,3,4,5,6] } } } as ReminderPrefs;
+    const a = planReadingReminders(p, now);
+    expect(a).toHaveLength(7);
+    expect(a[0].at.getHours()).toBe(6);
+    expect(a[0].at.getMinutes()).toBe(30);
+    expect(planReadingReminders(p, now, { personal: "2026-11-02" })).toHaveLength(6);
+  });
+});

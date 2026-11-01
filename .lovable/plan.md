@@ -1,24 +1,65 @@
-## Verificação dos plugins do celular (APK/AAB)
+# Agenda: temas abaixo do nome da reunião + expandir/recolher detalhes
 
-Resultado: nenhum plugin novo precisa ser instalado. Todos os recursos usados pelo app já estão instalados e registrados no projeto Android.
+## O que muda
+1. O título do cartão de reunião mostra só o tipo (ex.: "Fim de Semana"). Os temas aparecem nas linhas de baixo, com a mesma letra pequena e cinza das outras informações.
+2. Os cartões da agenda passam a mostrar 2 linhas de detalhes. Quando houver mais, aparece um botão "Mais detalhes ▾" para mostrar tudo e "Menos ▴" para recolher.
 
-| Recurso no app | Plugin | Situação |
-|---|---|---|
-| Base do app | core / android | instalado |
-| Botão voltar, abrir links | app / browser | instalado |
-| Anexos, backup, exportar Word/PDF | filesystem / share / file-opener | instalado |
-| Lembretes (avisos, 2º aviso, resumo diário, "Adiar 10 min") | local-notifications | instalado |
-| Modo imersivo | status-bar | instalado |
-| PIN e biometria | biometric-auth / secure-storage | instalado |
-| Importar backup do JW Library | arquivo sql-wasm na pasta do app (não é plugin) | presente |
+## Antes
+```text
+┌─────────────────────────────────────┐
+│ 09:00  ⌂ Fim de Semana · Quem       │
+│          realmente governa o mundo? │
+│          📍 Salão do Reino          │
+│          1) Quem realmente governa..│
+│          2) Continue vigilante      │
+└─────────────────────────────────────┘
+```
 
-As permissões de notificação e biometria já estão no manifesto Android.
+## Depois (recolhido)
+```text
+┌─────────────────────────────────────┐
+│ 09:00  ⌂ Fim de Semana              │
+│          📍 Salão do Reino          │
+│          1) Quem realmente governa  │
+│             o mundo?                │
+│          2) Continue vigilante      │
+│          Mais detalhes ▾            │
+└─────────────────────────────────────┘
+```
 
-### O que fazer para levar as mudanças ao APK/AAB
-Rodar no seu computador, na ordem:
-1. `git pull` (pegar a versão mais recente)
-2. `npm install` (garante os plugins da lista acima)
-3. o script de empacotamento Android do projeto (reconstrói as telas e confere se não estão desatualizadas) e depois `npx cap sync android`
-4. Gerar o AAB/APK no Android Studio
+## Depois (expandido)
+```text
+┌─────────────────────────────────────┐
+│ 09:00  ⌂ Fim de Semana              │
+│          📍 Salão do Reino          │
+│          1) Quem realmente governa  │
+│             o mundo?                │
+│          2) Continue vigilante      │
+│          Presidente: João Lima      │
+│          Cântico inicial: 12        │
+│          Cântico final: 45          │
+│          Menos ▴                    │
+└─────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│ 19:30  ⌂ Meio de Semana             │
+│          📍 Salão do Reino          │
+│          Tema: Sejam vigilantes     │
+│          Presidente: Carlos Souza   │
+│          Mais detalhes ▾            │
+└─────────────────────────────────────┘
+```
 
-Opcional, se aprovar: subir o número da versão e ligar o aviso "Novidades" antes de gerar o AAB para a Play Store.
+## Regras
+- Vale para as 4 reuniões: Meio de Semana, Fim de Semana, Pioneiros e Anciãos e Servos.
+- Fim de semana: os dois discursos (1 e 2) primeiro, depois presidente, cânticos.
+- Meio de semana / Pioneiros / Anciãos: "Tema: ..." primeiro, depois presidente, orações, cânticos.
+- O expandir/recolher vale para todos os cartões da agenda (campo, refeição, transporte também), mostrando todas as informações disponíveis.
+- Os temas não são mais cortados com "…": quebram em várias linhas.
+- Tocar no botão "Mais detalhes" só abre/fecha; tocar no resto do cartão continua abrindo a tela de detalhes como hoje.
+- Começa sempre recolhido; nenhuma informação salva muda.
+
+## Detalhes técnicos
+- `src/routes/_app.dashboard.tsx`: título da reunião = `meetingLabels[mt.kind]`.
+- `meetingLines` inclui `["Tema", mt.theme]` em midweek/pioneer/elders e mais campos (cânticos, local, orações); `brief` deixa de cortar em 2 — a lista inteira vai em `lines`.
+- Renderização: mostra `lines.slice(0,2)` e, com estado local por item (`Set` de ids expandidos), as restantes; botão separado (fora do `<button>` do cartão, para não aninhar botões), alvo de toque 44px, `aria-expanded`. Remove `line-clamp-1`, usa `break-words`.
+- Sem mudança de banco ou de dados.
