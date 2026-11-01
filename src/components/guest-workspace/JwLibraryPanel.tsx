@@ -105,10 +105,10 @@ export function JwLibraryPanel({ data, update }: { data: WsData; update: (fn: (d
                   {list.map((n) => (
                     <li key={n.id} className="rounded-lg bg-muted/40 p-2.5">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-xs font-semibold text-primary">{ref(n)}</p>
+                        <BibleRefText text={ref(n)} className="text-xs font-semibold text-primary" />
                         <button type="button" onClick={() => copyToHighlights(n)} className="text-muted-foreground hover:text-primary" aria-label={t("jw.copy", { defaultValue: "Copiar para Pontos altos" })}><Sparkles className="h-3.5 w-3.5" /></button>
                       </div>
-                      {n.title && <p className={cn("text-sm", !n.text && "italic text-muted-foreground")}>{n.title}</p>}
+                      {n.title && <BibleRefText text={n.title} className={cn("text-sm", !n.text && "italic text-muted-foreground")} />}
                       {n.text && <BibleRefText text={n.text} className="text-sm text-muted-foreground" />}
                       {n.tags.length > 0 && <p className="mt-1 text-[11px] text-muted-foreground">{n.tags.map((x) => `#${x}`).join(" ")}</p>}
                     </li>
