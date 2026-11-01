@@ -65,7 +65,9 @@ describe("carta PDF elegante e Word em lista", () => {
     const p2 = { ...part, id: "b", part_time: "09:20", outline_number: null, part_type_label: "Oração", speaker_name: "Ciclano", personal_code: "zzzz2345" };
     const items = [part, p2].map((p) => ({ part: p, model: buildLetterModel(defaultTemplate(), ev, p, [part, p2], "079382") }));
     const html = assignmentsListHtml(ev, items);
-    expect(html.match(/<hr>/g)).toHaveLength(2);
+    expect(html.match(/<hr data-divider="1">/g)).toHaveLength(3);
+    expect(html).toContain("Convite 1");
+    expect(html).toContain("Convite 2");
     expect(html.indexOf("Ciclano")).toBeLessThan(html.indexOf("Gonçalves"));
     expect(html).toContain("Link: https://visitasc.com.br/c/k7m9p2xa");
     expect(html).not.toContain("Amado irmão");

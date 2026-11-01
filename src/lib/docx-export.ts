@@ -13,7 +13,7 @@ function xmlEsc(s: string): string {
 }
 
 type Fmt = { b?: boolean; i?: boolean; u?: boolean; color?: string };
-type Para = { style?: string; leftPx: number; runs: string[]; prefix?: string };
+type Para = { style?: string; leftPx: number; runs: string[]; prefix?: string; rule?: boolean };
 
 function run(text: string, f: Fmt): string {
   if (!text) return "";
@@ -63,6 +63,7 @@ export function htmlToDocxBody(title: string, html: string): string {
     if (c) nf.color = c;
     if (tag === "br") { ensure(leftPx).runs.push("<w:r><w:br/></w:r>"); return; }
     if (tag === "hr" && el.hasAttribute("data-page-break")) { ensure(leftPx).runs.push('<w:r><w:br w:type="page"/></w:r>'); return; }
+    if (tag === "hr" && el.hasAttribute("data-divider")) { flush(); paras.push({ leftPx: 0, runs: [], rule: true }); return; }
     if (tag === "img" || tag === "video" || tag === "audio") {
       const n = el.getAttribute("alt") || el.getAttribute("title") || el.getAttribute("data-name");
       if (n) ensure(leftPx).runs.push(run(`[${n}]`, { i: true }));
@@ -103,6 +104,7 @@ export function htmlToDocxBody(title: string, html: string): string {
   return paras
     .map((p) => {
       const twips = Math.round((p.leftPx / 32) * 720);
+      if (p.rule) return `<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="1" w:color="7F7F7F"/></w:pBdr><w:spacing w:before="240" w:after="240"/></w:pPr></w:p>`;
       const ppr = [p.style ? `<w:pStyle w:val="${p.style}"/>` : "", twips > 0 ? `<w:ind w:left="${twips}"${p.prefix ? ' w:hanging="360"' : ""}/>` : ""].join("");
       let prefix = "";
       if (p.prefix === "ol") { const n = (counters.get(twips) ?? 0) + 1; counters.set(twips, n); prefix = `${n}.\t`; }
