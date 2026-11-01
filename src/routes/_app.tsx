@@ -355,7 +355,7 @@ function AppLayout() {
                   <ConnectionModeToggle compact />
                   <ThemeToggle variant="sidebar" />
                 </div>
-                <div className="p-3 flex-1 overflow-y-auto overscroll-contain">
+                <div className="p-3 flex-1 overflow-y-auto overscroll-contain safe-bottom-content">
                   <Nav onClick={() => setMobileMenuOpen(false)} />
                 </div>
               </SheetContent>
