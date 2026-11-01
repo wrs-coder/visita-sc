@@ -1,6 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+
+// O texto da Ajuda é em português; os rótulos citados vêm sempre do português
+// para não misturar idiomas.
+function usePtT() {
+  const { i18n } = useTranslation();
+  return useMemo(() => i18n.getFixedT("pt"), [i18n]);
+}
 import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound } from "lucide-react";
 import { HELP_TOPICS, OPEN_PALETTE_EVENT, searchHelp, type HelpTopic } from "@/lib/help/help-content";
 import { cn } from "@/lib/utils";
@@ -22,7 +29,7 @@ export const Route = createFileRoute("/_app/ajuda")({
 
 
 function PreviewCircuit() {
-  const { t } = useTranslation();
+  const t = usePtT();
   return (
     <div aria-hidden className="rounded-2xl border bg-background p-3 space-y-2">
       <div className="flex items-center justify-between">
@@ -40,7 +47,7 @@ function PreviewCircuit() {
 }
 
 function PreviewPin() {
-  const { t } = useTranslation();
+  const t = usePtT();
   return (
     <div aria-hidden className="rounded-2xl border bg-background p-3 space-y-2">
       <div className="flex items-center gap-2 font-semibold text-sm">
@@ -54,7 +61,7 @@ function PreviewPin() {
 }
 
 function TopicCard({ topic, open, onToggle }: { topic: HelpTopic; open: boolean; onToggle: () => void }) {
-  const { t } = useTranslation();
+  const t = usePtT();
   const Icon = topic.icon === "lock" ? Lock : CalendarDays;
   return (
     <div className="border-b last:border-b-0">
@@ -97,7 +104,7 @@ function TopicCard({ topic, open, onToggle }: { topic: HelpTopic; open: boolean;
 }
 
 function HelpPage() {
-  const { t } = useTranslation();
+  const t = usePtT();
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const topics = useMemo(() => searchHelp(HELP_TOPICS, query, (k) => t(k)), [query, t]);
