@@ -109,6 +109,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { DashboardPager } from "@/components/dashboard/DashboardPager";
 import { buildDayTimeline, groupByDate, resolveWeekdaySlot, type TimelineKind, type TimelineSource } from "@/lib/today-timeline";
+import { encouragementCategoryLabel, modalityLabel, recommendationPurposeLabel } from "@/lib/enum-labels";
 import { EventReminderSync } from "@/components/reminders/EventReminders";
 
 
@@ -197,14 +198,6 @@ interface MeetingTodayItem {
   closing_song?: string | null;
 }
 
-const MODALITY_LABEL: Record<string, string> = {
-  casa_em_casa: "Casa em Casa",
-  cartas: "Cartas",
-  telefone: "Telefone",
-  testemunho_publico: "Testemunho Público",
-  revisitas: "Revisitas",
-  estudos: "Estudos Bíblicos",
-};
 
 const ACOMPANHANTE_FOR_LABEL: Record<string, string> = {
   superintendente: "Superintendente",
@@ -1070,7 +1063,7 @@ function Dashboard() {
               }))),
           ...fieldMeetingsWeek.map((f) => ({
             id: `f-${f.id}`, kind: "field" as const, date: f.event_date, time: f.meeting_time,
-            title: `${t("dashboard.fieldMeeting")} · ${MODALITY_LABEL[f.modality] ?? f.modality}`,
+            title: `${t("dashboard.fieldMeeting")} · ${modalityLabel(f.modality)}`,
             subtitle: f.meeting_location,
             details: toDetails([
               [L("meetingsTalks.field.location", "Local da Reunião de Campo"), f.meeting_location],
@@ -1284,7 +1277,7 @@ function Dashboard() {
                   return (
                     <li key={f.id} className="text-sm space-y-1.5 pb-2 border-b border-border/50 last:border-b-0 last:pb-0">
                       <span className="inline-flex px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
-                        {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""} · {MODALITY_LABEL[f.modality] ?? f.modality}
+                        {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""} · {modalityLabel(f.modality)}
                       </span>
                       {filled.length > 0 && (
                         <dl className="grid grid-cols-1 gap-y-1 sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)] sm:gap-x-3">
@@ -1634,9 +1627,9 @@ function Dashboard() {
                           ev.section === "pastoral"
                             ? [ev.slot_label, ev.address].filter(Boolean).join(" · ")
                             : ev.section === "encouragement"
-                            ? [ev.category, ev.contact].filter(Boolean).join(" · ")
+                            ? [encouragementCategoryLabel(ev.category), ev.contact].filter(Boolean).join(" · ")
                             : ev.section === "recommendations"
-                            ? [ev.purpose, ev.field_group, ev.info].filter(Boolean).join(" · ")
+                            ? [recommendationPurposeLabel(ev.purpose), ev.field_group, ev.info].filter(Boolean).join(" · ")
                             : [ev.suggested_by, ev.info].filter(Boolean).join(" · ");
                         return (
                           <li
@@ -1786,7 +1779,7 @@ function Dashboard() {
                         {f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""}
                         {" · "}
                         <span className="text-xs text-muted-foreground">
-                          {MODALITY_LABEL[f.modality] ?? f.modality}
+                          {modalityLabel(f.modality)}
                         </span>
                       </div>
                       {f.meeting_location && (
@@ -2151,7 +2144,7 @@ function Dashboard() {
                             ]
                           : ev.section === "encouragement"
                           ? [
-                              ["Categoria", ev.category],
+                              ["Categoria", encouragementCategoryLabel(ev.category)],
                               ["Contato", ev.contact],
                               ["Saúde", ev.health_info],
                               ["Endereço", ev.address],
@@ -2159,7 +2152,7 @@ function Dashboard() {
                             ]
                           : ev.section === "recommendations"
                           ? [
-                              ["Propósito", ev.purpose],
+                              ["Propósito", recommendationPurposeLabel(ev.purpose)],
                               ["Grupo de campo", ev.field_group],
                               ["Informações", ev.info],
                               ["Sugerido por", ev.suggested_by],
@@ -2406,9 +2399,9 @@ function elderItemView(ev: ElderItemLike): { heading: string; rows: Array<[strin
     ev.section === "pastoral"
       ? [["Slot", ev.slot_label], ["Acompanhante", ev.companion], ["Endereço", ev.address], ["Membros da família", ev.family_members], ["Informações espirituais", ev.spiritual_info]]
       : ev.section === "encouragement"
-      ? [["Categoria", ev.category], ["Contato", ev.contact], ["Saúde", ev.health_info], ["Endereço", ev.address], ["Informações", ev.info]]
+      ? [["Categoria", encouragementCategoryLabel(ev.category)], ["Contato", ev.contact], ["Saúde", ev.health_info], ["Endereço", ev.address], ["Informações", ev.info]]
       : ev.section === "recommendations"
-      ? [["Propósito", ev.purpose], ["Grupo de campo", ev.field_group], ["Informações", ev.info], ["Sugerido por", ev.suggested_by]]
+      ? [["Propósito", recommendationPurposeLabel(ev.purpose)], ["Grupo de campo", ev.field_group], ["Informações", ev.info], ["Sugerido por", ev.suggested_by]]
       : [["Sugerido por", ev.suggested_by], ["Informações", ev.info], ["Fontes", ev.sources]];
   return {
     heading,
