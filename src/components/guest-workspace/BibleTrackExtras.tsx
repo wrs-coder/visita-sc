@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { getLocalizedBookName } from "@/lib/bible-canon";
 import { ALL_BOOKS, chaptersOf, type Highlight } from "@/lib/bible-chapters";
-import { emptyWeekday, weekdayNextUnread, weekdayDayDone, weekdaySeq, type MeetingWeek, type Track, type WeekdayPlan, mondayOf } from "@/lib/bible-tracks";
+import { emptyWeekday, weekdayNextUnread, weekdayDayDone, weekdayBookDays, weekdaySeq, type MeetingWeek, type Track, type WeekdayPlan, mondayOf } from "@/lib/bible-tracks";
 import { cn } from "@/lib/utils";
 
 const pill = (on: boolean) => cn("min-h-9 rounded-full px-3 text-xs font-medium transition-colors", on ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/60");
@@ -42,6 +42,7 @@ export function WeekdayCard({ plan, onChange, onRead, label, done, onMark, pendi
   const cur = weekdayNextUnread(plan, day, done);
   const books = plan.days[day] ?? [];
   const bn = (b: string) => getLocalizedBookName(b, i18n.language) ?? b;
+  const bookDays = weekdayBookDays(plan);
   return (
     <div className="space-y-3">
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5" role="tablist">
@@ -116,6 +117,9 @@ export function WeekdayCard({ plan, onChange, onRead, label, done, onMark, pendi
                     onClick={() => { const days = plan.days.map((x) => [...x]); days[day] = i >= 0 ? books.filter((x) => x !== b) : [...books, b]; onChange({ ...plan, days }); }}
                     className={cn("rounded-full border px-2 py-1 text-xs", i >= 0 ? "bg-primary text-primary-foreground" : "hover:bg-accent/60")}>
                     {i >= 0 && <span className="mr-1 font-semibold">{i + 1}</span>}{bn(b)}
+                    {(bookDays.get(b) ?? []).map((d) => (
+                      <span key={d} className={cn("ml-1 rounded-full px-1.5 text-[10px] font-medium capitalize", d === day ? (i >= 0 ? "bg-primary-foreground/25" : "bg-primary/15 text-primary") : (i >= 0 ? "bg-primary-foreground/15" : "bg-muted text-muted-foreground"))}>{names[d].slice(0, 3)}</span>
+                    ))}
                   </button>
                 );
               })}

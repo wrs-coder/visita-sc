@@ -115,3 +115,12 @@ export function weekdayProgress(plan: WeekdayPlan, read: Set<string>, totalBible
   const done = keys.size ? [...keys].filter((k) => read.has(k)).length : read.size;
   return { done, total, percent: total ? Math.round((done / total) * 100) : 0 };
 }
+
+/** Livro → dias da semana (0=dom..6=sáb, ordem seg→dom) em que ele está no plano "Dias". */
+export function weekdayBookDays(plan: WeekdayPlan): Map<string, number[]> {
+  const m = new Map<string, number[]>();
+  for (const d of [1, 2, 3, 4, 5, 6, 0]) for (const b of plan.days[d] ?? []) {
+    const list = m.get(b) ?? []; if (!list.includes(d)) list.push(d); m.set(b, list);
+  }
+  return m;
+}
