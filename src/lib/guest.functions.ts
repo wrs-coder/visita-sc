@@ -58,6 +58,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
     let wifeMode = endsWithStar;
     let availableCongregations: Array<{ id: string; name: string }> | null = null;
     let selectedCongregationId: string | null = null;
+    let wifeName: string | null = null;
 
     {
       const { data: byCong } = await supabaseAdmin
@@ -72,11 +73,12 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       // Try the new wife-by-super code path.
       const { data: prof } = await supabaseAdmin
         .from("profiles")
-        .select("id")
+        .select("id,wife_display_name")
         .eq("wife_invite_code", cleanCode)
         .maybeSingle();
       if (prof) {
         wifeMode = true;
+        wifeName = (prof as { wife_display_name?: string | null }).wife_display_name?.trim() || null;
         const { data: congs } = await supabaseAdmin
           .from("congregations")
           .select("id,name,is_active,superintendent_id")
@@ -175,6 +177,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
       return {
         ok: true as const,
         wifeMode,
+        wifeName,
         congregation: cong,
         availableCongregations,
         selectedCongregationId,
@@ -366,6 +369,7 @@ export const getGuestSnapshot = createServerFn({ method: "POST" })
     const payload = {
       ok: true as const,
       wifeMode,
+      wifeName,
       congregation: cong,
       availableCongregations,
       selectedCongregationId,

@@ -227,6 +227,7 @@
 .bible-color-sepia      { background-color: #f4ecd8; color: #5b4636; }
 .bible-color-yellow     { background-color: #fff7c2; color: #2a2a14; }
 .bible-color-night_blue { background-color: #0b1d3a; color: #e6ecff; }
+.bible-color-gray       { background-color: #e7e7ea; color: #1c1c1e; }
 
 .bible-text-bold { font-weight: 700; }
 
@@ -745,3 +746,9 @@ main [role="tabpanel"] [role="tab"][data-state="active"] {
 .dark .bible-highlight * {
   color: var(--highlight-ink, oklch(0.18 0 0)) !important;
 }
+
+/* Fontes do leitor da aba Bíblia (arquivos locais, funcionam offline). */
+@font-face { font-family: "ReaderLora"; src: url("/fonts/letter/Lora-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "ReaderLato"; src: url("/fonts/letter/Lato-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+.reader-font-serif { font-family: "ReaderLora", Georgia, serif; }
+.reader-font-easy { font-family: "ReaderLato", var(--font-sans); letter-spacing: 0.02em; word-spacing: 0.08em; }

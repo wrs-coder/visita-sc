@@ -7,6 +7,8 @@
       "dependencies": {
         "@aparajita/capacitor-biometric-auth": "^10.0.0",
         "@aparajita/capacitor-secure-storage": "^8.0.0",
+        "@capacitor-community/screen-brightness": "^8.0.0",
+        "@capacitor-community/text-to-speech": "^8.0.2",
         "@capacitor/android": "^8.5.2",
         "@capacitor/app": "^8.1.2",
         "@capacitor/browser": "^8.0.3",
@@ -14,7 +16,7 @@
         "@capacitor/filesystem": "^8.1.2",
         "@capacitor/local-notifications": "^8.3.1",
         "@capacitor/share": "^8.0.1",
-        "@capacitor/status-bar": "^8",
+        "@capacitor/status-bar": "^8.0.4",
         "@capawesome-team/capacitor-file-opener": "^8.0.5",
         "@cloudflare/vite-plugin": "^1.25.5",
         "@dnd-kit/core": "^6.3.1",
@@ -185,6 +187,10 @@
     "@babel/traverse": ["@babel/traverse@7.29.0", "", { "dependencies": { "@babel/code-frame": "^7.29.0", "@babel/generator": "^7.29.0", "@babel/helper-globals": "^7.28.0", "@babel/parser": "^7.29.0", "@babel/template": "^7.28.6", "@babel/types": "^7.29.0", "debug": "^4.3.1" } }, "sha512-4HPiQr0X7+waHfyXPZpWPfWL/J7dcN1mx9gL6WdQVMbPnF3+ZhSMs8tCxN7oHddJE9fhNE7+lxdnlyemKfJRuA=="],
 
     "@babel/types": ["@babel/types@7.29.8", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@babel/types/-/types-7.29.8.tgz", { "dependencies": { "@babel/helper-string-parser": "^7.29.7", "@babel/helper-validator-identifier": "^7.29.7" } }, "sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg=="],
+
+    "@capacitor-community/screen-brightness": ["@capacitor-community/screen-brightness@8.0.0", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-gR0GPofqSSzaFhOYcv89RfTOldDUH+7A77+iIpZXxBe5tW60H0BEvl5H6S3dtfbljCGgsddXoIBtJ3GXp+aUJA=="],
+
+    "@capacitor-community/text-to-speech": ["@capacitor-community/text-to-speech@8.0.2", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-SbpBMzcmzdTiN8jQDme/yUYHEJISZA+IiaRn5zT14k3UKpjaA7eYBnSm9h76rJHRV/y6DVZVhT1J0SaK5JTKtA=="],
 
     "@capacitor/android": ["@capacitor/android@8.5.2", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor/android/-/android-8.5.2.tgz", { "peerDependencies": { "@capacitor/core": "^8.5.0" } }, "sha512-rtiaz78egCcS+vs29wkWCL3C+RhazKMSygXcjutwWP8NmO6r5UBxOvGf3Wjz5+ahobyQ723tn9gCePwRwcNDZQ=="],
 

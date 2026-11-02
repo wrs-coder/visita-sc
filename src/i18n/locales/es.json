@@ -166,7 +166,9 @@
       "removed": "Código eliminado",
       "copied": "Código copiado",
       "errorFormat": "Usa de 4 a 12 caracteres (solo letras mayúsculas y números).",
-      "errorTaken": "Este código ya está en uso. Elige otro."
+      "errorTaken": "Este código ya está en uso. Elige otro.",
+      "nameLabel": "Nombre de la esposa",
+      "namePlaceholder": "Ej.: María"
     },
     "tabPersonal": "Datos personales",
     "tabFeatures": "Recursos de la aplicación",
@@ -1334,7 +1336,8 @@
       "imageFail": "No se pudo generar la imagen",
       "pdf": "PDF generado",
       "pdfFail": "No se pudo generar el PDF"
-    }
+    },
+    "wifeHello": "Hola, {{name}}"
   },
   "finishVisit": {
     "trigger": "Finalizar Visita",
