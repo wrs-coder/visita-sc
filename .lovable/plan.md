@@ -42,46 +42,58 @@ Na lista de livros do plano "Dias", cada livro que já foi escolhido para algum 
 - Mostra a abreviação do dia em uma etiqueta cinza. O dia que você está editando aparece na cor de destaque.
 - Funciona só como aviso: o mesmo livro continua podendo ser escolhido para mais de um dia.
 
-## 3. Leitor da Bíblia melhorado
+## 3. Leitor da Bíblia melhorado (só na aba Bíblia)
 
-**Recomendação:** manter e melhorar o leitor atual em vez de trocar por um leitor EPUB pronto. Leitores prontos mostram o EPUB como "páginas". Com isso, perderíamos os links de versículos, os pontos altos, as marcações de leitura e as notas, que dependem do texto separado por versículo. Melhorando o leitor atual, tudo continua funcionando e só a TNM do seu arquivo é usada.
+Os recursos novos valem somente nas leituras da aba **Bíblia**: Pessoal, Família, Reunião e o leitor de capítulo. A janela de versículo que abre nos Esboços, nas notas e nos links continua **exatamente como está**.
+
+Vamos melhorar o leitor atual, e não trocar por um leitor EPUB pronto. Um leitor pronto quebraria os links, os pontos altos e as marcações de leitura.
+
+**Topo reorganizado:** "Aa" e "🔊" ficam juntos em um único botão **Leitura**. "Concluído" continua no mesmo lugar. O "+" sozinho sai do topo e vira um botão com nome, **✎ Ponto alto**, embaixo.
 
 ```text
 ┌──────────────────────────────┐
-│ ‹  Salmos 23        Aa  🔊   │
+│ ‹ Salmos 23  [Aa🔊] [✓ Concluído]│
 ├──────────────────────────────┤
 │ 1 Jeová é o meu Pastor...    │
 │ 2 Ele me faz deitar...       │
 │                              │
-├─ Aparência (folha de baixo) ─┤
+│        [ ✎ Ponto alto ]      │ ← flutuante, acima da
+└──────────────────────────────┘   barra do Android
+
+Ao selecionar um trecho:
+┌──────────────────────────────┐
+│ [✎ Ponto alto] [Nota] [Copiar]│
+└──────────────────────────────┘
+
+Toque em [Aa🔊] → folha de baixo:
+┌──────────────────────────────┐
+│ ─── Leitura ───               │
+│ 🔊 Ouvir capítulo       [ ▶ ] │
 │ Tamanho   [A-]  ━━●━━  [A+]  │
-│ Fundo  (○Branco)(●Sépia)     │
-│        (○Cinza)(○Noite)      │
-│ Fonte  [Serifa][Sem serifa]  │
-│        [Leitura fácil]       │
-│ Brilho  ☀ ━━━━●━━ ☀          │
+│ Fundo (Branco)(●Sépia)       │
+│       (Cinza)(Noite)         │
+│ Fonte [Serifa][Sem serifa]   │
+│       [Leitura fácil]        │
+│ Brilho  ☀ ━━━━●━━            │
 │ Espaço entre linhas ━●━━     │
 └──────────────────────────────┘
 
-Leitura em voz alta:
+Ouvindo (barra fixa embaixo):
 ┌──────────────────────────────┐
-│  ⏮   ▶ Ouvir   ⏭   1.0x      │
-│  Versículo 2 destacado        │
+│ ⏮   ⏸   ⏭   1.0x   ✕        │
+│ Versículo 2 destacado         │
 └──────────────────────────────┘
 ```
 
-O que é possível fazer:
-
-- **Tamanho da letra:** usa a escala que já existe, com controle deslizante e botões A-/A+.
-- **Cor de fundo:** branco, sépia, cinza e noite, usando os temas atuais.
-- **Fonte:** três opções de fonte já incluídas no app, que funcionam sem internet.
-- **Brilho:** muda o brilho real da tela só enquanto o leitor está aberto e volta ao normal ao sair. Isso precisa de um componente nativo novo no Android. No computador, o efeito é feito escurecendo a tela.
-- **Ouvir em áudio:** usa a voz em português do próprio celular, funciona sem internet e destaca o versículo que está sendo lido. Tem botões de tocar/pausar, versículo anterior/próximo e velocidade. Também precisa de um componente nativo novo no Android, porque a voz do navegador não funciona bem dentro do app.
-- Todas essas preferências ficam salvas só no seu aparelho.
+- **Tamanho, fundo, fonte e espaço entre linhas** ficam salvos no aparelho e valem para todas as leituras da aba Bíblia.
+- **Brilho:** muda só enquanto o leitor está aberto e volta ao normal quando você sai.
+- **Ouvir:** usa a voz em português do próprio celular, funciona sem internet e destaca o versículo que está sendo lido.
+- **Ponto alto:** com texto selecionado, salva o trecho. Sem seleção, salva o capítulo.
+- Os recursos de brilho e voz precisam de 2 componentes nativos novos no Android, então o APK terá que ser gerado de novo. A versão não sobe.
 
 ## Detalhes técnicos
 
-- Nome da esposa: migração `alter table profiles add column wife_display_name text` (anulável, sem mudança de RLS). O valor é salvo em `_app.perfil.tsx`, devolvido pelo login de convidado em `guest.functions.ts` e mostrado em `visitante.painel.tsx`, com cache local para uso offline. Textos novos em pt/en/es.
-- Dias: monta um mapa `livro → dias[]` a partir de `rdata.weekday` no seletor de livros do WeekdayCard. A lógica é pura, com teste.
-- Leitor: ampliar `bible-view-settings.ts` com `fontFamily`, `lineHeight`, `brightness` e as cores sépia/cinza (valores padrão para configurações antigas) e aplicar no `CleanReader.tsx`. Plugins novos: `@capacitor-community/text-to-speech` e `@capacitor-community/screen-brightness`, depois `cap sync`. O APK precisará ser gerado de novo. A versão não sobe.
+- Nome da esposa: migração `alter table profiles add column wife_display_name text`, anulável e sem mudança de RLS. O valor é salvo em `_app.perfil.tsx`, devolvido pelo login de convidado em `guest.functions.ts` e mostrado em `visitante.painel.tsx`, com cache local para uso offline. Textos em pt/en/es.
+- Dias: mapa puro `livro → dias[]` a partir de `rdata.weekday`, usado no seletor de livros do WeekdayCard, com teste.
+- Leitor: novo store separado `bible-reader-settings.ts` com tamanho, fundo, fonte, espaço entre linhas e brilho. O `bible-view-settings.ts` da janela de versículo não é alterado. O store é aplicado no `CleanReader.tsx` e nas leituras da aba Bíblia. O topo do CleanReader é reorganizado e ganha um botão flutuante de ponto alto com rótulo e uma barra de seleção. Plugins: `@capacitor-community/text-to-speech` e `@capacitor-community/screen-brightness`, depois `cap sync`.
 - Validação com `bunx tsgo --noEmit` e `bunx vitest run`.
