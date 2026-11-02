@@ -1727,6 +1727,7 @@ export type Database = {
           phone: string | null
           updated_at: string
           username: string | null
+          wife_display_name: string | null
           wife_invite_code: string | null
         }
         Insert: {
@@ -1739,6 +1740,7 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           username?: string | null
+          wife_display_name?: string | null
           wife_invite_code?: string | null
         }
         Update: {
@@ -1751,6 +1753,7 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           username?: string | null
+          wife_display_name?: string | null
           wife_invite_code?: string | null
         }
         Relationships: [
