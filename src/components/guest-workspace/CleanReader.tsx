@@ -174,9 +174,33 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
             ))}
         </article>
       </div>
+      {dimFallback && rs.brightness != null && rs.brightness < 1 && (
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-[51] bg-foreground" style={{ opacity: (1 - rs.brightness) * 0.7, mixBlendMode: "multiply" }} />
+      )}
+      {!selected && speakIdx === null && !paused && verses && verses.length > 0 && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bar-bottom pb-3">
+          <Button className="pointer-events-auto h-11 gap-2 rounded-full px-5 shadow-lg" onClick={() => onHighlight(`${title}:`)}>
+            <PenLine className="h-4 w-4" />{t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}
+          </Button>
+        </div>
+      )}
+      {!selected && (speakIdx !== null || paused) && (
+        <div className="bar-bottom shrink-0 border-t bg-card px-3 pt-2">
+          <div className="mx-auto flex max-w-md items-center justify-between gap-1">
+            <Button size="icon" variant="ghost" className="h-11 w-11" aria-label={t("guestWs.prevVerse", { defaultValue: "Versículo anterior" })} onClick={() => void playFrom(Math.max(0, (speakIdx ?? 0) - 1))}><SkipBack className="h-5 w-5" /></Button>
+            {paused
+              ? <Button size="icon" className="h-12 w-12 rounded-full" aria-label={t("guestWs.play", { defaultValue: "Ouvir" })} onClick={() => void playFrom(speakIdx ?? 0)}><Play className="h-5 w-5" /></Button>
+              : <Button size="icon" className="h-12 w-12 rounded-full" aria-label={t("guestWs.pause", { defaultValue: "Pausar" })} onClick={pauseSpeak}><Pause className="h-5 w-5" /></Button>}
+            <Button size="icon" variant="ghost" className="h-11 w-11" aria-label={t("guestWs.nextVerse", { defaultValue: "Próximo versículo" })} onClick={() => void playFrom(Math.min((verses?.length ?? 1) - 1, (speakIdx ?? 0) + 1))}><SkipForward className="h-5 w-5" /></Button>
+            <Button size="sm" variant="outline" className="h-9 min-w-14 rounded-full" onClick={() => { const i = SPEECH_RATES.indexOf(rs.speechRate as typeof SPEECH_RATES[number]); setR({ speechRate: SPEECH_RATES[(i + 1) % SPEECH_RATES.length] }); }}>{rs.speechRate}x</Button>
+            <Button size="icon" variant="ghost" className="h-11 w-11" aria-label={t("guestWs.close", { defaultValue: "Fechar" })} onClick={closeSpeak}><X className="h-5 w-5" /></Button>
+          </div>
+          <p className="pb-1 text-center text-[11px] text-muted-foreground">{t("guestWs.verseN", { defaultValue: "Versículo" })} {speakIdx !== null ? verses?.[speakIdx]?.verse : ""}</p>
+        </div>
+      )}
       {selected && (
         <div role="toolbar" aria-label={t("guestWs.verseTools", { defaultValue: "Ferramentas do versículo" })}
-          className="bar-bottom flex shrink-0 flex-wrap items-center gap-1 border-t bg-card px-3 pt-2">
+          className="bar-bottom flex shrink-0 flex-wrap items-center gap-1 border-t bg-card px-3 pt-2 text-card-foreground">
           <span className="mr-1 text-xs font-medium">{ref}{range ? " · trecho" : ""}</span>
           <Highlighter className="h-4 w-4 text-muted-foreground" aria-hidden />
           {HIGHLIGHT_COLORS.map((c) => (
@@ -184,13 +208,65 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
               className={cn("h-6 w-6 rounded-full border bible-hl-swatch", `bible-hl-${c}`, settings.highlightColor === c && "ring-2 ring-primary ring-offset-1")} />
           ))}
           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={erase} aria-label={t("bibleVerse.clear", { defaultValue: "Limpar destaque" })}><Eraser className="h-4 w-4" /></Button>
-          <Button size="sm" variant="ghost" className="h-8 px-2" disabled={settings.textScale <= TEXT_SCALE_MIN} onClick={() => scale(-TEXT_SCALE_STEP)}>A-</Button>
-          <Button size="sm" variant="ghost" className="h-8 px-2" disabled={settings.textScale >= TEXT_SCALE_MAX} onClick={() => scale(TEXT_SCALE_STEP)}>A+</Button>
           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={copy} aria-label={t("guestWs.copy", { defaultValue: "Copiar" })}><Copy className="h-4 w-4" /></Button>
+          <Button size="sm" variant="default" className="h-8 gap-1" onClick={() => onHighlight(ref)}><PenLine className="h-4 w-4" />{t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}</Button>
           <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => onNote(ref, selected.text)}><NotebookPen className="h-4 w-4" />{t("guestWs.annotate", { defaultValue: "Anotar" })}</Button>
           <Button size="icon" variant="ghost" className="ml-auto h-8 w-8" onClick={() => setSel(null)} aria-label={t("guestWs.close", { defaultValue: "Fechar" })}><X className="h-4 w-4" /></Button>
         </div>
       )}
+      <Drawer open={sheet} onOpenChange={setSheet}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader><DrawerTitle>{t("guestWs.readerOptions", { defaultValue: "Opções de leitura" })}</DrawerTitle></DrawerHeader>
+          <div className="mx-auto w-full max-w-md space-y-5 overflow-y-auto px-4 safe-bottom-content">
+            <button type="button" disabled={!canSpeak() || !verses?.length} onClick={() => { setSheet(false); void playFrom(Math.max(0, verses?.findIndex((v) => v.verse === sel) ?? 0)); }}
+              className="flex min-h-12 w-full items-center gap-3 rounded-xl border px-3 text-left disabled:opacity-50">
+              <Volume2 className="h-5 w-5 text-primary" /><span className="flex-1 text-sm font-medium">{t("guestWs.listenChapter", { defaultValue: "Ouvir capítulo" })}</span><Play className="h-4 w-4" />
+            </button>
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">{t("guestWs.textSize", { defaultValue: "Tamanho da letra" })}</p>
+              <div className="flex items-center gap-3">
+                <Button variant="outline" size="sm" className="h-10 w-12" disabled={rs.textScale <= READER_SCALE_MIN} onClick={() => scale(-0.1)}>A-</Button>
+                <Slider className="flex-1" min={READER_SCALE_MIN} max={READER_SCALE_MAX} step={0.05} value={[rs.textScale]} onValueChange={([v]) => setR({ textScale: v })} />
+                <Button variant="outline" size="sm" className="h-10 w-12 text-base" disabled={rs.textScale >= READER_SCALE_MAX} onClick={() => scale(0.1)}>A+</Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">{t("guestWs.background", { defaultValue: "Fundo" })}</p>
+              <div className="grid grid-cols-4 gap-2">
+                {READER_BGS.map((b) => (
+                  <button key={b} type="button" aria-pressed={rs.bg === b} onClick={() => setR({ bg: b })}
+                    className={cn("flex h-14 flex-col items-center justify-center rounded-xl border text-xs", `bible-color-${b}`, rs.bg === b && "ring-2 ring-primary ring-offset-2 ring-offset-background")}>
+                    <span className="text-base font-semibold">Aa</span>{t(`guestWs.bg_${b}`, { defaultValue: { white: "Branco", sepia: "Sépia", gray: "Cinza", black: "Noite" }[b] })}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">{t("guestWs.font", { defaultValue: "Fonte" })}</p>
+              <div className="grid grid-cols-3 gap-2">
+                {READER_FONTS.map((f) => (
+                  <button key={f} type="button" aria-pressed={rs.font === f} onClick={() => setR({ font: f })}
+                    className={cn("min-h-11 rounded-xl border px-2 text-sm", f !== "system" && `reader-font-${f}`, rs.font === f ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent/60")}>
+                    {t(`guestWs.font_${f}`, { defaultValue: { system: "Sem serifa", serif: "Serifa", easy: "Leitura fácil" }[f] })}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground"><Sun className="h-3.5 w-3.5" />{t("guestWs.brightness", { defaultValue: "Brilho" })}</p>
+                {rs.brightness != null && <button type="button" className="text-xs text-primary" onClick={() => setR({ brightness: null })}>{t("guestWs.brightnessAuto", { defaultValue: "Usar do sistema" })}</button>}
+              </div>
+              <Slider min={0.1} max={1} step={0.05} value={[rs.brightness ?? 1]} onValueChange={([v]) => setR({ brightness: v })} />
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">{t("guestWs.lineSpacing", { defaultValue: "Espaço entre linhas" })}</p>
+              <Slider min={READER_LINE_MIN} max={READER_LINE_MAX} step={0.1} value={[rs.lineHeight]} onValueChange={([v]) => setR({ lineHeight: v })} />
+            </div>
+            <Button className="w-full" onClick={() => setSheet(false)}>{t("common.ok", { defaultValue: "OK" })}</Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
