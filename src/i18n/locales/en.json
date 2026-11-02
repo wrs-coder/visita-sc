@@ -166,7 +166,9 @@
       "removed": "Code removed",
       "copied": "Code copied",
       "errorFormat": "Use 4 to 12 characters (uppercase letters and numbers only).",
-      "errorTaken": "This code is already in use. Choose another."
+      "errorTaken": "This code is already in use. Choose another.",
+      "nameLabel": "Wife's name",
+      "namePlaceholder": "e.g. Mary"
     },
     "tabPersonal": "Personal data",
     "tabFeatures": "App features",
@@ -1359,7 +1361,8 @@
       "imageFail": "Failed to generate image",
       "pdf": "PDF generated",
       "pdfFail": "Failed to generate PDF"
-    }
+    },
+    "wifeHello": "Hello, {{name}}"
   },
   "finishVisit": {
     "trigger": "Finish Visit",
