@@ -3,6 +3,12 @@ import { loadReaderSettings, saveReaderSettings, sanitizeReaderSettings } from "
 import { loadSettings } from "./bible-view-settings";
 import { weekdayBookDays, emptyWeekday } from "./bible-tracks";
 
+const mem = new Map<string, string>();
+(globalThis as unknown as { localStorage: Storage }).localStorage = {
+  getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => { mem.set(k, v); },
+  removeItem: (k: string) => { mem.delete(k); }, clear: () => mem.clear(), key: () => null, length: 0,
+} as Storage;
+
 describe("bible reader settings", () => {
   beforeEach(() => localStorage.clear());
   it("defaults and clamps", () => {
