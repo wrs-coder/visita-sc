@@ -95,6 +95,7 @@ function Page() {
   const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
   const [wifeCode, setWifeCode] = useState("");
   const [busyWife, setBusyWife] = useState(false);
+  const [wifeName, setWifeName] = useState("");
   // Aba escolhida fica lembrada no aparelho (só apresentação).
   const [tab, setTab] = useState("personal");
   useEffect(() => {
@@ -118,8 +119,9 @@ function Page() {
     if (!user || role !== "superintendent") return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.from("profiles").select("wife_invite_code").eq("id", user.id).maybeSingle();
-      if (!cancelled) setWifeCode(((data as { wife_invite_code: string | null } | null)?.wife_invite_code) ?? "");
+      const { data } = await supabase.from("profiles").select("wife_invite_code,wife_display_name").eq("id", user.id).maybeSingle();
+      const row = data as { wife_invite_code: string | null; wife_display_name: string | null } | null;
+      if (!cancelled) { setWifeCode(row?.wife_invite_code ?? ""); setWifeName(row?.wife_display_name ?? ""); }
     })();
     return () => { cancelled = true; };
   }, [user, role]);
@@ -176,7 +178,7 @@ function Page() {
     setBusyWife(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ wife_invite_code: value || null })
+      .update({ wife_invite_code: value || null, wife_display_name: wifeName.trim().slice(0, 60) || null })
       .eq("id", user.id);
     setBusyWife(false);
     if (error) {
@@ -363,6 +365,12 @@ function Page() {
           <CardContent>
             <form onSubmit={saveWifeCode} className="space-y-3">
               <p className="text-xs text-muted-foreground">{t("profile.wifeAccess.description")}</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="wifeName">{t("profile.wifeAccess.nameLabel", { defaultValue: "Nome da esposa" })}</Label>
+                <Input id="wifeName" value={wifeName} maxLength={60} autoComplete="off"
+                  onChange={(e) => setWifeName(e.target.value)}
+                  placeholder={t("profile.wifeAccess.namePlaceholder", { defaultValue: "Ex.: Maria" })} />
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="wifeCode">{t("profile.wifeAccess.codeLabel")}</Label>
                 <div className="flex flex-wrap gap-2">

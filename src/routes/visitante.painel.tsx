@@ -47,6 +47,7 @@ export const Route = createFileRoute("/visitante/painel")({ component: Page });
 
 interface Snapshot {
   wifeMode: boolean;
+  wifeName?: string | null;
   congregation: { id: string; name: string };
   availableCongregations?: Array<{ id: string; name: string }> | null;
   selectedCongregationId?: string | null;
@@ -465,6 +466,9 @@ function Page() {
 
 
       <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
+        {snap.wifeMode && snap.wifeName && (
+          <p className="text-lg font-semibold tracking-tight">{t("guest.wifeHello", { name: snap.wifeName, defaultValue: "Olá, {{name}}" })}</p>
+        )}
         {snap.wifeMode && <GuestSectionNav value={guestSection} onChange={setGuestSection} />}
         {snap.wifeMode && guestSection !== "week" ? (
           <GuestWorkspace key={guestSection} section={guestSection} />
