@@ -2,14 +2,18 @@
 // destacar (mesmas cores e mesmos destaques do balão), letra A-/A+, copiar e anotar.
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Check, Plus, Highlighter, Eraser, Copy, NotebookPen, X } from "lucide-react";
+import { ArrowLeft, Check, Highlighter, Eraser, Copy, NotebookPen, X, Type, Volume2, Pause, Play, SkipBack, SkipForward, Sun, PenLine } from "lucide-react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Slider } from "@/components/ui/slider";
+import { READER_BGS, READER_FONTS, READER_LINE_MAX, READER_LINE_MIN, READER_SCALE_MAX, READER_SCALE_MIN, SPEECH_RATES, loadReaderSettings, saveReaderSettings, type ReaderSettings } from "@/lib/bible-reader-settings";
+import { canSpeak, setScreenBrightness, speakText, stopSpeaking } from "@/lib/reader-native";
 import { toast } from "sonner";
 import { useImmersiveWhile } from "@/lib/immersive";
 import { Button } from "@/components/ui/button";
 import { getActiveLibrary, getChapterFromLibrary, type BibleVerseRecord } from "@/lib/bible-notes-store";
 import { getLocalizedBookName } from "@/lib/bible-canon";
 import {
-  HIGHLIGHT_COLORS, TEXT_SCALE_MAX, TEXT_SCALE_MIN, TEXT_SCALE_STEP, addHighlight, buildSegments, clampTextScale,
+  HIGHLIGHT_COLORS, addHighlight, buildSegments,
   removeHighlightAt, selectionRange, clearHighlights, getHighlights, highlightKey, loadSettings, saveSettings, type HighlightColor,
 } from "@/lib/bible-view-settings";
 import { cn } from "@/lib/utils";
@@ -30,6 +34,14 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
   const [sel, setSel] = useState<number | null>(null);
   const [settings, setSettings] = useState(loadSettings);
   const [, bump] = useState(0);
+  const [rs, setRs] = useState<ReaderSettings>(loadReaderSettings);
+  const setR = (p: Partial<ReaderSettings>) => setRs(saveReaderSettings(p));
+  const [sheet, setSheet] = useState(false);
+  const [dimFallback, setDimFallback] = useState(false);
+  // Leitura em voz alta: índice do versículo falado (null = parado).
+  const [speakIdx, setSpeakIdx] = useState<number | null>(null);
+  const [paused, setPaused] = useState(false);
+  const speakRun = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const tapStart = useRef<TapStart | null>(null);
 
@@ -82,7 +94,35 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
     if (range) removeHighlightAt(key(selected.verse), range.start); else clearHighlights(key(selected.verse));
     setRange(null); bump((n) => n + 1);
   };
-  const scale = (d: number) => setSettings(saveSettings({ textScale: clampTextScale(settings.textScale + d) }));
+  const scale = (d: number) => setR({ textScale: rs.textScale + d });
+
+  // Brilho: aplica enquanto o leitor está aberto e devolve ao sistema ao sair.
+  useEffect(() => {
+    let alive = true;
+    void setScreenBrightness(rs.brightness).then((ok) => { if (alive) setDimFallback(!ok); });
+    return () => { alive = false; };
+  }, [rs.brightness]);
+  useEffect(() => () => { void setScreenBrightness(null); }, []);
+
+  const lang = i18n.language?.startsWith("es") ? "es-ES" : i18n.language?.startsWith("en") ? "en-US" : "pt-BR";
+  const playFrom = async (idx: number) => {
+    if (!verses?.length) return;
+    const run = ++speakRun.current;
+    await stopSpeaking();
+    setPaused(false);
+    for (let i = idx; i < verses.length; i++) {
+      if (speakRun.current !== run) return;
+      setSpeakIdx(i);
+      document.getElementById(`rv-${verses[i].verse}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+      try { await speakText(verses[i].text, lang, rs.speechRate); }
+      catch { if (speakRun.current === run) { toast.error(t("guestWs.ttsError", { defaultValue: "A voz do aparelho não está disponível." })); setSpeakIdx(null); } return; }
+    }
+    if (speakRun.current === run) setSpeakIdx(null);
+  };
+  const pauseSpeak = () => { speakRun.current++; void stopSpeaking(); setPaused(true); };
+  const closeSpeak = () => { speakRun.current++; void stopSpeaking(); setSpeakIdx(null); setPaused(false); };
+  useEffect(() => () => { speakRun.current++; void stopSpeaking(); }, []);
+  useEffect(() => { closeSpeak(); /* troca de capítulo */ }, [book, ch]); // eslint-disable-line react-hooks/exhaustive-deps
   const copy = async () => {
     if (!selected) return;
     try { await navigator.clipboard.writeText(`${ref} ${selected.text}`); toast.success(t("guestWs.copied", { defaultValue: "Copiado." })); } catch { /* */ }
@@ -90,20 +130,20 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
 
   useImmersiveWhile(true);
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background safe-x-landscape">
-      <div className="bar-top shrink-0 border-b bg-background/95 backdrop-blur">
+    <div className={cn("fixed inset-0 z-50 flex flex-col safe-x-landscape", rs.bg === "white" ? "bg-background" : `bible-color-${rs.bg}`)}>
+      <div className={cn("bar-top shrink-0 border-b backdrop-blur", rs.bg === "white" ? "bg-background/95" : `bible-color-${rs.bg}`)}>
         <div className="flex h-12 items-center gap-1 px-1.5">
           <Button variant="ghost" size="icon" onClick={onBack} className="h-10 w-10 shrink-0 rounded-full text-muted-foreground" aria-label={t("guestWs.back", { defaultValue: "Voltar" })}><ArrowLeft className="h-5 w-5" /></Button>
           <div className="min-w-0 flex-1 leading-tight">
             <p className="truncate text-sm font-semibold">{title}</p>
             <p className="text-[11px] text-muted-foreground">{percent}%</p>
           </div>
-          <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 rounded-full" onClick={() => onHighlight(selected ? ref : `${title}:`)} aria-label={t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}><Plus className="h-5 w-5" /></Button>
+          <Button variant="ghost" size="sm" className="h-9 shrink-0 gap-0.5 rounded-full px-2.5" onClick={() => setSheet(true)} aria-label={t("guestWs.readerOptions", { defaultValue: "Opções de leitura" })}><Type className="h-4 w-4" /><Volume2 className="h-4 w-4" /></Button>
           <Button size="sm" className="h-9 shrink-0 gap-1 rounded-full px-3" variant={done ? "secondary" : "default"} onClick={onDone}><Check className="h-4 w-4" /><span className="max-w-[7rem] truncate">{done ? t("guestWs.doneNext", { defaultValue: "Lido · próximo" }) : t("guestWs.markDone", { defaultValue: "Concluído" })}</span></Button>
         </div>
       </div>
-      <div ref={scrollRef} className={cn("flex-1 overflow-y-auto", !selected && "bar-bottom")}>
-        <article className={cn("mx-auto max-w-2xl px-5 pb-8 leading-relaxed", fontClass)} style={{ fontSize: settings.textScale !== 1 ? `${settings.textScale}em` : undefined }}>
+      <div ref={scrollRef} className={cn("relative flex-1 overflow-y-auto", !selected && speakIdx === null && "bar-bottom")}>
+        <article className={cn("mx-auto max-w-2xl px-5 pb-28", fontClass, rs.font !== "system" && `reader-font-${rs.font}`)} style={{ fontSize: rs.textScale !== 1 ? `${rs.textScale}em` : undefined, lineHeight: rs.lineHeight }}>
           <h1 className="py-3 text-2xl font-semibold">{title}</h1>
           {verses === null ? <p className="text-sm text-muted-foreground">{t("guestWs.loading", { defaultValue: "Carregando…" })}</p>
             : noLib ? (
@@ -113,7 +153,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
               </div>
             ) : verses.length === 0 ? <p className="text-sm text-muted-foreground">{t("guestWs.chapterMissing", { defaultValue: "Capítulo não encontrado na Bíblia importada." })}</p>
             : verses.map((v) => (
-              <p key={v.key} role="button" tabIndex={0} aria-pressed={sel === v.verse}
+              <p key={v.key} id={`rv-${v.verse}`} role="button" tabIndex={0} aria-pressed={sel === v.verse}
                 onPointerDown={(e) => { tapStart.current = { x: e.clientX, y: e.clientY, t: Date.now(), scroll: scrollRef.current?.scrollTop ?? 0 }; }}
                 onPointerCancel={() => { tapStart.current = null; }}
                 onPointerUp={(e) => {
@@ -125,7 +165,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
                   }, 0);
                 }}
                 onKeyDown={(e) => { if (e.key === "Enter") setSel(sel === v.verse ? null : v.verse); }}
-                className={cn("mb-2 cursor-pointer rounded-sm select-text", sel === v.verse && "underline decoration-primary decoration-2 underline-offset-4")}>
+                className={cn("mb-2 cursor-pointer rounded-sm select-text", sel === v.verse && "underline decoration-primary decoration-2 underline-offset-4", speakIdx !== null && verses[speakIdx]?.verse === v.verse && "bg-primary/15")}>
                 <sup className="mr-1 text-xs text-muted-foreground">{v.verse}</sup>
                 {buildSegments(v.text, libId ? getHighlights(key(v.verse)) : []).map((s, i) => (
                   <span key={i} data-start={s.start} className={s.highlighted ? `bible-highlight bible-hl-${s.color ?? "yellow"}` : undefined}>{s.text}</span>
