@@ -1,58 +1,60 @@
-# Ajustes: calendário com eventos juntos, editar semana, "SC. Substituto"
+# Substituto (Visita SCS): telefone livre, e-mail JW Hub e aviso aos anciãos
 
-## (01) Calendário mostra tudo da mesma semana
+## O que muda
 
-Hoje, quando a mesma semana tem mais de um item (ex.: "Semana de pioneiro - Assembleia" + "EMR-SC 16-17_Fev" + uma visita), as faixas são desenhadas umas por cima das outras e só uma aparece.
+1. **Telefone livre** — o campo "Telefone do Substituto" deixa de forçar o formato do Brasil `(00) 00000-0000`. Aceita qualquer número: `+351 912 345 678`, `+1 (555) 123-4567`, ramais etc. Só são permitidos dígitos, espaço, `+ ( ) - .` (até 30 caracteres).
+2. **E-mail do JW Hub (opcional)** — novo campo abaixo do telefone. Se preenchido com algo inválido, aparece um aviso discreto e o botão salvar não deixa passar; vazio é aceito.
+3. **Aviso aos anciãos** — o cartão que os anciãos já veem no painel quando a visita é "Visita SCS" ganha uma frase explicando que devem falar com o irmão indicado para obter a programação da visita, e mostra o e-mail (toque abre o e-mail) além do telefone (toque liga).
 
-Novo: cada item ganha sua própria faixa, empilhada dentro da semana (até 3 faixas, finas). Se houver mais, aparece "+1".
-
-```text
-┌ FEVEREIRO 2027 ──────────────────┐
-│ S   T   Q   Q   S   S   D        │
-│ 15  16  17  18  19  20  21       │
-│ [Visita · Jd. Alvorada        ]  │
-│ [Pioneiro - Assembleia        ]  │
-│     [EMR-SC 16-17_Fev ]          │
-└──────────────────────────────────┘
-```
-
-- A folha continua única (6 meses); só a altura das faixas se ajusta quando há mais de uma.
-- A lista (PDF, Word e Excel) já mostra uma linha por item; vou conferir que nenhuma fica de fora.
-
-## (02) Editar semana sem visita
-
-No cartão da semana, toque no cartão (ou no lápis) para abrir a mesma janela de criação, já preenchida. O botão vira "Salvar alterações".
+## Tela do superintendente — Criar/Editar visita
 
 ```text
-┌──────────────────────────────────┐
-│ ☀ Pioneiro  16 fev – 21 fev 2027 │
-│ Assembleia               ✎   🗑  │
-└──────────────────────────────────┘
-          ↓ toque em ✎
-┌ Editar semana ───────────────────┐
-│ Tipo     [ Pioneiro        ▾ ]   │
-│ Início   [ 16/02/2027 ]          │
-│ Fim      [ 21/02/2027 ]          │
-│ Observ.  [ Assembleia      ]     │
-│        Cancelar   Salvar         │
-└──────────────────────────────────┘
+┌───────────────────────────────┐
+│ Tipo de visita                │
+│ [ Visita SCS             ▾ ]  │
+│ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐ │
+│  Substituto do Superintendente│
+│  Nome do Substituto           │
+│  [ João da Silva          ]   │
+│  Telefone do Substituto       │
+│  [ +351 912 345 678       ]   │
+│  Qualquer formato de número   │
+│  E-mail do JW Hub (opcional)  │
+│  [ joao@jwhub.org         ]   │
+│ └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ │
+│ Início (terça)   Fim (domingo)│
+└───────────────────────────────┘
 ```
 
-## (03) Marca "SCS" na exportação
-
-"Visita SCS" já existe no app. Na exportação (PDF lista, PDF calendário, Word e Excel), visitas desse tipo ganham uma marca discreta "· SCS" em cinza, ao lado do nome da congregação.
+## Tela dos anciãos — Painel
 
 ```text
-16 fev – 21 fev   ● Jd. Alvorada · SCS
-[Jd. Alvorada · SCS        ]   <- calendário
+┌───────────────────────────────┐
+│ ┌───────────────────────────┐ │
+│ │ (👤) SUBSTITUTO DO SC      │ │
+│ │      João da Silva         │ │
+│ │                            │ │
+│ │ Para informações sobre a   │ │
+│ │ programação da visita,     │ │
+│ │ entre em contato com o     │ │
+│ │ irmão indicado abaixo.     │ │
+│ │                            │ │
+│ │ 📞 +351 912 345 678     ›  │ │
+│ │ ✉  joao@jwhub.org       ›  │ │
+│ └───────────────────────────┘ │
+└───────────────────────────────┘
 ```
+Linhas de contato no estilo iOS/One UI (lista com toque inteiro), cores do tema atual.
 
-## Ajuda
-Atualizar o painel de Ajuda (Itinerário) com a edição de semana e a marca SCS.
+Também aparece o e-mail no cartão da visita no Itinerário, no relatório da visita e no relatório completo, ao lado do telefone. Números já salvos no formato brasileiro continuam iguais.
 
 ## Detalhes técnicos
-- `itinerary-export.ts` (`itineraryPdfCalendar`): atribuir "lanes" por semana (ordem: visita primeiro, depois semanas sem visita); `barH = min(5, (rowH-3.6)/lanes)`; texto sempre desenhado quando cabe; teste novo garantindo 3 itens sobrepostos geram 3 faixas.
-- `ItineraryWeeks.tsx`: estado `editingId`; `openEdit(w)` preenche tipo/nome personalizado via `parseCustomType`; `save` usa `update().eq("id")` quando editando. Sem mudança no banco.
-- `itinerary-export.ts`: helper `isScsVisit(title)` (título "Visita SCS"); sufixo " · SCS" em cor suave no PDF e texto simples no Word/Excel; teste cobrindo o sufixo.
-- Registrar as três tarefas no roadmap.md ao iniciar.
-- Validar com `bunx tsgo --noEmit` e `bunx vitest run`. Versão não muda.
+
+- Banco: uma coluna nova opcional `visits.substitute_email text` (ADD COLUMN IF NOT EXISTS). Nenhuma política de acesso muda: as regras atuais da tabela já valem para todas as colunas (super escreve, anciãos da congregação leem).
+- `_app.configuracoes.tsx`: remover `maskPhone` do campo do substituto, `inputMode="tel"`, sanitizar com função pura `sanitizeIntlPhone` (novo `src/lib/contact-format.ts`, com `isValidEmail`); form/payload/edição incluem `substitute_email` (zerado quando não for SCS, como hoje).
+- `tel:` usa o número só com dígitos e `+`.
+- `_app.dashboard.tsx`: cartão existente recebe texto + e-mail (`mailto:`); chaves i18n pt/en/es.
+- Relatórios (`_app.relatorio.$visitId.tsx`, `FullVisitReportDialog.tsx`) e cartão do Itinerário mostram o e-mail.
+- Cache offline: o e-mail vem na mesma linha da visita, então o espelho local já o carrega.
+- Ajuda: atualizar o tópico de Visita SCS.
+- Testes: `contact-format.test.ts` (aceita "+351 912 345 678", remove letras, limita 30; e-mail vazio válido, "joao@" inválido). Rodar vitest e tsgo. Versão não muda.
