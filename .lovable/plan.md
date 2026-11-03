@@ -38,15 +38,21 @@ No cartão da semana, toque no cartão (ou no lápis) para abrir a mesma janela 
 └──────────────────────────────────┘
 ```
 
-## (03) "SC. Substituto" no Tipo de visita
+## (03) Marca "SCS" na exportação
 
-Nova opção na lista: Visita · Visita + Pastoreio · Visita + Treinamento SCS · Visita SCS · **SC. Substituto**. Ao escolher, aparecem os mesmos campos do substituto (nome, contato) já usados em "Visita SCS".
+"Visita SCS" já existe no app. Na exportação (PDF lista, PDF calendário, Word e Excel), visitas desse tipo ganham uma marca discreta "· SCS" em cinza, ao lado do nome da congregação.
+
+```text
+16 fev – 21 fev   ● Jd. Alvorada · SCS
+[Jd. Alvorada · SCS        ]   <- calendário
+```
 
 ## Ajuda
-Atualizar o painel de Ajuda (Itinerário) com a edição de semana e a nova opção.
+Atualizar o painel de Ajuda (Itinerário) com a edição de semana e a marca SCS.
 
 ## Detalhes técnicos
 - `itinerary-export.ts` (`itineraryPdfCalendar`): atribuir "lanes" por semana (ordem: visita primeiro, depois semanas sem visita); `barH = min(5, (rowH-3.6)/lanes)`; texto sempre desenhado quando cabe; teste novo garantindo 3 itens sobrepostos geram 3 faixas.
 - `ItineraryWeeks.tsx`: estado `editingId`; `openEdit(w)` preenche tipo/nome personalizado via `parseCustomType`; `save` usa `update().eq("id")` quando editando. Sem mudança no banco.
-- `_app.configuracoes.tsx`: adicionar "SC. Substituto" em `VISIT_TITLE_OPTIONS` e trocar `form.title === "Visita SCS"` por um helper `isSubstituteTitle` em todos os pontos (exibição, salvar, PDFs) que conferem esse título.
+- `itinerary-export.ts`: helper `isScsVisit(title)` (título "Visita SCS"); sufixo " · SCS" em cor suave no PDF e texto simples no Word/Excel; teste cobrindo o sufixo.
+- Registrar as três tarefas no roadmap.md ao iniciar.
 - Validar com `bunx tsgo --noEmit` e `bunx vitest run`. Versão não muda.
