@@ -59,15 +59,27 @@ Total: 16 congregações
 ```
 
 ## (02) Leitor da Bíblia — Ponto alto no topo
+Celular comum (cerca de 390 px de largura, como o seu):
 ```text
-┌──────────────────────────────────┐
-│ ‹ 1 Tes 4 [✎ Ponto alto][Aa🔊][✓ Lido]│
-├──────────────────────────────────┤
-│ texto do capítulo...             │
+┌────────────────────────────────┐
+│‹ 1 Tes 4 [✎ Ponto alto][Aa🔊][✓ Lido]
+│ (tudo em uma linha, sem cortar) │
+├────────────────────────────────┤
+│ texto do capítulo...           │
 ```
-- O botão sai de baixo e vai para o topo, com o texto completo **"✎ Ponto alto"**, ao lado de "Aa🔊". Ele abre o mesmo formulário de hoje.
-- Para sobrar espaço, "Concluído" passa a se chamar **"✓ Lido"**. Depois de marcar, mostra "Lido · próximo", como hoje.
-- Quando o nome do livro é grande (ex.: "1 Tessalonicenses"), o topo mostra a abreviatura ("1 Tes"). Nomes curtos aparecem completos. Em telas bem estreitas, a abreviatura é usada sempre.
+Conta aproximada: voltar 36 + título 60 + Ponto alto 104 + Aa🔊 52 + Lido 64 + espaços 30 = cerca de 346 px. Isso cabe nos cerca de 365 px úteis.
+
+Celular bem estreito (menos de 360 px):
+```text
+┌──────────────────────────────┐
+│‹ 1 Tes 4 [✎ Ponto alto][Aa][✓]│
+├──────────────────────────────┤
+```
+- Nesse caso, "Aa🔊" vira só "Aa" (o áudio continua dentro da mesma folha) e "Lido" fica só com o ✓. "✎ Ponto alto" sempre aparece escrito por extenso.
+- O botão sai de baixo e vai para o topo, com o texto completo **"✎ Ponto alto"**. Ele abre o mesmo formulário de hoje.
+- "Concluído" passa a se chamar **"✓ Lido"**. Depois de marcar, mostra "✓ Lido · próximo" só se couber; senão mostra "✓ Lido".
+- O título usa sempre a abreviatura quando o nome passa de 8 letras (ex.: "1 Tessalonicenses" vira "1 Tes", "Deuteronômio" vira "Deut"). Se ainda faltar espaço, o título é cortado com "…" e nunca empurra os botões para fora.
+- Vou conferir em tela de 360 e de 393 px antes de entregar.
 - Os esboços e o pop-up de versículos continuam iguais.
 
 ## Pontos de atenção
