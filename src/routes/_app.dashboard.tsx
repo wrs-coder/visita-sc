@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { telHref } from "@/lib/contact-format";
 import { setVisibleInterval } from "@/lib/visible-interval";
 import { readFnWithMirrorSafe, readOneWithMirror, readWithMirror } from "@/lib/local-first";
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -1495,8 +1496,9 @@ function Dashboard() {
           const v = visit as unknown as {
             substitute_name?: string | null;
             substitute_phone?: string | null;
+            substitute_email?: string | null;
           };
-          if (!v.substitute_name && !v.substitute_phone) return null;
+          if (!v.substitute_name && !v.substitute_phone && !v.substitute_email) return null;
           return (
             <Card className="shadow-card border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5">
               <CardContent className="p-5 flex items-start gap-4">
@@ -1510,14 +1512,19 @@ function Dashboard() {
                   {v.substitute_name && (
                     <div className="text-lg font-bold mt-0.5 break-words">{v.substitute_name}</div>
                   )}
-                  {v.substitute_phone && (
-                    <a
-                      href={`tel:${v.substitute_phone}`}
-                      className="text-sm text-foreground/80 mt-1 inline-flex items-center gap-1 hover:text-primary"
-                    >
-                      📞 {v.substitute_phone}
-                    </a>
-                  )}
+                  <p className="text-sm text-muted-foreground mt-2">{t("dashboard.scsContactHint")}</p>
+                  <div className="mt-3 rounded-xl bg-background/70 divide-y divide-border overflow-hidden">
+                    {v.substitute_phone && (
+                      <a href={telHref(v.substitute_phone)} className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium active:bg-muted">
+                        <span>📞</span><span className="flex-1 break-all">{v.substitute_phone}</span><span className="text-muted-foreground">›</span>
+                      </a>
+                    )}
+                    {v.substitute_email && (
+                      <a href={`mailto:${v.substitute_email}`} className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium active:bg-muted">
+                        <span>✉</span><span className="flex-1 break-all">{v.substitute_email}</span><span className="text-muted-foreground">›</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
