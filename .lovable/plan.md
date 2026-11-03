@@ -6,7 +6,7 @@ Sim, é possível. Hoje a tela Itinerário não tem nenhuma opção de exportar.
 
 - **PDF** (o mais indicado para mandar no WhatsApp): visual elegante, pronto para imprimir.
   - **Lista** — uma linha por semana, na ordem exata, com faixas de mês.
-  - **Calendário** — um mês por página, semanas pintadas (visita / sem visita).
+  - **Calendário** — 3 meses por folha (deitada), no máximo 2 folhas para o semestre; semanas pintadas (visita / sem visita).
 - **Word (.docx)** — a mesma lista, editável, caso queira acrescentar observações.
 - **Excel (.xlsx)** — tabela com colunas (Semana, Datas, Tipo, Congregação, Observação), cabeçalho fixo, para quem gosta de filtrar.
 
@@ -67,18 +67,25 @@ Semanas sem congregação (pioneiros, assembleia, férias, livre) aparecem no lu
 └──────────────────────────────┘
 ```
 
-## Mockup — PDF em calendário (1 mês por página)
+## Mockup — PDF em calendário (3 meses por folha, folha deitada)
 
 ```text
-┌──────────────────────────────┐
-│ NOVEMBRO 2026                │
-│ Seg Ter Qua Qui Sex Sáb Dom  │
-│ ▓▓▓ Cabiri ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │
-│ ▓▓▓ Jardim Alvorada ▓▓▓▓▓▓▓▓ │
-│ ░░░ Assembleia regional ░░░░ │
-│ ▓▓▓ Vila Nova ▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │
-└──────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│ ITINERÁRIO · Folha 1 de 2 · Nov 2026 – Jan 2027│
+├───────────────┬───────────────┬────────────────┤
+│ NOVEMBRO      │ DEZEMBRO      │ JANEIRO        │
+│ S T Q Q S S D │ S T Q Q S S D │ S T Q Q S S D  │
+│ ▓ Cabiri ▓▓▓▓ │ ░ Livre ░░░░░ │ ▓ Centro ▓▓▓▓  │
+│ ▓ Jd Alvor. ▓ │ ▓ Funda 1 ▓▓▓ │ ▓ Funda 2 ▓▓▓  │
+│ ░ Assembl. ░░ │ ▓ Vila Nova ▓ │ ░ Férias ░░░░  │
+│ ▓ Vila Nova ▓ │ ▓ Cabiri ▓▓▓▓ │ ▓ Jd Alvor. ▓  │
+├───────────────┴───────────────┴────────────────┤
+│ ▓ visita  ░ sem visita       Gerado 03/11/2026 │
+└────────────────────────────────────────────────┘
 ```
+
+- Semestre (até 6 meses) = no máximo 2 folhas (3 + 3). Em "Tudo agendado" com mais de 6 meses, o app avisa e segue 3 meses por folha.
+- Nomes longos são abreviados na grade para caber sem cortar.
 
 Estilo iOS/One UI: folha que sobe de baixo, pílulas de escolha, um botão principal. No arquivo: tipografia Lora/Lato (já usadas nas cartas), cores suaves do app.
 
@@ -89,7 +96,7 @@ Acrescentar no painel de Ajuda (Circuito e visitas) como exportar o itinerário.
 ## Detalhes técnicos
 
 - Nova lib pura `itinerary-export.ts`: junta `visits` + `itinerary_weeks` já carregados na tela, ordena por data, filtra período e gera linhas `{ inicio, fim, tipo, titulo }` — usada pelos três formatos (testável).
-- PDF: pdf-lib via `pdf-engine.ts` (regra do projeto), fontes de `public/fonts/letter`; lista e grade mensal desenhadas direto.
+- PDF: pdf-lib via `pdf-engine.ts` (regra do projeto), fontes de `public/fonts/letter`; lista em retrato; calendário em A4 paisagem com 3 colunas de mês por página (máx. 2 páginas para 6 meses).
 - DOCX: `htmlToDocx` existente (`docx-export.ts`).
 - XLSX: gerado com JSZip já instalado (planilha mínima com estilos), sem nova dependência.
 - Partilha via `share.ts`/`saveBlob` (chunked no Android).
