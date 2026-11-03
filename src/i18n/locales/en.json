@@ -258,6 +258,7 @@
     "registerNewVisit": "Register a new visit",
     "waitSuper": "Wait for the circuit overseer to register it.",
     "scsSubstitute": "SCS Visit · Substitute",
+    "scsContactHint": "For information about the visit schedule, please contact the brother listed below.",
     "checklistTitle": "Congregation Checklist",
     "doneOf": "{{done}} of {{total}} done",
     "mealsToday": "Today's meals",

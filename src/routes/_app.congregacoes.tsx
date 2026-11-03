@@ -38,6 +38,13 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Building2, Trash2, Pencil, KeyRound, Copy, Users, UserCog, Eye, EyeOff, Lock, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { FileDown, FileUp } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { CongregationImportDialog, buildRows } from "@/components/circuit/CongregationImportDialog";
+import { parseCongregationFile, congregationsExportHtml } from "@/lib/congregation-import";
+import { htmlToDocx, safeFileName, DOCX_MIME } from "@/lib/docx-export";
+import { pickFile, saveBlob } from "@/lib/share";
+import { supabase } from "@/integrations/supabase/client";
 import { BigEvents } from "@/components/circuit/BigEvents";
 import { CircuitHeader } from "@/components/circuit/CircuitHeader";
 import { useTranslation } from "react-i18next";
@@ -138,6 +145,13 @@ function Page() {
   const [pwdElder, setPwdElder] = useState<Elder | null>(null);
   const [newPwd, setNewPwd] = useState("");
   const [busy, setBusy] = useState(false);
+  const [importRows, setImportRows] = useState<ReturnType<typeof buildRows> | null>(null);
+  const [importCircuit, setImportCircuit] = useState<string | null>(null);
+  const [profileCircuit, setProfileCircuit] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    void supabase.from("profiles").select("circuit").eq("id", user.id).maybeSingle().then(({ data }) => setProfileCircuit(data?.circuit?.trim() || null));
+  }, [user]);
 
   const isSuper = role === "superintendent";
   const [section, setSection] = useState<"congregations" | "events">("congregations");
@@ -248,6 +262,27 @@ function Page() {
     toast.success("Código copiado");
   };
 
+  const startImport = async () => {
+    const file = await pickFile(".csv,.docx,.xlsx,text/csv");
+    if (!file) return;
+    try {
+      const parsed = await parseCongregationFile(file);
+      if (!parsed.items.length) { toast.error("Nenhuma congregação encontrada no arquivo."); return; }
+      setImportCircuit(parsed.circuit);
+      setImportRows(buildRows(parsed.items, list));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível ler o arquivo.");
+    }
+  };
+
+  const exportDocx = async () => {
+    const date = new Date().toLocaleDateString("pt-BR");
+    const circuit = importCircuit ?? profileCircuit;
+    const title = circuit ? `Congregações do Circuito ${circuit}` : "Congregações do circuito";
+    const blob = await htmlToDocx(title, congregationsExportHtml(list, date));
+    await saveBlob(blob, { filename: `${safeFileName(title, "congregacoes")}.docx`, mimeType: DOCX_MIME });
+  };
+
   const activeCount = list.filter((c) => c.is_active !== false).length;
 
   const toggleActive = async (c: Congregation, next: boolean) => {
@@ -286,12 +321,29 @@ function Page() {
               : t("congregations.activeMany", { count: activeCount })}
           </p>
         </div>
-        <Dialog open={openNew} onOpenChange={setOpenNew}>
-          <DialogTrigger asChild>
-            <Button>
+        <div className="flex shrink-0 items-center gap-2">
+        <Button variant="outline" size="sm" className="h-10 rounded-full" onClick={exportDocx} disabled={!list.length}>
+          <FileDown className="h-4 w-4 mr-1" /> Exportar
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="h-10 rounded-full">
               <Plus className="h-4 w-4 mr-1" /> {t("common.new")}
             </Button>
-          </DialogTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuItem className="min-h-11" onSelect={() => setOpenNew(true)}><Pencil className="h-4 w-4 mr-2" /> Criar nova</DropdownMenuItem>
+            <DropdownMenuItem className="min-h-11" onSelect={() => void startImport()}><FileUp className="h-4 w-4 mr-2" /> Importar de arquivo</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        </div>
+        {importRows && (
+          <CongregationImportDialog open onOpenChange={(v) => { if (!v) setImportRows(null); }} initial={importRows} existing={list}
+            onCreate={async (name, code) => { const r = await fnCreate({ data: { name, inviteCode: code } }); return r.ok ? { ok: true } : { ok: false, error: r.error }; }}
+            onRename={async (id, name, code) => { const r = await fnUpdate({ data: { id, name, inviteCode: code } }); return r.ok ? { ok: true } : { ok: false, error: r.error }; }}
+            onDone={load} />
+        )}
+        <Dialog open={openNew} onOpenChange={setOpenNew}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>{t("congregations.newCongregation")}</DialogTitle>

@@ -16,6 +16,7 @@ import {
   HIGHLIGHT_COLORS, addHighlight, buildSegments,
   removeHighlightAt, selectionRange, clearHighlights, getHighlights, highlightKey, loadSettings, saveSettings, type HighlightColor,
 } from "@/lib/bible-view-settings";
+import { abbreviateBookName } from "@/lib/book-abbrev";
 import { cn } from "@/lib/utils";
 import { isRealTap, type TapStart } from "@/lib/tap-guard";
 
@@ -28,6 +29,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
   const [book, chStr] = chapterKey.split(":");
   const ch = Number(chStr);
   const title = `${getLocalizedBookName(book, i18n.language) ?? book} ${ch}`;
+  const shortTitle = `${abbreviateBookName(getLocalizedBookName(book, i18n.language) ?? book)} ${ch}`;
   const [verses, setVerses] = useState<BibleVerseRecord[] | null>(null);
   const [libId, setLibId] = useState<string | null>(null);
   const [noLib, setNoLib] = useState(false);
@@ -135,11 +137,12 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
         <div className="flex h-12 items-center gap-1 px-1.5">
           <Button variant="ghost" size="icon" onClick={onBack} className="h-10 w-10 shrink-0 rounded-full text-muted-foreground" aria-label={t("guestWs.back", { defaultValue: "Voltar" })}><ArrowLeft className="h-5 w-5" /></Button>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="truncate text-sm font-semibold">{title}</p>
+            <p className="truncate text-sm font-semibold" title={title}>{shortTitle}</p>
             <p className="text-[11px] text-muted-foreground">{percent}%</p>
           </div>
-          <Button variant="ghost" size="sm" className="h-9 shrink-0 gap-0.5 rounded-full px-2.5" onClick={() => setSheet(true)} aria-label={t("guestWs.readerOptions", { defaultValue: "Opções de leitura" })}><Type className="h-4 w-4" /><Volume2 className="h-4 w-4" /></Button>
-          <Button size="sm" className="h-9 shrink-0 gap-1 rounded-full px-3" variant={done ? "secondary" : "default"} onClick={onDone}><Check className="h-4 w-4" /><span className="max-w-[7rem] truncate">{done ? t("guestWs.doneNext", { defaultValue: "Lido · próximo" }) : t("guestWs.markDone", { defaultValue: "Concluído" })}</span></Button>
+          <Button variant="outline" size="sm" className="h-9 shrink-0 gap-1 rounded-full px-2.5 text-xs" onClick={() => onHighlight(`${title}:`)}><PenLine className="h-3.5 w-3.5" />{t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}</Button>
+          <Button variant="ghost" size="sm" className="h-9 shrink-0 gap-0.5 rounded-full px-2" onClick={() => setSheet(true)} aria-label={t("guestWs.readerOptions", { defaultValue: "Opções de leitura" })}><Type className="h-4 w-4" /><Volume2 className="h-4 w-4 max-[359px]:hidden" /></Button>
+          <Button size="sm" className="h-9 shrink-0 gap-1 rounded-full px-2.5 text-xs" variant={done ? "secondary" : "default"} onClick={onDone} aria-label={t("guestWs.markRead", { defaultValue: "Lido" })}><Check className="h-4 w-4" /><span className="max-[359px]:hidden">{t("guestWs.markRead", { defaultValue: "Lido" })}</span></Button>
         </div>
       </div>
       <div ref={scrollRef} className={cn("relative flex-1 overflow-y-auto", !selected && speakIdx === null && "bar-bottom")}>
@@ -176,13 +179,6 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
       </div>
       {dimFallback && rs.brightness != null && rs.brightness < 1 && (
         <div aria-hidden className="pointer-events-none fixed inset-0 z-[51] bg-foreground" style={{ opacity: (1 - rs.brightness) * 0.7, mixBlendMode: "multiply" }} />
-      )}
-      {!selected && speakIdx === null && !paused && verses && verses.length > 0 && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bar-bottom pb-3">
-          <Button className="pointer-events-auto h-11 gap-2 rounded-full px-5 shadow-lg" onClick={() => onHighlight(`${title}:`)}>
-            <PenLine className="h-4 w-4" />{t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}
-          </Button>
-        </div>
       )}
       {!selected && (speakIdx !== null || paused) && (
         <div className="bar-bottom shrink-0 border-t bg-card px-3 pt-2">

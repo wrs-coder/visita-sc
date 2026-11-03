@@ -258,6 +258,7 @@
     "registerNewVisit": "Registra una nueva visita",
     "waitSuper": "Espera a que el superintendente la registre.",
     "scsSubstitute": "Visita SCS · Sustituto",
+    "scsContactHint": "Para información sobre el programa de la visita, comuníquese con el hermano indicado abajo.",
     "checklistTitle": "Lista de tareas de la Congregación",
     "doneOf": "{{done}} de {{total}} completados",
     "mealsToday": "Comidas de hoy",

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { sanitizeIntlPhone, isValidEmail, telHref } from "@/lib/contact-format";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,7 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ImportItineraryDialog } from "@/components/itinerary/ImportItineraryDialog";
 import { parseItineraryFile, type ImportRow } from "@/lib/itinerary-import";
-import { Plus, Upload, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone, AlertTriangle, ChevronDown } from "lucide-react";
+import { Plus, Upload, Share2, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone, AlertTriangle, ChevronDown } from "lucide-react";
 import { currentMonthKey, isMonthOpen, useOpenMap } from "@/lib/open-months";
 import { hasAnyTemplate } from "@/lib/visit-template-reminder";
 import { toast } from "sonner";
@@ -53,6 +54,8 @@ import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog"
 import { AppAboutCard } from "@/components/AppAboutCard";
 import { CircuitHeader } from "@/components/circuit/CircuitHeader";
 import { ItineraryWeeks } from "@/components/itinerary/ItineraryWeeks";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ItineraryExportSheet } from "@/components/itinerary/ItineraryExportSheet";
 import { loadPackages, fetchPackages, missingFields, packageToForm, type VisitPackage } from "@/lib/visit-packages";
 
 export const Route = createFileRoute("/_app/configuracoes")({
@@ -82,6 +85,7 @@ interface Visit {
   elder_program_template_id?: string | null;
   substitute_name?: string | null;
   substitute_phone?: string | null;
+  substitute_email?: string | null;
 }
 interface Cong {
   id: string;
@@ -129,6 +133,7 @@ function Page() {
     elder_program_template_id: "",
     substitute_name: "",
     substitute_phone: "",
+    substitute_email: "",
   });
   const isSuper = role === "superintendent";
   // Seção "Modelos da visita": recolhida por padrão, mas abre sozinha se faltar modelo obrigatório.
@@ -138,6 +143,7 @@ function Page() {
   const tplSectionOpen = tplOpen || tplMissing;
   const [importing, setImporting] = useState<{ name: string; rows: ImportRow[]; packages: VisitPackage[] } | null>(null);
   const [weeksKey, setWeeksKey] = useState(0);
+  const [exportOpen, setExportOpen] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const [packages, setPackages] = useState<VisitPackage[]>([]);
   useEffect(() => { if (open) { setPackages(loadPackages(user?.id)); fetchPackages(user?.id).then(setPackages); } }, [open, user?.id]);
@@ -250,6 +256,7 @@ function Page() {
       elder_program_template_id: "",
       substitute_name: "",
       substitute_phone: "",
+    substitute_email: "",
     });
     setOpen(true);
   };
@@ -300,6 +307,7 @@ function Page() {
       elder_program_template_id: "",
       substitute_name: v.substitute_name ?? "",
       substitute_phone: v.substitute_phone ?? "",
+      substitute_email: v.substitute_email ?? "",
     });
     setOpen(true);
   };
@@ -322,6 +330,7 @@ function Page() {
     if (!form.title || !form.start_date || !form.end_date) { toast.error("Preencha todos os campos"); return; }
     if (form.end_date < form.start_date) { toast.error("A data final não pode ser anterior à inicial"); return; }
     const isScs = form.title === "Visita SCS";
+    if (isScs && !isValidEmail(form.substitute_email)) { toast.error("E-mail do JW Hub inválido"); return; }
     // Modelos e pacotes são opcionais: a visita pode ser criada sem nenhum.
 
 
@@ -334,6 +343,7 @@ function Page() {
       congregation_id: form.congregation_id,
       substitute_name: isScs ? (form.substitute_name.trim() || null) : null,
       substitute_phone: isScs ? (form.substitute_phone.trim() || null) : null,
+      substitute_email: isScs ? (form.substitute_email.trim() || null) : null,
       ...(form.meeting_talk_template_id ? { meeting_talk_template_id: form.meeting_talk_template_id } : {}),
     };
 
@@ -439,7 +449,7 @@ function Page() {
   /** Cria uma visita importada pelo mesmo caminho do formulário e aplica o pacote escolhido. */
   const createImportedVisit = async (payload: { title: string; start_date: string; end_date: string; congregation_id: string }, pkg: VisitPackage | null) => {
     const { data, error } = await supabase.from("visits").insert({
-      ...payload, substitute_name: null, substitute_phone: null,
+      ...payload, substitute_name: null, substitute_phone: null, substitute_email: null,
       ...(pkg?.meeting_talk_template_id ? { meeting_talk_template_id: pkg.meeting_talk_template_id } : {}),
     }).select().single();
     if (error || !data) return false;
@@ -546,14 +556,25 @@ function Page() {
         {isSuper && (
           <div className="flex items-center gap-2">
           <input ref={importRef} type="file" accept=".ics,.csv,text/calendar,text/csv" className="hidden" onChange={(e) => onImportFile(e.target.files?.[0])} />
-          <Button variant="outline" onClick={() => importRef.current?.click()} aria-label="Importar itinerário (.ics ou .csv)">
-            <Upload className="h-4 w-4 mr-1" />Importar
+          <Button variant="outline" onClick={() => setExportOpen(true)} aria-label="Exportar itinerário">
+            <Share2 className="h-4 w-4 mr-1" />Exportar
           </Button>
+          <ItineraryExportSheet open={exportOpen} onOpenChange={setExportOpen} visits={visits} congs={congs}
+            circuit={profile?.circuit} superintendent={(profile as { full_name?: string | null } | null)?.full_name} />
           <Dialog open={open} onOpenChange={setOpen}>
-            <Button onClick={openNew}>
-              <Plus className="h-4 w-4 mr-1" />
-              {t("itinerary.newVisit")}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t("itinerary.newVisit")}
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => openNew()}><Plus className="h-4 w-4 mr-2" />Criar nova</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => importRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Importar de arquivo</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <DialogContent className="max-w-md max-h-[90dvh] flex flex-col gap-3">
               <DialogHeader className="shrink-0">
                 <DialogTitle className="flex items-center gap-2">
@@ -621,12 +642,28 @@ function Page() {
                       <Label>Telefone do Substituto</Label>
                       <Input
                         type="tel"
-                        inputMode="numeric"
+                        inputMode="tel"
                         className="mt-1"
                         value={form.substitute_phone}
-                        onChange={(e) => setForm({ ...form, substitute_phone: maskPhone(e.target.value) })}
-                        placeholder="(00) 00000-0000"
+                        onChange={(e) => setForm({ ...form, substitute_phone: sanitizeIntlPhone(e.target.value) })}
+                        placeholder="+55 11 91234-5678"
                       />
+                      <p className="mt-1 text-[11px] text-muted-foreground">Qualquer formato de número</p>
+                    </div>
+                    <div>
+                      <Label>E-mail do JW Hub (opcional)</Label>
+                      <Input
+                        type="email"
+                        inputMode="email"
+                        autoCapitalize="none"
+                        className="mt-1"
+                        value={form.substitute_email}
+                        onChange={(e) => setForm({ ...form, substitute_email: e.target.value })}
+                        placeholder="nome@jwhub.org"
+                      />
+                      {!isValidEmail(form.substitute_email) && (
+                        <p className="mt-1 text-[11px] text-destructive">E-mail inválido</p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -923,7 +960,7 @@ function Page() {
                               <AlertTriangle className="h-3 w-3" /> {t("visitReminder.badge")}
                             </div>
                           )}
-                          {v.title === "Visita SCS" && (v.substitute_name || v.substitute_phone) && (
+                          {v.title === "Visita SCS" && (v.substitute_name || v.substitute_phone || v.substitute_email) && (
                             <div
                               className="mt-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2"
                               aria-readonly="true"
@@ -940,7 +977,7 @@ function Page() {
                               {v.substitute_phone && (
                                 isSuper ? (
                                   <a
-                                    href={`tel:${v.substitute_phone}`}
+                                    href={telHref(v.substitute_phone)}
                                     className="mt-0.5 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
                                   >
                                     <Phone className="h-3 w-3" />
@@ -952,6 +989,11 @@ function Page() {
                                     <span aria-readonly="true">{v.substitute_phone}</span>
                                   </div>
                                 )
+                              )}
+                              {v.substitute_email && (
+                                <a href={`mailto:${v.substitute_email}`} className="mt-0.5 flex items-center gap-1 text-sm font-medium text-primary hover:underline break-all">
+                                  ✉ {v.substitute_email}
+                                </a>
                               )}
                             </div>
                           )}

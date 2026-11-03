@@ -123,6 +123,7 @@ export function FullVisitReportDialog({
                 ),
                 kv("Substituto", s(visit.substitute_name)),
                 kv("Telefone do substituto", s(visit.substitute_phone)),
+                kv("E-mail do substituto (JW Hub)", s((visit as { substitute_email?: string | null }).substitute_email)),
               ].filter((x): x is string => !!x),
             },
           ],
