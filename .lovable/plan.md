@@ -17,7 +17,39 @@ Nesses casos o celular continua dizendo "estou online". O app então pede os dad
 4. **Ao entrar**, se a sessão expirou (passa de 1 hora parado), o app tenta renová-la e fica esperando. O PIN só aparece se ele foi criado antes. Se não foi, só sobra a senha, e a senha precisa de internet.
 5. **Algumas telas não sabem ler a cópia guardada.** O Painel, Congregações, Transporte, Refeições e outras sabem. Itinerário, Programa da visita e outras ainda precisam ser conferidas uma a uma.
 
-Em resumo, o problema não é falta de cópia local. A cópia existe, mas o app não percebe a tempo que a internet sumiu.
+Mais três falhas que encontrei:
+6. **Se o pedido do seu perfil falha, o app grava "vazio" por cima do perfil bom guardado.** Na próxima abertura ele acha que sua conta está incompleta.
+7. **A preparação automática dos dados está desligada.** O download completo só roda no primeiro login. Se falha, falha calado.
+8. **As telas de Esboços e Estudo** perguntam ao servidor quem você é antes de abrir, mesmo com as notas já no celular.
+
+Em resumo, o problema não é só a cópia local. Ela está incompleta, e o app não percebe a tempo que a internet sumiu.
+
+## Sobre colocar todos os dados dentro do AAB/APK (sua pergunta)
+
+Sinceramente, isso não resolveria, e eu não recomendo:
+- O AAB é gerado uma vez e enviado para a Play Store. Os dados mudam todo dia (visitas, programa, esboços). Um discurso salvo ontem não estaria no arquivo gerado na semana passada.
+- O mesmo AAB vai para todos os usuários. Colocar os seus dados nele significaria entregar suas informações a qualquer pessoa que baixasse o app.
+
+O que resolve, com o mesmo efeito que você quer: **o app baixa tudo para a memória do celular, sem exceção, e mantém essa cópia sempre em dia.**
+
+### 0. Download completo e garantido
+- Ao entrar, e depois **toda vez que houver internet** (ao abrir o app e a cada poucas horas), o app baixa **todos** os seus dados: visitas, semanas, congregações, programas, modelos, refeições, transporte, escala, recados, notas, esboços e anexos.
+- Nada fica de fora por tamanho. Vou usar a memória do celular (IndexedDB), que aguenta centenas de MB.
+- O app pede ao Android para **não apagar** esses dados (armazenamento persistente).
+- No Perfil aparece **"Dados no aparelho: tudo baixado ✓ hoje 14:32"**, ou o que falta, com um botão **"Baixar tudo agora"**. Assim, antes de um discurso, você confere em um segundo.
+- A Bíblia e as telas já ficam dentro do app hoje. Isso continua igual.
+
+```text
+┌─────────────────────────────┐
+│ ‹ Perfil                    │
+│ ┌─────────────────────────┐ │
+│ │ Dados no aparelho       │ │
+│ │ ✓ Tudo baixado          │ │
+│ │   hoje às 14:32 · 38 MB │ │
+│ │ [ Baixar tudo agora ]   │ │
+│ └─────────────────────────┘ │
+└─────────────────────────────┘
+```
 
 ## O que vou fazer
 
