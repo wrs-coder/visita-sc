@@ -2214,6 +2214,7 @@ export type Database = {
           last_applied_at: string | null
           meeting_talk_template_id: string | null
           start_date: string
+          substitute_email: string | null
           substitute_name: string | null
           substitute_phone: string | null
           template_id: string | null
@@ -2233,6 +2234,7 @@ export type Database = {
           last_applied_at?: string | null
           meeting_talk_template_id?: string | null
           start_date: string
+          substitute_email?: string | null
           substitute_name?: string | null
           substitute_phone?: string | null
           template_id?: string | null
@@ -2252,6 +2254,7 @@ export type Database = {
           last_applied_at?: string | null
           meeting_talk_template_id?: string | null
           start_date?: string
+          substitute_email?: string | null
           substitute_name?: string | null
           substitute_phone?: string | null
           template_id?: string | null
