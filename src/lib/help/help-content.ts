@@ -93,7 +93,7 @@ const RAW_TOPICS: HelpTopic[] = [
       { before: "Em ", labelKey: "sidebar.itinerary", after: ", toque em “Nova visita” para cadastrar a semana de uma congregação." },
       { before: "Para trazer o itinerário de outro aplicativo, toque em “Importar” e escolha um arquivo .ics ou .csv. Você revisa tudo antes de salvar." },
       { before: "Na pílula “Circuito” ficam as congregações, os anciãos do circuito e os Grandes Eventos." },
-      { before: "Em Congregações, o botão “+ Nova” oferece “Criar nova” ou “Importar de arquivo” (lista do JW.org .csv, Word .docx ou Excel .xlsx). Você confere a lista, desmarca o que não é congregação e pode trocar o código de 5 números antes de criar." },
+      { before: "Em Congregações, o botão “+ Nova” oferece “Criar nova” ou “Importar de arquivo” (lista do JW.org .csv, Word .docx ou Excel .xlsx). Você confere a lista, desmarca o que não é congregação e pode trocar o código de 5 números antes de criar. Nomes muito parecidos com uma congregação sua (ex.: “Jd. Alvorada” e “Jardim Alvorada”) aparecem como “Parecida com uma sua”: escolha Substituir nome, Manter como está ou Criar como nova. Substituir troca só o nome — o código de acesso não muda." },
       { before: "O número da congregação, entre parênteses, pode ser mantido no nome ou retirado com a chave “Manter número da congregação”." },
       { before: "Toque em “Exportar” para gerar um Word com todas as congregações e seus códigos de acesso." },
       { before: "O ícone de calendário, ao lado do nome do circuito, abre o mês inteiro." },
