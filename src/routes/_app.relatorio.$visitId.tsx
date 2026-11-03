@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_app/relatorio/$visitId")({
 
 interface Visit {
   id: string; title: string; start_date: string; end_date: string;
-  congregation_id: string; substitute_name?: string | null; substitute_phone?: string | null;
+  congregation_id: string; substitute_name?: string | null; substitute_phone?: string | null; substitute_email?: string | null;
 }
 interface Cong { id: string; name: string; invite_code: string }
 
@@ -89,7 +89,7 @@ function ReportPage() {
     lines.push(`**${t("report.type")}** ${visit.title}`);
     lines.push(`**${t("report.period")}** ${fmtDate(visit.start_date)} ${t("report.periodSeparator")} ${fmtDate(visit.end_date)}`);
     if (visit.substitute_name || visit.substitute_phone) {
-      lines.push(`**${t("report.substitute")}** ${visit.substitute_name ?? ""} ${visit.substitute_phone ? `(${visit.substitute_phone})` : ""}`);
+      lines.push(`**${t("report.substitute")}** ${visit.substitute_name ?? ""} ${visit.substitute_phone ? `(${visit.substitute_phone})` : ""} ${visit.substitute_email ?? ""}`);
     }
     const section = (title: string, items: string[]) => {
       if (items.length === 0) return;
@@ -157,7 +157,7 @@ function ReportPage() {
           </p>
           {(visit.substitute_name || visit.substitute_phone) && (
             <p className="mt-1 text-sm">
-              <strong>{t("report.substitute")}</strong> {visit.substitute_name ?? ""}{visit.substitute_phone ? ` · ${visit.substitute_phone}` : ""}
+              <strong>{t("report.substitute")}</strong> {visit.substitute_name ?? ""}{visit.substitute_phone ? ` · ${visit.substitute_phone}` : ""}{visit.substitute_email ? ` · ${visit.substitute_email}` : ""}
             </p>
           )}
         </header>
