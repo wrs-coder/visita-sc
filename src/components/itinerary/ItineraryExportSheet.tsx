@@ -7,9 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveBlob } from "@/lib/share";
 import { DOCX_MIME, htmlToDocx } from "@/lib/docx-export";
 import {
-  buildExportRows, itineraryListHtml, itineraryPdfCalendar, itineraryPdfList, itineraryXlsx, monthPages, periodRange, XLSX_MIME,
+  buildExportRows, itineraryListHtml, itineraryPdfCalendar, itineraryPdfList, itineraryXlsx, monthPages, periodRange, currentSemester, XLSX_MIME,
   type ExportVisit, type ExportWeek, type PeriodMode,
 } from "@/lib/itinerary-export";
+
+const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const fmtD = (s: string) => { const [y, m, d] = s.split("-").map(Number); return `${d} ${MES[m - 1]} ${y}`; };
+const fmtRange = (r: { from: string; to: string }) => `${fmtD(r.from)} – ${fmtD(r.to)}`;
 
 type Fmt = "pdf" | "docx" | "xlsx";
 
@@ -31,7 +35,11 @@ export function ItineraryExportSheet({ open, onOpenChange, visits, congs, circui
 }) {
   const [fmt, setFmt] = useState<Fmt>("pdf");
   const [style, setStyle] = useState<"list" | "calendar">("list");
-  const [period, setPeriod] = useState<PeriodMode>("next6");
+  const [period, setPeriod] = useState<PeriodMode>(() => currentSemester(new Date()));
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const customBad = period === "custom" && (!from || !to || to < from);
+  const range = periodRange(period, new Date(), { from, to });
   const [includeOff, setIncludeOff] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -40,7 +48,7 @@ export function ItineraryExportSheet({ open, onOpenChange, visits, congs, circui
     try {
       const { data } = await supabase.from("itinerary_weeks").select("start_date,end_date,week_type,notes").order("start_date");
       const now = new Date();
-      const rows = buildExportRows(visits, congs, (data ?? []) as ExportWeek[], { range: periodRange(period, now), includeOff });
+      const rows = buildExportRows(visits, congs, (data ?? []) as ExportWeek[], { range, includeOff });
       if (!rows.length) { toast.error("Nenhuma semana no período escolhido."); return; }
       const meta = { circuit, superintendent, generatedAt: now };
       const base = `itinerario-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
@@ -74,18 +82,27 @@ export function ItineraryExportSheet({ open, onOpenChange, visits, congs, circui
             <section className="space-y-2">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Estilo</p>
               <Pills value={style} onChange={setStyle} options={[["list", "Lista"], ["calendar", "Calendário"]]} />
-              {style === "calendar" && <p className="text-xs text-muted-foreground">3 meses por folha (deitada) — o semestre cabe em 2 folhas.</p>}
             </section>
           )}
           <section className="space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Período</p>
-            <Pills value={period} onChange={setPeriod} options={[["next6", "Próximos 6 meses"], ["serviceYear", "Ano de serviço"], ["all", "Tudo agendado"]]} />
+            <Pills value={period} onChange={setPeriod} options={[["sem1", "1º Semestre"], ["sem2", "2º Semestre"], ["serviceYear", "Ano de serviço"], ["all", "Tudo agendado"], ["custom", "Personalizado"]]} />
+            {period === "custom" && (
+              <div className="divide-y rounded-xl bg-muted/50">
+                <label className="flex min-h-11 items-center justify-between gap-3 px-3 text-sm">De
+                  <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="bg-transparent text-right text-sm" /></label>
+                <label className="flex min-h-11 items-center justify-between gap-3 px-3 text-sm">Até
+                  <input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} className="bg-transparent text-right text-sm" /></label>
+              </div>
+            )}
+            {customBad ? <p className="text-xs text-destructive">{from && to ? "A data final deve ser depois da inicial." : "Escolha as duas datas."}</p>
+              : range && <p className="text-xs text-muted-foreground">{fmtRange(range)}</p>}
           </section>
           <label className="flex min-h-11 items-center justify-between gap-3 rounded-xl bg-muted/50 px-3 text-sm">
             Incluir semanas sem visita
             <Switch checked={includeOff} onCheckedChange={setIncludeOff} />
           </label>
-          <Button className="h-12 w-full rounded-full text-base" disabled={busy} onClick={run}>{busy ? "Gerando…" : "Gerar e partilhar"}</Button>
+          <Button className="h-12 w-full rounded-full text-base" disabled={busy || customBad} onClick={run}>{busy ? "Gerando…" : "Gerar e partilhar"}</Button>
         </div>
       </DrawerContent>
     </Drawer>
