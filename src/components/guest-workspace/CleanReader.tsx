@@ -2,7 +2,7 @@
 // destacar (mesmas cores e mesmos destaques do balão), letra A-/A+, copiar e anotar.
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Check, Highlighter, Eraser, Copy, NotebookPen, X, Type, Volume2, Pause, Play, SkipBack, SkipForward, Sun, PenLine } from "lucide-react";
+import { ArrowLeft, Check, Circle, CheckCircle2, Highlighter, Eraser, Copy, NotebookPen, X, Type, Volume2, Pause, Play, SkipBack, SkipForward, Sun, PenLine } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Slider } from "@/components/ui/slider";
 import { READER_BGS, READER_FONTS, READER_LINE_MAX, READER_LINE_MIN, READER_SCALE_MAX, READER_SCALE_MIN, SPEECH_RATES, loadReaderSettings, saveReaderSettings, type ReaderSettings } from "@/lib/bible-reader-settings";
@@ -142,7 +142,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
           </div>
           <Button variant="outline" size="sm" className="h-9 shrink-0 gap-1 rounded-full px-2.5 text-xs" onClick={() => onHighlight(`${title}:`)}><PenLine className="h-3.5 w-3.5" />{t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}</Button>
           <Button variant="ghost" size="sm" className="h-9 shrink-0 gap-0.5 rounded-full px-2" onClick={() => setSheet(true)} aria-label={t("guestWs.readerOptions", { defaultValue: "Opções de leitura" })}><Type className="h-4 w-4" /><Volume2 className="h-4 w-4 max-[359px]:hidden" /></Button>
-          <Button size="sm" className="h-9 shrink-0 gap-1 rounded-full px-2.5 text-xs" variant={done ? "secondary" : "default"} onClick={onDone} aria-label={t("guestWs.markRead", { defaultValue: "Lido" })}><Check className="h-4 w-4" /><span className="max-[359px]:hidden">{t("guestWs.markRead", { defaultValue: "Lido" })}</span></Button>
+          <Button size="sm" className={cn("h-9 shrink-0 gap-1 rounded-full px-2.5 text-xs", done ? "border border-success bg-success text-success-foreground hover:bg-success/90" : "border border-border bg-transparent text-muted-foreground hover:bg-muted")} variant="ghost" aria-pressed={done} onClick={() => { if (!done) { try { navigator.vibrate?.(15); } catch { /* sem vibração */ } toast.success("Capítulo marcado como lido"); } onDone(); }} aria-label={done ? "Lido — toque para desmarcar" : "Marcar capítulo como lido"}>{done ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}<span className="max-[359px]:hidden">{t("guestWs.markRead", { defaultValue: "Lido" })}</span></Button>
         </div>
       </div>
       <div ref={scrollRef} className={cn("relative flex-1 overflow-y-auto", !selected && speakIdx === null && "bar-bottom")}>

@@ -15,9 +15,17 @@ describe("exportar itinerário", () => {
   it("pode excluir semanas sem visita", () => {
     expect(buildExportRows(visits, congs, weeks, { range: null, includeOff: false })).toHaveLength(2);
   });
-  it("próximos 6 meses = 6 meses e calendário cabe em 1 folha", () => {
-    const range = periodRange("next6", new Date(2026, 10, 3))!;
-    expect(range).toEqual({ from: "2026-11-01", to: "2027-04-30" });
+  it("1º semestre = set a fev do ano seguinte; 2º = mar a ago", () => {
+    expect(periodRange("sem1", new Date(2026, 10, 3))).toEqual({ from: "2026-09-01", to: "2027-02-28" });
+    expect(periodRange("sem1", new Date(2027, 0, 10))).toEqual({ from: "2026-09-01", to: "2027-02-28" });
+    expect(periodRange("sem2", new Date(2026, 10, 3))).toEqual({ from: "2027-03-01", to: "2027-08-31" });
+    expect(periodRange("sem1", new Date(2027, 8, 1))).toEqual({ from: "2027-09-01", to: "2028-02-29" });
+  });
+  it("personalizado usa as datas e recusa período invertido", () => {
+    expect(periodRange("custom", new Date(), { from: "2026-10-01", to: "2026-12-31" })).toEqual({ from: "2026-10-01", to: "2026-12-31" });
+    expect(periodRange("custom", new Date(), { from: "2026-12-31", to: "2026-10-01" })).toBeNull();
+  });
+  it("calendário de 6 meses cabe em 1 folha", () => {
     const rows = [{ start: "2026-11-03", end: "2026-11-08", kind: "visit" as const, title: "a", detail: "" }, { start: "2027-04-20", end: "2027-04-26", kind: "visit" as const, title: "b", detail: "" }];
     const pages = monthPages(rows);
     expect(pages).toHaveLength(1);
