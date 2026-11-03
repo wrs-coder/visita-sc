@@ -1,48 +1,61 @@
-# Itinerário exportado: observações e folhas do calendário
+# Itinerário: observações, calendário numa folha e botões do topo
 
 ## (01) Observações nas semanas sem visita
 
-Hoje o arquivo mostra só "Semana de Pioneiro". As observações que você digita na semana são ignoradas.
-
-Depois do ajuste, o nome fica junto com a observação:
-
-```text
-┌──────────── Calendário (PDF) ─────────────┐
-│ NOVEMBRO 2026                             │
-│  S   T   Q   Q   S   S   D                │
-│  2   3   4   5   6   7   8                │
-│ [Cong. Jd. Alvorada ................]     │
-│  9  10  11  12  13  14  15                │
-│ [Semana de Pioneiro - Assembleia....]     │
-└───────────────────────────────────────────┘
-
-┌──────────── Lista (PDF/Word/Excel) ───────┐
-│ 09/11 – 15/11  Semana de Pioneiro -       │
-│                Assembleia     Sem visita  │
-└───────────────────────────────────────────┘
-```
+Hoje o arquivo mostra só "Semana de Pioneiro"; a observação digitada é ignorada. Depois do ajuste aparece junto: "Semana de Pioneiro - Assembleia".
 
 - Vale para Semana de Pioneiro, Semana livre e tipos que você criou.
-- Sem observação, fica como hoje (só o nome).
-- Observação longa: no calendário é cortada com "…" para caber na faixa; na lista, Word e Excel aparece inteira (só a primeira linha).
+- Sem observação, fica só o nome, como hoje.
 - Vale para os 4 formatos (PDF calendário, PDF lista, Word, Excel).
+- No calendário, texto longo é cortado com "…" para caber; na lista, Word e Excel aparece inteiro.
 
-## (02) 6 meses numa só página?
+## (02) Calendário: os 6 meses numa única folha
 
-Não deveria. O calendário já está programado para 3 meses por folha (folha 1 e folha 2, com "Folha 1 de 2" no topo). O mais provável é que o leitor de PDF do celular esteja mostrando as duas folhas juntas, uma embaixo da outra, parecendo uma página só.
-
-Vou confirmar gerando o arquivo de 6 meses e contando as folhas. Se estiver mesmo saindo numa folha só, corrijo para ficar exatamente:
+Sim, é possível. Folha deitada (paisagem), 2 linhas com 3 meses cada:
 
 ```text
-Folha 1: Set | Out | Nov
-Folha 2: Dez | Jan | Fev
+┌──────────────────────────────────────────────────────┐
+│ ITINERÁRIO · Circuito SP-12 · Set 2026 – Fev 2027    │
+│ ┌─ SETEMBRO ─┐  ┌─ OUTUBRO ──┐  ┌─ NOVEMBRO ─┐      │
+│ │S T Q Q S S D│  │S T Q Q S S D│  │S T Q Q S S D│     │
+│ │[Cong. Alvor.]│ │[Sem. Pion. -│  │[Cong. Cent.]│     │
+│ │ ...         │  │  Assembleia]│  │ ...         │     │
+│ └─────────────┘  └─────────────┘  └─────────────┘     │
+│ ┌─ DEZEMBRO ─┐  ┌─ JANEIRO ──┐  ┌─ FEVEREIRO ┐      │
+│ │ ...         │  │ ...         │  │ ...         │     │
+│ └─────────────┘  └─────────────┘  └─────────────┘     │
+│ ■ visita  ■ sem visita            Gerado em 03/11/26 │
+└──────────────────────────────────────────────────────┘
 ```
 
-Também vou evitar uma 3ª folha quando o período "próximos 6 meses" começa no meio do mês (hoje isso pode virar 7 meses).
+- Até 6 meses: 1 folha. Se escolher "ano de serviço" ou "tudo agendado" (mais de 6 meses), continua na folha seguinte, 6 meses por folha.
+- As faixas ficam um pouco mais baixas e a letra um pouco menor para caber, mas ainda legível impressa.
+- "Próximos 6 meses" que comece no meio do mês não vai gerar um 7º mês.
+
+## (03) Botões do topo do Itinerário
+
+Igual a Congregações: "Importar" entra dentro do "+ Nova visita", e o ícone de partilha vira um botão escrito "Exportar".
+
+```text
+ANTES                                  DEPOIS
+┌─────────────────────────────┐       ┌─────────────────────────────┐
+│ Itinerário                  │       │ Itinerário                  │
+│ [⇪ Importar] [⇧] [+ Nova    │       │ [⇧ Exportar] [+ Nova visita▾]│
+│                    visita]  │       │              ┌────────────────┐
+│                             │       │              │ ＋ Criar nova  │
+│                             │       │              │ ⇪ Importar de  │
+│                             │       │              │   arquivo      │
+│                             │       │              └────────────────┘
+└─────────────────────────────┘       └─────────────────────────────┘
+```
+
+- "Criar nova" abre o mesmo formulário de hoje; "Importar de arquivo" abre o mesmo seletor .ics/.csv de hoje.
+- "Exportar" abre a mesma janela de exportação.
+- A Ajuda é atualizada com os novos nomes dos botões.
 
 ## Detalhes técnicos
 
-- `src/lib/itinerary-export.ts` → `buildExportRows`: usar `parseCustomType(notes).rest` (primeira linha, trim) e montar `title = "<rótulo> - <observação>"`.
-- `monthPages`: limitar a 6 meses quando o intervalo for "próximos 6 meses" (no máximo 2 folhas); verificar com teste que gera 2 páginas.
-- Testes novos: título com observação, sem observação, e 6 meses = 2 folhas.
-- Nada muda no banco nem na tela do Itinerário. Versão não sobe.
+- `src/lib/itinerary-export.ts`: `buildExportRows` monta `title = rótulo + " - " + parseCustomType(notes).rest` (primeira linha); `monthPages` agrupa de 6 em 6; `itineraryPdfCalendar` desenha grade 3x2 em paisagem com `rowH` calculado pela altura disponível; intervalo "6 meses" alinhado a meses inteiros.
+- `src/routes/_app.configuracoes.tsx`: DropdownMenu no "+ Nova visita" (Criar nova / Importar de arquivo usando o `importRef` existente); botão "Exportar" com texto no lugar do ícone `Share2`.
+- `help-content.ts` atualizado; testes: título com/sem observação e 6 meses = 1 folha.
+- Nada muda no banco. Versão não sobe.
