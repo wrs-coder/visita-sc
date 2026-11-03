@@ -60,13 +60,14 @@ Total: 16 congregações
 
 ## (02) Leitor da Bíblia — Ponto alto no topo
 ```text
-┌──────────────────────────────┐
-│ ‹ 1 Tes 4  [✎] [Aa🔊] [✓ Concl]│
-├──────────────────────────────┤
-│ texto do capítulo...         │
+┌──────────────────────────────────┐
+│ ‹ 1 Tes 4 [✎ Ponto alto][Aa🔊][✓ Lido]│
+├──────────────────────────────────┤
+│ texto do capítulo...             │
 ```
-- O botão **✎ Ponto alto** sai de baixo e vai para o topo, ao lado de "Aa🔊" e "Concluído". Ele abre o mesmo formulário de hoje.
-- Quando o nome do livro é grande (ex.: "1 Tessalonicenses"), o topo mostra a abreviatura ("1 Tes"). Nomes curtos aparecem completos.
+- O botão sai de baixo e vai para o topo, com o texto completo **"✎ Ponto alto"**, ao lado de "Aa🔊". Ele abre o mesmo formulário de hoje.
+- Para sobrar espaço, "Concluído" passa a se chamar **"✓ Lido"**. Depois de marcar, mostra "Lido · próximo", como hoje.
+- Quando o nome do livro é grande (ex.: "1 Tessalonicenses"), o topo mostra a abreviatura ("1 Tes"). Nomes curtos aparecem completos. Em telas bem estreitas, a abreviatura é usada sempre.
 - Os esboços e o pop-up de versículos continuam iguais.
 
 ## Pontos de atenção
