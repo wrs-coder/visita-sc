@@ -46,7 +46,7 @@ export function ItineraryExportSheet({ open, onOpenChange, visits, congs, circui
       const base = `itinerario-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
       let blob: Blob, filename: string, mimeType: string;
       if (fmt === "pdf") {
-        if (style === "calendar" && monthPages(rows).length > 2) toast.message("Período com mais de 6 meses: o calendário terá mais de 2 folhas.");
+        if (style === "calendar" && monthPages(rows).length > 1) toast.message("Período com mais de 6 meses: o calendário terá mais de 1 folha.");
         blob = style === "calendar" ? await itineraryPdfCalendar(rows, meta) : await itineraryPdfList(rows, meta);
         filename = `${base}${style === "calendar" ? "-calendario" : ""}.pdf`; mimeType = "application/pdf";
       } else if (fmt === "docx") {

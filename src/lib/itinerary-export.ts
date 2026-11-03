@@ -30,6 +30,14 @@ export function periodRange(mode: PeriodMode, today: Date): { from: string; to: 
   return { from: `${y}-09-01`, to: `${y + 1}-08-31` };
 }
 
+/** "Semana de pioneiro - Assembleia": rótulo + primeira linha das observações. */
+export function offWeekTitle(w: Pick<ExportWeek, "week_type" | "notes">): string {
+  const c = parseCustomType(w.notes);
+  const label = c.name ?? WEEK_LABEL[w.week_type];
+  const obs = (c.rest ?? "").split(/\r?\n/).map((s) => s.trim()).find(Boolean);
+  return obs ? `${label} - ${obs}` : label;
+}
+
 export function buildExportRows(
   visits: ExportVisit[], congs: { id: string; name: string }[], weeks: ExportWeek[],
   opts: { range: { from: string; to: string } | null; includeOff: boolean },
@@ -40,8 +48,7 @@ export function buildExportRows(
     title: names.get(v.congregation_id) ?? "Congregação", detail: v.title || "Visita",
   }));
   if (opts.includeOff) for (const w of weeks) {
-    const c = parseCustomType(w.notes);
-    rows.push({ start: w.start_date, end: w.end_date || w.start_date, kind: "off", title: c.name ?? WEEK_LABEL[w.week_type], detail: "Sem visita" });
+    rows.push({ start: w.start_date, end: w.end_date || w.start_date, kind: "off", title: offWeekTitle(w), detail: "Sem visita" });
   }
   const r = opts.range;
   return rows.filter((x) => !r || (x.end >= r.from && x.start <= r.to)).sort((a, b) => a.start.localeCompare(b.start) || a.kind.localeCompare(b.kind));
@@ -53,14 +60,14 @@ export function periodLabel(rows: ExportRow[]): string {
   return `${MONTHS[a.getMonth()].slice(0, 3)} ${a.getFullYear()} – ${MONTHS[b.getMonth()].slice(0, 3)} ${b.getFullYear()}`;
 }
 
-/** Meses (ano, mês) do primeiro ao último item, em grupos de 3 — uma folha por grupo. */
+/** Meses (ano, mês) do primeiro ao último item, em grupos de 6 (grade 3x2) — uma folha por grupo. */
 export function monthPages(rows: ExportRow[]): { y: number; m: number }[][] {
   if (!rows.length) return [];
   const a = parse(rows[0].start), b = parse(rows[rows.length - 1].end);
   const list: { y: number; m: number }[] = [];
   for (let d = new Date(a.getFullYear(), a.getMonth(), 1); d <= b; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) list.push({ y: d.getFullYear(), m: d.getMonth() });
   const pages: { y: number; m: number }[][] = [];
-  for (let i = 0; i < list.length; i += 3) pages.push(list.slice(i, i + 3));
+  for (let i = 0; i < list.length; i += 6) pages.push(list.slice(i, i + 6));
   return pages;
 }
 
@@ -169,39 +176,43 @@ export async function itineraryPdfCalendar(rows: ExportRow[], meta: ExportMeta):
   const pages = monthPages(rows);
   if (!pages.length) pages.push([]);
   const gap = 6, left = 10, colW = (d.pageW - left * 2 - gap * 2) / 3, cell = colW / 7;
+  const gridTop = 26, gridBottom = d.pageH - 13, rowGap = 5;
+  const blockH = (gridBottom - gridTop - rowGap) / 2;
   pages.forEach((months, pi) => {
     if (pi) d.addPage();
-    d.setFont(true); d.setFontSize(14); color(d, C.accent); d.text(h.title.toUpperCase(), left, 14);
-    d.setFont(false); d.setFontSize(9); color(d, C.muted);
+    d.setFont(true); d.setFontSize(13); color(d, C.accent); d.text(h.title.toUpperCase(), left, 12);
+    d.setFont(false); d.setFontSize(8.5); color(d, C.muted);
     const span = months.length ? `${MONTHS[months[0].m]} ${months[0].y} – ${MONTHS[months[months.length - 1].m]} ${months[months.length - 1].y}` : "";
-    d.text([h.sub, span, `Folha ${pi + 1} de ${pages.length}`].filter(Boolean).join("  ·  "), left, 20);
-    months.forEach(({ y, m }, ci) => {
-      const x0 = left + ci * (colW + gap); let yy = 30;
-      d.setFont(true); d.setFontSize(11); color(d, C.ink); d.text(`${MONTHS[m]} ${y}`, x0, yy);
-      yy += 6; d.setFont(true); d.setFontSize(7.5); color(d, C.muted);
+    d.text([h.sub, span, pages.length > 1 ? `Folha ${pi + 1} de ${pages.length}` : ""].filter(Boolean).join("  ·  "), left, 18);
+    months.forEach(({ y, m }, idx) => {
+      const ci = idx % 3, ri = Math.floor(idx / 3);
+      const x0 = left + ci * (colW + gap); let yy = gridTop + ri * (blockH + rowGap) + 4;
+      d.setFont(true); d.setFontSize(10); color(d, C.ink); d.text(`${MONTHS[m]} ${y}`, x0, yy);
+      yy += 4.5; d.setFont(true); d.setFontSize(6.5); color(d, C.muted);
       ["S", "T", "Q", "Q", "S", "S", "D"].forEach((l, i) => d.text(l, x0 + i * cell + cell / 2, yy, { align: "center" }));
-      yy += 2;
+      yy += 1.5;
       const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate();
       const offset = (first.getDay() + 6) % 7;
-      const weeksN = Math.ceil((offset + days) / 7), rowH = 14;
+      const weeksN = Math.ceil((offset + days) / 7);
+      const rowH = (blockH - 10) / 6; // sempre cabe até 6 semanas
+      const barH = Math.min(5, rowH - 3.6);
       for (let w = 0; w < weeksN; w++) {
         const ry = yy + w * rowH;
         d.setDrawColor(C.line[0], C.line[1], C.line[2]); d.setLineWidth(0.2); d.line(x0, ry, x0 + colW, ry);
-        d.setFont(false); d.setFontSize(7); color(d, C.muted);
+        d.setFont(false); d.setFontSize(6); color(d, C.muted);
         const cellsDays: (string | null)[] = [];
         for (let i = 0; i < 7; i++) {
           const day = w * 7 + i - offset + 1;
-          if (day >= 1 && day <= days) { d.text(String(day), x0 + i * cell + 1, ry + 3.5); cellsDays.push(iso(new Date(y, m, day))); } else cellsDays.push(null);
+          if (day >= 1 && day <= days) { d.text(String(day), x0 + i * cell + 0.8, ry + 2.6); cellsDays.push(iso(new Date(y, m, day))); } else cellsDays.push(null);
         }
-        // uma faixa por evento que toca esta semana
-        const hits = rows.filter((r) => cellsDays.some((s) => s && s >= r.start && s <= r.end)); // eventos não se sobrepõem: todos na mesma faixa
+        const hits = rows.filter((r) => cellsDays.some((s) => s && s >= r.start && s <= r.end));
         for (const r of hits) {
-          const idx = cellsDays.map((s, i) => (s && s >= r.start && s <= r.end ? i : -1)).filter((i) => i >= 0);
-          const a = idx[0], b = idx[idx.length - 1];
-          const bx = x0 + a * cell + 0.3, bw = (b - a + 1) * cell - 0.6;
-          fill(d, r.kind === "visit" ? C.visit : C.off); d.rect(bx, ry + 5, bw, 7, "F");
-          d.setFont(r.kind === "visit"); d.setFontSize(8); color(d, r.kind === "visit" ? C.ink : C.muted);
-          if (b - a >= 1 || hits.length === 1) d.text(fit(d, r.title, bw - 2), bx + 1.2, ry + 9.8);
+          const ix = cellsDays.map((s, i) => (s && s >= r.start && s <= r.end ? i : -1)).filter((i) => i >= 0);
+          const a = ix[0], b = ix[ix.length - 1];
+          const bx = x0 + a * cell + 0.3, bw = (b - a + 1) * cell - 0.6, by = ry + 3.2;
+          fill(d, r.kind === "visit" ? C.visit : C.off); d.rect(bx, by, bw, barH, "F");
+          d.setFont(r.kind === "visit"); d.setFontSize(6.8); color(d, r.kind === "visit" ? C.ink : C.muted);
+          if (b - a >= 1 || hits.length === 1) d.text(fit(d, r.title, bw - 1.6), bx + 0.8, by + barH / 2 + 1.2);
         }
       }
       d.line(x0, yy + weeksN * rowH, x0 + colW, yy + weeksN * rowH);

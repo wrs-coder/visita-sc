@@ -53,6 +53,7 @@ import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog"
 import { AppAboutCard } from "@/components/AppAboutCard";
 import { CircuitHeader } from "@/components/circuit/CircuitHeader";
 import { ItineraryWeeks } from "@/components/itinerary/ItineraryWeeks";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ItineraryExportSheet } from "@/components/itinerary/ItineraryExportSheet";
 import { loadPackages, fetchPackages, missingFields, packageToForm, type VisitPackage } from "@/lib/visit-packages";
 
@@ -548,19 +549,25 @@ function Page() {
         {isSuper && (
           <div className="flex items-center gap-2">
           <input ref={importRef} type="file" accept=".ics,.csv,text/calendar,text/csv" className="hidden" onChange={(e) => onImportFile(e.target.files?.[0])} />
-          <Button variant="outline" onClick={() => importRef.current?.click()} aria-label="Importar itinerário (.ics ou .csv)">
-            <Upload className="h-4 w-4 mr-1" />Importar
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => setExportOpen(true)} aria-label="Exportar itinerário">
-            <Share2 className="h-4 w-4" />
+          <Button variant="outline" onClick={() => setExportOpen(true)} aria-label="Exportar itinerário">
+            <Share2 className="h-4 w-4 mr-1" />Exportar
           </Button>
           <ItineraryExportSheet open={exportOpen} onOpenChange={setExportOpen} visits={visits} congs={congs}
             circuit={profile?.circuit} superintendent={(profile as { full_name?: string | null } | null)?.full_name} />
           <Dialog open={open} onOpenChange={setOpen}>
-            <Button onClick={openNew}>
-              <Plus className="h-4 w-4 mr-1" />
-              {t("itinerary.newVisit")}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t("itinerary.newVisit")}
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => openNew()}><Plus className="h-4 w-4 mr-2" />Criar nova</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => importRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Importar de arquivo</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <DialogContent className="max-w-md max-h-[90dvh] flex flex-col gap-3">
               <DialogHeader className="shrink-0">
                 <DialogTitle className="flex items-center gap-2">
