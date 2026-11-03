@@ -6,4 +6,4 @@
 - [x] Leitor da Bíblia: "✎ Ponto alto" no topo, "Lido", abreviatura de livros longos
 - [x] Ajuda do superintendente com as novidades acima
 
-- [ ] Itinerário: calendário empilha itens da mesma semana; editar semana sem visita; marca "SCS" na exportação
+- [x] Itinerário: calendário empilha itens da mesma semana; editar semana sem visita; marca "SCS" na exportação
