@@ -8,7 +8,7 @@ import { parseCustomType } from "@/lib/itinerary-weeks";
 export type ExportVisit = { start_date: string; end_date: string; title: string; congregation_id: string; is_active?: boolean };
 export type ExportWeek = { start_date: string; end_date: string; week_type: "pioneer" | "free"; notes: string | null };
 export type ExportRow = { start: string; end: string; kind: "visit" | "off"; title: string; detail: string };
-export type PeriodMode = "next6" | "serviceYear" | "all";
+export type PeriodMode = "sem1" | "sem2" | "serviceYear" | "all" | "custom";
 export type ExportMeta = { circuit?: string | null; superintendent?: string | null; generatedAt: Date };
 
 const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -19,14 +19,17 @@ export const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${p
 const parse = (s: string) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 const br = (s: string) => { const d = parse(s); return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`; };
 
-export function periodRange(mode: PeriodMode, today: Date): { from: string; to: string } | null {
+/** Ano de serviço começa em setembro. */
+export const serviceYearStart = (today: Date) => (today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1);
+/** Semestre do ano de serviço em que estamos: set–fev = 1º, mar–ago = 2º. */
+export const currentSemester = (today: Date): "sem1" | "sem2" => (today.getMonth() >= 8 || today.getMonth() <= 1 ? "sem1" : "sem2");
+
+export function periodRange(mode: PeriodMode, today: Date, custom?: { from: string; to: string }): { from: string; to: string } | null {
   if (mode === "all") return null;
-  if (mode === "next6") {
-    const from = new Date(today.getFullYear(), today.getMonth(), 1);
-    const to = new Date(today.getFullYear(), today.getMonth() + 6, 0);
-    return { from: iso(from), to: iso(to) };
-  }
-  const y = today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1;
+  if (mode === "custom") return custom && custom.from && custom.to && custom.from <= custom.to ? custom : null;
+  const y = serviceYearStart(today);
+  if (mode === "sem1") return { from: `${y}-09-01`, to: iso(new Date(y + 1, 2, 0)) };
+  if (mode === "sem2") return { from: `${y + 1}-03-01`, to: `${y + 1}-08-31` };
   return { from: `${y}-09-01`, to: `${y + 1}-08-31` };
 }
 
