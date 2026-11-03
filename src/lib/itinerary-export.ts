@@ -194,14 +194,14 @@ export async function itineraryPdfCalendar(rows: ExportRow[], meta: ExportMeta):
           if (day >= 1 && day <= days) { d.text(String(day), x0 + i * cell + 1, ry + 3.5); cellsDays.push(iso(new Date(y, m, day))); } else cellsDays.push(null);
         }
         // uma faixa por evento que toca esta semana
-        const hits = rows.filter((r) => cellsDays.some((s) => s && s >= r.start && s <= r.end)).slice(0, 1);
+        const hits = rows.filter((r) => cellsDays.some((s) => s && s >= r.start && s <= r.end)); // eventos não se sobrepõem: todos na mesma faixa
         for (const r of hits) {
           const idx = cellsDays.map((s, i) => (s && s >= r.start && s <= r.end ? i : -1)).filter((i) => i >= 0);
           const a = idx[0], b = idx[idx.length - 1];
           const bx = x0 + a * cell + 0.3, bw = (b - a + 1) * cell - 0.6;
           fill(d, r.kind === "visit" ? C.visit : C.off); d.rect(bx, ry + 5, bw, 7, "F");
           d.setFont(r.kind === "visit"); d.setFontSize(8); color(d, r.kind === "visit" ? C.ink : C.muted);
-          d.text(fit(d, r.title, bw - 2), bx + 1.2, ry + 9.8);
+          if (b - a >= 1 || hits.length === 1) d.text(fit(d, r.title, bw - 2), bx + 1.2, ry + 9.8);
         }
       }
       d.line(x0, yy + weeksN * rowH, x0 + colW, yy + weeksN * rowH);
