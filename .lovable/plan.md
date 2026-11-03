@@ -141,3 +141,8 @@ Uma limitação, para ser honesto: o teste real no seu celular com Wi-Fi sem int
 - Testes com vitest: interceptor com fetch pendurado → timeout e auto-offline; `readWithMirror` em auto-offline não chama o remoto; inicialização do auth com rede pendurada libera em ≤3 s com o snapshot.
 - Playwright: `page.route` pendurando as requisições do backend, `context.set_offline(True)` e reload offline.
 - Uma regra no AGENTS.md: toda leitura do backend tem limite de espera, e queda detectada vira auto-offline, porque `navigator.onLine` não detecta Wi-Fi sem internet.
+
+## Testar em casa, sem ir à zona rural
+- **Botão "Simular internet ruim"** no Perfil, numa seção de teste. Ligado, o app passa a agir como na zona rural: o servidor "não responde". Você fecha e abre o app, entra nas telas, abre um esboço, e confere se tudo aparece. Depois desliga o botão.
+- **Teste real, sem botão:** tire da tomada o cabo de internet do roteador e deixe o Wi-Fi ligado. O celular fica "conectado ao Wi-Fi sem internet", que é exatamente o caso da zona rural.
+- **Outra forma:** ligue o roteador do celular da sua esposa com os dados móveis dela desligados e conecte o seu celular nele.
