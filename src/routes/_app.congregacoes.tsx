@@ -340,6 +340,7 @@ function Page() {
         {importRows && (
           <CongregationImportDialog open onOpenChange={(v) => { if (!v) setImportRows(null); }} initial={importRows} existing={list}
             onCreate={async (name, code) => { const r = await fnCreate({ data: { name, inviteCode: code } }); return r.ok ? { ok: true } : { ok: false, error: r.error }; }}
+            onRename={async (id, name, code) => { const r = await fnUpdate({ data: { id, name, inviteCode: code } }); return r.ok ? { ok: true } : { ok: false, error: r.error }; }}
             onDone={load} />
         )}
         <Dialog open={openNew} onOpenChange={setOpenNew}>
