@@ -30,6 +30,14 @@ export function periodRange(mode: PeriodMode, today: Date): { from: string; to: 
   return { from: `${y}-09-01`, to: `${y + 1}-08-31` };
 }
 
+/** "Semana de pioneiro - Assembleia": rótulo + primeira linha das observações. */
+export function offWeekTitle(w: Pick<ExportWeek, "week_type" | "notes">): string {
+  const c = parseCustomType(w.notes);
+  const label = c.name ?? WEEK_LABEL[w.week_type];
+  const obs = (c.rest ?? "").split(/\r?\n/).map((s) => s.trim()).find(Boolean);
+  return obs ? `${label} - ${obs}` : label;
+}
+
 export function buildExportRows(
   visits: ExportVisit[], congs: { id: string; name: string }[], weeks: ExportWeek[],
   opts: { range: { from: string; to: string } | null; includeOff: boolean },
@@ -40,8 +48,7 @@ export function buildExportRows(
     title: names.get(v.congregation_id) ?? "Congregação", detail: v.title || "Visita",
   }));
   if (opts.includeOff) for (const w of weeks) {
-    const c = parseCustomType(w.notes);
-    rows.push({ start: w.start_date, end: w.end_date || w.start_date, kind: "off", title: c.name ?? WEEK_LABEL[w.week_type], detail: "Sem visita" });
+    rows.push({ start: w.start_date, end: w.end_date || w.start_date, kind: "off", title: offWeekTitle(w), detail: "Sem visita" });
   }
   const r = opts.range;
   return rows.filter((x) => !r || (x.end >= r.from && x.start <= r.to)).sort((a, b) => a.start.localeCompare(b.start) || a.kind.localeCompare(b.kind));
