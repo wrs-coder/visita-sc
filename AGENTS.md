@@ -40,4 +40,4 @@
 - A new superintendent account's first entry opens /perfil with a welcome checklist, flagged only in device localStorage (first-run.ts), because no schema change is wanted and elders/guests must not be affected.
 - Release-note sections carry an optional audience (missing = all) and help topics are chosen per role via helpTopicsFor; Bible refs in read-only texts are linked at display time through BibleRefText/BibleRefChips, because saved content must never be rewritten.
 - The Bible-tab chapter reader (CleanReader) keeps its own device-local preferences in bible-reader-settings.ts and uses reader-native.ts (TTS/brightness plugins with web fallback), because the verse popover used by outlines and notes must stay unchanged.
-- Congregation import (.csv/.docx/.xlsx) is parsed and reviewed only on the device (congregation-import.ts) and creates rows one by one through the existing createCongregation server function; the congregation number is kept inside the name, because no schema change is allowed.
+- Congregation import is parsed on-device (congregation-import.ts), created via createCongregation, number kept in the name, because no schema change is allowed.
