@@ -104,7 +104,7 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.1.0";
+export const RELEASE_NOTES_VERSION = "5.2.0";
 
 /**
  * Aviso automático "O que há de novo" nesta versão: desligado a pedido.
@@ -114,6 +114,52 @@ export const RELEASE_NOTES_VERSION = "5.1.0";
 export const WHATS_NEW_AUTO_SHOW = true;
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "5.2.0",
+    sections: [
+      {
+        title: "Exportar o itinerário", audience: ["super"],
+        items: [
+          "Botão \"Exportar\" no Itinerário: PDF em Lista ou Calendário (6 meses numa folha), Word e Excel.",
+          "Escolha 1º Semestre (set–fev), 2º Semestre (mar–ago) ou um período personalizado.",
+          "Semanas sem visita aparecem com a observação (ex.: \"Semana de pioneiro - Assembleia\") e visitas SCS ganham a marca \"SCS\".",
+          "Semanas sem visita agora podem ser editadas no lápis.",
+          "\"+ Nova visita\" reúne Criar nova e Importar de arquivo.",
+        ],
+      },
+      {
+        title: "Congregações: importar e exportar", audience: ["super"],
+        items: [
+          "\"+ Nova\" → Importar de arquivo (CSV do JW.org, Word ou Excel), com revisão antes de criar.",
+          "Códigos de acesso simples gerados na hora e número da congregação opcional.",
+          "Nomes parecidos são reconhecidos: substitua só o nome, o código continua.",
+          "Exportar gera um Word com todas as congregações e códigos.",
+        ],
+      },
+      {
+        title: "Contato do substituto (Visita SCS)", audience: ["super", "elder"],
+        items: [
+          "Telefone em qualquer formato, inclusive de outros países, e e-mail do JW Hub opcional.",
+          "Os anciãos veem no painel com quem falar sobre a programação da visita, com toque para ligar ou enviar e-mail.",
+        ],
+      },
+      {
+        title: "Leitor da Bíblia renovado", audience: ["all"],
+        items: [
+          "Botão Aa🔊: tamanho e tipo de letra, cor de fundo, brilho, espaço entre linhas e ouvir o capítulo em áudio.",
+          "\"✎ Ponto alto\" e \"Lido\" no topo; nomes longos de livros aparecem abreviados.",
+          "\"Lido\" começa como círculo vazio e fica verde com ✓ ao marcar, para não confundir.",
+          "Na leitura por dia, cada livro mostra em que dia da semana será lido.",
+        ],
+      },
+      {
+        title: "Espaço da esposa", audience: ["super", "wife"],
+        items: [
+          "O superintendente pode escrever o nome da esposa no Perfil, e ela é recebida pelo nome.",
+        ],
+      },
+    ],
+  },
   {
     version: "5.1.0",
     sections: [
