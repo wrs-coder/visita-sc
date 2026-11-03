@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ImportItineraryDialog } from "@/components/itinerary/ImportItineraryDialog";
 import { parseItineraryFile, type ImportRow } from "@/lib/itinerary-import";
-import { Plus, Upload, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone, AlertTriangle, ChevronDown } from "lucide-react";
+import { Plus, Upload, Share2, Trash2, KeyRound, Calendar, Building2, Pencil, UserCheck, Phone, AlertTriangle, ChevronDown } from "lucide-react";
 import { currentMonthKey, isMonthOpen, useOpenMap } from "@/lib/open-months";
 import { hasAnyTemplate } from "@/lib/visit-template-reminder";
 import { toast } from "sonner";
@@ -53,6 +53,7 @@ import { VisitDeletionGuardDialog } from "@/components/VisitDeletionGuardDialog"
 import { AppAboutCard } from "@/components/AppAboutCard";
 import { CircuitHeader } from "@/components/circuit/CircuitHeader";
 import { ItineraryWeeks } from "@/components/itinerary/ItineraryWeeks";
+import { ItineraryExportSheet } from "@/components/itinerary/ItineraryExportSheet";
 import { loadPackages, fetchPackages, missingFields, packageToForm, type VisitPackage } from "@/lib/visit-packages";
 
 export const Route = createFileRoute("/_app/configuracoes")({
@@ -138,6 +139,7 @@ function Page() {
   const tplSectionOpen = tplOpen || tplMissing;
   const [importing, setImporting] = useState<{ name: string; rows: ImportRow[]; packages: VisitPackage[] } | null>(null);
   const [weeksKey, setWeeksKey] = useState(0);
+  const [exportOpen, setExportOpen] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const [packages, setPackages] = useState<VisitPackage[]>([]);
   useEffect(() => { if (open) { setPackages(loadPackages(user?.id)); fetchPackages(user?.id).then(setPackages); } }, [open, user?.id]);
@@ -549,6 +551,11 @@ function Page() {
           <Button variant="outline" onClick={() => importRef.current?.click()} aria-label="Importar itinerário (.ics ou .csv)">
             <Upload className="h-4 w-4 mr-1" />Importar
           </Button>
+          <Button variant="outline" size="icon" onClick={() => setExportOpen(true)} aria-label="Exportar itinerário">
+            <Share2 className="h-4 w-4" />
+          </Button>
+          <ItineraryExportSheet open={exportOpen} onOpenChange={setExportOpen} visits={visits} congs={congs}
+            circuit={profile?.circuit} superintendent={(profile as { full_name?: string | null } | null)?.full_name} />
           <Dialog open={open} onOpenChange={setOpen}>
             <Button onClick={openNew}>
               <Plus className="h-4 w-4 mr-1" />
