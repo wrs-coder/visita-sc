@@ -182,11 +182,12 @@ export function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-/** HTML simples para o Word exportado (tabela Congregação / Nº / Código). */
+/** HTML simples para o Word exportado: uma congregação por linha, com divisórias. */
 export function congregationsExportHtml(list: { name: string; invite_code: string }[], dateLabel: string): string {
-  const rows = [...list].sort((a, b) => a.name.localeCompare(b.name, "pt")).map((c) => {
+  const rows = [...list].sort((a, b) => a.name.localeCompare(b.name, "pt")).map((c, i) => {
     const { name, number } = splitNumber(c.name);
-    return `<tr><td>${escapeHtml(name)}</td><td>${number ?? ""}</td><td>${escapeHtml(c.invite_code)}</td></tr>`;
+    const num = number ? ` · Nº ${number}` : "";
+    return `<p>${i + 1}. <b>${escapeHtml(name)}</b>${num} · Código: <b>${escapeHtml(c.invite_code)}</b></p>`;
   }).join("");
-  return `<p>Gerado em ${escapeHtml(dateLabel)}</p><table><tr><th>Congregação</th><th>Nº</th><th>Código</th></tr>${rows}</table><p>Total: ${list.length} congregações</p>`;
+  return `<p>Gerado em ${escapeHtml(dateLabel)}</p><hr data-divider="1">${rows}<hr data-divider="1"><p>Total: ${list.length} congregações</p>`;
 }
