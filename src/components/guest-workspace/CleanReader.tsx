@@ -16,6 +16,7 @@ import {
   HIGHLIGHT_COLORS, addHighlight, buildSegments,
   removeHighlightAt, selectionRange, clearHighlights, getHighlights, highlightKey, loadSettings, saveSettings, type HighlightColor,
 } from "@/lib/bible-view-settings";
+import { abbreviateBookName } from "@/lib/book-abbrev";
 import { cn } from "@/lib/utils";
 import { isRealTap, type TapStart } from "@/lib/tap-guard";
 
@@ -178,13 +179,6 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
       </div>
       {dimFallback && rs.brightness != null && rs.brightness < 1 && (
         <div aria-hidden className="pointer-events-none fixed inset-0 z-[51] bg-foreground" style={{ opacity: (1 - rs.brightness) * 0.7, mixBlendMode: "multiply" }} />
-      )}
-      {!selected && speakIdx === null && !paused && verses && verses.length > 0 && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bar-bottom pb-3">
-          <Button className="pointer-events-auto h-11 gap-2 rounded-full px-5 shadow-lg" onClick={() => onHighlight(`${title}:`)}>
-            <PenLine className="h-4 w-4" />{t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}
-          </Button>
-        </div>
       )}
       {!selected && (speakIdx !== null || paused) && (
         <div className="bar-bottom shrink-0 border-t bg-card px-3 pt-2">
