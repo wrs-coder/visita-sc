@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { CalendarOff, ChevronDown, PenLine, Plus, Sun, Trash2 } from "lucide-react";
+import { CalendarOff, ChevronDown, Pencil, PenLine, Plus, Sun, Trash2 } from "lucide-react";
 import { currentMonthKey, isMonthOpen, useOpenMap } from "@/lib/open-months";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -53,22 +53,32 @@ export function ItineraryWeeks({ visits = [] }: { visits?: VisitLike[] }) {
     return r.sort((a, b) => a.start.localeCompare(b.start));
   }, [weeks, visits]);
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const openEdit = (w: Week) => {
+    const c = parseCustomType(w.notes);
+    setEditingId(w.id);
+    setType(c.name ? "other" : w.week_type); setCustomName(c.name ?? ""); setNotes(c.rest ?? "");
+    setStart(w.start_date); setEnd(w.end_date); setOpen(true);
+  };
   const openNew = (s = "", e = "") => {
-    setType("pioneer"); setCustomName(""); setNotes(""); setStart(s); setEnd(e); setOpen(true);
+    setEditingId(null); setType("pioneer"); setCustomName(""); setNotes(""); setStart(s); setEnd(e); setOpen(true);
   };
 
   const save = async () => {
     if (!start || !end || end < start) { toast.error("Confira as datas."); return; }
     if (type === "other" && !customName.trim()) { toast.error("Escreva o tipo da semana."); return; }
     setBusy(true);
-    const { error } = await supabase.from("itinerary_weeks").insert({
-      week_type: type === "pioneer" ? "pioneer" : "free",
+    const payload = {
+      week_type: (type === "pioneer" ? "pioneer" : "free") as "pioneer" | "free",
       start_date: start, end_date: end,
       notes: type === "other" ? buildCustomNotes(customName, notes) : notes.trim() || null,
-    });
+    };
+    const { error } = editingId
+      ? await supabase.from("itinerary_weeks").update(payload).eq("id", editingId)
+      : await supabase.from("itinerary_weeks").insert(payload);
     setBusy(false);
     if (error) { toast.error("Não foi possível salvar a semana."); return; }
-    toast.success("Semana adicionada.");
+    toast.success(editingId ? "Semana atualizada." : "Semana adicionada.");
     setOpen(false);
     load();
   };
@@ -136,6 +146,9 @@ export function ItineraryWeeks({ visits = [] }: { visits?: VisitLike[] }) {
                           <div className="text-sm font-semibold">{range(w.start_date, w.end_date)}</div>
                           {custom.rest && <div className="text-xs text-muted-foreground truncate">{custom.rest}</div>}
                         </div>
+                        <Button size="icon" variant="ghost" aria-label="Editar semana" onClick={() => openEdit(w)}>
+                          <Pencil className="h-4 w-4 text-primary" />
+                        </Button>
                         <Button size="icon" variant="ghost" aria-label="Excluir semana" onClick={() => remove(w.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -153,7 +166,7 @@ export function ItineraryWeeks({ visits = [] }: { visits?: VisitLike[] }) {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Nova semana sem visita</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingId ? "Editar semana" : "Nova semana sem visita"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
               <Label>Tipo</Label>
@@ -194,7 +207,7 @@ export function ItineraryWeeks({ visits = [] }: { visits?: VisitLike[] }) {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={save} disabled={busy}>Salvar</Button>
+            <Button onClick={save} disabled={busy}>{editingId ? "Salvar alterações" : "Salvar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
