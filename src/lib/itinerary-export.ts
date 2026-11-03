@@ -38,6 +38,15 @@ export function offWeekTitle(w: Pick<ExportWeek, "week_type" | "notes">): string
   return obs ? `${label} - ${obs}` : label;
 }
 
+/** Visita feita pelo substituto do superintendente ("Visita SCS"). */
+export const isScsVisit = (title: string | null | undefined) => (title ?? "").trim() === "Visita SCS";
+
+/** Itens que tocam a semana, visitas primeiro: cada um ganha sua própria faixa. */
+export function weekLanes(rows: ExportRow[], days: (string | null)[]): ExportRow[] {
+  return rows.filter((r) => days.some((s) => s && s >= r.start && s <= r.end))
+    .sort((a, b) => (a.kind === b.kind ? a.start.localeCompare(b.start) : a.kind === "visit" ? -1 : 1));
+}
+
 export function buildExportRows(
   visits: ExportVisit[], congs: { id: string; name: string }[], weeks: ExportWeek[],
   opts: { range: { from: string; to: string } | null; includeOff: boolean },
@@ -45,7 +54,7 @@ export function buildExportRows(
   const names = new Map(congs.map((c) => [c.id, c.name]));
   const rows: ExportRow[] = visits.filter((v) => v.is_active !== false).map((v) => ({
     start: v.start_date, end: v.end_date || v.start_date, kind: "visit",
-    title: names.get(v.congregation_id) ?? "Congregação", detail: v.title || "Visita",
+    title: (names.get(v.congregation_id) ?? "Congregação") + (isScsVisit(v.title) ? " · SCS" : ""), detail: v.title || "Visita",
   }));
   if (opts.includeOff) for (const w of weeks) {
     rows.push({ start: w.start_date, end: w.end_date || w.start_date, kind: "off", title: offWeekTitle(w), detail: "Sem visita" });
@@ -205,15 +214,20 @@ export async function itineraryPdfCalendar(rows: ExportRow[], meta: ExportMeta):
           const day = w * 7 + i - offset + 1;
           if (day >= 1 && day <= days) { d.text(String(day), x0 + i * cell + 0.8, ry + 2.6); cellsDays.push(iso(new Date(y, m, day))); } else cellsDays.push(null);
         }
-        const hits = rows.filter((r) => cellsDays.some((s) => s && s >= r.start && s <= r.end));
-        for (const r of hits) {
+        const all = weekLanes(rows, cellsDays);
+        const lanes = Math.min(3, all.length);
+        const hits = all.slice(0, lanes);
+        const laneH = lanes > 1 ? Math.min(barH, (rowH - 3.6) / lanes - 0.3) : barH;
+        hits.forEach((r, li) => {
           const ix = cellsDays.map((s, i) => (s && s >= r.start && s <= r.end ? i : -1)).filter((i) => i >= 0);
           const a = ix[0], b = ix[ix.length - 1];
-          const bx = x0 + a * cell + 0.3, bw = (b - a + 1) * cell - 0.6, by = ry + 3.2;
-          fill(d, r.kind === "visit" ? C.visit : C.off); d.rect(bx, by, bw, barH, "F");
-          d.setFont(r.kind === "visit"); d.setFontSize(6.8); color(d, r.kind === "visit" ? C.ink : C.muted);
-          if (b - a >= 1 || hits.length === 1) d.text(fit(d, r.title, bw - 1.6), bx + 0.8, by + barH / 2 + 1.2);
-        }
+          const bx = x0 + a * cell + 0.3, bw = (b - a + 1) * cell - 0.6, by = ry + 3.2 + li * (laneH + 0.3);
+          fill(d, r.kind === "visit" ? C.visit : C.off); d.rect(bx, by, bw, laneH, "F");
+          const fs = lanes > 1 ? Math.max(4.6, Math.min(6.8, laneH * 1.9)) : 6.8;
+          d.setFont(r.kind === "visit"); d.setFontSize(fs); color(d, r.kind === "visit" ? C.ink : C.muted);
+          const label = li === lanes - 1 && all.length > lanes ? `${r.title} +${all.length - lanes}` : r.title;
+          d.text(fit(d, label, bw - 1.6), bx + 0.8, by + laneH / 2 + fs * 0.17);
+        });
       }
       d.line(x0, yy + weeksN * rowH, x0 + colW, yy + weeksN * rowH);
     });
