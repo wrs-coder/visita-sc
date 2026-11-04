@@ -9,6 +9,32 @@ Você tem razão: **o problema também acontece no modo avião**, com a sincroni
 
 Ou seja, as três funções existem, mas as telas e a abertura do app não usam o que elas guardam. O conserto é ligar cada tela à cópia do celular e fazer a abertura nunca depender do servidor.
 
+## Nova regra principal (pedido seu): o celular é a fonte, o servidor só quando você pedir
+Esta regra substitui o "vigia de conexão" dos itens abaixo. Com ela, não existe mais o caso de "internet ruim travando o app".
+
+- **Todas as telas leem só do celular**: Painel, Itinerário, Congregações, Programa, Esboços, Estudo e Anotações, Notas e as demais. Abrir, sair e voltar nunca vai ao servidor.
+- **Abrir o app nunca vai ao servidor.** Você entra direto com os dados guardados, inclusive ao voltar de outro aplicativo.
+- **O que você cria ou altera é salvo na hora no celular** e fica marcado como "a enviar".
+- **O servidor só é usado quando você toca em "Sincronizar"**, no topo e no Perfil. Esse botão envia o que você mudou e baixa o que os anciãos enviaram, tudo de uma vez.
+- O botão mostra quantas alterações estão esperando e quando foi a última sincronização. Exemplo: "3 a enviar · última: ontem 19:40".
+- **Exceções que precisam de internet por natureza**, e só quando você aciona: primeiro login no aparelho, criar conta, trocar senha, gerar links de convite de Grandes Eventos e enviar códigos de acesso. Nesses casos o app avisa que precisa de internet, sem travar.
+- **Para os anciãos e a esposa vale a mesma regra.** Eles também têm o botão "Sincronizar" para receber o que o superintendente preparou e enviar o que preencheram.
+
+```text
+┌─────────────────────────────┐
+│ ≡  Visita SC     ⟳ 3   🔔 ? │  ← ⟳ Sincronizar (3 a enviar)
+│                             │
+│  Toque em ⟳:                │
+│ ┌─────────────────────────┐ │
+│ │ Sincronizar             │ │
+│ │ ↑ 3 alterações a enviar │ │
+│ │ ↓ Baixar novidades      │ │
+│ │ Última: ontem 19:40     │ │
+│ │ [ Sincronizar agora ]   │ │
+│ └─────────────────────────┘ │
+└─────────────────────────────┘
+```
+
 ## Critério de "pronto" (o que vou provar aqui antes de te entregar)
 Vou testar no **modo avião simulado**, com a sua conta e os seus dados reais baixados:
 - Abrir **cada tela** do menu: todas precisam mostrar dados.
