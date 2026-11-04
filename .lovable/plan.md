@@ -35,6 +35,21 @@ Esta regra substitui o "vigia de conexão" dos itens abaixo. Com ela, não exist
 └─────────────────────────────┘
 ```
 
+## Conferência com o instructions.md (pontos de atenção)
+Conferi as regras e encontrei **três pontos que precisam da sua decisão**. Nenhum é proibição, mas mexem em regras escritas:
+
+1. **Abrir sem PIN ao voltar de outro aplicativo** (regra 13). Hoje, sem servidor, o app só reconhece você depois do PIN. Proponho: se você nunca tocou em "Sair" neste aparelho, o app abre direto com os dados guardados. O PIN continua obrigatório depois de "Sair" e nas demais situações da regra 13 (30 dias, tentativas, biometria). **Precisa da sua autorização**, porque login e PIN só mudam com pedido explícito seu.
+2. **Fluxo de login com senha** (regra 13, "proibido alterar o login online"). **Não vou mexer nele.** O que estava no plano sobre a senha "falhar rápido" sai do plano. Fica só o aviso "Sem internet" e o destaque do botão do PIN na tela de entrada.
+3. **Envio só no clique explícito** (regras 3 e 26). A nova regra principal está de acordo: nada vai ao servidor sem você tocar em "Sincronizar" ou "Salvar dados". As **exceções** (primeiro login, criar conta, links de Grandes Eventos) continuam acontecendo só quando você toca no botão correspondente.
+
+Também vou cumprir:
+- **Regra 159:** as telas que hoje buscam dados por conta própria passam a ler pelo mesmo sistema central, sem novos atalhos.
+- **Regra 9:** a fila de envio existente é mantida.
+- **Regra 98:** nenhuma tela de entrada espera o servidor.
+- **Regra 120:** nenhum aviso de "sessão expirada" ao voltar ao app.
+- **Regra 15:** a versão não muda.
+- **Regras 7 e 3:** nada muda no banco de dados nem nas regras de acesso.
+
 ## Critério de "pronto" (o que vou provar aqui antes de te entregar)
 Vou testar no **modo avião simulado**, com a sua conta e os seus dados reais baixados:
 - Abrir **cada tela** do menu: todas precisam mostrar dados.
