@@ -182,3 +182,8 @@ Antes de encerrar qualquer mudança que toque modelos, papéis ou visitas, confi
   1. **Texto Explicativo:** Apresentar a hierarquia, a lógica de UX, as pílulas/botões e os estados de cada elemento.
   2. **Diagrama ASCII:** Desenhar o layout textual da tela mostrando exatamente onde cada botão, seletor, lista e barra fixa ficarão posicionados.
 - **PARADA PARA APROVAÇÃO:** A IA deve aguardar a validação explícita do usuário sobre o esboço em texto antes de aplicar qualquer alteração de código na aplicação real.
+
+## 27. Padrão Visual e Recolher/Estender
+
+- **REFERÊNCIA VISUAL OBRIGATÓRIA:** Todo ajuste ou criação de tela deve ter como referência o padrão iOS e One UI (Samsung), respeitando os tokens de cor do projeto.
+- **RECOLHER E ESTENDER:** Todo novo card, aba ou subaba deve ter o recurso de recolher e estender. É uma mudança apenas visual: não altera dados, lógica nem formato salvo; o conteúdo recolhido fica oculto, nunca desmontado, para preservar rascunhos e campos não salvos.
