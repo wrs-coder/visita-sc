@@ -22,3 +22,46 @@ Sem mudança visual, sem mudança na estrutura do banco, sem mudar versão.
 - `src/routes/_app.reunioes-discursos.tsx` `useEnsureVisitForSuper`: só inserir se `error == null` e `data.length === 0`; também consultar o espelho local primeiro.
 - `src/hooks/use-active-visit.ts`: só criar placeholder com leitura remota bem-sucedida; na escolha de "current", ordenar pondo "Programação geral"/visitas de 1 dia depois das visitas reais.
 - `src/routes/_app.dashboard.tsx`: mesma regra de preferência ao escolher a visita da semana.
+
+---
+
+# Pedidos novos
+
+## 6. Balão amarelo vai para o menu lateral
+Hoje o balão ("1 pendente(s) · tocar para enviar", "Sem internet", etc.) flutua no topo e cobre os botões Ajuda e Sincronizar. Ele sai do topo e passa a ficar no menu lateral, na mesma linha do botão do modo escuro.
+
+```text
+ANTES (topo)                     DEPOIS (menu lateral aberto)
++-----------------------------+  +---------------------------+
+| ☰  Cabiri  [1 pendente] ? ⟳ |  | Wanderson · Circuito      |
+|        ^ cobre os botões    |  |---------------------------|
++-----------------------------+  | [☾ Preto ] [⚠ 1 pendente ]|
+                                 |            [ Tocar enviar]|
+                                 |---------------------------|
+                                 | Painel                    |
+                                 | Itinerário ...            |
+                                 +---------------------------+
+```
+- O botão ☰ ganha uma bolinha amarela discreta quando houver pendência, para você saber que deve abrir o menu.
+- Tocar no cartão envia as pendências, como hoje.
+- Na tela da esposa (sem menu lateral) o balão continua como está.
+
+## 7. Lembretes com recolher/expandir em cada bloco
+Cada bloco dos Lembretes (Antecedência, Tipos de evento, Horário silencioso, Dias, etc.) ganha a seta ⌃/⌄, no mesmo estilo dos outros cartões do app. Recolher só esconde; nada configurado é perdido. O app lembra o que você deixou recolhido neste aparelho.
+
+```text
++-----------------------------+
+| 🔔 Lembretes de eventos   ⌃ |
+|-----------------------------|
+| Antecedência            ⌄  |
+| Tipos de evento         ⌃  |
+|   Refeições        [ON ]   |
+|   Saída de campo   [ON ]   |
+| Horário silencioso      ⌄  |
++-----------------------------+
+```
+
+## Detalhes técnicos (6 e 7)
+- `OfflineStatusBar.tsx`: nova variante `inline` renderizada em `_app.tsx` ao lado do `ThemeToggle variant="sidebar"` (grade passa a 2 colunas quando houver aviso); a versão flutuante deixa de renderizar dentro do `_app`, mantida em `visitante`/guest.
+- Indicador no botão ☰ lendo o mesmo contador de pendências.
+- `EventReminders.tsx`: envolver cada seção com o componente existente de `collapsible-blocks.tsx` (estado em localStorage, conteúdo escondido e nunca desmontado).
