@@ -50,6 +50,19 @@ Também vou cumprir:
 - **Regra 15:** a versão não muda.
 - **Regras 7 e 3:** nada muda no banco de dados nem nas regras de acesso.
 
+## O que acontece com as três funções de hoje
+- **Modo offline (interruptor): sai do app.** Ele não é mais necessário, porque o app já vai funcionar sempre como se estivesse offline. Quem estiver com ele ligado continua funcionando normalmente, sem perder nada.
+- **Sincronização offline: vira o botão "Sincronizar"**, agora no topo. É a mesma função, mais completa: envia o que você mudou, baixa tudo sem exceção e mostra "Tudo baixado ✓" com a data e a hora.
+- **Acesso sem internet (PIN e biometria): continua.** Ele é necessário depois de tocar em "Sair", ou se o Android apagar a sessão, para você entrar sem internet. Fica igual, só com mais destaque na tela de entrada quando não houver internet.
+
+```text
+Hoje                         Depois
+──────────────────────────   ──────────────────────────
+Modo offline (interruptor)   (removido, não faz falta)
+Sincronização offline        ⟳ Sincronizar (no topo)
+Acesso sem internet (PIN)    Acesso sem internet (PIN) ✓
+```
+
 ## Critério de "pronto" (o que vou provar aqui antes de te entregar)
 Vou testar no **modo avião simulado**, com a sua conta e os seus dados reais baixados:
 - Abrir **cada tela** do menu: todas precisam mostrar dados.
