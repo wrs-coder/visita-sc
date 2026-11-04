@@ -79,16 +79,30 @@ Arrastar ←  (Enviar)                Arrastar →  (Receber)
 +---------------------------+      +---------------------------+
           verde                              azul
 
-Site/PWA  (⋯ ao lado do esboço)
+Celular, site e PWA (⋯ ao lado do esboço)
 +---------------------------+
 | Renomear                  |
 | Mover                     |
 | ⬆ Enviar para a nuvem     |
 | ⬇ Receber da nuvem        |
 +---------------------------+
+
+⋯ ao lado da pasta
++---------------------------+
+| Nova subpasta             |
+| Renomear                  |
+| Exportar                  |
+| ⬆ Enviar para a nuvem     |
+| ⬇ Receber da nuvem        |
++---------------------------+
+   (age em todos os esboços da pasta)
 ```
+
+- **Três pontinhos de cada esboço (celular, site e PWA):** "⬆ Enviar para a nuvem" e "⬇ Receber da nuvem".
+- **Três pontinhos de cada pasta:** além de "Exportar", "⬆ Enviar para a nuvem" e "⬇ Receber da nuvem", agindo em todos os esboços da pasta e subpastas. Antes de receber, o app avisa quantos esboços com alterações não enviadas serão substituídos.
 
 ### Detalhes técnicos (4)
 - `SwipeToSync.tsx`: dois lados (`onPush` à esquerda com `bg-success`, `onPull` à direita com `bg-primary`), continua só toque para não atrapalhar o arrastar com mouse.
-- `OutlinesWorkspace.tsx`: `swipeSyncNote` deixa de chamar `syncOutlinesIfOnline()`; usa `pushOutlineToCloud` e `pullOutlineFromCloud` apenas com o id do esboço (funções já existentes) e limpa o `dirty` só desse esboço. Mesmas ações adicionadas ao menu ⋯ da nota.
+- `OutlinesWorkspace.tsx`: `swipeSyncNote` deixa de chamar `syncOutlinesIfOnline()`; usa `pushOutlineToCloud` e `pullOutlineFromCloud` apenas com o id do esboço e limpa o `dirty` só desse esboço. Mesmas ações no menu ⋯ da nota, visível também no celular.
+- Menu ⋯ da pasta: envio via `bulkPushOutlines` com os esboços da pasta e subpastas; recebimento chama `pullOutlineFromCloud` para cada esboço da pasta existente na nuvem, com resumo final (recebidos / não encontrados).
 - A sincronização geral pelo botão ⟳ continua igual.
