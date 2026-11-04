@@ -9,11 +9,17 @@ O app foi feito para buscar os dados no servidor e só usar a cópia do celular 
 
 ## O que será feito (5 itens)
 
-**1. Celular primeiro, sempre.** Todas as telas passam a ler só do celular: Painel, Itinerário, Congregações, Programa, Esboços, Estudo e Anotações, Notas e as demais. Abrir, sair e voltar nunca vai ao servidor. Sem pedido ao servidor, nem o modo avião nem a "internet pendurada" conseguem travar o app.
+**1. Celular primeiro, sempre: realmente todas as telas.** Isso inclui cada subaba e cada pílula, sem exceção. Abrir, sair, voltar e trocar de pílula nunca vai ao servidor. Sem pedido ao servidor, nem o modo avião nem a "internet pendurada" conseguem travar o app. A lista completa que vou percorrer:
+- **Painel:** as 4 telas (Agenda e suas pílulas, Esboços, Visita, Pastoreio), os recados, Próximas visitas e as notas de campo.
+- **Circuito:** Itinerário (lista e mês), Semanas sem visita, Congregações, Cronograma e Grandes Eventos (partes e cartas).
+- **Programa da visita:** todas as pílulas e cada pílula de dia, Resumo da semana, Programa dos anciãos, Reuniões de campo, Reuniões e discursos, Refeições, Transporte, Escala, Checklist e Relatório da visita.
+- **Modelos e pacotes:** Programação, Checklist, Reuniões de campo, Discursos, Programa dos anciãos e Pacotes de visita.
+- **Pessoal:** Esboços (pastas e notas), Estudo e Anotações (todas as subabas da Bíblia), Notas privadas, Considerações de campo, Comunicação do casal, Lixeira, Perfil e Ajuda.
+- **Anciãos e esposa:** os painéis e todas as telas que eles abrem.
 
 **2. Abrir o app sem servidor.** O app abre direto com os dados guardados, inclusive depois de trocar de aplicativo. Ele não grava mais "vazio" por cima do seu perfil.
 
-**3. Botão ⟳ Sincronizar no topo** (é a "Sincronização offline" melhorada). Só ele vai ao servidor: envia o que você mudou e baixa tudo, sem exceção. Mostra quantas alterações faltam enviar e "Tudo baixado ✓" com a data e a hora. O que você salva fica no celular até sincronizar.
+**3. Botão ⟳ Sincronizar no topo** (é a "Sincronização offline" melhorada). Só ele vai ao servidor: envia o que você mudou e baixa **realmente todos os dados** das 50 tabelas do banco a que a sua conta tem acesso, sem exceção. Isso inclui visitas, semanas, congregações, todos os programas, reuniões, refeições, transporte, escala, checklist, programa dos anciãos, modelos, pacotes, Grandes Eventos, cartas, recados, notas, esboços e perfil, além dos anexos. Mostra quantas alterações faltam enviar e "Tudo baixado ✓" com a data e a hora. Se alguma parte falhar, mostra qual foi, sem esconder. O que você salva fica no celular até sincronizar.
 
 **4. As três funções de hoje:**
 - O **Modo offline** (interruptor) sai, porque não faz mais falta.
