@@ -1,220 +1,62 @@
-# Plano: app funcionando de verdade quando a internet cai sem aviso
+# Plano final: o app funciona todo pelo celular, sem depender da internet
 
-## Correção sincera (depois do seu relato)
-Você tem razão: **o problema também acontece no modo avião**, com a sincronização feita e o PIN configurado. A "internet pendurada" explica só uma parte. O código mostra três defeitos que aparecem mesmo sem internet nenhuma:
+## Por que hoje falha (resumo sincero)
+O app foi feito para buscar os dados no servidor e só usar a cópia do celular quando o servidor falha. Na prática:
+- Várias telas (Itinerário, partes do Painel e outras) **não leem a cópia do celular**. Sem internet, elas ficam vazias, inclusive ao sair e voltar.
+- Ao **voltar de outro aplicativo**, o app pergunta ao servidor quem você é. Sem resposta, grava "vazio" no seu perfil e cai na tela de entrada.
+- Esboços e Estudo também consultam o servidor antes de abrir.
+- Com "internet pendurada", o app espera o servidor sem limite.
 
-1. **Telas que apagam o que já mostravam.** Itinerário, partes do Painel e outras guardam os dados só enquanto estão abertas. Ao voltar para elas, pedem tudo de novo ao servidor. Sem internet, recebem "nada" e mostram a tela vazia. **A sincronização baixa os dados, mas essas telas nunca leem o que foi baixado.**
-2. **Voltar de outro aplicativo.** O Android fecha o app quando ele fica em segundo plano. Ao reabrir, o app pergunta ao servidor quem você é. Sem resposta, grava "vazio" por cima do seu perfil guardado. Aí cai na tela de entrada ou no cadastro, ou fica girando.
-3. **Esboços e Estudo** perguntam ao servidor se você é superintendente antes de abrir, mesmo com as notas já no celular.
+## O que será feito (5 itens)
 
-Ou seja, as três funções existem, mas as telas e a abertura do app não usam o que elas guardam. O conserto é ligar cada tela à cópia do celular e fazer a abertura nunca depender do servidor.
+**1. Celular primeiro, sempre.** Todas as telas passam a ler só do celular: Painel, Itinerário, Congregações, Programa, Esboços, Estudo e Anotações, Notas e as demais. Abrir, sair e voltar nunca vai ao servidor. Sem pedido ao servidor, nem o modo avião nem a "internet pendurada" conseguem travar o app.
 
-## Nova regra principal (pedido seu): o celular é a fonte, o servidor só quando você pedir
-Esta regra substitui o "vigia de conexão" dos itens abaixo. Com ela, não existe mais o caso de "internet ruim travando o app".
+**2. Abrir o app sem servidor.** O app abre direto com os dados guardados, inclusive depois de trocar de aplicativo. Ele não grava mais "vazio" por cima do seu perfil.
 
-- **Todas as telas leem só do celular**: Painel, Itinerário, Congregações, Programa, Esboços, Estudo e Anotações, Notas e as demais. Abrir, sair e voltar nunca vai ao servidor.
-- **Abrir o app nunca vai ao servidor.** Você entra direto com os dados guardados, inclusive ao voltar de outro aplicativo.
-- **O que você cria ou altera é salvo na hora no celular** e fica marcado como "a enviar".
-- **O servidor só é usado quando você toca em "Sincronizar"**, no topo e no Perfil. Esse botão envia o que você mudou e baixa o que os anciãos enviaram, tudo de uma vez.
-- O botão mostra quantas alterações estão esperando e quando foi a última sincronização. Exemplo: "3 a enviar · última: ontem 19:40".
-- **Exceções que precisam de internet por natureza**, e só quando você aciona: primeiro login no aparelho, criar conta, trocar senha, gerar links de convite de Grandes Eventos e enviar códigos de acesso. Nesses casos o app avisa que precisa de internet, sem travar.
-- **Para os anciãos e a esposa vale a mesma regra.** Eles também têm o botão "Sincronizar" para receber o que o superintendente preparou e enviar o que preencheram.
+**3. Botão ⟳ Sincronizar no topo** (é a "Sincronização offline" melhorada). Só ele vai ao servidor: envia o que você mudou e baixa tudo, sem exceção. Mostra quantas alterações faltam enviar e "Tudo baixado ✓" com a data e a hora. O que você salva fica no celular até sincronizar.
+
+**4. As três funções de hoje:**
+- O **Modo offline** (interruptor) sai, porque não faz mais falta.
+- A **Sincronização offline** vira o botão ⟳.
+- O **PIN e a biometria** continuam iguais, para entrar sem internet depois de tocar em "Sair".
+
+**5. Botão "Simular internet ruim"** no Perfil, para você testar em casa antes de ir à zona rural.
 
 ```text
 ┌─────────────────────────────┐
-│ ≡  Visita SC     ⟳ 3   🔔 ? │  ← ⟳ Sincronizar (3 a enviar)
-│                             │
-│  Toque em ⟳:                │
+│ ≡  Visita SC     ⟳ 3   🔔 ? │  ⟳ = Sincronizar (3 a enviar)
 │ ┌─────────────────────────┐ │
 │ │ Sincronizar             │ │
 │ │ ↑ 3 alterações a enviar │ │
-│ │ ↓ Baixar novidades      │ │
-│ │ Última: ontem 19:40     │ │
+│ │ ✓ Tudo baixado          │ │
+│ │   ontem às 19:40        │ │
 │ │ [ Sincronizar agora ]   │ │
 │ └─────────────────────────┘ │
-└─────────────────────────────┘
-```
-
-## Conferência com o instructions.md (pontos de atenção)
-Conferi as regras e encontrei **três pontos que precisam da sua decisão**. Nenhum é proibição, mas mexem em regras escritas:
-
-1. **Abrir sem PIN ao voltar de outro aplicativo** (regra 13). Hoje, sem servidor, o app só reconhece você depois do PIN. Proponho: se você nunca tocou em "Sair" neste aparelho, o app abre direto com os dados guardados. O PIN continua obrigatório depois de "Sair" e nas demais situações da regra 13 (30 dias, tentativas, biometria). **Precisa da sua autorização**, porque login e PIN só mudam com pedido explícito seu.
-2. **Fluxo de login com senha** (regra 13, "proibido alterar o login online"). **Não vou mexer nele.** O que estava no plano sobre a senha "falhar rápido" sai do plano. Fica só o aviso "Sem internet" e o destaque do botão do PIN na tela de entrada.
-3. **Envio só no clique explícito** (regras 3 e 26). A nova regra principal está de acordo: nada vai ao servidor sem você tocar em "Sincronizar" ou "Salvar dados". As **exceções** (primeiro login, criar conta, links de Grandes Eventos) continuam acontecendo só quando você toca no botão correspondente.
-
-Também vou cumprir:
-- **Regra 159:** as telas que hoje buscam dados por conta própria passam a ler pelo mesmo sistema central, sem novos atalhos.
-- **Regra 9:** a fila de envio existente é mantida.
-- **Regra 98:** nenhuma tela de entrada espera o servidor.
-- **Regra 120:** nenhum aviso de "sessão expirada" ao voltar ao app.
-- **Regra 15:** a versão não muda.
-- **Regras 7 e 3:** nada muda no banco de dados nem nas regras de acesso.
-
-## O que acontece com as três funções de hoje
-- **Modo offline (interruptor): sai do app.** Ele não é mais necessário, porque o app já vai funcionar sempre como se estivesse offline. Quem estiver com ele ligado continua funcionando normalmente, sem perder nada.
-- **Sincronização offline: vira o botão "Sincronizar"**, agora no topo. É a mesma função, mais completa: envia o que você mudou, baixa tudo sem exceção e mostra "Tudo baixado ✓" com a data e a hora.
-- **Acesso sem internet (PIN e biometria): continua.** Ele é necessário depois de tocar em "Sair", ou se o Android apagar a sessão, para você entrar sem internet. Fica igual, só com mais destaque na tela de entrada quando não houver internet.
-
-```text
-Hoje                         Depois
-──────────────────────────   ──────────────────────────
-Modo offline (interruptor)   (removido, não faz falta)
-Sincronização offline        ⟳ Sincronizar (no topo)
-Acesso sem internet (PIN)    Acesso sem internet (PIN) ✓
-```
-
-## Critério de "pronto" (o que vou provar aqui antes de te entregar)
-Vou testar no **modo avião simulado**, com a sua conta e os seus dados reais baixados:
-- Abrir **cada tela** do menu: todas precisam mostrar dados.
-- Sair de uma tela e voltar: os dados continuam lá.
-- Fechar e reabrir o app, como ao trocar de aplicativo: ele abre direto no Painel, sem pedir senha e sem tela vazia.
-- Abrir um esboço de discurso: o texto completo aparece.
-
-Te entrego a lista com cada tela marcada como aprovada ou reprovada. Nenhuma fica de fora sem você saber.
-
-## Explicação sincera: por que nada resolveu até hoje
-
-As três funções que já existem (Modo offline, Sincronização offline e Acesso por PIN) funcionam **só quando o celular sabe que está sem internet**: modo avião, dados desligados ou quando você liga o "Modo offline" na mão.
-
-A queda inesperada quase nunca é assim. O caso comum é a **internet "meio caída"**:
-- Wi-Fi conectado, mas sem internet (roteador da casa, Salão do Reino, hotel)
-- sinal fraco de 4G/3G que "conecta" mas não traz nada
-- rede que pede login (Wi-Fi público)
-
-Nesses casos o celular continua dizendo "estou online". O app então pede os dados ao servidor e **fica esperando a resposta para sempre**. Encontrei isto no código:
-
-1. **Os pedidos ao banco não têm limite de espera.** Só as chamadas de login têm (12 s cada, até 3 endereços ≈ 40 s). Busca de visitas, congregações e programa espera sem fim.
-2. **A cópia guardada no celular só é usada depois que o pedido falha.** Como o pedido nunca falha (só fica esperando), a cópia nunca aparece. Resultado: tela em branco ou girando.
-3. **Ao abrir o app**, se a preparação do dia ainda não rodou, ele espera o servidor responder com seu perfil antes de mostrar qualquer coisa. Com a internet meio caída, a bolinha gira para sempre ou volta para a tela de entrada.
-4. **Ao entrar**, se a sessão expirou (passa de 1 hora parado), o app tenta renová-la e fica esperando. O PIN só aparece se ele foi criado antes. Se não foi, só sobra a senha, e a senha precisa de internet.
-5. **Algumas telas não sabem ler a cópia guardada.** O Painel, Congregações, Transporte, Refeições e outras sabem. Itinerário, Programa da visita e outras ainda precisam ser conferidas uma a uma.
-
-Mais três falhas que encontrei:
-6. **Se o pedido do seu perfil falha, o app grava "vazio" por cima do perfil bom guardado.** Na próxima abertura ele acha que sua conta está incompleta.
-7. **A preparação automática dos dados está desligada.** O download completo só roda no primeiro login. Se falha, falha calado.
-8. **As telas de Esboços e Estudo** perguntam ao servidor quem você é antes de abrir, mesmo com as notas já no celular.
-
-Em resumo, o problema não é só a cópia local. Ela está incompleta, e o app não percebe a tempo que a internet sumiu.
-
-## Sobre colocar todos os dados dentro do AAB/APK (sua pergunta)
-
-Sinceramente, isso não resolveria, e eu não recomendo:
-- O AAB é gerado uma vez e enviado para a Play Store. Os dados mudam todo dia (visitas, programa, esboços). Um discurso salvo ontem não estaria no arquivo gerado na semana passada.
-- O mesmo AAB vai para todos os usuários. Colocar os seus dados nele significaria entregar suas informações a qualquer pessoa que baixasse o app.
-
-O que resolve, com o mesmo efeito que você quer: **o app baixa tudo para a memória do celular, sem exceção, e mantém essa cópia sempre em dia.**
-
-### 0. Download completo e garantido
-- Ao entrar, e depois **toda vez que houver internet** (ao abrir o app e a cada poucas horas), o app baixa **todos** os seus dados: visitas, semanas, congregações, programas, modelos, refeições, transporte, escala, recados, notas, esboços e anexos.
-- Nada fica de fora por tamanho. Vou usar a memória do celular (IndexedDB), que aguenta centenas de MB.
-- O app pede ao Android para **não apagar** esses dados (armazenamento persistente).
-- No Perfil aparece **"Dados no aparelho: tudo baixado ✓ hoje 14:32"**, ou o que falta, com um botão **"Baixar tudo agora"**. Assim, antes de um discurso, você confere em um segundo.
-- A Bíblia e as telas já ficam dentro do app hoje. Isso continua igual.
-
-```text
-┌─────────────────────────────┐
-│ ‹ Perfil                    │
-│ ┌─────────────────────────┐ │
-│ │ Dados no aparelho       │ │
-│ │ ✓ Tudo baixado          │ │
-│ │   hoje às 14:32 · 38 MB │ │
-│ │ [ Baixar tudo agora ]   │ │
-│ └─────────────────────────┘ │
-└─────────────────────────────┘
-```
-
-## O que vou fazer
-
-### 1. "Vigia de conexão" automático (o ponto central)
-- Todo pedido ao servidor ganha um **limite de espera de cerca de 6 segundos**.
-- Se estourar ou falhar, o app entra sozinho em **"Sem conexão"**: as telas passam a ler direto da cópia do celular, sem esperar de novo.
-- A cada 20 segundos ele testa a internet sem atrapalhar. Quando ela volta, envia o que ficou pendente e volta ao normal.
-- O "Modo offline" manual continua existindo, igual a hoje.
-
-### 2. Abrir o app sempre pela cópia do celular
-- Se o aparelho já tinha uma conta conectada (você nunca tocou em "Sair"), o app abre direto com os dados guardados, **sem esperar o servidor e sem pedir PIN**.
-- A verificação com o servidor passa a rodar por trás. Se ela não responder em cerca de 3 segundos, o app segue com o que tem.
-
-### 3. Tela de entrada sem internet
-- Aviso claro: "Sem internet". O botão **Entrar com PIN** passa a ser o principal.
-- A senha falha rápido, com mensagem clara, em vez de girar por 40 segundos.
-- Se o PIN nunca foi criado, a tela explica que ele é necessário para entrar sem internet depois de sair da conta. Um lembrete no Perfil vai sugerir criar o PIN.
-
-### 4. Revisar todas as telas
-- Vou conferir uma a uma as telas do superintendente e dos anciãos. As que ainda não leem a cópia do celular passam a ler, começando por Itinerário e Programa da visita.
-- A preparação diária passa a garantir que tudo o que essas telas mostram fique guardado.
-
-### 5. Aviso discreto no topo (estilo iOS / One UI)
-
-```text
-┌─────────────────────────────┐
-│ 9:41                 ▂▄▆ 🔋 │
-│ ≡  Visita SC          🔔  ? │
-│ ┌─────────────────────────┐ │
-│ │ ⚠ Sem conexão · usando   │ │
-│ │   dados do aparelho      │ │
-│ └─────────────────────────┘ │
-│                             │
 │  Agenda   Esboços  Visita   │
-│  ┌───────────────────────┐  │
-│  │ Próxima visita        │  │
-│  │ Cong. Jardim Alvorada │  │
-│  │ 10–16 nov             │  │
-│  └───────────────────────┘  │
-│  (tudo aparece normalmente) │
+│  (dados sempre na tela)     │
 └─────────────────────────────┘
 ```
 
-Quando a internet volta, o aviso troca por "Conectado · enviando alterações…" e some sozinho.
-
-### Tela de entrada sem internet
-
-```text
-┌─────────────────────────────┐
-│        [logo] Visita SC     │
-│ ┌─────────────────────────┐ │
-│ │ ⚠ Sem internet agora    │ │
-│ │ Entre com seu PIN para  │ │
-│ │ usar os dados guardados │ │
-│ └─────────────────────────┘ │
-│ ┌─────────────────────────┐ │
-│ │  Wanderson (wa•••@...)  │ │
-│ │   ● ● ● ○ ○ ○           │ │
-│ │  [ Entrar com PIN ]     │ │
-│ │  [ Usar biometria ]     │ │
-│ │  Usar senha (precisa    │ │
-│ │  de internet)           │ │
-│ └─────────────────────────┘ │
-└─────────────────────────────┘
-```
+## Preciso da sua autorização (instructions.md, regra 13)
+O app passa a **abrir sem pedir PIN se você nunca tocou em "Sair"** neste aparelho. Depois de "Sair", o PIN continua obrigatório, como hoje. O login com senha não muda.
 
 ## O que não muda
-- Banco de dados, regras de acesso, formato dos dados e da sincronização.
-- Fila de alterações pendentes, PIN, biometria e cofre: as mesmas peças, só acionadas na hora certa.
-- Nenhum plugin novo do Capacitor e nenhuma mudança de versão.
+Banco de dados, regras de acesso, login com senha, PIN, fila de envio, versão do app. Nenhum plugin novo.
 
-## Como vou provar que funciona (antes de dizer que está pronto)
-Vou testar no navegador automatizado três situações, com conta real:
-1. Internet cortada de vez com o app aberto: as telas precisam continuar com dados.
-2. **Internet "pendurada"** (o servidor nunca responde, o caso real de hoje): em até cerca de 6 s precisa aparecer "Sem conexão", com os dados na tela.
-3. App fechado e reaberto sem internet: precisa abrir direto no Painel com os dados.
+## Como vou provar antes de entregar
+Com a sua conta, vou simular o modo avião e a internet pendurada e conferir:
+- abrir todas as telas
+- sair e voltar
+- fechar e reabrir o app
+- abrir um esboço
 
-Também vou escrever testes automáticos para cada regra.
-
-Uma limitação, para ser honesto: o teste real no seu celular com Wi-Fi sem internet só você consegue fazer. Vou listar os passos exatos para você testar.
+Te entrego a lista com cada tela aprovada ou reprovada.
 
 ## Detalhes técnicos
-- `connection-mode.ts`: o interceptor de fetch para o host do backend passa a usar AbortController com cerca de 6 s, inclusive no modo "online". Um novo estado automático `auto-offline` (só na memória, separado do manual) é ativado por timeout ou erro de rede. Enquanto ativo, os pedidos ao backend falham na hora (Cache Storage, depois erro sintético), como no modo manual. Um ping a cada 20 s em `/api/public/ping`, ou um HEAD leve no backend, sai do estado e chama `flushQueue`.
-- `local-first.ts`: com `auto-offline` ou o modo manual ativos, lê direto do espelho, sem esperar a chamada remota.
-- `use-auth.tsx`: `getSession` e `loadUserData` passam a usar `Promise.race` com cerca de 3 s. Se houver um snapshot `visita-sc:auth-profile:<uid>` e o token estiver salvo, hidrata dele e libera `loading`. Um SIGNED_OUT não deliberado continua sendo ignorado. A renovação do token roda em segundo plano.
-- `LoginForm.tsx`: detecta auto-offline ou a falha do ping e mostra o banner, com PinUnlockPanel em destaque. O submit por senha ganha timeout curto e uma mensagem específica.
-- Revisão das rotas que leem do backend sem `readWithMirror` (`_app.configuracoes`, `_app.programa-visita`, `_app.resumo-semana`, `checklist`, `reunioes-*` e outras). Conferir também se `offline-prefetch.ts` cobre essas tabelas.
-- Um novo componente `ConnectionBanner` no `_app.tsx`, só com tokens semânticos.
-- Testes com vitest: interceptor com fetch pendurado → timeout e auto-offline; `readWithMirror` em auto-offline não chama o remoto; inicialização do auth com rede pendurada libera em ≤3 s com o snapshot.
-- Playwright: `page.route` pendurando as requisições do backend, `context.set_offline(True)` e reload offline.
-- Uma regra no AGENTS.md: toda leitura do backend tem limite de espera, e queda detectada vira auto-offline, porque `navigator.onLine` não detecta Wi-Fi sem internet.
-
-## Testar em casa, sem ir à zona rural
-- **Botão "Simular internet ruim"** no Perfil, numa seção de teste. Ligado, o app passa a agir como na zona rural: o servidor "não responde". Você fecha e abre o app, entra nas telas, abre um esboço, e confere se tudo aparece. Depois desliga o botão.
-- **Teste real, sem botão:** tire da tomada o cabo de internet do roteador e deixe o Wi-Fi ligado. O celular fica "conectado ao Wi-Fi sem internet", que é exatamente o caso da zona rural.
-- **Outra forma:** ligue o roteador do celular da sua esposa com os dados móveis dela desligados e conecte o seu celular nele.
+- As leituras das rotas (`configuracoes`, `dashboard`, `congregacoes`, `programa-*`, `cronograma`, `consideracoes-campo`, `estudo-pessoal` etc.) passam a usar TanStack Query com uma queryFn que lê o espelho `local-db` e o cache persistido. Não há chamada remota na leitura, e o refetch automático fica desligado.
+- `runFullSync` (local-sync) passa a ser o único caminho remoto: envia a fila (`flushQueue`) e baixa todas as tabelas e os resultados das server functions usados pelas telas. Ao terminar, invalida as queries. Um carimbo "último download completo" fica por usuário. `navigator.storage.persist()` é chamado.
+- `use-auth.tsx`: hidrata do snapshot e da sessão salvos, sem esperar `getSession` ou `loadUserData`. A verificação remota só acontece na sincronização, e um erro remoto nunca sobrescreve o snapshot.
+- Os guards de `consideracoes-campo` e `estudo-pessoal` passam a usar o `role` do AuthProvider.
+- O interceptor de fetch ganha um timeout de cerca de 8 s para as chamadas acionadas pelo usuário. O interruptor de Modo offline sai da interface, e quem estava com o modo ligado tem o estado convertido de forma segura.
+- O simulador de internet ruim fica em localStorage e faz o interceptor pendurar ou falhar os pedidos ao backend.
+- Testes com vitest para a leitura local sem rede, para o snapshot que não é sobrescrito e para a sincronização. Teste com Playwright em `set_offline` e com rotas penduradas. Uma regra nova no AGENTS.md.
