@@ -57,7 +57,7 @@ export function OfflinePinCard() {
     });
   }, [reload]);
 
-  const validUntil = meta
+  const validUntil = meta && Number.isFinite(meta.expiresAt)
     ? new Date(meta.expiresAt).toLocaleDateString(i18n.language || "pt-BR")
     : "";
 

@@ -1902,7 +1902,7 @@
     "later": "Ahora no",
     "created": "PIN creado. Ya puedes entrar sin internet.",
     "manageTitle": "Acceso sin conexión (PIN)",
-    "manageDescOn": "Activo en este dispositivo. Válido hasta {{date}}: cada entrada con internet lo renueva.",
+    "manageDescOn": "Activo en este dispositivo, sin vencimiento. Solo deja de valer si tocas \"Salir\".",
     "manageDescOff": "Aún no configurado en este dispositivo.",
     "change": "Cambiar PIN",
     "remove": "Quitar acceso sin conexión",

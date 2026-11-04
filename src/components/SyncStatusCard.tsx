@@ -20,6 +20,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { DEVICE_SYNC_EVENT, readDeviceSyncReport, runDeviceSync, type DeviceSyncReport } from "@/lib/device-sync";
 import { isSimulatingBadNetwork, setSimulateBadNetwork } from "@/lib/net-policy";
+import { localDbStats } from "@/lib/local-db";
+import { MIRROR_ID_FIELD } from "@/lib/mirror-tables";
+import { CheckCircle2, AlertTriangle } from "lucide-react";
+
+// Áreas mostradas no painel "Pronto para ficar sem internet".
+const READY_AREAS: Array<{ key: string; label: string; tables: string[] }> = [
+  { key: "itinerary", label: "Itinerário e visitas", tables: ["visits", "itinerary_weeks", "circuit_schedule_events"] },
+  { key: "congregations", label: "Congregações", tables: ["congregations"] },
+  { key: "outlines", label: "Esboços e anotações", tables: ["personal_outlines", "private_notes"] },
+  { key: "templates", label: "Modelos", tables: ["program_templates", "checklist_templates", "meeting_talk_templates"] },
+  { key: "events", label: "Grandes Eventos", tables: ["circuit_big_events"] },
+];
 import {
   discardFailed,
   listFailed,
@@ -93,6 +105,26 @@ export function SyncStatusCard() {
     const unsub = subscribeAutoSync((s) => { if (!s.running && s.lastRunAt) void estimate(); });
     return () => { alive = false; unsub(); };
   }, []);
+
+  const [local, setLocal] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      void localDbStats()
+        .then((st) => {
+          if (!alive) return;
+          const m: Record<string, number> = {};
+          for (const r of st.tables) m[r.table] = r.rows;
+          setLocal(m);
+        })
+        .catch(() => undefined);
+    load();
+    const unsub = subscribeAutoSync((s) => { if (!s.running) load(); });
+    window.addEventListener(DEVICE_SYNC_EVENT, load);
+    return () => { alive = false; unsub(); window.removeEventListener(DEVICE_SYNC_EVENT, load); };
+  }, []);
+  const storedTables = local ? Object.keys(MIRROR_ID_FIELD).filter((tb) => tb in local).length : 0;
+  const totalTables = Object.keys(MIRROR_ID_FIELD).length;
 
   const { user, role, refresh } = useAuth();
   const queryClient = useQueryClient();
@@ -188,6 +220,31 @@ export function SyncStatusCard() {
             </Button>
           )}
         </div>
+
+        {local && (
+          <div className="rounded-md border p-2 space-y-1.5" aria-label={t("sync.readyTitle", "Pronto para ficar sem internet")}>
+            <div className="text-sm font-medium">{t("sync.readyTitle", "Pronto para ficar sem internet")}</div>
+            {READY_AREAS.map((a) => {
+              const has = a.tables.some((tb) => tb in local);
+              const n = a.tables.reduce((acc, tb) => acc + (local[tb] ?? 0), 0);
+              return (
+                <div key={a.key} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    {has ? <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" /> : <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                    <span className="truncate">{t(`sync.ready.${a.key}`, a.label)}</span>
+                  </span>
+                  <span className="text-muted-foreground shrink-0">{has ? `${n}` : t("sync.readyMissing", "não baixado")}</span>
+                </div>
+              );
+            })}
+            <div className="text-xs text-muted-foreground">
+              {t("sync.readyTables", "{{n}} de {{total}} partes guardadas no aparelho", { n: storedTables, total: totalTables })}
+            </div>
+            {storedTables < totalTables && (
+              <div className="text-xs text-destructive">{t("sync.readyHint", "Toque em Sincronizar agora com internet para baixar o que falta.")}</div>
+            )}
+          </div>
+        )}
 
         <label className="flex items-start justify-between gap-3 rounded-md border p-2">
           <span className="min-w-0">

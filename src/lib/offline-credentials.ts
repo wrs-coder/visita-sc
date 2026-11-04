@@ -16,14 +16,14 @@
 // É migrado para v2 de forma transparente no primeiro desbloqueio por PIN.
 //
 // Regras:
-//   - 30 dias sem NENHUMA conexão invalidam o cofre (exige login online).
+//   - Sem prazo: o cofre vale até o usuário tocar em "Sair" (decisão do usuário).
 //   - 5 erros → espera progressiva; 10 erros → o cofre é apagado.
 //   - Apagar o cofre não afeta nada na nuvem.
 
 const VAULT_KEY = "visita-sc:offline-vault";
 const PBKDF2_ITERATIONS = 210_000;
 
-export const VAULT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
+export const VAULT_MAX_AGE_MS = Number.POSITIVE_INFINITY; // sem prazo
 export const VAULT_SOFT_LIMIT = 5; // a partir daqui, espera progressiva
 export const VAULT_HARD_LIMIT = 10; // aqui o cofre é destruído
 
@@ -267,6 +267,7 @@ export async function getVaultMeta(): Promise<VaultMeta | null> {
 
 export function isVaultExpired(meta: VaultMeta | null): boolean {
   if (!meta) return false;
+  if (!Number.isFinite(VAULT_MAX_AGE_MS)) return false;
   return Date.now() - meta.lastOnlineAt > VAULT_MAX_AGE_MS;
 }
 

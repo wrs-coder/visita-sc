@@ -7,3 +7,6 @@
 - [x] Ajuda do superintendente com as novidades acima
 
 - [x] Itinerário: calendário empilha itens da mesma semana; editar semana sem visita; marca "SCS" na exportação
+
+- [x] Offline: PIN sem prazo, armazenamento permanente, painel Pronto para ficar sem internet
+- [ ] Teste automático de todas as telas com internet pendurada (pendente)

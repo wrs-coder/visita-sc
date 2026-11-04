@@ -1927,7 +1927,7 @@
     "later": "Not now",
     "created": "PIN created. You can now sign in without internet.",
     "manageTitle": "Offline access (PIN)",
-    "manageDescOn": "Active on this device. Valid until {{date}} — each online sign-in renews it.",
+    "manageDescOn": "Active on this device with no expiry. It only stops working if you tap \"Sign out\".",
     "manageDescOff": "Not set up on this device yet.",
     "change": "Change PIN",
     "remove": "Remove offline access",

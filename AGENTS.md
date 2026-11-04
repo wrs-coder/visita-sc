@@ -42,3 +42,4 @@
 - The Bible-tab chapter reader (CleanReader) keeps its own device-local preferences in bible-reader-settings.ts and uses reader-native.ts (TTS/brightness plugins with web fallback), because the verse popover used by outlines and notes must stay unchanged.
 - Congregation import is parsed on-device (congregation-import.ts), created via createCongregation, number kept in the name, because no schema change is allowed.
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
+- The offline PIN vault never expires (VAULT_MAX_AGE_MS = Infinity); only explicit Sign out or 10 wrong PINs destroy it, because the user works for long periods without internet.

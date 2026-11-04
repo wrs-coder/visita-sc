@@ -1895,7 +1895,7 @@
     "later": "Agora não",
     "created": "PIN criado. Agora você pode entrar sem internet.",
     "manageTitle": "Acesso sem internet (PIN)",
-    "manageDescOn": "Ativo neste aparelho. Válido até {{date}} — cada entrada com internet renova o prazo.",
+    "manageDescOn": "Ativo neste aparelho, sem prazo de validade. Só deixa de valer se você tocar em \"Sair\".",
     "manageDescOff": "Ainda não configurado neste aparelho.",
     "change": "Alterar PIN",
     "remove": "Remover acesso offline",

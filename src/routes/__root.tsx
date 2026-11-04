@@ -254,6 +254,8 @@ function RootComponent() {
     // Tenta flush no boot (com session-ready) e arma auto-retry com backoff.
     void runFlushWithSession("boot");
     startOfflineQueueAutoRetry();
+    // Pede ao sistema para não apagar os dados guardados no aparelho.
+    void navigator.storage?.persist?.().catch(() => undefined);
     const stopReconciler = startLocalWriteReconciler();
     // Celular primeiro: sem download automático; só pelo botão Sincronizar.
     return () => {

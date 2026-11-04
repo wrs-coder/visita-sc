@@ -28,7 +28,7 @@ export function OfflineStatusBar() {
     setLastAt(getLastWarmupAt());
     void getVaultMeta()
       .then((m) => {
-        if (!m) return;
+        if (!m || !Number.isFinite(m.expiresAt)) return;
         setVaultDaysLeft(Math.ceil((m.expiresAt - Date.now()) / 86_400_000));
       })
       .catch(() => undefined);

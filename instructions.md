@@ -94,7 +94,7 @@ Antes de encerrar qualquer mudança que toque modelos, papéis ou visitas, confi
 - A senha da conta NUNCA é guardada no aparelho. O cofre local (`src/lib/offline-credentials.ts`) guarda apenas sessão (access/refresh token) e o retrato de perfil, cifrados com AES-GCM.
 - Formato v2 obrigatório: `contentKey` aleatória de 256 bits cifra o conteúdo; a `contentKey` é embrulhada pela chave derivada do PIN (PBKDF2-SHA256, mínimo 210.000 iterações) e pode ser guardada no cofre nativo liberado por digital/rosto.
 - PIN é sempre de 6 dígitos e continua sendo o caminho garantido de recuperação; biometria é apenas atalho e nunca pode ser a única forma de abrir o cofre.
-- Validade de 30 dias sem contato com o servidor; 5 erros iniciam espera progressiva; 10 erros destroem o cofre. Logout explícito apaga cofre, chave nativa e sessão local.
+- Sem prazo de validade (o cofre vale até o usuário tocar em "Sair"); 5 erros iniciam espera progressiva; 10 erros destroem o cofre. Logout explícito apaga cofre, chave nativa e sessão local.
 - Nenhuma tela de entrada pode ficar presa esperando o servidor: toda restauração de sessão tem verificação de rede e limite de tempo, caindo para Modo Offline.
 - Com o cofre aberto e o servidor inacessível, o app reconhece o usuário pela sessão local (`src/lib/offline-session.ts`) + snapshot `visita-sc:auth-profile:<uid>`. A sessão real do servidor sempre tem prioridade.
 - O app abre direto, sem pedir PIN, enquanto o usuário nunca tocou em "Sair" neste aparelho: a sessão guardada no aparelho é usada mesmo sem internet ou com o token vencido. O PIN só é pedido depois de um "Sair" explícito.
