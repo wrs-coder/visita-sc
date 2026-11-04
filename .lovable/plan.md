@@ -1,68 +1,52 @@
-# Plano final: o app funciona todo pelo celular, sem depender da internet
+# Próximas melhorias para o app funcionar de verdade sem internet
 
-## Por que hoje falha (resumo sincero)
-O app foi feito para buscar os dados no servidor e só usar a cópia do celular quando o servidor falha. Na prática:
-- Várias telas (Itinerário, partes do Painel e outras) **não leem a cópia do celular**. Sem internet, elas ficam vazias, inclusive ao sair e voltar.
-- Ao **voltar de outro aplicativo**, o app pergunta ao servidor quem você é. Sem resposta, grava "vazio" no seu perfil e cai na tela de entrada.
-- Esboços e Estudo também consultam o servidor antes de abrir.
-- Com "internet pendurada", o app espera o servidor sem limite.
+Sugestões em ordem de importância. Nada muda no banco de dados, no login online nem na versão. Você escolhe quais aprovar.
 
-## O que será feito (5 itens)
+## 1. Testar as telas que ainda não foram testadas (mais importante)
+No último teste, seis telas abriram sem internet. Estas telas ainda leem direto do servidor em alguns pontos e **não foram testadas**:
+- Grandes Eventos (Circuito)
+- Relatório da visita e Relatório completo
+- Semanas sem visita (editar), Transporte, Cronograma
+- Reuniões e Discursos, Checklist, campos do esboço de discurso
 
-**1. Celular primeiro, sempre: realmente todas as telas.** Isso inclui cada subaba e cada pílula, sem exceção. Abrir, sair, voltar e trocar de pílula nunca vai ao servidor. Sem pedido ao servidor, nem o modo avião nem a "internet pendurada" conseguem travar o app. A lista completa que vou percorrer:
-- **Painel:** as 4 telas (Agenda e suas pílulas, Esboços, Visita, Pastoreio), os recados, Próximas visitas e as notas de campo.
-- **Circuito:** Itinerário (lista e mês), Semanas sem visita, Congregações, Cronograma e Grandes Eventos (partes e cartas).
-- **Programa da visita:** todas as pílulas e cada pílula de dia, Resumo da semana, Programa dos anciãos, Reuniões de campo, Reuniões e discursos, Refeições, Transporte, Escala, Checklist e Relatório da visita.
-- **Modelos e pacotes:** Programação, Checklist, Reuniões de campo, Discursos, Programa dos anciãos e Pacotes de visita.
-- **Pessoal:** Esboços (pastas e notas), Estudo e Anotações (todas as subabas da Bíblia), Notas privadas, Considerações de campo, Comunicação do casal, Lixeira, Perfil e Ajuda.
-- **Anciãos e esposa:** os painéis e todas as telas que eles abrem.
+Para cada uma: passar a ler a cópia do celular e testar com a internet "pendurada". Uma tela só conta como pronta depois que passar no teste.
 
-**2. Abrir o app sem servidor.** O app abre direto com os dados guardados, inclusive depois de trocar de aplicativo. Ele não grava mais "vazio" por cima do seu perfil.
-
-**3. Botão ⟳ Sincronizar no topo** (é a "Sincronização offline" melhorada). Só ele vai ao servidor: envia o que você mudou e baixa **realmente todos os dados** das 50 tabelas do banco a que a sua conta tem acesso, sem exceção. Isso inclui visitas, semanas, congregações, todos os programas, reuniões, refeições, transporte, escala, checklist, programa dos anciãos, modelos, pacotes, Grandes Eventos, cartas, recados, notas, esboços e perfil, além dos anexos. Mostra quantas alterações faltam enviar e "Tudo baixado ✓" com a data e a hora. Se alguma parte falhar, mostra qual foi, sem esconder. O que você salva fica no celular até sincronizar.
-
-**4. As três funções de hoje:**
-- O **Modo offline** (interruptor) sai, porque não faz mais falta.
-- A **Sincronização offline** vira o botão ⟳.
-- O **PIN e a biometria** continuam iguais, para entrar sem internet depois de tocar em "Sair".
-
-**5. Botão "Simular internet ruim"** no Perfil, para você testar em casa antes de ir à zona rural.
-
+## 2. Painel "Pronto para ficar sem internet" (no Perfil)
 ```text
-┌─────────────────────────────┐
-│ ≡  Visita SC     ⟳ 3   🔔 ? │  ⟳ = Sincronizar (3 a enviar)
-│ ┌─────────────────────────┐ │
-│ │ Sincronizar             │ │
-│ │ ↑ 3 alterações a enviar │ │
-│ │ ✓ Tudo baixado          │ │
-│ │   ontem às 19:40        │ │
-│ │ [ Sincronizar agora ]   │ │
-│ └─────────────────────────┘ │
-│  Agenda   Esboços  Visita   │
-│  (dados sempre na tela)     │
-└─────────────────────────────┘
++-----------------------------------+
+| Sem internet                      |
+| (v) Itinerário        atualizado  |
+| (v) Congregações (17) atualizado  |
+| (v) Esboços           atualizado  |
+| (!) Anexos: 3 sem download        |
+| Última sincronização: hoje 08:12  |
+|  [ Baixar o que falta ]           |
++-----------------------------------+
 ```
+Antes de viajar, você vê se tem tudo no celular.
 
-## Preciso da sua autorização (instructions.md, regra 13)
-O app passa a **abrir sem pedir PIN se você nunca tocou em "Sair"** neste aparelho. Depois de "Sair", o PIN continua obrigatório, como hoje. O login com senha não muda.
+## 3. Anexos dos esboços (PDFs e imagens)
+Hoje o texto fica no celular, mas um anexo nunca aberto pode não estar baixado. Proposta: o botão Sincronizar baixa também todos os anexos.
 
-## O que não muda
-Banco de dados, regras de acesso, login com senha, PIN, fila de envio, versão do app. Nenhum plugin novo.
+## 4. Impedir o Android de apagar os dados
+O pedido de "armazenamento permanente" hoje só é feito pela Bíblia. Fazer o mesmo pedido para todos os dados do app.
 
-## Como vou provar antes de entregar
-Com a sua conta, vou simular o modo avião e a internet pendurada e conferir:
-- abrir todas as telas
-- sair e voltar
-- fechar e reabrir o app
-- abrir um esboço
+## 5. Acesso por PIN: prazo de 30 dias
+Hoje o PIN deixa de valer após 30 dias sem nenhuma conexão. Opções: manter 30 dias (regra atual), ampliar para 90 dias, ou avisar 5 dias antes de vencer. Mudar o prazo altera uma regra do instructions.md e só faço se você autorizar.
 
-Te entrego a lista com cada tela aprovada ou reprovada.
+## 6. Aviso de pendências
+Mostrar no topo um número ("2 alterações aguardando envio") para lembrar de tocar em Sincronizar quando voltar a ter internet. Nada é enviado sozinho.
+
+## 7. Teste automático permanente
+Um teste que simula a internet pendurada e abre todas as telas. Ele roda antes de cada nova versão, para que ajustes futuros não quebrem o uso offline sem ninguém perceber.
+
+## O que não dá para funcionar sem internet
+Primeiro login num celular novo, receber dados novos dos anciãos, links públicos de Grandes Eventos e convites da esposa. Isso depende do servidor por natureza.
 
 ## Detalhes técnicos
-- As leituras das rotas (`configuracoes`, `dashboard`, `congregacoes`, `programa-*`, `cronograma`, `consideracoes-campo`, `estudo-pessoal` etc.) passam a usar TanStack Query com uma queryFn que lê o espelho `local-db` e o cache persistido. Não há chamada remota na leitura, e o refetch automático fica desligado.
-- `runFullSync` (local-sync) passa a ser o único caminho remoto: envia a fila (`flushQueue`) e baixa todas as tabelas e os resultados das server functions usados pelas telas. Ao terminar, invalida as queries. Um carimbo "último download completo" fica por usuário. `navigator.storage.persist()` é chamado.
-- `use-auth.tsx`: hidrata do snapshot e da sessão salvos, sem esperar `getSession` ou `loadUserData`. A verificação remota só acontece na sincronização, e um erro remoto nunca sobrescreve o snapshot.
-- Os guards de `consideracoes-campo` e `estudo-pessoal` passam a usar o `role` do AuthProvider.
-- O interceptor de fetch ganha um timeout de cerca de 8 s para as chamadas acionadas pelo usuário. O interruptor de Modo offline sai da interface, e quem estava com o modo ligado tem o estado convertido de forma segura.
-- O simulador de internet ruim fica em localStorage e faz o interceptor pendurar ou falhar os pedidos ao backend.
-- Testes com vitest para a leitura local sem rede, para o snapshot que não é sobrescrito e para a sincronização. Teste com Playwright em `set_offline` e com rotas penduradas. Uma regra nova no AGENTS.md.
+- Chamadas diretas `supabase.from` em BigEvents.tsx, _app.relatorio.$visitId.tsx, FullVisitReportDialog.tsx, ItineraryWeeks.tsx, TalkOutlineFields.tsx, _app.transporte/cronograma/reunioes-discursos, ChecklistPanel, SingleRowPanel: migrar para local-first-fetch / mirror-tables e confirmar a tabela no inventário de sync.
+- Anexos: pré-download em outline-attachments.ts durante a sincronização manual, gravando em partes (regra já existente).
+- `navigator.storage.persist()` no início do app, não só em bible-notes-store.ts.
+- Painel: lê status do local-db (contagem por tabela + data da última sync), sem rede.
+- Teste: Playwright com rotas bloqueadas/penduradas percorrendo todas as rotas `_app.*`, pílulas e subabas.
+- Validação: `bunx tsgo --noEmit` e `bunx vitest run`.
