@@ -13,6 +13,7 @@ Por que foi criada: duas partes do app criam essa "Programação geral" quando a
 2. **Nunca criar visita quando a consulta falhar** ou estiver sem internet, nas duas partes que criam a "Programação geral".
 3. **Se duas visitas cobrirem o mesmo dia, preferir a visita real** (com mais dias / com modelo aplicado) em vez da "Programação geral".
 4. Teste automático para os itens 2 e 3.
+5. **Painel no "Pronto para ficar sem internet":** hoje a lista mostra só Itinerário, Congregações, Esboços, Modelos e Grandes Eventos. Vou incluir a linha **"Painel da visita"**, que confere se refeições, campo, transporte, checklist e reuniões da visita atual estão guardados no celular.
 
 Sem mudança visual, sem mudança na estrutura do banco, sem mudar versão.
 
