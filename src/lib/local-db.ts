@@ -306,6 +306,48 @@ export async function clearDirty(table: string, ids: string[]): Promise<void> {
   });
 }
 
+/** A tabela já foi baixada para o celular pelo menos uma vez? */
+export async function isTableMirrored(table: string): Promise<boolean> {
+  try {
+    const kv = await getKv();
+    const index = (await kv.get<string[]>(INDEX_KEY)) ?? [];
+    return index.includes(table);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Download completo: o que o servidor não devolveu mais foi apagado lá.
+ * Marca como excluídas as linhas ausentes, sem tocar em escritas locais
+ * ainda não enviadas (`dirty`).
+ */
+export async function markMissingAsDeleted(
+  table: string,
+  keepIds: Set<string>,
+  deletedAt = new Date().toISOString(),
+): Promise<number> {
+  return serialize(async () => {
+    const file = await readFile(table);
+    let n = 0;
+    for (const [id, row] of Object.entries(file.rows)) {
+      if (row.dirty || row.deletedAt || keepIds.has(id)) continue;
+      file.rows[id] = { ...row, deletedAt, updatedAt: row.updatedAt };
+      n++;
+    }
+    await writeFile(table, file);
+    return n;
+  });
+}
+
+/** Garante que a tabela exista no espelho mesmo vazia (tabela baixada sem linhas). */
+export async function ensureTable(table: string): Promise<void> {
+  await serialize(async () => {
+    const file = await readFile(table);
+    await writeFile(table, file);
+  });
+}
+
 /** Cursor de sincronização (maior `updated_at` já baixado). */
 export async function getCursor(table: string): Promise<string | null> {
   return (await readFile(table)).cursor;

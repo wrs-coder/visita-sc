@@ -1,3 +1,4 @@
+import { readCacheMiddleware } from "@/lib/local-first-fn";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -68,7 +69,7 @@ async function getMeetingTalkViewer(userId: string) {
 }
 
 export const listMeetingTalkTemplates = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
     const viewer = await getMeetingTalkViewer(userId);
@@ -88,7 +89,7 @@ export const listMeetingTalkTemplates = createServerFn({ method: "POST" })
   });
 
 export const getMeetingTalkTemplate = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -416,7 +417,7 @@ export const applyMeetingTalkTemplateForVisit = createServerFn({ method: "POST" 
 // vinculados à sua congregação). Alimenta o dropdown da aba
 // "Reuniões e Discursos" → sub-aba "Fim de Semana" → "Discurso Final".
 export const getVisitWeekendThemes = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .inputValidator((input) => z.object({ visitId: z.string().uuid().nullable().optional() }).parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;

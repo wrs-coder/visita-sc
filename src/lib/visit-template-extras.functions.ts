@@ -1,3 +1,4 @@
+import { readCacheMiddleware } from "@/lib/local-first-fn";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -38,7 +39,7 @@ function pick<T>(override: T | null | undefined, fallback: T | null | undefined)
  * Authorized for: the visit's superintendent OR a member of the visit's congregation.
  */
 export const getVisitTemplateExtras = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;

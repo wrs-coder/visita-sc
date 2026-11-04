@@ -1408,7 +1408,11 @@
     "downloadDone": "Full download complete",
     "storageUsed": "{{used}} MB of ~{{quota}} MB on this device",
     "retry": "Trying to send again…",
-    "pendingTitle": "Pending changes"
+    "pendingTitle": "Pending changes",
+    "partial": "Synced, but {{n}} item(s) did not download. Tap again with a better connection.",
+    "simulate": "Simulate bad internet",
+    "simulateDesc": "To test at home: the app behaves as if the connection were stuck.",
+    "simulateOn": "Bad-internet simulation on"
   },
   "templateIO": {
     "export": "Export template",

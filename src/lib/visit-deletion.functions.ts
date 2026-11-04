@@ -1,3 +1,4 @@
+import { readCacheMiddleware } from "@/lib/local-first-fn";
 // Resumo do "quanto os anciãos já preencheram" antes do Superintendente
 // excluir uma visita do itinerário. Conta, por tabela, apenas registros
 // com conteúdo real — placeholders auto-criados (ex.: midweek_meetings
@@ -31,7 +32,7 @@ export interface VisitFillSummaryError {
 }
 
 export const getVisitFillSummary = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .inputValidator((input) => inputSchema.parse(input))
   .handler(async ({ data, context }): Promise<VisitFillSummary | VisitFillSummaryError> => {
     const { supabase } = context;

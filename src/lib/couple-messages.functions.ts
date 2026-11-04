@@ -1,3 +1,4 @@
+import { readCacheMiddleware } from "@/lib/local-first-fn";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -15,7 +16,7 @@ const codeSchema = z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4,12}$/);
 // ===== Superintendente (autenticado) =====
 
 export const listCoupleMessages = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data, error } = await supabase

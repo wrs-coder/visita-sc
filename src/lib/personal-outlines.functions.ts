@@ -1,3 +1,4 @@
+import { readCacheMiddleware } from "@/lib/local-first-fn";
 // Esboços pessoais — fonte da verdade é o Supabase. O cliente mantém um
 // cache local (IndexedDB) para velocidade e modo offline; este módulo expõe
 // as server functions de sync.
@@ -83,7 +84,7 @@ function isFolderMarker(row: { content_json: unknown }): boolean {
 }
 
 export const listCloudOutlines = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data, error } = await supabaseAdmin
@@ -97,7 +98,7 @@ export const listCloudOutlines = createServerFn({ method: "POST" })
   });
 
 export const listCloudOutlineTree = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data, error } = await supabaseAdmin
@@ -115,7 +116,7 @@ export const listCloudOutlineTree = createServerFn({ method: "POST" })
   });
 
 export const listTrashedOutlines = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data, error } = await supabaseAdmin

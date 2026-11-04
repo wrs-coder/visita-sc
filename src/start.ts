@@ -2,7 +2,8 @@ import { createStart, createMiddleware } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 
 import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+import { attachAuthSafe } from "@/lib/auth-attach-safe";
+import { createLocalFirstFnFetch } from "@/lib/local-first-fn";
 import {
   API_REQUEST_TIMEOUT_MS,
   apiOriginAttempts,
@@ -138,8 +139,23 @@ const apiFetch: typeof fetch = async (input, init) => {
   throw firstError ?? new TypeError("Nenhum servidor do Visita SC está acessível");
 };
 
+function connectionModeIsOffline(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem("visita-sc:connection-mode") === "offline";
+  } catch {
+    return false;
+  }
+}
+
+// Celular primeiro: funções de leitura respondem da cópia do aparelho;
+// todas as chamadas ganham limite de espera (ver local-first-fn.ts).
+const localFirstApiFetch = createLocalFirstFnFetch(apiFetch, connectionModeIsOffline);
+
 export const startInstance = createStart(() => ({
   requestMiddleware: [corsMiddleware, errorMiddleware],
-  functionMiddleware: [attachSupabaseAuth],
-  serverFns: { fetch: apiFetch },
+  // attachAuthSafe substitui o anexador gerado: lê o token sem esperar a
+  // renovação de sessão pela rede, que prendia o app sem internet.
+  functionMiddleware: [attachAuthSafe],
+  serverFns: { fetch: localFirstApiFetch },
 }));

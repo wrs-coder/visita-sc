@@ -4,7 +4,6 @@ import {
   ChevronDown,
   ChevronUp,
   CloudOff,
-  Download,
   HardDrive,
   ListChecks,
   RefreshCcw,
@@ -16,6 +15,11 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
+import { DEVICE_SYNC_EVENT, readDeviceSyncReport, runDeviceSync, type DeviceSyncReport } from "@/lib/device-sync";
+import { isSimulatingBadNetwork, setSimulateBadNetwork } from "@/lib/net-policy";
 import {
   discardFailed,
   listFailed,
@@ -28,8 +32,6 @@ import {
 } from "@/lib/offline-queue";
 import {
   getAutoSyncState,
-  runAutoSync,
-  runFullSync,
   subscribeAutoSync,
   type AutoSyncState,
 } from "@/lib/local-auto-sync";
@@ -92,19 +94,41 @@ export function SyncStatusCard() {
     return () => { alive = false; unsub(); };
   }, []);
 
-  const downloadAll = async () => {
-    const results = await runFullSync();
-    if (!results) {
-      if (!navigator.onLine) toast.error(t("sync.offline", "Offline"));
-      return;
-    }
-    const failed = results.filter((r) => !r.ok);
-    if (failed.length === 0) {
-      toast.success(t("sync.downloadDone", "Download completo concluído"));
-    } else {
-      toast.error(t("sync.error", "Falha em: {{t}}", { t: failed.map((f) => f.table).join(", ") }));
+  const { user, role, refresh } = useAuth();
+  const queryClient = useQueryClient();
+  const [report, setReport] = useState<DeviceSyncReport | null>(() => readDeviceSyncReport(user?.id));
+  const [busy, setBusy] = useState(false);
+  const [simulate, setSimulate] = useState(false);
+  useEffect(() => {
+    setReport(readDeviceSyncReport(user?.id));
+    setSimulate(isSimulatingBadNetwork());
+    const onReport = () => setReport(readDeviceSyncReport(user?.id));
+    const onSim = () => setSimulate(isSimulatingBadNetwork());
+    window.addEventListener(DEVICE_SYNC_EVENT, onReport);
+    window.addEventListener("visita-sc:simulate-bad-net", onSim);
+    return () => {
+      window.removeEventListener(DEVICE_SYNC_EVENT, onReport);
+      window.removeEventListener("visita-sc:simulate-bad-net", onSim);
+    };
+  }, [user?.id]);
+
+  // Um único botão: envia o que foi salvo e baixa TUDO para o aparelho.
+  const syncAll = async () => {
+    if (!user?.id || busy) return;
+    setBusy(true);
+    try {
+      const r = await runDeviceSync({ queryClient, userId: user.id, role, t });
+      await refresh().catch(() => undefined);
+      const fails = r.tablesFailed.length + r.screensFailed;
+      if (fails === 0 && r.remaining === 0) toast.success(t("sync.downloadDone", "Download completo concluído"));
+      else toast.warning(t("sync.partial", { n: fails + r.remaining }));
+    } catch {
+      toast.warning(t("sync.unstable"));
+    } finally {
+      setBusy(false);
     }
   };
+  const running = busy || state.running;
 
   const retryItem = (id: string) => {
     if (retryNow(id)) toast(t("sync.retry", "Tentando enviar novamente…"));
@@ -122,17 +146,16 @@ export function SyncStatusCard() {
         <div className="flex items-center justify-between gap-3">
           <div className="text-muted-foreground">
             <div>
-              {t("sync.last", "Última sincronização")}: {formatRel(state.lastRunAt, t)}
-              {state.lastOk && state.lastRows > 0 ? ` · ${state.lastRows}` : ""}
+              {t("sync.last", "Última sincronização")}: {formatRel(report ? new Date(report.at).toISOString() : null, t)}
             </div>
             {pending.length > 0 && (
               <div className="text-amber-600 dark:text-amber-400">
                 {pending.length} {t("sync.pending", "pendente(s)")}
               </div>
             )}
-            {state.error && (
+            {report && report.tablesFailed.length + report.screensFailed > 0 && (
               <div className="text-destructive">
-                {t("sync.error", "Falha em: {{t}}", { t: state.error })}
+                {t("sync.partial", { n: report.tablesFailed.length + report.screensFailed })}
               </div>
             )}
             {state.progress && (
@@ -150,22 +173,13 @@ export function SyncStatusCard() {
               </div>
             )}
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={state.running}
-            onClick={() => void runAutoSync({ force: true })}
-          >
-            <RefreshCcw className={`h-3.5 w-3.5 mr-1.5 ${state.running ? "animate-spin" : ""}`} />
-            {state.running ? t("sync.running", "Sincronizando…") : t("sync.now", "Sincronizar agora")}
+          <Button size="sm" variant="outline" disabled={running} onClick={() => void syncAll()}>
+            <RefreshCcw className={`h-3.5 w-3.5 mr-1.5 ${running ? "animate-spin" : ""}`} />
+            {running ? t("sync.running", "Sincronizando…") : t("sync.now", "Sincronizar agora")}
           </Button>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="secondary" disabled={state.running} onClick={() => void downloadAll()}>
-            <Download className="h-3.5 w-3.5 mr-1.5" />
-            {t("sync.downloadAll", "Baixar tudo agora")}
-          </Button>
           {pending.length > 0 && (
             <Button size="sm" variant="ghost" onClick={() => setShowPending((v) => !v)}>
               <ListChecks className="h-3.5 w-3.5 mr-1.5" />
@@ -174,6 +188,14 @@ export function SyncStatusCard() {
             </Button>
           )}
         </div>
+
+        <label className="flex items-start justify-between gap-3 rounded-md border p-2">
+          <span className="min-w-0">
+            <span className="block text-sm font-medium">{t("sync.simulate")}</span>
+            <span className="block text-xs text-muted-foreground">{t("sync.simulateDesc")}</span>
+          </span>
+          <Switch checked={simulate} onCheckedChange={(v) => setSimulateBadNetwork(v)} aria-label={t("sync.simulate")} />
+        </label>
 
         {showPending && pending.length > 0 && (
           <ul className="space-y-1.5 rounded-md border p-2">

@@ -1,3 +1,4 @@
+import { readCacheMiddleware } from "@/lib/local-first-fn";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -111,7 +112,7 @@ async function getViewer(userId: string) {
 }
 
 export const listElderProgramTemplates = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
     const viewer = await getViewer(userId);
@@ -131,7 +132,7 @@ export const listElderProgramTemplates = createServerFn({ method: "POST" })
   });
 
 export const getElderProgramTemplate = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;

@@ -1,3 +1,4 @@
+import { readCacheMiddleware } from "@/lib/local-first-fn";
 // Server fn que retorna o snapshot do "Resumo da Semana" para o
 // Superintendente autenticado, usando o MESMO shape do guest snapshot
 // (apenas leitura — RLS já permite o super ler tudo da própria
@@ -11,7 +12,7 @@ const inputSchema = z.object({
 });
 
 export const getSuperVisitSummary = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .inputValidator((input) => inputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;

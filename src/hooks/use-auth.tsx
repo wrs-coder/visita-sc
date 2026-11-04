@@ -9,6 +9,7 @@ import { ensureLocalDataOwner } from "@/lib/local-owner";
 import { clearVault, touchVaultOnline, updateVaultProfile } from "@/lib/offline-credentials";
 
 import i18n from "@/i18n";
+import { readStoredSession } from "@/lib/auth-attach-safe";
 
 export type AppRole = "superintendent" | "elder";
 export type ElderPosition = "coordenador" | "secretario" | "sup_servico" | "corpo";
@@ -106,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return isWarmupFreshForUser(uid) && !!getCachedUserData(uid);
   };
 
-  const loadUserData = async (uid: string | undefined) => {
+  const loadUserData = async (uid: string | undefined, force = false) => {
     if (!uid) {
       setProfile(null); setRole(null); setElderPosition(null); setCongregation(null);
       return;
@@ -120,14 +121,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     // Offline-first: se a preparação diária já foi concluída, hidrata do
     // snapshot local mesmo estando online, sem tocar no banco em cada abertura.
+    // Celular primeiro: com retrato da conta no aparelho, abre com ele e não
+    // vai ao servidor (só em refresh() explícito ou na sincronização).
     const hydrated = switchedAccount ? false : hydrateCachedUserData(uid);
-    if (!switchedAccount && (isOfflineMode() || (hydrated && isWarmupFreshForUser(uid)))) {
+    if (!switchedAccount && (isOfflineMode() || (hydrated && !force))) {
       return;
     }
-    const [{ data: p }, { data: rs }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
-      supabase.from("user_roles").select("role, congregation_id, elder_position").eq("user_id", uid).order("created_at", { ascending: true }).limit(5),
-    ]);
+    let p: Profile | null = null;
+    let rs: unknown[] | null = null;
+    try {
+      const [pr, rr] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
+        supabase.from("user_roles").select("role, congregation_id, elder_position").eq("user_id", uid).order("created_at", { ascending: true }).limit(5),
+      ]);
+      // Falha de rede nunca apaga o retrato bom guardado no aparelho.
+      if (pr.error || rr.error) return;
+      p = (pr.data as Profile | null) ?? null;
+      rs = rr.data ?? [];
+    } catch {
+      return;
+    }
     setProfile(p as Profile | null);
     // Pick the most privileged role (superintendent over elder) to be resilient to duplicate rows.
     const roles = (rs ?? []) as Array<{ role: AppRole; congregation_id: string | null; elder_position: ElderPosition | null }>;
@@ -211,7 +224,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const onOfflineSession = () => { enterOfflineSession(); };
     window.addEventListener(OFFLINE_SESSION_EVENT, onOfflineSession);
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    // A sessão nunca prende a abertura: se a renovação pela rede demorar,
+    // usa a sessão guardada no aparelho (regra 13: sem PIN enquanto o
+    // usuário não tocou em "Sair").
+    const sessionOrStored = async (): Promise<Session | null> => {
+      try {
+        const r = await Promise.race([
+          supabase.auth.getSession().then((x) => x.data.session),
+          new Promise<"timeout">((res) => setTimeout(() => res("timeout"), 4000)),
+        ]);
+        if (r && r !== "timeout") return r;
+      } catch { /* usa a cópia */ }
+      const stored = readStoredSession();
+      if (stored?.access_token && stored.user?.id) return stored as unknown as Session;
+      return null;
+    };
+    void sessionOrStored().then((s) => {
       if (!s && enterOfflineSession()) return;
       setSession(s);
       setUser(s?.user ?? null);
@@ -231,7 +259,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const refresh = async () => { await loadUserData(user?.id); };
+  const refresh = async () => { await loadUserData(user?.id, true); };
   const signOut = async (): Promise<boolean> => {
     const online = typeof navigator === "undefined" || navigator.onLine !== false;
     // Sem internet, NUNCA executar logout — o usuário não conseguiria voltar.

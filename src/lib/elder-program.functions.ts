@@ -1,3 +1,4 @@
+import { readCacheMiddleware } from "@/lib/local-first-fn";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -18,7 +19,7 @@ const textOpt = z.string().trim().max(1000).nullable().optional();
 const longTextOpt = z.string().max(4000).nullable().optional();
 
 export const listElderProgramForVisit = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const supabaseAdmin = getAdmin();

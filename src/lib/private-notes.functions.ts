@@ -1,3 +1,4 @@
+import { readCacheMiddleware } from "@/lib/local-first-fn";
 // Soft-delete e restauração de notas privadas (Lixeira).
 // Lê/escreve via supabaseAdmin com escopo estrito ao auth.uid() do middleware.
 
@@ -7,7 +8,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const listTrashedNotes = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data, error } = await supabaseAdmin

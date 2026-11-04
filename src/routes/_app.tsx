@@ -38,7 +38,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SyncButton } from "@/components/SyncButton";
 import { SupportDeveloperDialog } from "@/components/SupportDeveloper";
-import { ConnectionModeToggle } from "@/components/ConnectionModeToggle";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { CommandPalette } from "@/components/CommandPalette";
 import { Coffee, GraduationCap, HelpCircle } from "lucide-react";
@@ -352,7 +351,6 @@ function AppLayout() {
                   />
                 </div>
                 <div className="p-3 pb-0 grid grid-cols-3 gap-2">
-                  <ConnectionModeToggle compact />
                   <ThemeToggle variant="sidebar" />
                 </div>
                 <div className="p-3 flex-1 overflow-y-auto overscroll-contain safe-bottom-content">
@@ -408,7 +406,6 @@ function AppLayout() {
             />
           </div>
           <div className="p-3 pb-0 grid grid-cols-3 gap-2">
-            <ConnectionModeToggle compact />
             <ThemeToggle variant="sidebar" />
           </div>
           <div className="p-3 flex-1 overflow-y-auto overscroll-contain min-h-0">

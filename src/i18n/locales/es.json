@@ -1383,7 +1383,11 @@
     "downloadDone": "Descarga completa finalizada",
     "storageUsed": "{{used}} MB de ~{{quota}} MB en el dispositivo",
     "retry": "Intentando enviar de nuevo…",
-    "pendingTitle": "Cambios pendientes"
+    "pendingTitle": "Cambios pendientes",
+    "partial": "Sincronizado, pero {{n}} elemento(s) no se descargaron. Toca otra vez con mejor internet.",
+    "simulate": "Simular internet mala",
+    "simulateDesc": "Para probar en casa: la app actúa como si la conexión estuviera trabada.",
+    "simulateOn": "Simulación de internet mala activada"
   },
   "templateIO": {
     "export": "Exportar plantilla",

@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { isSuperintendentLocally } from "@/lib/local-role-guard";
 import { OutlinesWorkspace } from "@/components/outlines/OutlinesWorkspace";
 
 export const Route = createFileRoute("/_app/consideracoes-campo")({
@@ -12,19 +12,9 @@ export const Route = createFileRoute("/_app/consideracoes-campo")({
     const mode = search.mode === "edit" || search.mode === "outline" ? search.mode : undefined;
     return { noteId, mode };
   },
-  beforeLoad: async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-      const isSuper = (roles ?? []).some((r) => r.role === "superintendent");
-      if (!isSuper) throw redirect({ to: "/dashboard" });
-    } catch (e) {
-      if (e && typeof e === "object" && "to" in e) throw e;
-    }
+  // Só confere no aparelho: a tela abre sem internet.
+  beforeLoad: () => {
+    if (isSuperintendentLocally() === false) throw redirect({ to: "/dashboard" });
   },
   component: Page,
   head: () => ({ meta: [

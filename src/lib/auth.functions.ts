@@ -1,3 +1,4 @@
+import { readCacheMiddleware } from "@/lib/local-first-fn";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -221,7 +222,7 @@ export const resetElderPasswordBySuper = createServerFn({ method: "POST" })
 
 // List elders in super's congregations (for the password-reset UI)
 export const listMyElders = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data: congs } = await supabaseAdmin

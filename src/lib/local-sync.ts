@@ -11,12 +11,15 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import {
+  ensureTable,
   getCursor,
   getRows,
   markDeleted,
+  markMissingAsDeleted,
   setCursor,
   upsertRows,
 } from "@/lib/local-db";
+import { mirrorIdField } from "@/lib/mirror-tables";
 
 export type Row = Record<string, unknown>;
 
@@ -72,8 +75,19 @@ export async function pullTable(
   try {
     const since = full ? null : await getCursor(table);
     const rows = await pullWithRetry(pull, { table, since }, retryDelays);
+    const idField = mirrorIdField(table);
+    await ensureTable(table);
+    if (full) {
+      // Download completo: o que sumiu do servidor some do celular também.
+      const keep = new Set<string>();
+      for (const row of rows) {
+        const id = row[idField];
+        if (typeof id === "string" || typeof id === "number") keep.add(String(id));
+      }
+      await markMissingAsDeleted(table, keep);
+    }
     if (rows.length) {
-      await upsertRows(table, rows);
+      await upsertRows(table, rows, { idField });
       // Cursor avança para o maior updated_at recebido (somente após gravar).
       let newest: string | null = null;
       for (const row of rows) {
@@ -156,15 +170,24 @@ export async function syncTables(opts: SyncOptions): Promise<PullResult[]> {
 
 const PAGE_SIZE = 1000;
 
+/** Baixa a tabela inteira (ou o que mudou), página por página, sem limite. */
 export const supabasePull: PullFn = async ({ table, since }) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let q: any = supabase.from(table as never).select("*");
-  if (since) q = q.gt("updated_at", since);
-  const { data, error } = await q
-    .order("updated_at", { ascending: true })
-    .limit(PAGE_SIZE);
-  if (error) throw error;
-  return (data ?? []) as Row[];
+  const all: Row[] = [];
+  const idField = mirrorIdField(table);
+  for (let from = 0; ; from += PAGE_SIZE) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q: any = supabase.from(table as never).select("*");
+    if (since) q = q.gt("updated_at", since);
+    const { data, error } = await q
+      .order("updated_at", { ascending: true })
+      .order(idField, { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    const page = (data ?? []) as Row[];
+    all.push(...page);
+    if (page.length < PAGE_SIZE) break;
+  }
+  return all;
 };
 
 export const supabaseTombstones: TombstoneFn = async ({ since }) => {

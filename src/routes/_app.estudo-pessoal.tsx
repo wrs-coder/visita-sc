@@ -5,7 +5,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GraduationCap } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { isSuperintendentLocally } from "@/lib/local-role-guard";
 import { useAuth } from "@/hooks/use-auth";
 import { GuestWorkspace } from "@/components/guest-workspace/GuestWorkspace";
 import { OutlinesWorkspace } from "@/components/outlines/OutlinesWorkspace";
@@ -20,15 +20,9 @@ export const Route = createFileRoute("/_app/estudo-pessoal")({
     tab: s.tab === "bible" || s.tab === "research" || s.tab === "notes" ? s.tab : undefined,
     noteId: typeof s.noteId === "string" ? s.noteId : undefined,
   }),
-  beforeLoad: async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-      if (!(roles ?? []).some((r) => r.role === "superintendent")) throw redirect({ to: "/dashboard" });
-    } catch (e) {
-      if (e && typeof e === "object" && "to" in e) throw e;
-    }
+  // Só confere no aparelho: a tela abre sem internet.
+  beforeLoad: () => {
+    if (isSuperintendentLocally() === false) throw redirect({ to: "/dashboard" });
   },
   head: () => ({ meta: [
     { title: "Estudo e Anotações — Visita SC" },

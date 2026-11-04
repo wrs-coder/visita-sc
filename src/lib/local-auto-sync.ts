@@ -16,30 +16,11 @@ import {
   type PullResult,
   type SyncProgress,
 } from "@/lib/local-sync";
-import { getCursor, pruneLocalData, setCursor } from "@/lib/local-db";
+import { getCursor, setCursor } from "@/lib/local-db";
+import { MIRROR_TABLES } from "@/lib/mirror-tables";
 
-// Tabelas espelhadas: Fases 2/3 + Etapa A (esboços e reuniões ligadas a eles).
-// Todas têm `updated_at` e gatilho de tombstone no banco (migração da Fase 1).
-export const AUTO_SYNC_TABLES = [
-  "congregations",
-  "circuit_schedule_events",
-  "field_assignments",
-  "field_meetings",
-  "checklist_items",
-  "meals",
-  "meal_day_notes",
-  "transport_schedule",
-  "private_notes",
-  // Etapa A — esboços pessoais e dados de reuniões/discursos.
-  "personal_outlines",
-  "visits",
-  "schedule_events",
-  "midweek_meetings",
-  "weekend_meetings",
-  "pioneer_meetings",
-  "elders_servants_meetings",
-  "talk_themes",
-] as const;
+// Tabelas espelhadas: TODAS as tabelas que as telas leem ("baixar tudo").
+export const AUTO_SYNC_TABLES = MIRROR_TABLES;
 
 export type AutoSyncState = {
   running: boolean;
@@ -143,11 +124,7 @@ export async function runAutoSync(opts?: { force?: boolean; full?: boolean }): P
       error: failed.length ? failed.map((f) => f.table).join(", ") : null,
     };
     emit();
-    if (failed.length === 0) {
-      // Etapa C — limpeza silenciosa do espelho após sync bem-sucedida.
-      // Nunca remove pendências (`dirty`); falhas são ignoradas.
-      void pruneLocalData().catch(() => {});
-    }
+    // "Baixar tudo": nada é podado do celular por idade.
     return results;
   } catch (err) {
     state = {

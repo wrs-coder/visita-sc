@@ -1399,7 +1399,11 @@
     "downloadDone": "Download completo concluído",
     "storageUsed": "{{used}} MB de ~{{quota}} MB no aparelho",
     "retry": "Tentando enviar novamente…",
-    "pendingTitle": "Alterações pendentes"
+    "pendingTitle": "Alterações pendentes",
+    "partial": "Sincronizado, mas {{n}} item(ns) não baixaram. Toque de novo com internet melhor.",
+    "simulate": "Simular internet ruim",
+    "simulateDesc": "Para testar em casa: o app age como se a internet estivesse travada.",
+    "simulateOn": "Simulação de internet ruim ligada"
   },
   "templateIO": {
     "export": "Exportar modelo",

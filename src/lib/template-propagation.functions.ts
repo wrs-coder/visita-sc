@@ -1,3 +1,4 @@
+import { readCacheMiddleware } from "@/lib/local-first-fn";
 // Pendências leves de propagação de modelos.
 // Helpers ficam em template-propagation.server.ts para evitar a remoção
 // de siblings feita pelo splitter de server-fns do TanStack.
@@ -42,7 +43,7 @@ async function assertSuperOfVisit(
 }
 
 export const countPendingUpdatesForCongregation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .inputValidator((input) =>
     z.object({ congregationId: z.string().uuid() }).parse(input),
   )
@@ -81,7 +82,7 @@ export interface PendingUpdateRow {
 }
 
 export const listPendingUpdatesForCongregation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([readCacheMiddleware, requireSupabaseAuth])
   .inputValidator((input) =>
     z.object({ congregationId: z.string().uuid() }).parse(input),
   )

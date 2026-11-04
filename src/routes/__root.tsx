@@ -27,7 +27,6 @@ import { queryPersister, PERSIST_MAX_AGE, PERSIST_BUSTER } from "@/lib/query-per
 import { flushQueue, startOfflineQueueAutoRetry, queueSize } from "@/lib/offline-queue";
 import { readGuestSession } from "@/lib/guest-session";
 import { startLocalWriteReconciler } from "@/lib/local-write";
-import { startAutoSync } from "@/lib/local-auto-sync";
 import { ensureFreshSession, shouldWarnSessionExpired } from "@/lib/session-ready";
 import { isOfflineMode } from "@/lib/connection-mode";
 import { installNativeBackButton } from "@/lib/native-back-button";
@@ -256,9 +255,8 @@ function RootComponent() {
     void runFlushWithSession("boot");
     startOfflineQueueAutoRetry();
     const stopReconciler = startLocalWriteReconciler();
-    const stopAutoSync = startAutoSync();
+    // Celular primeiro: sem download automático; só pelo botão Sincronizar.
     return () => {
-      stopAutoSync();
       stopReconciler();
       subscription.unsubscribe();
       window.removeEventListener("online", onOnline);

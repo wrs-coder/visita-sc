@@ -97,6 +97,8 @@ Antes de encerrar qualquer mudança que toque modelos, papéis ou visitas, confi
 - Validade de 30 dias sem contato com o servidor; 5 erros iniciam espera progressiva; 10 erros destroem o cofre. Logout explícito apaga cofre, chave nativa e sessão local.
 - Nenhuma tela de entrada pode ficar presa esperando o servidor: toda restauração de sessão tem verificação de rede e limite de tempo, caindo para Modo Offline.
 - Com o cofre aberto e o servidor inacessível, o app reconhece o usuário pela sessão local (`src/lib/offline-session.ts`) + snapshot `visita-sc:auth-profile:<uid>`. A sessão real do servidor sempre tem prioridade.
+- O app abre direto, sem pedir PIN, enquanto o usuário nunca tocou em "Sair" neste aparelho: a sessão guardada no aparelho é usada mesmo sem internet ou com o token vencido. O PIN só é pedido depois de um "Sair" explícito.
+- Celular primeiro: todas as telas leem do aparelho; o servidor só é usado pelo botão "Sincronizar", logo após uma gravação bem-sucedida, ou quando o dado nunca foi baixado. Toda chamada tem limite de espera.
 - Diálogos de criação/ativação fecham imediatamente após a confirmação do PIN; a ativação da biometria acontece depois, com aviso próprio.
 - Proibido alterar o fluxo de login online (usuário/senha) ao mexer nesses recursos.
 
