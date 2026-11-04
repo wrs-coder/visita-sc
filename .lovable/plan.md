@@ -60,3 +60,35 @@ Sem mudança no banco, no login ou na versão.
 - `OfflineStatusBar.tsx`: variantes `inline` (com ação de envio, usada em `_app.tsx` ao lado de `ThemeToggle variant="sidebar"`) e `info` (sem ação, usada no painel "Pastas e Configurações" do `GuestWorkspace.tsx`/`visitante.painel.tsx`); a versão flutuante deixa de ser renderizada.
 - Bolinha no botão ☰ lendo o mesmo contador de pendências.
 - `EventReminders.tsx`: cada seção envolvida pelo componente de `collapsible-blocks.tsx` (estado em localStorage, conteúdo escondido, nunca desmontado).
+
+---
+
+## 4. Sincronizar um esboço por vez
+Hoje, ao arrastar um esboço, o app marca esse esboço e depois sincroniza **todos** os esboços. Passa a agir só no esboço arrastado:
+
+- **Arrastar para a esquerda (verde) = Enviar:** manda só este esboço para a nuvem.
+- **Arrastar para a direita (azul) = Receber:** baixa só este esboço da nuvem e substitui a cópia do celular.
+- Se o esboço tiver alterações ainda não enviadas, o Receber pergunta antes ("Substituir sua versão do celular?").
+- Sem internet: aviso "Sem internet, tente quando houver conexão" (nada é perdido).
+- **No site/PWA:** os três pontinhos de cada esboço ganham "Enviar para a nuvem" e "Receber da nuvem".
+
+```text
+Arrastar ←  (Enviar)                Arrastar →  (Receber)
++---------------------------+      +---------------------------+
+| Esboço 12 - Fé  |▓ ⬆ Enviar|      |⬇ Receber ▓| Esboço 12 - Fé|
++---------------------------+      +---------------------------+
+          verde                              azul
+
+Site/PWA  (⋯ ao lado do esboço)
++---------------------------+
+| Renomear                  |
+| Mover                     |
+| ⬆ Enviar para a nuvem     |
+| ⬇ Receber da nuvem        |
++---------------------------+
+```
+
+### Detalhes técnicos (4)
+- `SwipeToSync.tsx`: dois lados (`onPush` à esquerda com `bg-success`, `onPull` à direita com `bg-primary`), continua só toque para não atrapalhar o arrastar com mouse.
+- `OutlinesWorkspace.tsx`: `swipeSyncNote` deixa de chamar `syncOutlinesIfOnline()`; usa `pushOutlineToCloud` e `pullOutlineFromCloud` apenas com o id do esboço (funções já existentes) e limpa o `dirty` só desse esboço. Mesmas ações adicionadas ao menu ⋯ da nota.
+- A sincronização geral pelo botão ⟳ continua igual.
