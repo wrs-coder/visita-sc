@@ -352,18 +352,130 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
     return result;
   }
 
-  /** Swipe-to-sync: marks the note as changed so the regular sync pushes it now, or as soon as the internet returns. */
-  async function swipeSyncNote(note: FieldNote) {
-    const marked = { ...note, dirty: true };
-    await persistNote(marked);
-    setNotes((all) => all.map((n) => (n.id === marked.id ? marked : n)));
+  // ===== Enviar / Receber um esboço (ou uma pasta) por vez =====
+  // Age só nos esboços escolhidos; a sincronização geral (⟳) continua igual.
+  function cloudContentOf(note: FieldNote) {
+    return {
+      prayer: note.prayer ?? null,
+      territory: note.territory ?? null,
+      assistants: note.assistants ?? null,
+      description: note.description ?? null,
+      content: note.content ?? "",
+      talk: note.talk ?? null,
+      sort_order: note.sort_order ?? null,
+      event_date: note.event_date ?? null,
+      period: note.period ?? null,
+      attachments: note.attachments ?? [],
+    };
+  }
+
+  async function pushOneNote(note: FieldNote): Promise<{ ok: boolean; error?: string }> {
+    const r = await fnPushCloud({
+      data: {
+        id: note.cloud_id ?? undefined,
+        title: (note.title || t("personalOutlines.untitled", { defaultValue: "Sem título" })).slice(0, 200),
+        folder_path: folderPathForCloud(note.folderId),
+        note_type: (note.type ?? activeType ?? "outline"),
+        content: cloudContentOf(note),
+      },
+    });
+    if (!r.ok) return { ok: false, error: r.error };
+    const synced = { ...note, cloud_id: r.id ?? note.cloud_id, dirty: false, synced_at: Date.now() };
+    await persistNote(synced);
+    setNotes((all) => all.map((n) => (n.id === synced.id ? synced : n)));
+    setDraft((d) => (d && d.id === synced.id ? { ...d, cloud_id: synced.cloud_id, dirty: false, synced_at: synced.synced_at } : d));
+    return { ok: true };
+  }
+
+  async function pullOneNote(note: FieldNote): Promise<{ ok: boolean; missing?: boolean; error?: string }> {
+    if (!note.cloud_id) return { ok: false, missing: true };
+    const r = await fnPullCloud({ data: { id: note.cloud_id } });
+    if (!r.ok) return { ok: false, error: r.error };
+    const c = (r.outline.content_json ?? {}) as Record<string, unknown>;
+    const now = Date.now();
+    const n: FieldNote = {
+      ...note,
+      title: r.outline.title,
+      prayer: typeof c.prayer === "string" ? c.prayer : "",
+      territory: typeof c.territory === "string" ? c.territory : "",
+      assistants: typeof c.assistants === "string" ? c.assistants : "",
+      description: typeof c.description === "string" ? c.description : "",
+      content: typeof c.content === "string" ? c.content : "",
+      talk: sanitizeTalk(c.talk),
+      sort_order: typeof c.sort_order === "number" ? c.sort_order : note.sort_order ?? null,
+      event_date: typeof c.event_date === "string" ? c.event_date : note.event_date,
+      period: typeof c.period === "string" ? c.period : note.period,
+      attachments: Array.isArray(c.attachments) ? (c.attachments as FieldNote["attachments"]) : (note.attachments ?? []),
+      updated_at: now,
+      dirty: false,
+      synced_at: now,
+    };
+    await persistNote(n);
+    setNotes((all) => all.map((x) => (x.id === n.id ? n : x)));
+    setDraft((d) => (d && d.id === n.id ? n : d));
+    return { ok: true };
+  }
+
+  function isOfflineNow() {
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
-      toast(t("personalOutlines.swipeSyncQueued", { defaultValue: "Sem internet: envia sozinho quando a conexão voltar." }));
-      return;
+      toast(t("personalOutlines.cloudOffline", { defaultValue: "Sem internet. Tente quando houver conexão — nada foi perdido." }));
+      return true;
     }
-    const r = await syncOutlinesIfOnline();
-    if (r && !r.ok) { toast.error(t("personalOutlines.swipeSyncFail", { defaultValue: "Não foi possível sincronizar agora." })); return; }
-    toast.success(t("personalOutlines.swipeSyncDone", { defaultValue: "Enviado para os outros aparelhos." }));
+    return false;
+  }
+
+  async function pushNoteAction(note: FieldNote) {
+    if (isOfflineNow()) return;
+    const r = await pushOneNote(note);
+    if (!r.ok) { toast.error(r.error ?? t("personalOutlines.swipeSyncFail", { defaultValue: "Não foi possível sincronizar agora." })); return; }
+    toast.success(t("personalOutlines.notePushed", { defaultValue: "“{{title}}” enviado para a nuvem.", title: note.title || t("personalOutlines.untitled", { defaultValue: "Sem título" }) }));
+  }
+
+  async function pullNoteAction(note: FieldNote) {
+    if (!note.cloud_id) { toast(t("personalOutlines.noteNotInCloud", { defaultValue: "Este esboço ainda não está na nuvem. Envie primeiro." })); return; }
+    if (isOfflineNow()) return;
+    if (note.dirty && !window.confirm(t("personalOutlines.pullConfirm", { defaultValue: "Este esboço tem alterações não enviadas. Substituir sua versão do celular pela da nuvem?" }))) return;
+    const r = await pullOneNote(note);
+    if (!r.ok) { toast.error(r.error ?? t("personalOutlines.swipeSyncFail", { defaultValue: "Não foi possível sincronizar agora." })); return; }
+    toast.success(t("personalOutlines.notePulled", { defaultValue: "“{{title}}” atualizado com a versão da nuvem.", title: note.title || t("personalOutlines.untitled", { defaultValue: "Sem título" }) }));
+  }
+
+  function notesInFolderTree(folderId: string): FieldNote[] {
+    const ids = new Set<string>([folderId]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const f of folders) if (f.parentId && ids.has(f.parentId) && !ids.has(f.id)) { ids.add(f.id); grew = true; }
+    }
+    return notes.filter((n) => n.folderId && ids.has(n.folderId));
+  }
+
+  async function pushFolderAction(folderId: string) {
+    const list = notesInFolderTree(folderId);
+    if (list.length === 0) { toast(t("personalOutlines.folderEmpty", { defaultValue: "Esta pasta não tem esboços." })); return; }
+    if (isOfflineNow()) return;
+    let ok = 0, fail = 0;
+    const tid = toast.loading(t("personalOutlines.folderPushing", { defaultValue: "Enviando {{n}} esboço(s)…", n: list.length }));
+    for (const n of list) { const r = await pushOneNote(n); if (r.ok) ok++; else fail++; }
+    toast.dismiss(tid);
+    if (fail) toast.error(t("personalOutlines.folderPushPartial", { defaultValue: "{{ok}} enviado(s), {{fail}} com erro.", ok, fail }));
+    else toast.success(t("personalOutlines.folderPushed", { defaultValue: "{{ok}} esboço(s) enviado(s) para a nuvem.", ok }));
+  }
+
+  async function pullFolderAction(folderId: string) {
+    const list = notesInFolderTree(folderId);
+    if (list.length === 0) { toast(t("personalOutlines.folderEmpty", { defaultValue: "Esta pasta não tem esboços." })); return; }
+    if (isOfflineNow()) return;
+    const dirty = list.filter((n) => n.cloud_id && n.dirty).length;
+    if (dirty > 0 && !window.confirm(t("personalOutlines.folderPullConfirm", { defaultValue: "{{n}} esboço(s) desta pasta têm alterações não enviadas e serão substituídos pela versão da nuvem. Continuar?", n: dirty }))) return;
+    let ok = 0, missing = 0, fail = 0;
+    const tid = toast.loading(t("personalOutlines.folderPulling", { defaultValue: "Recebendo {{n}} esboço(s)…", n: list.length }));
+    for (const n of list) { const r = await pullOneNote(n); if (r.ok) ok++; else if (r.missing) missing++; else fail++; }
+    toast.dismiss(tid);
+    const msg = t("personalOutlines.folderPulled", { defaultValue: "{{ok}} recebido(s)", ok })
+      + (missing ? ` · ${t("personalOutlines.folderNotInCloud", { defaultValue: "{{n}} ainda não está(ão) na nuvem", n: missing })}` : "")
+      + (fail ? ` · ${t("personalOutlines.folderFail", { defaultValue: "{{n}} com erro", n: fail })}` : "");
+    if (fail) toast.error(msg); else toast.success(msg);
   }
 
   async function refreshCloudList() {
@@ -1496,6 +1608,18 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
                 <FileText className="h-4 w-4 mr-2" />
                 {t("personalOutlines.folders.exportFolderDocx", { defaultValue: "Exportar pasta (Word)" })}
               </DropdownMenuItem>
+              {activeType !== "talk_notes" && (
+                <>
+                  <DropdownMenuItem onClick={() => void pushFolderAction(folder.id)}>
+                    <CloudUpload className="h-4 w-4 mr-2 text-success" />
+                    {t("personalOutlines.cloudPush", { defaultValue: "Enviar para a nuvem" })}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => void pullFolderAction(folder.id)}>
+                    <CloudDownload className="h-4 w-4 mr-2 text-primary" />
+                    {t("personalOutlines.cloudPull", { defaultValue: "Receber da nuvem" })}
+                  </DropdownMenuItem>
+                </>
+              )}
               {!fixed && (
                 <>
                   <DropdownMenuSeparator />
@@ -1542,9 +1666,11 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
         : null;
     return (
       <SwipeToSync
-        enabled={activeType !== "talk_notes" && isAutoSyncFolder(note.folderId, folders)}
-        label={t("personalOutlines.swipeSync", { defaultValue: "Sincronizar" })}
-        onSync={() => swipeSyncNote(note)}
+        enabled={activeType !== "talk_notes"}
+        pushLabel={t("personalOutlines.cloudPushShort", { defaultValue: "Enviar" })}
+        pullLabel={t("personalOutlines.cloudPullShort", { defaultValue: "Receber" })}
+        onPush={() => pushNoteAction(note)}
+        onPull={() => pullNoteAction(note)}
       >
       <div
         ref={setRefs}
@@ -1627,10 +1753,16 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
                 {t("personalOutlines.folders.cut", { defaultValue: "Recortar" })}
               </DropdownMenuItem>
               {activeType !== "talk_notes" && (
-                <DropdownMenuItem onClick={() => handlePushNoteById(note.id)} disabled={cloudBusy}>
-                  <CloudUpload className="h-4 w-4 mr-2" />
-                  {t("personalOutlines.cloud.push", { defaultValue: "Enviar para nuvem" })}
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem onClick={() => void pushNoteAction(note)} disabled={cloudBusy}>
+                    <CloudUpload className="h-4 w-4 mr-2 text-success" />
+                    {t("personalOutlines.cloudPush", { defaultValue: "Enviar para a nuvem" })}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => void pullNoteAction(note)} disabled={cloudBusy}>
+                    <CloudDownload className="h-4 w-4 mr-2 text-primary" />
+                    {t("personalOutlines.cloudPull", { defaultValue: "Receber da nuvem" })}
+                  </DropdownMenuItem>
+                </>
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem

@@ -20,6 +20,7 @@ import { Logo } from "@/components/Logo";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { OfflineStatusInfo } from "@/components/OfflineStatusBar";
 import { useTheme } from "@/hooks/use-theme";
 import { useHideOnScroll } from "@/lib/use-hide-on-scroll";
 import { cn } from "@/lib/utils";
@@ -426,6 +427,7 @@ function Page() {
               <DropdownMenuItem onClick={() => setOfflineOpen(true)}><CloudDownload className="h-4 w-4 mr-2" />{t("offline.activate")}</DropdownMenuItem>
               <DropdownMenuSeparator />
               <div className="px-2 py-1.5"><ThemeToggle /></div>
+              <OfflineStatusInfo className="mx-2 mb-1.5" />
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={exit}><LogOut className="h-4 w-4 mr-2" />{t("guest.exit")}</DropdownMenuItem>
             </DropdownMenuContent>

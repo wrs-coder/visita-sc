@@ -24,6 +24,7 @@ import {
 import { readGuestSession } from "@/lib/guest-session";
 import { BibleReadingTab } from "./BibleReadingTab";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { OfflineStatusInfo } from "@/components/OfflineStatusBar";
 import { RichOutlineContent } from "@/lib/rich-content";
 import { findCitations, stripHtmlForDetection } from "@/lib/bible-refs";
 import { appendPlainTextToNote } from "@/lib/note-content";
@@ -458,6 +459,7 @@ function WorkspaceSheet({ backupKey, kind, open, onOpenChange, data, update, fol
           <SheetDescription className="sr-only">{t("guestWs.drawer", { defaultValue: "Pastas e configurações" })}</SheetDescription>
         </SheetHeader>
         <div className="space-y-5 px-4 pb-6">
+          <OfflineStatusInfo />
           <section className="space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-3">
             <h3 className="text-xs font-semibold uppercase text-primary">{t("guestWs.backup", { defaultValue: "Backup e Dados" })}</h3>
             <p className="text-xs text-muted-foreground">{lastBackup

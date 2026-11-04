@@ -16,7 +16,6 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PwaRegister } from "@/components/PwaRegister";
-import { OfflineStatusBar } from "@/components/OfflineStatusBar";
 import { AppOriginDiagnostics } from "@/components/AppOriginDiagnostics";
 import { AppUpdatePrompt } from "@/components/AppUpdatePrompt";
 import { WhatsNewDialog } from "@/components/WhatsNewDialog";
@@ -291,7 +290,6 @@ function RootComponent() {
     >
       <AuthProvider>
         <PwaRegister />
-        <OfflineStatusBar />
         <AppOriginDiagnostics />
         <AppUpdatePrompt />
         <WhatsNewDialog />

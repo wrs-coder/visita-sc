@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Bell, ChevronDown } from "lucide-react";
+import { CollapseBody, CollapseIdToggle, CollapseProvider, useCollapseOpen } from "@/components/ui/collapsible-blocks";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -81,10 +82,12 @@ export function ReminderSettingsCard({ scope, role }: { scope: string; role: Rem
   };
 
   return (
+    <CollapseProvider scope="reminders">
     <Card className="shadow-card">
       <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2"><Bell className="h-4 w-4 text-primary" />Lembretes de eventos</CardTitle>
+        <CardTitle className="text-base flex items-center gap-2"><Bell className="h-4 w-4 text-primary" /><span className="flex-1">Lembretes de eventos</span><CollapseIdToggle id="card" /></CardTitle>
       </CardHeader>
+      <CollapseBody id="card">
       <CardContent className="space-y-4">
         {!native ? (
           <p className="text-sm text-muted-foreground">Os lembretes funcionam apenas no aplicativo instalado no celular.</p>
@@ -96,8 +99,7 @@ export function ReminderSettingsCard({ scope, role }: { scope: string; role: Rem
             </label>
             {prefs.enabled && (
               <>
-                <div className="space-y-1.5">
-                  <div className="text-xs text-muted-foreground">Antecedência</div>
+                <Sec id="lead" title="Antecedência">
                   <LeadInput label="Antecedência" value={prefs.lead} onChange={(m) => update({ ...prefs, lead: m })} />
                   <div className="flex flex-wrap gap-2">
                     {LEAD_OPTIONS.map((l) => (
@@ -106,9 +108,8 @@ export function ReminderSettingsCard({ scope, role }: { scope: string; role: Rem
                       </Button>
                     ))}
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="text-xs text-muted-foreground">Avisar sobre</div>
+                </Sec>
+                <Sec id="kinds" title="Avisar sobre">
                   <div className="flex flex-wrap gap-2">
                     {kindsForRole(role).map((k) => {
                       const on = prefs.kinds.includes(k);
@@ -120,17 +121,15 @@ export function ReminderSettingsCard({ scope, role }: { scope: string; role: Rem
                       );
                     })}
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="text-xs text-muted-foreground">Segundo aviso</div>
+                </Sec>
+                <Sec id="second" title="Segundo aviso">
                   <div className="flex flex-wrap items-center gap-3">
                     <Switch aria-label="Segundo aviso" checked={!!prefs.second} onCheckedChange={(v) => update({ ...prefs, second: v ? 15 : 0 })} />
                     {!!prefs.second && <LeadInput label="Segundo aviso" value={prefs.second} onChange={(m) => update({ ...prefs, second: m })} />}
                   </div>
-                </div>
+                </Sec>
                 {prefs.kinds.length > 0 && (
-                  <div className="space-y-1.5">
-                    <div className="text-xs text-muted-foreground">Antecedência por tipo</div>
+                  <Sec id="byKind" title="Antecedência por tipo">
                     <div className="rounded-xl border divide-y">
                       {prefs.kinds.map((k) => (
                         <label key={k} className="flex items-center justify-between gap-3 px-3 py-2">
@@ -145,8 +144,9 @@ export function ReminderSettingsCard({ scope, role }: { scope: string; role: Rem
                         </label>
                       ))}
                     </div>
-                  </div>
+                  </Sec>
                 )}
+                <Sec id="digest" title="Resumo do dia e silêncio">
                 <div className="rounded-xl border divide-y">
                   <div className="flex items-center justify-between gap-3 px-3 py-2">
                     <span className="text-sm">Resumo do dia</span>
@@ -178,6 +178,7 @@ export function ReminderSettingsCard({ scope, role }: { scope: string; role: Rem
                     )}
                   </div>
                 </div>
+                </Sec>
                 <p className="text-xs text-muted-foreground">Na notificação, toque em “Adiar 10 min” para ser lembrado de novo.</p>
                 <Button size="sm" variant="ghost" onClick={() => void sendTestReminder().then((ok) => ok && toast.success("Lembrete de teste em 3 segundos"))}>
                   Testar lembrete
@@ -185,8 +186,7 @@ export function ReminderSettingsCard({ scope, role }: { scope: string; role: Rem
               </>
             )}
             {role !== "elder" && (
-              <div className="space-y-1.5">
-                <div className="text-xs text-muted-foreground">Leitura da Bíblia</div>
+              <Sec id="reading" title="Leitura da Bíblia">
                 <div className="rounded-xl border divide-y">
                   {(["personal", "family"] as ReadingKind[]).map((k) => {
                     const r = prefs.reading?.[k] ?? { on: false, time: k === "personal" ? "06:30" : "20:00", days: [0, 1, 2, 3, 4, 5, 6] };
@@ -222,11 +222,28 @@ export function ReminderSettingsCard({ scope, role }: { scope: string; role: Rem
                   })}
                 </div>
                 <p className="text-xs text-muted-foreground">Se a leitura do dia já foi marcada, o aviso de hoje não aparece.</p>
-              </div>
+              </Sec>
             )}
           </>
         )}
       </CardContent>
+      </CollapseBody>
     </Card>
+    </CollapseProvider>
+  );
+}
+
+/** Bloco recolhível dos lembretes (só visual: conteúdo fica oculto, nunca desmontado). */
+function Sec({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  const [open, toggle] = useCollapseOpen(id);
+  return (
+    <div className="space-y-1.5">
+      <button type="button" onClick={toggle} aria-expanded={open}
+        className="flex w-full min-h-[36px] items-center justify-between gap-2 rounded-md text-xs font-medium text-muted-foreground active:bg-muted/60">
+        <span>{title}</span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "" : "-rotate-90"}`} />
+      </button>
+      <CollapseBody id={id} className="space-y-1.5">{children}</CollapseBody>
+    </div>
   );
 }

@@ -1,40 +1,40 @@
-// Barra de status offline premium — indicador discreto no topo do app.
-// Estados: sincronizado / sincronizando (N/M) / offline com pendências / erro.
+// Aviso de sincronização (pendências / sem internet / enviando).
+// Não flutua mais no topo (cobria Ajuda e Sincronizar): aparece como
+// bloco no menu lateral (ao lado de "Escuro"/"Preto") e como linha
+// informativa no painel "Pastas e configurações" da esposa.
 // 100% cliente, zero rede extra. Fonte: fila offline + navigator.onLine.
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, CloudOff, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
+import { CheckCircle2, CloudOff, Loader2, RefreshCw } from "lucide-react";
 import { subscribe as subscribeQueue, subscribeFlushProgress, flushQueue } from "@/lib/offline-queue";
 import { getLastWarmupAt } from "@/lib/offline-prefetch";
-import { getVaultMeta } from "@/lib/offline-credentials";
 import { cn } from "@/lib/utils";
 
-type Status = "synced" | "syncing" | "pending" | "error" | "session";
+export type OfflineStatusKind = "synced" | "syncing" | "pending" | "offline";
 
-export function OfflineStatusBar() {
+export interface OfflineStatus {
+  visible: boolean;
+  kind: OfflineStatusKind;
+  online: boolean;
+  pending: number;
+  /** Texto curto para o bloco do menu lateral. */
+  short: string;
+  /** Texto completo para a linha informativa. */
+  long: string;
+  canSend: boolean;
+}
+
+export function useOfflineStatus(): OfflineStatus {
   const { t } = useTranslation();
-  const [online, setOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true,
-  );
+  const [online, setOnline] = useState(true);
   const [pending, setPending] = useState(0);
   const [progress, setProgress] = useState<{ total: number; done: number } | null>(null);
-  const [sessionExpired] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const [showSynced, setShowSynced] = useState(false);
   const [lastAt, setLastAt] = useState<number | null>(null);
-  const [vaultDaysLeft, setVaultDaysLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    setLastAt(getLastWarmupAt());
-    void getVaultMeta()
-      .then((m) => {
-        if (!m || !Number.isFinite(m.expiresAt)) return;
-        setVaultDaysLeft(Math.ceil((m.expiresAt - Date.now()) / 86_400_000));
-      })
-      .catch(() => undefined);
-  }, [online]);
-
-  useEffect(() => {
+    setOnline(navigator.onLine);
     const on = () => setOnline(true);
     const off = () => setOnline(false);
     window.addEventListener("online", on);
@@ -45,102 +45,99 @@ export function OfflineStatusBar() {
     };
   }, []);
 
+  useEffect(() => { setLastAt(getLastWarmupAt()); }, [online]);
   useEffect(() => subscribeQueue(setPending), []);
-
-  useEffect(() => {
-    return subscribeFlushProgress((info) => {
-      if (info.done < info.total) {
-        setProgress(info);
-      } else {
-        // Termina — some após pequeno delay.
-        setProgress(info);
-        setTimeout(() => setProgress(null), 800);
-      }
-    });
-  }, []);
-
-  // Só mostra quando há algo interessante a comunicar.
-  useEffect(() => {
-    const active =
-      !online || pending > 0 || progress !== null || sessionExpired;
-    setVisible(active);
-    if (!active) return;
-    // Auto-hide "synced" após 3s.
-    if (online && pending === 0 && !progress && !sessionExpired) {
-      const t = setTimeout(() => setVisible(false), 3000);
-      return () => clearTimeout(t);
+  useEffect(() => subscribeFlushProgress((info) => {
+    setProgress(info);
+    if (info.done >= info.total) {
+      setShowSynced(true);
+      window.setTimeout(() => { setProgress(null); }, 800);
+      window.setTimeout(() => setShowSynced(false), 3000);
     }
-  }, [online, pending, progress, sessionExpired]);
+  }), []);
 
-  if (!visible) return null;
+  const syncing = !!progress && progress.done < progress.total;
+  const kind: OfflineStatusKind = syncing ? "syncing" : !online ? "offline" : pending > 0 ? "pending" : "synced";
+  const visible = kind !== "synced" || showSynced;
 
-  const status: Status = sessionExpired
-    ? "session"
-    : progress && progress.done < progress.total
-      ? "syncing"
-      : !online && pending > 0
-        ? "pending"
-        : !online
-          ? "pending"
-          : pending > 0
-            ? "pending"
-            : "synced";
+  let short = t("offline.status.synced", "Sincronizado");
+  let long = short;
+  if (kind === "syncing" && progress) {
+    short = `${progress.done}/${progress.total}`;
+    long = t("offline.status.syncingProgress", "Sincronizando {{done}}/{{total}}", progress);
+  } else if (kind === "offline") {
+    short = pending > 0 ? t("offline.status.pendingShort", "{{n}} pendente(s)", { n: pending }) : t("offline.status.noInternetShort", "Sem internet");
+    long = pending > 0
+      ? t("offline.status.offlinePending", "Offline — {{n}} pendente(s)", { n: pending })
+      : `${t("offline.status.noInternetShort", "Sem internet")}${lastAt ? ` — ${t("offline.status.dataFrom", "dados de {{when}}", { when: ageLabel(lastAt) })}` : ""}`;
+  } else if (kind === "pending") {
+    short = t("offline.status.pendingShort", "{{n}} pendente(s)", { n: pending });
+    long = t("offline.status.pending", "{{n}} pendente(s)", { n: pending });
+  }
 
-  const styles: Record<Status, { bg: string; icon: React.ReactNode; label: string }> = {
-    synced: {
-      bg: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
-      icon: <CheckCircle2 className="h-3.5 w-3.5" />,
-      label: t("offline.status.synced", "Sincronizado"),
-    },
-    syncing: {
-      bg: "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30",
-      icon: <Loader2 className="h-3.5 w-3.5 animate-spin" />,
-      label: progress
-        ? t("offline.status.syncingProgress", "Sincronizando {{done}}/{{total}}", progress)
-        : t("offline.status.syncing", "Sincronizando"),
-    },
-    pending: {
-      bg: "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30",
-      icon: online ? <RefreshCw className="h-3.5 w-3.5" /> : <CloudOff className="h-3.5 w-3.5" />,
-      label: online
-        ? t("offline.status.pending", "{{n}} pendente(s)", { n: pending })
-        : pending > 0
-          ? t("offline.status.offlinePending", "Offline — {{n}} pendente(s)", { n: pending })
-          : `Sem internet${lastAt ? ` — dados de ${ageLabel(lastAt)}` : ""}`,
-    },
-    error: {
-      bg: "bg-destructive/10 text-destructive border-destructive/30",
-      icon: <AlertTriangle className="h-3.5 w-3.5" />,
-      label: t("offline.status.error", "Erro de sincronização"),
-    },
-    session: {
-      bg: "bg-destructive/10 text-destructive border-destructive/30",
-      icon: <AlertTriangle className="h-3.5 w-3.5" />,
-      label: t("offline.status.sessionExpired", "Sessão expirada — faça login"),
-    },
-  };
-  const s = styles[status];
-  const canSend = online && pending > 0 && status === "pending";
-  const vaultWarn = !online && vaultDaysLeft !== null && vaultDaysLeft <= 5 && vaultDaysLeft >= 0;
+  return { visible, kind, online, pending, short, long, canSend: online && pending > 0 && kind === "pending" };
+}
 
+function Icon({ kind, className }: { kind: OfflineStatusKind; className?: string }) {
+  if (kind === "syncing") return <Loader2 className={cn(className, "animate-spin")} />;
+  if (kind === "offline") return <CloudOff className={className} />;
+  if (kind === "pending") return <RefreshCw className={className} />;
+  return <CheckCircle2 className={className} />;
+}
+
+const TONE: Record<OfflineStatusKind, string> = {
+  synced: "border-success/40 bg-success/15 text-sidebar-foreground",
+  syncing: "border-primary/40 bg-primary/15 text-sidebar-foreground",
+  pending: "border-warning/60 bg-warning/20 text-sidebar-foreground",
+  offline: "border-warning/60 bg-warning/20 text-sidebar-foreground",
+};
+
+/** Bloco do menu lateral, na mesma linha de "Escuro" e "Preto". */
+export function OfflineStatusTile() {
+  const { t } = useTranslation();
+  const s = useOfflineStatus();
+  if (!s.visible) return <div aria-hidden="true" />;
+  const label = s.canSend ? `${s.long} · ${t("offline.status.tapToSend", "tocar para enviar")}` : s.long;
+  const cls = cn(
+    "flex flex-col items-center justify-center gap-0.5 h-14 rounded-xl border text-[11px] font-semibold leading-tight min-w-0 px-1 text-center",
+    TONE[s.kind],
+  );
+  const body = (
+    <>
+      <Icon kind={s.kind} className="h-4 w-4" />
+      <span className="truncate max-w-full">{s.short}</span>
+      {s.canSend && <span className="text-[10px] font-normal opacity-80">{t("offline.status.sendShort", "Enviar")}</span>}
+    </>
+  );
+  return s.canSend ? (
+    <button type="button" role="status" aria-live="polite" aria-label={label} title={label} onClick={() => void flushQueue()} className={cn(cls, "active:scale-[0.97] transition")}>
+      {body}
+    </button>
+  ) : (
+    <div role="status" aria-live="polite" aria-label={label} title={label} className={cls}>{body}</div>
+  );
+}
+
+/** Linha só informativa (painel da esposa / anciãos). */
+export function OfflineStatusInfo({ className }: { className?: string }) {
+  const { t } = useTranslation();
+  const s = useOfflineStatus();
+  if (!s.visible) return null;
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      onClick={canSend ? () => void flushQueue() : undefined}
-      className={cn(
-        "fixed top-[max(0.5rem,env(safe-area-inset-top,0px))] left-1/2 -translate-x-1/2 z-[60]",
-        canSend ? "pointer-events-auto cursor-pointer" : "pointer-events-none",
-        "flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium",
-        "shadow-sm backdrop-blur-sm transition-opacity",
-        s.bg,
-      )}
-    >
-      {s.icon}
-      <span>{s.label}{canSend ? " · tocar para enviar" : ""}</span>
-      {vaultWarn && <span>· acesso sem internet vence em {vaultDaysLeft} dia(s)</span>}
+    <div role="status" aria-live="polite" className={cn("flex items-start gap-2 rounded-2xl border p-3 text-xs", TONE[s.kind].replace("text-sidebar-foreground", "text-foreground"), className)}>
+      <Icon kind={s.kind} className="h-4 w-4 shrink-0 mt-0.5" />
+      <div className="min-w-0">
+        <div className="font-semibold">{s.long}</div>
+        {s.kind === "offline" && <div className="text-muted-foreground">{t("offline.status.savedHere", "Seus dados estão salvos neste aparelho.")}</div>}
+      </div>
     </div>
   );
+}
+
+/** Bolinha discreta no botão ☰ quando há aviso a ver no menu. */
+export function useOfflineAttention(): boolean {
+  const s = useOfflineStatus();
+  return s.kind === "pending" || s.kind === "offline";
 }
 
 function ageLabel(at: number): string {

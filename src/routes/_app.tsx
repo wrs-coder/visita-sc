@@ -49,6 +49,7 @@ import { useOfflineWarmup } from "@/hooks/use-offline-warmup";
 import { OfflineReadyBadge } from "@/components/OfflineReadyBadge";
 import { RouteAnnouncer } from "@/components/RouteAnnouncer";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { OfflineStatusTile, useOfflineAttention } from "@/components/OfflineStatusBar";
 import { VisitTemplateReminder } from "@/components/VisitTemplateReminder";
 import { useFocusChrome } from "@/lib/focus-chrome";
 
@@ -68,6 +69,7 @@ function AppLayout() {
   const focusChrome = useFocusChrome();
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const offlineAttention = useOfflineAttention();
   const [supportOpen, setSupportOpen] = useState(false);
   // Seções do menu recolhidas (preferência local do aparelho).
   const [closedSections, setClosedSections] = useState<string[]>([]);
@@ -331,10 +333,11 @@ function AppLayout() {
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <button
-                  className="p-2 -ml-2 rounded-md hover:bg-white/10"
+                  className="relative p-2 -ml-2 rounded-md hover:bg-primary-foreground/10"
                   aria-label={t("a11y.openMenu", { defaultValue: "Abrir menu de navegação" })}
                 >
                   <Menu className="h-5 w-5" aria-hidden="true" />
+                  {offlineAttention && <span aria-hidden="true" className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-warning ring-2 ring-primary" />}
                 </button>
               </SheetTrigger>
               <SheetContent
@@ -352,6 +355,7 @@ function AppLayout() {
                 </div>
                 <div className="p-3 pb-0 grid grid-cols-3 gap-2">
                   <ThemeToggle variant="sidebar" />
+                  <OfflineStatusTile />
                 </div>
                 <div className="p-3 flex-1 overflow-y-auto overscroll-contain safe-bottom-content">
                   <Nav onClick={() => setMobileMenuOpen(false)} />
@@ -407,6 +411,7 @@ function AppLayout() {
           </div>
           <div className="p-3 pb-0 grid grid-cols-3 gap-2">
             <ThemeToggle variant="sidebar" />
+            <OfflineStatusTile />
           </div>
           <div className="p-3 flex-1 overflow-y-auto overscroll-contain min-h-0">
             <Nav />

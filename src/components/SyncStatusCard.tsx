@@ -26,6 +26,7 @@ import { CheckCircle2, AlertTriangle } from "lucide-react";
 
 // Áreas mostradas no painel "Pronto para ficar sem internet".
 const READY_AREAS: Array<{ key: string; label: string; tables: string[] }> = [
+  { key: "dashboard", label: "Painel da visita", tables: ["meals", "field_meetings", "field_assignments", "transport_schedule", "checklist_items", "schedule_events", "midweek_meetings", "weekend_meetings"] },
   { key: "itinerary", label: "Itinerário e visitas", tables: ["visits", "itinerary_weeks", "circuit_schedule_events"] },
   { key: "congregations", label: "Congregações", tables: ["congregations"] },
   { key: "outlines", label: "Esboços e anotações", tables: ["personal_outlines", "private_notes"] },
