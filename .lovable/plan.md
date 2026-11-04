@@ -1,5 +1,23 @@
 # Plano: app funcionando de verdade quando a internet cai sem aviso
 
+## Correção sincera (depois do seu relato)
+Você tem razão: **o problema também acontece no modo avião**, com a sincronização feita e o PIN configurado. A "internet pendurada" explica só uma parte. O código mostra três defeitos que aparecem mesmo sem internet nenhuma:
+
+1. **Telas que apagam o que já mostravam.** Itinerário, partes do Painel e outras guardam os dados só enquanto estão abertas. Ao voltar para elas, pedem tudo de novo ao servidor. Sem internet, recebem "nada" e mostram a tela vazia. **A sincronização baixa os dados, mas essas telas nunca leem o que foi baixado.**
+2. **Voltar de outro aplicativo.** O Android fecha o app quando ele fica em segundo plano. Ao reabrir, o app pergunta ao servidor quem você é. Sem resposta, grava "vazio" por cima do seu perfil guardado. Aí cai na tela de entrada ou no cadastro, ou fica girando.
+3. **Esboços e Estudo** perguntam ao servidor se você é superintendente antes de abrir, mesmo com as notas já no celular.
+
+Ou seja, as três funções existem, mas as telas e a abertura do app não usam o que elas guardam. O conserto é ligar cada tela à cópia do celular e fazer a abertura nunca depender do servidor.
+
+## Critério de "pronto" (o que vou provar aqui antes de te entregar)
+Vou testar no **modo avião simulado**, com a sua conta e os seus dados reais baixados:
+- Abrir **cada tela** do menu: todas precisam mostrar dados.
+- Sair de uma tela e voltar: os dados continuam lá.
+- Fechar e reabrir o app, como ao trocar de aplicativo: ele abre direto no Painel, sem pedir senha e sem tela vazia.
+- Abrir um esboço de discurso: o texto completo aparece.
+
+Te entrego a lista com cada tela marcada como aprovada ou reprovada. Nenhuma fica de fora sem você saber.
+
 ## Explicação sincera: por que nada resolveu até hoje
 
 As três funções que já existem (Modo offline, Sincronização offline e Acesso por PIN) funcionam **só quando o celular sabe que está sem internet**: modo avião, dados desligados ou quando você liga o "Modo offline" na mão.
