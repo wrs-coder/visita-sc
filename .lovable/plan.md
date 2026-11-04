@@ -31,8 +31,8 @@ Hoje o texto fica no celular, mas um anexo nunca aberto pode não estar baixado.
 ## 4. Impedir o Android de apagar os dados
 O pedido de "armazenamento permanente" hoje só é feito pela Bíblia. Fazer o mesmo pedido para todos os dados do app.
 
-## 5. Acesso por PIN: prazo de 30 dias
-Hoje o PIN deixa de valer após 30 dias sem nenhuma conexão. Opções: manter 30 dias (regra atual), ampliar para 90 dias, ou avisar 5 dias antes de vencer. Mudar o prazo altera uma regra do instructions.md e só faço se você autorizar.
+## 5. Acesso por PIN sem prazo (autorizado por você)
+O PIN deixa de vencer após 30 dias sem conexão e passa a valer sem limite. Continua: bloqueio após erros e "Sair" apaga o acesso deste aparelho. Atualizo a regra no instructions.md.
 
 ## 6. Aviso de pendências
 Mostrar no topo um número ("2 alterações aguardando envio") para lembrar de tocar em Sincronizar quando voltar a ter internet. Nada é enviado sozinho.
