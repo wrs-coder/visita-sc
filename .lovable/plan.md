@@ -46,7 +46,7 @@ Observação sincera: a "trava" é uma regra que eu (a IA) sou obrigada a seguir
 
 **Causa provável (confirmada no código, falta confirmar com seu arquivo):** Provérbios é poesia. No EPUB, cada linha do versículo fica em um bloco separado. Ao montar o versículo, o app junta o texto dos blocos sem colocar espaço entre eles, então a última palavra de uma linha gruda na primeira da próxima.
 
-**Correção:**
+**Correção (vale para a Bíblia inteira, todos os livros — não só Provérbios; poesia como Salmos, Provérbios, Jó e profetas é onde mais aparece):**
 - Ao ler o EPUB, colocar espaço (ou quebra de linha) toda vez que muda de linha/bloco, seguindo a formatação original.
 - Mostrar a poesia em linhas, como no arquivo original, só na aba Bíblia (esboços continuam iguais).
 - Como o texto já importado ficou gravado colado, o app vai **reprocessar a Bíblia uma vez** a partir do EPUB guardado no aparelho. Se o arquivo original não estiver mais guardado, aparece um aviso pedindo para importar o EPUB de novo. Pontos altos e marcações são mantidos.
