@@ -1,108 +1,31 @@
-# Ajustes: aviso de pendências, Painel na prontidão e Lembretes
+# Correção: esboços e pastas não atualizam entre aparelhos
 
-## 1. Painel no "Pronto para ficar sem internet"
-Hoje a lista mostra só Itinerário, Congregações, Esboços, Modelos e Grandes Eventos. Entra a linha **"Painel da visita"**, que confere se refeições, campo, transporte, checklist e reuniões da visita atual estão guardados no celular.
+## O que encontrei (confirmado no código)
 
-## 2. Balão amarelo sai do topo
-Hoje o balão ("1 pendente(s) · tocar para enviar", "Sem internet", etc.) flutua no topo e cobre Ajuda e Sincronizar.
+1. **"Receber da nuvem" só atualiza esboços que o aparelho já conhece pelo "número da nuvem".** Se o esboço foi criado no aparelho A, o aparelho B não tem esse número. Resultado: "ainda não está na nuvem" ou nada acontece.
+2. **"Receber" da pasta não traz esboços novos.** Ela só passa pelos esboços que já existem dentro da pasta no aparelho B. Esboços criados ou movidos no aparelho A nunca chegam.
+3. **Duplicatas sem ligação.** Quando o mesmo esboço existe nos dois aparelhos sem o mesmo número da nuvem, "Enviar" no A atualiza uma cópia na nuvem, e o B continua ligado a outra (ou a nenhuma).
+4. **A lista da nuvem pode vir da cópia guardada no celular.** A leitura da lista de esboços passa pela cópia local (do trabalho de modo offline). Assim, ao tocar em Sincronizar no B, ele pode ler a lista antiga guardada em vez da nuvem atual.
+5. **Receber não acompanha mudanças de pasta ou título** feitas no outro aparelho.
 
-**Superintendente e anciãos:** vai para o menu lateral, ao lado do botão do modo escuro.
+## O que vou corrigir
 
-```text
-ANTES (topo)                     DEPOIS (menu lateral aberto)
-+-----------------------------+  +---------------------------+
-| ☰  Cabiri  [1 pendente] ? ⟳ |  | Wanderson · Circuito      |
-|        ^ cobre os botões    |  |---------------------------|
-+-----------------------------+  | [☾ Preto ] [⚠ 1 pendente ]|
-                                 |            [ Tocar enviar]|
-                                 |---------------------------|
-                                 | Painel                    |
-                                 | Itinerário ...            |
-                                 +---------------------------+
-```
-- O botão ☰ ganha uma bolinha amarela discreta quando houver pendência.
-- Tocar no cartão envia as pendências, como hoje.
+- **Receber (esboço):** sempre busca direto na nuvem, nunca na cópia guardada. Se o esboço não tiver número da nuvem, procura a cópia da nuvem pelo mesmo título e pasta, liga as duas e atualiza. Também atualiza título e pasta.
+- **Receber (pasta):** lê a lista atual da nuvem para aquela pasta e as subpastas. Atualiza os esboços que já existem, **cria os que faltam** e cria as subpastas que faltam. Antes de substituir alterações que você ainda não enviou, o app continua perguntando.
+- **Enviar (esboço ou pasta):** antes de criar uma cópia nova na nuvem, verifica se já existe lá um esboço com o mesmo título e pasta, e atualiza esse em vez de duplicar.
+- **Botão Sincronizar geral:** a lista de esboços da nuvem passa a ser lida sempre da nuvem quando você toca nele. O modo sem internet continua usando o que está no celular.
+- **Mensagens claras:** por exemplo "3 atualizados · 2 novos · 1 com erro".
 
-**Esposa:** o balão sai do topo e vai para o painel "Pastas e Configurações", como uma linha de aviso só informativa (sem toque, já que lá não há envio).
+Sem mudanças no banco de dados, no login ou na versão. O resto do app continua igual.
 
-```text
-+---------------------------+
-| Pastas e Configurações    |
-|---------------------------|
-| ⚠ Sem internet            |
-|   Seus dados estão salvos |
-|   neste aparelho.         |
-|---------------------------|
-| 📁 Pastas ...             |
-| ☾ Tema ...                |
-+---------------------------+
-```
+## Como vou testar
 
-## 3. Lembretes com recolher/expandir em cada bloco
-Cada bloco dos Lembretes (Antecedência, Tipos de evento, Horário silencioso, Dias, etc.) ganha a seta ⌃/⌄, no mesmo estilo dos outros cartões. Recolher só esconde; nada configurado é perdido. O app lembra o que ficou recolhido neste aparelho.
-
-```text
-+-----------------------------+
-| 🔔 Lembretes de eventos   ⌃ |
-|-----------------------------|
-| Antecedência            ⌄  |
-| Tipos de evento         ⌃  |
-|   Refeições        [ON ]   |
-|   Saída de campo   [ON ]   |
-| Horário silencioso      ⌄  |
-+-----------------------------+
-```
-
-Sem mudança no banco, no login ou na versão.
+- Testes automáticos com dois "aparelhos" simulados na mesma conta: enviar no A, receber no B (esboço novo, esboço editado, esboço sem ligação, pasta com subpasta).
+- Teste confirmando que o Receber não usa a cópia guardada.
+- `bunx tsgo --noEmit` e `bunx vitest run`.
 
 ## Detalhes técnicos
-- `SyncStatusCard.tsx`: nova área `dashboard` em `READY_AREAS` (meals, field_meetings, field_assignments, transport_schedule, checklist_items, schedule_events e tabelas de reuniões).
-- `OfflineStatusBar.tsx`: variantes `inline` (com ação de envio, usada em `_app.tsx` ao lado de `ThemeToggle variant="sidebar"`) e `info` (sem ação, usada no painel "Pastas e Configurações" do `GuestWorkspace.tsx`/`visitante.painel.tsx`); a versão flutuante deixa de ser renderizada.
-- Bolinha no botão ☰ lendo o mesmo contador de pendências.
-- `EventReminders.tsx`: cada seção envolvida pelo componente de `collapsible-blocks.tsx` (estado em localStorage, conteúdo escondido, nunca desmontado).
 
----
-
-## 4. Sincronizar um esboço por vez
-Hoje, ao arrastar um esboço, o app marca esse esboço e depois sincroniza **todos** os esboços. Passa a agir só no esboço arrastado:
-
-- **Arrastar para a esquerda (verde) = Enviar:** manda só este esboço para a nuvem.
-- **Arrastar para a direita (azul) = Receber:** baixa só este esboço da nuvem e substitui a cópia do celular.
-- Se o esboço tiver alterações ainda não enviadas, o Receber pergunta antes ("Substituir sua versão do celular?").
-- Sem internet: aviso "Sem internet, tente quando houver conexão" (nada é perdido).
-- **No site/PWA:** os três pontinhos de cada esboço ganham "Enviar para a nuvem" e "Receber da nuvem".
-
-```text
-Arrastar ←  (Enviar)                Arrastar →  (Receber)
-+---------------------------+      +---------------------------+
-| Esboço 12 - Fé  |▓ ⬆ Enviar|      |⬇ Receber ▓| Esboço 12 - Fé|
-+---------------------------+      +---------------------------+
-          verde                              azul
-
-Celular, site e PWA (⋯ ao lado do esboço)
-+---------------------------+
-| Renomear                  |
-| Mover                     |
-| ⬆ Enviar para a nuvem     |
-| ⬇ Receber da nuvem        |
-+---------------------------+
-
-⋯ ao lado da pasta
-+---------------------------+
-| Nova subpasta             |
-| Renomear                  |
-| Exportar                  |
-| ⬆ Enviar para a nuvem     |
-| ⬇ Receber da nuvem        |
-+---------------------------+
-   (age em todos os esboços da pasta)
-```
-
-- **Três pontinhos de cada esboço (celular, site e PWA):** "⬆ Enviar para a nuvem" e "⬇ Receber da nuvem".
-- **Três pontinhos de cada pasta:** além de "Exportar", "⬆ Enviar para a nuvem" e "⬇ Receber da nuvem", agindo em todos os esboços da pasta e subpastas. Antes de receber, o app avisa quantos esboços com alterações não enviadas serão substituídos.
-
-### Detalhes técnicos (4)
-- `SwipeToSync.tsx`: dois lados (`onPush` à esquerda com `bg-success`, `onPull` à direita com `bg-primary`), continua só toque para não atrapalhar o arrastar com mouse.
-- `OutlinesWorkspace.tsx`: `swipeSyncNote` deixa de chamar `syncOutlinesIfOnline()`; usa `pushOutlineToCloud` e `pullOutlineFromCloud` apenas com o id do esboço e limpa o `dirty` só desse esboço. Mesmas ações no menu ⋯ da nota, visível também no celular.
-- Menu ⋯ da pasta: envio via `bulkPushOutlines` com os esboços da pasta e subpastas; recebimento chama `pullOutlineFromCloud` para cada esboço da pasta existente na nuvem, com resumo final (recebidos / não encontrados).
-- A sincronização geral pelo botão ⟳ continua igual.
+- `pullOutlineFromCloud` / nova `listCloudOutlinesInPath` (sem `readCacheMiddleware`) em `personal-outlines.functions.ts`; `listCloudOutlineTree` ganha variante sem cache para `syncNow` em `use-outlines-sync.ts`.
+- `OutlinesWorkspace.tsx`: `pullOneNote` relaciona por `cloud_id` → (note_type, folder_path, título); `pullFolderAction` faz o merge da lista da nuvem usando `ensureFolderPath`; `pushOneNote` relaciona antes de inserir.
+- Lógica de relacionamento em função pura com testes (vitest).
