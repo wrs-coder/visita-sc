@@ -49,3 +49,12 @@ export function saveReaderSettings(patch: Partial<ReaderSettings>): ReaderSettin
   try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* quota */ }
   return next;
 }
+
+/** Sufixo do topo do leitor: ":1-31" (primeiro ao último versículo do capítulo). */
+export function chapterVerseSpan(verses: { verse: number }[] | null | undefined): string {
+  if (!verses || verses.length === 0) return "";
+  let lo = Infinity, hi = -Infinity;
+  for (const v of verses) { if (v.verse < lo) lo = v.verse; if (v.verse > hi) hi = v.verse; }
+  if (!Number.isFinite(lo)) return "";
+  return lo === hi ? `:${lo}` : `:${lo}-${hi}`;
+}

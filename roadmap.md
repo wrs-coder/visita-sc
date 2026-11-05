@@ -10,3 +10,4 @@
 
 - [x] Offline: PIN sem prazo, armazenamento permanente, painel Pronto para ficar sem internet
 - [ ] Teste automático de todas as telas com internet pendurada (pendente)
+- [x] Balão bíblico: topo enxuto (Aa, ⋯), bolinhas de destaque, citações com ";", topo do leitor com versículos, destaque de trecho no leitor

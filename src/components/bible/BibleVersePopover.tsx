@@ -3,9 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import {
-  Loader2, BookOpen, GripHorizontal, X, Bold, Highlighter, Eraser,
+  Loader2, GripHorizontal, X, Bold, Highlighter, Eraser,
   Copy, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, List, FilePlus2,
-  AArrowDown, AArrowUp, SlidersHorizontal,
+  AArrowDown, AArrowUp, MoreHorizontal, Palette, Plus, Minus, Navigation,
 } from "lucide-react";
 import { getChapterFromLibrary, prefetchChapters } from "@/lib/bible-notes-store";
 import { pushVerseHistory } from "@/lib/bible-history";
@@ -76,6 +76,13 @@ export function VerseLink({
   const displayBook = getLocalizedBookName(match.bookId, i18n.language) ?? match.bookName;
   const [open, setOpen] = useState(autoOpen);
   const [controlsExpanded, setControlsExpanded] = useState(false);
+  // Topo enxuto: menu ⋯, régua de fonte [Aa] e navegação oculta em "Mais opções".
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [fontOpen, setFontOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  // Barrinha flutuante de destaque: posição (relativa ao balão) e, quando
+  // aberta a partir de um destaque já existente, qual destaque ela edita.
+  const [hlBar, setHlBar] = useState<{ top: number; existing?: { verse: number; start: number; end: number } } | null>(null);
   const controlsId = useId();
   const [loading, setLoading] = useState(false);
   // Capítulo atualmente carregado (permite navegar entre capítulos).
@@ -132,6 +139,10 @@ export function VerseLink({
     if (next) {
       setSettings(loadSettings());
       setControlsExpanded(false);
+      setMenuOpen(false);
+      setFontOpen(false);
+      setNavOpen(false);
+      setHlBar(null);
       setOpen(true);
       return;
     }
@@ -160,6 +171,10 @@ export function VerseLink({
     if (!open) {
       setOffset({ x: 0, y: 0 });
       setControlsExpanded(false);
+      setMenuOpen(false);
+      setFontOpen(false);
+      setNavOpen(false);
+      setHlBar(null);
       // Volta ao estado original da citação ao reabrir.
       setChapterMode(false);
       setShowAll(false);
@@ -410,6 +425,16 @@ export function VerseLink({
   // iPadOS (WebKit) desfaz a seleção ao tocar num botão; guardamos o último trecho
   // selecionado dentro do texto para aplicar o destaque mesmo assim.
   const savedRangeRef = useRef<Range | null>(null);
+  // Barrinha logo ABAIXO do trecho (o menu nativo do Android fica acima);
+  // se não couber, sobe para cima do trecho.
+  const barTopFor = (rect: DOMRect): number | null => {
+    const box = contentRef.current?.getBoundingClientRect();
+    if (!box || (rect.width === 0 && rect.height === 0)) return null;
+    const BAR_H = 40;
+    let top = rect.bottom - box.top + 8;
+    if (top + BAR_H > box.height - 4) top = Math.max(44, rect.top - box.top - BAR_H - 8);
+    return top;
+  };
   useEffect(() => {
     if (typeof document === "undefined") return;
     const onSelChange = () => {
@@ -417,7 +442,11 @@ export function VerseLink({
       const c = textRef.current;
       if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !c) return;
       const r = sel.getRangeAt(0);
-      if (c.contains(r.startContainer) && c.contains(r.endContainer)) savedRangeRef.current = r.cloneRange();
+      if (c.contains(r.startContainer) && c.contains(r.endContainer)) {
+        savedRangeRef.current = r.cloneRange();
+        const top = barTopFor(r.getBoundingClientRect());
+        if (top != null) setHlBar({ top });
+      }
     };
     document.addEventListener("selectionchange", onSelChange);
     return () => document.removeEventListener("selectionchange", onSelChange);
@@ -437,6 +466,15 @@ export function VerseLink({
 
   const onPickHighlightColor = (c: HighlightColor) => {
     updateSetting({ highlightColor: c });
+    const ex = hlBar?.existing;
+    if (ex && libraryId) {
+      // Trocar a cor de um destaque já existente (mesmo trecho).
+      const key = highlightKey(libraryId, match.bookId, chapter, ex.verse);
+      const next = addHighlight(key, { start: ex.start, end: ex.end, color: c });
+      setHighlightsByVerse((m) => ({ ...m, [ex.verse]: next }));
+      setHlBar(null);
+      return;
+    }
     if (getActiveRange()) {
       // Aplica direto quando já há texto selecionado.
       onHighlightClickRef.current?.(c);
@@ -485,15 +523,63 @@ export function VerseLink({
     const next = addHighlight(key, { start, end, color: color ?? settings.highlightColor });
     setHighlightsByVerse((m) => ({ ...m, [a.verse]: next }));
     savedRangeRef.current = null;
+    setHlBar(null);
     sel?.removeAllRanges();
   };
   onHighlightClickRef.current = onHighlightClick;
 
-  const onSegmentClick = (verse: number, segStart: number, highlighted: boolean) => {
+  // Tocar num trecho já destacado abre a barrinha para trocar a cor ou apagar.
+  const onSegmentClick = (e: React.MouseEvent<HTMLElement>, verse: number, segStart: number, highlighted: boolean) => {
     if (!libraryId || !highlighted) return;
-    const key = highlightKey(libraryId, match.bookId, chapter, verse);
-    const next = removeHighlightAt(key, segStart);
-    setHighlightsByVerse((m) => ({ ...m, [verse]: next }));
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) return;
+    const h = (highlightsByVerse[verse] ?? []).find((x) => segStart >= x.start && segStart < x.end);
+    if (!h) return;
+    const top = barTopFor(e.currentTarget.getBoundingClientRect());
+    if (top == null) return;
+    e.stopPropagation();
+    savedRangeRef.current = null;
+    setHlBar({ top, existing: { verse, start: h.start, end: h.end } });
+  };
+  const onBarErase = () => {
+    const ex = hlBar?.existing;
+    if (ex && libraryId) {
+      const key = highlightKey(libraryId, match.bookId, chapter, ex.verse);
+      const next = removeHighlightAt(key, ex.start);
+      setHighlightsByVerse((m) => ({ ...m, [ex.verse]: next }));
+    }
+    savedRangeRef.current = null;
+    window.getSelection()?.removeAllRanges();
+    setHlBar(null);
+  };
+  // Régua de fonte some sozinha após um tempo sem uso.
+  const fontTimerRef = useRef<number | null>(null);
+  const bumpFontTimer = useCallback(() => {
+    if (fontTimerRef.current) window.clearTimeout(fontTimerRef.current);
+    fontTimerRef.current = window.setTimeout(() => setFontOpen(false), 2500);
+  }, []);
+  useEffect(() => () => { if (fontTimerRef.current) window.clearTimeout(fontTimerRef.current); }, []);
+  const fontDragRef = useRef<{ y: number; x: number; pointerId: number } | null>(null);
+  const onFontPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    fontDragRef.current = { y: e.clientY, x: e.clientX, pointerId: e.pointerId };
+    bumpFontTimer();
+  };
+  const onFontPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = fontDragRef.current;
+    if (!d || d.pointerId !== e.pointerId) return;
+    // Para cima/direita aumenta; para baixo/esquerda diminui. Um passo a cada 18px.
+    const delta = (d.y - e.clientY) + (e.clientX - d.x);
+    if (Math.abs(delta) >= 18) {
+      changeTextScale(delta > 0 ? 1 : -1);
+      fontDragRef.current = { y: e.clientY, x: e.clientX, pointerId: d.pointerId };
+      bumpFontTimer();
+    }
+  };
+  const onFontPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    fontDragRef.current = null;
   };
 
   const onClearAll = () => {
@@ -530,7 +616,7 @@ export function VerseLink({
         data-verse={p.verse}
         data-seg-start={s.start}
         className={s.highlighted ? `bible-highlight bible-hl-${s.color ?? "yellow"}` : undefined}
-        onClick={s.highlighted ? () => onSegmentClick(p.verse, s.start, true) : undefined}
+        onClick={s.highlighted ? (e) => onSegmentClick(e, p.verse, s.start, true) : undefined}
       >
         {s.text}
       </span>
@@ -591,7 +677,7 @@ export function VerseLink({
       </PopoverTrigger>
       <PopoverContent
         ref={attachContent}
-        className="w-80 max-w-[90vw] max-h-[85dvh] overflow-hidden z-[110] p-0 flex flex-col"
+        className="relative w-80 max-w-[calc(100vw-24px)] max-h-[85dvh] overflow-hidden z-[110] p-0 flex flex-col"
         align="start"
         style={{ translate: `${offset.x}px ${offset.y}px` }}
         onOpenAutoFocus={(e) => e.preventDefault()}
@@ -602,7 +688,7 @@ export function VerseLink({
         // Cliques fora, blur e toggle continuam ignorados (Missão 03).
         onEscapeKeyDown={() => explicitClose()}
       >
-        {/* Alça de arrasto + fechar */}
+        {/* Topo: arrastar + título inteiro + [Aa] [⋯] [✕] */}
         <div
           role="toolbar"
           aria-label={t("bibleVerse.dragHandle", { defaultValue: "Arrastar" })}
@@ -610,63 +696,142 @@ export function VerseLink({
           onPointerMove={onHandlePointerMove}
           onPointerUp={onHandlePointerUp}
           onPointerCancel={onHandlePointerUp}
-          className="flex items-center gap-2 px-2 py-1.5 border-b bg-muted/60 cursor-grab active:cursor-grabbing select-none touch-none"
+          onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest("button")) explicitClose(); }}
+          className="flex items-center gap-1 pl-2 pr-1 py-1 border-b bg-muted/60 cursor-grab active:cursor-grabbing select-none touch-none"
         >
-          <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-          <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-xs font-semibold text-foreground flex-1 truncate">
+          <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span className="text-sm font-semibold text-foreground flex-1 min-w-0 truncate pl-1">
             {displayBook} {chapter}{headerVerses ? `:${headerVerses}` : ""}
           </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-expanded={controlsExpanded}
-            aria-controls={controlsId}
-            aria-label={t(controlsExpanded ? "bibleVerse.hideControls" : "bibleVerse.showControls")}
-            title={t(controlsExpanded ? "bibleVerse.hideControls" : "bibleVerse.showControls")}
-            onClick={(e) => { e.stopPropagation(); setControlsExpanded((v) => !v); }}
-            className="h-7 w-7 shrink-0 text-muted-foreground"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-          </Button>
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); void onCopy(); }}
-            className="p-1 rounded hover:bg-background text-muted-foreground"
-            aria-label={t("bibleVerse.copy", { defaultValue: "Copiar texto" })}
-            title={t("bibleVerse.copy", { defaultValue: "Copiar texto" })}
+            aria-expanded={fontOpen}
+            aria-label={t("bibleVerse.fontSize", { defaultValue: "Tamanho da letra" })}
+            title={t("bibleVerse.fontSize", { defaultValue: "Tamanho da letra" })}
+            onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setFontOpen((v) => { if (!v) bumpFontTimer(); return !v; }); }}
+            className={cn("h-8 w-8 inline-flex items-center justify-center rounded-full hover:bg-background text-muted-foreground shrink-0", fontOpen && "bg-background text-foreground")}
           >
-            <Copy className="h-3.5 w-3.5" />
+            <span className="text-[13px] font-semibold leading-none">Aa</span>
           </button>
-          {onInsert && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); void onInsertClick(); }}
-              disabled={inserting || !parts || parts.length === 0}
-              className="p-1 rounded hover:bg-background text-muted-foreground disabled:opacity-40"
-              aria-label={t("bibleVerse.insert", { defaultValue: "Inserir no esboço" })}
-              title={t("bibleVerse.insert", { defaultValue: "Inserir no esboço" })}
-            >
-              {inserting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FilePlus2 className="h-3.5 w-3.5" />}
-            </button>
-          )}
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              explicitClose();
-            }}
-            className="p-1 rounded hover:bg-background text-muted-foreground"
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            aria-label={t("bibleVerse.moreActions", { defaultValue: "Mais ações" })}
+            title={t("bibleVerse.moreActions", { defaultValue: "Mais ações" })}
+            onPointerDown={keepSelection}
+            onMouseDown={keepSelection}
+            onClick={(e) => { e.stopPropagation(); setFontOpen(false); setMenuOpen((v) => !v); }}
+            className={cn("h-8 w-8 inline-flex items-center justify-center rounded-full hover:bg-background text-muted-foreground shrink-0", menuOpen && "bg-background text-foreground")}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); explicitClose(); }}
+            className={"h-8 w-8 inline-flex items-center justify-center rounded-full hover:bg-background text-muted-foreground shrink-0"}
             aria-label={t("bibleVerse.close", { defaultValue: "Fechar" })}
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
+        {/* Régua de fonte: + em cima, − embaixo, arrastar sobe/desce */}
+        {fontOpen && (
+          <div
+            className="absolute right-11 top-10 z-20 flex flex-col items-center gap-1 rounded-full border bg-popover p-1 shadow-lg"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label={t("bibleVerse.fontLarger", { defaultValue: "Aumentar letra" })}
+              onClick={() => { changeTextScale(1); bumpFontTimer(); }}
+              disabled={settings.textScale >= TEXT_SCALE_MAX}
+              className="h-8 w-8 inline-flex items-center justify-center rounded-full hover:bg-muted disabled:opacity-40"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+            <div
+              role="slider"
+              aria-label={t("bibleVerse.fontSize", { defaultValue: "Tamanho da letra" })}
+              aria-valuemin={TEXT_SCALE_MIN}
+              aria-valuemax={TEXT_SCALE_MAX}
+              aria-valuenow={settings.textScale}
+              onPointerDown={onFontPointerDown}
+              onPointerMove={onFontPointerMove}
+              onPointerUp={onFontPointerUp}
+              onPointerCancel={onFontPointerUp}
+              className="h-12 w-8 flex items-center justify-center touch-none cursor-ns-resize"
+            >
+              <span className="h-8 w-1 rounded-full bg-muted-foreground/40" />
+            </div>
+            <button
+              type="button"
+              aria-label={t("bibleVerse.fontSmaller", { defaultValue: "Diminuir letra" })}
+              onClick={() => { changeTextScale(-1); bumpFontTimer(); }}
+              disabled={settings.textScale <= TEXT_SCALE_MIN}
+              className="h-8 w-8 inline-flex items-center justify-center rounded-full hover:bg-muted disabled:opacity-40"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
+        {/* Menu ⋯ */}
+        {menuOpen && (
+          <div
+            role="menu"
+            className="absolute right-1 top-10 z-20 w-56 overflow-hidden rounded-xl border bg-popover py-1 shadow-lg"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <button type="button" role="menuitem" className={"w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-muted disabled:opacity-40"}
+              onClick={() => { setMenuOpen(false); void onCopy(); }}>
+              <Copy className="h-4 w-4 text-muted-foreground" />
+              {t("bibleVerse.copy", { defaultValue: "Copiar texto" })}
+            </button>
+            {onInsert && (
+              <button type="button" role="menuitem" className={"w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-muted disabled:opacity-40"}
+                disabled={inserting || !parts || parts.length === 0}
+                onClick={() => { setMenuOpen(false); void onInsertClick(); }}>
+                {inserting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus2 className="h-4 w-4 text-muted-foreground" />}
+                {t("bibleVerse.insert", { defaultValue: "Inserir no esboço" })}
+              </button>
+            )}
+            <button type="button" role="menuitem" className={"w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-muted disabled:opacity-40"}
+              onPointerDown={keepSelection}
+              onMouseDown={keepSelection}
+              onClick={() => {
+                setMenuOpen(false);
+                const r = getActiveRange();
+                const top = r ? barTopFor(r.getBoundingClientRect()) : null;
+                if (top != null) setHlBar({ top });
+                else toast.info(t("bibleVerse.selectToHighlight"));
+              }}>
+              <Highlighter className="h-4 w-4 text-muted-foreground" />
+              {t("bibleVerse.highlightSelection", { defaultValue: "Destacar seleção" })}
+            </button>
+            <button type="button" role="menuitem" aria-expanded={controlsExpanded} aria-controls={controlsId} className={"w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-muted disabled:opacity-40"}
+              onClick={() => { setMenuOpen(false); setControlsExpanded((v) => !v); }}>
+              <Palette className="h-4 w-4 text-muted-foreground" />
+              {t("bibleVerse.appearance", { defaultValue: "Aparência" })}
+            </button>
+            <button type="button" role="menuitem" className={"w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-muted disabled:opacity-40"}
+              onClick={() => { setMenuOpen(false); onClearAll(); }}>
+              <Eraser className="h-4 w-4 text-muted-foreground" />
+              {t("bibleVerse.clearHighlights")}
+            </button>
+            <div className="my-1 h-px bg-border" />
+            <button type="button" role="menuitem" aria-expanded={navOpen} className={"w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-muted disabled:opacity-40"}
+              onClick={() => { setMenuOpen(false); setNavOpen((v) => !v); }}>
+              <Navigation className="h-4 w-4 text-muted-foreground" />
+              <span className="flex-1">{t("bibleVerse.moreOptions", { defaultValue: "Mais opções" })}</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+        )}
+
+        {/* Aparência (fundo, negrito, letra) — aberta pelo menu ⋯ */}
         <div id={controlsId} hidden={!controlsExpanded} className="shrink-0 max-h-[40dvh] overflow-y-auto">
-        {/* Barra de aparência (cor, negrito, grifar) */}
         <div className="flex items-center gap-1.5 px-2 py-1.5 border-b bg-muted/30" aria-label={t("bibleVerse.viewSettings")}>
           <div className="flex items-center gap-1" role="radiogroup" aria-label={t("bibleVerse.color")}>
             {COLORS.map((c) => (
@@ -719,50 +884,11 @@ export function VerseLink({
             <AArrowUp className="h-3.5 w-3.5" />
           </button>
         </div>
+        </div>
 
-        {/* Destaque e navegação */}
-        <div className="flex flex-wrap items-center gap-1.5 px-2 py-1.5 border-b bg-muted/30">
-          <button
-            type="button"
-            title={t("bibleVerse.highlight")}
-            aria-label={t("bibleVerse.highlight")}
-            onPointerDown={keepSelection}
-            onMouseDown={keepSelection}
-            onClick={() => onHighlightClick()}
-            className="p-1 rounded hover:bg-background text-muted-foreground"
-          >
-            <Highlighter className="h-3.5 w-3.5" />
-          </button>
-          <div className="flex items-center gap-1" role="radiogroup" aria-label={t("bibleVerse.highlightColor", { defaultValue: "Cor do destaque" })}>
-            {HIGHLIGHT_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                role="radio"
-                aria-checked={settings.highlightColor === c}
-                aria-label={t(`bibleVerse.highlightColors.${c}`, { defaultValue: HL_LABELS[c] })}
-                title={t(`bibleVerse.highlightColors.${c}`, { defaultValue: HL_LABELS[c] })}
-                onPointerDown={keepSelection}
-                onMouseDown={keepSelection}
-                onClick={() => onPickHighlightColor(c)}
-                className={cn(
-                  "h-4 w-4 rounded-sm border bible-hl-swatch",
-                  `bible-hl-${c}`,
-                  settings.highlightColor === c ? "ring-2 ring-primary ring-offset-1" : "border-border",
-                )}
-              />
-            ))}
-          </div>
-          <button
-            type="button"
-            title={t("bibleVerse.clearHighlights")}
-            aria-label={t("bibleVerse.clearHighlights")}
-            onClick={onClearAll}
-            className="p-1 rounded hover:bg-background text-muted-foreground"
-          >
-            <Eraser className="h-3.5 w-3.5" />
-          </button>
-          <div className="mx-1 h-4 w-px bg-border" />
+        {/* Mais opções: navegação (oculta por padrão) */}
+        {navOpen && (
+        <div className="flex items-center gap-1.5 px-2 py-1.5 border-b bg-muted/30">
           <button
             type="button"
             aria-pressed={chapterMode}
@@ -817,10 +943,10 @@ export function VerseLink({
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
-        </div>
-
+        )}
 
         <div
+          onScroll={() => { if (hlBar) setHlBar(null); }}
           className={cn("overflow-y-auto overscroll-contain min-h-0", effectiveHeight == null && "max-h-[70dvh]")}
           style={effectiveHeight != null ? { height: effectiveHeight, flexShrink: 1 } : undefined}
         >
@@ -836,6 +962,11 @@ export function VerseLink({
               style={{ fontSize: `${settings.textScale * 0.875}rem` }}
               onDoubleClick={handleDoubleTapClose}
               onTouchEnd={handleTextTouchEnd}
+              onClick={() => {
+                setMenuOpen(false);
+                const sel = window.getSelection();
+                if (hlBar && (!sel || sel.isCollapsed)) { savedRangeRef.current = null; setHlBar(null); }
+              }}
             >
               {multiVerse ? (
                 <p>
@@ -876,6 +1007,40 @@ export function VerseLink({
             </p>
           )}
         </div>
+        {/* Barrinha flutuante de destaque (bolinhas) */}
+        {hlBar && (
+          <div
+            role="toolbar"
+            aria-label={t("bibleVerse.highlightColor", { defaultValue: "Cor do destaque" })}
+            className="absolute left-1/2 z-20 -translate-x-1/2 flex items-center gap-2 rounded-full border bg-popover px-2.5 py-1.5 shadow-lg"
+            style={{ top: hlBar.top }}
+            onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+            onMouseDown={keepSelection}
+          >
+            {HIGHLIGHT_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-label={t(`bibleVerse.highlightColors.${c}`, { defaultValue: HL_LABELS[c] })}
+                onPointerDown={keepSelection}
+                onMouseDown={keepSelection}
+                onClick={() => onPickHighlightColor(c)}
+                className={cn("h-6 w-6 rounded-full border border-border bible-hl-swatch", `bible-hl-${c}`)}
+              />
+            ))}
+            <div className="h-4 w-px bg-border" />
+            <button
+              type="button"
+              aria-label={hlBar.existing ? t("bibleVerse.removeHighlight", { defaultValue: "Apagar destaque" }) : t("bibleVerse.close", { defaultValue: "Fechar" })}
+              onPointerDown={keepSelection}
+              onMouseDown={keepSelection}
+              onClick={onBarErase}
+              className="h-6 w-6 inline-flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+            >
+              {hlBar.existing ? <Eraser className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+        )}
         {/* Alça para ajustar a altura */}
         <div
           role="separator"

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, Circle, CheckCircle2, Highlighter, Eraser, Copy, NotebookPen, X, Type, Volume2, Pause, Play, SkipBack, SkipForward, Sun, PenLine } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Slider } from "@/components/ui/slider";
-import { READER_BGS, READER_FONTS, READER_LINE_MAX, READER_LINE_MIN, READER_SCALE_MAX, READER_SCALE_MIN, SPEECH_RATES, loadReaderSettings, saveReaderSettings, type ReaderSettings } from "@/lib/bible-reader-settings";
+import { READER_BGS, READER_FONTS, READER_LINE_MAX, READER_LINE_MIN, READER_SCALE_MAX, READER_SCALE_MIN, SPEECH_RATES, chapterVerseSpan, loadReaderSettings, saveReaderSettings, type ReaderSettings } from "@/lib/bible-reader-settings";
 import { canSpeak, setScreenBrightness, speakText, stopSpeaking } from "@/lib/reader-native";
 import { toast } from "sonner";
 import { useImmersiveWhile } from "@/lib/immersive";
@@ -29,8 +29,9 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
   const [book, chStr] = chapterKey.split(":");
   const ch = Number(chStr);
   const title = `${getLocalizedBookName(book, i18n.language) ?? book} ${ch}`;
-  const shortTitle = `${abbreviateBookName(getLocalizedBookName(book, i18n.language) ?? book)} ${ch}`;
   const [verses, setVerses] = useState<BibleVerseRecord[] | null>(null);
+  const span = chapterVerseSpan(verses);
+  const shortTitle = `${abbreviateBookName(getLocalizedBookName(book, i18n.language) ?? book)} ${ch}${span}`;
   const [libId, setLibId] = useState<string | null>(null);
   const [noLib, setNoLib] = useState(false);
   const [sel, setSel] = useState<number | null>(null);
@@ -71,6 +72,26 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
     if (!el) return null;
     return Number(el.getAttribute("data-start")) + (node?.nodeType === 3 ? off : 0);
   };
+  // Android/iOS cancelam a seleção nativa ao tocar na cor: guardamos o trecho
+  // assim que ele é selecionado, para pintar só ele (e não o versículo todo).
+  useEffect(() => {
+    if (typeof document === "undefined" || !verses?.length) return;
+    const onSel = () => {
+      const s = window.getSelection?.();
+      if (!s || s.isCollapsed || !s.anchorNode || !s.focusNode) return;
+      const pa = (s.anchorNode.nodeType === 3 ? s.anchorNode.parentElement : (s.anchorNode as Element))?.closest?.("[id^='rv-']");
+      const pb = (s.focusNode.nodeType === 3 ? s.focusNode.parentElement : (s.focusNode as Element))?.closest?.("[id^='rv-']");
+      if (!pa || pa !== pb || !scrollRef.current?.contains(pa)) return;
+      const v = verses.find((x) => `rv-${x.verse}` === pa.id);
+      if (!v) return;
+      const a = offsetOf(s.anchorNode, s.anchorOffset);
+      const b = offsetOf(s.focusNode, s.focusOffset);
+      const r = a != null && b != null ? selectionRange(a, b, v.text.length) : null;
+      if (r) { setSel(v.verse); setRange(r); }
+    };
+    document.addEventListener("selectionchange", onSel);
+    return () => document.removeEventListener("selectionchange", onSel);
+  }, [verses]); // eslint-disable-line react-hooks/exhaustive-deps
   const pick = (v: BibleVerseRecord) => {
     const s = window.getSelection?.();
     if (s && !s.isCollapsed && s.anchorNode && s.focusNode) {
@@ -137,7 +158,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
         <div className="flex h-12 items-center gap-1 px-1.5">
           <Button variant="ghost" size="icon" onClick={onBack} className="h-10 w-10 shrink-0 rounded-full text-muted-foreground" aria-label={t("guestWs.back", { defaultValue: "Voltar" })}><ArrowLeft className="h-5 w-5" /></Button>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="truncate text-sm font-semibold" title={title}>{shortTitle}</p>
+            <p className="truncate text-sm font-semibold" title={`${title}${span}`}>{shortTitle}</p>
             <p className="text-[11px] text-muted-foreground">{percent}%</p>
           </div>
           <Button variant="outline" size="sm" className="h-9 shrink-0 gap-1 rounded-full px-2.5 text-xs" onClick={() => onHighlight(`${title}:`)}><PenLine className="h-3.5 w-3.5" />{t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}</Button>
