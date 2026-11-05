@@ -132,8 +132,10 @@ import {
   pushOutlineToCloud,
   pullOutlineFromCloud,
   deleteCloudOutline,
+  listCloudOutlineTreeFresh,
 } from "@/lib/personal-outlines.functions";
-import { useOutlinesSync } from "@/hooks/use-outlines-sync";
+import { useOutlinesSync, applyCloudRowToLocal, type CloudOutlineRow } from "@/hooks/use-outlines-sync";
+import { findCloudMatch, rowsInFolderTree } from "@/lib/outline-cloud-match";
 import { SwipeToSync } from "@/components/notes/SwipeToSync";
 import { TalkOutlineFields, useTalkSync } from "@/components/notes/TalkOutlineFields";
 import { sanitizeTalk } from "@/lib/talk-outline-info";
@@ -311,6 +313,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
   const fnListCloud = useServerFn(listCloudOutlines);
   const fnPushCloud = useServerFn(pushOutlineToCloud);
   const fnPullCloud = useServerFn(pullOutlineFromCloud);
+  const fnTreeFresh = useServerFn(listCloudOutlineTreeFresh);
   const fnDeleteCloud = useServerFn(deleteCloudOutline);
   const syncOutlines = useOutlinesSync({ auto: false });
   const fixedOutlineCloudPath = "__fixed__week-outlines";
@@ -369,7 +372,27 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
     };
   }
 
-  async function pushOneNote(note: FieldNote): Promise<{ ok: boolean; error?: string }> {
+  async function freshCloudRows(): Promise<{ ok: true; rows: CloudOutlineRow[] } | { ok: false; error: string }> {
+    const r = await fnTreeFresh();
+    if (!r.ok) return { ok: false, error: r.error };
+    return { ok: true, rows: r.outlines as CloudOutlineRow[] };
+  }
+
+  function reloadOutlineList() {
+    try { window.dispatchEvent(new CustomEvent("visita-sc:outlines-synced")); } catch { /* noop */ }
+  }
+
+  async function pushOneNote(note: FieldNote, rows?: CloudOutlineRow[]): Promise<{ ok: boolean; error?: string }> {
+    // Sem ligação com a nuvem: procura a cópia que o outro aparelho já
+    // enviou (mesmo título e pasta) para atualizar em vez de duplicar.
+    let cloudRows = rows;
+    if (!cloudRows) {
+      const fr = await freshCloudRows();
+      if (!fr.ok) return { ok: false, error: fr.error };
+      cloudRows = fr.rows;
+    }
+    const match = findCloudMatch({ ...note, type: note.type ?? activeType ?? "outline" }, folderPathForCloud(note.folderId), cloudRows);
+    if (match?.id !== note.cloud_id) note = { ...note, cloud_id: match?.id ?? null };
     const r = await fnPushCloud({
       data: {
         id: note.cloud_id ?? undefined,
@@ -387,30 +410,16 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
     return { ok: true };
   }
 
-  async function pullOneNote(note: FieldNote): Promise<{ ok: boolean; missing?: boolean; error?: string }> {
-    if (!note.cloud_id) return { ok: false, missing: true };
-    const r = await fnPullCloud({ data: { id: note.cloud_id } });
-    if (!r.ok) return { ok: false, error: r.error };
-    const c = (r.outline.content_json ?? {}) as Record<string, unknown>;
-    const now = Date.now();
-    const n: FieldNote = {
-      ...note,
-      title: r.outline.title,
-      prayer: typeof c.prayer === "string" ? c.prayer : "",
-      territory: typeof c.territory === "string" ? c.territory : "",
-      assistants: typeof c.assistants === "string" ? c.assistants : "",
-      description: typeof c.description === "string" ? c.description : "",
-      content: typeof c.content === "string" ? c.content : "",
-      talk: sanitizeTalk(c.talk),
-      sort_order: typeof c.sort_order === "number" ? c.sort_order : note.sort_order ?? null,
-      event_date: typeof c.event_date === "string" ? c.event_date : note.event_date,
-      period: typeof c.period === "string" ? c.period : note.period,
-      attachments: Array.isArray(c.attachments) ? (c.attachments as FieldNote["attachments"]) : (note.attachments ?? []),
-      updated_at: now,
-      dirty: false,
-      synced_at: now,
-    };
-    await persistNote(n);
+  async function pullOneNote(note: FieldNote, rows?: CloudOutlineRow[]): Promise<{ ok: boolean; missing?: boolean; error?: string }> {
+    let cloudRows = rows;
+    if (!cloudRows) {
+      const fr = await freshCloudRows();
+      if (!fr.ok) return { ok: false, error: fr.error };
+      cloudRows = fr.rows;
+    }
+    const match = findCloudMatch({ ...note, type: note.type ?? activeType ?? "outline" }, folderPathForCloud(note.folderId), cloudRows) as CloudOutlineRow | null;
+    if (!match) return { ok: false, missing: true };
+    const n = await applyCloudRowToLocal(match, note, [...folders]);
     setNotes((all) => all.map((x) => (x.id === n.id ? n : x)));
     setDraft((d) => (d && d.id === n.id ? n : d));
     return { ok: true };
@@ -432,10 +441,11 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
   }
 
   async function pullNoteAction(note: FieldNote) {
-    if (!note.cloud_id) { toast(t("personalOutlines.noteNotInCloud", { defaultValue: "Este esboço ainda não está na nuvem. Envie primeiro." })); return; }
     if (isOfflineNow()) return;
     if (note.dirty && !window.confirm(t("personalOutlines.pullConfirm", { defaultValue: "Este esboço tem alterações não enviadas. Substituir sua versão do celular pela da nuvem?" }))) return;
     const r = await pullOneNote(note);
+    if (r.missing) { toast(t("personalOutlines.noteNotInCloud", { defaultValue: "Este esboço ainda não está na nuvem. Envie primeiro." })); return; }
+    reloadOutlineList();
     if (!r.ok) { toast.error(r.error ?? t("personalOutlines.swipeSyncFail", { defaultValue: "Não foi possível sincronizar agora." })); return; }
     toast.success(t("personalOutlines.notePulled", { defaultValue: "“{{title}}” atualizado com a versão da nuvem.", title: note.title || t("personalOutlines.untitled", { defaultValue: "Sem título" }) }));
   }
@@ -456,23 +466,47 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
     if (isOfflineNow()) return;
     let ok = 0, fail = 0;
     const tid = toast.loading(t("personalOutlines.folderPushing", { defaultValue: "Enviando {{n}} esboço(s)…", n: list.length }));
-    for (const n of list) { const r = await pushOneNote(n); if (r.ok) ok++; else fail++; }
+    const fr = await freshCloudRows();
+    if (!fr.ok) { toast.dismiss(tid); toast.error(fr.error); return; }
+    for (const n of list) { const r = await pushOneNote(n, fr.rows); if (r.ok) ok++; else fail++; }
     toast.dismiss(tid);
     if (fail) toast.error(t("personalOutlines.folderPushPartial", { defaultValue: "{{ok}} enviado(s), {{fail}} com erro.", ok, fail }));
     else toast.success(t("personalOutlines.folderPushed", { defaultValue: "{{ok}} esboço(s) enviado(s) para a nuvem.", ok }));
   }
 
   async function pullFolderAction(folderId: string) {
-    const list = notesInFolderTree(folderId);
-    if (list.length === 0) { toast(t("personalOutlines.folderEmpty", { defaultValue: "Esta pasta não tem esboços." })); return; }
     if (isOfflineNow()) return;
-    const dirty = list.filter((n) => n.cloud_id && n.dirty).length;
-    if (dirty > 0 && !window.confirm(t("personalOutlines.folderPullConfirm", { defaultValue: "{{n}} esboço(s) desta pasta têm alterações não enviadas e serão substituídos pela versão da nuvem. Continuar?", n: dirty }))) return;
-    let ok = 0, missing = 0, fail = 0;
-    const tid = toast.loading(t("personalOutlines.folderPulling", { defaultValue: "Recebendo {{n}} esboço(s)…", n: list.length }));
-    for (const n of list) { const r = await pullOneNote(n); if (r.ok) ok++; else if (r.missing) missing++; else fail++; }
+    const list = notesInFolderTree(folderId);
+    const type = (folders.find((f) => f.id === folderId)?.type ?? activeType ?? "outline") as string;
+    const path = folderPathForCloud(folderId);
+    const tid = toast.loading(t("personalOutlines.folderPullingStart", { defaultValue: "Recebendo da nuvem…" }));
+    const fr = await freshCloudRows();
+    if (!fr.ok) { toast.dismiss(tid); toast.error(fr.error); return; }
+    // Liga cada esboço local à sua cópia da nuvem (sem usar a mesma duas vezes).
+    const used = new Set<string>();
+    const pairs: Array<{ local: FieldNote; row: CloudOutlineRow }> = [];
+    let missing = 0;
+    for (const n of list) {
+      const m = findCloudMatch({ ...n, type: n.type ?? type }, folderPathForCloud(n.folderId), fr.rows, used) as CloudOutlineRow | null;
+      if (m && !used.has(m.id)) { used.add(m.id); pairs.push({ local: n, row: m }); } else missing++;
+    }
+    const fresh = rowsInFolderTree(fr.rows, path, type).filter((r) => !used.has(r.id)) as CloudOutlineRow[];
+    const dirty = pairs.filter((p) => p.local.dirty).length;
     toast.dismiss(tid);
-    const msg = t("personalOutlines.folderPulled", { defaultValue: "{{ok}} recebido(s)", ok })
+    if (pairs.length === 0 && fresh.length === 0) {
+      toast(t("personalOutlines.folderNothingInCloud", { defaultValue: "Nada desta pasta foi encontrado na nuvem." }));
+      return;
+    }
+    if (dirty > 0 && !window.confirm(t("personalOutlines.folderPullConfirm", { defaultValue: "{{n}} esboço(s) desta pasta têm alterações não enviadas e serão substituídos pela versão da nuvem. Continuar?", n: dirty }))) return;
+    const tid2 = toast.loading(t("personalOutlines.folderPulling", { defaultValue: "Recebendo {{n}} esboço(s)…", n: pairs.length + fresh.length }));
+    const mutable = [...folders];
+    let ok = 0, added = 0, fail = 0;
+    for (const p of pairs) { try { await applyCloudRowToLocal(p.row, p.local, mutable); ok++; } catch { fail++; } }
+    for (const row of fresh) { try { await applyCloudRowToLocal(row, null, mutable); added++; } catch { fail++; } }
+    toast.dismiss(tid2);
+    reloadOutlineList();
+    const msg = t("personalOutlines.folderPulledUpdated", { defaultValue: "{{n}} atualizado(s)", n: ok })
+      + (added ? ` · ${t("personalOutlines.folderPulledNew", { defaultValue: "{{n}} novo(s)", n: added })}` : "")
       + (missing ? ` · ${t("personalOutlines.folderNotInCloud", { defaultValue: "{{n}} ainda não está(ão) na nuvem", n: missing })}` : "")
       + (fail ? ` · ${t("personalOutlines.folderFail", { defaultValue: "{{n}} com erro", n: fail })}` : "");
     if (fail) toast.error(msg); else toast.success(msg);

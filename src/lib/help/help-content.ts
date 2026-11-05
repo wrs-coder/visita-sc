@@ -153,6 +153,7 @@ const RAW_TOPICS: HelpTopic[] = [
       { before: "Em “Anexos do esboço”, junte fotos e vídeos. Eles ficam só neste aparelho." },
       { before: "Ao colar do Word, os recuos são mantidos. Você também pode importar e exportar em Word, uma nota ou a pasta inteira." },
       { before: "O botão “Salvar” grava no aparelho na hora. Com internet, o esboço vai para a ", labelKey: "personalOutlines.cloud.button", after: "." },
+      { before: "Para usar o mesmo esboço em outro aparelho: nos três pontinhos do esboço ou da pasta, toque em “Enviar para a nuvem” no primeiro aparelho e em “Receber da nuvem” no outro. Receber da pasta também traz esboços e subpastas que ainda não existem no aparelho. No celular, arraste o esboço para a esquerda (enviar) ou para a direita (receber)." },
     ],
   },
   {
@@ -224,6 +225,7 @@ const RAW_TOPICS: HelpTopic[] = [
       { before: "Em ", labelKey: "profile.changePassword", after: ", digite a nova senha e confirme." },
       { before: "Aba ", labelKey: "profile.tabFeatures", after: ":" },
       { before: "Em ", labelKey: "bibleManager.manage", after: ", importe ou troque o arquivo EPUB da Tradução do Novo Mundo. A Bíblia fica no aparelho e funciona sem internet. Baixe a Bíblia no site jw.org." },
+      { before: "Se algum versículo aparecer com palavras coladas (comum em poesia, como Salmos e Provérbios), importe de novo o mesmo arquivo EPUB: a nova leitura separa as linhas corretamente." },
       { before: "Em ", labelKey: "offlinePin.manageTitle", after: ", configure o PIN e a biometria para entrar sem internet." },
       { before: "Em ", labelKey: "sync.title", after: ", veja se seus dados já foram enviados para a nuvem." },
       { before: "Aba ", labelKey: "profile.tabSettings", after: ":" },

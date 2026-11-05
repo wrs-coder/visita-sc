@@ -665,7 +665,9 @@ function isInsideOutline(node: Node, outlineRoots: Set<Element>): boolean {
  *   - qualquer âncora de capítulo (`.w_ch`, `[id^="chapter"]` sem `verse`), OU
  *   - cabeçalho de capítulo / outline root.
  *  Subárvores ruidosas (notas, cross-refs) são puladas inteiras. */
-function textBetween(
+const BLOCK_BREAK_TAGS = new Set(["p", "div", "br", "li", "blockquote", "section", "h1", "h2", "h3", "h4", "h5", "h6", "tr", "td", "dd", "dt"]);
+
+export function textBetween(
   doc: Document,
   start: Node,
   end: Node | null,
@@ -700,6 +702,9 @@ function textBetween(
     if (node.nodeType === 1) {
       const el = node as Element;
       const elId = el.getAttribute("id") ?? "";
+      // Mudança de linha/bloco no EPUB (poesia, parágrafos, <br>): separa com
+      // espaço para a última palavra de uma linha não colar na próxima.
+      if (BLOCK_BREAK_TAGS.has((el.localName || el.nodeName).toLowerCase())) buf.push(" ");
 
       // Parada 2: âncora de verso "órfã" (não listada como marker mas presente no DOM).
       if (isVerseAnchorId(elId) && el !== start && !(start.nodeType === 1 && (start as Element).contains(el))) {
@@ -759,6 +764,8 @@ function textBetween(
       }
     } else if (node.nodeType === 3) {
       if (!hasNoisyAncestor(node) && !isInsideOutline(node, outlineRoots)) {
+        const prev = node.previousSibling as Element | null;
+        if (prev && prev.nodeType === 1 && BLOCK_BREAK_TAGS.has((prev.localName || prev.nodeName).toLowerCase())) buf.push(" ");
         buf.push(node.nodeValue ?? "");
       }
     }

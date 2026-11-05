@@ -79,6 +79,7 @@ Antes de encerrar qualquer mudança que toque modelos, papéis ou visitas, confi
 6. i18n pt/en/es completas e simétricas.
 7. Sync offline e invalidação de queries cobertas.
 8. Build passa sem erro de tipo.
+9. A "Ajuda" do app foi atualizada se a mudança afeta o uso (seção 30).
 
 ## 12. Anti-padrões Proibidos
 
@@ -187,3 +188,38 @@ Antes de encerrar qualquer mudança que toque modelos, papéis ou visitas, confi
 
 - **REFERÊNCIA VISUAL OBRIGATÓRIA:** Todo ajuste ou criação de tela deve ter como referência o padrão iOS e One UI (Samsung), respeitando os tokens de cor do projeto.
 - **RECOLHER E ESTENDER:** Todo novo card, aba ou subaba deve ter o recurso de recolher e estender. É uma mudança apenas visual: não altera dados, lógica nem formato salvo; o conteúdo recolhido fica oculto, nunca desmontado, para preservar rascunhos e campos não salvos.
+
+## 28. Como o Aplicativo Funciona (Referência Obrigatória)
+
+- **Celular primeiro:** todas as telas, abas, subabas e pílulas leem os dados guardados no aparelho. O servidor só é usado quando o usuário toca em Sincronizar, logo após salvar algo, ou quando ainda não existe cópia no aparelho — sempre com limite de espera, para que internet ruim ou "pendurada" nunca trave uma tela.
+- **Esboços entre aparelhos:** "Enviar para a nuvem" e "Receber da nuvem" agem por esboço ou por pasta (com subpastas), sempre lendo a lista atual da nuvem (nunca a cópia guardada) e ligando cópias pelo número da nuvem ou, na falta dele, por tipo + pasta + título único. Receber pede confirmação antes de substituir alterações não enviadas.
+- **Acesso da esposa:** o espaço pessoal dela fica só no aparelho, isolado por código de convite.
+- **Entrada sem internet:** o app abre sem PIN enquanto o usuário não tocar em "Sair" neste aparelho; depois disso, PIN/biometria (regra 13).
+- **Bíblia:** somente a TNM importada pelo próprio usuário via EPUB; nenhuma Bíblia embutida.
+
+## 29. Código Protegido (Trava)
+
+Os arquivos abaixo sustentam o funcionamento sem internet, a entrada offline, a sincronização e a leitura da Bíblia. **Só podem ser alterados com pedido explícito do usuário que cite a função afetada.** Antes de tocar em qualquer um deles, a IA deve avisar o usuário, explicar o motivo e aguardar autorização. Esta lista não pode ser removida nem reduzida sem autorização explícita.
+
+<!-- PROTECTED-FILES:START -->
+- src/lib/local-first-fetch.ts
+- src/lib/local-first-fn.ts
+- src/lib/mirror-tables.ts
+- src/lib/net-policy.ts
+- src/lib/response-cache.ts
+- src/lib/offline-queue.ts
+- src/lib/offline-prefetch.ts
+- src/hooks/use-auth.tsx
+- src/hooks/use-outlines-sync.ts
+- src/lib/outline-cloud-match.ts
+- src/lib/personal-outlines.functions.ts
+- src/lib/bible-notes-store.ts
+- src/lib/epub-bible-parser.ts
+<!-- PROTECTED-FILES:END -->
+
+Observação: a trava é uma regra de trabalho verificada por teste automático (instructions-rules.test.ts), não um cadeado técnico.
+
+## 30. Ajuda Sempre Atualizada (Obrigatório)
+
+- Toda mudança ou ajuste de tela, e toda função nova que afete diretamente o uso do aplicativo, **deve ser adicionada à "Ajuda" do app (src/lib/help/help-content.ts) no mesmo trabalho**, com os nomes reais dos botões.
+- Uma entrega que mude o uso sem atualizar a Ajuda é considerada incompleta (ver item 9 do checklist da seção 11).

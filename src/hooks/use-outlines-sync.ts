@@ -26,7 +26,7 @@ import {
   type NoteType,
 } from "@/lib/bible-notes-store";
 import {
-  listCloudOutlineTree,
+  listCloudOutlineTreeFresh,
   replaceCloudOutlineTree,
 } from "@/lib/personal-outlines.functions";
 import {
@@ -44,7 +44,7 @@ function typeOfNote(n: FieldNote): NoteType {
   return (n.type ?? "field_consideration") as NoteType;
 }
 
-function typeFromRow(row: { content_json: unknown }, key: "note_type" | "folder_type"): NoteType {
+export function typeFromRow(row: { content_json: unknown }, key: "note_type" | "folder_type"): NoteType {
   const cj = row.content_json as Record<string, unknown> | null | undefined;
   const v = cj?.[key];
   return v === "field_consideration" ? "field_consideration" : "outline";
@@ -92,7 +92,7 @@ function splitPath(path: string): string[] {
   return path.split(PATH_SEPARATOR).map((p) => p.trim()).filter(Boolean);
 }
 
-async function ensureFolderPath(
+export async function ensureFolderPath(
   path: string,
   folders: NoteFolder[],
   type: NoteType,
@@ -121,9 +121,63 @@ async function ensureFolderPath(
   return currentId;
 }
 
+export interface CloudOutlineRow {
+  id: string;
+  title: string;
+  folder_path: string;
+  content_json: unknown;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}
+
+/**
+ * Grava no celular a versão da nuvem de um esboço (título, pasta e conteúdo).
+ * `existing` = cópia local ligada a ele (ou null para criar uma nova).
+ */
+export async function applyCloudRowToLocal(
+  row: CloudOutlineRow,
+  existing: FieldNote | null,
+  mutableFolders: NoteFolder[],
+): Promise<FieldNote> {
+  const cTime = new Date(row.updated_at).getTime();
+  const cj = (row.content_json ?? {}) as Record<string, unknown>;
+  const noteType = typeFromRow(row, "note_type");
+  let folderId: string | null = null;
+  if (row.folder_path === FIXED_OUTLINE_SENTINEL) folderId = FIXED_FOLDER_WEEK_OUTLINES;
+  else if (row.folder_path === FIXED_FIELD_SENTINEL) folderId = FIXED_FOLDER_WEEK_CONSIDERATIONS;
+  else folderId = await ensureFolderPath(row.folder_path, mutableFolders, noteType);
+  const deletedAt = row.deleted_at ? new Date(row.deleted_at).getTime() : null;
+  const base = {
+    type: noteType,
+    folderId,
+    title: row.title,
+    prayer: typeof cj.prayer === "string" ? cj.prayer : "",
+    territory: typeof cj.territory === "string" ? cj.territory : "",
+    assistants: typeof cj.assistants === "string" ? cj.assistants : "",
+    description: typeof cj.description === "string" ? cj.description : "",
+    content: typeof cj.content === "string" ? cj.content : "",
+    talk: sanitizeTalk(cj.talk),
+    sort_order: typeof cj.sort_order === "number" ? cj.sort_order : null,
+    event_date: typeof cj.event_date === "string" ? cj.event_date : undefined,
+    period: typeof cj.period === "string" ? cj.period : undefined,
+    attachments: parseAttachmentsFromContent(cj),
+    updated_at: cTime,
+    cloud_id: row.id,
+    synced_at: Date.now(),
+    dirty: false,
+    deleted_at: deletedAt,
+  };
+  const next: FieldNote = existing
+    ? ({ ...existing, ...base } as FieldNote)
+    : ({ ...base, id: newNoteId(), created_at: new Date(row.created_at).getTime() } as FieldNote);
+  await saveNote(next);
+  return next;
+}
+
 export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
   const { user } = useAuth();
-  const fnList = useServerFn(listCloudOutlineTree);
+  const fnList = useServerFn(listCloudOutlineTreeFresh);
   const fnReplace = useServerFn(replaceCloudOutlineTree);
   const ran = useRef(false);
 
@@ -186,40 +240,9 @@ export function useOutlinesSync({ auto = true }: { auto?: boolean } = {}) {
     for (const note of localAll) if (note.cloud_id) byCloudId.set(note.cloud_id, note);
 
     for (const row of cloudOutlines) {
-      const cTime = new Date(row.updated_at).getTime();
-      const cj = (row.content_json ?? {}) as Record<string, unknown>;
-      const noteType = typeFromRow(row, "note_type");
-      let folderId: string | null = null;
-      if (row.folder_path === FIXED_OUTLINE_SENTINEL) folderId = FIXED_FOLDER_WEEK_OUTLINES;
-      else if (row.folder_path === FIXED_FIELD_SENTINEL) folderId = FIXED_FOLDER_WEEK_CONSIDERATIONS;
-      else folderId = await ensureFolderPath(row.folder_path, mutableFolders, noteType);
-      const existing = byCloudId.get(row.id);
-      const deletedAt = row.deleted_at ? new Date(row.deleted_at).getTime() : null;
-      const base = {
-        type: noteType,
-        folderId,
-        title: row.title,
-        prayer: typeof cj.prayer === "string" ? cj.prayer : "",
-        territory: typeof cj.territory === "string" ? cj.territory : "",
-        assistants: typeof cj.assistants === "string" ? cj.assistants : "",
-        description: typeof cj.description === "string" ? cj.description : "",
-        content: typeof cj.content === "string" ? cj.content : "",
-        talk: sanitizeTalk(cj.talk),
-        sort_order: typeof cj.sort_order === "number" ? cj.sort_order : null,
-        event_date: typeof cj.event_date === "string" ? cj.event_date : undefined,
-        period: typeof cj.period === "string" ? cj.period : undefined,
-        attachments: parseAttachmentsFromContent(cj),
-        updated_at: cTime,
-        cloud_id: row.id,
-        synced_at: Date.now(),
-        dirty: false,
-        deleted_at: deletedAt,
-      };
-      if (!existing) {
-        await saveNote({ ...base, id: newNoteId(), created_at: new Date(row.created_at).getTime() });
-      } else if (cTime > existing.updated_at) {
-        await saveNote({ ...existing, ...base });
-      }
+      const existing = byCloudId.get(row.id) ?? null;
+      if (existing && new Date(row.updated_at).getTime() <= existing.updated_at) continue;
+      await applyCloudRowToLocal(row, existing, mutableFolders);
     }
 
     const latestFolders = [
