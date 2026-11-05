@@ -56,6 +56,13 @@ Ao selecionar uma palavra ou trecho:
 4. Botões de "ler capítulo inteiro", versículo anterior/seguinte e capítulo anterior/próximo ficam ocultos. Sugestão: em vez de apagar, ficam dentro de "Mais opções" no menu, para quem precisar um dia.
 5. Destaque: as bolinhas coloridas só aparecem quando há trecho selecionado, numa pequena barra flutuante. Tocar numa cor pinta só o trecho. O ⌫ apaga o destaque daquele trecho.
 
+## Garantia para as bolinhas sempre aparecerem
+Há um risco pequeno no Android: o próprio celular abre o menu dele (Copiar/Compartilhar) por cima, ou demora a avisar que o texto foi selecionado. Para não depender disso:
+- A barrinha aparece logo abaixo do trecho (o menu do celular fica acima), sem se sobrepor.
+- O app guarda o trecho selecionado mesmo se o celular cancelar a seleção ao tocar na cor (mesma proteção que já funciona hoje).
+- Reserva: se a barrinha não aparecer, o menu [⋯] traz "Destacar seleção", que abre as mesmas bolinhas.
+- Teste no celular real (tela de 393 px) antes de concluir.
+
 ## Mais sugestões para menos distração
 - Tocar num trecho já destacado abre a mesma barrinha, para trocar a cor ou apagar.
 - Tocar duas vezes no título fecha o balão (opcional; o ✕ continua).
