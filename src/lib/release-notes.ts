@@ -104,7 +104,7 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.2.0";
+export const RELEASE_NOTES_VERSION = "5.3.0";
 
 /**
  * Aviso automático "O que há de novo" nesta versão: desligado a pedido.
@@ -114,6 +114,33 @@ export const RELEASE_NOTES_VERSION = "5.2.0";
 export const WHATS_NEW_AUTO_SHOW = true;
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "5.3.0",
+    sections: [
+      {
+        title: "Esboços na nuvem, um por um", audience: ["super"],
+        items: [
+          "No celular, arraste o esboço para a esquerda (verde) para enviar e para a direita (azul) para receber.",
+          "Os três pontinhos de cada esboço e de cada pasta trazem \"Enviar para a nuvem\" e \"Receber da nuvem\".",
+          "Receber agora traz esboços e subpastas novos criados no outro aparelho, sem duplicar.",
+        ],
+      },
+      {
+        title: "Aviso de pendências no menu", audience: ["super", "elder"],
+        items: [
+          "O balão amarelo (pendências, sem internet) saiu do topo e fica no menu lateral, ao lado do modo escuro.",
+          "Um pontinho no botão do menu avisa quando há algo para enviar.",
+        ],
+      },
+      {
+        title: "Lembretes e painel offline", audience: ["super"],
+        items: [
+          "Cada bloco dos Lembretes pode ser recolhido ou expandido.",
+          "\"Pronto para usar sem internet\" agora confere também o Painel da visita (reuniões e pastoreios).",
+        ],
+      },
+    ],
+  },
   {
     version: "5.2.0",
     sections: [
