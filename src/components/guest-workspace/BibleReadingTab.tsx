@@ -1,4 +1,5 @@
 // Aba "Leitura da Bíblia": meta, progresso, capítulos, pontos altos e leitura limpa.
+import { consumeReaderReturn, setReaderReturn, verseFromRef } from "@/lib/reader-return";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Sparkles, Play, Settings2, Plus } from "lucide-react";
@@ -48,6 +49,13 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   const toggleList = () => { const n = !listOpen; setListOpen(n); try { localStorage.setItem(BOOKS_OPEN_KEY, n ? "1" : "0"); } catch { /* */ } };
   const custom: CustomPlan = rdata.custom ?? { books: ALL_BOOKS, perDay: null, endDate: null };
   const [reading, setReading] = useState<string | null>(null);
+  const [jumpVerse, setJumpVerse] = useState<number | null>(null);
+  // Ao voltar de uma anotação criada no leitor, reabre o mesmo capítulo.
+  useEffect(() => {
+    const r = consumeReaderReturn(); if (!r) return;
+    if (r.track === "personal" || r.track === "family" || r.track === "meeting") setTrackState(r.track);
+    setReadingDay(r.readingDay); setJumpVerse(r.verse); setReading(r.chapterKey);
+  }, []);
   const [pick, setPick] = useState<string | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [preset, setPreset] = useState<string | undefined>();
@@ -103,8 +111,9 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
     return (
       <>
         <CleanReader chapterKey={reading} done={done.has(reading)} percent={percent} fontClass={fontClass}
-          onBack={() => { setReading(null); setReadingDay(null); }}
-          onNote={onNote}
+          key={reading} initialVerse={jumpVerse}
+          onBack={() => { setReading(null); setReadingDay(null); setJumpVerse(null); }}
+          onNote={(ref, text) => { setReaderReturn({ track, chapterKey: reading, readingDay, verse: verseFromRef(ref) }); onNote(ref, text); }}
           onDone={() => {
             toggle(reading, true);
             if (readingDay !== null && rdata.weekday) {

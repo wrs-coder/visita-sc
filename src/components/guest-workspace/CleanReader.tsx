@@ -20,7 +20,8 @@ import { abbreviateBookName } from "@/lib/book-abbrev";
 import { cn } from "@/lib/utils";
 import { isRealTap, type TapStart } from "@/lib/tap-guard";
 
-export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDone, onHighlight, onImport, onNote }: {
+export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDone, onHighlight, onImport, onNote, initialVerse }: {
+  initialVerse?: number | null;
   chapterKey: string; done: boolean; percent: number; fontClass: string;
   onBack: () => void; onDone: () => void; onHighlight: (ref: string) => void; onImport: () => void;
   onNote: (ref: string, text: string) => void;
@@ -60,6 +61,14 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
     window.scrollTo?.(0, 0);
     return () => { alive = false; };
   }, [book, ch]);
+
+  // Volta de Anotar/Ponto alto: rola até o versículo usado.
+  const jumped = useRef(false);
+  useEffect(() => {
+    if (jumped.current || !initialVerse || !verses?.length) return;
+    jumped.current = true;
+    requestAnimationFrame(() => document.getElementById(`rv-${initialVerse}`)?.scrollIntoView({ block: "center" }));
+  }, [verses, initialVerse]);
 
   const selected = verses?.find((v) => v.verse === sel) ?? null;
   const key = (verse: number) => highlightKey(libId ?? "", book, ch, verse);
@@ -230,7 +239,8 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
         </div>
       )}
       {selected && pill && (() => {
-        const W = 300, vw = typeof window !== "undefined" ? window.innerWidth : 400, vh = typeof window !== "undefined" ? window.innerHeight : 800;
+        const vw = typeof window !== "undefined" ? window.innerWidth : 400, vh = typeof window !== "undefined" ? window.innerHeight : 800;
+        const small = vw < 360; const W = Math.min(vw - 16, small ? 266 : 300);
         const left = Math.max(8, Math.min(vw - W - 8, pill.cx - W / 2));
         const below = pill.bottom + 56 < vh - 120;
         const top = below ? pill.bottom + 10 : Math.max(56, pill.top - 54);
@@ -238,16 +248,16 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
         return (
           <div role="toolbar" aria-label={t("guestWs.quickTools", { defaultValue: "Atalhos do destaque" })}
             style={{ left, top, width: W }}
-            className="fixed z-[52] flex items-center justify-between gap-1 rounded-full border bg-popover px-2 py-1.5 text-popover-foreground shadow-lg animate-in fade-in zoom-in-95">
+            className="fixed z-[52] flex items-center justify-between gap-0.5 overflow-hidden rounded-full border bg-popover px-2 py-1.5 text-popover-foreground shadow-lg animate-in fade-in zoom-in-95">
             {HIGHLIGHT_COLORS.map((c) => (
               <button key={c} type="button" onPointerDown={keep} onMouseDown={keep} onClick={() => paint(c, true)} aria-label={t(`bibleVerse.highlightColors.${c}`, { defaultValue: c })}
-                className={cn("h-7 w-7 shrink-0 rounded-full border bible-hl-swatch", `bible-hl-${c}`)} />
+                className={cn("shrink-0 rounded-full border bible-hl-swatch", small ? "h-6 w-6" : "h-7 w-7", `bible-hl-${c}`)} />
             ))}
-            <span className="mx-0.5 h-6 w-px shrink-0 bg-border" aria-hidden />
+            <span className="h-6 w-px shrink-0 bg-border" aria-hidden />
             <button type="button" onPointerDown={keep} onMouseDown={keep} onClick={() => { setPill(null); onHighlight(ref); }} aria-label={t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-primary hover:bg-muted"><Star className="h-4 w-4" /></button>
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary hover:bg-muted"><Star className="h-4 w-4" /></button>
             <button type="button" onPointerDown={keep} onMouseDown={keep} onClick={() => { const txt = range ? selected.text.slice(range.start, range.end) : selected.text; setPill(null); onNote(ref, txt); }} aria-label={t("guestWs.annotate", { defaultValue: "Anotar" })}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-primary hover:bg-muted"><NotebookPen className="h-4 w-4" /></button>
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary hover:bg-muted"><NotebookPen className="h-4 w-4" /></button>
           </div>
         );
       })()}
