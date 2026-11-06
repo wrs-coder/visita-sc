@@ -33,7 +33,18 @@ A pílula passa a ter a largura do próprio conteúdo, com bolinhas um pouco men
 
 Ajuda atualizada apenas se o texto atual citar o título por extenso.
 
+## 04 — Voltar ao capítulo depois de Anotar ou Ponto alto
+
+```text
+Hoje                               Depois
+Leitor Prov 22 → 📝 Anotar          Leitor Prov 22 → 📝 Anotar
+   → Salvar/Voltar                     → Salvar/Voltar
+   → aba Bíblia (lista de livros)      → Leitor Prov 22, rolado até o v. 11
+```
+Ao salvar ou voltar de uma Anotação ou de um Ponto alto aberto pelo leitor, o app retorna à mesma leitura: mesmo livro, capítulo e plano, rolando até o versículo usado. Se a anotação for aberta por outro caminho (lista de anotações), o voltar continua como hoje.
+
 ## Detalhes técnicos
+- 04: `BibleReadingTab` perde o estado `reading` porque `createFromVerse` (GuestWorkspace) troca de aba/desmonta. Guardar um "retorno ao leitor" `{track, chapterKey, readingDay, verse}` (sessionStorage, por espaço de trabalho) ao chamar `onNote`/`onHighlight`; ao fechar o editor de nota ou a gaveta de Ponto alto, voltar à aba Bíblia, reabrir `CleanReader` com esse capítulo e rolar até `data-verse`. Limpar o retorno depois de usado. Teste puro para gravar/consumir o retorno.
 - 01: SQL de dados (insert…select com `date + interval '-105 days'` e `meeting_at - interval '105 days'`) por tabela filha de `visits`; backup em JSON em /mnt/documents antes de apagar. Sem migração, sem RLS. Copiar também colunas de modelo/`template_snapshot`/`visit_template_overrides`.
 - 02: `BibleVersePopover` usa o abreviador já existente de `bible-reader-settings`; medir se o título cabe (ou limite de caracteres ~14) e trocar para abreviado; `title` attr com o nome completo. Teste puro do formatador.
 - 03: em `CleanReader.tsx`, trocar `width: 300` fixo por `w-max max-w-[calc(100vw-16px)]`, swatches `h-6 w-6` abaixo de 360px, recalcular `left` com largura estimada.
