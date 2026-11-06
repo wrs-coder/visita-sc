@@ -170,7 +170,7 @@ const RAW_TOPICS: HelpTopic[] = [
       { before: "Na aba ", labelKey: "studyPersonal.bible", after: ", escolha a leitura: “Pessoal”, “Família” ou “Reunião”. Cada uma tem seu próprio progresso." },
       { before: "Em “Meta de leitura”, a opção “Dias” define livros para cada dia da semana. Use “Marcar capítulos lidos” para atualizar a programação." },
       { before: "Toque em “Continuar” para abrir o próximo capítulo não lido." },
-      { before: "No topo do leitor ficam “✎ Ponto alto”, “Aa” (letra, cor, brilho e áudio) e “Lido”: com círculo vazio o capítulo ainda não foi marcado; verde com ✓ significa já lido (toque de novo para desmarcar). O topo mostra o livro, o capítulo e os versículos (ex.: Gên. 1:1-31). Ao selecionar um trecho, só ele recebe a cor." },
+      { before: "No topo do leitor ficam “✎ Ponto alto”, “Aa” (letra, cor, brilho e áudio) e “Lido”: com círculo vazio o capítulo ainda não foi marcado; verde com ✓ significa já lido (toque de novo para desmarcar). O topo mostra o livro, o capítulo e os versículos (ex.: Gên. 1:1-31). Ao selecionar um trecho, palavra ou versículo aparece uma pílula logo ao lado com as cores, ⭐ (Ponto alto) e 📝 (Anotar); tocar de novo na mesma cor remove o destaque. Se a pílula não aparecer, use a barra de baixo, que também tem o botão de apagar." },
       { before: "Marque pontos altos “Para comentar” e abra o “Modo comentário” na reunião." },
       { before: "Use o filtro dos pontos altos e das anotações para ver uma leitura só ou todas juntas." },
       { before: "Você pode trazer as anotações do JW Library escolhendo o arquivo de backup (.jwlibrary). Elas ficam separadas dos seus pontos altos." },

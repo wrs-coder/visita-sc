@@ -58,3 +58,10 @@ export function chapterVerseSpan(verses: { verse: number }[] | null | undefined)
   if (!Number.isFinite(lo)) return "";
   return lo === hi ? `:${lo}` : `:${lo}-${hi}`;
 }
+
+/** Destaque já existente com a mesma cor cobrindo todo o intervalo (tocar na mesma cor = remover). */
+export function sameColorHighlight<T extends { start: number; end: number; color?: string }>(
+  list: T[], range: { start: number; end: number }, color: string,
+): T | null {
+  return list.find((h) => (h.color ?? "yellow") === color && h.start <= range.start && h.end >= range.end) ?? null;
+}

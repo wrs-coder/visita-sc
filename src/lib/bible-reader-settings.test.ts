@@ -32,3 +32,16 @@ describe("weekdayBookDays", () => {
     expect(m.has("B2")).toBe(false);
   });
 });
+
+import { sameColorHighlight } from "./bible-reader-settings";
+describe("sameColorHighlight", () => {
+  const list = [{ start: 0, end: 10, color: "green" }, { start: 12, end: 20 }];
+  it("acha o destaque da mesma cor que cobre o trecho", () => {
+    expect(sameColorHighlight(list, { start: 2, end: 8 }, "green")).toEqual(list[0]);
+    expect(sameColorHighlight(list, { start: 12, end: 20 }, "yellow")).toEqual(list[1]);
+  });
+  it("cor diferente ou trecho fora não remove", () => {
+    expect(sameColorHighlight(list, { start: 2, end: 8 }, "blue")).toBeNull();
+    expect(sameColorHighlight(list, { start: 5, end: 15 }, "green")).toBeNull();
+  });
+});
