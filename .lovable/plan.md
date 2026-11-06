@@ -1,82 +1,41 @@
-# Balão bíblico mais limpo (estilo iOS / One UI)
+# Barra flutuante de destaque no Leitor da Bíblia
 
-O balão continua do mesmo tamanho, com o mesmo arrastar, as mesmas cores de fundo e os mesmos destaques já salvos. Só muda a arrumação dos botões.
-
-## Como fica
+## O que muda para você
+Ao selecionar uma palavra, um trecho ou um versículo no Leitor da Bíblia, aparece uma pílula pequena logo abaixo da seleção (ou acima, se não houver espaço):
 
 ```text
-ANTES (topo apertado)
 ┌───────────────────────────────┐
-│ ⠿ 📖 Mat...    [≡][📋][📝][✕] │
+│ ‹  Gên. 1:1-31          Aa  ✓ │
 ├───────────────────────────────┤
-│ ○○○○○ | B  A- A+              │
-│ 🖍 ■■■■ ⌫ | 📖 ˄ ˅ ‹ ›        │
+│ 1 No princípio Deus criou os  │
+│ [céus e a terra]              │
+│ ┌───────────────────────────┐ │
+│ │ 🟡 🟢 🔵 🟣 🟠 🔴 │ ⭐ │ 📝 │ │
+│ └───────────────────────────┘ │
+│ 2 Ora, a terra estava sem...  │
 ├───────────────────────────────┤
-│ 33 Mas continuem buscando...  │
+│ Gên 1:1 · trecho              │
+│ 🟡🟢🔵🟣🟠🔴 ⌫ [Ponto alto][Anotar]│
 └───────────────────────────────┘
-
-DEPOIS
-┌───────────────────────────────┐
-│ ⠿  Mateus 6:33     [Aa] [⋯] [✕]│  ← título inteiro
-├───────────────────────────────┤
-│ 33 Mas continuem buscando     │
-│ primeiro o Reino e a sua      │
-│ justiça...                    │
-└───────────────────────────────┘
-
-Toque em [Aa] → mini régua vertical
-              ┌───┐
-              │ + │  ↑ aumenta
-              │ ● │  (arrastar para cima/baixo)
-              │ − │  ↓ diminui
-              └───┘  some sozinha após 2 s
-
-Toque em [⋯] → menu
-        ┌────────────────────────┐
-        │ 📋 Copiar              │
-        │ 📝 Inserir no esboço   │
-        │ 🎨 Aparência (fundo, B)│
-        │ ⌫ Limpar destaques     │
-        │ ─────────────────────  │
-        │ 📖 Mais opções ›       │  ← capítulo inteiro,
-        └────────────────────────┘     anterior/seguinte
-
-Ao selecionar uma palavra ou trecho:
-│ Mas continuem [buscando primeiro] │
-│        ┌─────────────────┐        │
-│        │ ● ● ● ● ●   ⌫   │        │ ← bolinhas pequenas
-│        └─────────────────┘        │   flutuando perto do trecho
 ```
 
-## O que muda
+- Bolinha: pinta o trecho selecionado (ou o versículo inteiro se nada foi selecionado).
+- Tocar de novo na mesma cor já aplicada naquele trecho: remove esse destaque.
+- ⭐ abre direto o Ponto alto; 📝 abre direto Anotar (com o texto selecionado).
+- Sem ⌫ na pílula: apagar continua só na barra inferior.
+- A barra inferior atual fica igual, como garantia caso a pílula não apareça.
+- A pílula some ao rolar a tela, ao tocar fora ou depois de usar uma opção.
 
-1. Topo: fica o arrastar (⠿), sai o 📖, o título aparece inteiro, entram [Aa] e [⋯].
-2. [Aa]: mini régua de fonte. Para cima/direita aumenta, para baixo/esquerda diminui. Usa o mesmo tamanho já salvo hoje.
-3. [⋯]: junta Copiar, Inserir no esboço (só aparece dentro de esboços), Aparência e Limpar destaques.
-4. Botões de "ler capítulo inteiro", versículo anterior/seguinte e capítulo anterior/próximo ficam ocultos. Sugestão: em vez de apagar, ficam dentro de "Mais opções" no menu, para quem precisar um dia.
-5. Destaque: as bolinhas coloridas só aparecem quando há trecho selecionado, numa pequena barra flutuante. Tocar numa cor pinta só o trecho. O ⌫ apaga o destaque daquele trecho.
-
-## Garantia para as bolinhas sempre aparecerem
-Há um risco pequeno no Android: o próprio celular abre o menu dele (Copiar/Compartilhar) por cima, ou demora a avisar que o texto foi selecionado. Para não depender disso:
-- A barrinha aparece logo abaixo do trecho (o menu do celular fica acima), sem se sobrepor.
-- O app guarda o trecho selecionado mesmo se o celular cancelar a seleção ao tocar na cor (mesma proteção que já funciona hoje).
-- Reserva: se a barrinha não aparecer, o menu [⋯] traz "Destacar seleção", que abre as mesmas bolinhas.
-- Teste no celular real (tela de 393 px) antes de concluir.
-
-## Mais sugestões para menos distração
-- Tocar num trecho já destacado abre a mesma barrinha, para trocar a cor ou apagar.
-- Tocar duas vezes no título fecha o balão (opcional; o ✕ continua).
-- A barrinha de destaque some ao rolar o texto.
-
-## Junto nesta mesma rodada (já combinados)
-- Citações com ";": em "Provérbios 22:11; 23:1", o 23:1 também vira link para Provérbios.
-- Topo do Leitor da Bíblia mostra o intervalo: "Gênesis 1:1-31".
-- Leitor da Bíblia no celular volta a destacar só o trecho selecionado (mesma proteção que o balão já usa).
-- "Ajuda" atualizada com o novo topo do balão, a régua de fonte e as bolinhas de destaque.
+## Garantias
+- Pontos altos, destaques salvos e o texto da Bíblia não mudam.
+- Balão bíblico dos esboços não é alterado.
+- Cores usam os tokens do tema (claro, escuro e preto).
+- Ajuda atualizada com a nova pílula.
 
 ## Detalhes técnicos
-- `BibleVersePopover.tsx`: remover `BookOpen`; manter `GripHorizontal` e handlers de arrasto; trocar Copy/Insert/SlidersHorizontal por botão `Aa` (popover com régua usando `changeTextScale`, gesto por pointer delta) e `DropdownMenu` (Copiar, Inserir, Aparência abre o bloco de cores/negrito atual, Limpar, submenu de navegação com os botões existentes). Bloco de destaque vira barra flutuante condicionada à seleção salva (`savedRangeRef`/`selectionchange` já existentes); `keepSelection` mantido nas bolinhas. Configurações continuam em `bible-view-settings.ts`, sem mudar formato.
-- `bible-refs.ts`: herança de livro após ";" + testes em `bible-refs.test.ts`.
-- `CleanReader.tsx`: cabeçalho com intervalo de versículos; portar `selectionchange` + range salvo; teste da lógica de intervalo.
-- `help-content.ts` + `pt.json`: novos textos; `help-content.test.ts` valida as chaves.
-- Sem mudança no banco, login, versão ou nos destaques salvos. Validar com `bunx tsgo --noEmit` e `bunx vitest run`.
+- Arquivo: `src/components/guest-workspace/CleanReader.tsx` apenas (mais `help-content.ts` e i18n se faltar rótulo).
+- Reaproveitar o `selectionchange` e `range` já existentes; guardar o retângulo da seleção (`getBoundingClientRect`) para posicionar a pílula (`position: fixed`, limitada à largura da tela, z acima do texto).
+- Botões da pílula usam `onPointerDown` + `preventDefault` para não cancelar a seleção nativa no celular (mesma técnica do balão bíblico).
+- "Mesma cor remove": função pura nova em `bible-reader-settings.ts` (`findSameColorHighlight`) que detecta destaque com mesma cor sobrepondo o intervalo; se achar, `removeHighlightAt`, senão `addHighlight`. Teste unitário para os dois casos.
+- ⭐ chama `onHighlight(ref)`; 📝 chama `onNote(ref, textoSelecionado)`.
+- Validar com `bunx tsgo --noEmit` e `bunx vitest run`; sem mudança de banco, login ou versão.
