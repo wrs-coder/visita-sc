@@ -369,3 +369,20 @@ describe("abreviações numeradas, intervalos e listas", () => {
     expect(findCitations(ptBooks, "às 19:30 na sala")).toHaveLength(0);
   });
 });
+
+describe("herança de livro após ponto e vírgula", () => {
+  it("Provérbios 22:11; 23:1 → 23:1 também é Provérbios", () => {
+    const r = findCitations(ptBooks, "Leia Provérbios 22:11; 23:1 hoje");
+    expect(r.map((m) => [m.bookId, m.chapter, m.verse])).toEqual([["B20", 22, 11], ["B20", 23, 1]]);
+    expect(r[1].raw).toBe("23:1");
+  });
+  it("aceita faixas e listas após ;", () => {
+    const r = findCitations(ptBooks, "Salmos 1:1; 2:3-5; 4:1,3");
+    expect(r[1]).toMatchObject({ bookId: "B19", chapter: 2, verse: 3, verseEnd: 5 });
+    expect(r[2]).toMatchObject({ bookId: "B19", chapter: 4, verses: [1, 3] });
+  });
+  it("novo livro após ; troca o livro", () => {
+    const r = findCitations(ptBooks, "Provérbios 22:11; Mateus 6:33");
+    expect(r.map((m) => m.bookId)).toEqual(["B20", "B40"]);
+  });
+});

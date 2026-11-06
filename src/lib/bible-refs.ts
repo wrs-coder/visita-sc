@@ -305,6 +305,37 @@ export function findCitations(books: BookInfo[] | undefined, text: string): Cita
       index: startIdx,
       length: raw.length,
     });
+    // Herança após ";": "Provérbios 22:11; 23:1" → 23:1 também é Provérbios.
+    // Só "capítulo:versículo" (com faixa ou lista); um novo nome de livro
+    // é detectado normalmente pela busca principal.
+    let pos = startIdx + raw.length;
+    for (;;) {
+      const rest = text.slice(pos);
+      const s = rest.match(/^\s*;\s*((\d{1,3}):(\d{1,3})(?:(?:\s*,\s*\d{1,3})+|\s*[-–]\s*(\d{1,3}))?)(?![\d:])/);
+      if (!s) break;
+      const sub = s[1];
+      const subIdx = pos + s[0].length - sub.length;
+      const chapter = parseInt(s[2], 10);
+      const verse = parseInt(s[3], 10);
+      const listNums = /,/.test(sub)
+        ? sub.split(":")[1].split(",").map((n) => parseInt(n.trim(), 10)).filter((n) => n > 0)
+        : undefined;
+      if (chapter > 0 && verse > 0) {
+        out.push({
+          raw: sub,
+          bookId: info.bookId,
+          bookName: info.displayName,
+          chapter,
+          verse,
+          verseEnd: s[4] ? parseInt(s[4], 10) : undefined,
+          verses: listNums,
+          index: subIdx,
+          length: sub.length,
+        });
+      }
+      pos = subIdx + sub.length;
+    }
+    if (pos > re.lastIndex) re.lastIndex = pos;
   }
   return out;
 }

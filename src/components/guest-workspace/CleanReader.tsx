@@ -2,10 +2,10 @@
 // destacar (mesmas cores e mesmos destaques do balão), letra A-/A+, copiar e anotar.
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Circle, CheckCircle2, Highlighter, Eraser, Copy, NotebookPen, X, Type, Volume2, Pause, Play, SkipBack, SkipForward, Sun, PenLine } from "lucide-react";
+import { ArrowLeft, Circle, CheckCircle2, Highlighter, Eraser, Copy, NotebookPen, X, Type, Volume2, Pause, Play, SkipBack, SkipForward, Sun, PenLine, Star } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Slider } from "@/components/ui/slider";
-import { READER_BGS, READER_FONTS, READER_LINE_MAX, READER_LINE_MIN, READER_SCALE_MAX, READER_SCALE_MIN, SPEECH_RATES, loadReaderSettings, saveReaderSettings, type ReaderSettings } from "@/lib/bible-reader-settings";
+import { READER_BGS, READER_FONTS, READER_LINE_MAX, READER_LINE_MIN, READER_SCALE_MAX, READER_SCALE_MIN, SPEECH_RATES, chapterVerseSpan, sameColorHighlight, loadReaderSettings, saveReaderSettings, type ReaderSettings } from "@/lib/bible-reader-settings";
 import { canSpeak, setScreenBrightness, speakText, stopSpeaking } from "@/lib/reader-native";
 import { toast } from "sonner";
 import { useImmersiveWhile } from "@/lib/immersive";
@@ -29,8 +29,9 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
   const [book, chStr] = chapterKey.split(":");
   const ch = Number(chStr);
   const title = `${getLocalizedBookName(book, i18n.language) ?? book} ${ch}`;
-  const shortTitle = `${abbreviateBookName(getLocalizedBookName(book, i18n.language) ?? book)} ${ch}`;
   const [verses, setVerses] = useState<BibleVerseRecord[] | null>(null);
+  const span = chapterVerseSpan(verses);
+  const shortTitle = `${abbreviateBookName(getLocalizedBookName(book, i18n.language) ?? book)} ${ch}${span}`;
   const [libId, setLibId] = useState<string | null>(null);
   const [noLib, setNoLib] = useState(false);
   const [sel, setSel] = useState<number | null>(null);
@@ -64,6 +65,9 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
   const key = (verse: number) => highlightKey(libId ?? "", book, ch, verse);
   const ref = selected ? `${title}:${selected.verse}` : title;
   const [range, setRange] = useState<{ start: number; end: number } | null>(null);
+  // Pílula flutuante perto da seleção (a barra inferior continua como garantia).
+  const [pill, setPill] = useState<{ top: number; bottom: number; cx: number } | null>(null);
+  useEffect(() => { if (!selected) setPill(null); }, [selected]);
 
   // Offset de um ponto da seleção dentro do versículo (via data-start dos segmentos).
   const offsetOf = (node: Node | null, off: number): number | null => {
@@ -71,6 +75,29 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
     if (!el) return null;
     return Number(el.getAttribute("data-start")) + (node?.nodeType === 3 ? off : 0);
   };
+  // Android/iOS cancelam a seleção nativa ao tocar na cor: guardamos o trecho
+  // assim que ele é selecionado, para pintar só ele (e não o versículo todo).
+  useEffect(() => {
+    if (typeof document === "undefined" || !verses?.length) return;
+    const onSel = () => {
+      const s = window.getSelection?.();
+      if (!s || s.isCollapsed || !s.anchorNode || !s.focusNode) return;
+      const pa = (s.anchorNode.nodeType === 3 ? s.anchorNode.parentElement : (s.anchorNode as Element))?.closest?.("[id^='rv-']");
+      const pb = (s.focusNode.nodeType === 3 ? s.focusNode.parentElement : (s.focusNode as Element))?.closest?.("[id^='rv-']");
+      if (!pa || pa !== pb || !scrollRef.current?.contains(pa)) return;
+      const v = verses.find((x) => `rv-${x.verse}` === pa.id);
+      if (!v) return;
+      const a = offsetOf(s.anchorNode, s.anchorOffset);
+      const b = offsetOf(s.focusNode, s.focusOffset);
+      const r = a != null && b != null ? selectionRange(a, b, v.text.length) : null;
+      if (r) {
+        setSel(v.verse); setRange(r);
+        try { const b = s.getRangeAt(0).getBoundingClientRect(); setPill({ top: b.top, bottom: b.bottom, cx: b.left + b.width / 2 }); } catch { /* sem retângulo */ }
+      }
+    };
+    document.addEventListener("selectionchange", onSel);
+    return () => document.removeEventListener("selectionchange", onSel);
+  }, [verses]); // eslint-disable-line react-hooks/exhaustive-deps
   const pick = (v: BibleVerseRecord) => {
     const s = window.getSelection?.();
     if (s && !s.isCollapsed && s.anchorNode && s.focusNode) {
@@ -80,15 +107,23 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
       if (r) { setSel(v.verse); setRange(r); return; }
     }
     setRange(null);
-    setSel(sel === v.verse ? null : v.verse);
+    const next = sel === v.verse ? null : v.verse;
+    setSel(next);
+    const b = next != null ? document.getElementById(`rv-${v.verse}`)?.getBoundingClientRect() : null;
+    setPill(b ? { top: b.top, bottom: b.bottom, cx: b.left + b.width / 2 } : null);
   };
 
-  const paint = (c: HighlightColor) => {
+  const paint = (c: HighlightColor, toggle = false) => {
     if (!selected || !libId) return;
-    setSettings(saveSettings({ highlightColor: c }));
-    addHighlight(key(selected.verse), { ...(range ?? { start: 0, end: selected.text.length }), color: c });
+    const r = range ?? { start: 0, end: selected.text.length };
+    const same = toggle ? sameColorHighlight(getHighlights(key(selected.verse)), r, c) : null;
+    if (same) removeHighlightAt(key(selected.verse), same.start);
+    else {
+      setSettings(saveSettings({ highlightColor: c }));
+      addHighlight(key(selected.verse), { ...r, color: c });
+    }
     window.getSelection?.()?.removeAllRanges();
-    setRange(null);
+    setRange(null); setPill(null);
     bump((n) => n + 1);
   };
   const erase = () => {
@@ -137,7 +172,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
         <div className="flex h-12 items-center gap-1 px-1.5">
           <Button variant="ghost" size="icon" onClick={onBack} className="h-10 w-10 shrink-0 rounded-full text-muted-foreground" aria-label={t("guestWs.back", { defaultValue: "Voltar" })}><ArrowLeft className="h-5 w-5" /></Button>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="truncate text-sm font-semibold" title={title}>{shortTitle}</p>
+            <p className="truncate text-sm font-semibold" title={`${title}${span}`}>{shortTitle}</p>
             <p className="text-[11px] text-muted-foreground">{percent}%</p>
           </div>
           <Button variant="outline" size="sm" className="h-9 shrink-0 gap-1 rounded-full px-2.5 text-xs" onClick={() => onHighlight(`${title}:`)}><PenLine className="h-3.5 w-3.5" />{t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}</Button>
@@ -145,7 +180,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
           <Button size="sm" className={cn("h-9 shrink-0 gap-1 rounded-full px-2.5 text-xs", done ? "border border-success bg-success text-success-foreground hover:bg-success/90" : "border border-border bg-transparent text-muted-foreground hover:bg-muted")} variant="ghost" aria-pressed={done} onClick={() => { if (!done) { try { navigator.vibrate?.(15); } catch { /* sem vibração */ } toast.success("Capítulo marcado como lido"); } onDone(); }} aria-label={done ? "Lido — toque para desmarcar" : "Marcar capítulo como lido"}>{done ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}<span className="max-[359px]:hidden">{t("guestWs.markRead", { defaultValue: "Lido" })}</span></Button>
         </div>
       </div>
-      <div ref={scrollRef} className={cn("relative flex-1 overflow-y-auto", !selected && speakIdx === null && "bar-bottom")}>
+      <div ref={scrollRef} onScroll={() => { if (pill) setPill(null); }} className={cn("relative flex-1 overflow-y-auto", !selected && speakIdx === null && "bar-bottom")}>
         <article className={cn("mx-auto max-w-2xl px-5 pb-28", fontClass, rs.font !== "system" && `reader-font-${rs.font}`)} style={{ fontSize: rs.textScale !== 1 ? `${rs.textScale}em` : undefined, lineHeight: rs.lineHeight }}>
           <h1 className="py-3 text-2xl font-semibold">{title}</h1>
           {verses === null ? <p className="text-sm text-muted-foreground">{t("guestWs.loading", { defaultValue: "Carregando…" })}</p>
@@ -194,6 +229,28 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
           <p className="pb-1 text-center text-[11px] text-muted-foreground">{t("guestWs.verseN", { defaultValue: "Versículo" })} {speakIdx !== null ? verses?.[speakIdx]?.verse : ""}</p>
         </div>
       )}
+      {selected && pill && (() => {
+        const W = 300, vw = typeof window !== "undefined" ? window.innerWidth : 400, vh = typeof window !== "undefined" ? window.innerHeight : 800;
+        const left = Math.max(8, Math.min(vw - W - 8, pill.cx - W / 2));
+        const below = pill.bottom + 56 < vh - 120;
+        const top = below ? pill.bottom + 10 : Math.max(56, pill.top - 54);
+        const keep = (e: { preventDefault: () => void }) => e.preventDefault();
+        return (
+          <div role="toolbar" aria-label={t("guestWs.quickTools", { defaultValue: "Atalhos do destaque" })}
+            style={{ left, top, width: W }}
+            className="fixed z-[52] flex items-center justify-between gap-1 rounded-full border bg-popover px-2 py-1.5 text-popover-foreground shadow-lg animate-in fade-in zoom-in-95">
+            {HIGHLIGHT_COLORS.map((c) => (
+              <button key={c} type="button" onPointerDown={keep} onMouseDown={keep} onClick={() => paint(c, true)} aria-label={t(`bibleVerse.highlightColors.${c}`, { defaultValue: c })}
+                className={cn("h-7 w-7 shrink-0 rounded-full border bible-hl-swatch", `bible-hl-${c}`)} />
+            ))}
+            <span className="mx-0.5 h-6 w-px shrink-0 bg-border" aria-hidden />
+            <button type="button" onPointerDown={keep} onMouseDown={keep} onClick={() => { setPill(null); onHighlight(ref); }} aria-label={t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-primary hover:bg-muted"><Star className="h-4 w-4" /></button>
+            <button type="button" onPointerDown={keep} onMouseDown={keep} onClick={() => { const txt = range ? selected.text.slice(range.start, range.end) : selected.text; setPill(null); onNote(ref, txt); }} aria-label={t("guestWs.annotate", { defaultValue: "Anotar" })}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-primary hover:bg-muted"><NotebookPen className="h-4 w-4" /></button>
+          </div>
+        );
+      })()}
       {selected && (
         <div role="toolbar" aria-label={t("guestWs.verseTools", { defaultValue: "Ferramentas do versículo" })}
           className="bar-bottom flex shrink-0 flex-wrap items-center gap-1 border-t bg-card px-3 pt-2 text-card-foreground">
