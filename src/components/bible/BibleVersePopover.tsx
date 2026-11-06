@@ -1,3 +1,4 @@
+import { compactRefTitle } from "@/lib/book-abbrev";
 import { useEffect, useMemo, useRef, useState, useCallback, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -700,8 +701,9 @@ export function VerseLink({
           className="flex items-center gap-1 pl-2 pr-1 py-1 border-b bg-muted/60 cursor-grab active:cursor-grabbing select-none touch-none"
         >
           <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span className="text-sm font-semibold text-foreground flex-1 min-w-0 truncate pl-1">
-            {displayBook} {chapter}{headerVerses ? `:${headerVerses}` : ""}
+          <span className="text-sm font-semibold text-foreground flex-1 min-w-0 truncate pl-1"
+            title={`${displayBook} ${chapter}${headerVerses ? `:${headerVerses}` : ""}`}>
+            {compactRefTitle(String(displayBook), chapter, headerVerses || undefined)}
           </span>
           <button
             type="button"

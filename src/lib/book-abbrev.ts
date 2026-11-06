@@ -22,3 +22,12 @@ export function abbreviateBookName(name: string): string {
   if (m) return `${m[1]} ${m[2].slice(0, 3)}`;
   return n.slice(0, 4);
 }
+
+/** Título do balão bíblico: completo se couber (até 16 letras), senão livro abreviado. */
+export function compactRefTitle(book: string, chapter: number | string, verses?: string): string {
+  const tail = `${chapter}${verses ? `:${verses}` : ""}`;
+  const full = `${book} ${tail}`;
+  if (full.length <= 16) return full;
+  const ab = abbreviateBookName(book);
+  return ab === book ? full : `${ab}. ${tail}`;
+}
