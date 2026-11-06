@@ -10,10 +10,10 @@ import { shouldAutoOpenWhatsNew } from "./whats-new";
 import pkg from "../../package.json";
 
 describe("release notes por versão", () => {
-  it("a versão atual é 5.3.0 em todos os lugares", () => {
-    expect(RELEASE_NOTES_VERSION).toBe("5.3.0");
-    expect(APP_VERSION).toBe("5.3.0");
-    expect(pkg.version).toBe("5.3.0");
+  it("a versão atual é 5.4.0 em todos os lugares", () => {
+    expect(RELEASE_NOTES_VERSION).toBe("5.4.0");
+    expect(APP_VERSION).toBe("5.4.0");
+    expect(pkg.version).toBe("5.4.0");
   });
   it("a primeira entrada do histórico é a versão atual", () => {
     expect(RELEASE_HISTORY[0].version).toBe(RELEASE_NOTES_VERSION);
@@ -23,7 +23,7 @@ describe("release notes por versão", () => {
     const v = RELEASE_HISTORY.map((r) => r.version);
     expect(new Set(v).size).toBe(v.length);
   });
-  it("o aviso automático de novidades abre nesta versão (5.3.0)", () => {
+  it("o aviso automático de novidades abre nesta versão (5.4.0)", () => {
     expect(WHATS_NEW_AUTO_SHOW).toBe(true);
     // Mesmo aparelho atualizado, sem a janela vista e com uso anterior: não abre.
     expect(

@@ -104,7 +104,7 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.3.0";
+export const RELEASE_NOTES_VERSION = "5.4.0";
 
 /**
  * Aviso automático "O que há de novo" nesta versão: desligado a pedido.
@@ -114,6 +114,33 @@ export const RELEASE_NOTES_VERSION = "5.3.0";
 export const WHATS_NEW_AUTO_SHOW = true;
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "5.4.0",
+    sections: [
+      {
+        title: "Balão bíblico nos esboços e considerações", audience: ["super"],
+        items: [
+          "Mini regulador de fonte [Aa] para aumentar ou diminuir o texto rapidamente.",
+          "Menu [⋯] organizado com copiar, inserir no esboço e destaques.",
+          "Títulos longos usam o nome do livro abreviado para não cortar a referência.",
+        ],
+      },
+      {
+        title: "Citações encadeadas", audience: ["super"],
+        items: [
+          "Citações com ponto e vírgula (ex.: ; 5:12) reconhecem o mesmo livro bíblico automaticamente nos esboços e notas.",
+        ],
+      },
+      {
+        title: "Leitura da Bíblia e Estudo pessoal", audience: ["super", "wife"],
+        items: [
+          "Barra flutuante sobre os versículos com as bolinhas de destaque, ⭐ (Ponto alto) e 📝 (Anotar).",
+          "Toque na mesma cor já destacada para remover o destaque.",
+          "Ao salvar uma anotação ou ponto alto, você volta direto ao capítulo e versículo onde estava lendo.",
+        ],
+      },
+    ],
+  },
   {
     version: "5.3.0",
     sections: [
