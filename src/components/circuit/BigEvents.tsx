@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 // Pílula "Grandes Eventos" (Circuito): assembleias e reuniões especiais, oradores,
 // convites com PIN (link único por evento) e status ao vivo.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -151,7 +152,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     return true;
   };
   const removeEvent = async (id: string) => {
-    if (!confirm("Apagar este evento e todas as partes?")) return;
+    if (!await appConfirm("Apagar este evento e todas as partes?")) return;
     await supabase.from("circuit_big_events").delete().eq("id", id);
     await load();
   };
@@ -208,7 +209,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
 
   const deletePart = async (ev: EventRow, part: PartRow) => {
     const warn = part.status === "confirmed" ? `\n\n${part.speaker_name ?? "O orador"} já confirmou esta parte.` : "";
-    if (!confirm(`Excluir a parte "${part.theme}"?${warn}`)) return;
+    if (!await appConfirm(`Excluir a parte "${part.theme}"?${warn}`)) return;
     const { error } = await supabase.from("circuit_big_event_parts").delete().eq("id", part.id);
     if (error) { toast.error("Não foi possível excluir."); return; }
     await persistOrder(ev, evPartsOf(ev.id).filter((p) => p.id !== part.id));
@@ -223,7 +224,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const changeLinkMode = async (ev: EventRow, mode: "pin" | "personal") => {
     if (ev.link_mode === mode) return;
     const sent = evPartsOf(ev.id).some((p) => p.email_sent);
-    if (sent && !confirm("Os convites já enviados deixarão de funcionar e precisarão ser reenviados. Continuar?")) return;
+    if (sent && !await appConfirm("Os convites já enviados deixarão de funcionar e precisarão ser reenviados. Continuar?")) return;
     await patchEvent(ev.id, { link_mode: mode });
     if (mode === "personal") {
       await Promise.all(evPartsOf(ev.id).filter((p) => p.assigned_to === "speaker" && !p.personal_token)
@@ -233,7 +234,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   };
 
   const newLink = async (part: PartRow) => {
-    if (part.personal_token && !confirm("Gerar um novo link? O link anterior deixa de funcionar.")) return;
+    if (part.personal_token && !await appConfirm("Gerar um novo link? O link anterior deixa de funcionar.")) return;
     const ok = await patchPart(part.id, { personal_token: crypto.randomUUID() });
     if (ok) toast.success("Novo link criado");
   };

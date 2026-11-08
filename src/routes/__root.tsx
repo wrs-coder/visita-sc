@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
+import { AppDialogsHost } from "@/components/ui/app-dialogs";
 import { supabase } from "@/integrations/supabase/client";
 import { PwaRegister } from "@/components/PwaRegister";
 import { AppOriginDiagnostics } from "@/components/AppOriginDiagnostics";
@@ -296,6 +297,7 @@ function RootComponent() {
         <TermsUpdateDialog />
         <Outlet />
         <Toaster richColors position="top-center" />
+        <AppDialogsHost />
       </AuthProvider>
     </PersistQueryClientProvider>
     </ChunkErrorBoundary>

@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 // Gaveta de rodapé com os pontos altos da leitura.
 import { BibleRefText } from "@/components/bible/BibleRefText";
 import { useEffect, useState } from "react";
@@ -76,7 +77,7 @@ export function HighlightsDrawer({ open, onOpenChange, highlights, onSave, onDel
                     <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("guestWs.edit", { defaultValue: "Editar" })}
                       onClick={() => { setEditId(h.id); setRef(h.ref); setText(h.text); }}><Pencil className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label={t("guestWs.delete", { defaultValue: "Apagar" })}
-                      onClick={() => { if (window.confirm(t("guestWs.confirmDelete", { defaultValue: "Apagar este item?" }))) onDelete(h.id); }}><Trash2 className="h-4 w-4" /></Button>
+                      onClick={async () => { if (await appConfirm(t("guestWs.confirmDelete", { defaultValue: "Apagar este item?" }))) onDelete(h.id); }}><Trash2 className="h-4 w-4" /></Button>
                   </div>
                   {h.text && <BibleRefText text={h.text} className="mt-1 text-sm" />}
                 </li>

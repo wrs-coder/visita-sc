@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 import { createFileRoute } from "@tanstack/react-router";
 import { BibleRefChips } from "@/components/bible/BibleRefText";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -266,7 +267,7 @@ function Page() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm(t("notes.deleteConfirm"))) return;
+    if (!await appConfirm(t("notes.deleteConfirm"))) return;
     // Soft-delete → vai para a Lixeira (retenção de 30 dias).
     const { error } = await offlineUpdate(
       "private_notes",

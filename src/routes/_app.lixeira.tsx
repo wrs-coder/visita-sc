@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -84,7 +85,7 @@ function Page() {
     else toast.error(r.error);
   }
   async function purgeOutlineCloud(id: string) {
-    if (!confirm(t("trash.purgeConfirm", { defaultValue: "Apagar definitivamente? Esta ação não pode ser desfeita." }))) return;
+    if (!await appConfirm(t("trash.purgeConfirm", { defaultValue: "Apagar definitivamente? Esta ação não pode ser desfeita." }))) return;
     const r = await fnPurgeOutline({ data: { id } });
     if (r.ok) { toast.success(t("trash.purged", { defaultValue: "Apagado definitivamente." })); void refresh(); }
     else toast.error(r.error);
@@ -97,13 +98,13 @@ function Page() {
     else toast.error(r.error);
   }
   async function purgeNoteCloud(id: string) {
-    if (!confirm(t("trash.purgeConfirm", { defaultValue: "Apagar definitivamente? Esta ação não pode ser desfeita." }))) return;
+    if (!await appConfirm(t("trash.purgeConfirm", { defaultValue: "Apagar definitivamente? Esta ação não pode ser desfeita." }))) return;
     const r = await fnPurgeNote({ data: { id } });
     if (r.ok) { toast.success(t("trash.purged", { defaultValue: "Apagado definitivamente." })); void refresh(); }
     else toast.error(r.error);
   }
   async function emptyAllNotes() {
-    if (!confirm(t("trash.emptyConfirm", { defaultValue: "Esvaziar toda a lixeira de notas? Esta ação é definitiva." }))) return;
+    if (!await appConfirm(t("trash.emptyConfirm", { defaultValue: "Esvaziar toda a lixeira de notas? Esta ação é definitiva." }))) return;
     const r = await fnEmptyNotes();
     if (r.ok) { toast.success(t("trash.emptied", { defaultValue: "Lixeira esvaziada." })); void refresh(); }
     else toast.error(r.error);
@@ -116,7 +117,7 @@ function Page() {
     void refresh();
   }
   async function purgeLocal(id: string) {
-    if (!confirm(t("trash.purgeConfirm", { defaultValue: "Apagar definitivamente?" }))) return;
+    if (!await appConfirm(t("trash.purgeConfirm", { defaultValue: "Apagar definitivamente?" }))) return;
     await hardDeleteLocalNote(id);
     toast.success(t("trash.purged", { defaultValue: "Apagado definitivamente." }));
     void refresh();
@@ -127,7 +128,7 @@ function Page() {
     void refresh();
   }
   async function purgeLocalFolderFn(id: string) {
-    if (!confirm(t("trash.purgeConfirm", { defaultValue: "Apagar definitivamente?" }))) return;
+    if (!await appConfirm(t("trash.purgeConfirm", { defaultValue: "Apagar definitivamente?" }))) return;
     await hardDeleteLocalFolder(id);
     toast.success(t("trash.purged", { defaultValue: "Apagado definitivamente." }));
     void refresh();

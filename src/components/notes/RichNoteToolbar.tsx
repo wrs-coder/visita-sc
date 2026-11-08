@@ -1,3 +1,4 @@
+import { appPrompt } from "@/components/ui/app-dialogs";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Editor } from "@tiptap/react";
@@ -189,9 +190,9 @@ export function RichNoteToolbar({
       title={t("personalOutlines.topics.create", { defaultValue: "Criar tópico" })}
       aria-label={t("personalOutlines.topics.create", { defaultValue: "Criar tópico" })}
       onMouseDown={(e) => e.preventDefault()}
-      onClick={() => {
+      onClick={async () => {
         if (!editor) return;
-        const title = window.prompt(
+        const title = await appPrompt(
           t("personalOutlines.topics.titlePrompt", { defaultValue: "Título do tópico" }),
           "",
         );
@@ -234,9 +235,9 @@ export function RichNoteToolbar({
     <div className="w-px h-5 bg-border mx-0.5 shrink-0" aria-hidden />
   );
 
-  const promptLink = () => {
+  const promptLink = async () => {
     const prev = (editor.getAttributes("link") as { href?: string }).href ?? "";
-    const url = window.prompt(t("personalOutlines.editor.toolbar.linkPrompt"), prev);
+    const url = await appPrompt(t("personalOutlines.editor.toolbar.linkPrompt"), prev);
     if (url === null) return;
     if (url === "") {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();

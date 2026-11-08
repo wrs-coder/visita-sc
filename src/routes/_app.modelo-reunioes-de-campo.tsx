@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 import { createFileRoute } from "@tanstack/react-router";
 import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -181,7 +182,7 @@ function Page() {
 
   const handleDelete = async () => {
     if (!active) return;
-    if (!confirm(t("templates.deleteConfirm", { name: active.name }))) return;
+    if (!await appConfirm(t("templates.deleteConfirm", { name: active.name }))) return;
     setBusy(true);
     const r = await fnDel({ data: { id: active.id } });
     setBusy(false);

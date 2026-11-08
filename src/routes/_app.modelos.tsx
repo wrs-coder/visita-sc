@@ -1,3 +1,4 @@
+import { appPrompt } from "@/components/ui/app-dialogs";
 import { createFileRoute } from "@tanstack/react-router";
 import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -117,7 +118,7 @@ function Page() {
   }, [createdSlots, activeSlot]);
   const handleNew = async () => {
     if (!freeSlot) return;
-    const v = window.prompt(t("templates.chrome.newTemplate", { defaultValue: "Novo modelo" }), t("templates.templateNumber", { n: freeSlot }));
+    const v = await appPrompt(t("templates.chrome.newTemplate", { defaultValue: "Novo modelo" }), t("templates.templateNumber", { n: freeSlot }));
     if (!v || !v.trim()) return;
     setBusy(true);
     const r = await fnUpsert({ data: { slot: freeSlot, name: v.trim() } });
@@ -237,8 +238,8 @@ function Page() {
         onNew={handleNew}
         newDisabled={!freeSlot}
         disabled={busy}
-        onRename={() => {
-          const v = window.prompt(t("common.rename", { defaultValue: "Renomear" }), namesBySlot[Number(activeSlot)] ?? "");
+        onRename={async () => {
+          const v = await appPrompt(t("common.rename", { defaultValue: "Renomear" }), namesBySlot[Number(activeSlot)] ?? "");
           if (v && v.trim()) { setNamesBySlot({ ...namesBySlot, [Number(activeSlot)]: v.trim() }); renameSlot(Number(activeSlot), v.trim()); }
         }}
         onDuplicate={() => { if (freeSlot) duplicateSlot(Number(activeSlot), freeSlot); }}

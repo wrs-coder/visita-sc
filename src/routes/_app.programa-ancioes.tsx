@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { ChecklistPanel } from "@/components/visit-week/ChecklistPanel";
 import { slotDay, slotDays } from "@/lib/slot-day";
@@ -271,7 +272,7 @@ function Page() {
   };
 
   const deleteEvent = async (ev: ElderVisitEventDTO) => {
-    if (!confirm("Excluir este card?")) return;
+    if (!await appConfirm("Excluir este card?")) return;
     const r = await fnDelete({ data: { id: ev.id, visitId: visit.id, section: ev.section } });
     if (!r.ok) { toast.error(r.error); return; }
     setListFor(ev.section, listFor(ev.section).filter((x) => x.id !== ev.id));

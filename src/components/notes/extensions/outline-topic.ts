@@ -1,3 +1,4 @@
+import { appPrompt } from "@/components/ui/app-dialogs";
 /**
  * Nó TipTap "outlineTopic": agrupa blocos comuns (parágrafos, títulos, listas,
  * tabelas…) sob um título. Como o conteúdo continua sendo blocos normais,
@@ -195,8 +196,8 @@ export const OutlineTopic = Node.create<OutlineTopicOptions>({
         return true;
       };
 
-      const renameBtn = mkBtn(labels.rename, () => {
-        const next = window.prompt(labels.titlePrompt, String(current.attrs.title ?? ""));
+      const renameBtn = mkBtn(labels.rename, async () => {
+        const next = await appPrompt(labels.titlePrompt, String(current.attrs.title ?? ""));
         if (next === null) return;
         if (selectInside()) editor.commands.renameOutlineTopic(next.trim() || labels.defaultTitle);
       });
@@ -205,10 +206,10 @@ export const OutlineTopic = Node.create<OutlineTopicOptions>({
       });
 
       // Controle de tempo do tópico: minutos usados nos modos esboço/tela cheia.
-      const timeBtn = mkBtn("", () => {
+      const timeBtn = mkBtn("", async () => {
         const currentMin = normalizeMinutes(current.attrs.minutes);
         const suggested = currentMin ?? parseTopicMinutes(String(current.attrs.title ?? ""));
-        const next = window.prompt(
+        const next = await appPrompt(
           labels.minutesPrompt ?? "Minutos deste tópico (vazio = sem controle de tempo)",
           suggested ? String(suggested) : "",
         );
