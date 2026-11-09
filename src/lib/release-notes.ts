@@ -111,7 +111,7 @@ export const RELEASE_NOTES_VERSION = "5.5.0";
  * O texto continua em Configurações → Ver novidades e no aviso de atualização.
  * Troque para true para voltar a abrir sozinho na primeira abertura após atualizar.
  */
-export const WHATS_NEW_AUTO_SHOW = true;
+export const WHATS_NEW_AUTO_SHOW = false;
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
   {

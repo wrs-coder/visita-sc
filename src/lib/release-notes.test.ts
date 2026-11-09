@@ -10,10 +10,10 @@ import { shouldAutoOpenWhatsNew } from "./whats-new";
 import pkg from "../../package.json";
 
 describe("release notes por versão", () => {
-  it("a versão atual é 5.5.0 em todos os lugares", () => {
+  it("app na 5.5.1; novidades continuam as da 5.5.0 (sem bloco novo)", () => {
     expect(RELEASE_NOTES_VERSION).toBe("5.5.0");
-    expect(APP_VERSION).toBe("5.5.0");
-    expect(pkg.version).toBe("5.5.0");
+    expect(APP_VERSION).toBe("5.5.1");
+    expect(pkg.version).toBe("5.5.1");
   });
   it("a primeira entrada do histórico é a versão atual", () => {
     expect(RELEASE_HISTORY[0].version).toBe(RELEASE_NOTES_VERSION);
@@ -23,20 +23,20 @@ describe("release notes por versão", () => {
     const v = RELEASE_HISTORY.map((r) => r.version);
     expect(new Set(v).size).toBe(v.length);
   });
-  it("o aviso automático de novidades abre nesta versão (5.5.0)", () => {
-    expect(WHATS_NEW_AUTO_SHOW).toBe(true);
-    // Mesmo aparelho atualizado, sem a janela vista e com uso anterior: não abre.
+  it("o aviso automático de novidades não abre na 5.5.1", () => {
+    expect(WHATS_NEW_AUTO_SHOW).toBe(false);
+    // Aparelho atualizado para 5.5.1, sem a janela vista e com uso anterior: não abre.
     expect(
       shouldAutoOpenWhatsNew(
         {
-          installed: RELEASE_NOTES_VERSION,
+          installed: APP_VERSION,
           notesVersion: RELEASE_NOTES_VERSION,
           seen: null,
           hadPreviousUse: true,
         },
         WHATS_NEW_AUTO_SHOW,
       ),
-    ).toBe(true);
+    ).toBe(false);
     // Com a chave ligada, a mesma situação abriria (a regra continua viva).
     expect(
       shouldAutoOpenWhatsNew(
