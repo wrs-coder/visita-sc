@@ -31,10 +31,23 @@ export function weekdayPending(plan: WeekdayPlan | undefined, read: Set<string>,
 /**
  * Dias de leitura programada (meta "Dias") que passaram sem leitura desde a
  * última leitura marcada, sem contar hoje. 0 = não está atrasada.
- * Sem registro de leitura anterior, não conta atraso.
+ * Sem registro neste aparelho (ex.: celular novo), olha os últimos 7 dias:
+ * conta os dias programados que ainda têm capítulo não lido. Só quando
+ * `read` é informado; marcar um capítulo grava o registro e volta ao normal.
  */
-export function overdueDays(plan: WeekdayPlan | undefined, last: string | null, now = new Date()): number {
-  if (!plan?.enabled || !last) return 0;
+export function overdueDays(plan: WeekdayPlan | undefined, last: string | null, now = new Date(), read?: Set<string>): number {
+  if (!plan?.enabled) return 0;
+  if (!last) {
+    if (!read) return 0;
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let n = 0;
+    for (let i = 0; i < 7; i++) {
+      d.setDate(d.getDate() - 1);
+      const day = d.getDay();
+      if (weekdaySeq(plan, day).length && !weekdayDayDone(plan, day, read)) n++;
+    }
+    return n;
+  }
   const today = isoDay(now);
   if (last >= today) return 0;
   let n = 0;

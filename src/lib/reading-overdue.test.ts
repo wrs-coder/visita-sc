@@ -20,4 +20,9 @@ describe("leitura atrasada", () => {
     expect(overdueDays({ ...plan, enabled: false }, "2026-11-01", wed)).toBe(0);
     expect(overdueDays(plan, null, wed)).toBe(0);
   });
+  it("sem registro no aparelho: conta dias programados não lidos dos últimos 7 dias", () => {
+    expect(overdueDays(plan, null, wed, new Set())).toBe(5);
+    const all = new Set(Array.from({ length: 50 }, (_, i) => `B01:${i + 1}`));
+    expect(overdueDays(plan, null, wed, all)).toBe(0);
+  });
 });

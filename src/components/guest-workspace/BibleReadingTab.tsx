@@ -82,7 +82,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   }, [data, logTick]);
   const pendingHere = track !== "meeting" && (pendingTracks as Track[]).includes(track);
   // Dias de leitura programada perdidos desde a última leitura (meta "Dias").
-  const lateDays = useMemo(() => { void logTick; return track === "meeting" ? 0 : overdueDays(rdata.weekday, lastReadDay(track)); }, [rdata.weekday, track, logTick]);
+  const lateDays = useMemo(() => { void logTick; return track === "meeting" ? 0 : overdueDays(rdata.weekday, lastReadDay(track), new Date(), done); }, [rdata.weekday, track, logTick, done]);
   // "Continuar · Gên 17:1-27": livro abreviado + primeiro ao último versículo.
   const contKey = next ? (wdOn ? next : today?.keys.find((k) => !done.has(k)) ?? next) : null;
   const contSpan = useChapterSpan(contKey);
@@ -120,7 +120,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
     return (
       <>
         <CleanReader chapterKey={reading} done={done.has(reading)} percent={percent} fontClass={fontClass}
-          bookProgress={(() => { const b = reading.split(":")[0]; const n = chaptersOf(b); let c = 0; for (let i = 1; i <= n; i++) if (done.has(`${b}:${i}`)) c++; return { done: c, total: n }; })()}
+          bookProgress={track === "meeting" ? { done: Number(reading.split(":")[1]) || 0, total: chaptersOf(reading.split(":")[0]) } : (() => { const b = reading.split(":")[0]; const n = chaptersOf(b); let c = 0; for (let i = 1; i <= n; i++) if (done.has(`${b}:${i}`)) c++; return { done: c, total: n }; })()}
           key={reading} initialVerse={jumpVerse}
           onBack={() => { setReading(null); setReadingDay(null); setJumpVerse(null); }}
           onNote={(ref, text) => { setReaderReturn({ track, chapterKey: reading, readingDay, verse: verseFromRef(ref) }); onNote(ref, text); }}

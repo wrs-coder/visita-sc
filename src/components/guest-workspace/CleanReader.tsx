@@ -192,11 +192,11 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
         </div>
         {bookProgress && bookProgress.total > 0 && (
           <div className="flex items-center gap-2 px-4 pb-2 text-[11px] text-muted-foreground" aria-label={t("guestWs.bookProgress", { defaultValue: "Progresso do livro" })}>
-            <span className="max-w-[40%] truncate">{getLocalizedBookName(book, i18n.language) ?? book}</span>
+            <span className="max-w-[40%] truncate">{abbreviateBookAlways(getLocalizedBookName(book, i18n.language) ?? book)}</span>
             <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={bookProgress.total} aria-valuenow={bookProgress.done}>
               <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${Math.round((bookProgress.done / bookProgress.total) * 100)}%` }} />
             </div>
-            <span className="shrink-0 tabular-nums">{bookProgress.done}/{bookProgress.total}</span>
+            <span className="shrink-0 tabular-nums">{bookProgress.done}/{bookProgress.total} · {Math.round((bookProgress.done / bookProgress.total) * 100)}%</span>
           </div>
         )}
       </div>

@@ -3,7 +3,7 @@
 import { BibleRefText } from "@/components/bible/BibleRefText";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Play, Pencil, Star, X, ChevronLeft, ChevronRight, ExternalLink, Maximize2, CheckSquare } from "lucide-react";
+import { Play, Pencil, Star, X, ChevronLeft, ChevronRight, ExternalLink, Maximize2, CheckSquare, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
@@ -12,6 +12,7 @@ import { ALL_BOOKS, chaptersOf, type Highlight } from "@/lib/bible-chapters";
 import { emptyWeekday, weekdayNextUnread, weekdayDayDone, weekdayBookDays, weekdaySeq, type MeetingWeek, type Track, type WeekdayPlan, mondayOf } from "@/lib/bible-tracks";
 import { cn } from "@/lib/utils";
 import { useChapterSpan } from "./use-chapter-span";
+import { abbreviateBookAlways } from "@/lib/book-abbrev";
 
 const pill = (on: boolean) => cn("min-h-9 rounded-full px-3 text-xs font-medium transition-colors", on ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/60");
 
@@ -136,6 +137,21 @@ export function WeekdayCard({ plan, onChange, onRead, label, shortLabel, done, o
 
 export const newWeekday = (): WeekdayPlan => ({ ...emptyWeekday(), enabled: true });
 
+function MeetingChapterButton({ k, done, isNext, onRead }: { k: string; done: boolean; isNext: boolean; onRead: (k: string) => void }) {
+  const { t, i18n } = useTranslation();
+  const span = useChapterSpan(k);
+  const [b, c] = k.split(":");
+  const text = `${abbreviateBookAlways(getLocalizedBookName(b, i18n.language) ?? b)} ${c}${span}`;
+  return (
+    <Button variant={isNext ? "default" : "outline"} onClick={() => onRead(k)}
+      className={cn("h-11 w-full justify-start gap-2 rounded-xl", done && "text-muted-foreground")}>
+      {done ? <CheckCircle2 className="h-4 w-4 text-success" /> : <Play className="h-4 w-4" />}
+      <span className="flex-1 truncate text-left">{isNext ? `${t("guestWs.continue", { defaultValue: "Continuar" })} · ${text}` : text}</span>
+      {done && <span className="text-xs">{t("guestWs.markRead", { defaultValue: "Lido" })}</span>}
+    </Button>
+  );
+}
+
 export function MeetingWeekCard({ mw, keys, onSet, onRead, label, done }: { mw?: MeetingWeek; keys: string[]; onSet: (m: MeetingWeek) => void; onRead: (k: string) => void; label: (k: string) => string; done: Set<string> }) {
   const { t, i18n } = useTranslation();
   const [edit, setEdit] = useState(!mw);
@@ -156,7 +172,11 @@ export function MeetingWeekCard({ mw, keys, onSet, onRead, label, done }: { mw?:
         </div>
         <a href="https://wol.jw.org/" target="_blank" rel="noreferrer" className="inline-flex min-h-9 items-center gap-1 rounded-full border px-3 text-xs text-muted-foreground hover:bg-accent/60">wol <ExternalLink className="h-3 w-3" /></a>
       </div>
-      {mw && !edit && next && <Button className="h-11 w-full gap-2 rounded-xl" onClick={() => onRead(next)}><Play className="h-4 w-4" />{t("guestWs.read", { defaultValue: "Ler" })} · {label(next)}</Button>}
+      {mw && !edit && keys.length > 0 && (
+        <div className="space-y-2">
+          {keys.map((k) => <MeetingChapterButton key={k} k={k} done={done.has(k)} isNext={k === next && !done.has(k)} onRead={onRead} />)}
+        </div>
+      )}
       {edit ? (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">{t("guestWs.meetingHint", { defaultValue: "Informe a leitura desta semana. O app avança sozinho toda segunda-feira." })}</p>
