@@ -43,4 +43,4 @@
 - Congregation import parses on-device (congregation-import.ts) via createCongregation; no schema change.
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
-- Field optional items requested from elders live in requested_fields (template items copied to field_meetings on apply); NULL on a visit row means legacy and keeps the old visibility rule, so existing visits never lose fields.
+- Field items requested from elders: requested_fields (copied on apply); NULL on a visit row = legacy visibility, so old visits keep fields.
