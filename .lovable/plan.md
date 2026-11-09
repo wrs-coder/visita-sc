@@ -31,7 +31,7 @@ O celular guarda a "cópia local" (atualizada ao salvar) e uma "foto" de cada re
 
 **Como afeta:** todos (superintendente, anciãos, esposa). Nada se perde no servidor; só a tela fica desatualizada e confunde.
 **Correção:** quando um salvamento dá certo, descartar as "fotos" daquela tabela e das listas do servidor (esboços, lixeira, resumo). A próxima leitura usa a cópia local atualizada. Sem internet, tudo igual.
-**Chance de quebrar:** baixa a média (é o coração do offline). Proteção: só **apagar** fotos, nunca gravar dados; testes de "salvar → foto descartada" e "sem internet → ainda lê".
+**Chance de quebrar:** baixa a média (é o coração do offline). Proteção: só **apagar** fotos, nunca gravar dados; a cópia local que faz o app funcionar sem internet não é tocada; testes de "salvar → foto descartada" e "sem internet → ainda lê da cópia local" (simulando modo avião).
 
 ---
 
