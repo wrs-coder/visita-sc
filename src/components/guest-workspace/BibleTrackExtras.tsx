@@ -26,12 +26,12 @@ export function TrackPills({ value, onChange, alert = [] }: { value: Track; onCh
   );
 }
 
-function useDayNames() {
+export function useDayNames() {
   const { i18n } = useTranslation();
   return Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 7 + i).toLocaleDateString(i18n.language, { weekday: "short" }).replace(".", ""));
 }
 
-export function WeekdayCard({ plan, onChange, onRead, label, shortLabel, done, onMark, pending = false }: { shortLabel?: (k: string) => string; pending?: boolean; plan: WeekdayPlan; onChange: (p: WeekdayPlan) => void; onRead: (key: string, day: number) => void; label: (k: string) => string; done: Set<string>; onMark: (keys: string[], on: boolean) => void }) {
+export function WeekdayCard({ plan, onChange, onRead, label, shortLabel, done, onMark, pending = false, late = [] }: { shortLabel?: (k: string) => string; pending?: boolean; late?: number[]; plan: WeekdayPlan; onChange: (p: WeekdayPlan) => void; onRead: (key: string, day: number) => void; label: (k: string) => string; done: Set<string>; onMark: (keys: string[], on: boolean, day: number) => void }) {
   const { t, i18n } = useTranslation();
   const names = useDayNames();
   const [day, setDay] = useState(() => new Date().getDay());
@@ -46,29 +46,37 @@ export function WeekdayCard({ plan, onChange, onRead, label, shortLabel, done, o
   const books = plan.days[day] ?? [];
   const bn = (b: string) => getLocalizedBookName(b, i18n.language) ?? b;
   const bookDays = weekdayBookDays(plan);
+  const markDay = (keys: string[], on: boolean) => onMark(keys, on, day);
+  const dayLate = late.includes(day);
   return (
     <div className="space-y-3">
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5" role="tablist">
         {[1, 2, 3, 4, 5, 6, 0].map((d) => {
           const empty = !(plan.days[d] ?? []).length;
+          const isLate = late.includes(d);
           return (
             <button key={d} type="button" role="tab" aria-selected={day === d} onClick={() => setDay(d)}
-              className={cn("relative min-h-9 min-w-12 shrink-0 rounded-full border px-3 text-xs font-medium capitalize", day === d ? "border-primary bg-primary text-primary-foreground" : empty ? "text-muted-foreground/50" : "text-foreground hover:bg-accent/60")}>
-              {names[d]}
-              {d === today && <span className={cn("absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full", day === d ? "bg-primary-foreground" : "bg-primary")} />}
+              aria-label={isLate ? `${names[d]} · ${t("guestWs.lateBadge", { defaultValue: "atrasada" })}` : undefined}
+              className={cn("relative min-h-9 min-w-12 shrink-0 rounded-full border px-3 text-xs font-medium capitalize",
+                isLate
+                  ? (day === d ? "border-destructive bg-destructive text-destructive-foreground" : "border-destructive/60 bg-destructive/10 text-destructive hover:bg-destructive/15")
+                  : day === d ? "border-primary bg-primary text-primary-foreground" : empty ? "text-muted-foreground/50" : "text-foreground hover:bg-accent/60")}>
+              {isLate && <span aria-hidden className="mr-0.5">⚠</span>}{names[d]}
+              {d === today && <span className={cn("absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full", day === d ? (isLate ? "bg-destructive-foreground" : "bg-primary-foreground") : isLate ? "bg-destructive" : "bg-primary")} />}
             </button>
           );
         })}
       </div>
       {cur ? (
         <div className="space-y-2">
+          {dayLate && <p className="rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs font-medium text-destructive" role="status">⚠ {t("guestWs.dayLate", { defaultValue: "Leitura deste dia atrasada" })}</p>}
           <p className="text-xs text-muted-foreground">{books.map(bn).join(" → ")} · {seq.filter((k) => done.has(k)).length}/{seq.length}</p>
-          <Button className={cn("h-11 w-full gap-2 rounded-xl", pending && day === new Date().getDay() && "ring-2 ring-destructive ring-offset-2 ring-offset-background")} onClick={() => onRead(cur, day)}><Play className="h-4 w-4" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {(shortLabel ?? label)(cur)}{curSpan}</Button>
+          <Button className={cn("h-11 w-full gap-2 rounded-xl", ((pending && day === new Date().getDay()) || dayLate) && "ring-2 ring-destructive ring-offset-2 ring-offset-background")} onClick={() => onRead(cur, day)}><Play className="h-4 w-4" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {(shortLabel ?? label)(cur)}{curSpan}</Button>
         </div>
       ) : allDone ? (
         <div className="space-y-2 text-center">
           <p className="py-1 text-sm font-medium text-primary">{t("guestWs.dayDone", { defaultValue: "Concluído ✓" })}</p>
-          <Button size="sm" variant="outline" onClick={() => onMark(seq, false)}>{t("guestWs.restart", { defaultValue: "Recomeçar" })}</Button>
+          <Button size="sm" variant="outline" onClick={() => markDay(seq, false)}>{t("guestWs.restart", { defaultValue: "Recomeçar" })}</Button>
         </div>
       ) : <p className="py-2 text-center text-sm text-muted-foreground">{t("guestWs.noDayReading", { defaultValue: "Sem leitura neste dia." })}</p>}
       <div className="flex flex-wrap justify-between gap-1">
@@ -89,7 +97,7 @@ export function WeekdayCard({ plan, onChange, onRead, label, shortLabel, done, o
                   <div className="grid grid-cols-8 gap-1.5">
                     {Array.from({ length: n }, (_, i) => {
                       const k = `${b}:${i + 1}`; const on = done.has(k);
-                      return <button key={k} type="button" aria-pressed={on} onClick={() => { setLast(k); onMark([k], !on); }}
+                      return <button key={k} type="button" aria-pressed={on} onClick={() => { setLast(k); markDay([k], !on); }}
                         className={cn("h-9 rounded-lg border text-xs", on ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent/60", last === k && "ring-2 ring-ring")}>{i + 1}</button>;
                     })}
                   </div>
@@ -97,8 +105,8 @@ export function WeekdayCard({ plan, onChange, onRead, label, shortLabel, done, o
               );
             })}
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" disabled={!last} onClick={() => last && onMark(seq.slice(0, seq.indexOf(last) + 1), true)}>{t("guestWs.markUpTo", { defaultValue: "Marcar até aqui" })}</Button>
-              <Button variant="outline" className="flex-1" onClick={() => onMark(seq, false)}>{t("guestWs.clear", { defaultValue: "Limpar" })}</Button>
+              <Button variant="outline" className="flex-1" disabled={!last} onClick={() => last && markDay(seq.slice(0, seq.indexOf(last) + 1), true)}>{t("guestWs.markUpTo", { defaultValue: "Marcar até aqui" })}</Button>
+              <Button variant="outline" className="flex-1" onClick={() => markDay(seq, false)}>{t("guestWs.clear", { defaultValue: "Limpar" })}</Button>
             </div>
             <Button className="w-full" onClick={() => setMark(false)}>{t("guestWs.finish", { defaultValue: "Concluir" })}</Button>
           </div>

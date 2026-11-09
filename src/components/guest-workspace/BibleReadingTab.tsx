@@ -16,10 +16,10 @@ import { HighlightsDrawer } from "./HighlightsDrawer";
 import { CleanReader } from "./CleanReader";
 import { JwLibraryPanel } from "./JwLibraryPanel";
 import { CollapsibleSection } from "./CollapsibleSection";
-import { TrackPills, WeekdayCard, MeetingWeekCard, CommentCard, CommentMode, newWeekday } from "./BibleTrackExtras";
+import { TrackPills, WeekdayCard, MeetingWeekCard, CommentCard, CommentMode, newWeekday, useDayNames } from "./BibleTrackExtras";
 import { commentList, filterByTrack, meetingWeekKeys, weekdayAdvance, weekdayNextUnread, weekdayProgress, type Track } from "@/lib/bible-tracks";
 import type { WsReading } from "@/lib/guest-workspace-store";
-import { lastReadDay, markReadToday, overdueDays, weekdayPending } from "@/lib/reading-day-log";
+import { creditDayFor, creditWeekday, lastReadDay, lateWeekdays, markReadToday, weekdayLog, weekdayPending } from "@/lib/reading-day-log";
 import { abbreviateBookAlways } from "@/lib/book-abbrev";
 import { useChapterSpan } from "./use-chapter-span";
 
@@ -75,14 +75,21 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   const label = (k: string) => { const [b, c] = k.split(":"); return `${name(b)} ${c}`; };
 
   const [logTick, setLogTick] = useState(0);
-  const noteRead = () => { if (track !== "meeting") { markReadToday(track); setLogTick((n) => n + 1); } };
+  // Grava a leitura no dia da semana certo (atraso é contado por dia da semana).
+  const noteRead = (day: number | null) => {
+    if (track === "meeting") return;
+    if (day !== null) creditWeekday(track, day); else markReadToday(track);
+    setLogTick((n) => n + 1);
+  };
   const pendingTracks = useMemo(() => {
     void logTick;
-    return (["personal", "family"] as const).filter((tr) => { const r = getReading(data, tr); return weekdayPending(r.weekday, new Set(r.done), lastReadDay(tr)); });
+    return (["personal", "family"] as const).filter((tr) => { const r = getReading(data, tr); return weekdayPending(r.weekday, new Set(r.done), lastReadDay(tr), new Date(), weekdayLog(tr)); });
   }, [data, logTick]);
   const pendingHere = track !== "meeting" && (pendingTracks as Track[]).includes(track);
-  // Dias de leitura programada perdidos desde a última leitura (meta "Dias").
-  const lateDays = useMemo(() => { void logTick; return track === "meeting" ? 0 : overdueDays(rdata.weekday, lastReadDay(track), new Date(), done); }, [rdata.weekday, track, logTick, done]);
+  // Dias da semana com leitura atrasada (meta "Dias"), cada dia no seu ciclo de 7 dias.
+  const lateList = useMemo(() => { void logTick; return track === "meeting" ? [] : lateWeekdays(rdata.weekday, lastReadDay(track), new Date(), done, weekdayLog(track)); }, [rdata.weekday, track, logTick, done]);
+  const lateDays = lateList.length;
+  const dayNames = useDayNames();
   // "Continuar · Gên 17:1-27": livro abreviado + primeiro ao último versículo.
   const contKey = next ? (wdOn ? next : today?.keys.find((k) => !done.has(k)) ?? next) : null;
   const contSpan = useChapterSpan(contKey);
@@ -93,7 +100,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
     const r = getReading(d, track);
     const s = new Set(r.done);
     const on = force ?? !s.has(k);
-    if (on) { s.add(k); noteRead(); } else s.delete(k);
+    if (on) { s.add(k); noteRead(readingDay ?? creditDayFor(r.weekday, k, new Date(), lateList)); } else s.delete(k);
     return putReading(d, track, { ...r, done: [...s] });
   });
   const setPlan = (p: ReadingPlan) => {
@@ -175,8 +182,8 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
           );
         })}
       </div>
-      {wdOn && <WeekdayCard pending={pendingHere} plan={rdata.weekday!} label={label} shortLabel={shortLabel} done={done} onChange={(wp) => setReadingState({ weekday: wp })}
-        onMark={(keys, on) => update((d) => { const r = getReading(d, track); const s = new Set(r.done); keys.forEach((k) => on ? s.add(k) : s.delete(k)); if (on && keys.length) noteRead(); return putReading(d, track, { ...r, done: [...s] }); })}
+      {wdOn && <WeekdayCard pending={pendingHere} late={lateList} plan={rdata.weekday!} label={label} shortLabel={shortLabel} done={done} onChange={(wp) => setReadingState({ weekday: wp })}
+        onMark={(keys, on, day) => update((d) => { const r = getReading(d, track); const s = new Set(r.done); keys.forEach((k) => on ? s.add(k) : s.delete(k)); if (on && keys.length) noteRead(day); return putReading(d, track, { ...r, done: [...s] }); })}
         onRead={(k, d) => { setReadingDay(d); setReading(k); }} />}
 
       {!wdOn && plan === "custom" && (
@@ -221,6 +228,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
         {lateDays > 0 && (
           <p className="text-xs font-medium text-destructive" role="status">
             ⚠ {lateDays === 1 ? t("guestWs.lateDay", { defaultValue: "Leitura atrasada · 1 dia" }) : t("guestWs.lateDaysN", { defaultValue: "Leitura atrasada · {{n}} dias", n: lateDays })}
+            <span className="capitalize"> ({lateList.map((d) => dayNames[d]).join(", ")})</span>
           </p>
         )}
         <p className="text-[11px] text-muted-foreground">{track === "family" ? t("guestWs.trackFamily", { defaultValue: "Família" }) : t("guestWs.trackPersonal", { defaultValue: "Pessoal" })} · {t("guestWs.chaptersDone", { defaultValue: "{{n}} de {{total}} capítulos", n: wdp ? wdp.done : doneIn, total: (wdp ? wdp.total : total).toLocaleString(i18n.language) })}</p>
