@@ -114,7 +114,7 @@ function useEnsureVisitForSuper(congregationId: string | null, enabled: boolean)
   return ready;
 }
 
-function SuperCongregationSelector() {
+export function SuperCongregationSelector() {
   const { t } = useTranslation();
   const fnList = useServerFn(listMyCongregations);
   const [congs, setCongs] = useState<{ id: string; name: string }[]>([]);
@@ -364,7 +364,6 @@ function TabsGuarded({
 
       <SaveProgressBar />
 
-      {isSuper && <SuperCongregationSelector />}
       {isSuper && <SupervisorEditModeBar />}
 
       <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">

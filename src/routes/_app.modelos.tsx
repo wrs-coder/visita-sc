@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { listTemplates, upsertTemplate, replaceTemplateItems } from "@/lib/templates.functions";
 import { exportProgramTemplate, importProgramTemplate } from "@/lib/template-io.functions";
-import { TemplateHeaderRow, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
+import { TemplateHeaderRow, InfoDisclosure, TemplateFooterBar, EldersFillSection, countFilled } from "@/components/templates/TemplateChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -464,8 +464,6 @@ function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Paylo
         <SelectContent><SelectItem value="Manhã">{t("templates.program.study.morning")}</SelectItem><SelectItem value="Tarde">{t("templates.program.study.afternoon")}</SelectItem></SelectContent>
       </Select>
       <Input className="h-9" type="time" value={String(payload.meeting_time ?? "")} onChange={(e) => set("meeting_time", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder={t("templates.program.study.meetingPoint")} value={String(payload.meeting_point ?? "")} onChange={(e) => set("meeting_point", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder={t("templates.program.study.companion")} value={String(payload.acompanhante ?? "")} onChange={(e) => set("acompanhante", e.target.value)} />
       <Select value={String(payload.acompanhante_for ?? "")} onValueChange={(v) => set("acompanhante_for", v)}>
         <SelectTrigger className="h-9 col-span-2"><SelectValue placeholder={t("templates.program.study.companionFor")} /></SelectTrigger>
         <SelectContent>
@@ -477,7 +475,11 @@ function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Paylo
           <SelectItem value="esposa_sc_pastor">{t("templates.program.study.wifeScPastor")}</SelectItem>
         </SelectContent>
       </Select>
-      <Input className="h-9 col-span-2" placeholder={t("templates.program.study.contactPhone")} value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
+      <EldersFillSection className="col-span-2" filled={countFilled([String(payload.meeting_point ?? ""), String(payload.contact_phone ?? ""), String(payload.acompanhante ?? "")])} total={3}>
+        <Input className="h-9" placeholder={t("templates.program.study.meetingPoint")} value={String(payload.meeting_point ?? "")} onChange={(e) => set("meeting_point", e.target.value)} />
+        <Input className="h-9" placeholder={t("templates.program.study.contactPhone")} value={String(payload.contact_phone ?? "")} onChange={(e) => set("contact_phone", e.target.value)} />
+        <Input className="h-9" placeholder={t("templates.program.study.companion")} value={String(payload.acompanhante ?? "")} onChange={(e) => set("acompanhante", e.target.value)} />
+      </EldersFillSection>
     </div>
   );
   if (kind === "meal") return (
@@ -491,8 +493,10 @@ function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Paylo
         </SelectContent>
       </Select>
       <Input className="h-9" type="time" value={String(payload.meal_time ?? "")} onChange={(e) => set("meal_time", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder={t("templates.program.meal.host")} value={String(payload.host_name ?? "")} onChange={(e) => set("host_name", e.target.value)} />
-      <Input className="h-9 col-span-2" placeholder={t("templates.program.meal.location")} value={String(payload.location ?? "")} onChange={(e) => set("location", e.target.value)} />
+      <EldersFillSection className="col-span-2" filled={countFilled([String(payload.host_name ?? ""), String(payload.location ?? "")])} total={2}>
+        <Input className="h-9" placeholder={t("templates.program.meal.host")} value={String(payload.host_name ?? "")} onChange={(e) => set("host_name", e.target.value)} />
+        <Input className="h-9" placeholder={t("templates.program.meal.location")} value={String(payload.location ?? "")} onChange={(e) => set("location", e.target.value)} />
+      </EldersFillSection>
     </div>
   );
   return <TransportEditor payload={payload} onChange={onChange} />;
@@ -599,11 +603,11 @@ function TransportEditor({ payload, onChange }: { payload: Payload; onChange: (p
                   <Input className="h-9" type="time" value={String(ev.return_time ?? "")} onChange={(e) => updateEvent(idx, { return_time: e.target.value })} />
                 </div>
                 {showDriver && (
-                  <>
+                  <EldersFillSection className="col-span-2" filled={countFilled([String(ev.driver_name ?? ""), String(ev.contact_phone ?? ""), String(ev.notes ?? "")])} total={3}>
                     <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.driverName")} value={String(ev.driver_name ?? "")} onChange={(e) => updateEvent(idx, { driver_name: e.target.value })} />
                     <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.phone")} value={String(ev.contact_phone ?? "")} onChange={(e) => updateEvent(idx, { contact_phone: e.target.value })} />
                     <Input className="h-9 col-span-2" placeholder={t("templates.program.transport.notes")} value={String(ev.notes ?? "")} onChange={(e) => updateEvent(idx, { notes: e.target.value })} />
-                  </>
+                  </EldersFillSection>
                 )}
               </div>
             </div>

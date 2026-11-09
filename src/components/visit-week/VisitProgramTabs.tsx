@@ -4,6 +4,7 @@ import { BookOpen, Users, MapPin, UtensilsCrossed, Car } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { writePref } from "@/lib/template-day-pills";
+import { VisitProgramTopBar } from "./VisitProgramTopBar";
 
 export const VISIT_PROGRAM_TABS = [
   { to: "/programa-ancioes", key: "elders", label: "Anciãos", icon: BookOpen },
@@ -24,7 +25,8 @@ export function VisitProgramTabs() {
     if (VISIT_PROGRAM_PATHS.includes(pathname)) writePref(VISIT_PROGRAM_PREF, pathname);
   }, [pathname]);
   return (
-    <nav aria-label={t("visitProgram.title", { defaultValue: "Programa da visita" })} className="flex flex-wrap gap-1.5 mb-4">
+    <>
+    <nav aria-label={t("visitProgram.title", { defaultValue: "Programa da visita" })} className="flex flex-wrap gap-1.5 mb-2">
       {VISIT_PROGRAM_TABS.map(({ to, key, label, icon: Icon }) => {
         const active = pathname === to;
         return (
@@ -43,5 +45,7 @@ export function VisitProgramTabs() {
         );
       })}
     </nav>
+    <VisitProgramTopBar />
+    </>
   );
 }

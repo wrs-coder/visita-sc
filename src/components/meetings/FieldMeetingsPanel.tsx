@@ -21,6 +21,12 @@ import { useVisitTemplateExtras } from "@/hooks/use-visit-template-extras";
 import { TemplateExtraEditable } from "./TemplateExtraBlock";
 import { Textarea } from "@/components/ui/textarea";
 import { useMeetingsEditMode } from "./meetings-edit-mode";
+import { EldersFillSection, MissingBadge, countFilled } from "@/components/templates/TemplateChrome";
+import { appConfirm } from "@/components/ui/app-dialogs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Copy } from "lucide-react";
+import { fieldVisible, missingFieldCount, type FieldKey } from "@/lib/field-requested";
 
 type Modality = (typeof FIELD_MODALITIES)[number];
 
@@ -38,6 +44,7 @@ interface Row {
   closing_prayer: string | null;
   observations: string | null;
   is_active: boolean;
+  requested_fields?: string[] | null;
 }
 
 export function FieldMeetingsPanel() {
@@ -60,7 +67,7 @@ export function FieldMeetingsPanel() {
         table: "field_meetings",
         remote: () => supabase
           .from("field_meetings")
-          .select("id,visit_id,event_date,period,modality,meeting_time,meeting_location,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations,is_active")
+          .select("id,visit_id,event_date,period,modality,meeting_time,meeting_location,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations,is_active,requested_fields")
           .eq("visit_id", visit.id)
           .order("event_date")
           .order("period") as never,
@@ -112,6 +119,9 @@ export function FieldMeetingsPanel() {
     ...days.map((d) => `day:${format(d, "yyyy-MM-dd")}`),
     ...rows.map((r) => `ev:${r.id}`),
   ];
+  const missing = isSuper ? 0 : missingFieldCount(rows.filter((r) => r.is_active));
+  const copyTargets = (r: Row) => rows.filter((x) => x.id !== r.id && x.is_active);
+  const dayLabel = (r: Row) => `${format(parseISO(r.event_date), "EEE d", { locale: dateLocale })} · ${r.period}`;
   const rowSummary = (r: Row) =>
     [r.period, r.meeting_time?.slice(0, 5), r.meeting_location].filter(Boolean).join(" · ");
 
@@ -123,6 +133,7 @@ export function FieldMeetingsPanel() {
           ? t("meetingsTalks.field.subtitleSuper")
           : t("meetingsTalks.field.subtitleElder")}
       </p>
+      <MissingBadge count={missing} />
 
       <TemplateExtraEditable
         label={t("meetingsTalks.fromTemplate.fieldObservations")}
@@ -162,7 +173,7 @@ export function FieldMeetingsPanel() {
                 ) : (
                   dayRows.map((r) => (
                     <CollapseItem key={r.id} id={`ev:${r.id}`} summary={rowSummary(r)}>
-                      <RowCard row={r} isSuper={superEditing} saving={savingId === r.id} update={update} remove={remove} />
+                      <RowCard row={r} isSuper={superEditing} realSuper={isSuper} saving={savingId === r.id} update={update} remove={remove} targets={copyTargets(r)} dayLabel={dayLabel} />
                     </CollapseItem>
                   ))
                 )}
@@ -188,7 +199,7 @@ export function FieldMeetingsPanel() {
                 ) : (
                   dayRows.map((r) => (
                     <CollapseItem key={r.id} id={`ev:${r.id}`} summary={rowSummary(r)}>
-                      <RowCard row={r} isSuper={false} saving={false} update={update} remove={remove} />
+                      <RowCard row={r} isSuper={false} realSuper={isSuper} saving={false} update={update} remove={remove} targets={[]} dayLabel={dayLabel} />
                     </CollapseItem>
                   ))
                 )}
@@ -203,8 +214,9 @@ export function FieldMeetingsPanel() {
   );
 }
 
-function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSuper: boolean; saving: boolean; update: (id: string, p: Partial<Row>) => Promise<void>; remove: (id: string) => void }) {
+function RowCard({ row: r, isSuper, realSuper, saving, update, remove, targets, dayLabel, readOnly = false }: { row: Row; isSuper: boolean; realSuper: boolean; saving: boolean; update: (id: string, p: Partial<Row>) => Promise<void>; remove: (id: string) => void; targets: Row[]; dayLabel: (r: Row) => string; readOnly?: boolean }) {
   const { t } = useTranslation();
+  const show = (f: FieldKey) => fieldVisible(r, f, realSuper);
   const [meeting_time, setMeetingTime] = useState(r.meeting_time ?? "");
   const [meeting_location, setMeetingLocation] = useState(r.meeting_location ?? "");
   const [territory_number, setTerritoryNumber] = useState(r.territory_number ?? "");
@@ -230,7 +242,6 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
     closing_prayer !== (r.closing_prayer ?? "");
 
   const everSaved = !!(r.meeting_time || r.meeting_location || r.territory_number || r.territory_location || r.auxiliary_leaders || r.closing_prayer);
-  const showTerritory = r.modality === "casa_em_casa" || r.modality === "grupo_de_campo";
   const locationMissing = !meeting_location.trim();
 
   const handleSave = () => {
@@ -320,27 +331,49 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
               className={`h-9 mt-0.5 ${locationMissing ? "border-destructive focus-visible:ring-destructive" : ""}`}
             />
           </div>
-          {showTerritory && (
-            <>
+        </div>
+        {!readOnly && (
+          <div className="flex justify-end -mt-1">
+            <CopyToDays label={t("meetingsTalks.field.location")} value={meeting_location} field="meeting_location" targets={targets} dayLabel={dayLabel} update={update} />
+          </div>
+        )}
+        {(show("territory_number") || show("territory_location") || show("auxiliary_leaders") || show("closing_prayer")) && (
+          <EldersFillSection
+            defaultOpen={!realSuper}
+            filled={countFilled([show("territory_number") ? territory_number : null, show("territory_location") ? territory_location : null, show("auxiliary_leaders") ? auxiliary_leaders : null, show("closing_prayer") ? closing_prayer : null])}
+            total={(["territory_number", "territory_location", "auxiliary_leaders", "closing_prayer"] as FieldKey[]).filter(show).length}
+          >
+            {show("territory_number") && (
               <div>
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.territoryNumber")}</label>
-                <Input value={territory_number} onChange={(e) => setTerritoryNumber(e.target.value)} className="h-9 mt-0.5" />
+                <Input value={territory_number} readOnly={readOnly} onChange={(e) => setTerritoryNumber(e.target.value)} className="h-9 mt-0.5" />
               </div>
-              <div className="col-span-2">
+            )}
+            {show("territory_location") && (
+              <div>
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.territoryLocation")}</label>
-                <Input value={territory_location} onChange={(e) => setTerritoryLocation(e.target.value)} className="h-9 mt-0.5" />
+                <Input value={territory_location} readOnly={readOnly} onChange={(e) => setTerritoryLocation(e.target.value)} className="h-9 mt-0.5" />
               </div>
-              <div className="col-span-2">
+            )}
+            {show("auxiliary_leaders") && (
+              <div>
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.auxiliaryLeaders")}</label>
-                <Input value={auxiliary_leaders} onChange={(e) => setAuxiliaryLeaders(e.target.value)} className="h-9 mt-0.5" />
+                <Input value={auxiliary_leaders} readOnly={readOnly} onChange={(e) => setAuxiliaryLeaders(e.target.value)} className="h-9 mt-0.5" />
+                {!readOnly && (
+                  <div className="flex justify-end mt-1">
+                    <CopyToDays label={t("meetingsTalks.field.auxiliaryLeaders")} value={auxiliary_leaders} field="auxiliary_leaders" targets={targets} dayLabel={dayLabel} update={update} />
+                  </div>
+                )}
               </div>
-            </>
-          )}
-          <div className="col-span-2">
-            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.closingPrayer")}</label>
-            <Input value={closing_prayer} onChange={(e) => setClosingPrayer(e.target.value)} className="h-9 mt-0.5" />
-          </div>
-        </div>
+            )}
+            {show("closing_prayer") && (
+              <div>
+                <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.closingPrayer")}</label>
+                <Input value={closing_prayer} readOnly={readOnly} onChange={(e) => setClosingPrayer(e.target.value)} className="h-9 mt-0.5" />
+              </div>
+            )}
+          </EldersFillSection>
+        )}
         <div className="flex justify-end pt-1">
           <Button size="sm" disabled={!dirty || saving} onClick={handleSave}>
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
@@ -349,5 +382,55 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/** "Copiar para…": copia o valor para os dias/turnos marcados. */
+function CopyToDays({ label, value, field, targets, dayLabel, update }: {
+  label: string; value: string; field: "meeting_location" | "auxiliary_leaders"; targets: Row[];
+  dayLabel: (r: Row) => string; update: (id: string, p: Partial<Row>) => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [sel, setSel] = useState<string[]>([]);
+  if (!targets.length) return null;
+  const run = async () => {
+    const chosen = targets.filter((r) => sel.includes(r.id));
+    const overwrite = chosen.filter((r) => (r[field] ?? "").trim() && (r[field] ?? "") !== value);
+    if (overwrite.length) {
+      const ok = await appConfirm(t("meetingsTalks.field.copyOverwrite", { count: overwrite.length, defaultValue: `${overwrite.length} dia(s) já têm algo escrito. Substituir?` }));
+      if (!ok) return;
+    }
+    for (const r of chosen) await update(r.id, { [field]: value || null } as Partial<Row>);
+    setOpen(false);
+    setSel([]);
+    toast.success(t("meetingsTalks.field.copied", { count: chosen.length, defaultValue: `Copiado para ${chosen.length} dia(s)` }));
+  };
+  return (
+    <>
+      <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground" disabled={!value.trim()} onClick={() => setOpen(true)}>
+        <Copy className="h-3.5 w-3.5 mr-1" />{t("meetingsTalks.field.copyTo", { defaultValue: "Copiar para…" })}
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base">{label}: “{value}”</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[50vh] overflow-y-auto divide-y rounded-xl border">
+            {targets.map((r) => (
+              <label key={r.id} className="flex items-center gap-3 px-3 py-2.5 text-sm">
+                <Checkbox checked={sel.includes(r.id)} onCheckedChange={(v) => setSel((s) => v ? [...s, r.id] : s.filter((x) => x !== r.id))} />
+                <span className="flex-1 capitalize">{dayLabel(r)}</span>
+                {(r[field] ?? "").trim() && <span className="max-w-[40%] truncate text-xs text-muted-foreground">{r[field]}</span>}
+              </label>
+            ))}
+          </div>
+          <DialogFooter className="flex-row gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setOpen(false)}>{t("common.cancel", { defaultValue: "Cancelar" })}</Button>
+            <Button className="flex-1" disabled={!sel.length} onClick={() => void run()}>{t("meetingsTalks.field.copy", { defaultValue: "Copiar" })}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

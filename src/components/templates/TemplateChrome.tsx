@@ -122,8 +122,45 @@ export function TemplatePicker({ items, activeId, onPick, placeholder }: {
 }
 
 /** Linha recolhível estilo iOS/One UI; conteúdo fica oculto, nunca desmontado. */
-export function InfoDisclosure({ label, filled, children, className }: { label: string; filled?: boolean; children: ReactNode; className?: string }) {
-  const [open, setOpen] = useState(false);
+/** Bloco recolhível "A ser preenchido pelos Anciãos" (só visual; não muda permissões). */
+export function EldersFillSection({ filled, total, children, className, defaultOpen = false }: { filled: number; total: number; children: ReactNode; className?: string; defaultOpen?: boolean }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className={cn("rounded-xl border border-dashed bg-muted/30", className)}>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
+        className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-muted-foreground">
+        <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-90")} />
+        <span className="min-w-0 flex-1 truncate">{t("templates.chrome.eldersFill", { defaultValue: "A ser preenchido pelos Anciãos" })}</span>
+        {total > 0 && (
+          <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] tabular-nums", filled >= total ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground")}>
+            {filled}/{total}
+          </span>
+        )}
+      </button>
+      <div className={cn("px-3 pb-3 space-y-2", !open && "hidden")}>{children}</div>
+    </div>
+  );
+}
+
+/** Selo discreto "Faltam N campos" (some quando está tudo preenchido). */
+export function MissingBadge({ count, className }: { count: number; className?: string }) {
+  const { t } = useTranslation();
+  if (count <= 0) return null;
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive", className)}>
+      {t("templates.chrome.missing", { count, defaultValue: count === 1 ? "Falta 1 campo" : `Faltam ${count} campos` })}
+    </span>
+  );
+}
+
+/** Conta quantos valores estão preenchidos. */
+export function countFilled(values: Array<string | null | undefined>): number {
+  return values.filter((v) => !!(v && String(v).trim())).length;
+}
+
+export function InfoDisclosure({ label, filled, children, className, defaultOpen = false }: { label: string; filled?: boolean; children: ReactNode; className?: string; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className={cn("rounded-xl border bg-muted/20", className)}>
       <button

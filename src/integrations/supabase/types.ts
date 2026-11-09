@@ -1024,6 +1024,7 @@ export type Database = {
           modality: Database["public"]["Enums"]["field_modality"]
           observations: string | null
           period: string
+          requested_fields: string[]
           sort_order: number
           template_id: string
           territory_location: string | null
@@ -1041,6 +1042,7 @@ export type Database = {
           modality?: Database["public"]["Enums"]["field_modality"]
           observations?: string | null
           period?: string
+          requested_fields?: string[]
           sort_order?: number
           template_id: string
           territory_location?: string | null
@@ -1058,6 +1060,7 @@ export type Database = {
           modality?: Database["public"]["Enums"]["field_modality"]
           observations?: string | null
           period?: string
+          requested_fields?: string[]
           sort_order?: number
           template_id?: string
           territory_location?: string | null
@@ -1120,6 +1123,7 @@ export type Database = {
           modality: Database["public"]["Enums"]["field_modality"]
           observations: string | null
           period: string
+          requested_fields: string[] | null
           territory_location: string | null
           territory_number: string | null
           updated_at: string
@@ -1137,6 +1141,7 @@ export type Database = {
           modality?: Database["public"]["Enums"]["field_modality"]
           observations?: string | null
           period: string
+          requested_fields?: string[] | null
           territory_location?: string | null
           territory_number?: string | null
           updated_at?: string
@@ -1154,6 +1159,7 @@ export type Database = {
           modality?: Database["public"]["Enums"]["field_modality"]
           observations?: string | null
           period?: string
+          requested_fields?: string[] | null
           territory_location?: string | null
           territory_number?: string | null
           updated_at?: string
