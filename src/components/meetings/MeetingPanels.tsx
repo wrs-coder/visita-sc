@@ -10,6 +10,7 @@ import { useSingleRow } from "./SingleRowPanel";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Undo2 } from "lucide-react";
@@ -84,6 +85,42 @@ function FieldText({
   );
 }
 
+/**
+ * Tema de discurso/reunião em cartão azul (mesmo formato dos cânticos).
+ * Sempre mostra o texto completo, com quebra de linha. Só o superintendente
+ * (com Modo edição) digita; para os demais é apenas leitura.
+ */
+function ThemeCard({
+  label, value, editable, pending = false, onSave,
+}: {
+  label: string;
+  value: string | null;
+  editable: boolean;
+  pending?: boolean;
+  onSave: (v: string | null) => void | Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [local, setLocal] = useState(value ?? "");
+  useEffect(() => { setLocal(value ?? ""); }, [value]);
+  if (!editable) return <TemplateExtraBlock label={label} value={value} variant="blue" />;
+  return (
+    <div className="rounded-md border px-3 py-2 text-blue-600 dark:text-blue-400 border-blue-500/30 bg-blue-500/5 min-w-0">
+      <div className="text-[11px] uppercase tracking-wide font-medium opacity-80">{label}</div>
+      <Textarea
+        rows={1}
+        value={local}
+        onChange={(e) => setLocal(e.target.value)}
+        onBlur={() => { if (local !== (value ?? "")) onSave(local.trim() === "" ? null : local); }}
+        className={cn(
+          "mt-1 min-h-9 py-1.5 resize-none bg-background/60 text-sm break-words [field-sizing:content] [overflow-wrap:anywhere]",
+          pending && "border-timer-warn ring-1 ring-timer-warn/40",
+        )}
+        title={pending ? t("meetingsTalks.draft.fieldPending", { defaultValue: "Alteração ainda não salva" }) : undefined}
+      />
+    </div>
+  );
+}
+
 /* ============ MEIO DE SEMANA ============ */
 interface MidweekRow { id: string; visit_id: string; meeting_at: string | null; service_talk_theme: string | null; chairman: string | null; closing_prayer: string | null }
 
@@ -130,17 +167,20 @@ export function MidweekPanel() {
             <Label>{t("meetingsTalks.midweek.closingPrayer")}</Label>
             <FieldText invalid={!row.closing_prayer} pending={pending.has("closing_prayer")} value={row.closing_prayer} onSave={(v) => save({ closing_prayer: v })} placeholder={t("meetingsTalks.midweek.closingPrayerPlaceholder")} />
           </div>
-          <div>
-            <Label>{t("meetingsTalks.midweek.serviceTalk")}</Label>
-            <FieldText pending={pending.has("service_talk_theme")} value={row.service_talk_theme} onSave={(v) => save({ service_talk_theme: v })} readOnly={!isSuper} />
-          </div>
+          <ThemeCard
+            label={t("meetingsTalks.midweek.serviceTalk")}
+            value={row.service_talk_theme}
+            editable={isSuper}
+            pending={pending.has("service_talk_theme")}
+            onSave={(v) => save({ service_talk_theme: v })}
+          />
         </fieldset>
       ) : (
         <div className="grid gap-3">
           <ReadOnlyValue label={`${t("meetingsTalks.midweek.meetingDay")} / ${t("meetingsTalks.midweek.meetingTime")}`} value={formatDayTime(t, row.meeting_at)} />
           <ReadOnlyValue label={t("meetingsTalks.midweek.chairman")} value={row.chairman} />
           <ReadOnlyValue label={t("meetingsTalks.midweek.closingPrayer")} value={row.closing_prayer} />
-          <ReadOnlyValue label={t("meetingsTalks.midweek.serviceTalk")} value={row.service_talk_theme} />
+          <ThemeCard label={t("meetingsTalks.midweek.serviceTalk")} value={row.service_talk_theme} editable={false} onSave={() => {}} />
         </div>
       )}
       <TemplateExtraEditable
@@ -423,10 +463,11 @@ export function WeekendPanel() {
           <fieldset className="grid gap-3 border-0 p-0 m-0 min-w-0">
 
             <div className="min-w-0">
-              <Label>{t("meetingsTalks.weekend.publicTalk")}</Label>
-              <FieldText
-                value={row.public_talk_theme ?? ""}
-                readOnly={!isSuper}
+              <ThemeCard
+                label={t("meetingsTalks.weekend.publicTalk")}
+                value={row.public_talk_theme}
+                editable={isSuper}
+                pending={pending.has("public_talk_theme")}
                 onSave={(v) => save({ public_talk_theme: v || null })}
               />
               {!isSuper && (
@@ -456,7 +497,7 @@ export function WeekendPanel() {
           </fieldset>
         ) : (
           <div className="grid gap-3">
-            <ReadOnlyValue label={t("meetingsTalks.weekend.publicTalk")} value={row.public_talk_theme} />
+            <ThemeCard label={t("meetingsTalks.weekend.publicTalk")} value={row.public_talk_theme} editable={false} onSave={() => {}} />
             <ReadOnlyValue label={t("meetingsTalks.weekend.finalTalk")} value={row.talk_theme_title} />
           </div>
         )}
@@ -525,10 +566,13 @@ export function PioneerPanel() {
       />
       {showInputs ? (
         <fieldset className="grid gap-3 border-0 p-0 m-0">
-          <div>
-            <Label>{t("meetingsTalks.pioneer.theme")}</Label>
-            <FieldText pending={pending.has("theme")} value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
-          </div>
+          <ThemeCard
+            label={t("meetingsTalks.pioneer.theme")}
+            value={row.theme}
+            editable={isSuper}
+            pending={pending.has("theme")}
+            onSave={(v) => save({ theme: v })}
+          />
       <EldersSubtitle filled={countFilled([row.opening_prayer, row.closing_prayer, row.location])} total={3} />
           <div>
             <Label>{t("meetingsTalks.pioneer.openingPrayer")}</Label>
@@ -545,7 +589,7 @@ export function PioneerPanel() {
         </fieldset>
       ) : (
         <div className="grid gap-3">
-          <ReadOnlyValue label={t("meetingsTalks.pioneer.theme")} value={row.theme} />
+          <ThemeCard label={t("meetingsTalks.pioneer.theme")} value={row.theme} editable={false} onSave={() => {}} />
       <EldersSubtitle filled={countFilled([row.opening_prayer, row.closing_prayer, row.location])} total={3} />
           <ReadOnlyValue label={t("meetingsTalks.pioneer.openingPrayer")} value={row.opening_prayer} />
           <ReadOnlyValue label={t("meetingsTalks.pioneer.closingPrayer")} value={row.closing_prayer} />
@@ -607,10 +651,13 @@ export function EldersServantsPanel() {
       />
       {showInputs ? (
         <fieldset className="grid gap-3 border-0 p-0 m-0">
-          <div>
-            <Label>{t("meetingsTalks.elders.theme")}</Label>
-            <FieldText pending={pending.has("theme")} value={row.theme} onSave={(v) => save({ theme: v })} readOnly={!isSuper} />
-          </div>
+          <ThemeCard
+            label={t("meetingsTalks.elders.theme")}
+            value={row.theme}
+            editable={isSuper}
+            pending={pending.has("theme")}
+            onSave={(v) => save({ theme: v })}
+          />
       <EldersSubtitle filled={countFilled([row.opening_prayer, row.closing_prayer, row.location])} total={3} />
           <div>
             <Label>{t("meetingsTalks.elders.openingPrayer")}</Label>
@@ -627,7 +674,7 @@ export function EldersServantsPanel() {
         </fieldset>
       ) : (
         <div className="grid gap-3">
-          <ReadOnlyValue label={t("meetingsTalks.elders.theme")} value={row.theme} />
+          <ThemeCard label={t("meetingsTalks.elders.theme")} value={row.theme} editable={false} onSave={() => {}} />
       <EldersSubtitle filled={countFilled([row.opening_prayer, row.closing_prayer, row.location])} total={3} />
           <ReadOnlyValue label={t("meetingsTalks.elders.openingPrayer")} value={row.opening_prayer} />
           <ReadOnlyValue label={t("meetingsTalks.elders.closingPrayer")} value={row.closing_prayer} />

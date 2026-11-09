@@ -28,7 +28,7 @@ export function TemplateExtraBlock({
   return (
     <div className={`rounded-md border px-3 py-2 ${tone}`}>
       <div className="text-[11px] uppercase tracking-wide font-medium opacity-80">{label}</div>
-      <div className="text-sm whitespace-pre-wrap mt-0.5">{value}</div>
+      <div className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] mt-0.5">{value}</div>
     </div>
   );
 }
