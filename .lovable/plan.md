@@ -85,20 +85,23 @@ Novo: duas escolhas, guardadas só no celular:
 - **Leitura da Bíblia**: ex. Português do Brasil.
 - Se nada for escolhido, as duas usam a Bíblia em uso de hoje (nada muda para quem não mexer).
 
-Onde escolher (sem ir ao Perfil):
+Onde escolher: **só no Meu perfil**, uma única vez. A leitura e o balão bíblico não ganham nenhum botão novo.
 
 ```text
-Leitura da Bíblia            Perfil › Bíblia
-┌──────────────────────┐     ┌──────────────────────────┐
-│ ‹  Jer. 51:1-64  [PT-BR▾]│  │ Bíblias importadas        │
-│ ▓▓▓▓▓▓▓░ 50/52        │     │ ● TNM Português Brasil   │
-│                       │     │ ○ TNM Português Portugal │
-│ 1 Assim diz Jeová...  │     │──────────────────────────│
-└──────────────────────┘     │ Usar em:                 │
- toque no selo → lista       │ Esboços      [Portugal ▾]│
- das Bíblias importadas      │ Leitura      [Brasil   ▾]│
-                             └──────────────────────────┘
-Balão bíblico › ⋯ › "Bíblia: Portugal ▸"
+Meu perfil › Bíblia
+┌──────────────────────────┐
+│ Bíblias importadas        │
+│ ● TNM Português Brasil   │
+│ ○ TNM Português Portugal │
+│──────────────────────────│
+│ Usar em cada aba         │
+│ Esboços e anotações      │
+│              [Portugal ▾]│
+│ Leitura da Bíblia        │
+│              [Brasil   ▾]│
+│ (opção "Igual à Bíblia   │
+│  em uso" desfaz a escolha)│
+└──────────────────────────┘
 ```
 
 Destaques, pontos altos e anotações não mudam: continuam ligados ao livro/capítulo/versículo, valendo nas duas versões.
