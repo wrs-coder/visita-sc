@@ -19,7 +19,7 @@ import { CollapsibleSection } from "./CollapsibleSection";
 import { TrackPills, WeekdayCard, MeetingWeekCard, CommentCard, CommentMode, newWeekday, useDayNames } from "./BibleTrackExtras";
 import { commentList, filterByTrack, meetingWeekKeys, weekdayAdvance, weekdayNextUnread, weekdayProgress, type Track } from "@/lib/bible-tracks";
 import type { WsReading } from "@/lib/guest-workspace-store";
-import { creditDayFor, creditWeekday, lastReadDay, lateWeekdays, markReadToday, weekdayLog, weekdayPending } from "@/lib/reading-day-log";
+import { creditDayFor, creditPlan, lateWeekdays, markReadToday, planEdited, seedPlan, weekdayLog, weekdayPending } from "@/lib/reading-day-log";
 import { abbreviateBookAlways } from "@/lib/book-abbrev";
 import { useChapterSpan } from "./use-chapter-span";
 
@@ -74,20 +74,33 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   const name = (b: string) => getLocalizedBookName(b, i18n.language) ?? b;
   const label = (k: string) => { const [b, c] = k.split(":"); return `${name(b)} ${c}`; };
 
-  const [logTick, setLogTick] = useState(0);
-  // Grava a leitura no dia da semana certo (atraso é contado por dia da semana).
-  const noteRead = (day: number | null) => {
-    if (track === "meeting") return;
-    if (day !== null) creditWeekday(track, day); else markReadToday(track);
-    setLogTick((n) => n + 1);
+  // Grava a leitura no dia da semana certo, dentro do próprio plano (vai no backup).
+  const credit = (r: WsReading, day: number | null): WsReading => {
+    if (track === "meeting") return r;
+    markReadToday(track);
+    return day !== null && r.weekday?.enabled ? { ...r, weekday: creditPlan(r.weekday, day, new Date()) } : r;
   };
-  const pendingTracks = useMemo(() => {
-    void logTick;
-    return (["personal", "family"] as const).filter((tr) => { const r = getReading(data, tr); return weekdayPending(r.weekday, new Set(r.done), lastReadDay(tr), new Date(), weekdayLog(tr)); });
-  }, [data, logTick]);
+  // Plano antigo/backup de versão anterior: começa a contagem hoje, sem atraso de surpresa.
+  const wdPersonal = data.reading.weekday;
+  const wdFamily = data.readings?.family?.weekday;
+  useEffect(() => {
+    const need = (w?: typeof wdPersonal) => !!w?.enabled && !w.since;
+    if (!need(wdPersonal) && !need(wdFamily)) return;
+    const now = new Date();
+    update((d) => (["personal", "family"] as const).reduce((acc, tr) => {
+      const r = getReading(acc, tr);
+      return r.weekday && need(r.weekday) ? putReading(acc, tr, { ...r, weekday: seedPlan(r.weekday, weekdayLog(tr), now) }) : acc;
+    }, d));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wdPersonal, wdFamily]);
+  const pendingTracks = useMemo(
+    () => (["personal", "family"] as const).filter((tr) => { const r = getReading(data, tr); return weekdayPending(r.weekday, new Set(r.done), new Date()); }),
+    [data]);
   const pendingHere = track !== "meeting" && (pendingTracks as Track[]).includes(track);
   // Dias da semana com leitura atrasada (meta "Dias"), cada dia no seu ciclo de 7 dias.
-  const lateList = useMemo(() => { void logTick; return track === "meeting" ? [] : lateWeekdays(rdata.weekday, lastReadDay(track), new Date(), done, weekdayLog(track)); }, [rdata.weekday, track, logTick, done]);
+  const lateList = useMemo(() => (track === "meeting" ? [] : lateWeekdays(rdata.weekday, new Date(), done)), [rdata.weekday, track, done]);
+  // Edição do plano: as datas de controle vêm sempre do plano salvo.
+  const editWeekday = (wp: NonNullable<WsReading["weekday"]>) => update((d) => { const r = getReading(d, track); return putReading(d, track, { ...r, weekday: planEdited(r.weekday, wp, new Date()) }); });
   const lateDays = lateList.length;
   const dayNames = useDayNames();
   // "Continuar · Gên 17:1-27": livro abreviado + primeiro ao último versículo.
@@ -100,8 +113,9 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
     const r = getReading(d, track);
     const s = new Set(r.done);
     const on = force ?? !s.has(k);
-    if (on) { s.add(k); noteRead(readingDay ?? creditDayFor(r.weekday, k, new Date(), lateList)); } else s.delete(k);
-    return putReading(d, track, { ...r, done: [...s] });
+    if (on) s.add(k); else s.delete(k);
+    const base = { ...r, done: [...s] };
+    return putReading(d, track, on ? credit(base, readingDay ?? creditDayFor(r.weekday, k, new Date(), lateList)) : base);
   });
   const setPlan = (p: ReadingPlan) => {
     setReadingState((p === "year" || p === "custom") && plan !== p
@@ -135,7 +149,8 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
             toggle(reading, true);
             if (readingDay !== null && rdata.weekday) {
               const wp = weekdayAdvance(rdata.weekday, readingDay, reading);
-              setReadingState({ weekday: wp });
+              const rd = readingDay, rk = reading;
+              update((d) => { const r = getReading(d, track); return r.weekday ? putReading(d, track, { ...r, weekday: weekdayAdvance(r.weekday, rd, rk) }) : d; });
               setReading(weekdayNextUnread(wp, readingDay, new Set([...done, reading]))); return;
             }
             if (track === "meeting" && meetingKeys.includes(reading)) { const n = meetingKeys.find((k) => k !== reading && !done.has(k)); setReading(n ?? null); return; }
@@ -177,13 +192,13 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
           const on = id === "weekday" ? wdOn : !wdOn && plan === id;
           return (
           <button key={id} type="button" role="radio" aria-checked={on}
-            onClick={() => { if (id === "weekday") setReadingState({ weekday: { ...(rdata.weekday ?? newWeekday()), enabled: true } }); else { if (wdOn) setReadingState({ weekday: { ...rdata.weekday!, enabled: false } }); setPlan(id); } }}
+            onClick={() => { if (id === "weekday") editWeekday({ ...(rdata.weekday ?? newWeekday()), enabled: true }); else { if (wdOn) setReadingState({ weekday: { ...rdata.weekday!, enabled: false } }); setPlan(id); } }}
             className={cn("min-h-9 rounded-lg px-1 text-xs font-medium", span, on ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent/60")}>{l}</button>
           );
         })}
       </div>
-      {wdOn && <WeekdayCard pending={pendingHere} late={lateList} plan={rdata.weekday!} label={label} shortLabel={shortLabel} done={done} onChange={(wp) => setReadingState({ weekday: wp })}
-        onMark={(keys, on, day) => update((d) => { const r = getReading(d, track); const s = new Set(r.done); keys.forEach((k) => on ? s.add(k) : s.delete(k)); if (on && keys.length) noteRead(day); return putReading(d, track, { ...r, done: [...s] }); })}
+      {wdOn && <WeekdayCard pending={pendingHere} late={lateList} plan={rdata.weekday!} label={label} shortLabel={shortLabel} done={done} onChange={editWeekday}
+        onMark={(keys, on, day) => update((d) => { const r = getReading(d, track); const s = new Set(r.done); keys.forEach((k) => on ? s.add(k) : s.delete(k)); const base = { ...r, done: [...s] }; return putReading(d, track, on && keys.length ? credit(base, day) : base); })}
         onRead={(k, d) => { setReadingDay(d); setReading(k); }} />}
 
       {!wdOn && plan === "custom" && (

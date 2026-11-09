@@ -1,4 +1,4 @@
 - After a write, cached reads of that table and read server functions are only marked stale (response-cache.ts), never deleted, so offline reads never lose data.
 - Field items requested from elders: requested_fields (copied on apply); NULL on a visit row = legacy visibility, so old visits keep fields.
 - Per-tab Bible (outlines/reading) is device-local via getActiveLibrary(scope), falling back to the global active Bible, so unset users see no change.
-- Reading lateness is tracked per weekday in device localStorage (reading-day-log.ts, bible.readDay.<track>.byWeekday), falling back to the old single last-read date, so old devices keep working with no data change.
+- Reading lateness is tracked per weekday inside the WeekdayPlan (lastRead[7] + since floor, reading-day-log.ts), never from a shared last-read date, so it travels in backups and one day's reading never clears another day; plans without since are seeded to today so restores never raise surprise alerts.

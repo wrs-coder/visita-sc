@@ -6,7 +6,13 @@ export type Track = "personal" | "family" | "meeting";
 export const TRACKS: Track[] = ["personal", "family", "meeting"];
 
 /** Dias 0=domingo..6=sábado: livros de cada dia e onde parou. */
-export interface WeekdayPlan { enabled: boolean; days: string[][]; pos: (string | null)[] }
+export interface WeekdayPlan {
+  enabled: boolean; days: string[][]; pos: (string | null)[];
+  /** 0=dom..6=sáb: data (AAAA-MM-DD) da ocorrência de cada dia já lida. Vai no backup. */
+  lastRead?: (string | null)[];
+  /** Dia em que a contagem de atraso começou (piso para dias sem data). */
+  since?: string;
+}
 /** Semana da reunião: ponto de partida e ritmo; avança sozinha toda segunda. */
 export interface MeetingWeek { anchorMonday: string; startKey: string; perWeek: number }
 
@@ -83,7 +89,11 @@ export function sanitizeWeekday(raw: unknown): WeekdayPlan | undefined {
     const p = Array.isArray(o.pos) ? o.pos[i] : null;
     return typeof p === "string" && isValidChapterKey(p) ? p : null;
   });
-  return { enabled: o.enabled === true, days, pos };
+  const isIso = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d\d-\d\d$/.test(v);
+  const out: WeekdayPlan = { enabled: o.enabled === true, days, pos };
+  if (Array.isArray(o.lastRead)) out.lastRead = Array.from({ length: 7 }, (_, i) => (isIso((o.lastRead as unknown[])[i]) ? (o.lastRead as string[])[i] : null));
+  if (isIso(o.since)) out.since = o.since;
+  return out;
 }
 
 export function sanitizeMeetingWeek(raw: unknown): MeetingWeek | undefined {
