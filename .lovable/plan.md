@@ -67,7 +67,26 @@ No código, nada esconde essa barra no celular. O site e o celular usam a mesma 
 Então a diferença vem de uma destas causas:
 - No celular você entrou com outra conta ou com o código de ancião.
 - O celular está com uma versão do app anterior à 5.4.0.
-Para confirmar, me mande um print da tela do celular, incluindo o topo.
+Você observou certo: essa barra pertence só à aba "Reuniões".
+- **Reuniões** guarda as mudanças num rascunho. Por isso precisa de "Salvar dados" e "Descartar".
+- **Programação, Refeições, Transporte, Escala e Anciãos** salvam sozinhas cada campo assim que você sai dele. Por isso essas abas não têm botão.
+
+## Ajuste para deixar uniforme (incluído)
+O topo fica igual em todas as abas do Programa da visita:
+```text
+┌─────────────────────────────┐
+│ Programa da visita          │
+│ (Prog)(Refeiç)(Reuniões)... │
+│ Congregação: [ TEST     ▾ ] │ ← só superintendente, todas as abas
+│ ✓ Salvo automaticamente     │ ← abas que salvam sozinhas
+│   ou                        │
+│ ● 2 alterações [Descartar]  │ ← só Reuniões (rascunho)
+│               [Salvar]      │
+└─────────────────────────────┘
+```
+- "Congregação selecionada" sai de dentro de Reuniões e vai para o topo comum, como uma linha compacta.
+- Nas outras abas, o mesmo espaço mostra "✓ Salvo automaticamente", ou "Salvando…" enquanto grava.
+- O jeito de salvar de cada aba não muda. Assim nenhum risco é criado para o uso sem internet nem para os rascunhos.
 
 ## Detalhes técnicos
 - Alteração no banco autorizada: uma coluna nova e opcional `requested_fields text[]` em `field_meeting_template_items` e `field_meetings`. Os registros que já existem são preenchidos com os 4 itens, na mesma alteração. Nos novos, o valor começa vazio, ou seja, nada pedido. Ao aplicar o modelo na visita, essa informação é copiada junto. Não muda nenhuma regra de acesso.
