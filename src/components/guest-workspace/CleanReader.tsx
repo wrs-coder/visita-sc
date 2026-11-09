@@ -24,7 +24,8 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
   initialVerse?: number | null;
   /** Capítulos lidos do livro aberto (barra fina no topo). */
   bookProgress?: { done: number; total: number };
-  chapterKey: string; done: boolean; percent: number; fontClass: string;
+  /** Progresso geral da Bíblia; omitido na leitura da Reunião (semanal). */
+  chapterKey: string; done: boolean; percent?: number; fontClass: string;
   onBack: () => void; onDone: () => void; onHighlight: (ref: string) => void; onImport: () => void;
   onNote: (ref: string, text: string) => void;
 }) {
@@ -184,7 +185,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
           <Button variant="ghost" size="icon" onClick={onBack} className="h-10 w-10 shrink-0 rounded-full text-muted-foreground" aria-label={t("guestWs.back", { defaultValue: "Voltar" })}><ArrowLeft className="h-5 w-5" /></Button>
           <div className="min-w-0 flex-1 leading-tight">
             <p className="flex min-w-0 text-sm font-semibold" title={`${title}${span}`}><span className="truncate">{shortBook}</span><span className="shrink-0">{span}</span></p>
-            <p className="text-[11px] text-muted-foreground">{percent}%</p>
+            {percent !== undefined && <p className="text-[11px] text-muted-foreground">{percent}%</p>}
           </div>
           <Button variant="outline" size="sm" className="h-9 shrink-0 gap-1 rounded-full px-2.5 text-xs" onClick={() => onHighlight(`${title}:`)}><PenLine className="h-3.5 w-3.5" />{t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}</Button>
           <Button variant="ghost" size="sm" className="h-9 shrink-0 gap-0.5 rounded-full px-2" onClick={() => setSheet(true)} aria-label={t("guestWs.readerOptions", { defaultValue: "Opções de leitura" })}><Type className="h-4 w-4" /><Volume2 className="h-4 w-4 max-[359px]:hidden" /></Button>

@@ -119,7 +119,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
     const fontClass = { sm: "text-sm", md: "text-base", lg: "text-lg" }[data.settings.fontSize];
     return (
       <>
-        <CleanReader chapterKey={reading} done={done.has(reading)} percent={percent} fontClass={fontClass}
+        <CleanReader chapterKey={reading} done={done.has(reading)} percent={track === "meeting" ? undefined : percent} fontClass={fontClass}
           bookProgress={track === "meeting" ? { done: Number(reading.split(":")[1]) || 0, total: chaptersOf(reading.split(":")[0]) } : (() => { const b = reading.split(":")[0]; const n = chaptersOf(b); let c = 0; for (let i = 1; i <= n; i++) if (done.has(`${b}:${i}`)) c++; return { done: c, total: n }; })()}
           key={reading} initialVerse={jumpVerse}
           onBack={() => { setReading(null); setReadingDay(null); setJumpVerse(null); }}
