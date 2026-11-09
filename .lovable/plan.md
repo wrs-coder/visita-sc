@@ -49,6 +49,33 @@ Primeiro passo: conferir a visita real onde você testou (quantos dias de campo 
 - Deixar o botão mais visível (texto azul, estilo iOS).
 - Se a causa for outra, explico antes de mudar.
 
+### Copiar para o dia e turno certos
+A cópia já é feita **por saída de campo**, não pelo dia inteiro: cada turno (manhã/tarde) é uma linha separada. Assim seu exemplo funciona: copiar "Casa do Júlio" da Qua manhã e marcar só Qui tarde.
+
+A lista de escolha fica mais clara: agrupada por dia, mostrando turno, horário, modalidade e o que já está escrito:
+
+```text
+┌──────────────────────────────┐
+│ Local: "Casa do Júlio"       │
+│ Copiar para:                 │
+│ QUA 11                       │
+│  ☐ Tarde · 15:00 · Casas     │
+│      atual: Casa do Ramon    │
+│ QUI 12                       │
+│  ☐ Manhã · 09:00 · Casas     │
+│      atual: Casa do Ramon    │
+│  ☑ Tarde · 15:00 · Carrinho  │
+│      atual: (vazio)          │
+│ SEX 13                       │
+│  ☐ Manhã · 09:00 · Casas     │
+│ [Só os vazios]               │
+│ [Cancelar]        [Copiar]   │
+└──────────────────────────────┘
+```
+- Nada vem marcado: você escolhe cada turno.
+- Atalho "Só os vazios" marca apenas turnos ainda sem nada escrito.
+- Se algum marcado já tiver outro valor, o app pergunta antes de substituir.
+
 ## 03 — Bíblia diferente para cada aba
 
 Hoje existe uma única "Bíblia em uso", escolhida no Perfil, valendo para tudo.
