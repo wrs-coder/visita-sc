@@ -1,3 +1,5 @@
+import { MissingBadge } from "@/components/templates/TemplateChrome";
+import { appConfirm } from "@/components/ui/app-dialogs";
 import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { ChecklistPanel } from "@/components/visit-week/ChecklistPanel";
 import { slotDay, slotDays } from "@/lib/slot-day";
@@ -14,6 +16,7 @@ import {
   listElderProgramForVisit,
   updateElderProgramEvent,
   createElderRecommendation,
+  createElderLocalMatter,
   deleteElderProgramEvent,
   type ElderVisitEventDTO,
 } from "@/lib/elder-program.functions";
@@ -92,6 +95,7 @@ function Page() {
   const fnLoad = useServerFn(listElderProgramForVisit);
   const fnUpdate = useServerFn(updateElderProgramEvent);
   const fnCreateRec = useServerFn(createElderRecommendation);
+  const fnCreateLocal = useServerFn(createElderLocalMatter);
   const fnDelete = useServerFn(deleteElderProgramEvent);
   const navigate = useNavigate();
 
@@ -270,8 +274,14 @@ function Page() {
     setRecommendations([...recommendations, r.row]);
   };
 
+  const addLocalMatter = async () => {
+    const r = await fnCreateLocal({ data: { visitId: visit.id } });
+    if (!r.ok || !r.row) { toast.error(r.error ?? "Erro"); return; }
+    setListFor("local", [...listFor("local"), r.row]);
+  };
+
   const deleteEvent = async (ev: ElderVisitEventDTO) => {
-    if (!confirm("Excluir este card?")) return;
+    if (!await appConfirm("Excluir este card?")) return;
     const r = await fnDelete({ data: { id: ev.id, visitId: visit.id, section: ev.section } });
     if (!r.ok) { toast.error(r.error); return; }
     setListFor(ev.section, listFor(ev.section).filter((x) => x.id !== ev.id));
@@ -319,7 +329,7 @@ function Page() {
             const events = section === "pastoral" && pDay !== "__all__"
               ? listFor(section).filter((e) => slotDay(e.slot_label) === pDay)
               : listFor(section);
-            const canAddManual = section === "recommendations" && canEdit;
+            const canAddManual = (section === "recommendations" || section === "local") && canEdit;
             return (
               <Card key={section} className={tab === section ? "" : "hidden"}>
                 <CardContent className="p-4 space-y-4">
@@ -383,10 +393,13 @@ function Page() {
                   <CollapseBody id={`sec:${section}`} className="space-y-4">
 
                   <TemplateExtraBlock label="Informações adicionais do superintendente" value={sections[section]} />
+                  {section === "local" && !isSuper && (
+                    <MissingBadge count={events.reduce((n, e) => n + (e.subject?.trim() ? 0 : 1) + (e.info?.trim() ? 0 : 1), 0)} />
+                  )}
 
                   {events.length === 0 ? (
                     <p className="text-xs text-muted-foreground italic">
-                      {section === "recommendations" && canAddManual
+                      {canAddManual
                         ? "Nenhum evento. Adicione abaixo."
                         : "Nenhum evento criado pelo superintendente."}
                     </p>
@@ -404,7 +417,7 @@ function Page() {
                           <div key={ev.id} id={`pev-${ev.id}`} className={cn("scroll-mt-4",
                             section === "pastoral" && !isSuper && slots.length > 0 &&
                               (elderSlot === NO_SLOT ? !!ev.slot_label && slots.includes(ev.slot_label) : ev.slot_label !== elderSlot) && "hidden")}>
-                          <CollapseItem id={`ev:${ev.id}`} summary={[ev.slot_label, ev.family_name ?? ev.person_name].filter(Boolean).join(" · ") || SECTION_TITLES[section]}>
+                          <CollapseItem id={`ev:${ev.id}`} summary={section === "local" ? (ev.subject?.trim() || `Assunto ${events.indexOf(ev) + 1}`) : ([ev.slot_label, ev.family_name ?? ev.person_name].filter(Boolean).join(" · ") || SECTION_TITLES[section])}>
                           <EventCard
                             ev={ev}
                             slots={slots}
@@ -428,7 +441,7 @@ function Page() {
                   )}
 
                   {canAddManual && (
-                    <Button type="button" variant="outline" size="sm" onClick={addRecommendation}>
+                    <Button type="button" variant="outline" size="sm" onClick={section === "local" ? addLocalMatter : addRecommendation}>
                       <Plus className="h-4 w-4 mr-1" /> Adicionar
                     </Button>
                   )}
@@ -554,7 +567,9 @@ function EventCard({
     <Card className="border-dashed">
       <CardContent className="p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          {ev.source === "manual" && ev.section === "recommendations" ? (
+          {ev.section === "local" ? (
+            <span className="min-w-0 truncate text-sm font-semibold">{ev.subject?.trim() || "Assunto local"}</span>
+          ) : ev.source === "manual" && ev.section === "recommendations" ? (
             <span className="text-[10px] uppercase tracking-wide font-medium px-2 py-0.5 rounded bg-blue-500/10 text-blue-700 dark:text-blue-300">
               Adicionado pelos anciãos
             </span>

@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 import { createFileRoute } from "@tanstack/react-router";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
@@ -243,7 +244,7 @@ function Page() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Excluir esta congregação? Os dados de visitas relacionadas serão perdidos."))
+    if (!await appConfirm("Excluir esta congregação? Os dados de visitas relacionadas serão perdidos."))
       return;
     const res = await fnDelete({ data: { id } });
     if (!res.ok) {
@@ -498,7 +499,7 @@ function Page() {
                                 title="Excluir"
                                 onClick={async () => {
                                   if (
-                                    !confirm(
+                                    !await appConfirm(
                                       `Excluir o ancião "${e.full_name}"? Esta ação é permanente.`,
                                     )
                                   )

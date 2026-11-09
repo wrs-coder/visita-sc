@@ -11,6 +11,7 @@ import { getLocalizedBookName } from "@/lib/bible-canon";
 import { ALL_BOOKS, chaptersOf, type Highlight } from "@/lib/bible-chapters";
 import { emptyWeekday, weekdayNextUnread, weekdayDayDone, weekdayBookDays, weekdaySeq, type MeetingWeek, type Track, type WeekdayPlan, mondayOf } from "@/lib/bible-tracks";
 import { cn } from "@/lib/utils";
+import { useChapterSpan } from "./use-chapter-span";
 
 const pill = (on: boolean) => cn("min-h-9 rounded-full px-3 text-xs font-medium transition-colors", on ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/60");
 
@@ -29,7 +30,7 @@ function useDayNames() {
   return Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 7 + i).toLocaleDateString(i18n.language, { weekday: "short" }).replace(".", ""));
 }
 
-export function WeekdayCard({ plan, onChange, onRead, label, done, onMark, pending = false }: { pending?: boolean; plan: WeekdayPlan; onChange: (p: WeekdayPlan) => void; onRead: (key: string, day: number) => void; label: (k: string) => string; done: Set<string>; onMark: (keys: string[], on: boolean) => void }) {
+export function WeekdayCard({ plan, onChange, onRead, label, shortLabel, done, onMark, pending = false }: { shortLabel?: (k: string) => string; pending?: boolean; plan: WeekdayPlan; onChange: (p: WeekdayPlan) => void; onRead: (key: string, day: number) => void; label: (k: string) => string; done: Set<string>; onMark: (keys: string[], on: boolean) => void }) {
   const { t, i18n } = useTranslation();
   const names = useDayNames();
   const [day, setDay] = useState(() => new Date().getDay());
@@ -40,6 +41,7 @@ export function WeekdayCard({ plan, onChange, onRead, label, done, onMark, pendi
   const seq = weekdaySeq(plan, day);
   const allDone = weekdayDayDone(plan, day, done);
   const cur = weekdayNextUnread(plan, day, done);
+  const curSpan = useChapterSpan(cur);
   const books = plan.days[day] ?? [];
   const bn = (b: string) => getLocalizedBookName(b, i18n.language) ?? b;
   const bookDays = weekdayBookDays(plan);
@@ -60,7 +62,7 @@ export function WeekdayCard({ plan, onChange, onRead, label, done, onMark, pendi
       {cur ? (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">{books.map(bn).join(" → ")} · {seq.filter((k) => done.has(k)).length}/{seq.length}</p>
-          <Button className={cn("h-11 w-full gap-2 rounded-xl", pending && day === new Date().getDay() && "ring-2 ring-destructive ring-offset-2 ring-offset-background")} onClick={() => onRead(cur, day)}><Play className="h-4 w-4" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {label(cur)}</Button>
+          <Button className={cn("h-11 w-full gap-2 rounded-xl", pending && day === new Date().getDay() && "ring-2 ring-destructive ring-offset-2 ring-offset-background")} onClick={() => onRead(cur, day)}><Play className="h-4 w-4" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {(shortLabel ?? label)(cur)}{curSpan}</Button>
         </div>
       ) : allDone ? (
         <div className="space-y-2 text-center">

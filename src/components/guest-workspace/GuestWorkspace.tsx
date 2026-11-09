@@ -1,3 +1,4 @@
+import { appConfirm, appPrompt } from "@/components/ui/app-dialogs";
 import { htmlToDocx, folderToDocxZip, safeFileName } from "@/lib/docx-export";
 // Seções Anotações e Estudo Pessoal da esposa, com Modo Foco e gaveta.
 import { useImmersiveWhile } from "@/lib/immersive";
@@ -162,13 +163,13 @@ export function GuestWorkspace({ section, storageKey, fixedStudyTab }: {
     setOpenId(item.id);
   };
   const kindFolders = data.folders.filter((f) => f.kind === kind);
-  const addFolder = (preset?: string) => {
-    const name = (preset ?? window.prompt(t("guestWs.newFolder", { defaultValue: "Nova pasta" })))?.trim();
+  const addFolder = async (preset?: string) => {
+    const name = (preset ?? await appPrompt(t("guestWs.newFolder", { defaultValue: "Nova pasta" })))?.trim();
     if (name) update((d) => ({ ...d, folders: [...d.folders, { id: crypto.randomUUID(), name: name.slice(0, 120), kind }] }));
   };
-  const renameFolder = (id: string) => {
+  const renameFolder = async (id: string) => {
     const cur = data.folders.find((f) => f.id === id);
-    const name = window.prompt(t("guestWs.renameFolder", { defaultValue: "Renomear pasta" }), cur?.name)?.trim();
+    const name = (await appPrompt(t("guestWs.renameFolder", { defaultValue: "Renomear pasta" }), cur?.name))?.trim();
     if (name) update((d) => ({ ...d, folders: d.folders.map((f) => f.id === id ? { ...f, name: name.slice(0, 120) } : f) }));
   };
   const exportFolderDocx = async (id: string) => {
@@ -180,8 +181,8 @@ export function GuestWorkspace({ section, storageKey, fixedStudyTab }: {
       await saveBlob(blob, { filename: `${safeFileName(f.name, "pasta")}.zip`, mimeType: "application/zip" });
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
   };
-  const deleteFolder = (id: string) => {
-    if (!window.confirm(t("guestWs.confirmDeleteFolder", { defaultValue: "Apagar a pasta? As anotações continuam, sem pasta." }))) return;
+  const deleteFolder = async (id: string) => {
+    if (!await appConfirm(t("guestWs.confirmDeleteFolder", { defaultValue: "Apagar a pasta? As anotações continuam, sem pasta." }))) return;
     update((d) => ({ ...d, folders: d.folders.filter((f) => f.id !== id), items: d.items.map((i) => i.folderId === id ? { ...i, folderId: null } : i) }));
     setFolder(null);
   };
@@ -293,9 +294,9 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
   const [library, setLibrary] = useState<BibleLibrary | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
   const vh = useStableViewportHeight();
-  useEffect(() => { void getActiveLibrary().then(setLibrary).catch(() => null); }, []);
+  useEffect(() => { void getActiveLibrary("outlines").then(setLibrary).catch(() => null); }, []);
   const append = (html: string) => { onChange({ body: toNoteHtml(item.body) + html }); };
-  const addNote = () => { const n = window.prompt(t("guestWs.notePrompt", { defaultValue: "Nota explicativa" }))?.trim(); if (n) append(noteBlockHtml(n)); };
+  const addNote = async () => { const n = (await appPrompt(t("guestWs.notePrompt", { defaultValue: "Nota explicativa" })))?.trim(); if (n) append(noteBlockHtml(n)); };
   const detected = useMemo(() => (library ? findCitations(library.books, stripHtmlForDetection(item.body)) : []), [library, item.body]);
   const insertVerse = (text: string) => onChange({ body: appendPlainTextToNote(toNoteHtml(item.body), text) });
   const others = data.items.filter((i) => i.id !== item.id && (i.kind === "research" || i.kind === "note"));
@@ -360,7 +361,7 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
             <DropdownMenuItem onClick={addNote}><StickyNote className="mr-2 h-4 w-4" />{t("guestWs.addNoteBox", { defaultValue: "Inserir quadro de observação" })}</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setLinkOpen(true)}><Link2 className="mr-2 h-4 w-4" />{t("guestWs.addLinkTo", { defaultValue: "Ligar a outra anotação" })}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive" onClick={() => { if (window.confirm(t("guestWs.confirmDelete", { defaultValue: "Apagar este item?" }))) onDelete(); }}>
+            <DropdownMenuItem className="text-destructive" onClick={async () => { if (await appConfirm(t("guestWs.confirmDelete", { defaultValue: "Apagar este item?" }))) onDelete(); }}>
               <Trash2 className="mr-2 h-4 w-4" />{t("guestWs.delete", { defaultValue: "Apagar" })}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -439,7 +440,7 @@ function WorkspaceSheet({ backupKey, kind, open, onOpenChange, data, update, fol
     try {
       const incoming = await readWsBackup(file);
       const n = incoming.items.length;
-      if (!window.confirm(mode === "replace"
+      if (!await appConfirm(mode === "replace"
         ? t("guestWs.confirmRestore", { defaultValue: "Restaurar {{n}} itens? O conteúdo atual será substituído.", n })
         : t("guestWs.confirmImport", { defaultValue: "Importar {{n}} itens?", n }))) return;
       update((d) => mode === "replace" ? incoming : {

@@ -21,6 +21,8 @@ import {
 import {
   getCached,
   headersToRecord,
+  isStale,
+  markTableStale,
   restCacheKey,
   storeResponse,
   toResponse,
@@ -65,10 +67,27 @@ async function answerFromMirror(url: string, method: string, accept: string | nu
   return new Response(answer.body, { status: answer.status, headers });
 }
 
-async function localRead(url: string, method: string, accept: string | null, prefer: string | null) {
+/**
+ * Leitura no celular. Cópia exata em dia vence; se ela estiver vencida
+ * (houve gravação depois), o espelho atualizado responde. `staleOnly` diz
+ * que só sobrou a cópia vencida — quem chama tenta o servidor antes de usá-la.
+ */
+async function localLookup(url: string, method: string, accept: string | null, prefer: string | null) {
   const cached = await getCached(restCacheKey(url, accept, prefer));
-  if (cached) return toResponse(cached);
-  return answerFromMirror(url, method, accept, prefer);
+  if (cached && !isStale(cached)) return { res: toResponse(cached), staleOnly: false };
+  const mirror = await answerFromMirror(url, method, accept, prefer);
+  if (mirror) return { res: mirror, staleOnly: false };
+  if (cached) return { res: toResponse(cached), staleOnly: true };
+  return null;
+}
+
+/** Qualquer resposta local (inclusive vencida): usada sem internet. */
+async function localRead(url: string, method: string, accept: string | null, prefer: string | null) {
+  return (await localLookup(url, method, accept, prefer))?.res ?? null;
+}
+
+function isDeviceOffline(): boolean {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
 }
 
 function parseJsonRows(text: string): Row[] {
@@ -165,8 +184,10 @@ export function createLocalFirstFetch(deps: LocalFirstDeps): FetchLike {
       }
 
       if (!preferNetworkNow()) {
-        const local = await localRead(url, method, accept, prefer);
-        if (local) return local;
+        const local = await localLookup(url, method, accept, prefer);
+        if (local && !local.staleOnly) return local.res;
+        if (local && isDeviceOffline()) return local.res;
+        // Só cópia vencida: tenta o servidor; se falhar, usa a vencida.
       }
       try {
         const res = await net(READ_TIMEOUT_MS);
@@ -190,6 +211,8 @@ export function createLocalFirstFetch(deps: LocalFirstDeps): FetchLike {
       const res = await net(WRITE_TIMEOUT_MS);
       if (res.ok) {
         markWriteSucceeded();
+        const written = tableFromRestUrl(url);
+        if (written) markTableStale(written);
         const body = init?.body ?? null;
         void mirrorWrite(url, method, body, res, (u) =>
           fetchWithTimeout(

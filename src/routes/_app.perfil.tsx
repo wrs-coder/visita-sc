@@ -28,6 +28,7 @@ import { SupportDeveloperContent } from "@/components/SupportDeveloper";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { BibleManagerDialog } from "@/components/bible/BibleManagerDialog";
+import { BibleScopePicker } from "@/components/bible/BibleScopePicker";
 import { OfflinePinCard } from "@/components/auth/OfflinePinCard";
 import { SyncStatusCard } from "@/components/SyncStatusCard";
 import { getActiveLibrary, type BibleLibrary } from "@/lib/bible-notes-store";
@@ -495,6 +496,7 @@ function Page() {
                 <Languages className="h-4 w-4 mr-1.5" />
                 {t("bibleManager.manage")}
               </Button>
+              <BibleScopePicker refreshKey={activeBible} />
             </CardContent>
           </Card>
 

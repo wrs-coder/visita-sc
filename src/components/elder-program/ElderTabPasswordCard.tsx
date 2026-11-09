@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 // Cartão que gerencia a senha que protege a aba "Anciãos" no acesso de
 // visitantes (Corpo de Anciãos / ESC).
 //
@@ -117,7 +118,7 @@ export function ElderTabPasswordCard({ congregationId }: { congregationId: strin
   };
 
   const handleRemove = async () => {
-    if (!window.confirm("Remover a senha? A aba ficará livre para todos os visitantes.")) return;
+    if (!await appConfirm("Remover a senha? A aba ficará livre para todos os visitantes.")) return;
     setSaving(true);
     const tId = toast.loading("Removendo senha…");
     try {

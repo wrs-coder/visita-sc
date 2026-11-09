@@ -12,6 +12,25 @@ const ABBR: Record<string, string> = {
   "3 joão": "3 João", "apocalipse": "Apo", "revelação": "Rev",
 };
 
+// Nomes curtos que só são abreviados nos títulos (sempre abreviados).
+const SHORT_ABBR: Record<string, string> = {
+  "esdras": "Esd", "ester": "Est", "salmos": "Sal", "daniel": "Dan", "oseias": "Os", "oséias": "Os",
+  "obadias": "Obd", "jonas": "Jon", "miqueias": "Miq", "miquéias": "Miq", "marcos": "Mar",
+  "tiago": "Tia", "judas": "Jud", "jeremias": "Jer", "isaías": "Isa", "lucas": "Luc", "mateus": "Mat",
+  "romanos": "Rom", "hebreus": "Heb", "gênesis": "Gên", "êxodo": "Êx", "números": "Núm", "neemias": "Nee",
+  "efésios": "Efé", "gálatas": "Gál", "levítico": "Lev", "josué": "Jos", "juízes": "Juí",
+};
+
+/** Títulos: sempre usa a abreviatura (nomes de até 4 letras ficam inteiros). */
+export function abbreviateBookAlways(name: string): string {
+  const n = name.trim();
+  const k = n.toLowerCase();
+  const hit = ABBR[k] ?? SHORT_ABBR[k];
+  if (hit) return hit;
+  if (n.replace(/\s/g, "").length <= 4) return n;
+  return abbreviateBookName(n);
+}
+
 /** Nomes com mais de 8 letras viram abreviatura; nomes curtos ficam completos. */
 export function abbreviateBookName(name: string): string {
   const n = name.trim();
@@ -23,11 +42,9 @@ export function abbreviateBookName(name: string): string {
   return n.slice(0, 4);
 }
 
-/** Título do balão bíblico: completo se couber (até 16 letras), senão livro abreviado. */
+/** Título do balão bíblico: sempre com o livro abreviado (ex.: "1 Tes. 5:12,13"). */
 export function compactRefTitle(book: string, chapter: number | string, verses?: string): string {
   const tail = `${chapter}${verses ? `:${verses}` : ""}`;
-  const full = `${book} ${tail}`;
-  if (full.length <= 16) return full;
-  const ab = abbreviateBookName(book);
-  return ab === book ? full : `${ab}. ${tail}`;
+  const ab = abbreviateBookAlways(book);
+  return ab === book.trim() ? `${ab} ${tail}` : `${ab}. ${tail}`;
 }

@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 import { createFileRoute } from "@tanstack/react-router";
 import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
 import { useEffect, useState, useCallback } from "react";
@@ -16,7 +17,7 @@ import {
   importMeetingTalkTemplate,
   WEEKDAY_LABELS,
 } from "@/lib/meeting-talk-templates.functions";
-import { TemplateHeaderRow } from "@/components/templates/TemplateChrome";
+import { TemplateHeaderRow, InfoDisclosure, EldersFillSection, countFilled } from "@/components/templates/TemplateChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -196,7 +197,7 @@ function Page() {
 
   const handleDelete = async () => {
     if (!active) return;
-    if (!confirm(t("templates.deleteConfirm", { name: active.name }))) return;
+    if (!await appConfirm(t("templates.deleteConfirm", { name: active.name }))) return;
     setBusy(true);
     const r = await fnDel({ data: { id: active.id } });
     setBusy(false);
@@ -337,12 +338,18 @@ function Page() {
 
                 <TabsContent value="meio" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
+                    <InfoDisclosure label={t("templates.meetingTalk.superObservations", { defaultValue: "Observações do superintendente" })} defaultOpen={!!payload.midweek.observations} filled={!!payload.midweek.observations}>
                     <div>
-                      <Label>{t("templates.meetingTalk.midweek.chairman")}</Label>
-                      <Input className="mt-1" value={payload.midweek.chairman}
+                      <CharCounterTextarea
+                        className="mt-1 min-h-[80px]"
+                        value={payload.midweek.observations}
                         readOnly={!isSuper}
-                        onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, chairman: e.target.value } })} />
+                        max={4000}
+                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                        onValueChange={(v) => setPayload({ ...payload, midweek: { ...payload.midweek, observations: v } })}
+                      />
                     </div>
+                    </InfoDisclosure>
                     <div>
                       <Label>{t("templates.meetingTalk.midweek.serviceTalk")}</Label>
                       <Input className="mt-1" value={payload.midweek.service_talk_theme}
@@ -356,28 +363,37 @@ function Page() {
                         placeholder={t("templates.meetingTalk.midweek.finalSongPlaceholder")}
                         onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, final_song: e.target.value } })} />
                     </div>
+                    <EldersFillSection filled={countFilled([payload.midweek.chairman, payload.midweek.closing_prayer])} total={2}>
+                    <div>
+                      <Label>{t("templates.meetingTalk.midweek.chairman")}</Label>
+                      <Input className="mt-1" value={payload.midweek.chairman}
+                        readOnly={!isSuper}
+                        onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, chairman: e.target.value } })} />
+                    </div>
                     <div>
                       <Label>{t("templates.meetingTalk.midweek.closingPrayer")}</Label>
                       <Input className="mt-1" value={payload.midweek.closing_prayer}
                         readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, midweek: { ...payload.midweek, closing_prayer: e.target.value } })} />
                     </div>
-                    <div>
-                      <Label>{t("templates.meetingTalk.midweek.observations")}</Label>
-                      <CharCounterTextarea
-                        className="mt-1 min-h-[80px]"
-                        value={payload.midweek.observations}
-                        readOnly={!isSuper}
-                        max={4000}
-                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
-                        onValueChange={(v) => setPayload({ ...payload, midweek: { ...payload.midweek, observations: v } })}
-                      />
-                    </div>
+                    </EldersFillSection>
                   </CardContent></Card>
                 </TabsContent>
 
                 <TabsContent value="fim" className="mt-3">
                   <Card><CardContent className="p-4 space-y-4">
+                    <InfoDisclosure label={t("templates.meetingTalk.superObservations", { defaultValue: "Observações do superintendente" })} defaultOpen={!!payload.weekend_observations} filled={!!payload.weekend_observations}>
+                      <div>
+                        <CharCounterTextarea
+                          className="mt-1 min-h-[80px]"
+                          value={payload.weekend_observations}
+                          readOnly={!isSuper}
+                          max={4000}
+                          placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                          onValueChange={(v) => setPayload({ ...payload, weekend_observations: v })}
+                        />
+                      </div>
+                    </InfoDisclosure>
                     <div>
                       <Label>{t("templates.meetingTalk.weekend.openingSong")}</Label>
                       <Input className="mt-1" value={payload.weekend_opening_song} readOnly={!isSuper}
@@ -421,22 +437,11 @@ function Page() {
                         </ul>
                       )}
                     </div>
-                    <div className="border-t pt-3 grid gap-3">
+                    <div className="border-t pt-3">
                       <div>
                         <Label>{t("templates.meetingTalk.weekend.closingSong")}</Label>
                         <Input className="mt-1" value={payload.weekend_closing_song} readOnly={!isSuper}
                           onChange={(e) => setPayload({ ...payload, weekend_closing_song: e.target.value })} />
-                      </div>
-                      <div>
-                        <Label>{t("templates.meetingTalk.weekend.observations")}</Label>
-                        <CharCounterTextarea
-                          className="mt-1 min-h-[80px]"
-                          value={payload.weekend_observations}
-                          readOnly={!isSuper}
-                          max={4000}
-                          placeholder={t("templates.meetingTalk.observationsPlaceholder")}
-                          onValueChange={(v) => setPayload({ ...payload, weekend_observations: v })}
-                        />
                       </div>
                     </div>
                   </CardContent></Card>
@@ -448,6 +453,18 @@ function Page() {
                 <TabsContent value="pio" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
                     <p className="text-xs text-muted-foreground">{t("templates.meetingTalk.pioneer.intro")}</p>
+                    <InfoDisclosure label={t("templates.meetingTalk.superObservations", { defaultValue: "Observações do superintendente" })} defaultOpen={!!payload.pioneer.observations} filled={!!payload.pioneer.observations}>
+                    <div>
+                      <CharCounterTextarea
+                        className="mt-1 min-h-[80px]"
+                        value={payload.pioneer.observations}
+                        readOnly={!isSuper}
+                        max={4000}
+                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                        onValueChange={(v) => setPayload({ ...payload, pioneer: { ...payload.pioneer, observations: v } })}
+                      />
+                    </div>
+                    </InfoDisclosure>
                     <div>
                       <Label>{t("templates.meetingTalk.pioneer.theme")}</Label>
                       <Input className="mt-1" value={payload.pioneer.theme}
@@ -474,6 +491,7 @@ function Page() {
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, meeting_time: e.target.value } })} />
                       </div>
                     </div>
+                    <EldersFillSection filled={countFilled([payload.pioneer.location, payload.pioneer.opening_prayer, payload.pioneer.closing_prayer])} total={3}>
                     <div>
                       <Label>{t("templates.meetingTalk.pioneer.location")}</Label>
                       <Input className="mt-1" value={payload.pioneer.location} readOnly={!isSuper}
@@ -491,23 +509,31 @@ function Page() {
                           onChange={(e) => setPayload({ ...payload, pioneer: { ...payload.pioneer, closing_prayer: e.target.value } })} />
                       </div>
                     </div>
-                    <div>
-                      <Label>{t("templates.meetingTalk.pioneer.observations")}</Label>
-                      <CharCounterTextarea
-                        className="mt-1 min-h-[80px]"
-                        value={payload.pioneer.observations}
-                        readOnly={!isSuper}
-                        max={4000}
-                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
-                        onValueChange={(v) => setPayload({ ...payload, pioneer: { ...payload.pioneer, observations: v } })}
-                      />
-                    </div>
+                    </EldersFillSection>
                   </CardContent></Card>
                 </TabsContent>
 
 
                 <TabsContent value="anc" className="mt-3">
                   <Card><CardContent className="p-4 grid gap-3 max-w-2xl w-full">
+                    <InfoDisclosure label={t("templates.meetingTalk.superObservations", { defaultValue: "Observações do superintendente" })} defaultOpen={!!payload.elders.observations} filled={!!payload.elders.observations}>
+                    <div>
+                      <CharCounterTextarea
+                        className="mt-1 min-h-[80px]"
+                        value={payload.elders.observations}
+                        readOnly={!isSuper}
+                        max={4000}
+                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
+                        onValueChange={(v) => setPayload({ ...payload, elders: { ...payload.elders, observations: v } })}
+                      />
+                    </div>
+                    </InfoDisclosure>
+                    <div>
+                      <Label>{t("templates.meetingTalk.elders.theme")}</Label>
+                      <Input className="mt-1" value={payload.elders.theme}
+                        readOnly={!isSuper}
+                        onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, theme: e.target.value } })} />
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label>{t("templates.meetingTalk.elders.weekday")}</Label>
@@ -528,33 +554,18 @@ function Page() {
                           onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, meeting_time: e.target.value } })} />
                       </div>
                     </div>
-                    <div>
-                      <Label>{t("templates.meetingTalk.elders.observations")}</Label>
-                      <CharCounterTextarea
-                        className="mt-1 min-h-[80px]"
-                        value={payload.elders.observations}
-                        readOnly={!isSuper}
-                        max={4000}
-                        placeholder={t("templates.meetingTalk.observationsPlaceholder")}
-                        onValueChange={(v) => setPayload({ ...payload, elders: { ...payload.elders, observations: v } })}
-                      />
-                    </div>
+                    <EldersFillSection filled={countFilled([payload.elders.opening_prayer, payload.elders.closing_prayer])} total={2}>
                     <div>
                       <Label>{t("templates.meetingTalk.elders.openingPrayer")}</Label>
                       <Input className="mt-1" value={payload.elders.opening_prayer} readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, opening_prayer: e.target.value } })} />
                     </div>
                     <div>
-                      <Label>{t("templates.meetingTalk.elders.theme")}</Label>
-                      <Input className="mt-1" value={payload.elders.theme}
-                        readOnly={!isSuper}
-                        onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, theme: e.target.value } })} />
-                    </div>
-                    <div>
                       <Label>{t("templates.meetingTalk.elders.closingPrayer")}</Label>
                       <Input className="mt-1" value={payload.elders.closing_prayer} readOnly={!isSuper}
                         onChange={(e) => setPayload({ ...payload, elders: { ...payload.elders, closing_prayer: e.target.value } })} />
                     </div>
+                    </EldersFillSection>
                   </CardContent></Card>
                 </TabsContent>
               </Tabs>

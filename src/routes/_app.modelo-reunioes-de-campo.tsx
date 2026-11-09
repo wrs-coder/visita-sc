@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 import { createFileRoute } from "@tanstack/react-router";
 import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -24,7 +25,8 @@ import { CharCounterTextarea } from "@/components/ui/char-counter-textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Trash2, MapPin, AlertCircle, Save } from "lucide-react";
-import { TemplateHeaderRow, InfoDisclosure, TemplateFooterBar } from "@/components/templates/TemplateChrome";
+import { TemplateHeaderRow, InfoDisclosure, TemplateFooterBar, EldersFillSection, countFilled } from "@/components/templates/TemplateChrome";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
 import { DayPills, useTemplateDays } from "@/components/templates/DayPills";
 import { MONDAY_OFFSET } from "@/lib/template-day-pills";
@@ -48,7 +50,11 @@ interface ItemDraft {
   auxiliary_leaders: string;
   closing_prayer: string;
   observations: string;
+  requested_fields: ReqField[];
 }
+
+type ReqField = "territory_number" | "territory_location" | "auxiliary_leaders" | "closing_prayer";
+const REQ_FIELDS: ReqField[] = ["territory_number", "territory_location", "auxiliary_leaders", "closing_prayer"];
 
 const MAX = 24;
 const DAY_OPTS = [0, 1, 2, 3, 4, 5, 6];
@@ -108,6 +114,7 @@ function Page() {
           auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? "",
           closing_prayer: it.closing_prayer ?? "",
           observations: (it as { observations?: string | null }).observations ?? "",
+          requested_fields: (((it as { requested_fields?: string[] | null }).requested_fields) ?? []).filter((f): f is ReqField => (REQ_FIELDS as string[]).includes(f)),
         });
       }
       setItemsByTpl(map);
@@ -181,7 +188,7 @@ function Page() {
 
   const handleDelete = async () => {
     if (!active) return;
-    if (!confirm(t("templates.deleteConfirm", { name: active.name }))) return;
+    if (!await appConfirm(t("templates.deleteConfirm", { name: active.name }))) return;
     setBusy(true);
     const r = await fnDel({ data: { id: active.id } });
     setBusy(false);
@@ -191,7 +198,7 @@ function Page() {
     await load();
   };
 
-  const addItem = () => setItems([...items, { day_offset: dayState.activeDay, period: "Manhã", modality: "casa_em_casa", meeting_time: "", territory_number: "", territory_location: "", auxiliary_leaders: "", closing_prayer: "", observations: "" }]);
+  const addItem = () => setItems([...items, { day_offset: dayState.activeDay, period: "Manhã", modality: "casa_em_casa", meeting_time: "", territory_number: "", territory_location: "", auxiliary_leaders: "", closing_prayer: "", observations: "", requested_fields: [] }]);
   const updateItem = (idx: number, patch: Partial<ItemDraft>) =>
     setItems(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
@@ -212,6 +219,7 @@ function Page() {
           auxiliary_leaders: it.auxiliary_leaders || null,
           closing_prayer: it.closing_prayer || null,
           observations: it.observations || null,
+          requested_fields: it.requested_fields,
           sort_order: i,
         })),
       },
@@ -368,28 +376,40 @@ function Page() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <InfoDisclosure className="bg-background" label={t("templates.chrome.moreDetails", { defaultValue: "Mais detalhes" })} filled={!!(it.observations || it.closing_prayer || it.territory_number || it.territory_location || it.auxiliary_leaders)}>
-                          <div>
-                            <Label className="text-xs">{t("templates.field.observations")}</Label>
-                            <Textarea
-                              className="mt-1 text-blue-600 dark:text-blue-400 min-h-[60px]"
-                              placeholder={t("templates.field.observationsPlaceholder")}
-                              value={it.observations}
-                              maxLength={4000}
-                              onChange={(e) => updateItem(idx, { observations: e.target.value })}
-                            />
-                          </div>
-                        {it.modality === "casa_em_casa" && (
-                          <>
-                            <div className="grid grid-cols-2 gap-2">
-                              <Input placeholder={t("templates.field.territoryNumber")} value={it.territory_number} onChange={(e) => updateItem(idx, { territory_number: e.target.value })} className="h-8" />
-                              <Input placeholder={t("templates.field.territoryLocation")} value={it.territory_location} onChange={(e) => updateItem(idx, { territory_location: e.target.value })} className="h-8" />
-                            </div>
-                            <Input placeholder={t("templates.field.auxiliaryLeaders")} value={it.auxiliary_leaders} onChange={(e) => updateItem(idx, { auxiliary_leaders: e.target.value })} className="h-8" />
-                          </>
-                        )}
-                          <Input placeholder={t("templates.field.closingPrayer")} value={it.closing_prayer} onChange={(e) => updateItem(idx, { closing_prayer: e.target.value })} className="h-8" />
+                        <InfoDisclosure className="bg-background" defaultOpen={!!it.observations} label={t("templates.field.observations")} filled={!!it.observations}>
+                          <Textarea
+                            className="text-blue-600 dark:text-blue-400 min-h-[60px]"
+                            placeholder={t("templates.field.observationsPlaceholder")}
+                            value={it.observations}
+                            maxLength={4000}
+                            onChange={(e) => updateItem(idx, { observations: e.target.value })}
+                          />
                         </InfoDisclosure>
+                        <EldersFillSection
+                          className="bg-background"
+                          filled={countFilled(it.requested_fields.map((f) => it[f]))}
+                          total={it.requested_fields.length}
+                        >
+                          <p className="text-xs text-muted-foreground">{t("templates.field.requestHint", { defaultValue: "Marque o que os anciãos devem preencher. Só os itens marcados aparecem para eles." })}</p>
+                          {REQ_FIELDS.map((f) => {
+                            const on = it.requested_fields.includes(f);
+                            const label = t(`templates.field.${f === "territory_number" ? "territoryNumber" : f === "territory_location" ? "territoryLocation" : f === "auxiliary_leaders" ? "auxiliaryLeaders" : "closingPrayer"}`);
+                            return (
+                              <div key={f} className="space-y-1">
+                                <label className="flex items-center gap-2 text-sm">
+                                  <Checkbox
+                                    checked={on}
+                                    onCheckedChange={(v) => updateItem(idx, { requested_fields: v ? [...it.requested_fields, f] : it.requested_fields.filter((x) => x !== f) })}
+                                  />
+                                  <span>{label}</span>
+                                </label>
+                                {on && (
+                                  <Input placeholder={label} value={it[f]} onChange={(e) => updateItem(idx, { [f]: e.target.value } as Partial<ItemDraft>)} className="h-8" />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </EldersFillSection>
                       </div>
                       </CollapseItem>
                     ))}

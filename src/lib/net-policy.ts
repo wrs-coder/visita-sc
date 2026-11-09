@@ -10,6 +10,8 @@
 // - "Simular internet ruim" faz as chamadas esperarem o limite e falharem,
 //   para testar em casa o comportamento da zona rural.
 
+import { markFnStale } from "@/lib/response-cache";
+
 export const READ_TIMEOUT_MS = 8000;
 export const WRITE_TIMEOUT_MS = 12000;
 export const AUTH_TIMEOUT_MS = 10000;
@@ -38,6 +40,9 @@ export function isNetworkWindowOpen(): boolean {
 /** Marca que uma gravação acabou de dar certo no servidor. */
 export function markWriteSucceeded(now = Date.now()): void {
   freshUntil = now + FRESH_AFTER_WRITE_MS;
+  // Listas e resumos guardados antes desta gravação ficam "vencidos"
+  // (não são apagados; sem internet continuam servindo).
+  markFnStale(now);
 }
 
 /** Leituras devem preferir o servidor agora? */

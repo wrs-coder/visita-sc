@@ -38,6 +38,7 @@ const itemSchema = z.object({
   auxiliary_leaders: z.string().trim().max(200).nullable().optional(),
   closing_prayer: z.string().trim().max(200).nullable().optional(),
   observations: z.string().max(4000).nullable().optional(),
+  requested_fields: z.array(z.enum(["territory_number", "territory_location", "auxiliary_leaders", "closing_prayer"])).max(4).optional(),
   sort_order: z.number().int().min(0).max(1000).default(0),
 });
 
@@ -204,6 +205,7 @@ export const duplicateFieldMeetingTemplate = createServerFn({ method: "POST" })
           auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? null,
           closing_prayer: it.closing_prayer,
           observations: (it as { observations?: string | null }).observations ?? null,
+          requested_fields: (it as { requested_fields?: string[] | null }).requested_fields ?? [],
           sort_order: it.sort_order,
         })),
       );
@@ -250,6 +252,7 @@ export const replaceFieldMeetingTemplateItems = createServerFn({ method: "POST" 
         auxiliary_leaders: it.auxiliary_leaders || null,
         closing_prayer: it.closing_prayer || null,
         observations: it.observations ?? null,
+        requested_fields: it.requested_fields ?? [],
         sort_order: it.sort_order ?? i,
       }));
       const { error } = await supabaseAdmin.from("field_meeting_template_items").insert(rows);
@@ -309,7 +312,7 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
     // Merge NÃO-DESTRUTIVO por (event_date, period).
     const { data: existing } = await supabaseAdmin
       .from("field_meetings")
-      .select("id,event_date,period,observations")
+      .select("id,event_date,period,observations,requested_fields")
       .eq("visit_id", data.visitId);
     const existingByKey = new Map(
       (existing ?? []).map((r) => [`${r.event_date}|${r.period ?? ""}`, r]),
@@ -325,6 +328,7 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
       auxiliary_leaders: (it as { auxiliary_leaders?: string | null }).auxiliary_leaders ?? null,
       closing_prayer: it.closing_prayer,
       observations: (it as { observations?: string | null }).observations ?? null,
+      requested_fields: (it as { requested_fields?: string[] | null }).requested_fields ?? [],
     }));
 
     const rows = templateRows
@@ -342,6 +346,10 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
       const cur = existingByKey.get(`${tr.event_date}|${tr.period}`);
       if (!cur) continue;
       const curObs = (cur as { observations?: string | null }).observations;
+      // Itens solicitados: o modelo atual define o que os anciãos veem.
+      await supabaseAdmin.from("field_meetings")
+        .update({ requested_fields: tr.requested_fields })
+        .eq("id", (cur as { id: string }).id);
       if (tr.observations && tr.observations.trim() && (!curObs || !curObs.trim())) {
         await supabaseAdmin
           .from("field_meetings")

@@ -10,7 +10,7 @@ import {
   markWriteSucceeded,
   preferNetworkNow,
 } from "@/lib/net-policy";
-import { fnCacheKey, getCached, headersToRecord, storeResponse, toResponse } from "@/lib/response-cache";
+import { fnCacheKey, getCached, headersToRecord, isStale, storeResponse, toResponse } from "@/lib/response-cache";
 
 export const READ_FN_HEADER = "x-visitasc-read";
 const FN_READ_TIMEOUT_MS = 15_000;
@@ -78,10 +78,15 @@ export function createLocalFirstFnFetch(network: FetchLike, isOfflineMode: () =>
       return cached ? toResponse(cached) : null;
     };
 
-    if (isOfflineMode() || !preferNetworkNow()) {
+    if (isOfflineMode()) {
       const hit = await local();
       if (hit) return hit;
-      if (isOfflineMode()) throw new TypeError("Failed to fetch (offline mode)");
+      throw new TypeError("Failed to fetch (offline mode)");
+    }
+    if (!preferNetworkNow()) {
+      const cached = await getCached(key);
+      // Cópia vencida (houve gravação depois): tenta o servidor; se falhar, usa ela.
+      if (cached && (!isStale(cached) || (typeof navigator !== "undefined" && navigator.onLine === false))) return toResponse(cached);
     }
     try {
       const res = await run(FN_READ_TIMEOUT_MS);

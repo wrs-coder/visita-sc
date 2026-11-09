@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -371,7 +372,7 @@ function Page() {
   };
 
   const complete = async (id: string) => {
-    if (!confirm(t("schedule.confirmComplete"))) return;
+    if (!await appConfirm(t("schedule.confirmComplete"))) return;
     const { error } = await offlineDelete("circuit_schedule_events", { id });
     if (error) toast.error(error.message);
     else toast.success(t("schedule.completedToast"));

@@ -11,3 +11,12 @@
 - [x] Offline: PIN sem prazo, armazenamento permanente, painel Pronto para ficar sem internet
 - [ ] Teste automático de todas as telas com internet pendurada (pendente)
 - [x] Balão bíblico: topo enxuto (Aa, ⋯), bolinhas de destaque, citações com ";", topo do leitor com versículos, destaque de trecho no leitor
+
+## Modelos + Programa da visita (visual uniforme)
+- [x] Bloco "A ser preenchido pelos Anciãos" (recolhível) nos modelos: Refeições, Transporte, Estudos, Campo, Reuniões (4 subabas)
+- [x] Observações do superintendente recolhível e ordem dos campos nas Reuniões
+- [x] Campo: caixinhas "Solicitar aos anciãos" (coluna requested_fields)
+- [x] Programa › Campo: "Copiar para…" local e dirigentes auxiliares
+- [x] Assuntos locais: + Adicionar (anciãos criam/editam, não apagam) e título = tema ou "Assunto N"
+- [x] Topo comum: Congregação (SC) + "Salvo automaticamente"/rascunho
+- [x] Selo "Faltam N campos" e bloco cinza no Programa da visita

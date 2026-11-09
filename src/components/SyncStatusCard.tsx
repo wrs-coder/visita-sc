@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 import { useEffect, useState } from "react";
 import {
   CalendarClock,
@@ -297,7 +298,7 @@ export function SyncStatusCard() {
                     <Button size="sm" variant="ghost" className="h-7 px-2" aria-label={t("sync.retryFailed", "Tentar de novo")} onClick={() => { if (retryFailed(it.id)) toast(t("sync.retry", "Tentando enviar novamente…")); }}>
                       <RotateCcw className="h-3.5 w-3.5" />
                     </Button>
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive" aria-label={t("sync.discard", "Descartar")} onClick={() => { if (window.confirm(t("sync.discardConfirm", "Descartar esta alteração? Ela não será enviada."))) discardFailed(it.id); }}>
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive" aria-label={t("sync.discard", "Descartar")} onClick={async () => { if (await appConfirm(t("sync.discardConfirm", "Descartar esta alteração? Ela não será enviada."))) discardFailed(it.id); }}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>

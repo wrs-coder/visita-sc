@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, Trash2, Check, Loader2, BookOpen } from "lucide-react";
@@ -125,7 +126,7 @@ export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
   }
 
   async function handleRemove(id: string) {
-    if (!confirm(t("bibleManager.removeConfirm"))) return;
+    if (!await appConfirm(t("bibleManager.removeConfirm"))) return;
     await removeLibrary(id);
     await refresh();
     onChanged?.();

@@ -1,3 +1,4 @@
+import { appConfirm, appPrompt } from "@/components/ui/app-dialogs";
 import { htmlToDocx, folderToDocxZip, safeFileName, DOCX_MIME, type DocxFolderEntry } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
 import { FieldNoteInfoButton } from "@/components/notes/FieldNoteInfoButton";
@@ -442,7 +443,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
 
   async function pullNoteAction(note: FieldNote) {
     if (isOfflineNow()) return;
-    if (note.dirty && !window.confirm(t("personalOutlines.pullConfirm", { defaultValue: "Este esboço tem alterações não enviadas. Substituir sua versão do celular pela da nuvem?" }))) return;
+    if (note.dirty && !await appConfirm(t("personalOutlines.pullConfirm", { defaultValue: "Este esboço tem alterações não enviadas. Substituir sua versão do celular pela da nuvem?" }))) return;
     const r = await pullOneNote(note);
     if (r.missing) { toast(t("personalOutlines.noteNotInCloud", { defaultValue: "Este esboço ainda não está na nuvem. Envie primeiro." })); return; }
     reloadOutlineList();
@@ -497,7 +498,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
       toast(t("personalOutlines.folderNothingInCloud", { defaultValue: "Nada desta pasta foi encontrado na nuvem." }));
       return;
     }
-    if (dirty > 0 && !window.confirm(t("personalOutlines.folderPullConfirm", { defaultValue: "{{n}} esboço(s) desta pasta têm alterações não enviadas e serão substituídos pela versão da nuvem. Continuar?", n: dirty }))) return;
+    if (dirty > 0 && !await appConfirm(t("personalOutlines.folderPullConfirm", { defaultValue: "{{n}} esboço(s) desta pasta têm alterações não enviadas e serão substituídos pela versão da nuvem. Continuar?", n: dirty }))) return;
     const tid2 = toast.loading(t("personalOutlines.folderPulling", { defaultValue: "Recebendo {{n}} esboço(s)…", n: pairs.length + fresh.length }));
     const mutable = [...folders];
     let ok = 0, added = 0, fail = 0;
@@ -622,7 +623,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
   }
 
   async function handleCloudDelete(id: string) {
-    if (!confirm(t("personalOutlines.cloud.deleteConfirm", { defaultValue: "Excluir este esboço da nuvem?" }))) return;
+    if (!await appConfirm(t("personalOutlines.cloud.deleteConfirm", { defaultValue: "Excluir este esboço da nuvem?" }))) return;
     setCloudBusy(true);
     try {
       const r = await fnDeleteCloud({ data: { id } });
@@ -642,7 +643,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
 
 
   async function refreshActiveBible() {
-    setActiveBible(await getActiveLibrary());
+    setActiveBible(await getActiveLibrary("outlines"));
   }
 
   useEffect(() => {
@@ -868,7 +869,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
 
   async function handleDeleteNote() {
     if (!draft) return;
-    if (!confirm(t("fieldConsiderations.deleteConfirm"))) return;
+    if (!await appConfirm(t("fieldConsiderations.deleteConfirm"))) return;
     const removedDraft = notes.filter((n) => n.id === draft.id);
     await removeNote(draft.id);
     setNotes((all) => all.filter((n) => n.id !== draft.id));
@@ -879,7 +880,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
   }
 
   async function handleDeleteNoteById(noteId: string) {
-    if (!confirm(t("fieldConsiderations.deleteConfirm"))) return;
+    if (!await appConfirm(t("fieldConsiderations.deleteConfirm"))) return;
     const removedOne = notes.filter((n) => n.id === noteId);
     await removeNote(noteId);
     setNotes((all) => all.filter((n) => n.id !== noteId));
@@ -936,7 +937,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
 
   async function handleDeleteMany(ids: string[]) {
     if (ids.length === 0) return;
-    if (!confirm(t("fieldConsiderations.deleteConfirm"))) return;
+    if (!await appConfirm(t("fieldConsiderations.deleteConfirm"))) return;
     const removedMany = notes.filter((n) => ids.includes(n.id));
     for (const id of ids) {
       await removeNote(id);
@@ -964,7 +965,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
 
   async function handleCreateFolder(parentId: string | null) {
     if (!activeType) return;
-    const name = prompt(t("personalOutlines.folders.namePrompt"));
+    const name = await appPrompt(t("personalOutlines.folders.namePrompt"));
     if (!name || !name.trim()) return;
     const f: NoteFolder = {
       id: newFolderId(),
@@ -972,7 +973,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
       parentId,
       type: activeType,
       created_at: Date.now(),
-      autoSync: activeType !== "talk_notes" && confirm(t("personalOutlines.folders.autoSyncAsk", { defaultValue: "Sincronizar esta pasta automaticamente na nuvem (outros aparelhos)?" })),
+      autoSync: activeType !== "talk_notes" && await appConfirm(t("personalOutlines.folders.autoSyncAsk", { defaultValue: "Sincronizar esta pasta automaticamente na nuvem (outros aparelhos)?" })),
     };
     await saveFolder(f);
     setFolders((all) => [...all, f]);
@@ -981,7 +982,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
   }
 
   async function handleRenameFolder(folder: NoteFolder) {
-    const name = prompt(t("personalOutlines.folders.renamePrompt"), folder.name);
+    const name = await appPrompt(t("personalOutlines.folders.renamePrompt"), folder.name);
     if (!name || !name.trim()) return;
     const updated = { ...folder, name: name.trim() };
     await saveFolder(updated);
@@ -1022,7 +1023,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
   }, [activeType]);
 
   async function handleDeleteFolder(folder: NoteFolder) {
-    if (!confirm(t("personalOutlines.folders.deleteWarn"))) return;
+    if (!await appConfirm(t("personalOutlines.folders.deleteWarn"))) return;
     await deleteFolderCascade(folder.id);
     if (activeType) {
       const [fs, ns] = await Promise.all([listFolders(activeType), listNotes()]);
@@ -1153,7 +1154,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
 
 
   async function handleRenameNote(note: FieldNote) {
-    const name = prompt(
+    const name = await appPrompt(
       t("personalOutlines.folders.renameNotePrompt", { defaultValue: "Novo título da nota:" }),
       note.title,
     );
@@ -1261,7 +1262,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
       const payload = JSON.parse(text) as ExportPayload;
       // força tipo se vier de outra categoria
       if ("folder" in payload && payload.folder.type !== activeType) {
-        if (!confirm("O arquivo é de outro tipo. Importar mesmo assim no tipo atual?")) return;
+        if (!await appConfirm("O arquivo é de outro tipo. Importar mesmo assim no tipo atual?")) return;
         payload.folder.type = activeType;
         payload.subfolders.forEach((f) => (f.type = activeType));
         payload.notes.forEach((n) => (n.type = activeType));
@@ -2491,6 +2492,18 @@ function NoteEditor({
               </span>
             )}
           </Button>
+          )}
+          {(mode === "outline" || mode === "edit") && !isTalk && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={onFullscreen}
+              title={t("personalOutlines.fullscreen.enter")}
+              aria-label={t("personalOutlines.fullscreen.enter")}
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

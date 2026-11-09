@@ -483,6 +483,7 @@ export async function removeLibrary(id: string): Promise<void> {
   if (getActiveLibraryId() === id) {
     try { localStorage.removeItem(LS_ACTIVE_LIBRARY); } catch { /* noop */ }
   }
+  for (const sc of ["outlines", "reading"] as const) if (getScopedLibraryId(sc) === id) setScopedLibraryId(sc, null);
 }
 
 export function getActiveLibraryId(): string | null {
@@ -515,8 +516,35 @@ export async function resolveActiveLibraryId(): Promise<string | null> {
   return fallback;
 }
 
-export async function getActiveLibrary(): Promise<BibleLibrary | null> {
-  const id = await resolveActiveLibraryId();
+/** Bíblia escolhida por aba no Perfil (só no aparelho). Sem escolha = Bíblia em uso. */
+export type BibleScope = "outlines" | "reading";
+const scopeKey = (s: BibleScope) => `bible.library.${s}`;
+
+export function getScopedLibraryId(scope: BibleScope): string | null {
+  try { return localStorage.getItem(scopeKey(scope)); } catch { return null; }
+}
+
+export function setScopedLibraryId(scope: BibleScope, id: string | null): void {
+  try {
+    if (id) localStorage.setItem(scopeKey(scope), id);
+    else localStorage.removeItem(scopeKey(scope));
+  } catch { /* noop */ }
+}
+
+/** Escolha da aba se a Bíblia ainda existir; senão, a Bíblia em uso. */
+export async function resolveLibraryIdFor(scope?: BibleScope): Promise<string | null> {
+  if (scope) {
+    const want = getScopedLibraryId(scope);
+    if (want) {
+      const libs = await listLibraries();
+      if (libs.some((l) => l.id === want)) return want;
+    }
+  }
+  return resolveActiveLibraryId();
+}
+
+export async function getActiveLibrary(scope?: BibleScope): Promise<BibleLibrary | null> {
+  const id = await resolveLibraryIdFor(scope);
   if (!id) return null;
   if (!hasIDB()) return null;
   const db = await openDB();

@@ -13,5 +13,7 @@ describe("retorno ao leitor", () => {
 
 describe("título do balão", () => {
   it("abrevia livro em título longo", () => { expect(compactRefTitle("1 Tessalonicenses", 5, "12,13")).toBe("1 Tes. 5:12,13"); });
-  it("mantém título curto completo", () => { expect(compactRefTitle("Mateus", 6, "33")).toBe("Mateus 6:33"); });
+  it("abrevia sempre, mesmo título curto", () => { expect(compactRefTitle("Mateus", 6, "33")).toBe("Mat. 6:33"); });
+  it("Jeremias 51:1-64 não é cortado", () => { expect(compactRefTitle("Jeremias", 51, "1-64")).toBe("Jer. 51:1-64"); });
+  it("livro de nome curtíssimo fica inteiro", () => { expect(compactRefTitle("Jó", 3, "1")).toBe("Jó 3:1"); });
 });

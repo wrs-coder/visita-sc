@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 // Pílula "Modelos" de Grandes Eventos: modelos de carta convite (só no aparelho).
 import { useState } from "react";
 import { toast } from "sonner";
@@ -124,9 +125,9 @@ export function LetterTemplates({ list, onChange, sync }: { list: LetterTemplate
     toast.success("Modelo salvo");
   };
   const makeDefault = (id: string) => { const t = list.find((x) => x.id === id); if (t) onChange([t, ...list.filter((x) => x.id !== id)]); };
-  const remove = (id: string) => {
+  const remove = async (id: string) => {
     if (list.length <= 1) { toast.info("Mantenha pelo menos um modelo."); return; }
-    if (confirm("Apagar este modelo?")) onChange(list.filter((x) => x.id !== id));
+    if (await appConfirm("Apagar este modelo?")) onChange(list.filter((x) => x.id !== id));
   };
   const preview = async (t: LetterTemplate) => {
     const m = buildLetterModel(t, { name: "Assembleia de circuito", event_date: new Date().toISOString().slice(0, 10), location: "Salão de Assembleias", extra_info: null, public_token: "exemplo", public_code: "exemplo1", link_mode: "pin" },

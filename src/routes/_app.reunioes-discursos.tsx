@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState } from "react";
@@ -113,7 +114,7 @@ function useEnsureVisitForSuper(congregationId: string | null, enabled: boolean)
   return ready;
 }
 
-function SuperCongregationSelector() {
+export function SuperCongregationSelector() {
   const { t } = useTranslation();
   const fnList = useServerFn(listMyCongregations);
   const [congs, setCongs] = useState<{ id: string; name: string }[]>([]);
@@ -311,9 +312,9 @@ function TabsGuarded({
   const { visit } = useActiveVisit();
   const { editEnabled, setEditEnabled } = useMeetingsEditMode();
   const [reportOpen, setReportOpen] = useState(false);
-  const handleTabChange = (v: string) => {
+  const handleTabChange = async (v: string) => {
     if (draft?.dirty) {
-      const ok = window.confirm(t("meetingsTalks.unsavedConfirm"));
+      const ok = await appConfirm(t("meetingsTalks.unsavedConfirm"));
       if (!ok) return;
     }
     setCurrentTab(v);
@@ -363,7 +364,6 @@ function TabsGuarded({
 
       <SaveProgressBar />
 
-      {isSuper && <SuperCongregationSelector />}
       {isSuper && <SupervisorEditModeBar />}
 
       <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">

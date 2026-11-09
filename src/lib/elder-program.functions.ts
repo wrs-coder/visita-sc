@@ -127,6 +127,26 @@ export const createElderRecommendation = createServerFn({ method: "POST" })
     return { ok: true as const, error: null, row: toDTO(row as Record<string, unknown>, "recommendations") };
   });
 
+/** Anciãos (com permissão de edição) criam um assunto local; só o superintendente apaga. */
+export const createElderLocalMatter = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = getAdmin();
+    const { userId } = context;
+    const auth = await ensureCanEdit(supabaseAdmin, userId, data.visitId);
+    if (!auth.ok) return { ok: false as const, error: auth.error, row: null };
+    const { data: rows } = await supabaseAdmin
+      .from("elder_local_matters").select("sort_order").eq("visit_id", data.visitId).order("sort_order", { ascending: false }).limit(1);
+    const next = ((rows?.[0]?.sort_order as number | null) ?? -1) + 1;
+    const { data: row, error } = await supabaseAdmin
+      .from("elder_local_matters")
+      .insert({ visit_id: data.visitId, source: "manual", sort_order: next })
+      .select("*").single();
+    if (error || !row) return { ok: false as const, error: error?.message ?? "Falha.", row: null };
+    return { ok: true as const, error: null, row: toDTO(row as Record<string, unknown>, "local") };
+  });
+
 export const deleteElderProgramEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>

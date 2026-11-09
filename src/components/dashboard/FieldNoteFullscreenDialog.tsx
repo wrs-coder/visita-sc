@@ -99,7 +99,7 @@ export function FieldNoteFullscreenDialog({
       try {
         const [all, lib] = await Promise.all([
           listAllNotesIncludingTrash(),
-          getActiveLibrary(),
+          getActiveLibrary("outlines"),
         ]);
         if (cancelled) return;
         const found =
