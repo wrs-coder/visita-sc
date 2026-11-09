@@ -1,113 +1,43 @@
-# Ajustes: bloco dos Anciãos, "Copiar para…" e Bíblia por aba
+# Revisão geral do que foi alterado hoje
 
-Sem mudança no banco, sem nova versão. Funcionamento sem internet continua igual.
+Objetivo: conferir, sem mudar o visual, se tudo que depende das mudanças de hoje continua funcionando. Só corrigir o que estiver quebrado.
 
-## 01 — Bloco "A ser preenchido pelos Anciãos" (Programa da visita)
+## O que já encontrei na primeira busca
 
-Hoje: no Programa da visita ele abre fechado para o superintendente e aberto para o ancião, e não marca o que falta.
+- 37 telas/arquivos usam as partes alteradas hoje (campos "Solicitar aos anciãos", bloco dos anciãos, Bíblia por aba, barra do topo, Assuntos locais).
+- Suspeita 1: a tela cheia da anotação de campo no Painel ainda usa a "Bíblia em uso" geral, e não a Bíblia escolhida para "Esboços e anotações". Os balões dela podem mostrar a tradução errada.
+- O botão Sincronizar dos esboços lê território, localização, dirigentes auxiliares e oração final direto do Programa da visita — ainda não respeita os itens "solicitados" (precisa conferir se isso causa texto faltando ou sobrando).
 
-Novo comportamento:
-- Abre **sempre expandido** enquanto faltar algum campo.
-- Só começa recolhido quando **todos** estiverem preenchidos (pode abrir com um toque).
-- Campo vazio fica com **borda vermelha** e o contador fica vermelho ("1/3").
-- Quando completa, o contador fica azul com ✓.
-- Nos **Modelos** (tela do superintendente) nada muda: lá os campos ficam vazios de propósito.
+## O que vou verificar e corrigir
 
-```text
-┌──────────────────────────────┐
-│ Seg, 10 nov · Manhã          │
-│ Local *  [Salão do Reino   ] │
-│                [⧉ Copiar para…]│
-│ ┌ ┄ ┄ ┄ ┄ ┄ ┄ ┄ ┄ ┄ ┄ ┄ ┄ ┐ │
-│ ▾ A ser preenchido pelos     │
-│   Anciãos           (🔴 1/3) │
-│   Nº território              │
-│   [ S-13 12              ]   │
-│   Dirigentes auxiliares      │
-│   [                     ]🔴  │  ← borda vermelha
-│              [⧉ Copiar para…]│
-│   Oração final               │
-│   [ Irmão Paulo          ]   │
-│ └ ┄ ┄ ┄ ┄ ┄ ┄ ┄ ┄ ┄ ┄ ┄ ┄ ┘ │
-│                    [Salvar]  │
-└──────────────────────────────┘
+01. Painel (Dashboard)
+- Cartões Agenda, Esboços, Visita e Pastoreio: contagens e textos que vêm do Programa da visita, Campo, Reuniões e Assuntos locais.
+- Cópia local (modo sem internet): confirmar que a coluna nova do Campo é guardada e lida, para o Painel não ficar vazio offline.
 
-Tudo preenchido:
-│ ▸ A ser preenchido pelos     │
-│   Anciãos          (✓ 3/3)   │
-```
+02. Cronômetro dos esboços e balões bíblicos
+- Cronômetro/tempo por tópico continua igual (nada dele foi tocado, mas vou testar abrindo um esboço).
+- Balões de versículo: esboços, anotações, Estudo pessoal e tela cheia do Painel devem usar a Bíblia de "Esboços"; a leitura usa a de "Leitura". Corrigir a Suspeita 1.
 
-## 02 — "Copiar para…" não aparece
+03. Botão Sincronizar dos esboços
+- Conferir que puxa os dados do Programa da visita (Campo e Reuniões) com os campos novos, sem apagar o que já estava escrito.
 
-Pela leitura do código, o botão **não depende de o modelo ser novo ou antigo**. Ele some em três casos:
-1. A visita tem **só um dia/turno de campo ativo** (não há para onde copiar).
-2. O campo está vazio: aí o botão aparece apagado (fica cinza e difícil de ver).
-3. No celular, só aparece quando você instalar a **versão nova** do app. No site já deveria estar.
+04. Outros pontos ligados indiretamente
+- Relatórios em PDF/Word da visita e "Finalizar visita".
+- Backup automático, restauração e exclusão de visita (incluem a coluna nova).
+- Aplicar modelo a uma visita (campos solicitados copiados certo).
+- "Copiar para…" e o bloco dos anciãos que abre sozinho.
+- Ajuda (/ajuda): os nomes de telas citados ainda existem.
 
-Primeiro passo: conferir a visita real onde você testou (quantos dias de campo estão ativos) e abrir a tela no site para confirmar qual dos casos é. Depois:
-- Mostrar o botão sempre que houver outro dia, mesmo com o campo vazio, com o aviso "Escreva algo para copiar".
-- Deixar o botão mais visível (texto azul, estilo iOS).
-- Se a causa for outra, explico antes de mudar.
+## Como vou confirmar
 
-### Copiar para o dia e turno certos
-A cópia já é feita **por saída de campo**, não pelo dia inteiro: cada turno (manhã/tarde) é uma linha separada. Assim seu exemplo funciona: copiar "Casa do Júlio" da Qua manhã e marcar só Qui tarde.
-
-A lista de escolha fica mais clara: agrupada por dia, mostrando turno, horário, modalidade e o que já está escrito:
-
-```text
-┌──────────────────────────────┐
-│ Local: "Casa do Júlio"       │
-│ Copiar para:                 │
-│ QUA 11                       │
-│  ☐ Tarde · 15:00 · Casas     │
-│      atual: Casa do Ramon    │
-│ QUI 12                       │
-│  ☐ Manhã · 09:00 · Casas     │
-│      atual: Casa do Ramon    │
-│  ☑ Tarde · 15:00 · Carrinho  │
-│      atual: (vazio)          │
-│ SEX 13                       │
-│  ☐ Manhã · 09:00 · Casas     │
-│ [Só os vazios]               │
-│ [Cancelar]        [Copiar]   │
-└──────────────────────────────┘
-```
-- Nada vem marcado: você escolhe cada turno.
-- Atalho "Só os vazios" marca apenas turnos ainda sem nada escrito.
-- Se algum marcado já tiver outro valor, o app pergunta antes de substituir.
-
-## 03 — Bíblia diferente para cada aba
-
-Hoje existe uma única "Bíblia em uso", escolhida no Perfil, valendo para tudo.
-
-Novo: duas escolhas, guardadas só no celular:
-- **Esboços e anotações** (balão bíblico): ex. Português de Portugal.
-- **Leitura da Bíblia**: ex. Português do Brasil.
-- Se nada for escolhido, as duas usam a Bíblia em uso de hoje (nada muda para quem não mexer).
-
-Onde escolher: **só no Meu perfil**, uma única vez. A leitura e o balão bíblico não ganham nenhum botão novo.
-
-```text
-Meu perfil › Bíblia
-┌──────────────────────────┐
-│ Bíblias importadas        │
-│ ● TNM Português Brasil   │
-│ ○ TNM Português Portugal │
-│──────────────────────────│
-│ Usar em cada aba         │
-│ Esboços e anotações      │
-│              [Portugal ▾]│
-│ Leitura da Bíblia        │
-│              [Brasil   ▾]│
-│ (opção "Igual à Bíblia   │
-│  em uso" desfaz a escolha)│
-└──────────────────────────┘
-```
-
-Destaques, pontos altos e anotações não mudam: continuam ligados ao livro/capítulo/versículo, valendo nas duas versões.
+- Rodar todos os testes e a checagem de erros.
+- Adicionar testes pequenos: Bíblia certa para cada aba (incluindo a tela cheia do Painel) e Sincronizar respeitando os campos.
+- Abrir o app no navegador simulando o celular: Painel, um esboço com cronômetro e balão, Sincronizar, e Programa da visita.
+- No fim, entrego uma lista simples: "OK" ou "corrigido" para cada item.
 
 ## Detalhes técnicos
-- `EldersFillSection`: nova prop `autoOpen` (abre se `filled < total`, sem desmontar conteúdo) e `highlightMissing`; usada só em `FieldMeetingsPanel` (e demais painéis do Programa que usam o bloco). Inputs vazios exigidos recebem `border-destructive` via token.
-- `CopyToDays`: render com `targets.length > 0` independente do valor; diagnóstico via consulta de leitura dos `field_meetings` da visita testada.
-- `bible-notes-store.ts`: novas chaves localStorage `bible.library.outlines` e `bible.library.reading`; `getActiveLibrary(scope?)` cai para a chave global atual quando a do escopo não existe ou foi removida. CleanReader/use-chapter-span usam `reading`; BibleVersePopover/BibleRefText/OutlinesWorkspace usam `outlines`. Registrar regra no AGENTS.md.
-- Testes: abertura automática do bloco, fallback do escopo de Bíblia; `tsgo --noEmit` e `vitest run`.
+
+- `FieldNoteFullscreenDialog.tsx:102` chama `getActiveLibrary()` sem escopo → passar `"outlines"`.
+- `field-note-sync.ts` seleciona os 4 campos sem `requested_fields`; avaliar uso de `fieldVisible`.
+- Conferir `mirror-tables.ts`, `offline-prefetch.ts`, `backup.functions.ts`, `visit-deletion.functions.ts`, `visit-summary.functions.ts`, `guest.functions.ts` quanto a `requested_fields`.
+- Sem mudanças no banco nem no visual; versão não muda.
