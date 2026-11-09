@@ -1,6 +1,17 @@
 # Revisão geral do que foi alterado hoje
 
-Objetivo: conferir, sem mudar o visual, se tudo que depende das mudanças de hoje continua funcionando. Só corrigir o que estiver quebrado.
+Objetivo: conferir se tudo que depende das mudanças de hoje continua funcionando. Nesta etapa NADA é corrigido: só investigo, testo e entrego um relatório explicando cada problema, o risco e a correção mais segura. Você escolhe depois o que será feito.
+
+Mockup: nenhuma tela muda nesta etapa. Se alguma correção futura mexer no visual, ela virá com mockup ASCII de celular antes.
+
+## Formato do relatório que vou entregar
+
+```text
+Item                         Situação     Risco    Correção sugerida
+Painel - cartão Visita       OK           -        -
+Balão na tela cheia          Problema     Baixo    usar Bíblia "Esboços"
+Sincronizar esboços          Verificar    Médio    ...
+```
 
 ## O que já encontrei na primeira busca
 
@@ -8,7 +19,7 @@ Objetivo: conferir, sem mudar o visual, se tudo que depende das mudanças de hoj
 - Suspeita 1: a tela cheia da anotação de campo no Painel ainda usa a "Bíblia em uso" geral, e não a Bíblia escolhida para "Esboços e anotações". Os balões dela podem mostrar a tradução errada.
 - O botão Sincronizar dos esboços lê território, localização, dirigentes auxiliares e oração final direto do Programa da visita — ainda não respeita os itens "solicitados" (precisa conferir se isso causa texto faltando ou sobrando).
 
-## O que vou verificar e corrigir
+## O que vou verificar (sem corrigir)
 
 01. Painel (Dashboard)
 - Cartões Agenda, Esboços, Visita e Pastoreio: contagens e textos que vêm do Programa da visita, Campo, Reuniões e Assuntos locais.
@@ -31,9 +42,9 @@ Objetivo: conferir, sem mudar o visual, se tudo que depende das mudanças de hoj
 ## Como vou confirmar
 
 - Rodar todos os testes e a checagem de erros.
-- Adicionar testes pequenos: Bíblia certa para cada aba (incluindo a tela cheia do Painel) e Sincronizar respeitando os campos.
 - Abrir o app no navegador simulando o celular: Painel, um esboço com cronômetro e balão, Sincronizar, e Programa da visita.
-- No fim, entrego uma lista simples: "OK" ou "corrigido" para cada item.
+- Ler o código de cada ponto ligado às mudanças.
+- No fim, entrego o relatório acima: "OK" ou "problema", com explicação simples e a correção mais segura. Nenhum arquivo do app é alterado.
 
 ## Detalhes técnicos
 
