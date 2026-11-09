@@ -1,53 +1,55 @@
-# Trocar as janelinhas "visitasc.com.br diz:" pelo diálogo elegante do app
+# Correção dos 2 avisos do Monitoramento
 
-## O que muda para você
-Todas as janelinhas cinzas do navegador (pedir nome, "Excluir?", "Tem certeza?") passam a abrir no cartão moderno do app, igual às abas Campo, Reuniões, Anciãos e Perguntas. Nenhuma função muda: mesmos textos, mesmos botões, mesmo resultado.
+## Problema 1 — Não dá mais para apagar um link nem desligar o tempo de um tópico
 
-## Prévia visual
+**O que acontece hoje:** a caixa nova de digitar (que trocou o "visitasc.com.br diz:") deixa o botão **Salvar** apagado quando o campo está vazio. Só que dois lugares precisam justamente do campo vazio:
+- **Editor de esboço → Link:** apagar o endereço servia para *remover o link*.
+- **Tópico com tempo (⏱):** apagar os minutos servia para *desligar o cronômetro* — a própria caixa diz "vazio = sem controle de tempo".
 
-Pedir um nome (Novo modelo, Nova pasta, Renomear, Link, Título do tópico):
+**Quem é afetado:** superintendente e esposa, ao editar esboços/anotações. Nada é perdido, mas o link ou o tempo "grudam" e não saem.
+
 ```text
-┌──────────────────────────────┐
-│░░░░░░░░ (tela escurecida) ░░░│
-│ ┌──────────────────────────┐ │
-│ │ Novo modelo              │ │
-│ │ ┌──────────────────────┐ │ │
-│ │ │ Modelo 2           ✕ │ │ │  ← teclado já aberto,
-│ │ └──────────────────────┘ │ │    texto selecionado
-│ │ [ Cancelar ] [ Salvar  ] │ │
-│ └──────────────────────────┘ │
-└──────────────────────────────┘
+HOJE                          DEPOIS
+┌─────────────────────────┐   ┌─────────────────────────┐
+│ Minutos do tópico       │   │ Minutos do tópico       │
+│ vazio = sem controle    │   │ vazio = sem controle    │
+│ ┌─────────────────────┐ │   │ ┌─────────────────────┐ │
+│ │                     │ │   │ │                     │ │
+│ └─────────────────────┘ │   │ └─────────────────────┘ │
+│ [Cancelar] [Salvar]░░░  │   │ [Cancelar] [ Salvar ]   │
+│        (apagado)        │   │  (ativo: desliga tempo) │
+└─────────────────────────┘   └─────────────────────────┘
 ```
 
-Confirmar exclusão (botão vermelho, padrão iOS/One UI):
-```text
-┌──────────────────────────────┐
-│ ┌──────────────────────────┐ │
-│ │ Excluir modelo?          │ │
-│ │ "Modelo 2" será apagado. │ │
-│ │ Não dá para desfazer.    │ │
-│ │ [ Cancelar ] [ Excluir ] │ │
-│ │              (vermelho)  │ │
-│ └──────────────────────────┘ │
-└──────────────────────────────┘
-```
+**Correção:** a caixa ganha uma opção "aceita vazio", ligada só nesses dois lugares. Todas as outras caixas (nome de pasta, modelo etc.) continuam exigindo texto.
 
-Confirmação comum (ex.: marcar semana concluída): igual, com botão azul "Confirmar".
+**Chance de quebrar algo:** muito baixa. Visual igual; muda só uma regra em 2 pontos.
 
-## Onde será aplicado (todas as ~50 ocorrências encontradas)
-- Modelos de Visita: Novo, Renomear e excluir em todas as subabas.
-- Esboços / Estudo pessoal: nova pasta, renomear, excluir, puxar da nuvem, importar.
-- Área da esposa: pastas, nota explicativa, apagar itens, restaurar.
-- Editor de texto: link e título do tópico com tempo.
-- Congregações, Lixeira, Notas, Cronograma, Programa dos anciãos, senha da aba.
-- Grandes Eventos e modelos de carta, Sincronização (descartar), Gerenciar Bíblia.
+---
 
-## Exceção (fica como está)
-- Aviso "sair sem salvar" ao fechar/voltar em Reuniões (bloqueio de navegação precisa de resposta imediata do sistema). Nada quebra.
+## Problema 2 — Depois de salvar, outras telas podem mostrar dados antigos
+
+**O que acontece hoje:** o celular guarda duas coisas: a "cópia local" (atualizada a cada salvamento) e uma "foto" de cada resposta já recebida. Ao abrir uma tela, a **foto** é lida primeiro — e ela não é atualizada quando você salva. Só nos 90 segundos após salvar o app busca na internet.
+
+**Exemplo:** edita a visita ou apaga um esboço, 3 minutos depois abre o Painel/Lixeira/Resumo → ainda aparece o dado velho até tocar **Sincronizar**.
+
+**Quem é afetado:** todos (superintendente, anciãos, esposa). Nada é perdido no servidor; é só a tela desatualizada — mas confunde (lembra o caso dos anciãos e "Assuntos locais").
+
+**Correção (sem mudar a tela):**
+1. Quando um salvamento dá certo, apagar as "fotos" ligadas àquela tabela (ex.: salvou refeição → fotos de refeições/visita são descartadas). A próxima leitura usa a cópia local já atualizada.
+2. Para leituras por funções do servidor (lista de esboços, lixeira, resumo da visita), descartar as fotos dessas funções após qualquer salvamento.
+3. Continua offline-first: sem internet, tudo funciona igual.
+
+**Chance de quebrar algo:** baixa a média — é o coração do modo offline. Para proteger:
+- Não mexer no banco nem no formato da cópia local.
+- Só **apagar** fotos (nunca escrever dados novos) — no pior caso, o app busca na internet ou na cópia local.
+- Testes novos: salvar → foto descartada; sem internet → leitura ainda funciona.
+
+---
 
 ## Detalhes técnicos
-- Novo `src/components/ui/app-dialogs.tsx`: provedor montado uma vez no `__root`, com `appConfirm({title, description, confirmLabel, destructive})` e `appPrompt({title, defaultValue, placeholder})` retornando Promise (boolean / string|null). Usa AlertDialog/Dialog shadcn e tokens existentes.
-- Fallback: se o provedor não estiver montado (testes/SSR), cai no `window.confirm/prompt` — comportamento atual preservado.
-- Cada `if (!confirm(...)) return;` vira `if (!(await appConfirm(...))) return;` (handlers tornam-se async); extensão TipTap `outline-topic.ts` chama `appPrompt` de forma assíncrona e só aplica o comando depois da resposta.
-- Teste novo cobrindo: confirmar → true, cancelar → null/false, Enter salva, nome vazio desabilita Salvar.
-- Validação: `bunx tsgo --noEmit` e `bunx vitest run`. Sem mudança de banco, sem bump de versão.
+- `app-dialogs.tsx`: `appPrompt(msg, default, { allowEmpty })`; `allowEmpty` libera botão/submit e resolve `""`. Usar em `RichNoteToolbar.promptLink` e no `timeBtn` de `outline-topic.ts`.
+- `response-cache.ts`: `invalidateCached(predicate)` / `invalidateByTable(table)` e `invalidateFnCache()`.
+- `local-first-fetch.ts`: após write bem-sucedido (junto do `mirrorWrite`), invalidar chaves `rest:` cuja URL tenha `/rest/v1/<tabela>`; `net-policy.markWriteSucceeded` também chama `invalidateFnCache()`.
+- Testes: `app-dialogs.test.ts` (vazio permitido/não permitido), novo `local-first-fetch` invalidation test.
+- Validar `bunx tsgo --noEmit` e `bunx vitest run`; resolver os 2 findings. Sem mudança de banco, sem bump de versão.
