@@ -30,8 +30,8 @@ Reunião
 
 Dentro da leitura (topo):
 ┌──────────────────────────────┐
-│ ‹  Gênesis 18                │
-│ Gênesis ▓▓▓▓░░░░░░ 18/50 36% │
+│ ‹  Gên 18:1-33               │  ← título continua como hoje
+│ Gên ▓▓▓▓░░░░░░░░░ 18/50 36%  │  ← só o número muda
 └──────────────────────────────┘
 
 Família / Pessoal no celular (igual ao site):
