@@ -1,62 +1,54 @@
-# Leitura da Bíblia: três ajustes
+# Ajustes: Local da reunião de campo + dias repetidos nos Modelos
 
-Itens 01 e 02: só na leitura **Reunião**. Item 03: só em **Família** e **Pessoal**.
+## 01 — "Local da Reunião de Campo" dentro do bloco dos anciãos
 
-## O que encontrei
-
-1. **Caixa "Ler/Continuar" (Reunião)**: hoje há um único botão, que mostra só o próximo capítulo ("Ler · Gênesis 17"), com o nome inteiro do livro e sem versículos.
-2. **Barra do livro (Reunião)** ("Jeremias 50/52"): conta quantos capítulos do livro estão marcados como lidos, e não em qual capítulo você está.
-3. **Leitura atrasada (Família e Pessoal)**: o app guarda o dia da sua última leitura **só no aparelho onde você marcou**. O celular não tem esse registro e, sem registro, o app não conta atraso. No site o registro existe, por isso lá o aviso aparece.
-
-## Como vai ficar
+Hoje, em Programa da visita › Reuniões › Campo, o campo "Local" fica acima e fora do bloco cinza. Ele passa a ser o primeiro item dentro do bloco, continua obrigatório (vermelho se vazio), conta no "Faltam N campos" e mantém o botão "Copiar para…".
 
 ```text
-Reunião
-┌──────────────────────────────┐
-│ Pessoal │ Família │ Reunião● │
-├──────────────────────────────┤
-│ Leitura da semana   Gên 17–19│
-│ ┌──────────────────────────┐ │
-│ │ ✓ Gên 17:1-27      Lido  │ │  ← já lido (esmaecido)
-│ └──────────────────────────┘ │
-│ ┌──────────────────────────┐ │
-│ │ ▶ Continuar · Gên 18:1-33│ │  ← próximo (destaque)
-│ └──────────────────────────┘ │
-│ ┌──────────────────────────┐ │
-│ │ ▶ Gên 19:1-38            │ │
-│ └──────────────────────────┘ │
-│  ✎ Ajustar esta semana       │
-└──────────────────────────────┘
-
-Dentro da leitura (topo):
-┌──────────────────────────────┐
-│ ‹  Gên 18:1-33               │  ← título continua como hoje
-│ Gên ▓▓▓▓░░░░░░░░░ 18/50 36%  │  ← só o número muda
-└──────────────────────────────┘
-
-Família / Pessoal no celular (igual ao site):
-┌──────────────────────────────┐
-│ ⚠ Leitura atrasada · 1 dia   │  ← vermelho
-└──────────────────────────────┘
+ANTES                              DEPOIS
+┌───────────────────────────┐      ┌───────────────────────────┐
+│ Qua · Manhã · 08:30       │      │ Qua · Manhã · 08:30       │
+│ Local da reunião *        │      │ ▼ A ser preenchido pelos  │
+│ [                     ]   │      │   Anciãos        Faltam 3 │
+│ Copiar para…              │      │ ┌───────────────────────┐ │
+│ ▼ A ser preenchido pelos  │      │ │ Local da reunião *    │ │
+│   Anciãos        Faltam 2 │      │ │ [                   ] │ │
+│ │ Nº território S-13      │      │ │ Copiar para…          │ │
+│ │ Dirigentes auxiliares   │      │ │ Nº território S-13    │ │
+└───────────────────────────┘      │ │ Dirigentes auxiliares │ │
+                                   │ └───────────────────────┘ │
+                                   └───────────────────────────┘
 ```
 
-### 01 — Uma caixa por capítulo da semana (Reunião)
-- Um botão para cada capítulo da semana, com o livro abreviado e o primeiro e o último versículo: "Gên 17:1-27".
-- O primeiro capítulo ainda não lido aparece como "Continuar". Os capítulos já lidos ficam com ✓ e continuam podendo ser tocados.
+O bloco passa a aparecer sempre (o Local é sempre pedido), mesmo quando nenhum item opcional foi marcado no modelo. Nada muda no que é salvo.
 
-### 02 — Barra do livro pela sequência (Reunião)
-- A barra mostra o capítulo que você está lendo, o total de capítulos do livro e a porcentagem. Exemplo: Jeremias 51 de 52 → "51/52 98%".
-- Os capítulos lidos em outras leituras deixam de contar.
+## 02 — O dia aparece só uma vez nos Modelos visitas
 
-### 03 — Aviso de atraso no celular (Família e Pessoal)
-- A Reunião continua sem aviso de atraso.
-- Quando o aparelho não tiver o registro do dia, o app olha seus capítulos marcados. Cada dia com leitura programada nos últimos 7 dias (meta "Dias", sem contar hoje) que não tem os capítulos marcados como lidos conta como atrasado.
-- Exemplo: o domingo tinha leitura e você não marcou → "⚠ Leitura atrasada · 1 dia" aparece também no celular.
-- Quando o aparelho já tem o registro, nada muda. O visual também não muda.
+Concordo: depois de tocar no dia nas pílulas "Dias da Visita", repetir o dia é redundante. Hoje o dia aparece 3 vezes:
+1. Pílula do dia (fica — é a única escolha).
+2. Título do dia com ▶/▼ (recolher/expandir) — **sai**.
+3. Seletor de dia dentro de cada evento — **sai**.
+
+```text
+ANTES                              DEPOIS
+┌───────────────────────────┐      ┌───────────────────────────┐
+│ Dias: (Qua)(Qui)(Sex)     │      │ Dias: (Qua)(Qui)(Sex)     │
+│ ▼ QUARTA-FEIRA            │      │ ┌───────────────────────┐ │
+│ ┌───────────────────────┐ │      │ │ Manhã ▾  08:30   🗑   │ │
+│ │ Quarta ▾ Manhã ▾ 08:30│ │      │ │ Modalidade ▾          │ │
+│ │ Modalidade ▾          │ │      │ └───────────────────────┘ │
+│ └───────────────────────┘ │      │ [ + Adicionar ]           │
+└───────────────────────────┘      └───────────────────────────┘
+```
+
+Vale para as subabas Refeições, Transporte, Estudos e Campo. Cada evento continua podendo ser recolhido sozinho (resumo "Manhã · 08:30 · Casa em casa"), e as anotações do dia (Refeições/Estudos) continuam no topo, só sem o título repetido.
+
+Observação: o seletor interno servia para **mover** um evento para outro dia. Sem ele, para mudar o dia basta apagar e criar no dia certo. Nenhum dado existente muda: os eventos continuam ligados ao mesmo dia de antes.
+
+A subaba Reuniões (Pioneiros/Anciãos) não usa pílulas de dia, então o seletor "Dia da semana" dela permanece.
 
 ## Detalhes técnicos
-- `BibleTrackExtras.tsx › MeetingWeekCard`: trocar o botão único por uma lista de `keys`. Cada linha vira um subcomponente que usa `abbreviateBookAlways` + `useChapterSpan`.
-- `BibleReadingTab.tsx`: quando `track === "meeting"`, `bookProgress = { done: capítulo atual, total: chaptersOf(livro) }`.
-- `reading-day-log.ts › overdueDays`: novo parâmetro opcional `read`. Quando `last` estiver vazio, conta os dias programados dos últimos 7 dias em que `weekdaySeq(plan, dia)` não foi todo lido, sem contar hoje. A chamada em `BibleReadingTab.tsx` passa `done`.
-- Não há mudança de dados nem de servidor. Novos testes ficam em `reading-overdue.test.ts`: sem registro e domingo não lido → 1; sem registro e tudo lido → 0.
-- A validação é feita com `bunx tsgo --noEmit` e `bunx vitest run`. Não há aumento de versão.
+- `FieldMeetingsPanel.tsx`: mover o bloco do `meeting_location` (+ `CopyToDays`) para dentro de `EldersFillSection`; incluir location em `filled`/`total`; renderizar a seção sempre.
+- `_app.modelos.tsx` (`KindBlock` com `onlyDay`): remover `CollapseIdToggle` + rótulo do dia e o `Select` de `day_offset`; manter `dayExtra` e `CollapseItem`.
+- `_app.modelo-reunioes-de-campo.tsx`: remover cabeçalho `day:${d}` e o `Select` de dia do item; ajustar ids do `CollapseAllButton`.
+- Sem mudança em banco, servidor, salvamento ou formato. Validar com `bunx tsgo --noEmit` e `bunx vitest run`.
