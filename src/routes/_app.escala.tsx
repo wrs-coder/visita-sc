@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+import { EldersSubtitle, countFilled, emptyRing } from "@/components/templates/TemplateChrome";
 import { VisitDayPills, useVisitDay } from "@/components/visit-week/VisitDayPills";
 import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { createFileRoute } from "@tanstack/react-router";
@@ -235,17 +237,18 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("fieldStudies.meetingPoint")}</label>
-            <Input value={meeting_point} onChange={(e) => setMeetingPoint(e.target.value)} className="h-9 mt-0.5" />
-          </div>
-          <div>
+          <div className="col-span-2">
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("fieldStudies.time")}</label>
-            <Input type="time" value={meeting_time} readOnly={!isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />
+            <Input type="time" value={meeting_time} readOnly={!isSuper} disabled={!isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />
+          </div>
+          <EldersSubtitle className="col-span-2" filled={countFilled([meeting_point, acompanhante, contact_phone])} total={3} />
+          <div className="col-span-2">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("fieldStudies.meetingPoint")}</label>
+            <Input value={meeting_point} onChange={(e) => setMeetingPoint(e.target.value)} className={cn("h-9 mt-0.5", emptyRing(meeting_point))} />
           </div>
           <div className="col-span-2">
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("fieldStudies.companion")}</label>
-            <Input value={acompanhante} onChange={(e) => setAcompanhante(e.target.value)} className="h-9 mt-0.5" />
+            <Input value={acompanhante} onChange={(e) => setAcompanhante(e.target.value)} className={cn("h-9 mt-0.5", emptyRing(acompanhante))} />
           </div>
           <div className="col-span-2">
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("fieldStudies.companionFor")}</label>
@@ -267,7 +270,7 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
           </div>
           <div className="col-span-2">
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("fieldStudies.contactPhone")}</label>
-            <Input type="tel" value={contact_phone} onChange={(e) => setContactPhone(e.target.value)} className="h-9 mt-0.5" />
+            <Input type="tel" value={contact_phone} onChange={(e) => setContactPhone(e.target.value)} className={cn("h-9 mt-0.5", emptyRing(contact_phone))} />
           </div>
         </div>
         <div className="flex justify-end pt-1">

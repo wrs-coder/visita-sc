@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+import { EldersSubtitle, countFilled, emptyRing } from "@/components/templates/TemplateChrome";
 import { VisitDayPills, useVisitDay } from "@/components/visit-week/VisitDayPills";
 import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { createFileRoute } from "@tanstack/react-router";
@@ -279,17 +281,18 @@ function MealCard({ meal: m, isSuper, saving, update, remove }: { meal: Meal; is
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
+          <EldersSubtitle className="col-span-2" filled={countFilled([host_name, location, contact_phone])} total={3} />
           <div className="col-span-2">
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meals.host")}</label>
-            <Input value={host_name} onChange={(e) => setHostName(e.target.value)} className="h-9 mt-0.5" />
+            <Input value={host_name} onChange={(e) => setHostName(e.target.value)} className={cn("h-9 mt-0.5", emptyRing(host_name))} />
           </div>
           <div className="col-span-2">
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meals.address")}</label>
-            <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t("meals.addressPlaceholder")} className="h-9 mt-0.5" />
+            <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t("meals.addressPlaceholder")} className={cn("h-9 mt-0.5", emptyRing(location))} />
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meals.phone")}</label>
-            <Input type="tel" value={contact_phone} onChange={(e) => setContactPhone(e.target.value)} className="h-9 mt-0.5" />
+            <Input type="tel" value={contact_phone} onChange={(e) => setContactPhone(e.target.value)} className={cn("h-9 mt-0.5", emptyRing(contact_phone))} />
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meals.time")}</label>

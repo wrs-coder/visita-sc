@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+import { EldersSubtitle, countFilled, emptyRing } from "@/components/templates/TemplateChrome";
 import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { useVisitDay, VisitDayPills } from "@/components/visit-week/VisitDayPills";
 import { createFileRoute } from "@tanstack/react-router";
@@ -556,10 +558,11 @@ function Page() {
                         )}
                         {showDriver && (
                           <div className="space-y-2 pt-1">
+                            <EldersSubtitle filled={countFilled([r.driver_name, r.contact_phone])} total={2} />
                             <div>
                               <Label className="text-xs">{t("transport.driverName")}</Label>
                               <Input
-                                className="mt-1 h-9"
+                                className={cn("mt-1 h-9", emptyRing(r.driver_name))}
                                 defaultValue={r.driver_name}
                                 onBlur={(e) => {
                                   const v = e.target.value.trim();
@@ -571,7 +574,7 @@ function Page() {
                               <Label className="text-xs">{t("transport.contactPhone")}</Label>
                               <Input
                                 type="tel"
-                                className="mt-1 h-9"
+                                className={cn("mt-1 h-9", emptyRing(r.contact_phone))}
                                 defaultValue={r.contact_phone ?? ""}
                                 onBlur={(e) => {
                                   const v = e.target.value;

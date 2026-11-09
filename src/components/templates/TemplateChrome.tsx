@@ -146,6 +146,30 @@ export function EldersFillSection({ filled, total, children, className, defaultO
   );
 }
 
+/** Subtítulo leve (sem recolher) "A ser preenchido pelos Anciãos" com contador. */
+export function EldersSubtitle({ filled, total, className }: { filled: number; total: number; className?: string }) {
+  const { t } = useTranslation();
+  const done = total > 0 && filled >= total;
+  return (
+    <div className={cn("flex items-center gap-2 pt-2", className)}>
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground shrink-0">
+        {t("templates.chrome.eldersFill", { defaultValue: "A ser preenchido pelos Anciãos" })}
+      </span>
+      <span className="h-px flex-1 bg-border" aria-hidden />
+      {total > 0 && (
+        <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] tabular-nums", done ? "bg-primary/15 text-primary" : "bg-destructive/10 text-destructive")}>
+          {done ? "✓ " : ""}{filled}/{total}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Classe de borda vermelha para campo dos anciãos vazio. */
+export function emptyRing(v: string | null | undefined): string {
+  return v && String(v).trim() ? "" : "border-destructive";
+}
+
 /** Selo discreto "Faltam N campos" (some quando está tudo preenchido). */
 export function MissingBadge({ count, className }: { count: number; className?: string }) {
   const { t } = useTranslation();
