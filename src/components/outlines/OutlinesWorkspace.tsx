@@ -643,7 +643,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
 
 
   async function refreshActiveBible() {
-    setActiveBible(await getActiveLibrary());
+    setActiveBible(await getActiveLibrary("outlines"));
   }
 
   useEffect(() => {

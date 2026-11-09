@@ -121,7 +121,7 @@ export function FieldMeetingsPanel() {
   ];
   const missing = isSuper ? 0 : missingFieldCount(rows.filter((r) => r.is_active));
   const copyTargets = (r: Row) => rows.filter((x) => x.id !== r.id && x.is_active);
-  const dayLabel = (r: Row) => `${format(parseISO(r.event_date), "EEE d", { locale: dateLocale })} · ${r.period}`;
+  const dayLabel = (r: Row) => [format(parseISO(r.event_date), "EEE d", { locale: dateLocale }), r.period, r.meeting_time?.slice(0, 5), FIELD_MODALITY_LABELS[r.modality as Modality]].filter(Boolean).join(" · ");
   const rowSummary = (r: Row) =>
     [r.period, r.meeting_time?.slice(0, 5), r.meeting_location].filter(Boolean).join(" · ");
 
@@ -199,7 +199,7 @@ export function FieldMeetingsPanel() {
                 ) : (
                   dayRows.map((r) => (
                     <CollapseItem key={r.id} id={`ev:${r.id}`} summary={rowSummary(r)}>
-                      <RowCard row={r} isSuper={false} realSuper={isSuper} saving={false} update={update} remove={remove} targets={[]} dayLabel={dayLabel} />
+                      <RowCard row={r} isSuper={false} realSuper={isSuper} saving={false} update={update} remove={remove} targets={copyTargets(r)} dayLabel={dayLabel} />
                     </CollapseItem>
                   ))
                 )}
@@ -339,26 +339,26 @@ function RowCard({ row: r, isSuper, realSuper, saving, update, remove, targets, 
         )}
         {(show("territory_number") || show("territory_location") || show("auxiliary_leaders") || show("closing_prayer")) && (
           <EldersFillSection
-            defaultOpen={!realSuper}
+            autoOpen
             filled={countFilled([show("territory_number") ? territory_number : null, show("territory_location") ? territory_location : null, show("auxiliary_leaders") ? auxiliary_leaders : null, show("closing_prayer") ? closing_prayer : null])}
             total={(["territory_number", "territory_location", "auxiliary_leaders", "closing_prayer"] as FieldKey[]).filter(show).length}
           >
             {show("territory_number") && (
               <div>
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.territoryNumber")}</label>
-                <Input value={territory_number} readOnly={readOnly} onChange={(e) => setTerritoryNumber(e.target.value)} className="h-9 mt-0.5" />
+                <Input value={territory_number} readOnly={readOnly} onChange={(e) => setTerritoryNumber(e.target.value)} className={`h-9 mt-0.5 ${!readOnly && !territory_number.trim() ? "border-destructive focus-visible:ring-destructive" : ""}`} />
               </div>
             )}
             {show("territory_location") && (
               <div>
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.territoryLocation")}</label>
-                <Input value={territory_location} readOnly={readOnly} onChange={(e) => setTerritoryLocation(e.target.value)} className="h-9 mt-0.5" />
+                <Input value={territory_location} readOnly={readOnly} onChange={(e) => setTerritoryLocation(e.target.value)} className={`h-9 mt-0.5 ${!readOnly && !territory_location.trim() ? "border-destructive focus-visible:ring-destructive" : ""}`} />
               </div>
             )}
             {show("auxiliary_leaders") && (
               <div>
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.auxiliaryLeaders")}</label>
-                <Input value={auxiliary_leaders} readOnly={readOnly} onChange={(e) => setAuxiliaryLeaders(e.target.value)} className="h-9 mt-0.5" />
+                <Input value={auxiliary_leaders} readOnly={readOnly} onChange={(e) => setAuxiliaryLeaders(e.target.value)} className={`h-9 mt-0.5 ${!readOnly && !auxiliary_leaders.trim() ? "border-destructive focus-visible:ring-destructive" : ""}`} />
                 {!readOnly && (
                   <div className="flex justify-end mt-1">
                     <CopyToDays label={t("meetingsTalks.field.auxiliaryLeaders")} value={auxiliary_leaders} field="auxiliary_leaders" targets={targets} dayLabel={dayLabel} update={update} />
@@ -369,7 +369,7 @@ function RowCard({ row: r, isSuper, realSuper, saving, update, remove, targets, 
             {show("closing_prayer") && (
               <div>
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.closingPrayer")}</label>
-                <Input value={closing_prayer} readOnly={readOnly} onChange={(e) => setClosingPrayer(e.target.value)} className="h-9 mt-0.5" />
+                <Input value={closing_prayer} readOnly={readOnly} onChange={(e) => setClosingPrayer(e.target.value)} className={`h-9 mt-0.5 ${!readOnly && !closing_prayer.trim() ? "border-destructive focus-visible:ring-destructive" : ""}`} />
               </div>
             )}
           </EldersFillSection>
@@ -408,7 +408,7 @@ function CopyToDays({ label, value, field, targets, dayLabel, update }: {
   };
   return (
     <>
-      <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground" disabled={!value.trim()} onClick={() => setOpen(true)}>
+      <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs text-primary" disabled={!value.trim()} title={!value.trim() ? t("meetingsTalks.field.copyEmpty", { defaultValue: "Escreva algo para copiar" }) : undefined} onClick={() => setOpen(true)}>
         <Copy className="h-3.5 w-3.5 mr-1" />{t("meetingsTalks.field.copyTo", { defaultValue: "Copiar para…" })}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -425,6 +425,10 @@ function CopyToDays({ label, value, field, targets, dayLabel, update }: {
               </label>
             ))}
           </div>
+          <Button type="button" size="sm" variant="ghost" className="self-start h-7 px-2 text-xs text-primary"
+            onClick={() => setSel(targets.filter((r) => !(r[field] ?? "").trim()).map((r) => r.id))}>
+            {t("meetingsTalks.field.copyOnlyEmpty", { defaultValue: "Marcar só os vazios" })}
+          </Button>
           <DialogFooter className="flex-row gap-2">
             <Button variant="outline" className="flex-1" onClick={() => setOpen(false)}>{t("common.cancel", { defaultValue: "Cancelar" })}</Button>
             <Button className="flex-1" disabled={!sel.length} onClick={() => void run()}>{t("meetingsTalks.field.copy", { defaultValue: "Copiar" })}</Button>

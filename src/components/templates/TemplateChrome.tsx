@@ -3,7 +3,7 @@
  * celular, menu ⋮ de ações, linha recolhível e barra fixa no rodapé.
  * Somente apresentação: os handlers recebidos continuam os mesmos de antes.
  */
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight, Copy, Plus, Download, Loader2, MoreHorizontal, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -123,9 +123,12 @@ export function TemplatePicker({ items, activeId, onPick, placeholder }: {
 
 /** Linha recolhível estilo iOS/One UI; conteúdo fica oculto, nunca desmontado. */
 /** Bloco recolhível "A ser preenchido pelos Anciãos" (só visual; não muda permissões). */
-export function EldersFillSection({ filled, total, children, className, defaultOpen = false }: { filled: number; total: number; children: ReactNode; className?: string; defaultOpen?: boolean }) {
+export function EldersFillSection({ filled, total, children, className, defaultOpen = false, autoOpen = false }: { filled: number; total: number; children: ReactNode; className?: string; defaultOpen?: boolean; /** Programa da visita: abre enquanto faltar campo e marca o contador em vermelho. */ autoOpen?: boolean }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(defaultOpen);
+  const incomplete = total > 0 && filled < total;
+  const [open, setOpen] = useState(autoOpen ? incomplete : defaultOpen);
+  // Ficou faltando algo (ex.: alguém apagou um campo): reabre.
+  useEffect(() => { if (autoOpen && incomplete) setOpen(true); }, [autoOpen, incomplete]);
   return (
     <div className={cn("rounded-xl border border-dashed bg-muted/30", className)}>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
@@ -133,8 +136,8 @@ export function EldersFillSection({ filled, total, children, className, defaultO
         <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-90")} />
         <span className="min-w-0 flex-1 truncate">{t("templates.chrome.eldersFill", { defaultValue: "A ser preenchido pelos Anciãos" })}</span>
         {total > 0 && (
-          <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] tabular-nums", filled >= total ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground")}>
-            {filled}/{total}
+          <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] tabular-nums", filled >= total ? "bg-primary/15 text-primary" : autoOpen ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground")}>
+            {autoOpen && filled >= total ? "✓ " : ""}{filled}/{total}
           </span>
         )}
       </button>

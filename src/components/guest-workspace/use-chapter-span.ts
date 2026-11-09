@@ -15,7 +15,7 @@ export function useChapterSpan(chapterKey: string | null | undefined): string {
     let alive = true;
     void (async () => {
       const [book, chStr] = chapterKey.split(":");
-      const lib = await getActiveLibrary().catch(() => null);
+      const lib = await getActiveLibrary("reading").catch(() => null);
       if (!lib) return;
       const v = await getChapterFromLibrary(lib.id, book, Number(chStr)).catch(() => []);
       const s = chapterVerseSpan(v);

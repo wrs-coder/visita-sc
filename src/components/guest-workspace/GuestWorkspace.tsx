@@ -294,7 +294,7 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
   const [library, setLibrary] = useState<BibleLibrary | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
   const vh = useStableViewportHeight();
-  useEffect(() => { void getActiveLibrary().then(setLibrary).catch(() => null); }, []);
+  useEffect(() => { void getActiveLibrary("outlines").then(setLibrary).catch(() => null); }, []);
   const append = (html: string) => { onChange({ body: toNoteHtml(item.body) + html }); };
   const addNote = async () => { const n = (await appPrompt(t("guestWs.notePrompt", { defaultValue: "Nota explicativa" })))?.trim(); if (n) append(noteBlockHtml(n)); };
   const detected = useMemo(() => (library ? findCitations(library.books, stripHtmlForDetection(item.body)) : []), [library, item.body]);

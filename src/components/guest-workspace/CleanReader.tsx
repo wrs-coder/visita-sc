@@ -55,7 +55,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
     let alive = true;
     setVerses(null); setSel(null);
     void (async () => {
-      const lib = await getActiveLibrary().catch(() => null);
+      const lib = await getActiveLibrary("reading").catch(() => null);
       if (!lib) { if (alive) { setNoLib(true); setVerses([]); } return; }
       const v = await getChapterFromLibrary(lib.id, book, ch).catch(() => []);
       if (alive) { setNoLib(false); setLibId(lib.id); setVerses(v); }

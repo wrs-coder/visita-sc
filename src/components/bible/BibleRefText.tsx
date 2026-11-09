@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 let cached: Promise<BibleLibrary | null> | null = null;
 function loadLibrary(): Promise<BibleLibrary | null> {
-  if (!cached) cached = getActiveLibrary().catch(() => null);
+  if (!cached) cached = getActiveLibrary("outlines").catch(() => null);
   return cached;
 }
 
