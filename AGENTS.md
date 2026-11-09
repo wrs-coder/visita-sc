@@ -43,4 +43,3 @@
 - Congregation import parses on-device (congregation-import.ts) via createCongregation; no schema change.
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
-- Per-tab Bible choice (outlines vs reading) is device-local in bible-notes-store.ts (getActiveLibrary(scope)) and falls back to the global active Bible, picked only in Profile, so reader screens stay uncluttered and unset users see no change.
