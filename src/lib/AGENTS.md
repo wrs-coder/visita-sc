@@ -1,0 +1,1 @@
+- After a write, cached reads of that table and read server functions are only marked stale (response-cache.ts), never deleted, so offline reads never lose data.
