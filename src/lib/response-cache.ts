@@ -156,3 +156,55 @@ export async function storeResponse(
     /* corpo indisponível: segue sem guardar */
   }
 }
+
+// ---------------------------------------------------------------------------
+// "Foto vencida": depois de uma gravação, as cópias antigas daquela tabela (e
+// das funções de leitura) ficam marcadas como vencidas. Nada é apagado: sem
+// internet a cópia vencida continua servindo; com internet, a tela tenta a
+// cópia local atualizada (espelho) ou o servidor antes de usar a vencida.
+// ---------------------------------------------------------------------------
+const STALE_KEY = "visita-sc:stale-marks";
+type StaleMarks = { fn: number; tables: Record<string, number> };
+let staleMarks: StaleMarks | null = null;
+
+function loadMarks(): StaleMarks {
+  if (staleMarks) return staleMarks;
+  staleMarks = { fn: 0, tables: {} };
+  try {
+    const raw = typeof localStorage !== "undefined" ? localStorage.getItem(STALE_KEY) : null;
+    if (raw) {
+      const p = JSON.parse(raw) as Partial<StaleMarks>;
+      staleMarks = { fn: typeof p.fn === "number" ? p.fn : 0, tables: p.tables && typeof p.tables === "object" ? p.tables : {} };
+    }
+  } catch { /* sem armazenamento */ }
+  return staleMarks;
+}
+
+function saveMarks(): void {
+  try { if (typeof localStorage !== "undefined") localStorage.setItem(STALE_KEY, JSON.stringify(loadMarks())); } catch { /* quota */ }
+}
+
+/** Marca como vencidas as cópias de uma tabela guardadas até agora. */
+export function markTableStale(table: string, now = Date.now()): void {
+  loadMarks().tables[table] = now;
+  saveMarks();
+}
+
+/** Marca como vencidas as cópias das funções de leitura guardadas até agora. */
+export function markFnStale(now = Date.now()): void {
+  loadMarks().fn = now;
+  saveMarks();
+}
+
+/** A cópia foi guardada antes da última gravação relacionada? */
+export function isStale(entry: CachedResponse): boolean {
+  const m = loadMarks();
+  const mark = entry.kind === "fn" ? m.fn : entry.table ? m.tables[entry.table] ?? 0 : 0;
+  return entry.savedAt < mark;
+}
+
+/** Apenas para testes. */
+export function __resetStaleMarks(): void {
+  staleMarks = { fn: 0, tables: {} };
+  saveMarks();
+}

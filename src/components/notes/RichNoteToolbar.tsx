@@ -237,7 +237,7 @@ export function RichNoteToolbar({
 
   const promptLink = async () => {
     const prev = (editor.getAttributes("link") as { href?: string }).href ?? "";
-    const url = await appPrompt(t("personalOutlines.editor.toolbar.linkPrompt"), prev);
+    const url = await appPrompt(t("personalOutlines.editor.toolbar.linkPrompt"), prev, { allowEmpty: true });
     if (url === null) return;
     if (url === "") {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();

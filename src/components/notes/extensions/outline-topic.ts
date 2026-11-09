@@ -212,6 +212,7 @@ export const OutlineTopic = Node.create<OutlineTopicOptions>({
         const next = await appPrompt(
           labels.minutesPrompt ?? "Minutos deste tópico (vazio = sem controle de tempo)",
           suggested ? String(suggested) : "",
+          { allowEmpty: true },
         );
         if (next === null) return;
         if (selectInside()) editor.commands.setOutlineTopicMinutes(normalizeMinutes(next.trim()));

@@ -16,12 +16,14 @@ import {
   HIGHLIGHT_COLORS, addHighlight, buildSegments,
   removeHighlightAt, selectionRange, clearHighlights, getHighlights, highlightKey, loadSettings, saveSettings, type HighlightColor,
 } from "@/lib/bible-view-settings";
-import { abbreviateBookName } from "@/lib/book-abbrev";
+import { abbreviateBookAlways } from "@/lib/book-abbrev";
 import { cn } from "@/lib/utils";
 import { isRealTap, type TapStart } from "@/lib/tap-guard";
 
-export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDone, onHighlight, onImport, onNote, initialVerse }: {
+export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDone, onHighlight, onImport, onNote, initialVerse, bookProgress }: {
   initialVerse?: number | null;
+  /** Capítulos lidos do livro aberto (barra fina no topo). */
+  bookProgress?: { done: number; total: number };
   chapterKey: string; done: boolean; percent: number; fontClass: string;
   onBack: () => void; onDone: () => void; onHighlight: (ref: string) => void; onImport: () => void;
   onNote: (ref: string, text: string) => void;
@@ -32,7 +34,7 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
   const title = `${getLocalizedBookName(book, i18n.language) ?? book} ${ch}`;
   const [verses, setVerses] = useState<BibleVerseRecord[] | null>(null);
   const span = chapterVerseSpan(verses);
-  const shortTitle = `${abbreviateBookName(getLocalizedBookName(book, i18n.language) ?? book)} ${ch}${span}`;
+  const shortBook = `${abbreviateBookAlways(getLocalizedBookName(book, i18n.language) ?? book)} ${ch}`;
   const [libId, setLibId] = useState<string | null>(null);
   const [noLib, setNoLib] = useState(false);
   const [sel, setSel] = useState<number | null>(null);
@@ -181,13 +183,22 @@ export function CleanReader({ chapterKey, done, percent, fontClass, onBack, onDo
         <div className="flex h-12 items-center gap-1 px-1.5">
           <Button variant="ghost" size="icon" onClick={onBack} className="h-10 w-10 shrink-0 rounded-full text-muted-foreground" aria-label={t("guestWs.back", { defaultValue: "Voltar" })}><ArrowLeft className="h-5 w-5" /></Button>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="truncate text-sm font-semibold" title={`${title}${span}`}>{shortTitle}</p>
+            <p className="flex min-w-0 text-sm font-semibold" title={`${title}${span}`}><span className="truncate">{shortBook}</span><span className="shrink-0">{span}</span></p>
             <p className="text-[11px] text-muted-foreground">{percent}%</p>
           </div>
           <Button variant="outline" size="sm" className="h-9 shrink-0 gap-1 rounded-full px-2.5 text-xs" onClick={() => onHighlight(`${title}:`)}><PenLine className="h-3.5 w-3.5" />{t("guestWs.addHighlight", { defaultValue: "Ponto alto" })}</Button>
           <Button variant="ghost" size="sm" className="h-9 shrink-0 gap-0.5 rounded-full px-2" onClick={() => setSheet(true)} aria-label={t("guestWs.readerOptions", { defaultValue: "Opções de leitura" })}><Type className="h-4 w-4" /><Volume2 className="h-4 w-4 max-[359px]:hidden" /></Button>
           <Button size="sm" className={cn("h-9 shrink-0 gap-1 rounded-full px-2.5 text-xs", done ? "border border-success bg-success text-success-foreground hover:bg-success/90" : "border border-border bg-transparent text-muted-foreground hover:bg-muted")} variant="ghost" aria-pressed={done} onClick={() => { if (!done) { try { navigator.vibrate?.(15); } catch { /* sem vibração */ } toast.success("Capítulo marcado como lido"); } onDone(); }} aria-label={done ? "Lido — toque para desmarcar" : "Marcar capítulo como lido"}>{done ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}<span className="max-[359px]:hidden">{t("guestWs.markRead", { defaultValue: "Lido" })}</span></Button>
         </div>
+        {bookProgress && bookProgress.total > 0 && (
+          <div className="flex items-center gap-2 px-4 pb-2 text-[11px] text-muted-foreground" aria-label={t("guestWs.bookProgress", { defaultValue: "Progresso do livro" })}>
+            <span className="max-w-[40%] truncate">{getLocalizedBookName(book, i18n.language) ?? book}</span>
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={bookProgress.total} aria-valuenow={bookProgress.done}>
+              <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${Math.round((bookProgress.done / bookProgress.total) * 100)}%` }} />
+            </div>
+            <span className="shrink-0 tabular-nums">{bookProgress.done}/{bookProgress.total}</span>
+          </div>
+        )}
       </div>
       <div ref={scrollRef} onScroll={() => { if (pill) setPill(null); }} className={cn("relative flex-1 overflow-y-auto", !selected && speakIdx === null && "bar-bottom")}>
         <article className={cn("mx-auto max-w-2xl px-5 pb-28", fontClass, rs.font !== "system" && `reader-font-${rs.font}`)} style={{ fontSize: rs.textScale !== 1 ? `${rs.textScale}em` : undefined, lineHeight: rs.lineHeight }}>

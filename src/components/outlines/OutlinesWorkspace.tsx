@@ -2493,6 +2493,18 @@ function NoteEditor({
             )}
           </Button>
           )}
+          {(mode === "outline" || mode === "edit") && !isTalk && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={onFullscreen}
+              title={t("personalOutlines.fullscreen.enter")}
+              aria-label={t("personalOutlines.fullscreen.enter")}
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={t("personalOutlines.editor.moreActions", { defaultValue: "Mais ações" })}>

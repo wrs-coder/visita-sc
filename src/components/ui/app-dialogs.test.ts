@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { appConfirm, appPrompt } from "./app-dialogs";
+import { appConfirm, appPrompt, promptCanSubmit } from "./app-dialogs";
 
 const w = { confirm: vi.fn(), prompt: vi.fn() };
 vi.stubGlobal("window", w);
@@ -17,5 +17,15 @@ describe("app dialogs fallback (no host mounted)", () => {
     expect(await appPrompt("Novo modelo", "Modelo 1")).toBe("Modelo 2");
     w.prompt.mockReturnValue(null);
     expect(await appPrompt("Novo modelo")).toBeNull();
+  });
+});
+
+describe("prompt com campo vazio", () => {
+  it("caixa comum exige texto", () => {
+    expect(promptCanSubmit("  ")).toBe(false);
+    expect(promptCanSubmit("Pasta")).toBe(true);
+  });
+  it("link e minutos do tópico aceitam vazio (remove link / desliga o tempo)", () => {
+    expect(promptCanSubmit("", true)).toBe(true);
   });
 });

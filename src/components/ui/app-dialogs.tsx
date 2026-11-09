@@ -30,6 +30,8 @@ export type PromptOptions = {
   defaultValue?: string;
   placeholder?: string;
   confirmLabel?: string;
+  /** Permite salvar com o campo vazio (resolve ""), como o prompt nativo. */
+  allowEmpty?: boolean;
 };
 
 type Req =
@@ -65,6 +67,11 @@ export function appPrompt(title: string, defaultValue?: string, extra?: Omit<Pro
   return new Promise((resolve) => p({ kind: "prompt", opts, resolve }));
 }
 
+/** Salvar fica ativo com texto, ou vazio quando a caixa aceita vazio. */
+export function promptCanSubmit(value: string, allowEmpty?: boolean): boolean {
+  return !!allowEmpty || value.trim().length > 0;
+}
+
 export function AppDialogsHost() {
   const { t } = useTranslation();
   const [queue, setQueue] = useState<Req[]>([]);
@@ -97,6 +104,7 @@ export function AppDialogsHost() {
   const cancel = t("common.cancel", { defaultValue: "Cancelar" });
   const isPrompt = cur?.kind === "prompt";
   const destructive = cur?.kind === "confirm" && cur.opts.destructive;
+  const canSubmit = !isPrompt || promptCanSubmit(value, (cur.opts as PromptOptions).allowEmpty);
   const okLabel = cur
     ? cur.opts.confirmLabel ??
       (isPrompt ? t("common.save", { defaultValue: "Salvar" }) : destructive ? t("common.delete", { defaultValue: "Excluir" }) : t("common.confirm", { defaultValue: "Confirmar" }))
@@ -119,7 +127,7 @@ export function AppDialogsHost() {
           )}
         </AlertDialogHeader>
         {isPrompt && (
-          <form onSubmit={(e) => { e.preventDefault(); if (value.trim()) finish(true); }}>
+          <form onSubmit={(e) => { e.preventDefault(); if (canSubmit) finish(true); }}>
             <Input
               ref={inputRef}
               autoFocus
@@ -134,7 +142,7 @@ export function AppDialogsHost() {
         <AlertDialogFooter className="flex-row gap-2 sm:justify-end">
           <AlertDialogCancel className="mt-0 flex-1 rounded-xl sm:flex-none" onClick={() => finish(false)}>{cancel}</AlertDialogCancel>
           <AlertDialogAction
-            disabled={isPrompt && !value.trim()}
+            disabled={!canSubmit}
             className={`flex-1 rounded-xl sm:flex-none ${destructive ? buttonVariants({ variant: "destructive" }) : ""}`}
             onClick={(e) => { e.preventDefault(); finish(true); }}
           >

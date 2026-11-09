@@ -43,3 +43,4 @@
 - Congregation import parses on-device (congregation-import.ts) via createCongregation; no schema change.
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
+- After a successful write, cached responses for that table and all read server functions are only marked stale (timestamps in localStorage, response-cache.ts), never deleted: stale copies yield to the mirror or network but still serve offline, because offline reads must never lose data.
