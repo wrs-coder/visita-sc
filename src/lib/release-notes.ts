@@ -104,7 +104,7 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.4.0";
+export const RELEASE_NOTES_VERSION = "5.5.0";
 
 /**
  * Aviso automático "O que há de novo" nesta versão: desligado a pedido.
@@ -114,6 +114,36 @@ export const RELEASE_NOTES_VERSION = "5.4.0";
 export const WHATS_NEW_AUTO_SHOW = true;
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "5.5.0",
+    sections: [
+      {
+        title: "Modelos e Programa da Visita", audience: ["super", "elder"],
+        items: [
+          "Bloco \"A ser preenchido pelos Anciãos\" abre sozinho enquanto houver campos vazios, com destaque em vermelho nos pendentes.",
+          "Reunião de campo: escolha quais campos solicitar aos anciãos (território, localização, dirigentes auxiliares e oração final).",
+          "Botão \"Copiar para…\" replica local e dirigentes para outros dias e turnos, com atalho \"Marcar só os vazios\".",
+          "Barra do topo igual em todas as abas, com a congregação e o aviso de salvamento.",
+          "Anciãos podem adicionar novos assuntos locais no botão \"+ Adicionar\".",
+        ],
+      },
+      {
+        title: "Bíblia independente por aba", audience: ["super"],
+        items: [
+          "Em Meu perfil › Bíblia, escolha uma versão para Esboços e anotações e outra para a Leitura da Bíblia, sem trocar toda vez.",
+        ],
+      },
+      {
+        title: "Leitura da Bíblia", audience: ["super", "wife"],
+        items: [
+          "Reunião semanal: um botão por capítulo com todos os versículos (ex.: Gên 17:1-27) e marca de lido.",
+          "Barra do livro mostra o capítulo atual e a porcentagem real do livro.",
+          "Leitura atrasada contada por dia da semana: cada dia tem seu próprio ciclo de 7 dias e o dia atrasado fica em vermelho.",
+          "O histórico de leitura agora vai junto no backup, sem falsos avisos ao restaurar.",
+        ],
+      },
+    ],
+  },
   {
     version: "5.4.0",
     sections: [
