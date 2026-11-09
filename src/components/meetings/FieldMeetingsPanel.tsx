@@ -320,7 +320,14 @@ function RowCard({ row: r, isSuper, realSuper, saving, update, remove, targets, 
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.time")}</label>
             <Input type="time" value={meeting_time} readOnly={!isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />
           </div>
-          <div className="col-span-2">
+        </div>
+        {(
+          <EldersFillSection
+            autoOpen
+            filled={countFilled([meeting_location, show("territory_number") ? territory_number : null, show("territory_location") ? territory_location : null, show("auxiliary_leaders") ? auxiliary_leaders : null, show("closing_prayer") ? closing_prayer : null])}
+            total={1 + (["territory_number", "territory_location", "auxiliary_leaders", "closing_prayer"] as FieldKey[]).filter(show).length}
+          >
+            <div>
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
               {t("meetingsTalks.field.location")} <span className="text-destructive">*</span>
             </label>
@@ -330,19 +337,12 @@ function RowCard({ row: r, isSuper, realSuper, saving, update, remove, targets, 
               placeholder={t("meetingsTalks.field.locationPlaceholder")}
               className={`h-9 mt-0.5 ${locationMissing ? "border-destructive focus-visible:ring-destructive" : ""}`}
             />
-          </div>
-        </div>
-        {!readOnly && (
-          <div className="flex justify-end -mt-1">
+              {!readOnly && (
+          <div className="flex justify-end mt-1">
             <CopyToDays label={t("meetingsTalks.field.location")} value={meeting_location} field="meeting_location" targets={targets} dayLabel={dayLabel} update={update} />
           </div>
         )}
-        {(show("territory_number") || show("territory_location") || show("auxiliary_leaders") || show("closing_prayer")) && (
-          <EldersFillSection
-            autoOpen
-            filled={countFilled([show("territory_number") ? territory_number : null, show("territory_location") ? territory_location : null, show("auxiliary_leaders") ? auxiliary_leaders : null, show("closing_prayer") ? closing_prayer : null])}
-            total={(["territory_number", "territory_location", "auxiliary_leaders", "closing_prayer"] as FieldKey[]).filter(show).length}
-          >
+            </div>
             {show("territory_number") && (
               <div>
                 <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.territoryNumber")}</label>

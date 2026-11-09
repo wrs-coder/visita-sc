@@ -27,7 +27,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Plus, Trash2, MapPin, AlertCircle, Save } from "lucide-react";
 import { TemplateHeaderRow, InfoDisclosure, TemplateFooterBar, EldersFillSection, countFilled } from "@/components/templates/TemplateChrome";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CollapseProvider, CollapseBody, CollapseItem, CollapseAllButton, CollapseIdToggle } from "@/components/ui/collapsible-blocks";
+import { CollapseProvider, CollapseItem, CollapseAllButton } from "@/components/ui/collapsible-blocks";
 import { DayPills, useTemplateDays } from "@/components/templates/DayPills";
 import { MONDAY_OFFSET } from "@/lib/template-day-pills";
 import { toast } from "sonner";
@@ -334,24 +334,16 @@ function Page() {
                 ) : (
                   <CollapseProvider scope="tpl-field" visitId={active?.id ?? null} closedByDefault={["ev:"]}>
                   <div className="flex justify-end">
-                    <CollapseAllButton ids={[...DAY_OPTS.map((d) => `day:${d}`), ...items.map((_, i) => `ev:${i}`)]} />
+                    <CollapseAllButton ids={[...items.map((_, i) => `ev:${i}`)]} />
                   </div>
                   <div className="space-y-3">
                     {[dayState.activeDay].map((d) => (
                     <section key={d}>
-                      <div className="flex items-center gap-1 mb-1">
-                        <CollapseIdToggle id={`day:${d}`} />
-                        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{DAY_LABEL[d]}</div>
-                      </div>
-                      <CollapseBody id={`day:${d}`} className="space-y-2">
+                      <div className="space-y-2">
                     {items.map((it, idx) => it.day_offset !== d ? null : (
                       <CollapseItem key={idx} id={`ev:${idx}`} summary={[it.period, it.meeting_time?.slice(0, 5), modalityLabel(it.modality)].filter(Boolean).join(" · ")}>
                       <div className="border rounded-md p-3 space-y-2 bg-muted/30">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <Select value={String(it.day_offset)} onValueChange={(v) => updateItem(idx, { day_offset: Number(v) })}>
-                            <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
-                            <SelectContent>{dayState.days.map((d) => <SelectItem key={d} value={String(d)}>{DAY_LABEL[d]}</SelectItem>)}</SelectContent>
-                          </Select>
                           <Select value={it.period} onValueChange={(v) => updateItem(idx, { period: v })}>
                             <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
                             <SelectContent>
@@ -413,7 +405,7 @@ function Page() {
                       </div>
                       </CollapseItem>
                     ))}
-                      </CollapseBody>
+                      </div>
                     </section>
                     ))}
                   </div>
