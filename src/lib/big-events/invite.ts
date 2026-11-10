@@ -45,14 +45,22 @@ export function toMin(t: string | null | undefined): number | null {
 export const fromMin = (n: number) => `${String(Math.floor(n / 60) % 24).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 
 /** Recalcula horários: partes 'auto' começam ao fim da anterior; 'manual' mantêm a hora e servem de nova base. */
-export function recomputeTimes<T extends { id: string; sort_order: number; part_time: string | null; duration_min: number | null; time_mode?: string | null; part_type_label?: string | null }>(start: string | null, parts: T[]): Array<{ id: string; part_time: string | null }> {
+export function recomputeTimes<T extends { id: string; sort_order: number; part_time: string | null; duration_min: number | null; time_mode?: string | null; part_type_label?: string | null; part_type_id?: string | null }>(start: string | null, parts: T[]): Array<{ id: string; part_time: string | null }> {
   const sorted = [...parts].sort((a, b) => a.sort_order - b.sort_order);
   let cur = toMin(start);
+  let series: number | null = null; // relógio dos discursos da série (não move o programa)
   const out: Array<{ id: string; part_time: string | null }> = [];
   for (const p of sorted) {
     let t: number | null;
+    if (p.part_type_id === "SeriesItem") {
+      t = series ?? cur;
+      out.push({ id: p.id, part_time: t == null ? p.part_time : fromMin(t) });
+      if (t != null) series = t + (p.duration_min ?? 0);
+      continue;
+    }
     if (p.time_mode === "manual" && toMin(p.part_time) != null) t = toMin(p.part_time);
     else t = cur;
+    series = p.part_type_id === "SeriesHead" ? t : null;
     out.push({ id: p.id, part_time: t == null ? p.part_time : fromMin(t) });
     if (FLOATING.has(p.part_type_label ?? "")) continue; // Oração/Presidente não empurram o programa
     cur = t == null ? null : t + (p.duration_min ?? 0);

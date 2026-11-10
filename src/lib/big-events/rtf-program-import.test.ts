@@ -25,14 +25,16 @@ describe("importar programa .rtf", () => {
     const r = parseRtfProgram(rtf);
     expect(r.parts.map((p) => p.theme)).toEqual([
       "Cântico 5",
+      "Série de discursos: Imite aqueles que confiaram em Jeová!",
       "Imite aqueles que confiaram em Jeová! — Baraque",
       "Imite aqueles que confiaram em Jeová! — A mulher sunamita",
       "Imite aqueles que confiaram em Jeová! — Daniel, Hananias, Misael e Azarias",
       "Cântico 45",
     ]);
-    expect(r.parts.slice(1, 4).map((p) => p.duration_min)).toEqual([null, null, null]);
-    expect(r.parts.slice(1, 4).every((p) => p.symposium && p.assigned_to === "speaker")).toBe(true);
-    expect(r.parts.map((p) => p.part_time)).toEqual(["10:10", "10:15", null, null, "11:00"]);
+    expect(r.parts[1]).toMatchObject({ assigned_to: "none", duration_min: 45, part_time: "10:15" });
+    expect(r.parts.slice(2, 5).map((p) => p.duration_min)).toEqual([null, null, null]);
+    expect(r.parts.slice(2, 5).every((p) => p.symposium && p.assigned_to === "speaker")).toBe(true);
+    expect(r.parts.map((p) => p.part_time)).toEqual(["10:10", "10:15", null, null, null, "11:00"]);
     expect(r.parts[0].duration_min).toBe(5);
   });
 });

@@ -7,6 +7,10 @@ import { fromMin, toMin } from "./invite";
 export const PRAYER_TYPE = "Oração";
 export const CHAIR_TYPE = "Presidência do programa";
 /** Partes que acontecem "junto" com outra: não somam tempo nem recebem número. */
+/** Título da Série de discursos (conta no programa) e cada discurso dela (tempo só informativo). */
+export const SERIES_HEAD = "SeriesHead";
+export const SERIES_ITEM = "SeriesItem";
+export const isSeriesItem = (p: { part_type_id?: string | null }) => p.part_type_id === SERIES_ITEM;
 export const isFloatingType = (label: string | null | undefined) => label === PRAYER_TYPE || label === CHAIR_TYPE;
 
 const PRAYER_SONG = /^c[aâ]ntico\b.*\be\s+ora[cç][aã]o\b/i;
@@ -51,6 +55,14 @@ export function applyProgramRules(input: EtimPart[], opts: { renumber?: boolean 
     }
   });
   // (01) Numeração: todas as partes com designado, menos Oração e Presidente.
+  // Horário mostrado dos discursos da série: em sequência a partir do título.
+  let clock: number | null = null;
+  for (const p of out) {
+    p.time_mode = p.time_mode ?? "auto";
+    if (p.part_type_id === SERIES_HEAD) clock = toMin(p.part_time);
+    else if (isSeriesItem(p)) { if (!p.part_time && clock != null) p.part_time = fromMin(clock); if (clock != null) clock += p.duration_min ?? 0; }
+    else clock = null;
+  }
   const numbered = (p: EtimPart) => p.assigned_to !== "none" && !isFloatingType(p.part_type_label);
   if (opts.renumber || !out.some((p) => numbered(p) && p.outline_number)) {
     let n = 0;

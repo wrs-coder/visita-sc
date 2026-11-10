@@ -1,6 +1,7 @@
 // Lê o programa da assembleia em .rtf (exportado do jw.org) e devolve as partes.
 // Arquivo é entrada não confiável: tamanho limitado e só texto é extraído.
 import type { EtimPart, ProgramImport } from "./etim-import";
+import { SERIES_HEAD, SERIES_ITEM } from "./program-rules";
 
 /** Converte RTF em texto simples (uma linha por parágrafo). */
 export function rtfToText(rtf: string): string {
@@ -69,13 +70,12 @@ export function parseRtfProgram(rtf: string): ProgramImport {
         const item = l.replace(/^[•·\-–]\s*/, "").trim();
         const series = p.series ?? (p.symposium && /^[•·\-–]/.test(l) ? p : null);
         if (series && /^[•·\-–]/.test(l) && item && parts.length <= 80) {
-          // Série de discursos: cada marcador vira uma parte própria, com tema completo e tempo em branco.
+          // Série de discursos: o título fica (conta no programa) e cada marcador vira um discurso próprio,
+          // com tema completo e tempo em branco (só informativo, não soma no programa).
           const base = series.theme.replace(/^s[eé]rie de discursos:\s*/i, "").trim() || series.theme;
-          const child = { ...series, theme: `${base} — ${item}`.slice(0, 300), duration_min: null, talk_includes: [], series, seriesChild: true,
-            part_time: series.seriesUsed ? null : series.part_time };
-          if (!series.seriesUsed) { series.seriesUsed = true; parts[parts.indexOf(series)] = { ...child, series } ; parts[parts.length - 1].series = series; }
-          else parts.push(child);
-        } else if (p.assigned_to !== "none" && p.talk_includes.length < 10) p.talk_includes.push(item.slice(0, 200));
+          parts.push({ ...series, theme: `${base} — ${item}`.slice(0, 300), duration_min: null, talk_includes: [], series, seriesChild: true,
+            part_time: null, part_type_id: SERIES_ITEM, symposium: true, assigned_to: "speaker", time_mode: "auto" });
+        } else if ((p.assigned_to !== "none" || p.part_type_id === SERIES_HEAD) && p.talk_includes.length < 10) p.talk_includes.push(item.slice(0, 200));
       }
       continue;
     }
@@ -90,13 +90,17 @@ export function parseRtfProgram(rtf: string): ProgramImport {
       min: h * 60 + mi,
       part_time: `${String(h).padStart(2, "0")}:${String(mi).padStart(2, "0")}`,
       duration_min: null, theme, outline_number: null, instructions: null,
-      part_type_id: none ? "Song" : null, part_type_label: null,
-      symposium: /^s[eé]rie de discursos/i.test(theme), talk_includes: [], assigned_to: none ? "none" : "speaker",
+      ...(/^s[eé]rie de discursos/i.test(theme)
+        ? { part_type_id: SERIES_HEAD, part_type_label: "Simpósio", symposium: true, assigned_to: "none" as const }
+        : { part_type_id: none ? "Song" : null, part_type_label: null, symposium: false, assigned_to: none ? "none" as const : "speaker" as const }),
+      talk_includes: [],
     });
     if (parts.length > 80) break;
   }
   if (!parts.length) throw new Error("Não encontrei horários neste arquivo .rtf.");
-  for (let i = 0; i < parts.length - 1; i++) { if (parts[i].seriesChild || parts[i + 1].seriesChild && parts[i + 1].part_time == null) continue; const d = parts[i + 1].min - parts[i].min; if (d > 0 && d <= 60) parts[i].duration_min = d; }
+  // Tempo de cada parte = até o próximo horário (os discursos da série não entram nessa conta).
+  const timed = parts.filter((p) => !p.seriesChild);
+  for (let i = 0; i < timed.length - 1; i++) { const d = timed[i + 1].min - timed[i].min; if (d > 0 && d <= 90) timed[i].duration_min = d; }
   const title = (titleLines[1] ?? titleLines[0] ?? "").split(/ — | - /)[0].replace(/^["“”']+|["“”']+$/g, "").trim().slice(0, 200) || null;
   return { format: "etim", title, parts: parts.map(({ min: _m, series: _s, seriesChild: _c, seriesUsed: _u, ...p }) => p) };
 }

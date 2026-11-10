@@ -18,7 +18,7 @@ import { parseProgramFile, parseCircuitManagerCsv, decodeText, ETIM_MAX_BYTES, t
 import { parseRtfProgram } from "@/lib/big-events/rtf-program-import";
 import { buildEventFile, isEventFile, parseEventFile, EVENT_FILE_EXT } from "@/lib/big-events/event-share-file";
 import { buildInviteText, formatEventDate, generatePin, hashPin, isValidPin, recomputeTimes, toMin, fromMin, PART_TYPES, ASSIGNED_LABEL, PART_EXTRAS, readExtras, withExtras } from "@/lib/big-events/invite";
-import { applyProgramRules, isFloatingType } from "@/lib/big-events/program-rules";
+import { applyProgramRules, isFloatingType, isSeriesItem, SERIES_HEAD } from "@/lib/big-events/program-rules";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { htmlToDocx, safeFileName, DOCX_MIME } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
@@ -145,8 +145,18 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     if (error || !ev) { toast.error("Não foi possível criar o evento."); return; }
     const ps = dialog?.parts ?? [];
     if (ps.length) {
-      const { error: pe } = await supabase.from("circuit_big_event_parts").insert(ps.map((p, i) => ({ ...p, event_id: ev.id, superintendent_id: user.id, sort_order: i, personal_token: form.link_mode === "personal" && p.assigned_to === "speaker" ? crypto.randomUUID() : null })));
-      if (pe) toast.error("Evento criado, mas as partes não foram salvas.");
+      // Todas as partes com as mesmas colunas preenchidas: o lote não pode levar campo vazio obrigatório.
+      const { error: pe } = await supabase.from("circuit_big_event_parts").insert(ps.map((p, i) => ({
+        ...p, time_mode: p.time_mode ?? "auto", speaker_name: p.speaker_name ?? null,
+        event_id: ev.id, superintendent_id: user.id, sort_order: i,
+        personal_token: form.link_mode === "personal" && p.assigned_to === "speaker" ? crypto.randomUUID() : null,
+      })));
+      if (pe) {
+        await supabase.from("circuit_big_events").delete().eq("id", ev.id);
+        toast.error("Não foi possível importar as partes. Tente de novo.");
+        await load();
+        return;
+      }
     }
     setDialog(null);
     toggle(ev.id);
@@ -409,7 +419,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     const overlapIds = new Set<string>();
     let last: PartRow | null = null;
     for (const p of evParts) {
-      if (isFloatingType(p.part_type_label)) continue;
+      if (isFloatingType(p.part_type_label) || isSeriesItem(p)) continue;
       if (last && p.time_mode === "manual" && toMin(last.part_time) != null && toMin(p.part_time) != null
         && toMin(last.part_time)! + (last.duration_min ?? 0) > toMin(p.part_time)!) overlapIds.add(p.id);
       last = p;
@@ -426,6 +436,14 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       if (!k || isFloatingType(p.part_type_label)) return null;
       const others = (byName.get(k) ?? []).filter((x) => x.id !== p.id);
       return others.length ? others.map((x) => (x.outline_number ? `parte ${x.outline_number}` : x.part_time ?? x.theme)).join(", ") : null;
+    };
+    // Série de discursos: soma dos discursos (informativa) comparada ao tempo do título.
+    const seriesNote = (p: PartRow) => {
+      if (p.part_type_id !== SERIES_HEAD || !p.duration_min) return null;
+      const i = evParts.findIndex((x) => x.id === p.id);
+      let sum = 0, n = 0;
+      for (const x of evParts.slice(i + 1)) { if (!isSeriesItem(x)) break; sum += x.duration_min ?? 0; n++; }
+      return n && sum > p.duration_min ? `Os discursos somam ${sum} min; a série tem ${p.duration_min} min.` : null;
     };
     const pill = (v: PartFilter, n: number, label: string, tone: string) => (
       <button type="button" onClick={() => setF(v)} aria-pressed={f === v}
@@ -514,7 +532,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
           </div>
           <ul className="divide-y rounded-lg border">
             {shown.map((p, i) => {
-              return <PartItem key={p.id} ev={ev} elders={elders} part={p} overlap={overlapIds.has(p.id)} alsoIn={alsoIn(p)} first={i === 0} last={i === shown.length - 1}
+              return <PartItem key={p.id} ev={ev} elders={elders} part={p} overlap={overlapIds.has(p.id)} alsoIn={alsoIn(p)} note={seriesNote(p)} first={i === 0} last={i === shown.length - 1}
                 onPatch={patchPart} onSetPin={setPin} onNewPin={newPin} onCopy={copyInvite} onNewLink={newLink}
                 onEdit={() => setEditor({ ev, part: p, afterOrder: null })} onAddAfter={() => setEditor({ ev, part: null, afterOrder: p.sort_order })}
                 onMove={(d) => movePart(ev, p, d)} onDelete={() => deletePart(ev, p)} />;
@@ -730,8 +748,8 @@ function PartEditorDialog({ part, prevEnd, nextNumber, onCancel, onSave }: {
   );
 }
 
-function PartItem({ ev, elders, part, overlap, alsoIn, first, last, onPatch, onSetPin, onNewPin, onCopy, onNewLink, onEdit, onAddAfter, onMove, onDelete }: {
-  ev: EventRow; elders: Array<{ name: string; congregation: string }>; part: PartRow; overlap: boolean; alsoIn: string | null; first: boolean; last: boolean;
+function PartItem({ ev, elders, part, overlap, alsoIn, note, first, last, onPatch, onSetPin, onNewPin, onCopy, onNewLink, onEdit, onAddAfter, onMove, onDelete }: {
+  ev: EventRow; elders: Array<{ name: string; congregation: string }>; part: PartRow; overlap: boolean; alsoIn: string | null; note: string | null; first: boolean; last: boolean;
   onNewLink: (p: PartRow) => Promise<void>; onEdit: () => void; onAddAfter: () => void;
   onMove: (d: -1 | 1) => void; onDelete: () => void;
   onPatch: (id: string, p: Partial<PartRow>) => Promise<unknown>;
@@ -754,7 +772,7 @@ function PartItem({ ev, elders, part, overlap, alsoIn, first, last, onPatch, onS
         <span className="w-14 shrink-0 text-xs font-medium text-muted-foreground">{head}</span>
         <span className="min-w-0 flex-1">
           <span className="block">{part.theme}</span>
-          <span className="block text-xs text-muted-foreground">{[part.part_type_label, part.duration_min ? `${part.duration_min} min` : null, part.symposium ? "Simpósio" : null].filter(Boolean).join(" · ")}</span>
+          <span className="block text-xs text-muted-foreground">{[part.part_type_label, part.duration_min ? `${part.duration_min} min${isSeriesItem(part) ? " (informativo)" : ""}` : null, part.symposium && part.part_type_label !== "Simpósio" ? "Simpósio" : null].filter(Boolean).join(" · ")}</span>
           {part.symposium && part.assigned_to === "speaker" && part.duration_min == null && (
             <button type="button" onClick={onEdit} className="mt-0.5 block text-left text-xs font-medium text-destructive">⚠ Falta inserir o tempo</button>
           )}
@@ -773,6 +791,7 @@ function PartItem({ ev, elders, part, overlap, alsoIn, first, last, onPatch, onS
         </DropdownMenu>
       </div>
       {overlap && <p className="pl-16 text-xs text-destructive">Este horário começa antes do fim da parte anterior.</p>}
+      {note && <p className="ml-16 w-fit rounded-lg bg-warning/15 px-2 py-1 text-xs font-medium text-warning-foreground">⚠ {note}</p>}
       {alsoIn && <p className="ml-16 w-fit rounded-lg bg-warning/15 px-2 py-1 text-xs font-medium text-warning-foreground">⚠ Este ancião também está na {alsoIn}.</p>}
       {part.assigned_to === "speaker" && (
         <div className="space-y-2 pl-16">

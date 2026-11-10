@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "fs";
 import { applyProgramRules, typeForTheme } from "./program-rules";
 import { parseRtfProgram } from "./rtf-program-import";
 import { recomputeTimes } from "./invite";
@@ -53,5 +54,27 @@ describe("regras da importação do programa", () => {
     const p = applyProgramRules([{ part_time: "10:00", duration_min: 10, theme: "Tema", outline_number: "7", instructions: null, part_type_id: null, part_type_label: null, symposium: false, talk_includes: [], assigned_to: "speaker" }]);
     expect(p[0].outline_number).toBe("7");
     expect(p[0].part_type_label).toBe("Discurso");
+  });
+});
+
+describe("programa real do jw.org (Assembleia de Circuito 2026-2027)", () => {
+  const text = readFileSync(new URL("./sample-program.rtf", import.meta.url), "latin1");
+  const p = applyProgramRules(parseRtfProgram(text).parts, { renumber: true });
+  it("título da série conta no programa com o tempo total; discursos sem tempo", () => {
+    const heads = p.filter((x) => x.theme.startsWith("Série de discursos"));
+    expect(heads.map((x) => [x.part_time, x.duration_min, x.outline_number])).toEqual([["10:15", 50, null], ["14:45", 45, null]]);
+    const items = p.filter((x) => x.part_type_id === "SeriesItem");
+    expect(items).toHaveLength(6);
+    expect(items.every((x) => x.duration_min == null && x.assigned_to === "speaker")).toBe(true);
+    expect(items.map((x) => x.outline_number)).toEqual(["2", "3", "4", "9", "10", "11"]);
+  });
+  it("toda parte sai com o modo de horário preenchido (o lote não pode ter campo vazio)", () => {
+    expect(p.every((x) => x.time_mode === "auto" || x.time_mode === "manual")).toBe(true);
+  });
+  it("discursos da série não deslocam o horário do programa", () => {
+    const rows = p.map((x, i) => ({ ...x, id: String(i), sort_order: i }));
+    const t = recomputeTimes("09:00", rows);
+    const after = rows.findIndex((x) => x.theme.startsWith("Cântico 57"));
+    expect(t[after].part_time).toBe("11:05");
   });
 });
