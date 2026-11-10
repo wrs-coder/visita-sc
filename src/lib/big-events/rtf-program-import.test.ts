@@ -20,4 +20,19 @@ describe("importar programa .rtf", () => {
     expect(r.parts[4].talk_includes).toEqual(["Um estilo de vida simples"]);
     expect(r.title).toBe("Encontre a Mais Plena Alegria em Jeová");
   });
+  it("série de discursos: um discurso por marcador, tema completo e tempo em branco", () => {
+    const rtf = String.raw`{\rtf1\ansi\pard Programa\par X\par Manh\u227?\par 10:10 C\u226?ntico 5\par 10:15 S\u233?rie de discursos: Imite aqueles que confiaram em Jeov\u225?!\par \u8226? Baraque\par \u8226? A mulher sunamita\par \u8226? Daniel, Hananias, Misael e Azarias\par 11:00 C\u226?ntico 45\par}`;
+    const r = parseRtfProgram(rtf);
+    expect(r.parts.map((p) => p.theme)).toEqual([
+      "Cântico 5",
+      "Imite aqueles que confiaram em Jeová! — Baraque",
+      "Imite aqueles que confiaram em Jeová! — A mulher sunamita",
+      "Imite aqueles que confiaram em Jeová! — Daniel, Hananias, Misael e Azarias",
+      "Cântico 45",
+    ]);
+    expect(r.parts.slice(1, 4).map((p) => p.duration_min)).toEqual([null, null, null]);
+    expect(r.parts.slice(1, 4).every((p) => p.symposium && p.assigned_to === "speaker")).toBe(true);
+    expect(r.parts.map((p) => p.part_time)).toEqual(["10:10", "10:15", null, null, "11:00"]);
+    expect(r.parts[0].duration_min).toBe(5);
+  });
 });

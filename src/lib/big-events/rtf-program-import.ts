@@ -54,7 +54,8 @@ const TIME = /^(\d{1,2}):(\d{2})\s*(.+)$/;
 export function parseRtfProgram(rtf: string): ProgramImport {
   const lines = rtfToText(rtf).split("\n").map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
   const titleLines: string[] = [];
-  const parts: (EtimPart & { min: number })[] = [];
+  type P = EtimPart & { min: number; series?: P; seriesChild?: boolean; seriesUsed?: boolean };
+  const parts: P[] = [];
   let afternoon = false, started = false;
   for (const l of lines) {
     if (/^preste aten[cç][aã]o/i.test(l)) break;
@@ -63,7 +64,19 @@ export function parseRtfProgram(rtf: string): ProgramImport {
     const m = TIME.exec(l);
     if (!m) {
       if (!started && !parts.length && titleLines.length < 2 && !l.startsWith("[")) titleLines.push(l);
-      else if (parts.length && started) { const p = parts[parts.length - 1]; if (p.assigned_to !== "none" && p.talk_includes.length < 10) p.talk_includes.push(l.replace(/^[•·\-–]\s*/, "").slice(0, 200)); }
+      else if (parts.length && started) {
+        const p = parts[parts.length - 1];
+        const item = l.replace(/^[•·\-–]\s*/, "").trim();
+        const series = p.series ?? (p.symposium && /^[•·\-–]/.test(l) ? p : null);
+        if (series && /^[•·\-–]/.test(l) && item && parts.length <= 80) {
+          // Série de discursos: cada marcador vira uma parte própria, com tema completo e tempo em branco.
+          const base = series.theme.replace(/^s[eé]rie de discursos:\s*/i, "").trim() || series.theme;
+          const child = { ...series, theme: `${base} — ${item}`.slice(0, 300), duration_min: null, talk_includes: [], series, seriesChild: true,
+            part_time: series.seriesUsed ? null : series.part_time };
+          if (!series.seriesUsed) { series.seriesUsed = true; parts[parts.indexOf(series)] = { ...child, series } ; parts[parts.length - 1].series = series; }
+          else parts.push(child);
+        } else if (p.assigned_to !== "none" && p.talk_includes.length < 10) p.talk_includes.push(item.slice(0, 200));
+      }
       continue;
     }
     started = true;
@@ -83,7 +96,7 @@ export function parseRtfProgram(rtf: string): ProgramImport {
     if (parts.length > 80) break;
   }
   if (!parts.length) throw new Error("Não encontrei horários neste arquivo .rtf.");
-  for (let i = 0; i < parts.length - 1; i++) { const d = parts[i + 1].min - parts[i].min; if (d > 0 && d <= 60) parts[i].duration_min = d; }
+  for (let i = 0; i < parts.length - 1; i++) { if (parts[i].seriesChild || parts[i + 1].seriesChild && parts[i + 1].part_time == null) continue; const d = parts[i + 1].min - parts[i].min; if (d > 0 && d <= 60) parts[i].duration_min = d; }
   const title = (titleLines[1] ?? titleLines[0] ?? "").split(/ — | - /)[0].replace(/^["“”']+|["“”']+$/g, "").trim().slice(0, 200) || null;
-  return { format: "etim", title, parts: parts.map(({ min: _m, ...p }) => p) };
+  return { format: "etim", title, parts: parts.map(({ min: _m, series: _s, seriesChild: _c, seriesUsed: _u, ...p }) => p) };
 }

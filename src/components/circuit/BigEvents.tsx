@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { parseProgramFile, parseCircuitManagerCsv, decodeText, ETIM_MAX_BYTES, type EtimPart } from "@/lib/big-events/etim-import";
 import { parseRtfProgram } from "@/lib/big-events/rtf-program-import";
+import { buildEventFile, isEventFile, parseEventFile, EVENT_FILE_EXT } from "@/lib/big-events/event-share-file";
 import { buildInviteText, formatEventDate, generatePin, hashPin, isValidPin, recomputeTimes, toMin, fromMin, PART_TYPES } from "@/lib/big-events/invite";
 import { htmlToDocx, safeFileName, DOCX_MIME } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
@@ -108,9 +109,17 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     if (!f) return;
     try {
       // Android informa .etim como binário (.bin); conferimos nome e tamanho aqui.
-      if (!/\.(etim|json|csv|rtf)$/i.test(f.name)) throw new Error(`"${f.name}" não é um programa. Escolha um .etim, .rtf (programa do jw.org) ou o arquivo do Circuito Manager (.json ou .csv).`);
+      if (!/\.(etim|json|csv|rtf|visitasc)$/i.test(f.name)) throw new Error(`"${f.name}" não é um programa. Escolha um .visitasc, .etim, .rtf (programa do jw.org) ou o arquivo do Circuito Manager (.json ou .csv).`);
       if (f.size > ETIM_MAX_BYTES) throw new Error("Arquivo muito grande (máx. 1 MB).");
       const text = decodeText(await f.arrayBuffer());
+      let shared: unknown = null;
+      if (/\.(visitasc|json)$/i.test(f.name)) { try { shared = JSON.parse(text.replace(/^\uFEFF+/, "")); } catch { shared = null; } }
+      if (isEventFile(shared)) {
+        const r = parseEventFile(shared);
+        setForm({ name: r.event.name, event_type: r.event.event_type, event_date: r.event.event_date ?? "", location: r.event.location ?? "", link_mode: "pin" });
+        setDialog({ parts: r.parts });
+        return;
+      }
       const res = /\.csv$/i.test(f.name) ? { title: null, parts: parseCircuitManagerCsv(text) }
         : /\.rtf$/i.test(f.name) || text.trimStart().startsWith("{\\rtf") ? parseRtfProgram(text) : parseProgramFile(text);
       const name = res.title ?? f.name.replace(/\.(etim|json|csv|rtf)$/i, "").replace(/_/g, " ");
@@ -338,10 +347,27 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
   };
 
-  const runExport = async (kind: "docx" | "pdf") => {
+  const exportProgram = async (ev: EventRow) => {
+    const list = evPartsOf(ev.id);
+    if (!list.length) { toast.info("Este evento ainda não tem partes."); return; }
+    try {
+      const bytes = await (await import("@/lib/big-events/program-pdf")).programPdf(ev, list);
+      await saveBlob(new Blob([bytes as BlobPart], { type: "application/pdf" }), { filename: `${safeFileName(`Programa ${ev.name}`, "programa")}.pdf`, mimeType: "application/pdf" });
+    } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
+  };
+
+  const exportShareFile = async (ev: EventRow) => {
+    try {
+      const file = buildEventFile(ev, evPartsOf(ev.id));
+      const blob = new Blob([JSON.stringify(file, null, 1)], { type: "application/json" });
+      await saveBlob(blob, { filename: `${safeFileName(ev.name, "evento")}.${EVENT_FILE_EXT}`, mimeType: "application/json" });
+    } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
+  };
+
+  const runExport = async (kind: "docx" | "pdf" | "program" | "share") => {
     const ev = exportFor; if (!ev) return;
     setExporting(true);
-    try { await (kind === "docx" ? exportDocx(ev) : exportPdfs(ev)); } finally { setExporting(false); setExportFor(null); }
+    try { await (kind === "docx" ? exportDocx(ev) : kind === "pdf" ? exportPdfs(ev) : kind === "program" ? exportProgram(ev) : exportShareFile(ev)); } finally { setExporting(false); setExportFor(null); }
   };
 
   const renderEvent = (ev: EventRow) => {
@@ -443,13 +469,19 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       <div hidden={view !== "events"} className="space-y-3">
       <Dialog open={!!exportFor} onOpenChange={(o) => { if (!o && !exporting) setExportFor(null); }}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Exportar convites</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Exportar</DialogTitle></DialogHeader>
           <div className="space-y-2">
             <Button variant="outline" className="h-auto w-full justify-start py-3 text-left" disabled={exporting} onClick={() => runExport("docx")}>
               <span><span className="block font-semibold">Word (lista de designações)</span><span className="block text-xs text-muted-foreground">Para conferir e copiar os convites</span></span>
             </Button>
             <Button variant="outline" className="h-auto w-full justify-start py-3 text-left" disabled={exporting} onClick={() => runExport("pdf")}>
               <span><span className="block font-semibold">PDF individuais (.zip)</span><span className="block text-xs text-muted-foreground">Uma carta por orador, com "Clique aqui" ativo</span></span>
+            </Button>
+            <Button variant="outline" className="h-auto w-full justify-start py-3 text-left" disabled={exporting} onClick={() => runExport("program")}>
+              <span><span className="block font-semibold">Programa do evento (PDF)</span><span className="block text-xs text-muted-foreground">Com todas as designações, para acompanhar durante o evento</span></span>
+            </Button>
+            <Button variant="outline" className="h-auto w-full justify-start py-3 text-left" disabled={exporting} onClick={() => runExport("share")}>
+              <span><span className="block font-semibold">Arquivo para outro aparelho</span><span className="block text-xs text-muted-foreground">Abra em "Importar" no outro celular (sem PINs nem links)</span></span>
             </Button>
             {exporting && <p className="text-center text-xs text-muted-foreground">Gerando…</p>}
           </div>
@@ -560,7 +592,7 @@ function PartEditorDialog({ part, prevEnd, nextNumber, onCancel, onSave }: {
           <div><Label>Tema</Label><Input className="mt-1" maxLength={300} value={d.theme} onChange={(e) => setD({ ...d, theme: e.target.value })} /></div>
           <div className="grid grid-cols-[5rem_1fr] gap-2">
             <div><Label>Nº</Label><Input className="mt-1" maxLength={10} value={d.outline_number} onChange={(e) => setD({ ...d, outline_number: e.target.value })} /></div>
-            <div><Label>Tempo (min)</Label><Input className="mt-1" inputMode="numeric" value={d.duration_min} onChange={(e) => setD({ ...d, duration_min: e.target.value.replace(/\D/g, "").slice(0, 3) })} /></div>
+            <div><Label className={!d.duration_min && part?.symposium ? "text-destructive" : undefined}>Tempo (min)</Label><Input className={`mt-1 ${!d.duration_min && part?.symposium ? "border-destructive" : ""}`} inputMode="numeric" value={d.duration_min} onChange={(e) => setD({ ...d, duration_min: e.target.value.replace(/\D/g, "").slice(0, 3) })} /></div>
           </div>
           <div><Label>Tipo</Label>
             <div className="mt-1 flex flex-wrap gap-1">
@@ -623,6 +655,9 @@ function PartItem({ ev, elders, part, overlap, first, last, onPatch, onSetPin, o
         <span className="min-w-0 flex-1">
           <span className="block">{part.theme}</span>
           <span className="block text-xs text-muted-foreground">{[part.part_type_label, part.duration_min ? `${part.duration_min} min` : null, part.symposium ? "Simpósio" : null].filter(Boolean).join(" · ")}</span>
+          {part.symposium && part.assigned_to === "speaker" && part.duration_min == null && (
+            <button type="button" onClick={onEdit} className="mt-0.5 block text-left text-xs font-medium text-destructive">⚠ Falta inserir o tempo</button>
+          )}
         </span>
         {tag && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold">{tag}</span>}
         <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" aria-label="Editar parte" onClick={onEdit}><Pencil className="h-3.5 w-3.5" /></Button>
