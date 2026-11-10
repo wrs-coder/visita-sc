@@ -35,7 +35,10 @@ O nome no topo do cartão do evento ganha um campo editável (com o lápis), igu
 Layout mais compacto e elegante: cabeçalho com faixa fina, duas seções (Manhã/Tarde), cada parte em 1–2 linhas, letra que se ajusta sozinha para caber sempre em uma única folha A4.
 
 ## (09) Três papéis timbrados
-Em "Modelo de carta", escolher o cabeçalho: **Clássico** (o atual), **Formal** (nome à esquerda, circuito e contatos à direita, linha dupla fina) e **Sóbrio** (tudo centralizado em versalete, filete fino em cima e embaixo, rodapé discreto com contatos). Cores sóbrias, sem logotipos.
+Em "Modelo de carta", escolher o cabeçalho: **Clássico** (o atual), **Formal** (nome à esquerda, circuito e contatos à direita, linha dupla fina) e **Institucional** (faixa sólida de cor discreta no topo, de ponta a ponta, nome em letras claras à esquerda e circuito à direita; contatos vão para um rodapé fino no fim da folha). Os três ficam bem diferentes entre si; cores sóbrias, sem logotipos.
+
+## (10) Mesmas regras nas outras importações
+As regras 01–04 (numeração, tipo automático, Oração e Presidente) valem também para .etim, .csv (Circuito Manager) e .json quando o arquivo não trouxer esses dados. O que o arquivo já traz (número, tipo) é respeitado. O arquivo .visitasc entra exatamente como foi exportado.
 
 ## Mockups
 
@@ -58,10 +61,10 @@ Modelo de carta                      │  [texto livre........]    │
 ┌───────────────────────────┐        └───────────────────────────┘
 │ Papel timbrado            │
 │ ┌─────┐ ┌─────┐ ┌─────┐   │        Programa PDF (1 página)
-│ │═Nome│ │Nome │ │─────│   │        ┌───────────────────────────┐
-│ │ ─── │ │ ═══ │ │ NOME│   │        │ ASSEMBLEIA DE CIRCUITO    │
+│ │ Nome│ │Nome │ │█Nome│   │        ┌───────────────────────────┐
+│ │ ─── │ │  ═══│ │     │   │        │ ASSEMBLEIA DE CIRCUITO    │
 │ └─────┘ └─────┘ └─────┘   │        │ 12/12 · Salão X ─────────│
-│Clássico  Formal  Sóbrio   │        │ MANHÃ                     │
+│Clássico Formal Institucion│        │ MANHÃ                     │
 └───────────────────────────┘        │ 9:00 Presidente  · J.Silva│
                                      │ 10:00 1 Tema...  · Nome   │
                                      │   Demonstração · Vídeos   │
@@ -73,7 +76,8 @@ Modelo de carta                      │  [texto livre........]    │
 - `rtf-program-import.ts`: lista de partes sem número (regex), numeração sequencial em `outline_number`, `part_type_label` por regex (mesma tabela do .etim), inserção das partes Oração (`time_mode` manual, mesmo `part_time`, `duration_min` null) e Presidente (`part_time` −40 min, manual). O cálculo de duração automática ignora Oração/Presidente. Testes novos para cada regra (numeração, tipos, oração, presidente −40 min).
 - `invite.ts` `PART_TYPES`: + "Oração", "Presidência do programa". Rótulos de `assigned_to` centralizados (speaker→Ancião, branch→Rep. da Filial) e usados em BigEvents, invite, letter-template, program-pdf. Valores gravados não mudam.
 - Participações: guardadas em `talk_includes` (JSON já existente) como marcadores reservados `@extra:demo|videos|entrevista|assistencia`; helpers `readExtras/writeExtras` filtram esses marcadores de toda exibição dos "inclui". Sem mudança de esquema; `event-share-file.ts` já leva `talk_includes`.
+- Regras 01–04 numa função comum (program-rules.ts) chamada no fim das importações .rtf, .etim, .csv e .json, preenchendo só campos vazios.
 - Nome do evento: `patchEvent(ev.id, { name })` no onBlur, limite 200.
 - `program-pdf.ts`: medição prévia da altura e redução de escala (fonte/espaçamento) até caber em uma página.
-- `letter-template.ts`: novo campo opcional `headerStyle: "classic" | "formal" | "sober"` (ausente = classic, cartas antigas iguais); `letter-render.ts` desenha os três cabeçalhos; sincroniza pelo mesmo modelo já salvo.
+- `letter-template.ts`: novo campo opcional `headerStyle: "classic" | "formal" | "institutional"` (ausente = classic, cartas antigas iguais); `letter-render.ts` desenha os três cabeçalhos; sincroniza pelo mesmo modelo já salvo.
 - Validar com `bunx tsgo --noEmit` e `bunx vitest run`. Sem aumento de versão.
