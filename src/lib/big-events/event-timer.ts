@@ -14,8 +14,10 @@ export interface TimerState {
   /** Tempo real acumulado (ms) por parte, sem contar o trecho em andamento. */
   spent: Record<string, number>;
   done: string[];
+  /** Hora real (Date.now) em que cada parte começou pela primeira vez. */
+  firstStart?: Record<string, number>;
 }
-export const emptyTimer = (): TimerState => ({ v: 1, active: null, startedAt: null, pausedAt: null, spent: {}, done: [] });
+export const emptyTimer = (): TimerState => ({ v: 1, active: null, startedAt: null, pausedAt: null, spent: {}, done: [], firstStart: {} });
 
 const key = (eventId: string) => `bigEventTimer.${eventId}`;
 export function loadTimer(eventId: string): TimerState {
@@ -24,9 +26,11 @@ export function loadTimer(eventId: string): TimerState {
     if (!raw || raw.v !== 1 || typeof raw.spent !== "object") return emptyTimer();
     const spent: Record<string, number> = {};
     for (const [k, v] of Object.entries(raw.spent)) if (typeof v === "number" && v >= 0 && Number.isFinite(v)) spent[k] = v;
+    const firstStart: Record<string, number> = {};
+    if (raw.firstStart && typeof raw.firstStart === "object") for (const [k, v] of Object.entries(raw.firstStart)) if (typeof v === "number" && Number.isFinite(v)) firstStart[k] = v;
     const num = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : null);
     return { v: 1, active: typeof raw.active === "string" ? raw.active : null, startedAt: num(raw.startedAt), pausedAt: num(raw.pausedAt),
-      spent, done: Array.isArray(raw.done) ? raw.done.filter((x: unknown) => typeof x === "string") : [] };
+      spent, done: Array.isArray(raw.done) ? raw.done.filter((x: unknown) => typeof x === "string") : [], firstStart };
   } catch { return emptyTimer(); }
 }
 export function saveTimer(eventId: string, s: TimerState): void {
@@ -51,7 +55,8 @@ const close = (s: TimerState, now: number): TimerState => {
 export function tapPart(s: TimerState, id: string, now: number): TimerState {
   if (s.active === id) return close(s, now);
   const c = close(s, now);
-  return { ...c, active: id, startedAt: now, pausedAt: null, done: c.done.filter((x) => x !== id) };
+  const fs = c.firstStart ?? {};
+  return { ...c, active: id, startedAt: now, pausedAt: null, done: c.done.filter((x) => x !== id), firstStart: fs[id] != null ? fs : { ...fs, [id]: now } };
 }
 export function togglePause(s: TimerState, now: number): TimerState {
   if (!s.active || s.startedAt == null) return s;
@@ -63,8 +68,9 @@ export function stopAll(s: TimerState, now: number): TimerState { return close(s
 export function resetPart(s: TimerState, id: string, now: number): TimerState {
   const spent = { ...s.spent }; delete spent[id];
   const done = s.done.filter((x) => x !== id);
-  if (s.active === id) return { ...s, spent, done, startedAt: now, pausedAt: null };
-  return { ...s, spent, done };
+  const firstStart = { ...(s.firstStart ?? {}) }; delete firstStart[id];
+  if (s.active === id) return { ...s, spent, done, startedAt: now, pausedAt: null, firstStart: { ...firstStart, [id]: now } };
+  return { ...s, spent, done, firstStart };
 }
 /** Corrigir: define o tempo real em minutos de uma parte já concluída. */
 export function setPartMinutes(s: TimerState, id: string, minutes: number): TimerState {
@@ -168,3 +174,48 @@ export function programLabel(ms: number): string {
   if (min === 0) return "Programa no horário";
   return min > 0 ? `Programa +${min} min atrasado` : `Programa ${Math.abs(min)} min adiantado`;
 }
+
+// ---- Modo de exibição: temporizador (regressivo) ou cronômetro (progressivo) ----
+export type TimerMode = "down" | "up";
+const MODE_KEY = "bigEventTimer.mode";
+export function loadMode(): TimerMode { try { return localStorage.getItem(MODE_KEY) === "up" ? "up" : "down"; } catch { return "down"; } }
+export function saveMode(m: TimerMode): void { try { localStorage.setItem(MODE_KEY, m); } catch { /* */ } }
+/** Texto do relógio grande. Temporizador: 16:00 → 0:00 → -0:45. Cronômetro: 0:00 → 16:45. */
+export function displayClock(mode: TimerMode, planned: number | null, actual: number): string {
+  if (mode === "up" || planned == null) return clock(actual);
+  return clock(planned - actual);
+}
+
+// ---- Início previsto × início real ----
+const hm = (t: string | null) => { const m = t?.match(/^(\d{1,2}):(\d{2})/); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+/** Minutos do dia em que cada parte deveria começar ("•" seguem o título somando os tempos anteriores). */
+export function plannedStarts(parts: TimerPart[]): Record<string, number | null> {
+  const out: Record<string, number | null> = {};
+  for (const r of buildRows(parts)) {
+    if (r.kind === "item") continue;
+    const base = hm(r.part.part_time);
+    out[r.part.id] = base;
+    let acc = base;
+    for (const k of r.children ?? []) {
+      const own = hm(k.part_time);
+      out[k.id] = own ?? acc;
+      acc = (own ?? acc) == null ? null : (own ?? acc)! + (k.duration_min ?? 0);
+    }
+  }
+  return out;
+}
+/** Minutos inteiros de atraso no início (+ atrasou, − adiantou). null = sem referência. */
+export function startDelayMin(plannedMinOfDay: number | null, eventDate: string | null, actualStart: number | null, now: number): number | null {
+  if (plannedMinOfDay == null) return null;
+  const ref = actualStart ?? now;
+  const d = new Date(ref);
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  if (eventDate && eventDate !== today) return null; // só compara no dia do evento
+  if (actualStart == null && !eventDate) return null;
+  const plannedAt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(plannedMinOfDay / 60), plannedMinOfDay % 60).getTime();
+  const diff = Math.round((ref - plannedAt) / 60_000);
+  if (actualStart == null && diff <= 0) return null; // ainda não chegou a hora
+  return diff;
+}
+export const fmtHm = (min: number | null) => (min == null ? "--:--" : `${String(Math.floor(min / 60) % 24).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`);
+export const fmtClockTime = (ms: number) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
