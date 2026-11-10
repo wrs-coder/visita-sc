@@ -1,44 +1,95 @@
-# Corrigir importação .rtf (partes não salvas) + nova regra da Série de discursos
+# Controle de tempo do evento + ajustes nos Grandes Eventos
 
-Analisei o seu arquivo "CA-copgm27_T.rtf": tem 2 séries de discursos (10:15 e 2:45), cada uma com 3 "•", e o tempo total está no título da série.
+## (01) Controle de tempo do evento
 
-## 1. Por que o evento ficou vazio
-Na última mudança, só a Oração, o Presidente e a Música passaram a ter "horário fixo". As outras partes saíram sem essa informação. Quando o app grava todas de uma vez, o servidor recusa o pacote inteiro. Por isso o evento foi criado, mas apareceu "Nada aqui.".
+**Como funciona**
+- Tudo fica no aparelho (sem internet, sem servidor), igual ao cronômetro da visita.
+- Botão **"Controle de tempo"** dentro de cada evento abre uma tela cheia escura (modo foco). Não cria aba nova.
+- A tela mostra só o essencial: parte atual, ancião, contagem regressiva grande e a próxima parte.
+- Cor da contagem: **verde** → **âmbar** no último minuto → **vermelho** quando passa do tempo (aparece "+0:42").
+- No topo: **"Programa +3 min atrasado"** / "adiantado" / "no horário".
+- Partes sem orador (Cântico, Música, Vídeo) também têm tempo, mas aparecem mais apagadas.
+- Os "•" da Série de discursos contam dentro do tempo do título da série, sem empurrar o programa (mesma regra de hoje).
+- Se o app fechar ou o celular reiniciar, o controle continua de onde parou (os horários ficam guardados no aparelho).
+- A tela fica acesa enquanto o controle estiver ligado.
 
-**Correção**
-- Toda parte importada sai com o modo de horário preenchido ("fixo" ou "automático").
-- Se o servidor recusar as partes, o evento recém-criado é apagado e aparece "Não foi possível importar as partes". Assim não fica um evento vazio.
-- O evento vazio que já existe: apague pelo menu ⋯ e importe de novo depois da correção.
+**Tela de foco**
+```text
+┌──────────────────────────────┐
+│ ✕            Programa +3 min │  ← âmbar se atrasado
+│              atrasado        │
+│                              │
+│  10:15 · Discurso 4          │
+│  Como imitar a fé de Baraque │
+│  João Silva                  │
+│                              │
+│          08:24               │  ← verde / âmbar / vermelho
+│     ━━━━━━━━━━━━━━━━━──────  │
+│                              │
+│  Próxima                     │
+│  10:30 · A mulher sunamita   │
+│  Pedro Souza                 │
+│                              │
+│   ┌──────┐  ┌────────────┐   │
+│   │  ❚❚  │  │ Próxima ▸  │   │
+│   └──────┘  └────────────┘   │
+│        Ver programa ⌄        │
+└──────────────────────────────┘
+```
+- **Próxima ▸** encerra a parte atual e inicia a seguinte (grava o tempo real).
+- **❚❚** pausa (por exemplo, problema de som). **Ver programa** abre uma lista simples para pular ou voltar uma parte.
 
-## 2. Série de discursos (sua sugestão — concordo, é melhor)
-- **Título da série** vira uma parte própria, com o horário e o tempo total que já vêm no arquivo (ex.: 10:15 · 50 min). É ela que conta no programa e empurra os horários seguintes. Não recebe número nem convite.
-- **Cada "•"** continua sendo uma parte com número e convite para o ancião. O tempo de cada um é preenchido por você e serve **só como informação**: não soma no programa.
-- O horário de cada "•" é mostrado em sequência a partir do horário do título (10:15, 10:30, …), conforme os tempos que você preencher.
-- Se a soma dos "•" passar do tempo total da série, aparece um aviso âmbar: "Os discursos somam 55 min; a série tem 50 min".
-- O aviso vermelho "Falta inserir o tempo" continua nos "•" sem tempo.
+**Fora do app ("Sobrepor a outros apps")**
+- Ao sair do app, aparece uma bolinha flutuante por cima de outros apps:
+```text
+   ┌─────────────────┐
+   │ ● 08:24  +3 min │  ← arrastável; toque = volta ao app
+   │   Próxima ▸     │
+   └─────────────────┘
+```
+- Na primeira vez, o app explica e abre a configuração do Android para você permitir "Sobrepor a outros apps".
+- Se a permissão não for dada, o controle aparece numa notificação fixa com o cronômetro e o botão "Próxima" (funciona igual, só que na barra de notificações).
+
+**Relatório final**
+```text
+┌──────────────────────────────┐
+│ ‹  Relatório de tempo        │
+│ Programa terminou +4 min     │
+│──────────────────────────────│
+│ Parte       Prev.  Real  Dif.│
+│ Disc. 2     15:00 16:10 +1:10│ vermelho
+│ Disc. 3     10:00  9:20 -0:40│ verde
+│ Cântico 57   5:00  5:00  0:00│
+│──────────────────────────────│
+│ Por ancião                   │
+│ João Silva            +1:10  │
+│ Pedro Souza           -0:40  │
+│                              │
+│ [ Exportar PDF ]             │
+└──────────────────────────────┘
+```
+- PDF elegante no mesmo padrão do Programa do evento. O relatório fica guardado no aparelho e pode ser reaberto pelo evento.
+
+## (02) Ajustes nos eventos
+
+- **"Informações adicionais (vão em todos os convites)"**: concordo, é repetido com a carta convite. Sai da tela. Se algum evento antigo já tiver esse texto, ele continua indo nos convites já existentes até você apagar (aparece só nesse caso, com botão "Apagar"), para nada sumir sem você ver.
+- **Presidente do programa e Oração**: o quadro "Participações na parte" (Vídeo, Entrevista, Demonstração…) deixa de aparecer. O campo "Outras informações só para este ancião" continua.
 
 ```text
-┌───────────────────────────────┐
-│ 10:15  Série de discursos:    │
-│        Imite aqueles que...   │
-│        Simpósio · 50 min      │
-│ 10:15 ③ Imite... — Baraque    │
-│        15 min (informativo)   │
-│ 10:30 ④ Imite... — A mulher.. │
-│        ⚠ Falta inserir tempo  │
-│ 10:30 ⑤ Imite... — Daniel...  │
-│ ⚠ Os discursos somam 55 min;  │
-│   a série tem 50 min          │
-│ 11:05  Cântico 57 e anúncios  │
-└───────────────────────────────┘
+Oração · Cântico 7 e oração
+┌──────────────────────────────┐
+│ Ancião ____________________  │
+│ Congregação _______________  │
+│ ▸ Informações só deste convite│
+│   Outras informações...      │  ← sem as caixinhas
+└──────────────────────────────┘
 ```
 
-O mesmo vale para o Programa em PDF, os convites e o arquivo para outro celular.
-
 ## Detalhes técnicos
-- Causa: o insert em lote une as chaves dos objetos (`columns=`) e envia as ausentes como NULL; `time_mode` é NOT NULL, então o lote inteiro falha. `applyProgramRules` e `createEvent` passam a definir `time_mode ?? "auto"` e `speaker_name ?? null`; se as partes falharem, o evento é apagado + toast.
-- `parseRtfProgram`: o título da série fica como parte `assigned_to: "none"`, `part_type_id: "SeriesHead"`, `duration_min` = diferença até o próximo horário; os "•" ficam com `part_type_id: "SeriesItem"`, `symposium: true`, `duration_min: null`, `time_mode: "auto"`.
-- `recomputeTimes`: o SeriesItem não avança o relógio do programa. O horário exibido = horário do título + tempos dos itens anteriores. A soma dos itens é comparada com a duração do título para o aviso.
-- `.etim`/`.csv` mantêm o comportamento atual (já trazem o tempo de cada discurso).
-- Testes: as 2 séries do arquivo real (título com 50/45 min, itens sem tempo, numeração 2–4 e 9–11), horários do programa não deslocados, e lote de partes com `time_mode` sempre preenchido.
-- Sem mudança no banco nem aumento de versão.
+- Nada muda no banco de dados. Estado do controle em localStorage por evento (`bigEventTimer.<eventId>`: índice, início de cada parte, pausas, tempos reais), calculado por relógio real (Date.now), não por intervalos, para sobreviver a fechar/reabrir.
+- Lógica pura em `src/lib/big-events/event-timer.ts` (planejado × real, atraso acumulado, desvio por ancião, regra dos "•" da série) com testes vitest.
+- Tela: `EventTimerFocus.tsx` em tela cheia usando `focus-chrome` e `useImmersiveWhile`; tokens de cor existentes (success/warning/destructive), sem hex.
+- Sobreposição: plugin Capacitor nativo pequeno (`FloatingTimerPlugin` + `Service` com `TYPE_APPLICATION_OVERLAY`), permissão `SYSTEM_ALERT_WINDOW` e `FOREGROUND_SERVICE` no AndroidManifest; o serviço recebe horário-alvo e conta sozinho; botão "Próxima" envia evento de volta ao app. Sem permissão → notificação fixa (foreground service com cronômetro). No navegador, só a tela de foco.
+- PDF via `pdf-lib` (`timer-report-pdf.ts`), fontes já embarcadas.
+- (02): em `BigEvents.tsx`, ocultar o campo `extra_info` quando vazio; esconder `PART_EXTRAS` quando a parte for presidência (`IS_CHAIR`) ou oração (regra de `program-rules.ts`).
+- Exige gerar novo APK/AAB para a parte "Sobrepor a outros apps" funcionar no celular; sem aumento de versão durante o desenvolvimento.
