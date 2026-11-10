@@ -35,6 +35,9 @@
             </intent-filter>
         </activity>
 
+        <!-- Controle de tempo do evento: bolinha flutuante por cima de outros apps. -->
+        <service android:name=".FloatingTimerService" android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -54,4 +57,6 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Desbloqueio offline por digital/rosto (opcional; o PIN do app é o caminho garantido). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Controle de tempo do evento: "Sobrepor a outros apps" (opcional, o usuário autoriza). -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 </manifest>

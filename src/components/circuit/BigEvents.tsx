@@ -3,7 +3,7 @@ import { appConfirm } from "@/components/ui/app-dialogs";
 // convites com PIN (link único por evento) e status ao vivo.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowDown, ArrowUp, BellRing, CheckCircle2, ChevronDown, Circle, Copy, CopyPlus, Download, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2, Upload, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, BellRing, CheckCircle2, ChevronDown, Circle, Copy, CopyPlus, Download, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, Timer, Trash2, Upload, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { htmlToDocx, safeFileName, DOCX_MIME } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
 import JSZip from "jszip";
 import { LetterTemplates } from "./LetterTemplates";
+import { EventTimerFocus } from "./EventTimerFocus";
 import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
 import { fetchLetterTemplates, pushLetterTemplates, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
 import type { Database } from "@/integrations/supabase/types";
@@ -54,6 +55,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const [templates, setTemplates] = useState<LetterTemplate[]>([]);
   const [tplChoice, setTplChoice] = useState<Record<string, string>>({});
   const [exportFor, setExportFor] = useState<EventRow | null>(null);
+  const [timerFor, setTimerFor] = useState<EventRow | null>(null);
   const [exporting, setExporting] = useState(false);
   const [tplSync, setTplSync] = useState<SyncState>("local");
   useEffect(() => {
@@ -487,11 +489,16 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
               ))}
             </div>
           </div>
-          <div>
-            <Label className="text-xs">Informações adicionais (vão em todos os convites)</Label>
-            <Textarea className="mt-1" rows={2} maxLength={2000} defaultValue={ev.extra_info ?? ""}
-              onBlur={(e) => e.target.value !== (ev.extra_info ?? "") && patchEvent(ev.id, { extra_info: e.target.value.trim() || null })} />
-          </div>
+          {ev.extra_info && (
+            // Campo antigo: a carta convite já leva as informações gerais. Só aparece se já tiver texto.
+            <div className="rounded-2xl bg-muted/50 p-2.5">
+              <div className="flex items-center gap-2">
+                <Label className="flex-1 text-xs">Informações adicionais (vão em todos os convites)</Label>
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive" onClick={() => patchEvent(ev.id, { extra_info: null })}>Apagar</Button>
+              </div>
+              <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{ev.extra_info}</p>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Label className="shrink-0 text-xs">Modelo de carta</Label>
             <select className="h-8 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm" value={templateForEvent(templates, tplChoice, ev.id).id}
@@ -501,6 +508,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" className="gap-1" onClick={() => setExportFor(ev)}><Download className="h-3.5 w-3.5" />Exportar</Button>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setTimerFor(ev)} disabled={!evPartsOf(ev.id).length}><Timer className="h-3.5 w-3.5" />Controle de tempo</Button>
             {pendingN > 0 && <Button size="sm" variant="ghost" className="gap-1 px-2 text-xs" onClick={() => setRemindFor(ev)}><BellRing className="h-3.5 w-3.5" />Lembrar pendentes</Button>}
             <span className="flex-1" />
             <DropdownMenu>
@@ -555,6 +563,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       </div>
       {view === "templates" && <LetterTemplates list={templates} onChange={updateTemplates} />}
       <div hidden={view !== "events"} className="space-y-3">
+      {timerFor && <EventTimerFocus ev={timerFor} parts={evPartsOf(timerFor.id)} onClose={() => setTimerFor(null)} />}
       <Dialog open={!!exportFor} onOpenChange={(o) => { if (!o && !exporting) setExportFor(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Exportar</DialogTitle></DialogHeader>
@@ -761,6 +770,8 @@ function PartItem({ ev, elders, part, overlap, alsoIn, note, first, last, onPatc
   useEffect(() => { setPinState(part.pin_hash ? readPin(part.id) ?? "" : ""); }, [part.id, part.pin_hash]);
   const [showReason, setShowReason] = useState(false);
   const extras = readExtras(part.talk_includes);
+  // Presidente do programa e Oração não têm participações (vídeo, entrevista…).
+  const noExtras = isFloatingType(part.part_type_label) || /presid|^ora[cç][aã]o\b/i.test(part.theme);
   const [showInfo, setShowInfo] = useState(!!part.instructions || extras.length > 0);
   const congRef = useRef<HTMLInputElement>(null);
   const head = useMemo(() => [part.part_time, part.outline_number ? `Nº${part.outline_number}` : null].filter(Boolean).join(" "), [part]);
@@ -811,8 +822,8 @@ function PartItem({ ev, elders, part, overlap, alsoIn, note, first, last, onPatc
           </button>
           {showInfo && (
             <div className="space-y-2 rounded-2xl bg-muted/50 p-2.5">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Participações na parte</p>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+              {!noExtras && <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Participações na parte</p>}
+              {!noExtras && <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
                 {PART_EXTRAS.map((x) => (
                   <label key={x.id} className="flex min-h-8 items-center gap-2 text-xs">
                     <Checkbox checked={extras.includes(x.id)}
@@ -820,7 +831,7 @@ function PartItem({ ev, elders, part, overlap, alsoIn, note, first, last, onPatc
                     {x.label}
                   </label>
                 ))}
-              </div>
+              </div>}
               <Textarea rows={2} maxLength={1000} placeholder="Outras informações só para este ancião" defaultValue={part.instructions ?? ""}
                 onBlur={(e) => e.target.value.trim() !== (part.instructions ?? "") && onPatch(part.id, { instructions: e.target.value.trim() || null })} />
             </div>

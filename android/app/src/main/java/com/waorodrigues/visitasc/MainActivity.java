@@ -7,6 +7,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        registerPlugin(FloatingTimerPlugin.class);
         super.onCreate(savedInstanceState);
 
         // BridgeActivity troca o tema de abertura pelo tema definitivo. Limpa

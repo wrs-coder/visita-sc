@@ -21,3 +21,10 @@
 - [x] Topo comum: Congregação (SC) + "Salvo automaticamente"/rascunho
 - [x] Selo "Faltam N campos" e bloco cinza no Programa da visita
 - [ ] Controle de tempo do evento (Grandes Eventos): regressiva por parte, atraso geral e relatório por ancião — próxima etapa, aguardando pedido
+
+## Grandes Eventos — Controle de tempo
+- [x] Tela escura estilo programa, temporizador por parte, toque livre, série somando no programa
+- [x] Bolinha flutuante (Sobrepor a outros apps) + notificação fixa de reserva
+- [x] Relatório previsto × real e por ancião, com PDF
+- [x] "Informações adicionais" só aparece se já tiver texto; Presidente/Oração sem participações
+- [ ] Testar a bolinha flutuante no celular (precisa gerar novo APK)
