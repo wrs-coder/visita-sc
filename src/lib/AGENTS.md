@@ -2,3 +2,4 @@
 - Field items requested from elders: requested_fields (copied on apply); NULL on a visit row = legacy visibility, so old visits keep fields.
 - Per-tab Bible (outlines/reading) is device-local via getActiveLibrary(scope), falling back to the global active Bible, so unset users see no change.
 - Reading lateness is tracked per weekday inside the WeekdayPlan (lastRead[7] + since floor, reading-day-log.ts), never from a shared last-read date, so it travels in backups and one day's reading never clears another day; plans without since are seeded to today so restores never raise surprise alerts.
+- Big-event transfer file (.visitasc, event-share-file.ts) never carries PINs, tokens or links, because the receiving device generates its own.

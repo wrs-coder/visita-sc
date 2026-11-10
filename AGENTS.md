@@ -43,4 +43,3 @@
 - Congregation import parses on-device (congregation-import.ts) via createCongregation; no schema change.
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
-- Big-event device transfer uses a .visitasc JSON file (event-share-file.ts, format "visitasc-event") carrying program and speakers but never PINs, tokens or links, and the event program PDF (program-pdf.ts) reuses the bundled letter fonts, because the receiving device must generate its own secrets.
