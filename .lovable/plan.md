@@ -103,3 +103,6 @@ Modelo de carta                      │  [texto livre........]    │
 └───────────────────────────┘
 ```
 Tudo calculado no próprio aparelho a partir das partes já salvas; sem mudança no banco.
+
+## Próxima etapa (fora deste plano)
+Controle de tempo do evento (tela cheia com regressiva por parte, atraso geral e relatório por ancião) será feito numa etapa separada, após esta.
