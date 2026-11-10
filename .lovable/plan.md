@@ -81,3 +81,25 @@ Modelo de carta                      │  [texto livre........]    │
 - `program-pdf.ts`: medição prévia da altura e redução de escala (fonte/espaçamento) até caber em uma página.
 - `letter-template.ts`: novo campo opcional `headerStyle: "classic" | "formal" | "institutional"` (ausente = classic, cartas antigas iguais); `letter-render.ts` desenha os três cabeçalhos; sincroniza pelo mesmo modelo já salvo.
 - Validar com `bunx tsgo --noEmit` e `bunx vitest run`. Sem aumento de versão.
+
+## (11) Melhorias extras (estilo iOS / One UI)
+1. **Resumo no topo do evento**: quatro "pílulas" arredondadas com contador — Confirmados (verde) · Pendentes (âmbar) · Recusados (vermelho) · Sem ancião (cinza). Tocar numa pílula aplica o filtro correspondente.
+2. **Ancião repetido**: etiqueta âmbar "Também na parte 4" no cartão quando o mesmo nome aparece em duas partes do evento (Presidente/Oração ignorados).
+3. **Lembrar pendentes**: botão no menu do evento que abre uma folha inferior (bottom sheet) com a lista de quem não respondeu; "Copiar todas" ou copiar uma por uma.
+4. **Aviso de horário**: faixa discreta no topo da lista quando há partes sobrepostas ou quando o programa passa do horário de término informado.
+5. **Filtro rápido**: controle segmentado (estilo iOS) Todas · Pendentes · Sem tempo · Sem ancião, logo acima da lista de partes. Só esconde da vista; nada é apagado.
+
+```text
+┌───────────────────────────┐
+│ Assembleia de Circuito ✎  │
+│ (✓ 12)(⏳ 5)(✕ 1)(○ 3)    │
+│ ⚠ 2 partes se sobrepõem   │
+│ [Todas|Pendentes|Tempo|○] │
+│ ─────────────────────────  │
+│ 1 10:00 Tema...           │
+│   João Silva · ⏳          │
+│   ⚠ Também na parte 4     │
+│ ⋯ Lembrar pendentes       │
+└───────────────────────────┘
+```
+Tudo calculado no próprio aparelho a partir das partes já salvas; sem mudança no banco.
