@@ -1,7 +1,7 @@
 # Refinar o Controle de tempo (estilo dos modelos enviados)
 
 ## O que muda
-A tela continua escura, em lista no estilo do Programa, mas cada parte ganha o visual dos modelos:
+A tela continua escura, em lista no estilo do Programa. Os modelos servem só de inspiração: layout e cores seguem o padrão do app (iOS/One UI), não uma cópia exata.
 
 ```text
 +-------------------------------------+
@@ -28,7 +28,7 @@ A tela continua escura, em lista no estilo do Programa, mas cada parte ganha o v
 Cada linha mostra:
 - Número e tema (azul nas partes comuns, amarelo nos "•" da série).
 - ▶ horário previsto e ▶ horário em que realmente começou.
-- Pílula de sino: minutos que faltam (verde) ou passou do tempo (vermelho; âmbar no último minuto).
+- Pílula de sino: compara o horário em que a parte realmente começou (hora do celular) com o horário do programa. Verde "no horário" ou "-2" (adiantada); vermelho "+5" (começou 5 min atrasada). Antes de começar, se o horário previsto já passou, mostra em vermelho quanto está atrasando.
 - Orador e congregação.
 - Caixa grande à direita com relógio em números digitais e o tempo previsto embaixo; tocar nela inicia/encerra aquela parte (qualquer ordem, como hoje).
 - Barra de progresso fina abaixo da parte.
