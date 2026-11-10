@@ -20,3 +20,4 @@
 - [x] Assuntos locais: + Adicionar (anciãos criam/editam, não apagam) e título = tema ou "Assunto N"
 - [x] Topo comum: Congregação (SC) + "Salvo automaticamente"/rascunho
 - [x] Selo "Faltam N campos" e bloco cinza no Programa da visita
+- [ ] Controle de tempo do evento (Grandes Eventos): regressiva por parte, atraso geral e relatório por ancião — próxima etapa, aguardando pedido

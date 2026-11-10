@@ -18,6 +18,8 @@ export interface EtimPart {
   assigned_to: AssignedTo;
   /** Só quando o arquivo já traz o designado (CSV do Circuito Manager). */
   speaker_name?: string | null;
+  /** Oração/Presidente e a Música seguinte ficam no horário fixo. */
+  time_mode?: string;
 }
 
 const str = (v: unknown, max = 500): string | null =>

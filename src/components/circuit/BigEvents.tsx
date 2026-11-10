@@ -3,7 +3,7 @@ import { appConfirm } from "@/components/ui/app-dialogs";
 // convites com PIN (link único por evento) e status ao vivo.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, CheckCircle2, ChevronDown, Circle, Copy, CopyPlus, Download, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2, Upload, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, BellRing, CheckCircle2, ChevronDown, Circle, Copy, CopyPlus, Download, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2, Upload, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { parseProgramFile, parseCircuitManagerCsv, decodeText, ETIM_MAX_BYTES, type EtimPart } from "@/lib/big-events/etim-import";
 import { parseRtfProgram } from "@/lib/big-events/rtf-program-import";
 import { buildEventFile, isEventFile, parseEventFile, EVENT_FILE_EXT } from "@/lib/big-events/event-share-file";
-import { buildInviteText, formatEventDate, generatePin, hashPin, isValidPin, recomputeTimes, toMin, fromMin, PART_TYPES } from "@/lib/big-events/invite";
+import { buildInviteText, formatEventDate, generatePin, hashPin, isValidPin, recomputeTimes, toMin, fromMin, PART_TYPES, ASSIGNED_LABEL, PART_EXTRAS, readExtras, withExtras } from "@/lib/big-events/invite";
+import { applyProgramRules, isFloatingType } from "@/lib/big-events/program-rules";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { htmlToDocx, safeFileName, DOCX_MIME } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
 import JSZip from "jszip";
@@ -45,7 +47,8 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const [dialog, setDialog] = useState<{ parts: EtimPart[] | null } | null>(null);
   const [form, setForm] = useState({ name: "", event_type: "assembly", event_date: "", location: "", link_mode: "pin" });
   const [editor, setEditor] = useState<{ ev: EventRow; part: PartRow | null; afterOrder: number | null } | null>(null);
-  const [filter, setFilter] = useState<Record<string, "all" | "pending" | "declined">>({});
+  const [filter, setFilter] = useState<Record<string, PartFilter>>({});
+  const [remindFor, setRemindFor] = useState<EventRow | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [view, setView] = useState<"events" | "templates">("events");
   const [templates, setTemplates] = useState<LetterTemplate[]>([]);
@@ -120,8 +123,11 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
         setDialog({ parts: r.parts });
         return;
       }
-      const res = /\.csv$/i.test(f.name) ? { title: null, parts: parseCircuitManagerCsv(text) }
-        : /\.rtf$/i.test(f.name) || text.trimStart().startsWith("{\\rtf") ? parseRtfProgram(text) : parseProgramFile(text);
+      const isRtf = /\.rtf$/i.test(f.name) || text.trimStart().startsWith("{\\rtf");
+      const raw = /\.csv$/i.test(f.name) ? { title: null, parts: parseCircuitManagerCsv(text) }
+        : isRtf ? parseRtfProgram(text) : parseProgramFile(text);
+      // Numeração, tipo, Oração e Presidente: mesmas regras para .rtf, .etim, .csv e .json.
+      const res = { ...raw, parts: applyProgramRules(raw.parts, { renumber: isRtf }) };
       const name = res.title ?? f.name.replace(/\.(etim|json|csv|rtf)$/i, "").replace(/_/g, " ");
       setForm({ name, event_type: "assembly", event_date: "", location: "", link_mode: "pin" });
       setDialog({ parts: res.parts });
@@ -134,7 +140,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     const { data: ev, error } = await supabase.from("circuit_big_events").insert({
       superintendent_id: user.id, name: form.name.trim().slice(0, 200), event_type: form.event_type,
       event_date: form.event_date || null, location: form.location.trim() || null, link_mode: form.link_mode,
-      start_time: dialog?.parts?.find((p) => toMin(p.part_time) != null)?.part_time ?? null,
+      start_time: dialog?.parts?.find((p) => toMin(p.part_time) != null && !isFloatingType(p.part_type_label))?.part_time ?? null,
     }).select("*").single();
     if (error || !ev) { toast.error("Não foi possível criar o evento."); return; }
     const ps = dialog?.parts ?? [];
@@ -288,19 +294,34 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     return null;
   };
 
-  const copyInvite = async (ev: EventRow, part: PartRow) => {
+  /** Texto do convite (cria PIN ou link pessoal se faltar). */
+  const inviteTextFor = async (ev: EventRow, part: PartRow): Promise<string | null> => {
     let pin: string | null = null;
     if (ev.link_mode === "personal") {
-      if (!part.personal_token || !part.personal_code) { const t = crypto.randomUUID(); const r = await patchPart(part.id, { personal_token: t }); if (!r) return; part = r === true ? { ...part, personal_token: t } : r; }
+      if (!part.personal_token || !part.personal_code) { const t = crypto.randomUUID(); const r = await patchPart(part.id, { personal_token: t }); if (!r) return null; part = r === true ? { ...part, personal_token: t } : r; }
     } else {
       pin = part.pin_hash ? readPin(part.id) : null;
-      if (!pin) { pin = await newPin(ev, part); if (!pin) return; toast.info("PIN criado para este convite."); }
+      if (!pin) { pin = await newPin(ev, part); if (!pin) return null; }
     }
     const evParts = parts.filter((p) => p.event_id === ev.id);
-    const text = buildInviteText(ev, part, evParts.map((x) => (x.id === part.id ? part : x)), pin, origin());
+    return buildInviteText(ev, part, evParts.map((x) => (x.id === part.id ? part : x)), pin, origin());
+  };
+  const copyInvite = async (ev: EventRow, part: PartRow) => {
+    const text = await inviteTextFor(ev, part);
+    if (!text) return;
     try { await navigator.clipboard.writeText(text); toast.success("Convite copiado"); } catch { toast.error("Não foi possível copiar."); }
     if (!part.email_sent) void patchPart(part.id, { email_sent: true });
   };
+
+  /** Lembrar pendentes: copia todos os convites ainda sem resposta, separados por linha. */
+  const copyAllPending = async (ev: EventRow) => {
+    const list = pendingOf(ev.id);
+    const texts: string[] = [];
+    for (const p of list) { const t = await inviteTextFor(ev, p); if (t) texts.push(t); }
+    if (!texts.length) return;
+    try { await navigator.clipboard.writeText(texts.join("\n\n— — —\n\n")); toast.success(`${texts.length} convites copiados`); } catch { toast.error("Não foi possível copiar."); }
+  };
+  const pendingOf = (evId: string) => parts.filter((p) => p.event_id === evId && p.assigned_to === "speaker" && p.speaker_name?.trim() && p.status === "pending").sort((a, b) => a.sort_order - b.sort_order);
 
   const letterModels = async (ev: EventRow) => {
     const evParts = parts.filter((p) => p.event_id === ev.id && p.assigned_to === "speaker" && p.speaker_name?.trim()).sort((a, b) => a.sort_order - b.sort_order);
@@ -377,11 +398,41 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     const decl = speakers.filter((p) => p.status === "declined").length;
     const isOpen = open.has(ev.id);
     const f = filter[ev.id] ?? "all";
-    const pendingN = speakers.filter((p) => p.status === "pending").length;
-    const shown = f === "all" ? evParts : evParts.filter((p) => p.assigned_to === "speaker" && p.status === f);
-    const chip = (v: "pending" | "declined", label: string) => (
-      <button type="button" onClick={() => setFilter((m) => ({ ...m, [ev.id]: f === v ? "all" : v }))}
-        className={`rounded-full border px-2.5 py-1 text-xs ${f === v ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{label}</button>
+    const named = speakers.filter((p) => p.speaker_name?.trim());
+    const pendingN = named.filter((p) => p.status === "pending").length;
+    const noSpeakerN = speakers.filter((p) => !p.speaker_name?.trim()).length;
+    const noTime = (p: PartRow) => p.assigned_to === "speaker" && !isFloatingType(p.part_type_label) && p.duration_min == null;
+    const noTimeN = evParts.filter(noTime).length;
+    const shown = evParts.filter((p) => matchFilter(p, f, noTime));
+    const setF = (v: PartFilter) => setFilter((m) => ({ ...m, [ev.id]: f === v ? "all" : v }));
+    // Sobreposição: compara com a última parte que ocupa tempo (Oração/Presidente não contam).
+    const overlapIds = new Set<string>();
+    let last: PartRow | null = null;
+    for (const p of evParts) {
+      if (isFloatingType(p.part_type_label)) continue;
+      if (last && p.time_mode === "manual" && toMin(last.part_time) != null && toMin(p.part_time) != null
+        && toMin(last.part_time)! + (last.duration_min ?? 0) > toMin(p.part_time)!) overlapIds.add(p.id);
+      last = p;
+    }
+    // Mesmo ancião em mais de uma parte (Oração e Presidente ignorados).
+    const byName = new Map<string, PartRow[]>();
+    for (const p of speakers) {
+      const k = p.speaker_name?.trim().toLocaleLowerCase("pt-BR");
+      if (!k || isFloatingType(p.part_type_label)) continue;
+      byName.set(k, [...(byName.get(k) ?? []), p]);
+    }
+    const alsoIn = (p: PartRow) => {
+      const k = p.speaker_name?.trim().toLocaleLowerCase("pt-BR");
+      if (!k || isFloatingType(p.part_type_label)) return null;
+      const others = (byName.get(k) ?? []).filter((x) => x.id !== p.id);
+      return others.length ? others.map((x) => (x.outline_number ? `parte ${x.outline_number}` : x.part_time ?? x.theme)).join(", ") : null;
+    };
+    const pill = (v: PartFilter, n: number, label: string, tone: string) => (
+      <button type="button" onClick={() => setF(v)} aria-pressed={f === v}
+        className={`flex min-w-0 flex-1 flex-col items-center rounded-2xl px-1 py-1.5 transition-colors ${f === v ? "ring-2 ring-primary" : ""} ${tone}`}>
+        <span className="text-base font-semibold leading-tight tabular-nums">{n}</span>
+        <span className="w-full truncate text-center text-[10px] leading-tight">{label}</span>
+      </button>
     );
     return (
       <Card key={ev.id} className="shadow-card">
@@ -394,6 +445,11 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
           <span className="text-xs text-muted-foreground">{conf}/{speakers.length}{decl ? ` · ${decl}✕` : ""}</span>
         </button>
         <div hidden={!isOpen} className="space-y-3 px-4 pb-4">
+          <div className="relative">
+            <Input key={`name-${ev.name}`} defaultValue={ev.name} maxLength={200} aria-label="Nome do evento" className="pr-9 font-medium"
+              onBlur={(e) => { const v = e.target.value.trim(); if (!v) { e.target.value = ev.name; toast.error("O evento precisa de um nome."); return; } if (v !== ev.name) void patchEvent(ev.id, { name: v }); }} />
+            <Pencil className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <Input type="date" defaultValue={ev.event_date ?? ""} onBlur={(e) => e.target.value !== (ev.event_date ?? "") && patchEvent(ev.id, { event_date: e.target.value || null })} aria-label="Data" />
             <Input defaultValue={ev.location ?? ""} placeholder="Local" onBlur={(e) => e.target.value !== (ev.location ?? "") && patchEvent(ev.id, { location: e.target.value.trim() || null })} />
@@ -427,24 +483,38 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" className="gap-1" onClick={() => setExportFor(ev)}><Download className="h-3.5 w-3.5" />Exportar</Button>
-            {pendingN > 0 && chip("pending", `Faltam ${pendingN}`)}
-            {decl > 0 && chip("declined", `Recusas ${decl}`)}
+            {pendingN > 0 && <Button size="sm" variant="ghost" className="gap-1 px-2 text-xs" onClick={() => setRemindFor(ev)}><BellRing className="h-3.5 w-3.5" />Lembrar pendentes</Button>}
             <span className="flex-1" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Opções do evento"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setEditor({ ev, part: null, afterOrder: null })}><Plus className="mr-2 h-4 w-4" />Nova parte</DropdownMenuItem>
+                <DropdownMenuItem disabled={!pendingN} onClick={() => setRemindFor(ev)}><BellRing className="mr-2 h-4 w-4" />Lembrar pendentes</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => duplicateEvent(ev)}><CopyPlus className="mr-2 h-4 w-4" />Duplicar evento</DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive" onClick={() => removeEvent(ev.id)}><Trash2 className="mr-2 h-4 w-4" />Apagar evento</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          <div className="flex gap-1.5" role="group" aria-label="Resumo das designações">
+            {pill("confirmed", conf, "Confirmados", "bg-primary/10 text-primary")}
+            {pill("pending", pendingN, "Pendentes", "bg-warning/15 text-warning-foreground")}
+            {pill("declined", decl, "Recusados", "bg-destructive/10 text-destructive")}
+            {pill("nospeaker", noSpeakerN, "Sem ancião", "bg-muted text-muted-foreground")}
+          </div>
+          {overlapIds.size > 0 && (
+            <p className="flex items-center gap-1.5 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />{overlapIds.size === 1 ? "1 parte começa antes do fim da anterior." : `${overlapIds.size} partes começam antes do fim da anterior.`}
+            </p>
+          )}
+          <div className="flex rounded-full bg-muted p-0.5" role="tablist" aria-label="Filtrar partes">
+            {([["all", "Todas"], ["pending", "Pendentes"], ["notime", `Sem tempo${noTimeN ? ` ${noTimeN}` : ""}`], ["nospeaker", "Sem ancião"]] as const).map(([v, l]) => (
+              <button key={v} type="button" role="tab" aria-selected={f === v} onClick={() => setFilter((m) => ({ ...m, [ev.id]: v }))}
+                className={`h-8 min-w-0 flex-1 truncate rounded-full px-1 text-xs font-medium transition-colors ${f === v ? "bg-background shadow-sm" : "text-muted-foreground"}`}>{l}</button>
+            ))}
+          </div>
           <ul className="divide-y rounded-lg border">
             {shown.map((p, i) => {
-              const prev = evParts[evParts.findIndex((x) => x.id === p.id) - 1];
-              const overlap = !!prev && p.time_mode === "manual" && toMin(prev.part_time) != null && toMin(p.part_time) != null
-                && (toMin(prev.part_time)! + (prev.duration_min ?? 0)) > toMin(p.part_time)!;
-              return <PartItem key={p.id} ev={ev} elders={elders} part={p} overlap={overlap} first={i === 0} last={i === shown.length - 1}
+              return <PartItem key={p.id} ev={ev} elders={elders} part={p} overlap={overlapIds.has(p.id)} alsoIn={alsoIn(p)} first={i === 0} last={i === shown.length - 1}
                 onPatch={patchPart} onSetPin={setPin} onNewPin={newPin} onCopy={copyInvite} onNewLink={newLink}
                 onEdit={() => setEditor({ ev, part: p, afterOrder: null })} onAddAfter={() => setEditor({ ev, part: null, afterOrder: p.sort_order })}
                 onMove={(d) => movePart(ev, p, d)} onDelete={() => deletePart(ev, p)} />;
@@ -487,6 +557,26 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
           </div>
         </DialogContent>
       </Dialog>
+      <Drawer open={!!remindFor} onOpenChange={(o) => !o && setRemindFor(null)}>
+        <DrawerContent>
+          <DrawerHeader><DrawerTitle>Lembrar pendentes</DrawerTitle></DrawerHeader>
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto px-4 pb-2">
+            {remindFor && pendingOf(remindFor.id).map((p) => (
+              <div key={p.id} className="flex items-center gap-3 rounded-2xl bg-muted/60 px-3 py-2.5">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{p.speaker_name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{[p.part_time, p.outline_number ? `Nº ${p.outline_number}` : p.part_type_label, p.theme].filter(Boolean).join(" · ")}</span>
+                </span>
+                <Button size="sm" variant="outline" className="h-8 shrink-0 gap-1 rounded-full" onClick={() => copyInvite(remindFor, p)}><Copy className="h-3.5 w-3.5" />Copiar</Button>
+              </div>
+            ))}
+            {remindFor && !pendingOf(remindFor.id).length && <p className="py-6 text-center text-sm text-muted-foreground">Todos já responderam.</p>}
+          </div>
+          <div className="px-4 pb-6 pt-2">
+            <Button className="w-full rounded-full" disabled={!remindFor || !pendingOf(remindFor.id).length} onClick={() => remindFor && copyAllPending(remindFor)}><Copy className="mr-1 h-4 w-4" />Copiar todas</Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
       <datalist id="big-events-elders">
         {elders.filter((e) => e.name).map((e) => <option key={`${e.name}-${e.congregation}`} value={e.name}>{e.congregation}</option>)}
       </datalist>
@@ -561,6 +651,15 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   );
 }
 
+type PartFilter = "all" | "pending" | "declined" | "confirmed" | "notime" | "nospeaker";
+function matchFilter(p: PartRow, f: PartFilter, noTime: (p: PartRow) => boolean): boolean {
+  if (f === "all") return true;
+  if (f === "notime") return noTime(p);
+  if (p.assigned_to !== "speaker") return false;
+  if (f === "nospeaker") return !p.speaker_name?.trim();
+  return !!p.speaker_name?.trim() && p.status === f;
+}
+
 interface PartDraft { theme: string; outline_number: string; part_type_label: string; duration_min: string; time_mode: "auto" | "manual"; part_time: string; assigned_to: string }
 
 function PartEditorDialog({ part, prevEnd, nextNumber, onCancel, onSave }: {
@@ -592,7 +691,7 @@ function PartEditorDialog({ part, prevEnd, nextNumber, onCancel, onSave }: {
           <div><Label>Tema</Label><Input className="mt-1" maxLength={300} value={d.theme} onChange={(e) => setD({ ...d, theme: e.target.value })} /></div>
           <div className="grid grid-cols-[5rem_1fr] gap-2">
             <div><Label>Nº</Label><Input className="mt-1" maxLength={10} value={d.outline_number} onChange={(e) => setD({ ...d, outline_number: e.target.value })} /></div>
-            <div><Label className={!d.duration_min && part?.symposium ? "text-destructive" : undefined}>Tempo (min)</Label><Input className={`mt-1 ${!d.duration_min && part?.symposium ? "border-destructive" : ""}`} inputMode="numeric" value={d.duration_min} onChange={(e) => setD({ ...d, duration_min: e.target.value.replace(/\D/g, "").slice(0, 3) })} /></div>
+            <div><Label className={!d.duration_min && part?.symposium ? "text-destructive" : undefined}>Tempo (min){isFloatingType(d.part_type_label) ? " · não soma" : ""}</Label><Input className={`mt-1 ${!d.duration_min && part?.symposium ? "border-destructive" : ""}`} inputMode="numeric" value={d.duration_min} onChange={(e) => setD({ ...d, duration_min: e.target.value.replace(/\D/g, "").slice(0, 3) })} /></div>
           </div>
           <div><Label>Tipo</Label>
             <div className="mt-1 flex flex-wrap gap-1">
@@ -615,7 +714,7 @@ function PartEditorDialog({ part, prevEnd, nextNumber, onCancel, onSave }: {
           </div>
           <div><Label>Designado</Label>
             <div className="mt-1 flex gap-1">
-              {[["speaker", "Orador"], ["co", "SC"], ["branch", "Filial"], ["none", "—"]].map(([v, l]) => (
+              {(["speaker", "co", "branch", "none"] as const).map((v) => [v, ASSIGNED_LABEL[v]] as const).map(([v, l]) => (
                 <button key={v} type="button" onClick={() => setD({ ...d, assigned_to: v })}
                   className={`flex-1 rounded-full border px-2 py-1 text-xs ${d.assigned_to === v ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{l}</button>
               ))}
@@ -631,8 +730,8 @@ function PartEditorDialog({ part, prevEnd, nextNumber, onCancel, onSave }: {
   );
 }
 
-function PartItem({ ev, elders, part, overlap, first, last, onPatch, onSetPin, onNewPin, onCopy, onNewLink, onEdit, onAddAfter, onMove, onDelete }: {
-  ev: EventRow; elders: Array<{ name: string; congregation: string }>; part: PartRow; overlap: boolean; first: boolean; last: boolean;
+function PartItem({ ev, elders, part, overlap, alsoIn, first, last, onPatch, onSetPin, onNewPin, onCopy, onNewLink, onEdit, onAddAfter, onMove, onDelete }: {
+  ev: EventRow; elders: Array<{ name: string; congregation: string }>; part: PartRow; overlap: boolean; alsoIn: string | null; first: boolean; last: boolean;
   onNewLink: (p: PartRow) => Promise<void>; onEdit: () => void; onAddAfter: () => void;
   onMove: (d: -1 | 1) => void; onDelete: () => void;
   onPatch: (id: string, p: Partial<PartRow>) => Promise<unknown>;
@@ -643,10 +742,11 @@ function PartItem({ ev, elders, part, overlap, first, last, onPatch, onSetPin, o
   const [pin, setPinState] = useState("");
   useEffect(() => { setPinState(part.pin_hash ? readPin(part.id) ?? "" : ""); }, [part.id, part.pin_hash]);
   const [showReason, setShowReason] = useState(false);
-  const [showInfo, setShowInfo] = useState(!!part.instructions);
+  const extras = readExtras(part.talk_includes);
+  const [showInfo, setShowInfo] = useState(!!part.instructions || extras.length > 0);
   const congRef = useRef<HTMLInputElement>(null);
   const head = useMemo(() => [part.part_time, part.outline_number ? `Nº${part.outline_number}` : null].filter(Boolean).join(" "), [part]);
-  const tag = part.assigned_to === "co" ? "SC" : part.assigned_to === "branch" ? "Filial" : null;
+  const tag = part.assigned_to === "co" || part.assigned_to === "branch" ? ASSIGNED_LABEL[part.assigned_to] : null;
 
   return (
     <li className="space-y-2 p-3 text-sm">
@@ -673,9 +773,10 @@ function PartItem({ ev, elders, part, overlap, first, last, onPatch, onSetPin, o
         </DropdownMenu>
       </div>
       {overlap && <p className="pl-16 text-xs text-destructive">Este horário começa antes do fim da parte anterior.</p>}
+      {alsoIn && <p className="ml-16 w-fit rounded-lg bg-warning/15 px-2 py-1 text-xs font-medium text-warning-foreground">⚠ Este ancião também está na {alsoIn}.</p>}
       {part.assigned_to === "speaker" && (
         <div className="space-y-2 pl-16">
-          <Input list="big-events-elders" placeholder="Orador" defaultValue={part.speaker_name ?? ""}
+          <Input list="big-events-elders" placeholder="Ancião" defaultValue={part.speaker_name ?? ""}
             onBlur={(e) => {
               const name = e.target.value.trim();
               if (name === (part.speaker_name ?? "")) return;
@@ -684,13 +785,27 @@ function PartItem({ ev, elders, part, overlap, first, last, onPatch, onSetPin, o
               if (cong && !part.speaker_congregation) { patch.speaker_congregation = cong; if (congRef.current) congRef.current.value = cong; }
               void onPatch(part.id, patch);
             }} />
-          <Input ref={congRef} placeholder="Congregação do orador" maxLength={120} defaultValue={part.speaker_congregation ?? ""}
+          <Input ref={congRef} placeholder="Congregação do ancião" maxLength={120} defaultValue={part.speaker_congregation ?? ""}
             onBlur={(e) => e.target.value.trim() !== (part.speaker_congregation ?? "") && onPatch(part.id, { speaker_congregation: e.target.value.trim() || null })} />
           <button type="button" onClick={() => setShowInfo((v) => !v)} className="flex items-center gap-1 text-xs text-muted-foreground">
             <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showInfo ? "" : "-rotate-90"}`} />Informações só deste convite
           </button>
-          {showInfo && <Textarea rows={2} maxLength={1000} defaultValue={part.instructions ?? ""}
-            onBlur={(e) => e.target.value.trim() !== (part.instructions ?? "") && onPatch(part.id, { instructions: e.target.value.trim() || null })} />}
+          {showInfo && (
+            <div className="space-y-2 rounded-2xl bg-muted/50 p-2.5">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Participações na parte</p>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                {PART_EXTRAS.map((x) => (
+                  <label key={x.id} className="flex min-h-8 items-center gap-2 text-xs">
+                    <Checkbox checked={extras.includes(x.id)}
+                      onCheckedChange={(v) => void onPatch(part.id, { talk_includes: withExtras(part.talk_includes, v === true ? [...extras, x.id] : extras.filter((e) => e !== x.id)) })} />
+                    {x.label}
+                  </label>
+                ))}
+              </div>
+              <Textarea rows={2} maxLength={1000} placeholder="Outras informações só para este ancião" defaultValue={part.instructions ?? ""}
+                onBlur={(e) => e.target.value.trim() !== (part.instructions ?? "") && onPatch(part.id, { instructions: e.target.value.trim() || null })} />
+            </div>
+          )}
           {ev.link_mode === "personal" ? (
             <div className="flex items-center gap-2">
               <Link2 className="h-3.5 w-3.5 text-muted-foreground" />

@@ -8,12 +8,52 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { defaultTemplate, buildLetterModel, type LetterTemplate, type LetterColors, type LetterPart, LETTER_PALETTE, LETTER_PRESETS, DEFAULT_LETTER_COLORS, sanitizeLetterColors, presetOf, resolveLetterColors, rgbCss } from "@/lib/big-events/letter-template";
+import { defaultTemplate, buildLetterModel, type LetterTemplate, type LetterColors, type LetterPart, LETTER_PALETTE, LETTER_PRESETS, LETTER_HEADER_STYLES, headerStyleOf, type LetterHeaderStyle, DEFAULT_LETTER_COLORS, sanitizeLetterColors, presetOf, resolveLetterColors, rgbCss } from "@/lib/big-events/letter-template";
 import { CollapsibleSection } from "@/components/guest-workspace/CollapsibleSection";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 
 const PART_LABEL: Record<LetterPart, string> = { title: "Título e cabeçalho", box: "Caixa de designação", info: "Informações e lembretes", rule: "Filete decorativo" };
+
+/** Papel timbrado: três cabeçalhos com miniatura (cores seguem a paleta escolhida). */
+function HeaderStylePicker({ value, colors, onChange }: { value: LetterHeaderStyle; colors?: LetterColors; onChange: (v: LetterHeaderStyle) => void }) {
+  const pal = resolveLetterColors(colors);
+  const accent = rgbCss(pal.title), gold = rgbCss(pal.rule);
+  const bar = (w: string, c?: string) => <span className="block h-[3px] rounded-full bg-muted-foreground/40" style={{ width: w, ...(c ? { background: c } : {}) }} />;
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {LETTER_HEADER_STYLES.map((h) => (
+        <button key={h.id} type="button" aria-pressed={value === h.id} onClick={() => onChange(h.id)}
+          className={cn("flex flex-col items-stretch gap-1.5 rounded-2xl border p-2 text-left transition-colors", value === h.id ? "border-primary ring-2 ring-primary/30" : "hover:bg-muted")}>
+          <span className="relative block aspect-[3/4] overflow-hidden rounded-lg border bg-card">
+            {h.id === "classic" && (
+              <span className="flex flex-col items-center gap-1 px-2 pt-2">
+                {bar("60%", accent)}{bar("35%")}{bar("50%")}<span className="mt-0.5 block h-px w-1/2" style={{ background: gold }} />
+              </span>
+            )}
+            {h.id === "formal" && (
+              <span className="block px-2 pt-2">
+                <span className="flex justify-between gap-1"><span className="flex w-1/2 flex-col gap-1">{bar("100%", accent)}{bar("60%")}</span><span className="flex w-1/3 flex-col items-end gap-1">{bar("100%")}{bar("70%")}</span></span>
+                <span className="mt-1.5 block h-[1.5px] w-full" style={{ background: accent }} /><span className="mt-[2px] block h-px w-full" style={{ background: gold }} />
+              </span>
+            )}
+            {h.id === "institutional" && (
+              <>
+                <span className="flex h-5 items-center justify-between px-1.5" style={{ background: accent, borderBottom: `2px solid ${gold}` }}>
+                  <span className="block h-[3px] w-1/2 rounded-full bg-background/90" /><span className="block h-[3px] w-1/5 rounded-full bg-background/70" />
+                </span>
+                <span className="absolute inset-x-2 bottom-1.5 block border-t pt-1" style={{ borderColor: gold }}>{bar("70%")}</span>
+              </>
+            )}
+            <span className="absolute inset-x-2 top-1/2 flex flex-col gap-1">{bar("90%")}{bar("80%")}{bar("85%")}</span>
+          </span>
+          <span className="text-xs font-semibold">{h.name}</span>
+          <span className="text-[10px] leading-tight text-muted-foreground">{h.hint}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /** Seção "Cores da carta": paletas prontas, ajuste por parte e prévia em miniatura. */
 function LetterColorsEditor({ value, onChange }: { value?: LetterColors; onChange: (c: LetterColors) => void }) {
@@ -171,6 +211,12 @@ export function LetterTemplates({ list, onChange, sync }: { list: LetterTemplate
           </CollapsibleSection>
           </Card>
         ))}
+        <Card className="p-3">
+          <CollapsibleSection id="letter.header" title="Papel timbrado" defaultOpen={false}
+            summary={LETTER_HEADER_STYLES.find((h) => h.id === headerStyleOf(editing))?.name}>
+            <div className="px-1 pt-1"><HeaderStylePicker value={headerStyleOf(editing)} colors={editing.colors} onChange={(headerStyle) => setEditing({ ...editing, headerStyle })} /></div>
+          </CollapsibleSection>
+        </Card>
         <Card className="p-3">
           <CollapsibleSection id="letter.colors" title="Cores da carta" defaultOpen={false}
             summary={LETTER_PRESETS.find((p) => p.id === presetOf(editing.colors))?.name ?? "Personalizada"}>

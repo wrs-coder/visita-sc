@@ -41,7 +41,7 @@ export function rtfToText(rtf: string): string {
   return out.replace(/\u00A0/g, " ");
 }
 
-const NO_SPEAKER = /^(m[uú]sica|c[aâ]ntico|an[uú]ncios|ora[cç][aã]o|intervalo)/i;
+const NO_SPEAKER = /^(m[uú]sica|v[ií]deo musical|c[aâ]ntico|an[uú]ncios|ora[cç][aã]o|intervalo)/i;
 const cleanQuotes = (s: string) => {
   let t = s.replace(/^["“”‘’']+|["“”‘’']+$/g, "").trim();
   const open = (t.match(/[“‘]/g) ?? []).length, close = (t.match(/[”’]/g) ?? []).length;

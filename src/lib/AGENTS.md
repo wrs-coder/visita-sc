@@ -3,3 +3,4 @@
 - Per-tab Bible (outlines/reading) is device-local via getActiveLibrary(scope), falling back to the global active Bible, so unset users see no change.
 - Reading lateness is tracked per weekday inside the WeekdayPlan (lastRead[7] + since floor, reading-day-log.ts), never from a shared last-read date, so it travels in backups and one day's reading never clears another day; plans without since are seeded to today so restores never raise surprise alerts.
 - Big-event transfer file (.visitasc, event-share-file.ts) never carries PINs, tokens or links, because the receiving device generates its own.
+- Program import rules (numbering, auto type, Oração/Presidente parts) live only in big-events/program-rules.ts and run after every parser except .visitasc; part extras are "@extra:" markers inside talk_includes and Oração/Presidente never advance times, so no schema change is needed.

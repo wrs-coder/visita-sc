@@ -1,7 +1,7 @@
 // Monta a carta convite em Word (HTML → docx existente) e em PDF (pdf-lib) com link ativo.
 import { PDFDocument, PDFName, PDFString, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import { resolveLetterColors, type LetterModel, type RGB3 } from "./letter-template";
+import { headerStyleOf, resolveLetterColors, type LetterModel, type RGB3 } from "./letter-template";
 import type { InviteEvent, InvitePart } from "./invite";
 import { formatEventDate } from "./invite";
 
@@ -164,11 +164,34 @@ async function renderLetter(m: LetterModel, bytes: LetterFontBytes | null, lv: F
   const rule = (color: RGB, x1 = M, x2 = W - M, th = 0.6) => page.drawLine({ start: { x: x1, y }, end: { x: x2, y }, thickness: th, color });
 
   // Timbre (fonte própria do cabeçalho)
-  text(t.headerTitle, { font: F.serifBold, size: 22, align: "center", lead: 28, color: ACCENT });
-  text(t.headerSubtitle, { size: 12, align: "center", lead: 17 });
-  text(t.headerAddress, { size: 8.5, align: "center", lead: 12, color: MUTED });
-  text(t.headerPhone, { size: 8.5, align: "center", lead: 12, color: MUTED });
-  y -= G(8); rule(GOLD, M + CW * 0.2, W - M - CW * 0.2, 0.8); y -= G(20);
+  const style = headerStyleOf(t);
+  if (style === "formal") {
+    // Formal: nome e circuito à esquerda; endereço e telefone alinhados à direita; linha dupla.
+    const top0 = y, colW = CW * 0.55;
+    text(t.headerTitle, { font: F.serifBold, size: 19, width: colW, lead: 24, color: ACCENT });
+    text(t.headerSubtitle, { size: 11, width: colW, lead: 15 });
+    const leftEnd = y; y = top0 + 2;
+    const rx = M + colW + 10, rw = CW - colW - 10;
+    text(t.headerAddress, { size: 8, x: rx, width: rw, align: "right", lead: 11, color: MUTED });
+    text(t.headerPhone, { size: 8, x: rx, width: rw, align: "right", lead: 11, color: MUTED });
+    y = Math.min(y, leftEnd) - G(6);
+    rule(ACCENT, M, W - M, 1.1); y -= 2.5; rule(GOLD, M, W - M, 0.5); y -= G(20);
+  } else if (style === "institutional") {
+    // Institucional: faixa sólida no topo; contatos vão para o rodapé de cada página.
+    const BH = 64;
+    page.drawRectangle({ x: 0, y: H - BH, width: W, height: BH, color: ACCENT });
+    page.drawRectangle({ x: 0, y: H - BH - 3, width: W, height: 3, color: GOLD });
+    const name = clean(t.headerTitle.trim()), sub = clean(t.headerSubtitle.trim());
+    if (name) page.drawText(name, { x: M, y: H - BH / 2 - 7, size: 18, font: F.serifBold, color: WHITE });
+    if (sub) { const sw = F.serif.widthOfTextAtSize(sub, 11); page.drawText(sub, { x: W - M - sw, y: H - BH / 2 - 5, size: 11, font: F.serif, color: WHITE }); }
+    y = Math.min(y, H - BH - 3 - G(26));
+  } else {
+    text(t.headerTitle, { font: F.serifBold, size: 22, align: "center", lead: 28, color: ACCENT });
+    text(t.headerSubtitle, { size: 12, align: "center", lead: 17 });
+    text(t.headerAddress, { size: 8.5, align: "center", lead: 12, color: MUTED });
+    text(t.headerPhone, { size: 8.5, align: "center", lead: 12, color: MUTED });
+    y -= G(8); rule(GOLD, M + CW * 0.2, W - M - CW * 0.2, 0.8); y -= G(20);
+  }
 
   text(m.date, { size: B - 1, align: "right", color: MUTED, gap: G(12) });
   text(m.recipientName, { font: F.serifBold, lead: B * 1.35 });
@@ -266,5 +289,13 @@ async function renderLetter(m: LetterModel, bytes: LetterFontBytes | null, lv: F
   text(t.signoff, { gap: G(6) });
   text(t.signature, { font: F.serifItalic, size: 13.5, align: "right", color: ACCENT });
   linkPage.node.set(PDFName.of("Annots"), doc.context.obj(annots as never[]));
+  if (style === "institutional") {
+    const foot = clean([t.headerAddress.trim(), t.headerPhone.trim()].filter(Boolean).join("  ·  "));
+    if (foot) for (const pg of doc.getPages()) {
+      let size = 7.5; while (size > 5.5 && F.serif.widthOfTextAtSize(foot, size) > CW) size -= 0.25;
+      pg.drawLine({ start: { x: M, y: 30 }, end: { x: W - M, y: 30 }, thickness: 0.4, color: GOLD });
+      pg.drawText(foot, { x: M + (CW - F.serif.widthOfTextAtSize(foot, size)) / 2, y: 19, size, font: F.serif, color: MUTED });
+    }
+  }
   return doc;
 }

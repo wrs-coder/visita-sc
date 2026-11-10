@@ -76,7 +76,7 @@ describe("edição de partes e modo de link", () => {
   const next = { ...part, id: "b", sort_order: 1, speaker_name: "Pedro", speaker_congregation: "Vila Nova", instructions: null };
   it("convite leva congregação, info individual e congregação do próximo orador", () => {
     const t = buildInviteText(ev, part, [part, next], "1234", "https://x");
-    expect(t).toContain("Orador: João — Central");
+    expect(t).toContain("Ancião: João — Central");
     expect(t).toContain("Traga o esboço");
     expect(t).toContain("Próximo orador: Pedro — Vila Nova");
     expect(t).toContain("https://visitasc.com.br/c/EVT");

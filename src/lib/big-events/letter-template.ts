@@ -1,6 +1,6 @@
 // Modelos de carta convite (Grandes Eventos). Guardados só no aparelho, por usuário.
 // O quadro da designação nunca vem do modelo: é montado a partir do evento e da parte.
-import { formatEventDate, inviteLink, nextSpeakerName, type InviteEvent, type InvitePart } from "./invite";
+import { extrasLabel, formatEventDate, inviteLink, nextSpeakerName, type InviteEvent, type InvitePart } from "./invite";
 
 export interface LetterTemplate {
   id: string;
@@ -20,10 +20,21 @@ export interface LetterTemplate {
   closing: string;
   signoff: string;
   signature: string;
+  /** Papel timbrado (ausente = Clássico). */
+  headerStyle?: LetterHeaderStyle;
   /** Cores decorativas da carta em PDF (ausente = paleta Clássica). */
   colors?: LetterColors;
   updatedAt: string;
 }
+
+export type LetterHeaderStyle = "classic" | "formal" | "institutional";
+export const LETTER_HEADER_STYLES: { id: LetterHeaderStyle; name: string; hint: string }[] = [
+  { id: "classic", name: "Clássico", hint: "Centralizado, filete dourado" },
+  { id: "formal", name: "Formal", hint: "Nome à esquerda, contatos à direita" },
+  { id: "institutional", name: "Institucional", hint: "Faixa de cor no topo, contatos no rodapé" },
+];
+export const headerStyleOf = (t: Pick<LetterTemplate, "headerStyle">): LetterHeaderStyle =>
+  t.headerStyle === "formal" || t.headerStyle === "institutional" ? t.headerStyle : "classic";
 
 // ---------- Cores da carta ----------
 export type LetterPart = "title" | "box" | "info" | "rule";
@@ -159,9 +170,11 @@ export function buildLetterModel(
   const box: string[] = [];
   box.push(`${ev.name}${ev.event_date ? ` — ${formatEventDate(ev.event_date)}` : ""}`);
   if (ev.location) box.push(`Local: ${ev.location}`);
-  if (part.speaker_name) box.push(`Orador: ${withCong(part.speaker_name, part.speaker_congregation)}`);
+  if (part.speaker_name) box.push(`Ancião: ${withCong(part.speaker_name, part.speaker_congregation)}`);
   box.push(`Sua designação: ${head}`);
   if (part.theme) box.push(`Tema: ${part.theme}`);
+  const extras = extrasLabel(part.talk_includes);
+  if (extras) box.push(`Participações: ${extras}`);
   if (part.instructions) box.push(`Informações para você: ${part.instructions}`);
   if (part.show_next_speaker) { const n = nextSpeakerName(all, part.id); if (n) box.push(`Próximo orador: ${n}`); }
   if (ev.extra_info) box.push(`Informações: ${ev.extra_info}`);

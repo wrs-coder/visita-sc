@@ -6,9 +6,32 @@ export interface InvitePart {
   outline_number: string | null; instructions: string | null; part_type_label: string | null;
   assigned_to: string; speaker_name: string | null; show_next_speaker: boolean;
   speaker_congregation?: string | null; personal_token?: string | null; personal_code?: string | null;
+  talk_includes?: unknown;
 }
 
-export const PART_TYPES = ["Discurso", "Entrevistas", "Simpósio", "A Sentinela", "Discurso Batismo", "Discurso Público"] as const;
+export const PART_TYPES = ["Discurso", "Entrevistas", "Simpósio", "A Sentinela", "Discurso Batismo", "Discurso Público", "Oração", "Presidência do programa"] as const;
+/** Nome mostrado para cada "Designado" (o valor gravado não muda). */
+export const ASSIGNED_LABEL: Record<string, string> = { speaker: "Ancião", co: "SC", branch: "Rep. da Filial", none: "—" };
+const FLOATING = new Set(["Oração", "Presidência do programa"]);
+
+// ---------- Participações adicionais (guardadas em talk_includes como marcadores) ----------
+export const PART_EXTRAS = [
+  { id: "demo", label: "Demonstração" }, { id: "videos", label: "Vídeos" },
+  { id: "entrevista", label: "Entrevista" }, { id: "assistencia", label: "Participação da Assistência" },
+] as const;
+const EXTRA_PREFIX = "@extra:";
+const strList = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+export function readExtras(includes: unknown): string[] {
+  const ids = strList(includes).filter((x) => x.startsWith(EXTRA_PREFIX)).map((x) => x.slice(EXTRA_PREFIX.length));
+  return PART_EXTRAS.map((e) => e.id).filter((id) => ids.includes(id));
+}
+/** "inclui" do programa sem os marcadores internos. */
+export const plainIncludes = (includes: unknown) => strList(includes).filter((x) => !x.startsWith(EXTRA_PREFIX));
+export const withExtras = (includes: unknown, ids: string[]) => [...plainIncludes(includes), ...PART_EXTRAS.filter((e) => ids.includes(e.id)).map((e) => EXTRA_PREFIX + e.id)];
+export function extrasLabel(includes: unknown): string | null {
+  const ids = readExtras(includes);
+  return ids.length ? PART_EXTRAS.filter((e) => ids.includes(e.id)).map((e) => e.label).join(" · ") : null;
+}
 
 const withCong = (name: string, cong?: string | null) => (cong?.trim() ? `${name} — ${cong.trim()}` : name);
 
@@ -22,7 +45,7 @@ export function toMin(t: string | null | undefined): number | null {
 export const fromMin = (n: number) => `${String(Math.floor(n / 60) % 24).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 
 /** Recalcula horários: partes 'auto' começam ao fim da anterior; 'manual' mantêm a hora e servem de nova base. */
-export function recomputeTimes<T extends { id: string; sort_order: number; part_time: string | null; duration_min: number | null; time_mode?: string | null }>(start: string | null, parts: T[]): Array<{ id: string; part_time: string | null }> {
+export function recomputeTimes<T extends { id: string; sort_order: number; part_time: string | null; duration_min: number | null; time_mode?: string | null; part_type_label?: string | null }>(start: string | null, parts: T[]): Array<{ id: string; part_time: string | null }> {
   const sorted = [...parts].sort((a, b) => a.sort_order - b.sort_order);
   let cur = toMin(start);
   const out: Array<{ id: string; part_time: string | null }> = [];
@@ -31,6 +54,7 @@ export function recomputeTimes<T extends { id: string; sort_order: number; part_
     if (p.time_mode === "manual" && toMin(p.part_time) != null) t = toMin(p.part_time);
     else t = cur;
     out.push({ id: p.id, part_time: t == null ? p.part_time : fromMin(t) });
+    if (FLOATING.has(p.part_type_label ?? "")) continue; // Oração/Presidente não empurram o programa
     cur = t == null ? null : t + (p.duration_min ?? 0);
   }
   return out;
@@ -81,10 +105,12 @@ export function buildInviteText(ev: InviteEvent, part: InvitePart, all: InvitePa
   const lines: string[] = [];
   lines.push(`${ev.name}${ev.event_date ? ` — ${formatEventDate(ev.event_date)}` : ""}`);
   if (ev.location) lines.push(`Local: ${ev.location}`);
-  if (part.speaker_name) lines.push(`Orador: ${withCong(part.speaker_name, part.speaker_congregation)}`);
+  if (part.speaker_name) lines.push(`Ancião: ${withCong(part.speaker_name, part.speaker_congregation)}`);
   const head = [part.outline_number ? `Parte Nº ${part.outline_number}` : part.part_type_label, part.part_time, part.duration_min ? `${part.duration_min} min` : null].filter(Boolean).join(" · ");
   lines.push(`Sua designação: ${head}`);
   if (part.theme) lines.push(`Tema: ${part.theme}`);
+  const extras = extrasLabel(part.talk_includes);
+  if (extras) lines.push(`Participações: ${extras}`);
   if (part.instructions) lines.push(`Informações para você: ${part.instructions}`);
   if (part.show_next_speaker) {
     const next = nextSpeakerName(all, part.id);
