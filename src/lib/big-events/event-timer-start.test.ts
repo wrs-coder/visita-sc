@@ -37,7 +37,30 @@ describe("início previsto × real e modos", () => {
   });
 });
 describe("dia do evento", () => {
-  it("parte iniciada em outro dia (teste) não mostra atraso", () => {
-    expect(startDelayMin(600, "2026-11-12", new Date(2026, 10, 11, 23, 0).getTime(), 0)).toBeNull();
+  it("antes de começar, fora do dia do evento, não mostra atraso", () => {
+    expect(startDelayMin(600, "2026-11-12", null, new Date(2026, 10, 11, 23, 0).getTime())).toBeNull();
+  });
+});
+
+import { clockProgramDiff as _cpd, startDelayMin as _sdm, programLabel as _pl, emptyTimer as _et, tapPart as _tp, type TimerPart as _TP } from "./event-timer";
+import { partExtrasLabel as _pel } from "./invite";
+describe("relógio real do programa", () => {
+  const part: _TP = { id: "a", sort_order: 1, theme: "Discurso", part_time: "10:00", duration_min: 16, outline_number: "3", part_type_id: null, part_type_label: "Discurso", assigned_to: "speaker", speaker_name: "João" };
+  const at = (h: number, m: number) => new Date(2026, 10, 11, h, m).getTime();
+  it("sino compara pela hora do celular mesmo fora do dia do evento", () => {
+    expect(_sdm(600, "2026-12-05", at(2, 23), at(2, 24))).toBe(-457);
+  });
+  it("discurso das 10:00 iniciado 02:23 → programa 7h37 adiantado", () => {
+    let s = _tp(_et(), "a", at(2, 23));
+    s = _tp(s, "a", at(2, 39)); // encerra com 16 min
+    expect(Math.round(_cpd([part], s, at(2, 40))! / 60_000)).toBe(-457);
+    expect(_pl(-457 * 60_000)).toBe("Programa 7h37 adiantado");
+  });
+  it("parte rodando e estourando atrasa ao vivo", () => {
+    const s = _tp(_et(), "a", at(10, 0));
+    expect(Math.round(_cpd([part], s, at(10, 20))! / 60_000)).toBe(4);
+  });
+  it("Presidência e Oração não levam participações", () => {
+    expect(_pel({ talk_includes: ["__x:video"], part_type_label: "Oração" })).toBeNull();
   });
 });

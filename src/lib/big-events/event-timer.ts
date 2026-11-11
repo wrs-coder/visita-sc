@@ -151,6 +151,8 @@ export function summarize(partsIn: TimerPart[], s: TimerState, now: number): Sum
     const cur = sp.get(name) ?? { diff: 0, parts: 0 };
     sp.set(name, { diff: cur.diff + r.diff, parts: cur.parts + 1 });
   }
+  const clockDiff = clockProgramDiff(partsIn, s, now);
+  if (clockDiff != null) programDiff = clockDiff;
   return { programDiff, parts, bySpeaker: [...sp].map(([name, v]) => ({ name, ...v })).sort((a, b) => b.diff - a.diff) };
 }
 
@@ -172,7 +174,8 @@ export const signed = (ms: number) => (Math.abs(ms) < 1000 ? "0:00" : (ms > 0 ? 
 export function programLabel(ms: number): string {
   const min = Math.round(ms / 60_000);
   if (min === 0) return "Programa no horário";
-  return min > 0 ? `Programa +${min} min atrasado` : `Programa ${Math.abs(min)} min adiantado`;
+  const a = Math.abs(min), txt = a >= 60 ? `${Math.floor(a / 60)}h${String(a % 60).padStart(2, "0")}` : `${a} min`;
+  return min > 0 ? `Programa +${txt} atrasado` : `Programa ${txt} adiantado`;
 }
 
 // ---- Modo de exibição: temporizador (regressivo) ou cronômetro (progressivo) ----
@@ -210,12 +213,36 @@ export function startDelayMin(plannedMinOfDay: number | null, eventDate: string 
   const ref = actualStart ?? now;
   const d = new Date(ref);
   const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  if (eventDate && eventDate !== today) return null; // só compara no dia do evento
-  if (actualStart == null && !eventDate) return null;
+  // Antes de começar, só avisa atraso no dia do evento; depois de começar, compara sempre pela hora do dia.
+  if (actualStart == null && (!eventDate || eventDate !== today)) return null;
   const plannedAt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(plannedMinOfDay / 60), plannedMinOfDay % 60).getTime();
   const diff = Math.round((ref - plannedAt) / 60_000);
   if (actualStart == null && diff <= 0) return null; // ainda não chegou a hora
   return diff;
+}
+/** Desvio do programa pela hora do celular (ms): fim real (ou projetado, se ainda corre) da
+ *  última parte iniciada − fim que o programa marcava. null = sem referência de horário. */
+export function clockProgramDiff(parts: TimerPart[], s: TimerState, now: number): number | null {
+  const fs = s.firstStart ?? {};
+  let last: TimerPart | null = null;
+  for (const p of parts) {
+    if (fs[p.id] == null || isFloating(p) || (s.active !== p.id && !s.done.includes(p.id))) continue;
+    if (!last || fs[p.id] > fs[last.id]) last = p;
+  }
+  if (!last) return null;
+  const starts = plannedStarts(parts);
+  const pStart = starts[last.id], planned = plannedMs(last);
+  if (pStart == null || planned == null) return null;
+  const begin = fs[last.id], d = new Date(begin);
+  const plannedEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(pStart / 60), pStart % 60).getTime() + planned;
+  const actual = spentMs(s, last.id, now);
+  const realEnd = begin + (s.active === last.id ? Math.max(actual, planned) : actual);
+  return realEnd - plannedEnd;
+}
+/** "+5", "−12", "−7h37" (minutos inteiros; horas quando passar de 60). */
+export function fmtDelay(min: number): string {
+  const a = Math.abs(min), sign = min > 0 ? "+" : min < 0 ? "−" : "";
+  return a >= 60 ? `${sign}${Math.floor(a / 60)}h${String(a % 60).padStart(2, "0")}` : `${sign}${a}`;
 }
 export const fmtHm = (min: number | null) => (min == null ? "--:--" : `${String(Math.floor(min / 60) % 24).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`);
 export const fmtClockTime = (ms: number) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };

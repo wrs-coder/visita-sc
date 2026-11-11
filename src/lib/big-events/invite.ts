@@ -33,6 +33,10 @@ export function extrasLabel(includes: unknown): string | null {
   return ids.length ? PART_EXTRAS.filter((e) => ids.includes(e.id)).map((e) => e.label).join(" · ") : null;
 }
 
+/** Participações só valem para partes com orador; Presidente e Oração nunca têm. */
+export function partExtrasLabel(p: { talk_includes?: unknown; part_type_label?: string | null }): string | null {
+  return p.part_type_label === "Oração" || p.part_type_label === "Presidência do programa" ? null : extrasLabel(p.talk_includes);
+}
 const withCong = (name: string, cong?: string | null) => (cong?.trim() ? `${name} — ${cong.trim()}` : name);
 
 /** "HH:MM" -> minutos; null se inválido. */
@@ -117,14 +121,13 @@ export function buildInviteText(ev: InviteEvent, part: InvitePart, all: InvitePa
   const head = [part.outline_number ? `Parte Nº ${part.outline_number}` : part.part_type_label, part.part_time, part.duration_min ? `${part.duration_min} min` : null].filter(Boolean).join(" · ");
   lines.push(`Sua designação: ${head}`);
   if (part.theme) lines.push(`Tema: ${part.theme}`);
-  const extras = extrasLabel(part.talk_includes);
+  const extras = partExtrasLabel(part);
   if (extras) lines.push(`Participações: ${extras}`);
   if (part.instructions) lines.push(`Informações para você: ${part.instructions}`);
   if (part.show_next_speaker) {
     const next = nextSpeakerName(all, part.id);
     if (next) lines.push(`Próximo orador: ${next}`);
   }
-  if (ev.extra_info) lines.push(`Informações: ${ev.extra_info}`);
   if (ev.link_mode === "personal" && part.personal_token) {
     lines.push(`Confirme aqui: ${inviteLink(origin, part.personal_code || part.personal_token)}`);
   } else {

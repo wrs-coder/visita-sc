@@ -17,7 +17,7 @@ import { safeFileName } from "@/lib/docx-export";
 import {
   buildRows, clearTimer, clock, isFloating, loadTimer, plannedMs, programLabel, resetPart, saveTimer, setPartMinutes,
   signed, spentMs, stopAll, summarize, tapPart, toneFor, type TimerPart, type TimerState, type Tone,
-  displayClock, fmtClockTime, fmtHm, loadMode, plannedStarts, saveMode, startDelayMin, type TimerMode,
+  displayClock, fmtClockTime, fmtHm, loadMode, plannedStarts, saveMode, startDelayMin, fmtDelay, type TimerMode,
 } from "@/lib/big-events/event-timer";
 import { hideFloating, isNativeAndroid, overlayGranted, requestOverlay, showFloating } from "@/lib/big-events/floating-timer";
 
@@ -326,7 +326,7 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }:
                         {delay != null && (
                           <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold ${delay > 0 ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"}`}
                             title={realStart != null ? "Atraso no início" : "Atrasando o início"}>
-                            <Bell className="h-3 w-3" />{delay > 0 ? `+${delay}` : delay < 0 ? `${delay}` : "no horário"}{delay !== 0 ? " min" : ""}
+                            <Bell className="h-3 w-3" />{delay === 0 ? "no horário" : fmtDelay(delay)}{delay !== 0 && Math.abs(delay) < 60 ? " min" : ""}
                           </span>
                         )}
                       </div>

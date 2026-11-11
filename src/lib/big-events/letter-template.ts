@@ -1,6 +1,6 @@
 // Modelos de carta convite (Grandes Eventos). Guardados só no aparelho, por usuário.
 // O quadro da designação nunca vem do modelo: é montado a partir do evento e da parte.
-import { extrasLabel, formatEventDate, inviteLink, nextSpeakerName, type InviteEvent, type InvitePart } from "./invite";
+import { partExtrasLabel, formatEventDate, inviteLink, nextSpeakerName, type InviteEvent, type InvitePart } from "./invite";
 
 export interface LetterTemplate {
   id: string;
@@ -173,11 +173,10 @@ export function buildLetterModel(
   if (part.speaker_name) box.push(`Ancião: ${withCong(part.speaker_name, part.speaker_congregation)}`);
   box.push(`Sua designação: ${head}`);
   if (part.theme) box.push(`Tema: ${part.theme}`);
-  const extras = extrasLabel(part.talk_includes);
+  const extras = partExtrasLabel(part);
   if (extras) box.push(`Participações: ${extras}`);
   if (part.instructions) box.push(`Informações para você: ${part.instructions}`);
   if (part.show_next_speaker) { const n = nextSpeakerName(all, part.id); if (n) box.push(`Próximo orador: ${n}`); }
-  if (ev.extra_info) box.push(`Informações: ${ev.extra_info}`);
   return {
     tpl, date: longDatePt(today),
     recipientName: part.speaker_name?.trim() ?? "",

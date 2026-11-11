@@ -4,7 +4,7 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { loadLetterFonts, winAnsi } from "./letter-render";
-import { extrasLabel, formatEventDate, toMin } from "./invite";
+import { partExtrasLabel, formatEventDate, toMin } from "./invite";
 import { isFloatingType } from "./program-rules";
 
 export interface ProgramEvent { name: string; event_date: string | null; location: string | null; start_time: string | null }
@@ -81,7 +81,7 @@ function draw(page: PDFPage | null, F: Fonts, ev: ProgramEvent, sorted: ProgramP
     const themeFont = none ? R : B;
     const lines = wrap(clean(p.theme), themeFont, floating ? fs * 0.92 : fs, TW);
     const who = whoLabel(p);
-    const extras = extrasLabel(p.talk_includes);
+    const extras = partExtrasLabel(p);
     const meta = [floating ? null : p.part_type_label, p.duration_min ? `${p.duration_min} min` : null, extras].filter(Boolean).join(" · ");
     const sec = [who, meta].filter(Boolean).join("   |   ");
     const secLines = sec ? wrap(clean(sec), R, small, TW - 60 * k) : [];
