@@ -26,3 +26,48 @@ Ele mostrava quanto a parte concluída ficou acima ou abaixo do previsto. Isso j
 
 ## Detalhes técnicos
 - Arquivo: `src/components/circuit/EventTimerFocus.tsx` (botão do relógio e linha de horários). Nada muda em dados, relatório ou PDF.
+
+---
+
+## (03) Reorganizar o topo de cada evento (Grandes Eventos)
+
+Hoje tudo fica empilhado: nome, data, local, horário, confirmação, carta, botões, contadores e filtros repetidos. Proposta no estilo Ajustes do iPhone / One UI:
+
+```text
+ANTES                              DEPOIS
+┌─────────────────────────┐        ┌─────────────────────────┐
+│ v Feliz É Aquele...  0/0│        │ v Feliz É Aquele...  0/0│
+│ [Nome do evento      ✎] │        │   sáb 05/12 · SAV · 09:40│
+│ [05/12/2026] [SAV     ] │        │                         │
+│ Início [09:40] Recalc.. │        │ ┌──────────┐┌─────────┐ │
+│ Como confirmam          │        │ │⏱ Controle││⬇ Export.│ │
+│ (PIN)(Link pessoal)     │        │ │ de tempo ││         │ │
+│ Modelo [Assembleia   v] │        │ └──────────┘└─────────┘ │
+│ [Exportar][Controle] ...│        │                         │
+│ (0)(0)(0)(0)            │        │ ┌ Detalhes do evento  > ┐│
+│ Todas|Pend|S.tempo|S.an │        │ └ nome, data, carta...  ┘│
+└─────────────────────────┘        │                         │
+                                   │ (0 Conf)(0 Pend)(0 Rec) │
+                                   │ (0 Sem ancião)          │
+                                   │ ⚠ 2 partes sem tempo    │
+                                   │ ─── lista das partes ── │
+                                   └─────────────────────────┘
+
+Ao tocar em "Detalhes do evento" abre (lista agrupada):
+┌─────────────────────────────────┐
+│ Nome        Feliz É Aquele... ✎ │
+│ Data                 05/12/2026 │
+│ Local                       SAV │
+│ Início do programa        09:40 │
+│        ↻ Recalcular horários    │
+├─────────────────────────────────┤
+│ Confirmação  (PIN)(Link pessoal)│
+│ Modelo de carta   Assembleia  > │
+└─────────────────────────────────┘
+```
+
+- Botões principais grandes lado a lado: **Controle de tempo** e **Exportar**. "Lembrar pendentes" fica no menu "…" (já está lá).
+- Configurações do evento ficam guardadas em "Detalhes do evento", recolhido por padrão (abre sozinho em evento novo).
+- Os 4 contadores viram o próprio filtro: tocar em "Pendentes" mostra só pendentes; tocar de novo volta a "Todas". A barra de filtros repetida sai.
+- "Sem tempo" vira um aviso âmbar tocável, só quando houver partes sem tempo.
+- Nada muda nos dados; só a arrumação. Arquivo: `src/components/circuit/BigEvents.tsx`.
