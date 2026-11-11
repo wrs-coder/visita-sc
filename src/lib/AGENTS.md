@@ -8,3 +8,4 @@
 - Time-control display mode (countdown/stopwatch) and first real start per part are device-local in event-timer.ts; the start pill and the top 'Programa' line compare real phone time-of-day with the program times on any day (before starting, lateness shows only on the event day), because the user wants deviation by the phone clock.
 - Program timing: speaker parts imported from .rtf get the gap minus 1 min, and auto start times add 1 transition min after durations ending in 4/9 (advanceMin in invite.ts), because outlines are always 1 min shorter than the slot.
 - Finished visits are remembered on-device (finished-visits.ts) and filtered from the overdue list, because cached reads must never bring back 'Finalizar agora'.
+- External links open via external-link.ts: real <a target=_blank> in the browser, Capacitor Browser in the app, never inside the app's own frame, because YouTube refuses framing.

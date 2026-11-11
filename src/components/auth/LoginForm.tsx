@@ -1,5 +1,5 @@
 import { TUTORIALS_URL } from "@/lib/tutorials";
-import { openExternalUrl } from "@/lib/outline-attachments";
+import { EXTERNAL_LINK_PROPS, handleExternalLinkClick } from "@/lib/external-link";
 import { useEffect, useState } from "react";
 import { TermsDialog } from "@/components/auth/TermsDialog";
 import { useNavigate, Link } from "@tanstack/react-router";
@@ -285,7 +285,7 @@ export function LoginForm() {
               <span className="opacity-50">·</span>
               <button type="button" className="hover:text-primary" onClick={() => setAboutOpen(true)}>{t("login.about")}</button>
               <span className="opacity-50">·</span>
-              <a href={TUTORIALS_URL} target="_blank" rel="noopener noreferrer" className="hover:text-primary" onClick={(e) => { e.preventDefault(); void openExternalUrl(TUTORIALS_URL); }}>{t("login.videos")}</a>
+              <a href={TUTORIALS_URL} {...EXTERNAL_LINK_PROPS} className="hover:text-primary" onClick={(e) => handleExternalLinkClick(e, TUTORIALS_URL, "Precisa de internet para ver os vídeos.")}>{t("login.videos")}</a>
             </div>
           </CardContent>
         </Card>

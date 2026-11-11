@@ -461,7 +461,13 @@ export async function openExternalUrl(url: string): Promise<void> {
   try {
     window.open(url, "_blank", "noopener,noreferrer");
   } catch {
-    try { window.location.href = url; } catch { /* noop */ }
+    // Dentro de um quadro (prévia), navegar o próprio quadro mostraria
+    // "conexão recusada" em sites como o YouTube — nesse caso não navega.
+    let embedded = false;
+    try { embedded = window.self !== window.top; } catch { embedded = true; }
+    if (!embedded) {
+      try { window.location.href = url; } catch { /* noop */ }
+    }
   }
 }
 
