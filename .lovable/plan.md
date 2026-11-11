@@ -1,37 +1,34 @@
-# Eventos e cartas: o que já fica salvo na conta
+# Tempo direto no cartão da parte (Simpósio / Série)
 
-## Resposta curta
-Sua preocupação é válida, mas a maior parte **já fica salva na sua conta**, igual aos esboços e às visitas. Se o celular ou o notebook sumir, basta entrar com a sua conta em outro aparelho.
+## O que muda
+Hoje, quando falta o tempo de um discurso de Simpósio ou Série, o aviso "⚠ Falta inserir o tempo" abre o painel "Editar parte". Vamos trocar por um campinho de minutos no próprio cartão, no mesmo lugar onde o tempo aparece.
 
-Já fica salvo na conta (aparece em qualquer aparelho):
-- Eventos (nome, data, local, horários, modo do link)
-- Todas as partes, oradores e congregações
-- Confirmações dos oradores (Confirmado / Aguardando / Recusado), que chegam ao vivo
-- Links dos convites (os links já enviados continuam funcionando)
-- Modelos de carta
-
-Fica só no aparelho (de propósito):
-1. **O número do PIN em texto.** Por segurança, a conta guarda só uma versão embaralhada. Os oradores que já receberam o PIN continuam entrando normalmente. Mas, em outro aparelho, você não consegue **ver** esse número.
-2. **O controle de tempo e o relatório dele.** Ele é feito no dia, em um aparelho só.
-
-## O que proponho ajustar (pequeno)
-- Em outro aparelho, o "Ver/alterar PIN" passa a mostrar uma mensagem clara:
+## Prévia
 
 ```text
-┌──────────────────────────────┐
-│ PIN do convite               │
-│                              │
-│ O PIN foi criado em outro    │
-│ aparelho. Os oradores que já │
-│ receberam continuam entrando.│
-│                              │
-│ [ Criar novo PIN ]           │
-│ (o PIN antigo para de valer) │
-└──────────────────────────────┘
+┌──────────────────────────────────┐
+│ 10:15  Imite aqueles que         │
+│ Nº2    confiaram em Jeová!       │
+│        — Baraque             ... │
+│        Simpósio · [ __ ] min     │
+│        ⚠ Falta inserir o tempo   │
+└──────────────────────────────────┘
+        digita "10" e confirma ↓
+┌──────────────────────────────────┐
+│ 10:15  Imite aqueles que         │
+│ Nº2    confiaram em Jeová!       │
+│        — Baraque             ... │
+│        Simpósio · 10 min         │
+└──────────────────────────────────┘
 ```
-- Nada muda nos dados nem no servidor.
+
+- Campo pequeno, só números (teclado numérico), com borda vermelha suave.
+- Salva ao tocar fora ou em "OK" do teclado. Valores aceitos: 1 a 240.
+- Depois de salvo, o campo e o aviso somem e o tempo aparece como texto normal. Para mudar depois, continua sendo pelo "..." → Editar.
+- Em itens "•" da Série, o tempo continua marcado como "(informativo)" e não empurra o programa (regra atual).
+- O aviso âmbar "X partes sem tempo" no topo e o filtro diminuem sozinhos.
 
 ## Detalhes técnicos
-- `circuit_big_events`, `circuit_big_event_parts` e `letter_templates` já são tabelas na nuvem por usuário; o PIN em texto fica em localStorage e só o hash salgado vai ao servidor.
-- Ajuste só em `BigEvents.tsx` (diálogo do PIN quando `readPin` volta vazio e o evento já tem hash). Sem mudança de banco/RLS.
-- O controle de tempo segue local (regra existente).
+- `PartItem` em `BigEvents.tsx`: substituir o botão `onEdit` (linha ~860) por um `<input inputMode="numeric">` inline com estado local; no blur/Enter chama `onPatch(part.id, { duration_min })` (mesmo caminho usado pelo editor, sem mudança de banco).
+- Mostrar o campo para qualquer parte de orador sem `duration_min` que seja Simpósio/Série (mesma condição atual).
+- Teste unitário pequeno para a validação 1–240.
