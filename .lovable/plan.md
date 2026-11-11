@@ -27,7 +27,7 @@ A tela do Controle de tempo fica numa camada acima dos menus. Os menus abrem, ma
 │ Oração final · Pedro        ⋯   │
 │                                 │
 │ ┌─────────────────────────────┐ │
-│ │ ⏸ Pausar    │ ■ Concluir    │ │  <- só aqui, no fim da lista
+│ │      ■ Concluir evento      │ │  <- só aqui, no fim da lista
 │ └─────────────────────────────┘ │
 └─────────────────────────────────┘
 
@@ -46,7 +46,7 @@ A tela do Controle de tempo fica numa camada acima dos menus. Os menus abrem, ma
 2. **Todos os "..." funcionando** (correção acima).
 3. **"..." de cada parte**: Editar (abre a edição normal da parte no evento: tema, orador, tempo previsto), Reiniciar (zera e deixa a parte pronta), Alterar tempo (corrige o tempo gasto).
 4. **Dois toques no relógio grande**: pergunta "Zerar o tempo desta parte?" (Cancelar / Zerar). Um toque continua iniciando/encerrando.
-5. **Botões flutuantes Pausar/Encerrar removidos**. Viram um cartão no fim da lista, após a Oração final: "Pausar/Continuar" e "Concluir evento" (abre o relatório).
+5. **Botões flutuantes Pausar/Encerrar removidos**. No fim da lista, após a Oração final, fica só o botão "Concluir evento" (para o tempo em andamento e abre o relatório). Iniciar e parar continua no relógio de cada parte.
 6. **Partes sem orador** (cânticos, música, vídeos etc.) agrupadas numa linha recolhível; já abrem recolhidas. Se uma delas estiver rodando, aparece aberta.
 
 ## Relatório executivo
