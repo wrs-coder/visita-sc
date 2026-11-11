@@ -68,7 +68,7 @@ Como no Controle de tempo: cânticos, músicas, vídeos etc. ficam numa linha "�
 
 - "Link pessoal pronto" sai. **Novo link** vai para o "···". O lápis separado sai (Editar está no "···").
 - **Confirmado / Aguardando / Recusado** não é prazo: mostra se o ancião já respondeu pelo link do convite. Fica pequeno embaixo do horário. "Recusado" continua tocável para ver o motivo.
-- No modo PIN, o campo do PIN continua no cartão.
+- Modo PIN: o PIN já é criado sozinho ao tocar em "Copiar convite" e vai dentro do convite. Por isso o campo do PIN e o "Novo PIN" também saem do cartão e vão para o "···": "Ver ou alterar PIN" (abre uma folha pequena com o PIN atual, para digitar outro se quiser) e "Novo PIN".
 
 ## (06) "Informar o nome do próximo orador?"
 
