@@ -23,6 +23,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { htmlToDocx, safeFileName, DOCX_MIME } from "@/lib/docx-export";
 import { saveBlob } from "@/lib/share";
 import JSZip from "jszip";
+import { letterCandidates, pickLetterParts, speakerChanged } from "@/lib/big-events/letter-pick";
 import { LetterTemplates } from "./LetterTemplates";
 import { EventTimerFocus } from "./EventTimerFocus";
 import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
@@ -66,6 +67,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const [exportFor, setExportFor] = useState<EventRow | null>(null);
   const [timerFor, setTimerFor] = useState<EventRow | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [pickIds, setPickIds] = useState<Set<string> | null>(null);
   const [tplSync, setTplSync] = useState<SyncState>("local");
   useEffect(() => {
     if (!user) return;
@@ -316,6 +318,21 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     return null;
   };
 
+  /** Troca de orador numa parte que já tinha convite: renova link/PIN e volta a "Aguardando". */
+  const patchSpeaker = async (id: string, patch: Partial<PartRow>) => {
+    const old = parts.find((p) => p.id === id);
+    if (!old || !("speaker_name" in patch) || !speakerChanged(old.speaker_name, patch.speaker_name) || (!old.personal_token && !old.pin_hash)) return patchPart(id, patch);
+    const ev = events.find((e) => e.id === old.event_id);
+    const extra: Partial<PartRow> = { status: "pending", responded_at: null, decline_reason: null };
+    if (old.personal_token) extra.personal_token = crypto.randomUUID();
+    if (old.pin_hash) extra.pin_hash = null;
+    const r = await patchPart(id, { ...patch, ...extra });
+    if (!r) return r;
+    if (old.pin_hash && ev) { await newPin(ev, r === true ? { ...old, ...patch, ...extra } : r); }
+    toast.info(`Novo orador: ${old.personal_token ? "link" : "PIN"} renovado. Envie o novo convite.`);
+    return r;
+  };
+
   /** Texto do convite (cria PIN ou link pessoal se faltar). */
   const inviteTextFor = async (ev: EventRow, part: PartRow): Promise<string | null> => {
     let pin: string | null = null;
@@ -345,8 +362,8 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   };
   const pendingOf = (evId: string) => parts.filter((p) => p.event_id === evId && p.assigned_to === "speaker" && p.speaker_name?.trim() && p.status === "pending").sort((a, b) => a.sort_order - b.sort_order);
 
-  const letterModels = async (ev: EventRow) => {
-    const evParts = parts.filter((p) => p.event_id === ev.id && p.assigned_to === "speaker" && p.speaker_name?.trim()).sort((a, b) => a.sort_order - b.sort_order);
+  const letterModels = async (ev: EventRow, ids?: ReadonlySet<string> | null) => {
+    const evParts = pickLetterParts(parts.filter((p) => p.event_id === ev.id), ids);
     const all = parts.filter((p) => p.event_id === ev.id);
     const tpl = templateForEvent(templates, tplChoice, ev.id);
     const out: Array<{ part: PartRow; model: ReturnType<typeof buildLetterModel> }> = [];
@@ -369,10 +386,16 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
   };
 
-  const exportPdfs = async (ev: EventRow) => {
-    const items = await letterModels(ev);
+  const exportPdfs = async (ev: EventRow, ids?: ReadonlySet<string> | null) => {
+    const items = await letterModels(ev, ids);
     if (!items.length) { toast.info("Nenhuma parte com orador definido."); return; }
     try {
+      if (items.length === 1) {
+        const r = await (await import("@/lib/big-events/letter-render")).letterPdfFit(items[0].model);
+        if (r.pages > 1) toast.warning("A carta passou de 1 página — encurte os lembretes no modelo.", { duration: 8000 });
+        await saveBlob(new Blob([r.bytes as BlobPart], { type: "application/pdf" }), { filename: `${letterFileBase(items[0].part)}.pdf`, mimeType: "application/pdf" });
+        return;
+      }
       const zip = new JSZip();
       const used = new Set<string>();
       const over: string[] = [];
@@ -409,8 +432,13 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
 
   const runExport = async (kind: "docx" | "pdf" | "program" | "share") => {
     const ev = exportFor; if (!ev) return;
+    if (kind === "pdf" && !pickIds) {
+      const c = letterCandidates(parts.filter((p) => p.event_id === ev.id));
+      if (!c.length) { toast.info("Nenhuma parte com orador definido."); return; }
+      setPickIds(new Set(c.map((p) => p.id))); return;
+    }
     setExporting(true);
-    try { await (kind === "docx" ? exportDocx(ev) : kind === "pdf" ? exportPdfs(ev) : kind === "program" ? exportProgram(ev) : exportShareFile(ev)); } finally { setExporting(false); setExportFor(null); }
+    try { await (kind === "docx" ? exportDocx(ev) : kind === "pdf" ? exportPdfs(ev, pickIds) : kind === "program" ? exportProgram(ev) : exportShareFile(ev)); } finally { setExporting(false); setExportFor(null); setPickIds(null); }
   };
 
   const renderEvent = (ev: EventRow) => {
@@ -448,7 +476,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     }
     const alsoIn = (p: PartRow) => {
       const k = p.speaker_name?.trim().toLocaleLowerCase("pt-BR");
-      if (!k || isFloatingType(p.part_type_label)) return null;
+      if (!k || p.assigned_to !== "speaker" || isFloatingType(p.part_type_label)) return null;
       const others = (byName.get(k) ?? []).filter((x) => x.id !== p.id);
       return others.length ? others.map((x) => (x.outline_number ? `parte ${x.outline_number}` : x.part_time ?? x.theme)).join(", ") : null;
     };
@@ -580,7 +608,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
               const item = (p: PartRow) => {
                 const i = shown.indexOf(p);
                 return <PartItem key={p.id} ev={ev} elders={elders} part={p} overlap={overlapIds.has(p.id)} alsoIn={alsoIn(p)} note={seriesNote(p)} first={i === 0} last={i === shown.length - 1}
-                  onPatch={patchPart} onSetPin={setPin} onNewPin={newPin} onCopy={copyInvite} onNewLink={newLink}
+                  onPatch={patchSpeaker} onSetPin={setPin} onNewPin={newPin} onCopy={copyInvite} onNewLink={newLink}
                   onEdit={() => setEditor({ ev, part: p, afterOrder: null })} onAddAfter={() => setEditor({ ev, part: null, afterOrder: p.sort_order })}
                   onMove={(d) => movePart(ev, p, d)} onDelete={() => deletePart(ev, p)} />;
               };
@@ -619,24 +647,62 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       <div hidden={view !== "events"} className="space-y-3">
       {timerFor && <EventTimerFocus ev={timerFor} parts={evPartsOf(timerFor.id)} onClose={() => setTimerFor(null)} speakerCong={(p) => (p as { speaker_congregation?: string | null }).speaker_congregation ?? null}
         onEditPart={(id) => { const pt = evPartsOf(timerFor.id).find((x) => x.id === id); if (pt) setEditor({ ev: timerFor, part: pt, afterOrder: null }); }} />}
-      <Dialog open={!!exportFor} onOpenChange={(o) => { if (!o && !exporting) setExportFor(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Exportar</DialogTitle></DialogHeader>
-          <div className="space-y-2">
-            <Button variant="outline" className="h-auto w-full justify-start py-3 text-left" disabled={exporting} onClick={() => runExport("docx")}>
-              <span><span className="block font-semibold">Word (lista de designações)</span><span className="block text-xs text-muted-foreground">Para conferir e copiar os convites</span></span>
+      <Dialog open={!!exportFor} onOpenChange={(o) => { if (!o && !exporting) { setExportFor(null); setPickIds(null); } }}>
+        <DialogContent className="max-w-sm overflow-hidden">
+          <DialogHeader><DialogTitle>{pickIds ? "Escolher cartas" : "Exportar"}</DialogTitle></DialogHeader>
+          {pickIds && exportFor ? (() => {
+            const cands = letterCandidates(parts.filter((p) => p.event_id === exportFor.id));
+            const setAll = (ids: string[]) => setPickIds(new Set(ids));
+            return (
+              <div className="min-w-0 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">{pickIds.size} de {cands.length} selecionadas</span>
+                  <button type="button" className="text-xs font-medium text-primary" disabled={exporting} onClick={() => setPickIds(null)}>‹ Voltar</button>
+                </div>
+                <div className="flex gap-1.5">
+                  {([["Todas", cands.map((p) => p.id)], ["Nenhuma", []], ["Pendentes", cands.filter((p) => p.status === "pending").map((p) => p.id)]] as const).map(([l, ids]) => (
+                    <button key={l} type="button" disabled={exporting} onClick={() => setAll([...ids])} className="h-8 flex-1 rounded-full bg-muted text-xs font-medium">{l}</button>
+                  ))}
+                </div>
+                <ul className="max-h-[50vh] divide-y overflow-y-auto rounded-2xl bg-muted/50">
+                  {cands.map((p) => {
+                    const on = pickIds.has(p.id);
+                    return (
+                      <li key={p.id}>
+                        <label className="flex min-w-0 cursor-pointer items-start gap-3 px-3 py-2.5">
+                          <Checkbox checked={on} disabled={exporting} className="mt-0.5" onCheckedChange={() => setPickIds((s) => { const n = new Set(s); if (on) n.delete(p.id); else n.add(p.id); return n; })} />
+                          <span className="min-w-0 flex-1">
+                            <span className="block break-words text-sm font-medium">{[p.outline_number ? `Nº ${p.outline_number}` : null, p.theme].filter(Boolean).join(" · ")}</span>
+                            <span className="block break-words text-xs text-muted-foreground">{[p.speaker_name, p.speaker_congregation].filter(Boolean).join(" · ")}</span>
+                            {p.status === "declined" && <span className="block text-xs text-destructive">Recusou</span>}
+                          </span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Button className="w-full rounded-full" disabled={exporting || !pickIds.size} onClick={() => runExport("pdf")}>
+                  {exporting ? "Gerando…" : pickIds.size === 1 ? "Gerar 1 carta (PDF)" : `Gerar ${pickIds.size} cartas (.zip)`}
+                </Button>
+              </div>
+            );
+          })() : (
+          <div className="min-w-0 space-y-2">
+            <Button variant="outline" className="h-auto w-full min-w-0 justify-start whitespace-normal py-3 text-left" disabled={exporting} onClick={() => runExport("docx")}>
+              <span className="min-w-0"><span className="block font-semibold">Word (lista de designações)</span><span className="block text-xs text-muted-foreground">Para conferir e copiar os convites</span></span>
             </Button>
-            <Button variant="outline" className="h-auto w-full justify-start py-3 text-left" disabled={exporting} onClick={() => runExport("pdf")}>
-              <span><span className="block font-semibold">PDF individuais (.zip)</span><span className="block text-xs text-muted-foreground">Uma carta por orador, com "Clique aqui" ativo</span></span>
+            <Button variant="outline" className="h-auto w-full min-w-0 justify-start whitespace-normal py-3 text-left" disabled={exporting} onClick={() => runExport("pdf")}>
+              <span className="min-w-0"><span className="block font-semibold">PDF individuais (.zip)</span><span className="block text-xs text-muted-foreground">Uma carta por orador, com "Clique aqui" ativo</span></span>
             </Button>
-            <Button variant="outline" className="h-auto w-full justify-start py-3 text-left" disabled={exporting} onClick={() => runExport("program")}>
-              <span><span className="block font-semibold">Programa do evento (PDF)</span><span className="block text-xs text-muted-foreground">Com todas as designações, para acompanhar durante o evento</span></span>
+            <Button variant="outline" className="h-auto w-full min-w-0 justify-start whitespace-normal py-3 text-left" disabled={exporting} onClick={() => runExport("program")}>
+              <span className="min-w-0"><span className="block font-semibold">Programa do evento (PDF)</span><span className="block text-xs text-muted-foreground">Com todas as designações, para acompanhar durante o evento</span></span>
             </Button>
-            <Button variant="outline" className="h-auto w-full justify-start py-3 text-left" disabled={exporting} onClick={() => runExport("share")}>
-              <span><span className="block font-semibold">Arquivo para outro aparelho</span><span className="block text-xs text-muted-foreground">Abra em "Importar" no outro celular (sem PINs nem links)</span></span>
+            <Button variant="outline" className="h-auto w-full min-w-0 justify-start whitespace-normal py-3 text-left" disabled={exporting} onClick={() => runExport("share")}>
+              <span className="min-w-0"><span className="block font-semibold">Arquivo para outro aparelho</span><span className="block text-xs text-muted-foreground">Abra em "Importar" no outro celular (sem PINs nem links)</span></span>
             </Button>
             {exporting && <p className="text-center text-xs text-muted-foreground">Gerando…</p>}
           </div>
+          )}
         </DialogContent>
       </Dialog>
       <Drawer open={!!remindFor} onOpenChange={(o) => !o && setRemindFor(null)}>

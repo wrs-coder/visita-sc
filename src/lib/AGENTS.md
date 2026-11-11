@@ -9,3 +9,4 @@
 - Program timing: speaker parts imported from .rtf get the gap minus 1 min, and auto start times add 1 transition min after durations ending in 4/9 (advanceMin in invite.ts), because outlines are always 1 min shorter than the slot.
 - Finished visits are remembered on-device (finished-visits.ts) and filtered from the overdue list, because cached reads must never bring back 'Finalizar agora'.
 - External links open via external-link.ts: real <a target=_blank> in the browser, Capacitor Browser in the app, never inside the app's own frame, because YouTube refuses framing.
+- Renaming a big-event speaker who already had an invite renews the personal link or PIN and resets status to pending (patchSpeaker + letter-pick.ts), because the old invite belongs to the previous speaker.
