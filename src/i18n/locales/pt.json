@@ -85,7 +85,8 @@
     "wrongPwdBody": "Confira o usuário e a senha.",
     "tryAgain": "Tentar de novo",
     "about": "Sobre",
-    "support": "Apoie o desenvolvedor"
+    "support": "Apoie o desenvolvedor",
+    "videos": "Vídeos"
   },
   "profile": {
     "title": "Meu perfil",
@@ -2016,5 +2017,8 @@
     "bible": "Bíblia",
     "research": "Pesquisas",
     "notes": "Anotações"
+  },
+  "help": {
+    "videos": "Vídeos tutoriais"
   }
 }

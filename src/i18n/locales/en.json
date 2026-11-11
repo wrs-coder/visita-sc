@@ -85,7 +85,8 @@
     "wrongPwdBody": "Check your username and password.",
     "tryAgain": "Try again",
     "about": "About",
-    "support": "Support the developer"
+    "support": "Support the developer",
+    "videos": "Videos"
   },
   "profile": {
     "title": "My profile",
@@ -1279,7 +1280,8 @@
       "transport": "Transport",
       "meetings": "Meetings",
       "pastoreios": "Elders",
-      "checklist": "Checklist"
+      "checklist": "Checklist",
+      "couple": "Couple"
     },
     "sections": {
       "cron": "Schedule",
@@ -2048,5 +2050,8 @@
     "bible": "Bible",
     "research": "Research",
     "notes": "Notes"
+  },
+  "help": {
+    "videos": "Video tutorials"
   }
 }

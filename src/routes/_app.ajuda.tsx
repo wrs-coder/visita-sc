@@ -16,9 +16,11 @@ function ptLabel(key: string): string {
 function usePtT() {
   return ptLabel;
 }
-import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound, ClipboardList, BookOpen, Mic, FileText, HelpCircle, Download, Upload, ShieldCheck, UserCircle2, LayoutDashboard, FileStack, NotebookPen } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound, ClipboardList, BookOpen, Mic, FileText, HelpCircle, Download, Upload, ShieldCheck, PlayCircle, UserCircle2, LayoutDashboard, FileStack, NotebookPen } from "lucide-react";
 import { helpTopicsFor, OPEN_PALETTE_EVENT, searchHelp, type HelpTopic } from "@/lib/help/help-content";
 import { cn } from "@/lib/utils";
+import { TUTORIALS_URL } from "@/lib/tutorials";
+import { openExternalUrl } from "@/lib/outline-attachments";
 import { useAuth } from "@/hooks/use-auth";
 import { VISIT_PROGRAM_TABS } from "@/components/visit-week/VisitProgramTabs";
 
@@ -158,6 +160,22 @@ function HelpPage() {
   return (
     <div className="mx-auto max-w-xl space-y-4">
       <h1 className="text-2xl font-bold">Ajuda</h1>
+
+      <button
+        type="button"
+        onClick={() => {
+          if (typeof navigator !== "undefined" && !navigator.onLine) { alert("Precisa de internet para ver os vídeos."); return; }
+          void openExternalUrl(TUTORIALS_URL);
+        }}
+        className="flex w-full items-center gap-3 rounded-2xl border bg-card px-4 py-3 text-left shadow-card active:scale-[0.99] transition"
+      >
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><PlayCircle className="h-5 w-5" /></span>
+        <span className="flex-1">
+          <span className="block text-sm font-semibold">Vídeos tutoriais</span>
+          <span className="block text-xs text-muted-foreground">Aprenda passo a passo no YouTube</span>
+        </span>
+        <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+      </button>
 
       <label className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2.5">
         <Search className="h-4 w-4 text-muted-foreground" />

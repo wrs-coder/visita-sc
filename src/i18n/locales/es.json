@@ -85,7 +85,8 @@
     "wrongPwdBody": "Revisa el usuario y la contraseña.",
     "tryAgain": "Intentar de nuevo",
     "about": "Acerca de",
-    "support": "Apoya al desarrollador"
+    "support": "Apoya al desarrollador",
+    "videos": "Videos"
   },
   "profile": {
     "title": "Mi perfil",
@@ -429,7 +430,9 @@
       "midweek_meeting": "Reunión de Entre Semana",
       "weekend_meeting": "Reunión de Fin de Semana",
       "other": "Otro"
-    }
+    },
+    "todayBlock": "Hoy",
+    "todayBlockSubtitle": "Eventos programados para el día de hoy."
   },
   "fieldStudies": {
     "title": "Estudios y Revisitas",
@@ -1254,7 +1257,8 @@
       "transport": "Transporte",
       "meetings": "Reuniones",
       "pastoreios": "Ancianos",
-      "checklist": "Lista"
+      "checklist": "Lista",
+      "couple": "Pareja"
     },
     "sections": {
       "cron": "Programa",
@@ -2023,5 +2027,31 @@
     "bible": "Biblia",
     "research": "Investigación",
     "notes": "Notas"
+  },
+  "couple": {
+    "title": "Comunicación de la pareja",
+    "subtitleSuper": "Conversación privada con su esposa. Los mensajes aparecen aquí y en su panel.",
+    "subtitleWife": "Conversación privada con su esposo. Los mensajes aparecen aquí y en su panel.",
+    "newMessage": "Nuevo mensaje",
+    "newMessageTitle": "Nuevo mensaje",
+    "titleField": "Título",
+    "bodyField": "Mensaje",
+    "send": "Enviar",
+    "reply": "Responder",
+    "replyPlaceholder": "Escriba una respuesta…",
+    "noMessages": "Aún no hay mensajes. Inicie la conversación.",
+    "unreadBadge": "{{count}} nuevo(s)",
+    "fromSuper": "Esposo",
+    "fromWife": "Esposa",
+    "deleteThread": "Eliminar conversación",
+    "confirmDelete": "¿Eliminar esta conversación y todas las respuestas?",
+    "sent": "Mensaje enviado.",
+    "sendFailed": "No se pudo enviar.",
+    "deleted": "Conversación eliminada.",
+    "titleRequired": "Indique un título para el mensaje.",
+    "bodyRequired": "Escriba el mensaje."
+  },
+  "help": {
+    "videos": "Videos tutoriales"
   }
 }
