@@ -1,5 +1,3 @@
-import { TUTORIALS_URL } from "@/lib/tutorials";
-import { EXTERNAL_LINK_PROPS, handleExternalLinkClick } from "@/lib/external-link";
 import { useEffect, useState } from "react";
 import { TermsDialog } from "@/components/auth/TermsDialog";
 import { useNavigate, Link } from "@tanstack/react-router";
@@ -284,8 +282,6 @@ export function LoginForm() {
               <SupportDeveloperDialog trigger={<button type="button" className="hover:text-primary">{t("login.support")}</button>} />
               <span className="opacity-50">·</span>
               <button type="button" className="hover:text-primary" onClick={() => setAboutOpen(true)}>{t("login.about")}</button>
-              <span className="opacity-50">·</span>
-              <a href={TUTORIALS_URL} {...EXTERNAL_LINK_PROPS} className="hover:text-primary" onClick={(e) => handleExternalLinkClick(e, TUTORIALS_URL, "Precisa de internet para ver os vídeos.")}>{t("login.videos")}</a>
             </div>
           </CardContent>
         </Card>

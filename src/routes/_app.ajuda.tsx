@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -16,7 +16,7 @@ function ptLabel(key: string): string {
 function usePtT() {
   return ptLabel;
 }
-import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound, ClipboardList, BookOpen, Mic, FileText, HelpCircle, Download, Upload, ShieldCheck, PlayCircle, UserCircle2, LayoutDashboard, FileStack, NotebookPen } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight, Lock, Search, ArrowUpRight, KeyRound, ClipboardList, BookOpen, Mic, FileText, HelpCircle, Download, Upload, ShieldCheck, PlayCircle, X, UserCircle2, LayoutDashboard, FileStack, NotebookPen } from "lucide-react";
 import { helpTopicsFor, OPEN_PALETTE_EVENT, searchHelp, type HelpTopic } from "@/lib/help/help-content";
 import { cn } from "@/lib/utils";
 import { TUTORIALS_URL } from "@/lib/tutorials";
@@ -156,11 +156,27 @@ function HelpPage() {
   const [openId, setOpenId] = useState<string | null>(null);
   const topics = useMemo(() => searchHelp(helpTopicsFor(role), query, (k) => t(k)), [query, t, role]);
   const searching = query.trim().length > 0;
+  const router = useRouter();
+  const close = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) router.history.back();
+    else void router.navigate({ to: "/dashboard" });
+  };
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-2xl font-bold">Ajuda</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Ajuda</h1>
+        <button
+          type="button"
+          onClick={close}
+          aria-label="Fechar"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground active:scale-95 transition"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
 
+      {role === "superintendent" && (
       <a
         href={TUTORIALS_URL}
         {...EXTERNAL_LINK_PROPS}
@@ -174,6 +190,7 @@ function HelpPage() {
         </span>
         <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
       </a>
+      )}
 
       <label className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2.5">
         <Search className="h-4 w-4 text-muted-foreground" />
