@@ -1,50 +1,63 @@
-# Refinar o Controle de tempo (estilo dos modelos enviados)
+# Controle de tempo — refinamento 2
 
-## O que muda
-A tela continua escura, em lista no estilo do Programa. Os modelos servem só de inspiração: layout e cores seguem o padrão do app (iOS/One UI), não uma cópia exata.
+## Causa dos "..." não funcionarem (confirmada)
+A tela do Controle de tempo fica numa camada acima dos menus. Os menus abrem, mas ficam escondidos atrás dela. Correção: fazer os menus desta tela abrirem por cima (vale para o "..." do topo e de cada parte).
+
+## Mockup
 
 ```text
-+-------------------------------------+
-| Assembleia de Circuito...   [⏱|⏳]  |  <- escolha Cronômetro / Temporizador
-| ▶ 10:00   ▶ 14:00   Programa +3 min |
-|-------------------------------------|
-| ⏰ Manhã                            |
-|-------------------------------------|
-| 1. Por que confiar em Jeová...  +--------+
-|  ▶10:00 ▶10:02 [🔔 05]          | 02:11  |  vermelho = estourou
-|  Fernando Rui - SC              | (2min) |
-| ███████████████████████████████ +--------+
-| [icone] Série de discursos: Imite...|  (amarelo, faixa)
-| 2. • Baraque (16min)            +--------+
-|  ▶10:16 ▶10:18 [🔔 02]          | 01:59  |  verde = no tempo
-|  Wanderson - Cong. Vila Sul     | (16min)|
-| ███░░░░░░░░░░░░░░░░░░░░░░░░░░░░ +--------+
-| 3. • A mulher sunamita (15min)  +--------+
-|  ▶10:32  --:--                  |   ⏱    |  cinza = ainda não iniciada
-|  Lucas - Cong. Flores           +--------+
-+-------------------------------------+
+┌─────────────────────────────────┐
+│ ✕                           ⋯   │
+│ Imite aqueles que confiaram     │  <- tema completo, quebra linha
+│ em Jeová!                       │
+│ 📅 Sáb, 14 nov · Salão de Assem.│  <- data e local
+│ 🕘 09:40 – 15:50                │  <- início e fim
+│ ● Programa 4 min atrasado       │  <- verde/âmbar/cinza
+├─────────────────────────────────┤
+│ MANHÃ                           │
+│ ▸ Cântico 12 · Oração      (3)  │  <- partes sem orador, recolhidas
+│ ┌─────────────────────────────┐ │
+│ │ 10:15 · Discurso 2       ⋯  │ │
+│ │ João Silva · Cong. Centro   │ │
+│ │ 🔔 +2 min        ┌───────┐  │ │
+│ │                  │ 14:32 │  │ │  1 toque: inicia/encerra
+│ │ ▓▓▓▓▓▓░░░░        └───────┘  │ │  2 toques: "Zerar este tempo?"
+│ └─────────────────────────────┘ │
+│ ...                             │
+│ Oração final · Pedro        ⋯   │
+│                                 │
+│ ┌─────────────────────────────┐ │
+│ │ ⏸ Pausar    │ ■ Concluir    │ │  <- só aqui, no fim da lista
+│ └─────────────────────────────┘ │
+└─────────────────────────────────┘
+
+ ⋯ do topo            ⋯ da parte
+┌──────────────────┐ ┌──────────────┐
+│ ✓ Regressivo     │ │ ✎ Editar     │
+│   Cronômetro     │ │ ↺ Reiniciar  │
+│ ⤓ Relatório exec.│ │ ⏱ Alterar    │
+│ ⧉ Sobrepor apps  │ │   tempo      │
+│ ↺ Zerar tudo     │ └──────────────┘
+└──────────────────┘
 ```
 
-Cada linha mostra:
-- Número e tema (azul nas partes comuns, amarelo nos "•" da série).
-- ▶ horário previsto e ▶ horário em que realmente começou.
-- Pílula de sino: compara o horário em que a parte realmente começou (hora do celular) com o horário do programa. Verde "no horário" ou "-2" (adiantada); vermelho "+5" (começou 5 min atrasada). Antes de começar, se o horário previsto já passou, mostra em vermelho quanto está atrasando.
-- Orador e congregação.
-- Caixa grande à direita com relógio em números digitais e o tempo previsto embaixo; tocar nela inicia/encerra aquela parte (qualquer ordem, como hoje).
-- Barra de progresso fina abaixo da parte.
-- Separadores "Manhã" / "Tarde" quando houver intervalo, e a faixa amarela da Série de discursos.
+## O que muda
+1. **Topo organizado**: tema completo (sem cortar), depois data e local, depois início–fim, depois "Programa X min adiantado / atrasado / no horário". O seletor Regressivo/Cronômetro sai do topo e vai para o "...", junto com "Exportar relatório executivo".
+2. **Todos os "..." funcionando** (correção acima).
+3. **"..." de cada parte**: Editar (abre a edição normal da parte no evento: tema, orador, tempo previsto), Reiniciar (zera e deixa a parte pronta), Alterar tempo (corrige o tempo gasto).
+4. **Dois toques no relógio grande**: pergunta "Zerar o tempo desta parte?" (Cancelar / Zerar). Um toque continua iniciando/encerrando.
+5. **Botões flutuantes Pausar/Encerrar removidos**. Viram um cartão no fim da lista, após a Oração final: "Pausar/Continuar" e "Concluir evento" (abre o relatório).
+6. **Partes sem orador** (cânticos, música, vídeos etc.) agrupadas numa linha recolhível; já abrem recolhidas. Se uma delas estiver rodando, aparece aberta.
 
-## Cronômetro ou Temporizador
-Botão segmentado no topo (estilo iOS):
-- **Temporizador**: relógio conta para baixo (16:00 → 00:00 → -00:45 em vermelho).
-- **Cronômetro**: relógio conta para cima (00:00 → 16:45).
-A escolha fica salva no aparelho; o relatório, desvios e a bolha flutuante funcionam igual nos dois modos.
+## Relatório executivo
+O PDF atual ganha um bloco inicial de resumo: horário previsto × real de início e fim, desvio total do programa, nº de partes no tempo/estouradas, maior atraso e maior adiantamento por orador; depois a tabela por parte que já existe.
 
-## O que não muda
-Regras da série (os "•" somam no título sem empurrar o programa), pausa, refazer/corrigir tempos, relatório PDF, bolha Android, nada no servidor.
+## Integridade
+- Nada no banco/servidor muda; tempos continuam só no aparelho, com o mesmo formato salvo.
+- Lógica de série de discursos, pílula do sino, bolha sobre apps e modos regressivo/cronômetro ficam iguais.
+- Testes novos: zerar uma parte não afeta as outras; agrupamento de partes sem orador; resumo executivo (valores de desvio). Rodar typecheck e todos os testes.
 
 ## Detalhes técnicos
-- `event-timer.ts`: guardar `startedAt` real por parte (já derivável dos registros) e preferência `mode: "down" | "up"` em localStorage por aparelho; função `displayFor(mode, planned, spent)`.
-- `EventTimerFocus.tsx`: novo layout de linha, caixa digital (fonte monoespaçada tabular), cores via tokens em `styles.css` (timer-ok/warn/over/idle, série amarela), separadores Manhã/Tarde pelo maior intervalo/12:00.
-- Bolha nativa recebe o texto conforme o modo.
-- Testes novos para os dois modos; typecheck e vitest.
+- `EventTimerFocus.tsx`: `DropdownMenuContent` com `z-[70]`; novo cabeçalho; footer flutuante removido e virado item final da lista; duplo toque via detecção de 2 cliques <300 ms (atrasando o toque simples) + AlertDialog `z-[70]`; grupos recolhíveis de linhas consecutivas sem `elder`/orador, estado de recolhimento só em memória.
+- "Editar" fecha o foco e abre o editor da parte via callback do componente pai do evento.
+- `timer-report-pdf.ts`: seção de resumo executivo calculada a partir de `summarize()`.
