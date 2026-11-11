@@ -563,7 +563,8 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       </div>
       {view === "templates" && <LetterTemplates list={templates} onChange={updateTemplates} />}
       <div hidden={view !== "events"} className="space-y-3">
-      {timerFor && <EventTimerFocus ev={timerFor} parts={evPartsOf(timerFor.id)} onClose={() => setTimerFor(null)} speakerCong={(p) => (p as { speaker_congregation?: string | null }).speaker_congregation ?? null} />}
+      {timerFor && <EventTimerFocus ev={timerFor} parts={evPartsOf(timerFor.id)} onClose={() => setTimerFor(null)} speakerCong={(p) => (p as { speaker_congregation?: string | null }).speaker_congregation ?? null}
+        onEditPart={(id) => { const pt = evPartsOf(timerFor.id).find((x) => x.id === id); if (pt) setEditor({ ev: timerFor, part: pt, afterOrder: null }); }} />}
       <Dialog open={!!exportFor} onOpenChange={(o) => { if (!o && !exporting) setExportFor(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Exportar</DialogTitle></DialogHeader>

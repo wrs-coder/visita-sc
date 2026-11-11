@@ -219,3 +219,18 @@ export function startDelayMin(plannedMinOfDay: number | null, eventDate: string 
 }
 export const fmtHm = (min: number | null) => (min == null ? "--:--" : `${String(Math.floor(min / 60) % 24).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`);
 export const fmtClockTime = (ms: number) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+
+/** Números do resumo executivo do relatório (só partes concluídas com tempo previsto). */
+export interface ExecStats { onTime: number; over: number; under: number; worst: { name: string; diff: number } | null; best: { name: string; diff: number } | null }
+export function executiveStats(sum: Summary): ExecStats {
+  let onTime = 0, over = 0, under = 0;
+  for (const r of Object.values(sum.parts)) {
+    if (!r.done || r.diff == null) continue;
+    if (r.diff > 30_000) over++; else if (r.diff < -30_000) under++; else onTime++;
+  }
+  const sp = sum.bySpeaker;
+  const worst = sp.length && sp[0].diff > 30_000 ? { name: sp[0].name, diff: sp[0].diff } : null;
+  const last = sp[sp.length - 1];
+  const best = last && last.diff < -30_000 ? { name: last.name, diff: last.diff } : null;
+  return { onTime, over, under, worst, best };
+}

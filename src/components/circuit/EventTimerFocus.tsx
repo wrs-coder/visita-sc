@@ -1,12 +1,13 @@
 // Controle de tempo do evento: tela cheia escura no estilo do programa.
 // Cada parte tem seu temporizador; tocar em qualquer parte inicia a dela (encerra a anterior).
 // Tudo fica no aparelho (event-timer.ts). Fora do app, a bolinha flutuante continua contando.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { Bell, CalendarClock, ChevronLeft, FileDown, Layers, MoreHorizontal, Pause, Play, PlayCircle, Presentation, RotateCcw, Square, Sun, Sunset, Timer as TimerIcon, X } from "lucide-react";
+import { Bell, Calendar, CalendarClock, Check, ChevronLeft, ChevronRight, Clock, FileDown, Flag, Layers, MapPin, MoreHorizontal, Pencil, PlayCircle, Presentation, RotateCcw, Sun, Sunset, Timer as TimerIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { formatEventDate } from "@/lib/big-events/invite";
 import { appConfirm, appPrompt } from "@/components/ui/app-dialogs";
 import { useFocusChromeWhile } from "@/lib/focus-chrome";
 import { useImmersiveWhile } from "@/lib/immersive";
@@ -15,7 +16,7 @@ import { saveBlob } from "@/lib/share";
 import { safeFileName } from "@/lib/docx-export";
 import {
   buildRows, clearTimer, clock, isFloating, loadTimer, plannedMs, programLabel, resetPart, saveTimer, setPartMinutes,
-  signed, spentMs, stopAll, summarize, tapPart, togglePause, toneFor, type TimerPart, type TimerState, type Tone,
+  signed, spentMs, stopAll, summarize, tapPart, toneFor, type TimerPart, type TimerState, type Tone,
   displayClock, fmtClockTime, fmtHm, loadMode, plannedStarts, saveMode, startDelayMin, type TimerMode,
 } from "@/lib/big-events/event-timer";
 import { hideFloating, isNativeAndroid, overlayGranted, requestOverlay, showFloating } from "@/lib/big-events/floating-timer";
@@ -29,9 +30,9 @@ const TONE_BOX: Record<Tone, string> = {
 const diffTone = (ms: number | null) => (ms == null || Math.abs(ms) < 30_000 ? "text-muted-foreground" : ms > 0 ? "text-destructive" : "text-success");
 const OVERLAY_ASKED = "bigEventTimer.overlayAsked";
 
-interface Props { ev: { id: string; name: string; event_date: string | null; location: string | null }; parts: TimerPart[]; onClose: () => void; speakerCong?: (p: TimerPart) => string | null }
+interface Props { ev: { id: string; name: string; event_date: string | null; location: string | null }; parts: TimerPart[]; onClose: () => void; speakerCong?: (p: TimerPart) => string | null; onEditPart?: (id: string) => void }
 
-export function EventTimerFocus({ ev, parts, onClose, speakerCong }: Props) {
+export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }: Props) {
   const [s, setS] = useState<TimerState>(() => loadTimer(ev.id));
   const [now, setNow] = useState(() => Date.now());
   const [report, setReport] = useState(false);
@@ -41,7 +42,10 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong }: Props) {
   useImmersiveWhile(true);
 
   const update = (fn: (x: TimerState) => TimerState) => setS((x) => { const n = fn(x); saveTimer(ev.id, n); return n; });
-  const running = !!s.active && s.pausedAt == null;
+  // Grupos de partes sem orador: começam recolhidos (estado só nesta tela).
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
+  // Um toque inicia/para; dois toques perguntam se deseja zerar.
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!s.active) return;
     const t = setInterval(() => setNow(Date.now()), 500);
@@ -108,6 +112,14 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong }: Props) {
     if (!(await appConfirm({ title: "Zerar o controle de tempo?", description: "Todos os tempos registrados deste evento serão apagados deste aparelho.", confirmLabel: "Zerar", destructive: true }))) return;
     clearTimer(ev.id); setS(loadTimer(ev.id)); setReport(false);
   };
+  const zeroPart = async (p: TimerPart) => {
+    if (!(await appConfirm({ title: "Zerar o tempo desta parte?", description: p.theme, confirmLabel: "Zerar", destructive: true }))) return;
+    update((x) => resetPart(x, p.id, Date.now()));
+  };
+  const onClockTap = (p: TimerPart) => {
+    if (tapTimer.current) { clearTimeout(tapTimer.current); tapTimer.current = null; void zeroPart(p); return; }
+    tapTimer.current = setTimeout(() => { tapTimer.current = null; update((x) => tapPart(x, p.id, Date.now())); }, 280);
+  };
   const correct = async (p: TimerPart) => {
     const cur = Math.round(spentMs(s, p.id, Date.now()) / 6000) / 10;
     const v = await appPrompt("Tempo real (minutos)", String(cur).replace(".", ","), { placeholder: "Ex.: 12,5" });
@@ -128,31 +140,37 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong }: Props) {
 
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div className="dark fixed inset-0 z-[60] flex flex-col bg-background text-foreground" role="dialog" aria-label="Controle de tempo">
-      <header className="flex items-center gap-2 border-b border-border/60 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
+    <div className="dark fixed inset-0 z-50 flex flex-col bg-background text-foreground" role="dialog" aria-label="Controle de tempo">
+      <header className="flex items-start gap-2 border-b border-border/60 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         {report
-          ? <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" onClick={() => setReport(false)} aria-label="Voltar"><ChevronLeft className="h-5 w-5" /></Button>
-          : <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" onClick={close} aria-label="Fechar"><X className="h-5 w-5" /></Button>}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{report ? "Relatório de tempo" : ev.name || "Controle de tempo"}</p>
-          {!report && progStart != null && <p className="text-[11px] tabular-nums text-muted-foreground">{fmtHm(progStart)} – {fmtHm(progEnd)}</p>}
-          <p className={`text-xs font-medium tabular-nums ${progTone}`}>{report && !s.active ? programLabel(pd).replace("Programa", "Programa terminou") : programLabel(pd)}</p>
+          ? <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 rounded-full" onClick={() => setReport(false)} aria-label="Voltar"><ChevronLeft className="h-5 w-5" /></Button>
+          : <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 rounded-full" onClick={close} aria-label="Fechar"><X className="h-5 w-5" /></Button>}
+        <div className="min-w-0 flex-1 pt-1">
+          {report && <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Relatório de tempo</p>}
+          <p className="break-words text-[17px] font-semibold leading-snug">{ev.name || "Controle de tempo"}</p>
+          {(ev.event_date || ev.location) && (
+            <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+              {ev.event_date && <p className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 shrink-0" />{formatEventDate(ev.event_date)}</p>}
+              {ev.location && <p className="flex items-start gap-1.5"><MapPin className="mt-px h-3.5 w-3.5 shrink-0" /><span className="break-words">{ev.location}</span></p>}
+            </div>
+          )}
+          {progStart != null && <p className="mt-0.5 flex items-center gap-1.5 text-xs tabular-nums text-muted-foreground"><Clock className="h-3.5 w-3.5 shrink-0" />{fmtHm(progStart)} – {fmtHm(progEnd)}</p>}
+          <p className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold tabular-nums ${progTone}`}>
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {report && !s.active ? programLabel(pd).replace("Programa", "Programa terminou") : programLabel(pd)}
+          </p>
         </div>
-        {!report && (
-          <div role="radiogroup" aria-label="Modo do relógio" className="flex shrink-0 rounded-full bg-muted p-0.5 text-[11px] font-medium">
-            {([["down", "Regressivo"], ["up", "Cronômetro"]] as const).map(([m, l]) => (
-              <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => setMode(m)}
-                className={`rounded-full px-2.5 py-1 transition-colors ${mode === m ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>{l}</button>
-            ))}
-          </div>
-        )}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" aria-label="Opções"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="dark">
+          <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 rounded-full" aria-label="Opções"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="dark min-w-[15rem]">
+            <DropdownMenuItem onClick={() => setMode("down")}><Check className={`mr-2 h-4 w-4 ${mode === "down" ? "" : "opacity-0"}`} />Regressivo</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setMode("up")}><Check className={`mr-2 h-4 w-4 ${mode === "up" ? "" : "opacity-0"}`} />Cronômetro</DropdownMenuItem>
+            <DropdownMenuSeparator />
             {!report && <DropdownMenuItem onClick={() => setReport(true)}><Layers className="mr-2 h-4 w-4" />Ver relatório</DropdownMenuItem>}
-            <DropdownMenuItem onClick={exportPdf}><FileDown className="mr-2 h-4 w-4" />Exportar PDF</DropdownMenuItem>
+            <DropdownMenuItem onClick={exportPdf}><FileDown className="mr-2 h-4 w-4" />Exportar relatório executivo</DropdownMenuItem>
             {isNativeAndroid() && <DropdownMenuItem onClick={() => void requestOverlay()}><TimerIcon className="mr-2 h-4 w-4" />Permitir sobrepor a outros apps</DropdownMenuItem>}
-            <DropdownMenuItem className="text-destructive" onClick={restart}><RotateCcw className="mr-2 h-4 w-4" />Zerar tempos</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive" onClick={restart}><RotateCcw className="mr-2 h-4 w-4" />Zerar todos os tempos</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
@@ -207,10 +225,61 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong }: Props) {
           <Button className="mt-6 w-full gap-2 rounded-full" onClick={exportPdf}><FileDown className="h-4 w-4" />Exportar PDF</Button>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto pb-28">
+        <div className="flex-1 overflow-y-auto pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           {!s.active && !s.done.length && <p className="px-4 pt-4 text-center text-xs text-muted-foreground">Toque no relógio de uma parte para iniciar o tempo dela.</p>}
           <ul className="space-y-2 px-3 py-3">
-            {rows.map(({ part: p, kind, children }, idx) => {
+            {(() => {
+              const out: unknown[] = [];
+              const silent = (i: number) => { const r0 = rows[i]; return r0.kind === "part" && (r0.part.assigned_to === "none" || isFloating(r0.part)); };
+              let i = 0;
+              while (i < rows.length) {
+                if (!silent(i)) { out.push(renderRow(i)); i++; continue; }
+                let j = i;
+                while (j + 1 < rows.length && silent(j + 1) && !sectionFor(j + 1)) j++;
+                const ids = rows.slice(i, j + 1).map((x) => x.part.id);
+                const gid = ids[0];
+                const open = openGroups.has(gid) || ids.includes(s.active ?? "");
+                const sec = sectionFor(i);
+                if (sec) out.push(sectionLi(rows[i].part.id, sec));
+                out.push(
+                  <li key={`grp-${gid}`}>
+                    <button type="button" aria-expanded={open}
+                      onClick={() => setOpenGroups((g) => { const n = new Set(g); if (n.has(gid)) n.delete(gid); else n.add(gid); return n; })}
+                      className="flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-xs text-muted-foreground active:bg-muted/40">
+                      <ChevronRight className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-90" : ""}`} />
+                      <span className="min-w-0 flex-1 truncate">{rows.slice(i, j + 1).map((x) => x.part.theme).join(" · ")}</span>
+                      <span className="shrink-0 tabular-nums">{fmtHm(starts[gid] ?? null)}{ids.length > 1 ? ` · ${ids.length}` : ""}</span>
+                    </button>
+                  </li>,
+                );
+                if (open) for (let k = i; k <= j; k++) out.push(renderRow(k, true));
+                i = j + 1;
+              }
+              return out as ReactNode[];
+            })()}
+            {(s.active || s.done.length > 0) && (
+              <li className="pt-4">
+                <Button className="h-12 w-full gap-2 rounded-2xl text-[15px]" variant="secondary" onClick={() => void finish()}><Flag className="h-4 w-4" />Concluir evento</Button>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>,
+    document.body,
+  );
+
+  function sectionLi(id: string, section: "Manhã" | "Tarde") {
+    return (
+      <li key={`sec-${id}`} className="flex items-center gap-2 px-1 pb-0.5 pt-3 text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {section === "Manhã" ? <Sun className="h-4 w-4 text-warning" /> : <Sunset className="h-4 w-4 text-warning" />}{section}
+        <span className="h-px flex-1 bg-border/60" />
+      </li>
+    );
+  }
+
+  function renderRow(idx: number, inGroup = false) {
+              const { part: p, kind, children } = rows[idx];
               const r = sum.parts[p.id];
               const isHeadGroup = kind === "head" && !!children?.length;
               const active = s.active === p.id;
@@ -225,13 +294,8 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong }: Props) {
               const pStart = starts[p.id] ?? null;
               const realStart = s.firstStart?.[p.id] ?? null;
               const delay = startDelayMin(pStart, ev.event_date, realStart, now);
-              const section = sectionFor(idx);
-              const sectionEl = section && (
-                <li key={`sec-${p.id}`} className="flex items-center gap-2 px-1 pb-0.5 pt-3 text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {section === "Manhã" ? <Sun className="h-4 w-4 text-warning" /> : <Sunset className="h-4 w-4 text-warning" />}{section}
-                  <span className="h-px flex-1 bg-border/60" />
-                </li>
-              );
+              const section = inGroup ? null : sectionFor(idx);
+              const sectionEl = section ? sectionLi(p.id, section) : null;
               if (isHeadGroup) {
                 return [sectionEl, (
                   <li key={p.id} className="flex items-center gap-3 rounded-2xl bg-warning/10 px-3 py-2.5">
@@ -246,7 +310,7 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong }: Props) {
                   </li>
                 )];
               }
-              const tap = () => update((x) => tapPart(x, p.id, Date.now()));
+              const tap = () => onClockTap(p);
               return [sectionEl, (
                 <li key={p.id} ref={active ? (activeRef as never) : undefined}
                   className={`overflow-hidden rounded-2xl transition-colors ${isItem ? "ml-3" : ""} ${active ? "bg-muted ring-1 ring-border" : "bg-muted/40"}`}>
@@ -277,14 +341,15 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong }: Props) {
                           : <span className="font-mono text-[22px] font-semibold leading-none tabular-nums tracking-tight">{displayClock(mode, planned, actual)}</span>}
                         <span className="mt-1 text-[10px] font-medium opacity-80">{active ? (s.pausedAt != null ? "pausado" : "tocar p/ parar") : done ? "concluída" : planned != null ? `${Math.round(planned / 60_000)} min` : "iniciar"}</span>
                       </button>
-                      {done && !active && (
+                      {(
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button type="button" className="rounded-full p-1 text-muted-foreground hover:bg-muted" aria-label="Opções da parte"><MoreHorizontal className="h-4 w-4" /></button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="dark">
-                            <DropdownMenuItem onClick={() => update((x) => resetPart(x, p.id, Date.now()))}><RotateCcw className="mr-2 h-4 w-4" />Refazer</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => void correct(p)}><TimerIcon className="mr-2 h-4 w-4" />Corrigir tempo</DropdownMenuItem>
+                            {onEditPart && <DropdownMenuItem onClick={() => onEditPart(p.id)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>}
+                            <DropdownMenuItem onClick={() => void zeroPart(p)}><RotateCcw className="mr-2 h-4 w-4" />Reiniciar</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => void correct(p)}><TimerIcon className="mr-2 h-4 w-4" />Alterar tempo</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
@@ -297,24 +362,5 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong }: Props) {
                   )}
                 </li>
               )];
-            })}
-          </ul>
-        </div>
-      )}
-
-      {!report && (
-        <footer className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center gap-3 bg-gradient-to-t from-background via-background/95 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-8">
-          {s.active && (
-            <Button variant="secondary" className="pointer-events-auto h-12 gap-2 rounded-full px-5" onClick={() => update((x) => togglePause(x, Date.now()))}>
-              {running ? <><Pause className="h-4 w-4" />Pausar</> : <><Play className="h-4 w-4" />Continuar</>}
-            </Button>
-          )}
-          {(s.active || s.done.length > 0) && (
-            <Button variant="secondary" className="pointer-events-auto h-12 gap-2 rounded-full px-5" onClick={finish}><Square className="h-4 w-4" />Encerrar</Button>
-          )}
-        </footer>
-      )}
-    </div>,
-    document.body,
-  );
+  }
 }

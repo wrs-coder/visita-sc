@@ -79,3 +79,27 @@ describe("controle de tempo do evento", () => {
     expect(programLabel(-2 * M)).toBe("Programa 2 min adiantado");
   });
 });
+
+describe("executiveStats", () => {
+  it("conta partes no tempo, estouradas e adiantadas e aponta extremos", async () => {
+    const { executiveStats } = await import("./event-timer");
+    const st = executiveStats({ programDiff: 0, parts: {
+      a: { id: "a", planned: 600_000, actual: 720_000, diff: 120_000, done: true },
+      b: { id: "b", planned: 600_000, actual: 610_000, diff: 10_000, done: true },
+      c: { id: "c", planned: 600_000, actual: 480_000, diff: -120_000, done: true },
+      d: { id: "d", planned: 600_000, actual: 900_000, diff: 300_000, done: false },
+    }, bySpeaker: [{ name: "João", diff: 120_000, parts: 1 }, { name: "Pedro", diff: -120_000, parts: 1 }] });
+    expect(st).toEqual({ onTime: 1, over: 1, under: 1, worst: { name: "João", diff: 120_000 }, best: { name: "Pedro", diff: -120_000 } });
+  });
+});
+
+describe("resetPart", () => {
+  it("zera só a parte escolhida", async () => {
+    const { resetPart, emptyTimer } = await import("./event-timer");
+    const s = { ...emptyTimer(), spent: { a: 5000, b: 7000 }, done: ["a", "b"] };
+    const n = resetPart(s, "a", 0);
+    expect(n.spent.b).toBe(7000);
+    expect(n.done).toEqual(["b"]);
+    expect(n.spent.a ?? 0).toBe(0);
+  });
+});

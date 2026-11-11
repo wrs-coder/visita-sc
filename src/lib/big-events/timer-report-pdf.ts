@@ -3,7 +3,7 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf
 import fontkit from "@pdf-lib/fontkit";
 import { loadLetterFonts, winAnsi } from "./letter-render";
 import { formatEventDate } from "./invite";
-import { buildRows, clock, programLabel, signed, type Summary, type TimerPart } from "./event-timer";
+import { buildRows, clock, executiveStats, programLabel, signed, type Summary, type TimerPart } from "./event-timer";
 
 const INK = rgb(0.12, 0.13, 0.16), MUTED = rgb(0.44, 0.46, 0.5), ACCENT = rgb(0.1, 0.24, 0.42), GOLD = rgb(0.72, 0.6, 0.38),
   OK = rgb(0.1, 0.5, 0.28), RED = rgb(0.75, 0.15, 0.15), LINE = rgb(0.88, 0.89, 0.9), WHITE = rgb(1, 1, 1);
@@ -33,7 +33,26 @@ export async function timerReportPdf(ev: { name: string; event_date: string | nu
   let y = H - 92;
   const head = clean(programLabel(sum.programDiff).replace("Programa", "Programa terminou").replace("terminou no horário", "terminou no horário"));
   page.drawText(head, { x: M, y, size: 13, font: B, color: sum.programDiff > 30_000 ? RED : sum.programDiff < -30_000 ? OK : INK });
-  y -= 26;
+  y -= 22;
+  // Resumo executivo: cartões com números-chave.
+  const ex = executiveStats(sum);
+  const cards: Array<[string, string]> = [["No tempo", String(ex.onTime)], ["Passaram", String(ex.over)], ["Adiantadas", String(ex.under)]];
+  const cw = (W - 2 * M - 16) / 3;
+  cards.forEach(([l, v], i) => {
+    const x = M + i * (cw + 8);
+    page.drawRectangle({ x, y: y - 40, width: cw, height: 46, color: rgb(0.96, 0.96, 0.97) });
+    page.drawText(clean(v), { x: x + 10, y: y - 16, size: 16, font: B, color: i === 1 && ex.over ? RED : i === 2 && ex.under ? OK : INK });
+    page.drawText(clean(l), { x: x + 10, y: y - 32, size: 8.5, font: R, color: MUTED });
+  });
+  y -= 58;
+  for (const [l, e, c] of [["Mais atrasado", ex.worst, RED], ["Mais adiantado", ex.best, OK]] as const) {
+    if (!e) continue;
+    page.drawText(clean(`${l}: `), { x: M, y, size: 9.5, font: B, color: INK });
+    const w = B.widthOfTextAtSize(clean(`${l}: `), 9.5);
+    page.drawText(clean(`${e.name} (${signed(e.diff)})`), { x: M + w, y, size: 9.5, font: R, color: c });
+    y -= 15;
+  }
+  y -= 10;
   const cols = [M, W - M - 190, W - M - 125, W - M - 60];
   const newPage = () => { page = doc.addPage([W, H]); y = H - M; };
   const row = (cells: string[], font: PDFFont, color = INK, diffColor = color, indent = 0) => {
