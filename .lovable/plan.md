@@ -1,63 +1,28 @@
-# Controle de tempo — refinamento 2
+# Controle de tempo: relógio igual ao combinado e menos informação repetida
 
-## Causa dos "..." não funcionarem (confirmada)
-A tela do Controle de tempo fica numa camada acima dos menus. Os menus abrem, mas ficam escondidos atrás dela. Correção: fazer os menus desta tela abrirem por cima (vale para o "..." do topo e de cada parte).
+## (01) Relógio grande à direita de cada parte
 
-## Mockup
+Hoje o relógio mostra um ícone quando a parte ainda não começou, e embaixo troca o texto ("tocar p/ parar", "concluída", "pausado"). Vai voltar ao modelo combinado na sua imagem:
 
 ```text
-┌─────────────────────────────────┐
-│ ✕                           ⋯   │
-│ Imite aqueles que confiaram     │  <- tema completo, quebra linha
-│ em Jeová!                       │
-│ 📅 Sáb, 14 nov · Salão de Assem.│  <- data e local
-│ 🕘 09:40 – 15:50                │  <- início e fim
-│ ● Programa 4 min atrasado       │  <- verde/âmbar/cinza
-├─────────────────────────────────┤
-│ MANHÃ                           │
-│ ▸ Cântico 12 · Oração      (3)  │  <- partes sem orador, recolhidas
-│ ┌─────────────────────────────┐ │
-│ │ 10:15 · Discurso 2       ⋯  │ │
-│ │ João Silva · Cong. Centro   │ │
-│ │ 🔔 +2 min        ┌───────┐  │ │
-│ │                  │ 14:32 │  │ │  1 toque: inicia/encerra
-│ │ ▓▓▓▓▓▓░░░░        └───────┘  │ │  2 toques: "Zerar este tempo?"
-│ └─────────────────────────────┘ │
-│ ...                             │
-│ Oração final · Pedro        ⋯   │
-│                                 │
-│ ┌─────────────────────────────┐ │
-│ │      ■ Concluir evento      │ │  <- só aqui, no fim da lista
-│ └─────────────────────────────┘ │
-└─────────────────────────────────┘
-
- ⋯ do topo            ⋯ da parte
-┌──────────────────┐ ┌──────────────┐
-│ ✓ Regressivo     │ │ ✎ Editar     │
-│   Cronômetro     │ │ ↺ Reiniciar  │
-│ ⤓ Relatório exec.│ │ ⏱ Alterar    │
-│ ⧉ Sobrepor apps  │ │   tempo      │
-│ ↺ Zerar tudo     │ └──────────────┘
-└──────────────────┘
+┌──────────────────────────────────────┐
+│ 4. Baraque (16 min)        ┌───────┐ │
+│ 🗓 10:15  ▶ 10:17  🔔 +2 min │ 16:00 │ │
+│ João Silva · Central       │(16min)│ │
+│                            └───────┘ │
+│                                 ···  │
+└──────────────────────────────────────┘
 ```
 
-## O que muda
-1. **Topo organizado**: tema completo (sem cortar), depois data e local, depois início–fim, depois "Programa X min adiantado / atrasado / no horário". O seletor Regressivo/Cronômetro sai do topo e vai para o "...", junto com "Exportar relatório executivo".
-2. **Todos os "..." funcionando** (correção acima).
-3. **"..." de cada parte**: Editar (abre a edição normal da parte no evento: tema, orador, tempo previsto), Reiniciar (zera e deixa a parte pronta), Alterar tempo (corrige o tempo gasto).
-4. **Dois toques no relógio grande**: pergunta "Zerar o tempo desta parte?" (Cancelar / Zerar). Um toque continua iniciando/encerrando.
-5. **Botões flutuantes Pausar/Encerrar removidos**. No fim da lista, após a Oração final, fica só o botão "Concluir evento" (para o tempo em andamento e abre o relatório). Iniciar e parar continua no relógio de cada parte.
-6. **Partes sem orador** (cânticos, música, vídeos etc.) agrupadas numa linha recolhível; já abrem recolhidas. Se uma delas estiver rodando, aparece aberta.
+- Números grandes sempre visíveis, estilo relógio digital (também antes de começar: 16:00 no Regressivo, 00:00 no Cronômetro).
+- Embaixo, sempre o tempo previsto entre parênteses: "(16min)". Sem textos trocando.
+- Cores continuam: verde no tempo, âmbar no último minuto, vermelho quando passa. Antes de começar fica neutro.
+- Pausado continua indicado pelo relógio piscando.
+- Um toque inicia/para e dois toques perguntam se deseja zerar (sem mudança).
 
-## Relatório executivo
-O PDF atual ganha um bloco inicial de resumo: horário previsto × real de início e fim, desvio total do programa, nº de partes no tempo/estouradas, maior atraso e maior adiantamento por orador; depois a tabela por parte que já existe.
+## (02) Remover "Duração −14:04"
 
-## Integridade
-- Nada no banco/servidor muda; tempos continuam só no aparelho, com o mesmo formato salvo.
-- Lógica de série de discursos, pílula do sino, bolha sobre apps e modos regressivo/cronômetro ficam iguais.
-- Testes novos: zerar uma parte não afeta as outras; agrupamento de partes sem orador; resumo executivo (valores de desvio). Rodar typecheck e todos os testes.
+Ele mostrava quanto a parte concluída ficou acima ou abaixo do previsto. Isso já aparece no próprio relógio (em vermelho/verde) e no relatório, então sai da linha. A linha fica só com: horário do programa, hora em que começou e a pílula do sino.
 
 ## Detalhes técnicos
-- `EventTimerFocus.tsx`: `DropdownMenuContent` com `z-[70]`; novo cabeçalho; footer flutuante removido e virado item final da lista; duplo toque via detecção de 2 cliques <300 ms (atrasando o toque simples) + AlertDialog `z-[70]`; grupos recolhíveis de linhas consecutivas sem `elder`/orador, estado de recolhimento só em memória.
-- "Editar" fecha o foco e abre o editor da parte via callback do componente pai do evento.
-- `timer-report-pdf.ts`: seção de resumo executivo calculada a partir de `summarize()`.
+- Arquivo: `src/components/circuit/EventTimerFocus.tsx` (botão do relógio e linha de horários). Nada muda em dados, relatório ou PDF.
