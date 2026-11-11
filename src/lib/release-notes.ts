@@ -104,16 +104,53 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.5.0";
+export const RELEASE_NOTES_VERSION = "5.6.0";
 
 /**
- * Aviso automático "O que há de novo" nesta versão: desligado a pedido.
+ * Aviso automático "O que há de novo" (5.6.0: ligado, só para superintendentes).
  * O texto continua em Configurações → Ver novidades e no aviso de atualização.
  * Troque para true para voltar a abrir sozinho na primeira abertura após atualizar.
  */
-export const WHATS_NEW_AUTO_SHOW = false;
+export const WHATS_NEW_AUTO_SHOW = true;
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "5.6.0",
+    sections: [
+      {
+        title: "Controle de tempo dos Grandes Eventos", audience: ["super"],
+        items: [
+          "Tela de foco no estilo do programa, com relógio digital grande em cada parte.",
+          "Escolha entre Regressivo (temporizador) e Cronômetro no menu \"…\".",
+          "Sino de pontualidade: compara a hora do celular com o horário do programa.",
+          "Topo mostra se o programa está adiantado, atrasado ou no horário.",
+          "Série de discursos e Simpósio: os discursos contam dentro do tempo do título.",
+          "Toque duplo no relógio para zerar; \"Concluir evento\" no fim da lista.",
+          "Relatório executivo de pontualidade em PDF e bolinha flutuante no Android.",
+        ],
+      },
+      {
+        title: "Programa do evento e convites", audience: ["super"],
+        items: [
+          "Tela do evento mais limpa: detalhes e resumo recolhidos, Exportar no menu \"…\".",
+          "Partes sem orador ficam agrupadas e recolhidas.",
+          "Tempo que falta pode ser digitado direto no cartão da parte.",
+          "Importação .rtf coloca 1 minuto a menos nos discursos.",
+          "Horário automático soma 1 minuto de transição após tempos de 9, 14, 19 min.",
+          "PIN e Novo link agora ficam no \"…\" de cada designação.",
+          "Cartas e PDFs sem informações repetidas e sem participações em Presidente/Oração.",
+        ],
+      },
+      {
+        title: "Visitas e Ajuda", audience: ["super"],
+        items: [
+          "\"Finalizar agora\" não volta a aparecer depois de confirmar o fim da visita.",
+          "Vídeos tutoriais no YouTube direto na Ajuda.",
+          "Botão X para fechar a Ajuda.",
+        ],
+      },
+    ],
+  },
   {
     version: "5.5.0",
     sections: [
