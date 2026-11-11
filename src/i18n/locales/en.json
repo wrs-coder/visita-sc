@@ -1388,6 +1388,7 @@
     "enable": "Enable editing"
   },
   "sync": {
+    "screenUpdated": "{{screen}} updated",
     "never": "never",
     "now": "now",
     "minutesAgo": "{{n}} min ago",

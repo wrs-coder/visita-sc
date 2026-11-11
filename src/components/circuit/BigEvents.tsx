@@ -92,7 +92,30 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       supabase.from("circuit_big_event_parts").select("*").order("sort_order"),
     ]);
     setEvents(ev ?? []); setParts(pt ?? []); setLoading(false);
+    // Com internet: confere as respostas dos oradores direto no servidor
+    // (as respostas chegam pelo link, fora deste aparelho) e corrige a cópia local.
+    if (typeof navigator !== "undefined" && navigator.onLine) void refreshStatuses();
   }, [user]);
+
+  const refreshStatuses = async () => {
+    const { syncTables, supabasePull } = await import("@/lib/local-sync");
+    const r = await Promise.race([
+      syncTables({ tables: ["circuit_big_event_parts"], pull: supabasePull }),
+      new Promise<null>((res) => setTimeout(() => res(null), 8000)),
+    ]).catch(() => null);
+    if (!r || !r.every((x) => x.ok)) return;
+    const { getRows } = await import("@/lib/local-db");
+    const fresh = await getRows<PartRow>("circuit_big_event_parts");
+    const byId = new Map(fresh.map((p) => [p.id, p]));
+    setParts((ps) => ps.map((p) => { const f = byId.get(p.id); return f && (f.status !== p.status || f.responded_at !== p.responded_at) ? { ...p, status: f.status, responded_at: f.responded_at, decline_reason: f.decline_reason } : p; }));
+  };
+
+  // ⟳ desta tela: recarrega depois de baixar.
+  useEffect(() => {
+    const on = () => void load();
+    window.addEventListener("visita-sc:screen-synced", on);
+    return () => window.removeEventListener("visita-sc:screen-synced", on);
+  }, [load]);
 
   useEffect(() => {
     void load();
@@ -105,6 +128,10 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     const ch = supabase.channel(`big-parts-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "circuit_big_event_parts" }, (payload) => {
         const row = payload.new as PartRow;
+        const live = { status: row.status, responded_at: row.responded_at, decline_reason: row.decline_reason };
+        // Grava também na cópia do aparelho: senão a próxima releitura traz o status antigo.
+        void import("@/lib/local-db").then((m) => m.patchMirrorRow("circuit_big_event_parts", row.id, live)).catch(() => undefined);
+        void import("@/lib/response-cache").then((m) => m.markTableStale("circuit_big_event_parts")).catch(() => undefined);
         setParts((ps) => ps.map((p) => (p.id === row.id ? { ...p, status: row.status, responded_at: row.responded_at, decline_reason: row.decline_reason } : p)));
       })
       .subscribe();

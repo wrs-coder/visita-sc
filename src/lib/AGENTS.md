@@ -10,3 +10,5 @@
 - Finished visits are remembered on-device (finished-visits.ts) and filtered from the overdue list, because cached reads must never bring back 'Finalizar agora'.
 - External links open via external-link.ts: real <a target=_blank> in the browser, Capacitor Browser in the app, never inside the app's own frame, because YouTube refuses framing.
 - Renaming a big-event speaker who already had an invite renews the personal link or PIN and resets status to pending (patchSpeaker + letter-pick.ts), because the old invite belongs to the previous speaker.
+- The header/sidebar Sync button syncs only the open screen's mirror tables (screen-sync.ts route map, unmapped routes fall back to full sync); full sync lives in Profile and auto-sync runs once a day from 02:00 + per-device jitter, because full syncs waste time and server load.
+- Live big-event responses are merged into the mirror via patchMirrorRow (no cursor/updatedAt change) and BigEvents re-pulls parts online, because speaker answers arrive off-device and stale mirror reads reverted statuses.

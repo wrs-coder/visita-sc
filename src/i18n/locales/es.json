@@ -1365,6 +1365,7 @@
     "enable": "Activar edición"
   },
   "sync": {
+    "screenUpdated": "{{screen}} actualizado",
     "never": "nunca",
     "now": "ahora",
     "minutesAgo": "hace {{n}} min",

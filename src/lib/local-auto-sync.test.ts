@@ -69,66 +69,50 @@ describe("local-auto-sync (Fase 4)", () => {
     expect(s.error).toBe("rede");
   });
 
-  describe("janelas diárias (2x ao dia)", () => {
-    it("identifica as janelas corretamente", () => {
+  describe("janela diária (1x ao dia, madrugada)", () => {
+    beforeEach(() => { const m = new Map<string, string>([["visita-sc:auto-sync-jitter", "0"]]); vi.stubGlobal("localStorage", { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) }); });
+
+    it("só libera a partir das 02:00 (+ sorteio do aparelho)", () => {
       const at = (h: number, m = 0) => new Date(2026, 8, 22, h, m);
       expect(currentSyncWindow(at(0))).toBeNull();
-      expect(currentSyncWindow(at(5, 59))).toBeNull();
-      expect(currentSyncWindow(at(6))).toBe("morning");
-      expect(currentSyncWindow(at(11, 59))).toBe("morning");
-      expect(currentSyncWindow(at(12))).toBe("afternoon");
-      expect(currentSyncWindow(at(23, 59))).toBe("afternoon");
+      expect(currentSyncWindow(at(1, 59))).toBeNull();
+      expect(currentSyncWindow(at(2))).toBe("daily");
+      expect(currentSyncWindow(at(2, 10), 15)).toBeNull();
+      expect(currentSyncWindow(at(2, 15), 15)).toBe("daily");
+      expect(currentSyncWindow(at(23, 59))).toBe("daily");
     });
 
-    it("sem force, roda 1x na janela da manhã e ignora repetições no mesmo dia", async () => {
+    it("roda uma única vez por dia", async () => {
       vi.useFakeTimers();
-      vi.setSystemTime(new Date(2026, 8, 22, 8, 0));
-      const r1 = await runAutoSync();
-      expect(r1).not.toBeNull();
-      expect(syncTables).toHaveBeenCalledTimes(1);
-      vi.setSystemTime(new Date(2026, 8, 22, 10, 30));
-      const r2 = await runAutoSync();
-      expect(r2).toBeNull();
-      expect(syncTables).toHaveBeenCalledTimes(1);
-    });
-
-    it("roda de novo na janela da tarde do mesmo dia", async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date(2026, 8, 22, 7, 0));
-      await runAutoSync();
+      vi.setSystemTime(new Date(2026, 8, 22, 3, 0));
+      expect(await runAutoSync()).not.toBeNull();
       vi.setSystemTime(new Date(2026, 8, 22, 15, 0));
-      const r = await runAutoSync();
-      expect(r).not.toBeNull();
-      expect(syncTables).toHaveBeenCalledTimes(2);
+      expect(await runAutoSync()).toBeNull();
+      expect(syncTables).toHaveBeenCalledTimes(1);
     });
 
-    it("não roda automaticamente fora das janelas (madrugada)", async () => {
+    it("app fechado de madrugada: roda na primeira abertura do dia", async () => {
       vi.useFakeTimers();
-      vi.setSystemTime(new Date(2026, 8, 22, 2, 0));
-      const r = await runAutoSync();
-      expect(r).toBeNull();
+      vi.setSystemTime(new Date(2026, 8, 22, 9, 0));
+      expect(await runAutoSync()).not.toBeNull();
+    });
+
+    it("não roda antes das 02:00", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 8, 22, 1, 0));
+      expect(await runAutoSync()).toBeNull();
       expect(syncTables).not.toHaveBeenCalled();
     });
 
-    it("virada de dia libera a janela novamente", async () => {
+    it("virada de dia libera de novo; manual não consome o dia", async () => {
       vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 8, 22, 1, 0));
+      expect(await runAutoSync({ force: true })).not.toBeNull();
       vi.setSystemTime(new Date(2026, 8, 22, 8, 0));
-      await runAutoSync();
+      expect(await runAutoSync()).not.toBeNull();
       vi.setSystemTime(new Date(2026, 8, 23, 8, 0));
-      const r = await runAutoSync();
-      expect(r).not.toBeNull();
-      expect(syncTables).toHaveBeenCalledTimes(2);
-    });
-
-    it("manual (force) ignora janela e não consome a janela automática", async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date(2026, 8, 22, 3, 0)); // madrugada
-      const manual = await runAutoSync({ force: true });
-      expect(manual).not.toBeNull();
-      vi.setSystemTime(new Date(2026, 8, 22, 8, 0)); // manhã
-      const auto = await runAutoSync();
-      expect(auto).not.toBeNull();
-      expect(syncTables).toHaveBeenCalledTimes(2);
+      expect(await runAutoSync()).not.toBeNull();
+      expect(syncTables).toHaveBeenCalledTimes(3);
     });
   });
 
