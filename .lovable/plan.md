@@ -1,79 +1,19 @@
-# Controle de tempo e Grandes Eventos: telas mais limpas
+# Conferência: ajustes refletidos nas exportações e cartas
 
-## (01) Relógio grande à direita de cada parte (Controle de tempo)
+## O que já está certo
+- Série de discursos: horários dos "•" nos convites, cartas e PDF do programa seguem a regra da série (não empurram o programa).
+- "Informar próximo orador": convite e carta mostram "Próximo orador: Nome" quando marcado (inclusive a marcação automática do Simpósio/Série).
+- PIN: só sai no convite/carta no modo "Link único + PIN", criado sozinho ao copiar.
+- Relatório do Controle de tempo: PDF próprio com resumo executivo.
 
-Volta ao modelo combinado na sua imagem:
+## O que ainda falta alinhar (3 correções pequenas)
+1. **Informações adicionais**: sumiram da tela, mas se um evento antigo tiver esse texto ele ainda é impresso em "Informações: ..." no convite, na carta e não dá para ver/editar. Correção: deixar de imprimir nos convites, cartas e Word (o texto fica guardado, sem apagar nada).
+2. **Presidente e Oração**: se uma parte antiga tiver "Participações" marcadas, ainda aparecem no convite, na carta e no PDF do programa. Correção: ignorar participações nessas duas designações em todas as saídas.
+3. **Teste automático** garantindo as duas regras acima.
 
-```text
-┌──────────────────────────────────────┐
-│ 4. Baraque (16 min)        ┌───────┐ │
-│ 🗓 10:15  ▶ 10:17  🔔 +2 min │ 16:00 │ │
-│ João Silva · Central       │(16min)│ │
-│                            └───────┘ │
-└──────────────────────────────────────┘
-```
-
-- Números grandes sempre visíveis, estilo relógio digital (antes de começar: 16:00 no Regressivo, 00:00 no Cronômetro).
-- Embaixo, sempre o previsto entre parênteses: "(16min)". Sem textos trocando.
-- Cores: verde no tempo, âmbar no último minuto, vermelho quando passa; neutro antes de começar. Pausado = relógio piscando.
-- Um toque inicia/para; dois toques perguntam se deseja zerar (sem mudança).
-
-## (02) Remover "Duração −14:04"
-
-Mostrava quanto a parte concluída ficou acima/abaixo do previsto. Isso já aparece no relógio e no relatório, então sai.
-
-## (03) Topo de cada evento (Grandes Eventos)
-
-```text
-┌─────────────────────────────────┐
-│ v Feliz É Aquele Que Conf... 0/0│
-│   sáb 05/12 · SAV · 09:40       │
-│                                 │
-│ ┌─────────────────────────┐ ··· │
-│ │ ⏱  Controle de tempo    │     │
-│ └─────────────────────────┘     │
-│ Detalhes do evento            > │  (recolhido)
-│ Resumo  0 ✓  0 ⏳  0 ✕  0 👤   > │  (recolhido)
-│ ⚠ 2 partes sem tempo            │
-│ ─────── lista das partes ────── │
-└─────────────────────────────────┘
-Menu "···": Nova parte · Exportar · Lembrar pendentes ·
-            Duplicar evento · Apagar evento
-```
-
-- **Exportar** vai para o menu "···", junto de "Lembrar pendentes". Fica só o botão **Controle de tempo**.
-- **Detalhes do evento** (nome, data, local, início, recalcular, forma de confirmação, modelo de carta) recolhido; abre sozinho em evento novo.
-- **Resumo** (4 contadores) começa recolhido numa linha com os números; aberto, as pílulas servem de filtro (tocar de novo volta a "Todas"). A barra de filtros repetida sai.
-- "Sem tempo" vira aviso âmbar tocável, só quando houver.
-
-## (04) Partes sem orador recolhidas na lista
-
-Como no Controle de tempo: cânticos, músicas, vídeos etc. ficam numa linha "▸ partes sem orador", já recolhida. Toque para abrir.
-
-## (05) Cartão de cada designação mais limpo
-
-```text
-┌─────────────────────────────────┐
-│ 10:15  4. Baraque           ··· │
-│ 15 min ✓ Confirmado             │
-│    [Ancião                    ] │
-│    [Congregação               ] │
-│    ▸ Informações só deste convite│
-│    [⧉ Copiar convite]           │
-└─────────────────────────────────┘
-"···": Editar · Novo link (ou Novo PIN) ·
-       ✓ Informar próximo orador · Nova parte abaixo ·
-       Subir · Descer · Excluir
-```
-
-- "Link pessoal pronto" sai. **Novo link** vai para o "···". O lápis separado sai (Editar está no "···").
-- **Confirmado / Aguardando / Recusado** não é prazo: mostra se o ancião já respondeu pelo link do convite. Fica pequeno embaixo do horário. "Recusado" continua tocável para ver o motivo.
-- Modo PIN: o PIN já é criado sozinho ao tocar em "Copiar convite" e vai dentro do convite. Por isso o campo do PIN e o "Novo PIN" também saem do cartão e vão para o "···": "Ver ou alterar PIN" (abre uma folha pequena com o PIN atual, para digitar outro se quiser) e "Novo PIN".
-
-## (06) "Informar o nome do próximo orador?"
-
-- Em Simpósio e Série de discursos vem marcado sozinho em todos os oradores, menos no último do grupo (ao importar e ao criar parte).
-- Sai do cartão e vai para o "···" com ✓ quando ativo (também no Editar). Partes já salvas não mudam sozinhas.
+Sem mudança visual de tela, sem mudança no servidor.
 
 ## Detalhes técnicos
-- Arquivos: `EventTimerFocus.tsx`, `BigEvents.tsx` e o ponto de criação das partes importadas (padrão do "próximo orador"). Estado recolhido/aberto só no aparelho. Sem mudança no banco, convites, links ou PDFs.
+- `invite.ts` (buildInviteText) e `letter-template.ts` (caixa da designação): remover linha `extra_info`; pular `extrasLabel` quando part_type for Presidente/Oração (helper `allowsExtras(partTypeId)` reaproveitado do BigEvents).
+- `program-pdf.ts`: mesmo filtro de extras.
+- Testes em `big-events.test.ts` / `letter-template.test.ts`.
