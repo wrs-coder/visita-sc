@@ -329,17 +329,14 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }:
                             <Bell className="h-3 w-3" />{delay > 0 ? `+${delay}` : delay < 0 ? `${delay}` : "no horário"}{delay !== 0 ? " min" : ""}
                           </span>
                         )}
-                        {done && !active && r?.diff != null && <span className={`font-medium ${diffTone(r.diff)}`}>Duração {signed(r.diff)}</span>}
                       </div>
                       {who && <p className="mt-1 truncate text-xs text-muted-foreground">{who}{cong ? ` · ${cong}` : ""}</p>}
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1">
                       <button type="button" onClick={tap} aria-label={active ? "Encerrar esta parte" : "Iniciar esta parte"}
                         className={`flex h-[68px] w-[92px] flex-col items-center justify-center rounded-2xl transition-transform active:scale-95 ${TONE_BOX[tone]} ${active && s.pausedAt != null ? "animate-pulse" : ""}`}>
-                        {tone === "idle" && !active
-                          ? <TimerIcon className="h-7 w-7 opacity-80" />
-                          : <span className="font-mono text-[22px] font-semibold leading-none tabular-nums tracking-tight">{displayClock(mode, planned, actual)}</span>}
-                        <span className="mt-1 text-[10px] font-medium opacity-80">{active ? (s.pausedAt != null ? "pausado" : "tocar p/ parar") : done ? "concluída" : planned != null ? `${Math.round(planned / 60_000)} min` : "iniciar"}</span>
+                        <span className="font-mono text-[24px] font-semibold leading-none tabular-nums tracking-tight">{displayClock(mode, planned, actual)}</span>
+                        <span className="mt-1 text-[11px] font-medium opacity-90">{planned != null ? `(${Math.round(planned / 60_000)}min)` : "(—)"}</span>
                       </button>
                       {(
                         <DropdownMenu>

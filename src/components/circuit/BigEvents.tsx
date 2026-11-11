@@ -3,7 +3,7 @@ import { appConfirm } from "@/components/ui/app-dialogs";
 // convites com PIN (link único por evento) e status ao vivo.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowDown, ArrowUp, BellRing, CheckCircle2, ChevronDown, Circle, Copy, CopyPlus, Download, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, Timer, Trash2, Upload, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, BellRing, CheckCircle2, ChevronDown, Circle, Copy, CopyPlus, Download, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, Timer, Trash2, Upload, UserX, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ type EventRow = Database["public"]["Tables"]["circuit_big_events"]["Row"];
 type PartRow = Database["public"]["Tables"]["circuit_big_event_parts"]["Row"];
 
 const OPEN_KEY = "bigEvents.open";
+const SECTIONS_KEY = "bigEvents.sections";
 const pinKey = (partId: string) => `bigEvents.pin.${partId}`;
 const readPin = (id: string) => { try { return localStorage.getItem(pinKey(id)); } catch { return null; } };
 const writePin = (id: string, pin: string) => { try { localStorage.setItem(pinKey(id), pin); } catch { /* */ } };
@@ -49,6 +50,14 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const [form, setForm] = useState({ name: "", event_type: "assembly", event_date: "", location: "", link_mode: "pin" });
   const [editor, setEditor] = useState<{ ev: EventRow; part: PartRow | null; afterOrder: number | null } | null>(null);
   const [filter, setFilter] = useState<Record<string, PartFilter>>({});
+  // Seções recolhíveis por evento (só neste aparelho): detalhes, resumo e grupos sem orador.
+  const [sections, setSections] = useState<Record<string, boolean>>({});
+  useEffect(() => { try { const raw = localStorage.getItem(SECTIONS_KEY); if (raw) setSections(JSON.parse(raw) as Record<string, boolean>); } catch { /* */ } }, []);
+  const flip = (key: string, fallback: boolean) => setSections((m) => {
+    const n = { ...m, [key]: !(m[key] ?? fallback) };
+    try { localStorage.setItem(SECTIONS_KEY, JSON.stringify(n)); } catch { /* */ }
+    return n;
+  });
   const [remindFor, setRemindFor] = useState<EventRow | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [view, setView] = useState<"events" | "templates">("events");
@@ -150,6 +159,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       // Todas as partes com as mesmas colunas preenchidas: o lote não pode levar campo vazio obrigatório.
       const { error: pe } = await supabase.from("circuit_big_event_parts").insert(ps.map((p, i) => ({
         ...p, time_mode: p.time_mode ?? "auto", speaker_name: p.speaker_name ?? null,
+        show_next_speaker: autoNextSpeaker(ps, i),
         event_id: ev.id, superintendent_id: user.id, sort_order: i,
         personal_token: form.link_mode === "personal" && p.assigned_to === "speaker" ? crypto.randomUUID() : null,
       })));
@@ -417,6 +427,9 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     const noTimeN = evParts.filter(noTime).length;
     const shown = evParts.filter((p) => matchFilter(p, f, noTime));
     const setF = (v: PartFilter) => setFilter((m) => ({ ...m, [ev.id]: f === v ? "all" : v }));
+    const detailsDefault = evParts.length === 0;
+    const detailsOpen = sections[`det.${ev.id}`] ?? detailsDefault;
+    const summaryOpen = sections[`sum.${ev.id}`] ?? false;
     // Sobreposição: compara com a última parte que ocupa tempo (Oração/Presidente não contam).
     const overlapIds = new Set<string>();
     let last: PartRow | null = null;
@@ -460,11 +473,31 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
           <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "" : "-rotate-90"}`} />
           <span className="min-w-0 flex-1">
             <span className="block truncate font-semibold">{ev.name}</span>
-            <span className="block text-xs text-muted-foreground">{[formatEventDate(ev.event_date), ev.location].filter(Boolean).join(" · ")}</span>
+            <span className="block text-xs text-muted-foreground">{[formatEventDate(ev.event_date), ev.location, ev.start_time?.slice(0, 5)].filter(Boolean).join(" · ")}</span>
           </span>
           <span className="text-xs text-muted-foreground">{conf}/{speakers.length}{decl ? ` · ${decl}✕` : ""}</span>
         </button>
         <div hidden={!isOpen} className="space-y-3 px-4 pb-4">
+          <div className="flex items-center gap-2">
+            <Button className="h-11 flex-1 gap-2 rounded-2xl text-[15px]" onClick={() => setTimerFor(ev)} disabled={!evPartsOf(ev.id).length}><Timer className="h-4 w-4" />Controle de tempo</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button size="icon" variant="outline" className="h-11 w-11 rounded-2xl" aria-label="Opções do evento"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setEditor({ ev, part: null, afterOrder: null })}><Plus className="mr-2 h-4 w-4" />Nova parte</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setExportFor(ev)}><Download className="mr-2 h-4 w-4" />Exportar</DropdownMenuItem>
+                <DropdownMenuItem disabled={!pendingN} onClick={() => setRemindFor(ev)}><BellRing className="mr-2 h-4 w-4" />Lembrar pendentes{pendingN ? ` (${pendingN})` : ""}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => duplicateEvent(ev)}><CopyPlus className="mr-2 h-4 w-4" />Duplicar evento</DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive" onClick={() => removeEvent(ev.id)}><Trash2 className="mr-2 h-4 w-4" />Apagar evento</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="overflow-hidden rounded-2xl bg-muted/40">
+            <button type="button" onClick={() => flip(`det.${ev.id}`, detailsDefault)} aria-expanded={detailsOpen}
+              className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm font-medium">
+              <span className="flex-1">Detalhes do evento</span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${detailsOpen ? "" : "-rotate-90"}`} />
+            </button>
+            <div hidden={!detailsOpen} className="space-y-3 border-t border-border/60 p-3">
           <div className="relative">
             <Input key={`name-${ev.name}`} defaultValue={ev.name} maxLength={200} aria-label="Nome do evento" className="pr-9 font-medium"
               onBlur={(e) => { const v = e.target.value.trim(); if (!v) { e.target.value = ev.name; toast.error("O evento precisa de um nome."); return; } if (v !== ev.name) void patchEvent(ev.id, { name: v }); }} />
@@ -506,44 +539,65 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
               {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" className="gap-1" onClick={() => setExportFor(ev)}><Download className="h-3.5 w-3.5" />Exportar</Button>
-            <Button size="sm" variant="outline" className="gap-1" onClick={() => setTimerFor(ev)} disabled={!evPartsOf(ev.id).length}><Timer className="h-3.5 w-3.5" />Controle de tempo</Button>
-            {pendingN > 0 && <Button size="sm" variant="ghost" className="gap-1 px-2 text-xs" onClick={() => setRemindFor(ev)}><BellRing className="h-3.5 w-3.5" />Lembrar pendentes</Button>}
-            <span className="flex-1" />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Opções do evento"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setEditor({ ev, part: null, afterOrder: null })}><Plus className="mr-2 h-4 w-4" />Nova parte</DropdownMenuItem>
-                <DropdownMenuItem disabled={!pendingN} onClick={() => setRemindFor(ev)}><BellRing className="mr-2 h-4 w-4" />Lembrar pendentes</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => duplicateEvent(ev)}><CopyPlus className="mr-2 h-4 w-4" />Duplicar evento</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive" onClick={() => removeEvent(ev.id)}><Trash2 className="mr-2 h-4 w-4" />Apagar evento</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            </div>
           </div>
-          <div className="flex gap-1.5" role="group" aria-label="Resumo das designações">
-            {pill("confirmed", conf, "Confirmados", "bg-primary/10 text-primary")}
-            {pill("pending", pendingN, "Pendentes", "bg-warning/15 text-warning-foreground")}
-            {pill("declined", decl, "Recusados", "bg-destructive/10 text-destructive")}
-            {pill("nospeaker", noSpeakerN, "Sem ancião", "bg-muted text-muted-foreground")}
+          <div className="overflow-hidden rounded-2xl bg-muted/40">
+            <button type="button" onClick={() => flip(`sum.${ev.id}`, false)} aria-expanded={summaryOpen}
+              className="flex min-h-11 w-full items-center gap-3 px-3 text-left text-sm">
+              <span className="flex-1 font-medium">Resumo</span>
+              <span className="flex items-center gap-2.5 text-xs tabular-nums">
+                <span className="flex items-center gap-0.5 text-primary"><CheckCircle2 className="h-3.5 w-3.5" />{conf}</span>
+                <span className="flex items-center gap-0.5 text-warning"><Circle className="h-3.5 w-3.5" />{pendingN}</span>
+                <span className="flex items-center gap-0.5 text-destructive"><XCircle className="h-3.5 w-3.5" />{decl}</span>
+                <span className="flex items-center gap-0.5 text-muted-foreground"><UserX className="h-3.5 w-3.5" />{noSpeakerN}</span>
+              </span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${summaryOpen ? "" : "-rotate-90"}`} />
+            </button>
+            <div hidden={!summaryOpen} className="flex gap-1.5 border-t border-border/60 p-2" role="group" aria-label="Resumo das designações">
+              {pill("confirmed", conf, "Confirmados", "bg-primary/10 text-primary")}
+              {pill("pending", pendingN, "Pendentes", "bg-warning/15 text-warning-foreground")}
+              {pill("declined", decl, "Recusados", "bg-destructive/10 text-destructive")}
+              {pill("nospeaker", noSpeakerN, "Sem ancião", "bg-muted text-muted-foreground")}
+            </div>
           </div>
+          {f !== "all" && (
+            <button type="button" onClick={() => setFilter((m) => ({ ...m, [ev.id]: "all" }))} className="flex w-full items-center justify-between rounded-xl bg-primary/10 px-3 py-2 text-xs font-medium text-primary">
+              <span>Mostrando: {FILTER_LABEL[f]}</span><span>Ver todas</span>
+            </button>
+          )}
+          {noTimeN > 0 && f !== "notime" && (
+            <button type="button" onClick={() => setF("notime")} className="flex w-full items-center gap-1.5 rounded-xl bg-warning/15 px-3 py-2 text-left text-xs font-medium text-warning-foreground">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />{noTimeN === 1 ? "1 parte sem tempo" : `${noTimeN} partes sem tempo`}
+            </button>
+          )}
           {overlapIds.size > 0 && (
             <p className="flex items-center gap-1.5 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />{overlapIds.size === 1 ? "1 parte começa antes do fim da anterior." : `${overlapIds.size} partes começam antes do fim da anterior.`}
             </p>
           )}
-          <div className="flex rounded-full bg-muted p-0.5" role="tablist" aria-label="Filtrar partes">
-            {([["all", "Todas"], ["pending", "Pendentes"], ["notime", `Sem tempo${noTimeN ? ` ${noTimeN}` : ""}`], ["nospeaker", "Sem ancião"]] as const).map(([v, l]) => (
-              <button key={v} type="button" role="tab" aria-selected={f === v} onClick={() => setFilter((m) => ({ ...m, [ev.id]: v }))}
-                className={`h-8 min-w-0 flex-1 truncate rounded-full px-1 text-xs font-medium transition-colors ${f === v ? "bg-background shadow-sm" : "text-muted-foreground"}`}>{l}</button>
-            ))}
-          </div>
           <ul className="divide-y rounded-lg border">
-            {shown.map((p, i) => {
-              return <PartItem key={p.id} ev={ev} elders={elders} part={p} overlap={overlapIds.has(p.id)} alsoIn={alsoIn(p)} note={seriesNote(p)} first={i === 0} last={i === shown.length - 1}
-                onPatch={patchPart} onSetPin={setPin} onNewPin={newPin} onCopy={copyInvite} onNewLink={newLink}
-                onEdit={() => setEditor({ ev, part: p, afterOrder: null })} onAddAfter={() => setEditor({ ev, part: null, afterOrder: p.sort_order })}
-                onMove={(d) => movePart(ev, p, d)} onDelete={() => deletePart(ev, p)} />;
+            {groupRuns(shown, f === "all").map((run) => {
+              const item = (p: PartRow) => {
+                const i = shown.indexOf(p);
+                return <PartItem key={p.id} ev={ev} elders={elders} part={p} overlap={overlapIds.has(p.id)} alsoIn={alsoIn(p)} note={seriesNote(p)} first={i === 0} last={i === shown.length - 1}
+                  onPatch={patchPart} onSetPin={setPin} onNewPin={newPin} onCopy={copyInvite} onNewLink={newLink}
+                  onEdit={() => setEditor({ ev, part: p, afterOrder: null })} onAddAfter={() => setEditor({ ev, part: null, afterOrder: p.sort_order })}
+                  onMove={(d) => movePart(ev, p, d)} onDelete={() => deletePart(ev, p)} />;
+              };
+              if (!run.group) return item(run.parts[0]);
+              const key = `grp.${ev.id}.${run.parts[0].id}`;
+              const gOpen = sections[key] ?? false;
+              return [
+                <li key={key}>
+                  <button type="button" onClick={() => flip(key, false)} aria-expanded={gOpen}
+                    className="flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-xs text-muted-foreground">
+                    <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${gOpen ? "" : "-rotate-90"}`} />
+                    <span className="w-12 shrink-0 tabular-nums">{run.parts[0].part_time ?? ""}</span>
+                    <span className="min-w-0 flex-1 truncate">{run.parts.length === 1 ? run.parts[0].theme : `${run.parts.length} partes sem orador`}</span>
+                  </button>
+                </li>,
+                ...(gOpen ? run.parts.map(item) : []),
+              ];
             })}
             {!shown.length && <li className="p-3 text-center text-xs text-muted-foreground">Nada aqui.</li>}
           </ul>
@@ -680,6 +734,23 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
 }
 
 type PartFilter = "all" | "pending" | "declined" | "confirmed" | "notime" | "nospeaker";
+const FILTER_LABEL: Record<PartFilter, string> = { all: "Todas", pending: "Pendentes", declined: "Recusados", confirmed: "Confirmados", notime: "Sem tempo", nospeaker: "Sem ancião" };
+/** Agrupa partes seguidas que não pedem orador (cânticos, músicas…), para começarem recolhidas. */
+export function groupRuns<T extends { assigned_to: string }>(list: T[], enabled: boolean): Array<{ group: boolean; parts: T[] }> {
+  const out: Array<{ group: boolean; parts: T[] }> = [];
+  for (const p of list) {
+    const none = enabled && p.assigned_to === "none";
+    const lastRun = out[out.length - 1];
+    if (none && lastRun?.group) lastRun.parts.push(p);
+    else out.push({ group: none, parts: [p] });
+  }
+  return out;
+}
+/** Simpósio/Série: informar o próximo orador em todos, menos no último discurso do grupo. */
+export function autoNextSpeaker(list: Array<{ symposium?: boolean | null; assigned_to?: string | null }>, i: number): boolean {
+  const cur = list[i], next = list[i + 1];
+  return !!(cur?.symposium && cur.assigned_to === "speaker" && next?.symposium && next.assigned_to === "speaker");
+}
 function matchFilter(p: PartRow, f: PartFilter, noTime: (p: PartRow) => boolean): boolean {
   if (f === "all") return true;
   if (f === "notime") return noTime(p);
@@ -770,6 +841,7 @@ function PartItem({ ev, elders, part, overlap, alsoIn, note, first, last, onPatc
   const [pin, setPinState] = useState("");
   useEffect(() => { setPinState(part.pin_hash ? readPin(part.id) ?? "" : ""); }, [part.id, part.pin_hash]);
   const [showReason, setShowReason] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
   const extras = readExtras(part.talk_includes);
   // Presidente do programa e Oração não têm participações (vídeo, entrevista…).
   const noExtras = isFloatingType(part.part_type_label) || /presid|^ora[cç][aã]o\b/i.test(part.theme);
@@ -788,13 +860,30 @@ function PartItem({ ev, elders, part, overlap, alsoIn, note, first, last, onPatc
           {part.symposium && part.assigned_to === "speaker" && part.duration_min == null && (
             <button type="button" onClick={onEdit} className="mt-0.5 block text-left text-xs font-medium text-destructive">⚠ Falta inserir o tempo</button>
           )}
+          {part.assigned_to === "speaker" && part.speaker_name?.trim() && (
+            <span className="mt-0.5 flex items-center gap-1 text-xs">
+              {part.status === "confirmed" ? <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3.5 w-3.5" />Confirmado</span>
+                : part.status === "declined" ? <button type="button" onClick={() => setShowReason((v) => !v)} className="flex items-center gap-1 text-destructive"><XCircle className="h-3.5 w-3.5" />Recusado · ver motivo</button>
+                : <span className="flex items-center gap-1 text-muted-foreground"><Circle className="h-3.5 w-3.5" />Aguardando resposta</span>}
+            </span>
+          )}
         </span>
         {tag && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold">{tag}</span>}
-        <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" aria-label="Editar parte" onClick={onEdit}><Pencil className="h-3.5 w-3.5" /></Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" aria-label="Opções da parte"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onEdit}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+            {part.assigned_to === "speaker" && (ev.link_mode === "personal"
+              ? <DropdownMenuItem onClick={() => void onNewLink(part)}><Link2 className="mr-2 h-4 w-4" />Novo link</DropdownMenuItem>
+              : <>
+                  <DropdownMenuItem onClick={() => setPinOpen(true)}><KeyRound className="mr-2 h-4 w-4" />Ver ou alterar PIN</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => void onNewPin(ev, part).then((r) => r && setPinState(r))}><RefreshCw className="mr-2 h-4 w-4" />Novo PIN</DropdownMenuItem>
+                </>)}
+            {part.assigned_to === "speaker" && (
+              <DropdownMenuItem onClick={() => void onPatch(part.id, { show_next_speaker: !part.show_next_speaker })}>
+                <CheckCircle2 className={`mr-2 h-4 w-4 ${part.show_next_speaker ? "text-primary" : "opacity-30"}`} />Informar próximo orador
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={onAddAfter}><Plus className="mr-2 h-4 w-4" />Nova parte abaixo</DropdownMenuItem>
             <DropdownMenuItem disabled={first} onClick={() => onMove(-1)}><ArrowUp className="mr-2 h-4 w-4" />Subir</DropdownMenuItem>
             <DropdownMenuItem disabled={last} onClick={() => onMove(1)}><ArrowDown className="mr-2 h-4 w-4" />Descer</DropdownMenuItem>
@@ -837,37 +926,25 @@ function PartItem({ ev, elders, part, overlap, alsoIn, note, first, last, onPatc
                 onBlur={(e) => e.target.value.trim() !== (part.instructions ?? "") && onPatch(part.id, { instructions: e.target.value.trim() || null })} />
             </div>
           )}
-          {ev.link_mode === "personal" ? (
-            <div className="flex items-center gap-2">
-              <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">{part.personal_token ? "Link pessoal pronto" : "Link criado ao copiar"}</span>
-              <Button size="sm" variant="ghost" className="h-8 gap-1 px-2 text-xs" onClick={() => onNewLink(part)}><RefreshCw className="h-3.5 w-3.5" />Novo link</Button>
-            </div>
-          ) : (
-          <div className="flex items-center gap-2">
-            <Label className="text-xs">PIN</Label>
-            <Input inputMode="numeric" maxLength={6} className="h-8 w-24 font-mono" value={pin}
-              placeholder={part.pin_hash ? "••••" : "4-6 núm."}
-              onChange={(e) => setPinState(e.target.value.replace(/\D/g, ""))}
-              onBlur={() => { if (pin && pin !== readPin(part.id)) void onSetPin(ev, part, pin).then((r) => { if (!r) setPinState(readPin(part.id) ?? ""); }); }} />
-            <Button size="sm" variant="ghost" className="h-8 gap-1 px-2 text-xs" onClick={() => onNewPin(ev, part).then((r) => r && setPinState(r))}><RefreshCw className="h-3.5 w-3.5" />Novo PIN</Button>
-          </div>
-          )}
-          <label className="flex items-center gap-2 text-xs">
-            <Checkbox checked={part.show_next_speaker} onCheckedChange={(v) => onPatch(part.id, { show_next_speaker: v === true })} />
-            Informar o nome do próximo orador?
-          </label>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => onCopy(ev, part)}><Copy className="h-3.5 w-3.5" />Copiar convite</Button>
-            <span className="flex items-center gap-1 text-xs">
-              {part.status === "confirmed" ? <><CheckCircle2 className="h-4 w-4 text-primary" />Confirmado{part.responded_at ? ` ${new Date(part.responded_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}` : ""}</>
-                : part.status === "declined" ? <button type="button" onClick={() => setShowReason((v) => !v)} className="flex items-center gap-1 text-destructive"><XCircle className="h-4 w-4" />Recusado · ver motivo</button>
-                : <><Circle className="h-4 w-4 text-muted-foreground" />Aguardando</>}
-            </span>
-          </div>
+          <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => onCopy(ev, part)}><Copy className="h-3.5 w-3.5" />Copiar convite</Button>
           {showReason && part.decline_reason && <p className="rounded-md bg-muted p-2 text-xs whitespace-pre-wrap">{part.decline_reason}</p>}
         </div>
       )}
+      <Dialog open={pinOpen} onOpenChange={setPinOpen}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader><DialogTitle>PIN do convite</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">O PIN é criado sozinho ao copiar o convite. Digite outro só se quiser trocar.</p>
+          <Input inputMode="numeric" maxLength={6} className="h-11 text-center font-mono text-lg tracking-widest" value={pin} autoFocus
+            placeholder={part.pin_hash ? "••••" : "4-6 números"} aria-label="PIN"
+            onChange={(e) => setPinState(e.target.value.replace(/\D/g, ""))} />
+          <DialogFooter>
+            <Button onClick={() => {
+              if (pin && pin !== readPin(part.id)) void onSetPin(ev, part, pin).then((r) => { if (!r) setPinState(readPin(part.id) ?? ""); else setPinOpen(false); });
+              else setPinOpen(false);
+            }}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </li>
   );
 }
