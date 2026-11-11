@@ -1,24 +1,19 @@
-# Vídeos tutoriais: aviso "ERR_BLOCKED_BY_RESPONSE"
+# Vídeos tutoriais só para o superintendente de circuito
 
-## O que está acontecendo (provável)
-A correção anterior funciona fora da prévia: no teste, o link abriu a playlist numa aba nova.
-A tela de teste do Lovable (a prévia) abre o app dentro de uma "caixa protegida". Uma aba aberta a partir dela herda essa proteção, e o YouTube recusa abrir nessas condições. Por isso aparece "ERR_BLOCKED_BY_RESPONSE".
-O site publicado (visitasc.com.br) e o app no celular não usam essa caixa protegida.
-
-## Passos
-1. Primeiro, confirmar o diagnóstico abrindo o link pelo site publicado (visitasc.com.br/ajuda), depois de publicar.
-2. Se a playlist abrir lá, o app não precisa de outra mudança.
-3. Para não deixar ninguém sem saída, colocar um botão pequeno "Copiar link" ao lado do cartão "Vídeos tutoriais". Ao tocar, aparece a mensagem "Link copiado — cole no navegador".
+## O que muda
+1. **Ajuda:** o cartão "Vídeos tutoriais" só aparece quando a pessoa entrou como superintendente. Anciãos e quem entra com código de convite (esposa, ESC) não veem o cartão.
+2. **Tela de entrada (visitasc.com.br):** o app ainda não sabe quem é a pessoa antes do login. Por isso, o link "Vídeos" sai do rodapé, que fica só com Privacidade · Termos · Apoiar · Sobre.
 
 ```text
-+--------------------------------+
-| [>] Vídeos tutoriais        ↗  |
-|     Aprenda passo a passo      |
-|     no YouTube                 |
-|                  Copiar link   |
-+--------------------------------+
+Superintendente            Ancião / convite
++----------------------+   +----------------------+
+| Ajuda                |   | Ajuda                |
+| [>] Vídeos tutoriais |   | [Buscar na ajuda]    |
+| [Buscar na ajuda]    |   | ...                  |
++----------------------+   +----------------------+
 ```
 
 ## Detalhes técnicos
-- Adicionar um botão "Copiar link" que usa navigator.clipboard e mostra a mensagem com toast, na Ajuda e ao lado de "Vídeos" na tela de entrada.
-- Nada muda em external-link.ts.
+- Em _app.ajuda.tsx, mostrar o cartão só quando `role === "superintendent"` (useAuth já existe na tela).
+- Em LoginForm.tsx, remover o link "Vídeos" e o separador antes dele, junto com os imports que ficarem sem uso.
+- Nada muda em external-link.ts, que continua garantindo a abertura fora do app.
