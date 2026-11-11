@@ -100,7 +100,8 @@ export function parseRtfProgram(rtf: string): ProgramImport {
   if (!parts.length) throw new Error("Não encontrei horários neste arquivo .rtf.");
   // Tempo de cada parte = até o próximo horário (os discursos da série não entram nessa conta).
   const timed = parts.filter((p) => !p.seriesChild);
-  for (let i = 0; i < timed.length - 1; i++) { const d = timed[i + 1].min - timed[i].min; if (d > 0 && d <= 90) timed[i].duration_min = d; }
+  for (let i = 0; i < timed.length - 1; i++) { const d = timed[i + 1].min - timed[i].min; if (d > 0 && d <= 90) timed[i].duration_min = timed[i].assigned_to === "speaker" && d > 1 ? d - 1 : d; }
+  // Os esboços vêm com 1 min a menos que o intervalo (10:15 → 10:25 = 9 min).
   const title = (titleLines[1] ?? titleLines[0] ?? "").split(/ — | - /)[0].replace(/^["“”']+|["“”']+$/g, "").trim().slice(0, 200) || null;
   return { format: "etim", title, parts: parts.map(({ min: _m, series: _s, seriesChild: _c, seriesUsed: _u, ...p }) => p) };
 }

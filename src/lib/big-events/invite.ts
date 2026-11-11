@@ -48,6 +48,9 @@ export function toMin(t: string | null | undefined): number | null {
 }
 export const fromMin = (n: number) => `${String(Math.floor(n / 60) % 24).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 
+/** Avanço até a próxima parte: 9, 14, 19… min ganham 1 min de transição (fecha múltiplo de 5). */
+export const advanceMin = (dur: number | null | undefined) => { const d = dur ?? 0; return d > 0 && d % 5 === 4 ? d + 1 : d; };
+
 /** Recalcula horários: partes 'auto' começam ao fim da anterior; 'manual' mantêm a hora e servem de nova base. */
 export function recomputeTimes<T extends { id: string; sort_order: number; part_time: string | null; duration_min: number | null; time_mode?: string | null; part_type_label?: string | null; part_type_id?: string | null }>(start: string | null, parts: T[]): Array<{ id: string; part_time: string | null }> {
   const sorted = [...parts].sort((a, b) => a.sort_order - b.sort_order);
@@ -67,7 +70,7 @@ export function recomputeTimes<T extends { id: string; sort_order: number; part_
     series = p.part_type_id === "SeriesHead" ? t : null;
     out.push({ id: p.id, part_time: t == null ? p.part_time : fromMin(t) });
     if (FLOATING.has(p.part_type_label ?? "")) continue; // Oração/Presidente não empurram o programa
-    cur = t == null ? null : t + (p.duration_min ?? 0);
+    cur = t == null ? null : t + advanceMin(p.duration_min);
   }
   return out;
 }

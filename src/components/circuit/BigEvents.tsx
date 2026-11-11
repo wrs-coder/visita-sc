@@ -829,6 +829,14 @@ function PartEditorDialog({ part, prevEnd, nextNumber, onCancel, onSave }: {
   );
 }
 
+/** Minutos digitados no cartão: inteiro de 1 a 240, senão null. */
+export function parseDurationInput(v: string): number | null {
+  const t = v.trim();
+  if (!/^\d{1,3}$/.test(t)) return null;
+  const n = Number(t);
+  return n >= 1 && n <= 240 ? n : null;
+}
+
 function PartItem({ ev, elders, part, overlap, alsoIn, note, first, last, onPatch, onSetPin, onNewPin, onCopy, onNewLink, onEdit, onAddAfter, onMove, onDelete }: {
   ev: EventRow; elders: Array<{ name: string; congregation: string }>; part: PartRow; overlap: boolean; alsoIn: string | null; note: string | null; first: boolean; last: boolean;
   onNewLink: (p: PartRow) => Promise<void>; onEdit: () => void; onAddAfter: () => void;
@@ -858,7 +866,17 @@ function PartItem({ ev, elders, part, overlap, alsoIn, note, first, last, onPatc
           <span className="block">{part.theme}</span>
           <span className="block text-xs text-muted-foreground">{[part.part_type_label, part.duration_min ? `${part.duration_min} min${isSeriesItem(part) ? " (informativo)" : ""}` : null, part.symposium && part.part_type_label !== "Simpósio" ? "Simpósio" : null].filter(Boolean).join(" · ")}</span>
           {part.symposium && part.assigned_to === "speaker" && part.duration_min == null && (
-            <button type="button" onClick={onEdit} className="mt-0.5 block text-left text-xs font-medium text-destructive">⚠ Falta inserir o tempo</button>
+            <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+              <input
+                type="text" inputMode="numeric" pattern="[0-9]*" maxLength={3} placeholder="min"
+                aria-label="Tempo em minutos"
+                className="h-7 w-14 rounded-md border border-destructive/50 bg-background px-2 text-center text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                onKeyDown={(e) => { if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur(); }}
+                onBlur={(e) => { const n = parseDurationInput(e.currentTarget.value); if (n != null) void onPatch(part.id, { duration_min: n }); else e.currentTarget.value = ""; }}
+              />
+              <span className="text-muted-foreground">min</span>
+              <span className="font-medium text-destructive">⚠ Falta inserir o tempo</span>
+            </span>
           )}
           {part.assigned_to === "speaker" && part.speaker_name?.trim() && (
             <span className="mt-0.5 flex items-center gap-1 text-xs">

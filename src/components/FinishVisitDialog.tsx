@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { markVisitFinished } from "@/lib/finished-visits";
+import { markDeleted } from "@/lib/local-db";
 
 // Tabelas operacionais ligadas a uma visita. Apagar antes da visita evita
 // dependências órfãs (mesmo sem FK explícita). private_notes NÃO entra aqui:
@@ -31,6 +33,14 @@ const CHILD_TABLES = [
   "weekend_meetings",
   "pioneer_meetings",
   "elders_servants_meetings",
+  "elder_pastoral_visits",
+  "elder_recommendations",
+  "elder_local_matters",
+  "elder_encouragements",
+  "elder_program_visit_slots",
+  "elder_program_visit_sections",
+  "visit_pending_updates",
+  "visit_template_overrides",
 ] as const;
 
 interface Props {
@@ -71,18 +81,25 @@ export function FinishVisitDialog({
     if (!s303 || loading) return;
     setLoading(true);
     try {
-      for (const table of CHILD_TABLES) {
-        const { error } = await supabase
-          .from(table as never)
-          .delete()
-          .eq("visit_id", visitId);
-        if (error) throw new Error(`${table}: ${error.message}`);
-      }
+      // Limpeza em paralelo, cada uma com tempo limite: uma tabela lenta não trava as outras.
+      const results = await Promise.allSettled(
+        CHILD_TABLES.map((table) =>
+          Promise.race([
+            supabase.from(table as never).delete().eq("visit_id", visitId).then(({ error }) => {
+              if (error) throw new Error(`${table}: ${error.message}`);
+            }),
+            new Promise((_, rej) => setTimeout(() => rej(new Error(`${table}: tempo esgotado`)), 15000)),
+          ]),
+        ),
+      );
+      results.forEach((r) => { if (r.status === "rejected") console.warn("[finishVisit]", r.reason); });
       const { error: vErr } = await supabase
         .from("visits")
         .delete()
         .eq("id", visitId);
       if (vErr) throw new Error(vErr.message);
+      markVisitFinished(visitId);
+      void markDeleted("visits", [visitId]).catch(() => {});
 
       toast.success(t("finishVisit.success"));
       setOpen(false);

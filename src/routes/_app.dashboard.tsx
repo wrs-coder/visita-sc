@@ -80,6 +80,7 @@ import { UpcomingVisitsButton } from "@/components/dashboard/UpcomingVisitsDialo
 import { CoupleMessagesButton } from "@/components/dashboard/CoupleMessagesButton";
 import { DayPillsStrip } from "@/components/visit-summary/DayPillsStrip";
 import { FinishVisitDialog } from "@/components/FinishVisitDialog";
+import { withoutFinished } from "@/lib/finished-visits";
 import { FullVisitReportDialog } from "@/components/visit-week/FullVisitReportDialog";
 import { subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useTranslation } from "react-i18next";
@@ -464,7 +465,7 @@ function Dashboard() {
         .lt("end_date", today)
         .order("end_date", { ascending: false });
       if (cancelled) return;
-      setOverdueVisits(data ?? []);
+      setOverdueVisits(withoutFinished(data ?? []));
     })();
   }, [role, user, today, selected]);
 
@@ -961,6 +962,7 @@ function Dashboard() {
                   open={finishOpen}
                   onOpenChange={setFinishOpen}
                   onFinished={() => {
+                    setOverdueVisits((prev) => prev.filter((x) => x.id !== visit.id));
                     setSelected(null);
                     setActiveCongregationOverride(null);
                   }}
