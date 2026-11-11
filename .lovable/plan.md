@@ -57,3 +57,20 @@ Ao importar o .rtf, o tempo de cada designação é a diferença até a próxima
 3. Se a internet cair no meio, a visita fica marcada como finalizada no aparelho e a limpeza termina na próxima sincronização, sem reaparecer o aviso.
 4. A busca do aviso só olha as congregações do superintendente.
 - Sem mudança no banco. Teste: depois de confirmar, a lista de visitas a finalizar fica vazia mesmo com a cópia antiga do aparelho.
+
+---
+
+# Ajuste 4: Horário automático com 1 minuto de transição (Nova parte / Novo evento)
+
+Quando uma parte com horário "Automático (após a parte anterior)" vem depois de uma parte cujo tempo termina em 4 ou 9 (9, 14, 19, 24… min = falta 1 min para múltiplo de 5), soma-se 1 minuto de transição.
+
+```text
+10:15  Discurso Nº1   9 min
+10:25  Discurso Nº2   ← automático (10:15 + 9 + 1)
+10:34  ...           ← se Nº2 tiver 8 min, não soma nada
+```
+
+- O tempo da parte continua o que o usuário digitou (9 min); só o início da próxima ganha o minuto extra.
+- Horários manuais não mudam. Itens "•" da Série continuam sem empurrar o programa.
+- Vale também ao tocar "Recalcular horários" e para eventos importados (assim os 9 min do Ajuste 2 mantêm 10:15 → 10:25).
+- Técnico: `recomputeTimes` em `invite.ts` → avanço = `dur + (dur % 5 === 4 ? 1 : 0)`. Testes: 9→+10, 14→+15, 8→+8, 10→+10.
