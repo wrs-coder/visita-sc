@@ -1,4 +1,37 @@
-# Cartas convite: ajustes manuais de formatação + contador de páginas
+# Parte 1 (urgente): carta do IBE-01 aparecendo em outros circuitos
+
+## O que aconteceu
+- **Não houve vazamento entre contas.** Cada superintendente só vê os próprios modelos (conferido no banco: a regra de acesso é "só o dono").
+- O problema é o **modelo inicial do app**: ele veio preenchido com os seus dados (Wanderson Rodrigues, IBE-01, endereço e telefone de Angola). Toda conta nova recebe uma cópia dele como "padrão".
+- Hoje 13 contas ainda têm essa cópia intacta. O irmão do MG-037 criou o modelo dele, mas o padrão (⭐, usado nos eventos) continua sendo a cópia antiga — editada só em parte (nome trocado, "IBE-01" ainda lá).
+
+## Correção
+1. **Modelo inicial neutro**: nome, circuito, endereço, telefone e assinatura vêm do **perfil da própria conta** (nome e circuito); o que não existir fica em branco com dica "Preencha seu endereço". Textos genéricos continuam.
+2. **Conserto automático das contas atuais** (no aparelho, sem mexer no banco à mão): se o modelo padrão de uma conta ainda tiver dados do IBE-01 e a conta não for a sua, o app troca só esses campos (nome, circuito, endereço, telefone, assinatura) pelos do perfil dela e sincroniza. Textos que o irmão editou ficam como estão.
+3. Se a conta tiver um modelo próprio criado por ela e o padrão for a cópia antiga, o **modelo dela vira o padrão ⭐**.
+4. Aviso único no editor: "Revise o timbre do seu modelo de carta".
+
+```text
+┌─────────────────────────────┐
+│ ‹ Modelos                    │
+│ ┌─────────────────────────┐ │
+│ │ ⓘ Revise o timbre do seu │ │
+│ │   modelo de carta.  [OK] │ │
+│ └─────────────────────────┘ │
+│ ⭐ Assembleia de Circuito    │
+│    Padrão · MG-037           │
+│    Assembleia de circuito  › │
+└─────────────────────────────┘
+```
+
+### Detalhes técnicos
+- `defaultTemplate(profile?)` sem dados pessoais; perfil lido de `profiles` (nome/circuito) já em cache local.
+- `repairInheritedTemplate(list, profile, isOwner)` puro em letter-template.ts (detecta "IBE-01"/"Wanderson Rodrigues"/telefone +244 nos campos de timbre); aplicado em `fetchLetterTemplates`, grava via fluxo de sync existente (upsert do próprio dono, RLS intacta). Sua conta identificada pelo circuito IBE-01 no perfil.
+- Testes: modelo herdado é corrigido; modelo do Wanderson não muda; modelo próprio vira padrão; textos editados preservados.
+
+---
+
+# Parte 2: Cartas convite: ajustes manuais de formatação + contador de páginas
 
 ## O que muda para você
 No editor do **modelo de carta** (Circuito > Grandes Eventos > Modelos) entra:
