@@ -73,7 +73,11 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     if (!user) return;
     setTemplates(loadTemplates(user.id)); setTplChoice(loadEventChoice(user.id));
     let alive = true;
-    void fetchLetterTemplates(user.id).then((r) => { if (alive) { setTemplates(r.list); setTplSync(r.state); } });
+    void fetchLetterTemplates(user.id).then((r) => {
+      if (!alive) return;
+      setTemplates(r.list); setTplSync(r.state);
+      if (r.repaired) toast.info("Ajustamos o timbre do seu modelo de carta com os dados do seu perfil. Confira em Modelos.", { duration: 8000 });
+    });
     const stop = startLetterAutoSync(user.id, (s) => { if (alive) setTplSync(s); });
     return () => { alive = false; stop(); };
   }, [user]);

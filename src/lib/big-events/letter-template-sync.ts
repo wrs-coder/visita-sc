@@ -1,6 +1,6 @@
 // Sincronização dos modelos de carta (tabela letter_templates). O aparelho salva primeiro;
 // o servidor recebe depois. Conflitos: vence o updatedAt mais recente.
-import { defaultTemplate, loadTemplates, saveTemplates, type LetterTemplate } from "./letter-template";
+import { defaultTemplate, loadTemplates, repairInheritedTemplates, saveTemplates, type LetterTemplate } from "./letter-template";
 
 const migratedKey = (u: string) => `bigEvents.letterTemplates.migrated.${u}`;
 const pendingKey = (u: string) => `bigEvents.letterTemplates.pending.${u}`;
@@ -51,7 +51,7 @@ async function flush(u: string): Promise<boolean> {
   } catch { return false; }
 }
 
-export async function fetchLetterTemplates(u: string): Promise<{ list: LetterTemplate[]; state: SyncState }> {
+export async function fetchLetterTemplates(u: string): Promise<{ list: LetterTemplate[]; state: SyncState; repaired?: boolean }> {
   const local = loadTemplates(u);
   if (loadPending(u) && !(await flush(u))) return { list: local, state: "pending" };
   try {
@@ -62,14 +62,17 @@ export async function fetchLetterTemplates(u: string): Promise<{ list: LetterTem
     const server = (data ?? []).map((r) => ({ ...base, ...(r.data as object), id: r.id }) as LetterTemplate);
     let migrated = false;
     try { migrated = localStorage.getItem(migratedKey(u)) === "1"; } catch { /* */ }
-    const { list, upload } = mergeTemplates(server, local, migrated);
+    const merged = mergeTemplates(server, local, migrated);
+    const { data: prof } = await supabase.from("profiles").select("full_name,circuit,phone").eq("id", u).maybeSingle();
+    const fix = repairInheritedTemplates(merged.list, prof ?? null);
+    const list = fix.list, upload = fix.changed ? list : merged.upload;
     if (upload.length) {
       const { error: upErr } = await supabase.from("letter_templates").upsert(list.map((t, i) => toRow(u, t, i)) as never);
-      if (upErr) { saveTemplates(u, list); return { list, state: "pending" }; }
+      if (upErr) { saveTemplates(u, list); try { localStorage.setItem(pendingKey(u), JSON.stringify({ removed: [] })); } catch { /* */ } return { list, state: "pending", repaired: fix.changed }; }
     }
     try { localStorage.setItem(migratedKey(u), "1"); } catch { /* */ }
     saveTemplates(u, list);
-    return { list, state: "synced" };
+    return { list, state: "synced", repaired: fix.changed };
   } catch { return { list: local, state: "local" }; }
 }
 

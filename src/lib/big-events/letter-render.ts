@@ -1,7 +1,8 @@
 // Monta a carta convite em Word (HTML → docx existente) e em PDF (pdf-lib) com link ativo.
 import { PDFDocument, PDFName, PDFString, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import { headerStyleOf, resolveLetterColors, type LetterModel, type RGB3 } from "./letter-template";
+import { boxStyleOf, headerStyleOf, resolveLetterColors, sanitizeLayout, type LetterBoxKey, type LetterModel, type RGB3 } from "./letter-template";
+import { bulletOf, parseRuns } from "./letter-markup";
 import type { InviteEvent, InvitePart } from "./invite";
 import { formatEventDate } from "./invite";
 
@@ -97,14 +98,21 @@ export async function letterPdf(m: LetterModel, fontBytes?: LetterFontBytes | nu
 }
 
 /** Tenta cada nível de compactação até caber em 1 página; devolve o último se não couber. */
-export async function letterPdfFit(m: LetterModel, fontBytes?: LetterFontBytes | null): Promise<{ bytes: Uint8Array; pages: number }> {
+/** level: nível automático usado (1–6) ou 0 quando o layout é manual. */
+export async function letterPdfFit(m: LetterModel, fontBytes?: LetterFontBytes | null): Promise<{ bytes: Uint8Array; pages: number; level: number }> {
   const bytes = fontBytes === undefined ? await loadLetterFonts() : fontBytes;
-  let doc: PDFDocument | null = null;
+  const manual = sanitizeLayout(m.tpl.layout);
+  if (manual) {
+    const doc = await renderLetter(m, bytes, manual);
+    return { bytes: await doc.save({ useObjectStreams: false }), pages: doc.getPageCount(), level: 0 };
+  }
+  let doc: PDFDocument | null = null, level = 0;
   for (const lv of LETTER_FIT_LEVELS) {
+    level++;
     doc = await renderLetter(m, bytes, lv);
     if (doc.getPageCount() === 1) break;
   }
-  return { bytes: await doc!.save({ useObjectStreams: false }), pages: doc!.getPageCount() };
+  return { bytes: await doc!.save({ useObjectStreams: false }), pages: doc!.getPageCount(), level };
 }
 
 /**
@@ -161,6 +169,69 @@ async function renderLetter(m: LetterModel, bytes: LetterFontBytes | null, lv: F
     }
     y -= o.gap ?? 0;
   };
+  // Texto com marcação (**negrito**, *itálico*, ==destaque==, "• " marcador) das caixas editáveis.
+  type Piece = { text: string; font: PDFFont; mark: boolean };
+  type RLine = { words: Piece[][]; first: boolean; last: boolean; bullet: boolean; hang: number; size: number };
+  const MARK = rgb(1, 0.93, 0.55);
+  const pick = (base: PDFFont, r: { bold: boolean; italic: boolean }) => (r.bold ? F.serifBold : r.italic && base !== F.serifBold ? F.serifItalic : base);
+  const wW = (w: Piece[], size: number) => w.reduce((a, p) => a + p.font.widthOfTextAtSize(p.text, size), 0);
+  const wrapRich = (s: string, base: PDFFont, size: number, width: number, indent = 0): RLine[] => {
+    const out: RLine[] = [];
+    const sp = base.widthOfTextAtSize(" ", size);
+    for (const para of s.split("\n")) {
+      const bl = bulletOf(para), bullet = bl !== null, hang = bullet ? size * 1.1 : 0;
+      const words: Piece[][] = []; let cur: Piece[] = [];
+      for (const r of parseRuns(clean(bl ?? para))) {
+        const font = pick(base, r);
+        r.text.split(/(\s+)/).forEach((tok, i) => {
+          if (i % 2 === 1) { if (cur.length) words.push(cur); cur = []; return; }
+          if (tok) cur.push({ text: tok, font, mark: r.mark });
+        });
+      }
+      if (cur.length) words.push(cur);
+      let line: Piece[][] = [], lw = 0, first = true;
+      const avail = () => width - hang - (first && !bullet ? indent : 0);
+      for (const w of words) {
+        const ww = wW(w, size), nw = line.length ? lw + sp + ww : ww;
+        if (nw <= avail() || !line.length) { line.push(w); lw = nw; }
+        else { out.push({ words: line, first, last: false, bullet, hang, size }); first = false; line = [w]; lw = ww; }
+      }
+      out.push({ words: line, first, last: true, bullet, hang, size });
+    }
+    return out;
+  };
+  const drawRLine = (ln: RLine, x0: number, width: number, baseY: number, justify: boolean, indent: number, color: RGB) => {
+    const { size } = ln;
+    if (ln.bullet && ln.first) page.drawText("•", { x: x0 + size * 0.15, y: baseY, size, font: F.serif, color });
+    const xs = x0 + ln.hang + (ln.first && !ln.bullet ? indent : 0), ws = width - (xs - x0);
+    const sum = ln.words.reduce((a, w) => a + wW(w, size), 0);
+    const sp = F.serif.widthOfTextAtSize(" ", size);
+    const gapW = justify && !ln.last && ln.words.length > 1 ? (ws - sum) / (ln.words.length - 1) : sp;
+    let x = xs;
+    ln.words.forEach((w, wi) => {
+      for (const p of w) {
+        const pw = p.font.widthOfTextAtSize(p.text, size);
+        if (p.mark) page.drawRectangle({ x: x - 0.5, y: baseY - size * 0.28, width: pw + 1, height: size * 1.2, color: MARK });
+        page.drawText(p.text, { x, y: baseY, size, font: p.font, color });
+        x += pw;
+      }
+      x += gapW;
+    });
+  };
+  /** Caixa editável: letra própria e espaço acima/abaixo vindos do modelo. */
+  const richText = (k: LetterBoxKey, o: { font?: PDFFont; size?: number; justify?: boolean; indent?: number; color?: RGB; gap?: number }) => {
+    const s = t[k] as string;
+    if (!s.trim()) return;
+    const bx = boxStyleOf(t, k);
+    const font = o.font ?? F.serif, size = bx.size ?? o.size ?? B, lead = size * 1.42, ind = o.indent ?? 0;
+    y -= bx.above;
+    for (const ln of wrapRich(s, font, size, CW, ind)) {
+      ensure(lead);
+      drawRLine(ln, M, CW, y - size, !!o.justify, ind, o.color ?? INK);
+      y -= lead;
+    }
+    y -= (o.gap ?? 0) + bx.below;
+  };
   const rule = (color: RGB, x1 = M, x2 = W - M, th = 0.6) => page.drawLine({ start: { x: x1, y }, end: { x: x2, y }, thickness: th, color });
 
   // Timbre (fonte própria do cabeçalho)
@@ -204,7 +275,7 @@ async function renderLetter(m: LetterModel, bytes: LetterFontBytes | null, lv: F
     text(t.refLine, { font: F.serifBold, x: M + lw, width: CW - lw, gap: G(10) });
   }
   text(t.salutation, { gap: G(6) });
-  text(t.opening, { align: "justify", indent: INDENT, gap: G(12) });
+  richText("opening", { justify: true, indent: INDENT, gap: G(12) });
 
   // Quadro da designação (automático, compacto). Medido antes de desenhar: nada transborda.
   // Coluna do rótulo cabe no maior rótulo curto; rótulo longo vai numa linha própria, acima do texto.
@@ -256,10 +327,15 @@ async function renderLetter(m: LetterModel, bytes: LetterFontBytes | null, lv: F
   y = top - boxH - G(18);
 
   // Faixa com barra lateral; altura medida antes, título nunca sobrepõe o conteúdo.
-  const BS = B - 1.5, BL = BS * 1.42;
-  const bandLines = (s: string, font: PDFFont) => (s.trim() ? wrapP(s, font, BS, CW - 26, clean) : []);
-  const bandH = (c: WLine[]) => (c.length ? c.length * BL + 12 + c.filter((l) => l.last).length * 2 : 0);
-  const band = (ls: WLine[], fill: RGB, bar: RGB, font: PDFFont) => {
+  const bandLines = (k: LetterBoxKey, font: PDFFont) => {
+    const bx = boxStyleOf(t, k), size = bx.size ?? B - 1.5;
+    return (t[k] as string).trim() ? wrapRich(t[k] as string, font, size, CW - 26) : [];
+  };
+  const bandH = (c: RLine[]) => c.reduce((a, l) => a + l.size * 1.42 + (l.last ? 2 : 0), c.length ? 12 : 0);
+  const band = (k: LetterBoxKey, ls: RLine[], fill: RGB, bar: RGB) => {
+    const bx = boxStyleOf(t, k);
+    const had = ls.length > 0;
+    if (had) y -= bx.above;
     while (ls.length) {
       let n = 0;
       while (n < ls.length && bandH(ls.slice(0, n + 1)) <= y - lv.bottom) n++;
@@ -269,23 +345,23 @@ async function renderLetter(m: LetterModel, bytes: LetterFontBytes | null, lv: F
       page.drawRectangle({ x: M, y: y - h, width: CW, height: h, color: fill });
       page.drawRectangle({ x: M, y: y - h, width: 3, height: h, color: bar });
       y -= 6;
-      for (const l of chunk) { page.drawText(l.text, { x: M + 14, y: y - BS, size: BS, font, color: INK }); y -= BL + (l.last ? 2 : 0); }
+      for (const l of chunk) { drawRLine(l, M + 14, CW - 26, y - l.size, false, 0, INK); y -= l.size * 1.42 + (l.last ? 2 : 0); }
       y -= 6;
     }
-    y -= G(10);
+    y -= G(10) + (had ? bx.below : 0);
   };
-  const hl = bandLines(t.highlight, F.serifBold), rm = bandLines(t.reminders, F.serif);
+  const hl = bandLines("highlight", F.serifBold), rm = bandLines("reminders", F.serif);
   if (t.remindersTitle.trim()) {
     const firstH = bandH((hl.length ? hl : rm).slice(0, 2));
     ensure(B * 1.4 + 12 + firstH);
     text(t.remindersTitle, { font: F.serifBold, color: ACCENT, lead: B * 1.35 });
     y -= 2; rule(GOLD, M, M + 40, 1); y -= 10;
   }
-  band(hl, TINT_GOLD, GOLD, F.serifBold);
-  band(rm, TINT_ACCENT, INFO, F.serif);
-  text(t.rehearsal, { font: F.serifBold, gap: 0 });
-  text(t.rehearsalNote, { font: F.serifItalic, size: B - 1.5, color: MUTED, gap: G(12) });
-  text(t.closing, { align: "justify", indent: INDENT, gap: G(12) });
+  band("highlight", hl, TINT_GOLD, GOLD);
+  band("reminders", rm, TINT_ACCENT, INFO);
+  richText("rehearsal", { font: F.serifBold, gap: 0 });
+  richText("rehearsalNote", { font: F.serifItalic, size: B - 1.5, color: MUTED, gap: G(12) });
+  richText("closing", { justify: true, indent: INDENT, gap: G(12) });
   text(t.signoff, { gap: G(6) });
   text(t.signature, { font: F.serifItalic, size: 13.5, align: "right", color: ACCENT });
   linkPage.node.set(PDFName.of("Annots"), doc.context.obj(annots as never[]));

@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { defaultTemplate, buildLetterModel, type LetterTemplate, type LetterColors, type LetterPart, LETTER_PALETTE, LETTER_PRESETS, LETTER_HEADER_STYLES, headerStyleOf, type LetterHeaderStyle, DEFAULT_LETTER_COLORS, sanitizeLetterColors, presetOf, resolveLetterColors, rgbCss } from "@/lib/big-events/letter-template";
+import { defaultTemplate, type LetterTemplate, type LetterColors, type LetterPart, LETTER_PALETTE, LETTER_PRESETS, LETTER_HEADER_STYLES, headerStyleOf, type LetterHeaderStyle, DEFAULT_LETTER_COLORS, sanitizeLetterColors, presetOf, resolveLetterColors, rgbCss } from "@/lib/big-events/letter-template";
 import { CollapsibleSection } from "@/components/guest-workspace/CollapsibleSection";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
+import { LetterBoxField, LayoutEditor, PageCounter, sampleLetterModel } from "./LetterFormatting";
+import { LETTER_BOX_KEYS, sanitizeLayout, type LetterBoxKey } from "@/lib/big-events/letter-template";
 
 const PART_LABEL: Record<LetterPart, string> = { title: "Título e cabeçalho", box: "Caixa de designação", info: "Informações e lembretes", rule: "Filete decorativo" };
 
@@ -147,7 +149,7 @@ const GROUPS: Array<{ title: string; fields: Field[] }> = [
   { title: "Informações e lembretes", fields: [
     { key: "remindersTitle", label: "Título" }, { key: "highlight", label: "Destaque (faixa cinza)", rows: 3 },
     { key: "reminders", label: "Lembretes (faixa verde, um parágrafo por linha)", rows: 7 },
-    { key: "rehearsal", label: "Ensaio" }, { key: "rehearsalNote", label: "Observação do ensaio" },
+    { key: "rehearsal", label: "Ensaio", rows: 2 }, { key: "rehearsalNote", label: "Observação do ensaio", rows: 2 },
   ] },
   { title: "Encerramento", fields: [
     { key: "closing", label: "Texto final", rows: 2 }, { key: "signoff", label: "Despedida" }, { key: "signature", label: "Assinatura" },
@@ -170,9 +172,7 @@ export function LetterTemplates({ list, onChange, sync }: { list: LetterTemplate
     if (await appConfirm("Apagar este modelo?")) onChange(list.filter((x) => x.id !== id));
   };
   const preview = async (t: LetterTemplate) => {
-    const m = buildLetterModel(t, { name: "Assembleia de circuito", event_date: new Date().toISOString().slice(0, 10), location: "Salão de Assembleias", extra_info: null, public_token: "exemplo", public_code: "exemplo1", link_mode: "pin" },
-      { id: "x", sort_order: 0, part_time: "09:40", duration_min: 15, theme: "Tema de exemplo", outline_number: "7", instructions: null, part_type_label: "Discurso", assigned_to: "speaker", speaker_name: "Nome do orador", speaker_congregation: "Congregação", show_next_speaker: false },
-      [], "123456");
+    const m = sampleLetterModel(t);
     const bytes = await (await import("@/lib/big-events/letter-render")).letterPdf(m);
     await saveBlob(new Blob([bytes as BlobPart], { type: "application/pdf" }), { filename: "Previa do modelo.pdf", mimeType: "application/pdf" });
   };
@@ -186,31 +186,42 @@ export function LetterTemplates({ list, onChange, sync }: { list: LetterTemplate
           <Button size="sm" variant="outline" className="gap-1" onClick={() => preview(editing)}><Eye className="h-3.5 w-3.5" />Prévia</Button>
           <Button size="sm" onClick={save}>Salvar</Button>
         </div>
+        <PageCounter tpl={editing} />
         <Card className="space-y-1 p-4">
           <Label className="text-xs">Nome do modelo</Label>
           <Input value={editing.name} maxLength={80} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
         </Card>
         <Card className="p-4 text-xs text-muted-foreground">
-          O quadro da designação (evento, data, local, orador, parte, horário, tema, próximo orador, link e PIN) é preenchido sozinho com os dados de cada evento.
+          O quadro da designação (evento, data, local, orador, parte, horário, tema, próximo orador, link e PIN) é preenchido sozinho com os dados de cada evento. Nas caixas de texto use a barra para negrito, itálico, marcador, destaque, tamanho da letra e espaço.
         </Card>
         {GROUPS.map((g) => (
           <Card key={g.title} className="p-3">
           <CollapsibleSection id={`letter.${g.title}`} title={g.title} defaultOpen={false}>
           <div className="space-y-3 px-1 pt-1">
             {g.fields.map((f) => (
+              LETTER_BOX_KEYS.includes(f.key as LetterBoxKey) ? (
+                <LetterBoxField key={f.key} tpl={editing} k={f.key as LetterBoxKey} label={f.label} rows={f.rows ?? 2} onChange={setEditing} />
+              ) : (
               <div key={f.key} className="space-y-1">
                 <Label className="text-xs">{f.label}</Label>
-                {f.rows ? (
+                {LETTER_BOX_KEYS.includes(f.key as LetterBoxKey) ? null : f.rows ? (
                   <Textarea rows={f.rows} maxLength={4000} value={String(editing[f.key] ?? "")} onChange={(e) => setEditing({ ...editing, [f.key]: e.target.value })} />
                 ) : (
                   <Input maxLength={300} value={String(editing[f.key] ?? "")} onChange={(e) => setEditing({ ...editing, [f.key]: e.target.value })} />
                 )}
               </div>
+              )
             ))}
           </div>
           </CollapsibleSection>
           </Card>
         ))}
+        <Card className="p-3">
+          <CollapsibleSection id="letter.layout" title="Layout da carta" defaultOpen={false}
+            summary={sanitizeLayout(editing.layout) ? "Manual" : "Automático"}>
+            <div className="px-1 pt-1"><LayoutEditor value={editing.layout} onChange={(layout) => setEditing({ ...editing, layout })} /></div>
+          </CollapsibleSection>
+        </Card>
         <Card className="p-3">
           <CollapsibleSection id="letter.header" title="Papel timbrado" defaultOpen={false}
             summary={LETTER_HEADER_STYLES.find((h) => h.id === headerStyleOf(editing))?.name}>

@@ -28,3 +28,8 @@
 - [x] Relatório previsto × real e por ancião, com PDF
 - [x] "Informações adicionais" só aparece se já tiver texto; Presidente/Oração sem participações
 - [ ] Testar a bolinha flutuante no celular (precisa gerar novo APK)
+
+## Cartas convite
+- [x] Corrigir modelo inicial com dados do IBE-01 aparecendo em outros circuitos
+- [x] Barra de formatação por caixa (negrito, itálico, marcador, destaque, tamanho da letra, espaço)
+- [x] Layout manual da carta (letra, margens, espaçamento) + contador de páginas
