@@ -39,7 +39,8 @@
 - Ao editar, somem: título "Esboços Pessoais", a frase explicativa, a escolha "Consideração de campo | Esboço" e "Esboços recentes".
 - Topo vira uma barra só (quebra em 2 linhas se faltar espaço).
 - "Editar detalhes" abre em janela (popup) com Tema, pasta e demais campos.
-- Campo de texto ganha uma **alça** embaixo (igual "Observações do superintendente") para esticar sem limite.
+- Campo de texto ganha uma **alça** embaixo (igual "Observações do superintendente") para esticar sem limite. A rolagem vertical que já existe (da tela e do texto) continua igual; a alça só aumenta a altura.
+- Todos os ajustes deste plano valem também no site (computador) e no tablet, não só no celular.
 
 ```text
 ┌─────────────────────────────┐
@@ -71,7 +72,7 @@
 - **02:** risco de pegar uma linha que não é o título (ex.: "Esboço nº 12"). Mitigação: Tema continua editável e o nome do arquivo fica como reserva.
 - **03:** risco baixo; só preenche se estiver vazio, nunca sobrescreve.
 - **04:** sem risco para os dados.
-- **05:** maior mudança visual. Risco de esconder algo que o usuário procura; mitigação: tudo continua acessível pelo "⋯" e pelo popup, e ao sair da edição a tela volta como hoje. A alça precisa conviver com o teclado do Android (altura medida com teclado fechado, como já é feito).
+- **05:** maior mudança visual. Risco de esconder algo que o usuário procura; mitigação: tudo continua acessível pelo "⋯" e pelo popup, e ao sair da edição a tela volta como hoje. A alça não pode travar nem substituir a rolagem atual: o texto continua rolando por dentro e a página continua rolando por fora. A alça precisa conviver com o teclado do Android (altura medida com teclado fechado, como já é feito).
 - **Mini tempo no Safari:** a Apple pode continuar recusando; nesse caso fica a orientação do Slide Over.
 
 ## Detalhes técnicos
@@ -81,4 +82,4 @@
 - `recent-outlines.ts`: `clearRecent()`.
 - `OutlinesWorkspace.tsx`: flag de modo edição esconde cabeçalho/recentes; barra compacta; Dialog para detalhes; textarea/editor com `resize: vertical` via alça (mesmo componente das Observações). Sem mudança de banco nem formato salvo.
 - Mini tempo: `webkitSetPresentationMode('picture-in-picture')` síncrono no clique, vídeo com tamanho real fora da área visível; nova mensagem i18n.
-- Validar com `bunx tsgo --noEmit`, `bunx vitest run` e Playwright em 393px.
+- Validar com `bunx tsgo --noEmit`, `bunx vitest run` e Playwright em 393px (celular), 820px (tablet) e 1280px (site), conferindo que a rolagem continua funcionando após esticar a alça.
