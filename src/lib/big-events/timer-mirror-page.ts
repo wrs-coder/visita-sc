@@ -32,8 +32,8 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:3vw
 .spk{font-size:clamp(16px,3vw,40px);font-weight:500;margin-top:.6vh}
 .pill{white-space:nowrap;font-size:clamp(13px,2vw,26px);font-weight:600;border-radius:999px;padding:.6vh 1.6vw;border:1px solid ${css(c.border)}}
 main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0}
-.clk{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-weight:600;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;font-size:min(30vw,52vh)}
-.clk.long{font-size:min(20vw,40vh)}
+.clk{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-weight:600;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;font-size:min(30vw,52vh);white-space:nowrap}
+.clk.mid{font-size:min(24vw,40vh)}.clk.long{font-size:min(17vw,32vh)}
 .over{border:3px solid ${css(c.danger)};color:${css(c.danger)};border-radius:20px;padding:1.5vh 4vw;margin-bottom:3vh;font-weight:800;text-transform:uppercase;font-size:clamp(20px,4.5vw,64px)}
 .idle{text-align:center;padding:0 5vw}.idle .t{font-size:clamp(20px,4.5vw,60px);font-weight:600}.idle .s{font-size:clamp(14px,2.4vw,30px);color:${css(c.muted)};margin-bottom:1.5vh}
 footer{display:flex;justify-content:space-between;gap:3vw;border-top:2px solid ${css(c.border)};padding:2.5vh 3vw calc(2.5vh + env(safe-area-inset-bottom));font-size:clamp(16px,2.8vw,40px);color:${css(c.muted)}}
@@ -56,7 +56,7 @@ else{var l=snap.live,el=base+(l.paused?0:now-recv),tn=tone(l.plannedMs,el),txt=c
 var head=(l.label?esc(l.label)+' \\u2022 ':'')+esc(l.title)+(l.minutes!=null?' ('+l.minutes+' min)':'')+(l.pos?' ('+esc(T.partOf.replace("{i}",l.pos.i).replace("{n}",l.pos.n))+')':'');
 var st=!sig?'<span class="pill" style="color:'+C.muted+'">'+esc(T.noSignal)+'</span>':l.paused?'<span class="pill" style="color:'+C.warn+'">\\u23F8 '+esc(T.paused)+'</span>':'<span class="pill" style="color:'+C.ok+'">\\u25CF '+esc(T.live)+'</span>';
 h='<header><div style="min-width:0"><div class="lbl">'+head+'</div>'+(l.item?'<div class="item">\\u2022 '+esc(l.item)+'</div>':'')+(l.speaker?'<div class="spk">'+esc(T.speaker)+' '+esc(l.speaker)+'</div>':'')+'</div>'+st+'</header>';
-h+='<main>'+(tn==="over"?'<div class="over">\\u26A0 '+esc(T.over)+'</div>':'')+'<div class="clk '+(tn==="over"?"overc":tn==="idle"?"idlec":tn)+(txt.length>6?' long':'')+'">'+esc(txt)+'</div></main>';
+h+='<main>'+(tn==="over"?'<div class="over">\\u26A0 '+esc(T.over)+'</div>':'')+'<div class="clk '+(tn==="over"?"overc":tn==="idle"?"idlec":tn)+(txt.length>6?' long':(txt.length>5||tn==="over")?' mid':'')+'">'+esc(txt)+'</div></main>';
 if(l.endLabel||l.nextSpeaker)h+='<footer><span>'+(l.endLabel?esc(T.end)+' <b>'+esc(l.endLabel)+'</b>':'')+'</span><span>'+(l.nextSpeaker?esc(T.nextSpeaker)+' <b>'+esc(l.nextSpeaker)+'</b>':'')+'</span></footer>';}
 var a=document.getElementById("app");if(a.innerHTML!==h)a.innerHTML=h;}
 document.getElementById("hint").textContent=T.tapFull;

@@ -59,7 +59,7 @@ export function MirrorClockScreen({ snap, receivedAt, now, signal, hint }: { sna
             <AlertTriangle className="h-[1em] w-[1em]" />{t("timerMirror.over")}
           </p>
         )}
-        <p className={`font-mono font-semibold leading-none tracking-tight tabular-nums ${TONE[tone]} ${text.length > 6 ? "text-[min(20vw,40vh)]" : "text-[min(30vw,52vh)]"}`} aria-live="off">{text}</p>
+        <p className={`font-mono font-semibold leading-none tracking-tight tabular-nums ${TONE[tone]} whitespace-nowrap ${text.length > 6 ? "text-[min(17vw,32vh)]" : text.length > 5 || tone === "over" ? "text-[min(24vw,40vh)]" : "text-[min(30vw,52vh)]"}`} aria-live="off">{text}</p>
       </main>
       {(l.endLabel || l.nextSpeaker) && (
         <footer className="flex items-center justify-between gap-[3vw] border-t-2 border-border px-[3vw] pb-[max(2.5vh,env(safe-area-inset-bottom))] pt-[2.5vh] text-[clamp(16px,2.8vw,40px)] text-muted-foreground">

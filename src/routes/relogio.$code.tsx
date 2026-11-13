@@ -70,7 +70,7 @@ function MirrorViewer() {
   return (
     <Shell onClick={goFull}>
       <MirrorClockScreen snap={data?.snap ?? null} receivedAt={data?.at ?? 0} now={now || data?.at || 0} signal={signal} hint={code} />
-      {!full && <p className="pointer-events-none fixed inset-x-0 bottom-[1vh] text-center text-xs text-muted-foreground/60">{t("timerMirror.tapFull")}</p>}
+      {!full && !data?.snap.live && <p className="pointer-events-none fixed inset-x-0 bottom-[1vh] text-center text-xs text-muted-foreground/60">{t("timerMirror.tapFull")}</p>}
     </Shell>
   );
 }
