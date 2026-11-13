@@ -34,6 +34,10 @@ export interface MirrorSnap {
   live: MirrorLive | null;
   next: { time: string; title: string } | null;
   sentAt: number;
+  /** Mini tempo do orador: horário previsto e tema de cada parte com orador. */
+  speakers?: Record<string, { at: string; theme: string }>;
+  /** Partes com orador já concluídas. */
+  done?: string[];
 }
 
 const pad2 = (s: string) => (/^\d$/.test(s) ? `0${s}` : s);
@@ -87,7 +91,11 @@ export function buildSnap(eventName: string, parts: TimerPart[], s: TimerState, 
       ?? rows.find((r) => r.kind !== "head" && !done.has(r.part.id) && !isFloating(r.part));
     if (cand) next = { time: fmtHm(starts[cand.part.id] ?? null), title: cand.part.theme };
   }
-  return { v: 1, event: eventName, mode, live, next, sentAt: now };
+  const starts = plannedStarts(parts);
+  const speakers: Record<string, { at: string; theme: string }> = {};
+  for (const sp of parts) if (sp.assigned_to === "speaker") speakers[sp.id] = { at: fmtHm(starts[sp.id] ?? null), theme: sp.theme };
+  const done = s.done.filter((id) => !!speakers[id]);
+  return { v: 1, event: eventName, mode, live, next, sentAt: now, speakers, done };
 }
 
 /** Tempo decorrido agora no tablet: o recebido + o que passou desde que chegou (se não pausado). */
@@ -138,7 +146,15 @@ export function parseSnap(x: unknown): MirrorSnap | null {
     };
   }
   const n = o.next && typeof o.next === "object" ? o.next as Record<string, unknown> : null;
-  return { v: 1, event: str(o.event, 200) ?? "", mode: o.mode, live, next: n ? { time: str(n.time, 8) ?? "", title: str(n.title) ?? "" } : null, sentAt: o.sentAt };
+  let speakers: MirrorSnap["speakers"];
+  if (o.speakers && typeof o.speakers === "object") {
+    speakers = {};
+    for (const [k, v] of Object.entries(o.speakers as Record<string, unknown>).slice(0, 200)) {
+      if (v && typeof v === "object") { const r = v as Record<string, unknown>; speakers[k.slice(0, 80)] = { at: str(r.at, 8) ?? "", theme: str(r.theme) ?? "" }; }
+    }
+  }
+  const done = Array.isArray(o.done) ? o.done.filter((x): x is string => typeof x === "string").slice(0, 200).map((x) => x.slice(0, 80)) : undefined;
+  return { v: 1, event: str(o.event, 200) ?? "", mode: o.mode, live, next: n ? { time: str(n.time, 8) ?? "", title: str(n.title) ?? "" } : null, sentAt: o.sentAt, speakers, done };
 }
 
 const ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -149,10 +165,39 @@ export function newMirrorCode(rand: (n: number) => Uint8Array = (n) => crypto.ge
 export const isMirrorCode = (c: string) => /^[a-z2-9]{10}$/.test(c);
 export const MIRROR_ORIGIN = "https://visitasc.com.br";
 export const mirrorUrl = (code: string, origin: string = MIRROR_ORIGIN) => `${origin.replace(/\/+$/, "")}/relogio/${code}`;
+/** Link do Mini tempo: o mesmo relógio, mostrando só a parte desse orador. */
+export const miniUrl = (code: string, partId: string, origin: string = MIRROR_ORIGIN) => `${mirrorUrl(code, origin)}?p=${encodeURIComponent(partId)}`;
+export type MiniView =
+  | { kind: "live"; live: MirrorLive }
+  | { kind: "before"; at: string; theme: string }
+  | { kind: "done"; theme: string }
+  | { kind: "unknown" };
+/** O que o Mini tempo mostra para a parte p: contando, "começa às", concluída. */
+export function miniView(snap: MirrorSnap | null, p: string): MiniView {
+  if (!snap) return { kind: "unknown" };
+  if (snap.live && snap.live.id === p) return { kind: "live", live: snap.live };
+  const info = snap.speakers?.[p];
+  if (!info) return { kind: "unknown" };
+  if (snap.done?.includes(p)) return { kind: "done", theme: info.theme };
+  return { kind: "before", at: info.at, theme: info.theme };
+}
 /** Linha do orador: "Nome · Congregação". */
 export const withCong = (name: string | null | undefined, cong: string | null | undefined) => [name, cong].filter((x) => !!x && x.trim()).join(" · ");
-/** Linha 1 do relógio: "PARTE 05 • Série • tema atual (1 de 3) (10 min)". */
+/** Linha 1 do relógio: "PARTE 05 • tema (10 min)"; no simpósio só o tema do discurso atual "(1 de 3)". */
 export function mirrorHeadline(l: MirrorLive, partOf: (i: number, n: number) => string): string {
-  return [l.label, l.title, l.item].filter(Boolean).join(" • ") + (l.pos ? ` (${partOf(l.pos.i, l.pos.n)})` : "") + (l.minutes != null ? ` (${l.minutes} min)` : "");
+  return [l.label, l.item || l.title].filter(Boolean).join(" • ") + (l.pos ? ` (${partOf(l.pos.i, l.pos.n)})` : "") + (l.minutes != null ? ` (${l.minutes} min)` : "");
 }
 export const mirrorChannel = (code: string) => `timer-mirror:${code}`;
+
+/** Último retrato guardado no aparelho do relógio: volta na hora ao recarregar e continua contando. */
+export const MIRROR_KEEP_MS = 6 * 3600_000;
+export const mirrorKeepKey = (code: string) => `visitasc.mirror.last.${code}`;
+export function restoreKept(raw: string | null, now: number): { snap: MirrorSnap; at: number } | null {
+  if (!raw) return null;
+  try {
+    const o = JSON.parse(raw) as { snap?: unknown; at?: unknown };
+    const snap = parseSnap(o.snap);
+    if (!snap || typeof o.at !== "number" || now - o.at > MIRROR_KEEP_MS || o.at > now + 60_000) return null;
+    return { snap, at: o.at };
+  } catch { return null; }
+}

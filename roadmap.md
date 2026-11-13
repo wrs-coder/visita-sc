@@ -36,3 +36,6 @@
 - [x] Corrigir modelo inicial com dados do IBE-01 aparecendo em outros circuitos
 - [x] Barra de formatação por caixa (negrito, itálico, marcador, destaque, tamanho da letra, espaço)
 - [x] Layout manual da carta (letra, margens, espaçamento) + contador de páginas
+- [x] Relógio espelhado: retrato guardado (não volta a "Aguardando" ao recarregar/sem sinal)
+- [x] Relógio espelhado: em simpósio mostrar só o tema do discurso
+- [x] Mini tempo do orador: link por parte + janelinha flutuante

@@ -2061,6 +2061,14 @@
     "partOf": "Parte {{i}} de {{n}}",
     "invalid": "Código inválido. Leia de novo o QR Code no celular do superintendente.",
     "co": "Superintendente de circuito",
-    "branch": "Representante da filial"
+    "branch": "Representante da filial",
+    "mini": "Mini tempo",
+    "miniTitle": "Mini tempo do orador",
+    "miniSheetHint": "Envie ao orador que usa o esboço no celular ou tablet. O link mostra só o tempo desta parte e começa junto com o seu cronômetro.",
+    "miniStarts": "Seu discurso começa às",
+    "miniDone": "Seu discurso foi concluído. Obrigado!",
+    "float": "Flutuar sobre o esboço",
+    "floatHint": "A janelinha fica por cima de outros apps. Arraste para um canto.",
+    "floatFailed": "Este navegador não deixou flutuar. Use o Chrome (Android) ou o Safari (iPhone/iPad)."
   }
 }

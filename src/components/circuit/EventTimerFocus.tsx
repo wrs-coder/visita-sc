@@ -23,6 +23,7 @@ import { hideFloating, isNativeAndroid, overlayGranted, requestOverlay, showFloa
 import { useTranslation } from "react-i18next";
 import { useTimerMirror } from "./use-timer-mirror";
 import { TimerMirrorSheet } from "./TimerMirrorSheet";
+import { MiniTimeSheet } from "./MiniTimeSheet";
 
 const TONE_TEXT: Record<Tone, string> = { ok: "text-success", warn: "text-warning", over: "text-destructive", idle: "text-foreground" };
 const TONE_BAR: Record<Tone, string> = { ok: "bg-success", warn: "bg-warning", over: "bg-destructive", idle: "bg-muted-foreground" };
@@ -74,6 +75,7 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }:
   const { t } = useTranslation();
   const mirror = useTimerMirror(ev, parts, s, mode);
   const [mirrorOpen, setMirrorOpen] = useState(false);
+  const [miniPart, setMiniPart] = useState<TimerPart | null>(null);
   // Separadores Manhã/Tarde: só aparecem se o programa atravessa o meio-dia.
   const sectionFor = useMemo(() => {
     const mins = rows.map((r) => starts[r.part.id] ?? null);
@@ -191,6 +193,7 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }:
       </header>
 
       <TimerMirrorSheet open={mirrorOpen} onOpenChange={setMirrorOpen} mirror={mirror} />
+      <MiniTimeSheet part={miniPart} onClose={() => setMiniPart(null)} mirror={mirror} />
 
       {askOverlay && !report && (
         <div className="mx-3 mt-3 rounded-2xl bg-muted/60 p-3 text-sm">
@@ -347,7 +350,17 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }:
                           </span>
                         )}
                       </div>
-                      {who && <p className="mt-1 truncate text-xs text-muted-foreground">{who}{cong ? ` · ${cong}` : ""}</p>}
+                      {who && (
+                        <div className="mt-1 flex min-w-0 items-center gap-2">
+                          <p className="min-w-0 truncate text-xs text-muted-foreground">{who}{cong ? ` · ${cong}` : ""}</p>
+                          {p.assigned_to === "speaker" && (
+                            <button type="button" onClick={() => setMiniPart(p)}
+                              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary active:scale-95">
+                              <TimerIcon className="h-3 w-3" />{t("timerMirror.mini")}
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1">
                       <button type="button" onClick={tap} aria-label={active ? "Encerrar esta parte" : "Iniciar esta parte"}

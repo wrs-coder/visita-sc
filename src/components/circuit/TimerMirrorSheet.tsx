@@ -11,7 +11,7 @@ import { mirrorUrl } from "@/lib/big-events/timer-mirror";
 import { localMirrorSupported, localMirrorUrl, mirrorOrigin } from "@/lib/big-events/timer-mirror-link";
 import type { TimerMirrorApi } from "./use-timer-mirror";
 
-function Qr({ value }: { value: string }) {
+export function Qr({ value }: { value: string }) {
   const [svg, setSvg] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
@@ -26,7 +26,7 @@ function Qr({ value }: { value: string }) {
   );
 }
 
-async function shareLink(url: string, title: string) {
+export async function shareLink(url: string, title: string) {
   try {
     if (Capacitor.isNativePlatform()) { const { Share } = await import("@capacitor/share"); await Share.share({ title, url }); return; }
     if (navigator.share) await navigator.share({ title, url });

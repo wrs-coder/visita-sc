@@ -2094,6 +2094,14 @@
     "partOf": "Part {{i}} of {{n}}",
     "invalid": "Invalid code. Scan the QR code on the overseer's phone again.",
     "co": "Circuit overseer",
-    "branch": "Branch representative"
+    "branch": "Branch representative",
+    "mini": "Mini timer",
+    "miniTitle": "Speaker mini timer",
+    "miniSheetHint": "Send it to a speaker who uses notes on a phone or tablet. The link shows only this part's time and starts with your timer.",
+    "miniStarts": "Your talk starts at",
+    "miniDone": "Your talk is finished. Thank you!",
+    "float": "Float over notes",
+    "floatHint": "The small window stays above other apps. Drag it to a corner.",
+    "floatFailed": "This browser did not allow floating. Use Chrome (Android) or Safari (iPhone/iPad)."
   }
 }

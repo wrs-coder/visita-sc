@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { emptyTimer, tapPart, togglePause, type TimerPart } from "./event-timer";
-import { buildSnap, liveElapsed, mirrorClock, mirrorHeadline, mirrorTone, mirrorUrl, newMirrorCode, isMirrorCode, parseSnap, withCong } from "./timer-mirror";
+import { buildSnap, liveElapsed, miniUrl, miniView, mirrorClock, mirrorHeadline, restoreKept, mirrorTone, mirrorUrl, newMirrorCode, isMirrorCode, parseSnap, withCong } from "./timer-mirror";
 import { LOCAL_LOGIC_JS, localMirrorHtml } from "./timer-mirror-page";
 import { countRecent, mirrorOrigin } from "./timer-mirror-link";
 import { SERIES_HEAD, SERIES_ITEM } from "./program-rules";
@@ -125,7 +125,7 @@ describe("relógio espelhado — linhas da tela e endereço do QR", () => {
     ];
     const snap = buildSnap("X", parts, tapPart(emptyTimer(), "i1", 0), "down", 1000);
     expect(withCong(snap.live?.nextSpeaker, snap.live?.nextCong)).toBe("Irmão B · Sul");
-    expect(mirrorHeadline(snap.live!, (i, n) => `${i} de ${n}`)).toBe("Série • Tema i1 (1 de 2) (10 min)");
+    expect(mirrorHeadline(snap.live!, (i, n) => `${i} de ${n}`)).toBe("Tema i1 (1 de 2) (10 min)");
   });
   it("SC e filial não mostram congregação", () => {
     const snap = buildSnap("X", [P("a", 1, 30, { assigned_to: "co", speaker_congregation: "Central" })], tapPart(emptyTimer(), "a", 0), "down", 1000);
@@ -142,5 +142,50 @@ describe("relógio espelhado — linhas da tela e endereço do QR", () => {
   it("QR Code no aplicativo usa sempre o site oficial", () => {
     expect(mirrorUrl("abcdefghjk", mirrorOrigin({ location: { origin: "https://localhost" } }, true))).toBe("https://visitasc.com.br/relogio/abcdefghjk");
     expect(mirrorOrigin({ location: { origin: "http://192.168.0.10:8080" } }, false)).toBe("https://visitasc.com.br");
+  });
+});
+
+describe("relógio espelhado — simpósio sem tema repetido", () => {
+  const live = { id: "a", label: null, title: "Série: Imite aqueles que confiaram em Jeová!", item: "Imite aqueles… — Baraque", pos: { i: 1, n: 3 }, minutes: 19,
+    speaker: null, plannedMs: 19 * M, elapsedMs: 0, paused: false, endLabel: null, nextSpeaker: null };
+  const partOf = (i: number, n: number) => `Parte ${i} de ${n}`;
+  it("na série mostra só o tema do discurso", () => expect(mirrorHeadline(live, partOf)).toBe("Imite aqueles… — Baraque (Parte 1 de 3) (19 min)"));
+  it("parte comum continua com número e tema", () => expect(mirrorHeadline({ ...live, label: "PARTE 05", item: null, pos: null, title: "Tema" }, partOf)).toBe("PARTE 05 • Tema (19 min)"));
+});
+
+describe("relógio espelhado — retrato guardado", () => {
+  const snap = buildSnap("E", [P("a", 1, 30)], tapPart(emptyTimer(), "a", at(10, 0)), "down", at(10, 5));
+  it("volta o relógio guardado e continua contando do horário certo", () => {
+    const k = restoreKept(JSON.stringify({ snap, at: at(10, 5) }), at(10, 8));
+    expect(k).not.toBeNull();
+    expect(liveElapsed(k!.snap.live!, k!.at, at(10, 8))).toBe(8 * M);
+  });
+  it("descarta retrato com mais de 6 horas", () => expect(restoreKept(JSON.stringify({ snap, at: at(10, 5) }), at(16, 6))).toBeNull());
+  it("ignora conteúdo inválido", () => expect(restoreKept("{x", at(10, 5))).toBeNull());
+});
+
+describe("Mini tempo do orador", () => {
+  const parts = [P("a", 1, 30, { part_time: "10:00" }), P("b", 2, 20, { part_time: "10:30" })];
+  it("antes da parte mostra o horário em que começa", () => {
+    const v = miniView(parseSnap(JSON.parse(JSON.stringify(buildSnap("E", parts, tapPart(emptyTimer(), "a", at(10, 0)), "down", at(10, 1))))), "b");
+    expect(v.kind).toBe("before");
+  });
+  it("na parte dele mostra o relógio contando", () => {
+    const v = miniView(buildSnap("E", parts, tapPart(emptyTimer(), "b", at(10, 30)), "down", at(10, 31)), "b");
+    expect(v.kind === "live" && v.live.id).toBe("b");
+  });
+  it("depois da parte mostra concluída", () => {
+    const s = tapPart(tapPart(emptyTimer(), "b", at(10, 30)), "b", at(10, 50));
+    expect(miniView(buildSnap("E", parts, s, "down", at(10, 51)), "b").kind).toBe("done");
+  });
+  it("link só da parte do orador", () => expect(miniUrl("abcdefghjk", "b", "https://x.com")).toBe("https://x.com/relogio/abcdefghjk?p=b"));
+});
+
+describe("Rede local — resposta vazia não apaga relógio contando", () => {
+  it("a página guarda e mantém o último retrato", () => {
+    const html = localMirrorHtml({ title: "R", live: "", paused: "", noSignal: "", speaker: "", end: "", nextSpeaker: "", over: "", nextPart: "", waiting: "", tapFull: "", partOf: "" },
+      { bg: "#000", fg: "#fff", muted: "#999", ok: "#0f0", warn: "#ff0", danger: "#f00", border: "#333" });
+    expect(html).toContain("else if(!(snap&&snap.live)){snap=null;}");
+    expect(html).toContain("localStorage.setItem(KEY");
   });
 });

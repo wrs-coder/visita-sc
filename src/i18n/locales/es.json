@@ -2094,6 +2094,14 @@
     "partOf": "Parte {{i}} de {{n}}",
     "invalid": "Código inválido. Lea de nuevo el código QR en el celular del superintendente.",
     "co": "Superintendente de circuito",
-    "branch": "Representante de la sucursal"
+    "branch": "Representante de la sucursal",
+    "mini": "Mini tiempo",
+    "miniTitle": "Mini tiempo del orador",
+    "miniSheetHint": "Envíelo al orador que usa el bosquejo en el celular o tableta. El enlace muestra solo el tiempo de esta parte y empieza con su cronómetro.",
+    "miniStarts": "Su discurso empieza a las",
+    "miniDone": "Su discurso terminó. ¡Gracias!",
+    "float": "Flotar sobre el bosquejo",
+    "floatHint": "La ventanita queda sobre otras apps. Arrástrela a una esquina.",
+    "floatFailed": "Este navegador no permitió flotar. Use Chrome (Android) o Safari (iPhone/iPad)."
   }
 }

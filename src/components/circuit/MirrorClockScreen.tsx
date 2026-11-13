@@ -37,7 +37,7 @@ function FitLine({ fit, max, min, className = "", children }: { fit: string; max
 }
 
 /** Relógio: ocupa o maior tamanho possível dentro do espaço livre, sem encostar nos textos. */
-function FitClock({ text, className }: { text: string; className: string }) {
+export function FitClock({ text, className }: { text: string; className: string }) {
   const box = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLParagraphElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });

@@ -51,9 +51,11 @@ footer b{color:${css(c.fg)};font-weight:600}.sep{padding:0 .7em;color:${css(c.bo
 var T=${json(text)};var C=${json({ ok: c.ok, warn: c.warn, danger: c.danger, muted: c.muted })};
 ${LOCAL_LOGIC_JS}
 var snap=null,base=0,recv=0,lastOk=0;
+var KEY="visitasc.mirror.last";function keep(){try{localStorage.setItem(KEY,JSON.stringify({s:snap,b:base,r:recv}));}catch(e){}}
+(function(){try{var o=JSON.parse(localStorage.getItem(KEY)||"null");if(o&&o.s&&o.s.v===1&&Date.now()-o.r<21600000){snap=o.s;base=o.b;recv=o.r;}}catch(e){}})();
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[ch];});}
 function poll(){var x=new XMLHttpRequest();x.open("GET","/state?t="+Date.now(),true);x.timeout=4000;
-x.onload=function(){try{var r=JSON.parse(x.responseText);lastOk=Date.now();if(r&&r.snap&&r.snap.v===1){snap=r.snap;recv=Date.now();base=snap.live?snap.live.elapsedMs+(snap.live.paused?0:Math.max(0,r.serverNow-snap.sentAt)):0;}else{snap=null;}}catch(e){}};
+x.onload=function(){try{var r=JSON.parse(x.responseText);lastOk=Date.now();if(r&&r.snap&&r.snap.v===1){snap=r.snap;recv=Date.now();base=snap.live?snap.live.elapsedMs+(snap.live.paused?0:Math.max(0,r.serverNow-snap.sentAt)):0;keep();}else if(!(snap&&snap.live)){snap=null;}}catch(e){}};
 x.send();}
 function fitLine(el,max,min){if(!el)return;el.style.fontSize=max+"px";if(el.scrollWidth<=el.clientWidth+1)return;var lo=Math.min(min,max),hi=max;while(hi-lo>0.5){var m=(lo+hi)/2;el.style.fontSize=m+"px";if(el.scrollWidth<=el.clientWidth+1)lo=m;else hi=m;}el.style.fontSize=lo+"px";}
 function fitClock(){var b=document.getElementById("box"),el=document.getElementById("clk");if(!b||!el)return;var W=b.clientWidth*0.96,H=b.clientHeight,lo=16,hi=Math.max(16,H);el.style.fontSize=hi+"px";if(el.offsetWidth<=W&&el.offsetHeight<=H)return;while(hi-lo>1){var m=(lo+hi)/2;el.style.fontSize=m+"px";if(el.offsetWidth<=W&&el.offsetHeight<=H)lo=m;else hi=m;}el.style.fontSize=lo+"px";}
@@ -64,7 +66,7 @@ document.documentElement.className=land?"land":"";
 if(!snap){pre='<div class="idle"><div class="s">'+esc(sig?T.waiting:T.noSignal)+'</div></div>';}
 else if(!snap.live){pre='<header><div style="flex:1"></div><span class="pill" style="color:'+C.muted+'">'+esc(sig?T.live:T.noSignal)+'</span></header><div class="idle">'+(snap.next?'<div class="s">'+esc(T.nextPart)+'</div><div class="t">'+esc(snap.next.time)+' \\u2022 '+esc(snap.next.title)+'</div>':'<div class="t">'+esc(snap.event)+'</div>')+'</div>';}
 else{var l=snap.live,el=base+(l.paused?0:now-recv),tn=tone(l.plannedMs,el),txt=clock(snap.mode,l.plannedMs,el);
-var parts=[];if(l.label)parts.push(l.label);if(l.title)parts.push(l.title);if(l.item)parts.push(l.item);
+var parts=[];if(l.label)parts.push(l.label);parts.push(l.item||l.title);
 var head=esc(parts.join(" \\u2022 "))+(l.pos?' ('+esc(T.partOf.replace("{i}",l.pos.i).replace("{n}",l.pos.n))+')':'')+(l.minutes!=null?' ('+l.minutes+' min)':'');
 var who=withCong(l.speaker,l.speakerCong),nx=withCong(l.nextSpeaker,l.nextCong);
 var st=!sig?'<span class="pill" style="color:'+C.muted+'">'+esc(T.noSignal)+'</span>':l.paused?'<span class="pill" style="color:'+C.warn+'">\\u23F8 '+esc(T.paused)+'</span>':'<span class="pill" style="color:'+C.ok+'">\\u25CF '+esc(T.live)+'</span>';
