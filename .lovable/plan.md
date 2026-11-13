@@ -1,37 +1,32 @@
-# Corrigir: Tema automático ao anexar imagem/vídeo
+# Grandes Eventos aparecendo em todos os aparelhos da conta
 
-## Por que não funcionou
-A regra foi feita e ligada, mas usa o **"Tema/Título" que você digita na janela de anexar**, e não o nome do arquivo. Essa janela abre com o campo vazio e o botão "Adicionar" só libera depois que você escreve algo. Então o nome do arquivo nunca é usado. Os testes automáticos não pegaram isso porque testaram a regra isolada, sem a janela.
+## O que está acontecendo
+Os eventos **estão salvos na conta** (na nuvem), não só no aparelho. A falha está na **leitura** no outro aparelho:
 
-## O que vou fazer
-1. Ao escolher a foto ou o vídeo, o campo "Tema/Título" da janela já vem preenchido com o nome do arquivo, sem a extensão (ex.: "Mapa do território.jpg" vira "Mapa do território"). Você pode mudar antes de adicionar.
-2. Ao adicionar, se o Tema do esboço estiver vazio, ele recebe esse nome. Se já tiver Tema, nada muda.
-3. Se você já tiver escrito um título na janela, trocar de arquivo não apaga o que escreveu.
+- Para abrir rápido e funcionar sem internet, o app mostra primeiro a **cópia guardada no próprio celular**.
+- Na tela de Grandes Eventos, ao abrir com internet, o app só busca na nuvem as **respostas dos oradores** das partes que já conhece. Ele **não busca eventos novos** criados em outro aparelho.
+- Por isso o outro aparelho só vê o evento depois do **⟳ Sincronizar** daquela tela, do "Sincronizar tudo" no Perfil ou da sincronização automática diária (02:00).
+
+Esboços, cartas modelo e modelos de visita já buscam novidades sozinhos; Grandes Eventos ficou para trás.
+
+## O que vou corrigir
+Ao abrir a tela de Grandes Eventos **com internet**:
+1. O app baixa da nuvem **os eventos e as partes** (não só as respostas).
+2. Atualiza a lista na tela com o que veio: eventos novos aparecem, editados mudam e excluídos somem.
+3. Sem internet, continua mostrando a cópia do aparelho, como hoje.
+
+Nada muda no visual da tela, nem nos links, PINs, cartas ou relógio.
 
 ```text
-┌──────────────────────────────┐
-│ Anexar imagem                │
-│ [📷 Mapa do território.jpg ] │
-│ Tema/Título                  │
-│ [ Mapa do território      ]  │ ← já vem preenchido
-│ [Cancelar]      [Adicionar]  │
-└──────────────────────────────┘
+Aparelho A cria "Assembleia 2027"
+            │  (salvo na conta)
+            ▼
+Aparelho B abre Grandes Eventos com internet
+   → baixa eventos + partes → "Assembleia 2027" aparece
 ```
 
-## O que mais conferi dos planos
-Conferi no código, item por item:
-- Lembrete "Esqueceu de iniciar?" e "Não lembrar novamente": feitos
-- Tema a partir da primeira linha do Word: feito
-- Botão "Limpar" em Esboços recentes: feito
-- Edição sem distrações, alça de altura e "⬅ Esboços": feitos
-- Mini tempo flutuante no Safari: feito
-- Importar oradores, incluindo o PDF do programa oficial: feito
-- Barra de ferramentas e layout manual das cartas: feitos
-- Relógio espelhado que continua com "Sem sinal": feito
-
-Só o item do Tema ao anexar estava com falha.
-
 ## Detalhes técnicos
-- `AttachmentAddDialog.tsx`: no onChange do arquivo, se `title` estiver vazio, `setTitle(fileBaseName(file.name).slice(0,60))`.
-- Teste novo: escolher o arquivo preenche o título, e `titleFromNewAttachment` devolve esse nome quando o Tema está vazio.
-- Sem mudança de banco de dados nem de versão.
+- `BigEvents.tsx`: `refreshStatuses` passa a chamar `syncTables` com `circuit_big_events` e `circuit_big_event_parts` e, em caso de sucesso, recarrega ambas as listas inteiras do espelho (`getRows`), em vez de só corrigir status das partes existentes. Mantém limite de 8 s e o canal ao vivo.
+- Sem mudança de banco/RLS.
+- Teste novo garantindo que a atualização ao abrir inclui as duas tabelas; atualizar regra em `src/lib/AGENTS.md`.
+- Conferir no navegador: evento criado direto na nuvem aparece ao abrir a tela sem tocar ⟳.
