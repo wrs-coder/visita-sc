@@ -1,32 +1,31 @@
-# Grandes Eventos aparecendo em todos os aparelhos da conta
+# Grandes Eventos (e outras telas) não chegam aos outros aparelhos
 
-## O que está acontecendo
-Os eventos **estão salvos na conta** (na nuvem), não só no aparelho. A falha está na **leitura** no outro aparelho:
+## A falha encontrada
+Os eventos **estão salvos na conta** na nuvem (conferi: a conta tem os eventos lá). O problema é que o outro aparelho **nunca chega a buscá-los**:
 
-- Para abrir rápido e funcionar sem internet, o app mostra primeiro a **cópia guardada no próprio celular**.
-- Na tela de Grandes Eventos, ao abrir com internet, o app só busca na nuvem as **respostas dos oradores** das partes que já conhece. Ele **não busca eventos novos** criados em outro aparelho.
-- Por isso o outro aparelho só vê o evento depois do **⟳ Sincronizar** daquela tela, do "Sincronizar tudo" no Perfil ou da sincronização automática diária (02:00).
+- O app lê primeiro a cópia guardada no próprio celular, para abrir rápido e funcionar sem internet.
+- A sincronização deveria "furar" essa cópia e ir à nuvem. Mas o **⟳ desta tela**, a sincronização automática diária e a atualização ao abrir Grandes Eventos pedem os dados à nuvem **sem avisar que é uma sincronização**. Resultado: o próprio app responde com a cópia antiga do celular, e nada novo chega.
+- Mesmo quando o "Sincronizar tudo" do Perfil baixa os eventos, a tela pode continuar mostrando a **lista antiga já guardada**, porque essa lista não é marcada como desatualizada.
 
-Esboços, cartas modelo e modelos de visita já buscam novidades sozinhos; Grandes Eventos ficou para trás.
+Isso afeta qualquer tela que use o ⟳ da tela, não só Grandes Eventos. Esboços e cartas modelo usam outro caminho e por isso funcionavam.
 
 ## O que vou corrigir
-Ao abrir a tela de Grandes Eventos **com internet**:
-1. O app baixa da nuvem **os eventos e as partes** (não só as respostas).
-2. Atualiza a lista na tela com o que veio: eventos novos aparecem, editados mudam e excluídos somem.
-3. Sem internet, continua mostrando a cópia do aparelho, como hoje.
-
-Nada muda no visual da tela, nem nos links, PINs, cartas ou relógio.
+1. **Toda sincronização vai mesmo à nuvem:** ⟳ da tela, sincronização diária, Perfil e a atualização ao abrir Grandes Eventos.
+2. **Depois de baixar, a tela mostra o novo:** as listas guardadas das tabelas baixadas passam a ser consideradas desatualizadas, e a tela recarrega.
+3. **Ao abrir Grandes Eventos com internet:** baixa eventos **e** partes (hoje só baixa as respostas), e atualiza a lista inteira: novos aparecem, editados mudam, excluídos somem.
+4. **Sem internet:** nada muda, continua usando a cópia do celular.
 
 ```text
-Aparelho A cria "Assembleia 2027"
-            │  (salvo na conta)
-            ▼
-Aparelho B abre Grandes Eventos com internet
-   → baixa eventos + partes → "Assembleia 2027" aparece
+Aparelho A cria "Assembleia 2027"  →  salvo na nuvem
+Aparelho B abre Grandes Eventos (ou toca ⟳)
+   → busca de verdade na nuvem → "Assembleia 2027" aparece
 ```
 
+Sem mudanças no visual, links, PINs, cartas ou relógio. Sem mudança no banco.
+
 ## Detalhes técnicos
-- `BigEvents.tsx`: `refreshStatuses` passa a chamar `syncTables` com `circuit_big_events` e `circuit_big_event_parts` e, em caso de sucesso, recarrega ambas as listas inteiras do espelho (`getRows`), em vez de só corrigir status das partes existentes. Mantém limite de 8 s e o canal ao vivo.
-- Sem mudança de banco/RLS.
-- Teste novo garantindo que a atualização ao abrir inclui as duas tabelas; atualizar regra em `src/lib/AGENTS.md`.
-- Conferir no navegador: evento criado direto na nuvem aparece ao abrir a tela sem tocar ⟳.
+- Causa: `syncTables`/`supabasePull` passa pelo `createLocalFirstFetch`; fora de `withNetworkWindow`, `preferNetworkNow()` é falso e a leitura é respondida pelo espelho (`answerFromMirror`) ou pela cópia em `response-cache`. Só `runDeviceSync` abre a janela; `SyncButton` (tela), `runAutoSync` (diária/abertura/online), `ConnectionModeToggle` e `BigEvents.refreshStatuses` não.
+- Correção central em `local-sync.ts`: `syncTables` executa dentro de `withNetworkWindow` (cobre todos os chamadores) e, após gravar linhas de uma tabela, chama `markTableStale(table)`.
+- `BigEvents.tsx`: `refreshStatuses` sincroniza `circuit_big_events` + `circuit_big_event_parts` e recarrega ambas do espelho via `getRows`.
+- Testes: `syncTables` abre a janela de rede durante o pull e marca as tabelas como desatualizadas; regra registrada em `src/lib/AGENTS.md`.
+- Verificar com Playwright: evento inserido na nuvem com espelho já preenchido aparece após ⟳ da tela e ao reabrir a tela.
