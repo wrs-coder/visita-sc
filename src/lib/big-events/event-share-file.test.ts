@@ -17,3 +17,13 @@ describe("arquivo de evento entre aparelhos", () => {
     expect(() => parseEventFile({ Programas: [] })).toThrow();
   });
 });
+
+describe("exportar com ou sem designações", () => {
+  it("sem designações remove nomes", async () => {
+    const { buildEventFile } = await import("./event-share-file");
+    const p = { sort_order: 0, part_time: null, duration_min: 10, theme: "T", outline_number: "1", instructions: null, part_type_id: null, part_type_label: null, symposium: false, talk_includes: [], assigned_to: "speaker", time_mode: "auto", speaker_name: "João", speaker_congregation: "C" };
+    const ev = { name: "E", event_type: "assembly", event_date: null, location: null, extra_info: null, start_time: null };
+    expect(buildEventFile(ev as never, [p] as never, { withAssignments: false }).parts[0].speaker_name).toBeNull();
+    expect(buildEventFile(ev as never, [p] as never).parts[0].speaker_name).toBe("João");
+  });
+});

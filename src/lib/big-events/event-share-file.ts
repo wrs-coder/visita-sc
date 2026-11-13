@@ -11,7 +11,9 @@ export interface EventFile { format: typeof EVENT_FILE_FORMAT; version: 1; event
 
 type SrcPart = Omit<EventFilePart, "talk_includes" | "assigned_to"> & { talk_includes: unknown; assigned_to: string; sort_order: number };
 
-export function buildEventFile(ev: EventFileEvent, parts: SrcPart[]): EventFile {
+/** withAssignments=false: só o programa (sem nomes de oradores/congregações). Nunca leva PIN, link ou resposta. */
+export function buildEventFile(ev: EventFileEvent, parts: SrcPart[], opts: { withAssignments?: boolean } = {}): EventFile {
+  const keep = opts.withAssignments !== false;
   return {
     format: EVENT_FILE_FORMAT, version: 1,
     event: { name: ev.name, event_type: ev.event_type, event_date: ev.event_date, location: ev.location, extra_info: ev.extra_info, start_time: ev.start_time },
@@ -19,7 +21,7 @@ export function buildEventFile(ev: EventFileEvent, parts: SrcPart[]): EventFile 
       part_time: p.part_time, duration_min: p.duration_min, theme: p.theme, outline_number: p.outline_number, instructions: p.instructions,
       part_type_id: p.part_type_id, part_type_label: p.part_type_label, symposium: p.symposium,
       talk_includes: Array.isArray(p.talk_includes) ? p.talk_includes.filter((x): x is string => typeof x === "string") : [],
-      assigned_to: p.assigned_to as AssignedTo, time_mode: p.time_mode, speaker_name: p.speaker_name ?? null, speaker_congregation: p.speaker_congregation ?? null,
+      assigned_to: p.assigned_to as AssignedTo, time_mode: p.time_mode, speaker_name: keep ? p.speaker_name ?? null : null, speaker_congregation: keep ? p.speaker_congregation ?? null : null,
     })),
   };
 }

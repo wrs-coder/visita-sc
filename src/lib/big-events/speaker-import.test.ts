@@ -71,3 +71,46 @@ describe("speaker import — programa oficial em PDF", () => {
     expect(parseLine("7. Carlos Melo (Viana)")).toEqual({ number: "7", speaker: "Carlos Melo", congregation: "Viana" });
   });
 });
+
+import { appProgramRows, designacoesRows, matchSpeakers as ms2, retarget } from "./speaker-import";
+import { programacaoEspiritualRows } from "./speaker-import";
+
+describe("novos formatos de importação", () => {
+  const it2 = (x: number, y: number, s: string, w = 30): PdfItem => ({ page: 1, x, y, w, h: 10, s });
+  it("Programação espiritual: presidente, oração e discurso pelas colunas", () => {
+    const items = [
+      it2(72, 469, "NÚM."), it2(404, 461, "CÂNTICO"), it2(468, 461, "CENA", 15), it2(529, 469, "ORADOR", 40), it2(645, 469, "CONGREGAÇÃO", 73),
+      it2(39, 446, "09:40", 20), it2(80, 446, "--", 5), it2(99, 446, "Música (Presidente da seção)", 108), it2(492, 446, "Francisco Lima", 100), it2(626, 446, "Sequele 05", 100),
+      it2(39, 428, "09:50", 20), it2(80, 428, "--", 5), it2(99, 428, "Cântico e Oração inicial", 92), it2(518, 428, "Nicodemos Alves", 63), it2(626, 428, "Cassequel 09", 100),
+      it2(39, 409, "10:49", 20), it2(78, 409, "10", 9), it2(99, 409, "Ao fazer planos", 100), it2(509, 409, "Araújo Tokes", 80), it2(626, 409, "Funda 01", 100),
+      it2(39, 391, "10:15", 20), it2(76, 391, "S-1", 12), it2(101, 391, "(Série de discursos) X", 200),
+    ];
+    const r = programacaoEspiritualRows(items);
+    expect(r.map((x) => [x.role, x.number, x.speaker, x.congregation])).toEqual([
+      ["chair", "", "Francisco Lima", "Sequele 05"], ["prayer", "", "Nicodemos Alves", "Cassequel 09"], ["talk", "10", "Araújo Tokes", "Funda 01"],
+    ]);
+  });
+  it("Programa do app: nome · Cong. abaixo do tema, ignora 'Ancião a definir'", () => {
+    const r = appProgramRows(["09:00\tPresidente do programa", "Ancião a definir", "3\tpendente", "10:31\tA mulher sunamita", "João Mateus · Cong. Mulenvos 06 | Simpósio · 13 min", "10:44\t4 Daniel\tpendente", "Arzito · Cong. Ecoal 03 | Simpósio · 14 min"]);
+    expect(r.map((x) => [x.number, x.speaker, x.congregation])).toEqual([["3", "João Mateus", "Mulenvos 06"], ["4", "Arzito", "Ecoal 03"]]);
+  });
+  it("Word Designações: Ancião + Sua designação", () => {
+    const r = designacoesRows(["Ancião: Alberto Basílio — Funda 02", "Sua designação: Presidência do programa · 09:00", "Ancião: José Panzo — 08 Cidade do Sequele", "Sua designação: Parte Nº 10 · 14:59 · 14 min"]);
+    expect(r.map((x) => [x.role, x.number, x.speaker, x.congregation, x.time])).toEqual([["chair", "", "Alberto Basílio", "Funda 02", "09:00"], ["talk", "10", "José Panzo", "08 Cidade do Sequele", "14:59"]]);
+  });
+  it("troca Nº 10 ↔ Nº 11 antes de aplicar e liga presidente por horário", () => {
+    const base = { assigned_to: "speaker", speaker_name: null, status: "pending" };
+    const parts = [
+      { ...base, id: "c1", outline_number: null, theme: "Presidente do programa", part_type_label: "Presidência do programa", part_time: "09:00" },
+      { ...base, id: "c2", outline_number: null, theme: "Presidente do programa", part_type_label: "Presidência do programa", part_time: "12:40" },
+      { ...base, id: "p10", outline_number: "10", theme: "A" }, { ...base, id: "p11", outline_number: "11", theme: "B" },
+    ];
+    const m = ms2([
+      { number: "", speaker: "Tarde", congregation: null, role: "chair", time: "13:20" },
+      { number: "10", speaker: "X", congregation: null, role: "talk" }, { number: "11", speaker: "Y", congregation: null, role: "talk" },
+    ], parts);
+    expect(m[0].part?.id).toBe("c2");
+    const sw = retarget(m, 1, parts[3]);
+    expect([sw[1].part?.id, sw[2].part?.id, sw[2].swapped]).toEqual(["p11", "p10", true]);
+  });
+});

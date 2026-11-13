@@ -2,15 +2,18 @@
 // Tudo roda no aparelho; o arquivo é entrada não confiável (limites e rejeição de DOCTYPE/macros).
 import { IMPORT_MAX_BYTES, decodeXml, normalizeName, openZip, parseCsvRows, rejectUnsafe } from "@/lib/congregation-import";
 
-export type SpeakerRow = { number: string; speaker: string; congregation: string | null };
+/** role: discurso (pelo Nº), presidente ou oração (pela ordem/horário). */
+export type SpeakerRole = "talk" | "chair" | "prayer";
+export type SpeakerRow = { number: string; speaker: string; congregation: string | null; role?: SpeakerRole; time?: string | null; label?: string };
 
-type PartLike = {
+export type PartLike = {
   id: string; outline_number: string | null; theme: string; assigned_to: string;
+  part_time?: string | null; part_type_label?: string | null; sort_order?: number;
   speaker_name: string | null; speaker_congregation?: string | null; status: string;
 };
 
 export type MatchKind = "new" | "same" | "replace" | "confirmed" | "missing";
-export type SpeakerMatch = { row: SpeakerRow; part: PartLike | null; kind: MatchKind; checked: boolean };
+export type SpeakerMatch = { row: SpeakerRow; part: PartLike | null; kind: MatchKind; checked: boolean; swapped?: boolean };
 
 const SPLIT_RE = /\t|;|\||\s[–—-]\s|\s{3,}/;
 const NUM_RE = /^(?:n[ºo°.]?\s*|#\s*)?(\d{1,4})[.)º°]?$/i;
@@ -275,31 +278,178 @@ export async function readSpeakerRows(
   themes: string[] = [],
 ): Promise<SpeakerRow[]> {
   const ext = file.name.toLowerCase().split(".").pop();
+  if (ext === "docx") {
+    const lines = await readSpeakerFile(file);
+    const des = designacoesRows(lines);
+    return des.length ? des : linesToRows(lines, themes);
+  }
   if (ext !== "pdf") return linesToRows(await readSpeakerFile(file), themes);
   if (file.size > IMPORT_MAX_BYTES) throw new Error("Arquivo grande demais (máx. 10 MB).");
   const items = await pdfItems(await file.arrayBuffer());
+  const espiritual = programacaoEspiritualRows(items);
+  if (espiritual.length) return espiritual;
+  const lines = pdfItemsToLines(items);
+  const app = appProgramRows(lines);
+  if (app.length) return app;
   const table = runningProgramRows(items);
   const have = new Set(table.map((r) => r.number));
-  return [...table, ...linesToRows(pdfItemsToLines(items), themes).filter((r) => !have.has(r.number))];
+  return [...table, ...linesToRows(lines, themes).filter((r) => !have.has(r.number))];
 }
 
-/** Liga cada linha ao discurso com o mesmo Nº. Só partes de orador; SC/Filial ficam de fora. */
+// ---------- Novos formatos (adição) ----------
+const CHAIR_RE = /presid/i;
+const PRAYER_RE = /ora[çc][ãa]o/i;
+const SKIP_NAME_RE = /a definir|superintendente de circuito|^rep\.?\s*filial|^-+$|^\d+\s*min/i;
+function roleOf(theme: string): SpeakerRole { return CHAIR_RE.test(theme) ? "chair" : PRAYER_RE.test(theme) ? "prayer" : "talk"; }
+function cleanName(s: string): string { return s.replace(/\s+/g, " ").trim().slice(0, 120); }
+function pushRow(out: SpeakerRow[], r: SpeakerRow) {
+  if (!r.speaker || SKIP_NAME_RE.test(r.speaker) || EMPTY_SPEAKER_RE.test(r.speaker) || NOT_SPEAKER_RE.test(r.speaker)) return;
+  if (r.role === "talk" && (!r.number || out.some((x) => x.role === "talk" && x.number === r.number))) return;
+  out.push(r);
+}
+
+/** PDF "Programação espiritual": NÚM | Tema | Cântico | Tempo | Cena | Orador | Congregação (por posição). */
+export function programacaoEspiritualRows(items: PdfItem[]): SpeakerRow[] {
+  const out: SpeakerRow[] = [];
+  let cols: { orador: number; cong: number; start: number; themeEnd: number } | null = null;
+  const pages = [...new Set(items.map((i) => i.page))].sort((a, b) => a - b);
+  for (const page of pages) {
+    const pi = items.filter((i) => i.page === page);
+    const oh = pi.find((i) => norm(i.s) === "orador");
+    const ch = pi.find((i) => norm(i.s) === "congregacao");
+    if (oh && ch && ch.x > oh.x) {
+      const cena = pi.find((i) => norm(i.s) === "cena");
+      const cant = pi.find((i) => ["cantico", "tempo"].includes(norm(i.s)));
+      cols = { orador: oh.x + oh.w / 2, cong: ch.x + ch.w / 2, start: cena ? cena.x + cena.w + 4 : oh.x - 60, themeEnd: cant ? cant.x - 2 : oh.x - 60 };
+    }
+    if (!cols) continue;
+    const c = cols;
+    const rows = new Map<number, PdfItem[]>();
+    for (const it of pi) { const y = Math.round(it.y / 4) * 4; (rows.get(y) ?? rows.set(y, []).get(y)!).push(it); }
+    for (const row of rows.values()) {
+      row.sort((a, b) => a.x - b.x);
+      const time = row.find((i) => TIME_RE.test(i.s.trim()));
+      if (!time) continue;
+      const numIt = row.find((i) => i !== time && i.x < time.x + 70 && /^(?:\d{1,3}|S-\d+|-+)$/i.test(i.s.trim()));
+      const theme = row.filter((i) => i !== time && i !== numIt && i.x < c.themeEnd).map((i) => i.s).join(" ").trim();
+      const mid = (c.orador + c.cong) / 2;
+      const spk = row.filter((i) => i.x >= c.start && i.x + i.w / 2 < mid).map((i) => i.s).join(" ");
+      const cong = row.filter((i) => i.x + i.w / 2 >= mid).map((i) => i.s).join(" ");
+      const num = numIt && /^\d+$/.test(numIt.s.trim()) ? normNum(numIt.s) : "";
+      if (numIt && /^S-/i.test(numIt.s.trim())) continue;
+      const role = num ? (CHAIR_RE.test(theme) ? "chair" : "talk") : roleOf(theme);
+      if (role === "talk" && !num) continue;
+      pushRow(out, { number: num, speaker: cleanName(spk), congregation: cleanCong(cong), role, time: time.s.trim(), label: theme.replace(/^▪️?\s*/, "").slice(0, 120) });
+    }
+  }
+  return out.length >= 2 ? out : [];
+}
+
+/** PDF "Programa" gerado pelo app: linha "HH:MM  N Tema" e abaixo "Nome · Cong. X | Tipo · min". */
+export function appProgramRows(lines: string[]): SpeakerRow[] {
+  const out: SpeakerRow[] = [];
+  let loose = "";
+  for (let i = 0; i < lines.length; i++) {
+    const f = lines[i].split("\t").map((x) => x.trim()).filter(Boolean);
+    if (/^\d{1,3}$/.test(f[0] ?? "") && f.length <= 2) { loose = normNum(f[0]); continue; }
+    if (!TIME_RE.test(f[0] ?? "") || !f[1]) continue;
+    const m = f[1].match(/^(\d{1,3})\s+(.+)$/);
+    const num = m ? normNum(m[1]) : loose;
+    const theme = m ? m[2] : f[1];
+    loose = "";
+    const detail = lines[i + 1] ?? "";
+    if (TIME_RE.test(detail.split("\t")[0]?.trim() ?? "")) continue;
+    const who = detail.split("|")[0].split("·").map((x) => x.trim());
+    const role = num ? "talk" : roleOf(theme);
+    if (role === "prayer" && !/^ora[çc][ãa]o$/i.test(theme.trim())) continue;
+    if (role === "talk" && !num) continue;
+    pushRow(out, { number: num, speaker: cleanName(who[0] ?? ""), congregation: cleanCong((who[1] ?? "").replace(/^cong\.?\s*/i, "")), role, time: f[0], label: theme.slice(0, 120) });
+  }
+  return out.length >= 2 && lines.some((l) => /·\s*Cong\.|Ancião a definir|Superintendente de circuito/.test(l)) ? out : [];
+}
+
+/** Word "Designações": "Ancião: Nome — Cong." seguido de "Sua designação: Parte Nº 10 · 14:59". */
+export function designacoesRows(lines: string[]): SpeakerRow[] {
+  const out: SpeakerRow[] = [];
+  let who: { name: string; cong: string | null } | null = null;
+  for (const l of lines) {
+    const a = l.match(/^(?:ancião|orador|irmão)\s*:\s*(.+)$/i);
+    if (a) { const [n, ...c] = a[1].split(/\s[—–-]\s/); who = { name: cleanName(n), cong: cleanCong(c.join(" - ")) }; continue; }
+    const d = l.match(/^sua designa[çc][ãa]o\s*:\s*(.+)$/i);
+    if (!d || !who) continue;
+    const time = d[1].match(/\b(\d{1,2}:\d{2})\b/)?.[1] ?? null;
+    const n = d[1].match(/parte\s*n[º°o.]?\s*(\d{1,3})/i);
+    const role: SpeakerRole = n ? "talk" : roleOf(d[1]);
+    pushRow(out, { number: n ? normNum(n[1]) : "", speaker: who.name, congregation: who.cong, role, time, label: d[1].split("·")[0].trim() });
+    who = null;
+  }
+  return out;
+}
+
+const isChairPart = (p: PartLike) => p.part_type_label === "Presidência do programa" || (!p.outline_number && CHAIR_RE.test(p.theme));
+const isPrayerPart = (p: PartLike) => p.part_type_label === "Oração" || (!p.outline_number && /^ora[çc][ãa]o\b/i.test(p.theme.trim()));
+const minutes = (t: string | null | undefined) => { const m = (t ?? "").match(/^(\d{1,2}):(\d{2})/); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+
+/** Situação de uma linha ligada a uma parte (usada também quando o usuário troca o destino). */
+export function classify(row: SpeakerRow, part: PartLike | null): { kind: MatchKind; checked: boolean } {
+  if (!part) return { kind: "missing", checked: false };
+  const cur = part.speaker_name?.trim();
+  if (!cur) return { kind: "new", checked: true };
+  if (normalizeName(cur) === normalizeName(row.speaker)) {
+    const congDiff = !!row.congregation && normalizeName(row.congregation) !== normalizeName(part.speaker_congregation ?? "");
+    return { kind: "same", checked: congDiff };
+  }
+  if (part.status === "confirmed") return { kind: "confirmed", checked: false };
+  return { kind: "replace", checked: false };
+}
+
+/** Partes que podem receber um nome importado (orador, presidente, oração). */
+export function assignableParts(parts: PartLike[]): PartLike[] {
+  return parts.filter((p) => p.assigned_to === "speaker").sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+}
+
+/** Liga discursos pelo Nº; presidente e oração pela sessão/horário mais próximo (ou ordem). */
 export function matchSpeakers(rows: SpeakerRow[], parts: PartLike[]): SpeakerMatch[] {
   const byNum = new Map<string, PartLike>();
   for (const p of parts) {
     const k = normNum(p.outline_number);
     if (k && p.assigned_to === "speaker" && !byNum.has(k)) byNum.set(k, p);
   }
+  const used = new Set<string>();
+  const pick = (row: SpeakerRow, pool: PartLike[]) => {
+    const free = pool.filter((p) => !used.has(p.id));
+    if (!free.length) return null;
+    const t = minutes(row.time);
+    if (t == null) return free[0];
+    const pm = t >= 12 * 60 + 30;
+    const same = free.filter((p) => { const m = minutes(p.part_time); return m == null || (m >= 12 * 60 + 30) === pm; });
+    const list = same.length ? same : free;
+    return [...list].sort((a, b) => Math.abs((minutes(a.part_time) ?? t) - t) - Math.abs((minutes(b.part_time) ?? t) - t))[0];
+  };
+  const sp = assignableParts(parts);
   return rows.map((row) => {
-    const part = byNum.get(row.number) ?? null;
-    if (!part) return { row, part, kind: "missing" as const, checked: false };
-    const cur = part.speaker_name?.trim();
-    if (!cur) return { row, part, kind: "new" as const, checked: true };
-    if (normalizeName(cur) === normalizeName(row.speaker)) {
-      const congDiff = !!row.congregation && normalizeName(row.congregation) !== normalizeName(part.speaker_congregation ?? "");
-      return { row, part, kind: "same" as const, checked: congDiff };
-    }
-    if (part.status === "confirmed") return { row, part, kind: "confirmed" as const, checked: false };
-    return { row, part, kind: "replace" as const, checked: false };
+    let part: PartLike | null;
+    if (row.role === "chair") part = pick(row, sp.filter(isChairPart));
+    else if (row.role === "prayer") part = pick(row, sp.filter(isPrayerPart));
+    else part = byNum.get(row.number) ?? null;
+    if (part && used.has(part.id)) part = null;
+    if (part) used.add(part.id);
+    return { row, part, ...classify(row, part) };
   });
+}
+
+/** Troca o destino da linha i para a parte `partId`; se outra linha usava essa parte, as duas trocam. */
+export function retarget(items: SpeakerMatch[], i: number, part: PartLike | null): SpeakerMatch[] {
+  const prev = items[i].part;
+  return items.map((m, j) => {
+    if (j === i) return { ...m, part, ...classify(m.row, part), swapped: false };
+    if (part && m.part?.id === part.id) return { ...m, part: prev, ...classify(m.row, prev), swapped: true };
+    return m;
+  });
+}
+
+/** Rótulo curto de uma parte no seletor "Vai para". */
+export function partLabel(p: PartLike): string {
+  if (normNum(p.outline_number)) return `Nº ${normNum(p.outline_number)} · ${p.theme}`;
+  return [p.part_time, p.part_type_label ?? p.theme].filter(Boolean).join(" · ");
 }

@@ -24,8 +24,18 @@ export async function replaceMirror(table: string, rows: Array<Record<string, un
   markTableStale(table);
 }
 
-/** Baixa todos os eventos e partes da conta direto da nuvem. */
-export async function downloadAllEvents(): Promise<{ events: EventRow[]; parts: PartRow[] }> {
+/** Junta a lista da nuvem com os eventos que só existem no aparelho (nunca apaga nada local). */
+export function mergeWithLocal(cloudEv: EventRow[], cloudPt: PartRow[], localEv: EventRow[], localPt: PartRow[]) {
+  const inCloud = new Set(cloudEv.map((e) => e.id));
+  const onlyEv = localEv.filter((e) => !inCloud.has(e.id));
+  const onlyIds = new Set(onlyEv.map((e) => e.id));
+  const cloudPtIds = new Set(cloudPt.map((p) => p.id));
+  const onlyPt = localPt.filter((p) => onlyIds.has(p.event_id) && !cloudPtIds.has(p.id));
+  return { events: [...cloudEv, ...onlyEv], parts: [...cloudPt, ...onlyPt], localOnly: [...onlyIds] };
+}
+
+/** Baixa todos os eventos e partes da conta direto da nuvem, mantendo os que só existem no aparelho. */
+export async function downloadAllEvents(): Promise<{ events: EventRow[]; parts: PartRow[]; localOnly: string[]; cloudCount: number }> {
   return withNetworkWindow(async () => {
     const [ev, pt] = await Promise.all([
       supabase.from(EV).select("*").order("event_date", { ascending: true }),
@@ -33,11 +43,29 @@ export async function downloadAllEvents(): Promise<{ events: EventRow[]; parts: 
     ]);
     if (ev.error) throw ev.error;
     if (pt.error) throw pt.error;
-    const events = ev.data ?? [], parts = pt.data ?? [];
-    await replaceMirror(EV, events);
-    await replaceMirror(PT, parts);
-    return { events, parts };
+    const { getRows } = await import("@/lib/local-db");
+    const [lev, lpt] = await Promise.all([getRows<EventRow>(EV).catch(() => []), getRows<PartRow>(PT).catch(() => [])]);
+    const m = mergeWithLocal(ev.data ?? [], pt.data ?? [], lev, lpt);
+    await replaceMirror(EV, m.events);
+    await replaceMirror(PT, m.parts);
+    return { ...m, cloudCount: (ev.data ?? []).length };
   });
+}
+
+/** Envia para a nuvem os eventos (e partes) dados — usado para os que só existem no aparelho. */
+export async function pushAllLocal(events: EventRow[], parts: PartRow[]): Promise<number> {
+  if (!events.length) return 0;
+  const ids = new Set(events.map((e) => e.id));
+  await withNetworkWindow(async () => {
+    const { error } = await supabase.from(EV).upsert(events);
+    if (error) throw error;
+    const ps = parts.filter((p) => ids.has(p.event_id));
+    for (let i = 0; i < ps.length; i += 200) {
+      const r = await supabase.from(PT).upsert(ps.slice(i, i + 200));
+      if (r.error) throw r.error;
+    }
+  });
+  return events.length;
 }
 
 /** Junta a versão da nuvem de um evento à lista atual (substitui só ele). */

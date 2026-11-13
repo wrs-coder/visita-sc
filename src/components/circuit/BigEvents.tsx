@@ -25,12 +25,12 @@ import { saveBlob } from "@/lib/share";
 import JSZip from "jszip";
 import { letterCandidates, pickLetterParts, speakerChanged } from "@/lib/big-events/letter-pick";
 import { LetterTemplates } from "./LetterTemplates";
-import { matchSpeakers, readSpeakerRows, type SpeakerMatch } from "@/lib/big-events/speaker-import";
+import { assignableParts, matchSpeakers, partLabel, readSpeakerRows, retarget, type SpeakerMatch } from "@/lib/big-events/speaker-import";
 import { EventTimerFocus } from "./EventTimerFocus";
 import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
 import { fetchLetterTemplates, pushLetterTemplates, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
 import type { Database } from "@/integrations/supabase/types";
-import { downloadAllEvents, mergeEvent, pullEvent, pushEvent } from "@/lib/big-events/cloud-sync";
+import { downloadAllEvents, mergeEvent, pullEvent, pushAllLocal, pushEvent } from "@/lib/big-events/cloud-sync";
 import { SwipeToSync } from "@/components/notes/SwipeToSync";
 
 type EventRow = Database["public"]["Tables"]["circuit_big_events"]["Row"];
@@ -69,6 +69,9 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const [tplChoice, setTplChoice] = useState<Record<string, string>>({});
   const [exportFor, setExportFor] = useState<EventRow | null>(null);
   const [spkFor, setSpkFor] = useState<EventRow | null>(null);
+  const [shareStep, setShareStep] = useState(false);
+  const [shareWith, setShareWith] = useState(true);
+  const [spkEdit, setSpkEdit] = useState<number | null>(null);
   const [spkImport, setSpkImport] = useState<{ ev: EventRow; file: string; items: SpeakerMatch[] } | null>(null);
   const [spkBusy, setSpkBusy] = useState(false);
   const spkRef = useRef<HTMLInputElement>(null);
@@ -248,9 +251,30 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     setDownloading(true);
     try {
       const r = await downloadAllEvents();
-      setEvents(r.events); setParts(r.parts);
-      toast.success(`${r.events.length} ${r.events.length === 1 ? "evento baixado" : "eventos baixados"} da nuvem`);
+      setEvents([...r.events].sort((a, b) => (a.event_date ?? "9999").localeCompare(b.event_date ?? "9999")));
+      setParts([...r.parts].sort((a, b) => a.sort_order - b.sort_order));
+      setLocalOnly(new Set(r.localOnly)); setCloudCount(r.cloudCount);
+      toast.success(`Nuvem: ${r.cloudCount} ${r.cloudCount === 1 ? "evento" : "eventos"}${r.localOnly.length ? ` · ${r.localOnly.length} só neste aparelho` : ""}`);
     } catch { toast.error("Não foi possível baixar da nuvem."); } finally { setDownloading(false); }
+  };
+  const [localOnly, setLocalOnly] = useState<Set<string>>(new Set());
+  const [cloudCount, setCloudCount] = useState<number | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const uploadAll = async () => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) { toast.error("Sem conexão."); return; }
+    setUploading(true);
+    try {
+      // Confere na nuvem quais eventos faltam antes de enviar.
+      const r = await downloadAllEvents();
+      const missing = r.events.filter((e) => r.localOnly.includes(e.id));
+      if (!missing.length) { toast.success("Todos os eventos deste aparelho já estão na nuvem."); setLocalOnly(new Set()); setCloudCount(r.cloudCount); return; }
+      const n = await pushAllLocal(missing, r.parts);
+      const after = await downloadAllEvents();
+      setEvents([...after.events].sort((a, b) => (a.event_date ?? "9999").localeCompare(b.event_date ?? "9999")));
+      setParts([...after.parts].sort((a, b) => a.sort_order - b.sort_order));
+      setLocalOnly(new Set(after.localOnly)); setCloudCount(after.cloudCount);
+      toast.success(n === 1 ? "1 evento enviado para a nuvem" : `${n} eventos enviados para a nuvem`);
+    } catch { toast.error("Não foi possível enviar para a nuvem."); } finally { setUploading(false); }
   };
   const applyPulled = (id: string, r: { event: EventRow | null; parts: PartRow[] }) => {
     const m = mergeEvent(events, parts, id, r.event, r.parts);
@@ -267,7 +291,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   };
   const sendEvent = async (ev: EventRow) => {
     if (typeof navigator !== "undefined" && !navigator.onLine) { toast.error("Sem conexão."); return; }
-    try { const r = await pushEvent(ev, evPartsOf(ev.id)); applyPulled(ev.id, r); toast.success("Evento enviado para a nuvem"); }
+    try { const r = await pushEvent(ev, evPartsOf(ev.id)); applyPulled(ev.id, r); setLocalOnly((s) => { const n = new Set(s); n.delete(ev.id); return n; }); toast.success("Evento enviado para a nuvem"); }
     catch { toast.error("Não foi possível enviar para a nuvem."); }
   };
   const fmtStamp = (iso: string) => { const d = new Date(iso); return `${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} às ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`; };
@@ -504,8 +528,8 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     try {
       const evParts = evPartsOf(ev.id);
       const rows = await readSpeakerRows(f, evParts.map((p) => p.theme));
-      if (!rows.length) { toast.info("Não encontrei linhas com Nº do esboço e nome do orador."); return; }
-      setSpkImport({ ev, file: f.name, items: matchSpeakers(rows, evParts) });
+      if (!rows.length) { toast.info("Não encontrei designações (Nº do esboço, presidente ou oração com nome)."); return; }
+      setSpkEdit(null); setSpkImport({ ev, file: f.name, items: matchSpeakers(rows, evParts) });
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
   };
 
@@ -516,6 +540,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     try {
       for (const m of spkImport.items) {
         if (!m.checked || !m.part || m.kind === "missing" || m.kind === "confirmed") continue;
+        if (m.kind === "same" && !m.row.congregation) continue;
         const patch: Partial<PartRow> = { speaker_name: m.row.speaker };
         if (m.row.congregation) patch.speaker_congregation = m.row.congregation;
         if (await patchSpeaker(m.part.id, patch)) n++;
@@ -527,7 +552,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
 
   const exportShareFile = async (ev: EventRow) => {
     try {
-      const file = buildEventFile(ev, evPartsOf(ev.id));
+      const file = buildEventFile(ev, evPartsOf(ev.id), { withAssignments: shareWith });
       const blob = new Blob([JSON.stringify(file, null, 1)], { type: "application/json" });
       await saveBlob(blob, { filename: `${safeFileName(ev.name, "evento")}.${EVENT_FILE_EXT}`, mimeType: "application/json" });
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
@@ -540,8 +565,9 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       if (!c.length) { toast.info("Nenhuma parte com orador definido."); return; }
       setPickIds(new Set(c.map((p) => p.id))); return;
     }
+    if (kind === "share" && !shareStep) { setShareStep(true); return; }
     setExporting(true);
-    try { await (kind === "docx" ? exportDocx(ev) : kind === "pdf" ? exportPdfs(ev, pickIds) : kind === "program" ? exportProgram(ev) : exportShareFile(ev)); } finally { setExporting(false); setExportFor(null); setPickIds(null); }
+    try { await (kind === "docx" ? exportDocx(ev) : kind === "pdf" ? exportPdfs(ev, pickIds) : kind === "program" ? exportProgram(ev) : exportShareFile(ev)); } finally { setExporting(false); setExportFor(null); setPickIds(null); setShareStep(false); }
   };
 
   const renderEvent = (ev: EventRow) => {
@@ -606,7 +632,9 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
           <span className="min-w-0 flex-1">
             <span className="block truncate font-semibold">{ev.name}</span>
             <span className="block text-xs text-muted-foreground">{[formatEventDate(ev.event_date), ev.location, ev.start_time?.slice(0, 5)].filter(Boolean).join(" · ")}</span>
-            <span className="block text-[11px] text-muted-foreground">☁ Atualizado: {fmtStamp(ev.updated_at)}</span>
+            {localOnly.has(ev.id)
+              ? <span className="block text-[11px] font-medium text-warning">📱 Só neste aparelho</span>
+              : <span className="block text-[11px] text-muted-foreground">☁ Atualizado: {fmtStamp(ev.updated_at)}</span>}
           </span>
           <span className="text-xs text-muted-foreground">{conf}/{speakers.length}{decl ? ` · ${decl}✕` : ""}</span>
         </button>
@@ -756,10 +784,24 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       <div hidden={view !== "events"} className="space-y-3">
       {timerFor && <EventTimerFocus ev={timerFor} parts={evPartsOf(timerFor.id)} onClose={() => setTimerFor(null)} speakerCong={(p) => (p as { speaker_congregation?: string | null }).speaker_congregation ?? null}
         onEditPart={(id) => { const pt = evPartsOf(timerFor.id).find((x) => x.id === id); if (pt) setEditor({ ev: timerFor, part: pt, afterOrder: null }); }} />}
-      <Dialog open={!!exportFor} onOpenChange={(o) => { if (!o && !exporting) { setExportFor(null); setPickIds(null); } }}>
+      <Dialog open={!!exportFor} onOpenChange={(o) => { if (!o && !exporting) { setExportFor(null); setPickIds(null); setShareStep(false); } }}>
         <DialogContent className="max-w-sm overflow-hidden">
-          <DialogHeader><DialogTitle>{pickIds ? "Escolher cartas" : "Exportar"}</DialogTitle></DialogHeader>
-          {pickIds && exportFor ? (() => {
+          <DialogHeader><DialogTitle>{pickIds ? "Escolher cartas" : shareStep ? "Arquivo para outro aparelho" : "Exportar"}</DialogTitle></DialogHeader>
+          {shareStep && exportFor ? (
+            <div className="min-w-0 space-y-3">
+              <div className="flex justify-end"><button type="button" className="text-xs font-medium text-primary" disabled={exporting} onClick={() => setShareStep(false)}>‹ Voltar</button></div>
+              <div role="radiogroup" className="divide-y overflow-hidden rounded-2xl bg-muted/50">
+                {([[false, "Só as partes", "Programa, temas e horários, sem nomes"], [true, "Partes + designações", "Com oradores, congregações, presidente e orações"]] as const).map(([v, t, d]) => (
+                  <button key={t} type="button" role="radio" aria-checked={shareWith === v} onClick={() => setShareWith(v)} className="flex w-full items-start gap-3 px-3 py-3 text-left">
+                    <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${shareWith === v ? "border-primary" : "border-muted-foreground/40"}`}>{shareWith === v && <span className="h-2 w-2 rounded-full bg-primary" />}</span>
+                    <span className="min-w-0"><span className="block text-sm font-semibold">{t}</span><span className="block text-xs text-muted-foreground">{d}</span></span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Funciona sem internet. Nunca vão: PINs, links e respostas.</p>
+              <Button className="w-full rounded-full" disabled={exporting} onClick={() => runExport("share")}>{exporting ? "Gerando…" : "Gerar arquivo"}</Button>
+            </div>
+          ) : pickIds && exportFor ? (() => {
             const cands = letterCandidates(parts.filter((p) => p.event_id === exportFor.id));
             const setAll = (ids: string[]) => setPickIds(new Set(ids));
             return (
@@ -821,24 +863,52 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
             const items = spkImport.items;
             const sel = items.filter((m) => m.checked).length;
             const toggle = (i: number) => setSpkImport((s) => s && ({ ...s, items: s.items.map((m, j) => j === i ? { ...m, checked: !m.checked } : m) }));
+            const targets = assignableParts(evPartsOf(spkImport.ev.id));
+            const setTarget = (i: number, id: string) => setSpkImport((s) => s && ({ ...s, items: retarget(s.items, i, targets.find((p) => p.id === id) ?? null) }));
+            const editRow = (i: number, k: "speaker" | "congregation", v: string) => setSpkImport((s) => s && ({ ...s, items: s.items.map((m, j) => j === i ? { ...m, row: { ...m.row, [k]: k === "speaker" ? v : v.trim() ? v : null } } : m) }));
+            const roleName = (m: SpeakerMatch) => m.row.role === "chair" ? "Presidente" : m.row.role === "prayer" ? "Oração" : `Nº ${m.row.number}`;
+            const counts = { chair: items.filter((m) => m.row.role === "chair").length, prayer: items.filter((m) => m.row.role === "prayer").length };
             return (
               <div className="min-w-0 space-y-3">
                 <p className="truncate text-xs text-muted-foreground">Arquivo: {spkImport.file}</p>
+                <p className="text-xs text-muted-foreground">{items.length} encontrados{counts.chair ? ` · ${counts.chair} presid.` : ""}{counts.prayer ? ` · ${counts.prayer} oraç.` : ""}</p>
                 <ul className="max-h-[55vh] divide-y overflow-y-auto rounded-2xl bg-muted/50">
                   {items.map((m, i) => {
                     const locked = m.kind === "missing" || m.kind === "confirmed";
+                    const editing = spkEdit === i;
                     return (
-                      <li key={`${m.row.number}-${i}`}>
-                        <label className={`flex min-w-0 items-start gap-3 px-3 py-2.5 ${locked ? "opacity-60" : "cursor-pointer"}`}>
-                          <Checkbox checked={m.checked} disabled={locked || spkBusy} className="mt-0.5" onCheckedChange={() => toggle(i)} />
-                          <span className="min-w-0 flex-1">
-                            <span className="block break-words text-sm font-medium">Nº {m.row.number} · {m.part ? m.part.theme : "(não está no programa)"}</span>
-                            <span className="block break-words text-xs text-muted-foreground">{[m.row.speaker, m.row.congregation].filter(Boolean).join(" · ")}</span>
-                            {m.kind === "replace" && <span className="block text-xs text-warning">⚠ substitui: {m.part?.speaker_name}</span>}
-                            {m.kind === "confirmed" && <span className="block text-xs text-muted-foreground">{m.part?.speaker_name} já confirmou — não será trocado</span>}
-                            {m.kind === "same" && <span className="block text-xs text-muted-foreground">Mesmo orador{m.checked ? " · atualiza congregação" : ""}</span>}
-                          </span>
-                        </label>
+                      <li key={`${m.row.role}-${m.row.number}-${i}`} className="flex min-w-0 items-start gap-3 px-3 py-2.5">
+                        <Checkbox checked={m.checked} disabled={locked || spkBusy} className="mt-1" onCheckedChange={() => toggle(i)} aria-label={`Aplicar ${m.row.speaker}`} />
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <span className="shrink-0 text-xs font-semibold text-muted-foreground">{roleName(m)} →</span>
+                            <select aria-label="Vai para" disabled={spkBusy} value={m.part?.id ?? ""} onChange={(e) => setTarget(i, e.target.value)}
+                              className="h-7 min-w-0 flex-1 truncate rounded-lg border border-input bg-background px-1.5 text-xs">
+                              <option value="">(não aplicar)</option>
+                              {targets.map((p) => <option key={p.id} value={p.id}>{partLabel(p)}</option>)}
+                            </select>
+                          </div>
+                          {editing ? (
+                            <div className="space-y-1">
+                              <Input value={m.row.speaker} onChange={(e) => editRow(i, "speaker", e.target.value)} className="h-8 text-sm" placeholder="Nome" />
+                              <Input value={m.row.congregation ?? ""} onChange={(e) => editRow(i, "congregation", e.target.value)} className="h-8 text-sm" placeholder="Congregação" />
+                              <button type="button" className="text-xs font-medium text-primary" onClick={() => setSpkEdit(null)}>OK</button>
+                            </div>
+                          ) : (
+                            <button type="button" className="flex w-full min-w-0 items-start gap-1 text-left" onClick={() => setSpkEdit(i)} aria-label="Editar nome">
+                              <span className="min-w-0 flex-1">
+                                <span className="block break-words text-sm font-medium">{m.row.speaker}</span>
+                                {m.row.congregation && <span className="block break-words text-xs text-muted-foreground">{m.row.congregation}</span>}
+                              </span>
+                              <Pencil className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                            </button>
+                          )}
+                          {m.swapped && <span className="block text-xs text-primary">⇄ Trocado</span>}
+                          {m.kind === "missing" && <span className="block text-xs text-muted-foreground">Escolha a parte em "Vai para"</span>}
+                          {m.kind === "replace" && <span className="block text-xs text-warning">⚠ substitui: {m.part?.speaker_name}</span>}
+                          {m.kind === "confirmed" && <span className="block text-xs text-muted-foreground">🔒 {m.part?.speaker_name} já confirmou — não será trocado</span>}
+                          {m.kind === "same" && <span className="block text-xs text-muted-foreground">Mesmo orador{m.checked ? " · atualiza congregação" : ""}</span>}
+                        </div>
                       </li>
                     );
                   })}
@@ -876,7 +946,9 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       <datalist id="big-events-elders">
         {elders.filter((e) => e.name).map((e) => <option key={`${e.name}-${e.congregation}`} value={e.name}>{e.congregation}</option>)}
       </datalist>
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {cloudCount != null && <span className="mr-auto text-xs text-muted-foreground">Nuvem: {cloudCount} · Aparelho: {events.length}</span>}
+        <Button size="sm" variant="outline" className="gap-1" disabled={uploading} onClick={() => void uploadAll()}><CloudUpload className={`h-3.5 w-3.5 ${uploading ? "animate-pulse" : ""}`} />Enviar todos</Button>
         <input ref={fileRef} type="file" accept="*/*" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
         <Button size="sm" variant="outline" className="gap-1" disabled={downloading} onClick={() => void downloadAll()}><CloudDownload className={`h-3.5 w-3.5 ${downloading ? "animate-pulse" : ""}`} />Baixar da nuvem</Button>
         <Button size="sm" variant="outline" className="gap-1" onClick={() => fileRef.current?.click()}><Upload className="h-3.5 w-3.5" />Importar programa</Button>

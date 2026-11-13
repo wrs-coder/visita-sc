@@ -14,3 +14,14 @@ describe("mergeEvent", () => {
     expect(r.parts).toEqual([]);
   });
 });
+
+import { mergeWithLocal } from "./cloud-sync";
+describe("mergeWithLocal", () => {
+  it("nunca apaga eventos que só existem no aparelho", () => {
+    const e = (id: string) => ({ id } as never);
+    const r = mergeWithLocal([e("a")], [{ id: "pa", event_id: "a" } as never], [e("a"), e("b")], [{ id: "pb", event_id: "b" } as never]);
+    expect(r.events.map((x: { id: string }) => x.id)).toEqual(["a", "b"]);
+    expect(r.localOnly).toEqual(["b"]);
+    expect(r.parts).toHaveLength(2);
+  });
+});
