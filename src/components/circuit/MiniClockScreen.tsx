@@ -1,4 +1,4 @@
-// Mini tempo do orador: o mesmo relógio do púlpito, só da parte desse orador,
+// Mini tempo do orador: o mesmo relógio da tribuna, só da parte desse orador,
 // com a opção de flutuar por cima do esboço (JW Library, PDF…).
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";

@@ -1,4 +1,4 @@
-// Tela do aparelho espelho (celular, tablet ou TV no púlpito): o relógio é o protagonista.
+// Tela do aparelho espelho (celular, tablet ou TV na tribuna): o relógio é o protagonista.
 // Paisagem: 1) tema + Ao vivo · 2) orador · congregação · 3) relógio · 4) término | próximo orador.
 // Cada linha de texto fica numa linha só (a letra diminui até caber); em pé, o tema pode usar até 3 linhas.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";

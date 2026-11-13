@@ -104,16 +104,49 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.6.0";
+export const RELEASE_NOTES_VERSION = "5.7.0";
 
 /**
- * Aviso automático "O que há de novo" (5.6.0: ligado, só para superintendentes).
+ * Aviso automático "O que há de novo" (5.7.0: ligado, só para superintendentes).
  * O texto continua em Configurações → Ver novidades e no aviso de atualização.
  * Troque para true para voltar a abrir sozinho na primeira abertura após atualizar.
  */
 export const WHATS_NEW_AUTO_SHOW = true;
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "5.7.0",
+    subtitle: "Edição especial — relógio na tribuna, oradores importados e esboços sem distrações.",
+    sections: [
+      {
+        title: "Grandes Eventos", audience: ["super"],
+        items: [
+          "Espelhar relógio: envie a contagem para um celular, tablet ou TV na tribuna pelo QR Code (internet ou Wi‑Fi local do salão).",
+          "Mini tempo do orador: janelinha flutuante para o orador ver o tempo enquanto consulta o esboço.",
+          "Importar oradores: nomes e congregações do PDF, Word, Excel ou CSV do programa oficial do evento.",
+          "Modelos de carta: agora temos a formatação manual do layout de página e a barra de ferramentas de texto.",
+          "Troca de orador: gera novo link ou PIN automaticamente, por segurança.",
+        ],
+      },
+      {
+        title: "Esboços Pessoais", audience: ["super"],
+        items: [
+          "Modo sem distrações: tela limpa ao editar, com os detalhes numa janela.",
+          "Voltar fácil: o botão \"⬅ Esboços\" retorna direto à escolha do tipo de criação.",
+          "Alça de altura: aumente livremente a área de escrita, sem atrapalhar a rolagem.",
+          "Tema automático: preenchido pela primeira linha do Word ou pelo nome do anexo.",
+          "Limpar recentes: apague o histórico com um só toque.",
+        ],
+      },
+      {
+        title: "Sistema e Sincronização", audience: ["super"],
+        items: [
+          "Sincronização inteligente: o botão do topo sincroniza só a tela aberta, poupando dados e bateria.",
+          "Sincronização completa em Meu Perfil, com rotina automática diária de madrugada.",
+        ],
+      },
+    ],
+  },
   {
     version: "5.6.0",
     sections: [

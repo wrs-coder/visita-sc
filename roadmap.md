@@ -50,3 +50,8 @@
 
 - [x] Esboços: "⬅ Esboços" no modo edição volta à escolha do tipo (igual ao modo esboço)
 - [x] Importar oradores: ler PDF do programa oficial (N.x:, congregação abaixo do nome)
+
+## Versão 5.7.0
+- [x] Versão 5.7.0 (código 46), "O que há de novo" só para o SC, texto da Play Console
+- [x] "Púlpito" trocado por "tribuna"
+- [x] Ajuda: relógio na tribuna, Mini tempo, importar oradores, cartas e esboços

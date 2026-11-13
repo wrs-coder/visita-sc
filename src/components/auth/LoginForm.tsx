@@ -24,7 +24,7 @@ import { guestLogin } from "@/lib/guest-login";
 import { localDbStats } from "@/lib/local-db";
 import { runFullSync } from "@/lib/local-auto-sync";
 
-const APP_VERSION = "5.6.0";
+const APP_VERSION = "5.7.0";
 const APP_BUILD = "2026.11.11";
 const APP_UPDATED_AT = "09/11/2026";
 

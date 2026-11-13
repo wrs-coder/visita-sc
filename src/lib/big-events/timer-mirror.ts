@@ -1,4 +1,4 @@
-// Espelho do relógio do Controle de tempo (tablet no púlpito / mesa de som).
+// Espelho do relógio do Controle de tempo (tablet na tribuna / mesa de som).
 // Lógica pura: o celular do superintendente monta um "retrato" pequeno e o envia; o tablet
 // continua contando sozinho pelo próprio relógio a partir do tempo decorrido recebido,
 // então diferença de hora entre aparelhos ou sinal fraco não congela a contagem.

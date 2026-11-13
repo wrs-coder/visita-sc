@@ -2027,7 +2027,7 @@
   "timerMirror": {
     "menu": "Espelhar relógio",
     "title": "Espelhar relógio",
-    "subtitle": "Mostre só o relógio da parte em andamento em um tablet ou TV no púlpito ou na mesa de som.",
+    "subtitle": "Mostre só o relógio da parte em andamento em um tablet ou TV na tribuna ou na mesa de som.",
     "online": "Internet",
     "local": "Rede local",
     "onlineHint": "No tablet, abra a câmera e aponte para o código. Os dois aparelhos precisam de internet; se o sinal cair, o relógio do tablet continua contando.",
