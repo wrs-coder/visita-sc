@@ -8,6 +8,8 @@ export interface TimerPart {
   id: string; sort_order: number; theme: string; part_time: string | null; duration_min: number | null;
   outline_number: string | null; part_type_id: string | null; part_type_label: string | null;
   assigned_to: string; speaker_name: string | null;
+  /** Opcional: só usado pelo relógio espelhado (linha do orador). */
+  speaker_congregation?: string | null;
 }
 export interface TimerState {
   v: 1; active: string | null; startedAt: number | null; pausedAt: number | null;

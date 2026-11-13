@@ -28,3 +28,30 @@
 - [x] Relatório previsto × real e por ancião, com PDF
 - [x] "Informações adicionais" só aparece se já tiver texto; Presidente/Oração sem participações
 - [ ] Testar a bolinha flutuante no celular (precisa gerar novo APK)
+- [x] Espelhar relógio num tablet/TV: pela internet (QR Code) e pela rede local Wi‑Fi do salão
+- [x] Relógio espelhado: layout em 4 linhas (paisagem), tema em até 3 linhas (retrato), tela cheia ao primeiro toque, QR Code com o endereço do ambiente aberto
+- [ ] Testar o espelho pela rede local no celular (precisa gerar novo APK)
+
+## Cartas convite
+- [x] Corrigir modelo inicial com dados do IBE-01 aparecendo em outros circuitos
+- [x] Barra de formatação por caixa (negrito, itálico, marcador, destaque, tamanho da letra, espaço)
+- [x] Layout manual da carta (letra, margens, espaçamento) + contador de páginas
+- [x] Relógio espelhado: retrato guardado (não volta a "Aguardando" ao recarregar/sem sinal)
+- [x] Relógio espelhado: em simpósio mostrar só o tema do discurso
+- [x] Mini tempo do orador: link por parte + janelinha flutuante
+
+## Esboços pessoais + Mini tempo Safari (13/11)
+- [x] Mini tempo: flutuar no Safari (comando Apple) + mensagem Slide Over
+- [x] Lembrete cronômetro: tempo escolhido sempre em destaque; "não lembrar" só até sair
+- [x] .docx: primeira linha vira o Tema
+- [x] Anexar imagem/vídeo preenche Tema vazio
+- [x] Botão Limpar em Esboços recentes
+- [x] Edição sem distrações: barra compacta, detalhes em popup, alça sem afetar rolagem; vale site/tablet
+
+- [x] Esboços: "⬅ Esboços" no modo edição volta à escolha do tipo (igual ao modo esboço)
+- [x] Importar oradores: ler PDF do programa oficial (N.x:, congregação abaixo do nome)
+
+## Versão 5.7.0
+- [x] Versão 5.7.0 (código 46), "O que há de novo" só para o SC, texto da Play Console
+- [x] "Púlpito" trocado por "tribuna"
+- [x] Ajuda: relógio na tribuna, Mini tempo, importar oradores, cartas e esboços

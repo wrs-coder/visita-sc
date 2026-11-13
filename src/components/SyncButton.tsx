@@ -6,6 +6,9 @@ import { flushQueue, subscribe as subscribeQueue } from "@/lib/offline-queue";
 import { useConnectionMode } from "@/lib/connection-mode";
 import { useAuth } from "@/hooks/use-auth";
 import { runDeviceSync } from "@/lib/device-sync";
+import { useRouter, useRouterState } from "@tanstack/react-router";
+import { syncTables, supabasePull, supabaseTombstones } from "@/lib/local-sync";
+import { screenSyncTarget, SCREEN_SYNC_EVENT } from "@/lib/screen-sync";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +20,8 @@ export function SyncButton({ className, onSync }: { className?: string; onSync?:
   const mode = useConnectionMode();
   const { user, role, refresh } = useAuth();
   const [syncing, setSyncing] = useState(false);
+  const router = useRouter();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [pending, setPending] = useState(0);
   const [lastSync, setLastSync] = useState<number | null>(() => {
@@ -58,6 +63,25 @@ export function SyncButton({ className, onSync }: { className?: string; onSync?:
       return;
     }
     setSyncing(true);
+    // Só a tela aberta: envia pendências e baixa apenas as tabelas dela.
+    const target = user?.id ? screenSyncTarget(pathname) : null;
+    if (target) {
+      try {
+        if (pathname.startsWith("/estudo-pessoal") || pathname.startsWith("/consideracoes-campo")) await onSync?.();
+        const sent = await flushQueue();
+        const res = await syncTables({ tables: target.tables, pull: supabasePull, tombstones: supabaseTombstones });
+        await queryClient.invalidateQueries();
+        void router.invalidate();
+        window.dispatchEvent(new CustomEvent(SCREEN_SYNC_EVENT, { detail: { tables: target.tables } }));
+        if (sent.remaining > 0) toast.warning(t("sync.remaining", { n: sent.remaining }));
+        else if (res.some((r) => !r.ok)) toast.warning(t("sync.partial", { n: res.filter((r) => !r.ok).length }));
+        else toast.success(t("sync.screenUpdated", { screen: target.label }));
+      } catch (err) {
+        console.warn("[sync] tela", err);
+        toast.warning(t("sync.unstable"));
+      } finally { setSyncing(false); }
+      return;
+    }
     try {
       await onSync?.();
       // Celular primeiro: este botão é quem envia o que foi salvo e baixa

@@ -106,7 +106,7 @@ export function WhatsNewDialog() {
   // ficar escondida atrás da tela de PIN/biometria.
   const signedIn = !!user;
   useEffect(() => {
-    // 5.6.0: abre sozinho só para o superintendente de circuito.
+    // 5.7.0: abre sozinho só para o superintendente de circuito.
     if (!isNativeApp() || !signedIn || role !== "superintendent") return;
     let cancelled = false;
     void (async () => {

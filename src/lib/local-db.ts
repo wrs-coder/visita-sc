@@ -255,6 +255,22 @@ export async function markDeleted(
   });
 }
 
+/**
+ * Mescla campos numa linha já existente do espelho sem mexer no cursor nem
+ * no carimbo, para a próxima sincronização incremental continuar completa.
+ * Usado quando uma mudança chega ao vivo (ex.: resposta do orador).
+ */
+export async function patchMirrorRow(table: string, id: string, patch: Record<string, unknown>): Promise<boolean> {
+  return serialize(async () => {
+    const file = await readFile(table);
+    const prev = file.rows[id];
+    if (!prev || prev.deletedAt) return false;
+    file.rows[id] = { ...prev, data: { ...(prev.data as Record<string, unknown>), ...patch } };
+    await writeFile(table, file);
+    return true;
+  });
+}
+
 /** Linhas vivas (sem tombstone) da tabela espelho. */
 export async function getRows<T extends Record<string, unknown>>(
   table: string,

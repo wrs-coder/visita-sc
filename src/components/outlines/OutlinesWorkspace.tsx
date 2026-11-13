@@ -121,7 +121,9 @@ import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySen
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
 import { RichOutlineContent, sanitizeNoteHtml } from "@/lib/rich-content";
 import { searchOutlines } from "@/lib/outline-search";
-import { readRecent, touchRecent } from "@/lib/recent-outlines";
+import { readRecent, touchRecent, clearRecent } from "@/lib/recent-outlines";
+import { titleFromNewAttachment } from "@/lib/attachment-title";
+import { EditorResizeHandle } from "@/components/outlines/EditorResizeHandle";
 import { repairFolderTypes } from "@/lib/folder-type-repair";
 import { cn } from "@/lib/utils";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
@@ -234,6 +236,9 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
   const [saving, setSaving] = useState(false);
   const [activeBible, setActiveBible] = useState<BibleLibrary | null>(null);
   const [mode, setMode] = useState<"edit" | "outline">("outline");
+  // Edição sem distrações: esconde cabeçalho, tipo e recentes em todas as larguras.
+  const focusEdit = !!draft && mode === "edit";
+  useEffect(() => { if (focusEdit) setLibCollapsed(true); }, [focusEdit]);
   const kbVisible = useVirtualKeyboardVisible();
   const [fullscreen, setFullscreen] = useState(false);
   const [foldersCollapsed, setFoldersCollapsed] = useState<boolean>(() => {
@@ -1822,7 +1827,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
   return (
     <>
       <div className="space-y-4 w-full max-w-full overflow-x-clip box-border min-w-0">
-        <header className={cn("flex items-center gap-3", (lockedType || (draft && !showLibrary)) && "hidden", !lockedType && draft && !showLibrary && "lg:flex")}>
+        <header className={cn("flex items-center gap-3", (lockedType || (draft && !showLibrary)) && "hidden", !lockedType && draft && !showLibrary && "lg:flex", focusEdit && "!hidden")}>
           <div className="rounded-xl bg-primary/10 p-2 text-primary">
             <FileText className="h-5 w-5" />
           </div>
@@ -1836,7 +1841,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
 
 
         {/* Seletor de tipo (obrigatório) */}
-        <Card className={cn((lockedType || (draft && !showLibrary)) && "hidden", !lockedType && draft && !showLibrary && "lg:block")}>
+        <Card className={cn((lockedType || (draft && !showLibrary)) && "hidden", !lockedType && draft && !showLibrary && "lg:block", focusEdit && "!hidden")}>
           <CardContent className="p-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <span className="text-xs font-semibold text-muted-foreground">
               {t("personalOutlines.typePicker.label")}:
@@ -1876,11 +1881,18 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
         ) : (
           <>
           {recentNotes.length > 0 && !submittedQuery && (
-            <Card className={cn("mb-4", draft && !showLibrary && "hidden lg:block")}>
+            <Card className={cn("mb-4", draft && !showLibrary && "hidden lg:block", focusEdit && "!hidden")}>
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" />
-                  {t("personalOutlines.recentTitle", { defaultValue: "Esboços recentes" })}
+                  <span className="flex-1">{t("personalOutlines.recentTitle", { defaultValue: "Esboços recentes" })}</span>
+                  <button
+                    type="button"
+                    onClick={() => { clearRecent(activeType); setRecentIds([]); }}
+                    className="rounded-full px-2 py-0.5 text-[11px] font-medium normal-case tracking-normal text-primary hover:bg-primary/10"
+                  >
+                    {t("personalOutlines.recentClear", { defaultValue: "Limpar" })}
+                  </button>
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none]">
                   {recentNotes.map((n) => (
@@ -2127,7 +2139,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
                 para a pílula de tempo fixa (sticky) acompanhar a rolagem. */}
             <Card className={cn("w-full max-w-full min-w-0 overflow-clip max-lg:border-0 max-lg:shadow-none max-lg:bg-transparent", (!draft || showLibrary) && "hidden lg:block")}>
               <CardContent className="p-5 max-lg:pt-0 space-y-4 w-full max-w-full overflow-x-clip box-border min-w-0">
-                {draft && (
+                {draft && !focusEdit && (
                   <div className="hidden lg:flex items-center -ml-2 -mt-2">
                     <Button variant="ghost" size="sm" className="hidden lg:inline-flex h-8 px-2 text-primary" onClick={() => setLibCollapsed((v) => !v)}>
                       {libCollapsed ? <ChevronLeft className="h-4 w-4 mr-1" /> : <Maximize2 className="h-4 w-4 mr-1" />}
@@ -2172,7 +2184,16 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
                     dateFmt={dateFmt}
                     onInsertBibleText={handleInsertBibleText}
                     onSyncInfo={setSyncInfo}
-                    onBack={() => { setShowLibrary(true); window.scrollTo({ top: 0 }); }}
+                    onBack={() => {
+                      if (focusEdit) {
+                        // Igual ao Modo esboço: sai da edição sem distrações e volta à tela
+                        // "Escolha o tipo de criação:" com a lista completa (o rascunho continua no estado).
+                        setMode("outline");
+                        setSelectedFolderId(null);
+                        setLibCollapsed(false);
+                      }
+                      setShowLibrary(true); window.scrollTo({ top: 0 });
+                    }}
                   />
                   </>
                 )}
@@ -2322,6 +2343,8 @@ interface EditorProps {
 
 type SyncInfo = { run: () => void | Promise<void>; syncing: boolean };
 
+const EDITOR_EXTRA_KEY = "visita-sc:outline-editor-extra";
+
 function NoteEditor({
   draft, mode, type, saving, activeBible, detected,
   onPatch, onModeChange, onSave, onDelete, onExport, onExportDocx, onFullscreen, onCloud, dateFmt, onInsertBibleText, onSyncInfo, onBack,
@@ -2335,6 +2358,14 @@ function NoteEditor({
   const META_COLLAPSED_KEY = "visita-sc:outline-meta-collapsed";
   const stableVh = useStableViewportHeight();
   const [outlineSlot, setOutlineSlot] = useState<HTMLDivElement | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  // Altura extra do texto escolhida pela alça (só no aparelho).
+  const [extraPx, setExtraPx] = useState<number>(() => {
+    try { return Math.max(0, Number(localStorage.getItem(EDITOR_EXTRA_KEY)) || 0); } catch { return 0; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(EDITOR_EXTRA_KEY, String(Math.round(extraPx))); } catch { /* noop */ }
+  }, [extraPx]);
   // Detalhes começam recolhidos (mais espaço para escrever); a escolha fica salva.
   const [metaCollapsed, setMetaCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(META_COLLAPSED_KEY) !== "0"; } catch { return true; }
@@ -2421,131 +2452,9 @@ function NoteEditor({
     }
   };
 
-
-  return (
-    <div className="w-full max-w-full overflow-x-clip box-border min-w-0 [overflow-wrap:anywhere] break-words flex flex-col min-h-[calc(100dvh-8rem)]">
-      <div className="sticky top-0 z-30 shrink-0 -mx-5 px-3 sm:px-5 py-2 mb-3 bg-background/95 backdrop-blur border-b safe-top flex flex-wrap items-center justify-between gap-2 w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)] min-w-0">
-
-        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-          {onBack && (
-            <Button variant="ghost" size="sm" className="lg:hidden h-8 px-1.5 text-primary" onClick={onBack}>
-              <ChevronLeft className="h-4 w-4" /> {t("personalOutlines.list.back", { defaultValue: "Esboços" })}
-            </Button>
-          )}
-          {!isTalk && (
-            <div className="inline-flex rounded-md border bg-background p-0.5">
-              <button
-                type="button"
-                onClick={() => onModeChange("edit")}
-                className={cn(
-                  "px-3 py-1 text-xs rounded-sm transition",
-                  mode === "edit" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-                )}
-              >
-                {t("fieldConsiderations.editMode")}
-              </button>
-              <button
-                type="button"
-                onClick={() => onModeChange("outline")}
-                className={cn(
-                  "px-3 py-1 text-xs rounded-sm transition",
-                  mode === "outline" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-                )}
-              >
-                {t("fieldConsiderations.outlineMode")}
-              </button>
-            </div>
-          )}
-          <span className="hidden sm:inline text-[11px] text-muted-foreground">
-            {t("fieldConsiderations.updatedAt")}: {dateFmt(draft.updated_at)}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <SavingIndicator saving={saving} />
-          {isField && (
-            <FieldNoteInfoButton
-              note={draft}
-              onSync={canSync && !offline ? handleSyncFromField : undefined}
-              syncing={syncing}
-            />
-          )}
-          {isWeekOutline && draft.talk?.kind && (
-            <FieldNoteInfoButton
-              note={draft}
-              onSync={talkSync.can ? talkSync.sync : undefined}
-              syncing={talkSync.syncing}
-            />
-          )}
-          {!(isField && mode === "outline") && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMetaCollapsed((v) => !v)}
-            title={metaCollapsed
-              ? t("personalOutlines.editor.expandMeta", { defaultValue: "Expandir cabeçalho" })
-              : t("personalOutlines.editor.collapseMeta", { defaultValue: "Minimizar cabeçalho" })}
-          >
-            {metaCollapsed ? <ChevronsUpDown className="h-4 w-4" /> : <ChevronsDownUp className="h-4 w-4" />}
-            {isField && (
-              <span className="ml-1 text-xs">
-                {t("fieldConsiderations.editDetails", { defaultValue: "Editar detalhes" })}
-              </span>
-            )}
-          </Button>
-          )}
-          {(mode === "outline" || mode === "edit") && !isTalk && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={onFullscreen}
-              title={t("personalOutlines.fullscreen.enter")}
-              aria-label={t("personalOutlines.fullscreen.enter")}
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={t("personalOutlines.editor.moreActions", { defaultValue: "Mais ações" })}>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {mode === "outline" && !isTalk && (
-                <DropdownMenuItem onClick={onFullscreen}>
-                  <Maximize2 className="h-4 w-4 mr-2" /> {t("personalOutlines.fullscreen.enter")}
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={onExport}>
-                <Download className="h-4 w-4 mr-2" /> {t("personalOutlines.folders.exportNote")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onExportDocx}>
-                <FileText className="h-4 w-4 mr-2" /> Word (.docx)
-              </DropdownMenuItem>
-              {!isTalk && (
-                <DropdownMenuItem onClick={onCloud}>
-                  <Cloud className="h-4 w-4 mr-2" /> {t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
-                <Trash2 className="h-4 w-4 mr-2" /> {t("fieldConsiderations.delete")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {mode === "edit" && (
-            <Button size="sm" className="h-8" onClick={onSave} disabled={saving} title={t("fieldConsiderations.save")}>
-              <Save className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.save")}</span>
-            </Button>
-          )}
-        </div>
-      </div>
-
-
-
-      <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden max-h-[38vh] overflow-y-auto overflow-x-hidden pr-1">
-        {!metaCollapsed && !(isField && mode === "outline") && (<>
+  // Campos de detalhes: no modo edição abrem em janela (popup) para a área de
+  // escrita ficar sem distrações; no modo esboço continuam no cabeçalho.
+  const metaFields = (<>
         {isField && (
           <div className="grid gap-3 sm:grid-cols-2 w-full max-w-full min-w-0">
             <div className="grid gap-1.5 min-w-0">
@@ -2675,7 +2584,162 @@ function NoteEditor({
 
           </>
         ) : null}
-        </>)}
+  </>);
+  const focusEdit = mode === "edit";
+  const fullHeight = metaCollapsed || focusEdit;
+
+
+  return (
+    <div className="w-full max-w-full overflow-x-clip box-border min-w-0 [overflow-wrap:anywhere] break-words flex flex-col min-h-[calc(100dvh-8rem)]">
+      <div className="sticky top-0 z-30 shrink-0 -mx-5 px-3 sm:px-5 py-2 mb-3 bg-background/95 backdrop-blur border-b safe-top flex flex-wrap items-center justify-between gap-2 w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)] min-w-0">
+
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          {onBack && (
+            <Button variant="ghost" size="sm" className={cn("h-8 px-1.5 text-primary", !focusEdit && "lg:hidden")} onClick={onBack}>
+              <ChevronLeft className="h-4 w-4" />{" "}
+              {t("personalOutlines.list.back", { defaultValue: "Esboços" })}
+            </Button>
+          )}
+          {!isTalk && focusEdit && (
+            <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs" onClick={() => onModeChange("outline")}>
+              <BookOpen className="h-4 w-4 mr-1" />
+              {t("fieldConsiderations.outlineMode")}
+            </Button>
+          )}
+          {!isTalk && !focusEdit && (
+            <div className="inline-flex rounded-md border bg-background p-0.5">
+              <button
+                type="button"
+                onClick={() => onModeChange("edit")}
+                className={cn(
+                  "px-3 py-1 text-xs rounded-sm transition",
+                  "hover:bg-muted",
+                )}
+              >
+                {t("fieldConsiderations.editMode")}
+              </button>
+              <button
+                type="button"
+                onClick={() => onModeChange("outline")}
+                className={cn(
+                  "px-3 py-1 text-xs rounded-sm transition",
+                  mode === "outline" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                {t("fieldConsiderations.outlineMode")}
+              </button>
+            </div>
+          )}
+          <span className={cn("hidden text-[11px] text-muted-foreground", !focusEdit && "sm:inline")}>
+            {t("fieldConsiderations.updatedAt")}: {dateFmt(draft.updated_at)}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <SavingIndicator saving={saving} />
+          {isField && (
+            <FieldNoteInfoButton
+              note={draft}
+              onSync={canSync && !offline ? handleSyncFromField : undefined}
+              syncing={syncing}
+            />
+          )}
+          {isWeekOutline && draft.talk?.kind && (
+            <FieldNoteInfoButton
+              note={draft}
+              onSync={talkSync.can ? talkSync.sync : undefined}
+              syncing={talkSync.syncing}
+            />
+          )}
+          {focusEdit && (
+            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setDetailsOpen(true)}>
+              <Pencil className="h-4 w-4 sm:mr-1" />
+              <span className="hidden min-[380px]:inline text-xs">
+                {t("fieldConsiderations.editDetails", { defaultValue: "Editar detalhes" })}
+              </span>
+            </Button>
+          )}
+          {!focusEdit && !(isField && mode === "outline") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMetaCollapsed((v) => !v)}
+            title={metaCollapsed
+              ? t("personalOutlines.editor.expandMeta", { defaultValue: "Expandir cabeçalho" })
+              : t("personalOutlines.editor.collapseMeta", { defaultValue: "Minimizar cabeçalho" })}
+          >
+            {metaCollapsed ? <ChevronsUpDown className="h-4 w-4" /> : <ChevronsDownUp className="h-4 w-4" />}
+            {isField && (
+              <span className="ml-1 text-xs">
+                {t("fieldConsiderations.editDetails", { defaultValue: "Editar detalhes" })}
+              </span>
+            )}
+          </Button>
+          )}
+          {(mode === "outline" || mode === "edit") && !isTalk && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={onFullscreen}
+              title={t("personalOutlines.fullscreen.enter")}
+              aria-label={t("personalOutlines.fullscreen.enter")}
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={t("personalOutlines.editor.moreActions", { defaultValue: "Mais ações" })}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {mode === "outline" && !isTalk && (
+                <DropdownMenuItem onClick={onFullscreen}>
+                  <Maximize2 className="h-4 w-4 mr-2" /> {t("personalOutlines.fullscreen.enter")}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={onExport}>
+                <Download className="h-4 w-4 mr-2" /> {t("personalOutlines.folders.exportNote")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onExportDocx}>
+                <FileText className="h-4 w-4 mr-2" /> Word (.docx)
+              </DropdownMenuItem>
+              {!isTalk && (
+                <DropdownMenuItem onClick={onCloud}>
+                  <Cloud className="h-4 w-4 mr-2" /> {t("personalOutlines.cloud.button", { defaultValue: "Nuvem" })}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+                <Trash2 className="h-4 w-4 mr-2" /> {t("fieldConsiderations.delete")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {mode === "edit" && (
+            <Button size="sm" className="h-8" onClick={onSave} disabled={saving} title={t("fieldConsiderations.save")}>
+              <Save className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.save")}</span>
+            </Button>
+          )}
+        </div>
+      </div>
+
+
+
+      <Dialog open={focusEdit && detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-lg max-h-[85dvh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("fieldConsiderations.editDetails", { defaultValue: "Editar detalhes" })}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 w-full max-w-full min-w-0">{metaFields}</div>
+          <DialogFooter>
+            <Button onClick={() => setDetailsOpen(false)}>{t("common.done", { defaultValue: "Concluído" })}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden max-h-[38vh] overflow-y-auto overflow-x-hidden pr-1">
+        {!metaCollapsed && mode !== "edit" && !(isField && mode === "outline") && metaFields}
 
         {mode === "edit" && (
           <FloatingVersePanel
@@ -2711,17 +2775,21 @@ function NoteEditor({
           const attachRow = hasAttachments ? " - 5rem" : "";
           // Altura medida com o teclado FECHADO: abrir o teclado não encolhe a
           // área de texto (antes caía para ~3 linhas no Android).
-          let minH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "22rem";
-          let maxH = metaCollapsed ? `calc(100dvh - 14rem${attachRow})` : "60vh";
+          let minH = fullHeight ? `calc(100dvh - 14rem${attachRow})` : "22rem";
+          let maxH = fullHeight ? `calc(100dvh - 14rem${attachRow})` : "60vh";
           if (stableVh) {
             const rem = 16;
-            if (metaCollapsed) {
+            if (fullHeight) {
               const px = Math.max(22 * rem, stableVh - 14 * rem - (hasAttachments ? 5 * rem : 0));
               minH = `${px}px`;
               maxH = `${px}px`;
             } else {
               maxH = `${Math.max(22 * rem, Math.round(stableVh * 0.6))}px`;
             }
+          }
+          if (mode === "edit" && extraPx > 0) {
+            minH = `calc(${minH} + ${Math.round(extraPx)}px)`;
+            maxH = `calc(${maxH} + ${Math.round(extraPx)}px)`;
           }
           return mode === "edit" ? (
             <React.Suspense fallback={<div className="flex-1 rounded-md border bg-muted/30" style={{ minHeight: minH }} aria-busy="true" />}>
@@ -2736,10 +2804,15 @@ function NoteEditor({
               collapsibleToolbarKey="outlines.toolbarOpen"
               // Missão 01: sem cronômetro embutido no modo edição.
               outlineId={undefined}
-              compact={metaCollapsed}
+              compact={fullHeight}
               attachments={draft.attachments ?? []}
-              onAttachmentsChange={(next) => onPatch("attachments", next)}
+              onAttachmentsChange={(next) => {
+                const title = titleFromNewAttachment(draft.title, draft.attachments ?? [], next);
+                if (title) onPatch("title", title);
+                onPatch("attachments", next);
+              }}
             />
+            <EditorResizeHandle value={extraPx} onChange={setExtraPx} />
             </React.Suspense>
           ) : (
             <>

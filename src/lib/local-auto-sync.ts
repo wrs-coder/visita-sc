@@ -1,4 +1,8 @@
-// FASE 4 — Sincronização automática do espelho local (2x ao dia).
+// FASE 4 — Sincronização automática do espelho local (1x ao dia, madrugada).
+// Regra atual: uma única execução por dia, a partir das 02:00 (hora do
+// aparelho, com um sorteio fixo de 0–59 min por aparelho para espalhar a
+// carga no servidor). Se o app não estiver aberto de madrugada, roda na
+// primeira abertura do dia. Entre 00:00 e o início da janela não roda.
 //
 // O download incremental (local-sync) roda automaticamente no máximo
 // duas vezes por dia: uma na janela da manhã (06:00–11:59) e outra na
@@ -57,14 +61,24 @@ const MIN_GAP_MS = 30 * 1000; // evita tempestade em eventos encadeados
 let lastStart = 0;
 let started = false;
 
-// ————— Janelas diárias (horário do aparelho) —————
-export type SyncWindow = "morning" | "afternoon";
+// ————— Janela diária (horário do aparelho) —————
+export type SyncWindow = "daily";
 
-export function currentSyncWindow(now: Date = new Date()): SyncWindow | null {
-  const h = now.getHours();
-  if (h >= 6 && h < 12) return "morning";
-  if (h >= 12) return "afternoon";
-  return null; // 00:00–05:59: sem sincronização automática
+const JITTER_KEY = "visita-sc:auto-sync-jitter";
+/** Minutos sorteados uma vez por aparelho (0–59), estáveis. */
+export function deviceJitterMin(): number {
+  try {
+    const v = localStorage.getItem(JITTER_KEY);
+    if (v != null && !Number.isNaN(Number(v))) return Number(v);
+    const n = Math.floor(Math.random() * 60);
+    localStorage.setItem(JITTER_KEY, String(n));
+    return n;
+  } catch { return 0; }
+}
+
+export function currentSyncWindow(now: Date = new Date(), jitterMin = 0): SyncWindow | null {
+  const mins = now.getHours() * 60 + now.getMinutes();
+  return mins >= 120 + jitterMin ? "daily" : null; // antes das 02:00(+sorteio): espera
 }
 
 function dayKey(d: Date = new Date()): string {
@@ -75,7 +89,6 @@ function dayKey(d: Date = new Date()): string {
 
 const windowCursorKey = (w: SyncWindow) => `__auto_sync_window:${w}`;
 
-/** A janela atual já sincronizou hoje? (null = fora de janela) */
 async function windowAlreadySyncedToday(w: SyncWindow): Promise<boolean> {
   return (await getCursor(windowCursorKey(w))) === dayKey();
 }
@@ -89,7 +102,7 @@ export async function runAutoSync(opts?: { force?: boolean; full?: boolean }): P
   // Sem force: respeita a janela do dia (máx. 1 execução por janela).
   let windowToMark: SyncWindow | null = null;
   if (!opts?.force) {
-    const w = currentSyncWindow();
+    const w = currentSyncWindow(new Date(), deviceJitterMin());
     if (!w) return null;
     if (await windowAlreadySyncedToday(w)) return null;
     windowToMark = w;

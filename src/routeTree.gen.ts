@@ -48,6 +48,7 @@ import { Route as CadastroIndexRouteImport } from './routes/cadastro.index'
 import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
 import { Route as ConfirmarTokenRouteImport } from './routes/confirmar.$token'
+import { Route as RelogioCodeRouteImport } from './routes/relogio.$code'
 import { Route as VisitanteIndexRouteImport } from './routes/visitante.index'
 import { Route as VisitantePainelRouteImport } from './routes/visitante.painel'
 import { Route as AppRelatorioVisitIdRouteImport } from './routes/_app.relatorio.$visitId'
@@ -251,6 +252,11 @@ const ConfirmarTokenRoute = ConfirmarTokenRouteImport.update({
   path: '/confirmar/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RelogioCodeRoute = RelogioCodeRouteImport.update({
+  id: '/relogio/$code',
+  path: '/relogio/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VisitanteIndexRoute = VisitanteIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -315,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
+  '/relogio/$code': typeof RelogioCodeRoute
   '/visitante/painel': typeof VisitantePainelRoute
   '/cadastro/': typeof CadastroIndexRoute
   '/visitante/': typeof VisitanteIndexRoute
@@ -359,6 +366,7 @@ export interface FileRoutesByTo {
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
+  '/relogio/$code': typeof RelogioCodeRoute
   '/visitante/painel': typeof VisitantePainelRoute
   '/cadastro': typeof CadastroIndexRoute
   '/visitante': typeof VisitanteIndexRoute
@@ -406,6 +414,7 @@ export interface FileRoutesById {
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
+  '/relogio/$code': typeof RelogioCodeRoute
   '/visitante/painel': typeof VisitantePainelRoute
   '/cadastro/': typeof CadastroIndexRoute
   '/visitante/': typeof VisitanteIndexRoute
@@ -453,6 +462,7 @@ export interface FileRouteTypes {
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
+    | '/relogio/$code'
     | '/visitante/painel'
     | '/cadastro/'
     | '/visitante/'
@@ -497,6 +507,7 @@ export interface FileRouteTypes {
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
+    | '/relogio/$code'
     | '/visitante/painel'
     | '/cadastro'
     | '/visitante'
@@ -543,6 +554,7 @@ export interface FileRouteTypes {
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
+    | '/relogio/$code'
     | '/visitante/painel'
     | '/cadastro/'
     | '/visitante/'
@@ -564,6 +576,7 @@ export interface RootRouteChildren {
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
   CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
   ConfirmarTokenRoute: typeof ConfirmarTokenRoute
+  RelogioCodeRoute: typeof RelogioCodeRoute
   CadastroIndexRoute: typeof CadastroIndexRoute
   ApiPublicPingRoute: typeof ApiPublicPingRoute
   ApiPublicVersionRoute: typeof ApiPublicVersionRoute
@@ -844,6 +857,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfirmarTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/relogio/$code': {
+      id: '/relogio/$code'
+      path: '/relogio/$code'
+      fullPath: '/relogio/$code'
+      preLoaderRoute: typeof RelogioCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/visitante/': {
       id: '/visitante/'
       path: '/'
@@ -971,6 +991,7 @@ const rootRouteChildren: RootRouteChildren = {
   CadastroAnciaoRoute: CadastroAnciaoRoute,
   CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,
   ConfirmarTokenRoute: ConfirmarTokenRoute,
+  RelogioCodeRoute: RelogioCodeRoute,
   CadastroIndexRoute: CadastroIndexRoute,
   ApiPublicPingRoute: ApiPublicPingRoute,
   ApiPublicVersionRoute: ApiPublicVersionRoute,

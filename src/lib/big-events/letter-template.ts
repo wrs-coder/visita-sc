@@ -24,7 +24,32 @@ export interface LetterTemplate {
   headerStyle?: LetterHeaderStyle;
   /** Cores decorativas da carta em PDF (ausente = paleta Clássica). */
   colors?: LetterColors;
+  /** Layout da carta em PDF (ausente = ajuste automático). */
+  layout?: LetterLayout;
+  /** Ajustes por caixa de texto: letra (pt) e espaço acima/abaixo (pt). */
+  boxes?: Partial<Record<LetterBoxKey, LetterBoxStyle>>;
   updatedAt: string;
+}
+
+export type LetterBoxKey = "opening" | "highlight" | "reminders" | "rehearsal" | "rehearsalNote" | "closing";
+export const LETTER_BOX_KEYS: LetterBoxKey[] = ["opening", "highlight", "reminders", "rehearsal", "rehearsalNote", "closing"];
+export interface LetterBoxStyle { size?: number; above?: number; below?: number }
+export interface LetterLayout { mode: "auto" | "manual"; size: number; side: number; top: number; bottom: number; gap: number }
+/** Limites do modo manual (pt). */
+export const LAYOUT_LIMITS = { size: [9, 14], side: [28, 85], top: [20, 85], bottom: [20, 85], gap: [0.2, 1.5] } as const;
+export const BOX_SIZE_LIMITS = [8, 16] as const;
+export const DEFAULT_MANUAL_LAYOUT: LetterLayout = { mode: "manual", size: 11.5, side: 68, top: 60, bottom: 56, gap: 1 };
+const clampN = (v: unknown, [a, b]: readonly [number, number], fb: number) => (typeof v === "number" && Number.isFinite(v) ? Math.min(b, Math.max(a, v)) : fb);
+/** Layout manual válido, ou null para automático. */
+export function sanitizeLayout(l: unknown): LetterLayout | null {
+  const o = l as Partial<LetterLayout> | null;
+  if (!o || o.mode !== "manual") return null;
+  const d = DEFAULT_MANUAL_LAYOUT, L = LAYOUT_LIMITS;
+  return { mode: "manual", size: clampN(o.size, L.size, d.size), side: clampN(o.side, L.side, d.side), top: clampN(o.top, L.top, d.top), bottom: clampN(o.bottom, L.bottom, d.bottom), gap: clampN(o.gap, L.gap, d.gap) };
+}
+export function boxStyleOf(t: Pick<LetterTemplate, "boxes">, k: LetterBoxKey): { size: number | null; above: number; below: number } {
+  const b = t.boxes?.[k] ?? {};
+  return { size: typeof b.size === "number" ? clampN(b.size, BOX_SIZE_LIMITS, 11) : null, above: clampN(b.above, [0, 60], 0), below: clampN(b.below, [0, 60], 0) };
 }
 
 export type LetterHeaderStyle = "classic" | "formal" | "institutional";
@@ -96,27 +121,69 @@ export function defaultTemplate(): LetterTemplate {
   return {
     id: DEFAULT_TEMPLATE_ID,
     name: "Assembleia de circuito",
-    headerTitle: "Wanderson Rodrigues",
-    headerSubtitle: "IBE-01",
-    headerAddress: "Rua 1, Bl 03, nº 22A, AP 202, Cidade do Sequele, Icolo & Bengo – Angola",
-    headerPhone: "Tel.: +244 944 683 823 / 958 190 228",
-    refLine: "DESIGNAÇÃO — Escola do Ministério do Reino 2027",
+    headerTitle: "",
+    headerSubtitle: "",
+    headerAddress: "",
+    headerPhone: "",
+    refLine: "DESIGNAÇÃO — Assembleia de circuito",
     salutation: "Amado irmão:",
     opening: "Por ser um exemplo como ancião e por sua habilidade como orador e instrutor, você foi escolhido para ter uma participação neste evento especial. Por isso, assim como Esdras, 'prepare seu coração' para ensinar. Dessa forma, assim como Jesus, você conseguirá fazer 'arder o coração' da assistência por 'abrir plenamente as Escrituras' e, certamente, todos 'ficarão maravilhados', pois Jeová lhe dará a 'língua dos instruídos' para que saiba dizer a palavra certa. (Esd. 7:10; Luc. 24:32; Mat. 13:54; Isa. 50:4) Abaixo veja informações importantes sobre a sua designação:",
     remindersTitle: "INFORMAÇÕES & LEMBRETES:",
-    highlight: "O esboço e os vídeos necessários para preparar o seu discurso vão aparecer em breve no JW Documents, na secção “Partilhado consigo”; se não aparecer em dois dias, me informe imediatamente.",
+    highlight: "O esboço e os vídeos necessários para preparar o seu discurso vão aparecer em breve no JW Documents; se não aparecerem em dois dias, me informe imediatamente.",
     reminders: [
       "Preparação: Antes de começar a se preparar, leia novamente as páginas 56-61, 174-178 e 258-262 do livro Beneficie-se. Transmita a matéria de forma simples e lógica. Use perguntas intrigantes e ilustrações significativas baseadas em coisas que a assistência conhece. Você pode usar imagens que já saíram em nossas publicações para destacar pontos importantes.",
       "Participação da assistência: Quando for necessária participação da assistência, faça as perguntas específicas indicadas no esboço. No entanto, a consideração não é apenas uma sessão de perguntas e respostas. Ensine e explique a matéria.",
       "• Entrevistas e demonstrações: Escolha participantes que sejam exemplos como ancião em tudo e que tenham franqueza no falar; as entrevistas devem ser realistas e tocar o coração da assistência.",
     ].join("\n"),
-    rehearsal: "Data e Local do Ensaio: Quinta-feira, às 19:00, Salão do Reino.",
+    rehearsal: "Data e Local do Ensaio: ",
     rehearsalNote: "Observação: Quem tem necessidades especiais terá prioridade.",
     closing: "Torne sua participação assunto de oração a Jeová e estamos certos de que Ele abençoará seus esforços.",
     signoff: "Seu irmão,",
-    signature: "Wanderson Rodrigues, SC IBE-01",
+    signature: "",
     updatedAt: new Date().toISOString(),
   };
+}
+
+/** Dados do timbre de um circuito específico que entraram por engano no modelo inicial antigo. */
+const INHERITED = { name: "Wanderson Rodrigues", circuit: "IBE-01", address: "Sequele", phone: "+244 944 683 823" };
+export interface ProfileHeader { full_name?: string | null; circuit?: string | null; phone?: string | null }
+const normCircuit = (s?: string | null) => (s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/([A-Z]+)0*(\d+)/, "$1$2");
+/** É a conta dona daqueles dados? (não precisa de conserto) */
+export function isInheritedOwner(p: ProfileHeader): boolean {
+  return normCircuit(p.circuit) === normCircuit(INHERITED.circuit) || (p.full_name ?? "").includes(INHERITED.name);
+}
+const hasInherited = (t: LetterTemplate) =>
+  t.headerTitle.includes(INHERITED.name) || t.headerSubtitle.trim() === INHERITED.circuit || t.headerAddress.includes(INHERITED.address)
+  || t.headerPhone.includes(INHERITED.phone) || t.signature.includes(INHERITED.name) || /\bIBE-01\b/.test(t.signature);
+
+/**
+ * Troca no timbre só os dados herdados do modelo inicial antigo pelos do perfil da conta;
+ * textos editados ficam. Se o padrão era a cópia herdada e a conta criou um modelo próprio, o dela vira padrão.
+ */
+export function repairInheritedTemplates(list: LetterTemplate[], p: ProfileHeader | null, now = new Date()): { list: LetterTemplate[]; changed: boolean } {
+  if (!p || isInheritedOwner(p)) return { list, changed: false };
+  const name = p.full_name?.trim() ?? "", circ = p.circuit?.trim() ?? "", phone = p.phone?.trim() ?? "";
+  let changed = false;
+  const firstWasInherited = !!list[0] && hasInherited(list[0]);
+  const fixed = list.map((t) => {
+    if (!hasInherited(t)) return t;
+    changed = true;
+    const sig = t.signature.includes(INHERITED.name) || /\bIBE-01\b/.test(t.signature) ? [name, circ ? `SC ${circ}` : ""].filter(Boolean).join(", ") : t.signature;
+    return {
+      ...t,
+      headerTitle: t.headerTitle.includes(INHERITED.name) ? t.headerTitle.split(INHERITED.name).join(name).trim() : t.headerTitle,
+      headerSubtitle: t.headerSubtitle.trim() === INHERITED.circuit ? circ : t.headerSubtitle,
+      headerAddress: t.headerAddress.includes(INHERITED.address) ? "" : t.headerAddress,
+      headerPhone: t.headerPhone.includes(INHERITED.phone) ? (phone ? `Tel.: ${phone}` : "") : t.headerPhone,
+      signature: sig,
+      updatedAt: now.toISOString(),
+    };
+  });
+  if (firstWasInherited) {
+    const own = list.findIndex((t, i) => i > 0 && t.id !== DEFAULT_TEMPLATE_ID && !hasInherited(t));
+    if (own > 0) { const [o] = fixed.splice(own, 1); fixed.unshift(o); changed = true; }
+  }
+  return { list: fixed, changed };
 }
 
 const listKey = (userId: string) => `bigEvents.letterTemplates.${userId}`;

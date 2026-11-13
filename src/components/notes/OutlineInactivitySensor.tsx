@@ -27,16 +27,18 @@ const openedAt = new Map<string, number>();
 const bus = typeof window !== "undefined" ? new EventTarget() : null;
 const OWNER_EVENT = "outline-sensor-owner";
 
+// "Não lembrar novamente" vale só enquanto o modo esboço / tela cheia
+// estiver aberto: guardado em memória e limpo quando a última superfície
+// do esboço fecha. Ao reabrir, o alerta volta após 1 minuto.
+const sessionDismissed = new Set<string>();
+
 function isDismissed(outlineId: string): boolean {
-  try {
-    return localStorage.getItem(DISMISS_PREFIX + outlineId) === "1";
-  } catch {
-    return false;
-  }
+  return sessionDismissed.has(outlineId);
 }
 
 /** Permite reativar o alerta (usado pelo menu do cronômetro). */
 export function resetSensorDismiss(outlineId: string): void {
+  sessionDismissed.delete(outlineId);
   try { localStorage.removeItem(DISMISS_PREFIX + outlineId); } catch { /* noop */ }
 }
 
@@ -74,6 +76,7 @@ export function OutlineInactivitySensor({ outlineId, className }: Props) {
       if (rest.length === 0) {
         queues.delete(outlineId);
         openedAt.delete(outlineId);
+        sessionDismissed.delete(outlineId);
       } else queues.set(outlineId, rest);
       bus?.dispatchEvent(new Event(OWNER_EVENT));
     };
@@ -116,11 +119,15 @@ export function OutlineInactivitySensor({ outlineId, className }: Props) {
   };
 
   const dismissForever = () => {
-    try { localStorage.setItem(DISMISS_PREFIX + outlineId, "1"); } catch { /* noop */ }
+    sessionDismissed.add(outlineId);
+    // Limpa a marca permanente antiga, se existir.
+    try { localStorage.removeItem(DISMISS_PREFIX + outlineId); } catch { /* noop */ }
     close();
   };
 
-  const chosenMin = timer.targetChosen ? Math.round(timer.targetSec / 60) : null;
+  // Sempre mostra o tempo do esboço em destaque (o escolhido ou o padrão),
+  // lido do cronômetro no momento em que o alerta aparece.
+  const chosenMin = timer.targetSec > 0 ? Math.max(1, Math.round(timer.targetSec / 60)) : null;
   const minLabel = t("personalOutlines.timer.minShort", { defaultValue: "min" });
 
   return (

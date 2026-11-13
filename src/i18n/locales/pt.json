@@ -1378,6 +1378,7 @@
     "enable": "Ativar edição"
   },
   "sync": {
+    "screenUpdated": "{{screen}} atualizado",
     "never": "nunca",
     "now": "agora",
     "minutesAgo": "há {{n}} min",
@@ -1740,7 +1741,8 @@
         "hr": "Linha divisória",
         "indent": "Aumentar recuo",
         "outdent": "Diminuir recuo"
-      }
+      },
+      "resize": "Arraste para ampliar o texto"
     },
     "attachments": {
       "storageFull": "Pouco espaço no aparelho para gravar este anexo.",
@@ -1773,7 +1775,8 @@
       "center": "Centro",
       "right": "Direita",
       "reset": "Restaurar padrão"
-    }
+    },
+    "recentClear": "Limpar"
   },
   "bibleManager": {
     "title": "Gerenciar Bíblias",
@@ -2020,5 +2023,59 @@
   },
   "help": {
     "videos": "Vídeos tutoriais"
+  },
+  "timerMirror": {
+    "menu": "Espelhar relógio",
+    "title": "Espelhar relógio",
+    "subtitle": "Mostre só o relógio da parte em andamento em um tablet ou TV na tribuna ou na mesa de som.",
+    "online": "Internet",
+    "local": "Rede local",
+    "onlineHint": "No tablet, abra a câmera e aponte para o código. Os dois aparelhos precisam de internet; se o sinal cair, o relógio do tablet continua contando.",
+    "localHint": "Conecte este celular e o tablet ao mesmo Wi‑Fi do salão (pode ser sem internet). No tablet, aponte a câmera para o código ou digite o endereço no navegador.",
+    "localOnlyApp": "A rede local funciona só no aplicativo Android do Visita SC.",
+    "start": "Começar a espelhar",
+    "startLocal": "Ligar rede local",
+    "stop": "Parar",
+    "newCode": "Gerar novo código",
+    "newCodeShort": "Novo código",
+    "newCodeConfirm": "Os tablets conectados param de receber o relógio até lerem o novo QR Code.",
+    "copy": "Copiar link",
+    "copied": "Link copiado",
+    "share": "Compartilhar",
+    "viewers": "Aparelhos conectados: {{count}}",
+    "viewersNone": "Nenhum aparelho conectado ainda",
+    "noWifi": "Wi‑Fi não encontrado. Conecte este celular ao roteador do salão e toque em Tentar de novo.",
+    "localFailed": "Não foi possível ligar a rede local. Atualize o aplicativo e tente de novo.",
+    "retry": "Tentar de novo",
+    "badge": "Espelhando",
+    "keepOpen": "Mantenha o Controle de tempo aberto enquanto espelha.",
+    "pageTitle": "Relógio do evento",
+    "live": "Ao vivo",
+    "paused": "Pausado",
+    "noSignal": "Sem sinal",
+    "speaker": "Orador:",
+    "end": "Previsão de término:",
+    "nextSpeaker": "Próximo orador:",
+    "over": "Seu tempo terminou",
+    "nextPart": "Próxima parte",
+    "waiting": "Aguardando o superintendente…",
+    "tapFull": "Toque na tela para tela cheia",
+    "partOf": "Parte {{i}} de {{n}}",
+    "invalid": "Código inválido. Leia de novo o QR Code no celular do superintendente.",
+    "co": "Superintendente de circuito",
+    "branch": "Representante da filial",
+    "mini": "Mini tempo",
+    "miniTitle": "Mini tempo do orador",
+    "miniSheetHint": "Envie ao orador que usa o esboço no celular ou tablet. O link mostra só o tempo desta parte e começa junto com o seu cronômetro.",
+    "miniStarts": "Seu discurso começa às",
+    "miniDone": "Seu discurso foi concluído. Obrigado!",
+    "float": "Flutuar sobre o esboço",
+    "floatHint": "Para aumentar ou diminuir, faça pinça com dois dedos na janelinha. No Android, toque duas vezes.",
+    "floatFailed": "Este navegador não deixou flutuar. Use o Chrome (Android) ou o Safari (iPhone/iPad).",
+    "floatSize": "Tamanho da janelinha",
+    "size_small": "Pequena",
+    "size_medium": "Média",
+    "size_large": "Grande",
+    "floatFailedSafari": "O Safari bloqueou a janela. No iPad, use o Slide Over ao lado do seu esboço."
   }
 }

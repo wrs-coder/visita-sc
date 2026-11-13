@@ -1388,6 +1388,7 @@
     "enable": "Enable editing"
   },
   "sync": {
+    "screenUpdated": "{{screen}} updated",
     "never": "never",
     "now": "now",
     "minutesAgo": "{{n}} min ago",
@@ -1759,7 +1760,8 @@
         "hr": "Horizontal rule",
         "indent": "Increase indent",
         "outdent": "Decrease indent"
-      }
+      },
+      "resize": "Drag to enlarge the text"
     },
     "attachments": {
       "storageFull": "Not enough space on this device to save this attachment.",
@@ -1806,7 +1808,8 @@
       "found": "There are unsaved changes from {{time}}.",
       "restore": "Restore",
       "discard": "Discard"
-    }
+    },
+    "recentClear": "Clear"
   },
   "bibleManager": {
     "title": "Manage Bibles",
@@ -2053,5 +2056,59 @@
   },
   "help": {
     "videos": "Video tutorials"
+  },
+  "timerMirror": {
+    "menu": "Mirror clock",
+    "title": "Mirror clock",
+    "subtitle": "Show only the current part's clock on a tablet or TV at the podium or sound desk.",
+    "online": "Internet",
+    "local": "Local network",
+    "onlineHint": "On the tablet, open the camera and point it at the code. Both devices need internet; if the signal drops, the tablet clock keeps counting.",
+    "localHint": "Connect this phone and the tablet to the same hall Wi‑Fi (internet not needed). On the tablet, scan the code or type the address in the browser.",
+    "localOnlyApp": "Local network works only in the Visita SC Android app.",
+    "start": "Start mirroring",
+    "startLocal": "Turn on local network",
+    "stop": "Stop",
+    "newCode": "Generate new code",
+    "newCodeShort": "New code",
+    "newCodeConfirm": "Connected tablets stop receiving the clock until they scan the new QR code.",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "share": "Share",
+    "viewers": "Connected devices: {{count}}",
+    "viewersNone": "No device connected yet",
+    "noWifi": "Wi‑Fi not found. Connect this phone to the hall router and tap Try again.",
+    "localFailed": "Could not turn on the local network. Update the app and try again.",
+    "retry": "Try again",
+    "badge": "Mirroring",
+    "keepOpen": "Keep Time control open while mirroring.",
+    "pageTitle": "Event clock",
+    "live": "Live",
+    "paused": "Paused",
+    "noSignal": "No signal",
+    "speaker": "Speaker:",
+    "end": "Expected end:",
+    "nextSpeaker": "Next speaker:",
+    "over": "Your time is up",
+    "nextPart": "Next part",
+    "waiting": "Waiting for the overseer…",
+    "tapFull": "Tap the screen for full screen",
+    "partOf": "Part {{i}} of {{n}}",
+    "invalid": "Invalid code. Scan the QR code on the overseer's phone again.",
+    "co": "Circuit overseer",
+    "branch": "Branch representative",
+    "mini": "Mini timer",
+    "miniTitle": "Speaker mini timer",
+    "miniSheetHint": "Send it to a speaker who uses notes on a phone or tablet. The link shows only this part's time and starts with your timer.",
+    "miniStarts": "Your talk starts at",
+    "miniDone": "Your talk is finished. Thank you!",
+    "float": "Float over notes",
+    "floatHint": "To resize, pinch the small window with two fingers. On Android, double-tap it.",
+    "floatFailed": "This browser did not allow floating. Use Chrome (Android) or Safari (iPhone/iPad).",
+    "floatSize": "Window size",
+    "size_small": "Small",
+    "size_medium": "Medium",
+    "size_large": "Large",
+    "floatFailedSafari": "Safari blocked the window. On iPad, use Slide Over next to your outline."
   }
 }

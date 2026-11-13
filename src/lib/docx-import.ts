@@ -254,6 +254,26 @@ export async function importDocx(file: { name: string; size: number; arrayBuffer
     texts.push(s);
   }
   const html = docxXmlToHtml(texts[0], texts[1], texts[2]);
-  const title = file.name.replace(/\.docx$/i, "").slice(0, 200);
+  const fallback = file.name.replace(/\.docx$/i, "").slice(0, 200);
+  const title = firstLineTitle(html) || fallback;
   return { title, html };
+}
+
+/** Texto do primeiro bloco não vazio do HTML (título do esboço), até 200 caracteres. */
+export function firstLineTitle(html: string): string {
+  const blocks = html.split(/<\/(?:p|h[1-6]|li|div)>|<br\s*\/?>/i);
+  for (const b of blocks) {
+    const text = b
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (text) return text.slice(0, 200);
+  }
+  return "";
 }

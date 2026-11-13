@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { Bell, Calendar, CalendarClock, Check, ChevronLeft, ChevronRight, Clock, FileDown, Flag, Layers, MapPin, MoreHorizontal, Pencil, PlayCircle, Presentation, RotateCcw, Sun, Sunset, Timer as TimerIcon, X } from "lucide-react";
+import { Bell, Calendar, CalendarClock, Check, ChevronLeft, ChevronRight, Clock, FileDown, Flag, Layers, MapPin, MonitorSmartphone, MoreHorizontal, Pencil, PlayCircle, Presentation, RotateCcw, Sun, Sunset, Timer as TimerIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatEventDate } from "@/lib/big-events/invite";
@@ -20,6 +20,10 @@ import {
   displayClock, fmtClockTime, fmtHm, loadMode, plannedStarts, saveMode, startDelayMin, fmtDelay, type TimerMode,
 } from "@/lib/big-events/event-timer";
 import { hideFloating, isNativeAndroid, overlayGranted, requestOverlay, showFloating } from "@/lib/big-events/floating-timer";
+import { useTranslation } from "react-i18next";
+import { useTimerMirror } from "./use-timer-mirror";
+import { TimerMirrorSheet } from "./TimerMirrorSheet";
+import { MiniTimeSheet } from "./MiniTimeSheet";
 
 const TONE_TEXT: Record<Tone, string> = { ok: "text-success", warn: "text-warning", over: "text-destructive", idle: "text-foreground" };
 const TONE_BAR: Record<Tone, string> = { ok: "bg-success", warn: "bg-warning", over: "bg-destructive", idle: "bg-muted-foreground" };
@@ -67,6 +71,11 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }:
   const starts = useMemo(() => plannedStarts(parts), [parts]);
   const [mode, setModeState] = useState<TimerMode>(() => loadMode());
   const setMode = (m: TimerMode) => { setModeState(m); saveMode(m); };
+  // Espelho do relógio (tablet/TV): só lê o mesmo estado, não muda o cronômetro.
+  const { t } = useTranslation();
+  const mirror = useTimerMirror(ev, parts, s, mode);
+  const [mirrorOpen, setMirrorOpen] = useState(false);
+  const [miniPart, setMiniPart] = useState<TimerPart | null>(null);
   // Separadores Manhã/Tarde: só aparecem se o programa atravessa o meio-dia.
   const sectionFor = useMemo(() => {
     const mins = rows.map((r) => starts[r.part.id] ?? null);
@@ -159,6 +168,13 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }:
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
             {report && !s.active ? programLabel(pd).replace("Programa", "Programa terminou") : programLabel(pd)}
           </p>
+          {mirror.active && (
+            <button type="button" onClick={() => setMirrorOpen(true)}
+              className="ml-1.5 mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary active:opacity-70">
+              <MonitorSmartphone className="h-3.5 w-3.5" />{t("timerMirror.badge")}
+              {(mirror.viewers + mirror.local.viewers) > 0 && <span className="tabular-nums">· {mirror.viewers + mirror.local.viewers}</span>}
+            </button>
+          )}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 rounded-full" aria-label="Opções"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
@@ -166,6 +182,7 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }:
             <DropdownMenuItem onClick={() => setMode("down")}><Check className={`mr-2 h-4 w-4 ${mode === "down" ? "" : "opacity-0"}`} />Regressivo</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setMode("up")}><Check className={`mr-2 h-4 w-4 ${mode === "up" ? "" : "opacity-0"}`} />Cronômetro</DropdownMenuItem>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setMirrorOpen(true)}><MonitorSmartphone className="mr-2 h-4 w-4" />{t("timerMirror.menu")}</DropdownMenuItem>
             {!report && <DropdownMenuItem onClick={() => setReport(true)}><Layers className="mr-2 h-4 w-4" />Ver relatório</DropdownMenuItem>}
             <DropdownMenuItem onClick={exportPdf}><FileDown className="mr-2 h-4 w-4" />Exportar relatório executivo</DropdownMenuItem>
             {isNativeAndroid() && <DropdownMenuItem onClick={() => void requestOverlay()}><TimerIcon className="mr-2 h-4 w-4" />Permitir sobrepor a outros apps</DropdownMenuItem>}
@@ -174,6 +191,9 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }:
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
+
+      <TimerMirrorSheet open={mirrorOpen} onOpenChange={setMirrorOpen} mirror={mirror} />
+      <MiniTimeSheet part={miniPart} onClose={() => setMiniPart(null)} mirror={mirror} />
 
       {askOverlay && !report && (
         <div className="mx-3 mt-3 rounded-2xl bg-muted/60 p-3 text-sm">
@@ -330,7 +350,17 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }:
                           </span>
                         )}
                       </div>
-                      {who && <p className="mt-1 truncate text-xs text-muted-foreground">{who}{cong ? ` · ${cong}` : ""}</p>}
+                      {who && (
+                        <div className="mt-1 flex min-w-0 items-center gap-2">
+                          <p className="min-w-0 truncate text-xs text-muted-foreground">{who}{cong ? ` · ${cong}` : ""}</p>
+                          {p.assigned_to === "speaker" && (
+                            <button type="button" onClick={() => setMiniPart(p)}
+                              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary active:scale-95">
+                              <TimerIcon className="h-3 w-3" />{t("timerMirror.mini")}
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1">
                       <button type="button" onClick={tap} aria-label={active ? "Encerrar esta parte" : "Iniciar esta parte"}
