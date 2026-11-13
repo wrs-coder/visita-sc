@@ -61,3 +61,14 @@ Limites: a janelinha por cima de outros apps funciona no Chrome do Android e no 
 - O relógio flutuante é desenhado em canvas e enviado por `captureStream()` para um `<video>` com `requestPictureInPicture()`, com fallback para `documentPictureInPicture` e depois para a faixa fixa.
 - O botão "Mini tempo" fica na lista de partes do Controle de tempo, com uma folha de QR Code igual à do TimerMirrorSheet.
 - Roadmap: incluir "Relógio espelhado: retrato guardado" e "Mini tempo do orador".
+
+## Ajuste: tema repetido em simpósio ou série de discursos
+Hoje, no simpósio, a linha 1 mostra o nome da série e logo depois o tema do discurso, por exemplo "SÉRIE DE DISCURSOS: IMITE AQUELES… • Imite aqueles… — Baraque". Na série, a linha 1 vai mostrar só o tema do discurso, mais "(Parte 1 de 3)" e os minutos.
+
+```text
+┌──────────────────────────────────────────┐
+│ Imite aqueles… — Baraque (Parte 1 de 3) ● Ao vivo │
+│ Edivaldo Belchior Cunha · Congregação    │
+```
+
+Detalhe técnico: em `mirrorHeadline` (online) e na mesma função do HTML local, quando a parte tem `item` (sub-discurso do simpósio), o título da série é omitido e fica `[item]`. As partes comuns continuam como estão. Adicionar um teste para cada caso.
