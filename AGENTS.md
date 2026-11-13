@@ -40,7 +40,6 @@
 - A new superintendent account's first entry opens /perfil with a welcome checklist, flagged only in device localStorage (first-run.ts), because no schema change is wanted and elders/guests must not be affected.
 - Release-note sections carry an optional audience (missing = all) and help topics are chosen per role via helpTopicsFor; Bible refs in read-only texts are linked at display time through BibleRefText/BibleRefChips, because saved content must never be rewritten.
 - The Bible-tab chapter reader (CleanReader) keeps its own device-local preferences in bible-reader-settings.ts and uses reader-native.ts (TTS/brightness plugins with web fallback), because the verse popover used by outlines and notes must stay unchanged.
-- Congregation import parses on-device (congregation-import.ts) via createCongregation; no schema change.
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
-- Personal-outline edit mode is a distraction-free view: page header, type picker and recents hide, details open in a dialog, and an extra editor height from a drag handle is device-local (localStorage), because the internal and page scroll must keep working and saved content must not change.
+- Outline edit mode hides page chrome, opens details in a dialog and keeps handle-added editor height device-local, so scrolling and saved content stay unchanged.
