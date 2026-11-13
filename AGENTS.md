@@ -42,4 +42,4 @@
 - The Bible-tab chapter reader (CleanReader) keeps its own device-local preferences in bible-reader-settings.ts and uses reader-native.ts (TTS/brightness plugins with web fallback), because the verse popover used by outlines and notes must stay unchanged.
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
-- Outline edit mode hides page chrome, opens details in a dialog and keeps handle-added editor height device-local, so scrolling and saved content stay unchanged.
+- Outline edit mode hides page chrome, details open in a dialog, handle height is device-local.
