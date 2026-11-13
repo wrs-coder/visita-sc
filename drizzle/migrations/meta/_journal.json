@@ -85,6 +85,13 @@
       "when": 1794225751651,
       "tag": "0011_field_requested_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794588650912,
+      "tag": "0012_expire_big_events_after_2_days",
+      "breakpoints": true
     }
   ]
 }

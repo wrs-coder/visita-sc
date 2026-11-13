@@ -3,7 +3,7 @@ import { appConfirm } from "@/components/ui/app-dialogs";
 // convites com PIN (link único por evento) e status ao vivo.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowDown, ArrowUp, BellRing, CheckCircle2, ChevronDown, Circle, Copy, CopyPlus, Download, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, Timer, Trash2, Upload, UserX, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, BellRing, CheckCircle2, ChevronDown, Circle, CloudDownload, CloudUpload, Copy, CopyPlus, Download, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, Timer, Trash2, Upload, UserX, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,8 @@ import { EventTimerFocus } from "./EventTimerFocus";
 import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
 import { fetchLetterTemplates, pushLetterTemplates, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
 import type { Database } from "@/integrations/supabase/types";
+import { downloadAllEvents, mergeEvent, pullEvent, pushEvent } from "@/lib/big-events/cloud-sync";
+import { SwipeToSync } from "@/components/notes/SwipeToSync";
 
 type EventRow = Database["public"]["Tables"]["circuit_big_events"]["Row"];
 type PartRow = Database["public"]["Tables"]["circuit_big_event_parts"]["Row"];
@@ -94,6 +96,8 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     const next = { ...tplChoice, [eventId]: tplId }; setTplChoice(next); if (user) saveEventChoice(user.id, next);
   };
 
+  const eventsRef = useRef<EventRow[]>([]);
+  eventsRef.current = events;
   const load = useCallback(async () => {
     if (!user) return;
     const [{ data: ev }, { data: pt }] = await Promise.all([
@@ -118,6 +122,8 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       getRows<EventRow>("circuit_big_events"),
       getRows<PartRow>("circuit_big_event_parts"),
     ]);
+    // Nunca troca uma lista com eventos por uma vazia sem confirmar na nuvem.
+    if (!freshEv.length && eventsRef.current.length > 0) { toast.warning("Não consegui confirmar com a nuvem. Use ☁ Baixar da nuvem."); return; }
     // Lista inteira da conta: eventos criados/alterados/excluídos em outro aparelho.
     setEvents([...freshEv].sort((a, b) => (a.event_date ?? "9999").localeCompare(b.event_date ?? "9999")));
     setParts([...freshPt].sort((a, b) => a.sort_order - b.sort_order));
@@ -231,10 +237,40 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     return true;
   };
   const removeEvent = async (id: string) => {
-    if (!await appConfirm("Apagar este evento e todas as partes?")) return;
+    if (!await appConfirm("Apagar este evento de todos os aparelhos? As partes também serão apagadas.")) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) toast.info("Será apagado da nuvem quando houver conexão.");
     await supabase.from("circuit_big_events").delete().eq("id", id);
     await load();
   };
+  const [downloading, setDownloading] = useState(false);
+  const downloadAll = async () => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) { toast.error("Sem conexão."); return; }
+    setDownloading(true);
+    try {
+      const r = await downloadAllEvents();
+      setEvents(r.events); setParts(r.parts);
+      toast.success(`${r.events.length} ${r.events.length === 1 ? "evento baixado" : "eventos baixados"} da nuvem`);
+    } catch { toast.error("Não foi possível baixar da nuvem."); } finally { setDownloading(false); }
+  };
+  const applyPulled = (id: string, r: { event: EventRow | null; parts: PartRow[] }) => {
+    const m = mergeEvent(events, parts, id, r.event, r.parts);
+    setEvents([...m.events].sort((a, b) => (a.event_date ?? "9999").localeCompare(b.event_date ?? "9999")));
+    setParts([...m.parts].sort((a, b) => a.sort_order - b.sort_order));
+  };
+  const receiveEvent = async (ev: EventRow) => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) { toast.error("Sem conexão."); return; }
+    if (!await appConfirm(`Substituir "${ev.name}" neste aparelho pela versão da nuvem?`)) return;
+    try {
+      const r = await pullEvent(ev.id); applyPulled(ev.id, r);
+      toast.success(r.event ? "Evento recebido da nuvem" : "Este evento não existe mais na nuvem");
+    } catch { toast.error("Não foi possível receber da nuvem."); }
+  };
+  const sendEvent = async (ev: EventRow) => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) { toast.error("Sem conexão."); return; }
+    try { const r = await pushEvent(ev, evPartsOf(ev.id)); applyPulled(ev.id, r); toast.success("Evento enviado para a nuvem"); }
+    catch { toast.error("Não foi possível enviar para a nuvem."); }
+  };
+  const fmtStamp = (iso: string) => { const d = new Date(iso); return `${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} às ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`; };
   const evPartsOf = (evId: string) => parts.filter((p) => p.event_id === evId).sort((a, b) => a.sort_order - b.sort_order);
 
   /** Grava a parte (nova ou editada) e reorganiza ordem/horários. */
@@ -563,12 +599,14 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       </button>
     );
     return (
-      <Card key={ev.id} className="shadow-card">
+      <SwipeToSync key={ev.id} enabled={!isOpen} onPush={() => sendEvent(ev)} onPull={() => receiveEvent(ev)} pushLabel="Enviar" pullLabel="Receber">
+      <Card className="shadow-card">
         <button type="button" onClick={() => toggle(ev.id)} aria-expanded={isOpen} className="flex w-full items-center gap-2 px-4 py-3 text-left">
           <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "" : "-rotate-90"}`} />
           <span className="min-w-0 flex-1">
             <span className="block truncate font-semibold">{ev.name}</span>
             <span className="block text-xs text-muted-foreground">{[formatEventDate(ev.event_date), ev.location, ev.start_time?.slice(0, 5)].filter(Boolean).join(" · ")}</span>
+            <span className="block text-[11px] text-muted-foreground">☁ Atualizado: {fmtStamp(ev.updated_at)}</span>
           </span>
           <span className="text-xs text-muted-foreground">{conf}/{speakers.length}{decl ? ` · ${decl}✕` : ""}</span>
         </button>
@@ -581,6 +619,8 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
                 <DropdownMenuItem onClick={() => setEditor({ ev, part: null, afterOrder: null })}><Plus className="mr-2 h-4 w-4" />Nova parte</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setSpkFor(ev); spkRef.current?.click(); }}><Upload className="mr-2 h-4 w-4" />Importar oradores</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setExportFor(ev)}><Download className="mr-2 h-4 w-4" />Exportar</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void sendEvent(ev)}><CloudUpload className="mr-2 h-4 w-4" />Enviar para a nuvem</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void receiveEvent(ev)}><CloudDownload className="mr-2 h-4 w-4" />Receber da nuvem</DropdownMenuItem>
                 <DropdownMenuItem disabled={!pendingN} onClick={() => setRemindFor(ev)}><BellRing className="mr-2 h-4 w-4" />Lembrar pendentes{pendingN ? ` (${pendingN})` : ""}</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => duplicateEvent(ev)}><CopyPlus className="mr-2 h-4 w-4" />Duplicar evento</DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive" onClick={() => removeEvent(ev.id)}><Trash2 className="mr-2 h-4 w-4" />Apagar evento</DropdownMenuItem>
@@ -700,6 +740,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
           <Button size="sm" variant="outline" className="w-full gap-1" onClick={() => setEditor({ ev, part: null, afterOrder: null })}><Plus className="h-3.5 w-3.5" />Nova parte</Button>
         </div>
       </Card>
+      </SwipeToSync>
     );
   };
 
@@ -837,6 +878,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       </datalist>
       <div className="flex items-center justify-end gap-2">
         <input ref={fileRef} type="file" accept="*/*" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+        <Button size="sm" variant="outline" className="gap-1" disabled={downloading} onClick={() => void downloadAll()}><CloudDownload className={`h-3.5 w-3.5 ${downloading ? "animate-pulse" : ""}`} />Baixar da nuvem</Button>
         <Button size="sm" variant="outline" className="gap-1" onClick={() => fileRef.current?.click()}><Upload className="h-3.5 w-3.5" />Importar programa</Button>
         <Button size="sm" className="gap-1" onClick={() => { setForm({ name: "", event_type: "special", event_date: "", location: "", link_mode: "pin" }); setDialog({ parts: null }); }}><Plus className="h-3.5 w-3.5" />Novo</Button>
       </div>
