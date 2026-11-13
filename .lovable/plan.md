@@ -9,6 +9,11 @@ Conferi a sua conta na nuvem: **os 10 eventos e todas as partes continuam salvos
 - Se a sincronização trouxer uma lista vazia, mas a tela tinha eventos, o app **mantém o que está na tela** e mostra o aviso "Não consegui confirmar com a nuvem".
 - Ao abrir Grandes Eventos com internet, o app sempre pede à nuvem primeiro; a cópia do celular só é usada sem internet.
 
+### 1b. Botão "Baixar eventos da nuvem" (topo da tela)
+- Novo botão ☁↓ ao lado do ⟳ em Grandes Eventos. Busca **direto na nuvem** todos os eventos e partes da sua conta, ignora a cópia do celular, e substitui a lista do aparelho.
+- Funciona mesmo com a lista vazia, para recuperar os 10 eventos em todos os seus aparelhos.
+- Mostra "10 eventos baixados" ao terminar; sem internet avisa "Sem conexão".
+
 ### 2. Nos três pontinhos de cada evento (abaixo de "Exportar")
 - **Enviar para a nuvem** – grava este evento e suas partes na sua conta.
 - **Receber da nuvem** – substitui este evento no aparelho pela versão da nuvem (pede confirmação).
@@ -24,7 +29,7 @@ Conferi a sua conta na nuvem: **os 10 eventos e todas as partes continuam salvos
 
 ```text
 ┌──────────────────────────────────┐
-│ Grandes Eventos           ⟳  +   │
+│ Grandes Eventos       ☁↓ ⟳  +   │
 ├──────────────────────────────────┤
 │ ┌──────────────────────────────┐ │
 │ │ Assembleia de Circuito   ⋯   │ │
@@ -53,6 +58,7 @@ Conferi a sua conta na nuvem: **os 10 eventos e todas as partes continuam salvos
 ```
 
 ## Detalhes técnicos
+- Botão global: `forceDownloadAll()` faz select direto na nuvem (sem passar pelo leitor local), grava as linhas no espelho local (local-db) e atualiza a tela.
 - `BigEvents.tsx`: `refreshStatuses` ignora resultado vazio quando a tela já tem eventos; novas funções `pushEvent(ev)` (upsert do evento + partes via cliente online) e `pullEvent(id)` (select direto na nuvem do evento + partes, grava no espelho local via local-db e atualiza estado).
 - Envolver cada cartão com o `SwipeToSync` existente (`src/components/notes/SwipeToSync.tsx`), sem alterá-lo.
 - "Última atualização" usa `updated_at` já existente na tabela. Sem mudança de banco/RLS.
