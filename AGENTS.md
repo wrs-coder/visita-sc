@@ -43,3 +43,4 @@
 - Congregation import parses on-device (congregation-import.ts) via createCongregation; no schema change.
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
+- Personal-outline edit mode is a distraction-free view: page header, type picker and recents hide, details open in a dialog, and an extra editor height from a drag handle is device-local (localStorage), because the internal and page scroll must keep working and saved content must not change.

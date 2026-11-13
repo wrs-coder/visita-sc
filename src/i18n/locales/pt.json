@@ -1741,7 +1741,8 @@
         "hr": "Linha divisória",
         "indent": "Aumentar recuo",
         "outdent": "Diminuir recuo"
-      }
+      },
+      "resize": "Arraste para ampliar o texto"
     },
     "attachments": {
       "storageFull": "Pouco espaço no aparelho para gravar este anexo.",
@@ -1774,7 +1775,8 @@
       "center": "Centro",
       "right": "Direita",
       "reset": "Restaurar padrão"
-    }
+    },
+    "recentClear": "Limpar"
   },
   "bibleManager": {
     "title": "Gerenciar Bíblias",
@@ -2073,6 +2075,7 @@
     "floatSize": "Tamanho da janelinha",
     "size_small": "Pequena",
     "size_medium": "Média",
-    "size_large": "Grande"
+    "size_large": "Grande",
+    "floatFailedSafari": "O Safari bloqueou a janela. No iPad, use o Slide Over ao lado do seu esboço."
   }
 }

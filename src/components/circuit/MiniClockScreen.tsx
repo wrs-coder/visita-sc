@@ -6,7 +6,7 @@ import { PictureInPicture2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { liveElapsed, miniView, mirrorClock, mirrorTone, type MirrorSnap, type MirrorTone } from "@/lib/big-events/timer-mirror";
-import { FLOAT_SIZES, createFloatClock, floatSupported, loadFloatSize, saveFloatSize, type FloatClock, type FloatSize } from "@/lib/big-events/float-clock";
+import { FLOAT_SIZES, createFloatClock, floatSupported, isAppleMobile, loadFloatSize, saveFloatSize, type FloatClock, type FloatSize } from "@/lib/big-events/float-clock";
 import { darkTokenColors } from "@/lib/big-events/timer-mirror-page";
 import { FitClock } from "./MirrorClockScreen";
 
@@ -44,7 +44,9 @@ export function MiniClockScreen({ snap, receivedAt, now, signal, part }: { snap:
 
   const float = async () => {
     const ok = await floatRef.current?.open();
-    if (!ok) toast(t("timerMirror.floatFailed"));
+    if (!ok) toast(isAppleMobile()
+      ? t("timerMirror.floatFailedSafari", { defaultValue: "O Safari bloqueou a janela. No iPad, use o Slide Over ao lado do seu esboço." })
+      : t("timerMirror.floatFailed"));
   };
 
   const pill = (cls: string, body: React.ReactNode) => (

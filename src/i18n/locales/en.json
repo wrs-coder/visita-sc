@@ -1760,7 +1760,8 @@
         "hr": "Horizontal rule",
         "indent": "Increase indent",
         "outdent": "Decrease indent"
-      }
+      },
+      "resize": "Drag to enlarge the text"
     },
     "attachments": {
       "storageFull": "Not enough space on this device to save this attachment.",
@@ -1807,7 +1808,8 @@
       "found": "There are unsaved changes from {{time}}.",
       "restore": "Restore",
       "discard": "Discard"
-    }
+    },
+    "recentClear": "Clear"
   },
   "bibleManager": {
     "title": "Manage Bibles",
@@ -2106,6 +2108,7 @@
     "floatSize": "Window size",
     "size_small": "Small",
     "size_medium": "Medium",
-    "size_large": "Large"
+    "size_large": "Large",
+    "floatFailedSafari": "Safari blocked the window. On iPad, use Slide Over next to your outline."
   }
 }

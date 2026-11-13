@@ -21,7 +21,8 @@ export function saveFloatSize(s: FloatSize) { try { localStorage.setItem(SIZE_KE
 export function floatSupported(): boolean {
   if (typeof document === "undefined") return false;
   const d = document as Document & { pictureInPictureEnabled?: boolean };
-  return !!d.pictureInPictureEnabled && typeof HTMLCanvasElement !== "undefined" && typeof HTMLCanvasElement.prototype.captureStream === "function";
+  const webkit = typeof HTMLVideoElement !== "undefined" && "webkitSetPresentationMode" in HTMLVideoElement.prototype;
+  return (!!d.pictureInPictureEnabled || webkit) && typeof HTMLCanvasElement !== "undefined" && typeof HTMLCanvasElement.prototype.captureStream === "function";
 }
 
 export interface FloatClock { open(): Promise<boolean>; close(): void; isOpen(): boolean; destroy(): void }
@@ -35,7 +36,9 @@ export function createFloatClock(frame: () => FloatFrame, size: FloatSize = "sma
   if (!ctx) return null;
   const video = document.createElement("video");
   video.muted = true; video.playsInline = true; video.setAttribute("playsinline", ""); video.setAttribute("aria-hidden", "true");
-  Object.assign(video.style, { position: "fixed", width: "1px", height: "1px", opacity: "0", pointerEvents: "none", left: "0", bottom: "0" });
+  // O Safari (iPhone/iPad) recusa flutuar vídeos de 1 px ou invisíveis: o vídeo tem
+  // tamanho real, quase transparente e atrás da tela.
+  Object.assign(video.style, { position: "fixed", width: `${Math.round(W / 2)}px`, height: `${Math.round(H / 2)}px`, opacity: "0.01", pointerEvents: "none", right: "0", bottom: "0", zIndex: "-1" });
   document.body.appendChild(video);
   const font = (px: number) => `700 ${px}px ui-monospace, Menlo, monospace`;
   const draw = () => {
@@ -54,10 +57,34 @@ export function createFloatClock(frame: () => FloatFrame, size: FloatSize = "sma
   const timer = setInterval(draw, 250);
   return {
     async open() {
+      // Safari: comando próprio da Apple, chamado no mesmo instante do toque (sem esperar nada antes).
+      const wk = video as HTMLVideoElement & {
+        webkitSupportsPresentationMode?: (m: string) => boolean;
+        webkitSetPresentationMode?: (m: string) => void;
+        webkitPresentationMode?: string;
+      };
+      if (typeof wk.webkitSetPresentationMode === "function" && wk.webkitSupportsPresentationMode?.("picture-in-picture")) {
+        try {
+          void video.play().catch(() => { /* */ });
+          wk.webkitSetPresentationMode("picture-in-picture");
+        } catch { return false; }
+        await new Promise((r) => setTimeout(r, 700));
+        return wk.webkitPresentationMode === "picture-in-picture" || document.pictureInPictureElement === video;
+      }
       try { await video.play(); await (video as HTMLVideoElement & { requestPictureInPicture: () => Promise<unknown> }).requestPictureInPicture(); return true; } catch { return false; }
     },
-    close() { if (document.pictureInPictureElement === video) void document.exitPictureInPicture().catch(() => { /* */ }); },
-    isOpen: () => document.pictureInPictureElement === video,
+    close() {
+      const wk = video as HTMLVideoElement & { webkitSetPresentationMode?: (m: string) => void; webkitPresentationMode?: string };
+      if (wk.webkitPresentationMode === "picture-in-picture") { try { wk.webkitSetPresentationMode?.("inline"); } catch { /* */ } return; }
+      if (document.pictureInPictureElement === video) void document.exitPictureInPicture().catch(() => { /* */ }); },
+    isOpen: () => document.pictureInPictureElement === video || (video as HTMLVideoElement & { webkitPresentationMode?: string }).webkitPresentationMode === "picture-in-picture",
     destroy() { clearInterval(timer); this.close(); video.remove(); },
   };
+}
+
+/** iPhone/iPad (inclui iPad que se apresenta como Mac). */
+export function isAppleMobile(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1);
 }

@@ -39,3 +39,11 @@
 - [x] Relógio espelhado: retrato guardado (não volta a "Aguardando" ao recarregar/sem sinal)
 - [x] Relógio espelhado: em simpósio mostrar só o tema do discurso
 - [x] Mini tempo do orador: link por parte + janelinha flutuante
+
+## Esboços pessoais + Mini tempo Safari (13/11)
+- [x] Mini tempo: flutuar no Safari (comando Apple) + mensagem Slide Over
+- [x] Lembrete cronômetro: tempo escolhido sempre em destaque; "não lembrar" só até sair
+- [x] .docx: primeira linha vira o Tema
+- [x] Anexar imagem/vídeo preenche Tema vazio
+- [x] Botão Limpar em Esboços recentes
+- [x] Edição sem distrações: barra compacta, detalhes em popup, alça sem afetar rolagem; vale site/tablet

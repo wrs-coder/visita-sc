@@ -74,7 +74,7 @@ describe("docx import", () => {
     zip.file("word/styles.xml", styles);
     const data = await zip.generateAsync({ type: "uint8array" });
     const r = await importDocx(fileOf("Meu esboço.docx", data));
-    expect(r).toEqual({ title: "Meu esboço", html: '<p style="margin-left:32px">Ola</p>' });
+    expect(r).toEqual({ title: "Ola", html: '<p style="margin-left:32px">Ola</p>' });
   });
 });
 

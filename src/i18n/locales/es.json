@@ -1737,7 +1737,8 @@
         "hr": "Línea divisoria",
         "indent": "Aumentar sangría",
         "outdent": "Reducir sangría"
-      }
+      },
+      "resize": "Arrastra para ampliar el texto"
     },
     "attachments": {
       "storageFull": "Poco espacio en el dispositivo para guardar este adjunto.",
@@ -1784,7 +1785,8 @@
       "found": "Hay cambios sin guardar de {{time}}.",
       "restore": "Recuperar",
       "discard": "Descartar"
-    }
+    },
+    "recentClear": "Limpiar"
   },
   "bibleManager": {
     "title": "Administrar Biblias",
@@ -2106,6 +2108,7 @@
     "floatSize": "Tamaño de la ventanita",
     "size_small": "Pequeña",
     "size_medium": "Mediana",
-    "size_large": "Grande"
+    "size_large": "Grande",
+    "floatFailedSafari": "Safari bloqueó la ventana. En el iPad, usa Slide Over junto a tu bosquejo."
   }
 }

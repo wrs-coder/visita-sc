@@ -20,3 +20,7 @@ export function touchRecent(type: string, id: string): string[] {
   try { localStorage.setItem(key(type), JSON.stringify(next)); } catch { /* ignore */ }
   return next;
 }
+
+export function clearRecent(type: string): void {
+  try { localStorage.removeItem(key(type)); } catch { /* ignore */ }
+}
