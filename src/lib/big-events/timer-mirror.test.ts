@@ -189,3 +189,12 @@ describe("Rede local — resposta vazia não apaga relógio contando", () => {
     expect(html).toContain("localStorage.setItem(KEY");
   });
 });
+
+describe("Mini tempo — tamanho da janelinha", () => {
+  it("pequena é a faixa mais achatada aceita pelo Android (2,39:1)", async () => {
+    const { floatDims } = await import("./float-clock");
+    const d = floatDims("small"); expect(d.w / d.h).toBeCloseTo(2.4, 1);
+    expect(floatDims("medium").w / floatDims("medium").h).toBe(2);
+    expect(floatDims("large").w / floatDims("large").h).toBeCloseTo(16 / 9, 2);
+  });
+});

@@ -2101,7 +2101,11 @@
     "miniStarts": "Su discurso empieza a las",
     "miniDone": "Su discurso terminó. ¡Gracias!",
     "float": "Flotar sobre el bosquejo",
-    "floatHint": "La ventanita queda sobre otras apps. Arrástrela a una esquina.",
-    "floatFailed": "Este navegador no permitió flotar. Use Chrome (Android) o Safari (iPhone/iPad)."
+    "floatHint": "Para agrandar o achicar, pellizque la ventanita con dos dedos. En Android, toque dos veces.",
+    "floatFailed": "Este navegador no permitió flotar. Use Chrome (Android) o Safari (iPhone/iPad).",
+    "floatSize": "Tamaño de la ventanita",
+    "size_small": "Pequeña",
+    "size_medium": "Mediana",
+    "size_large": "Grande"
   }
 }

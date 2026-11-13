@@ -2068,7 +2068,11 @@
     "miniStarts": "Seu discurso começa às",
     "miniDone": "Seu discurso foi concluído. Obrigado!",
     "float": "Flutuar sobre o esboço",
-    "floatHint": "A janelinha fica por cima de outros apps. Arraste para um canto.",
-    "floatFailed": "Este navegador não deixou flutuar. Use o Chrome (Android) ou o Safari (iPhone/iPad)."
+    "floatHint": "Para aumentar ou diminuir, faça pinça com dois dedos na janelinha. No Android, toque duas vezes.",
+    "floatFailed": "Este navegador não deixou flutuar. Use o Chrome (Android) ou o Safari (iPhone/iPad).",
+    "floatSize": "Tamanho da janelinha",
+    "size_small": "Pequena",
+    "size_medium": "Média",
+    "size_large": "Grande"
   }
 }

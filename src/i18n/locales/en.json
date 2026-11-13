@@ -2101,7 +2101,11 @@
     "miniStarts": "Your talk starts at",
     "miniDone": "Your talk is finished. Thank you!",
     "float": "Float over notes",
-    "floatHint": "The small window stays above other apps. Drag it to a corner.",
-    "floatFailed": "This browser did not allow floating. Use Chrome (Android) or Safari (iPhone/iPad)."
+    "floatHint": "To resize, pinch the small window with two fingers. On Android, double-tap it.",
+    "floatFailed": "This browser did not allow floating. Use Chrome (Android) or Safari (iPhone/iPad).",
+    "floatSize": "Window size",
+    "size_small": "Small",
+    "size_medium": "Medium",
+    "size_large": "Large"
   }
 }

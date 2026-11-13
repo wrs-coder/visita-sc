@@ -6,7 +6,7 @@ import { PictureInPicture2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { liveElapsed, miniView, mirrorClock, mirrorTone, type MirrorSnap, type MirrorTone } from "@/lib/big-events/timer-mirror";
-import { createFloatClock, floatSupported, type FloatClock } from "@/lib/big-events/float-clock";
+import { FLOAT_SIZES, createFloatClock, floatSupported, loadFloatSize, saveFloatSize, type FloatClock, type FloatSize } from "@/lib/big-events/float-clock";
 import { darkTokenColors } from "@/lib/big-events/timer-mirror-page";
 import { FitClock } from "./MirrorClockScreen";
 
@@ -19,6 +19,8 @@ export function MiniClockScreen({ snap, receivedAt, now, signal, part }: { snap:
   state.current = { snap, receivedAt, part };
   const [can, setCan] = useState(false);
   const floatRef = useRef<FloatClock | null>(null);
+  const [size, setSize] = useState<FloatSize>("small");
+  useEffect(() => { setSize(loadFloatSize()); }, []);
 
   useEffect(() => {
     setCan(floatSupported());
@@ -30,14 +32,15 @@ export function MiniClockScreen({ snap, receivedAt, now, signal, part }: { snap:
         const el = liveElapsed(mv.live, at, Date.now());
         const tn = mirrorTone(mv.live.plannedMs, el);
         const color = tn === "ok" ? c.ok : tn === "warn" ? c.warn : tn === "idle" ? c.fg : c.danger;
-        return { text: mirrorClock(sn!.mode, mv.live.plannedMs, el), sub: tn === "over" ? t("timerMirror.over") : mv.live.paused ? t("timerMirror.paused") : "", color, bg: c.bg, fg: c.fg };
+        return { text: mirrorClock(sn!.mode, mv.live.plannedMs, el), color, bg: c.bg, blink: tn === "over" };
       }
-      if (mv.kind === "before") return { text: mv.at || "--:--", sub: t("timerMirror.miniStarts"), color: c.fg, bg: c.bg, fg: c.muted };
-      if (mv.kind === "done") return { text: "✓", sub: t("timerMirror.miniDone"), color: c.ok, bg: c.bg, fg: c.muted };
-      return { text: "--:--", sub: "", color: c.muted, bg: c.bg, fg: c.muted };
-    });
+      if (mv.kind === "before") return { text: mv.at || "--:--", color: c.muted, bg: c.bg };
+      if (mv.kind === "done") return { text: "✓", color: c.ok, bg: c.bg };
+      return { text: "--:--", color: c.muted, bg: c.bg };
+    }, size);
     return () => { floatRef.current?.destroy(); floatRef.current = null; };
-  }, [t]);
+  }, [size]);
+  const pick = (v: FloatSize) => { setSize(v); saveFloatSize(v); };
 
   const float = async () => {
     const ok = await floatRef.current?.open();
@@ -86,6 +89,19 @@ export function MiniClockScreen({ snap, receivedAt, now, signal, part }: { snap:
           : pill("text-muted-foreground", t("timerMirror.noSignal")))}
       </header>
       <main className="flex min-h-0 flex-1 flex-col items-center justify-center py-[2vh]">{body}</main>
+      {can && (
+        <div className="mb-3">
+          <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t("timerMirror.floatSize")}</p>
+          <div role="radiogroup" className="grid grid-cols-3 gap-1 rounded-full bg-muted p-1 text-sm font-medium">
+            {FLOAT_SIZES.map((k) => (
+              <button key={k} type="button" role="radio" aria-checked={size === k} onClick={() => pick(k)}
+                className={`rounded-full py-2 transition-colors ${size === k ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>
+                {t(`timerMirror.size_${k}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {can && (
         <Button className="h-12 w-full gap-2 rounded-2xl text-[15px]" onClick={() => void float()}>
           <PictureInPicture2 className="h-5 w-5" />{t("timerMirror.float")}
