@@ -109,14 +109,18 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const refreshStatuses = async () => {
     const { syncTables, supabasePull } = await import("@/lib/local-sync");
     const r = await Promise.race([
-      syncTables({ tables: ["circuit_big_event_parts"], pull: supabasePull }),
+      syncTables({ tables: ["circuit_big_events", "circuit_big_event_parts"], pull: supabasePull }),
       new Promise<null>((res) => setTimeout(() => res(null), 8000)),
     ]).catch(() => null);
     if (!r || !r.every((x) => x.ok)) return;
     const { getRows } = await import("@/lib/local-db");
-    const fresh = await getRows<PartRow>("circuit_big_event_parts");
-    const byId = new Map(fresh.map((p) => [p.id, p]));
-    setParts((ps) => ps.map((p) => { const f = byId.get(p.id); return f && (f.status !== p.status || f.responded_at !== p.responded_at) ? { ...p, status: f.status, responded_at: f.responded_at, decline_reason: f.decline_reason } : p; }));
+    const [freshEv, freshPt] = await Promise.all([
+      getRows<EventRow>("circuit_big_events"),
+      getRows<PartRow>("circuit_big_event_parts"),
+    ]);
+    // Lista inteira da conta: eventos criados/alterados/excluídos em outro aparelho.
+    setEvents([...freshEv].sort((a, b) => (a.event_date ?? "9999").localeCompare(b.event_date ?? "9999")));
+    setParts([...freshPt].sort((a, b) => a.sort_order - b.sort_order));
   };
 
   // ⟳ desta tela: recarrega depois de baixar.

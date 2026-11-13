@@ -20,6 +20,8 @@ import {
   upsertRows,
 } from "@/lib/local-db";
 import { mirrorIdField } from "@/lib/mirror-tables";
+import { withNetworkWindow } from "@/lib/net-policy";
+import { markTableStale } from "@/lib/response-cache";
 
 export type Row = Record<string, unknown>;
 
@@ -96,6 +98,8 @@ export async function pullTable(
       }
       if (newest) await setCursor(table, newest);
     }
+    // Listas guardadas desta tabela ficam vencidas: a tela relê o espelho novo.
+    if (rows.length || full) markTableStale(table);
     return { table, rows: rows.length, ok: true };
   } catch (err) {
     const message = describeSyncError(err);
@@ -147,6 +151,12 @@ export type SyncOptions = {
 
 /** Sincroniza (somente leitura) a lista de tabelas para o espelho local. */
 export async function syncTables(opts: SyncOptions): Promise<PullResult[]> {
+  // Janela de rede: sem ela, a leitura "celular primeiro" responderia com o
+  // próprio espelho e nada novo de outros aparelhos chegaria.
+  return withNetworkWindow(() => syncTablesInner(opts));
+}
+
+async function syncTablesInner(opts: SyncOptions): Promise<PullResult[]> {
   const results: PullResult[] = [];
   const total = opts.tables.length + (opts.tombstones ? 1 : 0);
   let done = 0;
