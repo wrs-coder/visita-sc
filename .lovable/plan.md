@@ -1,31 +1,59 @@
-# Grandes Eventos (e outras telas) não chegam aos outros aparelhos
+# Grandes Eventos: Enviar / Receber da nuvem por evento
 
-## A falha encontrada
-Os eventos **estão salvos na conta** na nuvem (conferi: a conta tem os eventos lá). O problema é que o outro aparelho **nunca chega a buscá-los**:
+## Boa notícia primeiro
+Conferi a sua conta na nuvem: **os 10 eventos e todas as partes continuam salvos lá**, nenhum foi apagado (nada mudou na nuvem nas últimas horas). O que sumiu foi só a lista mostrada no aparelho: a sincronização trocou a lista da tela pela cópia vazia que o celular tinha.
 
-- O app lê primeiro a cópia guardada no próprio celular, para abrir rápido e funcionar sem internet.
-- A sincronização deveria "furar" essa cópia e ir à nuvem. Mas o **⟳ desta tela**, a sincronização automática diária e a atualização ao abrir Grandes Eventos pedem os dados à nuvem **sem avisar que é uma sincronização**. Resultado: o próprio app responde com a cópia antiga do celular, e nada novo chega.
-- Mesmo quando o "Sincronizar tudo" do Perfil baixa os eventos, a tela pode continuar mostrando a **lista antiga já guardada**, porque essa lista não é marcada como desatualizada.
+## O que vamos fazer
 
-Isso afeta qualquer tela que use o ⟳ da tela, não só Grandes Eventos. Esboços e cartas modelo usam outro caminho e por isso funcionavam.
+### 1. Proteção (para nunca mais "sumir")
+- Se a sincronização trouxer uma lista vazia, mas a tela tinha eventos, o app **mantém o que está na tela** e mostra o aviso "Não consegui confirmar com a nuvem".
+- Ao abrir Grandes Eventos com internet, o app sempre pede à nuvem primeiro; a cópia do celular só é usada sem internet.
 
-## O que vou corrigir
-1. **Toda sincronização vai mesmo à nuvem:** ⟳ da tela, sincronização diária, Perfil e a atualização ao abrir Grandes Eventos.
-2. **Depois de baixar, a tela mostra o novo:** as listas guardadas das tabelas baixadas passam a ser consideradas desatualizadas, e a tela recarrega.
-3. **Ao abrir Grandes Eventos com internet:** baixa eventos **e** partes (hoje só baixa as respostas), e atualiza a lista inteira: novos aparecem, editados mudam, excluídos somem.
-4. **Sem internet:** nada muda, continua usando a cópia do celular.
+### 2. Nos três pontinhos de cada evento (abaixo de "Exportar")
+- **Enviar para a nuvem** – grava este evento e suas partes na sua conta.
+- **Receber da nuvem** – substitui este evento no aparelho pela versão da nuvem (pede confirmação).
+
+### 3. Arrastar para o lado (igual aos esboços)
+- Arrastar o cartão do evento para a **esquerda** = Enviar (verde).
+- Arrastar para a **direita** = Receber (azul).
+
+### 4. Última atualização
+- Abaixo do título de cada evento: "Atualizado na nuvem: 13/11 às 17:40".
+
+## Mockup
 
 ```text
-Aparelho A cria "Assembleia 2027"  →  salvo na nuvem
-Aparelho B abre Grandes Eventos (ou toca ⟳)
-   → busca de verdade na nuvem → "Assembleia 2027" aparece
+┌──────────────────────────────────┐
+│ Grandes Eventos           ⟳  +   │
+├──────────────────────────────────┤
+│ ┌──────────────────────────────┐ │
+│ │ Assembleia de Circuito   ⋯   │ │
+│ │ 06/02/2027 · 11 partes       │ │
+│ │ ☁ Atualizado: 13/11 17:40    │ │
+│ └──────────────────────────────┘ │
+│                                  │
+│  Menu ⋯                          │
+│  ┌────────────────────────────┐  │
+│  │ + Nova parte               │  │
+│  │ ⇪ Importar oradores        │  │
+│  │ ⬇ Exportar                 │  │
+│  │ ☁↑ Enviar para a nuvem     │  │
+│  │ ☁↓ Receber da nuvem        │  │
+│  │ 🔔 Lembrar pendentes       │  │
+│  │ ⧉ Duplicar evento          │  │
+│  │ 🗑 Apagar evento            │  │
+│  └────────────────────────────┘  │
+│                                  │
+│  Arrastando para a direita:      │
+│ ┌────────┬─────────────────────┐ │
+│ │☁↓      │ Assembleia de Ci... │ │
+│ │Receber │ 06/02/2027          │ │
+│ └────────┴─────────────────────┘ │
+└──────────────────────────────────┘
 ```
 
-Sem mudanças no visual, links, PINs, cartas ou relógio. Sem mudança no banco.
-
 ## Detalhes técnicos
-- Causa: `syncTables`/`supabasePull` passa pelo `createLocalFirstFetch`; fora de `withNetworkWindow`, `preferNetworkNow()` é falso e a leitura é respondida pelo espelho (`answerFromMirror`) ou pela cópia em `response-cache`. Só `runDeviceSync` abre a janela; `SyncButton` (tela), `runAutoSync` (diária/abertura/online), `ConnectionModeToggle` e `BigEvents.refreshStatuses` não.
-- Correção central em `local-sync.ts`: `syncTables` executa dentro de `withNetworkWindow` (cobre todos os chamadores) e, após gravar linhas de uma tabela, chama `markTableStale(table)`.
-- `BigEvents.tsx`: `refreshStatuses` sincroniza `circuit_big_events` + `circuit_big_event_parts` e recarrega ambas do espelho via `getRows`.
-- Testes: `syncTables` abre a janela de rede durante o pull e marca as tabelas como desatualizadas; regra registrada em `src/lib/AGENTS.md`.
-- Verificar com Playwright: evento inserido na nuvem com espelho já preenchido aparece após ⟳ da tela e ao reabrir a tela.
+- `BigEvents.tsx`: `refreshStatuses` ignora resultado vazio quando a tela já tem eventos; novas funções `pushEvent(ev)` (upsert do evento + partes via cliente online) e `pullEvent(id)` (select direto na nuvem do evento + partes, grava no espelho local via local-db e atualiza estado).
+- Envolver cada cartão com o `SwipeToSync` existente (`src/components/notes/SwipeToSync.tsx`), sem alterá-lo.
+- "Última atualização" usa `updated_at` já existente na tabela. Sem mudança de banco/RLS.
+- Teste novo: lista vazia da sincronização não apaga eventos da tela; pull de um evento substitui só ele.
