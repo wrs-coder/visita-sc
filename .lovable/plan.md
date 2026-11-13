@@ -1,74 +1,39 @@
-# Relógio espelhado: nunca voltar para "Aguardando o superintendente" durante a contagem
+# Mini tempo: janelinha flutuante menor e com tamanho ajustável
 
-## O que foi conferido
-- A contagem já é local: o celular principal manda um "retrato" (parte, tempo decorrido, pausado) a cada 4 s e a cada comando; o segundo aparelho conta sozinho a partir do último retrato. Se a internet cair, ele continua contando e só troca a pílula "Ao vivo" por "Sem sinal".
-- A tela "Aguardando o superintendente" só aparece quando o segundo aparelho **não tem nenhum retrato guardado**. Hoje o retrato fica só na memória da página. Se a página recarrega, o retrato some. Isso acontece quando o navegador recarrega a aba (economia de energia, troca de app, tela cheia em alguns aparelhos ou atualização do ambiente de teste). Até o próximo envio, a tela fica em "Aguardando".
-- Na versão Wi-Fi do salão (Rede local), se o celular principal responder "sem retrato" por um instante, a página também apaga o relógio.
+## O que dá e o que não dá para fazer
+- O tamanho da janelinha não é escolhido pela página, e sim pelo sistema do celular (Android ou iPhone). Ele calcula o tamanho pelo **formato** da imagem: quanto mais "quadrada", maior a janelinha fica.
+- Hoje a imagem é 2:1, quase quadrada. Por isso a janelinha fica alta e grande.
+- O próprio sistema já deixa o orador mudar o tamanho:
+  - Android: pinça com dois dedos ou toque duplo na janelinha para alternar entre pequena e grande.
+  - iPhone/iPad: pinça com dois dedos.
 
 ## O que muda
-1. O segundo aparelho guarda o último retrato no próprio navegador, separado por código do relógio. Ao reabrir ou recarregar, o relógio volta na hora e continua contando com o horário guardado.
-2. Uma resposta vazia ou falha de conexão nunca apaga um relógio que já está contando. Ele só some quando o superintendente encerra a parte ou o espelho. Vale para internet e para Wi-Fi do salão.
-3. Sem sinal, o relógio continua contando e mostra a pílula "Sem sinal" no lugar de "Ao vivo".
-4. O retrato guardado vence em 6 horas, para não reaparecer no evento seguinte.
+1. **Formato bem achatado (faixa):** a imagem passa para o formato mais largo que o Android aceita, 2,39:1, e o relógio ocupa a altura toda. A janelinha abre como uma faixa baixa e estreita, só com os números.
+2. **Sem texto extra na janelinha:** sai a linha de baixo ("Pausado" / "Seu tempo terminou"). O aviso passa a ser feito só pela cor: verde, amarelo, vermelho e vermelho piscando quando o tempo acaba. Os números ficam maiores dentro de uma janela menor.
+3. **Escolha de tamanho na página antes de flutuar:** três opções em pílulas no estilo iOS, **Pequena · Média · Grande**. Cada uma usa um formato diferente: Pequena é uma faixa fina, Grande mostra os números mais altos. A escolha fica salva no aparelho.
+4. **Dica sob o botão:** "Para aumentar ou diminuir, faça pinça com dois dedos na janelinha. No Android, toque duas vezes."
 
 ```text
-┌──────────────────────────┐
-│ TEMA DA PARTE  ○ Sem sinal│
-│ Orador · Congregação     │
-│                          │
-│        12:48             │  ← continua contando
-│                          │
-│ Término 10:42 | Próximo… │
+Página do Mini tempo              Janelinha sobre o esboço
+┌──────────────────────────┐      ┌──────────────────────────┐
+│ MINI TEMPO DO ORADOR     │      │ Esboço                   │
+│ Imite Baraque   ● Ao vivo│      │ 1. Introdução  ┌───────┐ │
+│                          │      │ 2. Baraque...  │ 12:48 │ │ ← faixa pequena
+│         12:48            │      │                └───────┘ │
+│                          │      │ 3. ...                   │
+│ Tamanho da janelinha     │      └──────────────────────────┘
+│ ( Pequena | Média | Grande )
+│ [ Flutuar sobre o esboço ]│
+│ Pinça com dois dedos     │
+│ para ajustar o tamanho   │
 └──────────────────────────┘
 ```
+
+## Limites
+- O menor tamanho possível é decidido pelo celular. Fica uma faixa pequena, mas não chega a ser um pontinho.
+- Não testei em celular real. A medida final da janelinha só aparece no aparelho.
 
 ## Detalhes técnicos
-- `relogio.$code.tsx`: salvar `{snap, at}` em localStorage (`mirror.last.<code>`) a cada snap recebido e restaurar no primeiro render (em useEffect, por causa do SSR); descartar se tiver mais de 6 h.
-- `timer-mirror-page.ts`: em `poll()`, quando `r.snap` vier nulo e já existir snap com `live`, manter o anterior; persistir em localStorage e restaurar ao carregar.
-- Quando o superintendente encerra o espelho/evento, o retrato enviado já vem sem `live`, e a tela mostra o estado de "próxima parte" normalmente.
-- Testes: restauração de retrato guardado (válido e vencido) e "resposta vazia não apaga relógio em contagem".
-- Nada muda no celular principal, no banco de dados ou no layout.
-
-## Por que isso não atrasa a contagem
-- O retrato guarda o horário exato em que o tempo foi medido. Ao reabrir, o relógio soma o tempo que passou desde então. Por isso ele volta já no segundo certo, não de onde parou.
-- Quando chega um retrato novo do celular principal, o relógio se corrige na hora. O celular do superintendente continua sendo o relógio oficial.
-- O relógio do segundo aparelho nunca altera o relógio do superintendente.
-
-## Fase 2: mini relógio flutuante para o orador ("Mini tempo")
-Para o orador que usa o esboço no próprio celular ou tablet, quando não houver um aparelho extra no púlpito. Pode ser usado sozinho ou junto com o relógio do púlpito.
-
-- No Controle de tempo, ao lado de cada orador, um botão "Mini tempo" gera um link e um QR Code só daquela parte.
-- O link mostra apenas a parte desse orador. Antes dela, aparece "Seu discurso começa às 10:15". Depois dela, o link para de mostrar o tempo.
-- A contagem é a mesma do relógio do púlpito e começa no mesmo momento, quando o superintendente inicia a parte.
-- Na página, o botão "Flutuar" transforma o relógio numa janelinha que fica por cima de outros apps, como o JW Library ou um PDF. O orador pode arrastar a janelinha para um canto.
-- A janelinha usa as mesmas cores: verde, amarelo a 2 min, vermelho a 1 min e "+0:15" depois do tempo.
-- Não precisa instalar o app nem criar conta.
-
-```text
-┌──────────────────────────┐
-│ Esboço (JW Library)      │
-│ 1. Introdução ...  ┌────┐│
-│ 2. Abraão confiou  │12:48││ ← janelinha flutuante
-│    em Jeová ...    └────┘│
-│ 3. ...                   │
-└──────────────────────────┘
-```
-
-Limites: a janelinha por cima de outros apps funciona no Chrome do Android e no Safari do iPhone/iPad (iOS 15 ou mais novo). Em navegadores sem esse recurso, o mini relógio fica numa faixa fina no topo da página. Primeiro vou validar a janelinha num celular Android de verdade. Se ela não se comportar bem, mantenho só a faixa.
-
-### Detalhes técnicos da Fase 2
-- Link `/relogio/<code>?p=<partId>`, usando o mesmo canal e o mesmo retrato. O visualizador filtra pela parte, então não precisa de canal novo nem de mudança no banco.
-- O relógio flutuante é desenhado em canvas e enviado por `captureStream()` para um `<video>` com `requestPictureInPicture()`, com fallback para `documentPictureInPicture` e depois para a faixa fixa.
-- O botão "Mini tempo" fica na lista de partes do Controle de tempo, com uma folha de QR Code igual à do TimerMirrorSheet.
-- Roadmap: incluir "Relógio espelhado: retrato guardado" e "Mini tempo do orador".
-
-## Ajuste: tema repetido em simpósio ou série de discursos
-Hoje, no simpósio, a linha 1 mostra o nome da série e logo depois o tema do discurso, por exemplo "SÉRIE DE DISCURSOS: IMITE AQUELES… • Imite aqueles… — Baraque". Na série, a linha 1 vai mostrar só o tema do discurso, mais "(Parte 1 de 3)" e os minutos.
-
-```text
-┌──────────────────────────────────────────┐
-│ Imite aqueles… — Baraque (Parte 1 de 3) ● Ao vivo │
-│ Edivaldo Belchior Cunha · Congregação    │
-```
-
-Detalhe técnico: em `mirrorHeadline` (online) e na mesma função do HTML local, quando a parte tem `item` (sub-discurso do simpósio), o título da série é omitido e fica `[item]`. As partes comuns continuam como estão. Adicionar um teste para cada caso.
+- `float-clock.ts`: canvas com proporção por tamanho: pequena 2.39:1 (360x150), média 2:1 (360x180), grande 16:9 (384x216). Fonte ajustada pela altura e pela largura, sem a linha `sub`. Piscar quando estourado, alternando a cor a cada 500 ms. `createFloatClock(frame, size)` recria o canvas e o stream ao trocar o tamanho, e fecha o PiP aberto antes de reabrir.
+- `MiniClockScreen.tsx`: pílulas segmentadas de tamanho, salvas em localStorage `visitasc.mini.size`, e dica de pinça.
+- i18n pt/en/es para as novas legendas. Teste da função pura que escolhe as dimensões por tamanho.
