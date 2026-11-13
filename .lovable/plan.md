@@ -1,85 +1,56 @@
-# Mini tempo no Safari + melhorias nos Esboços Pessoais
+# Plano: botão "Esboços" na edição + importar oradores em Grandes Eventos
 
-## Parte A — Mini tempo no iPad/iPhone (ajuste anterior)
-- Botão "Flutuar" usa o comando próprio da Apple, disparado no mesmo toque (sem espera antes).
-- O relógio interno usado para flutuar fica visível ao sistema (não mais 1 pixel invisível).
-- Se o Safari ainda recusar: mensagem clara — "O Safari bloqueou a janela. No iPad, use o Slide Over ao lado do seu esboço." (não diz mais "use o Safari").
+## 1. Botão "⬅ Esboços" no modo edição
 
-## Parte B — Pedidos do anexo
-
-### 01. Lembrete "Esqueceu de iniciar?" (modo esboço e tela cheia)
-1. **Tempo escolhido sempre em destaque.** Hoje o botão "Iniciar X min" só aparece quando o tempo já foi carregado no momento do alerta; às vezes ele chega depois e o botão some. A causa exata será confirmada primeiro; a correção faz o alerta reler o tempo escolhido quando aparece e sempre mostrá-lo como botão principal.
-2. **"Não lembrar novamente" vale só até sair.** Hoje fica gravado para sempre naquele esboço. Passa a valer só enquanto o modo esboço/tela cheia estiver aberto. Ao abrir de novo, o alerta volta após 1 minuto sem iniciar o cronômetro.
+Hoje, ao editar um esboço, o botão do topo diz "⬅ Mostrar esboços" e só abre a pasta atual. Passará a ser igual ao Modo esboço: "⬅ Esboços", voltando para a lista completa (todas as pastas).
 
 ```text
-┌─────────────────────────────┐
-│ ⏱ Esqueceu de iniciar?   ✕ │
-│  [ ▶ Iniciar 29 min ]       │ ◄ sempre em destaque
-│   5   14   19   44   Outro  │
-│  Não lembrar (só agora)     │
-└─────────────────────────────┘
+ANTES                              DEPOIS
+┌───────────────────────────┐      ┌───────────────────────────┐
+│ ⬅ Mostrar esboços  📖Modo │      │ ⬅ Esboços   📖 Modo esboço│
+│ ✎ Detalhes  ⤢  ⋯   💾     │      │ ✎ Detalhes  ⤢  ⋯   💾     │
+├───────────────────────────┤      ├───────────────────────────┤
+│ texto do esboço...        │      │ texto do esboço...        │
 ```
 
-### 02. Importar Word (.docx): título vira o Tema
-- O Tema passa a ser a **primeira frase/linha com texto** do documento (hoje usa o nome do arquivo). Se o documento estiver vazio no início, continua usando o nome do arquivo.
+- O texto em edição continua guardado (rascunho automático), nada é perdido ao voltar.
+- No computador, o botão "Mostrar/Expandir" da lateral continua como está.
 
-### 03. Anexar imagem/vídeo preenche o Tema
-- Ao anexar, se o Tema estiver **vazio**, ele recebe o nome do arquivo (sem a extensão, ex.: "Mapa do território"). Continua editável. Se já houver Tema, nada muda.
+## 2. Importar oradores no Programa do evento
 
-### 04. Botão "Limpar" em Esboços recentes
-```text
- ESBOÇOS RECENTES          Limpar
- ┌─────────┐ ┌─────────┐
- │ Fé viva │ │ Oração  │
- └─────────┘ └─────────┘
-```
-- Remove só a lista de recentes deste aparelho; nenhum esboço é apagado.
+É seguro e viável. Tudo é lido só no aparelho, como já fazemos com congregações e Word. Nada é enviado antes da sua confirmação.
 
-### 05. Edição sem distrações (Esboços Pessoais)
-- Ao editar, somem: título "Esboços Pessoais", a frase explicativa, a escolha "Consideração de campo | Esboço" e "Esboços recentes".
-- Topo vira uma barra só (quebra em 2 linhas se faltar espaço).
-- "Editar detalhes" abre em janela (popup) com Tema, pasta e demais campos.
-- Campo de texto ganha uma **alça** embaixo (igual "Observações do superintendente") para esticar sem limite. A rolagem vertical que já existe (da tela e do texto) continua igual; a alça só aumenta a altura.
-- Todos os ajustes deste plano valem também no site (computador) e no tablet, não só no celular.
+Botão novo "Importar oradores" no topo do Programa do evento. Aceita .csv, .xlsx, .docx e .pdf (PDF apenas com texto; PDF escaneado/foto não é lido).
+
+O app procura em cada linha: Nº do esboço + nome do orador + congregação, e liga ao discurso do programa com o mesmo Nº.
 
 ```text
-┌─────────────────────────────┐
-│ ⬅ Esboços   Modo esboço  ✎ │
-│                 ⤢   ⋯   💾 │
-├─────────────────────────────┤
-│ B I U  • 1.  ⇥  📖          │
-│                             │
-│ 1. Introdução               │
-│    Texto bíblico...         │
-│ 2. Primeiro ponto           │
-│    ...                      │
-│                             │
-│            ═══              │ ◄ alça: arraste p/ ampliar
-└─────────────────────────────┘
-
- Popup "Editar detalhes"
-┌─────────────────────────────┐
-│ Editar detalhes          ✕ │
-│ Tema  [Fé viva          ]   │
-│ Pasta [Discursos      ▾ ]   │
-│ Tipo  Esboço                │
-│              [ Concluído ]  │
-└─────────────────────────────┘
+┌───────────────────────────┐
+│ Importar oradores      ✕  │
+│ arquivo: programa.xlsx    │
+├───────────────────────────┤
+│ ☑ Nº 12 · A fé que move   │
+│   João Silva · Cabiri     │
+│ ☑ Nº 34 · Seja vigilante  │
+│   Pedro Lima · Cazenga    │
+│   ⚠ substitui: Carlos M.  │
+│ ☐ Nº 99 · (não está no    │
+│   programa)               │
+├───────────────────────────┤
+│  Cancelar     Aplicar (2) │
+└───────────────────────────┘
 ```
 
-## Minha opinião e riscos
-- **01:** bom ganho; risco baixo. O alerta pode aparecer mais vezes — é o que foi pedido.
-- **02:** risco de pegar uma linha que não é o título (ex.: "Esboço nº 12"). Mitigação: Tema continua editável e o nome do arquivo fica como reserva.
-- **03:** risco baixo; só preenche se estiver vazio, nunca sobrescreve.
-- **04:** sem risco para os dados.
-- **05:** maior mudança visual. Risco de esconder algo que o usuário procura; mitigação: tudo continua acessível pelo "⋯" e pelo popup, e ao sair da edição a tela volta como hoje. A alça não pode travar nem substituir a rolagem atual: o texto continua rolando por dentro e a página continua rolando por fora. A alça precisa conviver com o teclado do Android (altura medida com teclado fechado, como já é feito).
-- **Mini tempo no Safari:** a Apple pode continuar recusando; nesse caso fica a orientação do Slide Over.
+Regras de segurança:
+- Você revisa tudo antes; linhas sem Nº correspondente vêm desmarcadas.
+- Se a parte já tem outro orador, aparece aviso "substitui" e vem desmarcada.
+- Partes com orador já confirmado nunca são trocadas automaticamente.
+- Trocar o orador usa o mesmo caminho de hoje: gera novo link/PIN como já acontece manualmente.
+- Partes do SC e Rep. Filial são ignoradas.
+- Limites de tamanho de arquivo e proteção contra arquivos maliciosos (os mesmos da importação de congregações).
 
 ## Detalhes técnicos
-- Sensor: trocar o `localStorage` de dispensa por um Set em memória por montagem da tela; recalcular `chosenMin` a partir de `useOutlineTimer` no momento do disparo. Remover/ignorar chaves antigas `outline-sensor-dismissed`.
-- `docx-import.ts`: título = texto do primeiro parágrafo não vazio (limite 200, fallback nome do arquivo) + teste.
-- Anexos: em `onAttachmentsChange`, se `draft.title` vazio e houve item novo de imagem/vídeo, `onPatch("title", nome sem extensão)` + teste do helper.
-- `recent-outlines.ts`: `clearRecent()`.
-- `OutlinesWorkspace.tsx`: flag de modo edição esconde cabeçalho/recentes; barra compacta; Dialog para detalhes; textarea/editor com `resize: vertical` via alça (mesmo componente das Observações). Sem mudança de banco nem formato salvo.
-- Mini tempo: `webkitSetPresentationMode('picture-in-picture')` síncrono no clique, vídeo com tamanho real fora da área visível; nova mensagem i18n.
-- Validar com `bunx tsgo --noEmit`, `bunx vitest run` e Playwright em 393px (celular), 820px (tablet) e 1280px (site), conferindo que a rolagem continua funcionando após esticar a alça.
+- `OutlinesWorkspace.tsx`: no topo, em `focusEdit`, usar o rótulo `personalOutlines.list.back` e o mesmo `onBack` do modo esboço (sair da pasta para a raiz).
+- Novo `src/lib/big-events/speaker-import.ts`: reaproveita leitura de csv/xlsx/docx de `congregation-import.ts` (JSZip, limites, rejeição DOCTYPE/ENTITY); PDF via `pdfjs-dist` carregado sob demanda (nova dependência, só no clique). Extrai linhas → `{number, speaker, congregation}` por colunas (planilha) ou padrão "Nº – Nome – Congregação" (texto).
+- Casamento por `outline_number` normalizado; aplicar via função existente de atualização de parte (que já renova token/PIN).
+- Sem mudança de banco. Testes unitários para o leitor e o casamento; typecheck e vitest.
