@@ -28,3 +28,36 @@
 - Quando o superintendente encerra o espelho/evento, o retrato enviado já vem sem `live`, e a tela mostra o estado de "próxima parte" normalmente.
 - Testes: restauração de retrato guardado (válido e vencido) e "resposta vazia não apaga relógio em contagem".
 - Nada muda no celular principal, no banco de dados ou no layout.
+
+## Por que isso não atrasa a contagem
+- O retrato guarda o horário exato em que o tempo foi medido. Ao reabrir, o relógio soma o tempo que passou desde então. Por isso ele volta já no segundo certo, não de onde parou.
+- Quando chega um retrato novo do celular principal, o relógio se corrige na hora. O celular do superintendente continua sendo o relógio oficial.
+- O relógio do segundo aparelho nunca altera o relógio do superintendente.
+
+## Fase 2: mini relógio flutuante para o orador ("Mini tempo")
+Para o orador que usa o esboço no próprio celular ou tablet, quando não houver um aparelho extra no púlpito. Pode ser usado sozinho ou junto com o relógio do púlpito.
+
+- No Controle de tempo, ao lado de cada orador, um botão "Mini tempo" gera um link e um QR Code só daquela parte.
+- O link mostra apenas a parte desse orador. Antes dela, aparece "Seu discurso começa às 10:15". Depois dela, o link para de mostrar o tempo.
+- A contagem é a mesma do relógio do púlpito e começa no mesmo momento, quando o superintendente inicia a parte.
+- Na página, o botão "Flutuar" transforma o relógio numa janelinha que fica por cima de outros apps, como o JW Library ou um PDF. O orador pode arrastar a janelinha para um canto.
+- A janelinha usa as mesmas cores: verde, amarelo a 2 min, vermelho a 1 min e "+0:15" depois do tempo.
+- Não precisa instalar o app nem criar conta.
+
+```text
+┌──────────────────────────┐
+│ Esboço (JW Library)      │
+│ 1. Introdução ...  ┌────┐│
+│ 2. Abraão confiou  │12:48││ ← janelinha flutuante
+│    em Jeová ...    └────┘│
+│ 3. ...                   │
+└──────────────────────────┘
+```
+
+Limites: a janelinha por cima de outros apps funciona no Chrome do Android e no Safari do iPhone/iPad (iOS 15 ou mais novo). Em navegadores sem esse recurso, o mini relógio fica numa faixa fina no topo da página. Primeiro vou validar a janelinha num celular Android de verdade. Se ela não se comportar bem, mantenho só a faixa.
+
+### Detalhes técnicos da Fase 2
+- Link `/relogio/<code>?p=<partId>`, usando o mesmo canal e o mesmo retrato. O visualizador filtra pela parte, então não precisa de canal novo nem de mudança no banco.
+- O relógio flutuante é desenhado em canvas e enviado por `captureStream()` para um `<video>` com `requestPictureInPicture()`, com fallback para `documentPictureInPicture` e depois para a faixa fixa.
+- O botão "Mini tempo" fica na lista de partes do Controle de tempo, com uma folha de QR Code igual à do TimerMirrorSheet.
+- Roadmap: incluir "Relógio espelhado: retrato guardado" e "Mini tempo do orador".
