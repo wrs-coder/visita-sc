@@ -28,6 +28,8 @@
 - [x] Relatório previsto × real e por ancião, com PDF
 - [x] "Informações adicionais" só aparece se já tiver texto; Presidente/Oração sem participações
 - [ ] Testar a bolinha flutuante no celular (precisa gerar novo APK)
+- [x] Espelhar relógio num tablet/TV: pela internet (QR Code) e pela rede local Wi‑Fi do salão
+- [ ] Testar o espelho pela rede local no celular (precisa gerar novo APK)
 
 ## Cartas convite
 - [x] Corrigir modelo inicial com dados do IBE-01 aparecendo em outros circuitos

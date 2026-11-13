@@ -202,7 +202,7 @@ const RAW_TOPICS: HelpTopic[] = [
     title: "Controle de tempo do evento",
     icon: "event",
     route: "/congregacoes",
-    keywords: ["cronometro", "temporizador", "regressivo", "tempo", "atrasado", "adiantado", "sino", "relatorio"],
+    keywords: ["cronometro", "temporizador", "regressivo", "tempo", "atrasado", "adiantado", "sino", "relatorio", "espelhar", "tablet", "tv", "qr code", "wifi"],
     steps: [
       { before: "Abra o evento em Grandes Eventos e toque em “Controle de tempo”. Funciona sem internet." },
       { before: "Toque no relógio grande de uma parte para iniciar ou parar. Você pode escolher qualquer parte, fora de ordem." },
@@ -210,6 +210,8 @@ const RAW_TOPICS: HelpTopic[] = [
       { before: "O sino mostra se a parte começou no horário (verde) ou atrasada (vermelho), pela hora do celular. No topo aparece se o programa está atrasado ou adiantado." },
       { before: "No “...” do topo escolha Regressivo ou Cronômetro, veja ou exporte o relatório em PDF. No “...” de cada parte: Editar, Reiniciar e Alterar tempo." },
       { before: "No fim da lista, toque em “Concluir evento”. No Android, o tempo continua visível sobre outros apps." },
+      { before: "Para mostrar só o relógio num tablet ou TV, toque no “...” do topo e em ", labelKey: "timerMirror.menu", after: ". Em “Internet”, o tablet lê o QR Code; em “Rede local” (só no app Android), os dois aparelhos usam o mesmo Wi‑Fi do salão, mesmo sem internet." },
+      { before: "No tablet aparece a parte que você iniciar: verde, amarelo faltando 2 min, vermelho faltando 1 min e “Seu tempo terminou” quando passar, com a previsão de término e, no simpósio, o próximo orador." },
     ],
   },
   {
