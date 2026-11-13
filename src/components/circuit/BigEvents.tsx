@@ -25,6 +25,7 @@ import { saveBlob } from "@/lib/share";
 import JSZip from "jszip";
 import { letterCandidates, pickLetterParts, speakerChanged } from "@/lib/big-events/letter-pick";
 import { LetterTemplates } from "./LetterTemplates";
+import { linesToRows, matchSpeakers, readSpeakerFile, type SpeakerMatch } from "@/lib/big-events/speaker-import";
 import { EventTimerFocus } from "./EventTimerFocus";
 import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
 import { fetchLetterTemplates, pushLetterTemplates, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
@@ -65,6 +66,10 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const [templates, setTemplates] = useState<LetterTemplate[]>([]);
   const [tplChoice, setTplChoice] = useState<Record<string, string>>({});
   const [exportFor, setExportFor] = useState<EventRow | null>(null);
+  const [spkFor, setSpkFor] = useState<EventRow | null>(null);
+  const [spkImport, setSpkImport] = useState<{ ev: EventRow; file: string; items: SpeakerMatch[] } | null>(null);
+  const [spkBusy, setSpkBusy] = useState(false);
+  const spkRef = useRef<HTMLInputElement>(null);
   const [timerFor, setTimerFor] = useState<EventRow | null>(null);
   const [exporting, setExporting] = useState(false);
   const [pickIds, setPickIds] = useState<Set<string> | null>(null);
@@ -453,6 +458,33 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
   };
 
+  const onSpeakerFile = async (f: File | undefined) => {
+    const ev = spkFor; if (spkRef.current) spkRef.current.value = "";
+    if (!f || !ev) return;
+    try {
+      const evParts = evPartsOf(ev.id);
+      const rows = linesToRows(await readSpeakerFile(f), evParts.map((p) => p.theme));
+      if (!rows.length) { toast.info("Não encontrei linhas com Nº do esboço e nome do orador."); return; }
+      setSpkImport({ ev, file: f.name, items: matchSpeakers(rows, evParts) });
+    } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
+  };
+
+  const applySpeakers = async () => {
+    if (!spkImport) return;
+    setSpkBusy(true);
+    let n = 0;
+    try {
+      for (const m of spkImport.items) {
+        if (!m.checked || !m.part || m.kind === "missing" || m.kind === "confirmed") continue;
+        const patch: Partial<PartRow> = { speaker_name: m.row.speaker };
+        if (m.row.congregation) patch.speaker_congregation = m.row.congregation;
+        if (await patchSpeaker(m.part.id, patch)) n++;
+      }
+      toast.success(n === 1 ? "1 orador importado." : `${n} oradores importados.`);
+      setSpkImport(null);
+    } finally { setSpkBusy(false); }
+  };
+
   const exportShareFile = async (ev: EventRow) => {
     try {
       const file = buildEventFile(ev, evPartsOf(ev.id));
@@ -543,6 +575,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
               <DropdownMenuTrigger asChild><Button size="icon" variant="outline" className="h-11 w-11 rounded-2xl" aria-label="Opções do evento"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setEditor({ ev, part: null, afterOrder: null })}><Plus className="mr-2 h-4 w-4" />Nova parte</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setSpkFor(ev); spkRef.current?.click(); }}><Upload className="mr-2 h-4 w-4" />Importar oradores</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setExportFor(ev)}><Download className="mr-2 h-4 w-4" />Exportar</DropdownMenuItem>
                 <DropdownMenuItem disabled={!pendingN} onClick={() => setRemindFor(ev)}><BellRing className="mr-2 h-4 w-4" />Lembrar pendentes{pendingN ? ` (${pendingN})` : ""}</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => duplicateEvent(ev)}><CopyPlus className="mr-2 h-4 w-4" />Duplicar evento</DropdownMenuItem>
@@ -736,6 +769,45 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
           )}
         </DialogContent>
       </Dialog>
+      <Dialog open={!!spkImport} onOpenChange={(o) => { if (!o && !spkBusy) setSpkImport(null); }}>
+        <DialogContent className="max-w-sm overflow-hidden">
+          <DialogHeader><DialogTitle>Importar oradores</DialogTitle></DialogHeader>
+          {spkImport && (() => {
+            const items = spkImport.items;
+            const sel = items.filter((m) => m.checked).length;
+            const toggle = (i: number) => setSpkImport((s) => s && ({ ...s, items: s.items.map((m, j) => j === i ? { ...m, checked: !m.checked } : m) }));
+            return (
+              <div className="min-w-0 space-y-3">
+                <p className="truncate text-xs text-muted-foreground">Arquivo: {spkImport.file}</p>
+                <ul className="max-h-[55vh] divide-y overflow-y-auto rounded-2xl bg-muted/50">
+                  {items.map((m, i) => {
+                    const locked = m.kind === "missing" || m.kind === "confirmed";
+                    return (
+                      <li key={`${m.row.number}-${i}`}>
+                        <label className={`flex min-w-0 items-start gap-3 px-3 py-2.5 ${locked ? "opacity-60" : "cursor-pointer"}`}>
+                          <Checkbox checked={m.checked} disabled={locked || spkBusy} className="mt-0.5" onCheckedChange={() => toggle(i)} />
+                          <span className="min-w-0 flex-1">
+                            <span className="block break-words text-sm font-medium">Nº {m.row.number} · {m.part ? m.part.theme : "(não está no programa)"}</span>
+                            <span className="block break-words text-xs text-muted-foreground">{[m.row.speaker, m.row.congregation].filter(Boolean).join(" · ")}</span>
+                            {m.kind === "replace" && <span className="block text-xs text-warning">⚠ substitui: {m.part?.speaker_name}</span>}
+                            {m.kind === "confirmed" && <span className="block text-xs text-muted-foreground">{m.part?.speaker_name} já confirmou — não será trocado</span>}
+                            {m.kind === "same" && <span className="block text-xs text-muted-foreground">Mesmo orador{m.checked ? " · atualiza congregação" : ""}</span>}
+                          </span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1 rounded-full" disabled={spkBusy} onClick={() => setSpkImport(null)}>Cancelar</Button>
+                  <Button className="flex-1 rounded-full" disabled={spkBusy || !sel} onClick={() => void applySpeakers()}>{spkBusy ? "Aplicando…" : `Aplicar (${sel})`}</Button>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+      <input ref={spkRef} type="file" accept=".csv,.txt,.xlsx,.docx,.pdf" className="hidden" onChange={(e) => void onSpeakerFile(e.target.files?.[0])} />
       <Drawer open={!!remindFor} onOpenChange={(o) => !o && setRemindFor(null)}>
         <DrawerContent>
           <DrawerHeader><DrawerTitle>Lembrar pendentes</DrawerTitle></DrawerHeader>

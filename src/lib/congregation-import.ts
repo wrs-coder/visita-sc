@@ -91,13 +91,13 @@ export function parseCsv(text: string): ParsedImport {
   return { items: linesToItems(lines), circuit };
 }
 
-function decodeXml(s: string): string {
+export function decodeXml(s: string): string {
   return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'")
     .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
     .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&amp;/g, "&");
 }
 
-async function openZip(buf: ArrayBuffer): Promise<JSZip> {
+export async function openZip(buf: ArrayBuffer): Promise<JSZip> {
   const zip = await JSZip.loadAsync(buf);
   let total = 0, entries = 0;
   zip.forEach((_p, f) => {
@@ -108,7 +108,7 @@ async function openZip(buf: ArrayBuffer): Promise<JSZip> {
   return zip;
 }
 
-function rejectUnsafe(xml: string) {
+export function rejectUnsafe(xml: string) {
   if (/<!DOCTYPE|<!ENTITY/i.test(xml)) throw new Error("Arquivo inválido.");
 }
 

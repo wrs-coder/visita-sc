@@ -2185,9 +2185,13 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
                     onInsertBibleText={handleInsertBibleText}
                     onSyncInfo={setSyncInfo}
                     onBack={() => {
-                      if (focusEdit && typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches) {
-                        setLibCollapsed((v) => !v);
-                        return;
+                      if (focusEdit) {
+                        // Igual ao Modo esboço: volta à lista completa, não só à pasta aberta.
+                        setSelectedFolderId(null);
+                        if (typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches) {
+                          setLibCollapsed(false);
+                          return;
+                        }
                       }
                       setShowLibrary(true); window.scrollTo({ top: 0 });
                     }}
@@ -2594,9 +2598,7 @@ function NoteEditor({
           {onBack && (
             <Button variant="ghost" size="sm" className={cn("h-8 px-1.5 text-primary", !focusEdit && "lg:hidden")} onClick={onBack}>
               <ChevronLeft className="h-4 w-4" />{" "}
-              {focusEdit
-                ? t("personalOutlines.list.show", { defaultValue: "Mostrar esboços" })
-                : t("personalOutlines.list.back", { defaultValue: "Esboços" })}
+              {t("personalOutlines.list.back", { defaultValue: "Esboços" })}
             </Button>
           )}
           {!isTalk && focusEdit && (
