@@ -25,6 +25,13 @@ Conferi a sua conta na nuvem: **os 10 eventos e todas as partes continuam salvos
 ### 4. Última atualização
 - Abaixo do título de cada evento: "Atualizado na nuvem: 13/11 às 17:40".
 
+### 5. Apagar da nuvem
+- **Manual:** o "Apagar evento" (⋯) já apaga da nuvem quando há internet. Vou garantir isso: sem internet, o app avisa "Será apagado da nuvem quando houver conexão" e completa depois. Ao apagar, pergunta "Apagar este evento de todos os aparelhos?".
+- **Automático:** todo dia às 06:00 (já existe uma limpeza diária para o Cronograma), a nuvem também apagará os Grandes Eventos cuja data passou há **mais de 2 dias**, junto com as partes. Os links/PINs desses eventos deixam de funcionar. Eventos sem data nunca são apagados automaticamente.
+- Nos aparelhos, ao sincronizar, eles somem também.
+
+**Atenção:** este item 5 automático exige uma pequena mudança na rotina diária da nuvem (não muda tabelas nem permissões). Se preferir não mexer na nuvem, faço a exclusão automática só nos aparelhos.
+
 ## Mockup
 
 ```text
@@ -58,6 +65,7 @@ Conferi a sua conta na nuvem: **os 10 eventos e todas as partes continuam salvos
 ```
 
 ## Detalhes técnicos
+- Exclusão automática: ampliar `delete_expired_circuit_events()` (job diário existente `cleanup-expired-circuit-events`) com `DELETE FROM circuit_big_event_parts WHERE event_id IN (eventos com event_date < CURRENT_DATE - 2)` e depois os eventos. Tombstones existentes propagam a exclusão aos aparelhos.
 - Botão global: `forceDownloadAll()` faz select direto na nuvem (sem passar pelo leitor local), grava as linhas no espelho local (local-db) e atualiza a tela.
 - `BigEvents.tsx`: `refreshStatuses` ignora resultado vazio quando a tela já tem eventos; novas funções `pushEvent(ev)` (upsert do evento + partes via cliente online) e `pullEvent(id)` (select direto na nuvem do evento + partes, grava no espelho local via local-db e atualiza estado).
 - Envolver cada cartão com o `SwipeToSync` existente (`src/components/notes/SwipeToSync.tsx`), sem alterá-lo.
