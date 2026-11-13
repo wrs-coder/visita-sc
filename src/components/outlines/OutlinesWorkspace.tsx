@@ -2186,12 +2186,11 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
                     onSyncInfo={setSyncInfo}
                     onBack={() => {
                       if (focusEdit) {
-                        // Igual ao Modo esboço: volta à lista completa, não só à pasta aberta.
+                        // Igual ao Modo esboço: sai da edição sem distrações e volta à tela
+                        // "Escolha o tipo de criação:" com a lista completa (o rascunho continua no estado).
+                        setMode("outline");
                         setSelectedFolderId(null);
-                        if (typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches) {
-                          setLibCollapsed(false);
-                          return;
-                        }
+                        setLibCollapsed(false);
                       }
                       setShowLibrary(true); window.scrollTo({ top: 0 });
                     }}

@@ -25,10 +25,47 @@ function similar(a: string, b: string): boolean {
   return !!x && !!y && (x === y || (x.length > 8 && y.includes(x)) || (y.length > 8 && x.includes(y)));
 }
 
+// Programa oficial (Running Program): o Nº vem no tema ("N.1: ...", "N.10: ...").
+const N_THEME_RE = /^N[º°o]?\.?\s*(\d{1,3})\s*:/i;
+// Coluna "Tipo" do programa oficial e textos que nunca são nome de orador.
+const TYPE_RE = /^(?:discurso|discursos|ora[çc][ãa]o|c[âa]ntico|presidente|intervalo|v[íi]deo|drama|entrevistas?(?:\(s\))?|talk|prayer|song|chairman|interval|discurso\s*-\s*com:?.*)$/i;
+const EMPTY_SPEAKER_RE = /^(?:n\/?a|—|–|-|a designar|tbd|tba)$/i;
+// "SC Fulano" / "Rep. Filial": partes do superintendente ou da filial, nunca de orador importado.
+const NOT_SPEAKER_RE = /^(?:sc|s\.c\.|rep\.?\s*(?:da\s*)?filial|representante\s+da\s+filial)\b/i;
+const TIME_RE = /^\d{1,2}[:h]\d{2}$/;
+
+function cleanCong(s: string | null | undefined): string | null {
+  const v = (s ?? "").replace(/\s+/g, " ").replace(/[\s,.;–—-]+$/, "").trim();
+  return v ? v.slice(0, 120) : null;
+}
+
+/** Linha do programa oficial com o Nº dentro do tema: "10:00 | N.1: Tema | Orador | Discurso". */
+function parseNumberedThemeLine(fields: string[], themes: string[]): SpeakerRow | null {
+  const ni = fields.findIndex((f) => N_THEME_RE.test(f));
+  if (ni < 0) return null;
+  const number = normNum(fields[ni].match(N_THEME_RE)![1]);
+  const rest = fields
+    .filter((_, i) => i !== ni)
+    .filter((f) => !TIME_RE.test(f) && !/^\d+\s*min/i.test(f) && !TYPE_RE.test(f))
+    .filter((f) => !themes.some((t) => similar(f, t)));
+  if (!rest.length) return null;
+  let speaker = rest[0];
+  let congregation: string | null = rest[1] ?? null;
+  const paren = speaker.match(/^(.+?)\s*\(([^)]+)\)$/);
+  if (!congregation && paren) { speaker = paren[1]; congregation = paren[2]; }
+  speaker = speaker.replace(/\s+/g, " ").slice(0, 120).trim();
+  if (!speaker || EMPTY_SPEAKER_RE.test(speaker) || NOT_SPEAKER_RE.test(speaker) || /\d{3,}/.test(speaker)) return null;
+  return { number, speaker, congregation: cleanCong(congregation) };
+}
+
 /** Uma linha de texto → { número, orador, congregação } ou null. */
 export function parseLine(line: string, themes: string[] = []): SpeakerRow | null {
   let fields = line.split(SPLIT_RE).map((f) => f.trim()).filter(Boolean);
   if (!fields.length) return null;
+  // Formato do programa oficial (adição): só quando nenhuma coluna é um Nº solto.
+  if (!fields.some((f) => NUM_RE.test(f)) && fields.some((f) => N_THEME_RE.test(f))) {
+    return parseNumberedThemeLine(line.split(/\t|\||\s{3,}/).map((f) => f.trim()).filter(Boolean), themes);
+  }
   // "12 João Silva" sem separador: número no início.
   if (fields.length === 1 || !fields.some((f) => NUM_RE.test(f))) {
     const m = fields[0].match(/^(?:n[ºo°.]?\s*)?(\d{1,4})[.)º°:]?\s+(.+)$/i);
@@ -47,7 +84,7 @@ export function parseLine(line: string, themes: string[] = []): SpeakerRow | nul
   const paren = speaker.match(/^(.+?)\s*\(([^)]+)\)$/);
   if (!congregation && paren) { speaker = paren[1]; congregation = paren[2]; }
   speaker = speaker.slice(0, 120).trim();
-  if (!speaker || /\d{3,}/.test(speaker)) return null;
+  if (!speaker || /\d{3,}/.test(speaker) || EMPTY_SPEAKER_RE.test(speaker)) return null;
   return { number, speaker, congregation: congregation?.slice(0, 120).trim() || null };
 }
 
@@ -98,30 +135,112 @@ export function xlsxToTabLines(sharedXml: string, sheetXml: string): string[] {
   return lines;
 }
 
-async function pdfToLines(buf: ArrayBuffer): Promise<string[]> {
+/** Um pedaço de texto do PDF com posição (x/y em pontos, h = altura da letra). */
+export type PdfItem = { page: number; x: number; y: number; w: number; h: number; s: string };
+
+async function pdfItems(buf: ArrayBuffer): Promise<PdfItem[]> {
   const pdfjs = await import("pdfjs-dist");
   const worker = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
   pdfjs.GlobalWorkerOptions.workerSrc = worker;
   const doc = await pdfjs.getDocument({ data: new Uint8Array(buf) }).promise;
-  const lines: string[] = [];
+  const out: PdfItem[] = [];
   for (let n = 1; n <= Math.min(doc.numPages, 60); n++) {
     const content = await (await doc.getPage(n)).getTextContent();
-    const rows = new Map<number, Array<{ x: number; w: number; s: string }>>();
-    for (const it of content.items as Array<{ str?: string; transform?: number[]; width?: number }>) {
+    for (const it of content.items as Array<{ str?: string; transform?: number[]; width?: number; height?: number }>) {
       if (!it.str?.trim() || !it.transform) continue;
-      const y = Math.round(it.transform[5] / 3) * 3;
-      (rows.get(y) ?? rows.set(y, []).get(y)!).push({ x: it.transform[4], w: it.width ?? 0, s: it.str });
-    }
-    for (const y of [...rows.keys()].sort((a, b) => b - a)) {
-      const items = rows.get(y)!.sort((a, b) => a.x - b.x);
-      let line = "", end = -Infinity;
-      for (const i of items) { line += line ? (i.x - end > 12 ? "\t" : " ") + i.s : i.s; end = i.x + i.w; }
-      lines.push(line.replace(/ {2,}/g, " "));
+      out.push({ page: n, x: it.transform[4], y: it.transform[5], w: it.width ?? 0, h: it.height || Math.abs(it.transform[3]) || 0, s: it.str });
     }
   }
   await doc.cleanup?.();
-  if (!lines.length) throw new Error("Este PDF não tem texto (parece digitalizado).");
+  if (!out.length) throw new Error("Este PDF não tem texto (parece digitalizado).");
+  return out;
+}
+
+/** Itens do PDF → linhas de texto (colunas separadas por tab). Mesmo comportamento de antes. */
+export function pdfItemsToLines(items: PdfItem[]): string[] {
+  const lines: string[] = [];
+  const pages = [...new Set(items.map((i) => i.page))].sort((a, b) => a - b);
+  for (const page of pages) {
+    const rows = new Map<number, PdfItem[]>();
+    for (const it of items) {
+      if (it.page !== page) continue;
+      const y = Math.round(it.y / 3) * 3;
+      (rows.get(y) ?? rows.set(y, []).get(y)!).push(it);
+    }
+    for (const y of [...rows.keys()].sort((a, b) => b - a)) {
+      const row = rows.get(y)!.sort((a, b) => a.x - b.x);
+      let line = "", end = -Infinity;
+      for (const i of row) { line += line ? (i.x - end > 12 ? "\t" : " ") + i.s : i.s; end = i.x + i.w; }
+      lines.push(line.replace(/ {2,}/g, " "));
+    }
+  }
   return lines;
+}
+
+const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+
+/**
+ * Programa oficial em tabela (Horário | Tema | Orador | Tipo): o Nº está no tema ("N.1:"),
+ * o nome do orador fica na coluna Orador e a congregação logo abaixo, em letra menor.
+ * Lê pelas posições das colunas; páginas sem cabeçalho usam as colunas da página anterior.
+ */
+export function runningProgramRows(items: PdfItem[]): SpeakerRow[] {
+  const out: SpeakerRow[] = [];
+  const seen = new Set<string>();
+  type Cols = { tema: number; orador: number; tipo: number; top: number };
+  let cols = null as Cols | null;
+  const pages = [...new Set(items.map((i) => i.page))].sort((a, b) => a - b);
+  for (const page of pages) {
+    const pageItems = items.filter((i) => i.page === page);
+    const temaH = pageItems.find((i) => ["tema", "theme"].includes(norm(i.s)));
+    const oradorH = temaH && pageItems.find((i) => ["orador", "oradores", "speaker"].includes(norm(i.s)) && Math.abs(i.y - temaH.y) < 4 && i.x > temaH.x);
+    if (temaH && oradorH) {
+      const tipoH = pageItems.find((i) => ["tipo", "type"].includes(norm(i.s)) && Math.abs(i.y - temaH.y) < 4 && i.x > oradorH.x);
+      cols = { tema: temaH.x, orador: oradorH.x, tipo: tipoH?.x ?? Infinity, top: temaH.y };
+    } else if (cols) {
+      const prev: Cols = cols;
+      cols = { tema: prev.tema, orador: prev.orador, tipo: prev.tipo, top: Infinity };
+    }
+    if (!cols) continue;
+    const c = cols;
+    const body = pageItems.filter((i) => i.y < c.top - 2);
+    const inTheme = (i: PdfItem) => i.x >= c.tema - 4 && i.x < c.orador - 4;
+    const inSpeaker = (i: PdfItem) => i.x >= c.orador - 4 && i.x < c.tipo - 4;
+    // Âncoras: horário à esquerda do tema; sem horário, a linha "N.x:" do tema.
+    let anchors = body.filter((i) => i.x < c.tema - 2 && TIME_RE.test(i.s.trim())).map((i) => i.y);
+    if (!anchors.length) anchors = body.filter((i) => inTheme(i) && N_THEME_RE.test(i.s.trim())).map((i) => i.y);
+    anchors = [...new Set(anchors.map((y) => Math.round(y)))].sort((a, b) => b - a);
+    anchors.forEach((ay, k) => {
+      const next = anchors[k + 1] ?? -Infinity;
+      const block = body.filter((i) => i.y <= ay + 3 && i.y > next + 3).sort((a, b) => b.y - a.y || a.x - b.x);
+      const theme = block.filter(inTheme).map((i) => i.s.trim()).join(" ");
+      const m = theme.match(N_THEME_RE);
+      if (!m) return;
+      const number = normNum(m[1]);
+      if (!number || seen.has(number)) return;
+      // Linhas da coluna Orador (agrupadas por altura na página).
+      const rows: Array<{ y: number; text: string; h: number }> = [];
+      for (const i of block.filter(inSpeaker)) {
+        const last = rows[rows.length - 1];
+        if (last && Math.abs(last.y - i.y) < 3) { last.text += " " + i.s.trim(); last.h = Math.max(last.h, i.h); }
+        else rows.push({ y: i.y, text: i.s.trim(), h: i.h });
+      }
+      if (!rows.length) return;
+      const maxH = Math.max(...rows.map((r) => r.h));
+      const mixed = rows.some((r) => r.h < maxH * 0.85);
+      const name: string[] = [], cong: string[] = [];
+      rows.forEach((r, idx) => {
+        if (mixed) (r.h >= maxH * 0.85 ? name : cong).push(r.text);
+        else if (idx === 0) name.push(r.text);
+        else (/\d|,| - /.test(r.text) || cong.length ? cong : name).push(r.text);
+      });
+      const speaker = name.join(" ").replace(/\s+/g, " ").slice(0, 120).trim();
+      if (!speaker || EMPTY_SPEAKER_RE.test(speaker) || NOT_SPEAKER_RE.test(speaker) || TYPE_RE.test(speaker)) return;
+      seen.add(number);
+      out.push({ number, speaker, congregation: cleanCong(cong.join(" ")) });
+    });
+  }
+  return out;
 }
 
 export async function readSpeakerFile(file: { name: string; size: number; arrayBuffer: () => Promise<ArrayBuffer> }): Promise<string[]> {
@@ -143,8 +262,25 @@ export async function readSpeakerFile(file: { name: string; size: number; arrayB
     if (!sheet) throw new Error("Não parece uma planilha Excel.");
     return xlsxToTabLines((await zip.file("xl/sharedStrings.xml")?.async("string")) ?? "", sheet);
   }
-  if (ext === "pdf") return pdfToLines(buf);
+  if (ext === "pdf") return pdfItemsToLines(await pdfItems(buf));
   throw new Error("Formato não aceito. Use .csv, .xlsx, .docx ou .pdf.");
+}
+
+/**
+ * Lê o arquivo e devolve as linhas reconhecidas. No PDF, a tabela do programa oficial
+ * (com a congregação embaixo do nome) é lida primeiro; as demais linhas seguem a leitura de sempre.
+ */
+export async function readSpeakerRows(
+  file: { name: string; size: number; arrayBuffer: () => Promise<ArrayBuffer> },
+  themes: string[] = [],
+): Promise<SpeakerRow[]> {
+  const ext = file.name.toLowerCase().split(".").pop();
+  if (ext !== "pdf") return linesToRows(await readSpeakerFile(file), themes);
+  if (file.size > IMPORT_MAX_BYTES) throw new Error("Arquivo grande demais (máx. 10 MB).");
+  const items = await pdfItems(await file.arrayBuffer());
+  const table = runningProgramRows(items);
+  const have = new Set(table.map((r) => r.number));
+  return [...table, ...linesToRows(pdfItemsToLines(items), themes).filter((r) => !have.has(r.number))];
 }
 
 /** Liga cada linha ao discurso com o mesmo Nº. Só partes de orador; SC/Filial ficam de fora. */

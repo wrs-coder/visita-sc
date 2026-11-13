@@ -47,3 +47,6 @@
 - [x] Anexar imagem/vídeo preenche Tema vazio
 - [x] Botão Limpar em Esboços recentes
 - [x] Edição sem distrações: barra compacta, detalhes em popup, alça sem afetar rolagem; vale site/tablet
+
+- [x] Esboços: "⬅ Esboços" no modo edição volta à escolha do tipo (igual ao modo esboço)
+- [x] Importar oradores: ler PDF do programa oficial (N.x:, congregação abaixo do nome)

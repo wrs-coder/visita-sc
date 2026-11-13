@@ -25,7 +25,7 @@ import { saveBlob } from "@/lib/share";
 import JSZip from "jszip";
 import { letterCandidates, pickLetterParts, speakerChanged } from "@/lib/big-events/letter-pick";
 import { LetterTemplates } from "./LetterTemplates";
-import { linesToRows, matchSpeakers, readSpeakerFile, type SpeakerMatch } from "@/lib/big-events/speaker-import";
+import { matchSpeakers, readSpeakerRows, type SpeakerMatch } from "@/lib/big-events/speaker-import";
 import { EventTimerFocus } from "./EventTimerFocus";
 import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
 import { fetchLetterTemplates, pushLetterTemplates, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
@@ -463,7 +463,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     if (!f || !ev) return;
     try {
       const evParts = evPartsOf(ev.id);
-      const rows = linesToRows(await readSpeakerFile(f), evParts.map((p) => p.theme));
+      const rows = await readSpeakerRows(f, evParts.map((p) => p.theme));
       if (!rows.length) { toast.info("Não encontrei linhas com Nº do esboço e nome do orador."); return; }
       setSpkImport({ ev, file: f.name, items: matchSpeakers(rows, evParts) });
     } catch (e) { toast.error(String(e instanceof Error ? e.message : e)); }
