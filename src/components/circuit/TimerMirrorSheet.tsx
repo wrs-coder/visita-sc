@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { appConfirm } from "@/components/ui/app-dialogs";
 import { mirrorUrl } from "@/lib/big-events/timer-mirror";
-import { localMirrorSupported, localMirrorUrl } from "@/lib/big-events/timer-mirror-link";
+import { localMirrorSupported, localMirrorUrl, mirrorOrigin } from "@/lib/big-events/timer-mirror-link";
 import type { TimerMirrorApi } from "./use-timer-mirror";
 
 function Qr({ value }: { value: string }) {
@@ -36,7 +36,7 @@ async function shareLink(url: string, title: string) {
 export function TimerMirrorSheet({ open, onOpenChange, mirror }: { open: boolean; onOpenChange: (o: boolean) => void; mirror: TimerMirrorApi }) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<"online" | "local">(() => (mirror.prefs.local && !mirror.prefs.online ? "local" : "online"));
-  const url = mirrorUrl(mirror.prefs.code);
+  const url = mirrorUrl(mirror.prefs.code, mirrorOrigin());
   const canShare = typeof navigator !== "undefined" && (Capacitor.isNativePlatform() || !!navigator.share);
   const copy = async (text: string) => {
     try { await navigator.clipboard.writeText(text); toast.success(t("timerMirror.copied")); } catch { /* */ }

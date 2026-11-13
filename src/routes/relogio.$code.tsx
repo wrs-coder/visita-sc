@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MirrorClockScreen } from "@/components/circuit/MirrorClockScreen";
 import { isMirrorCode, mirrorChannel, parseSnap, type MirrorSnap } from "@/lib/big-events/timer-mirror";
@@ -21,8 +21,8 @@ export const Route = createFileRoute("/relogio/$code")({
   notFoundComponent: () => <Shell><p className="m-auto px-6 text-center text-muted-foreground">Página não encontrada. <Link to="/" className="underline">Início</Link></p></Shell>,
 });
 
-function Shell({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-  return <div className="dark fixed inset-0 flex select-none flex-col bg-background text-foreground" onClick={onClick}>{children}</div>;
+function Shell({ children }: { children: React.ReactNode }) {
+  return <div className="dark fixed inset-0 flex select-none flex-col overflow-hidden bg-background text-foreground [touch-action:manipulation]">{children}</div>;
 }
 
 function MirrorViewer() {
@@ -60,17 +60,38 @@ function MirrorViewer() {
     return () => { document.removeEventListener("visibilitychange", onVis); void lock?.release().catch(() => { /* */ }); };
   }, []);
 
-  const goFull = () => {
-    try { const d = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void }; if (d.requestFullscreen) void d.requestFullscreen().catch(() => { /* */ }); else d.webkitRequestFullscreen?.(); } catch { /* */ }
-    setFull(true);
-  };
+  // Tela cheia: tenta ao abrir; se o navegador exigir um toque, o primeiro toque em qualquer ponto ativa.
+  const [canFull, setCanFull] = useState(false);
+  const goFull = useCallback(() => {
+    try {
+      const d = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
+      if (document.fullscreenElement) return;
+      if (d.requestFullscreen) void d.requestFullscreen({ navigationUI: "hide" }).then(() => setFull(true)).catch(() => { /* precisa de toque */ });
+      else d.webkitRequestFullscreen?.();
+    } catch { /* */ }
+  }, []);
+  useEffect(() => {
+    const d = document.documentElement as HTMLElement & { webkitRequestFullscreen?: unknown };
+    setCanFull(!!(d.requestFullscreen || d.webkitRequestFullscreen));
+    goFull();
+    const onChange = () => setFull(!!document.fullscreenElement);
+    const onFirst = () => { goFull(); setFull(true); };
+    document.addEventListener("fullscreenchange", onChange);
+    window.addEventListener("pointerdown", onFirst);
+    window.addEventListener("keydown", onFirst);
+    return () => { document.removeEventListener("fullscreenchange", onChange); window.removeEventListener("pointerdown", onFirst); window.removeEventListener("keydown", onFirst); };
+  }, [goFull]);
 
   if (!valid) return <Shell><p className="m-auto max-w-xl px-6 text-center text-[clamp(16px,2.6vw,28px)] text-muted-foreground">{t("timerMirror.invalid")}</p></Shell>;
   const signal = !!data && now - data.at < 15_000;
   return (
-    <Shell onClick={goFull}>
+    <Shell>
       <MirrorClockScreen snap={data?.snap ?? null} receivedAt={data?.at ?? 0} now={now || data?.at || 0} signal={signal} hint={code} />
-      {!full && !data?.snap.live && <p className="pointer-events-none fixed inset-x-0 bottom-[1vh] text-center text-xs text-muted-foreground/60">{t("timerMirror.tapFull")}</p>}
+      {!full && canFull && (
+        <div className="pointer-events-none fixed inset-x-0 top-[max(1.5vh,env(safe-area-inset-top))] flex justify-center">
+          <p className="rounded-full bg-muted/90 px-4 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">{t("timerMirror.tapFull")}</p>
+        </div>
+      )}
     </Shell>
   );
 }

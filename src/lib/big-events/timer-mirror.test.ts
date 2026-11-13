@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { emptyTimer, tapPart, togglePause, type TimerPart } from "./event-timer";
-import { buildSnap, liveElapsed, mirrorClock, mirrorTone, newMirrorCode, isMirrorCode, parseSnap } from "./timer-mirror";
+import { buildSnap, liveElapsed, mirrorClock, mirrorHeadline, mirrorTone, mirrorUrl, newMirrorCode, isMirrorCode, parseSnap, withCong } from "./timer-mirror";
 import { LOCAL_LOGIC_JS, localMirrorHtml } from "./timer-mirror-page";
-import { countRecent } from "./timer-mirror-link";
+import { countRecent, mirrorOrigin } from "./timer-mirror-link";
 import { SERIES_HEAD, SERIES_ITEM } from "./program-rules";
 
 const P = (id: string, o: number, dur: number | null, extra: Partial<TimerPart> = {}): TimerPart => ({
@@ -107,5 +107,40 @@ describe("relógio espelhado — código e página local", () => {
     expect(html).not.toContain("</script><b>");
     expect(html).not.toContain("}</style>\"");
     expect(html.match(/<\/script>/g)?.length).toBe(1);
+  });
+});
+
+describe("relógio espelhado — linhas da tela e endereço do QR", () => {
+  it("linha do orador mostra nome e congregação", () => {
+    const parts = [P("a", 1, 30, { speaker_name: "Edivaldo Cunha", speaker_congregation: "Central" })];
+    const snap = buildSnap("X", parts, tapPart(emptyTimer(), "a", 0), "down", 1000);
+    expect(withCong(snap.live?.speaker, snap.live?.speakerCong)).toBe("Edivaldo Cunha · Central");
+    expect(parseSnap(JSON.parse(JSON.stringify(snap)))?.live?.speakerCong).toBe("Central");
+  });
+  it("no simpósio o próximo orador vem com a congregação", () => {
+    const parts = [
+      P("h", 1, 20, { part_type_id: SERIES_HEAD, theme: "Série", assigned_to: "none", speaker_name: null }),
+      P("i1", 2, 10, { part_type_id: SERIES_ITEM, speaker_name: "Irmão A", speaker_congregation: "Norte" }),
+      P("i2", 3, 10, { part_type_id: SERIES_ITEM, speaker_name: "Irmão B", speaker_congregation: "Sul" }),
+    ];
+    const snap = buildSnap("X", parts, tapPart(emptyTimer(), "i1", 0), "down", 1000);
+    expect(withCong(snap.live?.nextSpeaker, snap.live?.nextCong)).toBe("Irmão B · Sul");
+    expect(mirrorHeadline(snap.live!, (i, n) => `${i} de ${n}`)).toBe("Série • Tema i1 (1 de 2) (10 min)");
+  });
+  it("SC e filial não mostram congregação", () => {
+    const snap = buildSnap("X", [P("a", 1, 30, { assigned_to: "co", speaker_congregation: "Central" })], tapPart(emptyTimer(), "a", 0), "down", 1000);
+    expect(snap.live?.speakerCong).toBeNull();
+  });
+  it("retratos antigos sem congregação continuam válidos", () => {
+    const old = { v: 1, mode: "down", sentAt: 1, event: "X", next: null, live: { id: "a", title: "T", elapsedMs: 0, speaker: "Irmão" } };
+    expect(parseSnap(old)?.live?.speakerCong).toBeNull();
+  });
+  it("QR Code no navegador usa o site aberto (teste ou oficial)", () => {
+    const preview = "https://id-preview--abc.lovable.app";
+    expect(mirrorUrl("abcdefghjk", mirrorOrigin({ location: { origin: preview } }, false))).toBe(`${preview}/relogio/abcdefghjk`);
+  });
+  it("QR Code no aplicativo usa sempre o site oficial", () => {
+    expect(mirrorUrl("abcdefghjk", mirrorOrigin({ location: { origin: "https://localhost" } }, true))).toBe("https://visitasc.com.br/relogio/abcdefghjk");
+    expect(mirrorOrigin({ location: { origin: "http://192.168.0.10:8080" } }, false)).toBe("https://visitasc.com.br");
   });
 });

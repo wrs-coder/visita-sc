@@ -15,6 +15,8 @@ export interface MirrorLive {
   pos: { i: number; n: number } | null;
   minutes: number | null;
   speaker: string | null;
+  /** Congregação do orador (só quando a parte é de um orador). */
+  speakerCong?: string | null;
   plannedMs: number | null;
   /** Tempo decorrido (ms) no instante sentAt. */
   elapsedMs: number;
@@ -23,6 +25,7 @@ export interface MirrorLive {
   endLabel: string | null;
   /** Só no simpósio / série: quem fala depois. */
   nextSpeaker: string | null;
+  nextCong?: string | null;
 }
 export interface MirrorSnap {
   v: 1;
@@ -40,6 +43,7 @@ export function whoFor(p: TimerPart, labels: { co: string; branch: string } = { 
   if (p.assigned_to === "branch") return labels.branch;
   return null;
 }
+const congFor = (p: TimerPart | null | undefined) => (p && p.assigned_to === "speaker" ? p.speaker_congregation?.trim() || null : null);
 
 export function buildSnap(eventName: string, parts: TimerPart[], s: TimerState, mode: TimerMode, now: number, labels?: { co: string; branch: string }): MirrorSnap {
   const rows = buildRows(parts);
@@ -63,11 +67,13 @@ export function buildSnap(eventName: string, parts: TimerPart[], s: TimerState, 
       pos: head && i >= 0 ? { i: i + 1, n: kids.length } : null,
       minutes: planned != null ? Math.round(planned / 60_000) : null,
       speaker: whoFor(p, labels),
+      speakerCong: congFor(p),
       plannedMs: planned,
       elapsedMs: elapsed,
       paused,
       endLabel: planned != null ? fmtClockTime(now - elapsed + planned) : null,
       nextSpeaker: nextKid ? whoFor(nextKid, labels) : null,
+      nextCong: congFor(nextKid),
     };
   }
   let next: MirrorSnap["next"] = null;
@@ -127,8 +133,8 @@ export function parseSnap(x: unknown): MirrorSnap | null {
     live = {
       id: str(l.id, 80) ?? "", label: str(l.label, 40), title: str(l.title) ?? "", item: str(l.item),
       pos: pos && num(pos.i) != null && num(pos.n) != null ? { i: num(pos.i)!, n: num(pos.n)! } : null,
-      minutes: num(l.minutes), speaker: str(l.speaker, 120), plannedMs: num(l.plannedMs), elapsedMs: elapsed,
-      paused: l.paused === true, endLabel: str(l.endLabel, 8), nextSpeaker: str(l.nextSpeaker, 120),
+      minutes: num(l.minutes), speaker: str(l.speaker, 120), speakerCong: str(l.speakerCong, 120), plannedMs: num(l.plannedMs), elapsedMs: elapsed,
+      paused: l.paused === true, endLabel: str(l.endLabel, 8), nextSpeaker: str(l.nextSpeaker, 120), nextCong: str(l.nextCong, 120),
     };
   }
   const n = o.next && typeof o.next === "object" ? o.next as Record<string, unknown> : null;
@@ -142,5 +148,11 @@ export function newMirrorCode(rand: (n: number) => Uint8Array = (n) => crypto.ge
 }
 export const isMirrorCode = (c: string) => /^[a-z2-9]{10}$/.test(c);
 export const MIRROR_ORIGIN = "https://visitasc.com.br";
-export const mirrorUrl = (code: string) => `${MIRROR_ORIGIN}/relogio/${code}`;
+export const mirrorUrl = (code: string, origin: string = MIRROR_ORIGIN) => `${origin.replace(/\/+$/, "")}/relogio/${code}`;
+/** Linha do orador: "Nome · Congregação". */
+export const withCong = (name: string | null | undefined, cong: string | null | undefined) => [name, cong].filter((x) => !!x && x.trim()).join(" · ");
+/** Linha 1 do relógio: "PARTE 05 • Série • tema atual (1 de 3) (10 min)". */
+export function mirrorHeadline(l: MirrorLive, partOf: (i: number, n: number) => string): string {
+  return [l.label, l.title, l.item].filter(Boolean).join(" • ") + (l.pos ? ` (${partOf(l.pos.i, l.pos.n)})` : "") + (l.minutes != null ? ` (${l.minutes} min)` : "");
+}
 export const mirrorChannel = (code: string) => `timer-mirror:${code}`;

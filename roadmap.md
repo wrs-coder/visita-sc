@@ -29,6 +29,7 @@
 - [x] "Informações adicionais" só aparece se já tiver texto; Presidente/Oração sem participações
 - [ ] Testar a bolinha flutuante no celular (precisa gerar novo APK)
 - [x] Espelhar relógio num tablet/TV: pela internet (QR Code) e pela rede local Wi‑Fi do salão
+- [x] Relógio espelhado: layout em 4 linhas (paisagem), tema em até 3 linhas (retrato), tela cheia ao primeiro toque, QR Code com o endereço do ambiente aberto
 - [ ] Testar o espelho pela rede local no celular (precisa gerar novo APK)
 
 ## Cartas convite

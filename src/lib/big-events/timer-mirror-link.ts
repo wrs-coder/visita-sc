@@ -2,7 +2,7 @@
 // Internet: canal ao vivo da nuvem só de mensagens (nada é gravado no banco), nome = código aleatório.
 // Rede local (sem internet): mini-servidor do aplicativo Android no Wi‑Fi do salão (TimerMirrorServer).
 import { Capacitor, registerPlugin } from "@capacitor/core";
-import { mirrorChannel, newMirrorCode, isMirrorCode, type MirrorSnap } from "./timer-mirror";
+import { MIRROR_ORIGIN, mirrorChannel, newMirrorCode, isMirrorCode, type MirrorSnap } from "./timer-mirror";
 
 export interface MirrorPrefs { code: string; online: boolean; local: boolean }
 const prefsKey = (eventId: string) => `bigEventTimer.mirror.${eventId}`;
@@ -43,6 +43,12 @@ export async function openOnlineMirror(code: string, getSnap: () => MirrorSnap, 
     push,
     close: () => { closed = true; clearInterval(beat); onViewers(0); void supabase.removeChannel(ch); },
   };
+}
+
+/** Endereço do QR Code: no navegador usa o próprio site aberto (teste ou oficial), no aplicativo o oficial. */
+export function mirrorOrigin(win: { location: { origin: string } } | undefined = typeof window === "undefined" ? undefined : window, native = Capacitor.isNativePlatform()): string {
+  const o = win?.location.origin ?? "";
+  return !native && /^https:\/\/[^/]+$/.test(o) ? o : MIRROR_ORIGIN;
 }
 
 // ---- Rede local (Android) ----
