@@ -2,7 +2,9 @@ import { appConfirm } from "@/components/ui/app-dialogs";
 // Pílula "Modelos" de Grandes Eventos: modelos de carta convite (só no aparelho).
 import { useState } from "react";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Copy, Eye, Plus, Star, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudDownload, CloudUpload, Copy, Eye, MoreHorizontal, Plus, Star, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import type { TemplateCloud } from "@/lib/big-events/letter-template-sync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -156,7 +158,13 @@ const GROUPS: Array<{ title: string; fields: Field[] }> = [
   ] },
 ];
 
-export function LetterTemplates({ list, onChange, sync }: { list: LetterTemplate[]; onChange: (l: LetterTemplate[]) => void; sync?: SyncState }) {
+export function LetterTemplates({ list, onChange, sync, cloud, onDownload, onUploadAll, onPush, onPull }: {
+  list: LetterTemplate[]; onChange: (l: LetterTemplate[]) => void; sync?: SyncState; cloud?: TemplateCloud | null;
+  onDownload?: () => Promise<void>; onUploadAll?: () => Promise<void>; onPush?: (id: string) => Promise<void>; onPull?: (id: string) => Promise<void>;
+}) {
+  const [busy, setBusy] = useState<"down" | "up" | null>(null);
+  const run = async (k: "down" | "up", fn?: () => Promise<void>) => { if (!fn) return; setBusy(k); try { await fn(); } finally { setBusy(null); } };
+  const fmt = (iso: string) => { const d = new Date(iso); return `${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} às ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`; };
   const [editing, setEditing] = useState<LetterTemplate | null>(null);
 
   const save = () => {
@@ -245,6 +253,13 @@ export function LetterTemplates({ list, onChange, sync }: { list: LetterTemplate
         <p className="flex-1 text-sm text-muted-foreground">Modelos de carta convite. O primeiro é o padrão dos eventos.</p>
         <Button size="sm" className="gap-1" onClick={() => setEditing({ ...(list[0] ?? defaultTemplate()), id: crypto.randomUUID(), name: "Novo modelo" })}><Plus className="h-3.5 w-3.5" />Novo</Button>
       </div>
+      {onDownload && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {cloud && <span className="mr-auto text-xs text-muted-foreground">Nuvem: {cloud.cloudCount} · Aparelho: {list.length}</span>}
+          <Button size="sm" variant="outline" className="gap-1" disabled={!!busy} onClick={() => void run("down", onDownload)}><CloudDownload className={cn("h-3.5 w-3.5", busy === "down" && "animate-pulse")} />Baixar da nuvem</Button>
+          <Button size="sm" variant="outline" className="gap-1" disabled={!!busy} onClick={() => void run("up", onUploadAll)}><CloudUpload className={cn("h-3.5 w-3.5", busy === "up" && "animate-pulse")} />Enviar todos</Button>
+        </div>
+      )}
       {sync && (
         <p className="text-xs text-muted-foreground">
           {sync === "synced" ? "☁ Sincronizado entre seus aparelhos" : sync === "pending" ? "⟳ Salvo no aparelho · aguardando internet" : "Salvo no aparelho"}
@@ -256,12 +271,25 @@ export function LetterTemplates({ list, onChange, sync }: { list: LetterTemplate
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-1 truncate font-semibold">{t.name}{i === 0 && <Star className="h-3.5 w-3.5 fill-current text-primary" aria-label="Padrão" />}</span>
               <span className="block text-xs text-muted-foreground">{i === 0 ? "Padrão · " : ""}editado {new Date(t.updatedAt).toLocaleDateString("pt-BR")}</span>
+              {cloud && (cloud.localOnly.includes(t.id)
+                ? <span className="block text-[11px] font-medium text-warning">📱 Só neste aparelho</span>
+                : cloud.stamps[t.id] && <span className="block text-[11px] text-muted-foreground">☁ Atualizado: {fmt(cloud.stamps[t.id])}</span>)}
             </span>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </button>
           {i > 0 && <Button size="icon" variant="ghost" className="h-9 w-9" aria-label="Tornar padrão" onClick={() => makeDefault(t.id)}><Star className="h-4 w-4" /></Button>}
           <Button size="icon" variant="ghost" className="h-9 w-9" aria-label="Duplicar" onClick={() => onChange([...list, { ...t, id: crypto.randomUUID(), name: `${t.name} (cópia)`, updatedAt: new Date().toISOString() }])}><Copy className="h-4 w-4" /></Button>
-          <Button size="icon" variant="ghost" className="h-9 w-9" aria-label="Apagar" onClick={() => remove(t.id)}><Trash2 className="h-4 w-4" /></Button>
+          {onPush ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-9 w-9" aria-label="Mais opções"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => void onPush(t.id)}><CloudUpload className="mr-2 h-4 w-4" />Enviar para a nuvem</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void onPull?.(t.id)}><CloudDownload className="mr-2 h-4 w-4" />Receber da nuvem</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive" onClick={() => remove(t.id)}><Trash2 className="mr-2 h-4 w-4" />Apagar</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : <Button size="icon" variant="ghost" className="h-9 w-9" aria-label="Apagar" onClick={() => remove(t.id)}><Trash2 className="h-4 w-4" /></Button>}
         </Card>
       ))}
     </div>

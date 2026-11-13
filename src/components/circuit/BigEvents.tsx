@@ -28,7 +28,7 @@ import { LetterTemplates } from "./LetterTemplates";
 import { assignableParts, matchSpeakers, partLabel, readSpeakerRows, retarget, type SpeakerMatch } from "@/lib/big-events/speaker-import";
 import { EventTimerFocus } from "./EventTimerFocus";
 import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
-import { fetchLetterTemplates, pushLetterTemplates, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
+import { downloadAllTemplates, fetchLetterTemplates, pullTemplate, pushAllTemplates, pushTemplate, pushLetterTemplates, type TemplateCloud, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
 import type { Database } from "@/integrations/supabase/types";
 import { downloadAllEvents, mergeEvent, pullEvent, pushAllLocal, pushEvent } from "@/lib/big-events/cloud-sync";
 import { SwipeToSync } from "@/components/notes/SwipeToSync";
@@ -95,6 +95,19 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
     const prev = templates; setTemplates(l);
     if (user) { setTplSync("pending"); void pushLetterTemplates(user.id, prev, l).then(setTplSync); }
   };
+  const [tplCloud, setTplCloud] = useState<TemplateCloud | null>(null);
+  const tplCloudAction = async (fn: () => Promise<string>) => {
+    if (!user) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) { toast.error("Sem conexão."); return; }
+    try { toast.success(await fn()); } catch { toast.error("Não foi possível falar com a nuvem."); }
+  };
+  const applyTplCloud = (c: TemplateCloud) => { setTplCloud(c); setTemplates(c.list); setTplSync(c.localOnly.length ? "pending" : "synced"); };
+  const tplHandlers = user ? {
+    onDownload: () => tplCloudAction(async () => { const c = await downloadAllTemplates(user.id); applyTplCloud(c); return `Nuvem: ${c.cloudCount} ${c.cloudCount === 1 ? "modelo" : "modelos"}${c.localOnly.length ? ` · ${c.localOnly.length} só neste aparelho` : ""}`; }),
+    onUploadAll: () => tplCloudAction(async () => { const r = await pushAllTemplates(user.id); applyTplCloud(r.cloud); return r.sent ? `${r.sent} ${r.sent === 1 ? "modelo enviado" : "modelos enviados"} para a nuvem` : "Todos os modelos já estão na nuvem."; }),
+    onPush: (id: string) => tplCloudAction(async () => { applyTplCloud(await pushTemplate(user.id, id)); return "Modelo enviado para a nuvem"; }),
+    onPull: async (id: string) => { if (!await appConfirm("Substituir este modelo no aparelho pela versão da nuvem?")) return; await tplCloudAction(async () => { const r = await pullTemplate(user.id, id); applyTplCloud(r.cloud); return r.found ? "Modelo recebido da nuvem" : "Este modelo não existe na nuvem"; }); },
+  } : undefined;
   const chooseTemplate = (eventId: string, tplId: string) => {
     const next = { ...tplChoice, [eventId]: tplId }; setTplChoice(next); if (user) saveEventChoice(user.id, next);
   };
@@ -780,7 +793,7 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
             className={`h-9 flex-1 rounded-full text-sm font-medium transition-colors ${view === v ? "bg-background shadow-sm" : "text-muted-foreground"}`}>{l}</button>
         ))}
       </div>
-      {view === "templates" && <LetterTemplates list={templates} onChange={updateTemplates} />}
+      {view === "templates" && <LetterTemplates list={templates} onChange={updateTemplates} sync={tplSync} cloud={tplCloud} {...tplHandlers} />}
       <div hidden={view !== "events"} className="space-y-3">
       {timerFor && <EventTimerFocus ev={timerFor} parts={evPartsOf(timerFor.id)} onClose={() => setTimerFor(null)} speakerCong={(p) => (p as { speaker_congregation?: string | null }).speaker_congregation ?? null}
         onEditPart={(id) => { const pt = evPartsOf(timerFor.id).find((x) => x.id === id); if (pt) setEditor({ ev: timerFor, part: pt, afterOrder: null }); }} />}

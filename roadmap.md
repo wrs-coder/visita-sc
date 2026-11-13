@@ -55,3 +55,4 @@
 - [x] Versão 5.7.0 (código 46), "O que há de novo" só para o SC, texto da Play Console
 - [x] "Púlpito" trocado por "tribuna"
 - [x] Ajuda: relógio na tribuna, Mini tempo, importar oradores, cartas e esboços
+- [x] Modelos de carta: Baixar/Enviar todos, selo só no aparelho, flush sem sobrescrever

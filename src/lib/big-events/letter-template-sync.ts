@@ -35,13 +35,86 @@ const toRow = (u: string, t: LetterTemplate, i: number) => ({
   superintendent_id: u, id: t.id, name: t.name, data: t as unknown as Record<string, unknown>, sort_order: i, updated_at: t.updatedAt,
 });
 
+/** Modelos que precisam subir: não existem na nuvem ou estão mais novos no aparelho. */
+export function templatesToUpload(server: LetterTemplate[], local: LetterTemplate[]): LetterTemplate[] {
+  return local.filter((l) => { const s = server.find((x) => x.id === l.id); return !s || l.updatedAt > s.updatedAt; });
+}
+
+/** Junta nuvem e aparelho sem apagar nada local; vence o updatedAt mais recente. */
+export function mergeTemplatesKeepLocal(server: LetterTemplate[], local: LetterTemplate[]) {
+  const list = server.map((s) => { const l = local.find((x) => x.id === s.id); return l && l.updatedAt > s.updatedAt ? l : s; });
+  const localOnly = local.filter((l) => !server.some((s) => s.id === l.id));
+  return { list: [...list, ...localOnly], localOnly: localOnly.map((t) => t.id) };
+}
+
+async function readServer(): Promise<LetterTemplate[]> {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { withNetworkWindow } = await import("@/lib/net-policy");
+  const { markTableStale } = await import("@/lib/response-cache");
+  const r = await withNetworkWindow(async () => supabase.from("letter_templates").select("id,data,sort_order").order("sort_order"));
+  markTableStale("letter_templates");
+  if (r.error) throw r.error;
+  const base = defaultTemplate();
+  return (r.data ?? []).map((row) => ({ ...base, ...(row.data as object), id: row.id }) as LetterTemplate);
+}
+
+async function upsertTemplates(u: string, all: LetterTemplate[], only: LetterTemplate[]) {
+  if (!only.length) return;
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { withNetworkWindow } = await import("@/lib/net-policy");
+  const { markTableStale } = await import("@/lib/response-cache");
+  const rows = only.map((t) => toRow(u, t, Math.max(0, all.findIndex((x) => x.id === t.id))));
+  const { error } = await withNetworkWindow(async () => supabase.from("letter_templates").upsert(rows as never));
+  markTableStale("letter_templates");
+  if (error) throw error;
+}
+
+export type TemplateCloud = { list: LetterTemplate[]; localOnly: string[]; cloudCount: number; stamps: Record<string, string> };
+
+/** "Baixar da nuvem": busca direto na nuvem e junta com o aparelho (nunca apaga local). */
+export async function downloadAllTemplates(u: string): Promise<TemplateCloud> {
+  const server = await readServer();
+  const m = mergeTemplatesKeepLocal(server, loadTemplates(u));
+  saveTemplates(u, m.list);
+  return { ...m, cloudCount: server.length, stamps: Object.fromEntries(server.map((t) => [t.id, t.updatedAt])) };
+}
+
+/** "Enviar todos": sobe os modelos ausentes ou mais novos no aparelho. */
+export async function pushAllTemplates(u: string): Promise<{ sent: number; cloud: TemplateCloud }> {
+  const server = await readServer();
+  const local = loadTemplates(u);
+  const up = templatesToUpload(server, local);
+  await upsertTemplates(u, local, up);
+  return { sent: up.length, cloud: await downloadAllTemplates(u) };
+}
+
+/** Envia um modelo. */
+export async function pushTemplate(u: string, id: string): Promise<TemplateCloud> {
+  const local = loadTemplates(u);
+  const t = local.find((x) => x.id === id);
+  if (t) await upsertTemplates(u, local, [t]);
+  return downloadAllTemplates(u);
+}
+
+/** Recebe um modelo da nuvem (substitui só ele). null = não existe na nuvem. */
+export async function pullTemplate(u: string, id: string): Promise<{ found: boolean; cloud: TemplateCloud }> {
+  const server = await readServer();
+  const s = server.find((x) => x.id === id);
+  if (s) saveTemplates(u, loadTemplates(u).map((x) => (x.id === id ? s : x)));
+  return { found: !!s, cloud: await downloadAllTemplates(u) };
+}
+
 async function flush(u: string): Promise<boolean> {
   const pending = loadPending(u); if (!pending) return true;
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     const local = loadTemplates(u);
-    const { error } = await supabase.from("letter_templates").upsert(local.map((t, i) => toRow(u, t, i)) as never);
-    if (error) return false;
+    // Confere a nuvem antes: só sobe o que é novo ou mais recente, nunca sobrescreve versão mais nova.
+    const server = await readServer();
+    const shared = (a: LetterTemplate[], b: LetterTemplate[]) => a.filter((x) => b.some((y) => y.id === x.id)).map((x) => x.id).join();
+    const reordered = shared(local, server) !== shared(server, local);
+    const up = reordered ? local.filter((l) => { const sv = server.find((x) => x.id === l.id); return !sv || l.updatedAt >= sv.updatedAt; }) : templatesToUpload(server, local);
+    await upsertTemplates(u, local, up);
     if (pending.removed.length) {
       const { error: e2 } = await supabase.from("letter_templates").delete().in("id", pending.removed);
       if (e2) return false;
@@ -56,10 +129,8 @@ export async function fetchLetterTemplates(u: string): Promise<{ list: LetterTem
   if (loadPending(u) && !(await flush(u))) return { list: local, state: "pending" };
   try {
     const { supabase } = await import("@/integrations/supabase/client");
-    const { data, error } = await supabase.from("letter_templates").select("id,data,sort_order").order("sort_order");
-    if (error) return { list: local, state: "local" };
-    const base = defaultTemplate();
-    const server = (data ?? []).map((r) => ({ ...base, ...(r.data as object), id: r.id }) as LetterTemplate);
+    let server: LetterTemplate[];
+    try { server = await readServer(); } catch { return { list: local, state: "local" }; }
     let migrated = false;
     try { migrated = localStorage.getItem(migratedKey(u)) === "1"; } catch { /* */ }
     const merged = mergeTemplates(server, local, migrated);
