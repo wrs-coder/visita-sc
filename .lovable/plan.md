@@ -61,6 +61,30 @@ TOQUE EM "Aa"  (folha curta)       TOQUE EM "⋯"  (folha completa)
 - Os botões têm 44px, o mínimo do iOS para toque com o dedo. A folha fecha ao arrastar para baixo.
 - O teclado não fecha ao tocar nos botões, como hoje.
 
+### Barra fixa escolhida por você
+Cada usuário escolhe quais botões ficam na barra fixa e em que ordem. Os outros continuam em "⋯".
+
+```text
+⋯  →  "Personalizar barra"
+┌─────────────────────────────┐
+│ Cancelar  Barra fixa    OK  │
+│─────────────────────────────│
+│ NA BARRA (arraste ≡)        │
+│ ⊖  B  Negrito            ≡  │
+│ ⊖  🖍 Marca-texto        ≡  │
+│ ⊖  ⇥  Aumentar recuo     ≡  │
+│─────────────────────────────│
+│ DISPONÍVEIS                 │
+│ ⊕  x² Sobrescrito           │
+│ ⊕  🔗 Link                   │
+│ ⊕  ▦  Tabela                │
+│─────────────────────────────│
+│ Restaurar padrão            │
+└─────────────────────────────┘
+```
+- "Desfazer", "Aa" e "⋯" ficam sempre na barra, para você nunca perder o acesso.
+- A escolha fica guardada neste aparelho e em cada conta. O padrão é a barra mostrada acima.
+
 ## Detalhes técnicos
 
 - `docx-import.ts`: `StyleInfo` passa a ter `firstLine` e `hanging`, herdados via `basedOn`. Os parágrafos com nome "indent N" também passam a emitir `x-hang`/`text-indent` negativo, e o parágrafo vale mais que o estilo. `runsToHtml` passa a ler `w:highlight` e `w:shd@fill` → `<mark data-color>`, numa lista fixa de cores.
@@ -70,4 +94,5 @@ TOQUE EM "Aa"  (folha curta)       TOQUE EM "⋯"  (folha completa)
 - `docx-export.ts`: `w:ind w:hanging` e `w:highlight`. Teste de ida e volta.
 - `RichNoteToolbar.tsx`: reorganizar em barra fixa + `Sheet` (shadcn, bottom) para "Aa" e "⋯", reaproveitando os mesmos comandos. Nenhum comando novo além do marca-texto rápido, cuja última cor fica guardada no aparelho (localStorage).
 - Testes: fixture com trechos do seu arquivo. Eles conferem o deslocado nos níveis 0–2, o negrito em "Leia Provérbios", o marca-texto, a ida e volta pela exportação e os testes atuais do balão e das citações.
+- Personalização: catálogo único de botões (id → ícone, rótulo, comando, estado ativo). A barra lê a lista de ids salva em localStorage por usuário/código de convidado. Ids desconhecidos são ignorados e uma lista vazia volta ao padrão. O editor de ordem usa `@dnd-kit` se já estiver instalado; se não estiver, usa as setas ↑/↓.
 - Registrar em AGENTS.md a regra do recuo deslocado.
