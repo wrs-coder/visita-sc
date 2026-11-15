@@ -54,6 +54,8 @@ import {
   CircleMinus,
   CirclePlus,
   SlidersHorizontal,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OutlineTimer } from "./OutlineTimer";
@@ -72,6 +74,7 @@ import {
 import { useAuthOptional } from "@/hooks/use-auth";
 import { readGuestSession } from "@/lib/guest-session";
 import { wsSessionKey } from "@/lib/guest-workspace-store";
+import { trayMaxHeight, type ToolbarDock } from "@/lib/editor-toolbar-dock";
 
 const TEXT_COLORS = [
   "#0f172a", "#dc2626", "#ea580c", "#ca8a04",
@@ -103,6 +106,19 @@ interface ToolbarProps {
   onAddVideoAttachment?: () => void;
   /** Abre a barra de Localizar e substituir (do editor). */
   onOpenSearch?: () => void;
+  /**
+   * Onde a barra fica: "keyboard" = colada em cima do teclado (fixa na tela),
+   * "bottom" = no rodapé da área de texto, "hidden" = teclado de outro campo.
+   */
+  dock?: ToolbarDock;
+  /** Altura escondida pelo teclado no navegador/iOS (0 no app Android). */
+  keyboardInset?: number;
+  /** Altura visível da tela agora (com o teclado aberto ou não). */
+  visibleHeight?: number;
+  /** Barra recolhida: mostra só a pílula "Aa Ferramentas". */
+  collapsed?: boolean;
+  /** Recolher/mostrar a barra (só nas telas que permitem recolher). */
+  onToggleCollapsed?: () => void;
 }
 
 type SheetKind = "aa" | "more" | "customize" | null;
@@ -146,6 +162,11 @@ export function RichNoteToolbar({
   onAddLinkAttachment,
   onAddVideoAttachment,
   onOpenSearch,
+  dock = "bottom",
+  keyboardInset = 0,
+  visibleHeight = 0,
+  collapsed = false,
+  onToggleCollapsed,
 }: ToolbarProps) {
   const { t } = useTranslation();
   const scope = useToolbarScope();
@@ -155,7 +176,17 @@ export function RichNoteToolbar({
   const [, force] = useState(0);
   const longPress = useRef<{ timer: number | null; fired: boolean }>({ timer: null, fired: false });
 
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => setLastHl(readLastHighlight()), []);
+  useEffect(() => setMounted(true), []);
+  // Esc fecha o painel "Aa"/"⋯" (o teclado e a seleção continuam).
+  useEffect(() => {
+    if (sheet !== "aa" && sheet !== "more") return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSheet(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sheet]);
 
   // Estado aceso dos botões acompanha o cursor (sem ouvir cada tecla).
   useEffect(() => {
@@ -337,7 +368,7 @@ export function RichNoteToolbar({
       <button key={key} type="button" disabled={it.disabled}
         aria-pressed={it.active === undefined ? undefined : !!it.active}
         className={cn(
-          "flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-2xl bg-muted/60 px-1 py-2 text-[11px] leading-tight text-foreground transition-colors active:scale-95 disabled:opacity-40",
+          "flex min-h-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl bg-muted/60 px-1 py-1.5 text-[10.5px] leading-tight text-foreground transition-colors active:scale-95 disabled:opacity-40",
           it.active && "bg-primary/10 text-primary ring-1 ring-primary/30",
         )}
         onMouseDown={keep}
@@ -348,14 +379,14 @@ export function RichNoteToolbar({
     );
 
   const section = (title: string, children: ReactNode) => (
-    <section className="space-y-2">
+    <section className="space-y-1.5">
       <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</h3>
       {children}
     </section>
   );
-  const grid = (children: ReactNode) => <div className="grid grid-cols-4 gap-2">{children}</div>;
+  const grid = (children: ReactNode) => <div className="grid grid-cols-4 gap-1.5 min-[480px]:grid-cols-6">{children}</div>;
 
-  // ===== "Aa": estilo, tamanho, fonte, cor e marca-texto =====
+  // ===== "Aa": régua compacta (2 linhas finas acima da barra) =====
   const fontSizeNow = normalizeFontSize((editor.getAttributes("textStyle") as { fontSize?: string | null }).fontSize ?? null);
   const sizeNum = fontSizeNow ? parseInt(fontSizeNow, 10) : null;
   const stepSize = (dir: 1 | -1) => {
@@ -369,148 +400,186 @@ export function RichNoteToolbar({
   const blockValue = isActive("heading", { level: 2 }) ? "h2" : isActive("heading", { level: 3 }) ? "h3" : isActive("blockquote") ? "quote" : "p";
   const chip = (active: boolean) =>
     cn(
-      "inline-flex min-h-[40px] items-center gap-1.5 rounded-full border px-3 text-sm transition-colors active:scale-95",
+      "inline-flex h-9 shrink-0 items-center gap-1 rounded-full border px-3 text-[13px] transition-colors active:scale-95",
       active ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-foreground",
     );
-  const swatch = "h-9 w-9 rounded-full border border-border shadow-sm active:scale-95";
+  const divider = <div className="mx-1 h-6 w-px shrink-0 bg-border" aria-hidden />;
+  const swatchBtn = (key: string, color: string, label: string, onPick: () => void, selected = false) => (
+    <button key={key} type="button" aria-label={label} title={label} onMouseDown={keep} onClick={onPick}
+      className={cn("inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full active:scale-95", selected && "ring-2 ring-primary")}>
+      <span aria-hidden className="h-7 w-7 rounded-full border border-border shadow-sm" style={{ backgroundColor: color }} />
+    </button>
+  );
+  const resetBtn = (label: string, run: () => void) => (
+    <button type="button" aria-label={label} title={label} onMouseDown={keep} onClick={run}
+      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted active:scale-95">
+      <RotateCcw className="h-4 w-4" />
+    </button>
+  );
 
-  const aaSheet = (
-    <div className="space-y-5">
-      {section(tt("sectionStyle", "Estilo"), (
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className={chip(blockValue === "p")} onMouseDown={keep} onClick={() => chain().setParagraph().run()}><Pilcrow className="h-4 w-4" />{tt("normal", "Texto normal")}</button>
-          <button type="button" className={chip(blockValue === "h2")} onMouseDown={keep} onClick={() => chain().setNode("heading", { level: 2 }).run()}><Heading2 className="h-4 w-4" />{tt("title", "Título")}</button>
-          <button type="button" className={chip(blockValue === "h3")} onMouseDown={keep} onClick={() => chain().setNode("heading", { level: 3 }).run()}><Heading3 className="h-4 w-4" />{tt("subtitle", "Subtítulo")}</button>
-          <button type="button" className={chip(blockValue === "quote")} onMouseDown={keep} onClick={() => chain().toggleBlockquote().run()}><Quote className="h-4 w-4" />{tt("blockquote", "Citação")}</button>
-        </div>
-      ))}
-      {section(tt("sectionSize", "Tamanho da letra"), (
-        <div className="flex items-center gap-2">
-          <button type="button" className={cn(chip(false), "w-14 justify-center whitespace-nowrap text-base")} aria-label={tt("sizeDown", "Diminuir letra")} onMouseDown={keep} onClick={() => stepSize(-1)}>A−</button>
-          <div className="min-w-[72px] text-center text-sm font-medium tabular-nums">{sizeNum ?? tt("sizeDefault", "Padrão")}</div>
-          <button type="button" className={cn(chip(false), "w-14 justify-center whitespace-nowrap text-lg")} aria-label={tt("sizeUp", "Aumentar letra")} onMouseDown={keep} onClick={() => stepSize(1)}>A+</button>
-          <button type="button" className={cn(chip(false), "ml-auto")} onMouseDown={keep} onClick={() => chain().unsetFontSize().run()}><RotateCcw className="h-3.5 w-3.5" />{tt("sizeDefault", "Padrão")}</button>
-        </div>
-      ))}
-      {section(tt("fontFamily", "Fonte"), (
-        <div className="flex flex-wrap gap-2">
-          {FONT_FAMILIES.map((f) => (
-            <button key={f.label} type="button" className={chip(f.value ? isActive("textStyle", { fontFamily: f.value }) : false)} onMouseDown={keep}
-              onClick={() => (f.value ? chain().setFontFamily(f.value).run() : chain().unsetFontFamily().run())}>
-              <span style={{ fontFamily: f.value || undefined }}>{f.label}</span>
-            </button>
-          ))}
-        </div>
-      ))}
-      {section(tt("color", "Cor do texto"), (
-        <div className="flex flex-wrap items-center gap-2.5">
-          {TEXT_COLORS.map((c) => (
-            <button key={c} type="button" className={swatch} style={{ backgroundColor: c }} aria-label={c} onMouseDown={keep} onClick={() => chain().setColor(c).run()} />
-          ))}
-          <button type="button" className={chip(false)} onMouseDown={keep} onClick={() => chain().unsetColor().run()}><RotateCcw className="h-3.5 w-3.5" />{tt("reset", "Remover formatação")}</button>
-        </div>
-      ))}
-      {section(tt("highlight", "Marca-texto"), (
-        <div className="flex flex-wrap items-center gap-2.5">
-          {HIGHLIGHT_COLORS.map((c) => (
-            <button key={c} type="button" className={cn(swatch, c === lastHl && "ring-2 ring-primary ring-offset-2 ring-offset-background")} style={{ backgroundColor: c }} aria-label={c}
-              onMouseDown={keep} onClick={() => pickHighlight(c)} />
-          ))}
-          <button type="button" className={chip(false)} onMouseDown={keep} onClick={() => chain().unsetHighlight().run()}><RotateCcw className="h-3.5 w-3.5" />{tt("reset", "Remover formatação")}</button>
-        </div>
-      ))}
+  const aaTray = (
+    <div className="space-y-1 px-1 pb-1.5 pt-1.5" aria-label={tt("styles", "Estilo, tamanho e cor")}>
+      <ScrollRow className="gap-1.5 px-1">
+        <button type="button" className={chip(blockValue === "p")} onMouseDown={keep} onClick={() => chain().setParagraph().run()}><Pilcrow className="h-4 w-4" />{tt("normal", "Texto normal")}</button>
+        <button type="button" className={chip(blockValue === "h2")} onMouseDown={keep} onClick={() => chain().setNode("heading", { level: 2 }).run()}><Heading2 className="h-4 w-4" />{tt("title", "Título")}</button>
+        <button type="button" className={chip(blockValue === "h3")} onMouseDown={keep} onClick={() => chain().setNode("heading", { level: 3 }).run()}><Heading3 className="h-4 w-4" />{tt("subtitle", "Subtítulo")}</button>
+        <button type="button" className={chip(blockValue === "quote")} onMouseDown={keep} onClick={() => chain().toggleBlockquote().run()}><Quote className="h-4 w-4" />{tt("blockquote", "Citação")}</button>
+        {divider}
+        <button type="button" className={cn(chip(false), "w-11 justify-center px-0 text-sm")} aria-label={tt("sizeDown", "Diminuir letra")} title={tt("sizeDown", "Diminuir letra")} onMouseDown={keep} onClick={() => stepSize(-1)}>A−</button>
+        <button type="button" className={cn(chip(sizeNum !== null), "min-w-[64px] justify-center tabular-nums")} title={tt("sizeDefault", "Padrão")} onMouseDown={keep} onClick={() => chain().unsetFontSize().run()}>
+          {sizeNum ?? tt("sizeDefault", "Padrão")}
+        </button>
+        <button type="button" className={cn(chip(false), "w-11 justify-center px-0 text-base")} aria-label={tt("sizeUp", "Aumentar letra")} title={tt("sizeUp", "Aumentar letra")} onMouseDown={keep} onClick={() => stepSize(1)}>A+</button>
+        {divider}
+        {FONT_FAMILIES.map((f) => (
+          <button key={f.label} type="button" className={chip(f.value ? isActive("textStyle", { fontFamily: f.value }) : false)} onMouseDown={keep}
+            onClick={() => (f.value ? chain().setFontFamily(f.value).run() : chain().unsetFontFamily().run())}>
+            <span style={{ fontFamily: f.value || undefined }}>{f.label}</span>
+          </button>
+        ))}
+      </ScrollRow>
+      <ScrollRow className="gap-0.5 px-1">
+        <Palette className="mx-1 h-4 w-4 shrink-0 text-muted-foreground" aria-label={tt("color", "Cor do texto")} />
+        {TEXT_COLORS.map((c) => swatchBtn(`c${c}`, c, `${tt("color", "Cor do texto")} ${c}`, () => chain().setColor(c).run()))}
+        {resetBtn(`${tt("color", "Cor do texto")}: ${tt("reset", "Remover formatação")}`, () => chain().unsetColor().run())}
+        {divider}
+        <Highlighter className="mx-1 h-4 w-4 shrink-0 text-muted-foreground" aria-label={tt("highlight", "Marca-texto")} />
+        {HIGHLIGHT_COLORS.map((c) => swatchBtn(`h${c}`, c, `${tt("highlight", "Marca-texto")} ${c}`, () => pickHighlight(c), c === lastHl))}
+        {resetBtn(`${tt("highlight", "Marca-texto")}: ${tt("reset", "Remover formatação")}`, () => chain().unsetHighlight().run())}
+      </ScrollRow>
     </div>
   );
 
-  // ===== "⋯": todo o resto, agrupado =====
+  // ===== "⋯": painel baixo acima da barra (nunca cobre o texto inteiro) =====
   const inTable = isActive("table");
-  const moreSheet = (
-    <div className="space-y-5">
-      {section(tt("sectionText", "Texto"), grid(<>
-        {tile("b", items.bold)}{tile("i", items.italic)}{tile("u", items.underline)}{tile("hl", items.highlight)}
-        {tile("sub", items.subscript)}{tile("sup", items.superscript)}{tile("code", items.code)}{tile("clr", items.clearFormat)}
-      </>))}
-      {section(tt("sectionParagraph", "Parágrafo"), grid(<>
-        {tile("al", items.alignLeft)}{tile("ac", items.alignCenter)}{tile("ar", items.alignRight)}{tile("aj", items.alignJustify)}
-        {tile("ul", items.bulletList)}{tile("ol", items.orderedList)}{tile("tl", items.taskList)}{tile("fl", items.firstLine)}
-        {tile("out", items.outdent)}{tile("in", items.indent)}{tile("h2", items.heading2)}{tile("h3", items.heading3)}
-        {tile("q", items.blockquote)}{tile("cb", items.codeBlock)}
-      </>))}
-      {section(tt("sectionInsert", "Inserir"), grid(<>
-        {tile("photo", items.photo, true)}{tile("video", items.video, true)}{tile("al2", items.attachLink, true)}
-        {tile("link", items.link, true)}
-        {isActive("link") && tile("unlink", { icon: <Link2Off className={ic} />, label: tt("unlink", "Remover link"), run: () => chain().unsetLink().run() })}
-        {tile("table", items.table)}{tile("hr", items.hr)}{tile("topic", items.topic, true)}{tile("conv", items.convertHeadings)}
-      </>))}
-      {inTable && section(tt("table", "Tabela"), grid(<>
-        {tile("ar", { icon: <Plus className={ic} />, label: tt("addRow", "Adicionar linha"), run: () => chain().addRowAfter().run() })}
-        {tile("ac", { icon: <Plus className={cn(ic, "rotate-90")} />, label: tt("addCol", "Adicionar coluna"), run: () => chain().addColumnAfter().run() })}
-        {tile("dr", { icon: <Minus className={ic} />, label: tt("delRow", "Remover linha"), run: () => chain().deleteRow().run() })}
-        {tile("dc", { icon: <Minus className={cn(ic, "rotate-90")} />, label: tt("delCol", "Remover coluna"), run: () => chain().deleteColumn().run() })}
-        {tile("dt", { icon: <Trash2 className={cn(ic, "text-destructive")} />, label: tt("delTable", "Excluir tabela"), run: () => chain().deleteTable().run() }, true)}
-      </>))}
-      {section(tt("sectionTools", "Ferramentas"), grid(<>
-        {tile("search", items.search, true)}
-        {tile("focus", items.focus, true)}
-        {tile("custom", { icon: <SlidersHorizontal className={ic} />, label: tt("customize", "Personalizar barra"), run: () => setSheet("customize") })}
-      </>))}
+  const trayMax = trayMaxHeight(visibleHeight);
+  const moreTray = (
+    <div className="flex flex-col" style={{ maxHeight: trayMax }}>
+      <div className="flex shrink-0 items-center gap-2 px-3 pb-1 pt-2">
+        <h2 className="flex-1 truncate text-sm font-semibold">{tt("more", "Mais ferramentas")}</h2>
+        <button type="button" className="min-h-[36px] px-1 text-sm font-semibold text-primary" onMouseDown={keep} onClick={() => setSheet(null)}>{tt("done", "OK")}</button>
+      </div>
+      <div className="space-y-4 overflow-y-auto overscroll-contain px-2 pb-2">
+        {section(tt("sectionText", "Texto"), grid(<>
+          {tile("b", items.bold)}{tile("i", items.italic)}{tile("u", items.underline)}{tile("hl", items.highlight)}
+          {tile("sub", items.subscript)}{tile("sup", items.superscript)}{tile("code", items.code)}{tile("clr", items.clearFormat)}
+        </>))}
+        {section(tt("sectionParagraph", "Parágrafo"), grid(<>
+          {tile("al", items.alignLeft)}{tile("ac", items.alignCenter)}{tile("ar", items.alignRight)}{tile("aj", items.alignJustify)}
+          {tile("ul", items.bulletList)}{tile("ol", items.orderedList)}{tile("tl", items.taskList)}{tile("fl", items.firstLine)}
+          {tile("out", items.outdent)}{tile("in", items.indent)}{tile("h2", items.heading2)}{tile("h3", items.heading3)}
+          {tile("q", items.blockquote)}{tile("cb", items.codeBlock)}
+        </>))}
+        {section(tt("sectionInsert", "Inserir"), grid(<>
+          {tile("photo", items.photo, true)}{tile("video", items.video, true)}{tile("al2", items.attachLink, true)}
+          {tile("link", items.link, true)}
+          {isActive("link") && tile("unlink", { icon: <Link2Off className={ic} />, label: tt("unlink", "Remover link"), run: () => chain().unsetLink().run() })}
+          {tile("table", items.table)}{tile("hr", items.hr)}{tile("topic", items.topic, true)}{tile("conv", items.convertHeadings)}
+        </>))}
+        {inTable && section(tt("table", "Tabela"), grid(<>
+          {tile("ar", { icon: <Plus className={ic} />, label: tt("addRow", "Adicionar linha"), run: () => chain().addRowAfter().run() })}
+          {tile("ac", { icon: <Plus className={cn(ic, "rotate-90")} />, label: tt("addCol", "Adicionar coluna"), run: () => chain().addColumnAfter().run() })}
+          {tile("dr", { icon: <Minus className={ic} />, label: tt("delRow", "Remover linha"), run: () => chain().deleteRow().run() })}
+          {tile("dc", { icon: <Minus className={cn(ic, "rotate-90")} />, label: tt("delCol", "Remover coluna"), run: () => chain().deleteColumn().run() })}
+          {tile("dt", { icon: <Trash2 className={cn(ic, "text-destructive")} />, label: tt("delTable", "Excluir tabela"), run: () => chain().deleteTable().run() }, true)}
+        </>))}
+        {section(tt("sectionTools", "Ferramentas"), grid(<>
+          {tile("search", items.search, true)}
+          {tile("focus", items.focus, true)}
+          {tile("custom", { icon: <SlidersHorizontal className={ic} />, label: tt("customize", "Personalizar barra"), run: () => setSheet("customize") })}
+          {onToggleCollapsed && tile("hide", { icon: <ChevronDown className={ic} />, label: tt("hideBar", "Ocultar barra"), run: () => onToggleCollapsed() }, true)}
+        </>))}
+      </div>
     </div>
   );
+
+  const toolRow = (
+    <div className="flex items-center gap-0.5 px-1 py-1">
+      <button type="button" className={barBtn()} title={tt("undo", "Desfazer")} aria-label={tt("undo", "Desfazer")}
+        disabled={!editor.can().undo()} onMouseDown={keep} onClick={() => chain().undo().run()}>
+        <Undo2 className={ic} />
+      </button>
+      <div className="my-2 w-px shrink-0 self-stretch bg-border" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <ScrollRow>
+          {barIds.map(renderBarItem)}
+          {outlineId && (
+            <>
+              <div className="min-w-2 flex-1" aria-hidden />
+              <OutlineTimer outlineId={outlineId} variant="toolbar" />
+            </>
+          )}
+        </ScrollRow>
+      </div>
+      <div className="my-2 w-px shrink-0 self-stretch bg-border" aria-hidden />
+      <button type="button" className={cn(barBtn(sheet === "aa"), "text-base font-semibold")} title={tt("styles", "Estilo, tamanho e cor")}
+        aria-label={tt("styles", "Estilo, tamanho e cor")} aria-expanded={sheet === "aa"} onMouseDown={keep}
+        onClick={() => setSheet((s) => (s === "aa" ? null : "aa"))}>
+        Aa
+      </button>
+      <button type="button" className={barBtn(sheet === "more" || sheet === "customize")} title={tt("more", "Mais ferramentas")}
+        aria-label={tt("more", "Mais ferramentas")} aria-expanded={sheet === "more"} onMouseDown={keep}
+        onClick={() => setSheet((s) => (s === "more" ? null : "more"))}>
+        <Ellipsis className={ic} />
+      </button>
+    </div>
+  );
+
+  const docked = dock === "keyboard";
+  const shell = cn(
+    "border-t bg-background",
+    docked ? "shadow-lg" : "rounded-b-md",
+  );
+  const content = collapsed ? (
+    <div className={cn(shell, "flex justify-center px-2 py-1.5")} onMouseDown={keep}>
+      <button type="button" aria-expanded={false} onMouseDown={keep} onClick={() => onToggleCollapsed?.()}
+        className="inline-flex h-9 items-center gap-1.5 rounded-full bg-muted px-4 text-xs font-medium text-foreground active:scale-95">
+        <span className="font-semibold">Aa</span>
+        {t("notes.toolbar.show", { defaultValue: "Ferramentas" })}
+        <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+      </button>
+    </div>
+  ) : (
+    <div className={shell} onMouseDown={keep}>
+      {sheet === "aa" && <div className="border-b">{aaTray}</div>}
+      {sheet === "more" && <div className="border-b">{moreTray}</div>}
+      {toolRow}
+    </div>
+  );
+
+  const customize = sheet === "customize" && (
+    <CustomizeSheet
+      initial={barIds}
+      items={items}
+      onCancel={() => setSheet("more")}
+      onSave={(ids) => { saveToolbar(scope, ids); setSheet(null); }}
+    />
+  );
+
+  if (docked) {
+    return (
+      <>
+        {mounted && createPortal(
+          // Colada em cima do teclado (Samsung Notes / Notas do iPhone).
+          <div className="fixed inset-x-0 z-[55]" style={{ bottom: keyboardInset }} data-editor-toolbar="keyboard">
+            <div className="mx-auto w-full max-w-3xl">{content}</div>
+          </div>,
+          document.body,
+        )}
+        {customize}
+      </>
+    );
+  }
 
   return (
     <>
       <div
-        className={cn(
-          "sticky top-0 z-20 rounded-t-md border-b bg-background px-1 py-1 transition-all",
-          !visible && "pointer-events-none -translate-y-1 opacity-0",
-        )}
-        onMouseDown={keep}
+        data-editor-toolbar="bottom"
+        className={cn("transition-opacity", (dock === "hidden" || !visible) && "pointer-events-none opacity-0")}
       >
-        <div className="flex items-center gap-0.5">
-          <button type="button" className={barBtn()} title={tt("undo", "Desfazer")} aria-label={tt("undo", "Desfazer")}
-            disabled={!editor.can().undo()} onMouseDown={keep} onClick={() => chain().undo().run()}>
-            <Undo2 className={ic} />
-          </button>
-          <div className="w-px self-stretch my-2 bg-border shrink-0" aria-hidden />
-          <div className="min-w-0 flex-1">
-            <ScrollRow>
-              {barIds.map(renderBarItem)}
-              {outlineId && (
-                <>
-                  <div className="min-w-2 flex-1" aria-hidden />
-                  <OutlineTimer outlineId={outlineId} variant="toolbar" />
-                </>
-              )}
-            </ScrollRow>
-          </div>
-          <div className="w-px self-stretch my-2 bg-border shrink-0" aria-hidden />
-          <button type="button" className={cn(barBtn(sheet === "aa"), "text-base font-semibold")} title={tt("styles", "Estilo, tamanho e cor")}
-            aria-label={tt("styles", "Estilo, tamanho e cor")} aria-expanded={sheet === "aa"} onMouseDown={keep}
-            onClick={() => setSheet((s) => (s === "aa" ? null : "aa"))}>
-            Aa
-          </button>
-          <button type="button" className={barBtn(sheet === "more" || sheet === "customize")} title={tt("more", "Mais ferramentas")}
-            aria-label={tt("more", "Mais ferramentas")} aria-expanded={sheet === "more"} onMouseDown={keep}
-            onClick={() => setSheet((s) => (s === "more" ? null : "more"))}>
-            <Ellipsis className={ic} />
-          </button>
-        </div>
+        {content}
       </div>
-
-      <ToolSheet open={sheet === "aa"} title={tt("styles", "Estilo, tamanho e cor")} onClose={() => setSheet(null)} closeLabel={tt("done", "OK")}>
-        {aaSheet}
-      </ToolSheet>
-      <ToolSheet open={sheet === "more"} title={tt("more", "Mais ferramentas")} onClose={() => setSheet(null)} closeLabel={tt("done", "OK")}>
-        {moreSheet}
-      </ToolSheet>
-      {sheet === "customize" && (
-        <CustomizeSheet
-          initial={barIds}
-          items={items}
-          onCancel={() => setSheet("more")}
-          onSave={(ids) => { saveToolbar(scope, ids); setSheet(null); }}
-        />
-      )}
+      {customize}
     </>
   );
 }
@@ -656,7 +725,7 @@ function ToolSheet({ open, title, onClose, closeLabel, action, children }: {
 }
 
 /** Fila com rolagem lateral: dedo (nativo), arrastar com mouse, rodinha e setas. */
-function ScrollRow({ children }: { children: ReactNode }) {
+function ScrollRow({ children, className }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ left: false, right: false });
   const drag = useRef<{ x: number; sl: number; moved: boolean } | null>(null);
@@ -698,7 +767,7 @@ function ScrollRow({ children }: { children: ReactNode }) {
     <div className="relative min-w-0">
       <div
         ref={ref}
-        className="flex items-center gap-0.5 overflow-x-auto whitespace-nowrap no-scrollbar min-w-0"
+        className={cn("flex items-center gap-0.5 overflow-x-auto whitespace-nowrap no-scrollbar min-w-0", className)}
         onPointerDown={(e) => {
           if (e.pointerType !== "mouse" || !ref.current) return;
           drag.current = { x: e.clientX, sl: ref.current.scrollLeft, moved: false };

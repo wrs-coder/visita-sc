@@ -31,7 +31,8 @@ import { SearchReplace } from "./extensions/search-replace";
 import { RichNoteSearchBar } from "./RichNoteSearchBar";
 import { OutlineAttachmentsBar } from "./OutlineAttachmentsBar";
 import { AttachmentAddDialog } from "./AttachmentAddDialog";
-import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
+import { useVirtualKeyboardVisible, useVisualViewportInset } from "@/hooks/use-virtual-keyboard";
+import { toolbarDock, toolbarOpenFromStorage } from "@/lib/editor-toolbar-dock";
 import { cn } from "@/lib/utils";
 import { RICH_NOTE_CONTENT_CLASS } from "@/lib/rich-note-styles";
 import { cleanWordHtml } from "@/lib/word-paste-cleaner";
@@ -56,7 +57,7 @@ interface RichNoteEditorProps {
   attachments?: NoteAttachment[];
   /** Callback para atualizar a lista de anexos (opcional). */
   onAttachmentsChange?: (next: NoteAttachment[]) => void;
-  /** Quando presente, a barra pode ser recolhida; a escolha fica neste aparelho sob esta chave (inicia recolhida). */
+  /** Quando presente, a barra pode ser recolhida; a escolha fica neste aparelho sob esta chave (inicia aberta). */
   collapsibleToolbarKey?: string;
 }
 
@@ -233,10 +234,11 @@ export function RichNoteEditor({
   onAttachmentsChange,
   collapsibleToolbarKey,
 }: RichNoteEditorProps) {
-  const [toolbarOpen, setToolbarOpen] = useState(false);
+  // Barra sempre no rodapé (Samsung Notes); recolhida só se o usuário recolheu.
+  const [toolbarOpen, setToolbarOpen] = useState(true);
   useEffect(() => {
     if (!collapsibleToolbarKey) return;
-    try { setToolbarOpen(localStorage.getItem(collapsibleToolbarKey) === "1"); } catch { /* */ }
+    try { setToolbarOpen(toolbarOpenFromStorage(localStorage.getItem(collapsibleToolbarKey))); } catch { /* */ }
   }, [collapsibleToolbarKey]);
   const toggleToolbar = () => setToolbarOpen((v) => {
     const n = !v;
@@ -248,6 +250,7 @@ export function RichNoteEditor({
   const [focused, setFocused] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const kbVisible = useVirtualKeyboardVisible();
+  const viewport = useVisualViewportInset();
   const lastEmittedRef = useRef<string>("");
   const [attachDialog, setAttachDialog] = useState<"photo" | "link" | "videoFile" | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -320,6 +323,10 @@ export function RichNoteEditor({
         // Sem isto, o 1º parágrafo colado se funde ao parágrafo do cursor e
         // perde o recuo (bloco ou 1ª linha) que veio do Word.
         transformPasted: (slice) => keepPastedIndent(slice),
+        // A barra fica no rodapé (ou colada no teclado): o cursor nunca
+        // para escondido atrás dela.
+        scrollMargin: { top: 16, bottom: 88, left: 0, right: 0 },
+        scrollThreshold: { top: 16, bottom: 88, left: 0, right: 0 },
         attributes: {
           class: cn(
             "prose-sm max-w-none focus:outline-none px-3 py-2",
@@ -363,9 +370,10 @@ export function RichNoteEditor({
     return () => { editor.off("selectionUpdate", upd); };
   }, [editor]);
 
-  // Esconde toolbar quando o teclado recolhe e o editor não tem foco (mobile).
-  // Com a busca aberta, o foco fica no campo de busca e a barra continua.
-  const toolbarVisible = focused || !kbVisible || searchOpen;
+  // Barra no rodapé; com o teclado aberto ela sobe colada nele. Se o teclado
+  // for de outro campo (ex.: título), a barra some para não tapar.
+  const dock = toolbarDock({ keyboard: kbVisible, editorFocused: focused, searchOpen });
+  const scrollsInside = maxHeight !== "none";
 
   // Contador de palavras e tempo de fala (130 palavras/min).
   type CharCountStorage = { characters: () => number };
@@ -379,15 +387,18 @@ export function RichNoteEditor({
     if (!selection.empty) selWords = countWords(doc.textBetween(selection.from, selection.to, " ", " "));
   }
   const speakMin = speakingMinutes(selWords || words);
-  const showFooter = focused || words > 0;
+  // Com o teclado aberto o contador ficaria escondido atrás da barra.
+  const showFooter = (focused || words > 0) && dock !== "keyboard";
 
   return (
     <div
       className={cn(
-        // Container do editor com rolagem interna própria — funciona como
-        // "congelar linha superior" (Excel): a barra fica sticky no topo
-        // desta caixa e o conteúdo rola por baixo dela.
-        "rounded-md border bg-background relative overflow-y-auto overflow-x-hidden",
+        // Coluna: texto ocupa o espaço e a barra fica sempre no rodapé da
+        // caixa (Samsung Notes), mesmo com pouco texto.
+        "rounded-md border bg-background relative flex flex-col",
+        // Com altura máxima, a caixa rola por dentro e a barra fica presa no
+        // rodapé dela; sem altura máxima, quem rola é a tela.
+        scrollsInside ? "overflow-y-auto overflow-x-hidden" : "overflow-x-clip",
         // Onda 7.8 — modo foco: dim em parágrafos fora do bloco ativo
         // (apenas visual; o conteúdo continua editável).
         focusMode && [
@@ -399,30 +410,6 @@ export function RichNoteEditor({
       style={{ minHeight, maxHeight: maxHeight === "none" ? undefined : maxHeight }}
       onClick={() => editor?.chain().focus().run()}
     >
-      {collapsibleToolbarKey && (
-        <button type="button" aria-expanded={toolbarOpen}
-          onClick={(e) => { e.stopPropagation(); toggleToolbar(); }}
-          className="sticky top-0 z-20 flex w-full items-center gap-1.5 border-b bg-background/95 px-3 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
-          <span className="font-semibold">Aa</span>
-          {toolbarOpen
-            ? t("notes.toolbar.hide", { defaultValue: "Recolher ferramentas" })
-            : t("notes.toolbar.show", { defaultValue: "Ferramentas" })}
-          <span aria-hidden className={cn("ml-auto transition-transform", toolbarOpen && "rotate-90")}>›</span>
-        </button>
-      )}
-      {(!collapsibleToolbarKey || toolbarOpen) && <RichNoteToolbar
-        editor={editor}
-        visible={toolbarVisible}
-        focusMode={focusMode}
-        onToggleFocusMode={() => setFocusMode((v) => !v)}
-        outlineId={outlineId}
-        compact={compact}
-        onAddPhotoAttachment={onAttachmentsChange ? () => setAttachDialog("photo") : undefined}
-        onAddVideoAttachment={onAttachmentsChange ? () => setAttachDialog("videoFile") : undefined}
-        onAddLinkAttachment={onAttachmentsChange ? () => setAttachDialog("link") : undefined}
-        onOpenSearch={() => setSearchOpen(true)}
-      />}
-
       {editor && searchOpen && (
         <RichNoteSearchBar editor={editor} onClose={() => { setSearchOpen(false); editor.chain().focus().run(); }} />
       )}
@@ -434,33 +421,52 @@ export function RichNoteEditor({
         />
       )}
 
-      <EditorContent editor={editor} />
-      {showFooter && (
-        <div
-          className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/90 px-3 py-1 text-[11px] text-muted-foreground backdrop-blur"
-          aria-live="polite"
-        >
-          <span title={t("personalOutlines.editor.stats.chars", { defaultValue: "{{count}} caracteres", count: chars })}>
-            {selWords > 0 && (
-              <span className="font-medium text-foreground">
-                {t("personalOutlines.editor.stats.selection", { defaultValue: "Seleção:" })}{" "}
-              </span>
-            )}
-            {t("personalOutlines.editor.stats.words", {
-              defaultValue: "{{formattedCount}} palavras",
-              count: selWords || words,
-              formattedCount: (selWords || words).toLocaleString(),
-            })}
-          </span>
-          <span aria-hidden>·</span>
-          <span>
-            {t("personalOutlines.editor.stats.speaking", {
-              defaultValue: "~{{min}} min de fala",
-              min: speakMin,
-            })}
-          </span>
-        </div>
-      )}
+      <EditorContent editor={editor} className="flex-1" />
+      {dock === "keyboard" && <div aria-hidden className="h-16" />}
+      <div className="sticky bottom-0 z-20 shrink-0">
+        {showFooter && (
+          <div
+            className="flex items-center justify-end gap-3 border-t bg-background/90 px-3 py-1 text-[11px] text-muted-foreground backdrop-blur"
+            aria-live="polite"
+          >
+            <span title={t("personalOutlines.editor.stats.chars", { defaultValue: "{{count}} caracteres", count: chars })}>
+              {selWords > 0 && (
+                <span className="font-medium text-foreground">
+                  {t("personalOutlines.editor.stats.selection", { defaultValue: "Seleção:" })}{" "}
+                </span>
+              )}
+              {t("personalOutlines.editor.stats.words", {
+                defaultValue: "{{formattedCount}} palavras",
+                count: selWords || words,
+                formattedCount: (selWords || words).toLocaleString(),
+              })}
+            </span>
+            <span aria-hidden>·</span>
+            <span>
+              {t("personalOutlines.editor.stats.speaking", {
+                defaultValue: "~{{min}} min de fala",
+                min: speakMin,
+              })}
+            </span>
+          </div>
+        )}
+        <RichNoteToolbar
+          editor={editor}
+          dock={dock}
+          keyboardInset={viewport.inset}
+          visibleHeight={viewport.height}
+          collapsed={!!collapsibleToolbarKey && !toolbarOpen}
+          onToggleCollapsed={collapsibleToolbarKey ? toggleToolbar : undefined}
+          focusMode={focusMode}
+          onToggleFocusMode={() => setFocusMode((v) => !v)}
+          outlineId={outlineId}
+          compact={compact}
+          onAddPhotoAttachment={onAttachmentsChange ? () => setAttachDialog("photo") : undefined}
+          onAddVideoAttachment={onAttachmentsChange ? () => setAttachDialog("videoFile") : undefined}
+          onAddLinkAttachment={onAttachmentsChange ? () => setAttachDialog("link") : undefined}
+          onOpenSearch={() => setSearchOpen(true)}
+        />
+      </div>
 
       {onAttachmentsChange && attachDialog && (
         <AttachmentAddDialog

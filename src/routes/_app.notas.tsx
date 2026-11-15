@@ -11,13 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { EdgePanel } from "@/components/notes/EdgePanel";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import {
   Lock, Plus, Trash2, Loader2, Check, HeartHandshake, FileText,
   ClipboardList, Mic, ThumbsUp, Mail, FileDown, Share2, Search, X, Building2,
+  MoreHorizontal, ChevronLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -25,6 +26,7 @@ import { getDateLocale } from "@/lib/date-locale";
 import type { JsPdfCompat } from "@/lib/pdf/pdf-engine";
 import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/local-write";
 import { saveBlob } from "@/lib/share";
+import { cn } from "@/lib/utils";
 
 function makeUuid(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -68,14 +70,29 @@ interface Note {
   updated_at: string;
 }
 
-const CATEGORY_DEFS: { value: NoteType; icon: React.ComponentType<{ className?: string }> }[] = [
-  { value: "free", icon: FileText },
-  { value: "pastoral", icon: HeartHandshake },
-  { value: "s303", icon: ClipboardList },
-  { value: "oradores", icon: Mic },
-  { value: "recomendados", icon: ThumbsUp },
-  { value: "peticoes", icon: Mail },
+/** accent = token de cor por área (src/styles.css), usado no quadradinho do ícone. */
+const CATEGORY_DEFS: { value: NoteType; icon: React.ComponentType<{ className?: string }>; accent: string }[] = [
+  { value: "free", icon: FileText, accent: "notes" },
+  { value: "pastoral", icon: HeartHandshake, accent: "couple" },
+  { value: "s303", icon: ClipboardList, accent: "checklist" },
+  { value: "oradores", icon: Mic, accent: "meetings" },
+  { value: "recomendados", icon: ThumbsUp, accent: "meals" },
+  { value: "peticoes", icon: Mail, accent: "elder" },
 ];
+
+/** Quadradinho colorido do ícone da categoria (estilo One UI). */
+function CategoryIcon({ def, size = "md" }: { def: (typeof CATEGORY_DEFS)[number]; size?: "sm" | "md" }) {
+  const Icon = def.icon;
+  return (
+    <span
+      aria-hidden
+      className={cn("inline-flex shrink-0 items-center justify-center rounded-xl", size === "sm" ? "h-8 w-8" : "h-9 w-9")}
+      style={{ color: `var(--accent-${def.accent})`, backgroundColor: `var(--accent-${def.accent}-bg)` }}
+    >
+      <Icon className="h-4 w-4" />
+    </span>
+  );
+}
 
 const NOTAS_CONG_KEY = "notas_privadas_congregation_id";
 
@@ -100,6 +117,7 @@ function Page() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [highlightId, setHighlightId] = useState<string | null>(search.noteId ?? null);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const catLabel = (v: NoteType) => t(`notes.categories.${v}.label`);
   const catAdd = (v: NoteType) => t(`notes.categories.${v}.add`);
@@ -246,6 +264,9 @@ function Page() {
       updated_at: now,
     };
     setNotes((n) => [optimistic, ...n]);
+    // Mostra a categoria da nota recém-criada, com a nota em destaque.
+    setTab(note_type);
+    setHighlightId(id);
     const { error, queued } = await offlineInsert("private_notes", {
       id, congregation_id: congId, superintendent_id: user.id, note_type, ...base,
     } as Record<string, unknown>);
@@ -317,6 +338,16 @@ function Page() {
     });
   }, [notes, tab, query, dateFrom, dateTo]);
   const selectedNotes = useMemo(() => notes.filter((n) => selected.has(n.id)), [notes, selected]);
+  const countsByType = useMemo(() => {
+    const c: Record<string, { total: number; selected: number }> = {};
+    for (const n of notes) {
+      const k = n.note_type ?? "free";
+      const e = (c[k] ??= { total: 0, selected: 0 });
+      e.total++;
+      if (selected.has(n.id)) e.selected++;
+    }
+    return c;
+  }, [notes, selected]);
 
   if (role !== "superintendent") return (
     <Card>
@@ -452,17 +483,47 @@ function Page() {
     window.open(url, "_blank");
   };
 
+  const currentDef = CATEGORY_DEFS.find((c) => c.value === tab) ?? CATEGORY_DEFS[0];
+  const allInTabSelected = filtered.length > 0 && filtered.every((n) => selected.has(n.id));
+  const iconBtn = "h-10 w-10 shrink-0 rounded-full";
+
   return (
-    <div className="space-y-5">
-      <div className="flex items-start gap-3">
-        <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Lock className="h-5 w-5" /></div>
-        <div className="flex-1">
-          <h1 className="text-2xl md:text-3xl font-bold">{t("notes.title")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{t("notes.subtitle")}{congregation ? ` • ${congregation.name}` : ""}</p>
+    <div className="space-y-4">
+      {/* Topo limpo (iOS / One UI): título grande + ícones de busca e ações. */}
+      <div className="flex items-center gap-1">
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-2xl font-bold tracking-tight md:text-3xl">{t("notes.title")}</h1>
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+            <Lock className="h-3 w-3 shrink-0" />{t("notes.subtitle")}
+          </p>
         </div>
+        <Button
+          variant={searchOpen ? "secondary" : "ghost"} size="icon" className={iconBtn}
+          aria-label={t("notes.filters.search")} title={t("notes.filters.search")} aria-expanded={searchOpen}
+          onClick={() => setSearchOpen((o) => !o)}
+        >
+          <Search className="h-5 w-5" />
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className={iconBtn} aria-label={t("notes.moreActions")} title={t("notes.moreActions")}>
+              <MoreHorizontal className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuLabel className="text-xs text-muted-foreground">{t("notes.export.title")}</DropdownMenuLabel>
+            <DropdownMenuItem onClick={exportPdf}><FileDown className="h-4 w-4 mr-2" />{t("notes.export.pdf")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={shareWhatsapp}><Share2 className="h-4 w-4 mr-2" />{t("notes.export.whatsapp")}</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={filtered.length === 0} onClick={toggleAllInTab}>
+              <Check className="h-4 w-4 mr-2" />
+              {allInTabSelected ? t("notes.export.unselectFromTab") : t("notes.export.selectFromTab")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Linha única: congregação, + Novo e lupa (iOS / One UI). */}
+      {/* Congregação + Nova nota (escolhe direto uma das 6 categorias). */}
       <div className="flex items-center gap-2">
         <Select value={congId ?? ""} onValueChange={(v) => setCongId(v)}>
           <SelectTrigger className="flex-1 min-w-0 h-10 rounded-full" aria-label={t("notes.congregationLabel")}>
@@ -479,24 +540,16 @@ function Page() {
           <DropdownMenuTrigger asChild>
             <Button className="h-10 rounded-full shrink-0"><Plus className="h-4 w-4 mr-1" />{t("notes.newButton")}</Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-60">
-            <DropdownMenuItem onClick={() => add(tab)}><Plus className="h-4 w-4 mr-2" />{catAdd(tab)}</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={exportPdf}><FileDown className="h-4 w-4 mr-2" />{t("notes.export.pdf")}</DropdownMenuItem>
-            <DropdownMenuItem onClick={shareWhatsapp}><Share2 className="h-4 w-4 mr-2" />{t("notes.export.whatsapp")}</DropdownMenuItem>
-            <DropdownMenuItem disabled={filtered.length === 0} onClick={toggleAllInTab}>
-              <Check className="h-4 w-4 mr-2" />
-              {filtered.length > 0 && filtered.every((n) => selected.has(n.id)) ? t("notes.export.unselectFromTab") : t("notes.export.selectFromTab")}
-            </DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuLabel className="text-xs text-muted-foreground">{t("notes.newMenuTitle")}</DropdownMenuLabel>
+            {CATEGORY_DEFS.map((c) => (
+              <DropdownMenuItem key={c.value} className="gap-3 py-2" onClick={() => add(c.value)}>
+                <CategoryIcon def={c} size="sm" />
+                <span className="min-w-0 flex-1 truncate">{catAdd(c.value)}</span>
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button
-          variant={searchOpen ? "default" : "outline"} size="icon" className="h-10 w-10 rounded-full shrink-0"
-          aria-label={t("notes.filters.search")} aria-expanded={searchOpen}
-          onClick={() => setSearchOpen((o) => !o)}
-        >
-          <Search className="h-4 w-4" />
-        </Button>
       </div>
 
       {selected.size > 0 && (
@@ -509,25 +562,8 @@ function Page() {
         </div>
       )}
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as NoteType)}>
-        <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full h-auto">
-          {CATEGORY_DEFS.map((c) => {
-            const count = notes.filter((n) => n.note_type === c.value && selected.has(n.id)).length;
-            return (
-              <TabsTrigger key={c.value} value={c.value} className="text-xs relative">
-                <c.icon className="h-3.5 w-3.5 mr-1" />{catLabel(c.value)}
-                {count > 0 && (
-                  <span className="ml-1 inline-flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
-                    {count}
-                  </span>
-                )}
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-
-        {searchOpen && (
-        <Card className="mt-3">
+      {searchOpen && (
+        <Card>
           <CardContent className="p-3 grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-2 items-end">
             <div>
               <Label className="text-xs">{t("notes.filters.search")}</Label>
@@ -549,28 +585,78 @@ function Page() {
             </Button>
           </CardContent>
         </Card>
-        )}
+      )}
 
-        {CATEGORY_DEFS.map((c) => (
-          <TabsContent key={c.value} value={c.value} className="space-y-3 mt-3 list-optimized">
-            {filtered.length === 0 && tab === c.value && (
-              <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{catEmpty(c.value)}</CardContent></Card>
-            )}
-            {tab === c.value && filtered.map((n) => (
-              <div
-                key={n.id}
-                id={`note-${n.id}`}
-                className={highlightId === n.id ? "rounded-lg ring-2 ring-primary/60 transition-shadow" : undefined}
-              >
-                <NoteCard
-                  note={n} savingId={savingId} update={update} remove={remove}
-                  checked={selected.has(n.id)} onToggleSelect={() => toggleSelect(n.id)}
-                />
-              </div>
-            ))}
-          </TabsContent>
+      {/* Categoria atual: tocar abre o Painel Edge (o mesmo da alça na borda direita). */}
+      <button
+        type="button"
+        onClick={() => setPanelOpen(true)}
+        aria-haspopup="dialog"
+        aria-expanded={panelOpen}
+        className="flex w-full items-center gap-3 rounded-2xl bg-muted/50 px-3 py-2 text-left transition-colors active:scale-[0.99] hover:bg-muted"
+      >
+        <CategoryIcon def={currentDef} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-semibold">{catLabel(currentDef.value)}</span>
+          <span className="block text-xs text-muted-foreground">
+            {t("notes.panel.count", { count: countsByType[currentDef.value]?.total ?? 0 })}
+          </span>
+        </span>
+        <span className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-primary">
+          <ChevronLeft className="h-4 w-4" />{t("notes.panel.title")}
+        </span>
+      </button>
+
+      <EdgePanel open={panelOpen} onOpenChange={setPanelOpen} title={t("notes.panel.title")} handleLabel={t("notes.panel.handle")}>
+        <ul className="space-y-1">
+          {CATEGORY_DEFS.map((c) => {
+            const info = countsByType[c.value];
+            const active = c.value === tab;
+            return (
+              <li key={c.value}>
+                <button
+                  type="button"
+                  aria-current={active ? "true" : undefined}
+                  autoFocus={active}
+                  onClick={() => { setTab(c.value); setPanelOpen(false); }}
+                  className={cn(
+                    "flex min-h-[52px] w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left transition-colors active:scale-[0.99]",
+                    active ? "bg-primary/10 text-primary" : "hover:bg-muted",
+                  )}
+                >
+                  <CategoryIcon def={c} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{catLabel(c.value)}</span>
+                    {info?.selected ? (
+                      <span className="block text-[11px] text-primary">{t("notes.panel.selected", { count: info.selected })}</span>
+                    ) : null}
+                  </span>
+                  <span className="min-w-6 rounded-full bg-muted px-2 py-0.5 text-center text-xs tabular-nums text-muted-foreground">{info?.total ?? 0}</span>
+                  {active && <Check className="h-4 w-4 shrink-0" />}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </EdgePanel>
+
+      <div className="space-y-3 list-optimized">
+        {filtered.length === 0 && (
+          <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{catEmpty(tab)}</CardContent></Card>
+        )}
+        {filtered.map((n) => (
+          <div
+            key={n.id}
+            id={`note-${n.id}`}
+            className={highlightId === n.id ? "rounded-lg ring-2 ring-primary/60 transition-shadow" : undefined}
+          >
+            <NoteCard
+              note={n} savingId={savingId} update={update} remove={remove}
+              checked={selected.has(n.id)} onToggleSelect={() => toggleSelect(n.id)}
+            />
+          </div>
         ))}
-      </Tabs>
+      </div>
     </div>
   );
 }

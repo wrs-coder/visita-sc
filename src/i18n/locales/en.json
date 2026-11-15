@@ -973,12 +973,14 @@
     "saveChanges": "Save changes",
     "selectPlaceholder": "Select...",
     "selectAtLeastOne": "Please select at least one note to export.",
+    "moreActions": "More actions",
+    "newMenuTitle": "Create note",
     "export": {
       "title": "Export Notes",
       "selectedCount": "• {{count}} selected",
       "includesMultiple": " (may include notes from several sub-tabs)",
-      "selectFromTab": "Select from this tab",
-      "unselectFromTab": "Unselect from this tab",
+      "selectFromTab": "Select from this category",
+      "unselectFromTab": "Unselect from this category",
       "clear": "Clear",
       "pdf": "Export PDF",
       "whatsapp": "WhatsApp"
@@ -990,6 +992,15 @@
       "to": "To",
       "clear": "Clear",
       "close": "Close"
+    },
+    "panel": {
+      "title": "Categories",
+      "handle": "Open categories",
+      "count_zero": "No notes",
+      "count_one": "{{count}} note",
+      "count_other": "{{count}} notes",
+      "selected_one": "{{count}} selected",
+      "selected_other": "{{count}} selected"
     },
     "categories": {
       "free": {
@@ -1777,6 +1788,7 @@
         "clearFormat": "Clear formatting",
         "search": "Find and replace",
         "customize": "Customize bar",
+        "hideBar": "Hide bar",
         "customizeTitle": "Fixed bar",
         "onBar": "On the bar",
         "available": "Available",

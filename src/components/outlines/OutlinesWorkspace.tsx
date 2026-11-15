@@ -108,6 +108,9 @@ import { BibleHistoryChips } from "@/components/bible/BibleHistoryChips";
 
 // Rodada B: o editor (TipTap) só carrega ao editar um esboço; a lista abre
 // primeiro. Ele é pré-carregado em segundo plano para abrir sem espera.
+/** Botão só com ícone do topo do esboço: alvo de toque de 40px (iOS / One UI). */
+const HEADER_ICON_BTN = "h-10 w-10 shrink-0 rounded-full p-0";
+
 const loadRichNoteEditor = () => import("@/components/notes/RichNoteEditor");
 const RichNoteEditor = React.lazy(() => loadRichNoteEditor().then((m) => ({ default: m.RichNoteEditor })));
 if (typeof window !== "undefined") {
@@ -2591,19 +2594,20 @@ function NoteEditor({
 
   return (
     <div className="w-full max-w-full overflow-x-clip box-border min-w-0 [overflow-wrap:anywhere] break-words flex flex-col min-h-[calc(100dvh-8rem)]">
-      <div className="sticky top-0 z-30 shrink-0 -mx-5 px-3 sm:px-5 py-2 mb-3 bg-background/95 backdrop-blur border-b safe-top flex flex-wrap items-center justify-between gap-2 w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)] min-w-0">
+      <div className="sticky top-0 z-30 shrink-0 -mx-5 px-6 py-2 mb-3 bg-background/95 backdrop-blur border-b safe-top flex flex-wrap items-center justify-between gap-2 w-[calc(100%+2.5rem)] max-w-[calc(100%+2.5rem)] min-w-0">
 
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          {/* Topo só com ícones (iOS / One UI): nome completo no toque longo e no leitor de tela. */}
           {onBack && (
-            <Button variant="ghost" size="sm" className={cn("h-8 px-1.5 text-primary", !focusEdit && "lg:hidden")} onClick={onBack}>
-              <ChevronLeft className="h-4 w-4" />{" "}
-              {t("personalOutlines.list.back", { defaultValue: "Esboços" })}
+            <Button variant="ghost" size="icon" className={cn(HEADER_ICON_BTN, "text-primary", !focusEdit && "lg:hidden")} onClick={onBack}
+              aria-label={t("personalOutlines.list.back", { defaultValue: "Esboços" })} title={t("personalOutlines.list.back", { defaultValue: "Esboços" })}>
+              <ChevronLeft className="h-6 w-6" />
             </Button>
           )}
           {!isTalk && focusEdit && (
-            <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs" onClick={() => onModeChange("outline")}>
-              <BookOpen className="h-4 w-4 mr-1" />
-              {t("fieldConsiderations.outlineMode")}
+            <Button variant="ghost" size="icon" className={HEADER_ICON_BTN} onClick={() => onModeChange("outline")}
+              aria-label={t("fieldConsiderations.outlineMode")} title={t("fieldConsiderations.outlineMode")}>
+              <BookOpen className="h-5 w-5" />
             </Button>
           )}
           {!isTalk && !focusEdit && (
@@ -2634,7 +2638,7 @@ function NoteEditor({
             {t("fieldConsiderations.updatedAt")}: {dateFmt(draft.updated_at)}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0.5">
           <SavingIndicator saving={saving} />
           {isField && (
             <FieldNoteInfoButton
@@ -2651,11 +2655,10 @@ function NoteEditor({
             />
           )}
           {focusEdit && (
-            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setDetailsOpen(true)}>
-              <Pencil className="h-4 w-4 sm:mr-1" />
-              <span className="hidden min-[380px]:inline text-xs">
-                {t("fieldConsiderations.editDetails", { defaultValue: "Editar detalhes" })}
-              </span>
+            <Button variant="ghost" size="icon" className={HEADER_ICON_BTN} onClick={() => setDetailsOpen(true)}
+              aria-label={t("fieldConsiderations.editDetails", { defaultValue: "Editar detalhes" })}
+              title={t("fieldConsiderations.editDetails", { defaultValue: "Editar detalhes" })}>
+              <Pencil className="h-5 w-5" />
             </Button>
           )}
           {!focusEdit && !(isField && mode === "outline") && (
@@ -2678,19 +2681,20 @@ function NoteEditor({
           {(mode === "outline" || mode === "edit") && !isTalk && (
             <Button
               variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
+              size="icon"
+              className={HEADER_ICON_BTN}
               onClick={onFullscreen}
               title={t("personalOutlines.fullscreen.enter")}
               aria-label={t("personalOutlines.fullscreen.enter")}
             >
-              <Maximize2 className="h-4 w-4" />
+              <Maximize2 className="h-5 w-5" />
             </Button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={t("personalOutlines.editor.moreActions", { defaultValue: "Mais ações" })}>
-                <MoreHorizontal className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className={HEADER_ICON_BTN} aria-label={t("personalOutlines.editor.moreActions", { defaultValue: "Mais ações" })}
+                title={t("personalOutlines.editor.moreActions", { defaultValue: "Mais ações" })}>
+                <MoreHorizontal className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -2717,8 +2721,9 @@ function NoteEditor({
             </DropdownMenuContent>
           </DropdownMenu>
           {mode === "edit" && (
-            <Button size="sm" className="h-8" onClick={onSave} disabled={saving} title={t("fieldConsiderations.save")}>
-              <Save className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">{t("fieldConsiderations.save")}</span>
+            <Button size="icon" className="h-10 w-10 shrink-0 rounded-full" onClick={onSave} disabled={saving}
+              title={t("fieldConsiderations.save")} aria-label={t("fieldConsiderations.save")}>
+              <Save className="h-5 w-5" />
             </Button>
           )}
         </div>

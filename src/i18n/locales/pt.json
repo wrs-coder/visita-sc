@@ -963,12 +963,14 @@
     "saveChanges": "Salvar alterações",
     "selectPlaceholder": "Selecione...",
     "selectAtLeastOne": "Por favor, selecione pelo menos uma nota para exportar.",
+    "moreActions": "Mais ações",
+    "newMenuTitle": "Criar nota",
     "export": {
       "title": "Exportar Notas",
       "selectedCount": "• {{count}} selecionada(s)",
       "includesMultiple": " (pode incluir notas de várias sub-abas)",
-      "selectFromTab": "Selecionar desta aba",
-      "unselectFromTab": "Desmarcar desta aba",
+      "selectFromTab": "Selecionar desta categoria",
+      "unselectFromTab": "Desmarcar desta categoria",
       "clear": "Limpar",
       "pdf": "Exportar PDF",
       "whatsapp": "WhatsApp"
@@ -980,6 +982,15 @@
       "to": "Até",
       "clear": "Limpar",
       "close": "Fechar"
+    },
+    "panel": {
+      "title": "Categorias",
+      "handle": "Abrir categorias",
+      "count_zero": "Nenhuma nota",
+      "count_one": "{{count}} nota",
+      "count_other": "{{count}} notas",
+      "selected_one": "{{count}} selecionada",
+      "selected_other": "{{count}} selecionadas"
     },
     "categories": {
       "free": {
@@ -1758,6 +1769,7 @@
         "clearFormat": "Limpar formatação",
         "search": "Localizar e substituir",
         "customize": "Personalizar barra",
+        "hideBar": "Ocultar barra",
         "customizeTitle": "Barra fixa",
         "onBar": "Na barra",
         "available": "Disponíveis",
