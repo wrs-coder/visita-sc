@@ -1,79 +1,73 @@
-# Plano: contagem de versículos da TNM + melhorias do balão bíblico
+# Importação do Word (recuo, negrito, destaque) + barra de ferramentas mais rápida
 
-## Parte A — Quantos versículos tem cada capítulo (do próprio EPUB)
+## O que encontrei no seu arquivo (S-319-27_T_002.docx)
 
-Confirmado no arquivo enviado (Rute 1): antes do texto existe a linha de navegação
-`Rute 1 : 1 - 22`, com link para `bibleversenav8_1.xhtml`. Ou seja, o EPUB já diz que
-Rute 1 tem 22 versículos. O mesmo padrão existe em todos os idiomas da TNM, porque é a
-estrutura do arquivo (classe `w_navigation w_biblebookname`), não o texto.
+Simulei a importação do arquivo aqui e comparei com o Word.
 
-O que muda:
-1. Ao importar a Bíblia, o app lê essa linha de cada capítulo e guarda o número final
-   (22) junto da Bíblia, sem mudar os versículos guardados.
-2. Conferência na importação: versículos acima do número final são descartados
-   (proteção extra contra qualquer "Conteúdo do livro" que escape).
-3. Leitura e balão usam o número para saber se um versículo existe:
-   "Rute 1:30" passa a mostrar "Rute 1 tem 22 versículos" em vez de balão vazio.
-4. Bíblias já importadas não têm esse número: tudo continua como hoje (com o filtro
-   já feito). No gerenciador de Bíblias aparece um aviso discreto
-   "Reimporte para ativar a conferência de versículos".
-5. Se a linha não existir num EPUB diferente, o app simplesmente não confere (nada quebra).
+1. **Recuo.** O Word não usa "recuo de primeira linha" neste arquivo. Ele usa o **recuo deslocado**: a primeira linha começa mais à esquerda e as linhas seguintes ficam mais para dentro. Esse recuo vem dos estilos do modelo (JW Indent 0, 1, 2…). O app hoje lê só o nível do estilo e **descarta o deslocamento**. Por isso o parágrafo inteiro fica alinhado no mesmo recuo.
+2. **Negrito nos textos bíblicos.** A leitura do arquivo **mantém** o negrito ("[**Leia Provérbios 18:24.**]"). Então ele se perde depois, quando o texto entra no editor. A causa ainda não foi confirmada: a primeira etapa é reproduzir isso na tela.
+3. **Destaque (marca-texto).** Este arquivo não tem nenhum trecho com marca-texto. Mesmo assim, o importador **não lê** marca-texto nem sombreamento do Word. Hoje ele lê só negrito, itálico, sublinhado e cor.
 
 ```text
-┌─────────────────────────────┐
-│ Bíblias                     │
-│ ┌─────────────────────────┐ │
-│ │ TNM Português     ✓ Ativa│ │
-│ │ ⓘ Reimporte para ativar │ │
-│ │   a conferência de       │ │
-│ │   versículos  [Reimportar]│ │
-│ └─────────────────────────┘ │
-└─────────────────────────────┘
+WORD (como deve ficar)            VISITA SC HOJE
+┌──────────────────────────┐      ┌──────────────────────────┐
+│ Davi [Imagem 1]          │      │ Davi [Imagem 1]          │
+│   Jeová valorizava a     │      │   Jeová valorizava a     │
+│     pessoa que Davi era  │      │   pessoa que Davi era    │
+│     (1Sa 16:6, 7)        │      │   (1Sa 16:6, 7)          │
+│   [Leia Prov 18:24.]     │      │   [Leia Prov 18:24.]     │
+│    ^^^^ negrito          │      │    sem negrito           │
+└──────────────────────────┘      └──────────────────────────┘
 ```
 
-## Parte B — Balão bíblico e textos automáticos (a análise anterior)
+## Parte 1 — Importação do Word
 
-O reconhecimento atual ("Jo 3:16" vira link) não muda; só ganha casos novos, cada um
-protegido por teste.
+1. **Recuo deslocado:** passar a ler o deslocamento dos estilos e de cada parágrafo, junto com o recuo de primeira linha. Isso vale também para estilos que herdam de outro estilo, como o "JW Indent 1", que herda do "JW Indent 0". Os níveis JW Indent continuam como hoje: muda só a forma das linhas seguintes.
+2. **Mostrar o recuo deslocado no editor:** o recuo da 1ª linha já existe. Será acrescentado o deslocado, guardado no próprio parágrafo e com degraus de 32px, igual aos outros recuos. Na tela, o botão "1ª linha" passa a ter três estados: Nenhum → 1ª linha → Deslocado.
+3. **Negrito:** primeiro, reproduzir na tela com o seu arquivo e achar o passo exato em que o negrito some. Depois, corrigir só esse passo. O reconhecimento de citações bíblicas e o balão não mudam: o negrito fica por fora do link da citação.
+4. **Marca-texto:** ler o marca-texto e o sombreamento do Word e convertê-los na cor de destaque do editor (amarelo, verde, azul, rosa…). Cores desconhecidas viram amarelo.
+5. **Exportar para Word:** gravar de volta o deslocado e o marca-texto, para que o arquivo exportado seja importado igual.
+6. **Notas antigas:** não mudam. O deslocado só aparece em importações novas ou quando você aplica o recuo.
 
-Prioridade alta
-- Trecho que passa de capítulo: "Mt 5:3–6:2" mostra 5:3 até o fim do 5 e 6:1–2.
-- Versículo inexistente: mensagem clara (usa a Parte A) em vez de balão vazio.
-- Mensagens separadas: "Bíblia não importada", "Livro não encontrado",
-  "Versículo não existe", com botão "Tentar de novo" quando for falha de leitura.
+## Parte 2 — Barra de ferramentas do modo edição
 
-Prioridade média
-- Capítulo inteiro sem dois-pontos: "Salmo 23" abre o capítulo (só quando o livro é
-  claro, para não confundir com números comuns no texto).
-- Ligação com "e": "Jo 3:16 e 17" e listas misturadas "Rom 5:1, 3-5".
-- Formas ordinais/romanas: "1.ª Cor", "I Coríntios", "Primeira aos Coríntios".
-
-Prioridade baixa
-- Citação partida por negrito/itálico no meio ("**Jo** 3:16").
-- Teste com centenas de citações reais tiradas dos esboços, para medir acertos e
-  evitar links falsos.
+Hoje, ações básicas ficam dentro de grupos. Negrito, marca-texto, lista e recuo pedem 2 a 3 toques. Proposta no estilo One UI/iOS: uma linha fixa com o que mais se usa, e o restante numa folha que sobe de baixo.
 
 ```text
-┌─────────────────────────────┐
-│ Rute 1:30                 ✕ │
-│─────────────────────────────│
-│  Rute 1 tem 22 versículos.  │
-│  Confira a citação.         │
-└─────────────────────────────┘
+BARRA FIXA (1 toque, rola para o lado se faltar espaço)
+┌─────────────────────────────────────┐
+│ ↶  ↷ │ B  I  U  🖍 │ •≡  ⇤  ⇥  ↦ │ Aa  ⋯ │
+└─────────────────────────────────────┘
+ desfazer  formatação  lista/recuos  estilos/mais
+ 🖍 = último marca-texto usado (segurar = escolher cor)
+ ↦  = 1ª linha / deslocado
+
+TOQUE EM "Aa"  (folha curta)       TOQUE EM "⋯"  (folha completa)
+┌─────────────────────────────┐    ┌─────────────────────────────┐
+│ ───                         │    │ ───                         │
+│ Estilo                      │    │ Texto                       │
+│ [Normal][Título][Subtítulo] │    │ [x₂][x²][Fonte][Cor][Limpar]│
+│ [Citação]                   │    │ Parágrafo                   │
+│ Tamanho  A-  16  A+         │    │ [⫷][≡][⫸][☰] [1.][☑]       │
+│ Cor  ● ● ● ● ●              │    │ Inserir                     │
+└─────────────────────────────┘    │ [Foto][Vídeo][Link][Tabela] │
+                                    │ [Linha][Tópico c/ tempo]    │
+                                    └─────────────────────────────┘
 ```
 
-## Riscos e cuidados
-- Nenhum texto bíblico guardado é reescrito; notas e destaques não mudam.
-- Cada regra nova do reconhecimento entra com testes de "não deve virar link"
-  (horários, números de parágrafo, datas).
-- Ordem de execução: Parte A primeiro (base da mensagem de versículo inexistente),
-  depois alta, média, baixa.
+- Negrito, itálico, sublinhado, marca-texto, lista e recuos passam a ficar a **1 toque**.
+- O botão aceso mostra o estado do trecho atual, como hoje.
+- Nenhuma função some: tudo o que existe hoje continua na barra fixa, em "Aa" ou em "⋯".
+- Os botões têm 44px, o mínimo do iOS para toque com o dedo. A folha fecha ao arrastar para baixo.
+- O teclado não fecha ao tocar nos botões, como hoje.
 
 ## Detalhes técnicos
-- `epub-bible-parser.ts`: ler `p.w_biblebookname a[href^=bibleversenav]` texto
-  "1 - N" antes do `hardPurgeDoc`; montar `verseCounts[book][chapter]=N`; cortar
-  versos > N.
-- Guardar `verseCounts` opcional no registro da biblioteca (`bible-notes-store.ts`);
-  ausente = sem conferência. Teste com fixture `1001061112.xhtml`.
-- `getChapterFromLibrary`/popover: retornar motivo (`no-bible|no-book|out-of-range|read-error`).
-- `bible-refs.ts`: novos padrões com testes positivos e negativos.
+
+- `docx-import.ts`: `StyleInfo` passa a ter `firstLine` e `hanging`, herdados via `basedOn`. Os parágrafos com nome "indent N" também passam a emitir `x-hang`/`text-indent` negativo, e o parágrafo vale mais que o estilo. `runsToHtml` passa a ler `w:highlight` e `w:shd@fill` → `<mark data-color>`, numa lista fixa de cores.
+- `word-paste-cleaner.ts`: `normalizeIndent` aceita `text-indent` negativo → `hangLevel` 1–4 (32px), sem quebrar a regra de nível existente.
+- `first-line-indent.ts` + `RichNoteEditor.tsx`: atributo `firstLine` com valores positivos (1ª linha) e negativos (deslocado: `padding-left` + `text-indent` negativo). `nextFirstLine` faz o ciclo de três estados. Os HTML antigos continuam iguais.
+- Negrito: reproduzir com Playwright (importar o .docx, ver o HTML do editor). Suspeitos: a marca de citação bíblica sem `excludes` correto ou o `sanitizeNoteHtml`. A correção será feita só depois da causa confirmada.
+- `docx-export.ts`: `w:ind w:hanging` e `w:highlight`. Teste de ida e volta.
+- `RichNoteToolbar.tsx`: reorganizar em barra fixa + `Sheet` (shadcn, bottom) para "Aa" e "⋯", reaproveitando os mesmos comandos. Nenhum comando novo além do marca-texto rápido, cuja última cor fica guardada no aparelho (localStorage).
+- Testes: fixture com trechos do seu arquivo. Eles conferem o deslocado nos níveis 0–2, o negrito em "Leia Provérbios", o marca-texto, a ida e volta pela exportação e os testes atuais do balão e das citações.
+- Registrar em AGENTS.md a regra do recuo deslocado.
