@@ -67,23 +67,22 @@ Banco de dados, sincronização, formato salvo das notas antigas, botões ⇤/�
 
 # Parte 2 — Bíblia: versículos a mais no fim do capítulo 1 de TODOS os livros
 
-## O que acontece (provável, a confirmar com o arquivo real)
-A falha aparece em todos os livros, porque cada livro da TNM traz o seu quadro "Conteúdo do livro" junto ao capítulo 1. Oseias é só um exemplo.
-O leitor separa os versículos procurando "números marcados" no arquivo da TNM. O quadro "Conteúdo do livro" também tem números marcados: um por capítulo (1, 2 ... 14), cada um com tópicos e referências entre parênteses.
-- O filtro atual só reconhece esse quadro quando ele está num parágrafo comum com até 1500 letras. Em livros com muitos capítulos o quadro é maior ou vem em lista, e escapa.
-- Os itens 12, 13 e 14 do quadro viram "versículos 12, 13 e 14" do capítulo 1.
-- **Risco escondido:** os itens 1 a 11 podem substituir versículos reais curtos do capítulo 1, porque hoje vence o texto mais longo.
+## Causa confirmada com os arquivos enviados
+Cada livro da TNM tem um arquivo próprio "Conteúdo do livro" (ex.: "Conteúdo de Rute"). Nele há uma lista com um item por capítulo, e cada item é um número em negrito com link (1, 2, 3...) seguido dos tópicos com "(1, 2)", "(3-6)". O padrão é o mesmo em português, inglês e espanhol.
+- O leitor confunde esse arquivo com o texto do capítulo 1 e trata cada número de capítulo como se fosse um versículo.
+- O filtro atual procura parágrafos com dois ou mais parênteses. Aqui cada tópico tem só um parêntese, por isso nada é barrado.
+- **Resultado:** quando o livro tem mais capítulos do que o capítulo 1 tem versículos, sobram versículos falsos (Oseias: 14 capítulos e 11 versículos, então aparecem 12, 13 e 14).
+- **Mais grave:** nos números 1 a N, vence o texto mais longo. Versículos verdadeiros e curtos do capítulo 1 podem ter sido trocados pelo texto dos tópicos sem você perceber.
+- O outro arquivo, a tabela de capítulos ("w_navigation"), também precisa ser ignorado de forma explícita.
 
 ## O que será feito
-1. **Na importação:** o quadro "Conteúdo do livro" é reconhecido também em listas e blocos grandes. Um número que aponta para outro capítulo, como um link, deixa de contar como versículo.
-2. **Trava de segurança:** o texto de um versículo no formato "tópico (1-14) tópico (3)" é descartado, porque esse formato nunca aparece num versículo de verdade.
-3. **Bíblias já importadas, sem reimportar:** a mesma trava é aplicada na hora de mostrar o versículo, no balão, no leitor e na busca. Os versículos falsos somem e os destaques salvos continuam como estão.
-4. **Conferência de quantidade:** uma tabela só com números (quantos versículos tem cada capítulo, sem nenhum texto bíblico). Ao importar aparece um aviso como "Oseias 1: esperados 11, encontrados 14". Nada é apagado só por causa desse aviso.
+1. **Na importação:** ignorar por completo os arquivos de "Conteúdo do livro" (lista com classe "outline" e itens "chapterNo") e as tabelas de navegação ("w_navigation"). A identificação é pela estrutura do arquivo, e não por palavras, então funciona em todos os idiomas.
+2. **Segunda trava:** números dentro de listas de esboço ou de navegação nunca contam como versículo, mesmo se aparecerem dentro de outro arquivo.
+3. **Bíblias já importadas:** o app percebe sozinho quando a Bíblia guardada tem esses versículos falsos e mostra o aviso "Sua Bíblia precisa ser importada de novo para corrigir o capítulo 1", com o botão **Reimportar**. Até lá, os versículos com formato de tópico ficam escondidos no balão e no leitor. Só a reimportação recupera um versículo verdadeiro que foi trocado. Destaques, notas e leituras não são apagados.
+4. **Conferência de quantidade:** uma tabela só com números (quantos versículos tem cada capítulo, sem texto bíblico). Depois de importar, o app compara e mostra quantos capítulos ficaram diferentes.
 
 ## Detalhes técnicos
-- `epub-bible-parser.ts`: `findOutlineRoots` inclui `li, ol, ul, td` e, para containers com 3 ou mais filhos que casam com OUTLINE_PAREN_RE, ignora o limite de 1500; `isVerseMarker` rejeita `<a href>` que apontam para `#chapterN` com N diferente do capítulo atual; o dedup deixa de usar "mais longo vence" quando o texto candidato casa com o padrão de esboço.
-- Novo `isOutlineLikeVerse(text)` compartilhado (2 ou mais "(n)"/"(n-n)" e nenhuma pontuação de frase), aplicado em `getChapterFromLibrary` (leitura), sem gravar nada no IndexedDB.
-- `bible-verse-counts.ts`: só números por livro e capítulo, conforme a regra de não embutir texto bíblico; relatório de importação no BibleManagerDialog.
-- Varredura completa após a correção: para os 66 livros, comparar a quantidade de versículos de cada capítulo com a tabela de números e listar qualquer diferença restante.
-- Testes: fixtures de livros com poucos capítulos (ex.: Rute, 4), médios (Oseias, 14) e muitos (Salmos, Isaías); fixture XHTML imitando Oseias (quadro em lista com 14 itens) gera exatamente 11 versículos no capítulo 1; nenhum versículo real é substituído; o filtro na leitura remove os 3 falsos de uma Bíblia já salva; os testes atuais do parser e de idioma continuam passando.
-- Primeiro passo da execução: se possível, reproduzir com o arquivo EPUB do usuário, sem enviá-lo para a nuvem, para confirmar a causa antes de corrigir.
+- `epub-bible-parser.ts`: `isBookOutlineDoc(doc)` (`ul.outline`, `li.chapterNo` ou `.w_navigation`) retorna `[]` em `extractVersesFromDoc`; o laço de marcadores pula elementos com `hasNoisyAncestor` (a classe outline já está em NOISY_CLASS_RE, mas só era usada em `textBetween`).
+- `isOutlineLikeVerse(text)` aplicado na leitura (`getChapterFromLibrary`) sem gravar no IndexedDB; detecção de Bíblia afetada pela contagem de capítulo 1 maior que a esperada ou por versículo com formato de tópico.
+- `bible-verse-counts.ts`: apenas números; relatório no BibleManagerDialog.
+- Testes com os dois arquivos enviados como fixtures: o arquivo de conteúdo gera 0 versículos e a tabela de navegação gera 0; um livro sintético com 14 capítulos fica com o capítulo 1 exato, sem nenhum versículo trocado; os testes atuais do parser e de idioma continuam passando.
