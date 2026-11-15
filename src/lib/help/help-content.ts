@@ -34,8 +34,7 @@ const RAW_TOPICS: HelpTopic[] = [
     keywords: ["notas", "privadas", "confidencial", "pastoreio", "s-303", "oradores", "recomendados", "peticoes"],
     steps: [
       { before: "No menu lateral, toque em ", labelKey: "sidebar.privateNotes", after: "." },
-      { before: "Elas são ", labelKey: "notes.subtitle", after: "." },
-      { before: "Em ", labelKey: "notes.congregationLabel", after: ", escolha a congregação das notas." },
+      { before: "Elas ficam na congregação ativa (a do Início) e são ", labelKey: "notes.subtitle", after: "." },
       { before: "As notas ficam em 6 categorias: ", labelKey: "notes.categories.free.label", after: ", “Pastoreio”, “S-303”, “Oradores”, “Recomendados” e “Petições”." },
       { before: "Para trocar de categoria, toque no nome da categoria acima da lista. Abre o painel ", labelKey: "notes.panel.title", after: " com quantas notas há em cada uma; toque numa e o painel se fecha." },
       { before: "Toque em ", labelKey: "notes.newButton", after: " e escolha direto o tipo: “Nova nota livre”, “Nova visita de pastoreio”, “Novo registro S-303”, “Novo orador”, “Novo recomendado” ou “Nova petição”." },

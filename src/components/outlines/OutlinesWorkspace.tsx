@@ -1831,13 +1831,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
     <>
       <div className="space-y-4 w-full max-w-full overflow-x-clip box-border min-w-0">
         <header className={cn("flex items-center gap-3", (lockedType || (draft && !showLibrary)) && "hidden", !lockedType && draft && !showLibrary && "lg:flex", focusEdit && "!hidden")}>
-          <div className="rounded-xl bg-primary/10 p-2 text-primary">
-            <FileText className="h-5 w-5" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-xl font-semibold">{t("personalOutlines.title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("personalOutlines.subtitle")}</p>
-          </div>
+          <h1 className="sr-only">{t("personalOutlines.title")}</h1>
         </header>
 
         {/* Gerenciamento da Bíblia migrou para "Meu Perfil" */}

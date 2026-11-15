@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EdgePanel } from "@/components/notes/EdgePanel";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useActiveCongregation } from "@/hooks/use-active-congregation";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import {
   Lock, Plus, Trash2, Loader2, Check, HeartHandshake, FileText,
@@ -100,6 +101,7 @@ function Page() {
   const { t, i18n } = useTranslation();
   const dateLocale = getDateLocale(i18n.language);
   const { user, role } = useAuth();
+  const activeCong = useActiveCongregation();
   const [congs, setCongs] = useState<Array<{ id: string; name: string }>>([]);
   const [congId, setCongId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
@@ -162,6 +164,12 @@ function Page() {
         });
       });
   }, [role, user]);
+
+  // Sem seletor: as notas seguem a congregação ativa do app (Início / menu ☰).
+  useEffect(() => {
+    if (search.congId) return;
+    if (activeCong?.id && congs.some((c) => c.id === activeCong.id)) setCongId(activeCong.id);
+  }, [activeCong?.id, congs, search.congId]);
 
   useEffect(() => {
     if (congId) localStorage.setItem(NOTAS_CONG_KEY, congId);
@@ -491,12 +499,8 @@ function Page() {
     <div className="space-y-4">
       {/* Topo limpo (iOS / One UI): título grande + ícones de busca e ações. */}
       <div className="flex items-center gap-1">
-        <div className="min-w-0 flex-1">
-          <h1 className="sr-only truncate text-2xl font-bold tracking-tight md:text-3xl">{t("notes.title")}</h1>
-          <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-            <Lock className="h-3 w-3 shrink-0" />{t("notes.subtitle")}
-          </p>
-        </div>
+        <h1 className="sr-only">{t("notes.title")}</h1>
+        <div className="min-w-0 flex-1" />
         <Button
           variant={searchOpen ? "secondary" : "ghost"} size="icon" className={iconBtn}
           aria-label={t("notes.filters.search")} title={t("notes.filters.search")} aria-expanded={searchOpen}
@@ -521,24 +525,9 @@ function Page() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-
-      {/* Congregação + Nova nota (escolhe direto uma das 6 categorias). */}
-      <div className="flex items-center gap-2">
-        <Select value={congId ?? ""} onValueChange={(v) => setCongId(v)}>
-          <SelectTrigger className="flex-1 min-w-0 h-10 rounded-full" aria-label={t("notes.congregationLabel")}>
-            <Building2 className="h-4 w-4 text-primary shrink-0 mr-1" />
-            <SelectValue placeholder={t("notes.congregationPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            {congs.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="h-10 rounded-full shrink-0"><Plus className="h-4 w-4 mr-1" />{t("notes.newButton")}</Button>
+            <Button className="h-10 rounded-full shrink-0 ml-1"><Plus className="h-4 w-4 mr-1" />{t("notes.newButton")}</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64">
             <DropdownMenuLabel className="text-xs text-muted-foreground">{t("notes.newMenuTitle")}</DropdownMenuLabel>
@@ -551,6 +540,7 @@ function Page() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
 
       {selected.size > 0 && (
         <div className="flex items-center justify-between gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-sm">

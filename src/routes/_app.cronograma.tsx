@@ -72,6 +72,7 @@ import { getHiddenEventIds } from "@/lib/hidden-events";
 import { dayAccentStyle } from "@/lib/day-accent";
 import { CircuitHeader } from "@/components/circuit/CircuitHeader";
 import { MonthCalendar, type MonthVisit } from "@/components/circuit/MonthCalendar";
+import { offWeekTitle } from "@/lib/itinerary-export";
 
 export const Route = createFileRoute("/_app/cronograma")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -158,14 +159,44 @@ function Page() {
   useEffect(() => { if (search.view === "month") setView("month"); }, [search.view]);
   const [month, setMonth] = useState<Date>(() => new Date());
   const [selectedDay, setSelectedDay] = useState<string>(() => format(new Date(), "yyyy-MM-dd"));
-  const [visits, setVisits] = useState<MonthVisit[]>([]);
+  const [offWeeks, setVisits] = useState<MonthVisit[]>([]);
+  const [visitRows, setVisitRows] = useState<Record<string, unknown>[]>([]);
+  const visits = useMemo<MonthVisit[]>(() => {
+    const nameOf = (id: unknown) => congregations.find((c) => c.id === id)?.name;
+    const vs: MonthVisit[] = visitRows.map((v) => {
+      const cong = nameOf(v.congregation_id);
+      const title = String(v.title ?? "");
+      return {
+        id: String(v.id), start_date: String(v.start_date), end_date: String(v.end_date),
+        title: cong && !title.includes(cong) ? `${title || t("circuit.visitLegend")}: ${cong}` : title,
+      };
+    });
+    return [...vs, ...offWeeks].sort((a, b) => a.start_date.localeCompare(b.start_date));
+  }, [visitRows, offWeeks, congregations, t]);
   useEffect(() => {
     if (!userId || !canEdit) return;
     let cancelled = false;
-    void readWithMirror<MonthVisit & Record<string, unknown>>({
-      table: "visits",
-      remote: () => supabase.from("visits").select("id,title,start_date,end_date") as never,
-    }).then((res) => { if (!cancelled) setVisits(res.rows as MonthVisit[]); }).catch(() => undefined);
+    // Visitas (com o nome da congregação) + semanas do itinerário sem congregação.
+    void Promise.all([
+      readWithMirror<Record<string, unknown>>({
+        table: "visits",
+        remote: () => supabase.from("visits").select("id,title,start_date,end_date,congregation_id,is_active") as never,
+      }).then((r) => r.rows).catch(() => [] as Record<string, unknown>[]),
+      readWithMirror<Record<string, unknown>>({
+        table: "itinerary_weeks",
+        remote: () => supabase.from("itinerary_weeks").select("id,week_type,start_date,end_date,notes") as never,
+      }).then((r) => r.rows).catch(() => [] as Record<string, unknown>[]),
+    ]).then(([vs, ws]) => {
+      if (cancelled) return;
+      setVisitRows(vs.filter((v) => v.is_active !== false));
+      setVisits([
+        ...ws.map((w) => ({
+          id: "w:" + String(w.id), off: true,
+          title: offWeekTitle({ week_type: w.week_type as "pioneer" | "free", notes: (w.notes as string | null) ?? null }),
+          start_date: String(w.start_date), end_date: String(w.end_date),
+        })),
+      ]);
+    });
     return () => { cancelled = true; };
   }, [userId, canEdit]);
 

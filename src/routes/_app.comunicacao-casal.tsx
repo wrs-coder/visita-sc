@@ -142,10 +142,8 @@ function Page() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="sr-only text-2xl md:text-3xl font-bold">{t("couple.title")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{t("couple.subtitleSuper")}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <VisitWeekReportButton onClick={() => setReportOpen(true)} />
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>

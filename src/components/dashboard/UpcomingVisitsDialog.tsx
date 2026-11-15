@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { readWithMirror } from "@/lib/local-first";
+import { offWeekTitle } from "@/lib/itinerary-export";
 
-type VisitRow = { id: string; title: string; congregation_id: string; start_date: string; end_date: string; is_active?: boolean };
+type VisitRow = { id: string; title: string; congregation_id: string; start_date: string; end_date: string; is_active?: boolean; off?: boolean };
+type WeekRow = { id: string; week_type: "pioneer" | "free"; start_date: string; end_date: string; notes: string | null };
 
 interface Props {
   congregations: Array<{ id: string; name: string }>;
@@ -37,7 +39,19 @@ export function UpcomingVisitsButton({ congregations }: Props) {
           filter: (v) => v.is_active !== false && v.end_date >= today,
           sort: (a, b) => a.start_date.localeCompare(b.start_date),
         });
-        if (!cancelled) setRows(list);
+        // Semanas do itinerário sem congregação (pioneiros, livre, assembleias…).
+        const weeks = await readWithMirror<WeekRow>({
+          table: "itinerary_weeks",
+          remote: async () =>
+            await supabase.from("itinerary_weeks").select("id,week_type,start_date,end_date,notes").gte("end_date", today) as never,
+          filter: (w) => w.end_date >= today,
+        }).then((r) => r.rows).catch(() => [] as WeekRow[]);
+        const offRows: VisitRow[] = weeks.map((w) => ({
+          id: "w:" + w.id, off: true, congregation_id: "", start_date: w.start_date, end_date: w.end_date,
+          title: offWeekTitle(w),
+        }));
+        const merged = [...list, ...offRows].sort((a, b) => a.start_date.localeCompare(b.start_date));
+        if (!cancelled) setRows(merged);
       } catch {
         if (!cancelled) setRows([]);
       }
@@ -81,8 +95,14 @@ export function UpcomingVisitsButton({ congregations }: Props) {
                 return (
                   <li key={v.id} className="py-2.5 flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="font-medium truncate">{nameOf(v.congregation_id)}</div>
-                      <div className="text-xs text-muted-foreground truncate">{v.title}</div>
+                      {v.off ? (
+                        <div className="font-medium truncate text-muted-foreground">{v.title}</div>
+                      ) : (
+                        <>
+                          <div className="font-medium truncate">{nameOf(v.congregation_id)}</div>
+                          <div className="text-xs text-muted-foreground truncate">{v.title}</div>
+                        </>
+                      )}
                     </div>
                     <div className="text-right shrink-0">
                       <div className="text-sm tabular-nums">{fmt(v.start_date)} – {fmt(v.end_date)}</div>

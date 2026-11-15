@@ -34,6 +34,7 @@ import {
   ListChecks,
   Compass,
   Share2,
+  MoreHorizontal,
   Image as ImageIcon,
   FileDown,
   MessageCircle,
@@ -46,6 +47,7 @@ import {
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { saveBlob } from "@/lib/share";
 import { DayDetailsDialog } from "@/components/dashboard/DayDetailsDialog";
 import { MeetingsTalksPanel } from "@/components/visit-summary/MeetingsTalksPanel";
@@ -95,8 +97,11 @@ export function VisitSummaryView({
   onRefresh,
   headerSlot,
   onEditEvent,
+  cardMenuItems,
 }: {
   snap: VisitSnapshot;
+  /** Quando definido, Partilhar e estes itens ficam num menu ⋯ dentro do cartão da visita. */
+  cardMenuItems?: Array<{ label: string; onSelect: () => void }>;
   onRefresh?: () => void;
   /** Conteúdo extra renderizado ao lado dos botões de Share (ex: botão de sair do guest). */
   headerSlot?: React.ReactNode;
@@ -272,13 +277,15 @@ export function VisitSummaryView({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end gap-1">
+      <div className={cardMenuItems && !headerSlot ? "contents" : "flex items-center justify-end gap-1"}>
         <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Share2 className="h-4 w-4 mr-1" /> {t("guest.share")}
-            </Button>
-          </DialogTrigger>
+          {!cardMenuItems && (
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Share2 className="h-4 w-4 mr-1" /> {t("guest.share")}
+              </Button>
+            </DialogTrigger>
+          )}
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>{t("guest.shareTitle")}</DialogTitle>
@@ -337,11 +344,33 @@ export function VisitSummaryView({
       ) : (
         <>
           <Card>
-            <CardContent className="p-4">
-              <h1 className="font-semibold">{snap.visit.title}</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {fmtDate(snap.visit.start_date)} — {fmtDate(snap.visit.end_date)}
-              </p>
+            <CardContent className="flex items-start gap-2 p-4">
+              <div className="min-w-0 flex-1">
+                <h1 className="font-semibold">{snap.visit.title}</h1>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {fmtDate(snap.visit.start_date)} — {fmtDate(snap.visit.end_date)}
+                </p>
+              </div>
+              {cardMenuItems && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="-mr-2 -mt-1 h-9 w-9 shrink-0 rounded-full"
+                      aria-label={t("guest.share")} title={t("guest.share")}>
+                      <MoreHorizontal className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => setShareOpen(true)}>
+                      <Share2 className="h-4 w-4 mr-2" />{t("guest.share")}
+                    </DropdownMenuItem>
+                    {cardMenuItems.map((it) => (
+                      <DropdownMenuItem key={it.label} onSelect={it.onSelect}>
+                        <FileDown className="h-4 w-4 mr-2" />{it.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </CardContent>
           </Card>
 

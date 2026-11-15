@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { buildMonthGrid } from "@/lib/month-grid";
 import { cn } from "@/lib/utils";
 
-export interface MonthVisit { id: string; title: string; start_date: string; end_date: string }
+export interface MonthVisit { id: string; title: string; start_date: string; end_date: string; /** Semana do itinerário sem congregação. */ off?: boolean }
 
 export function MonthCalendar({
   month, onMonthChange, selected, onSelect, events, visits, locale,
@@ -91,6 +91,21 @@ export function MonthCalendar({
                 </button>
               );
             })}
+            {(() => {
+              const ws = week[0].key, we = week[6].key;
+              const items = visits.filter((v) => v.start_date <= we && v.end_date >= ws);
+              if (items.length === 0) return null;
+              return (
+                <div className="col-span-7 flex flex-col gap-0.5 px-1 pb-1">
+                  {items.map((v) => (
+                    <span key={v.id} className={cn(
+                      "truncate rounded-full px-2 py-0.5 text-[11px] font-medium",
+                      v.off ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary",
+                    )}>{v.title}</span>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         ))}
       </div>

@@ -71,7 +71,10 @@ export function WeekdayCard({ plan, onChange, onRead, label, shortLabel, done, o
         <div className="space-y-2">
           {dayLate && <p className="rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs font-medium text-destructive" role="status">⚠ {t("guestWs.dayLate", { defaultValue: "Leitura deste dia atrasada" })}</p>}
           <p className="text-xs text-muted-foreground">{books.map(bn).join(" → ")} · {seq.filter((k) => done.has(k)).length}/{seq.length}</p>
-          <Button className={cn("h-11 w-full gap-2 rounded-xl", ((pending && day === new Date().getDay()) || dayLate) && "ring-2 ring-destructive ring-offset-2 ring-offset-background")} onClick={() => onRead(cur, day)}><Play className="h-4 w-4" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {(shortLabel ?? label)(cur)}{curSpan}</Button>
+          {/* Hoje: o "Continuar" com a porcentagem no topo já faz o mesmo. */}
+          {day !== today && (
+            <Button className={cn("h-11 w-full gap-2 rounded-xl", ((pending && day === new Date().getDay()) || dayLate) && "ring-2 ring-destructive ring-offset-2 ring-offset-background")} onClick={() => onRead(cur, day)}><Play className="h-4 w-4" />{t("guestWs.continue", { defaultValue: "Continuar" })} · {(shortLabel ?? label)(cur)}{curSpan}</Button>
+          )}
         </div>
       ) : allDone ? (
         <div className="space-y-2 text-center">

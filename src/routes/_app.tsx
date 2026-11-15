@@ -70,7 +70,11 @@ function AppLayout() {
   const focusChrome = useFocusChrome();
   const { t } = useTranslation();
   const titleKey = pageTitleKey(location.pathname);
-  const pageTitle = titleKey ? (t(titleKey) as string) : null;
+  // Cronograma mostra o nome do circuito cadastrado no perfil, quando existir.
+  const circuitName = profile?.circuit?.trim();
+  const pageTitle = location.pathname.startsWith("/cronograma") && circuitName
+    ? circuitName
+    : titleKey ? (t(titleKey) as string) : null;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const offlineAttention = useOfflineAttention();
   const [supportOpen, setSupportOpen] = useState(false);

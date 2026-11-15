@@ -201,35 +201,17 @@ function Page() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="sr-only text-2xl md:text-3xl font-bold">{t("sidebar.weekSummary")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {filteredSnap.congregation.name} • {t("weekSummary.subtitle")}
-          </p>
-        </div>
-        {filteredSnap.visit &&
-          (isSuper ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground"
-                  aria-label="Programação geral" title="Programação geral">
-                  <FileDown className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setGeneralOpen(true)}>Programação geral</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setReportOpen(true)}>Só cronograma</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <VisitWeekReportButton variant="icon" label="Programação geral" onClick={() => setGeneralOpen(true)} />
-          ))}
-      </div>
+      <h1 className="sr-only">{t("sidebar.weekSummary")}</h1>
       <VisitSummaryView
         snap={filteredSnap}
         onRefresh={() => activeCong?.id && load(activeCong.id)}
         onEditEvent={isSuper ? handleEditEvent : undefined}
+        cardMenuItems={isSuper
+          ? [
+              { label: "Programação geral", onSelect: () => setGeneralOpen(true) },
+              { label: "Só cronograma", onSelect: () => setReportOpen(true) },
+            ]
+          : [{ label: "Programação geral", onSelect: () => setGeneralOpen(true) }]}
       />
 
       <AlertDialog open={!!corruptId} onOpenChange={(o) => !o && setCorruptId(null)}>
