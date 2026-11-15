@@ -64,3 +64,11 @@
 - [x] Balão: trecho entre capítulos, versículo inexistente, mensagens claras
 - [x] Citações: ligação "e"
 - [ ] Citações: capítulo inteiro sem dois-pontos e ordinais/romanas (aguarda o usuário decidir, risco de links falsos)
+
+## Editor de esboços — Word e barra (15/11)
+- [x] Importação Word: recuo deslocado (estilos com herança), negrito em textos bíblicos, marca-texto/sombreamento
+- [x] Exportação Word: deslocado e marca-texto (ida e volta)
+- [x] Barra fixa + folhas "Aa" e "⋯"
+- [x] Barra personalizável por usuário
+- [x] Localizar e substituir (aviso em citação bíblica)
+- [x] Contador de palavras e tempo de fala (130 pal/min)

@@ -5,7 +5,7 @@
 - Native attachment writes go through chunked Filesystem writeFile/appendFile in outline-attachments.ts, because sending a whole file as one base64 string overflows the Capacitor bridge.
 - Collapsible outline topics are a TipTap block node wrapping ordinary blocks (div[data-type=outline-topic]), with collapsed state kept only in device localStorage, so formatting, indent and Bible-ref detection keep working unchanged.
 - Collapse/expand state in visit tabs and template editors is device-local presentation state (localStorage via collapsible-blocks.tsx); collapsed content is hidden, never unmounted, so drafts and unsaved inputs survive.
-- Word indentation is normalized once (word-paste-cleaner.ts) into margin-left (block) and text-indent (first line), 32px steps; leading tabs are first-line only in long prose, so outlines keep their hierarchy.
+- Word indents normalize once (word-paste-cleaner.ts) to margin-left (32px) plus firstLine: >0 text-indent 32px, <0 hanging 16px; level ignores hanging, so hierarchy and round-trips hold.
 - DOCX outline import runs only on the device (docx-import.ts) with file-size, unzip-size and entry limits, rejects DOCTYPE/ENTITY and macros, and feeds the same Word paste normalizer and note sanitizer, because imported files are untrusted input.
 - The dashboard groups existing cards into swipeable pages at every width (DashboardPager, CSS scroll-snap, no viewport hook so SSR matches): the visible page mounts first, the rest mount on idle and are never unmounted, because card state must survive tab switches.
 - The personal outlines screen lazy-loads the TipTap editor (React.lazy + idle prewarm) so the list opens first; editor props and save flow stay unchanged.

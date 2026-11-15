@@ -1,3 +1,5 @@
+import { wordHighlightToColor } from "./highlight-palette";
+
 /**
  * Limpa o HTML colado do Microsoft Word/Office antes de entrar no editor de
  * esboços. Função pura (só strings) — conteúdo que NÃO veio do Word volta
@@ -55,21 +57,36 @@ function normalizeIndent(style: string, dropIndent: boolean): string {
   }
   if (dropIndent) return rest.join(";");
   const tabs = /x-tab-indent:\s*([\d.]+)px/i.exec(style);
+  // Recuo deslocado (text-indent negativo): 1ª linha na margem do bloco e as
+  // linhas seguintes mais para dentro, em degraus de 16px no editor.
+  const hang = ti <= -4 ? hangLevel(-ti) : 0;
+  const hangStyle = hang ? [`padding-left:${hang * 16}px`, `text-indent:-${hang * 16}px`] : [];
   if (forced !== null) {
     // Esboços oficiais (Indent0..N): Tab inicial continua somando degraus de bloco.
     const lvl = Math.min(8, forced + Math.round(((tabs ? parseFloat(tabs[1]) : 0) + lead) / 48));
     if (lvl) rest.push(`margin-left:${lvl * 32}px`);
+    rest.push(...hangStyle);
     return rest.join(";");
   }
-  // Recuo de bloco (margem) e recuo da 1ª linha (text-indent positivo ou
-  // Tab no começo) ficam separados, como no Word. Deslocamento negativo
-  // (hanging) mantém só a margem.
-  const lvl = indentLevel(ml);
+  // Recuo de bloco (margem), recuo da 1ª linha (text-indent positivo ou Tab
+  // no começo) e deslocado ficam separados, como no Word. No deslocado, o
+  // degrau do bloco é medido perto da 1ª linha (+12px), para que um arquivo
+  // exportado pelo app volte com o mesmo nível.
+  const lvl = indentLevel(hang ? Math.max(0, ml + ti + 12) : ml);
+  if (lvl) rest.push(`margin-left:${lvl * 32}px`);
+  if (hang && !lead) {
+    rest.push(...hangStyle);
+    return rest.join(";");
+  }
   const firstPx = Math.max(0, ti) + lead;
   const first = firstPx >= 16 ? firstLineLevel(firstPx) : 0;
-  if (lvl) rest.push(`margin-left:${lvl * 32}px`);
   if (first) rest.push(`text-indent:${first * 32}px`);
   return rest.join(";");
+}
+
+/** ~0,63 cm (24px do Word) = 1 degrau de deslocado (16px no editor), até 4. */
+export function hangLevel(px: number): number {
+  return Math.min(4, Math.max(1, Math.round(px / 24)));
 }
 
 /** 1,25 cm (~48px) = 1 degrau de 1ª linha (32px no editor), até 4. */
@@ -317,6 +334,7 @@ export function cleanWordHtml(html: string): string {
   out = convertTabs(out);
   out = convertLeadingWhitespace(out);
   out = convertLists(out);
+  out = convertHighlights(out);
   // Títulos com negrito definido na classe (ex.: JWHEADING) entram em negrito.
   out = out.replace(/<(p|h[1-6])\b([^>]*x-bold:1[^>]*)>([\s\S]*?)<\/\1>/gi, "<$1$2><b>$3</b></$1>");
   // Âncoras internas do Word (<a name="_Hlk...">) sem link.
@@ -333,7 +351,21 @@ export function cleanWordHtml(html: string): string {
     .replace(/<(\/?)h[4-6]\b/gi, "<$1h3")
     .replace(INVISIBLE_RE, "");
   out = cleanAttributes(out);
+  // Marca-texto: data-hl vira a marca do editor (cor da paleta).
+  out = out.replace(/<mark data-hl="#?([0-9a-f]{6})">/gi, (_m, h: string) => `<mark data-color="#${h.toLowerCase()}" style="background-color:#${h.toLowerCase()}">`);
   // Spans que ficaram sem atributos são só embalagem.
   out = out.replace(/<span>([\s\S]*?)<\/span>/gi, "$1");
   return out.trim();
+}
+
+/** Marca-texto do Word colado (mso-highlight) em spans simples, sem spans aninhados. */
+function convertHighlights(html: string): string {
+  return html.replace(
+    /<span\b([^>]*?mso-highlight:\s*([a-z]+)[^>]*)>((?:(?!<\/?span\b)[\s\S])*?)<\/span>/gi,
+    (full, _attrs: string, name: string, inner: string) => {
+      const color = wordHighlightToColor(name);
+      if (!color || !inner.replace(/<[^>]*>/g, "").trim()) return full;
+      return `<mark data-hl="${color.slice(1)}">${inner}</mark>`;
+    },
+  );
 }

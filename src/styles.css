@@ -752,3 +752,13 @@ main [role="tabpanel"] [role="tab"][data-state="active"] {
 @font-face { font-family: "ReaderLato"; src: url("/fonts/letter/Lato-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
 .reader-font-serif { font-family: "ReaderLora", Georgia, serif; }
 .reader-font-easy { font-family: "ReaderLato", var(--font-sans); letter-spacing: 0.02em; word-spacing: 0.08em; }
+
+/* Localizar e substituir no editor de esboços (só na tela). */
+.ProseMirror .search-hit {
+  background-color: color-mix(in oklab, var(--primary) 18%, transparent);
+  border-radius: 2px;
+}
+.ProseMirror .search-hit-current {
+  background-color: color-mix(in oklab, var(--primary) 38%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 70%, transparent);
+}

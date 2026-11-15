@@ -9,6 +9,7 @@
  */
 import JSZip from "jszip";
 import { cleanWordHtml, leadTabKey } from "./word-paste-cleaner";
+import { nearestHighlight, wordHighlightToColor } from "./highlight-palette";
 
 export const DOCX_MAX_BYTES = 10 * 1024 * 1024;
 export const DOCX_MAX_UNZIPPED = 50 * 1024 * 1024;
@@ -61,7 +62,13 @@ function isOn(xml: string, name: string): boolean {
   return v === null || !/^(0|false|none)$/i.test(v);
 }
 
-type StyleInfo = { name: string; basedOn?: string; left?: number; hanging?: number; bold?: boolean };
+type StyleInfo = { name: string; basedOn?: string; left?: number; hanging?: number; firstLine?: number; bold?: boolean };
+
+function num(v: string | null | undefined): number | undefined {
+  if (v === null || v === undefined) return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
 
 function parseStyles(xml: string): Record<string, StyleInfo> {
   const out: Record<string, StyleInfo> = {};
@@ -77,8 +84,9 @@ function parseStyles(xml: string): Record<string, StyleInfo> {
     out[id] = {
       name: (nameTag && attr(nameTag, "w:val")) || id,
       basedOn: (based && attr(based, "w:val")) || undefined,
-      left: ind ? Number(attr(ind, "w:left") ?? attr(ind, "w:start") ?? NaN) : undefined,
-      hanging: ind ? Number(attr(ind, "w:hanging") ?? NaN) : undefined,
+      left: ind ? num(attr(ind, "w:left") ?? attr(ind, "w:start")) : undefined,
+      hanging: ind ? num(attr(ind, "w:hanging")) : undefined,
+      firstLine: ind ? num(attr(ind, "w:firstLine")) : undefined,
       bold: rPr ? isOn(rPr[1], "w:b") : undefined,
     };
   }
@@ -93,8 +101,13 @@ function resolveStyle(styles: Record<string, StyleInfo>, id: string | null): Sty
     const s = styles[cur];
     res.chain.push(s.name, cur);
     if (!res.name) res.name = s.name;
-    if (res.left === undefined && s.left !== undefined && !Number.isNaN(s.left)) res.left = s.left;
-    if (res.hanging === undefined && s.hanging !== undefined && !Number.isNaN(s.hanging)) res.hanging = s.hanging;
+    if (res.left === undefined && s.left !== undefined) res.left = s.left;
+    // Deslocado e 1ª linha se excluem no Word: o estilo mais próximo que
+    // define um dos dois decide (ex.: "JW Indent 1" herda o deslocado do 0).
+    if (res.hanging === undefined && res.firstLine === undefined && (s.hanging !== undefined || s.firstLine !== undefined)) {
+      res.hanging = s.hanging ?? 0;
+      res.firstLine = s.firstLine ?? 0;
+    }
     if (res.bold === undefined && s.bold !== undefined) res.bold = s.bold;
     cur = s.basedOn ?? null;
   }
@@ -139,13 +152,19 @@ function runsToHtml(p: string): { html: string; leadingTabs: number } {
     const rPr = rPrM ? rPrM[1] : "";
     const body = rPrM ? m[1].replace(rPrM[0], "") : m[1];
     let text = "";
-    const tre = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>|<w:tab\b[^>]*\/>|<w:br\b[^>]*\/>/g;
+    const tre = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>|<w:tab\b[^>]*\/>|<w:br\b[^>]*\/>|<w:noBreakHyphen\b[^>]*\/>|<w:softHyphen\b[^>]*\/>/g;
     let t: RegExpExecArray | null;
     while ((t = tre.exec(body))) {
       if (t[1] !== undefined) {
         const s = decodeXml(t[1]);
         if (s.trim()) started = true;
         text += escapeHtml(s);
+      } else if (t[0].startsWith("<w:noBreakHyphen")) {
+        // Hífen sem quebra do Word ("10‑12"): sem ele "1Sa 16:10-12" virava "1012".
+        started = true;
+        text += "-";
+      } else if (t[0].startsWith("<w:softHyphen")) {
+        continue;
       } else if (t[0].startsWith("<w:tab")) {
         if (!started && !text.trim()) leadingTabs++;
         else text += " ";
@@ -158,9 +177,24 @@ function runsToHtml(p: string): { html: string; leadingTabs: number } {
     const c = firstTag(rPr, "w:color");
     const cv = c ? attr(c, "w:val") : null;
     if (cv && /^[0-9a-f]{6}$/i.test(cv) && !/^000000$/.test(cv)) text = `<span style="color:#${cv}">${text}</span>`;
+    const hl = runHighlight(rPr);
+    if (hl) text = `<mark data-hl="${hl.slice(1)}">${text}</mark>`;
     html += text;
   }
   return { html, leadingTabs };
+}
+
+/** Marca-texto (w:highlight) ou sombreamento do trecho (w:shd fill) → cor da paleta. */
+function runHighlight(rPr: string): string | null {
+  const h = firstTag(rPr, "w:highlight");
+  if (h) {
+    const c = wordHighlightToColor(attr(h, "w:val"));
+    if (c) return c;
+  }
+  const shd = firstTag(rPr, "w:shd");
+  const fill = shd ? attr(shd, "w:fill") : null;
+  if (fill && /^[0-9a-f]{6}$/i.test(fill)) return nearestHighlight(fill);
+  return null;
 }
 
 /** Converte o XML do Word (já extraído) em HTML do editor. Função pura. */
@@ -200,14 +234,22 @@ export function docxXmlToHtml(documentXml: string, stylesXml = "", numberingXml 
       }
     }
     const style: string[] = [];
+    const ind = firstTag(pPr, "w:ind");
+    // O parágrafo vale mais que o estilo; deslocado e 1ª linha se excluem.
+    const pHang = ind ? num(attr(ind, "w:hanging")) : undefined;
+    const pFirst = ind ? num(attr(ind, "w:firstLine")) : undefined;
+    const own = pHang !== undefined || pFirst !== undefined;
+    const hanging = (own ? pHang : st.hanging) ?? 0;
+    const first = (own ? pFirst : st.firstLine) ?? 0;
     const lvlByName = /indent\s*(\d)/i.exec(names);
-    if (lvlByName) style.push(`x-level:${lvlByName[1]}`);
-    else {
-      const ind = firstTag(pPr, "w:ind");
-      const left = Number((ind && (attr(ind, "w:left") ?? attr(ind, "w:start"))) ?? st.left ?? 0) || 0;
-      const first = Number((ind && attr(ind, "w:firstLine")) ?? 0) || 0;
+    if (lvlByName) {
+      style.push(`x-level:${lvlByName[1]}`);
+      if (hanging > 0) style.push(`text-indent:-${hanging / 20}pt`);
+    } else {
+      const left = (ind ? num(attr(ind, "w:left") ?? attr(ind, "w:start")) : undefined) ?? st.left ?? 0;
       if (left > 0) style.push(`margin-left:${left / 20}pt`);
-      if (first > 0) style.push(`text-indent:${first / 20}pt`);
+      if (hanging > 0) style.push(`text-indent:-${hanging / 20}pt`);
+      else if (first > 0) style.push(`text-indent:${first / 20}pt`);
     }
     if (leadingTabs) style.push(`${leadTabKey(html)}:${leadingTabs * 48}px`);
     const bold = st.bold || /jwheading/i.test(names.replace(/\s/g, ""));

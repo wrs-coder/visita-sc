@@ -301,6 +301,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Igual a useAuth, mas devolve undefined fora do AuthProvider (ex.: telas de convidado). */
+export function useAuthOptional() {
+  return useContext(AuthContext);
+}
+
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");

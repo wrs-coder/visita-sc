@@ -698,7 +698,9 @@ export function VerseLink({
           <button
             type="button"
             className={cn(
-              "text-sky-600 dark:text-sky-400 underline-offset-2 hover:underline font-medium",
+              // Dentro de negrito (ex.: "[Leia Provérbios 18:24.]" vindo do Word) o
+              // link acompanha o negrito em vez de ficar só "médio".
+              "text-sky-600 dark:text-sky-400 underline-offset-2 hover:underline font-medium [b_&]:font-bold [strong_&]:font-bold",
               className,
             )}
             style={fontScale !== 1 ? { fontSize: `${fontScale}em` } : undefined}

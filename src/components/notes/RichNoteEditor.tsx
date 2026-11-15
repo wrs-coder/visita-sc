@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { Extension } from "@tiptap/core";
-import { firstLineFromElement, nextFirstLine, type FirstLineAttrs } from "@/lib/first-line-indent";
+import { cycleFirstLine, firstLineFromElement, firstLineStyle, nextFirstLine, type FirstLineAttrs } from "@/lib/first-line-indent";
+import { countWords, speakingMinutes } from "@/lib/word-counter";
 import StarterKit from "@tiptap/starter-kit";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
@@ -26,6 +27,8 @@ import { Focus as TiptapFocus } from "@tiptap/extension-focus";
 import { RichNoteToolbar } from "./RichNoteToolbar";
 import { FontSize } from "./extensions/font-size";
 import { OutlineTopic } from "./extensions/outline-topic";
+import { SearchReplace } from "./extensions/search-replace";
+import { RichNoteSearchBar } from "./RichNoteSearchBar";
 import { OutlineAttachmentsBar } from "./OutlineAttachmentsBar";
 import { AttachmentAddDialog } from "./AttachmentAddDialog";
 import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
@@ -66,7 +69,7 @@ function keepPastedIndent(slice: Slice): Slice {
   const first = slice.content.firstChild;
   if (!first || slice.openStart === 0 || !first.isTextblock) return slice;
   const a = first.attrs as { indent?: number; firstLine?: number };
-  if (!(Number(a.indent) > 0 || Number(a.firstLine) > 0)) return slice;
+  if (!(Number(a.indent) > 0 || Number(a.firstLine) !== 0)) return slice;
   return new Slice(slice.content, 0, slice.openEnd);
 }
 
@@ -90,9 +93,12 @@ const IndentExtension = Extension.create({
             parseHTML: (element) => {
               const el = element as HTMLElement;
               const style = el.getAttribute("style") || "";
+              // No recuo deslocado o padding-left é das linhas seguintes,
+              // não do bloco.
+              const hanging = (parseFloat(el.style.textIndent) || 0) < 0;
               const ml =
                 parseFloat(el.style.marginLeft) ||
-                parseFloat(el.style.paddingLeft) ||
+                (hanging ? 0 : parseFloat(el.style.paddingLeft)) ||
                 0;
               // Recuo da 1ª linha (text-indent) é guardado à parte, em firstLine.
               const total = ml;
@@ -114,14 +120,14 @@ const IndentExtension = Extension.create({
               return { style: `margin-left: ${lvl * 32}px` };
             },
           },
-          // Recuo só da primeira linha, igual ao Word (0–4 degraus de 32px).
+          // 1ª linha (positivo, degraus de 32px) ou deslocado (negativo,
+          // degraus de 16px), igual ao Word.
           firstLine: {
             default: 0,
             parseHTML: (element) => firstLineFromElement(element as HTMLElement),
             renderHTML: (attrs) => {
-              const lvl = Number(attrs.firstLine) || 0;
-              if (!lvl) return {};
-              return { style: `text-indent: ${lvl * 32}px` };
+              const style = firstLineStyle(Number(attrs.firstLine) || 0);
+              return style ? { style } : {};
             },
           },
         },
@@ -176,10 +182,39 @@ const IndentExtension = Extension.create({
       if (changed && dispatch) dispatch(tr);
       return changed;
     };
+    // Normal → 1ª linha → Deslocado → Normal (o 1º parágrafo decide o passo).
+    const cycleFirstLineCmd = () => ({
+      state,
+      dispatch,
+    }: {
+      state: import("@tiptap/pm/state").EditorState;
+      dispatch?: (tr: import("@tiptap/pm/state").Transaction) => void;
+    }) => {
+      const { from, to } = state.selection;
+      const tr = state.tr;
+      let mode: "none" | "first" | "hanging" | null = null;
+      let changed = false;
+      state.doc.nodesBetween(from, to, (node, pos) => {
+        if (!this.options.types.includes(node.type.name)) return;
+        const a = node.attrs as FirstLineAttrs;
+        const fl = Number(a.firstLine) || 0;
+        if (mode === null) mode = fl > 0 ? "first" : fl < 0 ? "hanging" : "none";
+        const indent = Number(a.indent) || 0;
+        const next: FirstLineAttrs =
+          mode === "none" ? cycleFirstLine({ indent, firstLine: 0 })
+          : mode === "first" ? { indent, firstLine: -1 }
+          : { indent, firstLine: 0 };
+        tr.setNodeMarkup(pos, undefined, { ...node.attrs, ...next });
+        changed = true;
+      });
+      if (changed && dispatch) dispatch(tr);
+      return changed;
+    };
     return {
       indentBlock: change(1),
       outdentBlock: change(-1),
       toggleFirstLine,
+      cycleFirstLine: cycleFirstLineCmd,
     } as never;
   },
 });
@@ -215,6 +250,7 @@ export function RichNoteEditor({
   const kbVisible = useVirtualKeyboardVisible();
   const lastEmittedRef = useRef<string>("");
   const [attachDialog, setAttachDialog] = useState<"photo" | "link" | "videoFile" | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   // Tick para forçar leitura do CharacterCount após updates de conteúdo.
   const [, setTick] = useState(0);
 
@@ -238,6 +274,8 @@ export function RichNoteEditor({
         // Contagem viva de palavras e caracteres (sem custo perceptível;
         // o storage é exposto pelo editor.storage.characterCount).
         CharacterCount.configure({}),
+        // Localizar e substituir: só destaca na tela, não muda o HTML salvo.
+        SearchReplace,
         // Marca o bloco com `.has-focus` para o modo foco dimar os demais.
         TiptapFocus.configure({ className: "has-focus", mode: "all" }),
         Link.configure({
@@ -317,15 +355,30 @@ export function RichNoteEditor({
     lastEmittedRef.current = value;
   }, [value, editor]);
 
-  // Esconde toolbar quando o teclado recolhe e o editor não tem foco (mobile).
-  const toolbarVisible = focused || !kbVisible;
+  // Contador acompanha também a seleção (palavras do trecho marcado).
+  useEffect(() => {
+    if (!editor) return;
+    const upd = () => setTick((n) => (n + 1) % 1_000_000);
+    editor.on("selectionUpdate", upd);
+    return () => { editor.off("selectionUpdate", upd); };
+  }, [editor]);
 
-  // Stats vivas (CharacterCount). Reading time ≈ 200 palavras/min.
-  type CharCountStorage = { words: () => number; characters: () => number };
+  // Esconde toolbar quando o teclado recolhe e o editor não tem foco (mobile).
+  // Com a busca aberta, o foco fica no campo de busca e a barra continua.
+  const toolbarVisible = focused || !kbVisible || searchOpen;
+
+  // Contador de palavras e tempo de fala (130 palavras/min).
+  type CharCountStorage = { characters: () => number };
   const cc = editor?.storage.characterCount as CharCountStorage | undefined;
-  const words = cc?.words?.() ?? 0;
   const chars = cc?.characters?.() ?? 0;
-  const readingMin = Math.max(1, Math.round(words / 200));
+  let words = 0;
+  let selWords = 0;
+  if (editor && !editor.isDestroyed) {
+    const { doc, selection } = editor.state;
+    words = countWords(doc.textBetween(0, doc.content.size, " ", " "));
+    if (!selection.empty) selWords = countWords(doc.textBetween(selection.from, selection.to, " ", " "));
+  }
+  const speakMin = speakingMinutes(selWords || words);
   const showFooter = focused || words > 0;
 
   return (
@@ -367,7 +420,12 @@ export function RichNoteEditor({
         onAddPhotoAttachment={onAttachmentsChange ? () => setAttachDialog("photo") : undefined}
         onAddVideoAttachment={onAttachmentsChange ? () => setAttachDialog("videoFile") : undefined}
         onAddLinkAttachment={onAttachmentsChange ? () => setAttachDialog("link") : undefined}
+        onOpenSearch={() => setSearchOpen(true)}
       />}
+
+      {editor && searchOpen && (
+        <RichNoteSearchBar editor={editor} onClose={() => { setSearchOpen(false); editor.chain().focus().run(); }} />
+      )}
 
       {onAttachmentsChange && attachments && attachments.length > 0 && (
         <OutlineAttachmentsBar
@@ -382,24 +440,23 @@ export function RichNoteEditor({
           className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/90 px-3 py-1 text-[11px] text-muted-foreground backdrop-blur"
           aria-live="polite"
         >
-          <span>
+          <span title={t("personalOutlines.editor.stats.chars", { defaultValue: "{{count}} caracteres", count: chars })}>
+            {selWords > 0 && (
+              <span className="font-medium text-foreground">
+                {t("personalOutlines.editor.stats.selection", { defaultValue: "Seleção:" })}{" "}
+              </span>
+            )}
             {t("personalOutlines.editor.stats.words", {
-              defaultValue: "{{count}} palavras",
-              count: words,
+              defaultValue: "{{formattedCount}} palavras",
+              count: selWords || words,
+              formattedCount: (selWords || words).toLocaleString(),
             })}
           </span>
           <span aria-hidden>·</span>
           <span>
-            {t("personalOutlines.editor.stats.chars", {
-              defaultValue: "{{count}} caracteres",
-              count: chars,
-            })}
-          </span>
-          <span aria-hidden>·</span>
-          <span>
-            {t("personalOutlines.editor.stats.reading", {
-              defaultValue: "~{{min}} min de leitura",
-              min: readingMin,
+            {t("personalOutlines.editor.stats.speaking", {
+              defaultValue: "~{{min}} min de fala",
+              min: speakMin,
             })}
           </span>
         </div>

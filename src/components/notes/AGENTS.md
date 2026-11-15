@@ -1,0 +1,1 @@
+- The editor toolbar is one fixed row (undo + per-user ids from note-toolbar-prefs.ts + Aa + ⋯) with non-modal bottom sheets that never take focus from the editor; find/replace is decoration-only (search-replace.ts) and warns before touching Bible citations, because saved HTML and the keyboard must stay untouched.

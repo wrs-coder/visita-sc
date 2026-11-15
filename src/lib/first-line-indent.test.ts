@@ -4,11 +4,13 @@ import { firstLineFromElement, nextFirstLine } from "./first-line-indent";
 import { htmlToDocxBody } from "./docx-export";
 
 describe("recuo da 1ª linha", () => {
-  it("lê só text-indent positivo, em degraus de 32px até 4", () => {
+  it("lê text-indent positivo (1ª linha, 32px) e negativo (deslocado, 16px)", () => {
     expect(firstLineFromElement({ style: { textIndent: "32px" } })).toBe(1);
     expect(firstLineFromElement({ style: { textIndent: "64px" } })).toBe(2);
     expect(firstLineFromElement({ style: { textIndent: "400px" } })).toBe(4);
-    expect(firstLineFromElement({ style: { textIndent: "-20px" } })).toBe(0);
+    expect(firstLineFromElement({ style: { textIndent: "-16px" } })).toBe(-1);
+    expect(firstLineFromElement({ style: { textIndent: "-32px" } })).toBe(-2);
+    expect(firstLineFromElement({ style: { textIndent: "-2px" } })).toBe(0);
     expect(firstLineFromElement({ style: { textIndent: "" } })).toBe(0);
   });
   it("ligar num parágrafo antigo com recuo de bloco troca o bloco pela 1ª linha", () => {

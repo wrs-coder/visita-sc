@@ -12,24 +12,54 @@ function xmlEsc(s: string): string {
   return s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-type Fmt = { b?: boolean; i?: boolean; u?: boolean; color?: string };
-type Para = { style?: string; leftPx: number; firstPx?: number; runs: string[]; prefix?: string; rule?: boolean };
+type Fmt = { b?: boolean; i?: boolean; u?: boolean; color?: string; hl?: string };
+type Para = { style?: string; leftPx: number; firstPx?: number; hangPx?: number; runs: string[]; prefix?: string; rule?: boolean };
 
 function run(text: string, f: Fmt): string {
   if (!text) return "";
-  const pr = [f.b ? "<w:b/>" : "", f.i ? "<w:i/>" : "", f.u ? '<w:u w:val="single"/>' : "", f.color ? `<w:color w:val="${f.color}"/>` : ""].join("");
+  const pr = [
+    f.b ? "<w:b/>" : "",
+    f.i ? "<w:i/>" : "",
+    f.u ? '<w:u w:val="single"/>' : "",
+    f.color ? `<w:color w:val="${f.color}"/>` : "",
+    // Marca-texto como sombreamento do trecho: guarda a cor exata e volta
+    // igual ao importar de novo.
+    f.hl ? `<w:shd w:val="clear" w:color="auto" w:fill="${f.hl}"/>` : "",
+  ].join("");
   return `<w:r>${pr ? `<w:rPr>${pr}</w:rPr>` : ""}<w:t xml:space="preserve">${xmlEsc(text)}</w:t></w:r>`;
 }
 
+function hex6(h: string): string {
+  return (h.length === 3 ? h.split("").map((c) => c + c).join("") : h).toUpperCase();
+}
+
+/** Cor do texto (só a propriedade color, nunca background-color). */
 function cssColor(style: string): string | undefined {
-  const m = /color:\s*#([0-9a-f]{6}|[0-9a-f]{3})\b/i.exec(style);
-  if (!m) return undefined;
-  const h = m[1].length === 3 ? m[1].split("").map((c) => c + c).join("") : m[1];
-  return h.toUpperCase();
+  const m = /(?:^|;)\s*color:\s*#([0-9a-f]{6}|[0-9a-f]{3})\b/i.exec(style);
+  return m ? hex6(m[1]) : undefined;
+}
+
+function markColor(el: HTMLElement): string | undefined {
+  const data = /^#([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(el.getAttribute("data-color") ?? "");
+  if (data) return hex6(data[1]);
+  const st = el.getAttribute("style") ?? "";
+  const m = /background-color:\s*#([0-9a-f]{6}|[0-9a-f]{3})\b/i.exec(st);
+  if (m) return hex6(m[1]);
+  const r = /background-color:\s*rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i.exec(st);
+  if (r) return [r[1], r[2], r[3]].map((n) => Math.min(255, Number(n)).toString(16).padStart(2, "0")).join("").toUpperCase();
+  return "FEF08A";
 }
 
 function firstLinePx(style: string): number {
   const m = /text-indent:\s*([\d.]+)(px|pt)?/i.exec(style);
+  if (!m) return 0;
+  const v = Number(m[1]);
+  return m[2] === "pt" ? v * (4 / 3) : v;
+}
+
+/** Recuo deslocado do editor (text-indent negativo) em px. */
+function hangingPx(style: string): number {
+  const m = /text-indent:\s*-([\d.]+)(px|pt)?/i.exec(style);
   if (!m) return 0;
   const v = Number(m[1]);
   return m[2] === "pt" ? v * (4 / 3) : v;
@@ -42,10 +72,11 @@ function marginPx(style: string): number {
   return m[2] === "pt" ? v * (4 / 3) : m[2] === "em" ? v * 16 : v;
 }
 
-function indXml(left: number, first: number, hanging: boolean): string {
-  if (left <= 0 && first <= 0) return "";
+function indXml(left: number, first: number, hanging: boolean | number): string {
+  const hangTw = hanging === true ? 360 : typeof hanging === "number" ? hanging : 0;
+  if (left <= 0 && first <= 0 && hangTw <= 0) return "";
   const l = left > 0 ? ` w:left="${left}"` : "";
-  const extra = hanging ? ' w:hanging="360"' : first > 0 ? ` w:firstLine="${first}"` : "";
+  const extra = hangTw > 0 ? ` w:hanging="${hangTw}"` : first > 0 ? ` w:firstLine="${first}"` : "";
   return `<w:ind${l}${extra}/>`;
 }
 
@@ -73,6 +104,7 @@ export function htmlToDocxBody(title: string, html: string): string {
     if (tag === "b" || tag === "strong" || /font-weight:\s*(bold|[6-9]00)/i.test(style)) nf.b = true;
     if (tag === "i" || tag === "em") nf.i = true;
     if (tag === "u") nf.u = true;
+    if (tag === "mark") nf.hl = markColor(el);
     const c = cssColor(style);
     if (c) nf.color = c;
     if (tag === "br") { ensure(leftPx).runs.push("<w:r><w:br/></w:r>"); return; }
@@ -104,7 +136,7 @@ export function htmlToDocxBody(title: string, html: string): string {
       const lp = leftPx + marginPx(style);
       const h = /^h([1-6])$/.exec(tag);
       const hasBlockKids = Array.from(el.children).some((k) => /^(p|div|h[1-6]|ul|ol|blockquote|section)$/i.test(k.tagName));
-      if (!hasBlockKids) cur = { leftPx: lp, firstPx: firstLinePx(style), runs: [], style: h ? (Number(h[1]) <= 2 ? "Heading1" : "Heading2") : undefined };
+      if (!hasBlockKids) cur = { leftPx: lp, firstPx: firstLinePx(style), hangPx: hangingPx(style), runs: [], style: h ? (Number(h[1]) <= 2 ? "Heading1" : "Heading2") : undefined };
       kids(lp);
       flush();
       return;
@@ -119,7 +151,9 @@ export function htmlToDocxBody(title: string, html: string): string {
     .map((p) => {
       const twips = Math.round((p.leftPx / 32) * 720);
       if (p.rule) return `<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="1" w:color="7F7F7F"/></w:pBdr><w:spacing w:before="240" w:after="240"/></w:pPr></w:p>`;
-      const ppr = [p.style ? `<w:pStyle w:val="${p.style}"/>` : "", indXml(twips, p.prefix ? 0 : Math.round(((p.firstPx ?? 0) / 32) * 720), !!p.prefix)].join("");
+      // Deslocado: no Word a margem (w:left) é a das linhas seguintes.
+      const hangTw = !p.prefix && p.hangPx ? Math.round((p.hangPx / 32) * 720) : 0;
+      const ppr = [p.style ? `<w:pStyle w:val="${p.style}"/>` : "", indXml(twips + hangTw, p.prefix || hangTw ? 0 : Math.round(((p.firstPx ?? 0) / 32) * 720), p.prefix ? true : hangTw)].join("");
       let prefix = "";
       if (p.prefix === "ol") { const n = (counters.get(twips) ?? 0) + 1; counters.set(twips, n); prefix = `${n}.\t`; }
       else if (p.prefix === "ul") prefix = "•\t";

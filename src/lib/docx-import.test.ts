@@ -40,7 +40,7 @@ describe("docx import", () => {
       doc(p("T", '<w:pStyle w:val="Heading1"/>') + p("A", '<w:ind w:left="1418" w:hanging="300"/>', '<w:b/><w:color w:val="C00000"/>')),
       styles,
     );
-    expect(html).toBe('<h2>T</h2><p style="margin-left:64px"><span style="color:#C00000"><b>A</b></span></p>');
+    expect(html).toBe('<h2>T</h2><p style="margin-left:64px;padding-left:16px;text-indent:-16px"><span style="color:#C00000"><b>A</b></span></p>');
   });
 
   it("escapes markup inside text so scripts never become tags", () => {
@@ -82,7 +82,7 @@ describe("paste of official outlines", () => {
   const head = `<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><style><!-- p.JWIndent0{margin-left:7.1pt;text-indent:-7.1pt} p.JWIndent2{margin-left:35.45pt;text-indent:-14.2pt} p.JWHEADING{font-weight:bold} --></style></head><body>`;
   it("uses the class number as the step and bolds headings", () => {
     const out = cleanWordHtml(`${head}<p class=JWHEADING>VÍDEO</p><p class=JWIndent0>A</p><p class=JWIndent2>B</p></body></html>`);
-    expect(out).toBe('<p><b>VÍDEO</b></p><p>A</p><p style="margin-left:64px">B</p>');
+    expect(out).toBe('<p><b>VÍDEO</b></p><p style="padding-left:16px;text-indent:-16px">A</p><p style="margin-left:64px;padding-left:16px;text-indent:-16px">B</p>');
   });
   it("removes internal Word bookmarks", () => {
     expect(cleanWordHtml(`${head}<p class=MsoNormal><a name="_Hlk239955865"><b>X</b></a></p></body></html>`)).toBe("<p><b>X</b></p>");
