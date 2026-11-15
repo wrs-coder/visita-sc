@@ -165,7 +165,7 @@ function HelpPage() {
   return (
     <div className="mx-auto max-w-xl space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Ajuda</h1>
+        <h1 className="sr-only text-2xl font-bold">Ajuda</h1>
         <button
           type="button"
           onClick={close}

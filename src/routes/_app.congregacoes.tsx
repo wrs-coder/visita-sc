@@ -313,7 +313,7 @@ function Page() {
       <div hidden={section !== "congregations"} className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold flex items-center gap-2">
+          <h1 className="sr-only text-lg font-semibold flex items-center gap-2">
             <Building2 className="h-5 w-5" /> {t("congregations.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">

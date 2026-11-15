@@ -136,7 +136,7 @@ function Page() {
       <VisitProgramTabs />
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">{t("meals.title")}</h1>
+          <h1 className="sr-only text-2xl md:text-3xl font-bold">{t("meals.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {isSuper ? t("meals.subtitleSuper") : t("meals.subtitleElder")}
           </p>

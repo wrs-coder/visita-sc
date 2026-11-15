@@ -185,7 +185,7 @@ function Page() {
   if (!activeCong) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl md:text-3xl font-bold">{t("sidebar.weekSummary")}</h1>
+        <h1 className="sr-only text-2xl md:text-3xl font-bold">{t("sidebar.weekSummary")}</h1>
         <Card>
           <CardContent className="p-6 text-sm text-muted-foreground text-center">
             {t("weekSummary.selectCongregation")}
@@ -203,7 +203,7 @@ function Page() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">{t("sidebar.weekSummary")}</h1>
+          <h1 className="sr-only text-2xl md:text-3xl font-bold">{t("sidebar.weekSummary")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {filteredSnap.congregation.name} • {t("weekSummary.subtitle")}
           </p>

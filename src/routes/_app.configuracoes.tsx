@@ -486,7 +486,7 @@ function Page() {
   return (
     <div className="space-y-5">
       <CircuitHeader />
-      {!isSuper && <h1 className="text-2xl md:text-3xl font-bold">{t("itinerary.title")}</h1>}
+      {!isSuper && <h1 className="sr-only text-2xl md:text-3xl font-bold">{t("itinerary.title")}</h1>}
 
       <Card hidden={isSuper}>
         <CardContent className="p-5">

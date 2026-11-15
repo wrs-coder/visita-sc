@@ -2162,5 +2162,12 @@
     "size_medium": "Média",
     "size_large": "Grande",
     "floatFailedSafari": "O Safari bloqueou a janela. No iPad, use o Slide Over ao lado do seu esboço."
+  },
+  "pageTitles": {
+    "help": "Ajuda",
+    "elderBody": "Corpo de Anciãos",
+    "visitPackages": "Pacotes da visita",
+    "trash": "Lixeira",
+    "elderTemplates": "Programação Anciãos"
   }
 }

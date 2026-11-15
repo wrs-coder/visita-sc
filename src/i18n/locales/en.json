@@ -2195,5 +2195,12 @@
     "size_medium": "Medium",
     "size_large": "Large",
     "floatFailedSafari": "Safari blocked the window. On iPad, use Slide Over next to your outline."
+  },
+  "pageTitles": {
+    "help": "Help",
+    "elderBody": "Body of Elders",
+    "visitPackages": "Visit packages",
+    "trash": "Trash",
+    "elderTemplates": "Elders' Program"
   }
 }

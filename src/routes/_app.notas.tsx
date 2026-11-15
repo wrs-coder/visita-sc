@@ -492,7 +492,7 @@ function Page() {
       {/* Topo limpo (iOS / One UI): título grande + ícones de busca e ações. */}
       <div className="flex items-center gap-1">
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-bold tracking-tight md:text-3xl">{t("notes.title")}</h1>
+          <h1 className="sr-only truncate text-2xl font-bold tracking-tight md:text-3xl">{t("notes.title")}</h1>
           <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
             <Lock className="h-3 w-3 shrink-0" />{t("notes.subtitle")}
           </p>

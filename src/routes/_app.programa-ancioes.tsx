@@ -291,7 +291,7 @@ function Page() {
     <div className="space-y-5 max-w-full overflow-x-hidden">
       <VisitProgramTabs />
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+        <h1 className="sr-only text-2xl md:text-3xl font-bold flex items-center gap-2">
           <BookOpen className="h-6 w-6" /> Corpo de Anciãos
         </h1>
         <p className="text-sm text-muted-foreground mt-1">

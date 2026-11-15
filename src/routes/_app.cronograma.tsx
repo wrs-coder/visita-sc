@@ -410,7 +410,7 @@ function Page() {
       <CircuitHeader />
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className={cn(canEdit ? "text-lg font-semibold" : "text-2xl md:text-3xl font-bold")}>{t("schedule.title")}</h1>
+          <h1 className={cn("sr-only", canEdit ? "text-lg font-semibold" : "text-2xl md:text-3xl font-bold")}>{t("schedule.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {format(weekStart, "d MMM", { locale })} – {format(weekEnd, "d MMM", { locale })}
           </p>

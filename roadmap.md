@@ -86,3 +86,8 @@
 - [x] Barra personalizável mantida (barras antigas ganham o Aa)
 - [x] Notas Privadas sem a alça lateral (abre pelo nome da categoria)
 - [x] Anotações/Pesquisas: folha livre, tocar no vazio leva o cursor ao fim
+
+## Títulos das telas no topo (15/11)
+- [x] Celular/iPhone: nome da tela na barra azul (sem congregação); Início igual
+- [x] Tablet/computador: barra fina com o nome da tela
+- [x] Título grande de dentro das telas só para leitor de tela

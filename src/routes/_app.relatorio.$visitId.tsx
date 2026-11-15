@@ -149,7 +149,7 @@ function ReportPage() {
 
       <article className="report bg-white text-black mx-auto max-w-3xl p-6 md:p-10 rounded-md shadow-card print:shadow-none print:p-0 print:max-w-none">
         <header className="border-b pb-4 mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold">{t("report.title")}</h1>
+          <h1 className="sr-only text-2xl md:text-3xl font-bold">{t("report.title")}</h1>
           <p className="mt-2 text-sm">
             <strong>{t("report.congregation")}</strong> {cong?.name ?? dash}<br />
             <strong>{t("report.type")}</strong> {visit.title}<br />

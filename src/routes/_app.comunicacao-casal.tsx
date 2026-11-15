@@ -141,7 +141,7 @@ function Page() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">{t("couple.title")}</h1>
+          <h1 className="sr-only text-2xl md:text-3xl font-bold">{t("couple.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t("couple.subtitleSuper")}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

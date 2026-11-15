@@ -2195,5 +2195,12 @@
     "size_medium": "Mediana",
     "size_large": "Grande",
     "floatFailedSafari": "Safari bloqueó la ventana. En el iPad, usa Slide Over junto a tu bosquejo."
+  },
+  "pageTitles": {
+    "help": "Ayuda",
+    "elderBody": "Cuerpo de ancianos",
+    "visitPackages": "Paquetes de la visita",
+    "trash": "Papelera",
+    "elderTemplates": "Programa de ancianos"
   }
 }

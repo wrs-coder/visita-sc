@@ -62,7 +62,7 @@ function StudyPage() {
       <div className={cn("space-y-3", focused && "hidden lg:block")}>
         <header className="flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-2 text-primary"><GraduationCap className="h-5 w-5" /></div>
-          <h1 className="flex-1 text-xl font-semibold">{t("sidebar.studyNotes", { defaultValue: "Estudo e Anotações" })}</h1>
+          <h1 className="sr-only flex-1 text-xl font-semibold">{t("sidebar.studyNotes", { defaultValue: "Estudo e Anotações" })}</h1>
         </header>
         <div role="tablist" className="flex w-full rounded-full border bg-background p-0.5">
           {pills.map((p) => (

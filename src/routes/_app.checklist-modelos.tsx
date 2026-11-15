@@ -210,7 +210,7 @@ function Page() {
       <TemplatesTabs />
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+          <h1 className="sr-only text-2xl md:text-3xl font-bold flex items-center gap-2">
             <ListChecks className="h-6 w-6" />{t("templates.checklist.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">

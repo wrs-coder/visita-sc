@@ -330,7 +330,7 @@ function Page() {
   return (
     <div className="space-y-6 max-w-2xl">
       <header>
-        <h1 className="text-2xl md:text-3xl font-bold">{t("profile.title")}</h1>
+        <h1 className="sr-only text-2xl md:text-3xl font-bold">{t("profile.title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">{t("profile.subtitle")}</p>
       </header>
       <WelcomeCard circuitOk={!!profile?.circuit} nameOk={!!profile?.full_name?.trim()} onGoFeatures={() => changeTab("features")} />

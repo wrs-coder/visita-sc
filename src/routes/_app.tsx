@@ -52,6 +52,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { OfflineStatusTile, useOfflineAttention } from "@/components/OfflineStatusBar";
 import { VisitTemplateReminder } from "@/components/VisitTemplateReminder";
 import { useFocusChrome } from "@/lib/focus-chrome";
+import { pageTitleKey } from "@/lib/page-titles";
 
 
 export const Route = createFileRoute("/_app")({
@@ -68,6 +69,8 @@ function AppLayout() {
   const location = useLocation();
   const focusChrome = useFocusChrome();
   const { t } = useTranslation();
+  const titleKey = pageTitleKey(location.pathname);
+  const pageTitle = titleKey ? (t(titleKey) as string) : null;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const offlineAttention = useOfflineAttention();
   const [supportOpen, setSupportOpen] = useState(false);
@@ -362,12 +365,16 @@ function AppLayout() {
                 </div>
               </SheetContent>
             </Sheet>
-            <div className="flex items-center gap-2">
-              <Logo className="h-6 w-6" />
-              <span className="font-semibold text-sm truncate">
-                {displayedCongregationName ?? profile?.circuit ?? t("login.appTitle")}
-              </span>
-            </div>
+            {pageTitle ? (
+              <span className="min-w-0 truncate text-base font-semibold" aria-hidden="true">{pageTitle}</span>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Logo className="h-6 w-6" />
+                <span className="font-semibold text-sm truncate">
+                  {displayedCongregationName ?? profile?.circuit ?? t("login.appTitle")}
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <OfflineReadyBadge />
@@ -447,6 +454,11 @@ function AppLayout() {
           className="flex-1 md:ml-72 min-w-0 max-w-full overflow-x-hidden focus:outline-none"
           style={accentStyle(accentForPath(location.pathname))}
         >
+          {pageTitle && !focusChrome && (
+            <div className="sticky top-0 z-20 hidden h-12 items-center border-b bg-background/90 px-8 backdrop-blur md:flex safe-top" aria-hidden="true">
+              <span className="truncate text-base font-semibold">{pageTitle}</span>
+            </div>
+          )}
           <div className="max-w-5xl mx-auto px-3 pt-3 min-[400px]:px-4 md:p-8 safe-bottom-content safe-x min-w-0">
 
             {blocked ? (

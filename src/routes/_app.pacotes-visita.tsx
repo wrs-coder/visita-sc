@@ -136,7 +136,7 @@ function Page() {
     <div className="space-y-5">
       <TemplatesTabs />
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h1 className="text-xl font-bold flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> Pacotes da visita</h1>
+        <h1 className="sr-only text-xl font-bold flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> Pacotes da visita</h1>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4 mr-1" />Importar</Button>
           <Button size="sm" onClick={() => setEdit(emptyPkg())}><Plus className="h-4 w-4 mr-1" />Novo</Button>
