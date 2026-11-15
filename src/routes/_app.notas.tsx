@@ -607,7 +607,7 @@ function Page() {
         </span>
       </button>
 
-      <EdgePanel open={panelOpen} onOpenChange={setPanelOpen} title={t("notes.panel.title")} handleLabel={t("notes.panel.handle")}>
+      <EdgePanel open={panelOpen} onOpenChange={setPanelOpen} title={t("notes.panel.title")} handleLabel={t("notes.panel.handle")} showHandle={false}>
         <ul className="space-y-1">
           {CATEGORY_DEFS.map((c) => {
             const info = countsByType[c.value];

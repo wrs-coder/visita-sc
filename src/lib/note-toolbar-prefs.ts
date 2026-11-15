@@ -1,13 +1,22 @@
 /**
  * Barra fixa do editor escolhida por cada usuário (só neste aparelho).
  * Guarda apenas uma lista de ids; ids desconhecidos são ignorados e uma
- * lista vazia/corrompida volta ao padrão. "Desfazer", "Aa" e "⋯" ficam
- * sempre na barra e não entram nesta lista.
+ * lista vazia/corrompida volta ao padrão. "Desfazer" e "⋯" ficam sempre
+ * na barra. Listas antigas (array puro, de quando o "Aa" era fixo) ganham
+ * o botão "Aa" (style) na frente para ninguém perdê-lo; as novas são
+ * gravadas como { v: 2, ids }.
  */
 import { useSyncExternalStore } from "react";
 import { DEFAULT_HIGHLIGHT, HIGHLIGHT_COLORS } from "./highlight-palette";
 
 export const TOOLBAR_ITEM_IDS = [
+  "style",
+  "size",
+  "fontColor",
+  "bgColor",
+  "font",
+  "align",
+  "lists",
   "redo",
   "bold",
   "italic",
@@ -47,13 +56,13 @@ export const TOOLBAR_ITEM_IDS = [
 export type ToolbarItemId = (typeof TOOLBAR_ITEM_IDS)[number];
 
 export const DEFAULT_TOOLBAR: ToolbarItemId[] = [
-  "redo",
+  "style",
+  "size",
   "bold",
-  "italic",
-  "underline",
-  "highlight",
+  "fontColor",
+  "bgColor",
+  "align",
   "bulletList",
-  "outdent",
   "indent",
   "firstLine",
 ];
@@ -61,6 +70,18 @@ export const DEFAULT_TOOLBAR: ToolbarItemId[] = [
 const KNOWN = new Set<string>(TOOLBAR_ITEM_IDS);
 const PREFIX = "visita-sc:note-toolbar:";
 const HL_KEY = "visita-sc:note-toolbar:last-highlight";
+
+/** Lê o que está gravado: formato novo { v: 2, ids } ou lista antiga. */
+export function parseStoredToolbar(raw: unknown): ToolbarItemId[] {
+  if (raw && typeof raw === "object" && !Array.isArray(raw) && (raw as { v?: unknown }).v === 2) {
+    return normalizeToolbar((raw as { ids?: unknown }).ids);
+  }
+  if (Array.isArray(raw)) {
+    const ids = normalizeToolbar(raw);
+    return ids.includes("style") ? ids : ["style", ...ids];
+  }
+  return [...DEFAULT_TOOLBAR];
+}
 
 export function normalizeToolbar(raw: unknown): ToolbarItemId[] {
   if (!Array.isArray(raw)) return [...DEFAULT_TOOLBAR];
@@ -84,7 +105,7 @@ export function readToolbar(scope: string): ToolbarItemId[] {
   let v: ToolbarItemId[];
   try {
     const raw = localStorage.getItem(PREFIX + scope);
-    v = normalizeToolbar(raw ? JSON.parse(raw) : null);
+    v = parseStoredToolbar(raw ? JSON.parse(raw) : null);
   } catch {
     v = [...DEFAULT_TOOLBAR];
   }
@@ -96,7 +117,7 @@ export function saveToolbar(scope: string, ids: ToolbarItemId[] | null): void {
   const v = ids ? normalizeToolbar(ids) : [...DEFAULT_TOOLBAR];
   cache.set(scope, v);
   try {
-    if (ids) localStorage.setItem(PREFIX + scope, JSON.stringify(v));
+    if (ids) localStorage.setItem(PREFIX + scope, JSON.stringify({ v: 2, ids: v }));
     else localStorage.removeItem(PREFIX + scope);
   } catch {
     /* sem espaço: vale só nesta sessão */

@@ -13,12 +13,15 @@ export function EdgePanel({
   onOpenChange,
   title,
   handleLabel,
+  showHandle = true,
   children,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   handleLabel: string;
+  /** false = sem alça na borda; o painel só abre por um botão da tela. */
+  showHandle?: boolean;
   children: ReactNode;
 }) {
   const [mounted, setMounted] = useState(false);
@@ -38,7 +41,7 @@ export function EdgePanel({
 
   return createPortal(
     <>
-      {!open && (
+      {!open && showHandle && (
         <button
           type="button"
           aria-label={handleLabel}

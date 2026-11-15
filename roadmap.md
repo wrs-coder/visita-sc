@@ -79,3 +79,10 @@
 - [x] Topo do modo edição só com ícones (←, 📖, ✏️, ⤢, ⋯, 💾)
 - [x] Notas Privadas: Painel Edge com as 6 categorias e contadores
 - [x] Notas Privadas: "+ Novo" com as 6 categorias; exportar no ⋯ do topo
+
+## Barra com botões diretos + folha livre (15/11)
+- [x] Cada botão abre a sua faixa: Aa (estilo), 12▾ (tamanho), cor da fonte, cor do fundo, fonte, alinhamento, listas
+- [x] "Mais ferramentas" em páginas de 2 linhas, arrastando para o lado
+- [x] Barra personalizável mantida (barras antigas ganham o Aa)
+- [x] Notas Privadas sem a alça lateral (abre pelo nome da categoria)
+- [x] Anotações/Pesquisas: folha livre, tocar no vazio leva o cursor ao fim

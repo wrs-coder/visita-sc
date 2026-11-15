@@ -1786,7 +1786,19 @@
         "highlightHint": "segure para escolher a cor",
         "firstLineNone": "Recuo: normal",
         "firstLineFirst": "Recuo: 1ª linha",
-        "firstLineHanging": "Recuo: deslocado"
+        "firstLineHanging": "Recuo: deslocado",
+        "styleTray": "Estilo do parágrafo",
+        "sizeTray": "Tamanho da fonte",
+        "fontColor": "Cor da fonte",
+        "bgColor": "Cor do fundo",
+        "fontTray": "Fonte",
+        "alignTray": "Alinhamento",
+        "listsTray": "Listas e recuo",
+        "closeTray": "Fechar",
+        "colorAuto": "Automática",
+        "noHighlight": "Sem destaque",
+        "sectionFormat": "Estilo e cor",
+        "alwaysOnBarV2": "Desfazer e ⋯ ficam sempre na barra."
       },
       "resize": "Arraste para ampliar o texto",
       "search": {

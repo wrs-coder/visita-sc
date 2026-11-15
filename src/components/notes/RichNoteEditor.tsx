@@ -408,7 +408,13 @@ export function RichNoteEditor({
         className,
       )}
       style={{ minHeight, maxHeight: maxHeight === "none" ? undefined : maxHeight }}
-      onClick={() => editor?.chain().focus().run()}
+      onClick={(e) => {
+        if (!editor) return;
+        const target = e.target as HTMLElement;
+        // Toque fora do texto (área vazia da folha): cursor no fim.
+        if (target.closest(".ProseMirror") || target.closest("button,a,input,[data-editor-toolbar]")) return;
+        editor.chain().focus("end").run();
+      }}
     >
       {editor && searchOpen && (
         <RichNoteSearchBar editor={editor} onClose={() => { setSearchOpen(false); editor.chain().focus().run(); }} />
@@ -421,7 +427,9 @@ export function RichNoteEditor({
         />
       )}
 
-      <EditorContent editor={editor} className="flex-1" />
+      {/* Folha livre (Samsung Notes): o texto ocupa toda a área, então tocar
+          em qualquer espaço vazio abaixo dele leva o cursor para o fim. */}
+      <EditorContent editor={editor} className="flex flex-1 flex-col [&>.ProseMirror]:min-h-full [&>.ProseMirror]:flex-1" />
       {dock === "keyboard" && <div aria-hidden className="h-16" />}
       <div className="sticky bottom-0 z-20 shrink-0">
         {showFooter && (

@@ -1782,7 +1782,19 @@
         "highlightHint": "mantenga pulsado para elegir el color",
         "firstLineNone": "Sangría: normal",
         "firstLineFirst": "Sangría: primera línea",
-        "firstLineHanging": "Sangría: francesa"
+        "firstLineHanging": "Sangría: francesa",
+        "styleTray": "Estilo del párrafo",
+        "sizeTray": "Tamaño de fuente",
+        "fontColor": "Color de fuente",
+        "bgColor": "Color de fondo",
+        "fontTray": "Fuente",
+        "alignTray": "Alineación",
+        "listsTray": "Listas y sangría",
+        "closeTray": "Cerrar",
+        "colorAuto": "Automático",
+        "noHighlight": "Sin resaltado",
+        "sectionFormat": "Estilo y color",
+        "alwaysOnBarV2": "Deshacer y ⋯ siempre quedan en la barra."
       },
       "resize": "Arrastra para ampliar el texto",
       "search": {

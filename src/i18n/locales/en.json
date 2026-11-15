@@ -1805,7 +1805,19 @@
         "highlightHint": "hold to pick the color",
         "firstLineNone": "Indent: normal",
         "firstLineFirst": "Indent: first line",
-        "firstLineHanging": "Indent: hanging"
+        "firstLineHanging": "Indent: hanging",
+        "styleTray": "Paragraph style",
+        "sizeTray": "Font size",
+        "fontColor": "Font color",
+        "bgColor": "Background color",
+        "fontTray": "Font",
+        "alignTray": "Alignment",
+        "listsTray": "Lists and indent",
+        "closeTray": "Close",
+        "colorAuto": "Automatic",
+        "noHighlight": "No highlight",
+        "sectionFormat": "Style and color",
+        "alwaysOnBarV2": "Undo and ⋯ always stay on the bar."
       },
       "resize": "Drag to enlarge the text",
       "search": {
