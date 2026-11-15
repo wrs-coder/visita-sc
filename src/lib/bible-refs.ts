@@ -23,6 +23,9 @@ export interface CitationMatch {
   verseEnd?: number;
   /** Versos discretos quando a citação usa vírgulas (ex.: "1 Pe 1:3,5" → [3, 5]). */
   verses?: number[];
+  /** Trecho que passa de capítulo ("Mt 5:3–6:2"): capítulo e versículo finais. */
+  chapterEnd?: number;
+  chapterEndVerse?: number;
   index: number;
   length: number;
 }
@@ -172,13 +175,18 @@ function compile(books: BookInfo[], lang: Lang): CompiledIndex {
 
   // Sufixo opcional: intervalo "-N" OU lista ",N(,N)*"
   const RANGE_OR_LIST = `(?:\\s*[-–]\\s*\\d{1,3}|(?:\\s*,\\s*\\d{1,3})+)?`;
+  // Com capítulo também aceita trecho entre capítulos ("5:3–6:2") e a
+  // ligação "e/y/and" ("3:16 e 17"), mas nunca quando o número seguinte já é
+  // o começo de outra citação ("Jo 3:16 e 1 Co 2:3") ou de uma palavra.
+  const JOIN = `(?:\\s*,\\s*\\d{1,3}|\\s+(?:e|y|and)\\s+\\d{1,3}(?![\\d:]|\\s*[A-Za-zÀ-ÿ]))`;
+  const RANGE_OR_LIST_CV = `(?:\\s*[-–]\\s*\\d{1,3}:\\d{1,3}|\\s*[-–]\\s*\\d{1,3}|${JOIN}+)?`;
   const branches: string[] = [];
   // Branches com cap:vers — vêm primeiro para que "Judas 1:5" case como cap:vers
   if (longParts.length > 0) {
-    branches.push(`(?:${longParts.join("|")})\\.?\\s*\\d{1,3}:\\d{1,3}${RANGE_OR_LIST}`);
+    branches.push(`(?:${longParts.join("|")})\\.?\\s*\\d{1,3}:\\d{1,3}${RANGE_OR_LIST_CV}`);
   }
   if (shortParts.length > 0) {
-    branches.push(`(?:${shortParts.join("|")})(?:\\.\\s*|\\s+)\\d{1,3}:\\d{1,3}${RANGE_OR_LIST}`);
+    branches.push(`(?:${shortParts.join("|")})(?:\\.\\s*|\\s+)\\d{1,3}:\\d{1,3}${RANGE_OR_LIST_CV}`);
   }
   // Branches "verso-only" para livros de capítulo único (Judas 5, Fm 6...)
   if (longSingleParts.length > 0) {
@@ -203,8 +211,25 @@ function dissect(raw: string): {
   verse: number;
   verseEnd?: number;
   verses?: number[];
+  chapterEnd?: number;
+  chapterEndVerse?: number;
   noColon: boolean;
 } | null {
+  // "3:16 e 17" / "3:16 y 17" / "3:16 and 17" → mesma forma da lista por vírgula.
+  raw = raw.replace(/(\d)\s+(?:e|y|and)\s+(?=\d)/g, "$1, ");
+  // Trecho entre capítulos: "Mateus 5:3–6:2"
+  const mCross = raw.match(/^(.+?)\.?\s*(\d{1,3}):(\d{1,3})\s*[-–]\s*(\d{1,3}):(\d{1,3})$/);
+  if (mCross) {
+    const chapter = parseInt(mCross[2], 10);
+    const verse = parseInt(mCross[3], 10);
+    const chapterEnd = parseInt(mCross[4], 10);
+    const endVerse = parseInt(mCross[5], 10);
+    if (chapterEnd === chapter) {
+      return { bookTerm: mCross[1].trim(), chapter, verse, verseEnd: endVerse > verse ? endVerse : undefined, noColon: false };
+    }
+    if (chapterEnd < chapter) return null;
+    return { bookTerm: mCross[1].trim(), chapter, verse, chapterEnd, chapterEndVerse: endVerse, noColon: false };
+  }
   // Lista por vírgula com capítulo: "1 Pedro 1:3,5" ou "1 Pe 1:3, 5, 7"
   const mList = raw.match(/^(.+?)\.?\s*(\d{1,3}):(\d{1,3}(?:\s*,\s*\d{1,3})+)$/);
   if (mList) {
@@ -302,6 +327,7 @@ export function findCitations(books: BookInfo[] | undefined, text: string): Cita
       verse: d.verse,
       verseEnd: d.verseEnd,
       verses: d.verses,
+      ...(d.chapterEnd ? { chapterEnd: d.chapterEnd, chapterEndVerse: d.chapterEndVerse } : {}),
       index: startIdx,
       length: raw.length,
     });

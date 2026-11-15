@@ -59,3 +59,8 @@
 
 - [x] Bíblia: ignorar "Conteúdo do livro" e navegação na importação + esconder versículos-tópico já importados
 - [x] Recuo de primeira linha igual ao Word (colagem, .docx, editor, exportação)
+
+- [x] Contagem de versículos do EPUB (linha "1 - N") + aviso reimportar
+- [x] Balão: trecho entre capítulos, versículo inexistente, mensagens claras
+- [x] Citações: ligação "e"
+- [ ] Citações: capítulo inteiro sem dois-pontos e ordinais/romanas (aguarda o usuário decidir, risco de links falsos)

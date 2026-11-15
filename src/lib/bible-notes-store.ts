@@ -88,6 +88,8 @@ export interface BibleLibrary {
   bookCount: number;
   verseCount: number;
   imported_at: number;
+  /** Último versículo por capítulo (bookId → cap → N). Ausente em importações antigas. */
+  verseCounts?: Record<string, Record<number, number>>;
 }
 
 export interface BibleVerseRecord {
@@ -347,6 +349,9 @@ export async function importEpub(
     bookCount: parsed.books.length,
     verseCount: parsed.verses.length,
     imported_at: Date.now(),
+    ...(parsed.verseCounts && Object.keys(parsed.verseCounts).length > 0
+      ? { verseCounts: parsed.verseCounts }
+      : {}),
   };
 
   if (!hasIDB()) {
@@ -456,6 +461,7 @@ export async function listLibraries(): Promise<BibleLibrary[]> {
 
 export async function removeLibrary(id: string): Promise<void> {
   chapterCache.clearLibrary(id);
+  libMetaCache.delete(id);
   if (!hasIDB()) return;
   const db = await openDB();
   // Apaga versículos
@@ -619,6 +625,49 @@ export async function getChapterFromLibrary(
   });
   if (result.length > 0) chapterCache.set(cacheKey, result);
   return result;
+}
+
+export type ChapterLimit =
+  | { kind: "unknown" }
+  | { kind: "ok"; last: number }
+  | { kind: "no-chapter"; chapters: number }
+  | { kind: "out-of-range"; last: number };
+
+/** Lê só a contagem de versículos guardada na importação (pura, testável). */
+export function chapterLimitFrom(
+  lib: Pick<BibleLibrary, "verseCounts"> | null | undefined,
+  bookId: string,
+  chapter: number,
+  verse?: number,
+): ChapterLimit {
+  const book = lib?.verseCounts?.[bookId];
+  if (!book) return { kind: "unknown" };
+  const last = book[chapter];
+  if (!last) {
+    const chapters = Math.max(0, ...Object.keys(book).map(Number));
+    return chapter > chapters ? { kind: "no-chapter", chapters } : { kind: "unknown" };
+  }
+  if (verse != null && verse > last) return { kind: "out-of-range", last };
+  return { kind: "ok", last };
+}
+
+/** Bíblia importada antes da conferência de versículos (sugere reimportar). */
+export function libraryLacksVerseCounts(lib: Pick<BibleLibrary, "verseCounts">): boolean {
+  return !lib.verseCounts || Object.keys(lib.verseCounts).length === 0;
+}
+
+const libMetaCache = new Map<string, Promise<BibleLibrary | null>>();
+/** Registro da Bíblia (com cache curto em memória), para o balão conferir limites. */
+export function getLibraryMeta(libId: string): Promise<BibleLibrary | null> {
+  let p = libMetaCache.get(libId);
+  if (!p) {
+    p = listLibraries()
+      .then((all) => all.find((l) => l.id === libId) ?? null)
+      .catch(() => null);
+    libMetaCache.set(libId, p);
+    setTimeout(() => libMetaCache.delete(libId), 60_000);
+  }
+  return p;
 }
 
 /** Carrega capítulos em segundo plano (ignora erros). */

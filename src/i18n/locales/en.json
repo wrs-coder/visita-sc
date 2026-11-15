@@ -1831,7 +1831,8 @@
     "bookCount": "{{count}} books",
     "activeLabel": "Active Bible",
     "noneActive": "No active Bible",
-    "manage": "Manage Bibles"
+    "manage": "Manage Bibles",
+    "reimportHint": "Imported before verse checking. To turn it on, import the same file again and then delete this copy."
   },
   "bibleVerse": {
     "loading": "Loading verse…",
@@ -1864,7 +1865,12 @@
     "prevChapter": "Previous chapter",
     "nextChapter": "Next chapter",
     "truncated": "Showing {{shown}} of {{total}} verses.",
-    "showAll": "Show all"
+    "showAll": "Show all",
+    "continuesIn": "Continues in {{ref}}",
+    "readError": "Couldn't read the Bible on this device right now.",
+    "outOfRange": "{{book}} {{chapter}} has {{count}} verses. Check the reference.",
+    "noChapter": "{{book}} has {{count}} chapters. Check the reference.",
+    "retry": "Try again"
   },
   "theme": {
     "light": "Light mode",

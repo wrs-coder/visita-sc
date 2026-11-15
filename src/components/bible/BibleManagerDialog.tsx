@@ -12,6 +12,7 @@ import {
   removeLibrary,
   setActiveLibraryId,
   resolveActiveLibraryId,
+  libraryLacksVerseCounts,
   type BibleLibrary,
 } from "@/lib/bible-notes-store";
 import { toast } from "sonner";
@@ -212,6 +213,11 @@ export function BibleManagerDialog({ open, onOpenChange, onChanged }: Props) {
                           </Button>
                         </div>
                       </div>
+                      {libraryLacksVerseCounts(lib) && (
+                        <p className="text-[11px] text-muted-foreground rounded-md bg-muted/50 px-2 py-1.5">
+                          {t("bibleManager.reimportHint")}
+                        </p>
+                      )}
                     </div>
                   );
                 })}

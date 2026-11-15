@@ -4,7 +4,7 @@
 // (ver bible-canon.ts), independente do idioma do EPUB.
 
 import JSZip from "jszip";
-import { isBookOutlineDoc, isOutlineLikeVerse } from "./bible-outline-guard";
+import { isBookOutlineDoc, isOutlineLikeVerse, readChapterVerseRange } from "./bible-outline-guard";
 import { resolveBibleLang } from "./bible-lang";
 import {
   CANON,
@@ -40,6 +40,8 @@ export interface ParsedEpub {
   meta: ParsedEpubMeta;
   books: ParsedBookInfo[];
   verses: ParsedVerse[];
+  /** Último versículo de cada capítulo, lido da navegação do EPUB (bookId → cap → N). */
+  verseCounts?: Record<string, Record<number, number>>;
 }
 
 export type ParseProgress = (phase: "unzip" | "parse-opf" | "index-books" | "write-db", pct: number) => void;
@@ -1099,6 +1101,7 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
   // Extrai versículos de cada bucket.
   const books: ParsedBookInfo[] = [];
   const verses: ParsedVerse[] = [];
+  const verseCounts: Record<string, Record<number, number>> = {};
   const sortedBuckets = Array.from(buckets.values()).sort((a, b) => a.book.order - b.book.order);
 
   const total = Math.max(sortedBuckets.length, 1);
@@ -1116,6 +1119,7 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
     //  - texto vindo do fallback regex ("fallback") só preenche chaves ainda
     //    vazias — NUNCA sobrescreve verso real (proteção contra "Conteúdo
     //    do livro" sobrescrever 1 Pedro 1:4 etc.).
+    const counts: Record<number, number> = {};
     const verseMap = new Map<
       string,
       { chapter: number; verse: number; text: string; source: "marker" | "fallback" }
@@ -1131,6 +1135,9 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
         const chapByName = chapterFromFilename(href);
         const chapByHead = chapterFromHeading(doc);
         const fallback = chapByName ?? chapByHead ?? (multiFile ? hi + 1 : 1);
+        // Lido antes do extract (que remove a navegação do documento).
+        const range = readChapterVerseRange(doc);
+        if (range) counts[range.chapter] = range.last;
         const extracted = extractVersesFromDoc(doc, fallback);
 
         for (const v of extracted) {
@@ -1154,7 +1161,13 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
     }
 
 
-    const bookVerses = Array.from(verseMap.values());
+    // Conferência: o EPUB diz quantos versículos tem o capítulo; o que passar
+    // disso não é texto bíblico. Capítulos sem a informação ficam como estão.
+    const bookVerses = Array.from(verseMap.values()).filter((v) => {
+      const last = counts[v.chapter];
+      return !last || v.verse <= last;
+    });
+    if (Object.keys(counts).length > 0) verseCounts[bookId] = counts;
     if (bookVerses.length < 3) {
       // eslint-disable-next-line no-console
       console.warn(`[epub-bible] skip canon "${bucket.book.english}" (verses=${bookVerses.length})`);
@@ -1217,7 +1230,7 @@ export async function parseEpub(file: File, onProgress?: ParseProgress): Promise
     opf.meta.langLabel = r.langLabel;
   } catch { /* mantém o idioma declarado */ }
 
-  return { meta: opf.meta, books, verses };
+  return { meta: opf.meta, books, verses, verseCounts };
 }
 
 // Suprime avisos de "símbolos não utilizados" para utilitários legados

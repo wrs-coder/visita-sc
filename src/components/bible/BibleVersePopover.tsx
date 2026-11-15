@@ -8,7 +8,7 @@ import {
   Copy, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, List, FilePlus2,
   AArrowDown, AArrowUp, MoreHorizontal, Palette, Plus, Minus, Navigation,
 } from "lucide-react";
-import { getChapterFromLibrary, prefetchChapters } from "@/lib/bible-notes-store";
+import { getChapterFromLibrary, prefetchChapters, getLibraryMeta, chapterLimitFrom, type ChapterLimit } from "@/lib/bible-notes-store";
 import { pushVerseHistory } from "@/lib/bible-history";
 import { getLocalizedBookName } from "@/lib/bible-canon";
 import type { CitationMatch } from "@/lib/bible-refs";
@@ -95,6 +95,11 @@ export function VerseLink({
   const [inserting, setInserting] = useState(false);
   // Versículo isolado escolhido pelas setas anterior/próximo.
   const [verseOverride, setVerseOverride] = useState<number | null>(null);
+  // Falha ao ler do aparelho (diferente de "não existe") + nova tentativa.
+  const [loadError, setLoadError] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
+  // Limite do capítulo conforme a contagem guardada na importação.
+  const [limit, setLimit] = useState<ChapterLimit>({ kind: "unknown" });
 
   // View settings (color + bold) — global, persisted in localStorage.
   const [settings, setSettings] = useState<BibleViewSettings>(() => loadSettings());
@@ -293,6 +298,7 @@ export function VerseLink({
     }
     let cancelled = false;
     setLoading(true);
+    setLoadError(false);
     getChapterFromLibrary(libraryId, match.bookId, chapter)
       .then((recs) => {
         if (cancelled) return;
@@ -302,10 +308,23 @@ export function VerseLink({
       .catch(() => {
         if (cancelled) return;
         setChapterVerses([]);
+        setLoadError(true);
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [open, libraryId, match.bookId, chapter]);
+  }, [open, libraryId, match.bookId, chapter, reloadTick]);
+
+  // Contagem de versículos do capítulo (só Bíblias importadas com ela).
+  useEffect(() => {
+    if (!open || !libraryId) { setLimit({ kind: "unknown" }); return; }
+    let cancelled = false;
+    getLibraryMeta(libraryId).then((lib) => {
+      if (cancelled) return;
+      const askVerse = chapter === match.chapter ? match.verse : undefined;
+      setLimit(chapterLimitFrom(lib, match.bookId, chapter, askVerse));
+    });
+    return () => { cancelled = true; };
+  }, [open, libraryId, match.bookId, chapter, match.chapter, match.verse]);
 
   // Leitura antecipada: deixa o capítulo pronto antes do toque.
   useEffect(() => {
@@ -316,11 +335,20 @@ export function VerseLink({
   const selectedVerses = useMemo<number[]>(() => {
     if (match.verses && match.verses.length > 0) return [...match.verses];
     const start = match.verse;
+    // Trecho que passa de capítulo: deste capítulo vai até o último versículo.
+    if (match.chapterEnd && match.chapterEnd > match.chapter) {
+      const lastHere = chapterVerses && chapterVerses.length > 0
+        ? Math.max(...chapterVerses.map((v) => v.verse))
+        : start;
+      const nums: number[] = [];
+      for (let v = start; v <= Math.max(start, lastHere); v++) nums.push(v);
+      return nums;
+    }
     const end = match.verseEnd && match.verseEnd > start ? match.verseEnd : start;
     const nums: number[] = [];
     for (let v = start; v <= end; v++) nums.push(v);
     return nums;
-  }, [match.verse, match.verseEnd, match.verses]);
+  }, [match.verse, match.verseEnd, match.verses, match.chapterEnd, match.chapter, chapterVerses]);
 
   const totalSelected = selectedVerses.length;
   const truncated = !chapterMode && !showAll && totalSelected > MAX_RANGE;
@@ -592,13 +620,16 @@ export function VerseLink({
   };
 
   const isList = Boolean(match.verses && match.verses.length > 1);
-  const isRange = !isList && match.verseEnd && match.verseEnd > match.verse;
+  const crossChapter = Boolean(match.chapterEnd && match.chapterEnd > match.chapter);
+  const isRange = !isList && (crossChapter || (match.verseEnd && match.verseEnd > match.verse));
   const headerVerses = chapterMode
     ? ""
     : verseOverride != null
       ? `${verseOverride}`
       : isList
         ? match.verses!.join(",")
+        : crossChapter
+          ? `${match.verse}–${match.chapterEnd}:${match.chapterEndVerse}`
         : match.verseEnd
           ? `${match.verse}-${match.verseEnd}`
           : `${match.verse}`;
@@ -1002,11 +1033,42 @@ export function VerseLink({
                   </button>
                 </p>
               )}
+              {crossChapter && !chapterMode && verseOverride == null && chapter === match.chapter && (
+                <button
+                  type="button"
+                  onClick={() => { setChapter(match.chapterEnd!); setChapterMode(true); }}
+                  className="text-[12px] font-medium underline pt-1 opacity-90"
+                >
+                  {t("bibleVerse.continuesIn", {
+                    defaultValue: "Continua em {{ref}}",
+                    ref: `${match.chapterEnd}:1${(match.chapterEndVerse ?? 1) > 1 ? `–${match.chapterEndVerse}` : ""}`,
+                  })}
+                </button>
+              )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground italic px-4 py-3">
-              {t("bibleVerse.notFound")}
-            </p>
+            <div className="text-sm text-muted-foreground px-4 py-3 space-y-2">
+              <p className="italic">
+                {loadError
+                  ? t("bibleVerse.readError", { defaultValue: "Não foi possível ler a Bíblia neste aparelho agora." })
+                  : libraryId && limit.kind === "out-of-range" && !chapterMode
+                    ? t("bibleVerse.outOfRange", {
+                        defaultValue: "{{book}} {{chapter}} tem {{count}} versículos. Confira a citação.",
+                        book: displayBook, chapter, count: limit.last,
+                      })
+                    : libraryId && limit.kind === "no-chapter"
+                      ? t("bibleVerse.noChapter", {
+                          defaultValue: "{{book}} tem {{count}} capítulos. Confira a citação.",
+                          book: displayBook, count: limit.chapters,
+                        })
+                      : t("bibleVerse.notFound")}
+              </p>
+              {loadError && (
+                <Button size="sm" variant="outline" className="h-8" onClick={() => setReloadTick((n) => n + 1)}>
+                  {t("bibleVerse.retry", { defaultValue: "Tentar de novo" })}
+                </Button>
+              )}
+            </div>
           )}
         </div>
         {/* Barrinha flutuante de destaque (bolinhas) */}

@@ -1798,7 +1798,8 @@
     "bookCount": "{{count}} livros",
     "activeLabel": "Bíblia ativa",
     "noneActive": "Nenhuma Bíblia ativa",
-    "manage": "Gerenciar Bíblias"
+    "manage": "Gerenciar Bíblias",
+    "reimportHint": "Importada antes da conferência de versículos. Para ativá-la, importe o mesmo arquivo de novo e depois apague esta cópia."
   },
   "bibleVerse": {
     "loading": "Carregando versículo…",
@@ -1831,7 +1832,12 @@
     "prevChapter": "Capítulo anterior",
     "nextChapter": "Próximo capítulo",
     "truncated": "Mostrando {{shown}} de {{total}} versículos.",
-    "showAll": "Ver todos"
+    "showAll": "Ver todos",
+    "continuesIn": "Continua em {{ref}}",
+    "readError": "Não foi possível ler a Bíblia neste aparelho agora.",
+    "outOfRange": "{{book}} {{chapter}} tem {{count}} versículos. Confira a citação.",
+    "noChapter": "{{book}} tem {{count}} capítulos. Confira a citação.",
+    "retry": "Tentar de novo"
   },
   "theme": {
     "light": "Modo claro",

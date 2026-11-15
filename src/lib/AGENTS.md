@@ -22,3 +22,4 @@
 - Big events: 'Baixar da nuvem' merges cloud rows with device-only events (marked 'Só neste aparelho', sent via 'Enviar todos'), per-event receive replaces that event, and an empty sync never clears a non-empty list, because same-stamp rows marked deleted on the device never come back via incremental pull. Dated big events are deleted server-side 2 days after event_date by the existing daily cleanup job.
 
 - TNM 'Conteúdo do livro' and chapter-navigation files are skipped by structure (bible-outline-guard.ts) and outline-like verse texts are hidden at read time, because old imports stored them as fake chapter-1 verses and stored scripture must not be rewritten.
+- Per-chapter verse counts come from the TNM nav line (bibleversenav "1 - N") at import, are stored optional as BibleLibrary.verseCounts and trim extra verses; missing = no checking, because old imports must keep working unchanged.
