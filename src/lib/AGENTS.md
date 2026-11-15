@@ -23,3 +23,4 @@
 
 - TNM 'Conteúdo do livro' and chapter-navigation files are skipped by structure (bible-outline-guard.ts) and outline-like verse texts are hidden at read time, because old imports stored them as fake chapter-1 verses and stored scripture must not be rewritten.
 - Per-chapter verse counts come from the TNM nav line (bibleversenav "1 - N") at import, are stored optional as BibleLibrary.verseCounts and trim extra verses; missing = no checking, because old imports must keep working unchanged.
+- Screen titles come from src/lib/page-titles.ts (route → i18n key) and render in the mobile top bar / md+ slim bar; page <h1>s stay as sr-only, because titles inside the content wasted screen space and screen readers still need them.
