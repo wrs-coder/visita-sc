@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { Extension } from "@tiptap/core";
+import { firstLineFromElement, nextFirstLine, type FirstLineAttrs } from "@/lib/first-line-indent";
 import StarterKit from "@tiptap/starter-kit";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
@@ -31,6 +32,7 @@ import { useVirtualKeyboardVisible } from "@/hooks/use-virtual-keyboard";
 import { cn } from "@/lib/utils";
 import { RICH_NOTE_CONTENT_CLASS } from "@/lib/rich-note-styles";
 import { cleanWordHtml } from "@/lib/word-paste-cleaner";
+import { Slice } from "@tiptap/pm/model";
 
 import type { NoteAttachment } from "@/lib/outline-attachments";
 
@@ -59,6 +61,15 @@ interface RichNoteEditorProps {
 // Extensão de recuo (indent) — preserva margens vindas do Word e permite
 // aumentar/diminuir o recuo de parágrafos e títulos. Salva como atributo
 // `indent` (0–8) no nó e renderiza como margin-left em múltiplos de 32px.
+/** Cola como bloco o 1º parágrafo que traz recuo, para não perder o recuo. */
+function keepPastedIndent(slice: Slice): Slice {
+  const first = slice.content.firstChild;
+  if (!first || slice.openStart === 0 || !first.isTextblock) return slice;
+  const a = first.attrs as { indent?: number; firstLine?: number };
+  if (!(Number(a.indent) > 0 || Number(a.firstLine) > 0)) return slice;
+  return new Slice(slice.content, 0, slice.openEnd);
+}
+
 const IndentExtension = Extension.create({
   name: "indent",
   addOptions() {
@@ -83,9 +94,8 @@ const IndentExtension = Extension.create({
                 parseFloat(el.style.marginLeft) ||
                 parseFloat(el.style.paddingLeft) ||
                 0;
-              const ti = parseFloat(el.style.textIndent) || 0;
-              // Word costuma usar "mso-list" e margens em pt — converte ~ a px.
-              const total = Math.max(ml, ti);
+              // Recuo da 1ª linha (text-indent) é guardado à parte, em firstLine.
+              const total = ml;
               if (!total) {
                 // tenta extrair "margin-left:NNpt" de string composta
                 const m = /margin-left:\s*([\d.]+)pt/i.exec(style);
@@ -102,6 +112,16 @@ const IndentExtension = Extension.create({
               const lvl = Number(attrs.indent) || 0;
               if (!lvl) return {};
               return { style: `margin-left: ${lvl * 32}px` };
+            },
+          },
+          // Recuo só da primeira linha, igual ao Word (0–4 degraus de 32px).
+          firstLine: {
+            default: 0,
+            parseHTML: (element) => firstLineFromElement(element as HTMLElement),
+            renderHTML: (attrs) => {
+              const lvl = Number(attrs.firstLine) || 0;
+              if (!lvl) return {};
+              return { style: `text-indent: ${lvl * 32}px` };
             },
           },
         },
@@ -136,9 +156,30 @@ const IndentExtension = Extension.create({
         return changed;
       };
     };
+    const toggleFirstLine = () => ({
+      state,
+      dispatch,
+    }: {
+      state: import("@tiptap/pm/state").EditorState;
+      dispatch?: (tr: import("@tiptap/pm/state").Transaction) => void;
+    }) => {
+      const { from, to } = state.selection;
+      const tr = state.tr;
+      let turnOn: boolean | null = null;
+      let changed = false;
+      state.doc.nodesBetween(from, to, (node, pos) => {
+        if (!this.options.types.includes(node.type.name)) return;
+        if (turnOn === null) turnOn = !((node.attrs.firstLine as number) > 0);
+        tr.setNodeMarkup(pos, undefined, { ...node.attrs, ...nextFirstLine(node.attrs as FirstLineAttrs, turnOn) });
+        changed = true;
+      });
+      if (changed && dispatch) dispatch(tr);
+      return changed;
+    };
     return {
       indentBlock: change(1),
       outdentBlock: change(-1),
+      toggleFirstLine,
     } as never;
   },
 });
@@ -238,6 +279,9 @@ export function RichNoteEditor({
             return html;
           }
         },
+        // Sem isto, o 1º parágrafo colado se funde ao parágrafo do cursor e
+        // perde o recuo (bloco ou 1ª linha) que veio do Word.
+        transformPasted: (slice) => keepPastedIndent(slice),
         attributes: {
           class: cn(
             "prose-sm max-w-none focus:outline-none px-3 py-2",

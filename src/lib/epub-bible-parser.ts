@@ -4,6 +4,7 @@
 // (ver bible-canon.ts), independente do idioma do EPUB.
 
 import JSZip from "jszip";
+import { isBookOutlineDoc, isOutlineLikeVerse } from "./bible-outline-guard";
 import { resolveBibleLang } from "./bible-lang";
 import {
   CANON,
@@ -855,10 +856,12 @@ interface ExtractedVerse {
 }
 
 /** Extrai versículos de um documento xhtml, com inferência de capítulo via filename. */
-function extractVersesFromDoc(
+export function extractVersesFromDoc(
   doc: Document,
   fallbackChapter: number,
 ): ExtractedVerse[] {
+  // "Conteúdo do livro" e tabela de capítulos nunca têm versículos.
+  if (isBookOutlineDoc(doc)) return [];
   // Hard DOM Purge + descarte do pré-conteúdo (sumário/cabeçalho do livro).
   hardPurgeDoc(doc);
   truncatePreChapterContent(doc);
@@ -937,7 +940,7 @@ function extractVersesFromDoc(
       const v = parseInt(m[1], 10);
       if (v < 1 || v > 200) continue;
       const t = m[2].trim();
-      if (!t) continue;
+      if (!t || isOutlineLikeVerse(t)) continue;
       if (v === 1 && out.length > 0 && out[out.length - 1].verse > 1) chap++;
       out.push({ chapter: chap, verse: v, text: t, source: "fallback" });
     }
@@ -958,7 +961,7 @@ function extractVersesFromDoc(
     // Remove o número do versículo se ele aparecer "colado" no início.
     text = text.replace(new RegExp(`^\\s*${cur.verse}\\s*[\\.\\)]?\\s*`), "");
     text = text.replace(/\s{2,}/g, " ").trim();
-    if (text.length < 2) continue;
+    if (text.length < 2 || isOutlineLikeVerse(text)) continue;
     // Sanity-check de tamanho — versículos absurdamente longos indicam que algo
     // do tipo apêndice/rodapé escapou do filtro; trunca no primeiro ponto após 600 chars.
     if (text.length > 1200) {

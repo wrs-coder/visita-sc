@@ -1,5 +1,6 @@
 // IndexedDB wrapper for "Considerações de campo" notes + Bíblias importadas via EPUB.
 import { resolveBibleLang } from "./bible-lang";
+import { isOutlineLikeVerse } from "./bible-outline-guard";
 import { ChapterCache } from "./bible-chapter-cache";
 // Fallback para localStorage apenas para as notas (a Bíblia exige IndexedDB pelo volume).
 // 100% local — sem rede, sem Supabase.
@@ -609,7 +610,8 @@ export async function getChapterFromLibrary(
     const range = IDBKeyRange.bound(prefix, `${prefix}\uffff`);
     const req = tx.objectStore(STORE_BIBLES).getAll(range);
     req.onsuccess = () => {
-      const all = (req.result as BibleVerseRecord[]) ?? [];
+      // Esconde tópicos do "Conteúdo do livro" gravados por importações antigas.
+      const all = ((req.result as BibleVerseRecord[]) ?? []).filter((r) => !isOutlineLikeVerse(r.text));
       all.sort((a, b) => a.verse - b.verse);
       resolve(all);
     };
@@ -682,7 +684,7 @@ export async function searchVersesInLibrary(
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase();
-      if (hay.includes(needle)) {
+      if (hay.includes(needle) && !isOutlineLikeVerse(rec.text)) {
         out.push({ bookId: rec.bookId, chapter: rec.chapter, verse: rec.verse, text: rec.text });
       }
       cursor.continue();

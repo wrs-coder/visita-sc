@@ -56,3 +56,6 @@
 - [x] "Púlpito" trocado por "tribuna"
 - [x] Ajuda: relógio na tribuna, Mini tempo, importar oradores, cartas e esboços
 - [x] Modelos de carta: Baixar/Enviar todos, selo só no aparelho, flush sem sobrescrever
+
+- [x] Bíblia: ignorar "Conteúdo do livro" e navegação na importação + esconder versículos-tópico já importados
+- [x] Recuo de primeira linha igual ao Word (colagem, .docx, editor, exportação)

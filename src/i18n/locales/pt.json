@@ -1740,7 +1740,8 @@
         "codeBlock": "Bloco de código",
         "hr": "Linha divisória",
         "indent": "Aumentar recuo",
-        "outdent": "Diminuir recuo"
+        "outdent": "Diminuir recuo",
+        "firstLine": "Recuo da 1ª linha"
       },
       "resize": "Arraste para ampliar o texto"
     },

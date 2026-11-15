@@ -1736,7 +1736,8 @@
         "codeBlock": "Bloque de código",
         "hr": "Línea divisoria",
         "indent": "Aumentar sangría",
-        "outdent": "Reducir sangría"
+        "outdent": "Reducir sangría",
+        "firstLine": "Sangría de 1.ª línea"
       },
       "resize": "Arrastra para ampliar el texto"
     },

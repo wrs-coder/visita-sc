@@ -8,7 +8,7 @@
  *   e depois normalizado pelo mesmo limpador da colagem do Word.
  */
 import JSZip from "jszip";
-import { cleanWordHtml } from "./word-paste-cleaner";
+import { cleanWordHtml, leadTabKey } from "./word-paste-cleaner";
 
 export const DOCX_MAX_BYTES = 10 * 1024 * 1024;
 export const DOCX_MAX_UNZIPPED = 50 * 1024 * 1024;
@@ -209,7 +209,7 @@ export function docxXmlToHtml(documentXml: string, stylesXml = "", numberingXml 
       if (left > 0) style.push(`margin-left:${left / 20}pt`);
       if (first > 0) style.push(`text-indent:${first / 20}pt`);
     }
-    if (leadingTabs) style.push(`x-tab-indent:${leadingTabs * 48}px`);
+    if (leadingTabs) style.push(`${leadTabKey(html)}:${leadingTabs * 48}px`);
     const bold = st.bold || /jwheading/i.test(names.replace(/\s/g, ""));
     if (bold) style.push("x-bold:1");
     blocks.push(`<p class="MsoNormal"${style.length ? ` style="${style.join(";")}"` : ""}>${html}</p>`);

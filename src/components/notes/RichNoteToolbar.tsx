@@ -14,6 +14,7 @@ import {
   Heading2,
   Heading3,
   Pilcrow,
+  ArrowRightFromLine,
   RotateCcw,
   AlignLeft,
   AlignCenter,
@@ -224,6 +225,13 @@ export function RichNoteToolbar({
 
   const isActive = (name: string, attrs?: Record<string, unknown>) =>
     editor.isActive(name, attrs);
+
+  // Recuo só da primeira linha (igual ao Word) no parágrafo do cursor.
+  const firstLineOn = Number(editor.getAttributes("paragraph").firstLine || editor.getAttributes("heading").firstLine || 0) > 0;
+  const toggleFirstLine = () => {
+    const chain = editor.chain().focus() as unknown as { toggleFirstLine: () => { run: () => boolean } };
+    chain.toggleFirstLine().run();
+  };
 
   const btn = (active: boolean) =>
     cn(
@@ -440,6 +448,7 @@ export function RichNoteToolbar({
               else if (isActive("taskItem")) chain.sinkListItem("taskItem").run();
               else (chain as unknown as { indentBlock: () => typeof chain }).indentBlock().run();
             }}><IndentIncrease className="h-4 w-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" className={itemBtn(firstLineOn)} onMouseDown={(e) => e.preventDefault()} title={t("personalOutlines.editor.toolbar.firstLine")} aria-pressed={firstLineOn} onClick={toggleFirstLine}><ArrowRightFromLine className="h-4 w-4" /></Button>
           </>)}
         </Popover>
 
@@ -820,6 +829,13 @@ export function RichNoteToolbar({
               else (chain as unknown as { indentBlock: () => typeof chain }).indentBlock().run();
             }}>
             <IndentIncrease className="h-4 w-4" />
+          </Button>
+          <Button type="button" variant="ghost" size="sm" className={iconBtn(firstLineOn)}
+            title={t("personalOutlines.editor.toolbar.firstLine")}
+            aria-pressed={firstLineOn}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={toggleFirstLine}>
+            <ArrowRightFromLine className="h-4 w-4" />
           </Button>
 
           {sep}

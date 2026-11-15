@@ -34,6 +34,7 @@ export function indentLevel(px: number): number {
 function normalizeIndent(style: string, dropIndent: boolean): string {
   let ml = 0;
   let ti = 0;
+  let lead = 0;
   let forced: number | null = null;
   const rest: string[] = [];
   for (const d of style.split(";")) {
@@ -43,6 +44,7 @@ function normalizeIndent(style: string, dropIndent: boolean): string {
     if (key === "x-level") forced = Math.min(8, Math.max(0, parseInt(val, 10) || 0));
     else if (key === "x-bold") continue;
     else if (key === "x-tab-indent") ml += toPx(val);
+    else if (key === "x-lead-tab") lead += toPx(val);
     else if (key === "margin-left" || key === "padding-left") ml = Math.max(ml, toPx(val));
     else if (key === "text-indent") ti = toPx(val);
     else if (key === "margin") {
@@ -51,14 +53,28 @@ function normalizeIndent(style: string, dropIndent: boolean): string {
       if (left) ml = Math.max(ml, toPx(left));
     } else rest.push(d);
   }
+  if (dropIndent) return rest.join(";");
   const tabs = /x-tab-indent:\s*([\d.]+)px/i.exec(style);
-  const lvl = dropIndent
-    ? 0
-    : forced !== null
-      ? Math.min(8, forced + (tabs ? Math.round(parseFloat(tabs[1]) / 48) : 0))
-      : indentLevel(ml + Math.max(0, ti));
+  if (forced !== null) {
+    // Esboços oficiais (Indent0..N): Tab inicial continua somando degraus de bloco.
+    const lvl = Math.min(8, forced + Math.round(((tabs ? parseFloat(tabs[1]) : 0) + lead) / 48));
+    if (lvl) rest.push(`margin-left:${lvl * 32}px`);
+    return rest.join(";");
+  }
+  // Recuo de bloco (margem) e recuo da 1ª linha (text-indent positivo ou
+  // Tab no começo) ficam separados, como no Word. Deslocamento negativo
+  // (hanging) mantém só a margem.
+  const lvl = indentLevel(ml);
+  const firstPx = Math.max(0, ti) + lead;
+  const first = firstPx >= 16 ? firstLineLevel(firstPx) : 0;
   if (lvl) rest.push(`margin-left:${lvl * 32}px`);
+  if (first) rest.push(`text-indent:${first * 32}px`);
   return rest.join(";");
+}
+
+/** 1,25 cm (~48px) = 1 degrau de 1ª linha (32px no editor), até 4. */
+export function firstLineLevel(px: number): number {
+  return Math.min(4, Math.max(1, Math.round(px / 48)));
 }
 
 function cleanStyle(style: string, dropIndent = false): string {
@@ -149,6 +165,18 @@ function convertLists(html: string): string {
   );
 }
 
+/** Parágrafo de prosa (texto longo) a partir do qual um Tab inicial é só da 1ª linha. */
+export const PROSE_MIN_CHARS = 120;
+
+/**
+ * Tab no começo: em parágrafo longo (prosa) recua só a 1ª linha, como no
+ * Word; em linha curta (tópico de esboço) continua sendo degrau de bloco,
+ * para não mudar a hierarquia dos esboços.
+ */
+export function leadTabKey(innerHtml: string): "x-lead-tab" | "x-tab-indent" {
+  return stripTags(innerHtml).length >= PROSE_MIN_CHARS ? "x-lead-tab" : "x-tab-indent";
+}
+
 const LEAD_TAB_RE = /^((?:\s|&nbsp;|<(?!\/?p\b)[a-z][^>]*>)*?)<span\b[^>]*mso-tab-count:\s*(\d+)[^>]*>[\s\S]*?<\/span>/i;
 
 /** Tabulações no início do parágrafo (mso-tab-count) viram degraus de recuo. */
@@ -163,7 +191,7 @@ function convertTabs(html: string): string {
     }
     if (!tabs) return full;
     rest = rest.replace(/^((?:<[^>]+>)*)(?:\s|&nbsp;)+/i, "$1");
-    const extra = `x-tab-indent:${tabs * 48}px`;
+    const extra = `${leadTabKey(rest)}:${tabs * 48}px`;
     const st = /\sstyle=("([^"]*)"|'([^']*)')/i.exec(attrs);
     const nextAttrs = st
       ? attrs.replace(st[0], ` style="${(st[2] ?? st[3] ?? "").replace(/;?\s*$/, ";")}${extra}"`)
@@ -266,7 +294,7 @@ function convertLeadingWhitespace(html: string): string {
     const steps = tabs + Math.floor(spaces / 4);
     if (!steps) return full;
     const rest = m[1] + inner.slice(m[0].length);
-    const extra = `x-tab-indent:${steps * 48}px`;
+    const extra = `${leadTabKey(rest)}:${steps * 48}px`;
     const st = /\sstyle=("([^"]*)"|'([^']*)')/i.exec(attrs);
     const nextAttrs = st
       ? attrs.replace(st[0], ` style="${(st[2] ?? st[3] ?? "").replace(/;?\s*$/, ";")}${extra}"`)

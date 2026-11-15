@@ -1759,7 +1759,8 @@
         "codeBlock": "Code block",
         "hr": "Horizontal rule",
         "indent": "Increase indent",
-        "outdent": "Decrease indent"
+        "outdent": "Decrease indent",
+        "firstLine": "First-line indent"
       },
       "resize": "Drag to enlarge the text"
     },

@@ -24,7 +24,7 @@ describe("cleanWordHtml", () => {
   it("converts Word indents in cm/pt/in into editor indent levels", () => {
     expect(cleanWordHtml(wrap('<p class="MsoNormal" style="margin-left:1.25cm">A</p>'))).toBe('<p style="margin-left:32px">A</p>');
     expect(cleanWordHtml(wrap('<p class="MsoNormal" style="margin-left:72.0pt">B</p>'))).toBe('<p style="margin-left:64px">B</p>');
-    expect(cleanWordHtml(wrap('<p class="MsoNormal" style="margin-left:0in;text-indent:.5in">C</p>'))).toBe('<p style="margin-left:32px">C</p>');
+    expect(cleanWordHtml(wrap('<p class="MsoNormal" style="margin-left:0in;text-indent:.5in">C</p>'))).toBe('<p style="text-indent:32px">C</p>');
   });
 
   it("keeps multilevel Word lists nested", () => {
@@ -79,6 +79,17 @@ describe("cleanWordHtml", () => {
   it("reads Word Online indents placed on the wrapping div", () => {
     const html = `<div class="OutlineElement Ltr" style="margin: 0px 0px 0px 96px; padding: 0px"><p class="Paragraph"><span class="TextRun">H</span></p></div>`;
     expect(cleanWordHtml(html)).toContain('<p style="margin-left:64px">');
+  });
+
+  it("Word first-line indent stays on the first line only", () => {
+    expect(cleanWordHtml(wrap(`<p class=MsoNormal style='text-indent:1.25cm'>P</p>`))).toBe('<p style="text-indent:32px">P</p>');
+    expect(cleanWordHtml(wrap(`<p class=MsoNormal style='margin-left:1.25cm;text-indent:1.25cm'>Q</p>`))).toBe('<p style="margin-left:32px;text-indent:32px">Q</p>');
+  });
+
+  it("leading tab in a long prose paragraph indents only the first line", () => {
+    const prose = "15 Algumas pessoas dão mais importância à limpeza do que outras. A noção que temos de limpeza é influenciada pela nossa criação.";
+    expect(cleanWordHtml(wrap(`<p class=MsoNormal><span style='mso-tab-count:1'> </span>${prose}</p>`))).toBe(`<p style="text-indent:32px">${prose}</p>`);
+    expect(cleanWordHtml(wrap(`<p class=MsoNormal>\t${prose}</p>`))).toBe(`<p style="text-indent:32px">${prose}</p>`);
   });
 
   it("turns leading literal tabs into indent levels", () => {

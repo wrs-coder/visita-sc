@@ -13,7 +13,7 @@ function xmlEsc(s: string): string {
 }
 
 type Fmt = { b?: boolean; i?: boolean; u?: boolean; color?: string };
-type Para = { style?: string; leftPx: number; runs: string[]; prefix?: string; rule?: boolean };
+type Para = { style?: string; leftPx: number; firstPx?: number; runs: string[]; prefix?: string; rule?: boolean };
 
 function run(text: string, f: Fmt): string {
   if (!text) return "";
@@ -28,11 +28,25 @@ function cssColor(style: string): string | undefined {
   return h.toUpperCase();
 }
 
+function firstLinePx(style: string): number {
+  const m = /text-indent:\s*([\d.]+)(px|pt)?/i.exec(style);
+  if (!m) return 0;
+  const v = Number(m[1]);
+  return m[2] === "pt" ? v * (4 / 3) : v;
+}
+
 function marginPx(style: string): number {
   const m = /margin-left:\s*([\d.]+)(px|pt|em)?/i.exec(style);
   if (!m) return 0;
   const v = Number(m[1]);
   return m[2] === "pt" ? v * (4 / 3) : m[2] === "em" ? v * 16 : v;
+}
+
+function indXml(left: number, first: number, hanging: boolean): string {
+  if (left <= 0 && first <= 0) return "";
+  const l = left > 0 ? ` w:left="${left}"` : "";
+  const extra = hanging ? ' w:hanging="360"' : first > 0 ? ` w:firstLine="${first}"` : "";
+  return `<w:ind${l}${extra}/>`;
 }
 
 /** Converte o HTML do editor em parágrafos do Word (document.xml body). */
@@ -90,7 +104,7 @@ export function htmlToDocxBody(title: string, html: string): string {
       const lp = leftPx + marginPx(style);
       const h = /^h([1-6])$/.exec(tag);
       const hasBlockKids = Array.from(el.children).some((k) => /^(p|div|h[1-6]|ul|ol|blockquote|section)$/i.test(k.tagName));
-      if (!hasBlockKids) cur = { leftPx: lp, runs: [], style: h ? (Number(h[1]) <= 2 ? "Heading1" : "Heading2") : undefined };
+      if (!hasBlockKids) cur = { leftPx: lp, firstPx: firstLinePx(style), runs: [], style: h ? (Number(h[1]) <= 2 ? "Heading1" : "Heading2") : undefined };
       kids(lp);
       flush();
       return;
@@ -105,7 +119,7 @@ export function htmlToDocxBody(title: string, html: string): string {
     .map((p) => {
       const twips = Math.round((p.leftPx / 32) * 720);
       if (p.rule) return `<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="1" w:color="7F7F7F"/></w:pBdr><w:spacing w:before="240" w:after="240"/></w:pPr></w:p>`;
-      const ppr = [p.style ? `<w:pStyle w:val="${p.style}"/>` : "", twips > 0 ? `<w:ind w:left="${twips}"${p.prefix ? ' w:hanging="360"' : ""}/>` : ""].join("");
+      const ppr = [p.style ? `<w:pStyle w:val="${p.style}"/>` : "", indXml(twips, p.prefix ? 0 : Math.round(((p.firstPx ?? 0) / 32) * 720), !!p.prefix)].join("");
       let prefix = "";
       if (p.prefix === "ol") { const n = (counters.get(twips) ?? 0) + 1; counters.set(twips, n); prefix = `${n}.\t`; }
       else if (p.prefix === "ul") prefix = "•\t";
