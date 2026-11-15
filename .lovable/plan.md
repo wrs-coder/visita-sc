@@ -65,9 +65,10 @@ Banco de dados, sincronização, formato salvo das notas antigas, botões ⇤/�
 
 ---
 
-# Parte 2 — Bíblia: versículos a mais no fim do capítulo 1 (ex.: Oseias 1 com 14)
+# Parte 2 — Bíblia: versículos a mais no fim do capítulo 1 de TODOS os livros
 
 ## O que acontece (provável, a confirmar com o arquivo real)
+A falha aparece em todos os livros, porque cada livro da TNM traz o seu quadro "Conteúdo do livro" junto ao capítulo 1. Oseias é só um exemplo.
 O leitor separa os versículos procurando "números marcados" no arquivo da TNM. O quadro "Conteúdo do livro" também tem números marcados: um por capítulo (1, 2 ... 14), cada um com tópicos e referências entre parênteses.
 - O filtro atual só reconhece esse quadro quando ele está num parágrafo comum com até 1500 letras. Em livros com muitos capítulos o quadro é maior ou vem em lista, e escapa.
 - Os itens 12, 13 e 14 do quadro viram "versículos 12, 13 e 14" do capítulo 1.
@@ -83,5 +84,6 @@ O leitor separa os versículos procurando "números marcados" no arquivo da TNM.
 - `epub-bible-parser.ts`: `findOutlineRoots` inclui `li, ol, ul, td` e, para containers com 3 ou mais filhos que casam com OUTLINE_PAREN_RE, ignora o limite de 1500; `isVerseMarker` rejeita `<a href>` que apontam para `#chapterN` com N diferente do capítulo atual; o dedup deixa de usar "mais longo vence" quando o texto candidato casa com o padrão de esboço.
 - Novo `isOutlineLikeVerse(text)` compartilhado (2 ou mais "(n)"/"(n-n)" e nenhuma pontuação de frase), aplicado em `getChapterFromLibrary` (leitura), sem gravar nada no IndexedDB.
 - `bible-verse-counts.ts`: só números por livro e capítulo, conforme a regra de não embutir texto bíblico; relatório de importação no BibleManagerDialog.
-- Testes: fixture XHTML imitando Oseias (quadro em lista com 14 itens) gera exatamente 11 versículos no capítulo 1; nenhum versículo real é substituído; o filtro na leitura remove os 3 falsos de uma Bíblia já salva; os testes atuais do parser e de idioma continuam passando.
+- Varredura completa após a correção: para os 66 livros, comparar a quantidade de versículos de cada capítulo com a tabela de números e listar qualquer diferença restante.
+- Testes: fixtures de livros com poucos capítulos (ex.: Rute, 4), médios (Oseias, 14) e muitos (Salmos, Isaías); fixture XHTML imitando Oseias (quadro em lista com 14 itens) gera exatamente 11 versículos no capítulo 1; nenhum versículo real é substituído; o filtro na leitura remove os 3 falsos de uma Bíblia já salva; os testes atuais do parser e de idioma continuam passando.
 - Primeiro passo da execução: se possível, reproduzir com o arquivo EPUB do usuário, sem enviá-lo para a nuvem, para confirmar a causa antes de corrigir.
