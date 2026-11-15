@@ -53,6 +53,45 @@ Concordo: a alça e o botão da categoria fazem a mesma coisa. Fica só o botão
 
 O painel continua abrindo pela direita e fecha ao escolher uma categoria, ao tocar fora ou ao arrastar.
 
+
+## 3) "Mais ferramentas" (⋯) em páginas de duas linhas
+
+Cada grupo de ferramentas ocupa no máximo duas linhas. Para ver o próximo grupo, arraste para o lado, como as páginas de ícones do celular. Bolinhas embaixo mostram em qual página você está.
+
+```text
+├─────────────────────────────┤
+│ Inserir                     │
+│ [Tópico] [Tempo] [Link] [—] │
+│ [Tabela] [Imagem]           │
+│            ● ○ ○ ○          │  <- arraste ← para "Parágrafo"
+├─────────────────────────────┤
+│ ↶  Aa  12▾  B  T̲  [T]  ≡  ⋯ │
+```
+
+Páginas: Inserir · Parágrafo (recuos, espaçamento, alinhamento) · Ferramentas (Localizar, contador) · Barra (Editar barra, Ocultar barra). A altura é sempre a mesma, então o texto continua visível.
+
+## 4) Área de escrita livre em Anotações e Pesquisas (estilo Samsung Notes)
+
+Hoje a área de escrita começa pequena e só cresce conforme você digita. Ela passa a ocupar toda a tela disponível, como uma folha em branco. Tocar em qualquer espaço vazio abaixo do texto coloca o cursor no fim e abre o teclado. Tocar no meio do texto continua posicionando o cursor naquele ponto.
+
+```text
+┌─────────────────────────────┐
+│ ←        Pesquisa     ⋯  💾 │
+│ Título                      │
+│ Texto digitado...|          │
+│                             │
+│   (toque em qualquer lugar  │
+│    daqui para escrever)     │
+│                             │
+├─────────────────────────────┤
+│ ↶  Aa  12▾  B  T̲  [T]  ≡  ⋯ │
+└─────────────────────────────┘
+```
+
+Observação: não é possível começar uma linha "solta" no meio da tela, porque o texto precisa continuar em ordem para salvar, exportar para o Word e reconhecer os textos bíblicos. O toque no vazio sempre leva o cursor para o fim do texto, como no Samsung Notes no modo de digitação.
+
+Técnico: no `GuestWorkspace` (Anotações e Pesquisas), o editor recebe `flex-1` com altura mínima igual à área visível (`use-stable-viewport-height`). Um toque no espaço vazio chama `editor.commands.focus('end')`. O ⋯ passa a ter `ScrollRow` com scroll-snap por página, grade de 2 linhas e indicador de bolinhas. O formato salvo das notas não muda.
+
 ## O que não muda
 - As notas salvas, os esboços, a importação/exportação Word, a detecção de textos bíblicos e o balão bíblico.
 - O "+ Novo" com as 6 categorias e os links diretos para cada categoria.
