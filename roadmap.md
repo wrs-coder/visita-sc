@@ -72,3 +72,10 @@
 - [x] Barra personalizável por usuário
 - [x] Localizar e substituir (aviso em citação bíblica)
 - [x] Contador de palavras e tempo de fala (130 pal/min)
+
+## Editor estilo Samsung Notes + Notas Privadas (15/11)
+- [x] Barra do editor no rodapé, colada em cima do teclado (todas as telas de escrita)
+- [x] "Aa" vira régua fina; "⋯" vira painel baixo; "Ocultar barra" no ⋯
+- [x] Topo do modo edição só com ícones (←, 📖, ✏️, ⤢, ⋯, 💾)
+- [x] Notas Privadas: Painel Edge com as 6 categorias e contadores
+- [x] Notas Privadas: "+ Novo" com as 6 categorias; exportar no ⋯ do topo
