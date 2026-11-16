@@ -1,6 +1,7 @@
 /**
- * Balão de anexos (abre folha com miniaturas) — altura FIXA (2.5rem) para não
- * deformar o cálculo `calc(100dvh - 14rem - 5rem)` do editor imersivo.
+ * Balão de anexos (abre folha com miniaturas). Com `floating` vira uma boia
+ * livre (arrasta e prende na borda) e não ocupa espaço do texto; sem ela,
+ * fica numa linha fixa de 2.5rem (usada na Tela cheia).
  *
  * - Card 48×48, cantos arredondados, X discreto (readOnly esconde).
  * - Fotos/vídeos locais são resolvidos sob demanda (Filesystem nativo ou
@@ -13,6 +14,7 @@ import { Image as ImageIcon, X, PlayCircle, FileText, ExternalLink, HardDrive, I
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AttachmentLightbox } from "./AttachmentLightbox";
+import { FloatingDock } from "./FloatingDock";
 import { AttachmentVideoLightbox } from "./AttachmentVideoLightbox";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import {
@@ -28,6 +30,10 @@ interface Props {
   readOnly?: boolean;
   onRemove?: (id: string) => void;
   className?: string;
+  /** Boia livre (arrasta pela tela, igual à boia de textos bíblicos); sem ela, fica numa linha fixa. */
+  floating?: boolean;
+  /** Chave da posição salva da boia neste aparelho. */
+  floatKey?: string;
 }
 
 const BAR_HEIGHT = "h-10"; // 2.5rem — bate com o desconto do editor.
@@ -108,7 +114,7 @@ function AttachmentThumb({
   );
 }
 
-export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove, className }: Props) {
+export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove, className, floating = false, floatKey = "outlineAttachments.floatPos" }: Props) {
   const { t } = useTranslation();
   const [lightbox, setLightbox] = useState<NoteAttachment | null>(null);
   const [videoLightbox, setVideoLightbox] = useState<NoteAttachment | null>(null);
@@ -140,23 +146,49 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
   const videos = attachments.filter((a) => a.kind === "video").length;
   const others = attachments.length - photos - videos;
   const label = t("personalOutlines.attachments.barLabel", { defaultValue: "Anexos do esboço" });
+  const bubbleClass = "inline-flex items-center gap-1.5 rounded-full border font-medium text-primary active:scale-95 transition";
+  const counts = (
+    <>
+      {photos > 0 && <span className="inline-flex items-center gap-1"><ImageIcon className="h-4 w-4" />{photos}</span>}
+      {videos > 0 && <span className="inline-flex items-center gap-1"><PlayCircle className="h-4 w-4" />{videos}</span>}
+      {others > 0 && <span className="inline-flex items-center gap-1"><FileText className="h-4 w-4" />{others}</span>}
+    </>
+  );
 
   return (
     <>
       {/* Balão compacto (igual ao contador de textos bíblicos): abre a folha com os anexos. */}
+      {floating ? (
+        <FloatingDock
+          storageKey={floatKey}
+          defaultPos={{ side: "left", y: 9999 }}
+          mode="whole"
+          onTap={() => setSheetOpen(true)}
+          hidden={sheetOpen}
+        >
+          <button
+            type="button"
+            aria-label={`${label} (${attachments.length})`}
+            title={label}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSheetOpen(true); } }}
+            className={cn(bubbleClass, "h-11 px-4 text-sm shadow-lg bg-card")}
+          >
+            {counts}
+          </button>
+        </FloatingDock>
+      ) : (
       <div className={cn("w-full flex items-center justify-end gap-2 px-2", BAR_HEIGHT, className)}>
         <button
           type="button"
           onClick={() => setSheetOpen(true)}
           aria-label={`${label} (${attachments.length})`}
           title={label}
-          className="inline-flex h-7 items-center gap-1.5 rounded-full border bg-primary/10 px-3 text-xs font-medium text-primary shadow-sm active:scale-95 transition"
+          className={cn(bubbleClass, "h-7 px-3 text-xs bg-primary/10 shadow-sm")}
         >
-          {photos > 0 && <span className="inline-flex items-center gap-1"><ImageIcon className="h-3.5 w-3.5" />{photos}</span>}
-          {videos > 0 && <span className="inline-flex items-center gap-1"><PlayCircle className="h-3.5 w-3.5" />{videos}</span>}
-          {others > 0 && <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" />{others}</span>}
+          {counts}
         </button>
       </div>
+      )}
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="bottom" className="max-h-[70dvh] overflow-y-auto rounded-t-2xl">

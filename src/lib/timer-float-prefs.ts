@@ -1,4 +1,4 @@
-/** Posição da boia do cronômetro no Modo Esboço (preferência do aparelho). */
+/** Posição das boias flutuantes (cronômetro, anexos) — preferência do aparelho, uma chave por boia. */
 export interface FloatPos { side: "left" | "right"; y: number }
 const KEY = "outlineTimer.floatPos";
 export const FLOAT_MARGIN = 8;
@@ -11,13 +11,13 @@ export function snapFloat(x: number, y: number, w: number, h: number, vw: number
   return { side, y: Math.round(Math.min(maxY, Math.max(minY, y))) };
 }
 
-export function loadFloatPos(): FloatPos | null {
+export function loadFloatPos(key: string = KEY): FloatPos | null {
   try {
-    const v = JSON.parse(localStorage.getItem(KEY) ?? "null");
+    const v = JSON.parse(localStorage.getItem(key) ?? "null");
     if (v && (v.side === "left" || v.side === "right") && typeof v.y === "number") return v;
   } catch { /* noop */ }
   return null;
 }
-export function saveFloatPos(p: FloatPos) {
-  try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* noop */ }
+export function saveFloatPos(p: FloatPos, key: string = KEY) {
+  try { localStorage.setItem(key, JSON.stringify(p)); } catch { /* noop */ }
 }

@@ -15,3 +15,14 @@ describe("pastoral outline", () => {
     expect(pastoralOutlineText({ outline_html: "<p>Salmo 23:1</p><p>Ponto &amp; fim</p>" })).toBe("Salmo 23:1\nPonto & fim");
   });
 });
+
+import { pastoralFieldsSummary } from "./pastoral-outline";
+describe("pastoralFieldsSummary", () => {
+  it("resume data, acompanhante e quantidade de envolvidos", () => {
+    expect(pastoralFieldsSummary({ date: "2026-11-16", companion: "João", involved: "Pedro, Ana; Lucas" })).toBe("16/11/2026 · João · 3 pessoas");
+  });
+  it("um só envolvido mostra o nome; vazio fica vazio", () => {
+    expect(pastoralFieldsSummary({ involved: "Pedro" })).toBe("Pedro");
+    expect(pastoralFieldsSummary({})).toBe("");
+  });
+});

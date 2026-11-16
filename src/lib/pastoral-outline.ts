@@ -19,3 +19,18 @@ export function pastoralOutlineText(payload: Record<string, unknown> | null | un
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
+
+/** Linha resumo das informações recolhidas: "16/11/2026 · João · 3 pessoas". */
+export function pastoralFieldsSummary(
+  { date, companion, involved }: { date?: string | null; companion?: string | null; involved?: string | null },
+  people: (n: number) => string = (n) => `${n} pessoas`,
+): string {
+  const parts: string[] = [];
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((date ?? "").trim());
+  if (m) parts.push(`${m[3]}/${m[2]}/${m[1]}`);
+  if (companion?.trim()) parts.push(companion.trim());
+  const names = (involved ?? "").split(/[,;\n]+/).map((n) => n.trim()).filter(Boolean);
+  if (names.length === 1) parts.push(names[0]);
+  else if (names.length > 1) parts.push(people(names.length));
+  return parts.join(" · ");
+}

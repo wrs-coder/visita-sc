@@ -4,3 +4,8 @@
 - [x] Dia/Horário do pastoreio → data/hora no cronograma
 - [x] Notas Privadas › Pastoreio: cartões + Esboço do pastoreio
 - [x] Balão de anexos nos esboços
+- [ ] Modo Esboço: cronômetro como boia; Tela cheia volta como era
+- [ ] Modo edição: duas rolagens sempre visíveis
+- [ ] Bolha de anexos livre (arrastável) no modo edição e esboço
+- [ ] Modo Esboço: ajustes de tempo e recolher todos no menu ⋯, barra fixa
+- [ ] Esboço do pastoreio: links/anexos/balões bíblicos, campos recolhíveis

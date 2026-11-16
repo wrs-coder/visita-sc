@@ -37,6 +37,7 @@ import {
   NotebookPen,
   ChevronsDownUp,
   ChevronsUpDown,
+  SlidersHorizontal,
   FileUp,
   Clock,
   MoreHorizontal,
@@ -121,6 +122,8 @@ if (typeof window !== "undefined") {
 }
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { FloatingOutlineTimer } from "@/components/notes/FloatingOutlineTimer";
+import { TopicBadgeSettingsDialog, toggleAllTopics, useTopicMenu } from "@/components/notes/OutlineTopicBlock";
+import { useCollapsedTopics } from "@/lib/outline-topics";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
 import { RichOutlineContent, sanitizeNoteHtml } from "@/lib/rich-content";
@@ -2357,6 +2360,23 @@ function NoteEditor({
   const stableVh = useStableViewportHeight();
   const [outlineSlot, setOutlineSlot] = useState<HTMLDivElement | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [badgeSettingsOpen, setBadgeSettingsOpen] = useState(false);
+  // Barra do topo do esboço fixa ao rolar (ver html.outline-sticky em styles.css).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("outline-sticky");
+    return () => root.classList.remove("outline-sticky");
+  }, []);
+  // Modo edição: a rolagem da página fica sempre visível (junto com a do texto).
+  useEffect(() => {
+    if (mode !== "edit") return;
+    const root = document.documentElement;
+    root.classList.add("page-scrollbar-visible");
+    return () => root.classList.remove("page-scrollbar-visible");
+  }, [mode]);
+  const topicMenu = useTopicMenu();
+  const collapsedTopics = useCollapsedTopics();
+  const allTopicsCollapsed = topicMenu.ids.length > 0 && topicMenu.ids.every((id) => collapsedTopics[id]);
   // Altura extra do texto escolhida pela alça (só no aparelho).
   const [extraPx, setExtraPx] = useState<number>(() => {
     try { return Math.max(0, Number(localStorage.getItem(EDITOR_EXTRA_KEY)) || 0); } catch { return 0; }
@@ -2634,6 +2654,7 @@ function NoteEditor({
           </span>
         </div>
         <div className="flex items-center gap-0.5">
+          {mode === "outline" && <div ref={setOutlineSlot} className="flex items-center" />}
           <SavingIndicator saving={saving} />
           {isField && (
             <FieldNoteInfoButton
@@ -2656,7 +2677,7 @@ function NoteEditor({
               <Pencil className="h-5 w-5" />
             </Button>
           )}
-          {!focusEdit && !(isField && mode === "outline") && (
+          {!focusEdit && mode !== "outline" && (
           <Button
             variant="ghost"
             size="sm"
@@ -2698,6 +2719,20 @@ function NoteEditor({
                   <Maximize2 className="h-4 w-4 mr-2" /> {t("personalOutlines.fullscreen.enter")}
                 </DropdownMenuItem>
               )}
+              {mode === "outline" && topicMenu.ids.length > 0 && (
+                <DropdownMenuItem onClick={() => toggleAllTopics(topicMenu.ids, !allTopicsCollapsed)}>
+                  {allTopicsCollapsed ? <ChevronsUpDown className="h-4 w-4 mr-2" /> : <ChevronsDownUp className="h-4 w-4 mr-2" />}
+                  {allTopicsCollapsed
+                    ? t("personalOutlines.topics.expandAll", { defaultValue: "Expandir todos" })
+                    : t("personalOutlines.topics.collapseAll", { defaultValue: "Recolher todos" })}
+                </DropdownMenuItem>
+              )}
+              {mode === "outline" && topicMenu.hasTimed && (
+                <DropdownMenuItem onClick={() => setBadgeSettingsOpen(true)}>
+                  <SlidersHorizontal className="h-4 w-4 mr-2" /> {t("personalOutlines.topicTime.settings", { defaultValue: "Ajustes da pílula de tempo" })}
+                </DropdownMenuItem>
+              )}
+              {mode === "outline" && (topicMenu.ids.length > 0 || topicMenu.hasTimed) && <DropdownMenuSeparator />}
               <DropdownMenuItem onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" /> {t("personalOutlines.folders.exportNote")}
               </DropdownMenuItem>
@@ -2726,6 +2761,7 @@ function NoteEditor({
 
 
 
+      <TopicBadgeSettingsDialog open={badgeSettingsOpen} onOpenChange={setBadgeSettingsOpen} />
       <Dialog open={focusEdit && detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="max-w-lg max-h-[85dvh] overflow-y-auto">
           <DialogHeader>
@@ -2739,7 +2775,7 @@ function NoteEditor({
       </Dialog>
 
       <div className="shrink-0 grid gap-3 w-full max-w-full min-w-0 mb-3 empty:hidden max-h-[38vh] overflow-y-auto overflow-x-hidden pr-1">
-        {!metaCollapsed && mode !== "edit" && !(isField && mode === "outline") && metaFields}
+        {!metaCollapsed && mode !== "edit" && mode !== "outline" && metaFields}
 
         {mode === "edit" && (
           <FloatingVersePanel
@@ -2754,25 +2790,17 @@ function NoteEditor({
 
       <div className="flex-1 min-h-[22rem] flex flex-col gap-1.5 w-full max-w-full min-w-0">
 
-        {mode === "outline" ? (
-          <div className="sticky top-0 z-20 shrink-0 -mx-3 sm:-mx-5 px-3 sm:px-5 py-1.5 bg-background/95 backdrop-blur border-b flex flex-wrap items-center gap-2">
-            {!isTalk && (
-              <div className="min-w-0 overflow-x-auto">
-                <OutlineTimer outlineId={draft.id} variant="toolbar" />
-              </div>
-            )}
-            <div ref={setOutlineSlot} className="ml-auto flex items-center" />
-          </div>
-        ) : null}
+        {/* Modo Esboço: cronômetro vira boia (arrasta e prende na borda); a
+            barra do topo fica fixa e o esboço rola por baixo dela. */}
+        {mode === "outline" && !isTalk && <FloatingOutlineTimer outlineId={draft.id} />}
         {!isTalk && mode === "outline" && (
           <OutlineInactivitySensor outlineId={draft.id} />
         )}
 
         {(() => {
           const hasAttachments = (draft.attachments?.length ?? 0) > 0;
-          // Barra de anexos tem altura fixa de 5rem (h-20). Descontar do
-          // cálculo da janela rígida para preservar o scroll interno.
-          const attachRow = hasAttachments ? " - 2.5rem" : "";
+          // Anexos viram boia flutuante: não descontam mais espaço do texto.
+          const attachRow = "";
           // Altura medida com o teclado FECHADO: abrir o teclado não encolhe a
           // área de texto (antes caía para ~3 linhas no Android).
           let minH = fullHeight ? `calc(100dvh - 14rem${attachRow})` : "22rem";
@@ -2780,7 +2808,7 @@ function NoteEditor({
           if (stableVh) {
             const rem = 16;
             if (fullHeight) {
-              const px = Math.max(22 * rem, stableVh - 14 * rem - (hasAttachments ? 5 * rem : 0));
+              const px = Math.max(22 * rem, stableVh - 14 * rem);
               minH = `${px}px`;
               maxH = `${px}px`;
             } else {
@@ -2820,13 +2848,13 @@ function NoteEditor({
                 <OutlineAttachmentsBar
                   attachments={draft.attachments ?? []}
                   readOnly
-                  className="rounded-md border"
+                  floating
                 />
               )}
               <div className="flex-1 min-h-[22rem] bg-background px-1 py-4 sm:px-6 text-[17px] leading-8 break-words [overflow-wrap:anywhere]">
                 <div className="max-w-[68ch] mx-auto">
                 {draft.content ? (
-                  <RichOutlineContent html={draft.content} outlineId={draft.id} library={activeBible} onInsertVerse={onInsertBibleText} toolbarSlot={outlineSlot} />
+                  <RichOutlineContent html={draft.content} outlineId={draft.id} library={activeBible} onInsertVerse={onInsertBibleText} toolbarSlot={outlineSlot} topicActionsInMenu />
                 ) : (
                   <span className="text-muted-foreground italic">
                     {t("fieldConsiderations.contentEmpty")}
@@ -2901,7 +2929,7 @@ export function FullscreenOutline({
 
   return (
     <div data-back-closable className="webkit-stable-layer fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none bar-top bar-bottom safe-x-landscape">
-      {showTimer && <FloatingOutlineTimer outlineId={note.id} />}
+      {showTimer && <OutlineTimer outlineId={note.id} variant="fullscreen" />}
       {showTimer && <OutlineInactivitySensor outlineId={note.id} />}
       <div className="border-b px-4 py-2 min-w-0 shrink-0">
 

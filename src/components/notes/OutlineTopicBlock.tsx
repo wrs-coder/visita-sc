@@ -3,6 +3,7 @@
  * Setinha no título e no final do tópico; recolhido mostra só o título.
  */
 import type React from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { ChevronDown, ChevronUp, ChevronsDownUp, ChevronsUpDown, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,7 @@ import { setTopicsCollapsed, toggleTopic, useCollapsedTopics } from "@/lib/outli
 import { TopicDeviationPill, TopicTimeBadge, useHasTimedTopics, useTopicDone, useTopicHasTime } from "@/components/notes/TopicTiming";
 import { resetBadgePrefs, setBadgePrefs, useBadgePrefs, type BadgePosition, type BadgeSize } from "@/lib/topic-badge-prefs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -129,7 +131,6 @@ export function OutlineTopicsToolbar({ ids, inline = false }: { ids: string[]; i
 /** Ajustes da pílula de tempo (tamanho, opacidade, posição) — só neste aparelho. */
 function TopicBadgeSettings() {
   const { t } = useTranslation();
-  const prefs = useBadgePrefs();
   const title = t("personalOutlines.topicTime.settings", { defaultValue: "Ajustes da pílula de tempo" });
   return (
     <Popover>
@@ -146,6 +147,18 @@ function TopicBadgeSettings() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 space-y-3" onClick={(e) => e.stopPropagation()}>
         <p className="text-sm font-semibold">{title}</p>
+        <TopicBadgeSettingsBody />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** Conteúdo dos ajustes da pílula de tempo (usado no popover e no diálogo do menu ⋯). */
+function TopicBadgeSettingsBody() {
+  const { t } = useTranslation();
+  const prefs = useBadgePrefs();
+  return (
+    <div className="space-y-3">
         <div className="space-y-1.5">
           <p className="text-xs text-muted-foreground">{t("personalOutlines.topicTime.size", { defaultValue: "Tamanho" })}</p>
           <ToggleGroup type="single" size="sm" variant="outline" value={prefs.size} onValueChange={(v) => v && setBadgePrefs({ size: v as BadgeSize })} className="justify-start">
@@ -171,7 +184,54 @@ function TopicBadgeSettings() {
         <Button type="button" variant="ghost" size="sm" className="w-full" onClick={resetBadgePrefs}>
           {t("personalOutlines.topicTime.reset", { defaultValue: "Restaurar padrão" })}
         </Button>
-      </PopoverContent>
-    </Popover>
+    </div>
   );
+}
+
+/** Ajustes da pílula de tempo abertos pelo menu ⋯ do Modo Esboço. */
+export function TopicBadgeSettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { t } = useTranslation();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xs">
+        <DialogHeader>
+          <DialogTitle>{t("personalOutlines.topicTime.settings", { defaultValue: "Ajustes da pílula de tempo" })}</DialogTitle>
+        </DialogHeader>
+        <TopicBadgeSettingsBody />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---- Ações dos tópicos no menu ⋯ (Modo Esboço) -----------------------------
+// O conteúdo publica os tópicos visíveis; o menu do topo lê daqui.
+export interface TopicMenuState { ids: string[]; hasTimed: boolean }
+const EMPTY_MENU: TopicMenuState = { ids: [], hasTimed: false };
+let menuState: TopicMenuState = EMPTY_MENU;
+const menuSubs = new Set<() => void>();
+function publishTopicMenu(next: TopicMenuState) {
+  menuState = next;
+  menuSubs.forEach((f) => f());
+}
+export function useTopicMenu(): TopicMenuState {
+  return useSyncExternalStore(
+    (f) => { menuSubs.add(f); return () => { menuSubs.delete(f); }; },
+    () => menuState,
+    () => EMPTY_MENU,
+  );
+}
+/** Publica os tópicos para o menu ⋯ e mostra só a pílula de desvio no topo. */
+export function TopicsMenuPublisher({ ids, showPill = true }: { ids: string[]; showPill?: boolean }) {
+  const hasTimed = useHasTimedTopics();
+  const key = ids.join("|");
+  useEffect(() => {
+    publishTopicMenu({ ids, hasTimed });
+    return () => publishTopicMenu(EMPTY_MENU);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, hasTimed]);
+  return showPill ? <div className="flex items-center shrink-0"><TopicDeviationPill /></div> : null;
+}
+/** Recolhe ou expande todos os tópicos publicados. */
+export function toggleAllTopics(ids: string[], collapse: boolean) {
+  setTopicsCollapsed(ids, collapse);
 }

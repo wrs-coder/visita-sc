@@ -319,7 +319,7 @@ export function FieldNoteFullscreenDialog({
 
 
         {note?.attachments && note.attachments.length > 0 && (
-          <OutlineAttachmentsBar attachments={note.attachments} readOnly />
+          <OutlineAttachmentsBar attachments={note.attachments} readOnly floating />
         )}
 
 
