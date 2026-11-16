@@ -104,7 +104,7 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.7.0";
+export const RELEASE_NOTES_VERSION = "5.8.0";
 
 /**
  * Aviso automático "O que há de novo" (5.7.0: ligado, só para superintendentes).
@@ -114,6 +114,65 @@ export const RELEASE_NOTES_VERSION = "5.7.0";
 export const WHATS_NEW_AUTO_SHOW = true;
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "5.8.0",
+    subtitle: "Editor estilo Samsung Notes, telas mais limpas, itinerário completo no calendário e nuvem reforçada.",
+    sections: [
+      {
+        title: "Editor de esboços e anotações", audience: ["super"],
+        items: [
+          "Barra de ferramentas no rodapé, colada ao teclado: o texto continua visível enquanto você digita.",
+          "Topo limpo com ícones: voltar, modo esboço, editar detalhes, tela cheia, mais opções e salvar.",
+          "Estilo (Aa), tamanho, cor da fonte e marca-texto abrem faixas próprias com dezenas de cores.",
+          "Mais ferramentas (⋯) em páginas de duas linhas: arraste para o lado para ver o próximo grupo.",
+          "Barra personalizada: escolha quais ferramentas ficam fixas.",
+          "Localizar e Substituir, com aviso antes de alterar citações bíblicas.",
+          "Contador de palavras e tempo estimado do discurso (130 palavras por minuto).",
+          "Recuo de primeira linha e recuo deslocado preservados ao importar e exportar Word.",
+          "Toque no espaço vazio abaixo do texto para continuar escrevendo no fim da nota.",
+        ],
+      },
+      {
+        title: "Telas mais limpas", audience: ["super"],
+        items: [
+          "Os títulos das telas foram para a barra do topo, liberando espaço útil.",
+          "Resumo da semana e Comunicação do casal sem textos repetidos; partilha reunida no menu do cartão.",
+          "Congregações mostra \"Circuito\" no topo e o Cronograma mostra o nome do seu circuito.",
+        ],
+      },
+      {
+        title: "Notas privadas", audience: ["super"],
+        items: [
+          "Toque no nome da categoria para abrir o painel lateral com as 6 categorias e seus totais.",
+          "\"+ Novo\" mostra as 6 categorias para escolher o tipo de nota.",
+        ],
+      },
+      {
+        title: "Grandes Eventos e modelos de carta", audience: ["super"],
+        items: [
+          "\"Baixar da nuvem\" e \"Enviar todos\" para eventos e modelos de carta, sem perder o que está no aparelho.",
+          "A versão mais recente de cada modelo de carta é sempre protegida.",
+          "Importação de oradores preenche Presidente e Oração, com revisão e troca das designações antes de concluir.",
+          "Partilha do evento sem internet, com ou sem as designações dos oradores.",
+        ],
+      },
+      {
+        title: "Calendário e próximas visitas", audience: ["super"],
+        items: [
+          "Calendário do mês e \"Próximas visitas\" mostram todas as semanas do itinerário, com o nome de cada evento.",
+        ],
+      },
+      {
+        title: "Bíblia e balão bíblico", audience: ["super"],
+        items: [
+          "Primeiros capítulos de cada livro corrigidos: o \"Conteúdo do livro\" não aparece mais como versículos.",
+          "Quantidade exata de versículos por capítulo reconhecida ao importar a Bíblia.",
+          "Balão bíblico mais preciso em intervalos entre capítulos e citações com \"e\", com botão para tentar de novo.",
+          "Meta Dias com um só botão \"Continuar\".",
+        ],
+      },
+    ],
+  },
   {
     version: "5.7.0",
     subtitle: "Edição especial — relógio na tribuna, oradores importados e esboços sem distrações.",

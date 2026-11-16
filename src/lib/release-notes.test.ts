@@ -10,10 +10,10 @@ import { shouldAutoOpenWhatsNew } from "./whats-new";
 import pkg from "../../package.json";
 
 describe("release notes por versão", () => {
-  it("app e novidades na 5.7.0", () => {
-    expect(RELEASE_NOTES_VERSION).toBe("5.7.0");
-    expect(APP_VERSION).toBe("5.7.0");
-    expect(pkg.version).toBe("5.7.0");
+  it("app e novidades na 5.8.0", () => {
+    expect(RELEASE_NOTES_VERSION).toBe("5.8.0");
+    expect(APP_VERSION).toBe("5.8.0");
+    expect(pkg.version).toBe("5.8.0");
   });
   it("a primeira entrada do histórico é a versão atual", () => {
     expect(RELEASE_HISTORY[0].version).toBe(RELEASE_NOTES_VERSION);
@@ -23,7 +23,7 @@ describe("release notes por versão", () => {
     const v = RELEASE_HISTORY.map((r) => r.version);
     expect(new Set(v).size).toBe(v.length);
   });
-  it("novidades da 5.7.0 são só do superintendente e abrem sozinhas", () => {
+  it("novidades da 5.8.0 são só do superintendente e abrem sozinhas", () => {
     expect(WHATS_NEW_AUTO_SHOW).toBe(true);
     expect(RELEASE_HISTORY[0].sections.every((s) => s.audience?.join() === "super")).toBe(true);
     expect(
