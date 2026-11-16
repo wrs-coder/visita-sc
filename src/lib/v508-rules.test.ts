@@ -29,10 +29,11 @@ describe("5.0.8", () => {
     expect(n).toBe(2);
   });
   it("novidades especiais reúnem 5.0.5 a 5.0.8 em uma entrada", () => {
-    expect(RELEASE_HISTORY[0].version).toBe("5.7.0");
-    expect(RELEASE_HISTORY[1].version).toBe("5.6.0");
-    expect(RELEASE_HISTORY[2].version).toBe("5.5.0");
-    expect(RELEASE_HISTORY[3].version).toBe("5.4.0");
+    expect(RELEASE_HISTORY[0].version).toBe("5.8.0");
+    expect(RELEASE_HISTORY[1].version).toBe("5.7.0");
+    expect(RELEASE_HISTORY[2].version).toBe("5.6.0");
+    expect(RELEASE_HISTORY[3].version).toBe("5.5.0");
+    expect(RELEASE_HISTORY[4].version).toBe("5.4.0");
     expect(RELEASE_HISTORY.map((r) => r.version)).not.toContain("5.0.7");
     expect(RELEASE_HISTORY[4].version).toBe("5.3.0");
     expect(RELEASE_HISTORY[5].version).toBe("5.2.0");
