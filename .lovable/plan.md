@@ -1,7 +1,7 @@
 # Correções: cronômetro, rolagem, bolha de anexos, barra do Modo Esboço e Esboço do pastoreio
 
 ## O que encontrei (causas reais)
-- **(01) Cronômetro:** a boia só foi colocada na *Tela cheia*. O Modo Esboço normal (📖 dentro do esboço) continua com o cronômetro preso na faixa do topo. Por isso nada mudou.
+- **(01) Cronômetro:** por engano, coloquei a boia na *Tela cheia* (⤢), que não foi pedido, e o *Modo Esboço* (📖) continuou com o cronômetro preso no topo. Correção: a boia vai para o Modo Esboço e a Tela cheia volta exatamente como era antes (cronômetro no lugar original, sem nenhuma outra mudança).
 - **(02) Rolagem:** o modo edição tem duas rolagens (a dos campos de cima, limitada a 38% da tela, e a do texto). Quando a altura é recalculada (teclado, alça de altura), uma delas some porque a altura passa a caber "na conta" sem sobrar.
 - **(03) Bolha de anexos:** ela ainda é desenhada no mesmo lugar da antiga faixa de miniaturas, e a altura do texto ainda desconta esse espaço.
 - **(04) Topo do Modo Esboço:** "Ajustes do tempo por tópico" e "Recolher todos" ficam numa linha própria; a faixa do topo rola junto em alguns casos.
@@ -75,10 +75,11 @@ Menu ⋯ :  Ajustes do tempo por tópico
 - Recolhido mostra uma linha resumo: "16/11 · João · 3 pessoas". O aparelho lembra se estava recolhido.
 
 ## O que não muda
+**Tela cheia (⤢): volta a ser como era antes da última alteração e não recebe nenhuma das mudanças deste plano.**
 Conteúdo salvo, sincronização, formato dos esboços, tempo por tópico, avisos do cronômetro, balão bíblico e dados das notas de pastoreio.
 
 ## Detalhes técnicos
-- `OutlinesWorkspace.tsx` (modo outline inline): trocar `OutlineTimer variant="toolbar"` por `FloatingOutlineTimer`; remover a faixa sticky do cartão/título; o `toolbarSlot` de `RichOutlineContent` (ajustes de tempo + recolher todos) passa a ser renderizado como itens do menu ⋯ existente (expor ações via callback/ref em vez de portal no slot). Mesmo ajuste na `FullscreenOutline` e em `FieldNoteFullscreenDialog`.
+- `OutlinesWorkspace.tsx` (modo outline inline): trocar `OutlineTimer variant="toolbar"` por `FloatingOutlineTimer`; remover a faixa sticky do cartão/título; o `toolbarSlot` de `RichOutlineContent` (ajustes de tempo + recolher todos) passa a ser renderizado como itens do menu ⋯ existente (expor ações via callback/ref em vez de portal no slot). `FullscreenOutline` (tela cheia): reverter `FloatingOutlineTimer` para o `OutlineTimer` original na posição anterior; nenhuma outra mudança nela (mantém faixa de anexos e linha de zoom/recolher como antes).
 - Cabeçalho do modo esboço com `sticky top-0` dentro do contêiner que rola (ou contêiner `flex-col` com cabeçalho `shrink-0` e corpo `overflow-y-auto`).
 - `OutlineAttachmentsBar`: nova variante flutuante (portal, arrastável, encaixa na borda, posição salva em localStorage, mesmo padrão de `FloatingVersePanel`/`timer-float-prefs`). Remover `attachRow` dos cálculos de altura.
 - Rolagens: corpo do editor com `overflow-y: scroll` + `scrollbar-gutter: stable`; cálculo `minH/maxH` sem igualar exatamente a altura do contêiner pai; campos de cima mantêm `overflow-y-auto` com altura mínima.
