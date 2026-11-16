@@ -1052,7 +1052,9 @@
       "dateLine": "Date",
       "outline": "Shepherding outline",
       "outlinePlaceholder": "Points, scriptures, links, images and videos to show…",
-      "fullscreen": "Full screen"
+      "fullscreen": "Full screen",
+      "visitInfo": "Visit details",
+      "peopleCount": "{{count}} people"
     },
     "structured": {
       "s303": {

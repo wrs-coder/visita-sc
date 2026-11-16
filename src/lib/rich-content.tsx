@@ -7,7 +7,7 @@ import { UnknownRefLink } from "@/components/bible/UnknownRefPopover";
 import type { BibleLibrary } from "@/lib/bible-notes-store";
 import { RICH_NOTE_CONTENT_CLASS } from "@/lib/rich-note-styles";
 import { OUTLINE_TOPIC_TYPE } from "@/lib/outline-topics";
-import { OutlineTopicBlock, OutlineTopicsToolbar } from "@/components/notes/OutlineTopicBlock";
+import { OutlineTopicBlock, OutlineTopicsToolbar, TopicsMenuPublisher } from "@/components/notes/OutlineTopicBlock";
 import { TopicTimingProvider } from "@/components/notes/TopicTiming";
 import { normalizeMinutes, type TimedTopic } from "@/lib/outline-schedule";
 
@@ -511,8 +511,11 @@ function RichOutlineContentImpl({
   onInsertVerse,
   outlineId,
   toolbarSlot,
+  topicActionsInMenu,
 }: {
   html: string;
+  /** Modo Esboço: "ajustes" e "recolher todos" vão para o menu ⋯; no topo fica só a pílula de desvio. */
+  topicActionsInMenu?: boolean;
   /** Quando informado, a barra de tópicos (desvio, ajustes, recolher todos) é desenhada nesse elemento fixo. */
   toolbarSlot?: HTMLElement | null;
   /** Liga o controle de tempo por tópico (modo esboço / tela cheia). */
@@ -577,7 +580,7 @@ function RichOutlineContentImpl({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const topics = React.useMemo(() => timedTopics.current, [rendered]);
   if (!rendered) return <>{emptyFallback ?? null}</>;
-  rendered = <ToolbarSlotContext.Provider value={toolbarSlot}>{rendered}</ToolbarSlotContext.Provider>;
+  rendered = <TopicsMenuModeContext.Provider value={!!topicActionsInMenu}><ToolbarSlotContext.Provider value={toolbarSlot}>{rendered}</ToolbarSlotContext.Provider></TopicsMenuModeContext.Provider>;
   if (outlineId && topics.length > 0) {
     return <TopicTimingProvider outlineId={outlineId} topics={topics}>{rendered}</TopicTimingProvider>;
   }
@@ -589,10 +592,15 @@ function RichOutlineContentImpl({
  * mudam. Evita reprocessar notas longas a cada atualização de estado do pai.
  */
 const ToolbarSlotContext = React.createContext<HTMLElement | null | undefined>(undefined);
+const TopicsMenuModeContext = React.createContext(false);
 
 /** Desenha a barra de tópicos no topo fixo da tela quando há um local reservado. */
 function TopicsToolbarSlot({ ids }: { ids: string[] }) {
   const slot = React.useContext(ToolbarSlotContext);
+  const menuMode = React.useContext(TopicsMenuModeContext);
+  if (menuMode) {
+    return slot ? createPortal(<TopicsMenuPublisher ids={ids} />, slot) : <TopicsMenuPublisher ids={ids} showPill={false} />;
+  }
   if (slot === undefined) return <OutlineTopicsToolbar ids={ids} />;
   if (!slot) return null;
   return createPortal(<OutlineTopicsToolbar ids={ids} inline />, slot);

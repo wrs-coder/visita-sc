@@ -398,7 +398,7 @@ export function RichNoteEditor({
         "rounded-md border bg-background relative flex flex-col",
         // Com altura máxima, a caixa rola por dentro e a barra fica presa no
         // rodapé dela; sem altura máxima, quem rola é a tela.
-        scrollsInside ? "overflow-y-auto overflow-x-hidden" : "overflow-x-clip",
+        scrollsInside ? "always-scrollbar overflow-x-hidden" : "overflow-x-clip",
         // Onda 7.8 — modo foco: dim em parágrafos fora do bloco ativo
         // (apenas visual; o conteúdo continua editável).
         focusMode && [
@@ -423,6 +423,8 @@ export function RichNoteEditor({
       {onAttachmentsChange && attachments && attachments.length > 0 && (
         <OutlineAttachmentsBar
           attachments={attachments}
+          floating
+          floatKey="outlineAttachments.editPos"
           onRemove={(id) => onAttachmentsChange(attachments.filter((a) => a.id !== id))}
         />
       )}

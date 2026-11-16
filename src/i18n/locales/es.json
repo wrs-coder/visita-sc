@@ -1029,7 +1029,9 @@
       "dateLine": "Fecha",
       "outline": "Bosquejo del pastoreo",
       "outlinePlaceholder": "Puntos, textos bíblicos, enlaces, imágenes y videos para mostrar…",
-      "fullscreen": "Pantalla completa"
+      "fullscreen": "Pantalla completa",
+      "visitInfo": "Información de la visita",
+      "peopleCount": "{{count}} personas"
     },
     "structured": {
       "s303": {

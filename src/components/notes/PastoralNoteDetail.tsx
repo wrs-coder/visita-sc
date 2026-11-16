@@ -5,10 +5,10 @@
  * e tela cheia (⤢). O esboço fica em payload.outline_html e os anexos em
  * payload.attachments — notas antigas abrem com o esboço vazio.
  */
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, BookOpen, Check, Loader2, Maximize2, Minimize2, Trash2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, ChevronDown, Loader2, Maximize2, Minimize2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,12 @@ import { appendPlainTextToNote } from "@/lib/note-content";
 import type { NoteAttachment } from "@/lib/outline-attachments";
 import { readPastoralOutline } from "@/lib/pastoral-outline";
 import { FullscreenOutline } from "@/components/outlines/OutlinesWorkspace";
+import { FloatingVersePanel } from "@/components/guest-workspace/FloatingVersePanel";
+import { findCitations, stripHtmlForDetection } from "@/lib/bible-refs";
+import { pastoralFieldsSummary } from "@/lib/pastoral-outline";
+import { cn } from "@/lib/utils";
+
+const FIELDS_COLLAPSED_KEY = "pastoral.fieldsCollapsed";
 
 const RichNoteEditor = lazy(() => import("./RichNoteEditor").then((m) => ({ default: m.RichNoteEditor })));
 
@@ -51,6 +57,21 @@ export function PastoralNoteDetail({ note, saving, onSave, onRemove, onClose }: 
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [library, setLibrary] = useState<BibleLibrary | null>(null);
   useEffect(() => { void getActiveLibrary("outlines").then(setLibrary); }, []);
+  // Informações da visita recolhíveis; a escolha fica neste aparelho.
+  const [fieldsCollapsed, setFieldsCollapsed] = useState(false);
+  useEffect(() => {
+    try { setFieldsCollapsed(localStorage.getItem(FIELDS_COLLAPSED_KEY) === "1"); } catch { /* noop */ }
+  }, []);
+  const toggleFields = () => setFieldsCollapsed((v) => {
+    try { localStorage.setItem(FIELDS_COLLAPSED_KEY, v ? "0" : "1"); } catch { /* noop */ }
+    return !v;
+  });
+  // Textos bíblicos digitados no esboço (mesma detecção dos Esboços Pessoais).
+  const detected = useMemo(
+    () => (library ? findCitations(library.books, stripHtmlForDetection(html)) : []),
+    [library, html],
+  );
+  const insertBibleText = (text: string) => setHtml((h) => appendPlainTextToNote(h, text));
 
   const dirty = title !== (note.title ?? "") || date !== (note.note_date ?? "")
     || companion !== (note.companion ?? "") || involved !== (note.involved_names ?? "")
@@ -74,9 +95,11 @@ export function PastoralNoteDetail({ note, saving, onSave, onRemove, onClose }: 
 
   // Portal: a lista usa content-visibility (contenção), que prenderia este
   // overlay fixed dentro do cartão — ele ficava como uma faixa fina.
+  // Camada z-45: acima do topo do app (z-30) e ABAIXO das janelas de link,
+  // anexos e listas (z-50), que antes abriam escondidas atrás da nota.
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div data-back-closable className="fixed inset-0 z-[90] flex flex-col bg-background bar-top">
+    <div data-back-closable className="fixed inset-0 z-[45] flex flex-col bg-background bar-top">
       <div className="flex items-center gap-1 border-b px-2 py-2 shrink-0">
         <Button size="icon" variant="ghost" onClick={close} aria-label={t("common.back", { defaultValue: "Voltar" })} title={t("common.back", { defaultValue: "Voltar" })}>
           <ArrowLeft className="h-5 w-5" />
@@ -97,12 +120,29 @@ export function PastoralNoteDetail({ note, saving, onSave, onRemove, onClose }: 
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
         {!expanded && (
-          <div className="grid grid-cols-1 gap-2">
-            <div><Label className="text-xs">{t("notes.pastoral.dateLabel")}</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-            <div><Label className="text-xs">{t("notes.pastoral.companion")}</Label><Input value={companion} onChange={(e) => setCompanion(e.target.value)} placeholder={t("notes.pastoral.companionPlaceholder")} /></div>
-            <div><Label className="text-xs">{t("notes.pastoral.involved")}</Label><Input value={involved} onChange={(e) => setInvolved(e.target.value)} placeholder={t("notes.pastoral.involvedPlaceholder")} /></div>
-            <div><Label className="text-xs">{t("notes.pastoral.additional")}</Label><Textarea rows={3} value={additional} onChange={(e) => setAdditional(e.target.value)} placeholder={t("notes.pastoral.additionalPlaceholder")} /></div>
-          </div>
+          <section className="rounded-2xl border bg-card">
+            <button
+              type="button"
+              onClick={toggleFields}
+              aria-expanded={!fieldsCollapsed}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
+            >
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-semibold">{t("notes.pastoral.visitInfo", { defaultValue: "Informações da visita" })}</span>
+                {fieldsCollapsed && (
+                  <span className="block truncate text-xs text-muted-foreground">{pastoralFieldsSummary({ date, companion, involved }, (n) => t("notes.pastoral.peopleCount", { count: n, defaultValue: "{{count}} pessoas" })) || "—"}</span>
+                )}
+              </span>
+              <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", !fieldsCollapsed && "rotate-180")} />
+            </button>
+            {/* Recolhido só esconde (não desmonta), para não perder o que foi digitado. */}
+            <div className={cn("grid grid-cols-1 gap-2 border-t px-3 pb-3 pt-2", fieldsCollapsed && "hidden")}>
+              <div><Label className="text-xs">{t("notes.pastoral.dateLabel")}</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+              <div><Label className="text-xs">{t("notes.pastoral.companion")}</Label><Input value={companion} onChange={(e) => setCompanion(e.target.value)} placeholder={t("notes.pastoral.companionPlaceholder")} /></div>
+              <div><Label className="text-xs">{t("notes.pastoral.involved")}</Label><Textarea rows={3} value={involved} onChange={(e) => setInvolved(e.target.value)} placeholder={t("notes.pastoral.involvedPlaceholder")} /></div>
+              <div><Label className="text-xs">{t("notes.pastoral.additional")}</Label><Textarea rows={3} value={additional} onChange={(e) => setAdditional(e.target.value)} placeholder={t("notes.pastoral.additionalPlaceholder")} /></div>
+            </div>
+          </section>
         )}
         <div className="space-y-1">
           <Label className="text-xs">{t("notes.pastoral.outline", { defaultValue: "Esboço do pastoreio" })}</Label>
@@ -119,13 +159,19 @@ export function PastoralNoteDetail({ note, saving, onSave, onRemove, onClose }: 
             />
           </Suspense>
         </div>
+        <FloatingVersePanel
+          library={library}
+          detected={detected}
+          onInsert={insertBibleText}
+          storageKey="pastoral.versePanel.pos"
+        />
       </div>
       {outlineOpen && (
         <FullscreenOutline
           note={asFieldNote}
           library={library}
           onClose={() => setOutlineOpen(false)}
-          onInsertBibleText={(text) => setHtml((h) => appendPlainTextToNote(h, text))}
+          onInsertBibleText={insertBibleText}
         />
       )}
     </div>,

@@ -762,3 +762,28 @@ main [role="tabpanel"] [role="tab"][data-state="active"] {
   background-color: color-mix(in oklab, var(--primary) 38%, transparent);
   box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 70%, transparent);
 }
+
+/* Rolagem sempre visível (modo edição no celular): a barra não some ao
+   parar de rolar nem quando o texto ainda cabe na caixa. */
+@utility always-scrollbar {
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-muted-foreground) transparent;
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--color-muted-foreground) 55%, transparent); border-radius: 9999px; }
+}
+html.page-scrollbar-visible {
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-muted-foreground) transparent;
+}
+html.page-scrollbar-visible::-webkit-scrollbar { width: 5px; }
+html.page-scrollbar-visible::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--color-muted-foreground) 55%, transparent); border-radius: 9999px; }
+
+/* Esboço aberto: a barra do topo do esboço precisa ficar fixa ao rolar.
+   overflow-x:hidden no <main> o torna um contêiner de rolagem que não rola,
+   e o "sticky" para de funcionar; "clip" corta igual sem esse efeito. */
+@supports (overflow-x: clip) {
+  html.outline-sticky main { overflow-x: clip; }
+}
