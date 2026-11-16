@@ -1686,6 +1686,7 @@
       "themeGreenNeon": "Verde neón",
       "zoomIn": "Aumentar tamaño del visor",
       "zoomOut": "Disminuir tamaño del visor",
+      "close": "Cerrar cronómetro",
       "resetConfirmTitle": "¿Reiniciar el cronómetro?",
       "resetConfirmDesc": "El tiempo transcurrido volverá a 00:00.",
       "resetConfirm": "Confirmar",

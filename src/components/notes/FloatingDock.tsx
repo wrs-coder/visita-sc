@@ -10,19 +10,21 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { GripVertical } from "lucide-react";
+import { GripVertical, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FLOAT_MARGIN, loadFloatPos, saveFloatPos, snapFloat, type FloatPos } from "@/lib/timer-float-prefs";
 
 export function FloatingDock({
-  storageKey, defaultPos, topReserved = 96, mode = "grip", onTap, gripLabel, className, children, hidden,
+  storageKey, defaultPos, topReserved = 96, mode = "grip", onTap, onClose, gripLabel, closeLabel, className, children, hidden,
 }: {
   storageKey?: string;
   defaultPos: FloatPos;
   topReserved?: number;
   mode?: "grip" | "whole";
   onTap?: () => void;
+  onClose?: () => void;
   gripLabel?: string;
+  closeLabel?: string;
   className?: string;
   children: ReactNode;
   hidden?: boolean;
@@ -104,6 +106,17 @@ export function FloatingDock({
                 <GripVertical className="h-4 w-4" />
               </button>
               {children}
+              {onClose && (
+                <button
+                  type="button"
+                  aria-label={closeLabel}
+                  title={closeLabel}
+                  onClick={onClose}
+                  className="flex h-9 w-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
           ) : children}
         </div>,
