@@ -1,7 +1,7 @@
 import { appConfirm } from "@/components/ui/app-dialogs";
 import { createFileRoute } from "@tanstack/react-router";
 import { BibleRefChips } from "@/components/bible/BibleRefText";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,8 @@ import type { JsPdfCompat } from "@/lib/pdf/pdf-engine";
 import { offlineInsert, offlineUpdate, offlineDelete } from "@/lib/local-write";
 import { saveBlob } from "@/lib/share";
 import { cn } from "@/lib/utils";
+import { readPastoralOutline, pastoralOutlineText } from "@/lib/pastoral-outline";
+const PastoralNoteDetail = lazy(() => import("@/components/notes/PastoralNoteDetail").then((m) => ({ default: m.PastoralNoteDetail })));
 
 function makeUuid(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -670,6 +672,7 @@ function renderNoteToPdf(n: Note, writeLine: (t: string, s?: number, b?: boolean
       field(`${t("notes.pastoral.companion")}:`, n.companion);
       field(`${t("notes.pastoral.involved")}:`, n.involved_names);
       field(`${t("notes.pastoral.additional")}:`, n.additional_info);
+      field(`${t("notes.pastoral.outline", { defaultValue: "Esboço do pastoreio" })}:`, pastoralOutlineText(n.payload as Record<string, unknown> | null) || null);
       break;
     case "s303":
       field(`${t("notes.structured.s303.positivos")}:`, p.positivos);
@@ -710,6 +713,7 @@ function noteToTextLines(n: Note, t: TFn, dateLocale: DateLocale): string[] {
       add(t("notes.pastoral.companion"), n.companion);
       add(t("notes.pastoral.involved"), n.involved_names);
       add(t("notes.pastoral.additional"), n.additional_info);
+      add(t("notes.pastoral.outline", { defaultValue: "Esboço do pastoreio" }), pastoralOutlineText(n.payload as Record<string, unknown> | null) || null);
       break;
     case "s303":
       add(t("notes.structured.s303.positivos"), p.positivos);
@@ -793,38 +797,43 @@ function FreeNoteCard({ note, savingId, update, remove, checked, onToggleSelect 
 function PastoralNoteCard({ note, savingId, update, remove, checked, onToggleSelect }: { note: Note; savingId: string | null; update: (id: string, p: Partial<Note>) => void; remove: (id: string) => void; checked: boolean; onToggleSelect: () => void }) {
   const { t, i18n } = useTranslation();
   const dateLocale = getDateLocale(i18n.language);
-  const [date, setDate] = useState(note.note_date ?? "");
-  const [companion, setCompanion] = useState(note.companion ?? "");
-  const [involved, setInvolved] = useState(note.involved_names ?? "");
-  const [additional, setAdditional] = useState(note.additional_info ?? "");
-  useEffect(() => {
-    setDate(note.note_date ?? ""); setCompanion(note.companion ?? "");
-    setInvolved(note.involved_names ?? ""); setAdditional(note.additional_info ?? "");
-  }, [note.id, note.note_date, note.companion, note.involved_names, note.additional_info]);
-  const dirty = date !== (note.note_date ?? "") || companion !== (note.companion ?? "") || involved !== (note.involved_names ?? "") || additional !== (note.additional_info ?? "");
-  const everSaved = !!(note.companion || note.involved_names || note.additional_info);
-  const handleSave = () => { if (dirty) update(note.id, { note_date: date || null, companion, involved_names: involved, additional_info: additional }); };
+  const [open, setOpen] = useState(false);
+  const outline = readPastoralOutline(note.payload as Record<string, unknown> | null);
+  const media = outline.attachments.filter((a) => a.kind === "photo" || a.kind === "video").length;
+  const preview = pastoralOutlineText(note.payload as Record<string, unknown> | null) || note.additional_info || "";
   return (
-    <Card className="shadow-card">
-      <CardContent className="p-4 space-y-3">
-        <CardHeader
-          checked={checked} onToggleSelect={onToggleSelect} onRemove={() => remove(note.id)}
-          right={note.note_date ? format(parseISO(note.note_date), "EEE, d MMM yyyy", { locale: dateLocale }) : t("notes.pastoral.noDate")}
-        />
-        <div className="grid grid-cols-1 gap-2">
-          <div><Label className="text-xs">{t("notes.pastoral.dateLabel")}</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-          <div><Label className="text-xs">{t("notes.pastoral.companion")}</Label><Input value={companion} onChange={(e) => setCompanion(e.target.value)} placeholder={t("notes.pastoral.companionPlaceholder")} /></div>
-          <div><Label className="text-xs">{t("notes.pastoral.involved")}</Label><Input value={involved} onChange={(e) => setInvolved(e.target.value)} placeholder={t("notes.pastoral.involvedPlaceholder")} /></div>
-          <div><Label className="text-xs">{t("notes.pastoral.additional")}</Label><Textarea rows={4} value={additional} onChange={(e) => setAdditional(e.target.value)} placeholder={t("notes.pastoral.additionalPlaceholder")} /><BibleRefChips text={additional} className="mt-1" /></div>
-        </div>
-        <div className="flex justify-end">
-          <Button size="sm" disabled={!dirty || savingId === note.id} onClick={handleSave}>
-            {savingId === note.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
-            {everSaved ? t("notes.saveChanges") : t("notes.save")}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <>
+      <Card className="shadow-card active:scale-[0.99] transition-transform">
+        <CardContent className="p-0">
+          <div className="flex items-start gap-2 p-3">
+            <Checkbox checked={checked} onCheckedChange={onToggleSelect} className="mt-1" aria-label={note.title ?? ""} />
+            <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen(true)}>
+              <p className="truncate font-semibold">{note.title || note.involved_names || t("notes.categories.pastoral.default", { defaultValue: "Pastoreio" })}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {[note.note_date ? format(parseISO(note.note_date), "d MMM yyyy", { locale: dateLocale }) : t("notes.pastoral.noDate"), note.companion].filter(Boolean).join(" · ")}
+              </p>
+              {preview && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{preview}</p>}
+              {(outline.html || media > 0) && (
+                <p className="mt-1 text-xs text-primary">
+                  {[outline.html ? `📝 ${t("notes.pastoral.outline", { defaultValue: "Esboço do pastoreio" })}` : "", media ? `🖼 ${media}` : ""].filter(Boolean).join(" · ")}
+                </p>
+              )}
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+      {open && (
+        <Suspense fallback={null}>
+          <PastoralNoteDetail
+            note={note}
+            saving={savingId === note.id}
+            onSave={(patch) => update(note.id, patch as unknown as Partial<Note>)}
+            onRemove={() => { setOpen(false); remove(note.id); }}
+            onClose={() => setOpen(false)}
+          />
+        </Suspense>
+      )}
+    </>
   );
 }
 

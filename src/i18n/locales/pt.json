@@ -1039,7 +1039,10 @@
       "involvedPlaceholder": "Pessoas visitadas",
       "additional": "Informações adicionais",
       "additionalPlaceholder": "Pontos discutidos, encorajamento, próximos passos...",
-      "dateLine": "Data"
+      "dateLine": "Data",
+      "outline": "Esboço do pastoreio",
+      "outlinePlaceholder": "Pontos, textos bíblicos, links, imagens e vídeos para mostrar…",
+      "fullscreen": "Tela cheia"
     },
     "structured": {
       "s303": {

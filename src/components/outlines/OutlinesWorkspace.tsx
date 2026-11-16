@@ -2771,7 +2771,7 @@ function NoteEditor({
           const hasAttachments = (draft.attachments?.length ?? 0) > 0;
           // Barra de anexos tem altura fixa de 5rem (h-20). Descontar do
           // cálculo da janela rígida para preservar o scroll interno.
-          const attachRow = hasAttachments ? " - 5rem" : "";
+          const attachRow = hasAttachments ? " - 2.5rem" : "";
           // Altura medida com o teclado FECHADO: abrir o teclado não encolhe a
           // área de texto (antes caía para ~3 linhas no Android).
           let minH = fullHeight ? `calc(100dvh - 14rem${attachRow})` : "22rem";
@@ -2849,7 +2849,7 @@ function NoteEditor({
 // Fullscreen outline
 // =============================================================
 
-function FullscreenOutline({
+export function FullscreenOutline({
   note,
   library,
   onClose,

@@ -1,5 +1,5 @@
 /**
- * Barra horizontal de miniaturas de anexos — altura FIXA (5rem) para não
+ * Balão de anexos (abre folha com miniaturas) — altura FIXA (2.5rem) para não
  * deformar o cálculo `calc(100dvh - 14rem - 5rem)` do editor imersivo.
  *
  * - Card 48×48, cantos arredondados, X discreto (readOnly esconde).
@@ -9,8 +9,9 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X, PlayCircle, FileText, ExternalLink, HardDrive, ImageOff, Loader2 } from "lucide-react";
+import { Image as ImageIcon, X, PlayCircle, FileText, ExternalLink, HardDrive, ImageOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AttachmentLightbox } from "./AttachmentLightbox";
 import { AttachmentVideoLightbox } from "./AttachmentVideoLightbox";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
@@ -29,7 +30,7 @@ interface Props {
   className?: string;
 }
 
-const BAR_HEIGHT = "h-20"; // 5rem — bate com o desconto do editor.
+const BAR_HEIGHT = "h-10"; // 2.5rem — bate com o desconto do editor.
 
 function isLocalVideo(a: NoteAttachment): boolean {
   return a.kind === "video" && isLocalFileAttachment(a);
@@ -112,6 +113,7 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
   const [lightbox, setLightbox] = useState<NoteAttachment | null>(null);
   const [videoLightbox, setVideoLightbox] = useState<NoteAttachment | null>(null);
   const [missingNotice, setMissingNotice] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   if (!attachments || attachments.length === 0) return null;
 
@@ -134,26 +136,39 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
     onRemove(a.id);
   }
 
+  const photos = attachments.filter((a) => a.kind === "photo").length;
+  const videos = attachments.filter((a) => a.kind === "video").length;
+  const others = attachments.length - photos - videos;
+  const label = t("personalOutlines.attachments.barLabel", { defaultValue: "Anexos do esboço" });
+
   return (
     <>
-      <div
-        className={cn(
-          "w-full border-b bg-background/95 backdrop-blur",
-          BAR_HEIGHT,
-          "flex items-center gap-2 overflow-x-auto overflow-y-hidden px-2 py-1.5",
-          "scrollbar-thin",
-          className,
-        )}
-        role="list"
-        aria-label={t("personalOutlines.attachments.barLabel", {
-          defaultValue: "Anexos do esboço",
-        })}
-      >
+      {/* Balão compacto (igual ao contador de textos bíblicos): abre a folha com os anexos. */}
+      <div className={cn("w-full flex items-center justify-end gap-2 px-2", BAR_HEIGHT, className)}>
+        <button
+          type="button"
+          onClick={() => setSheetOpen(true)}
+          aria-label={`${label} (${attachments.length})`}
+          title={label}
+          className="inline-flex h-7 items-center gap-1.5 rounded-full border bg-primary/10 px-3 text-xs font-medium text-primary shadow-sm active:scale-95 transition"
+        >
+          {photos > 0 && <span className="inline-flex items-center gap-1"><ImageIcon className="h-3.5 w-3.5" />{photos}</span>}
+          {videos > 0 && <span className="inline-flex items-center gap-1"><PlayCircle className="h-3.5 w-3.5" />{videos}</span>}
+          {others > 0 && <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" />{others}</span>}
+        </button>
+      </div>
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent side="bottom" className="max-h-[70dvh] overflow-y-auto rounded-t-2xl">
+          <SheetHeader className="text-left">
+            <SheetTitle>{label} ({attachments.length})</SheetTitle>
+          </SheetHeader>
+          <div className="mt-3 grid grid-cols-4 gap-3 sm:grid-cols-6" role="list" aria-label={label}>
         {attachments.map((a) => {
           const noticed = missingNotice === a.id;
           return (
-            <div key={a.id} role="listitem" className="relative shrink-0 flex flex-col items-center w-14">
-              <AttachmentThumb attachment={a} onOpen={(missing) => void handleClick(a, missing)} />
+            <div key={a.id} role="listitem" className="relative flex flex-col items-center">
+              <AttachmentThumb attachment={a} onOpen={(missing) => { if (!missing && a.kind !== "publication") setSheetOpen(false); void handleClick(a, missing); }} />
 
               {!readOnly && (
                 <button
@@ -164,7 +179,7 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
                   }}
                   aria-label={t("common.remove", { defaultValue: "Remover" })}
                   className={cn(
-                    "absolute -top-1 -right-0.5 h-4 w-4 rounded-full bg-background border shadow",
+                    "absolute -top-1 right-1 h-5 w-5 rounded-full bg-background border shadow",
                     "flex items-center justify-center text-muted-foreground hover:text-destructive",
                   )}
                 >
@@ -174,7 +189,7 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
 
               <span
                 className={cn(
-                  "mt-1 w-full text-[10px] leading-tight text-center truncate",
+                  "mt-1 w-full text-[11px] leading-tight text-center truncate",
                   noticed ? "text-destructive" : "text-foreground/80",
                 )}
                 title={a.title}
@@ -186,7 +201,9 @@ export function OutlineAttachmentsBar({ attachments, readOnly = false, onRemove,
             </div>
           );
         })}
-      </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {lightbox && (
         <AttachmentLightbox open attachment={lightbox} onClose={() => setLightbox(null)} />

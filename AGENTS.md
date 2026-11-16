@@ -43,3 +43,6 @@
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
 - Outline edit mode hides page chrome, details open in a dialog, handle height is device-local.
+- Visit-program Pastoreio/Recomendações send straight to circuit_schedule_events/private_notes from a bottom sheet (ProgramDispatchSheet + pure pastoral-dispatch.ts: slot label → visit-week date/start time, field mapping, sent keys in localStorage per visit), staying on the screen, because users process many events in a row.
+- The pastoral note's "Esboço do pastoreio" lives in private_notes.payload (outline_html, attachments) and opens in its own screen (PastoralNoteDetail) reusing RichNoteEditor/FullscreenOutline; old notes read as empty, so no schema change.
+- Outline attachments show as a compact count bubble that opens a sheet of thumbnails (OutlineAttachmentsBar, 2.5rem row), because the fixed thumbnail strip stole writing space.

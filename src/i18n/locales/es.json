@@ -1026,7 +1026,10 @@
       "involvedPlaceholder": "Personas visitadas",
       "additional": "Información adicional",
       "additionalPlaceholder": "Puntos tratados, ánimo, próximos pasos...",
-      "dateLine": "Fecha"
+      "dateLine": "Fecha",
+      "outline": "Bosquejo del pastoreo",
+      "outlinePlaceholder": "Puntos, textos bíblicos, enlaces, imágenes y videos para mostrar…",
+      "fullscreen": "Pantalla completa"
     },
     "structured": {
       "s303": {
