@@ -112,6 +112,27 @@ Depois de agendar ou salvar, o app **não sai mais** da tela: aparece só um avi
 - Eventos já salvos aparecem desmarcados, para não duplicar.
 - Minha opinião: fazer os dois. Ficar na tela resolve o dia a dia; "Salvar todos" economiza tempo no início da semana.
 
+## (05) "Dia/Horário" do Pastoreio vira data e hora no Cronograma
+
+O campo é escrito por extenso (ex.: "Domingo, 10:30"). O app passa a entender:
+- **Dia da semana** → a data daquele dia dentro da semana da visita da congregação (ex.: visita de 10 a 16/11 → "Domingo" = 16/11).
+- **Horário** → "Horário início" do Cronograma.
+
+```text
+┌──────────────────────────────┐
+│ ▬▬  Agendar no Cronograma    │
+│ Lido em "Domingo, 10:30":    │
+│ Data     [ Dom, 16/11 ▾ ]    │
+│ Início   [ 10:30      ]      │
+│ ⚠ se não entender: campos    │
+│   vazios para você escolher  │
+└──────────────────────────────┘
+```
+
+- Aceita variações: "dom", "domingo 10h30", "Sáb. 9h", "segunda-feira – 19:00", com ou sem acento (também em inglês/espanhol).
+- Se só tiver dia ou só horário, preenche o que der e deixa o resto para escolher; nada é gravado sem você confirmar.
+- Vale no agendamento individual e no "Salvar todos" (a data/hora aparece em cada linha para ajustar).
+
 ## Integridade
 - Nenhuma mudança no banco: o esboço e os anexos da nota pastoral ficam no campo de dados extras que a nota já tem; notas antigas abrem normalmente (esboço vazio).
 - Agendar no Cronograma continua gravando igual; Notas antigas, sincronização, lixeira e backup inalterados.
@@ -122,4 +143,5 @@ Depois de agendar ou salvar, o app **não sai mais** da tela: aparece só um avi
 - `_app.notas.tsx`: aba pastoral renderiza grade de cartões; nova rota/estado `noteId` abre a nota em tela focada (focus-chrome) com `RichNoteEditor`, conteúdo em `payload.outline_html` e `payload.attachments` (private_notes.payload já é jsonb).
 - `OutlineAttachmentsBar` vira `AttachmentsBubble` + folha com grade, reutilizando `AttachmentLightbox`/`AttachmentVideoLightbox`; ajustar o desconto de altura do editor imersivo (remove os 5rem).
 - Remover a navegação após confirmar; toast sonner com ação "Ver"; "já salvo" detectado por nota/evento existente com a mesma origem (marca `payload.source_event_id` / id do evento no cronograma), sem mudança no banco; painel em lote reutiliza as mesmas funções de gravação unitária.
+- Função pura `parseSlotLabel(label, visitStart, visitEnd)` em `src/lib/` → `{ date?: "yyyy-MM-dd", time?: "HH:mm" }`, com testes para "Domingo, 10:30", "dom 10h30", "Sáb. 9h", texto sem dia, texto sem hora, dia fora da semana.
 - i18n pt/en/es, Ajuda (/ajuda) e AGENTS.md atualizados.
