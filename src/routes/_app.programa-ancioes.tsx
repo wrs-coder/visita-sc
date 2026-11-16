@@ -4,7 +4,7 @@ import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { ChecklistPanel } from "@/components/visit-week/ChecklistPanel";
 import { slotDay, slotDays } from "@/lib/slot-day";
 import { slotState, nextEventWithoutSlot, pickElderSlot, NO_SLOT } from "@/lib/pastoral-slots";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -41,6 +41,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ProgramDispatchSheet } from "@/components/elder-program/ProgramDispatchSheet";
+import { loadDispatched, saveDispatched } from "@/lib/pastoral-dispatch";
 import { ElderTabPasswordCard } from "@/components/elder-program/ElderTabPasswordCard";
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
@@ -97,98 +99,20 @@ function Page() {
   const fnCreateRec = useServerFn(createElderRecommendation);
   const fnCreateLocal = useServerFn(createElderLocalMatter);
   const fnDelete = useServerFn(deleteElderProgramEvent);
-  const navigate = useNavigate();
 
-  const PURPOSE_TO_TIPO: Record<string, string> = {
-    ministerial_servant: "Servo ministerial",
-    elder: "Ancião",
-    cca_change: "CCA",
-    // redesignation e removal: tipo vazio (escolha manual)
-  };
-
-  // Estado para confirmação + bloqueio de duplo-clique
-  const [pendingAction, setPendingAction] = useState<
-    | { kind: "cronograma" | "notas"; ev: ElderVisitEventDTO }
-    | null
-  >(null);
+  const { user } = useAuth();
+  // Envio ao Cronograma / Notas Privadas: fica nesta tela (folha + aviso).
+  const [dispatchOpen, setDispatchOpen] = useState<{ events: ElderVisitEventDTO[]; batch: boolean } | null>(null);
   const [dispatchedIds, setDispatchedIds] = useState<Set<string>>(new Set());
-  const markDispatched = (key: string) => setDispatchedIds((s) => new Set(s).add(key));
-
-  const goToCronograma = (ev: ElderVisitEventDTO) => {
-    if (!visit) return;
-    const key = `cron:${ev.id}`;
-    if (dispatchedIds.has(key)) {
-      toast.info("Este pastoreio já foi enviado ao Cronograma nesta sessão.");
-      return;
-    }
-    try {
-      const titleParts = ["Visita de Pastoreio"];
-      if (ev.family_name) titleParts.push(ev.family_name);
-      const noteLines: string[] = [];
-      if (ev.slot_label) noteLines.push(`Slot: ${ev.slot_label}`);
-      if (ev.family_members) noteLines.push(`Família: ${ev.family_members}`);
-      if (ev.spiritual_info) noteLines.push(`Info: ${ev.spiritual_info}`);
-      navigate({
-        to: "/cronograma",
-        search: {
-          action: "new",
-          title: titleParts.join(" — "),
-          location: ev.address ?? undefined,
-          companion: ev.companion ?? undefined,
-          notes: noteLines.join("\n") || undefined,
-          congId: visit.congregation_id,
-        } as never,
-      });
-      markDispatched(key);
-      toast.success("Abrindo no Cronograma — confirme e salve o evento.");
-    } catch (err) {
-      toast.error(`Erro ao abrir o Cronograma: ${(err as Error).message}`);
-    }
+  useEffect(() => { if (visit) setDispatchedIds(loadDispatched(visit.id)); }, [visit?.id]);
+  const markDispatched = (keys: string[]) => {
+    if (!visit || keys.length === 0) return;
+    setDispatchedIds((s) => { const n = new Set(s); keys.forEach((k) => n.add(k)); saveDispatched(visit.id, n); return n; });
   };
-
-  const goToNotas = (ev: ElderVisitEventDTO) => {
-    if (!visit) return;
-    if (!isSuper) {
-      toast.error("Acesso restrito: apenas o superintendente pode salvar em Notas Privadas.");
-      return;
-    }
-    const key = `notas:${ev.id}`;
-    if (dispatchedIds.has(key)) {
-      toast.info("Esta recomendação já foi salva em Notas Privadas nesta sessão.");
-      return;
-    }
-    try {
-      const corpoLines: string[] = [];
-      if (ev.family_members) corpoLines.push(`Membros da Família: ${ev.family_members}`);
-      if (ev.field_group) corpoLines.push(`Grupo de campo: ${ev.field_group}`);
-      if (ev.info) corpoLines.push(`Informações: ${ev.info}`);
-      navigate({
-        to: "/notas",
-        search: {
-          tab: "recomendados",
-          newNote: "recomendados",
-          congId: visit.congregation_id,
-          nome: ev.full_name ?? undefined,
-          tipo: ev.purpose ? PURPOSE_TO_TIPO[ev.purpose] ?? undefined : undefined,
-          corpo: corpoLines.join("\n") || undefined,
-        } as never,
-      });
-      markDispatched(key);
-      toast.success("Salvando em Notas Privadas…");
-    } catch (err) {
-      toast.error(`Erro ao salvar em Notas Privadas: ${(err as Error).message}`);
-    }
+  const openDispatch = (events: ElderVisitEventDTO[], batch: boolean) => {
+    if (!isSuper) { toast.error("Acesso restrito: apenas o superintendente."); return; }
+    setDispatchOpen({ events, batch });
   };
-
-  const confirmPending = () => {
-    if (!pendingAction) return;
-    const { kind, ev } = pendingAction;
-    setPendingAction(null);
-    if (kind === "cronograma") goToCronograma(ev);
-    else goToNotas(ev);
-  };
-
-
 
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState<Record<Section, string>>({
@@ -397,6 +321,12 @@ function Page() {
                     <MissingBadge count={events.reduce((n, e) => n + (e.subject?.trim() ? 0 : 1) + (e.info?.trim() ? 0 : 1), 0)} />
                   )}
 
+                  {isSuper && (section === "pastoral" || section === "recommendations") && events.length > 1 && (
+                    <Button type="button" variant="outline" size="sm" className="w-full"
+                      onClick={() => openDispatch(events.filter((e) => section !== "pastoral" || !!e.family_name), true)}>
+                      <CalendarPlus className="h-3.5 w-3.5 mr-1" /> Salvar todos ({events.length})
+                    </Button>
+                  )}
                   {events.length === 0 ? (
                     <p className="text-xs text-muted-foreground italic">
                       {canAddManual
@@ -426,8 +356,8 @@ function Page() {
                             canDelete={canEdit && (ev.section === "recommendations" || isSuper)}
                             onChange={(patch) => saveField(ev, patch)}
                             onDelete={() => deleteEvent(ev)}
-                            onScheduleInCronograma={ev.section === "pastoral" ? () => setPendingAction({ kind: "cronograma", ev }) : undefined}
-                            onSaveToPrivateNotes={ev.section === "recommendations" ? () => setPendingAction({ kind: "notas", ev }) : undefined}
+                            onScheduleInCronograma={ev.section === "pastoral" && isSuper ? () => openDispatch([ev], false) : undefined}
+                            onSaveToPrivateNotes={ev.section === "recommendations" && isSuper ? () => openDispatch([ev], false) : undefined}
                             isSuperintendent={isSuper}
                             alreadyScheduled={dispatchedIds.has(`cron:${ev.id}`)}
                             alreadySavedToNotes={dispatchedIds.has(`notas:${ev.id}`)}
@@ -463,24 +393,18 @@ function Page() {
         local={local}
       />
 
-      <AlertDialog open={pendingAction !== null} onOpenChange={(o) => { if (!o) setPendingAction(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pendingAction?.kind === "cronograma" ? "Agendar no Cronograma?" : "Salvar em Notas Privadas?"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingAction?.kind === "cronograma"
-                ? "Um novo evento será aberto no Cronograma com os dados deste pastoreio. Para evitar duplicidade, confirme apenas uma vez."
-                : "Uma nova nota privada será criada na subaba “Recomendados” com os dados desta recomendação. Para evitar duplicidade, confirme apenas uma vez."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmPending}>Confirmar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {dispatchOpen && visit && user && (
+        <ProgramDispatchSheet
+          open
+          onOpenChange={(o) => { if (!o) setDispatchOpen(null); }}
+          events={dispatchOpen.events}
+          batch={dispatchOpen.batch}
+          visit={visit}
+          userId={user.id}
+          dispatched={dispatchedIds}
+          onDispatched={markDispatched}
+        />
+      )}
     </div>
   );
 }
@@ -717,10 +641,10 @@ function EventCard({
                 variant={alreadyScheduled ? "secondary" : "outline"}
                 size="sm"
                 onClick={onScheduleInCronograma}
-                disabled={!ev.family_name || alreadyScheduled}
+                disabled={!ev.family_name || (alreadyScheduled && alreadySavedToNotes)}
                 title={
-                  alreadyScheduled
-                    ? "Já enviado ao Cronograma nesta sessão"
+                  alreadyScheduled && alreadySavedToNotes
+                    ? "Já agendado e salvo em Notas Privadas"
                     : !ev.family_name
                       ? "Preencha 'Família/Irmão(ã)' antes de agendar"
                       : undefined
@@ -731,7 +655,7 @@ function EventCard({
                 ) : (
                   <CalendarPlus className="h-3.5 w-3.5 mr-1" />
                 )}
-                {alreadyScheduled ? "Agendado no Cronograma" : "Agendar no Cronograma"}
+                {alreadyScheduled && alreadySavedToNotes ? "Agendado e salvo" : alreadyScheduled ? "Agendado · salvar em Notas" : "Agendar / Salvar em Notas"}
               </Button>
             )}
             {onSaveToPrivateNotes && (

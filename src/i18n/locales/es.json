@@ -1026,7 +1026,12 @@
       "involvedPlaceholder": "Personas visitadas",
       "additional": "Información adicional",
       "additionalPlaceholder": "Puntos tratados, ánimo, próximos pasos...",
-      "dateLine": "Fecha"
+      "dateLine": "Fecha",
+      "outline": "Bosquejo del pastoreo",
+      "outlinePlaceholder": "Puntos, textos bíblicos, enlaces, imágenes y videos para mostrar…",
+      "fullscreen": "Pantalla completa",
+      "visitInfo": "Información de la visita",
+      "peopleCount": "{{count}} personas"
     },
     "structured": {
       "s303": {
@@ -1681,6 +1686,7 @@
       "themeGreenNeon": "Verde neón",
       "zoomIn": "Aumentar tamaño del visor",
       "zoomOut": "Disminuir tamaño del visor",
+      "close": "Cerrar cronómetro",
       "resetConfirmTitle": "¿Reiniciar el cronómetro?",
       "resetConfirmDesc": "El tiempo transcurrido volverá a 00:00.",
       "resetConfirm": "Confirmar",

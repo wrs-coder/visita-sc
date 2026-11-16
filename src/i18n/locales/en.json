@@ -1049,7 +1049,12 @@
       "involvedPlaceholder": "People visited",
       "additional": "Additional information",
       "additionalPlaceholder": "Points discussed, encouragement, next steps...",
-      "dateLine": "Date"
+      "dateLine": "Date",
+      "outline": "Shepherding outline",
+      "outlinePlaceholder": "Points, scriptures, links, images and videos to show…",
+      "fullscreen": "Full screen",
+      "visitInfo": "Visit details",
+      "peopleCount": "{{count}} people"
     },
     "structured": {
       "s303": {
@@ -1704,6 +1709,7 @@
       "themeGreenNeon": "Neon green",
       "zoomIn": "Increase display size",
       "zoomOut": "Decrease display size",
+      "close": "Close timer",
       "resetConfirmTitle": "Reset the timer?",
       "resetConfirmDesc": "The elapsed time will go back to 00:00.",
       "resetConfirm": "Confirm",
