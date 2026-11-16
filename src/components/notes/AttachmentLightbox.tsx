@@ -5,6 +5,7 @@
 import { useEffect } from "react";
 import { X, ImageOff, Loader2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
@@ -34,9 +35,9 @@ export function AttachmentLightbox({ open, attachment, onClose }: Props) {
     return () => document.removeEventListener("keydown", onKey, { capture: true } as EventListenerOptions);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
       className={cn(
         "fixed inset-0 z-[200] flex items-center justify-center bg-black/95 p-4",
@@ -128,6 +129,7 @@ export function AttachmentLightbox({ open, attachment, onClose }: Props) {
         <X className="h-5 w-5" />
       </button>
 
-    </div>
+    </div>,
+    document.body,
   );
 }
