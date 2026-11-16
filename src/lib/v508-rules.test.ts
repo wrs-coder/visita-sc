@@ -35,8 +35,8 @@ describe("5.0.8", () => {
     expect(RELEASE_HISTORY[3].version).toBe("5.5.0");
     expect(RELEASE_HISTORY[4].version).toBe("5.4.0");
     expect(RELEASE_HISTORY.map((r) => r.version)).not.toContain("5.0.7");
-    expect(RELEASE_HISTORY[4].version).toBe("5.3.0");
-    expect(RELEASE_HISTORY[5].version).toBe("5.2.0");
+    expect(RELEASE_HISTORY[5].version).toBe("5.3.0");
+    expect(RELEASE_HISTORY[6].version).toBe("5.2.0");
   });
   it("lê a rolagem do body quando a janela fica parada (Android)", () => {
     expect(pageScrollY({ windowY: 0, htmlTop: 0, bodyTop: 320 })).toBe(320);
