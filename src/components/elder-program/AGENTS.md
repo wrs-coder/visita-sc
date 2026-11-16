@@ -1,0 +1,1 @@
+- Visit-program Pastoreio/Recomendações send straight to circuit_schedule_events/private_notes from a bottom sheet (ProgramDispatchSheet + pure pastoral-dispatch.ts: slot label → visit-week date/start time, field mapping, sent keys in localStorage per visit), staying on the screen, because users process many events in a row.
