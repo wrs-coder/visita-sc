@@ -273,6 +273,7 @@ function Page() {
       payload: (base.payload as Record<string, string>) ?? null,
       updated_at: now,
     };
+    if (note_type === "pastoral") pendingPastoralOpenId = id;
     setNotes((n) => [optimistic, ...n]);
     // Mostra a categoria da nota recém-criada, com a nota em destaque.
     setTab(note_type);
@@ -794,10 +795,16 @@ function FreeNoteCard({ note, savingId, update, remove, checked, onToggleSelect 
   );
 }
 
+/** Nota pastoral recém-criada abre direto na tela cheia (estilo Samsung Notes). */
+let pendingPastoralOpenId: string | null = null;
+
 function PastoralNoteCard({ note, savingId, update, remove, checked, onToggleSelect }: { note: Note; savingId: string | null; update: (id: string, p: Partial<Note>) => void; remove: (id: string) => void; checked: boolean; onToggleSelect: () => void }) {
   const { t, i18n } = useTranslation();
   const dateLocale = getDateLocale(i18n.language);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(() => {
+    if (pendingPastoralOpenId === note.id) { pendingPastoralOpenId = null; return true; }
+    return false;
+  });
   const outline = readPastoralOutline(note.payload as Record<string, unknown> | null);
   const media = outline.attachments.filter((a) => a.kind === "photo" || a.kind === "video").length;
   const preview = pastoralOutlineText(note.payload as Record<string, unknown> | null) || note.additional_info || "";

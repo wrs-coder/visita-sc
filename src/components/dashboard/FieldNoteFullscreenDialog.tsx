@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RichOutlineContent } from "@/lib/rich-content";
-import { OutlineTimer } from "@/components/notes/OutlineTimer";
+import { FloatingOutlineTimer } from "@/components/notes/FloatingOutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
 import { BibleHistoryChips } from "@/components/bible/BibleHistoryChips";
@@ -205,7 +205,7 @@ export function FieldNoteFullscreenDialog({
       >
         {showTimer && note && (
           <>
-            <OutlineTimer outlineId={note.id} variant="fullscreen" />
+            <FloatingOutlineTimer outlineId={note.id} />
             <OutlineInactivitySensor outlineId={note.id} />
           </>
         )}

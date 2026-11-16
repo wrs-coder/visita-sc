@@ -120,6 +120,7 @@ if (typeof window !== "undefined") {
   else window.setTimeout(warm, 1500);
 }
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
+import { FloatingOutlineTimer } from "@/components/notes/FloatingOutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
 import { RichOutlineContent, sanitizeNoteHtml } from "@/lib/rich-content";
@@ -2900,7 +2901,7 @@ export function FullscreenOutline({
 
   return (
     <div data-back-closable className="webkit-stable-layer fixed inset-0 z-[100] bg-background flex flex-col w-screen max-w-full overflow-x-hidden overscroll-x-none bar-top bar-bottom safe-x-landscape">
-      {showTimer && <OutlineTimer outlineId={note.id} variant="fullscreen" />}
+      {showTimer && <FloatingOutlineTimer outlineId={note.id} />}
       {showTimer && <OutlineInactivitySensor outlineId={note.id} />}
       <div className="border-b px-4 py-2 min-w-0 shrink-0">
 

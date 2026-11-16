@@ -6,6 +6,7 @@
  * payload.attachments — notas antigas abrem com o esboço vazio.
  */
 import { lazy, Suspense, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, BookOpen, Check, Loader2, Maximize2, Minimize2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -71,7 +72,10 @@ export function PastoralNoteDetail({ note, saving, onSave, onRemove, onClose }: 
     content: html, attachments, created_at: 0, updated_at: 0,
   };
 
-  return (
+  // Portal: a lista usa content-visibility (contenção), que prenderia este
+  // overlay fixed dentro do cartão — ele ficava como uma faixa fina.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div data-back-closable className="fixed inset-0 z-[90] flex flex-col bg-background bar-top">
       <div className="flex items-center gap-1 border-b px-2 py-2 shrink-0">
         <Button size="icon" variant="ghost" onClick={close} aria-label={t("common.back", { defaultValue: "Voltar" })} title={t("common.back", { defaultValue: "Voltar" })}>
@@ -124,6 +128,7 @@ export function PastoralNoteDetail({ note, saving, onSave, onRemove, onClose }: 
           onInsertBibleText={(text) => setHtml((h) => appendPlainTextToNote(h, text))}
         />
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }

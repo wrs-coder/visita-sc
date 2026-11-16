@@ -2,3 +2,4 @@
 - Private-notes categories switch through EdgePanel.tsx opened only by the category title button (showHandle=false; presentation only); the selected category stays the existing `tab` state and ?tab deep links, so dashboard links and saved notes are unchanged.
 - The pastoral note's "Esboço do pastoreio" lives in private_notes.payload (outline_html, attachments) and opens in its own screen (PastoralNoteDetail) reusing RichNoteEditor/FullscreenOutline; old notes read as empty, so no schema change.
 - Outline attachments show as a compact count bubble that opens a sheet of thumbnails (OutlineAttachmentsBar, 2.5rem row), because the fixed thumbnail strip stole writing space.
+- Full-screen overlays opened from list items (PastoralNoteDetail) and the Outline-mode floating timer (FloatingOutlineTimer) render through createPortal to document.body, because .list-optimized uses content-visibility containment that traps position:fixed inside the card.
