@@ -76,6 +76,42 @@ Topo do esboço:   📖 3   🖼 4      ← balões
 - Libera mais espaço para o texto (a faixa fixa de miniaturas sai).
 - Vale para Esboços Pessoais, Estudo e Anotações e o novo Esboço do pastoreio.
 
+## (04) Ficar no Programa da visita + "Salvar todos" (Pastoreio e Recomendações)
+
+Depois de agendar ou salvar, o app **não sai mais** da tela: aparece só um aviso curto embaixo, com atalho opcional.
+
+```text
+┌──────────────────────────────┐
+│ Pastoreio                    │
+│ ┌──────────────────────────┐ │
+│ │ Família Silva   ✓ 📅 ✓ 🔒│ │ ← selo de já salvo
+│ └──────────────────────────┘ │
+│ [ Salvar todos (5) ▸ ]       │
+│ ╭──────────────────────────╮ │
+│ │ ✓ Salvo  ·  Ver Cronograma│ │ ← aviso some em 4 s
+│ ╰──────────────────────────╯ │
+└──────────────────────────────┘
+```
+
+"Salvar todos" abre um painel de ajuste antes de gravar:
+
+```text
+┌──────────────────────────────┐
+│ ▬▬  Salvar todos (5)         │
+│ Destino: [📅 Cronograma][🔒 Notas]│
+│ ☑ Família Silva   📅 [●] 🔒 [●]│
+│ ☑ Ir. Pedro       📅 [●] 🔒 [ ]│
+│ ☐ Fam. Costa  (já salvo)     │
+│ ☑ Ir. Ana (Recom.)    🔒 [●] │
+│                              │
+│ [ Cancelar ]  [ Salvar 4 ]   │
+└──────────────────────────────┘
+```
+
+- Cada linha pode ser desmarcada ou ter um destino desligado; Recomendações só têm Notas Privadas (como hoje).
+- Eventos já salvos aparecem desmarcados, para não duplicar.
+- Minha opinião: fazer os dois. Ficar na tela resolve o dia a dia; "Salvar todos" economiza tempo no início da semana.
+
 ## Integridade
 - Nenhuma mudança no banco: o esboço e os anexos da nota pastoral ficam no campo de dados extras que a nota já tem; notas antigas abrem normalmente (esboço vazio).
 - Agendar no Cronograma continua gravando igual; Notas antigas, sincronização, lixeira e backup inalterados.
@@ -85,4 +121,5 @@ Topo do esboço:   📖 3   🖼 4      ← balões
 - `_app.programa-ancioes.tsx`: `pendingAction` passa a aceitar `kind: "pastoral-both"` com dois toggles; função pura `pastoralEventToNote(ev, visit)` em `src/lib/` (testada) gera `companion`, `involved_names`, `additional_info`, `note_date`.
 - `_app.notas.tsx`: aba pastoral renderiza grade de cartões; nova rota/estado `noteId` abre a nota em tela focada (focus-chrome) com `RichNoteEditor`, conteúdo em `payload.outline_html` e `payload.attachments` (private_notes.payload já é jsonb).
 - `OutlineAttachmentsBar` vira `AttachmentsBubble` + folha com grade, reutilizando `AttachmentLightbox`/`AttachmentVideoLightbox`; ajustar o desconto de altura do editor imersivo (remove os 5rem).
+- Remover a navegação após confirmar; toast sonner com ação "Ver"; "já salvo" detectado por nota/evento existente com a mesma origem (marca `payload.source_event_id` / id do evento no cronograma), sem mudança no banco; painel em lote reutiliza as mesmas funções de gravação unitária.
 - i18n pt/en/es, Ajuda (/ajuda) e AGENTS.md atualizados.
