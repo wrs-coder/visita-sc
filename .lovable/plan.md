@@ -1,102 +1,92 @@
-# Plano: Grandes Eventos, Modelos de visita e Checklist
+# Controle de tempo para a Reunião de Meio de Semana
 
-## (01) Grandes Eventos
+## Análise franca: é possível e vale a pena?
 
-**(01.1) Não apaga sozinho 2 dias depois do evento**
-Você tem razão: a limpeza foi feita no plano anterior e roda todo dia às 3h (horário de Brasília). Hoje ela rodou sem erro. Mesmo assim, a Assembleia de 14/11 ainda está na nuvem.
-Causa provável (a confirmar no primeiro passo): o celular guarda uma cópia do evento e, ao sincronizar, envia de novo para a nuvem o que a limpeza apagou. É o mesmo defeito do item (01.2), então uma correção resolve os dois.
-Correção: a limpeza também passa a registrar a exclusão, e o aparelho apaga sua cópia em vez de reenviá-la. Nada muda na regra: o evento some no 3º dia depois da data.
+**Sim, é possível — e com pouco peso para o app.** Motivos, conferidos no código:
 
-**(01.2) "Apagar evento" e ele volta**
-Causa confirmada: as tabelas de Grandes Eventos não registram a exclusão para os outros aparelhos (as outras tabelas registram). O evento some da nuvem, mas a cópia guardada no celular continua lá e a tela o mostra de novo.
-Correção:
-- registrar as exclusões de eventos e partes, como já é feito nas outras telas;
-- ao apagar, remover na hora também da cópia do celular;
-- se estiver sem internet, guardar o pedido e apagar da nuvem quando a conexão voltar.
+- O cronômetro dos Grandes Eventos já é separado do resto: ele recebe uma lista de partes (tema, tempo, quem faz) e guarda tudo só no aparelho. Dá para reaproveitar o mesmo cronômetro, a mesma tela de foco e o relógio espelhado, sem escrever outro.
+- Os arquivos que você mandou (apostila "Nossa Vida e Ministério Cristão") têm um formato fácil de ler: cada parte vem com número e tempo, ex.: `3. Leitura da Bíblia (4 min)`, `8. Estudo bíblico de congregação (30 min)`, `Comentários finais (3 min)`, cânticos e orações.
+- **Atenção honesta:** o importador dos Grandes Eventos NÃO lê esse arquivo do jeito que está. Ele procura horários (`9:40 Música`), e a apostila tem duração em minutos. Preciso criar um leitor novo para a apostila (pequeno, testado), reaproveitando a parte que já limpa o arquivo RTF.
+- Os horários de cada parte são calculados a partir da hora de início (ex.: 19:30), como já acontece nos Grandes Eventos.
+- Nada vai para a nuvem e nada muda nas tabelas. Fica tudo no aparelho, então funciona sem internet e não deixa o app mais lento.
 
-```text
-┌──────────────────────────────┐
-│ Grandes Eventos              │
-│ ┌──────────────────────────┐ │
-│ │ Assembleia 15/11      ⋯  │ │
-│ └──────────────────────────┘ │
-│  Apagar → some na hora e     │
-│  não volta mais, em nenhum   │
-│  aparelho                    │
-└──────────────────────────────┘
-```
+**Onde pode não valer a pena:** se você só usa isso na semana da visita, uma aba fixa no Início seria peso à toa. Por isso minha recomendação é diferente da sua ideia.
 
-## (02) Modelos de visita
+## Recomendação de lugar
 
-**(02.1) Excluir modelo em "Programação pessoal"**
-Botão "Excluir modelo" no menu do modelo ativo, com confirmação. Apaga o modelo e os itens dele. As visitas que já usaram o modelo ficam como estão (elas guardam uma cópia).
+Em vez de uma nova sub-aba no Início, que já tem 4 telas, coloque o cronômetro **dentro do Programa da visita**, numa nova pílula "Reunião". É lá que você está na semana da visita, e a reunião faz parte dela. No cartão "Visita" do Início entra só um atalho "⏱ Reunião", que aparece só na semana da visita.
 
 ```text
-┌──────────────────────────────┐
-│ Programação pessoal          │
-│ [Modelo 1] [Modelo 2]  [+]   │
-│ Modelo 1             ⋯       │
-│            ┌───────────────┐ │
-│            │ Renomear      │ │
-│            │ Exportar      │ │
-│            │ 🗑 Excluir     │ │ ← vermelho
-│            └───────────────┘ │
-├──────────────────────────────┤
-│  Excluir "Modelo 1"?         │
-│  As visitas já feitas não    │
-│  mudam.                      │
-│     [Cancelar]  [Excluir]    │
-└──────────────────────────────┘
+┌───────────────────────────┐
+│ ←  Programa da visita     │
+│ (Programa)(Pastoreio)     │
+│ (Recomend.)(●Reunião)     │
+├───────────────────────────┤
+│ Semana 11–17 jan          │
+│ Início  [19:30]  ▾        │
+│                           │
+│ 19:30 Cântico 39 e oração │
+│ 19:35 Comentários   1 min │
+│ ── Tesouros ───────────── │
+│ 19:36 1. Jeová valoriza…  │
+│                    10 min │
+│ 19:46 2. Joias esp. 10 min│
+│ 19:56 3. Leitura     4 min│
+│ ── Faça seu melhor ────── │
+│ 20:00 4. Iniciando…  3 min│
+│  …                        │
+│ ── Nossa vida cristã ──── │
+│ 20:20 8. Estudo     30 min│
+│ 20:50 Comentários f. 3 min│
+│                           │
+│ [ 📥 Importar apostila ]  │
+│ [ ▶  Iniciar controle   ] │
+└───────────────────────────┘
 ```
 
-**(02.2) Modelos aparecendo vazios**
-Aconteceu só no app instalado no notebook; no celular funcionou. Causa provável (a confirmar antes de corrigir): a tela busca os modelos uma única vez ao abrir. Se essa busca falha (login ainda carregando, internet lenta), a tela fica vazia sem aviso e não tenta de novo.
-Correção:
-- mostrar primeiro a cópia guardada no celular;
-- tentar de novo automaticamente quando o login ficar pronto ou a internet voltar;
-- nunca trocar uma lista com modelos por uma vazia sem confirmar na nuvem;
-- conferir as outras telas de modelos (Checklist, Reuniões, Campo, Anciãos), que podem ter o mesmo problema.
-
-**(02.3) Checklist: "Informação" preenchida já marca como concluída**
-Quando o campo "Informação" de uma pergunta é salvo com texto, a pergunta fica marcada como concluída na hora. Apagar o texto não desmarca, para não perder uma marcação manual. A pessoa ainda pode desmarcar à mão.
+Ao tocar em **Iniciar controle**, abre a mesma tela de foco dos Grandes Eventos:
 
 ```text
-┌──────────────────────────────┐
-│ ☑ Quantos publicadores?      │
-│   Informação: 84         ✓   │
-│ ☐ Pioneiros regulares?       │
-│   Informação: (vazio)        │
-└──────────────────────────────┘
+┌───────────────────────────┐
+│ ✕  Reunião · 11 jan       │
+├───────────────────────────┤
+│   3. Leitura da Bíblia    │
+│                           │
+│         03:12             │
+│     de 04:00 · verde      │
+│                           │
+│  [⏸ Pausar] [⏭ Próxima]  │
+│                           │
+│ Programa: +0:45 atrasado  │
+│ Termina ≈ 21:00           │
+└───────────────────────────┘
 ```
 
-## (03) Grandes Eventos › Modelos de cartas: exportar e importar
-
-Para partilhar modelos com outros SCs. O arquivo exportado **não leva o Timbre** (título, circuito, endereço e telefone do cabeçalho) **nem a Assinatura**. Ao importar, esses campos são preenchidos com os dados do seu perfil, como já acontece num modelo novo. O estilo do cabeçalho e os textos da carta vão no arquivo.
+**Importar apostila:** escolha o arquivo .rtf. O app lê as semanas que estão nele e pergunta qual semana usar. Antes de salvar, mostra uma revisão em que dá para mudar os tempos e o nome de quem faz cada parte.
 
 ```text
-┌──────────────────────────────┐
-│ Modelos de cartas      ⋯     │
-│            ┌───────────────┐ │
-│            │ ⬆ Exportar     │ │
-│            │ ⬇ Importar     │ │
-│            └───────────────┘ │
-├──────────────────────────────┤
-│ Exportar                     │
-│ ◉ Só este modelo             │
-│ ○ Todos os modelos           │
-│ Timbre e Assinatura não vão  │
-│ no arquivo.                  │
-│       [Cancelar] [Exportar]  │
-└──────────────────────────────┘
+┌───────────────────────────┐
+│ Importar apostila         │
+├───────────────────────────┤
+│ Semanas encontradas:      │
+│ ○ 4–10 jan                │
+│ ● 11–17 jan               │
+│ ○ 18–24 jan               │
+│                           │
+│ 13 partes · 105 min       │
+│ [ Cancelar ] [ Usar ]     │
+└───────────────────────────┘
 ```
 
-Importar: escolhe o arquivo e mostra a lista dos modelos para confirmar. Se já existir um modelo com o mesmo nome, o importado entra como "Nome (importado)". Nada é substituído.
+## O que fica de fora nesta etapa
+
+- Reunião de fim de semana: o formato é outro, e posso fazer depois.
+- Designações sincronizadas com os anciãos: hoje tudo fica só no seu aparelho.
 
 ## Detalhes técnicos
-- Migration: a função de limpeza já existente (`delete_expired_circuit_events`, que já cobre Grandes Eventos) é mantida; adicionar triggers `record_sync_tombstone` em `circuit_big_events` e `circuit_big_event_parts`.
-- Investigar primeiro em `big-events/cloud-sync.ts` se a fila/merge "never deletes device-only" reenvia eventos apagados na nuvem; com o tombstone, linha ausente na nuvem e com tombstone é apagada localmente, nunca reenviada.
-- `BigEvents.tsx` `removeEvent`: atualização otimista do estado + remoção das linhas do evento e das partes no local-db.
-- `_app.modelos.tsx`: item de exclusão (nova função de servidor `deleteTemplate`, só do dono, apaga `program_template_items` e depois o template); `load` (PWA desktop: conferir se o service worker serve resposta antiga) com fallback no mirror local, nova tentativa quando auth/online mudam e proteção contra lista vazia.
-- `ChecklistPanel.tsx`: ao salvar `info_text` com texto (trim), enviar também `status: "done"` no mesmo update.
-- Testes: limpeza (regra dos 2 dias), checklist que marca sozinho e exclusão de modelo; i18n pt/en/es.
-- Modelos de cartas: novo `letter-template-share.ts` (funções puras) que gera um arquivo `.json` versionado (`{kind:"visitasc-letter-templates",version:1,templates}`), remove `headerTitle/headerSubtitle/headerAddress/headerPhone/signature`, e na importação valida o formato e o tamanho, ignora campos desconhecidos, gera ids novos, preenche o timbre pelo perfil (mesma lógica do modelo inicial) e salva pelo fluxo atual de `letter-template-sync.ts`. A exportação usa o `share.ts` existente (celular) ou download (web). Botões no `LetterTemplates.tsx`. Testes: arquivo sem timbre/assinatura, importação com ids novos e sem sobrescrever.
+
+- `src/lib/meeting/mwb-import.ts`: reaproveita `rtfToText` de `rtf-program-import.ts`. Detecta cabeçalhos de semana (`11 a 17 de Janeiro`), seções (Tesouros / Faça seu melhor / Nossa vida cristã), partes `N. Tema (X min)`, cânticos e comentários. Gera `TimerPart[]` com tempos que somam a partir da hora de início. Tem limites de tamanho do arquivo e de quantidade de partes, e testes com os 3 arquivos enviados como amostra.
+- Armazenamento no aparelho: `meeting.program.<userId>.<weekMonday>` em localStorage. O estado do cronômetro reaproveita `loadTimer/saveTimer` com o id `meeting-<weekMonday>`, sem colidir com eventos.
+- UI: nova rota-pílula em `VisitProgramTabs` (padrão das telas separadas, para links antigos continuarem valendo), que usa `EventTimerFocus` sem mudanças. A tela de foco dos Grandes Eventos não muda.
+- Atalho no cartão Visita, só quando a semana da visita é a atual.
+- Textos em pt/en/es, uma regra nova no AGENTS.md e o `tsc --noEmit` passando.
