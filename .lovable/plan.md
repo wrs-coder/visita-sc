@@ -1,118 +1,83 @@
-# Plano: Estrela nas notas, Reunião (conselho, oradores, Terça da visita) e Quadro de anúncios
+# Ajustes: Para comentar, Oradores, boia da Reunião e Quadro de anúncios
 
-## (01) Leitura da Bíblia: estrela nas listas e ao criar
-
-Hoje a ⭐ só aparece dentro do cartão da leitura da Reunião. Ela passa a aparecer também:
-- ao lado de cada nota em "Anotações de leitura" e "Pontos altos";
-- no topo da tela ao criar ou editar uma dessas notas.
+## (01) "Para comentar" recolhe e expande
+Passa a usar o mesmo cartão recolhível dos outros cartões da tela Esboços, com ícone de mão levantada. Fica lembrado no aparelho se está aberto ou fechado. Conteúdo, estrelas e Modo comentário continuam iguais.
 
 ```text
-┌───────────────────────────┐
-│ ‹  Pontos altos        ＋ │
-├───────────────────────────┤
-│ Ezequiel 13:3          ☆ │
-│ Falsos profetas…          │
-├───────────────────────────┤
-│ Ezequiel 14:14         ★ │ ← vai para "Para comentar"
-│ Noé, Daniel e Jó…         │
-└───────────────────────────┘
-┌───────────────────────────┐
-│ ✕  Nova anotação   ☆  ✓  │ ← estrela ao criar
-│ Texto: Ez 14:14           │
-│ ______________________    │
-└───────────────────────────┘
-```
-É a mesma ⭐ que já existe (mesmo dado). Marcar em qualquer lugar mostra a nota no "Para comentar" e no cartão do Início.
-
-## (02) Controle de tempo da reunião
-
-### (02.1) Conselho por designação + minimizar
-- Ao tocar numa parte: nova opção "☐ Terá conselho" (padrão 1 min, ajustável).
-- Com conselho marcado, o controle ganha um segundo tempo logo após a parte: "Conselho · 1 min".
-- O conselho não tem campo de orador (quem dá é o presidente).
-- Botão — no topo do controle minimiza para a bolinha/boia; tocar nela volta. O tempo não para.
-
-```text
-┌───────────────────────────┐
-│ — Controle    19:52    ✕  │
-├───────────────────────────┤
-│ 4. Iniciando conversas    │
-│    03:00 / 03:00   ▶      │
-│ ↳ Conselho  01:00         │ ← tempo próprio
-│ 5. Cultivando o interesse │
-└───────────────────────────┘
+┌─────────────────────────────┐
+│ ✋ Para comentar   (3)    ⌄ │  ← toque recolhe/expande
+├─────────────────────────────┤
+│ ⭐ Gên 3:15  "A promessa…"  │
+│ ⭐ Sal 23:1  "Jeová é…"     │
+│ [ Modo comentário ]         │
+└─────────────────────────────┘
+recolhido:
+┌─────────────────────────────┐
+│ ✋ Para comentar   (3)    › │
+└─────────────────────────────┘
 ```
 
-### (02.2) Oradores: importar ou colar
-No ⋯ da semana, "Oradores": 1) importar arquivo (como Grandes Eventos), 2) colar/escrever os nomes, um por linha, em ordem.
-Regras do preenchimento automático:
-- Cânticos sozinhos não recebem nome.
-- "Cântico e oração" recebe nome.
-- "Comentários iniciais" e "Comentários finais" usam o mesmo nome (uma linha só).
-- Todas as outras partes recebem um nome, em ordem.
-- Dois nomes na mesma linha ("Lucia Nunes e Fernanda Abreu" ou "Lucia Nunes/Fernanda Abreu") contam como uma parte de demonstração e são aceitos juntos, mostrados como "Lucia Nunes / Fernanda Abreu".
-- Antes de salvar, mostra uma prévia parte → nome para conferir.
+## (02) Oradores sem rolagem para o lado
+Prévia em lista vertical: tema da parte em cima (quebra de linha elegante), nome embaixo. Nada ultrapassa a largura da tela.
 
 ```text
-┌───────────────────────────┐
-│ ✕  Oradores        Aplicar│
-├───────────────────────────┤
-│ [Importar arquivo]        │
-│ Ou cole, um por linha:    │
-│ ┌───────────────────────┐ │
-│ │João (presidente)      │ │
-│ │Pedro (oração)         │ │
-│ │…                      │ │
-│ └───────────────────────┘ │
-│ Prévia:                   │
-│ Coment. iniciais/finais João│
-│ Cântico e oração   Pedro  │
-└───────────────────────────┘
+┌─────────────────────────────┐
+│ Oradores                  ✕ │
+│ [ Importar arquivo ]        │
+│ ┌─────────────────────────┐ │
+│ │ Lucia Nunes e …         │ │
+│ └─────────────────────────┘ │
+│ Prévia                      │
+│ 3. Iniciando conversas —    │
+│    de casa em casa (3 min)  │
+│    Lucia Nunes /            │
+│    Fernanda Abreu           │
+│ ─────────────────────────── │
+│ 4. Cultivando o interesse   │
+│    Marcos Silva             │
+│            [ Aplicar ]      │
+└─────────────────────────────┘
 ```
 
-### (02.3) Semana da visita
-Quando a data da reunião cair numa semana de visita do programa:
-- "Estudo bíblico de congregação" é trocado pelo tema do discurso de serviço de terça-feira do Programa da visita (orador: o superintendente, 30 min).
-- "Comentários finais" passa para antes desse discurso.
-- O cântico final passa a ser o cântico de terça do Programa da visita.
-Nada é apagado: fora da semana de visita a ordem normal continua.
-
-### (02.4) Exportar e importar semanas
-No ⋯ de "‹ Semanas": "Exportar semanas" (escolhe quais) e "Importar semanas", igual aos programas dos Grandes Eventos.
-- O arquivo leva temas, minutos, ordem, seções e conselhos, mas sem nomes de oradores.
-- Quem importa: data e hora seguem a própria conta (dia e horário da reunião já usados nela, senão terça 19:30); a troca da semana de visita (02.3) usa o Programa da visita de quem importa.
-- Semana que já existe: só é substituída se marcar, como na importação da apostila.
-
-## (03) "Programa da Semana da Visita" para o quadro de anúncios — É POSSÍVEL
-
-Análise franca: dá para fazer em uma página A4 com quase tudo vindo do app (datas, congregação, nome do SC, reunião de terça da nova função, temas e cânticos do Programa da visita, reuniões especiais, saídas de campo). O que não existir no app sai como linha em branco para escrever à mão. Inspirado no modelo, não cópia: linha do tempo à esquerda com designações, faixas de cor por seção usando as cores do app.
-
-Botão no Início, logo abaixo de "Relatório executivo": "Quadro de anúncios". Gera PDF (pdf-lib, padrão do app) e abre a opção de compartilhar/imprimir.
+## (03) Boia da Reunião com tempo e controles
+A boia mostra o tempo da parte atual e os botões: parte anterior, iniciar/pausar, próxima parte. Toque no tempo reabre a tela inteira. Tamanho: Compacta / Normal / Grande (escolha guardada no aparelho, pelo toque longo ou botão de tamanho).
 
 ```text
-┌──────────── A4 ────────────┐
-│ 17–22 nov  SEMANA DA VISITA│
-│            Wanderson R.    │
-│ Congregação X              │
-│ ○ Meio de semana · Ter 19:30│
-│  João   Presidência        │
-│  ▬ Tesouros  10m 1. …      │
-│  ▬ Ministério 3m 4. …      │
-│  ▬ Vida cristã 15m 7. …    │
-│  SC     30m Discurso serviço│
-│ ○ Fim de semana            │
-│ ○ Reuniões especiais       │
-│ ┌ SERVIÇO DE CAMPO ───────┐│
-│ │Dia │Manhã hora/local│Tarde││
-│ └─────────────────────────┘│
-└────────────────────────────┘
+Compacta:   ┌──────────────┐
+            │ ⏱ 03:12  ⏸ │
+            └──────────────┘
+Normal:     ┌──────────────────────┐
+            │ 4. Cultivando o int… │
+            │      03:12 / 4:00    │
+            │  ⏮    ⏸    ⏭   ⤢  │
+            └──────────────────────┘
+Grande:     mesma da Normal, números e botões maiores
+```
+Tempo vermelho quando passar do limite, como na tela inteira. O relógio continua correndo minimizado (mesma contagem da tela inteira, nada reinicia).
+
+## (04) Quadro de anúncios com os dados certos
+- Horários sempre em 24h (ex.: 19:30, nunca 7:30 PM).
+- Reunião do Fim de Semana: incluir o nome do presidente.
+- Reuniões Especiais e Serviço de campo: usar as mesmas informações da Agenda do Início (sábado 10:30 sai 10:30; local do campo igual ao da Agenda).
+- Topo sem o nome do superintendente.
+
+```text
+┌───────────── A4 ─────────────┐
+│ SEMANA DA VISITA DO SC       │
+│ Congregação X · 17–22 nov    │  ← sem nome do SC
+│ MEIO DE SEMANA  Ter 19:30    │
+│ FIM DE SEMANA   Dom 09:00    │
+│  Presidência: João Souza     │
+│ REUNIÕES ESPECIAIS           │
+│  Sáb 10:30 Pioneiros  Salão  │
+│ SERVIÇO DE CAMPO             │
+│  Qua manhã 09:00 Casa Silva  │
+└──────────────────────────────┘
 ```
 
 ## Detalhes técnicos
-- Novo `meeting-share.ts` (puro): arquivo .json versionado `{kind:"visitasc-meeting-weeks",version:1}`, remove `assigned`, limite de tamanho, ids novos ao importar, reaproveita `mergeImported`; testes (sem oradores, ids novos, recusa inválido).
-- Estrela: reaproveita `star` dos highlights (bible-tracks); botão nas listas do GuestWorkspace/HighlightsDrawer e no FocusEditor. Sem mudança de formato.
-- meeting-store: `MeetingPart` ganha `counsel?: number` (minutos, opcional, sanitizado). Timer gera parte extra "counsel" após a parte. Minimizar reusa a boia do event-timer.
-- Novo `meeting-speakers.ts` (puro): `assignSpeakers(parts, lines)` com as regras acima; uma linha = uma parte, separadores " e " e "/" viram par de demonstração; conselho fica fora da contagem; testes.
-- Novo `visit-week-meeting.ts` (puro): `applyVisitWeek(program, visit)` lê service_talk_theme e final_song do programa da visita; testes de ordem e cântico.
-- PDF: `board-program-pdf.ts` com pdf-lib (createJsPdfCompat), uma página, fontes do app; botão no dashboard abaixo de executiveReport.
-- Testes para as regras de oradores, conselho e semana de visita; `tsc --noEmit` limpo.
+- (01) `ToCommentDashboardCard` envolto em `CollapsibleCard` (id `to-comment`, ícone `Hand` do lucide, accent notes); `CommentCard` fica dentro do conteúdo.
+- (02) Diálogo de Oradores em `MeetingHub.tsx`: `max-w-[calc(100vw-2rem)]`, `overflow-x-hidden`, `min-w-0`, `break-words`/`[overflow-wrap:anywhere]` nas linhas; prévia em pilha (tema/nome), sem tabela/`whitespace-nowrap`.
+- (03) Expor do cronômetro (`event-timer.ts` load/save por horário real) um pequeno hook para ler/controlar o estado salvo (start/pause/prev/next) usado por `MeetingTimerButton`; a boia `FloatingDock` renderiza tempo com tick de 1s e botões. Tamanho em localStorage (`meeting.dockSize`). Tela dos Grandes Eventos não muda.
+- (04) `board-program-export.ts`: horários das reuniões especiais e do campo hoje vêm de `meeting_at` convertido pelo fuso do aparelho (`getHours`), causando a hora a mais; passar a ler pelos mesmos itens/formatação da Agenda do Início (horário de parede salvo) e o local do campo pelo mesmo campo que a Agenda exibe. Buscar `chairman` em `weekend_meetings`. Formatação 24h única (`HH:mm`). Remover nome do SC do cabeçalho em `board-program.ts`. Primeiro passo: conferir na visita real quais valores a Agenda mostra para confirmar a origem exata do erro de horário e local.
+- Testes: atualizar `board-program.test.ts` (24h, presidente do fim de semana, sem nome do SC, sábado 10:30 permanece 10:30). Rodar testes e `bunx tsc --noEmit`.
