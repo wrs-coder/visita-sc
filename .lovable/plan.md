@@ -74,10 +74,56 @@ Se essa semana ainda não tiver programa, a tela mostra **"Importar apostila"** 
 
 **Alternativa**, se preferir: uma sub-aba "Reunião" entre Agenda e Esboços. Funciona, mas fica no Início todos os dias, mesmo quando não é dia de reunião.
 
+## (03) Onde editar, criar e renomear (igual aos Grandes Eventos)
+
+A tela da reunião tem dois níveis, como nos Grandes Eventos:
+
+**1. Lista de reuniões**: o botão "‹ Semanas" no topo da tela da reunião abre a lista de todas as semanas guardadas.
+
+```text
+┌───────────────────────────┐
+│ ‹  Reuniões         ＋  ⋯ │
+├───────────────────────────┤
+│ ┌───────────────────────┐ │
+│ │ Ter 12 jan · 19:30    │ │
+│ │ Ezequiel 13–14   ⋯    │ │
+│ └───────────────────────┘ │
+│ ┌───────────────────────┐ │
+│ │ Ter 19 jan · 19:30    │ │
+│ │ Ezequiel 15–16   ⋯    │ │
+│ └───────────────────────┘ │
+│  …                        │
+└───────────────────────────┘
+ ＋ = Nova reunião (em branco)
+ ⋯ topo = Importar apostila (.zip/.rtf)
+ ⋯ cartão = Renomear · Mudar data/hora
+            · Duplicar · Apagar
+```
+
+**2. Programa de uma reunião**: toque no cartão para abrir o programa. Toque numa parte para editar tema, tempo e quem faz. O ＋ adiciona uma parte, e a alça ⋮⋮ arrasta para mudar a ordem, como nas partes dos Grandes Eventos.
+
+```text
+┌───────────────────────────┐
+│ ‹ Semanas  Ter 12 jan  ✎  │
+├───────────────────────────┤
+│ Início [19:30]            │
+│ ⋮⋮ 19:36 1. Jeová… 10min ›│
+│ ⋮⋮ 19:46 2. Joias  10min ›│
+│ ⋮⋮ 19:56 3. Leitura 4min ›│
+│        [ ＋ Parte ]        │
+│ [ ▶  Iniciar controle   ] │
+└───────────────────────────┘
+```
+
+**Caminhos para chegar lá:**
+- na terça, pelo botão ⏱ do compromisso "Reunião" da Agenda, que abre direto a reunião da semana;
+- em qualquer dia, pela Agenda › menu ⋯ › "Reuniões", que abre a lista.
+
 ## Detalhes técnicos
 
 - `src/lib/meeting/mwb-import.ts` (puro e testado): usa `rtfToText` e separa semanas pelo cabeçalho "D a D de Mês" ou pelo arquivo. Lê partes `N. Tema (X min)`, cânticos, comentários e seções. O zip é lido com o JSZip que já existe no app, com limites de tamanho, de quantidade de arquivos e de partes. Os testes usam as 8 semanas do zip como amostra.
 - Guardado no aparelho: `meeting.program.<userId>.<segunda>` em localStorage. O cronômetro reaproveita `loadTimer/saveTimer` com o id `meeting-<segunda>`.
 - A Agenda (`DayDetailsDialog` e o item de reunião do dia) só ganha o botão no item de reunião. Os dados e a lógica da Agenda não mudam.
 - `MeetingTimerSheet` é uma nova tela por cima e usa `EventTimerFocus` sem mudanças. Os Grandes Eventos não são alterados.
+- Edição de partes: uma folha simples (tema, minutos, designado), reordenação com o mesmo padrão de arrastar já usado, e o horário de cada parte recalculado a partir do início.
 - Textos em pt/en/es, uma regra no AGENTS.md, testes passando e `tsc --noEmit` limpo.
