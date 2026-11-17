@@ -1,87 +1,76 @@
-# Correções: cronômetro, rolagem, bolha de anexos, barra do Modo Esboço e Esboço do pastoreio
+# Plano: Grandes Eventos, Modelos de visita e Checklist
 
-## O que encontrei (causas reais)
-- **(01) Cronômetro:** por engano, coloquei a boia na *Tela cheia* (⤢), que não foi pedido, e o *Modo Esboço* (📖) continuou com o cronômetro preso no topo. Correção: a boia vai para o Modo Esboço e a Tela cheia volta exatamente como era antes (cronômetro no lugar original, sem nenhuma outra mudança).
-- **(02) Rolagem:** o modo edição tem duas rolagens (a dos campos de cima, limitada a 38% da tela, e a do texto). Quando a altura é recalculada (teclado, alça de altura), uma delas some porque a altura passa a caber "na conta" sem sobrar.
-- **(03) Bolha de anexos:** ela ainda é desenhada no mesmo lugar da antiga faixa de miniaturas, e a altura do texto ainda desconta esse espaço.
-- **(04) Topo do Modo Esboço:** "Ajustes do tempo por tópico" e "Recolher todos" ficam numa linha própria; a faixa do topo rola junto em alguns casos.
-- **(05) Esboço do pastoreio:** a nota abre numa camada acima de tudo (nível 90), mas as janelas de **link**, **anexar imagem/vídeo** e listas aparecem num nível mais baixo (50) — elas abrem *escondidas atrás* da nota. Além disso, a nota não tem a boia de "textos bíblicos encontrados", então as citações digitadas não viram balões.
+## (01) Grandes Eventos
 
-## Prévia — Modo Esboço (01, 03, 04)
+**(01.1) Não apaga sozinho 2 dias depois do evento**
+Causa confirmada: a limpeza automática diária só apaga eventos do *Cronograma*. Não existe nenhuma limpeza para Grandes Eventos.
+Correção: criar uma limpeza diária no servidor que apaga o Grande Evento (e as partes dele) quando já passaram 2 dias da data do evento. Eventos sem data não são apagados.
+
+**(01.2) "Apagar evento" e ele volta**
+Causa confirmada: as tabelas de Grandes Eventos não registram a exclusão para os outros aparelhos (as outras tabelas registram). O evento some da nuvem, mas a cópia guardada no celular continua lá e a tela o mostra de novo.
+Correção:
+- registrar as exclusões de eventos e partes, como já é feito nas outras telas;
+- ao apagar, remover na hora também da cópia do celular;
+- se estiver sem internet, guardar o pedido e apagar da nuvem quando a conexão voltar.
+
 ```text
-┌─────────────────────────────┐
-│ ←  Visita Rute      (i)  ⋯  │ ← barra FIXA (texto rola por baixo)
-├─────────────────────────────┤
-│ 1. Introdução         ⏱ 3m  │
-│   Leia Rute 1:16 [📖]        │
-│ 2. Lealdade           ⏱ 5m  │
-│   ...texto ocupa o espaço   │
-│   onde ficavam miniaturas   │
-│                    ┌──────┐ │
-│                    │⋮ 04:12│ │ ← boia do cronômetro (arrasta)
-│ ┌───────┐          └──────┘ │
-│ │🖼 3 ▶1│ ← bolha de anexos   │
-│ └───────┘   (arrasta, abre   │
-│              a grade)        │
-└─────────────────────────────┘
-Menu ⋯ :  Ajustes do tempo por tópico
-          Recolher / Expandir todos
-          (demais itens que já existem)
+┌──────────────────────────────┐
+│ Grandes Eventos              │
+│ ┌──────────────────────────┐ │
+│ │ Assembleia 15/11      ⋯  │ │
+│ └──────────────────────────┘ │
+│  Apagar → some na hora e     │
+│  não volta mais, em nenhum   │
+│  aparelho                    │
+└──────────────────────────────┘
 ```
-- Sai a faixa com o cartão do título + cronômetro: o título já está na barra e os detalhes no (i).
-- Barra do topo fica fixa; só o esboço rola.
 
-## Prévia — Modo Edição (02, 03)
+## (02) Modelos de visita
+
+**(02.1) Excluir modelo em "Programação pessoal"**
+Botão "Excluir modelo" no menu do modelo ativo, com confirmação. Apaga o modelo e os itens dele. As visitas que já usaram o modelo ficam como estão (elas guardam uma cópia).
+
 ```text
-┌─────────────────────────────┐
-│ ←  📖  (i)  ⤢   ⋯   💾       │
-├─────────────────────────────┤
-│ Texto do esboço...        ▐ │ ← rolagem do texto sempre visível
-│ ...                       ▐ │
-│ (espaço das miniaturas     ▐ │
-│  agora é texto)   ┌───────┐ │
-│                   │🖼 3 ▶1│ │ ← bolha livre
-│                   └───────┘ │
-├─────────────────────────────┤
-│ ↶  Aa  12▾  T  T▣  ≡  ⋯     │ ← barra colada no teclado
-└─────────────────────────────┘
+┌──────────────────────────────┐
+│ Programação pessoal          │
+│ [Modelo 1] [Modelo 2]  [+]   │
+│ Modelo 1             ⋯       │
+│            ┌───────────────┐ │
+│            │ Renomear      │ │
+│            │ Exportar      │ │
+│            │ 🗑 Excluir     │ │ ← vermelho
+│            └───────────────┘ │
+├──────────────────────────────┤
+│  Excluir "Modelo 1"?         │
+│  As visitas já feitas não    │
+│  mudam.                      │
+│     [Cancelar]  [Excluir]    │
+└──────────────────────────────┘
 ```
-- As duas rolagens ficam sempre ativas (a dos campos de cima e a do texto), com barra visível no celular.
 
-## Prévia — Nota de Pastoreio (05)
+**(02.2) Modelos aparecendo vazios**
+Causa provável (a confirmar antes de corrigir): a tela busca os modelos uma única vez ao abrir. Se essa busca falha (login ainda carregando, internet lenta), a tela fica vazia sem aviso e não tenta de novo.
+Correção:
+- mostrar primeiro a cópia guardada no celular;
+- tentar de novo automaticamente quando o login ficar pronto ou a internet voltar;
+- nunca trocar uma lista com modelos por uma vazia sem confirmar na nuvem;
+- conferir as outras telas de modelos (Checklist, Reuniões, Campo, Anciãos), que podem ter o mesmo problema.
+
+**(02.3) Checklist: "Informação" preenchida já marca como concluída**
+Quando o campo "Informação" de uma pergunta é salvo com texto, a pergunta fica marcada como concluída na hora. Apagar o texto não desmarca, para não perder uma marcação manual. A pessoa ainda pode desmarcar à mão.
+
 ```text
-┌─────────────────────────────┐
-│ ←  Família Silva  📖 ⤢ 🗑 ✓  │
-├─────────────────────────────┤
-│ ▾ Informações da visita      │ ← toca para recolher/expandir
-│   Data da visita  [16/11]    │
-│   Acompanhante   [João]      │
-│   Nome dos envolvidos        │
-│   ┌───────────────────────┐ │ ← campo de várias linhas,
-│   │Pedro, Ana, filhos...  │ │   igual a "Informações
-│   └───────────────────────┘ │   adicionais"
-│   Informações adicionais     │
-│   ┌───────────────────────┐ │
-│   └───────────────────────┘ │
-│ Esboço do pastoreio          │
-│  Leia Salmo 23:1 [📖]        │ ← balões bíblicos funcionando
-│              ┌──────────┐   │
-│              │📖 3 textos│   │ ← boia de textos encontrados
-│              └──────────┘   │
-├─────────────────────────────┤
-│ ↶  Aa  🔗  🖼  ▶  ⋯          │ ← link/imagem/vídeo abrem por cima
-└─────────────────────────────┘
+┌──────────────────────────────┐
+│ ☑ Quantos publicadores?      │
+│   Informação: 84         ✓   │
+│ ☐ Pioneiros regulares?       │
+│   Informação: (vazio)        │
+└──────────────────────────────┘
 ```
-- Recolhido mostra uma linha resumo: "16/11 · João · 3 pessoas". O aparelho lembra se estava recolhido.
-
-## O que não muda
-**Tela cheia (⤢): volta a ser como era antes da última alteração e não recebe nenhuma das mudanças deste plano.**
-Conteúdo salvo, sincronização, formato dos esboços, tempo por tópico, avisos do cronômetro, balão bíblico e dados das notas de pastoreio.
 
 ## Detalhes técnicos
-- `OutlinesWorkspace.tsx` (modo outline inline): trocar `OutlineTimer variant="toolbar"` por `FloatingOutlineTimer`; remover a faixa sticky do cartão/título; o `toolbarSlot` de `RichOutlineContent` (ajustes de tempo + recolher todos) passa a ser renderizado como itens do menu ⋯ existente (expor ações via callback/ref em vez de portal no slot). `FullscreenOutline` (tela cheia): reverter `FloatingOutlineTimer` para o `OutlineTimer` original na posição anterior; nenhuma outra mudança nela (mantém faixa de anexos e linha de zoom/recolher como antes).
-- Cabeçalho do modo esboço com `sticky top-0` dentro do contêiner que rola (ou contêiner `flex-col` com cabeçalho `shrink-0` e corpo `overflow-y-auto`).
-- `OutlineAttachmentsBar`: nova variante flutuante (portal, arrastável, encaixa na borda, posição salva em localStorage, mesmo padrão de `FloatingVersePanel`/`timer-float-prefs`). Remover `attachRow` dos cálculos de altura.
-- Rolagens: corpo do editor com `overflow-y: scroll` + `scrollbar-gutter: stable`; cálculo `minH/maxH` sem igualar exatamente a altura do contêiner pai; campos de cima mantêm `overflow-y-auto` com altura mínima.
-- `PastoralNoteDetail`: overlay sobe para nível que não esconda Radix (baixar overlay para z-50 com portal próprio, ou elevar dialogs/sheets/popovers abertos dentro dele via classe de contêiner); adicionar `FloatingVersePanel` com detecção igual à do Esboço Pessoal; seção de campos recolhível (localStorage `pastoral.fieldsCollapsed`); "Nome dos envolvidos" vira `Textarea` auto-crescente.
-- Testes: unitários para a posição da bolha (encaixe/limites) e para o resumo recolhido; verificação no navegador em 393×687 de cada tela (modo esboço, edição, nota de pastoreio abrindo link/anexo).
+- Migration: `delete_expired_big_events()` SECURITY DEFINER (`event_date < CURRENT_DATE - 2`, apaga as partes antes), com cron diário; triggers `record_sync_tombstone` em `circuit_big_events` e `circuit_big_event_parts`.
+- `BigEvents.tsx` `removeEvent`: atualização otimista do estado + remoção das linhas do evento e das partes no local-db.
+- `_app.modelos.tsx`: item de exclusão (nova função de servidor `deleteTemplate`, só do dono, apaga `program_template_items` e depois o template); `load` com fallback no mirror local, nova tentativa quando auth/online mudam e proteção contra lista vazia.
+- `ChecklistPanel.tsx`: ao salvar `info_text` com texto (trim), enviar também `status: "done"` no mesmo update.
+- Testes: limpeza (regra dos 2 dias), checklist que marca sozinho e exclusão de modelo; i18n pt/en/es.
