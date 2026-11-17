@@ -29,6 +29,7 @@ Hoje a ⭐ só aparece dentro do cartão da leitura da Reunião. Ela passa a apa
 ### (02.1) Conselho por designação + minimizar
 - Ao tocar numa parte: nova opção "☐ Terá conselho" (padrão 1 min, ajustável).
 - Com conselho marcado, o controle ganha um segundo tempo logo após a parte: "Conselho · 1 min".
+- O conselho não tem campo de orador (quem dá é o presidente).
 - Botão — no topo do controle minimiza para a bolinha/boia; tocar nela volta. O tempo não para.
 
 ```text
@@ -49,6 +50,7 @@ Regras do preenchimento automático:
 - "Cântico e oração" recebe nome.
 - "Comentários iniciais" e "Comentários finais" usam o mesmo nome (uma linha só).
 - Todas as outras partes recebem um nome, em ordem.
+- Dois nomes na mesma linha ("Lucia Nunes e Fernanda Abreu" ou "Lucia Nunes/Fernanda Abreu") contam como uma parte de demonstração e são aceitos juntos, mostrados como "Lucia Nunes / Fernanda Abreu".
 - Antes de salvar, mostra uma prévia parte → nome para conferir.
 
 ```text
@@ -103,7 +105,7 @@ Botão no Início, logo abaixo de "Relatório executivo": "Quadro de anúncios".
 ## Detalhes técnicos
 - Estrela: reaproveita `star` dos highlights (bible-tracks); botão nas listas do GuestWorkspace/HighlightsDrawer e no FocusEditor. Sem mudança de formato.
 - meeting-store: `MeetingPart` ganha `counsel?: number` (minutos, opcional, sanitizado). Timer gera parte extra "counsel" após a parte. Minimizar reusa a boia do event-timer.
-- Novo `meeting-speakers.ts` (puro): `assignSpeakers(parts, names)` com as regras acima + testes.
+- Novo `meeting-speakers.ts` (puro): `assignSpeakers(parts, lines)` com as regras acima; uma linha = uma parte, separadores " e " e "/" viram par de demonstração; conselho fica fora da contagem; testes.
 - Novo `visit-week-meeting.ts` (puro): `applyVisitWeek(program, visit)` lê service_talk_theme e final_song do programa da visita; testes de ordem e cântico.
 - PDF: `board-program-pdf.ts` com pdf-lib (createJsPdfCompat), uma página, fontes do app; botão no dashboard abaixo de executiveReport.
 - Testes para as regras de oradores, conselho e semana de visita; `tsc --noEmit` limpo.
