@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { telHref } from "@/lib/contact-format";
 import { setVisibleInterval } from "@/lib/visible-interval";
 import { readFnWithMirrorSafe, readOneWithMirror, readWithMirror } from "@/lib/local-first";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,6 +110,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { DashboardPager } from "@/components/dashboard/DashboardPager";
+// Carregados só quando usados: não pesam na abertura do Início.
+const ToCommentDashboardCard = lazy(() => import("@/components/dashboard/ToCommentDashboardCard"));
+const MeetingTimerButton = lazy(() => import("@/components/meeting/MeetingTimerButton"));
 import { buildDayTimeline, groupByDate, resolveWeekdaySlot, type TimelineKind, type TimelineSource } from "@/lib/today-timeline";
 import { encouragementCategoryLabel, modalityLabel, recommendationPurposeLabel } from "@/lib/enum-labels";
 import { EventReminderSync } from "@/components/reminders/EventReminders";
@@ -909,6 +912,7 @@ function Dashboard() {
             </span>
           )}
           <div className="flex items-center gap-1.5 shrink-0">
+          {role === "superintendent" && user && <Suspense fallback={null}><MeetingTimerButton userId={user.id} /></Suspense>}
           {role === "superintendent" && <CoupleMessagesButton threads={coupleThreads} unread={coupleUnread} onChanged={loadCouple} />}
           {role === "superintendent" && <UpcomingVisitsButton congregations={congs} />}
           {visit && (
@@ -1542,6 +1546,7 @@ function Dashboard() {
                 label: t("dashboard.pager.tabOutlines", { defaultValue: "Esboços" }),
                 content: (
                   <>
+        {user && <Suspense fallback={null}><ToCommentDashboardCard userId={user.id} /></Suspense>}
         <CollapsibleCard id="notes-field" accent="notes" icon={<BookOpen className="h-4 w-4 text-primary" />} title={t("dashboard.studyNotesOutlinesTab")}>
               {outlinesPreview.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("dashboard.studyNotesEmptyOutlines")}</p>

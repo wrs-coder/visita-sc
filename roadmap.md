@@ -13,3 +13,6 @@
 - [x] Programação pessoal: excluir modelo; lista vazia por cópia antiga
 - [x] Checklist: Informação preenchida marca concluída
 - [x] Modelos de cartas: exportar/importar sem Timbre e Assinatura
+- [x] Controle de tempo da reunião de meio de semana (botão ⏱, importar .zip/.rtf, criar/editar/renomear)
+- [x] "Para comentar" só com ⭐ + cartão na tela Esboços do Início
+- [x] Tela cheia da anotação do Início volta ao cronômetro original

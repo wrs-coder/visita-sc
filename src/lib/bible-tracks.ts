@@ -70,11 +70,10 @@ export function filterByTrack(list: Highlight[], track: Track | null): Highlight
   return track ? list.filter((h) => trackOf(h) === track) : list;
 }
 
-/** "Para comentar": pontos altos da reunião desta semana e os marcados com ★. */
-export function commentList(list: Highlight[], today: Date): Highlight[] {
-  const mon = mondayOf(today);
+/** "Para comentar": somente as notas marcadas com ★ (todas, sem limite). Sem estrela = só em Pontos altos. */
+export function commentList(list: Highlight[], _today?: Date): Highlight[] {
   return list
-    .filter((h) => h.star || (trackOf(h) === "meeting" && h.date.slice(0, 10) >= mon))
+    .filter((h) => h.star === true)
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 

@@ -218,7 +218,7 @@ export function CommentCard({ list, onStar, onOpen }: { list: Highlight[]; onSta
         <p className="flex-1 text-sm font-semibold">{t("guestWs.toComment", { defaultValue: "Para comentar" })} ({list.length})</p>
         {list.length > 0 && <Button size="sm" variant="outline" className="h-8 gap-1 rounded-full" onClick={onOpen}><Maximize2 className="h-3.5 w-3.5" />{t("guestWs.commentMode", { defaultValue: "Modo comentário" })}</Button>}
       </div>
-      {list.length === 0 ? <p className="text-xs text-muted-foreground">{t("guestWs.toCommentEmpty", { defaultValue: "Pontos altos marcados na leitura da reunião aparecem aqui." })}</p> : (
+      {list.length === 0 ? <p className="text-xs text-muted-foreground">{t("guestWs.toCommentEmpty", { defaultValue: "Notas marcadas com ⭐ aparecem aqui." })}</p> : (
         <ul className="divide-y">
           {list.map((h) => (
             <li key={h.id} className="flex items-start gap-2 py-2">
