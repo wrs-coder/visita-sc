@@ -92,24 +92,29 @@ O cronômetro dos Grandes Eventos não conta "segundo a segundo" na memória. El
 
 ## (05) Cartão "Para comentar" na tela Esboços do Início
 
-Sim, dá e vale a pena. O cartão lê os mesmos pontos altos da leitura da reunião, que você já marca em Estudo e Anotações. Nada é copiado.
+**Regra nova, que vale nos dois lugares:** o "Para comentar" mostra **somente as notas marcadas com ⭐**, todas elas, sem limite. As notas sem estrela ficam só em Pontos altos e Anotações da leitura. Hoje o cartão também mostra as notas da semana sem estrela. Isso muda para seguir a sua regra, tanto em Estudo e Anotações quanto no Início.
+
+O cartão do Início é **o mesmo cartão** de Estudo e Anotações, não uma cópia simplificada. Ele tem o mesmo texto, os mesmos balões com link do texto bíblico (tocar abre o versículo) e o mesmo botão "Modo comentário". Assim você não precisa ir até Estudo e Anotações.
 
 ```text
 ┌───────────────────────────┐
 │ Agenda (●Esboços) Visita  │
 ├───────────────────────────┤
 │ ┌───────────────────────┐ │
-│ │ 💬 Para comentar (3)  │ │
-│ │ Ez 13:3 — Profetas…   │ │
-│ │ Ez 14:14 ★ Noé, Dan…  │ │
+│ │ 💬 Para comentar (4)  │ │
+│ │ ⭐ [Ez 13:3] Profetas…│ │
+│ │ ⭐ [Ez 14:14] Noé, D… │ │
+│ │ ⭐ [Ez 14:20] …       │ │
+│ │ ⭐ [Ez 16:42] …       │ │
 │ │ [ Modo comentário › ] │ │
 │ └───────────────────────┘ │
 │  … cartões de esboços …   │
 └───────────────────────────┘
+  [Ez 13:3] = balão com link do texto
 ```
 
-- Mostra até 3 itens. "Modo comentário" abre a mesma tela de comentários que já existe.
-- Se não houver nada para comentar, o cartão não aparece, para não ocupar espaço.
+- Se nenhuma nota tiver ⭐, o cartão não aparece no Início. Em Estudo e Anotações, ele continua mostrando a mensagem de vazio.
+- Tirar a ⭐ de uma nota remove a nota do cartão. A nota continua guardada em Pontos altos.
 
 ## (06) Tela cheia do Início com cronômetro flutuante: foi erro meu
 
@@ -122,6 +127,6 @@ Conferi: na correção anterior, troquei por engano o cronômetro da Tela cheia 
 - Botão ⏱ no cabeçalho do dashboard, ao lado de `CoupleMessagesButton`, só para o superintendente. A tela é carregada com React.lazy, então nada entra no carregamento inicial. A Agenda não muda.
 - `MeetingTimerSheet` é uma nova tela por cima e usa `EventTimerFocus` sem mudanças. Os Grandes Eventos não são alterados.
 - Edição de partes: uma folha simples (tema, minutos, designado), reordenação com o mesmo padrão de arrastar já usado, e o horário de cada parte recalculado a partir do início.
-- (05) Cartão `ToCommentDashboardCard`: usa `commentList` de `bible-tracks.ts` sobre o workspace local `user.<userId>`, `CommentMode` de `BibleTrackExtras` e carregamento sob demanda.
+- (05) `commentList` em `bible-tracks.ts` passa a filtrar só `star === true`. O teste existente é atualizado para "só estrelas, todas". O Início usa o mesmo `CommentCard` e o mesmo `CommentMode` de `BibleTrackExtras`, que já trazem os balões de referência, lendo o workspace local `user.<userId>`. O cartão é carregado sob demanda.
 - (06) `FieldNoteFullscreenDialog.tsx`: volta a usar `<OutlineTimer variant="fullscreen" />`, como na versão anterior.
 - Textos em pt/en/es, uma regra no AGENTS.md, testes passando e `tsc --noEmit` limpo.
