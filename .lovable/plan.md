@@ -24,55 +24,24 @@ Se uma semana já estiver guardada, ela é substituída só se você marcar.
 └───────────────────────────┘
 ```
 
-## (02) Onde colocar: você tem razão
+## (02) Onde fica: botão ⏱ solto no topo, ao lado de Recados
 
-Eu sugeri o Programa da visita porque a reunião da visita faz parte da semana da visita. Mas, como você explicou, lá já tem 5 abas, e o controle é só da reunião de meio de semana. Sua ideia é melhor. **Recomendo a Agenda**, sem criar uma 5ª tela no Início:
-
-- No dia da reunião (terça), o compromisso **"Reunião"** da Agenda ganha um botão **⏱ Controle de tempo**.
-- Esse botão abre a tela da reunião da semana: programa, hora de início, importar e iniciar.
-- Assim o Início continua com 4 telas, e o controle aparece exatamente onde e quando você precisa.
+O botão não fica preso ao compromisso de terça. Assim, se o dia ou a hora da reunião mudar no futuro, nada quebra. Ele fica no topo do Início, ao lado do ícone de Recados, e vale para qualquer dia.
 
 ```text
 ┌───────────────────────────┐
-│ Agenda   (Hoje)(Semana)   │
+│ VisitaSC        ⏱  💬  ☰ │  ← ⏱ novo, ao lado de Recados
 ├───────────────────────────┤
-│ Terça, 12 jan             │
-│ ┌───────────────────────┐ │
-│ │ 🚗 Transporte   18:45 │ │
-│ └───────────────────────┘ │
-│ ┌───────────────────────┐ │
-│ │ 🏛 Reunião      19:30 │ │
-│ │ Cong. Central         │ │
-│ │ [ ⏱ Controle de tempo]│ │
-│ └───────────────────────┘ │
+│ (●Agenda)(Esboços)(Visita)│
+│ (Pastoreio)               │
+│  … Início igual a hoje …  │
 └───────────────────────────┘
 ```
 
-Tela da reunião, que abre por cima:
+- Ao tocar no ⏱, abre a reunião da semana atual. Se a semana ainda não tiver programa, abre a lista de reuniões.
+- As 4 telas do Início não mudam.
 
-```text
-┌───────────────────────────┐
-│ ✕  Reunião · 12 jan   ⋯   │
-├───────────────────────────┤
-│ Início  [19:30]           │
-│ 19:30 Cântico 39 e oração │
-│ ── Tesouros ───────────── │
-│ 19:36 1. Jeová valo… 10min│
-│ 19:56 3. Leitura      4min│
-│ ── Faça seu melhor ────── │
-│  …                        │
-│ 20:50 Comentários f.  3min│
-│                           │
-│ [ ▶  Iniciar controle   ] │
-└───────────────────────────┘
-  ⋯ = Importar apostila (.zip/.rtf)
-```
-
-**Iniciar controle** abre a mesma tela de foco dos Grandes Eventos: tempo da parte, pausar, próxima e atraso total.
-
-Se essa semana ainda não tiver programa, a tela mostra **"Importar apostila"** no centro.
-
-**Alternativa**, se preferir: uma sub-aba "Reunião" entre Agenda e Esboços. Funciona, mas fica no Início todos os dias, mesmo quando não é dia de reunião.
+**Vai pesar no Início? Não.** O Início ganha só o ícone. A tela da reunião, o leitor da apostila e o leitor do zip só carregam quando você toca no ⏱, do mesmo jeito que o editor de esboços já carrega só quando é aberto. Os programas ficam no aparelho e não usam a internet nem a nuvem.
 
 ## (03) Onde editar, criar e renomear (igual aos Grandes Eventos)
 
@@ -115,15 +84,13 @@ A tela da reunião tem dois níveis, como nos Grandes Eventos:
 └───────────────────────────┘
 ```
 
-**Caminhos para chegar lá:**
-- na terça, pelo botão ⏱ do compromisso "Reunião" da Agenda, que abre direto a reunião da semana;
-- em qualquer dia, pela Agenda › menu ⋯ › "Reuniões", que abre a lista.
+**Caminho:** toque no ⏱ do topo para abrir a reunião da semana. Dali, "‹ Semanas" leva à lista, onde dá para criar, renomear, duplicar e apagar.
 
 ## Detalhes técnicos
 
 - `src/lib/meeting/mwb-import.ts` (puro e testado): usa `rtfToText` e separa semanas pelo cabeçalho "D a D de Mês" ou pelo arquivo. Lê partes `N. Tema (X min)`, cânticos, comentários e seções. O zip é lido com o JSZip que já existe no app, com limites de tamanho, de quantidade de arquivos e de partes. Os testes usam as 8 semanas do zip como amostra.
 - Guardado no aparelho: `meeting.program.<userId>.<segunda>` em localStorage. O cronômetro reaproveita `loadTimer/saveTimer` com o id `meeting-<segunda>`.
-- A Agenda (`DayDetailsDialog` e o item de reunião do dia) só ganha o botão no item de reunião. Os dados e a lógica da Agenda não mudam.
+- Botão ⏱ no cabeçalho do dashboard, ao lado de `CoupleMessagesButton`, só para o superintendente. A tela é carregada com React.lazy, então nada entra no carregamento inicial. A Agenda não muda.
 - `MeetingTimerSheet` é uma nova tela por cima e usa `EventTimerFocus` sem mudanças. Os Grandes Eventos não são alterados.
 - Edição de partes: uma folha simples (tema, minutos, designado), reordenação com o mesmo padrão de arrastar já usado, e o horário de cada parte recalculado a partir do início.
 - Textos em pt/en/es, uma regra no AGENTS.md, testes passando e `tsc --noEmit` limpo.
