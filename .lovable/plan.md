@@ -77,6 +77,12 @@ Quando a data da reunião cair numa semana de visita do programa:
 - O cântico final passa a ser o cântico de terça do Programa da visita.
 Nada é apagado: fora da semana de visita a ordem normal continua.
 
+### (02.4) Exportar e importar semanas
+No ⋯ de "‹ Semanas": "Exportar semanas" (escolhe quais) e "Importar semanas", igual aos programas dos Grandes Eventos.
+- O arquivo leva temas, minutos, ordem, seções e conselhos, mas sem nomes de oradores.
+- Quem importa: data e hora seguem a própria conta (dia e horário da reunião já usados nela, senão terça 19:30); a troca da semana de visita (02.3) usa o Programa da visita de quem importa.
+- Semana que já existe: só é substituída se marcar, como na importação da apostila.
+
 ## (03) "Programa da Semana da Visita" para o quadro de anúncios — É POSSÍVEL
 
 Análise franca: dá para fazer em uma página A4 com quase tudo vindo do app (datas, congregação, nome do SC, reunião de terça da nova função, temas e cânticos do Programa da visita, reuniões especiais, saídas de campo). O que não existir no app sai como linha em branco para escrever à mão. Inspirado no modelo, não cópia: linha do tempo à esquerda com designações, faixas de cor por seção usando as cores do app.
@@ -103,6 +109,7 @@ Botão no Início, logo abaixo de "Relatório executivo": "Quadro de anúncios".
 ```
 
 ## Detalhes técnicos
+- Novo `meeting-share.ts` (puro): arquivo .json versionado `{kind:"visitasc-meeting-weeks",version:1}`, remove `assigned`, limite de tamanho, ids novos ao importar, reaproveita `mergeImported`; testes (sem oradores, ids novos, recusa inválido).
 - Estrela: reaproveita `star` dos highlights (bible-tracks); botão nas listas do GuestWorkspace/HighlightsDrawer e no FocusEditor. Sem mudança de formato.
 - meeting-store: `MeetingPart` ganha `counsel?: number` (minutos, opcional, sanitizado). Timer gera parte extra "counsel" após a parte. Minimizar reusa a boia do event-timer.
 - Novo `meeting-speakers.ts` (puro): `assignSpeakers(parts, lines)` com as regras acima; uma linha = uma parte, separadores " e " e "/" viram par de demonstração; conselho fica fora da contagem; testes.
