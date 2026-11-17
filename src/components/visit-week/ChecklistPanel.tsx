@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { infoSavePatch } from "@/lib/checklist/info-autodone";
 import { useTranslation } from "react-i18next";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { useAuth } from "@/hooks/use-auth";
@@ -141,7 +142,7 @@ export function ChecklistPanel() {
               </div>
               <AccordionContent>
                 <fieldset disabled={!editAllowed} className="space-y-3 pt-1 pb-3 disabled:opacity-70 min-w-0 border-0 p-0 m-0">
-                  <FieldArea label={t("checklistPage.infoLabel")} v={it.info_text ?? ""} onSave={(v) => update(it.id, { info_text: v })} readOnly={!canEdit} />
+                  <FieldArea label={t("checklistPage.infoLabel")} v={it.info_text ?? ""} onSave={(v) => update(it.id, infoSavePatch(v))} readOnly={!canEdit} />
                   <FieldArea label={t("checklistPage.linkNotesLabel")} v={it.link_or_notes ?? ""} onSave={(v) => update(it.id, { link_or_notes: v })} readOnly={!canEdit} />
                   {canManage && (
                     <div className="flex gap-2">

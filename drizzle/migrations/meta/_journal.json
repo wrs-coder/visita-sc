@@ -92,6 +92,13 @@
       "when": 1794588650912,
       "tag": "0012_expire_big_events_after_2_days",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794934133242,
+      "tag": "0013_big_events_tombstones",
+      "breakpoints": true
     }
   ]
 }

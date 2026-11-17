@@ -30,7 +30,7 @@ import { EventTimerFocus } from "./EventTimerFocus";
 import { buildLetterModel, letterFileBase, loadEventChoice, loadTemplates, saveEventChoice, templateForEvent, type LetterTemplate } from "@/lib/big-events/letter-template";
 import { downloadAllTemplates, fetchLetterTemplates, pullTemplate, pushAllTemplates, pushTemplate, pushLetterTemplates, type TemplateCloud, startLetterAutoSync, type SyncState } from "@/lib/big-events/letter-template-sync";
 import type { Database } from "@/integrations/supabase/types";
-import { downloadAllEvents, mergeEvent, pullEvent, pushAllLocal, pushEvent } from "@/lib/big-events/cloud-sync";
+import { downloadAllEvents, forgetEventLocally, isExpiredBigEvent, mergeEvent, pullEvent, pushAllLocal, pushEvent } from "@/lib/big-events/cloud-sync";
 import { SwipeToSync } from "@/components/notes/SwipeToSync";
 
 type EventRow = Database["public"]["Tables"]["circuit_big_events"]["Row"];
@@ -120,7 +120,8 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
       supabase.from("circuit_big_events").select("*").order("event_date", { ascending: true }),
       supabase.from("circuit_big_event_parts").select("*").order("sort_order"),
     ]);
-    setEvents(ev ?? []); setParts(pt ?? []); setLoading(false);
+    const today = new Date().toISOString().slice(0, 10);
+    setEvents((ev ?? []).filter((e) => !isExpiredBigEvent(e.event_date, today))); setParts(pt ?? []); setLoading(false);
     // Com internet: confere as respostas dos oradores direto no servidor
     // (as respostas chegam pelo link, fora deste aparelho) e corrige a cópia local.
     if (typeof navigator !== "undefined" && navigator.onLine) void refreshStatuses();
@@ -255,7 +256,14 @@ export function BigEvents({ elders }: { elders: Array<{ name: string; congregati
   const removeEvent = async (id: string) => {
     if (!await appConfirm("Apagar este evento de todos os aparelhos? As partes também serão apagadas.")) return;
     if (typeof navigator !== "undefined" && !navigator.onLine) toast.info("Será apagado da nuvem quando houver conexão.");
+    const partIds = parts.filter((p) => p.event_id === id).map((p) => p.id);
+    // Some na hora e não volta da cópia do aparelho.
+    setEvents((es) => es.filter((e) => e.id !== id));
+    setParts((ps) => ps.filter((p) => p.event_id !== id));
+    setLocalOnly((s) => { if (!s.has(id)) return s; const n = new Set(s); n.delete(id); return n; });
+    await supabase.from("circuit_big_event_parts").delete().eq("event_id", id);
     await supabase.from("circuit_big_events").delete().eq("id", id);
+    await forgetEventLocally(id, partIds);
     await load();
   };
   const [downloading, setDownloading] = useState(false);

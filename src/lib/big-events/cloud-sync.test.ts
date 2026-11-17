@@ -25,3 +25,21 @@ describe("mergeWithLocal", () => {
     expect(r.parts).toHaveLength(2);
   });
 });
+
+import { isExpiredBigEvent } from "./cloud-sync";
+describe("eventos apagados e vencidos", () => {
+  const ev = (id: string, event_date: string | null = null) => ({ id, event_date } as never);
+  it("evento apagado na nuvem não volta da cópia do aparelho", () => {
+    const r = mergeWithLocal([], [], [ev("x"), ev("y")], [], new Set(["x"]));
+    expect(r.localOnly).toEqual(["y"]);
+  });
+  it("evento de 14/11 some em 17/11; de 15/11 ainda fica em 17/11", () => {
+    expect(isExpiredBigEvent("2026-11-14", "2026-11-17")).toBe(true);
+    expect(isExpiredBigEvent("2026-11-15", "2026-11-17")).toBe(false);
+    expect(isExpiredBigEvent(null, "2026-11-17")).toBe(false);
+  });
+  it("evento vencido que só existe no aparelho não é reenviado", () => {
+    const r = mergeWithLocal([], [], [ev("a", "2026-11-14"), ev("b", "2026-11-20")], [], new Set(), "2026-11-17");
+    expect(r.localOnly).toEqual(["b"]);
+  });
+});

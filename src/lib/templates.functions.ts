@@ -258,3 +258,15 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
 
     return { ok: true as const, inserted, skipped, lastAppliedAt: now };
   });
+
+export const deleteTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    // Itens saem junto (cascata); visitas que usaram o modelo guardam a cópia própria.
+    const { error } = await supabaseAdmin.from("program_templates")
+      .delete().eq("id", data.id).eq("superintendent_id", userId);
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const };
+  });

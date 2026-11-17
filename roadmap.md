@@ -9,3 +9,7 @@
 - [x] Bolha de anexos livre (arrastável) no modo edição e esboço
 - [x] Modo Esboço: ajustes de tempo e recolher todos no menu ⋯, barra fixa
 - [x] Esboço do pastoreio: links/anexos/balões bíblicos, campos recolhíveis
+- [x] Grandes Eventos: limpeza 2 dias + apagado não volta
+- [x] Programação pessoal: excluir modelo; lista vazia por cópia antiga
+- [x] Checklist: Informação preenchida marca concluída
+- [x] Modelos de cartas: exportar/importar sem Timbre e Assinatura

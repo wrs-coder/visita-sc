@@ -2,7 +2,7 @@ import { appConfirm } from "@/components/ui/app-dialogs";
 // Pílula "Modelos" de Grandes Eventos: modelos de carta convite (só no aparelho).
 import { useState } from "react";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, CloudDownload, CloudUpload, Copy, Eye, MoreHorizontal, Plus, Star, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudDownload, CloudUpload, Copy, Download, Eye, MoreHorizontal, Plus, Share2, Star, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { TemplateCloud } from "@/lib/big-events/letter-template-sync";
 import { Button } from "@/components/ui/button";
@@ -136,7 +136,8 @@ function LetterColorsEditor({ value, onChange }: { value?: LetterColors; onChang
     </div>
   );
 }
-import { saveBlob } from "@/lib/share";
+import { saveBlob, shareJsonFile, pickFile } from "@/lib/share";
+import { buildLetterShareFile, parseLetterShareFile, MAX_SHARE_FILE_BYTES } from "@/lib/big-events/letter-template-share";
 import type { SyncState } from "@/lib/big-events/letter-template-sync";
 
 type Field = { key: keyof LetterTemplate; label: string; rows?: number };
@@ -178,6 +179,28 @@ export function LetterTemplates({ list, onChange, sync, cloud, onDownload, onUpl
   const remove = async (id: string) => {
     if (list.length <= 1) { toast.info("Mantenha pelo menos um modelo."); return; }
     if (await appConfirm("Apagar este modelo?")) onChange(list.filter((x) => x.id !== id));
+  };
+  const exportTemplates = async (items: LetterTemplate[]) => {
+    if (!items.length) return;
+    const base = items.length === 1 ? items[0].name : "Modelos de cartas";
+    const safe = base.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Modelos de cartas";
+    try {
+      await shareJsonFile(`${safe}.json`, buildLetterShareFile(items));
+      toast.success("Arquivo pronto. Timbre e Assinatura não foram incluídos.");
+    } catch { toast.error("Não foi possível exportar."); }
+  };
+  const importTemplates = async () => {
+    const file = await pickFile(".json,application/json");
+    if (!file) return;
+    if (file.size > MAX_SHARE_FILE_BYTES) { toast.error("Arquivo grande demais."); return; }
+    try {
+      const got = parseLetterShareFile(JSON.parse(await file.text()), list);
+      if (!got.length) { toast.info("O arquivo não tem modelos."); return; }
+      const names = got.map((t) => `• ${t.name}`).join("\n");
+      if (!await appConfirm(`Importar ${got.length === 1 ? "este modelo" : `${got.length} modelos`}?\n${names}\n\nO Timbre e a Assinatura serão os seus.`)) return;
+      onChange([...list, ...got]);
+      toast.success(got.length === 1 ? "1 modelo importado" : `${got.length} modelos importados`);
+    } catch (e) { toast.error(e instanceof Error && e.message.includes("Modelos de cartas") ? e.message : "Arquivo inválido."); }
   };
   const preview = async (t: LetterTemplate) => {
     const m = sampleLetterModel(t);
@@ -251,6 +274,13 @@ export function LetterTemplates({ list, onChange, sync, cloud, onDownload, onUpl
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <p className="flex-1 text-sm text-muted-foreground">Modelos de carta convite. O primeiro é o padrão dos eventos.</p>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-9 w-9" aria-label="Exportar ou importar"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => void exportTemplates(list)}><Share2 className="mr-2 h-4 w-4" />Exportar todos</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => void importTemplates()}><Download className="mr-2 h-4 w-4" />Importar</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button size="sm" className="gap-1" onClick={() => setEditing({ ...(list[0] ?? defaultTemplate()), id: crypto.randomUUID(), name: "Novo modelo" })}><Plus className="h-3.5 w-3.5" />Novo</Button>
       </div>
       {onDownload && (
@@ -285,6 +315,7 @@ export function LetterTemplates({ list, onChange, sync, cloud, onDownload, onUpl
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => void onPush(t.id)}><CloudUpload className="mr-2 h-4 w-4" />Enviar para a nuvem</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => void onPull?.(t.id)}><CloudDownload className="mr-2 h-4 w-4" />Receber da nuvem</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void exportTemplates([t])}><Share2 className="mr-2 h-4 w-4" />Exportar (sem Timbre e Assinatura)</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={() => remove(t.id)}><Trash2 className="mr-2 h-4 w-4" />Apagar</DropdownMenuItem>
               </DropdownMenuContent>

@@ -1,11 +1,12 @@
-import { appPrompt } from "@/components/ui/app-dialogs";
+import { appPrompt, appConfirm } from "@/components/ui/app-dialogs";
 import { createFileRoute } from "@tanstack/react-router";
 import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
-import { listTemplates, upsertTemplate, replaceTemplateItems } from "@/lib/templates.functions";
+import { listTemplates, upsertTemplate, replaceTemplateItems, deleteTemplate } from "@/lib/templates.functions";
+import { freshIfEmpty } from "@/lib/fresh-if-empty";
 import { exportProgramTemplate, importProgramTemplate } from "@/lib/template-io.functions";
 import { TemplateHeaderRow, InfoDisclosure, TemplateFooterBar, EldersFillSection, countFilled } from "@/components/templates/TemplateChrome";
 import { Button } from "@/components/ui/button";
@@ -43,9 +44,10 @@ function Page() {
     () => Object.fromEntries(SLOTS.map((s) => [s, t("templates.templateNumber", { n: s })])),
     [t]
   );
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const fnList = useServerFn(listTemplates);
   const fnUpsert = useServerFn(upsertTemplate);
+  const fnDelete = useServerFn(deleteTemplate);
   const fnReplace = useServerFn(replaceTemplateItems);
   const fnExport = useServerFn(exportProgramTemplate);
   const fnImport = useServerFn(importProgramTemplate);
@@ -59,9 +61,13 @@ function Page() {
   const [activeSlot, setActiveSlot] = useState("1");
   const [busy, setBusy] = useState(false);
 
+  const tplsCount = useRef(0);
   const load = useCallback(async () => {
-    const r = await fnList();
-    if (!r.ok) return;
+    const r = await freshIfEmpty(() => fnList(), (x) => !x.templates.length);
+    if (!r || !r.ok) return;
+    // Nunca troca uma lista com modelos por uma vazia sem confirmação.
+    if (!r.templates.length && tplsCount.current > 0) return;
+    tplsCount.current = r.templates.length;
     setTpls(r.templates as TemplateRow[]);
     const map: Record<string, ItemDraft[]> = {};
     for (const t of r.templates) map[t.id] = [];
@@ -92,7 +98,12 @@ function Page() {
     setStudyGenObsBySlot(studyObsMap);
   }, [fnList]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, user?.id]);
+  useEffect(() => {
+    const on = () => void load();
+    window.addEventListener("online", on);
+    return () => window.removeEventListener("online", on);
+  }, [load]);
 
   const [section, setSectionState] = useState<Kind>("study");
   useEffect(() => { setSectionState(readPref<Kind>("tpl-program:section", "study")); }, []);
@@ -243,6 +254,18 @@ function Page() {
           if (v && v.trim()) { setNamesBySlot({ ...namesBySlot, [Number(activeSlot)]: v.trim() }); renameSlot(Number(activeSlot), v.trim()); }
         }}
         onDuplicate={() => { if (freeSlot) duplicateSlot(Number(activeSlot), freeSlot); }}
+        onDelete={activeTpl ? async () => {
+          const name = namesBySlot[activeTpl.slot] || activeTpl.name;
+          if (!await appConfirm(t("templates.deleteConfirm", { name }))) return;
+          setBusy(true);
+          const r = await fnDelete({ data: { id: activeTpl.id } });
+          setBusy(false);
+          if (!r.ok) { toast.error(r.error); return; }
+          toast.success(t("templates.deleted"));
+          tplsCount.current = Math.max(0, tplsCount.current - 1);
+          setTpls((list) => list.filter((x) => x.id !== activeTpl.id));
+          await load();
+        } : undefined}
         duplicateDisabled={!freeSlot}
         io={{
           filenameBase: namesBySlot[Number(activeSlot)] ?? t("templates.exportProgram", { n: activeSlot }),
