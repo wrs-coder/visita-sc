@@ -1,132 +1,109 @@
-# Controle de tempo da Reunião de Meio de Semana (revisado)
+# Plano: Estrela nas notas, Reunião (conselho, oradores, Terça da visita) e Quadro de anúncios
 
-## (01) Importar o zip com várias semanas: sim, dá
+## (01) Leitura da Bíblia: estrela nas listas e ao criar
 
-Seu zip tem 8 arquivos .rtf, um para cada semana de janeiro e fevereiro de 2027. O app já abre arquivos zip no próprio aparelho (usa isso no backup e na importação do JW Library). Então dá para:
-
-- escolher o **.zip** ou um **.rtf** solto;
-- o app lê todas as semanas de uma vez e mostra a lista;
-- você confirma, e cada semana fica guardada pela data dela. Na terça de cada semana, o programa já está pronto.
-
-Se uma semana já estiver guardada, ela é substituída só se você marcar.
+Hoje a ⭐ só aparece dentro do cartão da leitura da Reunião. Ela passa a aparecer também:
+- ao lado de cada nota em "Anotações de leitura" e "Pontos altos";
+- no topo da tela ao criar ou editar uma dessas notas.
 
 ```text
 ┌───────────────────────────┐
-│ Importar apostila         │
+│ ‹  Pontos altos        ＋ │
 ├───────────────────────────┤
-│ 8 semanas encontradas     │
-│ ☑ 4–10 jan    13 partes   │
-│ ☑ 11–17 jan   13 partes   │
-│ ☑ 18–24 jan   12 partes   │
-│ ☐ 25–31 jan   já existe   │
-│  …                        │
-│ [ Cancelar ] [ Importar ] │
+│ Ezequiel 13:3          ☆ │
+│ Falsos profetas…          │
+├───────────────────────────┤
+│ Ezequiel 14:14         ★ │ ← vai para "Para comentar"
+│ Noé, Daniel e Jó…         │
+└───────────────────────────┘
+┌───────────────────────────┐
+│ ✕  Nova anotação   ☆  ✓  │ ← estrela ao criar
+│ Texto: Ez 14:14           │
+│ ______________________    │
+└───────────────────────────┘
+```
+É a mesma ⭐ que já existe (mesmo dado). Marcar em qualquer lugar mostra a nota no "Para comentar" e no cartão do Início.
+
+## (02) Controle de tempo da reunião
+
+### (02.1) Conselho por designação + minimizar
+- Ao tocar numa parte: nova opção "☐ Terá conselho" (padrão 1 min, ajustável).
+- Com conselho marcado, o controle ganha um segundo tempo logo após a parte: "Conselho · 1 min".
+- Botão — no topo do controle minimiza para a bolinha/boia; tocar nela volta. O tempo não para.
+
+```text
+┌───────────────────────────┐
+│ — Controle    19:52    ✕  │
+├───────────────────────────┤
+│ 4. Iniciando conversas    │
+│    03:00 / 03:00   ▶      │
+│ ↳ Conselho  01:00         │ ← tempo próprio
+│ 5. Cultivando o interesse │
 └───────────────────────────┘
 ```
 
-## (02) Onde fica: botão ⏱ solto no topo, ao lado de Recados
-
-O botão não fica preso ao compromisso de terça. Assim, se o dia ou a hora da reunião mudar no futuro, nada quebra. Ele fica no topo do Início, ao lado do ícone de Recados, e vale para qualquer dia.
-
-```text
-┌───────────────────────────┐
-│ VisitaSC        ⏱  💬  ☰ │  ← ⏱ novo, ao lado de Recados
-├───────────────────────────┤
-│ (●Agenda)(Esboços)(Visita)│
-│ (Pastoreio)               │
-│  … Início igual a hoje …  │
-└───────────────────────────┘
-```
-
-- Ao tocar no ⏱, abre a reunião da semana atual. Se a semana ainda não tiver programa, abre a lista de reuniões.
-- As 4 telas do Início não mudam.
-
-**Vai pesar no Início? Não.** O Início ganha só o ícone. A tela da reunião, o leitor da apostila e o leitor do zip só carregam quando você toca no ⏱, do mesmo jeito que o editor de esboços já carrega só quando é aberto. Os programas ficam no aparelho e não usam a internet nem a nuvem.
-
-## (03) Onde editar, criar e renomear (igual aos Grandes Eventos)
-
-A tela da reunião tem dois níveis, como nos Grandes Eventos:
-
-**1. Lista de reuniões**: o botão "‹ Semanas" no topo da tela da reunião abre a lista de todas as semanas guardadas.
+### (02.2) Oradores: importar ou colar
+No ⋯ da semana, "Oradores": 1) importar arquivo (como Grandes Eventos), 2) colar/escrever os nomes, um por linha, em ordem.
+Regras do preenchimento automático:
+- Cânticos sozinhos não recebem nome.
+- "Cântico e oração" recebe nome.
+- "Comentários iniciais" e "Comentários finais" usam o mesmo nome (uma linha só).
+- Todas as outras partes recebem um nome, em ordem.
+- Antes de salvar, mostra uma prévia parte → nome para conferir.
 
 ```text
 ┌───────────────────────────┐
-│ ‹  Reuniões         ＋  ⋯ │
+│ ✕  Oradores        Aplicar│
 ├───────────────────────────┤
+│ [Importar arquivo]        │
+│ Ou cole, um por linha:    │
 │ ┌───────────────────────┐ │
-│ │ Ter 12 jan · 19:30    │ │
-│ │ Ezequiel 13–14   ⋯    │ │
+│ │João (presidente)      │ │
+│ │Pedro (oração)         │ │
+│ │…                      │ │
 │ └───────────────────────┘ │
-│ ┌───────────────────────┐ │
-│ │ Ter 19 jan · 19:30    │ │
-│ │ Ezequiel 15–16   ⋯    │ │
-│ └───────────────────────┘ │
-│  …                        │
+│ Prévia:                   │
+│ Coment. iniciais/finais João│
+│ Cântico e oração   Pedro  │
 └───────────────────────────┘
- ＋ = Nova reunião (em branco)
- ⋯ topo = Importar apostila (.zip/.rtf)
- ⋯ cartão = Renomear · Mudar data/hora
-            · Duplicar · Apagar
 ```
 
-**2. Programa de uma reunião**: toque no cartão para abrir o programa. Toque numa parte para editar tema, tempo e quem faz. O ＋ adiciona uma parte, e a alça ⋮⋮ arrasta para mudar a ordem, como nas partes dos Grandes Eventos.
+### (02.3) Semana da visita
+Quando a data da reunião cair numa semana de visita do programa:
+- "Estudo bíblico de congregação" é trocado pelo tema do discurso de serviço de terça-feira do Programa da visita (orador: o superintendente, 30 min).
+- "Comentários finais" passa para antes desse discurso.
+- O cântico final passa a ser o cântico de terça do Programa da visita.
+Nada é apagado: fora da semana de visita a ordem normal continua.
+
+## (03) "Programa da Semana da Visita" para o quadro de anúncios — É POSSÍVEL
+
+Análise franca: dá para fazer em uma página A4 com quase tudo vindo do app (datas, congregação, nome do SC, reunião de terça da nova função, temas e cânticos do Programa da visita, reuniões especiais, saídas de campo). O que não existir no app sai como linha em branco para escrever à mão. Inspirado no modelo, não cópia: linha do tempo à esquerda com designações, faixas de cor por seção usando as cores do app.
+
+Botão no Início, logo abaixo de "Relatório executivo": "Quadro de anúncios". Gera PDF (pdf-lib, padrão do app) e abre a opção de compartilhar/imprimir.
 
 ```text
-┌───────────────────────────┐
-│ ‹ Semanas  Ter 12 jan  ✎  │
-├───────────────────────────┤
-│ Início [19:30]            │
-│ ⋮⋮ 19:36 1. Jeová… 10min ›│
-│ ⋮⋮ 19:46 2. Joias  10min ›│
-│ ⋮⋮ 19:56 3. Leitura 4min ›│
-│        [ ＋ Parte ]        │
-│ [ ▶  Iniciar controle   ] │
-└───────────────────────────┘
+┌──────────── A4 ────────────┐
+│ 17–22 nov  SEMANA DA VISITA│
+│            Wanderson R.    │
+│ Congregação X              │
+│ ○ Meio de semana · Ter 19:30│
+│  João   Presidência        │
+│  ▬ Tesouros  10m 1. …      │
+│  ▬ Ministério 3m 4. …      │
+│  ▬ Vida cristã 15m 7. …    │
+│  SC     30m Discurso serviço│
+│ ○ Fim de semana            │
+│ ○ Reuniões especiais       │
+│ ┌ SERVIÇO DE CAMPO ───────┐│
+│ │Dia │Manhã hora/local│Tarde││
+│ └─────────────────────────┘│
+└────────────────────────────┘
 ```
-
-**Caminho:** toque no ⏱ do topo para abrir a reunião da semana. Dali, "‹ Semanas" leva à lista, onde dá para criar, renomear, duplicar e apagar.
-
-## (04) O controle não para ao trocar de tela ou minimizar o app
-
-O cronômetro dos Grandes Eventos não conta "segundo a segundo" na memória. Ele guarda a hora real em que cada parte começou. Se você minimizar o app, trocar de tela ou até fechar e abrir de novo, o tempo continua certo. Ao voltar, a tela mostra o tempo exato que passou. A reunião usa o mesmo cronômetro, então tem o mesmo comportamento. Vou incluir um teste automático para essa regra: "minimizou 5 min, voltou e a parte mostra +5 min".
-
-## (05) Cartão "Para comentar" na tela Esboços do Início
-
-**Regra nova, que vale nos dois lugares:** o "Para comentar" mostra **somente as notas marcadas com ⭐**, todas elas, sem limite. As notas sem estrela ficam só em Pontos altos e Anotações da leitura. Hoje o cartão também mostra as notas da semana sem estrela. Isso muda para seguir a sua regra, tanto em Estudo e Anotações quanto no Início.
-
-O cartão do Início é **o mesmo cartão** de Estudo e Anotações, não uma cópia simplificada. Ele tem o mesmo texto, os mesmos balões com link do texto bíblico (tocar abre o versículo) e o mesmo botão "Modo comentário". Assim você não precisa ir até Estudo e Anotações.
-
-```text
-┌───────────────────────────┐
-│ Agenda (●Esboços) Visita  │
-├───────────────────────────┤
-│ ┌───────────────────────┐ │
-│ │ 💬 Para comentar (4)  │ │
-│ │ ⭐ [Ez 13:3] Profetas…│ │
-│ │ ⭐ [Ez 14:14] Noé, D… │ │
-│ │ ⭐ [Ez 14:20] …       │ │
-│ │ ⭐ [Ez 16:42] …       │ │
-│ │ [ Modo comentário › ] │ │
-│ └───────────────────────┘ │
-│  … cartões de esboços …   │
-└───────────────────────────┘
-  [Ez 13:3] = balão com link do texto
-```
-
-- Se nenhuma nota tiver ⭐, o cartão não aparece no Início. Em Estudo e Anotações, ele continua mostrando a mensagem de vazio.
-- Tirar a ⭐ de uma nota remove a nota do cartão. A nota continua guardada em Pontos altos.
-
-## (06) Tela cheia do Início com cronômetro flutuante: foi erro meu
-
-Conferi: na correção anterior, troquei por engano o cronômetro da Tela cheia da anotação do Início pela boia flutuante. Eu achei que aquela tela era um Modo Esboço. Vou voltar exatamente ao cronômetro de antes e não mudo mais nada nessa tela.
 
 ## Detalhes técnicos
-
-- `src/lib/meeting/mwb-import.ts` (puro e testado): usa `rtfToText` e separa semanas pelo cabeçalho "D a D de Mês" ou pelo arquivo. Lê partes `N. Tema (X min)`, cânticos, comentários e seções. O zip é lido com o JSZip que já existe no app, com limites de tamanho, de quantidade de arquivos e de partes. Os testes usam as 8 semanas do zip como amostra.
-- Guardado no aparelho: `meeting.program.<userId>.<segunda>` em localStorage. O cronômetro reaproveita `loadTimer/saveTimer` com o id `meeting-<segunda>`.
-- Botão ⏱ no cabeçalho do dashboard, ao lado de `CoupleMessagesButton`, só para o superintendente. A tela é carregada com React.lazy, então nada entra no carregamento inicial. A Agenda não muda.
-- `MeetingTimerSheet` é uma nova tela por cima e usa `EventTimerFocus` sem mudanças. Os Grandes Eventos não são alterados.
-- Edição de partes: uma folha simples (tema, minutos, designado), reordenação com o mesmo padrão de arrastar já usado, e o horário de cada parte recalculado a partir do início.
-- (05) `commentList` em `bible-tracks.ts` passa a filtrar só `star === true`. O teste existente é atualizado para "só estrelas, todas". O Início usa o mesmo `CommentCard` e o mesmo `CommentMode` de `BibleTrackExtras`, que já trazem os balões de referência, lendo o workspace local `user.<userId>`. O cartão é carregado sob demanda.
-- (06) `FieldNoteFullscreenDialog.tsx`: volta a usar `<OutlineTimer variant="fullscreen" />`, como na versão anterior.
-- Textos em pt/en/es, uma regra no AGENTS.md, testes passando e `tsc --noEmit` limpo.
+- Estrela: reaproveita `star` dos highlights (bible-tracks); botão nas listas do GuestWorkspace/HighlightsDrawer e no FocusEditor. Sem mudança de formato.
+- meeting-store: `MeetingPart` ganha `counsel?: number` (minutos, opcional, sanitizado). Timer gera parte extra "counsel" após a parte. Minimizar reusa a boia do event-timer.
+- Novo `meeting-speakers.ts` (puro): `assignSpeakers(parts, names)` com as regras acima + testes.
+- Novo `visit-week-meeting.ts` (puro): `applyVisitWeek(program, visit)` lê service_talk_theme e final_song do programa da visita; testes de ordem e cântico.
+- PDF: `board-program-pdf.ts` com pdf-lib (createJsPdfCompat), uma página, fontes do app; botão no dashboard abaixo de executiveReport.
+- Testes para as regras de oradores, conselho e semana de visita; `tsc --noEmit` limpo.
