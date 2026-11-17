@@ -69,6 +69,29 @@ Quando o campo "Informação" de uma pergunta é salvo com texto, a pergunta fic
 └──────────────────────────────┘
 ```
 
+## (03) Grandes Eventos › Modelos de cartas: exportar e importar
+
+Para partilhar modelos com outros SCs. O arquivo exportado **não leva o Timbre** (título, circuito, endereço e telefone do cabeçalho) **nem a Assinatura**. Ao importar, esses campos são preenchidos com os dados do seu perfil, como já acontece num modelo novo. O estilo do cabeçalho e os textos da carta vão no arquivo.
+
+```text
+┌──────────────────────────────┐
+│ Modelos de cartas      ⋯     │
+│            ┌───────────────┐ │
+│            │ ⬆ Exportar     │ │
+│            │ ⬇ Importar     │ │
+│            └───────────────┘ │
+├──────────────────────────────┤
+│ Exportar                     │
+│ ◉ Só este modelo             │
+│ ○ Todos os modelos           │
+│ Timbre e Assinatura não vão  │
+│ no arquivo.                  │
+│       [Cancelar] [Exportar]  │
+└──────────────────────────────┘
+```
+
+Importar: escolhe o arquivo e mostra a lista dos modelos para confirmar. Se já existir um modelo com o mesmo nome, o importado entra como "Nome (importado)". Nada é substituído.
+
 ## Detalhes técnicos
 - Migration: a função de limpeza já existente (`delete_expired_circuit_events`, que já cobre Grandes Eventos) é mantida; adicionar triggers `record_sync_tombstone` em `circuit_big_events` e `circuit_big_event_parts`.
 - Investigar primeiro em `big-events/cloud-sync.ts` se a fila/merge "never deletes device-only" reenvia eventos apagados na nuvem; com o tombstone, linha ausente na nuvem e com tombstone é apagada localmente, nunca reenviada.
@@ -76,3 +99,4 @@ Quando o campo "Informação" de uma pergunta é salvo com texto, a pergunta fic
 - `_app.modelos.tsx`: item de exclusão (nova função de servidor `deleteTemplate`, só do dono, apaga `program_template_items` e depois o template); `load` (PWA desktop: conferir se o service worker serve resposta antiga) com fallback no mirror local, nova tentativa quando auth/online mudam e proteção contra lista vazia.
 - `ChecklistPanel.tsx`: ao salvar `info_text` com texto (trim), enviar também `status: "done"` no mesmo update.
 - Testes: limpeza (regra dos 2 dias), checklist que marca sozinho e exclusão de modelo; i18n pt/en/es.
+- Modelos de cartas: novo `letter-template-share.ts` (funções puras) que gera um arquivo `.json` versionado (`{kind:"visitasc-letter-templates",version:1,templates}`), remove `headerTitle/headerSubtitle/headerAddress/headerPhone/signature`, e na importação valida o formato e o tamanho, ignora campos desconhecidos, gera ids novos, preenche o timbre pelo perfil (mesma lógica do modelo inicial) e salva pelo fluxo atual de `letter-template-sync.ts`. A exportação usa o `share.ts` existente (celular) ou download (web). Botões no `LetterTemplates.tsx`. Testes: arquivo sem timbre/assinatura, importação com ids novos e sem sobrescrever.
