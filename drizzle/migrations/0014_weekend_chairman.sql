@@ -1,0 +1,1 @@
+ALTER TABLE public.weekend_meetings ADD COLUMN IF NOT EXISTS chairman text NULL;

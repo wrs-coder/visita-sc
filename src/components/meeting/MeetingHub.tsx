@@ -22,6 +22,7 @@ import {
   basePartId, currentProgram, DEFAULT_COUNSEL_MIN, loadPrograms, mergeImported, newBlankProgram, partStarts, savePrograms, sortPrograms, timerId, toTimerParts, totalMinutes,
   type MeetingPart, type MeetingProgram, type MeetingSection,
 } from "@/lib/meeting/meeting-store";
+import type { TimerPart } from "@/lib/big-events/event-timer";
 import { applyVisitWeek } from "@/lib/meeting/visit-week-meeting";
 import { assignSpeakers, parseSpeakerLines } from "@/lib/meeting/meeting-speakers";
 import { buildMeetingShareFile, MAX_MEETING_SHARE_BYTES, parseMeetingShareFile } from "@/lib/meeting/meeting-share";
@@ -47,7 +48,7 @@ function fmtDate(iso: string, lang: string) {
 export default function MeetingHub({ userId, onClose, onMinimize, initialOpenId, initialTiming }: {
   userId: string; onClose: () => void;
   /** Minimizar o controle: a tela some, o tempo continua (guardado no aparelho). */
-  onMinimize?: (programId: string) => void; initialOpenId?: string | null; initialTiming?: boolean;
+  onMinimize?: (programId: string, timerKey: string, parts: TimerPart[]) => void; initialOpenId?: string | null; initialTiming?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const [list, setListState] = useState<MeetingProgram[]>(() => loadPrograms(userId));
@@ -148,7 +149,7 @@ export default function MeetingHub({ userId, onClose, onMinimize, initialOpenId,
           ev={{ id: timerId(prog), name: prog.title || t("meeting.title", { defaultValue: "Reunião" }), event_date: prog.date, location: null }}
           parts={timerParts}
           onClose={() => setTiming(false)}
-          onMinimize={onMinimize ? () => onMinimize(prog.id) : undefined}
+          onMinimize={onMinimize ? () => onMinimize(prog.id, timerId(prog), timerParts) : undefined}
           onEditPart={(id) => { const part = storedPart(id); if (part) setEditPart({ progId: prog.id, part, isNew: false }); }}
         />
         {editPart && <PartDialog key={editPart.part.id} state={editPart} onClose={() => setEditPart(null)} onSave={(part) => { patch(editPart.progId, (x) => ({ ...x, parts: x.parts.map((q) => (q.id === part.id ? part : q)) })); setEditPart(null); }} />}
@@ -430,21 +431,21 @@ function SpeakersDialog({ parts, skip, onClose, onApply }: { parts: MeetingPart[
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto rounded-2xl">
+      <DialogContent className="max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-y-auto overflow-x-hidden rounded-2xl [&>*]:min-w-0">
         <DialogHeader>
           <DialogTitle>{t("meeting.speakers", { defaultValue: "Oradores" })}</DialogTitle>
           <DialogDescription>{t("meeting.speakersHelp", { defaultValue: "Um nome por linha, na ordem das partes. Dois nomes na mesma linha (\"Ana e Bia\" ou \"Ana/Bia\") = demonstração. Cântico sozinho não leva nome; comentários iniciais e finais usam o mesmo nome." })}</DialogDescription>
         </DialogHeader>
         <Button variant="outline" className="w-full rounded-full" onClick={() => void loadFile()}><FileUp className="mr-2 h-4 w-4" />{t("meeting.speakersFile", { defaultValue: "Importar arquivo (.txt/.csv)" })}</Button>
-        <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} placeholder={"João Silva\nPedro Souza\nLucia Nunes e Fernanda Abreu"} aria-label={t("meeting.speakersPaste", { defaultValue: "Cole ou escreva os nomes" })} />
+        <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} className="w-full min-w-0 resize-y break-words" placeholder={"João Silva\nPedro Souza\nLucia Nunes e Fernanda Abreu"} aria-label={t("meeting.speakersPaste", { defaultValue: "Cole ou escreva os nomes" })} />
         {names.length > 0 && (
           <div className="space-y-1">
             <p className="text-xs font-semibold text-muted-foreground">{t("meeting.preview", { defaultValue: "Prévia" })}</p>
-            <ul className="divide-y rounded-xl border bg-card text-sm">
+            <ul className="min-w-0 divide-y rounded-xl border bg-card text-sm">
               {parts.filter((p) => res.byId.has(p.id) || skip.has(p.id)).map((p) => (
-                <li key={p.id} className="flex items-start gap-2 px-3 py-1.5">
-                  <span className="min-w-0 flex-1 truncate text-muted-foreground">{p.theme}</span>
-                  <span className="max-w-[45%] truncate text-right font-medium">{skip.has(p.id) ? p.assigned : res.byId.get(p.id)}</span>
+                <li key={p.id} className="min-w-0 px-3 py-2">
+                  <p className="whitespace-normal break-words text-xs leading-snug text-muted-foreground [overflow-wrap:anywhere]">{p.theme}</p>
+                  <p className="mt-0.5 whitespace-normal break-words font-medium leading-snug [overflow-wrap:anywhere]">{skip.has(p.id) ? p.assigned : res.byId.get(p.id)}</p>
                 </li>
               ))}
             </ul>

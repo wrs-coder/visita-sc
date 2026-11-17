@@ -199,6 +199,7 @@ export function MidweekPanel() {
 
 /* ============ FINAL DE SEMANA ============ */
 interface WeekendRow {
+  chairman?: string | null;
   id: string; visit_id: string;
   meeting_at: string | null;
   talk_theme_id: string | null;
@@ -395,7 +396,7 @@ export function WeekendPanel() {
   const extras = useVisitTemplateExtras(visit?.id);
   const { row, loading, save, pending } = useSingleRow<WeekendRow>(
     "weekend_meetings",
-    "id,visit_id,meeting_at,talk_theme_id,talk_theme_title,public_talk_theme",
+    "id,visit_id,meeting_at,talk_theme_id,talk_theme_title,public_talk_theme,chairman",
     visit,
   );
   const [themes, setThemes] = useState<Theme[]>([]);
@@ -449,6 +450,14 @@ export function WeekendPanel() {
           </fieldset>
         ) : (
           <div className="grid gap-3">            <ReadOnlyValue label={`${t("meetingsTalks.weekend.meetingDay")} / ${t("meetingsTalks.weekend.meetingTime")}`} value={formatDayTime(t, row.meeting_at)} /></div>
+        )}
+        {showInputs ? (
+          <div className="min-w-0">
+            <Label>{t("meetingsTalks.weekend.chairman", { defaultValue: "Presidente" })}</Label>
+            <FieldText pending={pending.has("chairman")} value={row.chairman ?? null} onSave={(v) => save({ chairman: v })} placeholder={t("meetingsTalks.midweek.chairmanPlaceholder")} />
+          </div>
+        ) : (
+          <ReadOnlyValue label={t("meetingsTalks.weekend.chairman", { defaultValue: "Presidente" })} value={row.chairman ?? null} />
         )}
         <div className="mt-1 border-t" aria-hidden />
         <TemplateExtraEditable

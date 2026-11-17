@@ -19,7 +19,7 @@ export interface BoardModel {
 export interface BoardInput {
   startDate: string; endDate: string; sc: string; congregation: string;
   midweek: { at: string | null; chairman: string | null; parts: MeetingPart[] | null; serviceTalk: string | null; finalSong: string | null };
-  weekend: { at: string | null; publicTalk: string | null; finalTalk: string | null; openingSong: string | null; closingSong: string | null };
+  weekend: { at: string | null; chairman?: string | null; publicTalk: string | null; finalTalk: string | null; openingSong: string | null; closingSong: string | null };
   pioneer: { at: string | null; place: string | null } | null;
   elders: { at: string | null; place: string | null } | null;
   field: Array<{ date: string; period: string; time: string | null; place: string | null }>;
@@ -67,7 +67,7 @@ export function buildBoardModel(i: BoardInput): BoardModel {
     midweek.push({ who: "", text: `${song(i.midweek.finalSong)} e oração final`, minutes: null, tone: "neutral", italic: true });
   }
   const weekend: BoardRow[] = [
-    { who: "", text: "Presidência", minutes: null, tone: "neutral", strong: true },
+    { who: i.weekend.chairman ?? "", text: "Presidência", minutes: null, tone: "neutral", strong: true },
     { who: "", text: `${song(i.weekend.openingSong)} e oração inicial`, minutes: null, tone: "neutral", italic: true },
     { who: i.sc, text: i.weekend.publicTalk ?? "Discurso público", minutes: 30, tone: "visit", strong: true },
     { who: "", text: "Cântico da Sentinela", minutes: null, tone: "neutral", italic: true },
@@ -86,8 +86,14 @@ export function buildBoardModel(i: BoardInput): BoardModel {
     const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const rows = i.field.filter((f) => f.date.slice(0, 10) === iso);
     const isAm = (f: BoardInput["field"][number]) => /manh|morn|mañ/i.test(f.period) || (!/tard|after/i.test(f.period) && !!f.time && f.time < "12:00");
-    const am = rows.find(isAm), pm = rows.find((f) => !isAm(f));
-    return { day, am: { time: am?.time?.slice(0, 5) ?? "", place: am?.place ?? "" }, pm: { time: pm?.time?.slice(0, 5) ?? "", place: pm?.place ?? "" } };
+    const pick = (list: BoardInput["field"]) => {
+      const sorted = [...list].sort((a, b) => (a.time ?? "99").localeCompare(b.time ?? "99"));
+      const withPlace = sorted.filter((f) => f.place?.trim());
+      const first = withPlace[0] ?? sorted[0];
+      const places = [...new Set(withPlace.map((f) => f.place!.trim()))];
+      return { time: first?.time?.slice(0, 5) ?? "", place: places.join(" / ") };
+    };
+    return { day, am: pick(rows.filter(isAm)), pm: pick(rows.filter((f) => !isAm(f))) };
   });
   return {
     range: formatRange(i.startDate, i.endDate), sc: i.sc, congregation: i.congregation,
@@ -114,7 +120,6 @@ export async function renderBoardPdf(m: BoardModel): Promise<Blob> {
   pdf.text(r1, colX - 4, 20, { align: "right" }); pdf.text(r2, colX - 4, 27, { align: "right" });
   pdf.setFontSize(22); pdf.text("SEMANA DA VISITA", rightX, 21);
   pdf.setFontSize(9); pdf.text("DO SUPERINTENDENTE DE CIRCUITO", rightX, 27);
-  pdf.setFont(false); pdf.setFontSize(10); pdf.text(m.sc, rightX, 32.5);
 
   // Linha do tempo
   let y = 44;

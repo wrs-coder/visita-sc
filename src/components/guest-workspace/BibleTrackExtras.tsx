@@ -209,15 +209,16 @@ export function MeetingWeekCard({ mw, keys, onSet, onRead, label, done }: { mw?:
   );
 }
 
-export function CommentCard({ list, onStar, onOpen }: { list: Highlight[]; onStar: (id: string) => void; onOpen: () => void }) {
+export function CommentCard({ list, onStar, onOpen, bare }: { list: Highlight[]; onStar: (id: string) => void; onOpen: () => void; bare?: boolean }) {
   const { t } = useTranslation();
   return (
-    <div className="space-y-2 rounded-2xl border bg-card p-4">
-      <div className="flex items-center gap-2">
+    <div className={bare ? "space-y-2" : "space-y-2 rounded-2xl border bg-card p-4"}>
+      {!bare && <div className="flex items-center gap-2">
         <Star className="h-4 w-4 fill-primary text-primary" />
         <p className="flex-1 text-sm font-semibold">{t("guestWs.toComment", { defaultValue: "Para comentar" })} ({list.length})</p>
         {list.length > 0 && <Button size="sm" variant="outline" className="h-8 gap-1 rounded-full" onClick={onOpen}><Maximize2 className="h-3.5 w-3.5" />{t("guestWs.commentMode", { defaultValue: "Modo comentário" })}</Button>}
-      </div>
+      </div>}
+      {bare && list.length > 0 && <Button size="sm" variant="outline" className="h-8 gap-1 rounded-full" onClick={onOpen}><Maximize2 className="h-3.5 w-3.5" />{t("guestWs.commentMode", { defaultValue: "Modo comentário" })}</Button>}
       {list.length === 0 ? <p className="text-xs text-muted-foreground">{t("guestWs.toCommentEmpty", { defaultValue: "Notas marcadas com ⭐ aparecem aqui." })}</p> : (
         <ul className="divide-y">
           {list.map((h) => (

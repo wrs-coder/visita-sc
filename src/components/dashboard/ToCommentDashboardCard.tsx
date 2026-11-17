@@ -2,12 +2,16 @@
 // (texto, balões com link do texto bíblico, Modo comentário), lendo o workspace local do usuário.
 // Só notas com ⭐. Sem nenhuma, o cartão não aparece.
 import { useCallback, useEffect, useState } from "react";
+import { Hand } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
 import { CommentCard, CommentMode } from "@/components/guest-workspace/BibleTrackExtras";
 import { commentEntries, toggleCommentStar } from "@/lib/bible-tracks";
 import { loadWs, saveWs, wsUserKey } from "@/lib/guest-workspace-store";
 import type { Highlight } from "@/lib/bible-chapters";
 
 export default function ToCommentDashboardCard({ userId }: { userId: string }) {
+  const { t } = useTranslation();
   const sk = wsUserKey(userId);
   const [list, setList] = useState<Highlight[]>([]);
   const [open, setOpen] = useState(false);
@@ -29,7 +33,10 @@ export default function ToCommentDashboardCard({ userId }: { userId: string }) {
   if (list.length === 0) return null;
   return (
     <>
-      <CommentCard list={list} onOpen={() => setOpen(true)} onStar={(id) => void toggleStar(id)} />
+      <CollapsibleCard id="to-comment" accent="notes" icon={<Hand className="h-4 w-4" />}
+        title={`${t("guestWs.toComment", { defaultValue: "Para comentar" })} (${list.length})`}>
+        <CommentCard bare list={list} onOpen={() => setOpen(true)} onStar={(id) => void toggleStar(id)} />
+      </CollapsibleCard>
       {open && <CommentMode list={list} onClose={() => setOpen(false)} />}
     </>
   );

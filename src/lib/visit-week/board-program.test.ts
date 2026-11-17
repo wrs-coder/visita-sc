@@ -27,4 +27,18 @@ describe("quadro de anúncios", () => {
     expect(m.field[0].pm.time).toBe("15:00");
     expect(m.field[1].am.place).toBe("");
   });
+  it("presidente do fim de semana e horários em 24h", () => {
+    const m = buildBoardModel({ ...base, weekend: { ...base.weekend, chairman: "Carlos", at: "2026-11-22T15:00:00" }, pioneer: { at: "2026-11-21T10:30:00", place: "Salão" } });
+    expect(m.weekend[0].who).toBe("Carlos");
+    expect(m.weekendWhen).toContain("15:00");
+    expect(m.specials[0].time).toBe("Sábado 10:30");
+  });
+  it("campo: vários registros no mesmo período juntam os locais preenchidos", () => {
+    const m = buildBoardModel({ ...base, field: [
+      { date: "2026-11-18", period: "Manhã", time: "09:00", place: null },
+      { date: "2026-11-18", period: "Manhã", time: "08:30", place: "Salão do Reino" },
+      { date: "2026-11-18", period: "Manhã", time: "09:00", place: "Casa do Teta" },
+    ] });
+    expect(m.field[0].am).toEqual({ time: "08:30", place: "Salão do Reino / Casa do Teta" });
+  });
 });
