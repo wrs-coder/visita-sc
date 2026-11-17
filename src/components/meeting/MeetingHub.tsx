@@ -4,23 +4,28 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, CalendarDays, ChevronLeft, ChevronRight, Copy, FileUp, MoreHorizontal, Pencil, Play, Plus, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarDays, ChevronLeft, ChevronRight, Copy, Download, FileUp, MoreHorizontal, Pencil, Play, Plus, Trash2, Upload, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { appConfirm, appPrompt } from "@/components/ui/app-dialogs";
 import { useFocusChromeWhile } from "@/lib/focus-chrome";
-import { pickFile } from "@/lib/share";
+import { pickFile, saveBlob } from "@/lib/share";
 import { EventTimerFocus } from "@/components/circuit/EventTimerFocus";
 import { clearTimer } from "@/lib/big-events/event-timer";
 import { parseMwbFile } from "@/lib/meeting/mwb-import";
 import {
-  currentProgram, loadPrograms, mergeImported, newBlankProgram, partStarts, savePrograms, sortPrograms, timerId, toTimerParts, totalMinutes,
+  basePartId, currentProgram, DEFAULT_COUNSEL_MIN, loadPrograms, mergeImported, newBlankProgram, partStarts, savePrograms, sortPrograms, timerId, toTimerParts, totalMinutes,
   type MeetingPart, type MeetingProgram, type MeetingSection,
 } from "@/lib/meeting/meeting-store";
+import { applyVisitWeek } from "@/lib/meeting/visit-week-meeting";
+import { assignSpeakers, parseSpeakerLines } from "@/lib/meeting/meeting-speakers";
+import { buildMeetingShareFile, MAX_MEETING_SHARE_BYTES, parseMeetingShareFile } from "@/lib/meeting/meeting-share";
+import { useVisitWeekInfo } from "./use-visit-week-info";
 import { cn } from "@/lib/utils";
 
 const SECTION_KEYS: Record<MeetingSection, [string, string]> = {
@@ -39,27 +44,36 @@ function fmtDate(iso: string, lang: string) {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(lang, { weekday: "short", day: "2-digit", month: "short" });
 }
 
-export default function MeetingHub({ userId, onClose }: { userId: string; onClose: () => void }) {
+export default function MeetingHub({ userId, onClose, onMinimize, initialOpenId, initialTiming }: {
+  userId: string; onClose: () => void;
+  /** Minimizar o controle: a tela some, o tempo continua (guardado no aparelho). */
+  onMinimize?: (programId: string) => void; initialOpenId?: string | null; initialTiming?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const [list, setListState] = useState<MeetingProgram[]>(() => loadPrograms(userId));
-  const [openId, setOpenId] = useState<string | null>(() => currentProgram(loadPrograms(userId), new Date())?.id ?? null);
-  const [timing, setTiming] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(() => initialOpenId ?? currentProgram(loadPrograms(userId), new Date())?.id ?? null);
+  const [timing, setTiming] = useState(!!initialTiming && !!initialOpenId);
+  const [speakersFor, setSpeakersFor] = useState<string | null>(null);
   const [editPart, setEditPart] = useState<{ progId: string; part: MeetingPart; isNew: boolean } | null>(null);
   const [whenFor, setWhenFor] = useState<MeetingProgram | null>(null);
-  const [review, setReview] = useState<{ weeks: MeetingProgram[]; pick: Set<string> } | null>(null);
+  const [review, setReview] = useState<{ weeks: MeetingProgram[]; pick: Set<string>; shared?: boolean } | null>(null);
   useFocusChromeWhile(true);
 
   const setList = (fn: (l: MeetingProgram[]) => MeetingProgram[]) => setListState((l) => { const n = sortPrograms(fn(l)); savePrograms(userId, n); return n; });
   const patch = (id: string, fn: (p: MeetingProgram) => MeetingProgram) =>
     setList((l) => l.map((p) => (p.id === id ? { ...fn(p), updatedAt: new Date().toISOString() } : p)));
   const prog = list.find((p) => p.id === openId) ?? null;
+  // Semana da visita: troca aplicada só ao mostrar/cronometrar (nada é gravado).
+  const visitInfo = useVisitWeekInfo(userId, prog?.date ?? null);
+  const view = useMemo(() => (prog ? applyVisitWeek(prog, visitInfo) : null), [prog, visitInfo]);
+  const storedPart = (id: string) => prog?.parts.find((x) => x.id === basePartId(id)) ?? null;
 
   // Voltar do Android/navegador fecha um nível por vez.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !timing && !editPart && !review && !whenFor) { if (openId) setOpenId(null); else onClose(); } };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !timing && !editPart && !review && !whenFor && !speakersFor) { if (openId) setOpenId(null); else onClose(); } };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openId, timing, editPart, review, whenFor, onClose]);
+  }, [openId, timing, editPart, review, whenFor, speakersFor, onClose]);
 
   const doImport = async () => {
     const f = await pickFile(".rtf,.zip,application/rtf,text/rtf,application/zip");
@@ -69,6 +83,24 @@ export default function MeetingHub({ userId, onClose }: { userId: string; onClos
       if (!weeks.length) { toast.error(t("meeting.importNone", { defaultValue: "Não encontrei semanas da apostila neste arquivo." })); return; }
       const have = new Set(list.map((p) => p.monday));
       setReview({ weeks, pick: new Set(weeks.filter((w) => !have.has(w.monday)).map((w) => w.monday)) });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("meeting.importFail", { defaultValue: "Não foi possível ler o arquivo." }));
+    }
+  };
+  const exportWeeks = async (weeks: MeetingProgram[]) => {
+    if (!weeks.length) return;
+    const blob = new Blob([buildMeetingShareFile(weeks)], { type: "application/json" });
+    const name = weeks.length === 1 ? `reuniao-${weeks[0].monday}` : `reunioes-${weeks[0].monday}-a-${weeks[weeks.length - 1].monday}`;
+    await saveBlob(blob, { filename: `${name}.json`, mimeType: "application/json", pickerTypes: [{ description: "JSON", accept: { "application/json": [".json"] } }] });
+  };
+  const importShared = async () => {
+    const f = await pickFile(".json,application/json");
+    if (!f) return;
+    try {
+      if (f.size > MAX_MEETING_SHARE_BYTES) throw new Error(t("meeting.fileTooBig", { defaultValue: "Arquivo muito grande." }));
+      const weeks = parseMeetingShareFile(await f.text(), list);
+      const have = new Set(list.map((p) => p.monday));
+      setReview({ weeks, pick: new Set(weeks.filter((w) => !have.has(w.monday)).map((w) => w.monday)), shared: true });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("meeting.importFail", { defaultValue: "Não foi possível ler o arquivo." }));
     }
@@ -107,7 +139,7 @@ export default function MeetingHub({ userId, onClose }: { userId: string; onClos
     return { ...x, parts };
   });
 
-  const timerParts = useMemo(() => (prog ? toTimerParts(prog) : []), [prog]);
+  const timerParts = useMemo(() => (view ? toTimerParts(view.program) : []), [view]);
 
   if (timing && prog) {
     return (
@@ -116,7 +148,8 @@ export default function MeetingHub({ userId, onClose }: { userId: string; onClos
           ev={{ id: timerId(prog), name: prog.title || t("meeting.title", { defaultValue: "Reunião" }), event_date: prog.date, location: null }}
           parts={timerParts}
           onClose={() => setTiming(false)}
-          onEditPart={(id) => { const part = prog.parts.find((x) => x.id === id); if (part) setEditPart({ progId: prog.id, part, isNew: false }); }}
+          onMinimize={onMinimize ? () => onMinimize(prog.id) : undefined}
+          onEditPart={(id) => { const part = storedPart(id); if (part) setEditPart({ progId: prog.id, part, isNew: false }); }}
         />
         {editPart && <PartDialog key={editPart.part.id} state={editPart} onClose={() => setEditPart(null)} onSave={(part) => { patch(editPart.progId, (x) => ({ ...x, parts: x.parts.map((q) => (q.id === part.id ? part : q)) })); setEditPart(null); }} />}
       </>
@@ -139,7 +172,14 @@ export default function MeetingHub({ userId, onClose }: { userId: string; onClos
         </p>
         {prog ? (
           <>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" aria-label={t("meeting.rename", { defaultValue: "Renomear reunião" })} onClick={() => void rename(prog)}><Pencil className="h-4 w-4" /></Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" aria-label={t("common.more", { defaultValue: "Mais" })}><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setSpeakersFor(prog.id)}><Users className="mr-2 h-4 w-4" />{t("meeting.speakers", { defaultValue: "Oradores" })}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void rename(prog)}><Pencil className="mr-2 h-4 w-4" />{t("meeting.renameShort", { defaultValue: "Renomear" })}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void exportWeeks([prog])}><Upload className="mr-2 h-4 w-4" />{t("meeting.exportOne", { defaultValue: "Exportar esta semana" })}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" aria-label={t("common.close", { defaultValue: "Fechar" })} onClick={onClose}><X className="h-5 w-5" /></Button>
           </>
         ) : (
@@ -147,7 +187,12 @@ export default function MeetingHub({ userId, onClose }: { userId: string; onClos
             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" aria-label={t("meeting.new", { defaultValue: "Nova reunião" })} onClick={createBlank}><Plus className="h-5 w-5" /></Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" aria-label={t("common.more", { defaultValue: "Mais" })}><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end"><DropdownMenuItem onClick={() => void doImport()}><FileUp className="mr-2 h-4 w-4" />{t("meeting.import", { defaultValue: "Importar apostila (.zip/.rtf)" })}</DropdownMenuItem></DropdownMenuContent>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => void doImport()}><FileUp className="mr-2 h-4 w-4" />{t("meeting.import", { defaultValue: "Importar apostila (.zip/.rtf)" })}</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => void importShared()}><Download className="mr-2 h-4 w-4" />{t("meeting.importShared", { defaultValue: "Importar semanas" })}</DropdownMenuItem>
+                <DropdownMenuItem disabled={list.length === 0} onClick={() => void exportWeeks(list)}><Upload className="mr-2 h-4 w-4" />{t("meeting.exportAll", { defaultValue: "Exportar semanas (sem oradores)" })}</DropdownMenuItem>
+              </DropdownMenuContent>
             </DropdownMenu>
           </>
         )}
@@ -185,8 +230,8 @@ export default function MeetingHub({ userId, onClose }: { userId: string; onClos
             </ul>
           )
         ) : (
-          <ProgramView prog={prog} lang={i18n.language} onWhen={() => setWhenFor(prog)} onStart={(v) => patch(prog.id, (x) => ({ ...x, start: v }))}
-            onEdit={(part) => setEditPart({ progId: prog.id, part, isNew: false })}
+          <ProgramView prog={view?.program ?? prog} visitWeek={!!visitInfo} lang={i18n.language} onWhen={() => setWhenFor(prog)} onStart={(v) => patch(prog.id, (x) => ({ ...x, start: v }))}
+            onEdit={(part) => { const sp = storedPart(part.id); if (sp) setEditPart({ progId: prog.id, part: sp, isNew: false }); }}
             onAdd={() => setEditPart({ progId: prog.id, part: { id: crypto.randomUUID(), theme: "", minutes: 5, section: prog.parts[prog.parts.length - 1]?.section ?? "open", kind: "part", assigned: "" }, isNew: true })}
             onMove={(id, d) => movePart(prog, id, d)} onRun={() => setTiming(true)} />
         )}
@@ -198,11 +243,15 @@ export default function MeetingHub({ userId, onClose }: { userId: string; onClos
           onSave={(part) => { patch(editPart.progId, (x) => ({ ...x, parts: editPart.isNew ? [...x.parts, part] : x.parts.map((q) => (q.id === part.id ? part : q)) })); setEditPart(null); }} />
       )}
       {whenFor && <WhenDialog prog={whenFor} onClose={() => setWhenFor(null)} onSave={(date, start) => { patch(whenFor.id, (x) => ({ ...x, date, start })); setWhenFor(null); }} />}
+      {speakersFor && view && prog && prog.id === speakersFor && (
+        <SpeakersDialog parts={view.program.parts} skip={view.talkId ? new Set([view.talkId]) : new Set()} onClose={() => setSpeakersFor(null)}
+          onApply={(byId) => { patch(prog.id, (x) => ({ ...x, parts: x.parts.map((q) => (byId.has(q.id) ? { ...q, assigned: byId.get(q.id)! } : q)) })); setSpeakersFor(null); toast.success(t("meeting.speakersDone", { defaultValue: "Oradores preenchidos." })); }} />
+      )}
       {review && (
         <Dialog open onOpenChange={(o) => !o && setReview(null)}>
           <DialogContent className="max-h-[85dvh] overflow-y-auto rounded-2xl">
             <DialogHeader>
-              <DialogTitle>{t("meeting.importTitle", { defaultValue: "Importar apostila" })}</DialogTitle>
+              <DialogTitle>{review.shared ? t("meeting.importShared", { defaultValue: "Importar semanas" }) : t("meeting.importTitle", { defaultValue: "Importar apostila" })}</DialogTitle>
               <DialogDescription>{t("meeting.importFound", { defaultValue: "{{n}} semana(s) encontrada(s)", n: review.weeks.length })}</DialogDescription>
             </DialogHeader>
             <ul className="divide-y">
@@ -234,8 +283,8 @@ export default function MeetingHub({ userId, onClose }: { userId: string; onClos
   return typeof document === "undefined" ? null : createPortal(body, document.body);
 }
 
-function ProgramView({ prog, lang, onWhen, onStart, onEdit, onAdd, onMove, onRun }: {
-  prog: MeetingProgram; lang: string; onWhen: () => void; onStart: (v: string) => void; onEdit: (p: MeetingPart) => void; onAdd: () => void; onMove: (id: string, d: -1 | 1) => void; onRun: () => void;
+function ProgramView({ prog, visitWeek, lang, onWhen, onStart, onEdit, onAdd, onMove, onRun }: {
+  prog: MeetingProgram; visitWeek: boolean; lang: string; onWhen: () => void; onStart: (v: string) => void; onEdit: (p: MeetingPart) => void; onAdd: () => void; onMove: (id: string, d: -1 | 1) => void; onRun: () => void;
 }) {
   const { t } = useTranslation();
   const starts = partStarts(prog);
@@ -250,6 +299,7 @@ function ProgramView({ prog, lang, onWhen, onStart, onEdit, onAdd, onMove, onRun
         <Label htmlFor="mt-start" className="text-xs text-muted-foreground">{t("meeting.start", { defaultValue: "Início" })}</Label>
         <Input id="mt-start" type="time" value={prog.start} onChange={(e) => /^\d{2}:\d{2}$/.test(e.target.value) && onStart(e.target.value)} className="h-9 w-32 rounded-full" />
       </div>
+      {visitWeek && <p className="rounded-2xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">{t("meeting.visitWeek", { defaultValue: "Semana da visita: discurso de serviço e cântico de terça do Programa da visita." })}</p>}
       {prog.parts.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">{t("meeting.noParts", { defaultValue: "Nenhuma parte. Toque em ＋ Parte ou importe a apostila na lista de semanas." })}</p>}
       <ul className="overflow-hidden rounded-2xl border bg-card">
         {prog.parts.map((p, i) => {
@@ -265,6 +315,7 @@ function ProgramView({ prog, lang, onWhen, onStart, onEdit, onAdd, onMove, onRun
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm leading-snug">{p.theme || "—"}</span>
                     {p.assigned && <span className="block truncate text-xs text-muted-foreground">{p.assigned}</span>}
+                    {p.counsel ? <span className="mt-0.5 inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">+ {t("meeting.counsel", { defaultValue: "Conselho" })} · {p.counsel} min</span> : null}
                   </span>
                   <span className="shrink-0 pt-0.5 text-xs tabular-nums text-muted-foreground">{p.minutes ?? "–"} min</span>
                 </button>
@@ -292,9 +343,14 @@ function PartDialog({ state, onClose, onSave, onDelete }: { state: { part: Meeti
   const [minutes, setMinutes] = useState(state.part.minutes == null ? "" : String(state.part.minutes));
   const [assigned, setAssigned] = useState(state.part.assigned);
   const [section, setSection] = useState<MeetingSection>(state.part.section);
+  const [hasCounsel, setHasCounsel] = useState(!!state.part.counsel);
+  const [counsel, setCounsel] = useState(String(state.part.counsel ?? DEFAULT_COUNSEL_MIN));
   const save = () => {
     const m = minutes.trim() === "" ? null : Math.max(0, Math.min(180, Math.round(Number(minutes))));
-    onSave({ ...state.part, theme: theme.trim().slice(0, 200), minutes: m != null && Number.isFinite(m) ? m : null, assigned: assigned.trim().slice(0, 120), section });
+    const c = Math.max(1, Math.min(10, Math.round(Number(counsel) || DEFAULT_COUNSEL_MIN)));
+    const { counsel: _old, ...base } = state.part;
+    void _old;
+    onSave({ ...base, theme: theme.trim().slice(0, 200), minutes: m != null && Number.isFinite(m) ? m : null, assigned: assigned.trim().slice(0, 120), section, ...(hasCounsel && state.part.kind === "part" ? { counsel: c } : {}) });
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -306,6 +362,16 @@ function PartDialog({ state, onClose, onSave, onDelete }: { state: { part: Meeti
             <div className="w-24 space-y-1"><Label htmlFor="mp-min">{t("meeting.minutes", { defaultValue: "Minutos" })}</Label><Input id="mp-min" type="number" inputMode="numeric" min={0} max={180} value={minutes} onChange={(e) => setMinutes(e.target.value)} /></div>
             <div className="flex-1 space-y-1"><Label htmlFor="mp-who">{t("meeting.assigned", { defaultValue: "Quem faz" })}</Label><Input id="mp-who" value={assigned} onChange={(e) => setAssigned(e.target.value)} /></div>
           </div>
+          {state.part.kind === "part" && (
+            <div className="flex items-center gap-3 rounded-xl border px-3 py-2">
+              <label className="flex flex-1 items-center gap-2 text-sm">
+                <Checkbox checked={hasCounsel} onCheckedChange={(v) => setHasCounsel(!!v)} />
+                {t("meeting.hasCounsel", { defaultValue: "Terá conselho" })}
+              </label>
+              {hasCounsel && <Input aria-label={t("meeting.counselMin", { defaultValue: "Minutos de conselho" })} type="number" inputMode="numeric" min={1} max={10} value={counsel} onChange={(e) => setCounsel(e.target.value)} className="h-9 w-16" />}
+              {hasCounsel && <span className="text-xs text-muted-foreground">min</span>}
+            </div>
+          )}
           <div className="space-y-1">
             <Label>{t("meeting.sectionLabel", { defaultValue: "Seção" })}</Label>
             <div className="flex flex-wrap gap-1.5">
@@ -343,6 +409,52 @@ function WhenDialog({ prog, onClose, onSave }: { prog: MeetingProgram; onClose: 
         <DialogFooter className="flex-row gap-2">
           <Button variant="outline" className="flex-1 rounded-full" onClick={onClose}>{t("common.cancel", { defaultValue: "Cancelar" })}</Button>
           <Button className="flex-1 rounded-full" disabled={!ok} onClick={() => onSave(date, start)}>{t("common.save", { defaultValue: "Salvar" })}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SpeakersDialog({ parts, skip, onClose, onApply }: { parts: MeetingPart[]; skip: Set<string>; onClose: () => void; onApply: (byId: Map<string, string>) => void }) {
+  const { t } = useTranslation();
+  const [text, setText] = useState("");
+  const names = useMemo(() => parseSpeakerLines(text), [text]);
+  const res = useMemo(() => assignSpeakers(parts, names, skip), [parts, names, skip]);
+  const loadFile = async () => {
+    const f = await pickFile(".txt,.csv,text/plain,text/csv");
+    if (!f) return;
+    if (f.size > 200_000) { toast.error(t("meeting.fileTooBig", { defaultValue: "Arquivo muito grande." })); return; }
+    // CSV: usa a última coluna preenchida de cada linha (o nome).
+    const lines = (await f.text()).split(/\r?\n/).map((l) => { const cols = l.split(/[;\t]/).map((c) => c.trim()).filter(Boolean); return cols[cols.length - 1] ?? ""; });
+    setText(lines.filter(Boolean).join("\n"));
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto rounded-2xl">
+        <DialogHeader>
+          <DialogTitle>{t("meeting.speakers", { defaultValue: "Oradores" })}</DialogTitle>
+          <DialogDescription>{t("meeting.speakersHelp", { defaultValue: "Um nome por linha, na ordem das partes. Dois nomes na mesma linha (\"Ana e Bia\" ou \"Ana/Bia\") = demonstração. Cântico sozinho não leva nome; comentários iniciais e finais usam o mesmo nome." })}</DialogDescription>
+        </DialogHeader>
+        <Button variant="outline" className="w-full rounded-full" onClick={() => void loadFile()}><FileUp className="mr-2 h-4 w-4" />{t("meeting.speakersFile", { defaultValue: "Importar arquivo (.txt/.csv)" })}</Button>
+        <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} placeholder={"João Silva\nPedro Souza\nLucia Nunes e Fernanda Abreu"} aria-label={t("meeting.speakersPaste", { defaultValue: "Cole ou escreva os nomes" })} />
+        {names.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-muted-foreground">{t("meeting.preview", { defaultValue: "Prévia" })}</p>
+            <ul className="divide-y rounded-xl border bg-card text-sm">
+              {parts.filter((p) => res.byId.has(p.id) || skip.has(p.id)).map((p) => (
+                <li key={p.id} className="flex items-start gap-2 px-3 py-1.5">
+                  <span className="min-w-0 flex-1 truncate text-muted-foreground">{p.theme}</span>
+                  <span className="max-w-[45%] truncate text-right font-medium">{skip.has(p.id) ? p.assigned : res.byId.get(p.id)}</span>
+                </li>
+              ))}
+            </ul>
+            {res.missing > 0 && <p className="text-xs text-warning">{t("meeting.speakersMissing", { defaultValue: "Faltam {{n}} nome(s): essas partes ficam como estão.", n: res.missing })}</p>}
+            {res.extra > 0 && <p className="text-xs text-warning">{t("meeting.speakersExtra", { defaultValue: "{{n}} nome(s) sobrando no fim da lista.", n: res.extra })}</p>}
+          </div>
+        )}
+        <DialogFooter className="flex-row gap-2">
+          <Button variant="outline" className="flex-1 rounded-full" onClick={onClose}>{t("common.cancel", { defaultValue: "Cancelar" })}</Button>
+          <Button className="flex-1 rounded-full" disabled={res.byId.size === 0} onClick={() => onApply(res.byId)}>{t("meeting.apply", { defaultValue: "Aplicar" })}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

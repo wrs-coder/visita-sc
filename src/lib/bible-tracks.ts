@@ -77,6 +77,28 @@ export function commentList(list: Highlight[], _today?: Date): Highlight[] {
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+/** Prefixo dos ids de Anotações de leitura dentro do "Para comentar". */
+export const NOTE_STAR_PREFIX = "note:";
+interface StarNote { id: string; kind: string; title: string; body: string; updatedAt: string; star?: boolean }
+const plain = (html: string) => html.replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|li|h\d)>/gi, "\n").replace(/<[^>]+>/g, "")
+  .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/\n{3,}/g, "\n\n").trim();
+
+/** "Para comentar" completo: Pontos altos ⭐ + Anotações de leitura ⭐ (mostradas no mesmo formato). */
+export function commentEntries(d: { highlights: Highlight[]; items?: StarNote[] }): Highlight[] {
+  const notes: Highlight[] = (d.items ?? []).filter((i) => i.kind === "bible" && i.star === true)
+    .map((i) => ({ id: `${NOTE_STAR_PREFIX}${i.id}`, ref: i.title, bookId: null, text: plain(i.body), date: i.updatedAt, star: true }));
+  return [...d.highlights.filter((h) => h.star === true), ...notes].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/** Liga/desliga a ⭐ de um ponto alto ou de uma anotação de leitura (id com prefixo). */
+export function toggleCommentStar<T extends { highlights: Highlight[]; items: StarNote[] }>(d: T, id: string): T {
+  if (id.startsWith(NOTE_STAR_PREFIX)) {
+    const nid = id.slice(NOTE_STAR_PREFIX.length);
+    return { ...d, items: d.items.map((i) => (i.id === nid ? { ...i, star: !i.star } : i)) };
+  }
+  return { ...d, highlights: d.highlights.map((h) => (h.id === id ? { ...h, star: !h.star } : h)) };
+}
+
 export function sanitizeWeekday(raw: unknown): WeekdayPlan | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const o = raw as Record<string, unknown>;

@@ -8,7 +8,7 @@ import { sanitizeWeekday, sanitizeMeetingWeek, type WeekdayPlan, type MeetingWee
 import { isValidChapterKey, chaptersOf, type ReadingPlan, type Highlight, type CustomPlan } from "./bible-chapters";
 
 export type WsKind = "note" | "bible" | "research";
-export interface WsItem { id: string; kind: WsKind; title: string; body: string; folderId: string | null; color: string | null; updatedAt: string }
+export interface WsItem { id: string; kind: WsKind; title: string; body: string; folderId: string | null; color: string | null; updatedAt: string; /** ⭐ "Para comentar" (só anotações de leitura). */ star?: boolean }
 export interface WsFolder { id: string; name: string; kind?: WsKind }
 export interface WsSettings { fontSize: "sm" | "md" | "lg"; width: "narrow" | "wide" }
 export interface WsReading { plan: ReadingPlan; startDate: string; done: string[]; custom?: CustomPlan; weekday?: WeekdayPlan; meetingWeek?: MeetingWeek }
@@ -93,7 +93,7 @@ export function sanitizeWs(raw: unknown): WsData {
     return [{ id: str(o.id, 64), kind: o.kind as WsKind, title: str(o.title, 300), body: str(o.body, 500_000),
       folderId: typeof o.folderId === "string" ? str(o.folderId, 64) : null,
       color: typeof o.color === "string" && (WS_COLORS as readonly string[]).includes(o.color) ? o.color : null,
-      updatedAt: str(o.updatedAt, 40) || new Date().toISOString() }];
+      updatedAt: str(o.updatedAt, 40) || new Date().toISOString(), ...(o.star === true ? { star: true } : {}) }];
   }) : [];
   const folders = Array.isArray(r.folders) ? r.folders.slice(0, 500).flatMap((x): WsFolder[] => {
     const o = x as Record<string, unknown>;

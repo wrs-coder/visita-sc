@@ -3,7 +3,7 @@
 // Só notas com ⭐. Sem nenhuma, o cartão não aparece.
 import { useCallback, useEffect, useState } from "react";
 import { CommentCard, CommentMode } from "@/components/guest-workspace/BibleTrackExtras";
-import { commentList } from "@/lib/bible-tracks";
+import { commentEntries, toggleCommentStar } from "@/lib/bible-tracks";
 import { loadWs, saveWs, wsUserKey } from "@/lib/guest-workspace-store";
 import type { Highlight } from "@/lib/bible-chapters";
 
@@ -11,7 +11,7 @@ export default function ToCommentDashboardCard({ userId }: { userId: string }) {
   const sk = wsUserKey(userId);
   const [list, setList] = useState<Highlight[]>([]);
   const [open, setOpen] = useState(false);
-  const reload = useCallback(() => { void loadWs(sk).then((d) => setList(commentList(d.highlights))); }, [sk]);
+  const reload = useCallback(() => { void loadWs(sk).then((d) => setList(commentEntries(d))); }, [sk]);
   useEffect(() => {
     reload();
     const onVis = () => { if (document.visibilityState === "visible") reload(); };
@@ -22,9 +22,9 @@ export default function ToCommentDashboardCard({ userId }: { userId: string }) {
   // Tirar a ⭐ aqui grava no mesmo workspace (lê a cópia mais nova antes de salvar).
   const toggleStar = async (id: string) => {
     const d = await loadWs(sk);
-    const n = { ...d, highlights: d.highlights.map((h) => (h.id === id ? { ...h, star: !h.star } : h)) };
+    const n = toggleCommentStar(d, id);
     await saveWs(sk, n);
-    setList(commentList(n.highlights));
+    setList(commentEntries(n));
   };
   if (list.length === 0) return null;
   return (

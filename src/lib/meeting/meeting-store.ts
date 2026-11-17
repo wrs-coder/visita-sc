@@ -4,7 +4,14 @@ import { SONG_MIN } from "./mwb-import";
 import type { TimerPart } from "@/lib/big-events/event-timer";
 
 export type MeetingSection = "open" | "treasures" | "ministry" | "living" | "close";
-export interface MeetingPart { id: string; theme: string; minutes: number | null; section: MeetingSection; kind: "song" | "comments" | "part"; assigned: string }
+export interface MeetingPart {
+  id: string; theme: string; minutes: number | null; section: MeetingSection; kind: "song" | "comments" | "part"; assigned: string;
+  /** Minutos de conselho logo após a parte (sem orador). Ausente = sem conselho. */
+  counsel?: number;
+}
+/** Sufixo do id da parte extra "Conselho" no cronômetro. */
+export const COUNSEL_SUFFIX = "::counsel";
+export const DEFAULT_COUNSEL_MIN = 1;
 export interface MeetingProgram {
   id: string;
   /** Segunda-feira da semana da apostila (YYYY-MM-DD). */
@@ -34,6 +41,7 @@ function sanitizePart(raw: unknown): MeetingPart | null {
     section: SECTIONS.includes(o.section as MeetingSection) ? (o.section as MeetingSection) : "open",
     kind: o.kind === "song" || o.kind === "comments" ? o.kind : "part",
     assigned: typeof o.assigned === "string" ? o.assigned.slice(0, 120) : "",
+    ...(typeof o.counsel === "number" && Number.isFinite(o.counsel) && o.counsel > 0 && o.counsel <= 10 ? { counsel: Math.round(o.counsel) } : {}),
   };
 }
 export function sanitizeProgram(raw: unknown): MeetingProgram | null {
@@ -85,21 +93,35 @@ const fromMin = (n: number) => `${String(Math.floor(n / 60) % 24).padStart(2, "0
 /** Horário previsto de cada parte: início + soma dos minutos anteriores. */
 export function partStarts(p: MeetingProgram): string[] {
   let acc = toMin(p.start);
-  return p.parts.map((x) => { const t = fromMin(acc); acc += x.minutes ?? 0; return t; });
+  return p.parts.map((x) => { const t = fromMin(acc); acc += (x.minutes ?? 0) + (x.counsel ?? 0); return t; });
 }
-export const totalMinutes = (p: MeetingProgram) => p.parts.reduce((s, x) => s + (x.minutes ?? 0), 0);
+export const totalMinutes = (p: MeetingProgram) => p.parts.reduce((s, x) => s + (x.minutes ?? 0) + (x.counsel ?? 0), 0);
 export const timerId = (p: MeetingProgram) => `meeting-${p.id}`;
 
 /** Converte para as partes do cronômetro dos Grandes Eventos (mesma tela de foco). */
 export function toTimerParts(p: MeetingProgram): TimerPart[] {
   const starts = partStarts(p);
-  return p.parts.map((x, i) => ({
-    id: x.id, sort_order: i, theme: x.theme, part_time: starts[i], duration_min: x.minutes ?? (x.kind === "song" ? SONG_MIN : null),
-    outline_number: null, part_type_id: x.kind === "song" ? "Song" : null, part_type_label: null,
-    // Partes e comentários contam um a um (como partes com orador); só cânticos ficam sem orador.
-    assigned_to: x.kind === "song" ? "none" : "speaker", speaker_name: x.assigned || null,
-  }));
+  const out: TimerPart[] = [];
+  p.parts.forEach((x, i) => {
+    out.push({
+      id: x.id, sort_order: out.length, theme: x.theme, part_time: starts[i], duration_min: x.minutes ?? (x.kind === "song" ? SONG_MIN : null),
+      outline_number: null, part_type_id: x.kind === "song" ? "Song" : null, part_type_label: null,
+      // Partes e comentários contam um a um (como partes com orador); só cânticos ficam sem orador.
+      assigned_to: x.kind === "song" ? "none" : "speaker", speaker_name: x.assigned || null,
+    });
+    if (x.counsel) {
+      // Conselho: tempo próprio logo após a parte, sem orador (quem dá é o presidente).
+      out.push({
+        id: `${x.id}${COUNSEL_SUFFIX}`, sort_order: out.length, theme: `Conselho · ${x.theme}`.slice(0, 200),
+        part_time: fromMin(toMin(starts[i]) + (x.minutes ?? 0)), duration_min: x.counsel,
+        outline_number: null, part_type_id: null, part_type_label: null, assigned_to: "speaker", speaker_name: null,
+      });
+    }
+  });
+  return out;
 }
+/** Id do cronômetro → id da parte guardada (o conselho edita a parte dele). */
+export const basePartId = (id: string) => (id.endsWith(COUNSEL_SUFFIX) ? id.slice(0, -COUNSEL_SUFFIX.length) : id);
 
 export function newBlankProgram(today: Date): MeetingProgram {
   const d = new Date(today.getFullYear(), today.getMonth(), today.getDate());

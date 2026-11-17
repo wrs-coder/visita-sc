@@ -16,3 +16,12 @@
 - [x] Controle de tempo da reunião de meio de semana (botão ⏱, importar .zip/.rtf, criar/editar/renomear)
 - [x] "Para comentar" só com ⭐ + cartão na tela Esboços do Início
 - [x] Tela cheia da anotação do Início volta ao cronômetro original
+
+## Reunião, estrela e quadro (17/11)
+- [x] Estrela nas listas Anotações/Pontos altos e ao criar
+- [x] Conselho por parte (sem orador) + minimizar controle
+- [x] Oradores: importar/colar (A e B / A/B = demonstração)
+- [x] Semana da visita: discurso de serviço, comentários finais antes, cântico de terça
+- [x] Exportar/importar semanas sem oradores
+- [x] PDF Quadro de anúncios abaixo do Relatório executivo
+- [x] Remover "Ir para o modo esboço" da Tela cheia do Início

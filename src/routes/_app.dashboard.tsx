@@ -99,7 +99,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Maximize2, PencilLine, MoreVertical, Printer as PrinterIcon, Flag as FlagIcon, ChevronUp, ChevronDown } from "lucide-react";
+import { Maximize2, PencilLine, MoreVertical, Printer as PrinterIcon, Flag as FlagIcon, ChevronUp, ChevronDown, LayoutPanelTop } from "lucide-react";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -932,6 +933,17 @@ function Dashboard() {
                   <DropdownMenuItem onSelect={() => setFullReportOpen(true)}>
                     <FileText className="h-4 w-4 mr-2" /> {t("dashboard.executiveReport")}
                   </DropdownMenuItem>
+                  {role === "superintendent" && user && (
+                    <DropdownMenuItem onSelect={() => {
+                      const id = toast.loading(t("dashboard.boardProgramLoading", { defaultValue: "Gerando o quadro de anúncios…" }));
+                      void import("@/components/visit-week/board-program-export")
+                        .then((m) => m.exportBoardProgram(visit.id, user.id))
+                        .then(() => toast.success(t("dashboard.boardProgramDone", { defaultValue: "Quadro de anúncios pronto." }), { id }))
+                        .catch((e) => toast.error(e instanceof Error ? e.message : t("dashboard.boardProgramFail", { defaultValue: "Não foi possível gerar o quadro." }), { id }));
+                    }}>
+                      <LayoutPanelTop className="h-4 w-4 mr-2" /> {t("dashboard.boardProgram", { defaultValue: "Quadro de anúncios" })}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link to="/relatorio/$visitId" params={{ visitId: visit.id }}>
                       <PrinterIcon className="h-4 w-4 mr-2" /> {t("report.print")}
