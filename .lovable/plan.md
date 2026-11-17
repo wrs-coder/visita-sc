@@ -3,8 +3,9 @@
 ## (01) Grandes Eventos
 
 **(01.1) Não apaga sozinho 2 dias depois do evento**
-Causa confirmada: a limpeza automática diária só apaga eventos do *Cronograma*. Não existe nenhuma limpeza para Grandes Eventos.
-Correção: criar uma limpeza diária no servidor que apaga o Grande Evento (e as partes dele) quando já passaram 2 dias da data do evento. Eventos sem data não são apagados.
+Você tem razão: a limpeza foi feita no plano anterior e roda todo dia às 3h (horário de Brasília). Hoje ela rodou sem erro. Mesmo assim, a Assembleia de 14/11 ainda está na nuvem.
+Causa provável (a confirmar no primeiro passo): o celular guarda uma cópia do evento e, ao sincronizar, envia de novo para a nuvem o que a limpeza apagou. É o mesmo defeito do item (01.2), então uma correção resolve os dois.
+Correção: a limpeza também passa a registrar a exclusão, e o aparelho apaga sua cópia em vez de reenviá-la. Nada muda na regra: o evento some no 3º dia depois da data.
 
 **(01.2) "Apagar evento" e ele volta**
 Causa confirmada: as tabelas de Grandes Eventos não registram a exclusão para os outros aparelhos (as outras tabelas registram). O evento some da nuvem, mas a cópia guardada no celular continua lá e a tela o mostra de novo.
@@ -49,7 +50,7 @@ Botão "Excluir modelo" no menu do modelo ativo, com confirmação. Apaga o mode
 ```
 
 **(02.2) Modelos aparecendo vazios**
-Causa provável (a confirmar antes de corrigir): a tela busca os modelos uma única vez ao abrir. Se essa busca falha (login ainda carregando, internet lenta), a tela fica vazia sem aviso e não tenta de novo.
+Aconteceu só no app instalado no notebook; no celular funcionou. Causa provável (a confirmar antes de corrigir): a tela busca os modelos uma única vez ao abrir. Se essa busca falha (login ainda carregando, internet lenta), a tela fica vazia sem aviso e não tenta de novo.
 Correção:
 - mostrar primeiro a cópia guardada no celular;
 - tentar de novo automaticamente quando o login ficar pronto ou a internet voltar;
@@ -69,8 +70,9 @@ Quando o campo "Informação" de uma pergunta é salvo com texto, a pergunta fic
 ```
 
 ## Detalhes técnicos
-- Migration: `delete_expired_big_events()` SECURITY DEFINER (`event_date < CURRENT_DATE - 2`, apaga as partes antes), com cron diário; triggers `record_sync_tombstone` em `circuit_big_events` e `circuit_big_event_parts`.
+- Migration: a função de limpeza já existente (`delete_expired_circuit_events`, que já cobre Grandes Eventos) é mantida; adicionar triggers `record_sync_tombstone` em `circuit_big_events` e `circuit_big_event_parts`.
+- Investigar primeiro em `big-events/cloud-sync.ts` se a fila/merge "never deletes device-only" reenvia eventos apagados na nuvem; com o tombstone, linha ausente na nuvem e com tombstone é apagada localmente, nunca reenviada.
 - `BigEvents.tsx` `removeEvent`: atualização otimista do estado + remoção das linhas do evento e das partes no local-db.
-- `_app.modelos.tsx`: item de exclusão (nova função de servidor `deleteTemplate`, só do dono, apaga `program_template_items` e depois o template); `load` com fallback no mirror local, nova tentativa quando auth/online mudam e proteção contra lista vazia.
+- `_app.modelos.tsx`: item de exclusão (nova função de servidor `deleteTemplate`, só do dono, apaga `program_template_items` e depois o template); `load` (PWA desktop: conferir se o service worker serve resposta antiga) com fallback no mirror local, nova tentativa quando auth/online mudam e proteção contra lista vazia.
 - `ChecklistPanel.tsx`: ao salvar `info_text` com texto (trim), enviar também `status: "done"` no mesmo update.
 - Testes: limpeza (regra dos 2 dias), checklist que marca sozinho e exclusão de modelo; i18n pt/en/es.
