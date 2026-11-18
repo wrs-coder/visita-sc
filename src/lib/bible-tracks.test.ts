@@ -15,14 +15,14 @@ describe("bible tracks", () => {
     expect(weekdayCurrent(weekdayAdvance(p, 3, "B57:1"), 3)).toBe("B57:1"); // Filemom tem 1 capítulo
     expect(weekdayCurrent(p, 2)).toBeNull();
   });
-  it("Para comentar lists this week's meeting highlights and starred ones", () => {
+  it("Para comentar lists only starred notes, all of them", () => {
     const list = commentList([
       { id: "a", ref: "", bookId: null, text: "", date: "2026-10-27T10:00:00Z", track: "meeting" },
       { id: "b", ref: "", bookId: null, text: "", date: "2026-10-10T10:00:00Z", track: "meeting" },
       { id: "c", ref: "", bookId: null, text: "", date: "2026-10-10T10:00:00Z", star: true },
       { id: "d", ref: "", bookId: null, text: "", date: "2026-10-28T10:00:00Z" },
     ], new Date(2026, 9, 29));
-    expect(list.map((h) => h.id).sort()).toEqual(["a", "c"]);
+    expect(list.map((h) => h.id)).toEqual(["c"]);
   });
   it("old data stays personal; new readings survive sanitize", () => {
     const d = sanitizeWs({ reading: { plan: "canon", done: ["B01:1"] }, highlights: [{ id: "x", ref: "Gên 1:1", text: "t" }],

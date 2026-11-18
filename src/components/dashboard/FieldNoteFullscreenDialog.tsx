@@ -1,8 +1,7 @@
 import { FieldNoteInfoButton } from "@/components/notes/FieldNoteInfoButton";
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { FileText, PencilLine, Plus, Minus, Loader2, X } from "lucide-react";
+import { FileText, Plus, Minus, Loader2, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RichOutlineContent } from "@/lib/rich-content";
-import { FloatingOutlineTimer } from "@/components/notes/FloatingOutlineTimer";
+import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { OutlineInactivitySensor } from "@/components/notes/OutlineInactivitySensor";
 import { OutlineAttachmentsBar } from "@/components/notes/OutlineAttachmentsBar";
 import { BibleHistoryChips } from "@/components/bible/BibleHistoryChips";
@@ -205,7 +204,7 @@ export function FieldNoteFullscreenDialog({
       >
         {showTimer && note && (
           <>
-            <FloatingOutlineTimer outlineId={note.id} />
+            <OutlineTimer outlineId={note.id} variant="fullscreen" />
             <OutlineInactivitySensor outlineId={note.id} />
           </>
         )}
@@ -244,20 +243,6 @@ export function FieldNoteFullscreenDialog({
               >
                 <Plus className="h-4 w-4" />
               </Button>
-
-              {note && (
-                <Button asChild variant="outline" size="sm" className="shrink-0">
-                  <Link
-                    to="/consideracoes-campo"
-                    search={{ noteId: note.id, mode: "outline" }}
-                  >
-                    <PencilLine className="h-3.5 w-3.5 sm:mr-1" />
-                    <span className="hidden sm:inline">
-                      {t("dashboard.studyNotesGoToOutline", { defaultValue: "Abrir no modo esboço" })}
-                    </span>
-                  </Link>
-                </Button>
-              )}
             </div>
 
             <Button
@@ -301,19 +286,6 @@ export function FieldNoteFullscreenDialog({
             </Button>
 
             <div ref={setFsSlot} className="flex items-center" />
-            {note && (
-              <Button asChild variant="outline" size="sm" className="ml-auto h-8">
-                <Link
-                  to="/consideracoes-campo"
-                  search={{ noteId: note.id, mode: "outline" }}
-                >
-                  <PencilLine className="h-3.5 w-3.5 mr-1" />
-                  <span className="text-xs">
-                    {t("dashboard.studyNotesGoToOutline", { defaultValue: "Abrir no modo esboço" })}
-                  </span>
-                </Link>
-              </Button>
-            )}
           </div>
         </div>
 

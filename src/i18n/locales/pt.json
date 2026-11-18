@@ -2105,7 +2105,8 @@
     "lastBackup": "Último backup: {{when}}",
     "noBackupYet": "Nenhum backup feito neste aparelho ainda.",
     "bibleGroup": "Bíblia",
-    "startReading": "Começar a ler"
+    "startReading": "Começar a ler",
+    "toCommentEmpty": "Notas marcadas com ⭐ aparecem aqui."
   },
   "studyPersonal": {
     "bible": "Bíblia",
@@ -2175,5 +2176,51 @@
     "visitPackages": "Pacotes da visita",
     "trash": "Lixeira",
     "elderTemplates": "Programação Anciãos"
+  },
+  "meeting": {
+    "open": "Controle de tempo da reunião",
+    "title": "Reunião",
+    "list": "Reuniões",
+    "weeks": "Semanas",
+    "new": "Nova reunião",
+    "import": "Importar apostila (.zip/.rtf)",
+    "importTitle": "Importar apostila",
+    "importFound": "{{n}} semana(s) encontrada(s)",
+    "importDo": "Importar",
+    "importNone": "Não encontrei semanas da apostila neste arquivo.",
+    "importFail": "Não foi possível ler o arquivo.",
+    "imported": "{{n}} semana(s) importada(s).",
+    "exists": "já existe (marque para substituir)",
+    "empty": "Nenhuma reunião ainda. Importe a apostila (.zip com várias semanas ou um .rtf) ou crie uma em branco.",
+    "rename": "Renomear reunião",
+    "renameShort": "Renomear",
+    "when": "Mudar data/hora",
+    "duplicate": "Duplicar",
+    "copy": "cópia",
+    "delete": "Apagar",
+    "deleteTitle": "Apagar reunião?",
+    "deleteDesc": "O programa e o tempo marcado desta reunião serão apagados deste aparelho.",
+    "untitled": "Sem título",
+    "parts": "partes",
+    "start": "Início",
+    "date": "Data",
+    "noParts": "Nenhuma parte. Toque em ＋ Parte ou importe a apostila na lista de semanas.",
+    "addPart": "Parte",
+    "run": "Iniciar controle",
+    "newPart": "Nova parte",
+    "editPart": "Editar parte",
+    "theme": "Tema",
+    "minutes": "Minutos",
+    "assigned": "Quem faz",
+    "sectionLabel": "Seção",
+    "up": "Subir",
+    "down": "Descer",
+    "section": {
+      "open": "Abertura",
+      "treasures": "Tesouros da Palavra de Deus",
+      "ministry": "Faça seu melhor no ministério",
+      "living": "Nossa vida cristã",
+      "close": "Encerramento"
+    }
   }
 }

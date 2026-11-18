@@ -9,3 +9,20 @@
 - [x] Bolha de anexos livre (arrastável) no modo edição e esboço
 - [x] Modo Esboço: ajustes de tempo e recolher todos no menu ⋯, barra fixa
 - [x] Esboço do pastoreio: links/anexos/balões bíblicos, campos recolhíveis
+- [x] Grandes Eventos: limpeza 2 dias + apagado não volta
+- [x] Programação pessoal: excluir modelo; lista vazia por cópia antiga
+- [x] Checklist: Informação preenchida marca concluída
+- [x] Modelos de cartas: exportar/importar sem Timbre e Assinatura
+- [x] Controle de tempo da reunião de meio de semana (botão ⏱, importar .zip/.rtf, criar/editar/renomear)
+- [x] "Para comentar" só com ⭐ + cartão na tela Esboços do Início
+- [x] Tela cheia da anotação do Início volta ao cronômetro original
+
+## Reunião, estrela e quadro (17/11)
+- [x] Estrela nas listas Anotações/Pontos altos e ao criar
+- [x] Conselho por parte (sem orador) + minimizar controle
+- [x] Oradores: importar/colar (A e B / A/B = demonstração)
+- [x] Semana da visita: discurso de serviço, comentários finais antes, cântico de terça
+- [x] Exportar/importar semanas sem oradores
+- [x] PDF Quadro de anúncios abaixo do Relatório executivo
+- [x] Remover "Ir para o modo esboço" da Tela cheia do Início
+- [x] Quadro: frases opcionais (Isa. 54:13 / Lucas 2:10), campo próximo, meio de semana com todas as partes do controle de tempo

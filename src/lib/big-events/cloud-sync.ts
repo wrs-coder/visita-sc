@@ -24,10 +24,25 @@ export async function replaceMirror(table: string, rows: Array<Record<string, un
   markTableStale(table);
 }
 
-/** Junta a lista da nuvem com os eventos que só existem no aparelho (nunca apaga nada local). */
-export function mergeWithLocal(cloudEv: EventRow[], cloudPt: PartRow[], localEv: EventRow[], localPt: PartRow[]) {
+/** Evento com data já passou da limpeza diária (apagado no 3º dia depois da data). */
+export function isExpiredBigEvent(eventDate: string | null | undefined, today: string): boolean {
+  if (!eventDate) return false;
+  const d = new Date(`${today}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 2);
+  return eventDate < d.toISOString().slice(0, 10);
+}
+
+/**
+ * Junta a lista da nuvem com os eventos que só existem no aparelho. Eventos
+ * apagados na nuvem (exclusão registrada) ou já vencidos pela limpeza diária
+ * não voltam, porque reenviá-los ressuscitaria o que foi apagado.
+ */
+export function mergeWithLocal(
+  cloudEv: EventRow[], cloudPt: PartRow[], localEv: EventRow[], localPt: PartRow[],
+  deletedIds: ReadonlySet<string> = new Set(), today?: string,
+) {
   const inCloud = new Set(cloudEv.map((e) => e.id));
-  const onlyEv = localEv.filter((e) => !inCloud.has(e.id));
+  const onlyEv = localEv.filter((e) => !inCloud.has(e.id) && !deletedIds.has(e.id) && !(today && isExpiredBigEvent(e.event_date, today)));
   const onlyIds = new Set(onlyEv.map((e) => e.id));
   const cloudPtIds = new Set(cloudPt.map((p) => p.id));
   const onlyPt = localPt.filter((p) => onlyIds.has(p.event_id) && !cloudPtIds.has(p.id));
@@ -45,11 +60,32 @@ export async function downloadAllEvents(): Promise<{ events: EventRow[]; parts: 
     if (pt.error) throw pt.error;
     const { getRows } = await import("@/lib/local-db");
     const [lev, lpt] = await Promise.all([getRows<EventRow>(EV).catch(() => []), getRows<PartRow>(PT).catch(() => [])]);
-    const m = mergeWithLocal(ev.data ?? [], pt.data ?? [], lev, lpt);
+    const deleted = await fetchDeletedEventIds();
+    const today = new Date().toISOString().slice(0, 10);
+    const m = mergeWithLocal(ev.data ?? [], pt.data ?? [], lev, lpt, deleted, today);
     await replaceMirror(EV, m.events);
     await replaceMirror(PT, m.parts);
     return { ...m, cloudCount: (ev.data ?? []).length };
   });
+}
+
+/** Ids de Grandes Eventos apagados na nuvem (exclusões registradas). Falha = nenhum. */
+async function fetchDeletedEventIds(): Promise<Set<string>> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from("sync_tombstones" as never) as any)
+      .select("row_id").eq("table_name", EV).limit(5000);
+    if (error) return new Set();
+    return new Set(((data ?? []) as Array<{ row_id: string }>).map((r) => r.row_id));
+  } catch { return new Set(); }
+}
+
+/** Apaga um evento e suas partes da cópia deste aparelho. */
+export async function forgetEventLocally(id: string, partIds: string[]) {
+  const { markDeleted } = await import("@/lib/local-db");
+  await markDeleted(EV, [id]).catch(() => 0);
+  if (partIds.length) await markDeleted(PT, partIds).catch(() => 0);
+  markTableStale(EV); markTableStale(PT);
 }
 
 /** Envia para a nuvem os eventos (e partes) dados — usado para os que só existem no aparelho. */

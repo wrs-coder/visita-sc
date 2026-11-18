@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { resolveCanonical, getLocalizedBookName } from "@/lib/bible-canon";
+import { StarToggle } from "./StarToggle";
 import { filterHighlights, bookId as bid, type Highlight } from "@/lib/bible-chapters";
 
 export function refToBookId(ref: string): string | null {
@@ -16,18 +17,19 @@ export function refToBookId(ref: string): string | null {
   return resolveCanonical((m ? m[1] : ref).trim())?.id ?? null;
 }
 
-export function HighlightsDrawer({ open, onOpenChange, highlights, onSave, onDelete, presetRef }: {
+export function HighlightsDrawer({ open, onOpenChange, highlights, onSave, onDelete, presetRef, onStar }: {
   open: boolean; onOpenChange: (o: boolean) => void; highlights: Highlight[];
-  onSave: (h: Highlight) => void; onDelete: (id: string) => void; presetRef?: string;
+  onSave: (h: Highlight) => void; onDelete: (id: string) => void; presetRef?: string; onStar?: (id: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const [editId, setEditId] = useState<string | null>(null);
   const [ref, setRef] = useState("");
   const [text, setText] = useState("");
+  const [star, setStar] = useState(false);
   const [q, setQ] = useState("");
   const [book, setBook] = useState<string | null>(null);
 
-  useEffect(() => { if (open) { setEditId(null); setRef(presetRef ?? ""); setText(""); } }, [open, presetRef]);
+  useEffect(() => { if (open) { setEditId(null); setRef(presetRef ?? ""); setText(""); setStar(false); } }, [open, presetRef]);
 
   const name = (id: string) => getLocalizedBookName(id, i18n.language) ?? id;
   const books = [...new Set(highlights.map((h) => h.bookId).filter((b): b is string => !!b))].sort();
@@ -36,8 +38,8 @@ export function HighlightsDrawer({ open, onOpenChange, highlights, onSave, onDel
   const save = () => {
     if (!text.trim() && !ref.trim()) return;
     const old = highlights.find((h) => h.id === editId);
-    onSave({ id: editId ?? crypto.randomUUID(), ref: ref.trim(), bookId: refToBookId(ref), text: text.trim(), date: old?.date ?? new Date().toISOString() });
-    setEditId(null); setRef(""); setText("");
+    onSave({ id: editId ?? crypto.randomUUID(), ref: ref.trim(), bookId: refToBookId(ref), text: text.trim(), date: old?.date ?? new Date().toISOString(), star });
+    setEditId(null); setRef(""); setText(""); setStar(false);
   };
 
   return (
@@ -51,8 +53,9 @@ export function HighlightsDrawer({ open, onOpenChange, highlights, onSave, onDel
           <div className="space-y-2 rounded-xl border bg-card p-3">
             <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder={t("guestWs.refPh", { defaultValue: "Referência (ex.: Salmo 23:1)" })} />
             <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} placeholder={t("guestWs.meditationPh", { defaultValue: "Meditação" })} />
-            <div className="flex justify-end gap-2">
-              {editId && <Button variant="ghost" size="sm" onClick={() => { setEditId(null); setRef(""); setText(""); }}>{t("common.cancel", { defaultValue: "Cancelar" })}</Button>}
+            <div className="flex items-center justify-end gap-2">
+              <span className="mr-auto flex items-center text-xs text-muted-foreground"><StarToggle on={star} onToggle={() => setStar((v) => !v)} className="-ml-2" />{t("guestWs.star", { defaultValue: "Para comentar" })}</span>
+              {editId && <Button variant="ghost" size="sm" onClick={() => { setEditId(null); setRef(""); setText(""); setStar(false); }}>{t("common.cancel", { defaultValue: "Cancelar" })}</Button>}
               <Button size="sm" onClick={save}>{t("common.save", { defaultValue: "Salvar" })}</Button>
             </div>
           </div>
@@ -74,8 +77,9 @@ export function HighlightsDrawer({ open, onOpenChange, highlights, onSave, onDel
                       {h.ref ? <BibleRefText text={h.ref} className="text-sm font-semibold" /> : <p className="text-sm font-semibold">—</p>}
                       <p className="text-xs text-muted-foreground">{new Date(h.date).toLocaleDateString(i18n.language)}</p>
                     </div>
+                    {onStar && <StarToggle on={!!h.star} onToggle={() => onStar(h.id)} className="h-8 w-8" />}
                     <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("guestWs.edit", { defaultValue: "Editar" })}
-                      onClick={() => { setEditId(h.id); setRef(h.ref); setText(h.text); }}><Pencil className="h-4 w-4" /></Button>
+                      onClick={() => { setEditId(h.id); setRef(h.ref); setText(h.text); setStar(!!h.star); }}><Pencil className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label={t("guestWs.delete", { defaultValue: "Apagar" })}
                       onClick={async () => { if (await appConfirm(t("guestWs.confirmDelete", { defaultValue: "Apagar este item?" }))) onDelete(h.id); }}><Trash2 className="h-4 w-4" /></Button>
                   </div>

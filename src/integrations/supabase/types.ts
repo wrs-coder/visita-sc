@@ -2301,6 +2301,7 @@ export type Database = {
       }
       weekend_meetings: {
         Row: {
+          chairman: string | null
           created_at: string
           id: string
           meeting_at: string | null
@@ -2311,6 +2312,7 @@ export type Database = {
           visit_id: string
         }
         Insert: {
+          chairman?: string | null
           created_at?: string
           id?: string
           meeting_at?: string | null
@@ -2321,6 +2323,7 @@ export type Database = {
           visit_id: string
         }
         Update: {
+          chairman?: string | null
           created_at?: string
           id?: string
           meeting_at?: string | null

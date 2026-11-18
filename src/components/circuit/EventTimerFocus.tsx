@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { Bell, Calendar, CalendarClock, Check, ChevronLeft, ChevronRight, Clock, FileDown, Flag, Layers, MapPin, MonitorSmartphone, MoreHorizontal, Pencil, PlayCircle, Presentation, RotateCcw, Sun, Sunset, Timer as TimerIcon, X } from "lucide-react";
+import { Bell, Calendar, CalendarClock, Check, ChevronLeft, ChevronRight, Clock, FileDown, Flag, Layers, MapPin, Minus, MonitorSmartphone, MoreHorizontal, Pencil, PlayCircle, Presentation, RotateCcw, Sun, Sunset, Timer as TimerIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatEventDate } from "@/lib/big-events/invite";
@@ -34,9 +34,9 @@ const TONE_BOX: Record<Tone, string> = {
 const diffTone = (ms: number | null) => (ms == null || Math.abs(ms) < 30_000 ? "text-muted-foreground" : ms > 0 ? "text-destructive" : "text-success");
 const OVERLAY_ASKED = "bigEventTimer.overlayAsked";
 
-interface Props { ev: { id: string; name: string; event_date: string | null; location: string | null }; parts: TimerPart[]; onClose: () => void; speakerCong?: (p: TimerPart) => string | null; onEditPart?: (id: string) => void }
+interface Props { ev: { id: string; name: string; event_date: string | null; location: string | null }; parts: TimerPart[]; onClose: () => void; speakerCong?: (p: TimerPart) => string | null; onEditPart?: (id: string) => void; onMinimize?: () => void }
 
-export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }: Props) {
+export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart, onMinimize }: Props) {
   const [s, setS] = useState<TimerState>(() => loadTimer(ev.id));
   const [now, setNow] = useState(() => Date.now());
   const [report, setReport] = useState(false);
@@ -154,6 +154,7 @@ export function EventTimerFocus({ ev, parts, onClose, speakerCong, onEditPart }:
         {report
           ? <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 rounded-full" onClick={() => setReport(false)} aria-label="Voltar"><ChevronLeft className="h-5 w-5" /></Button>
           : <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 rounded-full" onClick={close} aria-label="Fechar"><X className="h-5 w-5" /></Button>}
+        {!report && onMinimize && <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 rounded-full" onClick={onMinimize} aria-label={t("meeting.minimize", { defaultValue: "Minimizar" })} title={t("meeting.minimize", { defaultValue: "Minimizar" })}><Minus className="h-5 w-5" /></Button>}
         <div className="min-w-0 flex-1 pt-1">
           {report && <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Relatório de tempo</p>}
           <p className="break-words text-[17px] font-semibold leading-snug">{ev.name || "Controle de tempo"}</p>

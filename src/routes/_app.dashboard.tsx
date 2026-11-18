@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { telHref } from "@/lib/contact-format";
 import { setVisibleInterval } from "@/lib/visible-interval";
 import { readFnWithMirrorSafe, readOneWithMirror, readWithMirror } from "@/lib/local-first";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -99,7 +99,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Maximize2, PencilLine, MoreVertical, Printer as PrinterIcon, Flag as FlagIcon, ChevronUp, ChevronDown } from "lucide-react";
+import { Maximize2, PencilLine, MoreVertical, Printer as PrinterIcon, Flag as FlagIcon, ChevronUp, ChevronDown, LayoutPanelTop } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -110,6 +110,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { DashboardPager } from "@/components/dashboard/DashboardPager";
+// Carregados só quando usados: não pesam na abertura do Início.
+const ToCommentDashboardCard = lazy(() => import("@/components/dashboard/ToCommentDashboardCard"));
+const MeetingTimerButton = lazy(() => import("@/components/meeting/MeetingTimerButton"));
+const BoardProgramSheet = lazy(() => import("@/components/visit-week/BoardProgramSheet"));
 import { buildDayTimeline, groupByDate, resolveWeekdaySlot, type TimelineKind, type TimelineSource } from "@/lib/today-timeline";
 import { encouragementCategoryLabel, modalityLabel, recommendationPurposeLabel } from "@/lib/enum-labels";
 import { EventReminderSync } from "@/components/reminders/EventReminders";
@@ -218,6 +222,7 @@ function Dashboard() {
   useActiveCongregation(); // mantém o hook montado para sincronizar contexto
   const [selected, setSelected] = useState<string | null>(null);
   const [fullReportOpen, setFullReportOpen] = useState(false);
+  const [boardOpen, setBoardOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [eventDetail, setEventDetail] = useState<{ item: import("@/lib/today-timeline").TimelineItem; to: string } | null>(null);
   const { visit } = useActiveVisit({
@@ -909,6 +914,7 @@ function Dashboard() {
             </span>
           )}
           <div className="flex items-center gap-1.5 shrink-0">
+          {role === "superintendent" && user && <Suspense fallback={null}><MeetingTimerButton userId={user.id} /></Suspense>}
           {role === "superintendent" && <CoupleMessagesButton threads={coupleThreads} unread={coupleUnread} onChanged={loadCouple} />}
           {role === "superintendent" && <UpcomingVisitsButton congregations={congs} />}
           {visit && (
@@ -928,6 +934,11 @@ function Dashboard() {
                   <DropdownMenuItem onSelect={() => setFullReportOpen(true)}>
                     <FileText className="h-4 w-4 mr-2" /> {t("dashboard.executiveReport")}
                   </DropdownMenuItem>
+                  {role === "superintendent" && user && (
+                    <DropdownMenuItem onSelect={() => setBoardOpen(true)}>
+                      <LayoutPanelTop className="h-4 w-4 mr-2" /> {t("dashboard.boardProgram", { defaultValue: "Quadro de anúncios" })}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link to="/relatorio/$visitId" params={{ visitId: visit.id }}>
                       <PrinterIcon className="h-4 w-4 mr-2" /> {t("report.print")}
@@ -947,6 +958,11 @@ function Dashboard() {
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
+              {role === "superintendent" && user && boardOpen && (
+                <Suspense fallback={null}>
+                  <BoardProgramSheet open={boardOpen} onOpenChange={setBoardOpen} visitId={visit.id} userId={user.id} />
+                </Suspense>
+              )}
               <FullVisitReportDialog
                 open={fullReportOpen}
                 onOpenChange={setFullReportOpen}
@@ -1542,6 +1558,7 @@ function Dashboard() {
                 label: t("dashboard.pager.tabOutlines", { defaultValue: "Esboços" }),
                 content: (
                   <>
+        {user && <Suspense fallback={null}><ToCommentDashboardCard userId={user.id} /></Suspense>}
         <CollapsibleCard id="notes-field" accent="notes" icon={<BookOpen className="h-4 w-4 text-primary" />} title={t("dashboard.studyNotesOutlinesTab")}>
               {outlinesPreview.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("dashboard.studyNotesEmptyOutlines")}</p>

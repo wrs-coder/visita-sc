@@ -43,7 +43,8 @@ export interface JsPdfCompat {
   splitTextToSize(text: string, maxWidth: number): string[];
   /** Largura real do texto no estilo/tamanho atual, na unidade declarada. */
   measureText(text: string): number;
-  setFont(bold: boolean): void;
+  /** `italic` opcional (Helvetica Oblique); ausente = normal, como sempre. */
+  setFont(bold: boolean, italic?: boolean): void;
   setFontSize(size: number): void;
   setTextColor(r: number, g?: number, b?: number): void;
   setFillColor(r: number, g: number, b: number): void;
@@ -126,6 +127,9 @@ export async function createJsPdfCompat(
   const doc: PDFDocument = await PDFDocument.create();
   const fontRegular: PDFFont = await doc.embedFont(StandardFonts.Helvetica);
   const fontBold: PDFFont = await doc.embedFont(StandardFonts.HelveticaBold);
+  // Fontes padrão do PDF (sem dados embutidos): custo desprezível.
+  const fontItalic: PDFFont = await doc.embedFont(StandardFonts.HelveticaOblique);
+  const fontBoldItalic: PDFFont = await doc.embedFont(StandardFonts.HelveticaBoldOblique);
 
   const isLandscape = opts.orientation === "l";
   const pageWPt = isLandscape ? 841.89 : 595.28; // A4
@@ -137,13 +141,19 @@ export async function createJsPdfCompat(
   const pages: PDFPage[] = [];
   let curIdx = -1;
   let curBold = false;
+  let curItalic = false;
   let curFontSize = 12;
   let curTextRGB: [number, number, number] = [0, 0, 0];
   let curFillRGB: [number, number, number] = [0, 0, 0];
   let curDrawRGB: [number, number, number] = [0, 0, 0];
   let curLineWidth = 0.5;
 
-  const font = () => (curBold ? fontBold : fontRegular);
+  const font = () =>
+    curItalic
+      ? curBold ? fontBoldItalic : fontItalic
+      : curBold
+        ? fontBold
+        : fontRegular;
   const color = (c: [number, number, number]) =>
     rgb(c[0] / 255, c[1] / 255, c[2] / 255);
 
@@ -230,8 +240,9 @@ export async function createJsPdfCompat(
       const safe = sanitizeForHelvetica(text);
       return fromPt(font().widthOfTextAtSize(safe, curFontSize));
     },
-    setFont(bold) {
+    setFont(bold, italic) {
       curBold = bold;
+      curItalic = !!italic;
     },
     setFontSize(size) {
       curFontSize = size;

@@ -24,6 +24,7 @@ import {
 } from "@/lib/guest-workspace-store";
 import { readGuestSession } from "@/lib/guest-session";
 import { BibleReadingTab } from "./BibleReadingTab";
+import { StarToggle } from "./StarToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { OfflineStatusInfo } from "@/components/OfflineStatusBar";
 import { RichOutlineContent } from "@/lib/rich-content";
@@ -259,8 +260,8 @@ export function GuestWorkspace({ section, storageKey, fixedStudyTab }: {
       ) : (
         <ul className="divide-y rounded-xl border bg-card">
           {list.map((i) => (
-            <li key={i.id}>
-              <button type="button" onClick={() => setOpenId(i.id)} className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-accent/40">
+            <li key={i.id} className="flex items-start">
+              <button type="button" onClick={() => setOpenId(i.id)} className="flex min-w-0 flex-1 items-start gap-3 px-4 py-3 text-left hover:bg-accent/40">
                 {i.color && <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", colorDot[i.color])} />}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium"><Mark text={i.title || t("guestWs.untitled", { defaultValue: "Sem título" })} q={q} /></span>
@@ -271,6 +272,7 @@ export function GuestWorkspace({ section, storageKey, fixedStudyTab }: {
                   <span className="block text-[11px] text-muted-foreground/80">{relTime(i.updatedAt, i18n.language)}</span>
                 </span>
               </button>
+              {i.kind === "bible" && <StarToggle on={!!i.star} className="mr-1 mt-1.5" onToggle={() => update((d) => ({ ...d, items: d.items.map((x) => (x.id === i.id ? { ...x, star: !x.star } : x)) }))} />}
             </li>
           ))}
         </ul>
@@ -342,6 +344,7 @@ function FocusEditor({ item, data, onChange, onDelete, onClose, onSave, onOpenIt
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="flex-1" />
+        {item.kind === "bible" && <StarToggle on={!!item.star} onToggle={() => onChange({ star: !item.star })} className="h-9 w-9" />}
         <div className="flex shrink-0 rounded-full border p-0.5" role="radiogroup">
           <button type="button" role="radio" aria-checked={mode === "read"} aria-label={t("guestWs.readMode", { defaultValue: "Ler" })} onClick={() => setMode("read")} className={cn("rounded-full px-2 py-1", mode === "read" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}><Eye className="h-3.5 w-3.5" /></button>
           <button type="button" role="radio" aria-checked={mode === "edit"} aria-label={t("guestWs.editMode", { defaultValue: "Editar" })} onClick={() => setMode("edit")} className={cn("rounded-full px-2 py-1", mode === "edit" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}><PenLine className="h-3.5 w-3.5" /></button>

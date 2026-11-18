@@ -1,0 +1,2 @@
+CREATE TRIGGER tombstone_circuit_big_events AFTER DELETE ON public.circuit_big_events FOR EACH ROW EXECUTE FUNCTION public.record_sync_tombstone();
+CREATE TRIGGER tombstone_circuit_big_event_parts AFTER DELETE ON public.circuit_big_event_parts FOR EACH ROW EXECUTE FUNCTION public.record_sync_tombstone();

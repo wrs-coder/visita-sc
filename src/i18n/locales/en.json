@@ -2138,7 +2138,8 @@
     "lastBackup": "Last backup: {{when}}",
     "noBackupYet": "No backup made on this device yet.",
     "bibleGroup": "Bible",
-    "startReading": "Start reading"
+    "startReading": "Start reading",
+    "toCommentEmpty": "Notes marked with ⭐ appear here."
   },
   "studyPersonal": {
     "bible": "Bible",
@@ -2208,5 +2209,51 @@
     "visitPackages": "Visit packages",
     "trash": "Trash",
     "elderTemplates": "Elders' Program"
+  },
+  "meeting": {
+    "open": "Meeting time control",
+    "title": "Meeting",
+    "list": "Meetings",
+    "weeks": "Weeks",
+    "new": "New meeting",
+    "import": "Import workbook (.zip/.rtf)",
+    "importTitle": "Import workbook",
+    "importFound": "{{n}} week(s) found",
+    "importDo": "Import",
+    "importNone": "No workbook weeks found in this file.",
+    "importFail": "Could not read the file.",
+    "imported": "{{n}} week(s) imported.",
+    "exists": "already exists (check to replace)",
+    "empty": "No meetings yet. Import the workbook (.zip with several weeks or one .rtf) or create a blank one.",
+    "rename": "Rename meeting",
+    "renameShort": "Rename",
+    "when": "Change date/time",
+    "duplicate": "Duplicate",
+    "copy": "copy",
+    "delete": "Delete",
+    "deleteTitle": "Delete meeting?",
+    "deleteDesc": "This meeting's program and recorded times will be deleted from this device.",
+    "untitled": "Untitled",
+    "parts": "parts",
+    "start": "Start",
+    "date": "Date",
+    "noParts": "No parts. Tap ＋ Part or import the workbook from the week list.",
+    "addPart": "Part",
+    "run": "Start timing",
+    "newPart": "New part",
+    "editPart": "Edit part",
+    "theme": "Theme",
+    "minutes": "Minutes",
+    "assigned": "Assigned to",
+    "sectionLabel": "Section",
+    "up": "Move up",
+    "down": "Move down",
+    "section": {
+      "open": "Opening",
+      "treasures": "Treasures From God's Word",
+      "ministry": "Apply Yourself to the Field Ministry",
+      "living": "Living as Christians",
+      "close": "Closing"
+    }
   }
 }

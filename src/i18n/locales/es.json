@@ -2115,7 +2115,8 @@
     "lastBackup": "Última copia: {{when}}",
     "noBackupYet": "Aún no se ha hecho ninguna copia en este dispositivo.",
     "bibleGroup": "Biblia",
-    "startReading": "Empezar a leer"
+    "startReading": "Empezar a leer",
+    "toCommentEmpty": "Las notas marcadas con ⭐ aparecen aquí."
   },
   "studyPersonal": {
     "bible": "Biblia",
@@ -2208,5 +2209,51 @@
     "visitPackages": "Paquetes de la visita",
     "trash": "Papelera",
     "elderTemplates": "Programa de ancianos"
+  },
+  "meeting": {
+    "open": "Control de tiempo de la reunión",
+    "title": "Reunión",
+    "list": "Reuniones",
+    "weeks": "Semanas",
+    "new": "Nueva reunión",
+    "import": "Importar guía (.zip/.rtf)",
+    "importTitle": "Importar guía",
+    "importFound": "{{n}} semana(s) encontrada(s)",
+    "importDo": "Importar",
+    "importNone": "No encontré semanas de la guía en este archivo.",
+    "importFail": "No se pudo leer el archivo.",
+    "imported": "{{n}} semana(s) importada(s).",
+    "exists": "ya existe (marque para reemplazar)",
+    "empty": "Aún no hay reuniones. Importe la guía (.zip con varias semanas o un .rtf) o cree una en blanco.",
+    "rename": "Renombrar reunión",
+    "renameShort": "Renombrar",
+    "when": "Cambiar fecha/hora",
+    "duplicate": "Duplicar",
+    "copy": "copia",
+    "delete": "Eliminar",
+    "deleteTitle": "¿Eliminar reunión?",
+    "deleteDesc": "El programa y los tiempos de esta reunión se eliminarán de este dispositivo.",
+    "untitled": "Sin título",
+    "parts": "partes",
+    "start": "Inicio",
+    "date": "Fecha",
+    "noParts": "No hay partes. Toque ＋ Parte o importe la guía desde la lista de semanas.",
+    "addPart": "Parte",
+    "run": "Iniciar control",
+    "newPart": "Nueva parte",
+    "editPart": "Editar parte",
+    "theme": "Tema",
+    "minutes": "Minutos",
+    "assigned": "Quién la hace",
+    "sectionLabel": "Sección",
+    "up": "Subir",
+    "down": "Bajar",
+    "section": {
+      "open": "Apertura",
+      "treasures": "Tesoros de la Biblia",
+      "ministry": "Seamos mejores maestros",
+      "living": "Nuestra vida cristiana",
+      "close": "Conclusión"
+    }
   }
 }

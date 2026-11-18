@@ -13,11 +13,12 @@ import { ALL_BOOKS, bookOrder, chapterSequence, chaptersOf, customPlanDay, yearP
 import type { WsData } from "@/lib/guest-workspace-store";
 import { cn } from "@/lib/utils";
 import { HighlightsDrawer } from "./HighlightsDrawer";
+import { StarToggle } from "./StarToggle";
 import { CleanReader } from "./CleanReader";
 import { JwLibraryPanel } from "./JwLibraryPanel";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { TrackPills, WeekdayCard, MeetingWeekCard, CommentCard, CommentMode, newWeekday, useDayNames } from "./BibleTrackExtras";
-import { commentList, filterByTrack, meetingWeekKeys, weekdayAdvance, weekdayNextUnread, weekdayProgress, type Track } from "@/lib/bible-tracks";
+import { commentEntries, toggleCommentStar, filterByTrack, meetingWeekKeys, weekdayAdvance, weekdayNextUnread, weekdayProgress, type Track } from "@/lib/bible-tracks";
 import type { WsReading } from "@/lib/guest-workspace-store";
 import { creditDayFor, creditPlan, lateWeekdays, markReadToday, planEdited, seedPlan, weekdayLog, weekdayPending } from "@/lib/reading-day-log";
 import { abbreviateBookAlways } from "@/lib/book-abbrev";
@@ -42,7 +43,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
   const [hlFilter, setHlFilter] = useState<Track | null>(null);
   const [commentOpen, setCommentOpen] = useState(false);
   const meetingKeys = track === "meeting" ? meetingWeekKeys(rdata.meetingWeek, new Date()) : [];
-  const toComment = commentList(data.highlights, new Date());
+  const toComment = commentEntries(data);
   const done = useMemo(() => new Set(doneList), [doneList]);
   const [openBooks, setOpenBooks] = useState<Set<string>>(new Set());
   const [listOpen, setListOpen] = useState(false);
@@ -127,10 +128,12 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
 
   const drawerEl = (
     <HighlightsDrawer open={drawer} onOpenChange={setDrawer} highlights={data.highlights} presetRef={preset}
+      onStar={(id) => update((d) => toggleCommentStar(d, id))}
       onSave={(h) => update((d) => {
         const old = d.highlights.find((x) => x.id === h.id);
         const tr = old ? old.track : track === "personal" ? undefined : track;
-        const tagged = { ...h, ...(tr ? { track: tr } : {}), ...(old?.star ? { star: true } : {}) };
+        const keepStar = h.star ?? old?.star;
+        const tagged = { ...h, ...(tr ? { track: tr } : {}), ...(keepStar ? { star: true } : { star: undefined }) };
         return { ...d, highlights: [tagged, ...d.highlights.filter((x) => x.id !== h.id)] };
       })}
       onDelete={(id) => update((d) => ({ ...d, highlights: d.highlights.filter((x) => x.id !== id) }))} />
@@ -176,7 +179,7 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
         </CollapsibleSection>
         <CollapsibleSection id="meeting.comment" title={t("guestWs.toComment", { defaultValue: "Para comentar" })} summary={String(toComment.length)}>
         <CommentCard list={toComment} onOpen={() => setCommentOpen(true)}
-          onStar={(id) => update((d) => ({ ...d, highlights: d.highlights.map((h) => h.id === id ? { ...h, star: !h.star } : h) }))} />
+          onStar={(id) => update((d) => toggleCommentStar(d, id))} />
         </CollapsibleSection>
       </>)}
       {commentOpen && <CommentMode list={toComment} onClose={() => setCommentOpen(false)} />}
@@ -327,11 +330,12 @@ export function BibleReadingTab({ data, update, notes, onNote }: { data: WsData;
             ) : (
               <ul className="divide-y rounded-xl border bg-card">
                 {filterByTrack(data.highlights, hlFilter).sort((x, y) => y.date.localeCompare(x.date)).slice(0, 20).map((h) => (
-                  <li key={h.id}>
-                    <button type="button" onClick={() => { setPreset(undefined); setDrawer(true); }} className="w-full px-4 py-2.5 text-left hover:bg-accent/40">
-                      <p className="text-sm font-semibold">{h.ref || "—"} <span className="ml-1 rounded-full border px-1.5 text-[10px] font-normal text-muted-foreground">{({ personal: "P", family: "F", meeting: "R" } as const)[h.track ?? "personal"]}</span>{h.star && <span className="ml-1 text-primary">★</span>}</p>
+                  <li key={h.id} className="flex items-start">
+                    <button type="button" onClick={() => { setPreset(undefined); setDrawer(true); }} className="min-w-0 flex-1 px-4 py-2.5 text-left hover:bg-accent/40">
+                      <p className="text-sm font-semibold">{h.ref || "—"} <span className="ml-1 rounded-full border px-1.5 text-[10px] font-normal text-muted-foreground">{({ personal: "P", family: "F", meeting: "R" } as const)[h.track ?? "personal"]}</span></p>
                       {h.text && <p className="line-clamp-2 text-xs text-muted-foreground">{h.text}</p>}
                     </button>
+                    <StarToggle on={!!h.star} onToggle={() => update((d) => toggleCommentStar(d, h.id))} />
                   </li>
                 ))}
               </ul>
