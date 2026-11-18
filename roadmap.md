@@ -25,3 +25,4 @@
 - [x] Exportar/importar semanas sem oradores
 - [x] PDF Quadro de anúncios abaixo do Relatório executivo
 - [x] Remover "Ir para o modo esboço" da Tela cheia do Início
+- [x] Quadro: frases opcionais (Isa. 54:13 / Lucas 2:10), campo próximo, meio de semana com todas as partes do controle de tempo

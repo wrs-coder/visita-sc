@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBoardModel, formatRange, type BoardInput } from "./board-program";
+import { buildBoardModel, formatRange, pickVisitProgram, type BoardInput } from "./board-program";
 
 const base: BoardInput = {
   startDate: "2026-11-17", endDate: "2026-11-22", sc: "Wanderson Rodrigues", congregation: "Cidade do Sequele",
@@ -40,5 +40,38 @@ describe("quadro de anúncios", () => {
       { date: "2026-11-18", period: "Manhã", time: "09:00", place: "Casa do Teta" },
     ] });
     expect(m.field[0].am).toEqual({ time: "08:30", place: "Salão do Reino / Casa do Teta" });
+  });
+});
+
+describe("quadro: meio de semana igual ao controle de tempo", () => {
+  const parts = [
+    { id: "s1", theme: "Cântico 77 e oração", minutes: 5, section: "open", kind: "song", assigned: "Paulo" },
+    { id: "c1", theme: "Comentários iniciais", minutes: 1, section: "open", kind: "comments", assigned: "João" },
+    { id: "t1", theme: "Joias espirituais", minutes: 10, section: "treasures", kind: "part", assigned: "Ana" },
+    { id: "m1", theme: "Iniciando conversas", minutes: 3, section: "ministry", kind: "part", assigned: "Lucia Nunes e Fernanda Abreu", counsel: 1 },
+    { id: "f1", theme: "Comentários finais", minutes: 3, section: "close", kind: "comments", assigned: "João" },
+    { id: "v1", theme: "Tenha consideração", minutes: 30, section: "living", kind: "part", assigned: "Wanderson Rodrigues" },
+  ] as const;
+  const m = buildBoardModel({ ...base, midweek: { ...base.midweek, parts: parts.map((p) => ({ ...p })), start: "19:30", visitTalkId: "v1" } });
+  it("traz todas as partes, inclusive comentários iniciais e conselho", () => {
+    expect(m.midweek.map((r) => r.text)).toEqual([
+      "Presidência", "Cântico 77 e oração", "Comentários iniciais", "Joias espirituais", "Iniciando conversas", "Conselho", "Comentários finais", "Tenha consideração",
+    ]);
+  });
+  it("horário de cada parte como no controle de tempo", () => {
+    expect(m.midweek.filter((r) => r.time).map((r) => r.time)).toEqual(["19:30", "19:35", "19:36", "19:46", "19:49", "19:50", "19:53"]);
+  });
+  it("discurso de serviço destacado pela parte trocada", () => {
+    expect(m.midweek.find((r) => r.text === "Tenha consideração")?.tone).toBe("visit");
+  });
+});
+
+describe("quadro: programa da semana da visita", () => {
+  const list = [{ date: "2026-11-10", monday: "2026-11-09" }, { date: "2026-11-16", monday: "2026-11-16" }];
+  it("acha a semana da apostila que cruza a visita mesmo com a reunião fora do período", () => {
+    expect(pickVisitProgram(list, "2026-11-17", "2026-11-22")?.monday).toBe("2026-11-16");
+  });
+  it("prefere o programa com dia dentro da visita", () => {
+    expect(pickVisitProgram([...list, { date: "2026-11-17", monday: "2026-11-16" }], "2026-11-17", "2026-11-22")?.date).toBe("2026-11-17");
   });
 });

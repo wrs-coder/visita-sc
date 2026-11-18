@@ -100,7 +100,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Maximize2, PencilLine, MoreVertical, Printer as PrinterIcon, Flag as FlagIcon, ChevronUp, ChevronDown, LayoutPanelTop } from "lucide-react";
-import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,6 +113,7 @@ import { DashboardPager } from "@/components/dashboard/DashboardPager";
 // Carregados só quando usados: não pesam na abertura do Início.
 const ToCommentDashboardCard = lazy(() => import("@/components/dashboard/ToCommentDashboardCard"));
 const MeetingTimerButton = lazy(() => import("@/components/meeting/MeetingTimerButton"));
+const BoardProgramSheet = lazy(() => import("@/components/visit-week/BoardProgramSheet"));
 import { buildDayTimeline, groupByDate, resolveWeekdaySlot, type TimelineKind, type TimelineSource } from "@/lib/today-timeline";
 import { encouragementCategoryLabel, modalityLabel, recommendationPurposeLabel } from "@/lib/enum-labels";
 import { EventReminderSync } from "@/components/reminders/EventReminders";
@@ -222,6 +222,7 @@ function Dashboard() {
   useActiveCongregation(); // mantém o hook montado para sincronizar contexto
   const [selected, setSelected] = useState<string | null>(null);
   const [fullReportOpen, setFullReportOpen] = useState(false);
+  const [boardOpen, setBoardOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [eventDetail, setEventDetail] = useState<{ item: import("@/lib/today-timeline").TimelineItem; to: string } | null>(null);
   const { visit } = useActiveVisit({
@@ -934,13 +935,7 @@ function Dashboard() {
                     <FileText className="h-4 w-4 mr-2" /> {t("dashboard.executiveReport")}
                   </DropdownMenuItem>
                   {role === "superintendent" && user && (
-                    <DropdownMenuItem onSelect={() => {
-                      const id = toast.loading(t("dashboard.boardProgramLoading", { defaultValue: "Gerando o quadro de anúncios…" }));
-                      void import("@/components/visit-week/board-program-export")
-                        .then((m) => m.exportBoardProgram(visit.id, user.id))
-                        .then(() => toast.success(t("dashboard.boardProgramDone", { defaultValue: "Quadro de anúncios pronto." }), { id }))
-                        .catch((e) => toast.error(e instanceof Error ? e.message : t("dashboard.boardProgramFail", { defaultValue: "Não foi possível gerar o quadro." }), { id }));
-                    }}>
+                    <DropdownMenuItem onSelect={() => setBoardOpen(true)}>
                       <LayoutPanelTop className="h-4 w-4 mr-2" /> {t("dashboard.boardProgram", { defaultValue: "Quadro de anúncios" })}
                     </DropdownMenuItem>
                   )}
@@ -963,6 +958,11 @@ function Dashboard() {
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
+              {role === "superintendent" && user && boardOpen && (
+                <Suspense fallback={null}>
+                  <BoardProgramSheet open={boardOpen} onOpenChange={setBoardOpen} visitId={visit.id} userId={user.id} />
+                </Suspense>
+              )}
               <FullVisitReportDialog
                 open={fullReportOpen}
                 onOpenChange={setFullReportOpen}
