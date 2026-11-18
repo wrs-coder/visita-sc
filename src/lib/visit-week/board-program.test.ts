@@ -53,13 +53,18 @@ describe("quadro: meio de semana igual ao controle de tempo", () => {
     { id: "v1", theme: "Tenha consideração", minutes: 30, section: "living", kind: "part", assigned: "Wanderson Rodrigues" },
   ] as const;
   const m = buildBoardModel({ ...base, midweek: { ...base.midweek, parts: parts.map((p) => ({ ...p })), start: "19:30", visitTalkId: "v1" } });
-  it("traz todas as partes, inclusive comentários iniciais e conselho", () => {
+  it("traz as partes com comentários, sem linha Presidência e sem Conselho", () => {
     expect(m.midweek.map((r) => r.text)).toEqual([
-      "Presidência", "Cântico 77 e oração", "Comentários iniciais", "Joias espirituais", "Iniciando conversas", "Conselho", "Comentários finais", "Tenha consideração",
+      "Cântico 77 e oração", "Comentários iniciais", "Joias espirituais", "Iniciando conversas", "Comentários finais", "Tenha consideração",
     ]);
+    expect(m.midweek.find((r) => r.text === "Comentários iniciais")?.who).toBe("João");
+  });
+  it("sem partes de comentários, a Presidência volta", () => {
+    const n = buildBoardModel({ ...base, midweek: { ...base.midweek, parts: parts.filter((p) => p.kind !== "comments").map((p) => ({ ...p })), start: "19:30" } });
+    expect(n.midweek[0].text).toBe("Presidência");
   });
   it("horário de cada parte como no controle de tempo", () => {
-    expect(m.midweek.filter((r) => r.time).map((r) => r.time)).toEqual(["19:30", "19:35", "19:36", "19:46", "19:49", "19:50", "19:53"]);
+    expect(m.midweek.filter((r) => r.time).map((r) => r.time)).toEqual(["19:30", "19:35", "19:36", "19:46", "19:50", "19:53"]);
   });
   it("discurso de serviço destacado pela parte trocada", () => {
     expect(m.midweek.find((r) => r.text === "Tenha consideração")?.tone).toBe("visit");
@@ -73,5 +78,22 @@ describe("quadro: programa da semana da visita", () => {
   });
   it("prefere o programa com dia dentro da visita", () => {
     expect(pickVisitProgram([...list, { date: "2026-11-17", monday: "2026-11-16" }], "2026-11-17", "2026-11-22")?.date).toBe("2026-11-17");
+  });
+});
+
+describe("quadro: temas e orações opcionais", () => {
+  const inp = { ...base, pioneer: { at: null, place: "Salão", theme: "Perseverem", opening: "Ana", closing: "Bia" },
+    field: [{ date: "2026-11-18", period: "Manhã", time: "08:30", place: "Salão", prayer: "Pedro" }] };
+  it("desligados não entram", () => {
+    const m = buildBoardModel(inp);
+    expect(m.specials[0].theme).toBeUndefined();
+    expect(m.specials[0].prayers).toBeUndefined();
+    expect(m.field[0].prayer).toBeUndefined();
+  });
+  it("ligados entram", () => {
+    const m = buildBoardModel(inp, { specialThemes: true, specialPrayers: true, fieldPrayer: true });
+    expect(m.specials[0].theme).toBe("Perseverem");
+    expect(m.specials[0].prayers).toBe("Oração inicial: Ana · final: Bia");
+    expect(m.field[0].prayer).toBe("Pedro");
   });
 });

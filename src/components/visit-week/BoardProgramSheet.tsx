@@ -9,12 +9,12 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { BOARD_BOTTOM_PHRASE, BOARD_TOP_PHRASE } from "@/lib/visit-week/board-program";
 
 const KEY = "board.phrases";
-type Prefs = { top: boolean; bottom: boolean };
+type Prefs = { top: boolean; bottom: boolean; themes: boolean; prayers: boolean; field: boolean };
 function loadPrefs(): Prefs {
   try {
     const o = JSON.parse(localStorage.getItem(KEY) ?? "{}") as Partial<Prefs>;
-    return { top: o.top !== false, bottom: o.bottom !== false };
-  } catch { return { top: true, bottom: true }; }
+    return { top: o.top !== false, bottom: o.bottom !== false, themes: o.themes !== false, prayers: o.prayers !== false, field: o.field !== false };
+  } catch { return { top: true, bottom: true, themes: true, prayers: true, field: true }; }
 }
 
 function Row({ id, title, text, checked, onChange }: { id: string; title: string; text: string; checked: boolean; onChange: (v: boolean) => void }) {
@@ -44,7 +44,7 @@ export default function BoardProgramSheet({ open, onOpenChange, visitId, userId 
     setBusy(true);
     try {
       const m = await import("@/components/visit-week/board-program-export");
-      await m.exportBoardProgram(visitId, userId, { topPhrase: prefs.top, bottomPhrase: prefs.bottom });
+      await m.exportBoardProgram(visitId, userId, { topPhrase: prefs.top, bottomPhrase: prefs.bottom, specialThemes: prefs.themes, specialPrayers: prefs.prayers, fieldPrayer: prefs.field });
       toast.success("Quadro de anúncios pronto.");
       onOpenChange(false);
     } catch (e) {
@@ -64,7 +64,16 @@ export default function BoardProgramSheet({ open, onOpenChange, visitId, userId 
             <Row id="board-top" title="Frase do topo" text={BOARD_TOP_PHRASE} checked={prefs.top} onChange={(v) => set({ top: v })} />
             <Row id="board-bottom" title="Frase do rodapé" text={BOARD_BOTTOM_PHRASE} checked={prefs.bottom} onChange={(v) => set({ bottom: v })} />
           </div>
-          <p className="px-1 text-xs text-muted-foreground">A reunião do meio de semana sai com todas as partes do controle de tempo da reunião.</p>
+          <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Reuniões especiais</p>
+          <div className="divide-y divide-border overflow-hidden rounded-2xl border bg-card">
+            <Row id="board-themes" title="Temas" text="Tema da reunião com os pioneiros e da reunião com anciãos e servos" checked={prefs.themes} onChange={(v) => set({ themes: v })} />
+            <Row id="board-prayers" title="Orações" text="Oração inicial e final das reuniões com pioneiros e com anciãos e servos" checked={prefs.prayers} onChange={(v) => set({ prayers: v })} />
+          </div>
+          <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Serviço de campo</p>
+          <div className="divide-y divide-border overflow-hidden rounded-2xl border bg-card">
+            <Row id="board-field" title="Oração" text="Quem faz a oração em cada saída de campo" checked={prefs.field} onChange={(v) => set({ field: v })} />
+          </div>
+          <p className="px-1 text-xs text-muted-foreground">Tudo cabe em uma folha. Itens vazios no Programa da visita não aparecem.</p>
           <Button className="h-12 w-full rounded-full text-base" onClick={run} disabled={busy}>
             {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Gerar PDF
           </Button>
