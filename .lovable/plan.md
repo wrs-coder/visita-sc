@@ -1,102 +1,81 @@
-# Pauta da Reunião com os Anciãos
+# Pauta dos anciãos — ajustes e pauta montável
 
-## Resposta rápida: onde e como
-- **Onde:** uma nova pílula **"Pauta"** dentro do *Programa da visita* (ao lado de Meio de semana, Fim de semana, Anciãos...). A pauta é da visita, então fica junto da semana da visita, e o antigo "Programa dos anciãos" continua funcionando igual.
-- **Dashboard:** a aba **"Pastoreio"** passa a se chamar **"Anciãos"**. Nela entra o cartão **"Pauta da reunião com os anciãos"**, que recolhe e expande como os outros cartões, com os links de leitura, artigo e vídeo abrindo direto.
+## 1. "Coordenador" vira "C.Serviço"
+- O selo de quem edita passa a mostrar: **Só SC / C.Serviço / Todos**.
+- "C.Serviço" continua valendo para coordenador, secretário e superintendente de serviço (a regra não muda, só o nome).
+
+## 2. Tema/Assunto livre
+- Em "Encorajamentos e conselhos", o campo **Tema/Assunto** deixa de vir preenchido com o tema da reunião. Fica vazio para o SC escrever o assunto que escolher.
+
+## 3. Recomendações com ícones e vários links
+Cada linha tem um ícone (Leitura / Artigo / Vídeo), um texto e **quantos links quiser**.
 
 ```text
-┌──────────────────────────────┐
-│ Agenda  Esboços  Visita [Anciãos]
-├──────────────────────────────┤
-│ ✋ Pauta – reunião c/ anciãos ▾│
-│   Sexta 20/11 · 19:00        │
-│   Encorajamentos · 15 min    │
-│   📖 Leitura ........ 🔗     │
-│   ▶ Vídeo ........... 🔗     │
-│   1) Cartas · 2) Recom. ·   │
-│   5) Assunto local           │
-│   [ Abrir pauta completa › ] │
-│ (cartões de pastoreio atuais)│
-└──────────────────────────────┘
+┌─────────────────────────────────┐
+│ Recomendações                    │
+│ [📖] Salmo 23 — meditar          │
+│      🔗 jw.org/...          ✕    │
+│      🔗 wol.jw.org/...      ✕    │
+│      + Adicionar link            │
+│ [▶] Vídeo: Seja um pastor        │
+│      🔗 jw.org/...          ✕    │
+│ + Nova recomendação  (📖 📚 ▶)   │
+└─────────────────────────────────┘
 ```
-- **Anciãos sem cadastro:** veem e preenchem a pauta pelo acesso já existente **"Corpo de anciãos e ESC"** (código de convite da congregação), sem criar link novo. Anciãos com cadastro veem a pauta no app normalmente.
-- **Como executar:** em 3 etapas, cada uma testável antes da próxima (ver final).
+- Ícones iguais aos seus anexos: livro aberto (leitura), livros empilhados (artigo), botão play (vídeo).
+- Na pauta (tela, cartão do Dashboard e PDF) aparece um botão **"Clique aqui"**; ao tocar, todos os links daquela linha abrem no navegador.
 
-## Tela no celular (SC)
+## 4. Pauta montável por cada superintendente
+Sim, é possível. A pauta vira uma lista de **blocos** que o SC monta como quiser.
+
 ```text
-┌──────────────────────────────┐
-│ ‹  Programa da visita     ⋯  │
-│ [Meio][Fim][Anciãos][Pauta]  │
-├──────────────────────────────┤
-│ PAUTA – REUNIÃO COM ANCIÃOS  │
-│ Isa 50:4; Pro 18:13,17 ...   │
-│ ┌──────────────────────────┐ │
-│ │ Oração inicial  Natan  ✎ │ │
-│ │ Oração recom.   ——     ✎ │ │
-│ │ Oração final    Paulo  ✎ │ │
-│ │ Ata             Marcos ✎ │ │
-│ │ Tempo total     50 min   │ │
-│ └──────────────────────────┘ │
-│ ▾ Encorajamentos e conselhos │
-│   15 min · Tema: ________    │
-│   Informações do SC     🔒SC │
-│   [ editor de esboço ... ]   │
-│   Recomendações p/ meditar   │
-│   📖 Leitura  ______  🔗     │
-│   📄 Artigo   ______  🔗     │
-│   ▶ Vídeo     ______  🔗     │
-│   Info. dos anciãos  👥 Todos│
-│   [ editor de esboço ... ]   │
-│ ▸ 1) Cartas da filial  5 min │
-│ ▸ 2) Recomendações   20 min  │
-│ ▸ 5) Assunto local   10 min  │
-│                              │
-│ [ 🔗 Compartilhar ] [ ⤓ PDF ]│
-└──────────────────────────────┘
+┌─────────────────────────────────┐
+│ Pauta            [✎ Montar]      │
+├─────────────────────────────────┤
+│ ≡ Encorajamentos e conselhos  ⋯ │
+│ ≡ 1) Revisão das cartas  5 min ⋯ │
+│ ≡ 2) Recomendações      20 min ⋯ │
+│ ≡ 5) Assunto local      10 min ⋯ │
+│ + Adicionar bloco                │
+└─────────────────────────────────┘
+ ⋯ = Renomear · Minutos · Quem edita
+     · Subir/Descer · Ocultar · Apagar
 ```
-Cada bloco recolhe/expande como os outros cartões. O selo (🔒SC / 👥 Todos / 👤 Coordenador) mostra quem pode escrever ali; o SC toca nele para mudar.
+- **Tudo editável:** título de cada bloco, minutos, ordem (arrastar ≡ ou setas), ocultar ou apagar.
+- **Tipos de bloco para adicionar:** Texto livre (editor do esboço), Lista de links/recomendações, Recomendações de irmãos (puxa do Programa dos anciãos), Assunto local (puxa do Programa), Orações e ata, Cartas.
+- **Modelo próprio:** o SC salva a montagem como "Meu modelo de pauta" e cada nova visita já começa com ela. Botão "Restaurar padrão" volta ao modelo atual.
+- Cada superintendente tem o seu modelo; nada de um afeta outro.
+- Pautas já salvas continuam abrindo: o formato antigo é convertido para blocos na primeira abertura, sem perder nada.
 
-## Tela do ancião (acesso Corpo de anciãos)
+## 5. Sugestões para o PDF (escolha uma ou combine)
+
+**A — Ata formal (sóbria)**
 ```text
-┌──────────────────────────────┐
-│   Pauta – Reunião c/ Anciãos │
-│   10 Cidade do Sequele       │
-│   Sexta 20/11 · 19:00        │
-├──────────────────────────────┤
-│ Informações do SC   (leitura)│
-│ ...texto do SC...            │
-│ Info. dos anciãos  ✎ editar  │
-│ [ editor de esboço ]         │
-│ 5) Assunto local      ✎      │
-│ Quem indicou: ______         │
-│ Tema: ______                 │
-│            [ Salvar ]        │
-└──────────────────────────────┘
+ PAUTA — REUNIÃO COM OS ANCIÃOS
+ Congregação X · ter 24/11 · 19:30
+ ───────────────────────────────
+ Oração inicial: Fulano  Final: Beltrano
+ ───────────────────────────────
+ 1  Encorajamentos .......... 10 min
+    texto...
+ 2  Revisão das cartas ....... 5 min
+ ───────────────────────────────
+                    Tempo total 50 min
 ```
-Só os campos liberados pelo SC ficam editáveis; o resto aparece só para leitura.
+Só preto e um tom de azul, numeração grande à esquerda, tempos alinhados com pontilhado.
 
-## Preenchido automaticamente
-- Data, hora, local, tema, orações inicial/final: da *Reunião com anciãos e servos* do Programa da visita.
-- 2) Recomendações (2.1, 2.2...): das recomendações já lançadas no Programa dos anciãos.
-- 5) Assunto local (quem indicou, tema, fontes): dos assuntos locais já lançados.
-- Tempo total: soma dos minutos de cada tópico.
-Nada que o SC já digitou é sobrescrito.
+**B — Cartões One UI**
+Cada bloco num cartão de cantos arredondados, título em faixa azul clara, tempo numa "pílula" à direita. Mais moderno e arejado.
 
-## Campos de anotação
-Usam o mesmo editor do modo editar esboço (barra no rodapé, estilos, listas, cores, referências bíblicas clicáveis).
+**C — Linha do tempo**
+Coluna à esquerda com horários calculados (19:30, 19:40, 19:45...) e bolinhas ligadas por linha; conteúdo à direita. Ótimo para controlar o tempo na reunião.
 
-## Exportar
-PDF A4 no mesmo layout do modelo enviado (título, faixa de orações/ata/tempo, caixas com bordas, tempos à direita, links "Clique aqui!" funcionando).
-
-## Etapas
-1. **Pauta do SC** (inclui o cartão no Dashboard e o novo nome da aba): pílula "Pauta", tópicos, preenchimento automático, editor, PDF.
-2. **Permissões por campo**: selos SC / Coordenador / Todos.
-3. **Acesso dos anciãos**: anciãos cadastrados no app + nova aba "Pauta" no acesso Corpo de anciãos, com salvamento e aviso de conflito.
+Em todos: cabeçalho com versículo opcional, ícones das recomendações com "Clique aqui" clicável, espaço para anotações à mão opcional, rodapé com página e "Superintendente de circuito". Recomendo **C com o visual limpo de A**.
 
 ## Detalhes técnicos
-- Nova tabela `elder_meeting_agendas` (uma por visita): `visit_id`, `superintendent_id`, `payload jsonb` (tópicos, HTML das notas, links, minutos), `permissions jsonb` (campo → `sc|coordinator|all`), `updated_at`; RLS do SC dono + anciãos da congregação; tombstone/touch triggers como as demais.
-- Acesso sem cadastro: aba no painel do visitante (`visitante.painel.tsx`) via server functions de `guest.functions.ts` que validam o código de convite e **só gravam os campos com permissão `all`** (validação no servidor com zod e sanitizador de notas existente).
-- Auto-preenchimento é calculado na exibição a partir de `elders_servants_meetings`, `elder_recommendations`, `elder_local_matters`; não altera esses dados.
-- PDF via pdf-lib (`pdf-engine.ts`), novo `elder-agenda-pdf.ts` com teste de 1 página.
-- Editor: reutiliza `RichNoteEditor` em modo compacto.
-- Registro em AGENTS.md e testes de permissão (ancião não grava campo do SC).
+- `agenda.ts`: novo `AgendaPayload.v2 = { blocks: Block[] }` (id, type, title, minutes, perm, hidden, data). `normalizeAgenda` converte o payload antigo em blocos. Permissões passam a ser por bloco; `mergeAgenda` aceita alterações estruturais (títulos/ordem/adicionar/apagar) só do SC.
+- Recomendação: `{ kind: 'reading'|'article'|'video', text, urls: string[] }`, todas via `safeUrl`. "Clique aqui" chama `window.open` para cada url (no app nativo, Browser plugin em sequência).
+- Modelo pessoal do SC: guardado no próprio registro do SC (nova coluna jsonb em uma tabela só do SC, ex. `elder_agenda_templates` com superintendent_id, owner-only RLS); visita nova copia o modelo.
+- Rótulo i18n `coordinator` → "C.Serviço" (pt/en/es).
+- Remover preenchimento automático do tema em `agendaView`.
+- PDF em `agenda-pdf.ts` reescrito para o layout escolhido, via pdf-engine; testes de conversão antigo→blocos, permissões e links.
