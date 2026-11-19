@@ -16,6 +16,7 @@ Estilos de cartão disponíveis:
 | Resposta do SC | recomendação final do superintendente |
 | Recomendações de irmãos | puxa as recomendações do Programa dos anciãos |
 | Assunto local | puxa os assuntos locais do Programa dos anciãos |
+| Nota privada do SC | só o superintendente vê; nunca sai no PDF |
 
 Cada cartão tem seu próprio selo **Só SC / C.Serviço / Todos** (ex.: no mesmo tópico, as anotações são só do SC e as informações dos anciãos são de todos).
 
@@ -51,11 +52,12 @@ Ao tocar "⊕ Adicionar cartão" abre uma folha de baixo (estilo One UI):
 │        ━━━━                 │
 │  Escolha o estilo do cartão │
 │  📝 Anotações               │
-│  ▶  Assistir, recapitular   │
+│  ▶  Fontes de matéria       │
 │  👥 Informações dos anciãos │
-│  📖 Resposta do SC  │
+│  📖 Resposta do SC          │
 │  🙋 Recomendações de irmãos │
 │  📍 Assunto local           │
+│  🔒 Nota privada do SC      │
 └─────────────────────────────┘
 ```
 
@@ -94,7 +96,7 @@ Ao tocar "⊕ Adicionar cartão" abre uma folha de baixo (estilo One UI):
 ```
 Já vem preenchido com o que está no Programa dos anciãos. O que for editado aqui vale só na pauta; o Programa dos anciãos não muda.
 
-**Notas privadas do SC.** Novo estilo de cartão "🔒 Nota privada do SC". Só o superintendente vê: ele não é enviado aos anciãos (nem no acesso por código), não aparece no cartão do Dashboard deles e nunca sai no PDF.
+**Notas privadas do SC.** Estilo de cartão "🔒 Nota privada do SC". Só o superintendente vê: ele não é enviado aos anciãos (nem no acesso por código), não aparece no cartão do Dashboard deles e nunca sai no PDF.
 ```text
 │ ┌─────────────────────────┐ │
 │ │ 🔒 Nota privada do SC   │ │
@@ -126,3 +128,4 @@ Diferente dos esboços (que guardam o anexo só no aparelho), na pauta os anciã
 - Tópico com só cartões recs/local e lista vazia → oculto em `agendaView`/numeração/PDF.
 - Recs: override por recomendação em `card.notes[recId] = {family, fieldGroup, info}` (fallback para family_members, field_group, info de elder_recommendations); conversão do formato antigo (string) para info.
 - Anexos: bucket privado `elder-agenda-files` (criado pela ferramenta de storage), caminho `<visit_id>/<file>`; upload e URLs assinadas curtas só via server functions que conferem o papel (SC / ancião com código), anexos de cartão privado só para o SC. Reusa redução de foto de outline-attachments.ts. Sem mudança de tabela.
+- Um único rótulo por estilo (CARD_TYPE_LABEL) usado na tabela, na folha de escolha, no editor e no PDF, para os nomes nunca divergirem.
