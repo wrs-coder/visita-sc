@@ -105,13 +105,19 @@ Já vem preenchido com o que está no Programa dos anciãos. O que for editado a
 │ └─────────────────────────┘ │
 ```
 
-**Anexos.** Nos cartões de Anotações, Informações dos anciãos, Resposta do SC e Nota privada aparece o botão 📎 igual ao dos esboços: foto, vídeo, PDF ou link.
+**Anexos (leves e por escolha do SC).** Nos cartões de Anotações, Informações dos anciãos, Resposta do SC e Nota privada aparece o botão 📎. Só aceita **foto** e **PDF**; vídeo entra apenas como link (não envia arquivo).
 ```text
 │  📎 Anexos                  │
-│  [🖼 foto.jpg] [📄 carta.pdf]│
-│  [▶ vídeo.mp4]  ⊕ Adicionar │
+│  [🖼 foto.jpg  ☁ Enviar ◯ ] │
+│  [📄 carta.pdf ☁ Enviar ● ] │
+│  ⊕ Foto  ⊕ PDF  ⊕ Link      │
 ```
-Diferente dos esboços (que guardam o anexo só no aparelho), na pauta os anciãos também precisam ver. Por isso o arquivo vai para a nuvem, numa pasta privada. Anexos de nota privada só abrem para o SC. No PDF aparece a lista de anexos com link "Abrir" (menos os privados). Limite sugerido: 25 MB por arquivo, fotos reduzidas como nos esboços. Funciona sem internet só para anexos já abertos antes.
+- Por padrão o anexo fica **só no seu aparelho** (como nos esboços) e não ocupa nada na nuvem.
+- Você liga "☁ Enviar" só nos que os anciãos precisam ver.
+- Antes de enviar, a foto é comprimida (lado maior 1600 px, JPEG ~70%, normalmente 200–400 KB). PDF tem limite de 5 MB e até 5 anexos enviados por pauta.
+- Os arquivos não ficam no banco de dados: ficam num depósito de arquivos separado e privado, então várias reuniões no mesmo dia não deixam o app lento. Cada aparelho baixa o arquivo uma vez e guarda.
+- Os anexos enviados são apagados da nuvem 30 dias depois da visita.
+- Anexo de nota privada nunca é enviado. No PDF aparece a lista dos anexos enviados com link "Abrir".
 
 ## O que continua igual
 - Pautas e modelos já salvos abrem sem perder nada: cada bloco antigo vira um tópico com o cartão correspondente; no modelo padrão, "Assistir/meditar" e "Informações dos anciãos" passam a ser cartões dentro de "Encorajamentos e conselhos", e "Resposta do SC" fica num tópico final sem minutos.
@@ -127,5 +133,5 @@ Diferente dos esboços (que guardam o anexo só no aparelho), na pauta os anciã
 - Cartões novos: `private` (removido pelo servidor em `loadAgenda` para quem não é SC; `mergeAgenda` ignora; PDF pula) e anexos `attachments[]` (id, kind photo|video|pdf|link, title, path|url).
 - Tópico com só cartões recs/local e lista vazia → oculto em `agendaView`/numeração/PDF.
 - Recs: override por recomendação em `card.notes[recId] = {family, fieldGroup, info}` (fallback para family_members, field_group, info de elder_recommendations); conversão do formato antigo (string) para info.
-- Anexos: bucket privado `elder-agenda-files` (criado pela ferramenta de storage), caminho `<visit_id>/<file>`; upload e URLs assinadas curtas só via server functions que conferem o papel (SC / ancião com código), anexos de cartão privado só para o SC. Reusa redução de foto de outline-attachments.ts. Sem mudança de tabela.
+- Anexos: ficam no aparelho (outline-attachments.ts) por padrão; com 'Enviar' ligado, foto comprimida no aparelho e PDF ≤5 MB sobem para bucket privado `elder-agenda-files` (`<visit_id>/<file>`, limite 5 MB, só image/jpeg e application/pdf), máx. 5 por pauta; upload e URLs assinadas curtas só via server functions que conferem o papel; cartão privado nunca sobe; limpeza diária apaga arquivos de visitas com mais de 30 dias. Sem mudança de tabela.
 - Um único rótulo por estilo (CARD_TYPE_LABEL) usado na tabela, na folha de escolha, no editor e no PDF, para os nomes nunca divergirem.
