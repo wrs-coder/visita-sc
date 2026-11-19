@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBoardModel, formatRange, pickVisitProgram, type BoardInput } from "./board-program";
+import { BOARD_BOTTOM_PHRASE, buildBoardModel, formatRange, formatReading, pickVisitProgram, type BoardInput } from "./board-program";
 
 const base: BoardInput = {
   startDate: "2026-11-17", endDate: "2026-11-22", sc: "Wanderson Rodrigues", congregation: "Cidade do Sequele",
@@ -18,7 +18,7 @@ describe("quadro de anúncios", () => {
     expect(m.midweek.find((r) => r.text === "Tenha consideração")?.who).toBe("Wanderson Rodrigues");
     expect(m.midweek.some((r) => r.text.startsWith("Cântico 151"))).toBe(true);
     expect(m.weekend.find((r) => r.text === "Quem governa o mundo?")?.who).toBe("");
-    expect(m.midweek[0].who).toBe("João");
+    expect(m.chairman).toBe("João");
   });
   it("serviço de campo de quarta a domingo, manhã e tarde separados", () => {
     const m = buildBoardModel(base);
@@ -57,11 +57,21 @@ describe("quadro: meio de semana igual ao controle de tempo", () => {
     expect(m.midweek.map((r) => r.text)).toEqual([
       "Cântico 77 e oração", "Comentários iniciais", "Joias espirituais", "Iniciando conversas", "Comentários finais", "Tenha consideração",
     ]);
-    expect(m.midweek.find((r) => r.text === "Comentários iniciais")?.who).toBe("João");
+    expect(m.midweek.find((r) => r.text === "Comentários iniciais")?.who).toBe("");
+    expect(m.midweek.find((r) => r.text === "Comentários finais")?.who).toBe("");
+    expect(m.chairman).toBe("João");
   });
-  it("sem partes de comentários, a Presidência volta", () => {
+  it("não há linha Presidência (presidente vai no cabeçalho)", () => {
     const n = buildBoardModel({ ...base, midweek: { ...base.midweek, parts: parts.filter((p) => p.kind !== "comments").map((p) => ({ ...p })), start: "19:30" } });
-    expect(n.midweek[0].text).toBe("Presidência");
+    expect(n.midweek.some((r) => r.text === "Presidência")).toBe(false);
+  });
+  it("leitura semanal da Bíblia vem do título da semana", () => {
+    expect(formatReading("| LAMENTAÇÕES 1-2")).toBe("Lamentações 1 a 2");
+    expect(buildBoardModel({ ...base, midweek: { ...base.midweek, reading: "ISAÍAS 3-5" } }).reading).toBe("Isaías 3 a 5");
+  });
+  it("frase final corrigida", () => {
+    expect(BOARD_BOTTOM_PHRASE).toContain("ministério de campo");
+    expect(BOARD_BOTTOM_PHRASE).toContain("“para declarar as boas novas de uma grande alegria” – Lucas 2:10.");
   });
   it("horário de cada parte como no controle de tempo", () => {
     expect(m.midweek.filter((r) => r.time).map((r) => r.time)).toEqual(["19:30", "19:35", "19:36", "19:46", "19:50", "19:53"]);

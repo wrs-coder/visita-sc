@@ -4,6 +4,7 @@ import { getVisitTemplateExtras } from "@/lib/visit-template-extras.functions";
 import { loadPrograms } from "@/lib/meeting/meeting-store";
 import { applyVisitWeek } from "@/lib/meeting/visit-week-meeting";
 import { boardMissing, buildBoardModel, pickVisitProgram, renderBoardPdf, type BoardContentOptions, type BoardRenderOptions } from "@/lib/visit-week/board-program";
+import { withNetworkWindow } from "@/lib/net-policy";
 import { saveBlob } from "@/lib/share";
 import { resolveWeekdaySlot } from "@/lib/today-timeline";
 
@@ -11,6 +12,11 @@ type R = Record<string, unknown>;
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
 export async function exportBoardProgram(visitId: string, userId: string, opts: BoardRenderOptions & BoardContentOptions = {}): Promise<{ missing: string[] }> {
+  // Sempre os dados mais novos (como a Agenda depois de sincronizar); sem internet, usa a cópia do aparelho.
+  return withNetworkWindow(() => exportBoardProgramNow(visitId, userId, opts));
+}
+
+async function exportBoardProgramNow(visitId: string, userId: string, opts: BoardRenderOptions & BoardContentOptions): Promise<{ missing: string[] }> {
   const { data: v } = await supabase.from("visits").select("id,start_date,end_date,congregation_id").eq("id", visitId).maybeSingle();
   if (!v) throw new Error("Visita não encontrada.");
   const [cg, pr, mw, we, pi, el, fm, ex] = await Promise.all([
@@ -41,7 +47,7 @@ export async function exportBoardProgram(visitId: string, userId: string, opts: 
   const midAt = str((mw.data as R | null)?.meeting_at) ?? (prog ? `${prog.date}T${prog.start}:00` : null);
   const model = buildBoardModel({
     startDate: v.start_date, endDate: v.end_date, sc, congregation: str((cg.data as R | null)?.name) ?? "",
-    midweek: { at: midAt, chairman: str((mw.data as R | null)?.chairman), parts, serviceTalk, finalSong, start: prog?.start ?? null, visitTalkId: view?.talkId ?? null },
+    midweek: { at: midAt, chairman: str((mw.data as R | null)?.chairman), parts, serviceTalk, finalSong, start: prog?.start ?? null, visitTalkId: view?.talkId ?? null, reading: prog?.title ?? null },
     weekend: {
       at: str((we.data as R | null)?.meeting_at), chairman: str((we.data as R | null)?.chairman), publicTalk: str((we.data as R | null)?.public_talk_theme), finalTalk: str((we.data as R | null)?.talk_theme_title),
       openingSong: str(extras?.weekend?.opening_song), closingSong: str(extras?.weekend?.closing_song),
