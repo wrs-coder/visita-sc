@@ -3,13 +3,14 @@ import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { guestGetElderAgenda, guestSaveElderAgenda } from "@/lib/elder-agenda.functions";
+import { guestGetAgendaAttachmentUrl, guestGetElderAgenda, guestSaveElderAgenda } from "@/lib/elder-agenda.functions";
 import { readAgendaCache, writeAgendaCache } from "@/lib/elder-agenda/agenda-cache";
 import { ElderAgendaView, type AgendaData, type AgendaSaver } from "./ElderAgendaView";
 
 export function GuestElderAgenda({ inviteCode }: { inviteCode: string }) {
   const fnGet = useServerFn(guestGetElderAgenda);
   const fnSave = useServerFn(guestSaveElderAgenda);
+  const fnUrl = useServerFn(guestGetAgendaAttachmentUrl);
   const [data, setData] = useState<AgendaData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const scope = `code.${inviteCode}`;
@@ -29,5 +30,6 @@ export function GuestElderAgenda({ inviteCode }: { inviteCode: string }) {
   };
   if (error) return <div className="text-center py-8 space-y-3"><p className="text-sm text-muted-foreground">{error}</p><Button variant="outline" onClick={() => void load()}>Tentar de novo</Button></div>;
   if (!data) return <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
-  return <ElderAgendaView key={data.visitId} data={data} save={save} />;
+  const attachmentApi = { urlFor: async (path: string) => { const r = await fnUrl({ data: { inviteCode, path } }); return r.ok ? r.url : null; } };
+  return <ElderAgendaView key={data.visitId} data={{ ...data, attachmentApi }} save={save} />;
 }

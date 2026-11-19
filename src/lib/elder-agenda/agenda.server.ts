@@ -1,7 +1,7 @@
 // Leitura/gravação da pauta dos anciãos com o cliente de serviço. Só chamar depois de conferir quem pede.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  RECOMMENDATION_PURPOSE, emptyAgenda, emptyAuto, isLocked, mergeAgenda, normalizeAgenda, normalizeBlocks,
+  RECOMMENDATION_PURPOSE, emptyAgenda, emptyAuto, isLocked, mergeAgenda, normalizeAgenda, normalizeBlocks, withoutPrivate,
   type AgendaAuto, type AgendaPayload, type AgendaRole,
 } from "./agenda";
 
@@ -44,7 +44,7 @@ export async function loadAgenda(visitId: string, role: AgendaRole): Promise<Age
     supabaseAdmin.from("congregations").select("name,superintendent_id").eq("id", v.congregation_id).maybeSingle(),
     supabaseAdmin.from("elder_meeting_agendas").select("payload,permissions,updated_at").eq("visit_id", visitId).maybeSingle(),
     supabaseAdmin.from("elders_servants_meetings").select("meeting_at,location,theme,opening_prayer,closing_prayer").eq("visit_id", visitId).limit(1),
-    supabaseAdmin.from("elder_recommendations").select("id,purpose,full_name,field_group,info").eq("visit_id", visitId).order("sort_order").order("created_at"),
+    supabaseAdmin.from("elder_recommendations").select("id,purpose,full_name,family_members,field_group,info").eq("visit_id", visitId).order("sort_order").order("created_at"),
     supabaseAdmin.from("elder_local_matters").select("id,suggested_by,subject,sources,info").eq("visit_id", visitId).order("sort_order").order("created_at"),
   ]);
   const m = meet?.[0];
@@ -55,7 +55,7 @@ export async function loadAgenda(visitId: string, role: AgendaRole): Promise<Age
     recommendations: (recs ?? []).map((r) => ({
       id: r.id,
       title: [r.full_name, r.purpose ? RECOMMENDATION_PURPOSE[r.purpose] : null].filter(Boolean).join(" — ") || "Recomendação",
-      info: [r.field_group ? `Grupo: ${r.field_group}` : "", r.info ?? ""].filter(Boolean).join("\n"),
+      family: r.family_members ?? "", fieldGroup: r.field_group ?? "", info: r.info ?? "",
     })),
     local: (locs ?? []).map((l) => ({ id: l.id, suggestedBy: l.suggested_by ?? "", subject: l.subject ?? "", sources: l.sources ?? "", info: l.info ?? "" })),
   };
@@ -67,9 +67,10 @@ export async function loadAgenda(visitId: string, role: AgendaRole): Promise<Age
     const blocks = normalizeBlocks(tpl?.[0]?.blocks);
     if (blocks.length) payload = { ...emptyAgenda(), blocks };
   }
+  if (role === "sc" && cong?.superintendent_id) void cleanupOldAttachments(cong.superintendent_id).catch(() => undefined);
   return {
     ok: true, visitId, visitTitle: v.title, congregation: cong?.name ?? "", range: fmtRange(v.start_date, v.end_date), role,
-    payload, auto, updatedAt: row?.updated_at ?? null,
+    payload: role === "sc" ? payload : withoutPrivate(payload), auto, updatedAt: row?.updated_at ?? null,
   };
 }
 
@@ -81,11 +82,49 @@ export async function saveAgenda(visitId: string, role: AgendaRole, incomingRaw:
   const { data: row } = await supabaseAdmin.from("elder_meeting_agendas").select("payload,permissions").eq("visit_id", visitId).maybeSingle();
   const current = row ? normalizeAgenda(row.payload, row.permissions) : emptyAgenda();
   if (role !== "sc" && isLocked(current)) return "locked";
-  const merged = mergeAgenda(current, normalizeAgenda(incomingRaw), role);
+  const incoming = normalizeAgenda(incomingRaw);
+  // Anexo só pode apontar para a pasta desta visita.
+  for (const b of incoming.blocks) for (const c of b.cards) c.attachments = c.attachments.map((a) => (a.cloudPath && !a.cloudPath.startsWith(`${visitId}/`) ? { ...a, cloudPath: "" } : a));
+  const merged = mergeAgenda(current, incoming, role);
   const { data, error } = await supabaseAdmin.from("elder_meeting_agendas").upsert(
     { visit_id: visitId, superintendent_id: cong.superintendent_id, payload: merged as never, permissions: {} as never },
     { onConflict: "visit_id" },
   ).select("updated_at").single();
   if (error) throw new Error("Não foi possível salvar a pauta.");
   return data.updated_at;
+}
+
+export const AGENDA_BUCKET = "elder-agenda-files";
+
+/** Payload salvo (com notas privadas) — para conferir anexos. */
+export async function savedPayload(visitId: string): Promise<AgendaPayload | null> {
+  const { data: row } = await supabaseAdmin.from("elder_meeting_agendas").select("payload,permissions").eq("visit_id", visitId).maybeSingle();
+  return row ? normalizeAgenda(row.payload, row.permissions) : null;
+}
+
+/** O arquivo está na pauta salva e pode ser visto por este papel (privado só o SC). */
+export async function attachmentVisible(visitId: string, path: string, role: AgendaRole): Promise<boolean> {
+  if (!path.startsWith(`${visitId}/`)) return false;
+  const p = await savedPayload(visitId);
+  if (!p) return false;
+  return p.blocks.some((b) => b.cards.some((c) => (role === "sc" || c.type !== "private") && c.attachments.some((a) => a.cloudPath === path)));
+}
+
+export async function signedAttachmentUrl(path: string): Promise<string | null> {
+  const { data } = await supabaseAdmin.storage.from(AGENDA_BUCKET).createSignedUrl(path, 600);
+  return data?.signedUrl ?? null;
+}
+
+/** Apaga da nuvem os anexos de visitas encerradas há mais de 30 dias (deste SC). */
+async function cleanupOldAttachments(superintendentId: string) {
+  const limit = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+  const { data: congs } = await supabaseAdmin.from("congregations").select("id").eq("superintendent_id", superintendentId);
+  const ids = (congs ?? []).map((c) => c.id);
+  if (!ids.length) return;
+  const { data: visits } = await supabaseAdmin.from("visits").select("id").in("congregation_id", ids).lt("end_date", limit)
+    .order("end_date", { ascending: false }).limit(20);
+  for (const v of visits ?? []) {
+    const { data: files } = await supabaseAdmin.storage.from(AGENDA_BUCKET).list(v.id, { limit: 100 });
+    if (files?.length) await supabaseAdmin.storage.from(AGENDA_BUCKET).remove(files.map((f) => `${v.id}/${f.name}`));
+  }
 }

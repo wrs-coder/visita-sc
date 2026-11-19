@@ -9,7 +9,7 @@ import { useElderAgenda } from "./use-elder-agenda";
 export default function ElderAgendaDashboardCard({ visitId }: { visitId: string }) {
   const { data, loading, error } = useElderAgenda(visitId);
   const view = data ? agendaView(data.payload, data.auto) : null;
-  const list = data ? numberedBlocks(data.payload.blocks) : [];
+  const list = data ? numberedBlocks(data.payload.blocks, data.auto) : [];
   return (
     <CollapsibleCard
       id="elder-agenda"
@@ -32,15 +32,17 @@ export default function ElderAgendaDashboardCard({ visitId }: { visitId: string 
           {data.auto.meetingAt ? <p className="text-muted-foreground break-words">{[formatMeetingWhen(data.auto.meetingAt), data.auto.location].filter(Boolean).join(" · ")}</p> : null}
           <ul className="space-y-1.5">
             {list.map(({ block: b, n }) => {
-              const links = b.type === "links" ? b.items.filter((it) => it.text || itemUrls(it).length) : [];
-              const extra = b.type === "recs" ? data.auto.recommendations.length : b.type === "local" ? data.auto.local.length : 0;
+              const cards = b.cards.filter((c) => c.type !== "private");
+              const links = cards.flatMap((c) => (c.type === "links" ? c.items.filter((it) => it.text || itemUrls(it).length) : []));
+              const extra = cards.some((c) => c.type === "recs") ? data.auto.recommendations.length : cards.some((c) => c.type === "local") ? data.auto.local.length : 0;
+              const subject = cards.find((c) => c.showSubject && c.subject)?.subject;
               return (
                 <li key={b.id} className="space-y-1">
                   <div className="flex justify-between gap-2">
                     <span className="break-words"><span className="font-semibold text-primary">{n}.</span> {b.title}{extra ? ` (${extra})` : ""}</span>
                     {b.minutes ? <span className="text-muted-foreground shrink-0">{b.minutes} min</span> : null}
                   </div>
-                  {b.showSubject && b.subject ? <p className="pl-4 text-muted-foreground break-words">{b.subject}</p> : null}
+                  {subject ? <p className="pl-4 text-muted-foreground break-words">{subject}</p> : null}
                   {links.length ? <div className="ml-4 divide-y rounded-xl border px-3">{links.map((it) => <AgendaLinkRow key={it.id} item={it} />)}</div> : null}
                 </li>
               );

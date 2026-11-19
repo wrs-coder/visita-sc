@@ -20,7 +20,7 @@ describe("pauta: PDF", () => {
   for (const style of ["formal", "cards", "timeline"] as AgendaPdfStyle[]) {
     it(`${style}: todos os links da linha ficam clicáveis`, async () => {
       const p = emptyAgenda();
-      p.blocks = p.blocks.map((b) => (b.id === "reco" ? { ...b, items: [{ id: "v", kind: "video" as const, text: "Vídeo", urls: ["https://www.jw.org/a", "https://www.jw.org/b"] }] } : b));
+      p.blocks = p.blocks.map((b) => ({ ...b, cards: b.cards.map((c) => (c.id === "reco" ? { ...c, items: [{ id: "v", kind: "video" as const, text: "Vídeo", urls: ["https://www.jw.org/a", "https://www.jw.org/b"] }] } : c)) }));
       const blob = await renderAgendaPdf({ payload: p, auto: { ...emptyAuto(), meetingAt: "2026-11-24T22:30:00Z" }, congregation: "Central", range: "17/11 a 22/11/2026", style });
       const urls = await urlsOf(blob);
       expect(urls).toContain("https://www.jw.org/a");

@@ -56,7 +56,7 @@ export function AgendaTemplatesDialog({ open, onOpenChange, blocks, onApply }: {
                   <button type="button" aria-label={m.is_default ? "Modelo padrão" : "Usar como padrão nas novas visitas"} onClick={() => void run(() => t.setDefault(m.is_default ? null : m.id))}
                     className={m.is_default ? "text-primary" : "text-muted-foreground"}><Star className={`h-4 w-4 ${m.is_default ? "fill-current" : ""}`} /></button>
                   <span className="flex-1 min-w-0 text-sm font-medium break-words">{m.name}</span>
-                  <span className="text-[11px] text-muted-foreground shrink-0">{m.blocks.length} blocos</span>
+                  <span className="text-[11px] text-muted-foreground shrink-0">{m.blocks.length} tópicos</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   <Button size="sm" onClick={() => apply(m.blocks)}>Usar</Button>

@@ -4,31 +4,35 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  ArrowDown, ArrowUp, BookOpen, CalendarClock, ChevronDown, Eye, EyeOff, FileDown, Layers, Library, Link2, Loader2,
-  Lock, Pencil, PlayCircle, Plus, Save, Trash2, Users, UserCog, WifiOff, X,
+  ArrowDown, ArrowUp, BookOpen, CalendarClock, ChevronDown, Eye, EyeOff, FileDown, FileText, HandHeart, Layers, Library, Link2, Loader2,
+  Lock, MapPin, MessageSquareReply, Pencil, PlayCircle, Plus, Save, Trash2, Users, UserCog, WifiOff, X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { BibleRefText } from "@/components/bible/BibleRefText";
 import { saveBlob } from "@/lib/share";
 import {
-  ACCESS_LABEL, BLOCK_TYPE_LABEL, MAX_BLOCKS, agendaView, canEditNow, isLocked, itemUrls, newBlock, newId, numberedBlocks, safeUrl,
-  type AgendaAccess, type AgendaAuto, type AgendaBlock, type AgendaBlockType, type AgendaLinkItem, type AgendaLinkKind, type AgendaPayload, type AgendaRole,
+  ACCESS_LABEL, ATTACHABLE, CARD_TYPES, CARD_TYPE_LABEL, MAX_BLOCKS, MAX_CARDS, agendaView, autoHidden, canEditCard, isLocked, itemUrls,
+  newBlock, newCard, newId, numberedBlocks, recInfoView, safeUrl, withoutPrivate,
+  type AgendaAccess, type AgendaAttachment, type AgendaAuto, type AgendaBlock, type AgendaCard, type AgendaCardType, type AgendaLinkItem,
+  type AgendaLinkKind, type AgendaPayload, type AgendaRecInfo, type AgendaRole,
 } from "@/lib/elder-agenda/agenda";
 import { AGENDA_PDF_STYLES, AGENDA_VERSES, type AgendaPdfStyle } from "@/lib/elder-agenda/agenda-pdf";
 import { readPdfStyle, writePdfStyle } from "@/lib/elder-agenda/agenda-cache";
 import { openAllLinks } from "./open-all-links";
 import { AgendaTemplatesDialog } from "./AgendaTemplatesDialog";
+import { AgendaAttachments, type AgendaAttachmentApi } from "./AgendaAttachments";
 
 const RichNoteEditor = lazy(() => import("@/components/notes/RichNoteEditor").then((m) => ({ default: m.RichNoteEditor })));
 
 export interface AgendaData {
   visitId: string; congregation: string; range: string; role: AgendaRole;
   payload: AgendaPayload; auto: AgendaAuto; offline?: boolean;
+  attachmentApi?: AgendaAttachmentApi;
 }
 export type AgendaSaver = (payload: AgendaPayload) => Promise<{ ok: boolean; error?: string }>;
 
@@ -56,7 +60,7 @@ const toLocalInput = (iso: string | null) => {
 
 export async function exportAgendaPdf(data: AgendaData, payload: AgendaPayload, style: AgendaPdfStyle) {
   const { renderAgendaPdf } = await import("@/lib/elder-agenda/agenda-pdf");
-  const blob = await renderAgendaPdf({ payload, auto: data.auto, congregation: data.congregation, range: data.range, style });
+  const blob = await renderAgendaPdf({ payload: withoutPrivate(payload), auto: data.auto, congregation: data.congregation, range: data.range, style });
   await saveBlob(blob, { filename: `pauta-reuniao-anciaos-${style}-${data.visitId.slice(0, 8)}.pdf`, mimeType: "application/pdf" });
 }
 
@@ -77,6 +81,10 @@ export function AgendaLinkRow({ item }: { item: AgendaLinkItem }) {
   );
 }
 
+export const CARD_ICON: Record<AgendaCardType, typeof Lock> = {
+  notes: FileText, links: PlayCircle, eldersInfo: Users, scReply: MessageSquareReply, recs: HandHeart, local: MapPin, private: Lock,
+};
+
 export function ElderAgendaView({ data, save }: { data: AgendaData; save: AgendaSaver }) {
   const [p, setP] = useState<AgendaPayload>(data.payload);
   const [dirty, setDirty] = useState(false);
@@ -85,6 +93,7 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
   const [building, setBuilding] = useState(false);
   const [tplOpen, setTplOpen] = useState(false);
   const [pdfOpen, setPdfOpen] = useState(false);
+  const [addTo, setAddTo] = useState<string | null>(null);
   const [pdfStyle, setPdfStyle] = useState<AgendaPdfStyle>("timeline");
   const isSc = data.role === "sc";
   const offline = !!data.offline;
@@ -96,24 +105,42 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
   }, []);
   const toggle = (id: string) => setClosed((cur) => { const next = { ...cur, [id]: !cur[id] }; try { localStorage.setItem(openKey, JSON.stringify(next)); } catch { /* cheio */ } return next; });
   const locked = isLocked(p);
-  const can = (perm: AgendaAccess) => !offline && canEditNow(data.role, perm, p);
+  const canPerm = (perm: AgendaAccess) => !offline && (isSc || (!locked && canEditCard(data.role, { type: "notes", perm })));
+  const canCard = (c: AgendaCard) => !offline && (isSc || (!locked && canEditCard(data.role, c)));
   const view = useMemo(() => agendaView(p, data.auto), [p, data.auto]);
-  const numbered = useMemo(() => new Map(numberedBlocks(p.blocks).map((n) => [n.block.id, n.n])), [p.blocks]);
+  const numbered = useMemo(() => new Map(numberedBlocks(p.blocks, data.auto).map((n) => [n.block.id, n.n])), [p.blocks, data.auto]);
   const patch = (next: Partial<AgendaPayload>) => { setP((cur) => ({ ...cur, ...next })); setDirty(true); };
   const patchBlock = (id: string, next: Partial<AgendaBlock>) => {
     setP((cur) => ({ ...cur, blocks: cur.blocks.map((b) => (b.id === id ? { ...b, ...next } : b)) })); setDirty(true);
+  };
+  const patchCard = (id: string, next: Partial<AgendaCard>) => {
+    setP((cur) => ({ ...cur, blocks: cur.blocks.map((b) => ({ ...b, cards: b.cards.map((c) => (c.id === id ? { ...c, ...next } : c)) })) })); setDirty(true);
   };
   const move = (i: number, d: -1 | 1) => setP((cur) => {
     const j = i + d; if (j < 0 || j >= cur.blocks.length) return cur;
     const blocks = cur.blocks.slice(); [blocks[i], blocks[j]] = [blocks[j], blocks[i]]; setDirty(true); return { ...cur, blocks };
   });
-  const addBlock = (type: AgendaBlockType) => {
-    if (p.blocks.length >= MAX_BLOCKS) { toast.error(`Limite de ${MAX_BLOCKS} blocos.`); return; }
-    patch({ blocks: [...p.blocks, newBlock(type)] });
+  const moveCard = (b: AgendaBlock, i: number, d: -1 | 1) => {
+    const j = i + d; if (j < 0 || j >= b.cards.length) return;
+    const cards = b.cards.slice(); [cards[i], cards[j]] = [cards[j], cards[i]]; patchBlock(b.id, { cards });
+  };
+  const addBlock = () => {
+    if (p.blocks.length >= MAX_BLOCKS) { toast.error(`Limite de ${MAX_BLOCKS} tópicos.`); return; }
+    patch({ blocks: [...p.blocks, newBlock()] });
+  };
+  const addCard = (blockId: string, type: AgendaCardType) => {
+    const b = p.blocks.find((x) => x.id === blockId); setAddTo(null);
+    if (!b) return;
+    if (b.cards.length >= MAX_CARDS) { toast.error(`Limite de ${MAX_CARDS} cartões por tópico.`); return; }
+    patchBlock(b.id, { cards: [...b.cards, newCard(type)] });
   };
   const removeBlock = (b: AgendaBlock) => {
-    if (!confirm(`Apagar o bloco "${b.title}"? O conteúdo dele também sai da pauta.`)) return;
+    if (!confirm(`Apagar o tópico "${b.title}"? Os cartões dele também saem da pauta.`)) return;
     patch({ blocks: p.blocks.filter((x) => x.id !== b.id) });
+  };
+  const removeCard = (b: AgendaBlock, c: AgendaCard) => {
+    if (!confirm(`Tirar o cartão "${CARD_TYPE_LABEL[c.type]}" deste tópico?`)) return;
+    patchBlock(b.id, { cards: b.cards.filter((x) => x.id !== c.id) });
   };
 
   const onSave = async () => {
@@ -129,8 +156,8 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
     try { await exportAgendaPdf(data, p, style); } catch { toast.error("Não foi possível gerar o PDF."); } finally { setExporting(false); }
   };
 
-  const accessBadge = (perm: AgendaAccess, onChange: (a: AgendaAccess) => void, what: string) => {
-    if (!isSc) return can(perm) ? null : <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><Lock className="h-3 w-3" />Leitura</span>;
+  const accessBadge = (perm: AgendaAccess, onChange: (a: AgendaAccess) => void, what: string, editable: boolean) => {
+    if (!isSc) return editable ? null : <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><Lock className="h-3 w-3" />Leitura</span>;
     const Icon = ACCESS_ICON[perm];
     return (
       <button type="button" onClick={() => onChange(ACCESS_NEXT[perm])}
@@ -141,23 +168,23 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
     );
   };
 
-  const rich = (b: AgendaBlock, placeholder: string) =>
-    can(b.perm) ? (
+  const richField = (value: string, onChange: (html: string) => void, editable: boolean, placeholder: string) =>
+    editable ? (
       <Suspense fallback={<div className="h-24 rounded-lg bg-muted/40 animate-pulse" />}>
-        <RichNoteEditor value={b.html} onChange={(html) => patchBlock(b.id, { html })} placeholder={placeholder} minHeight="84px" maxHeight="55vh" />
+        <RichNoteEditor value={value} onChange={onChange} placeholder={placeholder} minHeight="84px" maxHeight="55vh" />
       </Suspense>
-    ) : b.html ? <BibleRefText text={b.html} className="text-sm" /> : <p className="text-sm text-muted-foreground italic">—</p>;
+    ) : value ? <BibleRefText text={value} className="text-sm" /> : <p className="text-sm text-muted-foreground italic">—</p>;
 
-  const linksEditor = (b: AgendaBlock) => {
-    const setItems = (items: AgendaLinkItem[]) => patchBlock(b.id, { items });
-    const setItem = (i: number, next: Partial<AgendaLinkItem>) => setItems(b.items.map((x, j) => (j === i ? { ...x, ...next } : x)));
-    if (!can(b.perm)) {
-      const shown = b.items.filter((it) => it.text || itemUrls(it).length);
+  const linksEditor = (c: AgendaCard, editable: boolean) => {
+    const setItems = (items: AgendaLinkItem[]) => patchCard(c.id, { items });
+    const setItem = (i: number, next: Partial<AgendaLinkItem>) => setItems(c.items.map((x, j) => (j === i ? { ...x, ...next } : x)));
+    if (!editable) {
+      const shown = c.items.filter((it) => it.text || itemUrls(it).length);
       return shown.length ? <div className="divide-y rounded-xl border px-3">{shown.map((it) => <AgendaLinkRow key={it.id} item={it} />)}</div> : null;
     }
     return (
       <div className="space-y-2">
-        {b.items.map((it, i) => (
+        {c.items.map((it, i) => (
           <div key={it.id} className="rounded-xl border p-3 space-y-2">
             <div className="flex items-center gap-1.5">
               {(Object.keys(LINK_KIND_UI) as AgendaLinkKind[]).map((k) => {
@@ -171,7 +198,7 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
                 );
               })}
               <span className="flex-1" />
-              <button type="button" onClick={() => setItems(b.items.filter((_, j) => j !== i))} aria-label="Apagar linha" className="p-2 text-muted-foreground"><Trash2 className="h-4 w-4" /></button>
+              <button type="button" onClick={() => setItems(c.items.filter((_, j) => j !== i))} aria-label="Apagar linha" className="p-2 text-muted-foreground"><Trash2 className="h-4 w-4" /></button>
             </div>
             <Input value={it.text} placeholder="Título (ex.: Salmo 23 — meditar)" onChange={(e) => setItem(i, { text: e.target.value })} maxLength={500} />
             {it.urls.map((u, k) => (
@@ -186,83 +213,151 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
             {it.urls.length < 10 ? <button type="button" onClick={() => setItem(i, { urls: [...it.urls, ""] })} className="text-primary text-sm font-medium inline-flex items-center gap-1"><Plus className="h-4 w-4" />Adicionar link</button> : null}
           </div>
         ))}
-        {b.items.length < 30 ? (
-          <Button type="button" variant="outline" size="sm" onClick={() => setItems([...b.items, { id: newId(), kind: "book", text: "", urls: [""] }])}>
-            <Plus className="h-4 w-4" />Nova recomendação
+        {c.items.length < 30 ? (
+          <Button type="button" variant="outline" size="sm" onClick={() => setItems([...c.items, { id: newId(), kind: "book", text: "", urls: [""] }])}>
+            <Plus className="h-4 w-4" />Nova fonte
           </Button>
         ) : null}
       </div>
     );
   };
 
-  const blockContent = (b: AgendaBlock, n: number) => (
-    <>
-      {b.showSubject ? (
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Tema / Assunto</Label>
-          {can(b.perm) ? <Input value={b.subject} placeholder="Assunto escolhido pelo SC" onChange={(e) => patchBlock(b.id, { subject: e.target.value })} maxLength={300} />
-            : <p className="text-sm break-words">{b.subject || "—"}</p>}
-        </div>
-      ) : null}
-      {b.type === "recs" ? (
-        data.auto.recommendations.length === 0
-          ? <p className="text-sm text-muted-foreground">Nenhuma recomendação lançada no Programa dos anciãos.</p>
-          : data.auto.recommendations.map((r, i) => (
-            <div key={r.id} className="rounded-xl border p-3 space-y-2">
-              <p className="text-sm font-semibold break-words">{n}.{i + 1} — {r.title}</p>
-              {r.info ? <p className="text-sm whitespace-pre-wrap break-words text-muted-foreground">{r.info}</p> : null}
-              <Label className="text-xs text-muted-foreground">Informação partilhada pelo CA</Label>
-              {can(b.perm) ? (
-                <Suspense fallback={<div className="h-20 rounded-lg bg-muted/40 animate-pulse" />}>
-                  <RichNoteEditor value={b.notes[r.id] ?? ""} onChange={(html) => patchBlock(b.id, { notes: { ...b.notes, [r.id]: html } })} placeholder="Informação do CA" minHeight="84px" maxHeight="45vh" />
-                </Suspense>
-              ) : b.notes[r.id] ? <BibleRefText text={b.notes[r.id]} className="text-sm" /> : <p className="text-sm text-muted-foreground italic">—</p>}
+  const recField = (c: AgendaCard, recId: string, cur: AgendaRecInfo, key: keyof AgendaRecInfo, label: string, editable: boolean) => {
+    const set = (v: string) => patchCard(c.id, { recInfo: { ...c.recInfo, [recId]: { ...cur, ...(c.recInfo[recId] ?? {}), [key]: v } } });
+    return (
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">{label}</Label>
+        {key === "info" ? richField(cur.info, set, editable, label)
+          : editable ? <Input value={cur[key]} onChange={(e) => set(e.target.value)} maxLength={key === "family" ? 1000 : 300} className="h-9" />
+          : <p className="text-sm break-words whitespace-pre-wrap">{cur[key] || "—"}</p>}
+      </div>
+    );
+  };
+
+  const cardBody = (c: AgendaCard, n: number) => {
+    const editable = canCard(c);
+    const set = (attachments: AgendaAttachment[]) => patchCard(c.id, { attachments });
+    return (
+      <>
+        {c.showSubject ? (
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Tema / Assunto</Label>
+            {editable ? <Input value={c.subject} placeholder="Assunto escolhido pelo SC" onChange={(e) => patchCard(c.id, { subject: e.target.value })} maxLength={300} />
+              : <p className="text-sm break-words">{c.subject || "—"}</p>}
+          </div>
+        ) : null}
+        {c.type === "recs" ? (
+          data.auto.recommendations.length === 0
+            ? <p className="text-sm text-muted-foreground">Nenhuma recomendação lançada no Programa dos anciãos.</p>
+            : data.auto.recommendations.map((r, i) => {
+              const cur = recInfoView(c, r);
+              return (
+                <div key={r.id} className="rounded-xl border p-3 space-y-2">
+                  <p className="text-sm font-semibold break-words">{n}.{i + 1} — {r.title}</p>
+                  {recField(c, r.id, cur, "family", "Membros da família", editable)}
+                  {recField(c, r.id, cur, "fieldGroup", "Grupo de campo", editable)}
+                  {recField(c, r.id, cur, "info", "Informações espirituais, pessoais e familiares", editable)}
+                  {c.notes[r.id] ? (
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Informação partilhada pelo CA</Label>
+                      {richField(c.notes[r.id], (html) => patchCard(c.id, { notes: { ...c.notes, [r.id]: html } }), editable, "Informação do CA")}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })
+        ) : null}
+        {c.type === "local" ? (
+          data.auto.local.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum assunto local lançado no Programa dos anciãos.</p>
+          : data.auto.local.map((l) => (
+            <div key={l.id} className="rounded-xl border p-3 space-y-1 text-sm">
+              <p className="break-words"><span className="text-muted-foreground">Quem indicou: </span>{l.suggestedBy || "—"}</p>
+              <p className="break-words"><span className="text-muted-foreground">Tema: </span>{l.subject || "—"}</p>
+              {l.sources ? <p className="break-words whitespace-pre-wrap"><span className="text-muted-foreground">Fontes: </span>{l.sources}</p> : null}
             </div>
           ))
-      ) : null}
-      {b.type === "local" ? data.auto.local.map((l) => (
-        <div key={l.id} className="rounded-xl border p-3 space-y-1 text-sm">
-          <p className="break-words"><span className="text-muted-foreground">Quem indicou: </span>{l.suggestedBy || "—"}</p>
-          <p className="break-words"><span className="text-muted-foreground">Tema: </span>{l.subject || "—"}</p>
-          {l.sources ? <p className="break-words whitespace-pre-wrap"><span className="text-muted-foreground">Fontes: </span>{l.sources}</p> : null}
-        </div>
-      )) : null}
-      {b.type === "links" ? linksEditor(b) : null}
-      {b.type === "links" && !can(b.perm) && !b.html ? null : (
-        <div className="space-y-1">
-          {b.type !== "text" ? <Label className="text-xs text-muted-foreground">Anotações</Label> : null}
-          {rich(b, b.type === "text" ? "Escreva aqui" : "Anotações")}
-        </div>
-      )}
-    </>
-  );
+        ) : null}
+        {c.type === "links" ? linksEditor(c, editable) : null}
+        {c.type === "recs" || (c.type === "links" && !editable && !c.html) ? null : (
+          <div className="space-y-1">
+            {c.type === "links" || c.type === "local" ? <Label className="text-xs text-muted-foreground">Anotações</Label> : null}
+            {richField(c.html, (html) => patchCard(c.id, { html }), editable, c.type === "private" ? "Só você vê esta nota" : "Escreva aqui")}
+          </div>
+        )}
+        {ATTACHABLE.includes(c.type) ? (
+          <AgendaAttachments card={c} editable={isSc && !offline} api={data.attachmentApi} offline={offline} onChange={set} />
+        ) : null}
+      </>
+    );
+  };
 
-  const structureControls = (b: AgendaBlock, i: number) => (
-    <div className="space-y-2 rounded-xl bg-muted/40 p-3">
-      <Input value={b.title} onChange={(e) => patchBlock(b.id, { title: e.target.value.replace(/^\s*\d+[).]\s*/, "") })} maxLength={200} aria-label="Título do bloco" className="font-semibold" />
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Input type="number" inputMode="numeric" min={0} max={240} value={b.minutes} onChange={(e) => patchBlock(b.id, { minutes: Math.max(0, Math.min(240, Number(e.target.value) || 0)) })} className="h-8 w-16" />min
-        </label>
-        {accessBadge(b.perm, (perm) => patchBlock(b.id, { perm }), b.title)}
-        {b.type === "text" ? (
-          <button type="button" onClick={() => patchBlock(b.id, { showSubject: !b.showSubject })}
-            className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${b.showSubject ? "border-primary text-primary" : "border-border text-muted-foreground"}`}>
+  const cardView = (c: AgendaCard, n: number) => {
+    const Icon = CARD_ICON[c.type];
+    const editable = canCard(c);
+    return (
+      <section key={c.id} className={`space-y-2 rounded-2xl p-3 ${c.type === "private" ? "border border-dashed border-primary/40 bg-primary/5" : "bg-muted/30"}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon className="h-4 w-4 text-primary shrink-0" />
+          <span className="flex-1 min-w-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground break-words">{CARD_TYPE_LABEL[c.type]}</span>
+          {c.type === "private" ? <span className="text-[11px] text-muted-foreground shrink-0">Só você vê · fora do PDF</span>
+            : isSc ? <span className="text-[11px] text-muted-foreground shrink-0">{ACCESS_LABEL[c.perm]}</span>
+            : !editable ? accessBadge(c.perm, () => undefined, CARD_TYPE_LABEL[c.type], false) : null}
+        </div>
+        {cardBody(c, n)}
+      </section>
+    );
+  };
+
+  const buildCardRow = (b: AgendaBlock, c: AgendaCard, i: number) => {
+    const Icon = CARD_ICON[c.type];
+    return (
+      <div key={c.id} className="flex flex-wrap items-center gap-1.5 rounded-xl border bg-background px-2.5 py-2">
+        <div className="flex w-full items-center gap-2 min-w-0">
+          <Icon className="h-4 w-4 text-primary shrink-0" />
+          <span className="flex-1 min-w-0 text-sm font-medium break-words">{CARD_TYPE_LABEL[c.type]}</span>
+        </div>
+        {c.type === "private" ? <span className="text-[11px] text-muted-foreground">Só você</span>
+          : accessBadge(c.perm, (perm) => patchCard(c.id, { perm }), CARD_TYPE_LABEL[c.type], true)}
+        {c.type === "notes" ? (
+          <button type="button" onClick={() => patchCard(c.id, { showSubject: !c.showSubject })}
+            className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${c.showSubject ? "border-primary text-primary" : "border-border text-muted-foreground"}`}>
             Tema/Assunto
           </button>
         ) : null}
         <span className="flex-1" />
-        <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Subir" className="p-1.5 text-muted-foreground disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button>
-        <button type="button" onClick={() => move(i, 1)} disabled={i === p.blocks.length - 1} aria-label="Descer" className="p-1.5 text-muted-foreground disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button>
+        <button type="button" onClick={() => moveCard(b, i, -1)} disabled={i === 0} aria-label="Subir cartão" className="p-1.5 text-muted-foreground disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button>
+        <button type="button" onClick={() => moveCard(b, i, 1)} disabled={i === b.cards.length - 1} aria-label="Descer cartão" className="p-1.5 text-muted-foreground disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button>
+        <button type="button" onClick={() => removeCard(b, c)} aria-label="Tirar cartão" className="p-1.5 text-destructive"><Trash2 className="h-4 w-4" /></button>
+      </div>
+    );
+  };
+
+  const structureControls = (b: AgendaBlock, i: number) => (
+    <div className="space-y-2 rounded-xl bg-muted/40 p-3">
+      <Input value={b.title} onChange={(e) => patchBlock(b.id, { title: e.target.value.replace(/^\s*\d+[).]\s*/, "") })} maxLength={200} aria-label="Título do tópico" className="font-semibold" />
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Input type="number" inputMode="numeric" min={0} max={240} value={b.minutes} onChange={(e) => patchBlock(b.id, { minutes: Math.max(0, Math.min(240, Number(e.target.value) || 0)) })} className="h-8 w-16" />min
+        </label>
+        <span className="flex-1" />
+        <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Subir tópico" className="p-1.5 text-muted-foreground disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button>
+        <button type="button" onClick={() => move(i, 1)} disabled={i === p.blocks.length - 1} aria-label="Descer tópico" className="p-1.5 text-muted-foreground disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button>
         <button type="button" onClick={() => patchBlock(b.id, { hidden: !b.hidden })} aria-label={b.hidden ? "Mostrar" : "Ocultar"} className="p-1.5 text-muted-foreground">{b.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
-        <button type="button" onClick={() => removeBlock(b)} aria-label="Apagar bloco" className="p-1.5 text-destructive"><Trash2 className="h-4 w-4" /></button>
+        <button type="button" onClick={() => removeBlock(b)} aria-label="Apagar tópico" className="p-1.5 text-destructive"><Trash2 className="h-4 w-4" /></button>
+      </div>
+      {autoHidden(b, data.auto) ? <p className="text-[11px] text-muted-foreground">Oculto: nada no Programa dos anciãos.</p> : null}
+      <div className="space-y-1.5">
+        {b.cards.map((c, j) => buildCardRow(b, c, j))}
+        {b.cards.length === 0 ? <p className="text-xs text-muted-foreground">Sem cartões: só o título aparece.</p> : null}
+        <button type="button" onClick={() => setAddTo(b.id)} className="w-full rounded-xl border border-dashed py-2 text-sm font-medium text-primary inline-flex items-center justify-center gap-1">
+          <Plus className="h-4 w-4" />Adicionar cartão
+        </button>
       </div>
     </div>
   );
 
   const meetingMs = data.auto.meetingAt ? Date.parse(data.auto.meetingAt) : NaN;
   const deadlineMs = p.deadlineAt ? Date.parse(p.deadlineAt) : NaN;
-
   return (
     <div className="space-y-3 pb-24">
       <header className="text-center space-y-0.5">
@@ -309,11 +404,11 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
 
       <Card>
         <CardContent className="pt-4 space-y-1">
-          <div className="flex justify-end">{accessBadge(p.prayersPerm, (prayersPerm) => patch({ prayersPerm }), "Orações e ata")}</div>
+          <div className="flex justify-end">{accessBadge(p.prayersPerm, (prayersPerm) => patch({ prayersPerm }), "Orações e ata", canPerm(p.prayersPerm))}</div>
           {([["Oração inicial", "prayerOpen", data.auto.openingPrayer ?? ""], ["Oração recomendação", "prayerRec", ""], ["Oração final", "prayerClose", data.auto.closingPrayer ?? ""], ["Ata [Sfg 1:6]", "minutesTaker", ""]] as const).map(([label, k, fb]) => (
             <div key={k} className="flex items-center gap-2 min-w-0 py-1">
               <Label className="w-32 shrink-0 text-xs text-muted-foreground">{label}</Label>
-              {can(p.prayersPerm)
+              {canPerm(p.prayersPerm)
                 ? <Input value={p[k]} placeholder={fb || "—"} onChange={(e) => patch({ [k]: e.target.value } as Partial<AgendaPayload>)} className="h-9" maxLength={120} />
                 : <span className="text-sm break-words">{p[k] || fb || "—"}</span>}
             </div>
@@ -326,11 +421,12 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
       </Card>
 
       {p.blocks.map((b, i) => {
-        if (b.hidden && !(isSc && building)) return null;
+        const hiddenNow = b.hidden || autoHidden(b, data.auto);
+        if (hiddenNow && !(isSc && building)) return null;
         const n = numbered.get(b.id);
         const open = building || !closed[b.id];
         return (
-          <Card key={b.id} className={`overflow-hidden ${b.hidden ? "opacity-60" : ""}`}>
+          <Card key={b.id} className={`overflow-hidden ${hiddenNow ? "opacity-60" : ""}`}>
             <button type="button" onClick={() => !building && toggle(b.id)} aria-expanded={open} className="flex w-full items-center gap-2 px-4 py-3 text-left min-w-0">
               <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-primary/10 px-1.5 text-xs font-bold text-primary shrink-0">{n ?? "–"}</span>
               <span className="flex-1 min-w-0 font-semibold break-words">{b.title}</span>
@@ -338,25 +434,32 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
               {!building ? <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${open ? "rotate-180" : ""}`} /> : null}
             </button>
             <CardContent className={open ? "space-y-3 pt-0" : "hidden"}>
-              {isSc && building ? structureControls(b, i) : !isSc && !can(b.perm) ? <div className="flex justify-end">{accessBadge(b.perm, () => undefined, b.title)}</div> : null}
-              {blockContent(b, n ?? 0)}
+              {isSc && building ? structureControls(b, i) : b.cards.map((c) => cardView(c, n ?? 0))}
             </CardContent>
           </Card>
         );
       })}
 
       {isSc && building ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button type="button" variant="outline" className="w-full border-dashed"><Plus className="h-4 w-4" />Adicionar bloco</Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="w-64">
-            {(Object.keys(BLOCK_TYPE_LABEL) as AgendaBlockType[]).map((t) => (
-              <DropdownMenuItem key={t} onSelect={() => addBlock(t)}>{BLOCK_TYPE_LABEL[t]}</DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button type="button" variant="outline" className="w-full border-dashed" onClick={addBlock}><Plus className="h-4 w-4" />Adicionar tópico</Button>
       ) : null}
+
+      <Sheet open={!!addTo} onOpenChange={(v) => { if (!v) setAddTo(null); }}>
+        <SheetContent side="bottom" className="rounded-t-3xl pb-8">
+          <SheetHeader><SheetTitle>Escolha o estilo do cartão</SheetTitle></SheetHeader>
+          <div className="mt-3 divide-y rounded-2xl border">
+            {CARD_TYPES.map((t) => {
+              const Icon = CARD_ICON[t];
+              return (
+                <button key={t} type="button" onClick={() => addTo && addCard(addTo, t)} className="flex w-full items-center gap-3 px-4 py-3 text-left">
+                  <Icon className="h-5 w-5 text-primary shrink-0" />
+                  <span className="text-sm font-medium">{CARD_TYPE_LABEL[t]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <div className="sticky bottom-3 z-10 flex gap-2 rounded-2xl border bg-background/95 p-2 shadow-lg backdrop-blur">
         <Button variant="outline" className="flex-1" onClick={() => setPdfOpen(true)} disabled={exporting}>

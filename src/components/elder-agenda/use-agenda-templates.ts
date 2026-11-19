@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { withNetworkWindow } from "@/lib/net-policy";
-import { normalizeBlocks, type AgendaBlock } from "@/lib/elder-agenda/agenda";
+import { normalizeBlocks, stripForTemplate, type AgendaBlock } from "@/lib/elder-agenda/agenda";
 
 export interface AgendaTemplate { id: string; name: string; blocks: AgendaBlock[]; is_default: boolean }
 const CACHE = "visita-sc:agenda-templates";
@@ -31,7 +31,7 @@ export function useAgendaTemplates(enabled: boolean) {
     if (!u.user) throw new Error("Entre na sua conta.");
     if (makeDefault) await supabase.from("elder_agenda_templates").update({ is_default: false }).eq("superintendent_id", u.user.id);
     const { error } = await withNetworkWindow(async () => supabase.from("elder_agenda_templates")
-      .insert({ superintendent_id: u.user!.id, name: name.slice(0, 120), blocks: blocks.map((b) => ({ ...b, notes: {} })) as never, is_default: makeDefault }));
+      .insert({ superintendent_id: u.user!.id, name: name.slice(0, 120), blocks: stripForTemplate(blocks) as never, is_default: makeDefault }));
     if (error) throw error;
     await reload();
   }, [reload]);
@@ -39,7 +39,7 @@ export function useAgendaTemplates(enabled: boolean) {
   const update = useCallback(async (id: string, patch: Partial<Pick<AgendaTemplate, "name" | "blocks">>) => {
     const row: Record<string, unknown> = {};
     if (patch.name != null) row.name = patch.name.slice(0, 120);
-    if (patch.blocks) row.blocks = patch.blocks.map((b) => ({ ...b, notes: {} }));
+    if (patch.blocks) row.blocks = stripForTemplate(patch.blocks);
     const { error } = await withNetworkWindow(async () => supabase.from("elder_agenda_templates").update(row as never).eq("id", id));
     if (error) throw error;
     await reload();

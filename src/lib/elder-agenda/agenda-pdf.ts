@@ -3,8 +3,8 @@
 // Os blocos saem na ordem e com a numeração escolhidas; links viram "Clique aqui" clicável.
 import { createJsPdfCompat, type JsPdfCompat } from "@/lib/pdf/pdf-engine";
 import {
-  agendaView, htmlToPlain, itemUrls, numberedBlocks,
-  type AgendaAuto, type AgendaBlock, type AgendaLinkKind, type AgendaPayload,
+  CARD_TYPE_LABEL, agendaView, htmlToPlain, itemUrls, numberedBlocks, recInfoView, sharedAttachments,
+  type AgendaAuto, type AgendaBlock, type AgendaCard, type AgendaLinkKind, type AgendaPayload,
 } from "./agenda";
 
 export const AGENDA_VERSES = "Isa 50:4; Pro 18:13,17; Tia 1:19; 1 Cor 4:6; 2 Cor 1:24; Col 2:8; Mat 5:41; Tito 1:5";
@@ -34,7 +34,7 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
   const W = pdf.pageW, H = pdf.pageH, M = 16;
   const gutter = style === "timeline" ? 22 : style === "formal" ? 12 : 0;
   const X = M + gutter, CW = W - M - X; // coluna de conteúdo
-  const p = input.payload, a = input.auto, v = agendaView(p, a);
+  const p = { ...input.payload, blocks: input.payload.blocks.map((b) => ({ ...b, cards: b.cards.filter((c) => c.type !== "private") })) }, a = input.auto, v = agendaView(p, a);
   const color = (c: RGB) => pdf.setTextColor(c[0], c[1], c[2]);
   const fill = (c: RGB) => pdf.setFillColor(c[0], c[1], c[2]);
   const draw = (c: RGB, w = 0.3) => { pdf.setDrawColor(c[0], c[1], c[2]); pdf.setLineWidth(w); };
@@ -90,7 +90,7 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
 
   // ---------- Blocos ----------
   const start = a.meetingAt ? new Date(a.meetingAt) : null;
-  const list = numberedBlocks(p.blocks);
+  const list = numberedBlocks(p.blocks, a);
   for (const { block: b, n, startMin } of list) {
     ensure(18);
     const top = y, pageTop = page;
@@ -126,27 +126,11 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
       y += 3 + tl.length * 4.8;
     }
 
-    // Conteúdo
+    // Conteúdo: cartões na ordem escolhida
     const ix = style === "cards" ? M + 4.5 : X, iw = style === "cards" ? W - 2 * M - 9 : CW;
-    if (b.showSubject) { label("Tema / Assunto", ix); para(b.subject || "—", ix, iw, 10); }
-    const plain = htmlToPlain(b.html);
-    if (b.type === "recs") {
-      const recs = a.recommendations;
-      if (!recs.length) para("Nenhuma recomendação lançada.", ix, iw, 9);
-      recs.forEach((r, i) => {
-        ensure(10); pdf.setFont(true); pdf.setFontSize(9.5); color(INK); pdf.text(`${n}.${i + 1}  ${r.title}`, ix, y + 4); y += 5.5;
-        para([r.info, htmlToPlain(b.notes[r.id] ?? "")].filter(Boolean).join("\n"), ix + 5, iw - 5, 9);
-      });
-    } else if (b.type === "local") {
-      a.local.forEach((l) => {
-        ensure(10);
-        pdf.setFont(true); pdf.setFontSize(9.5); color(INK); pdf.text(pdf.splitTextToSize(l.subject || "Assunto", iw)[0] ?? "", ix, y + 4); y += 5;
-        para([l.suggestedBy ? `Quem indicou: ${l.suggestedBy}` : "", l.sources ? `Fontes: ${l.sources}` : "", l.info].filter(Boolean).join("\n"), ix + 5, iw - 5, 9);
-      });
-    }
-    if (plain) para(plain, ix, iw);
-    if (b.type === "links") {
-      for (const it of b.items) {
+    const multi = b.cards.length > 1;
+    const linksOf = (c: AgendaCard) => {
+      for (const it of c.items) {
         const urls = itemUrls(it);
         if (!it.text && !urls.length) continue;
         ensure(7);
@@ -171,8 +155,37 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
         }
         y += Math.max(1, lines.length) * 4.1 + 2;
       }
+    };
+    for (const c of b.cards) {
+      if (multi && c.type !== "notes") label(CARD_TYPE_LABEL[c.type], ix);
+      if (c.showSubject) { label("Tema / Assunto", ix); para(c.subject || "—", ix, iw, 10); }
+      const plain = htmlToPlain(c.html);
+      if (c.type === "recs") {
+        a.recommendations.forEach((r, i) => {
+          const ri = recInfoView(c, r);
+          ensure(10); pdf.setFont(true); pdf.setFontSize(9.5); color(INK); pdf.text(`${n}.${i + 1}  ${r.title}`, ix, y + 4); y += 5.5;
+          para([ri.family ? `Membros da família: ${ri.family}` : "", ri.fieldGroup ? `Grupo de campo: ${ri.fieldGroup}` : "",
+            htmlToPlain(ri.info), htmlToPlain(c.notes[r.id] ?? "")].filter(Boolean).join("\n"), ix + 5, iw - 5, 9);
+        });
+      } else if (c.type === "local") {
+        a.local.forEach((l) => {
+          ensure(10);
+          pdf.setFont(true); pdf.setFontSize(9.5); color(INK); pdf.text(pdf.splitTextToSize(l.subject || "Assunto", iw)[0] ?? "", ix, y + 4); y += 5;
+          para([l.suggestedBy ? `Quem indicou: ${l.suggestedBy}` : "", l.sources ? `Fontes: ${l.sources}` : "", l.info].filter(Boolean).join("\n"), ix + 5, iw - 5, 9);
+        });
+      }
+      if (plain && c.type !== "recs") para(plain, ix, iw);
+      if (c.type === "links") linksOf(c);
+      for (const at of sharedAttachments(c)) {
+        ensure(5); pdf.setFont(false); pdf.setFontSize(8.5); color(MUTED);
+        const t = `Anexo: ${at.title}`.slice(0, 90);
+        pdf.text(t, ix, y + 3.5);
+        if (at.kind === "link") { color(LINK); pdf.text("Abrir", ix + iw, y + 3.5, { align: "right" }); pdf.link(ix + iw - 10, y, 10, 4.5, at.url); }
+        else { pdf.text("no app", ix + iw, y + 3.5, { align: "right" }); }
+        y += 4.6;
+      }
+      if (!plain && !c.showSubject && (c.type === "notes" || c.type === "eldersInfo" || c.type === "scReply")) blank(2);
     }
-    if (!plain && !b.showSubject && b.type === "text") blank(2);
 
     // Moldura/linha do bloco
     if (style === "timeline" && page === pageTop) { draw(RULE, 0.4); pdf.line(M + 3, top + 7, M + 3, Math.max(top + 9, y - 1)); fill(NAVY); pdf.rect(M + 2.1, top + 6.2, 1.8, 1.8, "F"); }

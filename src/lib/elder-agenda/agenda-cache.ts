@@ -1,6 +1,6 @@
 // Cópia da pauta no aparelho: abre sem internet com os dados do último carregamento
 // (depois do prazo, é a versão fechada que vale na reunião).
-import type { AgendaAuto, AgendaPayload, AgendaRole } from "./agenda";
+import { normalizeAgenda, type AgendaAuto, type AgendaPayload, type AgendaRole } from "./agenda";
 
 export interface CachedAgenda {
   visitId: string; congregation: string; range: string; role: AgendaRole;
@@ -16,7 +16,7 @@ export function readAgendaCache(scope: string): CachedAgenda | null {
     const raw = localStorage.getItem(KEY(scope));
     if (!raw) return null;
     const d = JSON.parse(raw) as CachedAgenda;
-    return d && d.payload && d.payload.v === 2 ? d : null;
+    return d && d.payload ? { ...d, payload: normalizeAgenda(d.payload) } : null;
   } catch { return null; }
 }
 

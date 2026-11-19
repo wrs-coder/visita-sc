@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getElderAgenda, saveElderAgenda } from "@/lib/elder-agenda.functions";
+import { getAgendaAttachmentUrl, getElderAgenda, saveElderAgenda, scAttachmentUploadUrl, scDeleteAttachment } from "@/lib/elder-agenda.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { cloudAttachmentCount } from "@/lib/elder-agenda/agenda";
+import type { AgendaAttachmentApi } from "./AgendaAttachments";
 import { withNetworkWindow } from "@/lib/net-policy";
 import { readAgendaCache, writeAgendaCache } from "@/lib/elder-agenda/agenda-cache";
 import type { AgendaData, AgendaSaver } from "./ElderAgendaView";
@@ -9,7 +12,10 @@ import type { AgendaData, AgendaSaver } from "./ElderAgendaView";
 export function useElderAgenda(visitId: string | null | undefined) {
   const fnGet = useServerFn(getElderAgenda);
   const fnSave = useServerFn(saveElderAgenda);
-  const [data, setData] = useState<AgendaData | null>(null);
+  const fnUrl = useServerFn(getAgendaAttachmentUrl);
+  const fnUp = useServerFn(scAttachmentUploadUrl);
+  const fnDel = useServerFn(scDeleteAttachment);
+  const [raw, setData] = useState<AgendaData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -35,6 +41,21 @@ export function useElderAgenda(visitId: string | null | undefined) {
     if (r.ok) setData((d) => { if (!d) return d; const next = { ...d, payload }; writeAgendaCache(`visit.${visitId}`, next); return next; });
     return r.ok ? { ok: true } : { ok: false, error: r.error };
   }, [visitId, fnSave]);
+
+  const attachmentApi = useMemo<AgendaAttachmentApi | undefined>(() => {
+    if (!visitId) return undefined;
+    return {
+      urlFor: async (path) => { const r = await withNetworkWindow(() => fnUrl({ data: { visitId, path } })); return r.ok ? r.url : null; },
+      upload: async (blob, ext) => {
+        const r = await withNetworkWindow(() => fnUp({ data: { visitId, ext, size: blob.size, currentCount: raw ? cloudAttachmentCount(raw.payload) : 0 } }));
+        if (!r.ok) return { error: r.error };
+        const { error: e } = await supabase.storage.from("elder-agenda-files").uploadToSignedUrl(r.path, r.token, blob, { contentType: ext === "pdf" ? "application/pdf" : "image/jpeg" });
+        return e ? { error: "Não foi possível enviar." } : { path: r.path };
+      },
+      remove: async (path) => { await withNetworkWindow(() => fnDel({ data: { visitId, path } })); },
+    };
+  }, [visitId, fnUrl, fnUp, fnDel, raw]);
+  const data = useMemo(() => (raw ? { ...raw, attachmentApi } : null), [raw, attachmentApi]);
 
   return { data, error, loading, reload, save };
 }
