@@ -12,6 +12,7 @@ const auto = { ...emptyAuto(), recommendations: [{ id: "r1", title: "João", fam
 
 describe("pauta: nomes dos estilos", () => {
   it("usa os nomes combinados", () => {
+    expect(CARD_TYPE_LABEL.notes).toBe("Informações do SC");
     expect(CARD_TYPE_LABEL.links).toBe("Fontes de matéria");
     expect(CARD_TYPE_LABEL.scReply).toBe("Resposta do SC");
     expect(ACCESS_LABEL.coordinator).toBe("C.Serviço");

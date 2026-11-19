@@ -33,7 +33,7 @@ export interface AgendaPayload {
 
 /** Um único nome por estilo: usado na lista de escolha, no editor e no PDF. */
 export const CARD_TYPE_LABEL: Record<AgendaCardType, string> = {
-  notes: "Anotações", links: "Fontes de matéria", eldersInfo: "Informações dos anciãos", scReply: "Resposta do SC",
+  notes: "Informações do SC", links: "Fontes de matéria", eldersInfo: "Informações dos anciãos", scReply: "Resposta do SC",
   recs: "Recomendações de irmãos", local: "Assunto local", private: "Nota privada do SC",
 };
 export const CARD_TYPES: AgendaCardType[] = ["notes", "links", "eldersInfo", "scReply", "recs", "local", "private"];
