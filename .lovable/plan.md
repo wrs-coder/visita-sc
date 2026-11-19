@@ -52,7 +52,7 @@
 ┌─────────────────────────────────┐
 │ ▬▬▬                             │
 │ Minhas informações       Salvar │
-│ Seu nome  [ João Silva        ] │
+│ Nome (opcional) [ João Silva  ] │
 │ ☑ Visitou os inativos?          │
 │ ☐ Pioneiros foram ajudados?     │
 │ 1. Qual a maior necessidade?    │
@@ -80,6 +80,7 @@
 ```
 
 ## Regras
+- O **nome é opcional**: sem nome, a resposta aparece como "Ancião 1", "Ancião 2"... O app sabe quem escreveu pelo aparelho, não pelo nome.
 - Cada ancião só edita/apaga **a sua** resposta; o SC pode editar ou apagar qualquer uma.
 - Todos os anciãos com acesso ao cartão **veem** todas as respostas (como hoje).
 - Prazo de preenchimento e "Ocultar dos anciãos" continuam valendo.
