@@ -2,7 +2,23 @@
 
 ## Resposta rápida: onde e como
 - **Onde:** uma nova pílula **"Pauta"** dentro do *Programa da visita* (ao lado de Meio de semana, Fim de semana, Anciãos...). A pauta é da visita, então fica junto da semana da visita, e o antigo "Programa dos anciãos" continua funcionando igual.
-- **Atalho:** no Dashboard, tela *Visita*, um cartão "Pauta dos anciãos" que abre direto nela.
+- **Dashboard:** a aba **"Pastoreio"** passa a se chamar **"Anciãos"** (nome sugerido; pode ser outro da sua lista). Nela entra o cartão **"Pauta da reunião com os anciãos"**, que recolhe e expande como os outros cartões, com os links de leitura, artigo e vídeo abrindo direto.
+
+```text
+┌──────────────────────────────┐
+│ Agenda  Esboços  Visita [Anciãos]
+├──────────────────────────────┤
+│ ✋ Pauta – reunião c/ anciãos ▾│
+│   Sexta 20/11 · 19:00        │
+│   Encorajamentos · 15 min    │
+│   📖 Leitura ........ 🔗     │
+│   ▶ Vídeo ........... 🔗     │
+│   1) Cartas · 2) Recom. ·   │
+│   5) Assunto local           │
+│   [ Abrir pauta completa › ] │
+│ (cartões de pastoreio atuais)│
+└──────────────────────────────┘
+```
 - **Anciãos sem cadastro:** veem e preenchem a pauta pelo acesso já existente **"Corpo de anciãos e ESC"** (código de convite da congregação), sem criar link novo. Anciãos com cadastro veem a pauta no app normalmente.
 - **Como executar:** em 3 etapas, cada uma testável antes da próxima (ver final).
 
@@ -73,7 +89,7 @@ Usam o mesmo editor do modo editar esboço (barra no rodapé, estilos, listas, c
 PDF A4 no mesmo layout do modelo enviado (título, faixa de orações/ata/tempo, caixas com bordas, tempos à direita, links "Clique aqui!" funcionando).
 
 ## Etapas
-1. **Pauta do SC**: pílula "Pauta", tópicos, preenchimento automático, editor, PDF.
+1. **Pauta do SC** (inclui o cartão no Dashboard e o novo nome da aba): pílula "Pauta", tópicos, preenchimento automático, editor, PDF.
 2. **Permissões por campo**: selos SC / Coordenador / Todos.
 3. **Acesso dos anciãos**: anciãos cadastrados no app + nova aba "Pauta" no acesso Corpo de anciãos, com salvamento e aviso de conflito.
 
