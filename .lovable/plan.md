@@ -1,101 +1,87 @@
-# Pauta dos anciãos — ajustes e pauta montável
+# Pauta: tópicos com cartões à escolha
 
-## 1. "Coordenador" vira "C.Serviço"
-- O selo de quem edita passa a mostrar: **Só SC / C.Serviço / Todos**.
-- "C.Serviço" continua valendo para coordenador, secretário e superintendente de serviço (a regra não muda, só o nome).
+## A ideia
+Hoje cada bloco da pauta é de um tipo só. Passa a ser assim:
 
-## 2. Tema/Assunto livre
-- Em "Encorajamentos e conselhos", o campo **Tema/Assunto** deixa de vir preenchido com o tema da reunião. Fica vazio para o SC escrever o assunto que escolher.
+- **Tópico** = o título numerado (ex.: "1. Encorajamentos e conselhos"), com minutos.
+- Dentro de cada tópico, o superintendente escolhe **quais cartões** quer, em qualquer ordem, quantos quiser (ou nenhum).
 
-## 3. Recomendações com ícones e vários links
-Cada linha tem um ícone (Leitura / Artigo / Vídeo), um texto e **quantos links quiser**.
+Estilos de cartão disponíveis:
 
+| Cartão | O que tem |
+|---|---|
+| Anotações | editor do esboço + Tema/Assunto opcional |
+| Assistir, recapitular e meditar | linhas com ícone (livro / livros / play) + até 10 links |
+| Informações dos anciãos | campo livre para os anciãos escreverem |
+| Leitura e meditação do SC | recomendação final do superintendente |
+| Recomendações de irmãos | puxa as recomendações do Programa dos anciãos |
+| Assunto local | puxa os assuntos locais do Programa dos anciãos |
+
+Cada cartão tem seu próprio selo **Só SC / C.Serviço / Todos** (ex.: no mesmo tópico, as anotações são só do SC e as informações dos anciãos são de todos).
+
+## Tela "Montar pauta" (modo edição)
 ```text
-┌─────────────────────────────────┐
-│ Recomendações                    │
-│ [📖] Salmo 23 — meditar          │
-│      🔗 jw.org/...          ✕    │
-│      🔗 wol.jw.org/...      ✕    │
-│      + Adicionar link            │
-│ [▶] Vídeo: Seja um pastor        │
-│      🔗 jw.org/...          ✕    │
-│ + Nova recomendação  (📖 📚 ▶)   │
-└─────────────────────────────────┘
+┌─────────────────────────────┐
+│ ‹ Pauta        Montar  Pronto│
+├─────────────────────────────┤
+│ ┌─────────────────────────┐ │
+│ │ 1  Encorajamentos e   ✎ │ │
+│ │    conselhos    15 min  │ │
+│ │ ─────────────────────── │ │
+│ │ ≡ 📝 Anotações  Só SC ↑↓🗑│ │
+│ │ ≡ ▶ Assistir e meditar  │ │
+│ │       Só SC       ↑↓🗑   │ │
+│ │ ≡ 👥 Info. dos anciãos   │ │
+│ │       Todos       ↑↓🗑   │ │
+│ │  ⊕ Adicionar cartão     │ │
+│ └─────────────────────────┘ │
+│ ┌─────────────────────────┐ │
+│ │ 2  Revisão das cartas ✎ │ │
+│ │                  5 min  │ │
+│ │ ≡ 📝 Anotações C.Serviço │ │
+│ │  ⊕ Adicionar cartão     │ │
+│ └─────────────────────────┘ │
+│     ⊕ Adicionar tópico      │
+└─────────────────────────────┘
 ```
-- Ícones iguais aos seus anexos: livro aberto (leitura), livros empilhados (artigo), botão play (vídeo).
-- Na pauta (tela, cartão do Dashboard e PDF) aparece um botão **"Clique aqui"**; ao tocar, todos os links daquela linha abrem no navegador.
 
-## 4. Pauta montável por cada superintendente
-Sim, é possível. A pauta vira uma lista de **blocos** que o SC monta como quiser.
-
+Ao tocar "⊕ Adicionar cartão" abre uma folha de baixo (estilo One UI):
 ```text
-┌─────────────────────────────────┐
-│ Pauta            [✎ Montar]      │
-├─────────────────────────────────┤
-│ ≡ Encorajamentos e conselhos  ⋯ │
-│ ≡ 1) Revisão das cartas  5 min ⋯ │
-│ ≡ 2) Recomendações      20 min ⋯ │
-│ ≡ 5) Assunto local      10 min ⋯ │
-│ + Adicionar bloco                │
-└─────────────────────────────────┘
- ⋯ = Renomear · Minutos · Quem edita
-     · Subir/Descer · Ocultar · Apagar
+┌─────────────────────────────┐
+│        ━━━━                 │
+│  Escolha o estilo do cartão │
+│  📝 Anotações               │
+│  ▶  Assistir, recapitular   │
+│  👥 Informações dos anciãos │
+│  📖 Leitura e meditação SC  │
+│  🙋 Recomendações de irmãos │
+│  📍 Assunto local           │
+└─────────────────────────────┘
 ```
-- **Tudo editável:** título de cada bloco, minutos, ordem (arrastar ≡ ou setas), ocultar ou apagar.
-- **Tipos de bloco para adicionar:** Texto livre (editor do esboço), Lista de links/recomendações, Recomendações de irmãos (puxa do Programa dos anciãos), Assunto local (puxa do Programa), Orações e ata, Cartas.
-- **Modelo próprio:** o SC salva a montagem como "Meu modelo de pauta" e cada nova visita já começa com ela. Botão "Restaurar padrão" volta ao modelo atual.
-- Cada superintendente tem o seu modelo; nada de um afeta outro.
-- **Numeração automática:** os títulos não têm mais número fixo ("1)", "2)", "5)"). Cada bloco visível ganha o número pela ordem escolhida (1, 2, 3...), na tela e no PDF.
-- **Vários modelos de pauta:** o SC pode ter mais de um modelo, **exportar** (arquivo para guardar ou enviar a outro SC) e **importar**.
-- **Sincronização:** os modelos ficam na nuvem da conta e aparecem em todos os aparelhos dela (celular, tablet, computador).
 
-## 4b. Prazo para preencher e acesso sem internet
+## Tela normal (preenchendo)
 ```text
-┌─────────────────────────────────┐
-│ Prazo para anciãos preencherem   │
-│ [ seg 23/11 · 20:00        ▾ ]   │
-│ Reunião: ter 24/11 · 19:30       │
-│ ✓ Disponível sem internet após   │
-│   o prazo                        │
-└─────────────────────────────────┘
+┌─────────────────────────────┐
+│ 1. ENCORAJAMENTOS E   15 min│
+│    CONSELHOS               ⌄│
+│  Tema/Assunto: ____________ │
+│  [editor de anotações]      │
+│  ── Assistir e meditar ──   │
+│  📖 Texto…      Clique aqui │
+│  ▶  Texto…      Clique aqui │
+│  ── Informações dos anciãos │
+│  [editor]          Todos    │
+└─────────────────────────────┘
 ```
-- O SC escolhe data e hora limite. Depois do prazo, os anciãos só podem ver, não podem mais editar (o SC continua podendo editar).
-- Se o prazo for antes da reunião, a pauta fechada é guardada em cada aparelho que a abriu (SC, anciãos com conta e acesso "Corpo de anciãos"). Na hora da reunião ela abre mesmo sem internet, com os dados até o prazo, incluindo o PDF.
-- Sem prazo, a pauta continua funcionando como hoje (precisa de internet).
-- Pautas já salvas continuam abrindo: o formato antigo é convertido para blocos na primeira abertura, sem perder nada.
 
-## 5. Sugestões para o PDF (escolha uma ou combine)
-
-**A — Ata formal (sóbria)**
-```text
- PAUTA — REUNIÃO COM OS ANCIÃOS
- Congregação X · ter 24/11 · 19:30
- ───────────────────────────────
- Oração inicial: Fulano  Final: Beltrano
- ───────────────────────────────
- 1  Encorajamentos .......... 10 min
-    texto...
- 2  Revisão das cartas ....... 5 min
- ───────────────────────────────
-                    Tempo total 50 min
-```
-Só preto e um tom de azul, numeração grande à esquerda, tempos alinhados com pontilhado.
-
-**B — Cartões One UI**
-Cada bloco num cartão de cantos arredondados, título em faixa azul clara, tempo numa "pílula" à direita. Mais moderno e arejado.
-
-**C — Linha do tempo**
-Coluna à esquerda com horários calculados (19:30, 19:40, 19:45...) e bolinhas ligadas por linha; conteúdo à direita. Ótimo para controlar o tempo na reunião.
-
-Em todos: cabeçalho com versículo opcional, ícones das recomendações com "Clique aqui" clicável, espaço para anotações à mão opcional, rodapé com página e "Superintendente de circuito". **Os três modelos ficam no app:** ao tocar em PDF, o usuário escolhe Ata formal, Cartões ou Linha do tempo; a última escolha fica salva no aparelho.
+## O que continua igual
+- Pautas e modelos já salvos abrem sem perder nada: cada bloco antigo vira um tópico com o cartão correspondente; no modelo padrão, "Assistir/meditar" e "Informações dos anciãos" passam a ser cartões dentro de "Encorajamentos e conselhos", e "Leitura e meditação do SC" fica num tópico final sem minutos.
+- Numeração automática, prazo, uso sem internet, sincronização e exportação dos modelos, e os 3 estilos de PDF (cada tópico mostra seus cartões em ordem).
+- Só o SC muda a estrutura; os outros preenchem os cartões que podem editar.
 
 ## Detalhes técnicos
-- `agenda.ts`: novo `AgendaPayload.v2 = { blocks: Block[] }` (id, type, title, minutes, perm, hidden, data). `normalizeAgenda` converte o payload antigo em blocos. Permissões passam a ser por bloco; `mergeAgenda` aceita alterações estruturais (títulos/ordem/adicionar/apagar) só do SC.
-- Recomendação: `{ kind: 'reading'|'article'|'video', text, urls: string[] }`, todas via `safeUrl`. "Clique aqui" chama `window.open` para cada url (no app nativo, Browser plugin em sequência).
-- Modelo pessoal do SC: guardado no próprio registro do SC (nova coluna jsonb em uma tabela só do SC, ex. `elder_agenda_templates` com superintendent_id, owner-only RLS); visita nova copia o modelo.
-- Tabela `elder_agenda_templates` (id, superintendent_id, name, blocks jsonb, is_default, timestamps; RLS só dono; grants authenticated/service_role) entra no espelho local e na sincronização existentes (local-first-fetch/mirror-tables). Exportar/importar = arquivo .json validado com zod.
-- Numeração calculada na exibição (índice entre blocos visíveis); títulos salvos sem número.
-- Prazo: `deadline_at` dentro do payload; o servidor recusa salvamentos de não-SC após o prazo. Depois do prazo, o cliente guarda o snapshot da pauta no armazenamento do aparelho (por visita/código) e usa esse snapshot quando estiver sem rede.
-- Rótulo i18n `coordinator` → "C.Serviço" (pt/en/es).
-- Remover preenchimento automático do tema em `agendaView`.
-- PDF em `agenda-pdf.ts` com três renderizadores (formal/cards/timeline) via pdf-engine, escolha guardada em localStorage; testes de conversão antigo→blocos, permissões e links.
+- `agenda.ts`: payload v3 — `AgendaBlock` (tópico: id, title, minutes, hidden, cards[]) e `AgendaCard` (id, type: notes|links|eldersInfo|scReading|recs|local, perm, showSubject, subject, html, items, notes). Conversão v2→v3 e legado na leitura (`normalizeAgenda`), juntando reco/eldersInfo ao tópico "enc" quando vierem do padrão. Limites: 30 tópicos, 12 cartões por tópico.
+- `mergeAgenda`: permissão passa a ser por cartão; estrutura (tópicos e cartões) só pelo SC; prazo inalterado.
+- Modelos (`elder_agenda_templates`) e arquivo exportado: aceitam versão 1 (converte) e 2; sem mudança no banco (payload é jsonb).
+- `ElderAgendaView.tsx`: render por tópico → cartões; editor com subir/descer/apagar cartão e folha de estilos; `agenda-pdf.ts` (3 estilos) percorre cartões.
+- Testes: conversão v2→v3 sem perda, permissão por cartão (ancião não edita cartão Só SC no mesmo tópico), SC adiciona/remove cartões, numeração por tópico, importação de modelo antigo.
