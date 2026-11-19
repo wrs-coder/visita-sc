@@ -181,3 +181,17 @@ describe("pauta: ajustes de cabeçalho, decisão e ocultos", () => {
     expect(weekOf("2026-11-19")).toEqual({ from: "2026-11-16", to: "2026-11-22" });
   });
 });
+
+describe("modelo de PDF escolhido pelo SC", () => {
+  it("pauta antiga sem modelo usa Linha do tempo", async () => {
+    const { normalizeAgenda } = await import("./agenda");
+    expect(normalizeAgenda({ v: 3, blocks: [] }).pdfStyle).toBe("timeline");
+  });
+  it("ancião não troca o modelo escolhido pelo SC", async () => {
+    const { normalizeAgenda, mergeAgenda } = await import("./agenda");
+    const cur = normalizeAgenda({ v: 3, blocks: [], pdfStyle: "formal" });
+    const inc = normalizeAgenda({ v: 3, blocks: [], pdfStyle: "cards" });
+    expect(mergeAgenda(cur, inc, "elder").pdfStyle).toBe("formal");
+    expect(mergeAgenda(cur, inc, "sc").pdfStyle).toBe("cards");
+  });
+});

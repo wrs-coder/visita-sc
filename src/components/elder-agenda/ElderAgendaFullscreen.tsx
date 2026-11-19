@@ -29,7 +29,7 @@ export function ElderAgendaFullscreen({ data, payload, isSc, onClose }: { data: 
     if (c.type === "recs") data.auto.recommendations.forEach((r, i) => {
       const ri = recInfoView(c, r);
       parts.push(
-        <div key={r.id} className="space-y-1">
+        <div key={r.id} className={`space-y-1 ${i > 0 ? "border-t border-border pt-4 mt-1" : ""}`}>
           <p className="font-semibold break-words">{n}.{i + 1} — {r.title}</p>
           {ri.family ? <p className="text-sm text-muted-foreground break-words">Família: {ri.family}</p> : null}
           {ri.fieldGroup ? <p className="text-sm text-muted-foreground break-words">Grupo: {ri.fieldGroup}</p> : null}
@@ -49,7 +49,7 @@ export function ElderAgendaFullscreen({ data, payload, isSc, onClose }: { data: 
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background" role="dialog" aria-modal="true" aria-label="Pauta em tela cheia">
-      <header className="flex items-center gap-2 border-b px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+      <header className="flex items-center gap-2 border-b px-3 py-2 pt-safe">
         <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fechar tela cheia"><X className="h-5 w-5" /></Button>
         <span className="flex-1 min-w-0 truncate font-semibold">{payload.headerTitle || "Pauta"}</span>
         <OutlineTimer outlineId={`agenda-${data.visitId}`} variant="fullscreen" />
@@ -88,7 +88,7 @@ export function ElderAgendaFullscreen({ data, payload, isSc, onClose }: { data: 
         })}
         <div className="h-20" />
       </div>
-      <footer className="flex gap-2 border-t p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <footer className="flex gap-2 border-t p-2 pb-safe">
         <Button variant="outline" className="flex-1" disabled={idx === 0} onClick={() => go(idx - 1)}><ChevronLeft className="h-4 w-4" />Anterior</Button>
         <Button className="flex-1" disabled={idx >= list.length - 1} onClick={() => go(idx + 1)}>Próximo<ChevronRight className="h-4 w-4" /></Button>
       </footer>

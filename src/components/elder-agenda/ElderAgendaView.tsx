@@ -166,8 +166,9 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
     finally { setBusy(false); }
   };
   const onExport = async (style: AgendaPdfStyle) => {
-    setPdfStyle(style); writePdfStyle(style); setPdfOpen(false); setExporting(true);
-    try { await exportAgendaPdf(data, p, style); } catch { toast.error("Não foi possível gerar o PDF."); } finally { setExporting(false); }
+    setPdfOpen(false); setExporting(true);
+    if (isSc) { setPdfStyle(style); writePdfStyle(style); if (p.pdfStyle !== style) patch({ pdfStyle: style }); }
+    try { await exportAgendaPdf(data, isSc ? { ...p, pdfStyle: style } : p, style); } catch { toast.error("Não foi possível gerar o PDF."); } finally { setExporting(false); }
   };
 
   const accessBadge = (perm: AgendaAccess, onChange: (a: AgendaAccess) => void, what: string, editable: boolean) => {
@@ -435,15 +436,32 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
   const deadlineMs = p.deadlineAt ? Date.parse(p.deadlineAt) : NaN;
   return (
     <div className="space-y-3 pb-24">
-      <header className="text-center space-y-0.5">
-        <h2 className="text-lg font-bold tracking-tight break-words">{p.headerTitle || "Pauta"}</h2>
-        {p.headerVerses ? <BibleRefText text={p.headerVerses} className="text-[11px] text-primary break-words" /> : null}
-        <p className="text-xs text-muted-foreground break-words">
-          {[data.congregation, formatMeetingWhen(data.auto.meetingAt), data.auto.location].filter(Boolean).join(" · ")}
-        </p>
-      </header>
+      {isSc && !offline ? (
+        <Card>
+          <CardContent className="pt-4 space-y-3">
+            <div className="flex gap-2">
+              <Button type="button" variant={building ? "default" : "outline"} className="flex-1" onClick={() => setBuilding((v) => !v)}>
+                <Pencil className="h-4 w-4" />{building ? "Concluir montagem" : "Montar pauta"}
+              </Button>
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setTplOpen(true)}><Layers className="h-4 w-4" />Modelos</Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
-      <Button type="button" variant="outline" className="w-full" onClick={() => setFull(true)}><Maximize2 className="h-4 w-4" />Tela cheia</Button>
+      <Card>
+        <CardContent className="pt-4 space-y-2">
+          <header className="text-center space-y-0.5">
+            <h2 className="text-lg font-bold tracking-tight break-words">{p.headerTitle || "Pauta"}</h2>
+            {p.headerVerses ? <BibleRefText text={p.headerVerses} className="text-[11px] text-primary break-words" /> : null}
+            <p className="text-xs text-muted-foreground break-words">
+              {[data.congregation, formatMeetingWhen(data.auto.meetingAt), data.auto.location].filter(Boolean).join(" · ")}
+            </p>
+          </header>
+
+          <Button type="button" variant="outline" className="w-full" onClick={() => setFull(true)}><Maximize2 className="h-4 w-4" />Tela cheia</Button>
+        </CardContent>
+      </Card>
 
       {isSc && building ? (
         <Card>
@@ -469,34 +487,15 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
         <div className="flex items-center gap-2 rounded-xl border bg-muted/50 px-3 py-2 text-xs text-muted-foreground"><CalendarClock className="h-4 w-4 shrink-0" />Preencha até {formatMeetingWhen(p.deadlineAt)}.</div>
       ) : null}
 
-      {isSc && !offline ? (
-        <Card>
-          <CardContent className="pt-4 space-y-3">
-            <div className="flex gap-2">
-              <Button type="button" variant={building ? "default" : "outline"} className="flex-1" onClick={() => setBuilding((v) => !v)}>
-                <Pencil className="h-4 w-4" />{building ? "Concluir montagem" : "Montar pauta"}
-              </Button>
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setTplOpen(true)}><Layers className="h-4 w-4" />Modelos</Button>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground flex items-center gap-1"><CalendarClock className="h-3.5 w-3.5" />Prazo para os anciãos preencherem</Label>
-              <div className="flex items-center gap-2">
-                <Input type="datetime-local" value={toLocalInput(p.deadlineAt)} className="h-9"
-                  onChange={(e) => { const t = Date.parse(e.target.value); patch({ deadlineAt: Number.isFinite(t) ? new Date(t).toISOString() : null }); }} />
-                {p.deadlineAt ? <button type="button" onClick={() => patch({ deadlineAt: null })} aria-label="Tirar prazo" className="p-2 text-muted-foreground"><X className="h-4 w-4" /></button> : null}
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                {!p.deadlineAt ? "Sem prazo: os anciãos podem preencher até a reunião."
-                  : Number.isFinite(meetingMs) && deadlineMs < meetingMs ? "Depois do prazo, a pauta fica só para leitura e abre sem internet nos aparelhos que já a abriram."
-                  : "O prazo é depois do horário da reunião."}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
 
-      <Card>
-        <CardContent className="pt-4 space-y-1">
+      <Card className="overflow-hidden">
+        <button type="button" onClick={() => toggle("__prayers")} aria-expanded={!closed.__prayers} className="flex w-full items-center gap-2 px-4 py-3 text-left min-w-0">
+          <span className="flex-1 min-w-0 font-semibold">Orações e tempo</span>
+          <span className="text-xs text-muted-foreground shrink-0">{view.totalMinutes} min</span>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${closed.__prayers ? "" : "rotate-180"}`} />
+        </button>
+        {!closed.__prayers ? (
+        <CardContent className="pt-0 space-y-1">
           <div className="flex justify-end">{accessBadge(p.prayersPerm, (prayersPerm) => patch({ prayersPerm }), "Orações e ata", canPerm(p.prayersPerm))}</div>
           {isSc && !offline ? (
             <div className="flex flex-wrap gap-1.5 pb-1">
@@ -522,7 +521,25 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
             <span className="text-xs text-muted-foreground">Tempo total</span>
             <span className="text-sm font-semibold">{view.totalMinutes} min</span>
           </div>
+          {isSc && !offline ? (
+            <div className="border-t pt-2 mt-1">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground flex items-center gap-1"><CalendarClock className="h-3.5 w-3.5" />Prazo para os anciãos preencherem</Label>
+              <div className="flex items-center gap-2">
+                <Input type="datetime-local" value={toLocalInput(p.deadlineAt)} className="h-9"
+                  onChange={(e) => { const t = Date.parse(e.target.value); patch({ deadlineAt: Number.isFinite(t) ? new Date(t).toISOString() : null }); }} />
+                {p.deadlineAt ? <button type="button" onClick={() => patch({ deadlineAt: null })} aria-label="Tirar prazo" className="p-2 text-muted-foreground"><X className="h-4 w-4" /></button> : null}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {!p.deadlineAt ? "Sem prazo: os anciãos podem preencher até a reunião."
+                  : Number.isFinite(meetingMs) && deadlineMs < meetingMs ? "Depois do prazo, a pauta fica só para leitura e abre sem internet nos aparelhos que já a abriram."
+                  : "O prazo é depois do horário da reunião."}
+              </p>
+            </div>
+            </div>
+          ) : null}
         </CardContent>
+        ) : null}
       </Card>
 
       {p.blocks.map((b, i) => {
@@ -567,7 +584,7 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
       </Sheet>
 
       <div className="sticky bottom-3 z-10 flex gap-2 rounded-2xl border bg-background/95 p-2 shadow-lg backdrop-blur">
-        <Button variant="outline" className="flex-1" onClick={() => setPdfOpen(true)} disabled={exporting}>
+        <Button variant="outline" className="flex-1" onClick={() => (isSc ? setPdfOpen(true) : void onExport(p.pdfStyle))} disabled={exporting}>
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />} PDF
         </Button>
         {!offline ? (

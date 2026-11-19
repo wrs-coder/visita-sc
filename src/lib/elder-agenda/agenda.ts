@@ -28,6 +28,8 @@ export type AgendaRecDecision = "assign" | "decline" | null;
 export interface AgendaScRec { comment: string; decision: AgendaRecDecision }
 export const DEFAULT_AGENDA_TITLE = "Pauta – Reunião com Anciãos";
 export const DEFAULT_AGENDA_VERSES = "Isa 50:4; Pro 18:13,17; Tia 1:19; 1 Cor 4:6; 2 Cor 1:24; Col 2:8; Mat 5:41; Tito 1:5";
+export type AgendaPdfStyleId = "formal" | "cards" | "timeline";
+export const agendaPdfStyleOf = (v: unknown): AgendaPdfStyleId => (v === "formal" || v === "cards" || v === "timeline" ? v : "timeline");
 export interface AgendaBlock { id: string; title: string; minutes: number; hidden: boolean; cards: AgendaCard[] }
 export interface AgendaPayload {
   v: 3;
@@ -38,6 +40,8 @@ export interface AgendaPayload {
   /** Interruptores opcionais do cabeçalho (inicial e final são fixas). */
   showPrayerRec: boolean; showMinutes: boolean;
   headerTitle: string; headerVerses: string;
+  /** Modelo de PDF escolhido pelo SC; os anciãos sempre exportam neste. */
+  pdfStyle: AgendaPdfStyleId;
   scRecs: Record<string, AgendaScRec>;
 }
 
@@ -86,7 +90,7 @@ export function defaultBlocks(): AgendaBlock[] {
 
 export function emptyAgenda(): AgendaPayload {
   return { v: 3, prayerOpen: "", prayerRec: "", prayerClose: "", minutesTaker: "", prayersPerm: "coordinator", deadlineAt: null, blocks: defaultBlocks(),
-    showPrayerRec: true, showMinutes: true, headerTitle: DEFAULT_AGENDA_TITLE, headerVerses: DEFAULT_AGENDA_VERSES, scRecs: {} };
+    showPrayerRec: true, showMinutes: true, headerTitle: DEFAULT_AGENDA_TITLE, headerVerses: DEFAULT_AGENDA_VERSES, scRecs: {}, pdfStyle: "timeline" };
 }
 
 const str = (v: unknown, max = 200_000) => (typeof v === "string" ? v.slice(0, max) : "");
@@ -235,6 +239,7 @@ function extras(r: Record<string, unknown>) {
     headerTitle: typeof r.headerTitle === "string" ? str(r.headerTitle, 200) : DEFAULT_AGENDA_TITLE,
     headerVerses: typeof r.headerVerses === "string" ? str(r.headerVerses, 600) : DEFAULT_AGENDA_VERSES,
     scRecs: scRecMap(r.scRecs),
+    pdfStyle: agendaPdfStyleOf(r.pdfStyle),
   };
 }
 
