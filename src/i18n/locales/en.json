@@ -304,7 +304,7 @@
     "pager": {
       "tabToday": "Today",
       "tabVisit": "Visit",
-      "tabPastoral": "Shepherding",
+      "tabPastoral": "Elders",
       "tabTomorrow": "Tomorrow",
       "tomorrowTitle": "Tomorrow's schedule",
       "noTime": "No time set",
@@ -2206,6 +2206,7 @@
   "pageTitles": {
     "help": "Help",
     "elderBody": "Body of Elders",
+    "elderAgenda": "Elders' agenda",
     "visitPackages": "Visit packages",
     "trash": "Trash",
     "elderTemplates": "Elders' Program"

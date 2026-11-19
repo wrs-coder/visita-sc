@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   RELEASE_HISTORY,
   RELEASE_NOTES,
-  RELEASE_NOTES_VERSION,
+  RELEASE_NOTES_VERSION, splitByAudience,
   WHATS_NEW_AUTO_SHOW,
 } from "./release-notes";
 import { APP_VERSION } from "./app-update-check";
@@ -10,10 +10,10 @@ import { shouldAutoOpenWhatsNew } from "./whats-new";
 import pkg from "../../package.json";
 
 describe("release notes por versão", () => {
-  it("app e novidades na 5.8.0", () => {
-    expect(RELEASE_NOTES_VERSION).toBe("5.8.0");
-    expect(APP_VERSION).toBe("5.8.0");
-    expect(pkg.version).toBe("5.8.0");
+  it("app e novidades na 6.0.0", () => {
+    expect(RELEASE_NOTES_VERSION).toBe("6.0.0");
+    expect(APP_VERSION).toBe("6.0.0");
+    expect(pkg.version).toBe("6.0.0");
   });
   it("a primeira entrada do histórico é a versão atual", () => {
     expect(RELEASE_HISTORY[0].version).toBe(RELEASE_NOTES_VERSION);
@@ -23,9 +23,10 @@ describe("release notes por versão", () => {
     const v = RELEASE_HISTORY.map((r) => r.version);
     expect(new Set(v).size).toBe(v.length);
   });
-  it("novidades da 5.8.0 são só do superintendente e abrem sozinhas", () => {
+  it("novidades da 6.0.0: anciãos veem a parte que os afeta e abrem sozinhas", () => {
     expect(WHATS_NEW_AUTO_SHOW).toBe(true);
-    expect(RELEASE_HISTORY[0].sections.every((s) => s.audience?.join() === "super")).toBe(true);
+    const { mine } = splitByAudience(RELEASE_HISTORY[0].sections, "elder");
+    expect(mine.map((s) => s.title)).toEqual(["Para os anciãos", "Melhorias gerais"]);
     expect(
       shouldAutoOpenWhatsNew(
         { installed: "5.6.0", notesVersion: RELEASE_NOTES_VERSION, seen: null, hadPreviousUse: true },

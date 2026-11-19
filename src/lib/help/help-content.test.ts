@@ -72,9 +72,9 @@ describe("new help topics", () => {
     expect(readFileSync("src/components/notes/RichNoteToolbar.tsx", "utf8")).toContain("Modo foco");
     expect(readFileSync("src/components/notes/OutlineAttachmentsBar.tsx", "utf8")).toContain("Anexos do esboço");
   });
-  it("mostra os 12 temas na ordem pedida", () => {
-    expect(HELP_TOPICS.map((t) => t.title)).toEqual(["Meu Perfil", "Modelos de visita", "Circuito e visitas", "Painel inicial", "Esboços", "Grandes Eventos", "Bíblia e anotações", "Notas Privadas", "Semana da visita", "Relatórios e backup", "Entrada e segurança", "Perguntas frequentes"]);
-    expect(HELP_ORDER).toHaveLength(12);
+  it("mostra os 15 temas na ordem pedida", () => {
+    expect(HELP_TOPICS.map((t) => t.title)).toEqual(["Meu Perfil", "Modelos de visita", "Circuito e visitas", "Painel inicial", "Esboços", "Grandes Eventos", "Bíblia e anotações", "Notas Privadas", "Semana da visita", "Controle de tempo da reunião", "Quadro de anúncios", "Pauta da reunião com os anciãos", "Relatórios e backup", "Entrada e segurança", "Perguntas frequentes"]);
+    expect(HELP_ORDER).toHaveLength(15);
   });
 });
 

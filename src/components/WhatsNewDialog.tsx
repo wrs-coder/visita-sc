@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { isNativeApp } from "@/lib/api-origin";
+import { useRouterState } from "@tanstack/react-router";
+import { isWifeCode, readGuestSession } from "@/lib/guest-session";
 import { getInstalledVersion } from "@/lib/app-update-check";
 import {
   RELEASE_HISTORY,
@@ -86,8 +88,12 @@ function storedKeys(): string[] {
 export function WhatsNewDialog() {
   const { t } = useTranslation();
   const { user, role } = useAuth();
+  const pathname = useRouterState({ select: (st) => st.location.pathname });
+  // Ancião que entra pelo código "Corpo de anciãos" (não a esposa) também vê a parte dos anciãos.
+  const guest = typeof window === "undefined" ? null : readGuestSession();
+  const elderGuest = !user && pathname.startsWith("/visitante") && !!guest && !isWifeCode(guest.code);
   const viewer: ReleaseAudience | null =
-    role === "superintendent" ? "super" : role === "elder" ? "elder" : null;
+    role === "superintendent" ? "super" : role === "elder" || elderGuest ? "elder" : null;
   const { mine, others } = splitByAudience(current.sections, viewer);
   const [open, setOpen] = useState(false);
   // "Já usava o app" é medido na primeira montagem, antes de qualquer gravação nova.
@@ -106,8 +112,9 @@ export function WhatsNewDialog() {
   // ficar escondida atrás da tela de PIN/biometria.
   const signedIn = !!user;
   useEffect(() => {
-    // 5.7.0: abre sozinho só para o superintendente de circuito.
-    if (!isNativeApp() || !signedIn || role !== "superintendent") return;
+    // 6.0.0: abre sozinho para o superintendente e para os anciãos (conta ou código).
+    const eligible = (signedIn && (role === "superintendent" || role === "elder")) || elderGuest;
+    if (!isNativeApp() || !eligible) return;
     let cancelled = false;
     void (async () => {
       const installed = await getInstalledVersion();
@@ -133,7 +140,7 @@ export function WhatsNewDialog() {
     return () => {
       cancelled = true;
     };
-  }, [signedIn, previousUse, role]);
+  }, [signedIn, previousUse, role, elderGuest]);
 
   const close = (next: boolean) => {
     if (next) return;

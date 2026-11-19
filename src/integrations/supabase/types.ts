@@ -433,6 +433,36 @@ export type Database = {
           },
         ]
       }
+      elder_agenda_templates: {
+        Row: {
+          blocks: Json
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          superintendent_id: string
+          updated_at: string
+        }
+        Insert: {
+          blocks?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          superintendent_id?: string
+          updated_at?: string
+        }
+        Update: {
+          blocks?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          superintendent_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       elder_encouragements: {
         Row: {
           address: string | null
@@ -528,6 +558,44 @@ export type Database = {
           visit_id?: string
         }
         Relationships: []
+      }
+      elder_meeting_agendas: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json
+          permissions: Json
+          superintendent_id: string
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          permissions?: Json
+          superintendent_id: string
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          permissions?: Json
+          superintendent_id?: string
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "elder_meeting_agendas_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: true
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       elder_pastoral_visits: {
         Row: {

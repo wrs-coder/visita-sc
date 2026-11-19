@@ -58,6 +58,8 @@ export interface JsPdfCompat {
     style?: "F" | "S" | "FS",
   ): void;
   line(x1: number, y1: number, x2: number, y2: number): void;
+  /** Área clicável que abre `url` (http/https) no leitor de PDF. */
+  link(x: number, y: number, w: number, h: number, url: string): void;
   output(type: "blob"): Promise<Blob>;
 }
 
@@ -123,7 +125,7 @@ function sanitizeForHelvetica(text: string): string {
 export async function createJsPdfCompat(
   opts: PdfDocOptions,
 ): Promise<JsPdfCompat> {
-  const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
+  const { PDFDocument, StandardFonts, rgb, PDFName, PDFString } = await import("pdf-lib");
   const doc: PDFDocument = await PDFDocument.create();
   const fontRegular: PDFFont = await doc.embedFont(StandardFonts.Helvetica);
   const fontBold: PDFFont = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -285,6 +287,19 @@ export async function createJsPdfCompat(
         color: color(curDrawRGB),
         thickness: curLineWidth,
       });
+    },
+    link(x, y, w, h, url) {
+      if (!/^https?:\/\//i.test(url)) return;
+      const x1 = toPt(x), y2 = pageHPt - toPt(y), x2 = toPt(x + w), y1 = pageHPt - toPt(y + h);
+      const annot = doc.context.obj({
+        Type: "Annot", Subtype: "Link", Rect: [x1, y1, x2, y2], Border: [0, 0, 0],
+        A: { Type: "Action", S: "URI", URI: PDFString.of(url) },
+      });
+      const page = pages[curIdx];
+      const ref = doc.context.register(annot);
+      const annots = page.node.lookup(PDFName.of("Annots"));
+      if (annots && "push" in annots) (annots as unknown as { push(r: unknown): void }).push(ref);
+      else page.node.set(PDFName.of("Annots"), doc.context.obj([ref]));
     },
     async output(type) {
       if (type !== "blob") {

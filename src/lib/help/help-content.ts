@@ -47,6 +47,49 @@ const RAW_TOPICS: HelpTopic[] = [
   },
 
   {
+    id: "meeting-timer",
+    title: "Controle de tempo da reunião",
+    icon: "event",
+    route: "/dashboard",
+    keywords: ["reuniao", "apostila", "cronometro", "tempo", "meio de semana", "conselho", "boia"],
+    steps: [
+      { before: "No topo do app, toque no botão ⏱ para abrir o Controle de tempo da reunião." },
+      { before: "Toque em “Importar” e escolha a apostila (.zip ou .rtf) baixada no celular." },
+      { before: "Na semana da visita, os oradores, o conselho, o presidente e a oração final aparecem sozinhos." },
+      { before: "Ao minimizar, fica uma boia com o tempo e os botões iniciar, pausar, anterior e próxima. Escolha Compacta, Normal ou Grande." },
+    ],
+  },
+  {
+    id: "board-program",
+    title: "Quadro de anúncios",
+    icon: "report",
+    route: "/dashboard",
+    keywords: ["quadro", "anuncios", "pdf", "programa", "campo", "reunioes especiais"],
+    steps: [
+      { before: "No Início, no cartão da visita, toque em ⋮ e depois em “Quadro de anúncios”." },
+      { before: "Escolha o modelo Completo (com designados) ou Simplificado (temas e cânticos)." },
+      { before: "Ligue ou desligue as frases do topo e do rodapé e o Serviço de campo detalhado." },
+      { before: "O PDF sai sempre em uma folha, com os horários e locais da Agenda." },
+    ],
+  },
+  {
+    id: "elder-agenda-sc",
+    title: "Pauta da reunião com os anciãos",
+    icon: "templates",
+    route: "/pauta-ancioes",
+    keywords: ["pauta", "anciaos", "reuniao", "modelo", "prazo", "s-303", "fontes de materia"],
+    steps: [
+      { before: "Abra pelo Início, aba “Anciãos”, ou pela pílula “Pauta” do Programa da visita." },
+      { before: "Toque em “Montar pauta” para criar tópicos e escolher os cartões de cada um, na ordem que quiser." },
+      { before: "Em cada cartão, toque no selo para escolher quem edita (Todos ou C.Serviço) ou deixe oculto, só para você." },
+      { before: "Defina o “Prazo para os anciãos preencherem” no cartão das orações." },
+      { before: "Em “Fontes de matéria”, cada publicação ou vídeo tem seu nome e seu link." },
+      { before: "Em “Modelos”, salve sua pauta para as próximas visitas; ela sincroniza com seus aparelhos." },
+      { before: "Use “Tela cheia” na reunião e exporte o PDF em um dos três estilos." },
+    ],
+  },
+
+  {
     id: "security",
     title: "Entrada e segurança",
     icon: "lock",
@@ -294,7 +337,7 @@ const RAW_TOPICS: HelpTopic[] = [
   },
 ];
 
-export const HELP_ORDER = ["profile", "visit-templates", "circuit", "dashboard", "outlines", "big-events", "bible", "private-notes", "visit-week", "reports-backup", "security", "faq"];
+export const HELP_ORDER = ["profile", "visit-templates", "circuit", "dashboard", "outlines", "big-events", "bible", "private-notes", "visit-week", "meeting-timer", "board-program", "elder-agenda-sc", "reports-backup", "security", "faq"];
 
 export const HELP_TOPICS: HelpTopic[] = HELP_ORDER.map((id) => RAW_TOPICS.find((t) => t.id === id)!).filter(Boolean);
 
@@ -346,6 +389,19 @@ export const ELDER_HELP_TOPICS: HelpTopic[] = [
     steps: [
       { before: "No menu lateral, ", labelKey: "sidebar.weekSummary", after: " mostra a semana inteira em uma tela." },
       { before: "Gere o PDF para imprimir ou enviar aos irmãos." },
+    ],
+  },
+  {
+    id: "elder-agenda",
+    title: "Pauta da reunião com os anciãos",
+    icon: "templates",
+    route: "/dashboard",
+    keywords: ["pauta", "reuniao", "anciaos", "pdf", "prazo"],
+    steps: [
+      { before: "No Início, abra a aba “Anciãos” (ou a pílula “Pauta” no Programa da visita)." },
+      { before: "Preencha os cartões que o superintendente liberou para você e toque em salvar." },
+      { before: "Depois do prazo, a pauta fica só para leitura e abre mesmo sem internet." },
+      { before: "Toque no botão de PDF para exportar no modelo escolhido pelo superintendente." },
     ],
   },
   {

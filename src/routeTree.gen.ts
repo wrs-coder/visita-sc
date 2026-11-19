@@ -35,6 +35,7 @@ import { Route as AppModeloReunioesDiscursosRouteImport } from './routes/_app.mo
 import { Route as AppModelosRouteImport } from './routes/_app.modelos'
 import { Route as AppNotasRouteImport } from './routes/_app.notas'
 import { Route as AppPacotesVisitaRouteImport } from './routes/_app.pacotes-visita'
+import { Route as AppPautaAncioesRouteImport } from './routes/_app.pauta-ancioes'
 import { Route as AppPerfilRouteImport } from './routes/_app.perfil'
 import { Route as AppProgramaAncioesRouteImport } from './routes/_app.programa-ancioes'
 import { Route as AppProgramaVisitaRouteImport } from './routes/_app.programa-visita'
@@ -187,6 +188,11 @@ const AppPacotesVisitaRoute = AppPacotesVisitaRouteImport.update({
   path: '/pacotes-visita',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPautaAncioesRoute = AppPautaAncioesRouteImport.update({
+  id: '/pauta-ancioes',
+  path: '/pauta-ancioes',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPerfilRoute = AppPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -309,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
   '/pacotes-visita': typeof AppPacotesVisitaRoute
+  '/pauta-ancioes': typeof AppPautaAncioesRoute
   '/perfil': typeof AppPerfilRoute
   '/programa-ancioes': typeof AppProgramaAncioesRoute
   '/programa-visita': typeof AppProgramaVisitaRoute
@@ -354,6 +361,7 @@ export interface FileRoutesByTo {
   '/modelos': typeof AppModelosRoute
   '/notas': typeof AppNotasRoute
   '/pacotes-visita': typeof AppPacotesVisitaRoute
+  '/pauta-ancioes': typeof AppPautaAncioesRoute
   '/perfil': typeof AppPerfilRoute
   '/programa-ancioes': typeof AppProgramaAncioesRoute
   '/programa-visita': typeof AppProgramaVisitaRoute
@@ -402,6 +410,7 @@ export interface FileRoutesById {
   '/_app/modelos': typeof AppModelosRoute
   '/_app/notas': typeof AppNotasRoute
   '/_app/pacotes-visita': typeof AppPacotesVisitaRoute
+  '/_app/pauta-ancioes': typeof AppPautaAncioesRoute
   '/_app/perfil': typeof AppPerfilRoute
   '/_app/programa-ancioes': typeof AppProgramaAncioesRoute
   '/_app/programa-visita': typeof AppProgramaVisitaRoute
@@ -450,6 +459,7 @@ export interface FileRouteTypes {
     | '/modelos'
     | '/notas'
     | '/pacotes-visita'
+    | '/pauta-ancioes'
     | '/perfil'
     | '/programa-ancioes'
     | '/programa-visita'
@@ -495,6 +505,7 @@ export interface FileRouteTypes {
     | '/modelos'
     | '/notas'
     | '/pacotes-visita'
+    | '/pauta-ancioes'
     | '/perfil'
     | '/programa-ancioes'
     | '/programa-visita'
@@ -542,6 +553,7 @@ export interface FileRouteTypes {
     | '/_app/modelos'
     | '/_app/notas'
     | '/_app/pacotes-visita'
+    | '/_app/pauta-ancioes'
     | '/_app/perfil'
     | '/_app/programa-ancioes'
     | '/_app/programa-visita'
@@ -766,6 +778,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPacotesVisitaRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/pauta-ancioes': {
+      id: '/_app/pauta-ancioes'
+      path: '/pauta-ancioes'
+      fullPath: '/pauta-ancioes'
+      preLoaderRoute: typeof AppPautaAncioesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/perfil': {
       id: '/_app/perfil'
       path: '/perfil'
@@ -921,6 +940,7 @@ interface AppRouteChildren {
   AppModelosRoute: typeof AppModelosRoute
   AppNotasRoute: typeof AppNotasRoute
   AppPacotesVisitaRoute: typeof AppPacotesVisitaRoute
+  AppPautaAncioesRoute: typeof AppPautaAncioesRoute
   AppPerfilRoute: typeof AppPerfilRoute
   AppProgramaAncioesRoute: typeof AppProgramaAncioesRoute
   AppProgramaVisitaRoute: typeof AppProgramaVisitaRoute
@@ -951,6 +971,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppModelosRoute: AppModelosRoute,
   AppNotasRoute: AppNotasRoute,
   AppPacotesVisitaRoute: AppPacotesVisitaRoute,
+  AppPautaAncioesRoute: AppPautaAncioesRoute,
   AppPerfilRoute: AppPerfilRoute,
   AppProgramaAncioesRoute: AppProgramaAncioesRoute,
   AppProgramaVisitaRoute: AppProgramaVisitaRoute,

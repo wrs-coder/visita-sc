@@ -6,6 +6,7 @@ import { setVisibleInterval } from "@/lib/visible-interval";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { GuestElderAgenda } from "@/components/elder-agenda/GuestElderAgenda";
 import { useServerFn } from "@tanstack/react-start";
 import { getGuestSnapshot } from "@/lib/guest.functions";
 import { readGuestSession, clearGuestSession, setSelectedCongregation, setWeekAnchor } from "@/lib/guest-session";
@@ -15,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks, Compass, Share2, Image as ImageIcon, FileDown, MessageCircle, Sun, Mic, CloudDownload, Heart, Send, Plus, ChevronLeft, ChevronRight, BookOpen, ChevronDown, Moon, MoreVertical } from "lucide-react";
+import { LogOut, CalendarDays, UtensilsCrossed, Users, Car, MapPin, Clock, Phone, ListChecks, Compass, Share2, Image as ImageIcon, FileDown, MessageCircle, Sun, Mic, CloudDownload, Heart, Send, Plus, ChevronLeft, ChevronRight, BookOpen, ChevronDown, Moon, MoreVertical, ClipboardList } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -485,7 +486,7 @@ function Page() {
             </p>
 
             <Tabs value={currentTab} onValueChange={setCurrentTab}>
-              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-8"}`}>
+              <TabsList className={`grid w-full ${snap.wifeMode ? "grid-cols-6" : "grid-cols-9"}`}>
                 <TabsTrigger value="hoje"><Sun className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.today")}</span></TabsTrigger>
                 <TabsTrigger value="estudos"><Users className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.studies")}</span></TabsTrigger>
                 <TabsTrigger value="campo"><Compass className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.field")}</span></TabsTrigger>
@@ -497,6 +498,7 @@ function Page() {
                   <>
                     <TabsTrigger value="reunioes"><Mic className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.meetings")}</span></TabsTrigger>
                     <TabsTrigger value="pastoreios"><BookOpen className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.pastoreios")}</span></TabsTrigger>
+                    <TabsTrigger value="pauta" aria-label="Pauta"><ClipboardList className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Pauta</span></TabsTrigger>
                     <TabsTrigger value="check"><ListChecks className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{t("guest.tabs.checklist")}</span></TabsTrigger>
                   </>
                 )}
@@ -672,6 +674,14 @@ function Page() {
               {!snap.wifeMode && (
                 <TabsContent value="pastoreios" className="space-y-3 mt-4">
                   <ElderTabGate congregationId={snap.congregation.id} data={snap.elderProgram ?? null} />
+                </TabsContent>
+              )}
+
+              {!snap.wifeMode && code && (
+                <TabsContent value="pauta" className="mt-4">
+                  <ElderTabGate congregationId={snap.congregation.id} data={null}>
+                    <GuestElderAgenda inviteCode={code} />
+                  </ElderTabGate>
                 </TabsContent>
               )}
 

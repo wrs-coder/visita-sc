@@ -17,6 +17,7 @@ export const PAGE_TITLE_KEYS: Record<string, string> = {
   "/resumo-semana": "sidebar.weekSummary",
   "/relatorio": "report.title",
   "/programa-ancioes": "pageTitles.elderBody",
+  "/pauta-ancioes": "pageTitles.elderAgenda",
   "/pacotes-visita": "pageTitles.visitPackages",
   "/congregacoes": "circuit.pillCircuit",
   "/consideracoes-campo": "sidebar.personalOutlines",

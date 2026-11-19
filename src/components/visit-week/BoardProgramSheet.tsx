@@ -9,12 +9,12 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { BOARD_BOTTOM_PHRASE, BOARD_TOP_PHRASE } from "@/lib/visit-week/board-program";
 
 const KEY = "board.phrases";
-type Prefs = { top: boolean; bottom: boolean; themes: boolean; prayers: boolean; field: boolean };
+type Prefs = { top: boolean; bottom: boolean; themes: boolean; prayers: boolean; field: boolean; template: "full" | "simple"; fieldDetailed: boolean };
 function loadPrefs(): Prefs {
   try {
     const o = JSON.parse(localStorage.getItem(KEY) ?? "{}") as Partial<Prefs>;
-    return { top: o.top !== false, bottom: o.bottom !== false, themes: o.themes !== false, prayers: o.prayers !== false, field: o.field !== false };
-  } catch { return { top: true, bottom: true, themes: true, prayers: true, field: true }; }
+    return { top: o.top !== false, bottom: o.bottom !== false, themes: o.themes !== false, prayers: o.prayers !== false, field: o.field !== false, template: o.template === "simple" ? "simple" : "full", fieldDetailed: o.fieldDetailed === true };
+  } catch { return { top: true, bottom: true, themes: true, prayers: true, field: true, template: "full", fieldDetailed: false }; }
 }
 
 function Row({ id, title, text, checked, onChange }: { id: string; title: string; text: string; checked: boolean; onChange: (v: boolean) => void }) {
@@ -44,8 +44,9 @@ export default function BoardProgramSheet({ open, onOpenChange, visitId, userId 
     setBusy(true);
     try {
       const m = await import("@/components/visit-week/board-program-export");
-      await m.exportBoardProgram(visitId, userId, { topPhrase: prefs.top, bottomPhrase: prefs.bottom, specialThemes: prefs.themes, specialPrayers: prefs.prayers, fieldPrayer: prefs.field });
-      toast.success("Quadro de anúncios pronto.");
+      const r = await m.exportBoardProgram(visitId, userId, { topPhrase: prefs.top, bottomPhrase: prefs.bottom, specialThemes: prefs.themes, specialPrayers: prefs.prayers, fieldPrayer: prefs.field, template: prefs.template, fieldDetailed: prefs.fieldDetailed });
+      if (r.missing.length) toast.warning(`Quadro pronto. Faltam no Programa da visita: ${r.missing.join(", ")}.`);
+      else toast.success("Quadro de anúncios pronto.");
       onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar o quadro.");
@@ -59,6 +60,19 @@ export default function BoardProgramSheet({ open, onOpenChange, visitId, userId 
           <DrawerTitle className="flex items-center gap-2"><LayoutPanelTop className="h-5 w-5 text-primary" /> Quadro de anúncios</DrawerTitle>
         </DrawerHeader>
         <div className="space-y-4 overflow-y-auto overflow-x-hidden px-4 pb-6">
+          <div role="radiogroup" aria-label="Modelo do quadro" className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
+            {([["full", "Completo"], ["simple", "Simplificado"]] as const).map(([v, label]) => (
+              <button key={v} type="button" role="radio" aria-checked={prefs.template === v} onClick={() => set({ template: v })}
+                className={`h-9 rounded-full text-sm font-medium transition-colors ${prefs.template === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="px-1 text-xs text-muted-foreground break-words">
+            {prefs.template === "full"
+              ? "Todas as partes do meio de semana com os oradores; fim de semana só com horários e temas."
+              : "Temas dos discursos, cânticos, reuniões especiais completas e o serviço de campo em destaque."}
+          </p>
           <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Frases do quadro</p>
           <div className="divide-y divide-border overflow-hidden rounded-2xl border bg-card">
             <Row id="board-top" title="Frase do topo" text={BOARD_TOP_PHRASE} checked={prefs.top} onChange={(v) => set({ top: v })} />
@@ -71,6 +85,9 @@ export default function BoardProgramSheet({ open, onOpenChange, visitId, userId 
           </div>
           <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Serviço de campo</p>
           <div className="divide-y divide-border overflow-hidden rounded-2xl border bg-card">
+            {prefs.template === "full" && (
+              <Row id="board-field-detail" title="Campo detalhado" text="Manhã e tarde separados, com modalidade, território e oração de cada saída" checked={prefs.fieldDetailed} onChange={(v) => set({ fieldDetailed: v })} />
+            )}
             <Row id="board-field" title="Oração" text="Quem faz a oração em cada saída de campo" checked={prefs.field} onChange={(v) => set({ field: v })} />
           </div>
           <p className="px-1 text-xs text-muted-foreground">Tudo cabe em uma folha. Itens vazios no Programa da visita não aparecem.</p>

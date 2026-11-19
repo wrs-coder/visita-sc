@@ -5,7 +5,7 @@
 // - Se o superintendente não definiu senha → exibe o conteúdo direto.
 // - Se há senha → pede a senha; depois de validar, marca como destravado
 //   em sessionStorage até o usuário fechar a aba/navegador.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
@@ -45,9 +45,12 @@ function markUnlocked(congregationId: string) {
 export function ElderTabGate({
   congregationId,
   data,
+  children,
 }: {
   congregationId: string;
   data: ElderProgramData | null;
+  /** Conteúdo próprio atrás da mesma senha (ex.: Pauta); sem ele mostra o programa dos anciãos. */
+  children?: ReactNode;
 }) {
   const fnStatus = useServerFn(getElderTabPasswordStatus);
   const fnVerify = useServerFn(verifyElderTabPassword);
@@ -159,5 +162,5 @@ export function ElderTabGate({
     );
   }
 
-  return <ElderProgramReadOnly data={data} />;
+  return children ? <>{children}</> : <ElderProgramReadOnly data={data} />;
 }
