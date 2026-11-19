@@ -2,7 +2,7 @@
 
 ## Resposta rápida: onde e como
 - **Onde:** uma nova pílula **"Pauta"** dentro do *Programa da visita* (ao lado de Meio de semana, Fim de semana, Anciãos...). A pauta é da visita, então fica junto da semana da visita, e o antigo "Programa dos anciãos" continua funcionando igual.
-- **Dashboard:** a aba **"Pastoreio"** passa a se chamar **"Anciãos"** (nome sugerido; pode ser outro da sua lista). Nela entra o cartão **"Pauta da reunião com os anciãos"**, que recolhe e expande como os outros cartões, com os links de leitura, artigo e vídeo abrindo direto.
+- **Dashboard:** a aba **"Pastoreio"** passa a se chamar **"Anciãos"**. Nela entra o cartão **"Pauta da reunião com os anciãos"**, que recolhe e expande como os outros cartões, com os links de leitura, artigo e vídeo abrindo direto.
 
 ```text
 ┌──────────────────────────────┐
