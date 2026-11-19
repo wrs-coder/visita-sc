@@ -17,6 +17,7 @@ Ao tocar em "Quadro de anúncios", o painel ganha um seletor no topo (estilo One
 │ Temas especiais           [●]│
 │ Orações especiais         [●]│
 │ Oração do campo           [●]│
+│ Campo detalhado (só Compl.)[ ]│
 │ ┌──────────────────────────┐ │
 │ │      Gerar PDF           │ │
 │ └──────────────────────────┘ │
@@ -28,7 +29,9 @@ O aparelho guarda o último modelo escolhido.
 
 - Meio de semana: todas as partes do controle de tempo, com o nome de cada orador ao lado (das designações da apostila e do Programa da visita): presidente nos comentários, oradores das partes, estudantes "Felicia / Rosy", oração inicial e final.
 - Fim de semana: só horários e temas, **sem nomes**.
-- Reuniões Especiais e Serviço de Campo: ficam como estão.
+- Reuniões Especiais: fica como está.
+- Serviço de Campo: novo interruptor **"Campo detalhado"**. Desligado = tabela atual (Dia | Manhã | Local | Tarde | Local). Ligado = tabela do Modelo 2 (Manhã/Tarde, cada saída com dia, horário, local, modalidade, território e oração).
+- Espaço: com 5 a 7 saídas cabe bem; o vão que sobra no Modelo 1 (~3 cm) mais a redução automática de letra absorvem. Com muitas saídas (10+), a letra pode ficar pequena (mínimo ~7pt); nesse caso o painel avisa "Ficou apertado — use o Simplificado".
 - Tudo continua cabendo em uma folha.
 
 ## 3. Modelo Simplificado (igual ao Modelo 2)
