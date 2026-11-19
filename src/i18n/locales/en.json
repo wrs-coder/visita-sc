@@ -1386,7 +1386,7 @@
   "finishVisit": {
     "trigger": "Finish Visit",
     "title": "Finish visit",
-    "description": "Confirm the items below before closing <strong>{{title}}</strong>. This action deletes the visit and all operational data (schedules, assignments, meals, transport, meetings). <strong>Private Notes</strong> are preserved.",
+    "description": "Confirm the items below before closing <strong>{{title}}</strong>. This action deletes the visit and all operational data (schedules, assignments, meals, transport, meetings), including the <strong>Elders meeting agenda</strong> and its attachments. <strong>Private Notes</strong> are preserved.",
     "s303": "S-303 sent",
     "s303Help": "Required to confirm closure.",
     "designations": "Complete Elders/MS designations",

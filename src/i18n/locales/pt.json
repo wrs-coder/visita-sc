@@ -1376,7 +1376,7 @@
   "finishVisit": {
     "trigger": "Finalizar Visita",
     "title": "Finalizar visita",
-    "description": "Confirme os itens abaixo antes de encerrar <strong>{{title}}</strong>. Esta ação apaga a visita e todos os dados operacionais (cronogramas, escalas, refeições, transporte, reuniões). As <strong>Notas Privadas</strong> permanecem preservadas.",
+    "description": "Confirme os itens abaixo antes de encerrar <strong>{{title}}</strong>. Esta ação apaga a visita e todos os dados operacionais (cronogramas, escalas, refeições, transporte, reuniões), incluindo a <strong>Pauta da reunião com os anciãos</strong> e seus anexos. As <strong>Notas Privadas</strong> permanecem preservadas.",
     "s303": "Enviei S-303",
     "s303Help": "Obrigatório para confirmar o encerramento.",
     "designations": "Concluir as Designações de Anc/S.M",

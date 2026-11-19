@@ -1363,7 +1363,7 @@
   "finishVisit": {
     "trigger": "Finalizar Visita",
     "title": "Finalizar visita",
-    "description": "Confirma los elementos a continuación antes de cerrar <strong>{{title}}</strong>. Esta acción elimina la visita y todos los datos operativos (programas, asignaciones, comidas, transporte, reuniones). Las <strong>Notas Privadas</strong> se conservan.",
+    "description": "Confirma los elementos a continuación antes de cerrar <strong>{{title}}</strong>. Esta acción elimina la visita y todos los datos operativos (programas, asignaciones, comidas, transporte, reuniones), incluida la <strong>Pauta de la reunión con los ancianos</strong> y sus adjuntos. Las <strong>Notas Privadas</strong> se conservan.",
     "s303": "S-303 enviado",
     "s303Help": "Obligatorio para confirmar el cierre.",
     "designations": "Concluir las Asignaciones de Anc./SM",

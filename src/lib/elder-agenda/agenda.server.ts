@@ -122,6 +122,30 @@ export async function signedAttachmentUrl(path: string): Promise<string | null> 
   return data?.signedUrl ?? null;
 }
 
+/** "Finalizar a visita": apaga todos os anexos da pasta da visita e a pauta. Só chamar depois de conferir que é o SC. */
+export async function purgeAgenda(visitId: string): Promise<{ files: number }> {
+  let files = 0;
+  for (let page = 0; page < 20; page++) {
+    const { data: list, error } = await supabaseAdmin.storage.from(AGENDA_BUCKET).list(visitId, { limit: 100 });
+    if (error) throw new Error(`Anexos: ${error.message}`);
+    if (!list?.length) break;
+    const { error: rmErr } = await supabaseAdmin.storage.from(AGENDA_BUCKET).remove(list.map((f) => `${visitId}/${f.name}`));
+    if (rmErr) throw new Error(`Anexos: ${rmErr.message}`);
+    files += list.length;
+    if (list.length < 100) break;
+  }
+  const { error } = await supabaseAdmin.from("elder_meeting_agendas").delete().eq("visit_id", visitId);
+  if (error) throw new Error(`Pauta: ${error.message}`);
+  return { files };
+}
+
+/** Quantas respostas dos anciãos a pauta salva tem (aviso antes de excluir a visita). */
+export async function agendaResponseCount(visitId: string): Promise<number> {
+  const p = await savedPayload(visitId);
+  if (!p) return 0;
+  return p.blocks.reduce((n, b) => n + b.cards.reduce((m, c) => m + (c.type === "eldersInfo" ? c.responses.length : 0), 0), 0);
+}
+
 /** Apaga da nuvem os anexos de visitas encerradas há mais de 30 dias (deste SC). */
 async function cleanupOldAttachments(superintendentId: string) {
   const limit = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);

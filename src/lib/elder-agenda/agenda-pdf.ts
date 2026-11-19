@@ -3,8 +3,8 @@
 // Os blocos saem na ordem e com a numeração escolhidas; links viram "Clique aqui" clicável.
 import { createJsPdfCompat, type JsPdfCompat } from "@/lib/pdf/pdf-engine";
 import {
-  CARD_TYPE_LABEL, DEFAULT_AGENDA_VERSES, agendaView, isScOnlyCard, prayerRecShown, htmlToPlain, shownParts, numberedBlocks, recInfoView, sharedAttachments, responseName,
-  type AgendaAuto, type AgendaBlock, type AgendaCard, type AgendaLinkKind, type AgendaPayload,
+  CARD_TYPE_LABEL, DEFAULT_AGENDA_VERSES, agendaView, isScOnlyCard, prayerRecShown, htmlToPlain, shownParts, numberedBlocks, recInfoView, sharedAttachments, responseName, CHECK_ANSWER_LABEL,
+  type AgendaAuto, type AgendaCheckAnswer, type AgendaBlock, type AgendaCard, type AgendaLinkKind, type AgendaPayload,
 } from "./agenda";
 
 /** Versículos padrão (cada SC pode trocar na pauta). */
@@ -17,6 +17,10 @@ export const AGENDA_PDF_STYLES: Array<{ id: AgendaPdfStyle; label: string; hint:
 ];
 type RGB = [number, number, number];
 const INK: RGB = [28, 30, 36], MUTED: RGB = [110, 115, 125], NAVY: RGB = [30, 58, 110], SOFT: RGB = [236, 241, 250], RULE: RGB = [200, 205, 215], LINK: RGB = [25, 90, 200];
+/** Fundo claro + texto escuro de cada resposta do checklist (como as etiquetas do app). */
+const CHECK_TONE: Record<AgendaCheckAnswer, [RGB, RGB]> = {
+  yes: [[222, 242, 228], [22, 101, 52]], no: [[251, 226, 224], [153, 27, 27]], partial: [[253, 240, 210], [133, 77, 14]],
+};
 const KIND_LABEL: Record<AgendaLinkKind, string> = { book: "Leitura", article: "Artigo", video: "Vídeo" };
 
 export interface AgendaPdfInput { payload: AgendaPayload; auto: AgendaAuto; congregation: string; range: string; style?: AgendaPdfStyle }
@@ -231,11 +235,25 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
       fill(SOFT); pdf.rect(M, y, W - 2 * M, 7.5, "F"); fill(NAVY); pdf.rect(M, y, 1.4, 7.5, "F");
       pdf.setFont(true); pdf.setFontSize(10); color(NAVY); pdf.text(responseName(r, i), M + 4.5, y + 5.1); y += 10;
       const x = M + 4.5, w = W - 2 * M - 9;
+      // Checklist: pergunta à esquerda, etiqueta Sim / Não / Em parte à direita.
+      const BADGE_W = 18;
       for (const q of checklist) {
-        ensure(5.5); draw(INK, 0.3); pdf.rect(x, y + 0.6, 3.2, 3.2, "S");
-        if (r.checks[q.id]) { pdf.line(x + 0.6, y + 2.3, x + 1.4, y + 3.2); pdf.line(x + 1.4, y + 3.2, x + 2.7, y + 1); }
-        pdf.setFont(false); pdf.setFontSize(9.5); color(INK); pdf.text(pdf.splitTextToSize(q.text, w - 6)[0] ?? "", x + 5, y + 3.4); y += 5.2;
+        const a = r.checks[q.id];
+        pdf.setFont(false); pdf.setFontSize(9.5);
+        const lines = pdf.splitTextToSize(q.text, w - BADGE_W - 4) as string[];
+        const h = Math.max(5.6, lines.length * 4.3 + 1.3);
+        ensure(h);
+        pdf.setFont(false); pdf.setFontSize(9.5); color(INK);
+        lines.forEach((l, k) => pdf.text(l, x, y + 3.6 + k * 4.3));
+        const bx = x + w - BADGE_W;
+        const [bg, fg] = a ? CHECK_TONE[a] : [SOFT, MUTED];
+        fill(bg); pdf.rect(bx, y + 0.4, BADGE_W, 4.4, "F");
+        pdf.setFont(true); pdf.setFontSize(8); color(fg);
+        pdf.text(a ? CHECK_ANSWER_LABEL[a] : "—", bx + BADGE_W / 2, y + 3.5, { align: "center" });
+        draw(RULE, 0.15); pdf.line(x, y + h - 0.3, x + w, y + h - 0.3);
+        y += h + 0.6;
       }
+      if (checklist.length) y += 1.5;
       questions.forEach((q, k) => {
         ensure(6); pdf.setFont(true); pdf.setFontSize(9.5); color(INK);
         for (const l of pdf.splitTextToSize(`${k + 1}. ${q.text}`, w)) { ensure(4.5); pdf.text(l, x, y + 3.8); y += 4.3; }

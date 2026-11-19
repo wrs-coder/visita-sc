@@ -99,3 +99,26 @@ export const guestGetAgendaAttachmentUrl = createServerFn({ method: "POST" })
     const url = await signedAttachmentUrl(data.path);
     return url ? { ok: true as const, url } : { ok: false as const, error: "Anexo indisponível." };
   });
+
+/** "Finalizar a visita": só o SC apaga a pauta e todos os anexos da visita na nuvem. Chamar antes de apagar a visita. */
+export const scPurgeElderAgenda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { roleForUser, purgeAgenda } = await import("./elder-agenda/agenda.server");
+    const role = await roleForUser(context.userId, data.visitId);
+    if (role === null) {
+      // Visita já apagada: nada a limpar (a pauta sai junto com a visita). Visita de outro SC: recusa.
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: v } = await supabaseAdmin.from("visits").select("id").eq("id", data.visitId).maybeSingle();
+      return v ? { ok: false as const, error: "Só o superintendente apaga a pauta." } : { ok: true as const, files: 0 };
+    }
+    if (role !== "sc") return { ok: false as const, error: "Só o superintendente apaga a pauta." };
+    try {
+      const r = await purgeAgenda(data.visitId);
+      return { ok: true as const, files: r.files };
+    } catch (e) {
+      console.error("[scPurgeElderAgenda]", e);
+      return { ok: false as const, error: "Não foi possível apagar a pauta da reunião com os anciãos." };
+    }
+  });

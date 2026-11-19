@@ -89,6 +89,15 @@ export const getVisitFillSummary = createServerFn({ method: "POST" })
       }
     }
 
+    // Pauta da reunião com os anciãos (tabela sem acesso direto do cliente): respostas dos anciãos.
+    let agendaResponses = 0;
+    try {
+      const { roleForUser, agendaResponseCount } = await import("./elder-agenda/agenda.server");
+      if ((await roleForUser(context.userId, visitId)) === "sc") agendaResponses = await agendaResponseCount(visitId);
+    } catch (e) {
+      console.error("[getVisitFillSummary] Pauta:", e);
+    }
+
     const items: VisitFillItem[] = [
       { key: "meals", label: "Refeições preenchidas", count: meals.count ?? 0 },
       { key: "mealNotes", label: "Observações de refeições por dia", count: mealNotes.count ?? 0 },
@@ -101,6 +110,7 @@ export const getVisitFillSummary = createServerFn({ method: "POST" })
       { key: "weekend", label: "Reunião do fim de semana", count: weekend.count ?? 0 },
       { key: "pioneer", label: "Reunião com pioneiros", count: pioneer.count ?? 0 },
       { key: "elders", label: "Reunião com anciãos e servos", count: elders.count ?? 0 },
+      { key: "elderAgenda", label: "Respostas dos anciãos na pauta da reunião", count: agendaResponses },
     ].filter((x) => x.count > 0);
 
     const totalCount = items.reduce((acc, it) => acc + it.count, 0);

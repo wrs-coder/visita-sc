@@ -236,3 +236,29 @@ describe("pauta: informações adicionais dos anciãos", () => {
     expect(card(mergeAgenda(cur, withResps(cur, []), "sc"), "eldersInfo").responses).toHaveLength(0);
   });
 });
+
+describe("pauta: checklist Sim / Não / Em parte", () => {
+  const H1 = "c".repeat(64);
+  const rawWith = (checks: Record<string, unknown>) => ({ v: 3, blocks: [{ id: "t", title: "T", cards: [{ id: "e", type: "eldersInfo",
+    checklist: [{ id: "k1", text: "Visitou os inativos?" }, { id: "k2", text: "Relatórios em dia?" }, { id: "k3", text: "Outro" }],
+    responses: [{ id: "r1", authorKey: H1, name: "", checks, answers: {}, html: "", updatedAt: "" }] }] }] });
+  const checksOf = (raw: unknown) => normalizeAgenda(raw).blocks[0].cards[0].responses[0].checks;
+  it("guarda as três respostas", () => {
+    expect(checksOf(rawWith({ k1: "yes", k2: "no", k3: "partial" }))).toEqual({ k1: "yes", k2: "no", k3: "partial" });
+  });
+  it("marcação antiga (caixa marcada) vira Sim", () => {
+    expect(checksOf(rawWith({ k1: true, k2: false }))).toEqual({ k1: "yes" });
+  });
+  it("valor desconhecido fica sem resposta", () => {
+    expect(checksOf(rawWith({ k1: "talvez", k2: 1 }))).toEqual({});
+  });
+  it("rótulos são Sim, Não e Em parte", async () => {
+    const { CHECK_ANSWER_LABEL } = await import("./agenda");
+    expect([CHECK_ANSWER_LABEL.yes, CHECK_ANSWER_LABEL.no, CHECK_ANSWER_LABEL.partial]).toEqual(["Sim", "Não", "Em parte"]);
+  });
+  it("ancião salva a própria resposta com Em parte", () => {
+    const cur = normalizeAgenda(rawWith({}));
+    const inc = normalizeAgenda(rawWith({ k1: "partial" }));
+    expect(mergeAgenda(cur, inc, "elder", Date.now(), H1).blocks[0].cards[0].responses[0].checks).toEqual({ k1: "partial" });
+  });
+});

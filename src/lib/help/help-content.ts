@@ -86,6 +86,8 @@ const RAW_TOPICS: HelpTopic[] = [
       { before: "Em “Fontes de matéria”, cada publicação ou vídeo tem seu nome e seu link." },
       { before: "Em “Modelos”, salve sua pauta para as próximas visitas; ela sincroniza com seus aparelhos." },
       { before: "Use “Tela cheia” na reunião e exporte o PDF em um dos três estilos." },
+      { before: "Em “Informações adicionais dos anciãos”, cada item do checklist é respondido com Sim, Não ou Em parte." },
+      { before: "Ao finalizar a visita, a pauta e os anexos enviados são apagados junto com os outros dados da visita." },
     ],
   },
 
@@ -400,6 +402,7 @@ export const ELDER_HELP_TOPICS: HelpTopic[] = [
     steps: [
       { before: "No Início, abra a aba “Anciãos” (ou a pílula “Pauta” no Programa da visita)." },
       { before: "Preencha os cartões que o superintendente liberou para você e toque em salvar." },
+      { before: "No checklist de “Informações adicionais dos anciãos”, escolha Sim, Não ou Em parte em cada item." },
       { before: "Depois do prazo, a pauta fica só para leitura e abre mesmo sem internet." },
       { before: "Toque no botão de PDF para exportar no modelo escolhido pelo superintendente." },
     ],

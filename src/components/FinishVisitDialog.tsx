@@ -17,6 +17,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { markVisitFinished } from "@/lib/finished-visits";
 import { markDeleted } from "@/lib/local-db";
+import { useServerFn } from "@tanstack/react-start";
+import { scPurgeElderAgenda } from "@/lib/elder-agenda.functions";
+import { withNetworkWindow } from "@/lib/net-policy";
+import { purgeLocalAgenda } from "@/components/elder-agenda/purge-local-agenda";
 
 // Tabelas operacionais ligadas a uma visita. Apagar antes da visita evita
 // dependências órfãs (mesmo sem FK explícita). private_notes NÃO entra aqui:
@@ -68,6 +72,7 @@ export function FinishVisitDialog({
     else setOpenState(o);
   };
 
+  const purgeAgenda = useServerFn(scPurgeElderAgenda);
   const [s303, setS303] = useState(false);
   const [designacoes, setDesignacoes] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -81,6 +86,14 @@ export function FinishVisitDialog({
     if (!s303 || loading) return;
     setLoading(true);
     try {
+      // Pauta da reunião com os anciãos: apaga na nuvem (pauta + anexos) antes da visita, porque
+      // a conferência do SC precisa da visita. Se falhar, nada é apagado e o SC tenta de novo.
+      const agenda = await Promise.race([
+        withNetworkWindow(() => purgeAgenda({ data: { visitId } })),
+        new Promise<never>((_, rej) => setTimeout(() => rej(new Error("Pauta: tempo esgotado")), 20000)),
+      ]);
+      if (!agenda.ok) throw new Error(agenda.error);
+      await purgeLocalAgenda(visitId).catch((err) => console.error("[finishVisit] Pauta no aparelho:", err));
       // Limpeza em paralelo, cada uma com tempo limite: uma tabela lenta não trava as outras.
       const results = await Promise.allSettled(
         CHILD_TABLES.map((table) =>

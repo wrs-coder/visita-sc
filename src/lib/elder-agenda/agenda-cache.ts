@@ -19,6 +19,10 @@ export function readAgendaCache(scope: string): CachedAgenda | null {
     return d && d.payload ? { ...d, payload: normalizeAgenda(d.payload) } : null;
   } catch { return null; }
 }
+/** Apaga a cópia guardada no aparelho (visita finalizada ou sem pauta no servidor). */
+export function clearAgendaCache(scope: string) {
+  try { localStorage.removeItem(KEY(scope)); } catch (e) { console.error("[agenda-cache] Erro ao apagar cópia:", e); }
+}
 
 const STYLE_KEY = "visita-sc:agenda-pdf-style";
 export function readPdfStyle(): "formal" | "cards" | "timeline" {

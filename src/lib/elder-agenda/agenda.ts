@@ -30,11 +30,15 @@ export interface AgendaCard {
   responses: AgendaElderResponse[];
 }
 export interface AgendaQuestion { id: string; text: string }
+/** Resposta de um item do checklist; item sem resposta fica fora do mapa. */
+export type AgendaCheckAnswer = "yes" | "no" | "partial";
+export const CHECK_ANSWERS: AgendaCheckAnswer[] = ["yes", "no", "partial"];
+export const CHECK_ANSWER_LABEL: Record<AgendaCheckAnswer, string> = { yes: "Sim", no: "Não", partial: "Em parte" };
 export interface AgendaElderResponse {
   id: string;
   /** SHA-256 do segredo do aparelho que escreveu; vazio = só o SC altera (ex.: texto antigo). */ authorKey: string;
   /** Opcional: sem nome aparece como "Ancião N". */ name: string;
-  checks: Record<string, boolean>; answers: Record<string, string>; html: string; updatedAt: string;
+  /** Antigo formato de marcar (true) é lido como "Sim". */ checks: Record<string, AgendaCheckAnswer>; answers: Record<string, string>; html: string; updatedAt: string;
 }
 export type AgendaRecDecision = "assign" | "decline" | null;
 /** Comentário e decisão do SC por recomendação: só do SC, nunca chega aos anciãos nem ao PDF. */
@@ -201,10 +205,19 @@ export function normalizeCard(raw: unknown): AgendaCard {
 function questionList(raw: unknown): AgendaQuestion[] {
   return (Array.isArray(raw) ? raw : []).slice(0, MAX_QUESTIONS).map((q) => { const o = obj(q); return { id: idOk(o.id), text: str(o.text, 300) }; });
 }
+/** Resposta do checklist: aceita as três opções; o antigo "marcado" (true) vira "Sim". */
+export function checkAnswerOf(v: unknown): AgendaCheckAnswer | null {
+  if (v === true) return "yes";
+  return v === "yes" || v === "no" || v === "partial" ? v : null;
+}
 function normResponse(raw: unknown): AgendaElderResponse {
   const o = obj(raw);
-  const checks: Record<string, boolean> = {};
-  for (const [k, v] of Object.entries(obj(o.checks)).slice(0, MAX_QUESTIONS)) if (ID_RE.test(k) && v === true) checks[k] = true;
+  const checks: Record<string, AgendaCheckAnswer> = {};
+  for (const [k, v] of Object.entries(obj(o.checks)).slice(0, MAX_QUESTIONS)) {
+    if (!ID_RE.test(k)) continue;
+    const a = checkAnswerOf(v);
+    if (a) checks[k] = a;
+  }
   const answers: Record<string, string> = {};
   for (const [k, v] of Object.entries(obj(o.answers)).slice(0, MAX_QUESTIONS)) if (ID_RE.test(k)) answers[k] = str(v, 5000);
   const key = str(o.authorKey, 64);

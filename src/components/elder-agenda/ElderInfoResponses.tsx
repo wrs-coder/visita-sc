@@ -1,7 +1,7 @@
 // "Informações adicionais dos anciãos": cada ancião preenche o seu cartão (nome opcional, checklist,
 // perguntas e texto). Fora da tela cheia só um balão com o total; as respostas abrem em carrossel.
 import { useRef, useState } from "react";
-import { CheckSquare, ChevronLeft, ChevronRight, MessageCircle, Pencil, Plus, Square, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ListChecks, MessageCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,37 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { BibleRefText } from "@/components/bible/BibleRefText";
-import { htmlToPlain, newId, responseName, type AgendaCard, type AgendaElderResponse } from "@/lib/elder-agenda/agenda";
+import { CHECK_ANSWERS, CHECK_ANSWER_LABEL, htmlToPlain, newId, responseName, type AgendaCard, type AgendaCheckAnswer, type AgendaElderResponse } from "@/lib/elder-agenda/agenda";
+
+/** Tom de cada resposta (tokens de status do sistema de cores). */
+const TONE: Record<AgendaCheckAnswer, "confirmed" | "attention" | "pending"> = { yes: "confirmed", no: "attention", partial: "pending" };
+const TONE_TEXT: Record<AgendaCheckAnswer, string> = {
+  yes: "[color:var(--status-confirmed-fg)]", no: "[color:var(--status-attention-fg)]", partial: "[color:var(--status-pending-fg)]",
+};
+
+/** Seletor estilo One UI com três opções; tocar de novo na escolhida limpa a resposta. */
+function CheckAnswerPicker({ label, value, onChange }: { label: string; value: AgendaCheckAnswer | undefined; onChange: (v: AgendaCheckAnswer | undefined) => void }) {
+  return (
+    <div role="radiogroup" aria-label={label} className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
+      {CHECK_ANSWERS.map((a) => {
+        const on = value === a;
+        return (
+          <button key={a} type="button" role="radio" aria-checked={on} onClick={() => onChange(on ? undefined : a)}
+            className={`min-h-9 rounded-lg px-2 text-sm transition-colors ${on ? `bg-background font-semibold shadow-sm ${TONE_TEXT[a]}` : "text-muted-foreground"}`}>
+            {CHECK_ANSWER_LABEL[a]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Etiqueta da resposta na leitura (app e tela cheia). */
+function CheckAnswerBadge({ value }: { value: AgendaCheckAnswer | undefined }) {
+  return value
+    ? <span className="status-badge shrink-0" data-tone={TONE[value]}>{CHECK_ANSWER_LABEL[value]}</span>
+    : <span className="status-badge shrink-0">—</span>;
+}
 
 const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const toHtml = (t: string) => t.split(/\n/).map((l) => `<p>${esc(l)}</p>`).join("");
@@ -90,17 +120,17 @@ function ResponseForm({ card, value, onSave, onCancel }: { card: AgendaCard; val
         <Input value={r.name} maxLength={80} onChange={(e) => setR({ ...r, name: e.target.value })} placeholder="Ex.: João Silva" />
       </div>
       {checklist.length ? (
-        <div className="space-y-1 rounded-xl border divide-y">
-          {checklist.map((q) => {
-            const on = !!r.checks[q.id];
-            return (
-              <button key={q.id} type="button" role="checkbox" aria-checked={on} onClick={() => setR({ ...r, checks: { ...r.checks, [q.id]: !on } })}
-                className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm">
-                {on ? <CheckSquare className="h-5 w-5 text-primary shrink-0" /> : <Square className="h-5 w-5 text-muted-foreground shrink-0" />}
-                <span className="break-words">{q.text}</span>
-              </button>
-            );
-          })}
+        <div className="rounded-xl border divide-y">
+          {checklist.map((q) => (
+            <div key={q.id} className="space-y-2 px-3 py-2.5">
+              <p className="text-sm break-words">{q.text}</p>
+              <CheckAnswerPicker label={q.text} value={r.checks[q.id]} onChange={(v) => {
+                const checks = { ...r.checks };
+                if (v) checks[q.id] = v; else delete checks[q.id];
+                setR({ ...r, checks });
+              }} />
+            </div>
+          ))}
         </div>
       ) : null}
       {questions.map((q, i) => (
@@ -145,9 +175,9 @@ export function ResponsesCarousel({ card, canChange, onEdit, onRemove }: {
                 </> : null}
               </div>
               {card.checklist.filter((q) => q.text.trim()).map((q) => (
-                <p key={q.id} className="flex items-start gap-2 text-sm">
-                  {r.checks[q.id] ? <CheckSquare className="h-4 w-4 mt-0.5 text-primary shrink-0" /> : <Square className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />}
-                  <span className="break-words">{q.text}</span>
+                <p key={q.id} className="flex items-start justify-between gap-2 text-sm">
+                  <span className="min-w-0 break-words">{q.text}</span>
+                  <CheckAnswerBadge value={r.checks[q.id]} />
                 </p>
               ))}
               {card.questions.filter((q) => q.text.trim()).map((q, k) => (
@@ -180,9 +210,10 @@ export function ElderInfoQuestionsEditor({ card, onChange }: { card: AgendaCard;
     return (
       <div className="space-y-1.5">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title} (opcional)</p>
+        {key === "checklist" ? <p className="text-xs text-muted-foreground">Cada ancião responde Sim, Não ou Em parte.</p> : null}
         {items.map((q, i) => (
           <div key={q.id} className="flex items-center gap-1.5">
-            {key === "checklist" ? <Square className="h-4 w-4 text-muted-foreground shrink-0" /> : <span className="w-4 text-xs text-muted-foreground">{i + 1}.</span>}
+            {key === "checklist" ? <ListChecks className="h-4 w-4 text-muted-foreground shrink-0" /> : <span className="w-4 text-xs text-muted-foreground">{i + 1}.</span>}
             <Input value={q.text} maxLength={300} className="h-9" placeholder={key === "checklist" ? "Ex.: Visitou os inativos?" : "Ex.: Qual a maior necessidade?"}
               onChange={(e) => set(items.map((x) => (x.id === q.id ? { ...x, text: e.target.value } : x)))} />
             <button type="button" onClick={() => set(items.filter((x) => x.id !== q.id))} aria-label="Tirar" className="p-1.5 text-muted-foreground"><Trash2 className="h-4 w-4" /></button>

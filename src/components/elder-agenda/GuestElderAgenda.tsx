@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { guestGetAgendaAttachmentUrl, guestGetElderAgenda, guestSaveElderAgenda } from "@/lib/elder-agenda.functions";
-import { readAgendaCache, writeAgendaCache } from "@/lib/elder-agenda/agenda-cache";
+import { clearAgendaCache, readAgendaCache, writeAgendaCache } from "@/lib/elder-agenda/agenda-cache";
 import { authorSecret } from "./agenda-author";
 import { ElderAgendaView, type AgendaData, type AgendaSaver } from "./ElderAgendaView";
 
@@ -17,7 +17,7 @@ export function GuestElderAgenda({ inviteCode }: { inviteCode: string }) {
   const scope = `code.${inviteCode}`;
   const load = useCallback(async () => {
     setError(null);
-    try { const r = await fnGet({ data: { inviteCode } }); if (r.ok) { setData(r); writeAgendaCache(scope, r); } else setError(r.error); }
+    try { const r = await fnGet({ data: { inviteCode } }); if (r.ok) { setData(r); writeAgendaCache(scope, r); } else { clearAgendaCache(scope); setData(null); setError(r.error); } }
     catch {
       const c = readAgendaCache(scope);
       if (c) setData({ ...c, offline: true }); else setError("Sem conexão. A pauta ainda não foi guardada neste aparelho.");

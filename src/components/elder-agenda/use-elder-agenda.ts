@@ -6,7 +6,7 @@ import { cloudAttachmentCount } from "@/lib/elder-agenda/agenda";
 import type { AgendaAttachmentApi } from "./AgendaAttachments";
 import { authorSecret } from "./agenda-author";
 import { withNetworkWindow } from "@/lib/net-policy";
-import { readAgendaCache, writeAgendaCache } from "@/lib/elder-agenda/agenda-cache";
+import { clearAgendaCache, readAgendaCache, writeAgendaCache } from "@/lib/elder-agenda/agenda-cache";
 import type { AgendaData, AgendaSaver } from "./ElderAgendaView";
 
 /** Carrega a pauta da visita da nuvem; sem internet, usa a cópia guardada no aparelho (somente leitura). */
@@ -26,7 +26,8 @@ export function useElderAgenda(visitId: string | null | undefined) {
     const scope = `visit.${visitId}`;
     try {
       const r = await withNetworkWindow(() => fnGet({ data: { visitId } }));
-      if (r.ok) { setData(r); writeAgendaCache(scope, r); } else setError(r.error);
+      // Resposta do servidor sem pauta (visita finalizada ou sem acesso): a cópia do aparelho também sai.
+      if (r.ok) { setData(r); writeAgendaCache(scope, r); } else { clearAgendaCache(scope); setData(null); setError(r.error); }
     } catch {
       const c = readAgendaCache(scope);
       if (c) setData({ ...c, offline: true });
