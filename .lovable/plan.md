@@ -1,90 +1,53 @@
-# Quadro de anúncios: dois modelos + presidente e oração final automáticos
+# Quadro de anúncios — dados iguais à Agenda e novo layout do Modelo Completo
 
-## 1. Escolha do modelo no celular
+## 1. Informações corretas nos três modelos (principalmente o Serviço de Campo)
 
-Ao tocar em "Quadro de anúncios", o painel ganha um seletor no topo (estilo One UI).
+**O que verifiquei:** na nuvem, a visita "10 Cidade do Sequele" (17–22/11) tem o campo com local "Teta Lando" (quarta de manhã) e "Casa do irmao Teta" nos outros dias, e os horários batem com o quadro. Mas o quadro saiu com "Salão do Reino / Salao do Reino". Esse texto não está escrito fixo no app, então o quadro está lendo uma cópia diferente da que a Agenda mostra. Ainda não sei qual das duas está desatualizada; isso será o primeiro passo.
 
-```text
-┌──────────────────────────────┐
-│ ▬▬▬                          │
-│ Quadro de anúncios           │
-│ ┌────────────┬─────────────┐ │
-│ │■ Completo  │ Simplificado│ │
-│ └────────────┴─────────────┘ │
-│ Itens opcionais              │
-│ Frase do topo (Isa 54:13) [●]│
-│ Frase do rodapé (Luc 2:10)[●]│
-│ Temas especiais           [●]│
-│ Orações especiais         [●]│
-│ Oração do campo           [●]│
-│ Campo detalhado (só Compl.)[ ]│
-│ ┌──────────────────────────┐ │
-│ │      Gerar PDF           │ │
-│ └──────────────────────────┘ │
-└──────────────────────────────┘
-```
-O aparelho guarda o último modelo escolhido.
+**O que vou fazer:**
+1. Abrir a Agenda e gerar o quadro com a sua conta, comparando campo por campo de onde cada um tira os dados (nuvem, cópia do aparelho ou alterações ainda não enviadas).
+2. Fazer o quadro usar **exatamente a mesma fonte da Agenda**, para tudo: campo (dia, horário, local, modalidade, território, oração), meio de semana, fim de semana, pioneiros e anciãos. Assim o que aparece na Agenda é o que vai para a folha, nos três modelos.
+3. Se a Agenda mostrar o local da "designação do superintendente" (ponto de encontro) em vez do local da reunião de campo, sigo o mesmo critério que ela usa.
+4. Teste automático: "o local do campo no quadro é igual ao da Agenda".
 
-## 2. Modelo Completo (igual ao Modelo 1)
+## 2. Modelo Completo com o layout do seu Modelo 1
 
-- Meio de semana: todas as partes do controle de tempo, com o nome de cada orador ao lado (das designações da apostila e do Programa da visita): presidente nos comentários, oradores das partes, estudantes "Felicia / Rosy", oração inicial e final.
-- Fim de semana: só horários e temas, **sem nomes**.
-- Reuniões Especiais: fica como está.
-- Serviço de Campo: novo interruptor **"Campo detalhado"**. Desligado = tabela atual (Dia | Manhã | Local | Tarde | Local). Ligado = tabela do Modelo 2 (Manhã/Tarde, cada saída com dia, horário, local, modalidade, território e oração).
-- Espaço: com 5 a 7 saídas cabe bem; o vão que sobra no Modelo 1 (~3 cm) mais a redução automática de letra absorvem. Com muitas saídas (10+), a letra pode ficar pequena (mínimo ~7pt); nesse caso o painel avisa "Ficou apertado — use o Simplificado".
-- Tudo continua cabendo em uma folha.
-
-## 3. Modelo Simplificado (igual ao Modelo 2)
+Mudanças em relação à folha atual:
+- **Pontilhado** ligando o nome da parte ao nome do designado (Cântico… ........ Claucio).
+- **Reuniões Especiais** em duas colunas: "Horário e Local" (dia/hora em negrito e o local logo abaixo) | "Reunião" (nome, tema em itálico e orações), em quadro mais estreito e centralizado.
+- Restante igual: faixa azul do topo, frase de Isaías, cores por seção (azul, dourado, vermelho), fim de semana com tempos, tabela do campo Dia | Manhã | Local | Tarde | Local, rodapé com Lucas 2:10 e data de emissão.
+- Continua cabendo em **uma única folha**.
+- O Modelo Simplificado **não muda**.
 
 ```text
-┌──────────── A4 ─────────────┐
-│        PROGRAMAÇÃO          │
-│ VISITA DO SUPERINTENDENTE   │
-│ "...Todos os seus filhos.." │
-│▓▓ REUNIÃO MEIO DE SEMANA ▓▓▓│
-│░░ DISCURSO DE SERVIÇO ░░░░░░│
-│  Sinta alegria na obra...   │
-│▓▓ REUNIÃO DO FIM DE SEMANA ▓│
-│░░ DISCURSO PÚBLICO ░░░░░░░░░│
-│  Você vai ser corajoso...   │
-│░░ DISCURSO DE SERVIÇO FINAL │
-│  Avancemos à madureza...    │
-│░░ ♫ CÂNTICOS ♫ ░░░░░░░░░░░░░│
-│ Terça(Final):79 Fds(I):56   │
-│ Fds(Final):156              │
-│▓▓ REUNIÕES ESPECIAIS ▓▓▓▓▓▓▓│
-│ PIONEIROS     │ ANCIÃOS     │
-│ Local / Dia e hora / Tema   │
-│ Oração inicial / final      │
-│▓▓ SERVIÇO DE CAMPO ▓▓▓▓▓▓▓▓▓│
-│░░ PERÍODO DA MANHÃ ░░░░░░░░░│
-│ Dia·Hora·Local │ Modalidade │
-│                │ Território │
-│                │ Oração     │
-│░░ PERÍODO DA TARDE ░░░░░░░░░│
-│ (mesma tabela)              │
-└─────────────────────────────┘
+┌──────────────── Folha A4 ────────────────┐
+│█ 17 a 22 nov │ SEMANA DA VISITA │ Congr. █│
+│  "...Todos os seus filhos..." Isa. 54:13  │
+│        PROGRAMAÇÃO DAS REUNIÕES           │
+│ Meio de Semana: Terça às 19:00            │
+│ ▪19:00     Cântico 28 e oração .... Claucio│
+│ ▪19:05 01m Comentários iniciais ... André │
+│ ▪19:06 10m 1. Uma reação ........... Nobre│
+│ ...                                       │
+│ Fim de Semana: Sábado às 16:15            │
+│ ▪16:20 30m Filme - Episódio 2 ...         │
+├───────────── REUNIÕES ESPECIAIS ──────────┤
+│   Horário e Local   │ Reunião             │
+│   Sábado 10:30      │ Reunião c/ Pioneiros│
+│   Salão do Reino    │ "Eu os reanimarei"  │
+│                     │ Oração: ... / ...   │
+├──── REUNIÕES PARA O SERVIÇO DE CAMPO ─────┤
+│ Dia  │Manhã│ Local     │Tarde│ Local      │
+│Quarta│09:00│ Teta Lando│16:30│ Casa Teta  │
+├───────────────────────────────────────────┤
+│  Incentivamos todos... – Lucas 2:10       │
+│                       Emitido em 19/11/26 │
+└───────────────────────────────────────────┘
 ```
-- Meio e fim de semana: só temas dos discursos e números dos cânticos.
-- Reuniões especiais: todos os dados da Agenda (local, dia/hora, tema, orações), lado a lado.
-- Campo (destaque): uma linha por saída com dia, horário, local, modalidade, nº do território e oração, separado Manhã/Tarde, lendo a mesma fonte da Agenda do dashboard.
-- Mantém as frases opcionais. Se não couber em 1 folha, reduz letra/espaços automaticamente.
 
-## 4. Apostila preenche presidente e oração final
-
-Ao importar a apostila (como já faz com o discurso de serviço e o cântico final), na semana da visita:
-- "Comentários iniciais" (e finais) recebem o **Presidente** do Programa da visita › Meio de semana.
-- "Cântico e oração" final recebe a **Oração final** do meio de semana.
-Só preenche se a parte estiver vazia — nunca apaga um nome já digitado. Nada é gravado no programa salvo (aplicado na hora de mostrar, como hoje).
-
-## Sugestões
-- Mostrar no painel um aviso "Faltam: presidente, oração final" quando houver campos vazios antes de gerar.
-- Nome do arquivo com o modelo: "Quadro-completo-17-22-nov.pdf".
+No celular, o painel do Quadro de anúncios fica como está.
 
 ## Detalhes técnicos
-- `use-visit-week-info.ts`: selecionar também `chairman, closing_prayer` de midweek_meetings; `VisitWeekInfo` ganha `chairman`, `closingPrayer`.
-- `visit-week-meeting.ts` `applyVisitWeek`: preencher `assigned` das partes `comments` vazias com chairman e da última `song`+oração com closingPrayer. Teste novo em meeting-rules.test.ts.
-- `board-program.ts`: `BoardTemplate = "full" | "simple"`; modelo completo omite nomes do fim de semana; novo `renderSimpleBoard` (pdf-lib, tokens de cor existentes) com campo por linha (modalidade, território, oração) a partir dos field_meetings via readWithMirror.
-- Fim de semana no simplificado: public_talk_theme (weekend_meetings), discurso final do SC e cânticos de visit_template_overrides/extras.
-- `BoardProgramSheet.tsx`: seletor segmentado, localStorage `board.template`.
-- Testes em board-program.test.ts para: fim de semana sem nomes no completo; campo com modalidade/território/oração no simplificado.
+- `board-program-export.ts` hoje consulta direto com `supabase.from(...)`; a Agenda (`_app.dashboard.tsx`) carrega os mesmos registros pelo caminho do aparelho primeiro. Trocar para `readWithMirror` (local-first.ts) e incluir as alterações pendentes, como a Agenda faz, depois de confirmar com Playwright qual cópia tem "Salao do Reino".
+- `board-program.ts` (render do modelo `full`): função de pontilhado entre o texto da parte e o nome, com `fit()` mantido; bloco de Especiais em duas colunas centralizadas; manter a escala automática para uma página.
+- Atualizar `board-program.test.ts`; gerar PDFs de exemplo dos três modelos e conferir visualmente.
