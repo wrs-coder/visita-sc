@@ -529,6 +529,44 @@ export type Database = {
         }
         Relationships: []
       }
+      elder_meeting_agendas: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json
+          permissions: Json
+          superintendent_id: string
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          permissions?: Json
+          superintendent_id: string
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          permissions?: Json
+          superintendent_id?: string
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "elder_meeting_agendas_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: true
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       elder_pastoral_visits: {
         Row: {
           address: string | null

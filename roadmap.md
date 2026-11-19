@@ -26,3 +26,10 @@
 - [x] PDF Quadro de anúncios abaixo do Relatório executivo
 - [x] Remover "Ir para o modo esboço" da Tela cheia do Início
 - [x] Quadro: frases opcionais (Isa. 54:13 / Lucas 2:10), campo próximo, meio de semana com todas as partes do controle de tempo
+
+## Pauta da reunião com os anciãos (19/11)
+- [x] Pílula "Pauta" no Programa da visita com tópicos do modelo, preenchimento automático e editor de esboço
+- [x] Permissões por bloco (Só SC / Coordenador / Todos)
+- [x] PDF no layout do modelo com links clicáveis
+- [x] Aba "Pastoreio" do Dashboard renomeada para "Anciãos" + cartão da pauta (recolhe/expande)
+- [x] Acesso "Corpo de anciãos" (sem cadastro) com aba Pauta

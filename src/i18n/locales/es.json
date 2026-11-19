@@ -304,7 +304,7 @@
     "pager": {
       "tabToday": "Hoy",
       "tabVisit": "Visita",
-      "tabPastoral": "Pastoreo",
+      "tabPastoral": "Ancianos",
       "tabTomorrow": "Mañana",
       "tomorrowTitle": "Programa de mañana",
       "noTime": "Sin horario",
@@ -2206,6 +2206,7 @@
   "pageTitles": {
     "help": "Ayuda",
     "elderBody": "Cuerpo de ancianos",
+    "elderAgenda": "Pauta de ancianos",
     "visitPackages": "Paquetes de la visita",
     "trash": "Papelera",
     "elderTemplates": "Programa de ancianos"

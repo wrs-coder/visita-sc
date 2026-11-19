@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { BookOpen, Users, MapPin, UtensilsCrossed, Car } from "lucide-react";
+import { BookOpen, Users, MapPin, UtensilsCrossed, Car, ClipboardList } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { writePref } from "@/lib/template-day-pills";
@@ -8,6 +8,7 @@ import { VisitProgramTopBar } from "./VisitProgramTopBar";
 
 export const VISIT_PROGRAM_TABS = [
   { to: "/programa-ancioes", key: "elders", label: "Anciãos", icon: BookOpen },
+  { to: "/pauta-ancioes", key: "agenda", label: "Pauta", icon: ClipboardList },
   { to: "/escala", key: "studies", label: "Estudos e Revisitas", icon: Users },
   { to: "/reunioes-discursos", key: "meetings", label: "Reuniões", icon: MapPin },
   { to: "/refeicoes", key: "meals", label: "Refeições", icon: UtensilsCrossed },

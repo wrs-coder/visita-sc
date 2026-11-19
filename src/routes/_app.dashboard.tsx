@@ -112,6 +112,7 @@ import { formatDistanceToNow } from "date-fns";
 import { DashboardPager } from "@/components/dashboard/DashboardPager";
 // Carregados só quando usados: não pesam na abertura do Início.
 const ToCommentDashboardCard = lazy(() => import("@/components/dashboard/ToCommentDashboardCard"));
+const ElderAgendaDashboardCard = lazy(() => import("@/components/elder-agenda/ElderAgendaDashboardCard"));
 const MeetingTimerButton = lazy(() => import("@/components/meeting/MeetingTimerButton"));
 const BoardProgramSheet = lazy(() => import("@/components/visit-week/BoardProgramSheet"));
 import { buildDayTimeline, groupByDate, resolveWeekdaySlot, type TimelineKind, type TimelineSource } from "@/lib/today-timeline";
@@ -1622,9 +1623,10 @@ function Dashboard() {
           ...(visit
             ? [{
                 id: "pastoreio",
-                label: t("dashboard.pager.tabPastoral", { defaultValue: "Pastoreio" }),
+                label: t("dashboard.pager.tabPastoral", { defaultValue: "Anciãos" }),
                 content: (
                   <>
+      <Suspense fallback={null}><ElderAgendaDashboardCard visitId={visit.id} /></Suspense>
       {role === "superintendent" && visit && (
         <CollapsibleCard
           id="super-elder-program"
