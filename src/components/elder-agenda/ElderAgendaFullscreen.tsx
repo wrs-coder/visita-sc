@@ -7,7 +7,7 @@ import { BibleRefText } from "@/components/bible/BibleRefText";
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
 import { useFocusChromeWhile } from "@/lib/focus-chrome";
 import {
-  CARD_TYPE_LABEL, agendaView, htmlToPlain, itemUrls, numberedBlocks, prayerRecShown, recInfoView,
+  CARD_TYPE_LABEL, agendaView, htmlToPlain, itemUrls, shownParts, numberedBlocks, prayerRecShown, recInfoView,
   type AgendaCard, type AgendaPayload,
 } from "@/lib/elder-agenda/agenda";
 import { AgendaAttachments } from "./AgendaAttachments";
@@ -41,7 +41,7 @@ export function ElderAgendaFullscreen({ data, payload, isSc, onClose }: { data: 
     if (c.type === "local") data.auto.local.forEach((l) => parts.push(
       <div key={l.id} className="space-y-0.5 text-sm"><p className="font-semibold break-words">{l.subject || "Assunto"}</p>{l.suggestedBy ? <p className="text-muted-foreground">Quem indicou: {l.suggestedBy}</p> : null}{l.sources ? <p className="whitespace-pre-wrap">{l.sources}</p> : null}</div>,
     ));
-    if (c.type === "links") c.items.filter((it) => it.text || itemUrls(it).length).forEach((it) => parts.push(<AgendaLinkRow key={it.id} item={it} />));
+    if (c.type === "links") c.items.filter((it) => shownParts(it).length).forEach((it) => parts.push(<AgendaLinkRow key={it.id} item={it} />));
     if (c.type !== "recs") { const t = text(c.html); if (t) parts.push(<div key="h">{t}</div>); }
     if (c.attachments.length) parts.push(<AgendaAttachments key="a" card={c} editable={false} api={data.attachmentApi} offline={!!data.offline} onChange={() => undefined} />);
     return parts;

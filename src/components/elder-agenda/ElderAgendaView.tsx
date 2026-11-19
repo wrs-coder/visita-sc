@@ -18,9 +18,9 @@ import { BibleRefText } from "@/components/bible/BibleRefText";
 import { saveBlob } from "@/lib/share";
 import {
   ACCESS_LABEL, ATTACHABLE, CARD_TYPES, CARD_TYPE_LABEL, MAX_BLOCKS, MAX_CARDS, agendaView, autoHidden, canEditCard, isLocked, itemUrls,
-  newBlock, newCard, newId, numberedBlocks, prayerRecShown, recInfoView, safeUrl, withoutPrivate,
+  newBlock, newCard, newId, numberedBlocks, prayerRecShown, recInfoView, safeUrl, withoutPrivate, withParts, newLinkItem, shownParts,
   type AgendaRecDecision,
-  type AgendaAccess, type AgendaAttachment, type AgendaAuto, type AgendaBlock, type AgendaCard, type AgendaCardType, type AgendaLinkItem,
+  type AgendaAccess, type AgendaAttachment, type AgendaAuto, type AgendaBlock, type AgendaCard, type AgendaCardType, type AgendaLinkItem, type AgendaLinkPart,
   type AgendaLinkKind, type AgendaPayload, type AgendaRecInfo, type AgendaRole,
 } from "@/lib/elder-agenda/agenda";
 import { AGENDA_PDF_STYLES, type AgendaPdfStyle } from "@/lib/elder-agenda/agenda-pdf";
@@ -76,16 +76,17 @@ export async function exportAgendaPdf(data: AgendaData, payload: AgendaPayload, 
 /** Linha de links só para ler: ícone + texto + "Clique aqui" (abre todos os links da linha). */
 export function AgendaLinkRow({ item }: { item: AgendaLinkItem }) {
   const { icon: Icon, label } = LINK_KIND_UI[item.kind];
-  const urls = itemUrls(item);
+  const parts = shownParts(item);
   return (
     <div className="flex items-center gap-3 min-w-0 py-2">
       <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0"><Icon className="h-4 w-4 text-primary" aria-label={label} /></span>
-      <span className="flex-1 min-w-0 text-sm break-words">{item.text || <span className="text-muted-foreground">{label}</span>}</span>
-      {urls.length ? (
-        <button type="button" onClick={() => void openAllLinks(urls)} className="text-primary text-sm font-semibold shrink-0 hover:underline">
-          Clique aqui{urls.length > 1 ? ` (${urls.length})` : ""}
-        </button>
-      ) : null}
+      <span className="flex-1 min-w-0 text-sm break-words">
+        {parts.length ? parts.map((pt, k) => (
+          <span key={pt.id}>{k ? <span className="text-muted-foreground"> | </span> : null}
+            {pt.url ? <button type="button" onClick={() => void openAllLinks([pt.url])} className="text-primary underline underline-offset-2 text-left">{pt.title}</button> : pt.title}
+          </span>
+        )) : <span className="text-muted-foreground">{label}</span>}
+      </span>
     </div>
   );
 }
@@ -223,7 +224,7 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
     const setItems = (items: AgendaLinkItem[]) => patchCard(c.id, { items });
     const setItem = (i: number, next: Partial<AgendaLinkItem>) => setItems(c.items.map((x, j) => (j === i ? { ...x, ...next } : x)));
     if (!editable) {
-      const shown = c.items.filter((it) => it.text || itemUrls(it).length);
+      const shown = c.items.filter((it) => shownParts(it).length);
       return shown.length ? <div className="divide-y rounded-xl border px-3">{shown.map((it) => <AgendaLinkRow key={it.id} item={it} />)}</div> : null;
     }
     return (
@@ -244,21 +245,27 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
               <span className="flex-1" />
               <button type="button" onClick={() => setItems(c.items.filter((_, j) => j !== i))} aria-label="Apagar linha" className="p-2 text-muted-foreground"><Trash2 className="h-4 w-4" /></button>
             </div>
-            <Input value={it.text} placeholder="Título (ex.: Salmo 23 — meditar)" onChange={(e) => setItem(i, { text: e.target.value })} maxLength={500} />
-            {it.urls.map((u, k) => (
-              <div key={k} className="flex items-center gap-2">
-                <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                <Input value={u} placeholder="https://www.jw.org/..." inputMode="url" className="h-9"
-                  onChange={(e) => setItem(i, { urls: it.urls.map((x, j) => (j === k ? e.target.value : x)) })}
-                  onBlur={(e) => setItem(i, { urls: it.urls.map((x, j) => (j === k ? safeUrl(e.target.value) : x)) })} />
-                {it.urls.length > 1 ? <button type="button" onClick={() => setItem(i, { urls: it.urls.filter((_, j) => j !== k) })} aria-label="Tirar link" className="p-1.5 text-muted-foreground"><X className="h-4 w-4" /></button> : null}
-              </div>
-            ))}
-            {it.urls.length < 10 ? <button type="button" onClick={() => setItem(i, { urls: [...it.urls, ""] })} className="text-primary text-sm font-medium inline-flex items-center gap-1"><Plus className="h-4 w-4" />Adicionar link</button> : null}
+            {it.parts.map((pt, k) => {
+              const setPart = (next: Partial<AgendaLinkPart>) => setItem(i, withParts({ ...it, parts: it.parts.map((x, j) => (j === k ? { ...x, ...next } : x)) }));
+              return (
+                <div key={pt.id} className={`space-y-1.5 ${k ? "border-t pt-2" : ""}`}>
+                  <div className="flex items-center gap-2">
+                    <Input value={pt.title} placeholder={k ? "Outro nome" : "Nome (ex.: A Sentinela 15/2/2015 págs. 15-18)"} maxLength={300} onChange={(e) => setPart({ title: e.target.value })} />
+                    {it.parts.length > 1 ? <button type="button" onClick={() => setItem(i, withParts({ ...it, parts: it.parts.filter((_, j) => j !== k) }))} aria-label="Tirar este item" className="p-1.5 text-muted-foreground"><X className="h-4 w-4" /></button> : null}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <Input value={pt.url} placeholder="Link (opcional) https://www.jw.org/..." inputMode="url" className="h-9"
+                      onChange={(e) => setPart({ url: e.target.value })} onBlur={(e) => setPart({ url: safeUrl(e.target.value) })} />
+                  </div>
+                </div>
+              );
+            })}
+            {it.parts.length < 10 ? <button type="button" onClick={() => setItem(i, withParts({ ...it, parts: [...it.parts, { id: newId(), title: "", url: "" }] }))} className="text-primary text-sm font-medium inline-flex items-center gap-1"><Plus className="h-4 w-4" />Adicionar {it.kind === "video" ? "outro vídeo" : it.kind === "article" ? "outro artigo" : "outra leitura"}</button> : null}
           </div>
         ))}
         {c.items.length < 30 ? (
-          <Button type="button" variant="outline" size="sm" onClick={() => setItems([...c.items, { id: newId(), kind: "book", text: "", urls: [""] }])}>
+          <Button type="button" variant="outline" size="sm" onClick={() => setItems([...c.items, newLinkItem("book")])}>
             <Plus className="h-4 w-4" />Nova fonte
           </Button>
         ) : null}

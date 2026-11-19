@@ -2,7 +2,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight, ClipboardList, Loader2, WifiOff } from "lucide-react";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
-import { agendaView, itemUrls, numberedBlocks } from "@/lib/elder-agenda/agenda";
+import { agendaView, itemUrls, shownParts, numberedBlocks } from "@/lib/elder-agenda/agenda";
 import { AgendaLinkRow, formatMeetingWhen } from "./ElderAgendaView";
 import { useElderAgenda } from "./use-elder-agenda";
 
@@ -33,7 +33,7 @@ export default function ElderAgendaDashboardCard({ visitId }: { visitId: string 
           <ul className="space-y-1.5">
             {list.map(({ block: b, n }) => {
               const cards = b.cards.filter((c) => c.type !== "private");
-              const links = cards.flatMap((c) => (c.type === "links" ? c.items.filter((it) => it.text || itemUrls(it).length) : []));
+              const links = cards.flatMap((c) => (c.type === "links" ? c.items.filter((it) => shownParts(it).length) : []));
               const extra = cards.some((c) => c.type === "recs") ? data.auto.recommendations.length : cards.some((c) => c.type === "local") ? data.auto.local.length : 0;
               const subject = cards.find((c) => c.showSubject && c.subject)?.subject;
               return (

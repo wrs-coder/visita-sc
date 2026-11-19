@@ -93,6 +93,14 @@ describe("pauta: links e anexos", () => {
     const p = normalizeAgenda({ v: 3, blocks: [{ id: "t", title: "T", cards: [{ id: "l", type: "links", items: [{ kind: "video", text: "x", urls: ["data:x", "jw.org/a"] }] }] }] });
     expect(p.blocks[0].cards[0].items[0].urls).toEqual(["", "https://jw.org/a"]);
   });
+  it("formato antigo: nomes separados por | recebem o link na mesma ordem", () => {
+    const p = normalizeAgenda({ v: 3, blocks: [{ id: "t", title: "T", cards: [{ id: "l", type: "links", items: [{ kind: "article", text: "A Sentinela 2015 | Sfg 1:18", urls: ["jw.org/a", "jw.org/b"] }] }] }] });
+    expect(p.blocks[0].cards[0].items[0].parts.map((x) => [x.title, x.url])).toEqual([["A Sentinela 2015", "https://jw.org/a"], ["Sfg 1:18", "https://jw.org/b"]]);
+  });
+  it("item sem link continua só com o nome", () => {
+    const p = normalizeAgenda({ v: 3, blocks: [{ id: "t", title: "T", cards: [{ id: "l", type: "links", items: [{ kind: "book", parts: [{ title: "Lucas 6:40", url: "" }] }] }] }] });
+    expect(p.blocks[0].cards[0].items[0].parts[0]).toMatchObject({ title: "Lucas 6:40", url: "" });
+  });
   it("anexo enviado só aceita caminho da pasta de uma visita", () => {
     const p = normalizeAgenda({ v: 3, blocks: [{ id: "t", title: "T", cards: [{ id: "n", type: "notes", attachments: [
       { kind: "pdf", title: "a", cloudPath: "../x.pdf" }, { kind: "photo", title: "b", cloudPath: "11111111-1111-1111-1111-111111111111/abc.jpg" }, { kind: "link", url: "javascript:x" },

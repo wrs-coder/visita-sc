@@ -3,7 +3,7 @@
 // Os blocos saem na ordem e com a numeração escolhidas; links viram "Clique aqui" clicável.
 import { createJsPdfCompat, type JsPdfCompat } from "@/lib/pdf/pdf-engine";
 import {
-  CARD_TYPE_LABEL, DEFAULT_AGENDA_VERSES, agendaView, isScOnlyCard, prayerRecShown, htmlToPlain, itemUrls, numberedBlocks, recInfoView, sharedAttachments,
+  CARD_TYPE_LABEL, DEFAULT_AGENDA_VERSES, agendaView, isScOnlyCard, prayerRecShown, htmlToPlain, shownParts, numberedBlocks, recInfoView, sharedAttachments,
   type AgendaAuto, type AgendaBlock, type AgendaCard, type AgendaLinkKind, type AgendaPayload,
 } from "./agenda";
 
@@ -139,31 +139,39 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
     // Conteúdo: cartões na ordem escolhida
     const ix = style === "cards" ? M + 4.5 : X, iw = style === "cards" ? W - 2 * M - 9 : CW;
     const multi = b.cards.length > 1;
+    // Cada nome é o próprio link (azul sublinhado); itens do mesmo tipo na mesma linha, separados por " | ".
     const linksOf = (c: AgendaCard) => {
+      const LH = 4.3;
       for (const it of c.items) {
-        const urls = itemUrls(it);
-        if (!it.text && !urls.length) continue;
+        const parts = shownParts(it);
+        if (!parts.length) continue;
         ensure(7);
         icon(it.kind, ix, y + 0.8);
-        pdf.setFont(false); pdf.setFontSize(9.5); color(INK);
-        const textW = iw - 34;
-        const lines = pdf.splitTextToSize(it.text || KIND_LABEL[it.kind], textW);
-        lines.forEach((l, i) => pdf.text(l, ix + 8, y + 3.8 + i * 4.1));
-        if (urls.length) {
-          pdf.setFont(true); pdf.setFontSize(9); color(LINK);
-          const lbl = urls.length > 1 ? `Clique aqui (${urls.length})` : "Clique aqui";
-          pdf.text(lbl, ix + iw, y + 3.8, { align: "right" });
-          // Um PDF abre um link por toque: cada link da linha ganha sua faixa clicável.
-          const w = pdf.measureText(lbl), segW = w / urls.length;
-          urls.forEach((u, i) => pdf.link(ix + iw - w + i * segW, y, segW, 5, u));
-          if (urls.length > 1) {
-            y += Math.max(1, lines.length) * 4.1 + 0.5;
-            pdf.setFont(false); pdf.setFontSize(7.5);
-            urls.forEach((u, i) => { ensure(4); pdf.text(`${i + 1}. ${u.replace(/^https?:\/\//, "").slice(0, 70)}`, ix + 8, y + 3); pdf.link(ix + 8, y, iw - 8, 3.8, u); y += 3.6; });
-            y += 1.5; continue;
+        pdf.setFont(false); pdf.setFontSize(9.5);
+        const x0 = ix + 8, xMax = ix + iw;
+        let cx = x0, line = 0, prevUrl = "";
+        const space = pdf.measureText(" ");
+        const put = (word: string, url: string, lead: boolean) => {
+          const w = pdf.measureText(word);
+          const gap = lead ? space : 0;
+          let joined = false;
+          if (cx > x0 && cx + gap + w > xMax) { line++; cx = x0; ensure(LH + 1); }
+          else { joined = cx > x0 && gap > 0 && !!url && url === prevUrl; cx += cx > x0 ? gap : 0; }
+          prevUrl = url;
+          const by = y + 3.8 + line * LH;
+          color(url ? LINK : INK); pdf.text(word, cx, by);
+          if (url) {
+            pdf.setDrawColor(LINK[0], LINK[1], LINK[2]); pdf.setLineWidth(0.2);
+            pdf.line(joined ? cx - gap : cx, by + 0.7, cx + w, by + 0.7);
+            pdf.link(cx - (lead ? space : 0), by - 3.4, w + (lead ? space : 0), 4.4, url);
           }
-        }
-        y += Math.max(1, lines.length) * 4.1 + 2;
+          cx += w;
+        };
+        parts.forEach((pt, k) => {
+          if (k) { put("|", "", true); }
+          pt.title.split(/\s+/).filter(Boolean).forEach((wd, j) => put(wd, pt.url, k > 0 || j > 0));
+        });
+        y += (line + 1) * LH + 2;
       }
     };
     for (const c of b.cards) {

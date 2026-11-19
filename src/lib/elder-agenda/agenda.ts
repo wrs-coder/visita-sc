@@ -6,7 +6,9 @@ export type AgendaRole = "sc" | "coordinator" | "elder";
 export type AgendaAccess = "sc" | "coordinator" | "all";
 export type AgendaCardType = "notes" | "links" | "eldersInfo" | "scReply" | "recs" | "local" | "private";
 export type AgendaLinkKind = "book" | "article" | "video";
-export interface AgendaLinkItem { id: string; kind: AgendaLinkKind; text: string; urls: string[] }
+export interface AgendaLinkPart { id: string; title: string; url: string }
+/** Cada parte é uma publicação/vídeo com seu próprio link; text/urls ficam sincronizados por compatibilidade. */
+export interface AgendaLinkItem { id: string; kind: AgendaLinkKind; text: string; urls: string[]; parts: AgendaLinkPart[] }
 export interface AgendaRecInfo { family: string; fieldGroup: string; info: string }
 export type AgendaAttachmentKind = "photo" | "pdf" | "link";
 export interface AgendaAttachment {
@@ -66,7 +68,7 @@ const DEFAULT_PERM: Record<AgendaCardType, AgendaAccess> = {
 };
 export function newCard(type: AgendaCardType, extra: Partial<AgendaCard> = {}): AgendaCard {
   return { id: newId(), type, perm: DEFAULT_PERM[type], showSubject: false, subject: "", html: "",
-    items: type === "links" ? [{ id: newId(), kind: "book", text: "", urls: [""] }] : [], notes: {}, recInfo: {}, attachments: [], hidden: false, ...extra };
+    items: type === "links" ? [newLinkItem("book")] : [], notes: {}, recInfo: {}, attachments: [], hidden: false, ...extra };
 }
 export function newBlock(title = "Novo tópico", cards: AgendaCard[] = [newCard("notes")]): AgendaBlock {
   return { id: newId(), title, minutes: 5, hidden: false, cards };
@@ -78,7 +80,7 @@ export function defaultBlocks(): AgendaBlock[] {
   return [
     t("enc", "Encorajamentos e conselhos", 15, [
       newCard("notes", { id: "enc", showSubject: true }),
-      newCard("links", { id: "reco", items: (["book", "article", "video"] as AgendaLinkKind[]).map((kind) => ({ id: `reco-${kind}`, kind, text: "", urls: [""] })) }),
+      newCard("links", { id: "reco", items: (["book", "article", "video"] as AgendaLinkKind[]).map((kind) => ({ ...newLinkItem(kind), id: `reco-${kind}` })) }),
       newCard("eldersInfo", { id: "eldersInfo" }),
     ]),
     t("letters", "Revisão das últimas cartas da filial", 5, [newCard("notes", { id: "letters", perm: "coordinator" })]),
@@ -109,10 +111,37 @@ export function safeUrl(v: unknown): string {
 }
 const kindOk = (v: unknown): AgendaLinkKind => (v === "article" || v === "video" ? v : "book");
 
+/** Converte o formato antigo (texto com "|" + links soltos) em partes: 1º nome ↔ 1º link. */
+export function partsFromLegacy(text: string, urls: string[]): AgendaLinkPart[] {
+  const titles = text.split("|").map((t) => t.trim()).filter(Boolean);
+  const good = urls.map(safeUrl);
+  const n = Math.max(titles.length, good.filter(Boolean).length ? good.length : 0);
+  const out: AgendaLinkPart[] = [];
+  for (let i = 0; i < n; i++) {
+    const title = titles[i] ?? "";
+    const url = good[i] ?? "";
+    if (!title && !url) continue;
+    out.push({ id: newId(), title: title || `Link ${i + 1}`, url });
+  }
+  return out;
+}
+export function withParts(it: Omit<AgendaLinkItem, "text" | "urls" | "parts"> & { parts: AgendaLinkPart[] }): AgendaLinkItem {
+  const parts = it.parts.length ? it.parts : [{ id: newId(), title: "", url: "" }];
+  return { ...it, parts, text: parts.map((x) => x.title.trim()).filter(Boolean).join(" | "), urls: parts.map((x) => x.url) };
+}
+export const newLinkItem = (kind: AgendaLinkKind): AgendaLinkItem => withParts({ id: newId(), kind, parts: [] });
+
 function normItem(raw: unknown): AgendaLinkItem {
   const r = obj(raw);
-  const urls = (Array.isArray(r.urls) ? r.urls : []).slice(0, 10).map((u) => (typeof u === "string" && u.trim() === "" ? "" : safeUrl(u)));
-  return { id: idOk(r.id), kind: kindOk(r.kind), text: str(r.text, 500), urls: urls.length ? urls : [""] };
+  let parts: AgendaLinkPart[];
+  if (Array.isArray(r.parts)) {
+    parts = r.parts.slice(0, 10).map((x) => { const o = obj(x); const u = str(o.url, 2000);
+      return { id: idOk(o.id), title: str(o.title, 300), url: u.trim() ? safeUrl(u) : "" }; });
+  } else {
+    const urls = (Array.isArray(r.urls) ? r.urls : []).slice(0, 10).map((u) => (typeof u === "string" ? u : ""));
+    parts = partsFromLegacy(str(r.text, 500), urls).slice(0, 10);
+  }
+  return withParts({ id: idOk(r.id), kind: kindOk(r.kind), parts });
 }
 const CLOUD_PATH_RE = /^[0-9a-f-]{36}\/[\w-]{1,64}\.(jpg|pdf)$/;
 function normAttachment(raw: unknown): AgendaAttachment | null {
@@ -207,7 +236,7 @@ function fromLegacy(r: Record<string, unknown>, perms: Record<string, unknown>):
     switch (c.id) {
       case "enc": return { ...c, subject: str(r.encTheme, 300), perm: p("enc", "sc"), html: str(r.scInfo) };
       case "reco": return { ...c, perm: p("reco", "sc"), html: str(r.reco), items: c.items.map((it, i) => {
-        const l = links[i] ?? {}; const u = safeUrl(l.url); return { ...it, text: str(l.label, 500), urls: [u] };
+        const l = links[i] ?? {}; return withParts({ id: it.id, kind: it.kind, parts: partsFromLegacy(str(l.label, 500), [str(l.url, 2000)]) });
       }) };
       case "eldersInfo": return { ...c, perm: p("eldersInfo", "all"), html: str(r.eldersInfo) };
       case "letters": return { ...c, perm: p("letters", "coordinator"), html: str(r.letters) };
@@ -368,7 +397,9 @@ export function agendaView(p: AgendaPayload, a: AgendaAuto) {
 }
 
 /** Todas as URLs válidas de uma linha de links. */
-export const itemUrls = (it: AgendaLinkItem) => it.urls.map(safeUrl).filter(Boolean);
+export const itemUrls = (it: AgendaLinkItem) => (it.parts ?? []).map((x) => safeUrl(x.url)).filter(Boolean);
+/** Partes com nome ou link, para exibir. */
+export const shownParts = (it: AgendaLinkItem) => (it.parts ?? []).filter((x) => x.title.trim() || x.url).map((x, i) => ({ ...x, title: x.title.trim() || `Link ${i + 1}`, url: safeUrl(x.url) }));
 
 /** Anexos que os anciãos podem ver (link ou arquivo enviado à nuvem). */
 export const sharedAttachments = (c: AgendaCard) => (c.type === "private" ? [] : c.attachments.filter((a) => a.kind === "link" || !!a.cloudPath));
