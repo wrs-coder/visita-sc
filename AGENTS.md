@@ -43,4 +43,3 @@
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
 - Outline edit mode hides page chrome, details open in a dialog, handle height is device-local.
-- The elder meeting agenda (elder_meeting_agendas, one row per visit, payload+permissions jsonb) has no client grants: all reads/writes go through elder-agenda.functions.ts, which resolves the caller's role (SC, coordinator-level elder, elder or invite-code guest) and merges only groups that role may edit (mergeAgenda), because per-field permissions cannot be expressed in RLS; data from other visit tables is joined at display time only.
