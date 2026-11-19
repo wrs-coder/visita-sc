@@ -37,7 +37,7 @@ Hoje cada linha tem um texto ("A Sentinela ... | Sfg 1:18-19") e links soltos, q
  📚 A Sentinela 15 de Fev. 2015 págs. 15-18 | Sfg 1:18-19
  ▶  Que tipo de pessoa eu devo ser? | Jeová reconhece o seu valor
 ```
-Nomes com link em azul sublinhado (clicáveis), separados por " | ", quebrando linha se não couber. Some "Clique aqui" e a lista de endereços.
+Todos os itens do mesmo tipo (Leitura, Artigo ou Vídeo) ficam na MESMA linha, separados por " | ", mesmo que sejam 3 ou mais; só passam para a linha de baixo quando acabar o espaço (a quebra acontece entre palavras, e o pedaço que desceu continua clicável). Nomes com link em azul sublinhado. Some "Clique aqui" e a lista de endereços.
 
 ## Pautas já preenchidas
 Convertidas automaticamente ao abrir: o texto é dividido em "|" e cada parte recebe o link na mesma ordem (1º nome ↔ 1º link). Sobras de links viram itens "Link 2", "Link 3". Nada é perdido.
