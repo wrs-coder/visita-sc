@@ -1,15 +1,15 @@
 // Cartão da aba "Anciãos" do Dashboard: resumo da pauta (recolhe/expande) com os links funcionando.
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, ClipboardList, Loader2 } from "lucide-react";
+import { ChevronRight, ClipboardList, Loader2, WifiOff } from "lucide-react";
 import { CollapsibleCard } from "@/components/dashboard/CollapsibleCard";
-import { agendaView } from "@/lib/elder-agenda/agenda";
+import { agendaView, itemUrls, numberedBlocks } from "@/lib/elder-agenda/agenda";
 import { AgendaLinkRow, formatMeetingWhen } from "./ElderAgendaView";
 import { useElderAgenda } from "./use-elder-agenda";
 
 export default function ElderAgendaDashboardCard({ visitId }: { visitId: string }) {
   const { data, loading, error } = useElderAgenda(visitId);
   const view = data ? agendaView(data.payload, data.auto) : null;
-  const links = data?.payload.links.filter((l) => l.url || l.label) ?? [];
+  const list = data ? numberedBlocks(data.payload.blocks) : [];
   return (
     <CollapsibleCard
       id="elder-agenda"
@@ -28,16 +28,23 @@ export default function ElderAgendaDashboardCard({ visitId }: { visitId: string 
         <p className="text-sm text-muted-foreground">{error ?? "Pauta indisponível."}</p>
       ) : (
         <div className="space-y-2 text-sm min-w-0">
+          {data.offline ? <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><WifiOff className="h-3.5 w-3.5" />Cópia guardada no aparelho</p> : null}
           {data.auto.meetingAt ? <p className="text-muted-foreground break-words">{[formatMeetingWhen(data.auto.meetingAt), data.auto.location].filter(Boolean).join(" · ")}</p> : null}
-          <div className="rounded-lg bg-muted/40 px-3 py-2 space-y-0.5">
-            <p className="font-medium break-words">Encorajamentos · {data.payload.encMinutes} min</p>
-            {view.encTheme ? <p className="text-muted-foreground break-words">{view.encTheme}</p> : null}
-          </div>
-          {links.length ? <div className="divide-y rounded-lg border px-3">{links.map((l) => <AgendaLinkRow key={l.kind} {...l} />)}</div> : null}
-          <ul className="space-y-1">
-            <li className="flex justify-between gap-2"><span className="break-words">1) Cartas da filial</span><span className="text-muted-foreground shrink-0">{data.payload.lettersMinutes} min</span></li>
-            <li className="flex justify-between gap-2"><span className="break-words">2) Recomendações{data.auto.recommendations.length ? ` (${data.auto.recommendations.length})` : ""}</span><span className="text-muted-foreground shrink-0">{data.payload.recsMinutes} min</span></li>
-            <li className="flex justify-between gap-2"><span className="break-words">5) Assunto local{data.auto.local.length ? ` (${data.auto.local.length})` : ""}</span><span className="text-muted-foreground shrink-0">{data.payload.localMinutes} min</span></li>
+          <ul className="space-y-1.5">
+            {list.map(({ block: b, n }) => {
+              const links = b.type === "links" ? b.items.filter((it) => it.text || itemUrls(it).length) : [];
+              const extra = b.type === "recs" ? data.auto.recommendations.length : b.type === "local" ? data.auto.local.length : 0;
+              return (
+                <li key={b.id} className="space-y-1">
+                  <div className="flex justify-between gap-2">
+                    <span className="break-words"><span className="font-semibold text-primary">{n}.</span> {b.title}{extra ? ` (${extra})` : ""}</span>
+                    {b.minutes ? <span className="text-muted-foreground shrink-0">{b.minutes} min</span> : null}
+                  </div>
+                  {b.showSubject && b.subject ? <p className="pl-4 text-muted-foreground break-words">{b.subject}</p> : null}
+                  {links.length ? <div className="ml-4 divide-y rounded-xl border px-3">{links.map((it) => <AgendaLinkRow key={it.id} item={it} />)}</div> : null}
+                </li>
+              );
+            })}
           </ul>
           <p className="text-xs text-muted-foreground text-right">Tempo total: {view.totalMinutes} min</p>
         </div>

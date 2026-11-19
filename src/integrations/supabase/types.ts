@@ -433,6 +433,36 @@ export type Database = {
           },
         ]
       }
+      elder_agenda_templates: {
+        Row: {
+          blocks: Json
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          superintendent_id: string
+          updated_at: string
+        }
+        Insert: {
+          blocks?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          superintendent_id?: string
+          updated_at?: string
+        }
+        Update: {
+          blocks?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          superintendent_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       elder_encouragements: {
         Row: {
           address: string | null

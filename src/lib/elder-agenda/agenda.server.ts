@@ -1,13 +1,13 @@
 // Leitura/gravação da pauta dos anciãos com o cliente de serviço. Só chamar depois de conferir quem pede.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  RECOMMENDATION_PURPOSE, emptyAuto, mergeAgenda, normalizeAgenda, normalizePermissions,
-  type AgendaAuto, type AgendaPayload, type AgendaPermissions, type AgendaRole,
+  RECOMMENDATION_PURPOSE, emptyAgenda, emptyAuto, isLocked, mergeAgenda, normalizeAgenda, normalizeBlocks,
+  type AgendaAuto, type AgendaPayload, type AgendaRole,
 } from "./agenda";
 
 export interface AgendaDTO {
   ok: true; visitId: string; visitTitle: string; congregation: string; range: string;
-  role: AgendaRole; payload: AgendaPayload; permissions: AgendaPermissions; auto: AgendaAuto; updatedAt: string | null;
+  role: AgendaRole; payload: AgendaPayload; auto: AgendaAuto; updatedAt: string | null;
 }
 
 /** Papel de um usuário com cadastro na visita (null = sem acesso). */
@@ -41,7 +41,7 @@ export async function loadAgenda(visitId: string, role: AgendaRole): Promise<Age
   const { data: v } = await supabaseAdmin.from("visits").select("id,title,start_date,end_date,congregation_id").eq("id", visitId).maybeSingle();
   if (!v) return null;
   const [{ data: cong }, { data: row }, { data: meet }, { data: recs }, { data: locs }] = await Promise.all([
-    supabaseAdmin.from("congregations").select("name").eq("id", v.congregation_id).maybeSingle(),
+    supabaseAdmin.from("congregations").select("name,superintendent_id").eq("id", v.congregation_id).maybeSingle(),
     supabaseAdmin.from("elder_meeting_agendas").select("payload,permissions,updated_at").eq("visit_id", visitId).maybeSingle(),
     supabaseAdmin.from("elders_servants_meetings").select("meeting_at,location,theme,opening_prayer,closing_prayer").eq("visit_id", visitId).limit(1),
     supabaseAdmin.from("elder_recommendations").select("id,purpose,full_name,field_group,info").eq("visit_id", visitId).order("sort_order").order("created_at"),
@@ -59,23 +59,31 @@ export async function loadAgenda(visitId: string, role: AgendaRole): Promise<Age
     })),
     local: (locs ?? []).map((l) => ({ id: l.id, suggestedBy: l.suggested_by ?? "", subject: l.subject ?? "", sources: l.sources ?? "", info: l.info ?? "" })),
   };
+  let payload = normalizeAgenda(row?.payload, row?.permissions);
+  if (!row && cong?.superintendent_id) {
+    // Pauta nova: começa pelo modelo padrão do SC, se ele tiver um.
+    const { data: tpl } = await supabaseAdmin.from("elder_agenda_templates").select("blocks")
+      .eq("superintendent_id", cong.superintendent_id).eq("is_default", true).limit(1);
+    const blocks = normalizeBlocks(tpl?.[0]?.blocks);
+    if (blocks.length) payload = { ...emptyAgenda(), blocks };
+  }
   return {
     ok: true, visitId, visitTitle: v.title, congregation: cong?.name ?? "", range: fmtRange(v.start_date, v.end_date), role,
-    payload: normalizeAgenda(row?.payload), permissions: normalizePermissions(row?.permissions), auto, updatedAt: row?.updated_at ?? null,
+    payload, auto, updatedAt: row?.updated_at ?? null,
   };
 }
 
-export async function saveAgenda(visitId: string, role: AgendaRole, incomingRaw: unknown, permsRaw: unknown): Promise<string | null> {
+export async function saveAgenda(visitId: string, role: AgendaRole, incomingRaw: unknown): Promise<string | null | "locked"> {
   const { data: v } = await supabaseAdmin.from("visits").select("congregation_id").eq("id", visitId).maybeSingle();
   if (!v) return null;
   const { data: cong } = await supabaseAdmin.from("congregations").select("superintendent_id").eq("id", v.congregation_id).maybeSingle();
   if (!cong) return null;
   const { data: row } = await supabaseAdmin.from("elder_meeting_agendas").select("payload,permissions").eq("visit_id", visitId).maybeSingle();
-  const perms = normalizePermissions(row?.permissions);
-  const merged = mergeAgenda(normalizeAgenda(row?.payload), normalizeAgenda(incomingRaw), role, perms);
-  const nextPerms = role === "sc" && permsRaw ? normalizePermissions(permsRaw) : perms;
+  const current = row ? normalizeAgenda(row.payload, row.permissions) : emptyAgenda();
+  if (role !== "sc" && isLocked(current)) return "locked";
+  const merged = mergeAgenda(current, normalizeAgenda(incomingRaw), role);
   const { data, error } = await supabaseAdmin.from("elder_meeting_agendas").upsert(
-    { visit_id: visitId, superintendent_id: cong.superintendent_id, payload: merged as never, permissions: nextPerms as never },
+    { visit_id: visitId, superintendent_id: cong.superintendent_id, payload: merged as never, permissions: {} as never },
     { onConflict: "visit_id" },
   ).select("updated_at").single();
   if (error) throw new Error("Não foi possível salvar a pauta.");

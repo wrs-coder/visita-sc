@@ -33,3 +33,11 @@
 - [x] PDF no layout do modelo com links clicáveis
 - [x] Aba "Pastoreio" do Dashboard renomeada para "Anciãos" + cartão da pauta (recolhe/expande)
 - [x] Acesso "Corpo de anciãos" (sem cadastro) com aba Pauta
+
+## Pauta montável (19/11)
+- [x] "Coordenador" → "C.Serviço"; Tema/Assunto livre
+- [x] Recomendações com ícones e vários links ("Clique aqui" abre todos)
+- [x] Blocos montáveis (renomear, ordenar, ocultar, apagar, adicionar) com numeração automática
+- [x] Modelos de pauta sincronizados, exportar/importar, padrão para novas visitas
+- [x] Prazo para preencher + pauta guardada no aparelho para abrir sem internet
+- [x] PDF em 3 estilos (Ata formal, Cartões, Linha do tempo)
