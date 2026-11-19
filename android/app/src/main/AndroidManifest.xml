@@ -37,6 +37,7 @@
 
         <!-- Controle de tempo do evento: bolinha flutuante por cima de outros apps. -->
         <service android:name=".FloatingTimerService" android:exported="false" />
+        <service android:name=".MeetingOverlayService" android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

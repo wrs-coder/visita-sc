@@ -63,4 +63,26 @@ public class FloatingTimerPlugin extends Plugin {
         try { getContext().stopService(new Intent(getContext(), FloatingTimerService.class)); } catch (Exception ignored) { }
         call.resolve();
     }
+
+    // ---- Boia da reunião (MeetingOverlayService) ----
+    @PluginMethod
+    public void showMeeting(PluginCall call) {
+        if (!canDraw()) { call.reject("no-permission"); return; }
+        Intent i = new Intent(getContext(), MeetingOverlayService.class);
+        i.putExtra("json", call.getString("json", "{}"));
+        try { getContext().startService(i); call.resolve(); }
+        catch (Exception e) { call.reject(String.valueOf(e.getMessage())); }
+    }
+
+    /** Fecha a boia e devolve as ações tocadas lá fora (para o app reaplicar). */
+    @PluginMethod
+    public void takeMeeting(PluginCall call) {
+        try { getContext().stopService(new Intent(getContext(), MeetingOverlayService.class)); } catch (Exception ignored) { }
+        android.content.SharedPreferences sp = getContext().getSharedPreferences(MeetingOverlayService.PREFS, android.content.Context.MODE_PRIVATE);
+        String a = sp.getString("actions", "[]");
+        sp.edit().putString("actions", "[]").apply();
+        JSObject r = new JSObject();
+        r.put("actions", a);
+        call.resolve(r);
+    }
 }

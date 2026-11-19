@@ -9,6 +9,10 @@ import {
   displayClock, loadMode, loadTimer, plannedMs, saveTimer, spentMs, tapPart, togglePause, type TimerPart, type TimerState,
 } from "@/lib/big-events/event-timer";
 import { cn } from "@/lib/utils";
+import { overlayGranted, requestOverlay, isNativeAndroid } from "@/lib/big-events/floating-timer";
+import { overlayPayload, replayActions, showMeetingOverlay, takeMeetingOverlay, stepPart as stepPartShared } from "@/lib/big-events/meeting-overlay";
+
+const ASKED_KEY = "meeting.overlayAsked";
 
 export type DockSize = "s" | "m" | "l";
 const SIZE_KEY = "meeting.dockSize";
@@ -16,14 +20,7 @@ const loadSize = (): DockSize => { try { const v = localStorage.getItem(SIZE_KEY
 const NEXT_SIZE: Record<DockSize, DockSize> = { s: "m", m: "l", l: "s" };
 
 /** Próxima/anterior parte a partir da ativa (ou da última concluída). */
-export function stepPart(parts: TimerPart[], s: TimerState, dir: 1 | -1): string | null {
-  const list = [...parts].sort((a, b) => a.sort_order - b.sort_order);
-  if (!list.length) return null;
-  const ref = s.active ?? [...s.done].pop() ?? null;
-  const i = ref ? list.findIndex((p) => p.id === ref) : -1;
-  if (i < 0) return dir === 1 ? list[0].id : null;
-  return list[i + dir]?.id ?? null;
-}
+export const stepPart = stepPartShared;
 
 export default function MeetingFloatingTimer({ timerKey, parts, onOpen }: { timerKey: string; parts: TimerPart[]; onOpen: () => void }) {
   const { t } = useTranslation();
@@ -33,6 +30,28 @@ export default function MeetingFloatingTimer({ timerKey, parts, onOpen }: { time
   useEffect(() => { setSize(loadSize()); }, []);
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(id); }, []);
   const update = (fn: (x: TimerState) => TimerState) => setS((x) => { const n = fn(loadTimer(timerKey) ?? x); saveTimer(timerKey, n); return n; });
+  // Fora do app (Android): boia nativa por cima de outros apps; ao voltar, reaplica os toques.
+  useEffect(() => {
+    if (!isNativeAndroid()) return;
+    let off: (() => void) | undefined; let alive = true;
+    void import("@capacitor/app").then(({ App }) => App.addListener("appStateChange", async ({ isActive }) => {
+      if (isActive) {
+        const acts = await takeMeetingOverlay();
+        if (acts.length) { const n = replayActions(parts, loadTimer(timerKey), acts); saveTimer(timerKey, n); setS(n); }
+        setNow(Date.now());
+      } else {
+        const cur = loadTimer(timerKey);
+        await showMeetingOverlay(overlayPayload(parts, cur, Date.now(), loadMode() === "up", loadSize()));
+      }
+    })).then((h) => { if (alive) off = () => void h.remove(); else void h.remove(); });
+    // Pede a permissão "Sobrepor a outros apps" uma única vez.
+    void overlayGranted().then((ok) => {
+      if (ok) return;
+      try { if (localStorage.getItem(ASKED_KEY)) return; localStorage.setItem(ASKED_KEY, "1"); } catch { return; }
+      if (window.confirm(t("meeting.overlayAsk", { defaultValue: "Para o tempo ficar na tela fora do Visita SC, permita \"Sobrepor a outros apps\"." }))) void requestOverlay();
+    });
+    return () => { alive = false; off?.(); void takeMeetingOverlay(); };
+  }, [timerKey, parts, t]);
   const cycleSize = () => setSize((z) => { const n = NEXT_SIZE[z]; try { localStorage.setItem(SIZE_KEY, n); } catch { /* */ } return n; });
 
   const active = parts.find((p) => p.id === s.active) ?? null;
