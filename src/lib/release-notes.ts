@@ -104,7 +104,7 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "5.8.0";
+export const RELEASE_NOTES_VERSION = "6.0.0";
 
 /**
  * Aviso automático "O que há de novo" (5.7.0: ligado, só para superintendentes).
@@ -114,6 +114,60 @@ export const RELEASE_NOTES_VERSION = "5.8.0";
 export const WHATS_NEW_AUTO_SHOW = true;
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "6.0.0",
+    subtitle: "Controle de tempo da reunião, Quadro de anúncios e a nova Pauta da reunião com os anciãos.",
+    sections: [
+      {
+        title: "Controle de tempo da reunião", audience: ["super"],
+        items: [
+          "Importe a apostila (.zip ou .rtf) e cronometre a reunião do meio de semana parte por parte.",
+          "Conselho, oradores e a semana da visita já preenchidos; presidente e oração final entram sozinhos.",
+          "Boia flutuante com o tempo e os botões iniciar, pausar, anterior e próxima, em três tamanhos.",
+          "Exportar e importar programas, e minimizar sem perder a contagem.",
+        ],
+      },
+      {
+        title: "Quadro de anúncios em PDF", audience: ["super"],
+        items: [
+          "Dois modelos: Completo (com designados e pontilhados) e Simplificado (temas e cânticos).",
+          "Sempre em uma folha, com horários de 24 h, leitura semanal da Bíblia e presidente no cabeçalho.",
+          "Reuniões Especiais em tópico próprio e Serviço de campo com manhã/tarde, locais, territórios e orações.",
+          "Frases de Isaías 54:13 e Lucas 2:10 opcionais; dados sempre iguais aos da Agenda.",
+        ],
+      },
+      {
+        title: "Pauta da reunião com os anciãos", audience: ["super"],
+        items: [
+          "Monte a pauta do seu jeito: tópicos numerados sozinhos e cartões à escolha, na ordem que quiser.",
+          "Cartões: Informações do SC, Fontes de matéria, Informações dos anciãos, Resposta do SC, Recomendações e Assunto local.",
+          "Título e textos bíblicos editáveis; orações de recomendação e Ata opcionais.",
+          "Cada cartão define quem edita (Todos ou C.Serviço) e pode ficar oculto, só para você.",
+          "Recomendações com comentário e decisão Designar/Não designar; \"Não designar\" vira nota em Recomendados.",
+          "Botão para trazer a S-303 da semana, anexos de foto e PDF (envio opcional) e tela cheia com cronômetro.",
+          "Prazo para os anciãos preencherem; modelos sincronizados entre seus aparelhos e exportáveis.",
+          "PDF em três estilos; nas Fontes de matéria cada nome é o próprio link.",
+        ],
+      },
+      {
+        title: "Para os anciãos", audience: ["super", "elder"],
+        items: [
+          "A aba \"Pastoreio\" do Início agora se chama \"Anciãos\" e mostra a Pauta da reunião com os anciãos.",
+          "A Pauta também está na pílula \"Pauta\" do Programa da visita, inclusive para quem entra pelo código do Corpo de anciãos.",
+          "Preencha os cartões liberados pelo superintendente até o prazo; depois a pauta fica só para leitura e abre sem internet.",
+          "Exporte a pauta em PDF no modelo escolhido pelo superintendente; toque no nome de uma publicação ou vídeo para abri-lo.",
+        ],
+      },
+      {
+        title: "Melhorias gerais",
+        items: [
+          "\"Para comentar\" recolhível e só com as notas marcadas com estrela.",
+          "Pastoreio: agendar e salvar em notas sem sair da tela; cronômetro flutuante no Modo Esboço.",
+          "Fotos e vídeos sempre em tela cheia; Grandes Eventos apagados não voltam mais.",
+        ],
+      },
+    ],
+  },
   {
     version: "5.8.0",
     subtitle: "Editor estilo Samsung Notes, telas mais limpas, itinerário completo no calendário e nuvem reforçada.",
