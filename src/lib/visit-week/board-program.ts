@@ -388,9 +388,9 @@ export async function renderBoardPdf(m: BoardModel, opts: BoardRenderOptions = {
   });
   // Linha que separa as duas reuniões, com quadradinhos nas pontas.
   y += 1.5 * k;
-  const sx0 = L0 - 6, sx1 = R0 + 4;
+  const sx0 = M, sx1 = W - M;
   fill(C.brand); pdf.rect(sx0, y - 0.45, sx1 - sx0, 0.9, "F");
-  pdf.rect(sx0 - 1.6, y - 1.6, 3.2, 3.2, "F"); pdf.rect(sx1 - 1.6, y - 1.6, 3.2, 3.2, "F");
+  pdf.rect(sx0, y - 1.6, 3.2, 3.2, "F"); pdf.rect(sx1 - 3.2, y - 1.6, 3.2, 3.2, "F");
   y += 7 * k;
   block(`Reunião do Fim de Semana: ${m.weekendWhen}`, m.weekend, weLines);
   y += 1 * k; stroke(C.line, 0.3); pdf.line(L0, y, W - M, y); y += 2 * k;
