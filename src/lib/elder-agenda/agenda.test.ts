@@ -28,7 +28,7 @@ describe("pauta: tópicos com cartões", () => {
     const inc = withHtml(withHtml(emptyAgenda(), "enc", "invadido"), "eldersInfo", "nota do ancião");
     const out = mergeAgenda(cur, inc, "elder");
     expect(card(out, "enc").html).toBe("texto do SC");
-    expect(card(out, "eldersInfo").html).toBe("nota do ancião");
+    expect(card(out, "eldersInfo").html).toBe("");
   });
   it("só o SC adiciona ou tira cartões e tópicos", () => {
     const inc = emptyAgenda(); inc.blocks[0].cards.push(newCard("notes")); inc.blocks.push(newBlock("Novo"));
@@ -201,5 +201,38 @@ describe("modelo de PDF escolhido pelo SC", () => {
     const inc = normalizeAgenda({ v: 3, blocks: [], pdfStyle: "cards" });
     expect(mergeAgenda(cur, inc, "elder").pdfStyle).toBe("formal");
     expect(mergeAgenda(cur, inc, "sc").pdfStyle).toBe("cards");
+  });
+});
+
+describe("pauta: informações adicionais dos anciãos", () => {
+  const H1 = "a".repeat(64), H2 = "b".repeat(64);
+  const resp = (id: string, authorKey: string, html: string) => ({ id, authorKey, name: "", checks: {}, answers: {}, html, updatedAt: "" });
+  const withResps = (p: AgendaPayload, list: ReturnType<typeof resp>[]) => withCard(p, "eldersInfo", { responses: list });
+  it("tem o nome novo", () => { expect(CARD_TYPE_LABEL.eldersInfo).toBe("Informações adicionais dos anciãos"); });
+  it("texto antigo do campo único vira a primeira resposta", () => {
+    const raw = withHtml(emptyAgenda(), "eldersInfo", "<p>antigo</p>");
+    const c = card(normalizeAgenda(JSON.parse(JSON.stringify(raw))), "eldersInfo");
+    expect(c.html).toBe("");
+    expect(c.responses.map((r) => r.name)).toEqual(["Resposta anterior"]);
+  });
+  it("ancião insere a própria resposta e não altera a de outro", () => {
+    const cur = withResps(emptyAgenda(), [resp("r1", H1, "do primeiro")]);
+    const inc = withResps(emptyAgenda(), [resp("r1", H1, "invadido"), resp("r2", H2, "minha")]);
+    const out = card(mergeAgenda(cur, inc, "elder", Date.now(), H2), "eldersInfo").responses;
+    expect(out.map((r) => r.html)).toEqual(["do primeiro", "minha"]);
+  });
+  it("sem a chave do aparelho, ancião não muda nada", () => {
+    const cur = withResps(emptyAgenda(), [resp("r1", H1, "x")]);
+    const out = mergeAgenda(cur, withResps(emptyAgenda(), []), "elder");
+    expect(card(out, "eldersInfo").responses).toHaveLength(1);
+  });
+  it("ancião não altera checklist nem perguntas", () => {
+    const cur = withCard(emptyAgenda(), "eldersInfo", { questions: [{ id: "q1", text: "do SC" }] });
+    const inc = withCard(emptyAgenda(), "eldersInfo", { questions: [{ id: "q1", text: "mudado" }] });
+    expect(card(mergeAgenda(cur, inc, "elder", Date.now(), H1), "eldersInfo").questions[0].text).toBe("do SC");
+  });
+  it("SC pode apagar a resposta de qualquer ancião", () => {
+    const cur = withResps(emptyAgenda(), [resp("r1", H1, "x")]);
+    expect(card(mergeAgenda(cur, withResps(cur, []), "sc"), "eldersInfo").responses).toHaveLength(0);
   });
 });

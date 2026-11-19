@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { guestGetAgendaAttachmentUrl, guestGetElderAgenda, guestSaveElderAgenda } from "@/lib/elder-agenda.functions";
 import { readAgendaCache, writeAgendaCache } from "@/lib/elder-agenda/agenda-cache";
+import { authorSecret } from "./agenda-author";
 import { ElderAgendaView, type AgendaData, type AgendaSaver } from "./ElderAgendaView";
 
 export function GuestElderAgenda({ inviteCode }: { inviteCode: string }) {
@@ -24,7 +25,7 @@ export function GuestElderAgenda({ inviteCode }: { inviteCode: string }) {
   }, [fnGet, inviteCode, scope]);
   useEffect(() => { void load(); }, [load]);
   const save: AgendaSaver = async (payload) => {
-    const r = await fnSave({ data: { inviteCode, payload: payload as unknown as Record<string, unknown> } });
+    const r = await fnSave({ data: { inviteCode, payload: payload as unknown as Record<string, unknown>, authorSecret: authorSecret() || undefined } });
     if (r.ok) setData((d) => { if (!d) return d; const next = { ...d, payload }; writeAgendaCache(scope, next); return next; });
     return r.ok ? { ok: true } : { ok: false, error: r.error };
   };

@@ -11,6 +11,7 @@ import {
   type AgendaCard, type AgendaPayload,
 } from "@/lib/elder-agenda/agenda";
 import { AgendaAttachments } from "./AgendaAttachments";
+import { ResponsesCarousel } from "./ElderInfoResponses";
 import { AgendaLinkRow, formatMeetingWhen, type AgendaData } from "./ElderAgendaView";
 
 export function ElderAgendaFullscreen({ data, payload, isSc, onClose }: { data: AgendaData; payload: AgendaPayload; isSc: boolean; onClose: () => void }) {
@@ -42,6 +43,7 @@ export function ElderAgendaFullscreen({ data, payload, isSc, onClose }: { data: 
       <div key={l.id} className="space-y-0.5 text-sm"><p className="font-semibold break-words">{l.subject || "Assunto"}</p>{l.suggestedBy ? <p className="text-muted-foreground">Quem indicou: {l.suggestedBy}</p> : null}{l.sources ? <p className="whitespace-pre-wrap">{l.sources}</p> : null}</div>,
     ));
     if (c.type === "links") c.items.filter((it) => shownParts(it).length).forEach((it) => parts.push(<AgendaLinkRow key={it.id} item={it} />));
+    if (c.type === "eldersInfo" && c.responses.length) parts.push(<ResponsesCarousel key="r" card={c} />);
     if (c.type !== "recs") { const t = text(c.html); if (t) parts.push(<div key="h">{t}</div>); }
     if (c.attachments.length) parts.push(<AgendaAttachments key="a" card={c} editable={false} api={data.attachmentApi} offline={!!data.offline} onChange={() => undefined} />);
     return parts;

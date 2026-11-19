@@ -3,7 +3,7 @@
 // Os blocos saem na ordem e com a numeração escolhidas; links viram "Clique aqui" clicável.
 import { createJsPdfCompat, type JsPdfCompat } from "@/lib/pdf/pdf-engine";
 import {
-  CARD_TYPE_LABEL, DEFAULT_AGENDA_VERSES, agendaView, isScOnlyCard, prayerRecShown, htmlToPlain, shownParts, numberedBlocks, recInfoView, sharedAttachments,
+  CARD_TYPE_LABEL, DEFAULT_AGENDA_VERSES, agendaView, isScOnlyCard, prayerRecShown, htmlToPlain, shownParts, numberedBlocks, recInfoView, sharedAttachments, responseName,
   type AgendaAuto, type AgendaBlock, type AgendaCard, type AgendaLinkKind, type AgendaPayload,
 } from "./agenda";
 
@@ -101,6 +101,7 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
   // ---------- Blocos ----------
   const start = a.meetingAt ? new Date(a.meetingAt) : null;
   const list = numberedBlocks(p.blocks, a);
+  const sheets: Array<{ n: number; title: string; card: AgendaCard }> = [];
   for (const { block: b, n, startMin } of list) {
     ensure(18);
     const top = y, pageTop = page;
@@ -175,6 +176,12 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
       }
     };
     for (const c of b.cards) {
+      if (c.type === "eldersInfo") {
+        sheets.push({ n, title: b.title, card: c });
+        ensure(6); pdf.setFont(false, true); pdf.setFontSize(8.5); color(MUTED);
+        pdf.text(`${CARD_TYPE_LABEL.eldersInfo}: ver folha separada (${c.responses.length} ${c.responses.length === 1 ? "resposta" : "respostas"}).`, ix, y + 3.6); y += 6;
+        continue;
+      }
       if (multi && c.type !== "notes") label(CARD_TYPE_LABEL[c.type], ix);
       if (c.showSubject) { label("Tema / Assunto", ix); para(c.subject || "—", ix, iw, 10); }
       const plain = htmlToPlain(c.html);
@@ -202,13 +209,41 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
         else { pdf.text("no app", ix + iw, y + 3.5, { align: "right" }); }
         y += 4.6;
       }
-      if (!plain && !c.showSubject && (c.type === "notes" || c.type === "eldersInfo" || c.type === "scReply")) blank(2);
+      if (!plain && !c.showSubject && (c.type === "notes" || c.type === "scReply")) blank(2);
     }
 
     // Moldura/linha do bloco
     if (style === "timeline" && page === pageTop) { draw(RULE, 0.4); pdf.line(M + 3, top + 7, M + 3, Math.max(top + 9, y - 1)); fill(NAVY); pdf.rect(M + 2.1, top + 6.2, 1.8, 1.8, "F"); }
     if (style === "formal") { draw(RULE, 0.2); pdf.line(X, y + 1, W - M, y + 1); }
     y += style === "cards" ? 4 : 5;
+  }
+  // ---------- Folha separada: Informações adicionais dos anciãos ----------
+  for (const sh of sheets) {
+    footer(); pdf.addPage(); page++; y = 18;
+    fill(NAVY); pdf.rect(0, 0, W, 4, "F");
+    pdf.setFont(true); pdf.setFontSize(15); color(NAVY); pdf.text(CARD_TYPE_LABEL.eldersInfo, W / 2, y, { align: "center" }); y += 6;
+    pdf.setFont(false); pdf.setFontSize(9.5); color(MUTED);
+    pdf.text(`${sh.n}. ${pdf.splitTextToSize(sh.title, W - 2 * M - 10)[0] ?? ""}`, W / 2, y, { align: "center" }); y += 8;
+    const checklist = sh.card.checklist.filter((q) => q.text.trim()), questions = sh.card.questions.filter((q) => q.text.trim());
+    if (!sh.card.responses.length) { para("Nenhuma resposta.", M, W - 2 * M); continue; }
+    sh.card.responses.forEach((r, i) => {
+      ensure(14);
+      fill(SOFT); pdf.rect(M, y, W - 2 * M, 7.5, "F"); fill(NAVY); pdf.rect(M, y, 1.4, 7.5, "F");
+      pdf.setFont(true); pdf.setFontSize(10); color(NAVY); pdf.text(responseName(r, i), M + 4.5, y + 5.1); y += 10;
+      const x = M + 4.5, w = W - 2 * M - 9;
+      for (const q of checklist) {
+        ensure(5.5); draw(INK, 0.3); pdf.rect(x, y + 0.6, 3.2, 3.2, "S");
+        if (r.checks[q.id]) { pdf.line(x + 0.6, y + 2.3, x + 1.4, y + 3.2); pdf.line(x + 1.4, y + 3.2, x + 2.7, y + 1); }
+        pdf.setFont(false); pdf.setFontSize(9.5); color(INK); pdf.text(pdf.splitTextToSize(q.text, w - 6)[0] ?? "", x + 5, y + 3.4); y += 5.2;
+      }
+      questions.forEach((q, k) => {
+        ensure(6); pdf.setFont(true); pdf.setFontSize(9.5); color(INK);
+        for (const l of pdf.splitTextToSize(`${k + 1}. ${q.text}`, w)) { ensure(4.5); pdf.text(l, x, y + 3.8); y += 4.3; }
+        y += 0.5; para(r.answers[q.id]?.trim() || "—", x + 4, w - 4, 9.5);
+      });
+      const t = htmlToPlain(r.html); if (t) para(t, x, w);
+      y += 4;
+    });
   }
   footer();
   return pdf.output("blob");

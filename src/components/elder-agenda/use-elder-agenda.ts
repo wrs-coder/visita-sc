@@ -4,6 +4,7 @@ import { getAgendaAttachmentUrl, getElderAgenda, saveElderAgenda, scAttachmentUp
 import { supabase } from "@/integrations/supabase/client";
 import { cloudAttachmentCount } from "@/lib/elder-agenda/agenda";
 import type { AgendaAttachmentApi } from "./AgendaAttachments";
+import { authorSecret } from "./agenda-author";
 import { withNetworkWindow } from "@/lib/net-policy";
 import { readAgendaCache, writeAgendaCache } from "@/lib/elder-agenda/agenda-cache";
 import type { AgendaData, AgendaSaver } from "./ElderAgendaView";
@@ -37,7 +38,7 @@ export function useElderAgenda(visitId: string | null | undefined) {
 
   const save: AgendaSaver = useCallback(async (payload) => {
     if (!visitId) return { ok: false, error: "Sem visita." };
-    const r = await withNetworkWindow(() => fnSave({ data: { visitId, payload: payload as unknown as Record<string, unknown> } }));
+    const r = await withNetworkWindow(() => fnSave({ data: { visitId, payload: payload as unknown as Record<string, unknown>, authorSecret: authorSecret() || undefined } }));
     if (r.ok) setData((d) => { if (!d) return d; const next = { ...d, payload }; writeAgendaCache(`visit.${visitId}`, next); return next; });
     return r.ok ? { ok: true } : { ok: false, error: r.error };
   }, [visitId, fnSave]);

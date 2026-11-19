@@ -29,6 +29,9 @@ import { openAllLinks } from "./open-all-links";
 import { AgendaTemplatesDialog } from "./AgendaTemplatesDialog";
 import { AgendaAttachments, type AgendaAttachmentApi } from "./AgendaAttachments";
 import { EditorResizeHandle } from "@/components/outlines/EditorResizeHandle";
+import { ElderInfoQuestionsEditor, ElderInfoResponses } from "./ElderInfoResponses";
+import { authorHash } from "./agenda-author";
+import type { AgendaElderResponse } from "@/lib/elder-agenda/agenda";
 import { s303ForWeek, upsertDeclineNote } from "@/lib/elder-agenda/agenda-notes";
 
 const ElderAgendaFullscreen = lazy(() => import("./ElderAgendaFullscreen").then((m) => ({ default: m.ElderAgendaFullscreen })));
@@ -117,7 +120,9 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
     try { setClosed(JSON.parse(localStorage.getItem(openKey) || "{}")); } catch { /* sem preferência */ }
     setPdfStyle(readPdfStyle());
     setHeights(readHeights());
+    void authorHash().then(setMyHash).catch(() => undefined);
   }, []);
+  const [myHash, setMyHash] = useState("");
   const toggle = (id: string) => setClosed((cur) => { const next = { ...cur, [id]: !cur[id] }; try { localStorage.setItem(openKey, JSON.stringify(next)); } catch { /* cheio */ } return next; });
   const locked = isLocked(p);
   const canPerm = (perm: AgendaAccess) => !offline && (isSc || (!locked && canEditCard(data.role, { type: "notes", perm })));
@@ -165,6 +170,16 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
       if (r.ok) { setDirty(false); toast.success("Pauta salva."); } else toast.error(r.error ?? "Não foi possível salvar.");
     } catch { toast.error("Sem conexão. Tente salvar de novo."); }
     finally { setBusy(false); }
+  };
+  /** Resposta do ancião: grava na hora, sem esperar o botão Salvar. */
+  const commitResponses = async (cardId: string, responses: AgendaElderResponse[]) => {
+    const next: AgendaPayload = { ...p, blocks: p.blocks.map((b) => ({ ...b, cards: b.cards.map((c) => (c.id === cardId ? { ...c, responses } : c)) })) };
+    try {
+      const res = await save(next);
+      if (!res.ok) { toast.error(res.error ?? "Não foi possível salvar."); return false; }
+      setP((cur) => ({ ...cur, blocks: cur.blocks.map((b) => ({ ...b, cards: b.cards.map((c) => (c.id === cardId ? { ...c, responses } : c)) })) }));
+      return true;
+    } catch { toast.error("Sem conexão. Tente de novo."); return false; }
   };
   const onExport = async (style: AgendaPdfStyle) => {
     setPdfOpen(false); setExporting(true);
@@ -348,7 +363,10 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
           ))
         ) : null}
         {c.type === "links" ? linksEditor(c, editable) : null}
-        {c.type === "recs" || (c.type === "links" && !editable && !c.html) ? null : (
+        {c.type === "eldersInfo" ? (
+          <ElderInfoResponses card={c} isSc={isSc} canWrite={editable} myHash={myHash} onCommit={(list) => commitResponses(c.id, list)} />
+        ) : null}
+        {c.type === "recs" || c.type === "eldersInfo" || (c.type === "links" && !editable && !c.html) ? null : (
           <div className="space-y-1">
             {c.type === "links" || c.type === "local" ? <Label className="text-xs text-muted-foreground">Anotações</Label> : null}
             {richField(c.html, (html) => patchCard(c.id, { html }), editable, c.type === "private" ? "Só você vê esta nota" : "Escreva aqui", `${c.id}.html`)}
@@ -408,6 +426,7 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
           </button>
         ) : null}
         <span className="flex-1" />
+        {c.type === "eldersInfo" ? <ElderInfoQuestionsEditor card={c} onChange={(next) => patchCard(c.id, next)} /> : null}
         <button type="button" onClick={() => moveCard(b, i, -1)} disabled={i === 0} aria-label="Subir cartão" className="p-1.5 text-muted-foreground disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button>
         <button type="button" onClick={() => moveCard(b, i, 1)} disabled={i === b.cards.length - 1} aria-label="Descer cartão" className="p-1.5 text-muted-foreground disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button>
         <button type="button" onClick={() => removeCard(b, c)} aria-label="Tirar cartão" className="p-1.5 text-destructive"><Trash2 className="h-4 w-4" /></button>

@@ -24,6 +24,17 @@ export interface AgendaCard {
   /** Membros da família / grupo / informações editados na pauta, por recomendação (cartão recs). */ recInfo: Record<string, AgendaRecInfo>;
   attachments: AgendaAttachment[];
   /** Oculto dos anciãos: só o SC vê; nunca sai do servidor para outros nem vai ao PDF. */ hidden: boolean;
+  /** Só no cartão eldersInfo: perguntas de marcar e perguntas com resposta, montadas pelo SC. */
+  checklist: AgendaQuestion[]; questions: AgendaQuestion[];
+  /** Só no cartão eldersInfo: uma resposta por ancião (cada aparelho só altera a sua). */
+  responses: AgendaElderResponse[];
+}
+export interface AgendaQuestion { id: string; text: string }
+export interface AgendaElderResponse {
+  id: string;
+  /** SHA-256 do segredo do aparelho que escreveu; vazio = só o SC altera (ex.: texto antigo). */ authorKey: string;
+  /** Opcional: sem nome aparece como "Ancião N". */ name: string;
+  checks: Record<string, boolean>; answers: Record<string, string>; html: string; updatedAt: string;
 }
 export type AgendaRecDecision = "assign" | "decline" | null;
 /** Comentário e decisão do SC por recomendação: só do SC, nunca chega aos anciãos nem ao PDF. */
@@ -49,7 +60,7 @@ export interface AgendaPayload {
 
 /** Um único nome por estilo: usado na lista de escolha, no editor e no PDF. */
 export const CARD_TYPE_LABEL: Record<AgendaCardType, string> = {
-  notes: "Informações do SC", links: "Fontes de matéria", eldersInfo: "Informações dos anciãos", scReply: "Resposta do SC",
+  notes: "Informações do SC", links: "Fontes de matéria", eldersInfo: "Informações adicionais dos anciãos", scReply: "Resposta do SC",
   recs: "Recomendações de irmãos", local: "Assunto local", private: "Nota privada do SC",
 };
 export const CARD_TYPES: AgendaCardType[] = ["notes", "links", "eldersInfo", "scReply", "recs", "local", "private"];
@@ -58,6 +69,8 @@ export const ACCESS_LABEL: Record<AgendaAccess, string> = { sc: "Só SC", coordi
 export const MAX_BLOCKS = 30;
 export const MAX_CARDS = 12;
 export const MAX_CLOUD_ATTACHMENTS = 5;
+export const MAX_RESPONSES = 30;
+export const MAX_QUESTIONS = 20;
 export const MAX_CLOUD_BYTES = 5 * 1024 * 1024;
 
 let seq = 0;
@@ -68,7 +81,7 @@ const DEFAULT_PERM: Record<AgendaCardType, AgendaAccess> = {
 };
 export function newCard(type: AgendaCardType, extra: Partial<AgendaCard> = {}): AgendaCard {
   return { id: newId(), type, perm: DEFAULT_PERM[type], showSubject: false, subject: "", html: "",
-    items: type === "links" ? [newLinkItem("book")] : [], notes: {}, recInfo: {}, attachments: [], hidden: false, ...extra };
+    items: type === "links" ? [newLinkItem("book")] : [], notes: {}, recInfo: {}, attachments: [], hidden: false, checklist: [], questions: [], responses: [], ...extra };
 }
 export function newBlock(title = "Novo tópico", cards: AgendaCard[] = [newCard("notes")]): AgendaBlock {
   return { id: newId(), title, minutes: 5, hidden: false, cards };
@@ -181,7 +194,31 @@ export function normalizeCard(raw: unknown): AgendaCard {
     recInfo: type === "recs" ? recInfoMap(r.recInfo) : {},
     attachments: ATTACHABLE.includes(type) ? (Array.isArray(r.attachments) ? r.attachments : []).slice(0, 20).map(normAttachment).filter((a): a is AgendaAttachment => !!a) : [],
     hidden: type !== "private" && r.hidden === true,
+    ...eldersInfoParts(type, r),
   };
+}
+
+function questionList(raw: unknown): AgendaQuestion[] {
+  return (Array.isArray(raw) ? raw : []).slice(0, MAX_QUESTIONS).map((q) => { const o = obj(q); return { id: idOk(o.id), text: str(o.text, 300) }; });
+}
+function normResponse(raw: unknown): AgendaElderResponse {
+  const o = obj(raw);
+  const checks: Record<string, boolean> = {};
+  for (const [k, v] of Object.entries(obj(o.checks)).slice(0, MAX_QUESTIONS)) if (ID_RE.test(k) && v === true) checks[k] = true;
+  const answers: Record<string, string> = {};
+  for (const [k, v] of Object.entries(obj(o.answers)).slice(0, MAX_QUESTIONS)) if (ID_RE.test(k)) answers[k] = str(v, 5000);
+  const key = str(o.authorKey, 64);
+  return { id: idOk(o.id), authorKey: /^[0-9a-f]{64}$/.test(key) ? key : "", name: str(o.name, 80), checks, answers, html: str(o.html, 50_000), updatedAt: str(o.updatedAt, 40) };
+}
+/** Campos do cartão eldersInfo; o texto antigo do campo único vira a primeira resposta. */
+function eldersInfoParts(type: AgendaCardType, r: Record<string, unknown>): Pick<AgendaCard, "checklist" | "questions" | "responses"> & { html?: string } {
+  if (type !== "eldersInfo") return { checklist: [], questions: [], responses: [] };
+  const responses = (Array.isArray(r.responses) ? r.responses : []).slice(0, MAX_RESPONSES).map(normResponse);
+  const legacy = str(r.html);
+  if (legacy.replace(/<[^>]*>/g, "").trim() && !responses.some((x) => x.id === "legacy")) {
+    responses.unshift({ id: "legacy", authorKey: "", name: "Resposta anterior", checks: {}, answers: {}, html: legacy, updatedAt: "" });
+  }
+  return { checklist: questionList(r.checklist), questions: questionList(r.questions), responses: responses.slice(0, MAX_RESPONSES), html: "" };
 }
 
 /** Bloco do formato v2 (um tipo por bloco) vira tópico com um cartão de mesmo id. */
@@ -194,11 +231,12 @@ function legacyBlockToTopic(r: Record<string, unknown>): AgendaBlock {
   const title = str(r.title, 200).replace(/^\s*\d+[).]\s*/, "") || CARD_TYPE_LABEL[type];
   return { id, title, minutes: mins(r.minutes, 0), hidden: r.hidden === true, cards: [card] };
 }
+const renameTitle = (t: string) => (t.trim() === "Informações dos anciãos" ? CARD_TYPE_LABEL.eldersInfo : t);
 function normalizeTopic(raw: unknown): AgendaBlock {
   const r = obj(raw);
   if (!Array.isArray(r.cards)) return legacyBlockToTopic(r);
   return {
-    id: idOk(r.id), title: str(r.title, 200).replace(/^\s*\d+[).]\s*/, "") || "Tópico",
+    id: idOk(r.id), title: renameTitle(str(r.title, 200).replace(/^\s*\d+[).]\s*/, "")) || "Tópico",
     minutes: mins(r.minutes, 0), hidden: r.hidden === true,
     cards: r.cards.slice(0, MAX_CARDS).map(normalizeCard),
   };
@@ -238,7 +276,7 @@ function fromLegacy(r: Record<string, unknown>, perms: Record<string, unknown>):
       case "reco": return { ...c, perm: p("reco", "sc"), html: str(r.reco), items: c.items.map((it, i) => {
         const l = links[i] ?? {}; return withParts({ id: it.id, kind: it.kind, parts: partsFromLegacy(str(l.label, 500), [str(l.url, 2000)]) });
       }) };
-      case "eldersInfo": return { ...c, perm: p("eldersInfo", "all"), html: str(r.eldersInfo) };
+      case "eldersInfo": return normalizeCard({ ...c, perm: p("eldersInfo", "all"), html: str(r.eldersInfo) });
       case "letters": return { ...c, perm: p("letters", "coordinator"), html: str(r.letters) };
       case "recs": return { ...c, perm: p("recs", "all"), notes: strMap(r.recNotes) };
       case "local": return { ...c, perm: p("local", "all"), html: str(r.localNotes) };
@@ -336,13 +374,28 @@ export function weekOf(isoDate: string): { from: string; to: string } {
  * SC grava tudo (estrutura, títulos, ordem, prazo, cartões). Os outros só o conteúdo dos cartões que podem editar,
  * e nada depois do prazo. Estrutura e anexos são sempre os salvos.
  */
-export function mergeAgenda(current: AgendaPayload, incoming: AgendaPayload, role: AgendaRole, now = Date.now()): AgendaPayload {
+/** Respostas do cartão eldersInfo: quem não é SC só troca/insere/apaga a resposta com a própria chave. */
+export function mergeResponses(cur: AgendaElderResponse[], inc: AgendaElderResponse[], authorHash: string | null): AgendaElderResponse[] {
+  if (!authorHash) return cur;
+  const mine = inc.find((x) => x.authorKey === authorHash);
+  const others = cur.filter((x) => x.authorKey !== authorHash);
+  const at = cur.findIndex((x) => x.authorKey === authorHash);
+  if (!mine) return others;
+  const next = { ...mine, id: at >= 0 ? cur[at].id : mine.id };
+  if (at >= 0) { const out = cur.slice(); out[at] = next; return out; }
+  return others.length >= MAX_RESPONSES ? others : [...others, next];
+}
+/** Nome mostrado: o digitado ou "Ancião N" pela posição. */
+export const responseName = (r: AgendaElderResponse, i: number) => r.name.trim() || `Ancião ${i + 1}`;
+
+export function mergeAgenda(current: AgendaPayload, incoming: AgendaPayload, role: AgendaRole, now = Date.now(), authorHash: string | null = null): AgendaPayload {
   if (role === "sc") return incoming;
   if (isLocked(current, now)) return current;
   const inc = new Map(incoming.blocks.flatMap((b) => b.cards).map((c) => [c.id, c]));
   const out: AgendaPayload = { ...current, blocks: current.blocks.map((b) => ({ ...b, cards: b.cards.map((c) => {
     const n = inc.get(c.id);
     if (!n || n.type !== c.type || !canEditCard(role, c)) return c;
+    if (c.type === "eldersInfo") return { ...c, responses: mergeResponses(c.responses, n.responses, authorHash) };
     return { ...c, subject: n.subject, html: n.html, notes: n.notes, recInfo: n.recInfo, items: c.type === "links" ? n.items : c.items };
   }) })) };
   if (canEdit(role, current.prayersPerm)) {

@@ -75,7 +75,12 @@ export async function loadAgenda(visitId: string, role: AgendaRole): Promise<Age
   };
 }
 
-export async function saveAgenda(visitId: string, role: AgendaRole, incomingRaw: unknown): Promise<string | null | "locked"> {
+async function sha256Hex(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export async function saveAgenda(visitId: string, role: AgendaRole, incomingRaw: unknown, authorSecret?: string): Promise<string | null | "locked"> {
   const { data: v } = await supabaseAdmin.from("visits").select("congregation_id").eq("id", visitId).maybeSingle();
   if (!v) return null;
   const { data: cong } = await supabaseAdmin.from("congregations").select("superintendent_id").eq("id", v.congregation_id).maybeSingle();
@@ -86,7 +91,8 @@ export async function saveAgenda(visitId: string, role: AgendaRole, incomingRaw:
   const incoming = normalizeAgenda(incomingRaw);
   // Anexo só pode apontar para a pasta desta visita.
   for (const b of incoming.blocks) for (const c of b.cards) c.attachments = c.attachments.map((a) => (a.cloudPath && !a.cloudPath.startsWith(`${visitId}/`) ? { ...a, cloudPath: "" } : a));
-  const merged = mergeAgenda(current, incoming, role);
+  const authorHash = authorSecret ? await sha256Hex(authorSecret) : null;
+  const merged = mergeAgenda(current, incoming, role, Date.now(), authorHash);
   const { data, error } = await supabaseAdmin.from("elder_meeting_agendas").upsert(
     { visit_id: visitId, superintendent_id: cong.superintendent_id, payload: merged as never, permissions: {} as never },
     { onConflict: "visit_id" },
