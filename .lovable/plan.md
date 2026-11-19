@@ -81,3 +81,20 @@ Todos os campos de texto/anotação da pauta (cartões, nota privada, comentári
 - Alça: reaproveitar o componente de altura ajustável dos esboços, chave por campo no localStorage.
 - Tela cheia: novo `ElderAgendaFullscreen.tsx` reutilizando `OutlineTimer`, `AttachmentLightbox`, `AttachmentVideoLightbox` e `focus-chrome`.
 - PDFs: respeitar interruptores de oração/ata. Testes Vitest para: oração recomendação oculta sem recomendações; dados do SC fora do payload do ancião; ordem do S-303; nota criada só em "Não designar".
+
+## (06) Título e versículos editáveis
+
+```text
+┌─────────────────────────────┐
+│ Cabeçalho da pauta    [✎]   │
+│ Título                      │
+│ [Pauta – Reunião com Anciãos]│
+│ Versículos                  │
+│ [Isa 50:4; Pro 18:13,17; ...]│
+└─────────────────────────────┘
+```
+- Cada SC escolhe o título e os versículos (pode deixar versículos em branco).
+- O texto atual vira o valor padrão; pautas antigas continuam iguais.
+- Fica salvo no modelo da pauta (sincroniza na conta e vai na exportação de modelos) e aparece nos 3 PDFs.
+- Versículos continuam clicáveis (abrem a Bíblia TNM). Só o SC edita.
+- Técnico: payload ganha `headerTitle` e `headerVerses` (com padrão), incluídos no modelo; PDFs leem esses campos.
