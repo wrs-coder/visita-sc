@@ -98,3 +98,16 @@ Todos os campos de texto/anotação da pauta (cartões, nota privada, comentári
 - Fica salvo no modelo da pauta (sincroniza na conta e vai na exportação de modelos) e aparece nos 3 PDFs.
 - Versículos continuam clicáveis (abrem a Bíblia TNM). Só o SC edita.
 - Técnico: payload ganha `headerTitle` e `headerVerses` (com padrão), incluídos no modelo; PDFs leem esses campos.
+
+## (07) Ocultar cartões individuais (só SC)
+
+```text
+┌─────────────────────────────┐
+│ Fontes de matéria  [👁‍🗨] [⋮] │
+│  ⋮ Ocultar dos anciãos  (●○)│
+└─────────────────────────────┘
+```
+- Cada cartão ganha o interruptor "Ocultar dos anciãos", como já existe nos tópicos.
+- Oculto: SC vê com selo "Oculto"; anciãos não recebem o conteúdo e ele não sai nos PDFs.
+- Vale também nos modelos (sincroniza e exporta).
+- Técnico: `AgendaCard.hidden` opcional (ausente = visível); o filtro do ancião e os PDFs removem cartões ocultos, igual aos tópicos. Teste Vitest garante que cartão oculto não chega ao ancião.
