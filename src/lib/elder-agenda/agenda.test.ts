@@ -139,3 +139,45 @@ describe("pauta: modelos", () => {
     expect(out.flatMap((b) => b.cards).find((c) => c.id === "letters")!.html).toBe("cartas");
   });
 });
+
+import { emptyAgenda as _empty, emptyAuto as _auto, mergeAgenda as _merge, newCard as _card, normalizeAgenda as _norm, prayerRecShown, s303Html, weekOf, withoutPrivate as _wp } from "./agenda";
+describe("pauta: ajustes de cabeçalho, decisão e ocultos", () => {
+  it("oração recomendação só aparece ligada e com recomendações", () => {
+    const p = _empty();
+    expect(prayerRecShown(p, _auto())).toBe(false);
+    const a = { ..._auto(), recommendations: [{ id: "r1", title: "João", family: "", fieldGroup: "", info: "" }] };
+    expect(prayerRecShown(p, a)).toBe(true);
+    expect(prayerRecShown({ ...p, showPrayerRec: false }, a)).toBe(false);
+  });
+  it("pautas antigas abrem com título, versículos e ata padrão", () => {
+    const p = _norm({ v: 3, blocks: [] });
+    expect(p.headerTitle).toBe("Pauta – Reunião com Anciãos");
+    expect(p.headerVerses).toContain("Isa 50:4");
+    expect(p.showMinutes).toBe(true);
+  });
+  it("cartão oculto e decisões do SC não chegam aos anciãos", () => {
+    const p = _empty();
+    p.blocks[0].cards[0] = { ...p.blocks[0].cards[0], hidden: true };
+    p.scRecs = { r1: { comment: "<p>x</p>", decision: "decline" } };
+    const out = _wp(p);
+    expect(out.blocks[0].cards.some((c) => c.id === p.blocks[0].cards[0].id)).toBe(false);
+    expect(out.scRecs).toEqual({});
+  });
+  it("ancião salvando não apaga cartão oculto nem decisão", () => {
+    const cur = _empty();
+    cur.blocks[0].cards.push(_card("notes", { id: "h1", hidden: true, html: "segredo" }));
+    cur.scRecs = { r1: { comment: "", decision: "decline" } };
+    const m = _merge(cur, _wp(cur), "elder");
+    expect(m.blocks[0].cards.find((c) => c.id === "h1")?.html).toBe("segredo");
+    expect(m.scRecs.r1.decision).toBe("decline");
+  });
+  it("S-303 entra na ordem positivos, encorajar, preocupantes", () => {
+    const h = s303Html({ preocupantes: "C", positivos: "A", encorajar: "B" });
+    expect(h.indexOf("A")).toBeLessThan(h.indexOf("B"));
+    expect(h.indexOf("B")).toBeLessThan(h.indexOf("C"));
+    expect(h).toContain("Pontos para encorajar (Atos 11:23)");
+  });
+  it("semana da visita vai de segunda a domingo", () => {
+    expect(weekOf("2026-11-19")).toEqual({ from: "2026-11-16", to: "2026-11-22" });
+  });
+});

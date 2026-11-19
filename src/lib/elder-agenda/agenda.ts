@@ -21,7 +21,13 @@ export interface AgendaCard {
   /** Informação partilhada pelo CA, por recomendação (cartão recs). */ notes: Record<string, string>;
   /** Membros da família / grupo / informações editados na pauta, por recomendação (cartão recs). */ recInfo: Record<string, AgendaRecInfo>;
   attachments: AgendaAttachment[];
+  /** Oculto dos anciãos: só o SC vê; nunca sai do servidor para outros nem vai ao PDF. */ hidden: boolean;
 }
+export type AgendaRecDecision = "assign" | "decline" | null;
+/** Comentário e decisão do SC por recomendação: só do SC, nunca chega aos anciãos nem ao PDF. */
+export interface AgendaScRec { comment: string; decision: AgendaRecDecision }
+export const DEFAULT_AGENDA_TITLE = "Pauta – Reunião com Anciãos";
+export const DEFAULT_AGENDA_VERSES = "Isa 50:4; Pro 18:13,17; Tia 1:19; 1 Cor 4:6; 2 Cor 1:24; Col 2:8; Mat 5:41; Tito 1:5";
 export interface AgendaBlock { id: string; title: string; minutes: number; hidden: boolean; cards: AgendaCard[] }
 export interface AgendaPayload {
   v: 3;
@@ -29,6 +35,10 @@ export interface AgendaPayload {
   /** Prazo (ISO) para anciãos preencherem; depois disso só o SC edita. */
   deadlineAt: string | null;
   blocks: AgendaBlock[];
+  /** Interruptores opcionais do cabeçalho (inicial e final são fixas). */
+  showPrayerRec: boolean; showMinutes: boolean;
+  headerTitle: string; headerVerses: string;
+  scRecs: Record<string, AgendaScRec>;
 }
 
 /** Um único nome por estilo: usado na lista de escolha, no editor e no PDF. */
@@ -52,7 +62,7 @@ const DEFAULT_PERM: Record<AgendaCardType, AgendaAccess> = {
 };
 export function newCard(type: AgendaCardType, extra: Partial<AgendaCard> = {}): AgendaCard {
   return { id: newId(), type, perm: DEFAULT_PERM[type], showSubject: false, subject: "", html: "",
-    items: type === "links" ? [{ id: newId(), kind: "book", text: "", urls: [""] }] : [], notes: {}, recInfo: {}, attachments: [], ...extra };
+    items: type === "links" ? [{ id: newId(), kind: "book", text: "", urls: [""] }] : [], notes: {}, recInfo: {}, attachments: [], hidden: false, ...extra };
 }
 export function newBlock(title = "Novo tópico", cards: AgendaCard[] = [newCard("notes")]): AgendaBlock {
   return { id: newId(), title, minutes: 5, hidden: false, cards };
@@ -75,7 +85,8 @@ export function defaultBlocks(): AgendaBlock[] {
 }
 
 export function emptyAgenda(): AgendaPayload {
-  return { v: 3, prayerOpen: "", prayerRec: "", prayerClose: "", minutesTaker: "", prayersPerm: "coordinator", deadlineAt: null, blocks: defaultBlocks() };
+  return { v: 3, prayerOpen: "", prayerRec: "", prayerClose: "", minutesTaker: "", prayersPerm: "coordinator", deadlineAt: null, blocks: defaultBlocks(),
+    showPrayerRec: true, showMinutes: true, headerTitle: DEFAULT_AGENDA_TITLE, headerVerses: DEFAULT_AGENDA_VERSES, scRecs: {} };
 }
 
 const str = (v: unknown, max = 200_000) => (typeof v === "string" ? v.slice(0, max) : "");
@@ -136,6 +147,7 @@ export function normalizeCard(raw: unknown): AgendaCard {
     notes: type === "recs" ? strMap(r.notes) : {},
     recInfo: type === "recs" ? recInfoMap(r.recInfo) : {},
     attachments: ATTACHABLE.includes(type) ? (Array.isArray(r.attachments) ? r.attachments : []).slice(0, 20).map(normAttachment).filter((a): a is AgendaAttachment => !!a) : [],
+    hidden: type !== "private" && r.hidden === true,
   };
 }
 
@@ -207,6 +219,25 @@ function fromLegacy(r: Record<string, unknown>, perms: Record<string, unknown>):
     minutesTaker: str(r.minutesTaker, 120), prayersPerm: p("prayers", "coordinator"), blocks };
 }
 
+function scRecMap(raw: unknown): Record<string, AgendaScRec> {
+  const out: Record<string, AgendaScRec> = {};
+  for (const [k, v] of Object.entries(obj(raw)).slice(0, 50)) {
+    if (!ID_RE.test(k)) continue;
+    const r = obj(v);
+    out[k] = { comment: str(r.comment, 20_000), decision: r.decision === "assign" || r.decision === "decline" ? r.decision : null };
+  }
+  return out;
+}
+/** Campos novos com padrão: pautas antigas abrem iguais. */
+function extras(r: Record<string, unknown>) {
+  return {
+    showPrayerRec: r.showPrayerRec !== false, showMinutes: r.showMinutes !== false,
+    headerTitle: typeof r.headerTitle === "string" ? str(r.headerTitle, 200) : DEFAULT_AGENDA_TITLE,
+    headerVerses: typeof r.headerVerses === "string" ? str(r.headerVerses, 600) : DEFAULT_AGENDA_VERSES,
+    scRecs: scRecMap(r.scRecs),
+  };
+}
+
 function deadline(v: unknown): string | null {
   if (typeof v !== "string" || !v) return null;
   const t = Date.parse(v); return Number.isFinite(t) ? new Date(t).toISOString() : null;
@@ -221,7 +252,7 @@ export function normalizeAgenda(raw: unknown, legacyPerms?: unknown): AgendaPayl
   return {
     v: 3, prayerOpen: str(r.prayerOpen, 120), prayerRec: str(r.prayerRec, 120), prayerClose: str(r.prayerClose, 120),
     minutesTaker: str(r.minutesTaker, 120), prayersPerm: access(r.prayersPerm, "coordinator"), deadlineAt: deadline(r.deadlineAt),
-    blocks: normalizeBlocks(r.blocks),
+    blocks: normalizeBlocks(r.blocks), ...extras(r),
   };
 }
 
@@ -239,9 +270,32 @@ export function isLocked(p: Pick<AgendaPayload, "deadlineAt">, now = Date.now())
 export const canEditNow = (role: AgendaRole, perm: AgendaAccess, p: Pick<AgendaPayload, "deadlineAt">, now = Date.now()) =>
   role === "sc" || (!isLocked(p, now) && canEdit(role, perm));
 
-/** Tira as notas privadas do SC: nunca saem do servidor para anciãos, nem vão ao PDF. */
+/** Cartão que só o SC vê (nota privada ou cartão oculto). */
+export const isScOnlyCard = (c: Pick<AgendaCard, "type" | "hidden">) => c.type === "private" || c.hidden;
+/** Tira tudo que é só do SC (notas privadas, cartões ocultos, comentários/decisões): nunca sai do servidor para anciãos, nem vai ao PDF. */
 export function withoutPrivate(p: AgendaPayload): AgendaPayload {
-  return { ...p, blocks: p.blocks.map((b) => ({ ...b, cards: b.cards.filter((c) => c.type !== "private") })) };
+  return { ...p, scRecs: {}, blocks: p.blocks.map((b) => ({ ...b, cards: b.cards.filter((c) => !isScOnlyCard(c)) })) };
+}
+
+/** Oração recomendação só existe com o interruptor ligado e alguma recomendação na visita. */
+export const prayerRecShown = (p: Pick<AgendaPayload, "showPrayerRec">, a: Pick<AgendaAuto, "recommendations">) => p.showPrayerRec && a.recommendations.length > 0;
+
+/** Texto das três partes da S-303, nesta ordem, para "Informações do SC". */
+export function s303Html(x: { positivos?: string; encorajar?: string; preocupantes?: string }): string {
+  const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const part = (label: string, v?: string) => {
+    const t = (v ?? "").trim(); if (!t) return "";
+    return `<p><strong>${esc(label)}</strong></p>${t.split(/\n+/).map((l) => `<p>${esc(l)}</p>`).join("")}`;
+  };
+  return [part("Destaques positivos e elogios", x.positivos), part("Pontos para encorajar (Atos 11:23)", x.encorajar), part("Pontos preocupantes (Tito 1:5)", x.preocupantes)].join("");
+}
+
+/** Semana (segunda a domingo) que contém a data, em yyyy-mm-dd. */
+export function weekOf(isoDate: string): { from: string; to: string } {
+  const d = new Date(`${isoDate.slice(0, 10)}T12:00:00Z`);
+  const dow = (d.getUTCDay() + 6) % 7;
+  const mon = new Date(d.getTime() - dow * 86_400_000), sun = new Date(mon.getTime() + 6 * 86_400_000);
+  return { from: mon.toISOString().slice(0, 10), to: sun.toISOString().slice(0, 10) };
 }
 
 /**
@@ -263,7 +317,7 @@ export function mergeAgenda(current: AgendaPayload, incoming: AgendaPayload, rol
   return out;
 }
 
-export interface AgendaAutoRec { id: string; title: string; family: string; fieldGroup: string; info: string }
+export interface AgendaAutoRec { id: string; title: string; family: string; fieldGroup: string; info: string; name?: string; purpose?: string }
 export interface AgendaAuto {
   meetingAt: string | null; location: string | null; theme: string | null;
   openingPrayer: string | null; closingPrayer: string | null;
@@ -331,9 +385,16 @@ export function htmlToPlain(html: string): string {
 export const stripForTemplate = (blocks: AgendaBlock[]): AgendaBlock[] =>
   blocks.map((b) => ({ ...b, cards: b.cards.map((c) => ({ ...c, notes: {}, recInfo: {}, attachments: [] })) }));
 
-export interface AgendaTemplateFile { kind: "visita-sc/agenda-template"; version: 2; name: string; blocks: AgendaBlock[] }
-export function templateToFile(name: string, blocks: AgendaBlock[]): AgendaTemplateFile {
-  return { kind: "visita-sc/agenda-template", version: 2, name: name.slice(0, 120), blocks: stripForTemplate(blocks) };
+export interface AgendaHeader { title: string; verses: string }
+export interface AgendaTemplateFile { kind: "visita-sc/agenda-template"; version: 2; name: string; blocks: AgendaBlock[]; header?: AgendaHeader }
+export function templateToFile(name: string, blocks: AgendaBlock[], header?: AgendaHeader): AgendaTemplateFile {
+  return { kind: "visita-sc/agenda-template", version: 2, name: name.slice(0, 120), blocks: stripForTemplate(blocks), ...(header ? { header } : {}) };
+}
+export function parseTemplateHeader(text: string): AgendaHeader | null {
+  try {
+    const h = obj(obj(JSON.parse(text)).header);
+    return typeof h.title === "string" ? { title: str(h.title, 200), verses: str(h.verses, 600) } : null;
+  } catch { return null; }
 }
 export function parseTemplateFile(text: string): { name: string; blocks: AgendaBlock[] } | null {
   try {

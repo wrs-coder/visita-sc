@@ -3,11 +3,12 @@
 // Os blocos saem na ordem e com a numeração escolhidas; links viram "Clique aqui" clicável.
 import { createJsPdfCompat, type JsPdfCompat } from "@/lib/pdf/pdf-engine";
 import {
-  CARD_TYPE_LABEL, agendaView, htmlToPlain, itemUrls, numberedBlocks, recInfoView, sharedAttachments,
+  CARD_TYPE_LABEL, DEFAULT_AGENDA_VERSES, agendaView, isScOnlyCard, prayerRecShown, htmlToPlain, itemUrls, numberedBlocks, recInfoView, sharedAttachments,
   type AgendaAuto, type AgendaBlock, type AgendaCard, type AgendaLinkKind, type AgendaPayload,
 } from "./agenda";
 
-export const AGENDA_VERSES = "Isa 50:4; Pro 18:13,17; Tia 1:19; 1 Cor 4:6; 2 Cor 1:24; Col 2:8; Mat 5:41; Tito 1:5";
+/** Versículos padrão (cada SC pode trocar na pauta). */
+export const AGENDA_VERSES = DEFAULT_AGENDA_VERSES;
 export type AgendaPdfStyle = "formal" | "cards" | "timeline";
 export const AGENDA_PDF_STYLES: Array<{ id: AgendaPdfStyle; label: string; hint: string }> = [
   { id: "formal", label: "Ata formal", hint: "Sóbrio, numeração grande e tempos pontilhados" },
@@ -34,7 +35,7 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
   const W = pdf.pageW, H = pdf.pageH, M = 16;
   const gutter = style === "timeline" ? 22 : style === "formal" ? 12 : 0;
   const X = M + gutter, CW = W - M - X; // coluna de conteúdo
-  const p = { ...input.payload, blocks: input.payload.blocks.map((b) => ({ ...b, cards: b.cards.filter((c) => c.type !== "private") })) }, a = input.auto, v = agendaView(p, a);
+  const p = { ...input.payload, blocks: input.payload.blocks.map((b) => ({ ...b, cards: b.cards.filter((c) => !isScOnlyCard(c)) })) }, a = input.auto, v = agendaView(p, a);
   const color = (c: RGB) => pdf.setTextColor(c[0], c[1], c[2]);
   const fill = (c: RGB) => pdf.setFillColor(c[0], c[1], c[2]);
   const draw = (c: RGB, w = 0.3) => { pdf.setDrawColor(c[0], c[1], c[2]); pdf.setLineWidth(w); };
@@ -42,7 +43,7 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
   let page = 1;
   const footer = () => {
     pdf.setFont(false, true); pdf.setFontSize(7.5); color(MUTED);
-    pdf.text(`Pauta – Reunião com os anciãos · ${input.congregation}`, M, H - 8);
+    pdf.text(`${input.payload.headerTitle.trim() || "Pauta – Reunião com os anciãos"} · ${input.congregation}`, M, H - 8);
     pdf.text(`Página ${page}`, W - M, H - 8, { align: "right" });
   };
   const ensure = (h: number) => { if (y + h > H - 16) { footer(); pdf.addPage(); page++; y = 18; } };
@@ -69,21 +70,30 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
 
   // ---------- Cabeçalho ----------
   fill(NAVY); pdf.rect(0, 0, W, 4, "F");
-  pdf.setFont(true); pdf.setFontSize(17); color(NAVY); pdf.text("Pauta – Reunião com os Anciãos", W / 2, y, { align: "center" }); y += 6;
-  pdf.setFont(false, true); pdf.setFontSize(8.5); color(MUTED); pdf.text(AGENDA_VERSES, W / 2, y, { align: "center" }); y += 5;
+  pdf.setFont(true); pdf.setFontSize(17); color(NAVY); pdf.text(p.headerTitle.trim() || "Pauta – Reunião com os Anciãos", W / 2, y, { align: "center" }); y += 6;
+  if (p.headerVerses.trim()) {
+    pdf.setFont(false, true); pdf.setFontSize(8.5); color(MUTED);
+    for (const l of pdf.splitTextToSize(p.headerVerses.trim(), W - 2 * M)) { pdf.text(l, W / 2, y, { align: "center" }); y += 3.8; }
+    y += 1.2;
+  }
   pdf.setFont(false); pdf.setFontSize(9.5); color(INK);
   const sub = [input.congregation, whenLine(a.meetingAt) || input.range, a.location].filter(Boolean).join("  ·  ");
   if (sub) { pdf.text(sub, W / 2, y, { align: "center" }); y += 4; }
   y += 2;
 
   // Faixa de orações e tempo
-  const cells: Array<[string, string]> = [["Oração inicial", v.prayerOpen], ["Oração recomendação", p.prayerRec], ["Oração final", v.prayerClose], ["Ata", p.minutesTaker], ["Tempo total", `${v.totalMinutes} min`]];
+  const cells: Array<[string, string]> = [["Oração inicial", v.prayerOpen]];
+  if (prayerRecShown(p, a)) cells.push(["Oração recomendação", p.prayerRec]);
+  cells.push(["Oração final", v.prayerClose]);
+  if (p.showMinutes) cells.push(["Ata", p.minutesTaker]);
+  cells.push(["Tempo total", `${v.totalMinutes} min`]);
+  const last = cells.length - 1;
   const cw = (W - 2 * M) / cells.length;
   if (style === "cards") { fill(SOFT); pdf.rect(M, y, W - 2 * M, 13, "F"); } else { draw(RULE, 0.3); pdf.line(M, y, W - M, y); pdf.line(M, y + 13, W - M, y + 13); }
   cells.forEach(([t, val], i) => {
     const cx = M + cw * i + cw / 2;
     pdf.setFont(true); pdf.setFontSize(7); color(MUTED); pdf.text(t.toUpperCase(), cx, y + 4.6, { align: "center" });
-    pdf.setFont(i === 4); pdf.setFontSize(9); color(i === 4 ? NAVY : INK);
+    pdf.setFont(i === last); pdf.setFontSize(9); color(i === last ? NAVY : INK);
     pdf.text(pdf.splitTextToSize(val || "—", cw - 3)[0] ?? "", cx, y + 10, { align: "center" });
   });
   y += 19;

@@ -1,12 +1,12 @@
 // Leitura/gravação da pauta dos anciãos com o cliente de serviço. Só chamar depois de conferir quem pede.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  RECOMMENDATION_PURPOSE, emptyAgenda, emptyAuto, isLocked, mergeAgenda, normalizeAgenda, normalizeBlocks, withoutPrivate,
+  RECOMMENDATION_PURPOSE, emptyAgenda, emptyAuto, isLocked, isScOnlyCard, mergeAgenda, normalizeAgenda, normalizeBlocks, withoutPrivate,
   type AgendaAuto, type AgendaPayload, type AgendaRole,
 } from "./agenda";
 
 export interface AgendaDTO {
-  ok: true; visitId: string; visitTitle: string; congregation: string; range: string;
+  ok: true; visitId: string; visitTitle: string; congregation: string; congregationId: string; startDate: string; range: string;
   role: AgendaRole; payload: AgendaPayload; auto: AgendaAuto; updatedAt: string | null;
 }
 
@@ -56,6 +56,7 @@ export async function loadAgenda(visitId: string, role: AgendaRole): Promise<Age
       id: r.id,
       title: [r.full_name, r.purpose ? RECOMMENDATION_PURPOSE[r.purpose] : null].filter(Boolean).join(" — ") || "Recomendação",
       family: r.family_members ?? "", fieldGroup: r.field_group ?? "", info: r.info ?? "",
+      name: r.full_name ?? "", purpose: r.purpose ? RECOMMENDATION_PURPOSE[r.purpose] ?? "" : "",
     })),
     local: (locs ?? []).map((l) => ({ id: l.id, suggestedBy: l.suggested_by ?? "", subject: l.subject ?? "", sources: l.sources ?? "", info: l.info ?? "" })),
   };
@@ -69,7 +70,7 @@ export async function loadAgenda(visitId: string, role: AgendaRole): Promise<Age
   }
   if (role === "sc" && cong?.superintendent_id) void cleanupOldAttachments(cong.superintendent_id).catch(() => undefined);
   return {
-    ok: true, visitId, visitTitle: v.title, congregation: cong?.name ?? "", range: fmtRange(v.start_date, v.end_date), role,
+    ok: true, visitId, visitTitle: v.title, congregation: cong?.name ?? "", congregationId: v.congregation_id, startDate: v.start_date, range: fmtRange(v.start_date, v.end_date), role,
     payload: role === "sc" ? payload : withoutPrivate(payload), auto, updatedAt: row?.updated_at ?? null,
   };
 }
@@ -107,7 +108,7 @@ export async function attachmentVisible(visitId: string, path: string, role: Age
   if (!path.startsWith(`${visitId}/`)) return false;
   const p = await savedPayload(visitId);
   if (!p) return false;
-  return p.blocks.some((b) => b.cards.some((c) => (role === "sc" || c.type !== "private") && c.attachments.some((a) => a.cloudPath === path)));
+  return p.blocks.some((b) => b.cards.some((c) => (role === "sc" || !isScOnlyCard(c)) && c.attachments.some((a) => a.cloudPath === path)));
 }
 
 export async function signedAttachmentUrl(path: string): Promise<string | null> {

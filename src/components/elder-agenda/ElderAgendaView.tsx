@@ -2,6 +2,7 @@
 // SC: renomeia, reordena, oculta, apaga e adiciona blocos, escolhe quem edita cada um, define um prazo
 // e usa/salva modelos. Anciãos (com ou sem cadastro) preenchem o que foi liberado até o prazo.
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Maximize2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, BookOpen, CalendarClock, ChevronDown, Eye, EyeOff, FileDown, FileText, HandHeart, Layers, Library, Link2, Loader2,
@@ -17,20 +18,28 @@ import { BibleRefText } from "@/components/bible/BibleRefText";
 import { saveBlob } from "@/lib/share";
 import {
   ACCESS_LABEL, ATTACHABLE, CARD_TYPES, CARD_TYPE_LABEL, MAX_BLOCKS, MAX_CARDS, agendaView, autoHidden, canEditCard, isLocked, itemUrls,
-  newBlock, newCard, newId, numberedBlocks, recInfoView, safeUrl, withoutPrivate,
+  newBlock, newCard, newId, numberedBlocks, prayerRecShown, recInfoView, safeUrl, withoutPrivate,
+  type AgendaRecDecision,
   type AgendaAccess, type AgendaAttachment, type AgendaAuto, type AgendaBlock, type AgendaCard, type AgendaCardType, type AgendaLinkItem,
   type AgendaLinkKind, type AgendaPayload, type AgendaRecInfo, type AgendaRole,
 } from "@/lib/elder-agenda/agenda";
-import { AGENDA_PDF_STYLES, AGENDA_VERSES, type AgendaPdfStyle } from "@/lib/elder-agenda/agenda-pdf";
+import { AGENDA_PDF_STYLES, type AgendaPdfStyle } from "@/lib/elder-agenda/agenda-pdf";
 import { readPdfStyle, writePdfStyle } from "@/lib/elder-agenda/agenda-cache";
 import { openAllLinks } from "./open-all-links";
 import { AgendaTemplatesDialog } from "./AgendaTemplatesDialog";
 import { AgendaAttachments, type AgendaAttachmentApi } from "./AgendaAttachments";
+import { EditorResizeHandle } from "@/components/outlines/EditorResizeHandle";
+import { s303ForWeek, upsertDeclineNote } from "@/lib/elder-agenda/agenda-notes";
+
+const ElderAgendaFullscreen = lazy(() => import("./ElderAgendaFullscreen").then((m) => ({ default: m.ElderAgendaFullscreen })));
+const H_KEY = "visita-sc:agenda-field-h";
+function readHeights(): Record<string, number> { try { return JSON.parse(localStorage.getItem(H_KEY) || "{}"); } catch { return {}; } }
 
 const RichNoteEditor = lazy(() => import("@/components/notes/RichNoteEditor").then((m) => ({ default: m.RichNoteEditor })));
 
 export interface AgendaData {
   visitId: string; congregation: string; range: string; role: AgendaRole;
+  /** Para ligar com as Notas privadas (só vem do servidor nas versões novas). */ congregationId?: string; startDate?: string;
   payload: AgendaPayload; auto: AgendaAuto; offline?: boolean;
   attachmentApi?: AgendaAttachmentApi;
 }
@@ -95,6 +104,10 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
   const [pdfOpen, setPdfOpen] = useState(false);
   const [addTo, setAddTo] = useState<string | null>(null);
   const [pdfStyle, setPdfStyle] = useState<AgendaPdfStyle>("timeline");
+  const [full, setFull] = useState(false);
+  const [heights, setHeights] = useState<Record<string, number>>({});
+  const [syncing, setSyncing] = useState<string | null>(null);
+  const setHeight = (k: string, px: number) => setHeights((cur) => { const next = { ...cur, [k]: px }; try { localStorage.setItem(H_KEY, JSON.stringify(next)); } catch { /* cheio */ } return next; });
   const isSc = data.role === "sc";
   const offline = !!data.offline;
   const openKey = "visita-sc:agenda-open";
@@ -102,6 +115,7 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
   useEffect(() => {
     try { setClosed(JSON.parse(localStorage.getItem(openKey) || "{}")); } catch { /* sem preferência */ }
     setPdfStyle(readPdfStyle());
+    setHeights(readHeights());
   }, []);
   const toggle = (id: string) => setClosed((cur) => { const next = { ...cur, [id]: !cur[id] }; try { localStorage.setItem(openKey, JSON.stringify(next)); } catch { /* cheio */ } return next; });
   const locked = isLocked(p);
@@ -168,12 +182,41 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
     );
   };
 
-  const richField = (value: string, onChange: (html: string) => void, editable: boolean, placeholder: string) =>
-    editable ? (
-      <Suspense fallback={<div className="h-24 rounded-lg bg-muted/40 animate-pulse" />}>
-        <RichNoteEditor value={value} onChange={onChange} placeholder={placeholder} minHeight="84px" maxHeight="55vh" />
-      </Suspense>
+  const richField = (value: string, onChange: (html: string) => void, editable: boolean, placeholder: string, hKey = "") => {
+    const extra = hKey ? heights[hKey] ?? 0 : 0;
+    return editable ? (
+      <div>
+        <Suspense fallback={<div className="h-24 rounded-lg bg-muted/40 animate-pulse" />}>
+          <RichNoteEditor value={value} onChange={onChange} placeholder={placeholder} minHeight={`${84 + extra}px`} maxHeight={extra ? "none" : "55vh"} />
+        </Suspense>
+        {hKey ? <EditorResizeHandle value={extra} onChange={(px) => setHeight(hKey, px)} /> : null}
+      </div>
     ) : value ? <BibleRefText text={value} className="text-sm" /> : <p className="text-sm text-muted-foreground italic">—</p>;
+  };
+
+  const decide = async (recId: string, decision: AgendaRecDecision, c: AgendaCard) => {
+    const prev = p.scRecs[recId] ?? { comment: "", decision: null };
+    patch({ scRecs: { ...p.scRecs, [recId]: { ...prev, decision } } });
+    if (decision !== "decline") return;
+    const rec = data.auto.recommendations.find((x) => x.id === recId);
+    if (!rec || !data.congregationId) { toast.error("Abra a pauta com internet uma vez para ligar com as Notas privadas."); return; }
+    const ri = recInfoView(c, rec);
+    try {
+      const r = await upsertDeclineNote({ congregationId: data.congregationId, rec, commentHtml: prev.comment, family: ri.family, fieldGroup: ri.fieldGroup, info: ri.info });
+      toast.success(r === "updated" ? "Nota em Recomendados atualizada." : r === "queued" ? "Nota guardada no aparelho; envia ao sincronizar." : "Nota criada em Notas privadas › Recomendados.");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível criar a nota."); }
+  };
+
+  const syncS303 = async (c: AgendaCard) => {
+    if (!data.congregationId || !data.startDate) { toast.error("Abra a pauta com internet uma vez para sincronizar."); return; }
+    setSyncing(c.id);
+    try {
+      const html = await s303ForWeek(data.congregationId, data.startDate);
+      if (!html) { toast.info("Nenhuma S-303 nesta semana em Notas privadas."); return; }
+      patchCard(c.id, { html: c.html ? `${c.html}${html}` : html });
+      toast.success("S-303 inserida. Toque em Salvar para gravar.");
+    } catch { toast.error("Não foi possível ler as Notas privadas."); } finally { setSyncing(null); }
+  };
 
   const linksEditor = (c: AgendaCard, editable: boolean) => {
     const setItems = (items: AgendaLinkItem[]) => patchCard(c.id, { items });
@@ -227,7 +270,7 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
     return (
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">{label}</Label>
-        {key === "info" ? richField(cur.info, set, editable, label)
+        {key === "info" ? richField(cur.info, set, editable, label, `${c.id}.${recId}.info`)
           : editable ? <Input value={cur[key]} onChange={(e) => set(e.target.value)} maxLength={key === "family" ? 1000 : 300} className="h-9" />
           : <p className="text-sm break-words whitespace-pre-wrap">{cur[key] || "—"}</p>}
       </div>
@@ -260,7 +303,26 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
                   {c.notes[r.id] ? (
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Informação partilhada pelo CA</Label>
-                      {richField(c.notes[r.id], (html) => patchCard(c.id, { notes: { ...c.notes, [r.id]: html } }), editable, "Informação do CA")}
+                      {richField(c.notes[r.id], (html) => patchCard(c.id, { notes: { ...c.notes, [r.id]: html } }), editable, "Informação do CA", `${c.id}.${r.id}.ca`)}
+                    </div>
+                  ) : null}
+                  {isSc ? (
+                    <div className="space-y-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-2.5">
+                      <p className="flex items-center gap-1 text-[11px] font-semibold text-primary"><Lock className="h-3 w-3" />Só SC · fora do PDF</p>
+                      <Label className="text-xs text-muted-foreground">Comentários do SC</Label>
+                      {richField(p.scRecs[r.id]?.comment ?? "", (html) => patch({ scRecs: { ...p.scRecs, [r.id]: { decision: p.scRecs[r.id]?.decision ?? null, comment: html } } }), !offline, "Seus comentários sobre o recomendado", `${c.id}.${r.id}.sc`)}
+                      <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1" role="radiogroup" aria-label="Decisão">
+                        {([["assign", "Designar"], ["decline", "Não designar"]] as const).map(([d, lbl]) => {
+                          const on = p.scRecs[r.id]?.decision === d;
+                          return (
+                            <button key={d} type="button" role="radio" aria-checked={on} disabled={offline}
+                              onClick={() => void decide(r.id, on ? null : d, c)}
+                              className={`rounded-full px-2 py-1.5 text-xs font-semibold transition-colors ${on ? (d === "decline" ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground") : "text-muted-foreground"}`}>
+                              {lbl}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -281,7 +343,7 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
         {c.type === "recs" || (c.type === "links" && !editable && !c.html) ? null : (
           <div className="space-y-1">
             {c.type === "links" || c.type === "local" ? <Label className="text-xs text-muted-foreground">Anotações</Label> : null}
-            {richField(c.html, (html) => patchCard(c.id, { html }), editable, c.type === "private" ? "Só você vê esta nota" : "Escreva aqui")}
+            {richField(c.html, (html) => patchCard(c.id, { html }), editable, c.type === "private" ? "Só você vê esta nota" : "Escreva aqui", `${c.id}.html`)}
           </div>
         )}
         {ATTACHABLE.includes(c.type) ? (
@@ -295,11 +357,18 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
     const Icon = CARD_ICON[c.type];
     const editable = canCard(c);
     return (
-      <section key={c.id} className={`space-y-2 rounded-2xl p-3 ${c.type === "private" ? "border border-dashed border-primary/40 bg-primary/5" : "bg-muted/30"}`}>
+      <section key={c.id} className={`space-y-2 rounded-2xl p-3 ${c.type === "private" || c.hidden ? "border border-dashed border-primary/40 bg-primary/5" : "bg-muted/30"}`}>
         <div className="flex items-center gap-2 min-w-0">
           <Icon className="h-4 w-4 text-primary shrink-0" />
           <span className="flex-1 min-w-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground break-words">{CARD_TYPE_LABEL[c.type]}</span>
+          {c.type === "notes" && isSc && !offline ? (
+            <button type="button" onClick={() => void syncS303(c)} disabled={syncing === c.id} aria-label="Sincronizar com a S-303 da semana"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-primary hover:bg-primary/10 shrink-0">
+              {syncing === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            </button>
+          ) : null}
           {c.type === "private" ? <span className="text-[11px] text-muted-foreground shrink-0">Só você vê · fora do PDF</span>
+            : c.hidden ? <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground shrink-0"><EyeOff className="h-3 w-3" />Oculto</span>
             : isSc ? <span className="text-[11px] text-muted-foreground shrink-0">{ACCESS_LABEL[c.perm]}</span>
             : !editable ? accessBadge(c.perm, () => undefined, CARD_TYPE_LABEL[c.type], false) : null}
         </div>
@@ -322,6 +391,12 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
           <button type="button" onClick={() => patchCard(c.id, { showSubject: !c.showSubject })}
             className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${c.showSubject ? "border-primary text-primary" : "border-border text-muted-foreground"}`}>
             Tema/Assunto
+          </button>
+        ) : null}
+        {c.type !== "private" ? (
+          <button type="button" onClick={() => patchCard(c.id, { hidden: !c.hidden })} aria-pressed={c.hidden}
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${c.hidden ? "border-primary text-primary" : "border-border text-muted-foreground"}`}>
+            {c.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}{c.hidden ? "Oculto dos anciãos" : "Visível"}
           </button>
         ) : null}
         <span className="flex-1" />
@@ -361,12 +436,30 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
   return (
     <div className="space-y-3 pb-24">
       <header className="text-center space-y-0.5">
-        <h2 className="text-lg font-bold tracking-tight">Pauta – Reunião com Anciãos</h2>
-        <p className="text-[11px] text-primary break-words">{AGENDA_VERSES}</p>
+        <h2 className="text-lg font-bold tracking-tight break-words">{p.headerTitle || "Pauta"}</h2>
+        {p.headerVerses ? <BibleRefText text={p.headerVerses} className="text-[11px] text-primary break-words" /> : null}
         <p className="text-xs text-muted-foreground break-words">
           {[data.congregation, formatMeetingWhen(data.auto.meetingAt), data.auto.location].filter(Boolean).join(" · ")}
         </p>
       </header>
+
+      <Button type="button" variant="outline" className="w-full" onClick={() => setFull(true)}><Maximize2 className="h-4 w-4" />Tela cheia</Button>
+
+      {isSc && building ? (
+        <Card>
+          <CardContent className="pt-4 space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cabeçalho da pauta</p>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Título</Label>
+              <Input value={p.headerTitle} onChange={(e) => patch({ headerTitle: e.target.value })} maxLength={200} placeholder="Pauta – Reunião com Anciãos" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Versículos (pode deixar em branco)</Label>
+              <Input value={p.headerVerses} onChange={(e) => patch({ headerVerses: e.target.value })} maxLength={600} placeholder="Isa 50:4; Pro 18:13,17" />
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {offline ? (
         <div className="flex items-center gap-2 rounded-xl border bg-muted/50 px-3 py-2 text-xs text-muted-foreground"><WifiOff className="h-4 w-4 shrink-0" />Sem internet: mostrando a pauta guardada neste aparelho (somente leitura).</div>
@@ -405,7 +498,19 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
       <Card>
         <CardContent className="pt-4 space-y-1">
           <div className="flex justify-end">{accessBadge(p.prayersPerm, (prayersPerm) => patch({ prayersPerm }), "Orações e ata", canPerm(p.prayersPerm))}</div>
-          {([["Oração inicial", "prayerOpen", data.auto.openingPrayer ?? ""], ["Oração recomendação", "prayerRec", ""], ["Oração final", "prayerClose", data.auto.closingPrayer ?? ""], ["Ata [Sfg 1:6]", "minutesTaker", ""]] as const).map(([label, k, fb]) => (
+          {isSc && !offline ? (
+            <div className="flex flex-wrap gap-1.5 pb-1">
+              {([["showPrayerRec", "Oração recomendação"], ["showMinutes", "Ata"]] as const).map(([k, lbl]) => (
+                <button key={k} type="button" role="switch" aria-checked={p[k]} onClick={() => patch({ [k]: !p[k] } as Partial<AgendaPayload>)}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${p[k] ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+                  <span className={`h-3 w-5 rounded-full p-0.5 ${p[k] ? "bg-primary" : "bg-muted-foreground/40"}`}><span className={`block h-2 w-2 rounded-full bg-background transition-transform ${p[k] ? "translate-x-2" : ""}`} /></span>{lbl}
+                </button>
+              ))}
+              {p.showPrayerRec && !data.auto.recommendations.length ? <span className="text-[11px] text-muted-foreground self-center">Sem recomendações: oração recomendação oculta.</span> : null}
+            </div>
+          ) : null}
+          {([["Oração inicial", "prayerOpen", data.auto.openingPrayer ?? ""], ["Oração recomendação", "prayerRec", ""], ["Oração final", "prayerClose", data.auto.closingPrayer ?? ""], ["Ata [Sfg 1:6]", "minutesTaker", ""]] as const)
+            .filter(([, k]) => (k === "prayerRec" ? prayerRecShown(p, data.auto) : k === "minutesTaker" ? p.showMinutes : true)).map(([label, k, fb]) => (
             <div key={k} className="flex items-center gap-2 min-w-0 py-1">
               <Label className="w-32 shrink-0 text-xs text-muted-foreground">{label}</Label>
               {canPerm(p.prayersPerm)
@@ -491,7 +596,14 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
 
       {isSc ? (
         <AgendaTemplatesDialog open={tplOpen} onOpenChange={setTplOpen} blocks={p.blocks}
+          header={{ title: p.headerTitle, verses: p.headerVerses }} onHeader={(h) => patch({ headerTitle: h.title, headerVerses: h.verses })}
           onApply={(blocks) => { patch({ blocks }); setBuilding(true); toast.success("Modelo aplicado. Toque em Salvar para gravar."); }} />
+      ) : null}
+
+      {full ? (
+        <Suspense fallback={null}>
+          <ElderAgendaFullscreen data={data} payload={p} isSc={isSc} onClose={() => setFull(false)} />
+        </Suspense>
       ) : null}
     </div>
   );

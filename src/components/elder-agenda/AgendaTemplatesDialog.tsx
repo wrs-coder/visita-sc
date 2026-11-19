@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { saveBlob } from "@/lib/share";
-import { applyTemplate, defaultBlocks, parseTemplateFile, templateToFile, type AgendaBlock } from "@/lib/elder-agenda/agenda";
+import { applyTemplate, defaultBlocks, parseTemplateFile, parseTemplateHeader, templateToFile, type AgendaBlock, type AgendaHeader } from "@/lib/elder-agenda/agenda";
 import { useAgendaTemplates } from "./use-agenda-templates";
 
-export function AgendaTemplatesDialog({ open, onOpenChange, blocks, onApply }: {
+export function AgendaTemplatesDialog({ open, onOpenChange, blocks, onApply, header, onHeader }: {
   open: boolean; onOpenChange: (v: boolean) => void; blocks: AgendaBlock[]; onApply: (blocks: AgendaBlock[]) => void;
+  header?: AgendaHeader; onHeader?: (h: AgendaHeader) => void;
 }) {
   const t = useAgendaTemplates(open);
   const [name, setName] = useState("");
@@ -27,10 +28,12 @@ export function AgendaTemplatesDialog({ open, onOpenChange, blocks, onApply }: {
     if (f.size > 1_000_000) { toast.error("Arquivo grande demais."); return; }
     const parsed = parseTemplateFile(await f.text());
     if (!parsed) { toast.error("Este arquivo não é um modelo de pauta."); return; }
+    const h = parseTemplateHeader(await f.text());
+    if (h && onHeader) onHeader(h);
     await run(() => t.create(parsed.name, parsed.blocks), `Modelo "${parsed.name}" importado.`);
   };
   const exportOne = async (n: string, b: AgendaBlock[]) => {
-    const blob = new Blob([JSON.stringify(templateToFile(n, b), null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(templateToFile(n, b, header), null, 2)], { type: "application/json" });
     await saveBlob(blob, { filename: `modelo-pauta-${n.replace(/[^\w-]+/g, "-").slice(0, 40) || "anciaos"}.json`, mimeType: "application/json" });
   };
 
