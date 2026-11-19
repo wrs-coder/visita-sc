@@ -70,7 +70,7 @@ Cada bloco num cartão de cantos arredondados, título em faixa azul clara, temp
 **C — Linha do tempo**
 Coluna à esquerda com horários calculados (19:30, 19:40, 19:45...) e bolinhas ligadas por linha; conteúdo à direita. Ótimo para controlar o tempo na reunião.
 
-Em todos: cabeçalho com versículo opcional, ícones das recomendações com "Clique aqui" clicável, espaço para anotações à mão opcional, rodapé com página e "Superintendente de circuito". Recomendo **C com o visual limpo de A**.
+Em todos: cabeçalho com versículo opcional, ícones das recomendações com "Clique aqui" clicável, espaço para anotações à mão opcional, rodapé com página e "Superintendente de circuito". **Os três modelos ficam no app:** ao tocar em PDF, o usuário escolhe Ata formal, Cartões ou Linha do tempo; a última escolha fica salva no aparelho.
 
 ## Detalhes técnicos
 - `agenda.ts`: novo `AgendaPayload.v2 = { blocks: Block[] }` (id, type, title, minutes, perm, hidden, data). `normalizeAgenda` converte o payload antigo em blocos. Permissões passam a ser por bloco; `mergeAgenda` aceita alterações estruturais (títulos/ordem/adicionar/apagar) só do SC.
@@ -78,4 +78,4 @@ Em todos: cabeçalho com versículo opcional, ícones das recomendações com "C
 - Modelo pessoal do SC: guardado no próprio registro do SC (nova coluna jsonb em uma tabela só do SC, ex. `elder_agenda_templates` com superintendent_id, owner-only RLS); visita nova copia o modelo.
 - Rótulo i18n `coordinator` → "C.Serviço" (pt/en/es).
 - Remover preenchimento automático do tema em `agendaView`.
-- PDF em `agenda-pdf.ts` reescrito para o layout escolhido, via pdf-engine; testes de conversão antigo→blocos, permissões e links.
+- PDF em `agenda-pdf.ts` com três renderizadores (formal/cards/timeline) via pdf-engine, escolha guardada em localStorage; testes de conversão antigo→blocos, permissões e links.
