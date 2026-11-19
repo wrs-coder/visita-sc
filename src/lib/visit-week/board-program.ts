@@ -8,12 +8,21 @@ import { createJsPdfCompat } from "@/lib/pdf/pdf-engine";
 export type BoardTone = "neutral" | "treasures" | "ministry" | "living" | "visit";
 export interface BoardRow { who: string; text: string; minutes: number | null; tone: BoardTone; italic?: boolean; strong?: boolean; /** Início previsto "HH:MM" (só no meio de semana, igual ao controle de tempo). */ time?: string }
 export interface BoardField { day: string; am: { time: string; place: string }; pm: { time: string; place: string }; prayer?: string }
+/** Uma saída de campo (tabela detalhada: dia, horário, local, modalidade, território e oração). */
+export interface BoardFieldItem { day: string; time: string; place: string; modality: string; territory: string; prayer: string; am: boolean }
+export interface BoardSpecialDetail { title: string; place: string; when: string; theme: string; opening: string; closing: string }
 export interface BoardModel {
   range: string; sc: string; congregation: string;
   midweekWhen: string; midweek: BoardRow[];
   weekendWhen: string; weekend: BoardRow[];
   specials: Array<{ time: string; text: string; place: string; theme?: string; prayers?: string }>;
   field: BoardField[];
+  /** Todas as saídas de campo, por data e horário. */
+  fieldDetail: BoardFieldItem[];
+  /** Modelo simplificado. */
+  serviceTalk: string; publicTalk: string; finalTalk: string;
+  songs: { midFinal: string; weOpen: string; weClose: string };
+  specialsDetail: BoardSpecialDetail[];
 }
 
 export interface BoardInput {
@@ -28,14 +37,19 @@ export interface BoardInput {
   weekend: { at: string | null; chairman?: string | null; publicTalk: string | null; finalTalk: string | null; openingSong: string | null; closingSong: string | null };
   pioneer: { at: string | null; place: string | null; theme?: string | null; opening?: string | null; closing?: string | null } | null;
   elders: { at: string | null; place: string | null; theme?: string | null; opening?: string | null; closing?: string | null } | null;
-  field: Array<{ date: string; period: string; time: string | null; place: string | null; prayer?: string | null }>;
+  field: Array<{ date: string; period: string; time: string | null; place: string | null; prayer?: string | null; modality?: string | null; territory?: string | null }>;
 }
 
 /** Frases opcionais do quadro (ligadas/desligadas no aparelho). */
 export const BOARD_TOP_PHRASE = "“. . . Todos os seus filhos serão ensinados por Jeová . . .” — Isa. 54:13";
 export const BOARD_BOTTOM_PHRASE =
   "Incentivamos todos a apoiarem ativamente o ministério, pois fomos escolhidos “para declarar boas novas de uma grande alegria que todo o povo terá” – Lucas 2:10.";
-export interface BoardRenderOptions { topPhrase?: boolean; bottomPhrase?: boolean; issuedAt?: Date }
+export type BoardTemplate = "full" | "simple";
+export interface BoardRenderOptions { topPhrase?: boolean; bottomPhrase?: boolean; issuedAt?: Date; template?: BoardTemplate; fieldDetailed?: boolean }
+const MODALITY: Record<string, string> = {
+  casa_em_casa: "Casa em casa", estudos_revisitas: "Estudos e revisitas", telefone: "Telefone", cartas: "Cartas",
+  telefone_cartas: "Telefone e cartas", grupo_de_campo: "Grupo de campo",
+};
 /** Itens opcionais lidos do Programa da visita (desligados = não entram no quadro). */
 export interface BoardContentOptions { specialThemes?: boolean; specialPrayers?: boolean; fieldPrayer?: boolean }
 
@@ -110,13 +124,13 @@ export function buildBoardModel(i: BoardInput, o: BoardContentOptions = {}): Boa
     midweek.push({ who: i.sc, text: i.midweek.serviceTalk ?? "Discurso de serviço", minutes: 30, tone: "visit", strong: true });
     midweek.push({ who: "", text: `${song(i.midweek.finalSong)} e oração final`, minutes: null, tone: "neutral", italic: true });
   }
+  // Fim de semana: só horários e temas, sem nomes (modelo completo).
   const weekend: BoardRow[] = [
-    { who: i.weekend.chairman ?? "", text: "Presidência", minutes: null, tone: "neutral", strong: true },
     { who: "", text: `${song(i.weekend.openingSong)} e oração inicial`, minutes: null, tone: "neutral", italic: true },
-    { who: i.sc, text: i.weekend.publicTalk ?? "Discurso público", minutes: 30, tone: "visit", strong: true },
+    { who: "", text: i.weekend.publicTalk ?? "Discurso público", minutes: 30, tone: "visit", strong: true },
     { who: "", text: "Cântico da Sentinela", minutes: null, tone: "neutral", italic: true },
     { who: "", text: "Estudo de A Sentinela (abreviado)", minutes: 30, tone: "neutral" },
-    { who: i.sc, text: i.weekend.finalTalk ?? "Discurso final", minutes: 30, tone: "visit", strong: true },
+    { who: "", text: i.weekend.finalTalk ?? "Discurso final", minutes: 30, tone: "visit", strong: true },
     { who: "", text: `${song(i.weekend.closingSong)} e oração final`, minutes: null, tone: "neutral", italic: true },
   ];
   const specials: BoardModel["specials"] = [];
@@ -145,7 +159,25 @@ export function buildBoardModel(i: BoardInput, o: BoardContentOptions = {}): Boa
     const prayers = o.fieldPrayer ? [...new Set(rows.map((f) => f.prayer?.trim()).filter((x): x is string => !!x))] : [];
     return { day, am: pick(rows.filter(isAm)), pm: pick(rows.filter((f) => !isAm(f))), ...(prayers.length ? { prayer: prayers.join(" / ") } : {}) };
   });
+  const isAmAny = (f: BoardInput["field"][number]) => /manh|morn|mañ/i.test(f.period) || (!/tard|after/i.test(f.period) && !!f.time && f.time < "12:00");
+  const fieldDetail: BoardFieldItem[] = [...i.field]
+    .filter((f) => f.date)
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.time ?? "99").localeCompare(b.time ?? "99"))
+    .map((f) => ({
+      day: WEEKDAYS[d0(f.date).getDay()], time: f.time?.slice(0, 5) ?? "", place: f.place?.trim() ?? "",
+      modality: f.modality ? (MODALITY[f.modality] ?? f.modality) : "", territory: f.territory?.trim() ?? "",
+      prayer: o.fieldPrayer ? (f.prayer?.trim() ?? "") : "", am: isAmAny(f),
+    }));
+  const num = (v: string | null) => /(\d{1,3})/.exec(v ?? "")?.[1] ?? "";
+  const detail = (title: string, x: BoardInput["pioneer"], at: ReturnType<typeof splitAt>): BoardSpecialDetail | null => x ? ({
+    title, place: x.place?.trim() ?? "", when: at ? `${at.day}, ${at.time}` : "", theme: x.theme?.trim() ?? "",
+    opening: x.opening?.trim() ?? "", closing: x.closing?.trim() ?? "",
+  }) : null;
+  const specialsDetail = [detail("Reunião com Pioneiros", i.pioneer, pi), detail("Reunião com Anciãos e Servos", i.elders, el)].filter((x): x is BoardSpecialDetail => !!x);
   return {
+    fieldDetail, specialsDetail,
+    serviceTalk: i.midweek.serviceTalk?.trim() ?? "", publicTalk: i.weekend.publicTalk?.trim() ?? "", finalTalk: i.weekend.finalTalk?.trim() ?? "",
+    songs: { midFinal: num(i.midweek.finalSong), weOpen: num(i.weekend.openingSong), weClose: num(i.weekend.closingSong) },
     range: formatRange(i.startDate, i.endDate), sc: i.sc, congregation: i.congregation,
     midweekWhen: mw ? `${mw.day} às ${mw.time}` : "Meio de semana", midweek,
     weekendWhen: we ? `${we.day} às ${we.time}` : "Fim de semana", weekend, specials, field,
@@ -155,11 +187,68 @@ export function buildBoardModel(i: BoardInput, o: BoardContentOptions = {}): Boa
 // Cores do quadro (RGB) — impresso, não segue o tema claro/escuro do app.
 const C = {
   brand: [0, 122, 153], text: [30, 30, 30], muted: [110, 110, 110], line: [200, 205, 210], soft: [229, 241, 245], zebra: [245, 247, 249],
-  treasures: [54, 110, 125], ministry: [196, 132, 0], living: [170, 40, 30], visit: [0, 122, 153], neutral: [110, 110, 110],
+  light: [126, 200, 227], treasures: [54, 110, 125], ministry: [196, 132, 0], living: [170, 40, 30], visit: [0, 122, 153], neutral: [110, 110, 110],
 } as const;
 type RGB = readonly [number, number, number];
+type Pdf = Awaited<ReturnType<typeof createJsPdfCompat>>;
+
+// ---- Tabela detalhada do serviço de campo (Modelo 2), usada nos dois modelos ----
+const FD = { band: 8, sub: 6, head: 6, line: 4.2, pad: 1.8, gap: 2 };
+function fieldGroups(items: BoardFieldItem[]) {
+  return [{ title: "PERÍODO DA MANHÃ", rows: items.filter((f) => f.am) }, { title: "PERÍODO DA TARDE", rows: items.filter((f) => !f.am) }].filter((g) => g.rows.length);
+}
+export function fieldDetailHeight(items: BoardFieldItem[], k: number): number {
+  const gs = fieldGroups(items);
+  if (!gs.length) return 2 + FD.band * k + 8 * k;
+  return 2 + FD.band * k + gs.reduce((t, g) => t + (FD.sub + FD.head) * k + g.rows.length * (2 * FD.line + FD.pad) * k + FD.gap, 0);
+}
+function drawFieldDetail(pdf: Pdf, items: BoardFieldItem[], top: number, k: number, M: number, W: number, title: string, light = false): number {
+  const tw = W - 2 * M, F = (n: number) => pdf.setFontSize(n * k);
+  const fill = (c: RGB) => pdf.setFillColor(c[0], c[1], c[2]);
+  const ink = (c: RGB) => pdf.setTextColor(c[0], c[1], c[2]);
+  const stroke = (c: RGB, w: number) => { pdf.setDrawColor(c[0], c[1], c[2]); pdf.setLineWidth(w); };
+  const fit = (t0: string, w: number) => { let t = t0; while (t.length > 3 && pdf.measureText(t) > w) t = t.slice(0, -2); return t === t0 ? t0 : `${t.trimEnd()}…`; };
+  let y = top + 2;
+  fill(light ? C.light : C.brand); pdf.rect(M, y, tw, FD.band * k, "F");
+  ink(light ? C.text : [255, 255, 255]); pdf.setFont(true); F(12); pdf.text(title, W / 2, y + 5.6 * k, { align: "center" });
+  y += FD.band * k;
+  const gs = fieldGroups(items);
+  if (!gs.length) { ink(C.muted); pdf.setFont(false, true); F(8.5); pdf.text("Nenhuma saída de campo cadastrada no Programa da visita.", W / 2, y + 5 * k, { align: "center" }); return y + 8 * k; }
+  const half = tw * 0.46;
+  for (const g of gs) {
+    fill(C.soft); pdf.rect(M, y, tw, FD.sub * k, "F");
+    ink(C.text); pdf.setFont(true); F(8.5); pdf.text(g.title, W / 2, y + 4.2 * k, { align: "center" });
+    y += FD.sub * k;
+    const boxTop = y;
+    ink(C.brand); pdf.setFont(true); F(8.5);
+    pdf.text("Dia, horário e local", M + half / 2, y + 4.2 * k, { align: "center" });
+    pdf.text("Informações adicionais", M + half + (tw - half) / 2, y + 4.2 * k, { align: "center" });
+    y += FD.head * k;
+    g.rows.forEach((f, j) => {
+      const h = (2 * FD.line + FD.pad) * k;
+      if (j % 2 === 1) { fill(C.zebra); pdf.rect(M, y, tw, h, "F"); }
+      stroke(C.line, 0.2); pdf.line(M, y, M + tw, y);
+      const l1 = y + FD.line * k, l2 = l1 + FD.line * k;
+      ink(C.brand); pdf.setFont(true); F(8.5);
+      const dayTxt = `${f.day}${f.time ? ` · ${f.time}` : ""}`;
+      pdf.text(fit(dayTxt, half - 4), M + 2, l1);
+      ink(C.text); pdf.setFont(false); F(8.5);
+      pdf.text(fit(`Local: ${f.place || "________"}`, half - 4), M + 2, l2);
+      const info1 = [f.modality && `Modalidade: ${f.modality}`, f.territory && `Território: Nº ${f.territory}`].filter(Boolean).join(" · ");
+      pdf.text(fit(info1 || "Modalidade: ________", tw - half - 4), M + half + 2, l1);
+      if (f.prayer) pdf.text(fit(`Oração: ${f.prayer}`, tw - half - 4), M + half + 2, l2);
+      y += h;
+    });
+    stroke(C.brand, 0.4); pdf.rect(M, boxTop, tw, y - boxTop, "S");
+    stroke(C.line, 0.25); pdf.line(M + half, boxTop, M + half, y);
+    y += FD.gap;
+  }
+  return y;
+}
 
 export async function renderBoardPdf(m: BoardModel, opts: BoardRenderOptions = {}): Promise<Blob> {
+  if (opts.template === "simple") return renderSimpleBoardPdf(m, opts);
+  const detailed = !!opts.fieldDetailed;
   const showTop = opts.topPhrase ?? false, showBottom = opts.bottomPhrase ?? false;
   const pdf = await createJsPdfCompat({ unit: "mm" });
   const W = pdf.pageW, H = pdf.pageH, M = 12, colX = 70, rightX = colX + 6, bottom = H - 10;
@@ -202,7 +291,7 @@ export async function renderBoardPdf(m: BoardModel, opts: BoardRenderOptions = {
     const units = [...midLines, ...weLines].reduce((t, l) => t + 1 + (l.length - 1) * 0.8, 0);
     const specRows = m.specials.map((sp) => 1 + (sp.theme ? 1 : 0) + (sp.prayers ? 1 : 0));
     const specialsH = m.specials.length ? 5 + 8 * s + 6 * s + specRows.reduce((t, n) => t + (n * 4.2 + 1.8) * s, 0) + 2 : 0;
-    const rh = 6 * s, fieldH = 5 + 8 * s + 7 * s + m.field.length * rh;
+    const rh = 6 * s, fieldH = detailed ? fieldDetailHeight(m.fieldDetail, s) + 2 : 5 + 8 * s + 7 * s + m.field.length * rh;
     const fixed = (yTop + 12) + 2 * 10 * s + (toneBars(m.midweek) + toneBars(m.weekend)) * 1.6 * s + specialsH + fieldH + footH;
     const free = (bottom - fixed) / Math.max(1, units);
     return { s, blockCols, midLines, weLines, specRows, rh, rowH: Math.min(5.8, free), ok: free >= 3.8 * s };
@@ -283,7 +372,10 @@ export async function renderBoardPdf(m: BoardModel, opts: BoardRenderOptions = {
   }
 
   // Serviço de campo: logo depois, sempre na mesma folha.
-  const hy = band("SERVIÇO DE CAMPO", y + 2);
+  if (detailed) {
+    y = drawFieldDetail(pdf, m.fieldDetail, y, k, M, W, "REUNIÕES PARA O SERVIÇO DE CAMPO");
+  } else {
+  const hy = band("REUNIÕES PARA O SERVIÇO DE CAMPO", y + 2);
   const fieldRows = m.field.length;
   const cDay = 22, cT = 18, cO = hasPrayer ? 34 : 0, cP = (tw - cDay - 2 * cT - cO) / 2;
   fill(C.soft); pdf.rect(M, hy, tw, 7 * k, "F");
@@ -314,6 +406,7 @@ export async function renderBoardPdf(m: BoardModel, opts: BoardRenderOptions = {
     if (f.prayer) pdf.text(fit(f.prayer, cO - 3), M + tw - cO + 1.5, ty);
   });
   y = hy + 7 * k + fieldRows * rh;
+  }
 
   // Rodapé: frase de incentivo (opcional) e data de emissão.
   if (showBottom) {
@@ -326,4 +419,109 @@ export async function renderBoardPdf(m: BoardModel, opts: BoardRenderOptions = {
   ink(C.muted); pdf.setFont(false); pdf.setFontSize(7);
   pdf.text(`Emitido em ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`, W - M, Math.min(y + 5, H - 5), { align: "right" });
   return pdf.output("blob");
+}
+
+/** Modelo simplificado (Modelo 2): temas, cânticos, reuniões especiais completas e campo em destaque. */
+async function renderSimpleBoardPdf(m: BoardModel, opts: BoardRenderOptions): Promise<Blob> {
+  const showTop = opts.topPhrase ?? false, showBottom = opts.bottomPhrase ?? false;
+  const pdf = await createJsPdfCompat({ unit: "mm" });
+  const W = pdf.pageW, H = pdf.pageH, M = 12, tw = W - 2 * M, bottom = H - 10;
+  const fill = (c: RGB) => pdf.setFillColor(c[0], c[1], c[2]);
+  const ink = (c: RGB) => pdf.setTextColor(c[0], c[1], c[2]);
+  const stroke = (c: RGB, w: number) => { pdf.setDrawColor(c[0], c[1], c[2]); pdf.setLineWidth(w); };
+  const fit = (t0: string, w: number) => { let t = t0; while (t.length > 3 && pdf.measureText(t) > w) t = t.slice(0, -2); return t === t0 ? t0 : `${t.trimEnd()}…`; };
+  pdf.setFont(false, true); pdf.setFontSize(9);
+  const footLines = showBottom ? pdf.splitTextToSize(BOARD_BOTTOM_PHRASE, tw - 24) : [];
+  const footH = (showBottom ? 5 + footLines.length * 4.2 : 0) + 5;
+  const colW = (tw - 4) / 2;
+  const specLines = (sp: BoardSpecialDetail, k: number) => { pdf.setFont(false); pdf.setFontSize(8.5 * k); return sp.theme ? Math.min(2, pdf.splitTextToSize(sp.theme, colW - 26).length) : 1; };
+  const height = (k: number) => {
+    const head = 22 + (showTop ? 6 : 0);
+    const meet = 3 * (8 * k) + 3 * (6 * k + 7 * k) + (6 * k + 7 * k) + 4;
+    const spec = m.specialsDetail.length ? 2 + 8 * k + 6 * k + Math.max(...m.specialsDetail.map((sp) => (4 + specLines(sp, k)) * 4.6 * k)) + 3 : 0;
+    return head + meet + spec + fieldDetailHeight(m.fieldDetail, k) + footH;
+  };
+  let k = 1;
+  while (k > 0.7 + 1e-9 && 10 + height(k) > bottom) k -= 0.05;
+  const F = (n: number) => pdf.setFontSize(n * k);
+  let y = 16;
+  ink(C.text); pdf.setFont(true); pdf.setFontSize(15);
+  pdf.text("PROGRAMAÇÃO", W / 2, y, { align: "center" }); y += 6.5;
+  pdf.text("VISITA DO SUPERINTENDENTE DE CIRCUITO", W / 2, y, { align: "center" }); y += 5;
+  ink(C.muted); pdf.setFont(false); pdf.setFontSize(9);
+  pdf.text(fit(`${m.congregation ? `${m.congregation} · ` : ""}${m.range}`, tw), W / 2, y, { align: "center" });
+  if (showTop) { y += 5.5; ink(C.text); pdf.setFont(false, true); pdf.setFontSize(10); pdf.text(fit(BOARD_TOP_PHRASE, tw), W / 2, y, { align: "center" }); }
+  y += 5;
+  const band = (title: string) => {
+    fill(C.light); pdf.rect(M, y, tw, 8 * k, "F");
+    ink(C.text); pdf.setFont(true); F(12); pdf.text(title, W / 2, y + 5.6 * k, { align: "center" });
+    y += 8 * k + 1;
+  };
+  const sub = (title: string, x = M, w = tw) => {
+    fill(C.soft); pdf.rect(x, y, w, 6 * k, "F");
+    ink(C.text); pdf.setFont(true); F(8.5); pdf.text(title, x + w / 2, y + 4.2 * k, { align: "center" });
+  };
+  const titled = (label: string, t: string) => { sub(label); y += 6 * k; ink(C.text); pdf.setFont(false); F(11); pdf.text(fit(t || "________________", tw - 6), W / 2, y + 5 * k, { align: "center" }); y += 7 * k; };
+  band("REUNIÃO DO MEIO DE SEMANA");
+  titled("DISCURSO DE SERVIÇO", m.serviceTalk);
+  band("REUNIÃO DO FIM DE SEMANA");
+  titled("DISCURSO PÚBLICO", m.publicTalk);
+  titled("DISCURSO DE SERVIÇO FINAL", m.finalTalk);
+  sub("CÂNTICOS"); y += 6 * k;
+  const songCells: Array<[string, string]> = [["Terça-feira (final): ", m.songs.midFinal], ["Fim de semana (inicial): ", m.songs.weOpen], ["Fim de semana (final): ", m.songs.weClose]];
+  songCells.forEach(([l, v], j) => {
+    const cx = M + tw * (j + 0.5) / 3;
+    pdf.setFont(true); F(9); const lw = pdf.measureText(l); pdf.setFont(false); F(10); const vw = pdf.measureText(v || "___");
+    const x0 = cx - (lw + vw) / 2;
+    ink(C.text); pdf.setFont(true); F(9); pdf.text(l, x0, y + 5 * k);
+    pdf.setFont(false); F(10); pdf.text(v || "___", x0 + lw, y + 5 * k);
+  });
+  y += 7 * k + 4;
+  if (m.specialsDetail.length) {
+    band("REUNIÕES ESPECIAIS");
+    const top = y;
+    let maxY = y;
+    m.specialsDetail.forEach((sp, j) => {
+      const x = M + j * (colW + 4);
+      y = top; sub(sp.title.toUpperCase(), x, colW); y += 6 * k;
+      const kv = (label: string, v: string, lines = 1) => {
+        ink(C.text); pdf.setFont(true); F(8.5); pdf.text(label, x + 1.5, y + 4 * k);
+        pdf.setFont(false); F(8.5);
+        const ls = lines > 1 ? pdf.splitTextToSize(v || "________", colW - 26).slice(0, 2) : [fit(v || "________", colW - 26)];
+        ls.forEach((ln, n) => pdf.text(ln, x + 24, y + 4 * k + n * 4.2 * k));
+        y += 4.6 * k * Math.max(1, ls.length);
+      };
+      kv("Local:", sp.place); kv("Dia e hora:", sp.when); kv("Tema:", sp.theme, 2);
+      kv("Oração inicial:", sp.opening); kv("Oração final:", sp.closing);
+      maxY = Math.max(maxY, y);
+    });
+    if (m.specialsDetail.length > 1) { stroke(C.text, 0.4); pdf.line(M + colW + 2, top, M + colW + 2, maxY); }
+    y = maxY + 3;
+  }
+  y = drawFieldDetail(pdf, m.fieldDetail, y, k, M, W, "REUNIÕES PARA O SERVIÇO DE CAMPO", true);
+  if (showBottom) {
+    y += 5;
+    stroke(C.brand, 0.3); pdf.line(W / 2 - 30, y - 3, W / 2 + 30, y - 3);
+    ink(C.text); pdf.setFont(false, true); pdf.setFontSize(9);
+    footLines.forEach((ln) => { y += 4.2; pdf.text(ln, W / 2, y, { align: "center" }); });
+  }
+  const d = opts.issuedAt ?? new Date();
+  ink(C.muted); pdf.setFont(false); pdf.setFontSize(7);
+  pdf.text(`Emitido em ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`, W - M, Math.min(y + 5, H - 5), { align: "right" });
+  return pdf.output("blob");
+}
+
+/** Itens que faltam no Programa da visita (aviso antes de gerar). */
+export function boardMissing(m: BoardModel, template: BoardTemplate): string[] {
+  const out: string[] = [];
+  if (template === "full") {
+    if (m.midweek.some((r) => /coment[aá]rios iniciais/i.test(r.text) && !r.who)) out.push("presidente do meio de semana");
+    const last = [...m.midweek].reverse().find((r) => r.italic && /ora[cç][aã]o/i.test(r.text));
+    if (last && !last.who) out.push("oração final do meio de semana");
+  } else {
+    if (!m.serviceTalk) out.push("discurso de serviço");
+    if (!m.publicTalk) out.push("discurso público");
+  }
+  if (!m.fieldDetail.length) out.push("saídas de campo");
+  return out;
 }

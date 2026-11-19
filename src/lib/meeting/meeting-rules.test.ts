@@ -83,3 +83,25 @@ describe("partilhar semanas", () => {
     expect(() => parseMeetingShareFile('{"kind":"x"}', [])).toThrow();
   });
 });
+
+describe("semana da visita: presidente e oração final do Programa da visita", () => {
+  const info = { serviceTalk: "T", finalSong: "151", scName: "W", chairman: "André", closingPrayer: "Adão" };
+  it("comentários iniciais e finais vazios recebem o presidente", () => {
+    const { program } = applyVisitWeek(prog(), info);
+    expect(program.parts.find((x) => x.id === "ci")!.assigned).toBe("André");
+    expect(program.parts.find((x) => x.id === "cf")!.assigned).toBe("André");
+  });
+  it("cântico e oração final vazio recebe a oração final", () => {
+    const { program } = applyVisitWeek(prog(), info);
+    expect(program.parts.find((x) => x.id === "s3")!.assigned).toBe("Adão");
+    expect(program.parts.find((x) => x.id === "s1")!.assigned).toBe("");
+  });
+  it("nunca troca um nome já digitado", () => {
+    const p = prog();
+    p.parts[1] = { ...p.parts[1], assigned: "Claudio" };
+    p.parts[7] = { ...p.parts[7], assigned: "Bebeca" };
+    const { program } = applyVisitWeek(p, info);
+    expect(program.parts.find((x) => x.id === "ci")!.assigned).toBe("Claudio");
+    expect(program.parts.find((x) => x.id === "s3")!.assigned).toBe("Bebeca");
+  });
+});

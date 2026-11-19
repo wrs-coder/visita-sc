@@ -17,7 +17,7 @@ describe("quadro de anúncios", () => {
     const m = buildBoardModel(base);
     expect(m.midweek.find((r) => r.text === "Tenha consideração")?.who).toBe("Wanderson Rodrigues");
     expect(m.midweek.some((r) => r.text.startsWith("Cântico 151"))).toBe(true);
-    expect(m.weekend.find((r) => r.text === "Quem governa o mundo?")?.who).toBe("Wanderson Rodrigues");
+    expect(m.weekend.find((r) => r.text === "Quem governa o mundo?")?.who).toBe("");
     expect(m.midweek[0].who).toBe("João");
   });
   it("serviço de campo de quarta a domingo, manhã e tarde separados", () => {
@@ -27,9 +27,9 @@ describe("quadro de anúncios", () => {
     expect(m.field[0].pm.time).toBe("15:00");
     expect(m.field[1].am.place).toBe("");
   });
-  it("presidente do fim de semana e horários em 24h", () => {
+  it("fim de semana sem nomes e horários em 24h", () => {
     const m = buildBoardModel({ ...base, weekend: { ...base.weekend, chairman: "Carlos", at: "2026-11-22T15:00:00" }, pioneer: { at: "2026-11-21T10:30:00", place: "Salão" } });
-    expect(m.weekend[0].who).toBe("Carlos");
+    expect(m.weekend.every((r) => r.who === "")).toBe(true);
     expect(m.weekendWhen).toContain("15:00");
     expect(m.specials[0].time).toBe("Sábado 10:30");
   });
@@ -95,5 +95,28 @@ describe("quadro: temas e orações opcionais", () => {
     expect(m.specials[0].theme).toBe("Perseverem");
     expect(m.specials[0].prayers).toBe("Oração inicial: Ana · final: Bia");
     expect(m.field[0].prayer).toBe("Pedro");
+  });
+});
+
+describe("quadro: campo detalhado e modelo simplificado", () => {
+  const inp: BoardInput = { ...base, field: [
+    { date: "2026-11-18", period: "Tarde", time: "14:00", place: "Bloco 12", modality: "telefone_cartas", territory: null, prayer: "Genesio" },
+    { date: "2026-11-18", period: "Manhã", time: "09:00", place: "Bloco 12, Ap 22", modality: "casa_em_casa", territory: "10", prayer: "Fernando" },
+  ] };
+  it("cada saída traz dia, horário, local, modalidade, território e oração", () => {
+    const m = buildBoardModel(inp, { fieldPrayer: true });
+    expect(m.fieldDetail[0]).toEqual({ day: "Quarta-feira", time: "09:00", place: "Bloco 12, Ap 22", modality: "Casa em casa", territory: "10", prayer: "Fernando", am: true });
+    expect(m.fieldDetail[1].am).toBe(false);
+    expect(m.fieldDetail[1].modality).toBe("Telefone e cartas");
+  });
+  it("simplificado: temas e números dos cânticos", () => {
+    const m = buildBoardModel({ ...inp, weekend: { ...base.weekend, closingSong: "Cântico 156" } });
+    expect(m.serviceTalk).toBe("Tenha consideração");
+    expect(m.publicTalk).toBe("Quem governa o mundo?");
+    expect(m.songs).toEqual({ midFinal: "151", weOpen: "3", weClose: "156" });
+  });
+  it("simplificado: reuniões especiais com todos os dados, sem depender dos interruptores", () => {
+    const m = buildBoardModel({ ...base, pioneer: { at: "2026-11-18T19:00:00", place: "Salão", theme: "Eu os chamo de amigos", opening: "Ana", closing: "Bia" } });
+    expect(m.specialsDetail[0]).toEqual({ title: "Reunião com Pioneiros", place: "Salão", when: "Quarta-feira, 19:00", theme: "Eu os chamo de amigos", opening: "Ana", closing: "Bia" });
   });
 });
