@@ -49,3 +49,48 @@ Sim, é viável. Hoje a foto já abre numa janela dentro do app, mas o **PDF** �
 - `AgendaAttachments.tsx`: `open()` deixa de chamar `saveBlob` para PDF; `blobOf()` só chama `keepLocal` quando o usuário é o editor (SC), nunca para anciãos.
 - Sem mudanças no banco, nos links assinados (10 min), no PDF exportado da pauta nem no formato dos dados.
 - Testes: regra "visualização de ancião não grava cópia local" (blobOf com editable=false não chama keepLocal). Rodar `bunx tsc --noEmit` e suíte completa; conferir no navegador abrindo um PDF de exemplo.
+
+---
+
+# Parte 2 — Superintendente insere respostas por um ancião
+
+Para anciãos sem acesso ao app: o SC recebe a informação (conversa, mensagem) e lança no cartão "Informações adicionais dos anciãos".
+
+```text
+ Cartão (visão do SC)
+┌──────────────────────────┐
+│ Informações adicionais   │
+│ dos anciãos     💬 3     │
+│ [+ Inserir informações]  │   (já existe para o ancião)
+│ [+ Inserir por um ancião]│   ← novo, só para o SC
+└──────────────────────────┘
+
+ Folha "Resposta de um ancião"
+┌──────────────────────────┐
+│ Nome do ancião (opcional)│
+│ [ Irmão Silva          ] │
+│ Checklist                │
+│ Pergunta 1  [Sim|Não|Em parte]
+│ Perguntas                │
+│ [ resposta...          ] │
+│ Informações              │
+│ [ texto...             ] │
+│        [ Salvar ]        │
+└──────────────────────────┘
+ No carrossel aparece: "Irmão Silva · inserido pelo SC"
+```
+
+- O SC pode inserir quantas respostas quiser (uma por ancião), editar e apagar.
+- Aparecem para todos os anciãos no carrossel, na tela cheia e na folha separada do PDF, igual às outras.
+- Um ancião que depois entrar no app não consegue editar a resposta lançada pelo SC (fica com o SC).
+
+## Compatibilidade com a versão da Play Store
+- Nada muda no formato salvo: a resposta do SC usa o mesmo modelo das respostas existentes, com uma marca extra opcional ("inserido pelo SC") que versões antigas simplesmente ignoram.
+- O visualizador de anexos é só tela nova: a versão instalada continua abrindo/baixando como hoje até ser atualizada.
+- Sem mudanças no banco, nas funções do servidor já usadas pela versão instalada, nem no PDF.
+
+## Detalhes técnicos (Parte 2)
+- Respostas do SC recebem `authorKey` próprio `sc:<id aleatório>` (nunca coincide com o hash de um aparelho) e campo opcional `bySc: true`; normalização aceita ausência.
+- `ElderInfoResponses.tsx`: botão "Inserir por um ancião" quando `isSc && canWrite`; reutiliza o mesmo formulário; `canChange` já permite ao SC editar todas.
+- Servidor: o merge de papel SC já grava `responses` inteiro; confirmar em `mergeAgenda` que, para SC, respostas `sc:` são preservadas e que o merge de ancião (`mergeResponses`) nunca remove respostas de outros autores (já é assim).
+- Testes: SC adiciona resposta e ela sobrevive a um salvamento de ancião; ancião não consegue alterar resposta `sc:`; payload sem `bySc` continua válido.
