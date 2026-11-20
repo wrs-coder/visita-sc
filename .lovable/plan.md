@@ -95,3 +95,42 @@ Salva só aquele campo e a tela continua em Leitura. Campos só do SC aparecem c
 - Novo `AgendaReadView.tsx` reutilizando os renderizadores de links (" | "), `AgendaAttachments` (visualizador), carrossel de `ElderInfoResponses`.
 - Novo `AgendaFieldSheet.tsx` (Sheet de baixo) que edita um campo e chama `patch` + save pontual do payload.
 - Guard de alterações não salvas; textos pt/en/es; Ajuda (`help-content`) atualizada com os novos rótulos; testes de que salvar um campo isolado preserva respostas dos anciãos.
+
+---
+
+# Parte 2: iPad (telas confusas, "campo azul" e PDF que não abre)
+
+## Causa provável do PDF (a confirmar no primeiro passo)
+O leitor de PDF usado (versão 6 recente) exige recursos novos do Safari; em iPads com iOS um pouco mais antigo ele falha e mostra "Não foi possível mostrar este PDF". O mesmo leitor também é usado na importação de oradores.
+
+**Correção:** usar a versão "compatível" do leitor (feita para navegadores mais antigos) e, se mesmo assim falhar, mostrar o PDF pelo leitor nativo do iPad dentro da própria tela (sem salvar no aparelho), com o botão "Abrir de outra forma".
+
+## "Campo azul"
+Provavelmente é o destaque azul que o Safari pinta ao tocar em botões/cartões e o contorno azul de foco. **Correção:** remover o destaque de toque e trocar o contorno por um anel suave na cor do app, só quando usar teclado.
+
+## Telas confusas no iPad
+Hoje as telas são esticadas da largura do celular. Proposta (padrão iPadOS / One UI tablet):
+
+```text
+ ┌──────────────────────────────────────────────────────────┐
+ │  Pauta – Reunião com Anciãos      ( Leitura )(Preparar)  │
+ ├───────────────────┬──────────────────────────────────────┤
+ │ TÓPICOS           │ 1. Visita aos grupos          15 min │
+ │ ▸ 1. Visita       │ 📖 Fontes: w23.05 | Vídeo X          │
+ │   2. Recomend.    │ 👥 Respostas   ‹ 1/3 ›               │
+ │   3. Considerações│ 🔒 Informações do SC            ✏️   │
+ │   4. Oração final │                                      │
+ └───────────────────┴──────────────────────────────────────┘
+```
+- Conteúdo com largura máxima confortável e centralizado nas demais telas (sem linhas enormes).
+- Na pauta e em telas de leitura: lista de tópicos à esquerda, conteúdo à direita.
+- Painéis/folhas de baixo viram janelas centralizadas no iPad.
+- Respeitar a área segura do iPad (barra de baixo e orientação horizontal).
+
+Para eu acertar exatamente o que te incomodou, seria ótimo uma captura de tela do iPad mostrando o campo azul.
+
+## Detalhes técnicos
+- `AttachmentViewer.tsx` e `speaker-import.ts`: importar `pdfjs-dist/legacy/build/pdf.mjs` + worker legacy; fallback em `<iframe>`/`<object>` com blob URL em memória (revogado ao fechar).
+- `styles.css`: `-webkit-tap-highlight-color: transparent`, `:focus-visible` com token `--ring`; nada de hex.
+- Layout: container `max-w-3xl mx-auto` em `md:`, grade de duas colunas em `lg:` na pauta; Sheet → Dialog em `md:`.
+- Verificar com Playwright em 820x1180 e 1180x820 (perfil WebKit).
