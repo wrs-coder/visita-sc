@@ -134,3 +134,35 @@ Para eu acertar exatamente o que te incomodou, seria ótimo uma captura de tela 
 - `styles.css`: `-webkit-tap-highlight-color: transparent`, `:focus-visible` com token `--ring`; nada de hex.
 - Layout: container `max-w-3xl mx-auto` em `md:`, grade de duas colunas em `lg:` na pauta; Sheet → Dialog em `md:`.
 - Verificar com Playwright em 820x1180 e 1180x820 (perfil WebKit).
+
+---
+
+# Parte 3: Botão "Atualizar pauta" e anexo excluído que continua aparecendo
+
+## O que vi até agora (causa ainda a confirmar no 1º passo)
+- Depois de salvar, a tela não recarrega a pauta do servidor: continua mostrando a versão que estava aberta, e a cópia guardada no aparelho (para uso offline) pode reaparecer ao reabrir a tela.
+- Ao gravar a resposta de um ancião, o app envia a pauta inteira que está na tela; se essa tela estiver desatualizada, pode "ressuscitar" algo que já foi apagado em outro aparelho.
+- O arquivo excluído pode continuar guardado no aparelho (cópia local do SC) e na pasta da nuvem.
+
+**Primeiro passo:** reproduzir (apagar anexo → salvar → reabrir / abrir em outro aparelho) e confirmar qual dessas é a causa antes de corrigir.
+
+## Correção proposta
+```text
+ ┌──────────────────────────────────────┐
+ │ ( Leitura )( Preparar )( Montar ) ⟳  │  ← Atualizar pauta
+ │ Atualizado às 22:05 · ✓ em dia       │
+ └──────────────────────────────────────┘
+```
+- Botão **⟳ Atualizar pauta** (também "puxar para baixo"): busca a versão mais nova da nuvem, substitui a cópia do aparelho e mostra "Atualizado às HH:MM".
+- Se houver alterações não salvas, pergunta: "Salvar antes / Descartar e atualizar".
+- Depois de **Salvar**, a tela recarrega sozinha a versão do servidor (o que você vê = o que está salvo).
+- Excluir anexo apaga também o arquivo da nuvem e a cópia do aparelho, após salvar.
+- Respostas dos anciãos passam a gravar só a própria resposta, sem reenviar o resto da pauta.
+- Aviso quando outra pessoa salvou depois que você abriu: "A pauta mudou em outro aparelho. Atualizar?"
+
+## Detalhes técnicos
+- `ElderAgendaView.tsx`: ação `refresh()` que chama o loader do servidor, regrava `agenda-cache`/IndexedDB e faz `setP`; chamada após `onSave`.
+- Conflito otimista: enviar `updatedAt` conhecido em `saveAgenda`; se o do banco for mais novo, responder `stale` e oferecer atualizar.
+- `commitResponses`: enviar payload base do servidor + só o cartão alterado (ou função dedicada de resposta).
+- Remoção de anexo: `storage.remove` dos `cloudPath` que saíram do payload salvo (no servidor, comparando antes/depois) e limpeza do IndexedDB `visita-sc-agenda-att`.
+- Testes: anexo removido não volta após merge; resposta de ancião não restaura anexo apagado.
