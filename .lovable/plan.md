@@ -166,3 +166,47 @@ Para eu acertar exatamente o que te incomodou, seria ótimo uma captura de tela 
 - `commitResponses`: enviar payload base do servidor + só o cartão alterado (ou função dedicada de resposta).
 - Remoção de anexo: `storage.remove` dos `cloudPath` que saíram do payload salvo (no servidor, comparando antes/depois) e limpeza do IndexedDB `visita-sc-agenda-att`.
 - Testes: anexo removido não volta após merge; resposta de ancião não restaura anexo apagado.
+
+---
+
+# Parte 4: Telas adaptadas a cada aparelho (automático)
+
+O app reconhece sozinho o tipo de tela e escolhe o layout. Não precisa configurar nada.
+
+| Aparelho | Layout |
+|---|---|
+| Celular Android (app da Play Store) | Uma coluna, estilo One UI (como hoje, revisado) |
+| iPhone (instalado pela tela de início) | Uma coluna, estilo iOS, respeitando entalhe/Dynamic Island e barra de baixo |
+| Tablet Android | Duas colunas: lista à esquerda, conteúdo à direita |
+| iPad 6ª geração ou mais novo | Duas colunas (horizontal) / coluna central larga (vertical) |
+
+```text
+ CELULAR                 TABLET / iPad (horizontal)
+ ┌──────────────┐        ┌────────┬───────────────────────┐
+ │ Início       │        │ Início │ Agenda da semana      │
+ │ [card]       │        │ Esboços│ ┌──────┐ ┌──────┐     │
+ │ [card]       │        │ Visita │ │ card │ │ card │     │
+ │ [card]       │        │ Anciãos│ └──────┘ └──────┘     │
+ └──────────────┘        │ Ajuda  │ ┌──────┐ ┌──────┐     │
+                         └────────┴───────────────────────┘
+```
+
+## Como fica
+- Tablet/iPad: menu lateral fixo no lugar das pílulas de topo; cartões do Início em grade (2 colunas, 3 em telas grandes) em vez de páginas deslizantes.
+- Pauta, esboços e notas: lista à esquerda + conteúdo à direita.
+- Formulários e janelas: centralizados com largura confortável (sem campos esticados).
+- Girar o aparelho troca o layout na hora, sem perder o que estava digitado.
+- iPhone/iPad instalados: barras e cores do sistema corretas, sem a marcação azul ao tocar.
+- iPad 6ª geração (iPadOS 17): tudo testado para funcionar nele, incluindo o leitor de PDF.
+
+## Ordem sugerida de entrega (ondas)
+1. Correções urgentes: PDF no iPad, marcação azul, botão Atualizar pauta e anexo que volta.
+2. Pauta: modos Leitura / Preparar / Montar.
+3. Base de layouts por aparelho + Início e menu lateral no tablet.
+4. Demais telas (esboços, notas, visita, circuito) no layout de tablet.
+
+## Detalhes técnicos
+- Detecção por largura (CSS `md:` 768px / `lg:` 1024px) e `@capacitor/core` `getPlatform()`/`display-mode: standalone` só para ajustes de plataforma; sem hook de viewport no SSR (mantém regra do DashboardPager: pager no celular, grade via CSS em `lg:`).
+- `AppShell`: sidebar em `lg:` usando os mesmos links do header; header atual preservado no celular.
+- `env(safe-area-inset-*)` revisado para iPhone/iPad standalone; manifesto e metas Apple existentes mantidos (sem mexer no `sw.js`).
+- Verificação com Playwright (WebKit) em 390x844, 412x915, 800x1280, 810x1080 e 1080x810.
