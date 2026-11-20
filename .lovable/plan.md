@@ -28,6 +28,10 @@ Novo: no cartão "Oração inicial … Tempo total" (só o SC edita), uma linha 
 - "Manual": vale só na pauta (cabeçalho, tela cheia, cartão do Início, PDF e horários de cada tópico). A aba "Reuniões anciãos e servos" não é alterada.
 - Voltar para "Da agenda" apaga o horário manual.
 
+### Correção do horário errado (20h em vez de 19h)
+Causa encontrada: a Agenda do Início usa o "Dia e horário definido pelo Superintendente" (do modelo da visita), mas a pauta lê outro campo — o horário antigo gravado em "Reunião anciãos e servos" —, e ainda o converte pelo fuso do aparelho. Por isso aparece uma hora a mais.
+Correção: a pauta passa a usar exatamente a mesma regra da Agenda e do Quadro de anúncios (primeiro o dia/horário definido pelo SC; se não houver, o gravado na aba), sempre como "hora de parede" (19:00 é 19:00 em qualquer aparelho). Antes de mudar, confirmo nos dados desta visita que o resultado dá 19h.
+
 ## 2. Seletor de congregação nas Notas privadas
 
 Volta como uma pílula discreta no topo; continua abrindo na congregação ativa.
@@ -45,6 +49,7 @@ Tocar abre a lista das congregações; a escolha fica lembrada no aparelho e nã
 
 ## Detalhes técnicos
 - `AgendaPayload` ganha `meetingAtOverride: string | null` (opcional; o que falta = null, por isso pautas antigas e o app da Play Store continuam funcionando). Normalização e merge seguem `prayersPerm`.
+- `loadAgenda` (agenda.server.ts) passa a resolver `meetingAt` com os extras do modelo (`elders.weekday` + `meeting_time`) via `resolveWeekdaySlot`, igual a board-program-export.ts, devolvendo data/hora local sem fuso; `formatMeetingWhen` e o PDF leem a hora sem converter fuso.
 - Novo helper `effectiveMeetingAt(p, a) = p.meetingAtOverride ?? a.meetingAt`, usado em ElderAgendaView, Fullscreen, DashboardCard, GuestElderAgenda e agenda-pdf (em vez de `auto.meetingAt`).
 - Notas: `<Select>` com `congs` / `setCongId` em `_app.notas.tsx`, salvo em `NOTAS_CONG_KEY`; o efeito da congregação ativa só vale quando nada foi salvo.
 - Textos novos em pt/en/es; testes de normalização/override; tsc + toda a bateria de testes.
