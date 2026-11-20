@@ -334,7 +334,7 @@ function AppLayout() {
       {/* Onda 7.9 — Anunciador SR-only de mudança de rota. */}
       <RouteAnnouncer pathname={location.pathname} />
       {/* Mobile top bar */}
-      <header className={cn("md:hidden sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm safe-top safe-x transition-transform duration-200 will-change-transform", headerHidden && "-translate-y-full", focusChrome && "hidden")}>
+      <header className={cn("lg:hidden sticky top-0 z-30 bg-primary text-primary-foreground shadow-sm safe-top safe-x transition-transform duration-200 will-change-transform", headerHidden && "-translate-y-full", focusChrome && "hidden")}>
         <div className="flex items-center justify-between px-3 h-14">
           <div className="flex items-center gap-2">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -409,9 +409,9 @@ function AppLayout() {
         </div>
       </header>
 
-      <div className="md:flex">
-        {/* Desktop sidebar */}
-        <aside className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-sidebar text-sidebar-foreground safe-top safe-bottom">
+      <div className="lg:flex">
+        {/* Menu lateral fixo: iPad/tablet na horizontal e computador (no vertical usa a barra do celular). */}
+        <aside className="hidden lg:flex lg:w-64 xl:w-72 lg:flex-col lg:fixed lg:inset-y-0 bg-sidebar text-sidebar-foreground safe-top safe-bottom">
           <div className="shrink-0">
             <SidebarHeader
               congregationName={displayedCongregationName}
@@ -455,15 +455,15 @@ function AppLayout() {
         <main
           id="main-content"
           tabIndex={-1}
-          className="flex-1 md:ml-72 min-w-0 max-w-full overflow-x-hidden focus:outline-none"
+          className="flex-1 lg:ml-64 xl:ml-72 min-w-0 max-w-full overflow-x-hidden focus:outline-none"
           style={accentStyle(accentForPath(location.pathname))}
         >
           {pageTitle && !focusChrome && (
-            <div className="sticky top-0 z-20 hidden h-12 items-center border-b bg-background/90 px-8 backdrop-blur md:flex safe-top" aria-hidden="true">
+            <div className="sticky top-0 z-20 hidden h-12 items-center border-b bg-background/90 px-8 backdrop-blur lg:flex safe-top" aria-hidden="true">
               <span className="truncate text-base font-semibold">{pageTitle}</span>
             </div>
           )}
-          <div className="max-w-5xl mx-auto px-3 pt-3 min-[400px]:px-4 md:p-8 safe-bottom-content safe-x min-w-0">
+          <div className="max-w-5xl mx-auto px-3 pt-3 min-[400px]:px-4 md:pt-5 lg:pt-8 safe-bottom-content content-x min-w-0">
 
             {blocked ? (
               <div className="min-h-[60vh] flex items-center justify-center">

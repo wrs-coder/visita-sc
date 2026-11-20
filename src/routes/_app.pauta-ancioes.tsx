@@ -24,7 +24,7 @@ function Page() {
   const { visit, loading: visitLoading } = useActiveVisit();
   const { data, error, loading, reload, save } = useElderAgenda(visit?.id);
   return (
-    <div className="space-y-4 max-w-2xl mx-auto overflow-x-hidden">
+    <div className="space-y-4 max-w-2xl lg:max-w-5xl mx-auto overflow-x-hidden">
       <VisitProgramTabs />
       <h1 className="sr-only">Pauta da reunião com os anciãos</h1>
       {visitLoading || (loading && !data) ? (

@@ -1,0 +1,1 @@
+- The app shell shows the fixed sidebar only from lg (1024px: iPad/tablet landscape, desktop) and the phone top bar below it, and content side padding comes from .content-x (phone unchanged, md+ comfortable margins), because a 288px sidebar on 768px portrait tablets squeezed every screen and the unlayered safe-x class zeroed Tailwind padding.

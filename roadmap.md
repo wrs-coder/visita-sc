@@ -47,4 +47,4 @@
 - [x] Botão "Atualizar pauta"; salvar recarrega a versão da nuvem; respostas novas não somem
 - [x] Anexo tirado some na hora e sai da nuvem
 - [x] PDF no iPad (leitor compatível + plano B) e sem marcação azul ao tocar
-- [ ] Layout de tablet/iPad (menu lateral, grade no Início, pauta em duas colunas) — próxima onda
+- [x] Layout de tablet/iPad: menu lateral só na horizontal, margens laterais, Início em 2 colunas, pauta com índice de tópicos, janelas centralizadas

@@ -1,7 +1,7 @@
 // Telas deslizantes do Dashboard em todas as larguras (celular, tablet,
 // computador). Seletor rápido + carrossel horizontal com scroll-snap.
 // A tela visível monta primeiro; as demais montam com o aparelho ocioso
-// e nunca são desmontadas. Em telas largas os cartões ficam em 2 colunas.
+// e nunca são desmontadas. Em tablet/iPad e telas largas os cartões ficam em 2 colunas.
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -136,7 +136,7 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
         role="tablist"
         aria-label="Telas do painel"
         onKeyDown={onTabKey}
-        className="sticky top-14 z-20 -mx-1 grid gap-1 rounded-xl border bg-card p-1 shadow-sm md:mx-auto md:max-w-2xl"
+        className="sticky top-14 lg:top-12 z-20 -mx-1 grid gap-1 rounded-xl border bg-card p-1 shadow-sm md:mx-auto md:max-w-2xl"
         style={{ gridTemplateColumns: `repeat(${pages.length}, minmax(0, 1fr))` }}
       >
         {pages.map((p, i) => (
@@ -178,7 +178,7 @@ export function DashboardPager({ pages, unreadLabel = "Recados não lidos" }: { 
             key={p.id}
             role="tabpanel"
             aria-label={p.label}
-            className="w-full shrink-0 snap-start snap-always space-y-6 px-4 md:px-0 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0 lg:[&>*]:w-full lg:[&>*]:min-w-0"
+            className="w-full shrink-0 snap-start snap-always space-y-6 px-4 md:px-0 md:grid md:grid-cols-2 md:items-start md:gap-5 md:space-y-0 md:[&>*]:w-full md:[&>*]:min-w-0 lg:gap-6"
           >
             {isMounted(p.id) || p.id === active ? p.content : <div className="min-h-[60vh]" aria-hidden="true" />}
           </section>

@@ -332,6 +332,21 @@
   padding-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
   padding-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
 }
+/* Área de conteúdo do app: no celular segue igual (só o recuo do sistema);
+   em tablet/iPad e computador ganha margem lateral confortável, somada ao recuo do sistema. */
+.content-x {
+  padding-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+  padding-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+}
+@media (min-width: 768px) {
+  .content-x {
+    padding-left: max(1.5rem, env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+    padding-right: max(1.5rem, env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  }
+}
+@media (min-width: 1024px) {
+  .content-x { padding-left: 2rem; padding-right: 2rem; }
+}
 /* Telas cheias (padrão iOS/One UI): o fundo vai até a borda; só a barra real recebe o recuo. */
 .bar-top { padding-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px)); }
 .bar-bottom { padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)); }
