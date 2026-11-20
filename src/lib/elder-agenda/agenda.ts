@@ -39,6 +39,7 @@ export interface AgendaElderResponse {
   /** SHA-256 do segredo do aparelho que escreveu; vazio = só o SC altera (ex.: texto antigo). */ authorKey: string;
   /** Opcional: sem nome aparece como "Ancião N". */ name: string;
   /** Antigo formato de marcar (true) é lido como "Sim". */ checks: Record<string, AgendaCheckAnswer>; answers: Record<string, string>; html: string; updatedAt: string;
+  /** Lançada pelo SC em nome de um ancião sem acesso ao app (versões antigas ignoram). */ bySc?: true;
 }
 export type AgendaRecDecision = "assign" | "decline" | null;
 /** Comentário e decisão do SC por recomendação: só do SC, nunca chega aos anciãos nem ao PDF. */
@@ -221,7 +222,7 @@ function normResponse(raw: unknown): AgendaElderResponse {
   const answers: Record<string, string> = {};
   for (const [k, v] of Object.entries(obj(o.answers)).slice(0, MAX_QUESTIONS)) if (ID_RE.test(k)) answers[k] = str(v, 5000);
   const key = str(o.authorKey, 64);
-  return { id: idOk(o.id), authorKey: /^[0-9a-f]{64}$/.test(key) ? key : "", name: str(o.name, 80), checks, answers, html: str(o.html, 50_000), updatedAt: str(o.updatedAt, 40) };
+  return { id: idOk(o.id), authorKey: /^[0-9a-f]{64}$/.test(key) ? key : "", name: str(o.name, 80), checks, answers, html: str(o.html, 50_000), updatedAt: str(o.updatedAt, 40), ...(o.bySc === true ? { bySc: true as const } : {}) };
 }
 /** Campos do cartão eldersInfo; o texto antigo do campo único vira a primeira resposta. */
 function eldersInfoParts(type: AgendaCardType, r: Record<string, unknown>): Pick<AgendaCard, "checklist" | "questions" | "responses"> & { html?: string } {

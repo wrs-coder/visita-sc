@@ -27,6 +27,7 @@ import { AGENDA_PDF_STYLES, type AgendaPdfStyle } from "@/lib/elder-agenda/agend
 import { readPdfStyle, writePdfStyle } from "@/lib/elder-agenda/agenda-cache";
 import { openAllLinks } from "./open-all-links";
 import { AgendaTemplatesDialog } from "./AgendaTemplatesDialog";
+import { AttachmentViewerHost } from "./AttachmentViewer";
 import { AgendaAttachments, type AgendaAttachmentApi } from "./AgendaAttachments";
 import { EditorResizeHandle } from "@/components/outlines/EditorResizeHandle";
 import { ElderInfoQuestionsEditor, ElderInfoResponses } from "./ElderInfoResponses";
@@ -648,6 +649,7 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
           <ElderAgendaFullscreen data={data} payload={p} isSc={isSc} onClose={() => setFull(false)} />
         </Suspense>
       ) : null}
+      <AttachmentViewerHost />
     </div>
   );
 }

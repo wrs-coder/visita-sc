@@ -3,8 +3,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { FileText, ImageIcon, Link2, Loader2, Paperclip, Plus, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { pickFile, saveBlob } from "@/lib/share";
+import { pickFile } from "@/lib/share";
+import { viewerStore } from "./attachment-viewer-store";
 import { newId, safeUrl, type AgendaAttachment, type AgendaCard } from "@/lib/elder-agenda/agenda";
 import { dropLocal, keepLocal, localBlob, prepareFile } from "./agenda-attachments";
 import { openAllLinks } from "./open-all-links";
@@ -22,7 +22,6 @@ export function AgendaAttachments({ card, editable, api, onChange, offline }: {
   onChange: (attachments: AgendaAttachment[]) => void;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
-  const [photo, setPhoto] = useState<{ src: string; title: string } | null>(null);
   const isPrivate = card.type === "private";
   const list = editable ? card.attachments : card.attachments.filter((a) => a.kind === "link" || a.cloudPath);
   if (!editable && !list.length) return null;
@@ -36,7 +35,10 @@ export function AgendaAttachments({ card, editable, api, onChange, offline }: {
     const url = await api.urlFor(a.cloudPath);
     if (!url) return null;
     const res = await fetch(url); if (!res.ok) return null;
-    const b = await res.blob(); await keepLocal(a.id, b); return b;
+    const b = await res.blob();
+    // Anciãos só visualizam: nada fica guardado no aparelho. O SC mantém a cópia como antes.
+    if (editable) await keepLocal(a.id, b);
+    return b;
   };
   const open = async (a: AgendaAttachment) => {
     if (a.kind === "link") { void openAllLinks([a.url]); return; }
@@ -44,8 +46,7 @@ export function AgendaAttachments({ card, editable, api, onChange, offline }: {
     try {
       const b = await blobOf(a);
       if (!b) { toast.error(a.cloudPath ? "Sem internet para baixar este anexo." : "Este anexo está só no aparelho onde foi adicionado."); return; }
-      if (a.kind === "photo") setPhoto({ src: URL.createObjectURL(b), title: a.title });
-      else await saveBlob(b, { filename: a.title.toLowerCase().endsWith(".pdf") ? a.title : `${a.title}.pdf`, mimeType: "application/pdf" });
+      viewerStore.open({ id: a.id, title: a.title, kind: a.kind, blob: b });
     } catch { toast.error("Não foi possível abrir o anexo."); } finally { setBusy(null); }
   };
   const add = async (kind: "photo" | "pdf") => {
@@ -118,12 +119,6 @@ export function AgendaAttachments({ card, editable, api, onChange, offline }: {
       {editable && !isPrivate && card.attachments.some((a) => a.kind !== "link" && !a.cloudPath) ? (
         <p className="text-[11px] text-muted-foreground">Fotos e PDF ficam só neste aparelho até você ligar "Enviar".</p>
       ) : null}
-      <Dialog open={!!photo} onOpenChange={(v) => { if (!v && photo) { URL.revokeObjectURL(photo.src); setPhoto(null); } }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle className="break-words">{photo?.title}</DialogTitle></DialogHeader>
-          {photo ? <img src={photo.src} alt={photo.title} className="w-full rounded-lg" /> : null}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

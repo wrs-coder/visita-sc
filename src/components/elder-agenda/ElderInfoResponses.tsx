@@ -59,6 +59,8 @@ export function ElderInfoResponses({ card, isSc, canWrite, myHash, onCommit, inl
   const mine = myHash ? list.find((r) => r.authorKey === myHash) : undefined;
   const canChange = (r: AgendaElderResponse) => canWrite && (isSc || (!!myHash && r.authorKey === myHash));
 
+  // SC lança a resposta de um ancião sem app: chave vazia = só o SC altera; anciãos nunca a sobrescrevem.
+  const startForElder = () => setEdit({ id: newId(), authorKey: "", name: "", checks: {}, answers: {}, html: "", updatedAt: "", bySc: true });
   const startNew = () => setEdit(mine ?? { id: newId(), authorKey: myHash, name: "", checks: {}, answers: {}, html: "", updatedAt: "" });
   const remove = async (r: AgendaElderResponse) => {
     if (!confirm("Apagar esta resposta?")) return;
@@ -82,6 +84,11 @@ export function ElderInfoResponses({ card, isSc, canWrite, myHash, onCommit, inl
           {mine ? <><Pencil className="h-4 w-4" />Editar minhas informações</> : <><Plus className="h-4 w-4" />Inserir informações sobre o assunto</>}
         </Button>
       ) : null}
+      {canWrite && isSc && !inline ? (
+        <Button type="button" variant="outline" className="w-full border-dashed" onClick={startForElder}>
+          <Plus className="h-4 w-4" />Inserir por um ancião
+        </Button>
+      ) : null}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
@@ -92,7 +99,7 @@ export function ElderInfoResponses({ card, isSc, canWrite, myHash, onCommit, inl
 
       <Sheet open={!!edit} onOpenChange={(v) => { if (!v) setEdit(null); }}>
         <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-2xl pb-safe">
-          {edit ? <ResponseForm card={card} value={edit} onCancel={() => setEdit(null)} onSave={async (r) => {
+          {edit ? <ResponseForm card={card} value={edit} title={edit.bySc ? "Resposta de um ancião" : "Minhas informações"} onCancel={() => setEdit(null)} onSave={async (r) => {
             const next = list.some((x) => x.id === r.id) ? list.map((x) => (x.id === r.id ? r : x)) : [...list, r];
             if (await onCommit(next)) { setEdit(null); toast.success("Informações enviadas."); }
           }} /> : null}
@@ -102,7 +109,7 @@ export function ElderInfoResponses({ card, isSc, canWrite, myHash, onCommit, inl
   );
 }
 
-function ResponseForm({ card, value, onSave, onCancel }: { card: AgendaCard; value: AgendaElderResponse; onSave: (r: AgendaElderResponse) => Promise<void>; onCancel: () => void }) {
+function ResponseForm({ card, value, title, onSave, onCancel }: { card: AgendaCard; title: string; value: AgendaElderResponse; onSave: (r: AgendaElderResponse) => Promise<void>; onCancel: () => void }) {
   const [r, setR] = useState(value);
   const [text, setText] = useState(htmlToPlain(value.html));
   const [busy, setBusy] = useState(false);
@@ -114,9 +121,9 @@ function ResponseForm({ card, value, onSave, onCancel }: { card: AgendaCard; val
   };
   return (
     <div className="space-y-4">
-      <SheetHeader><SheetTitle>Minhas informações</SheetTitle></SheetHeader>
+      <SheetHeader><SheetTitle>{title}</SheetTitle></SheetHeader>
       <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Nome (opcional)</Label>
+        <Label className="text-xs text-muted-foreground">{value.bySc ? "Nome do ancião (opcional)" : "Nome (opcional)"}</Label>
         <Input value={r.name} maxLength={80} onChange={(e) => setR({ ...r, name: e.target.value })} placeholder="Ex.: João Silva" />
       </div>
       {checklist.length ? (
@@ -168,7 +175,7 @@ export function ResponsesCarousel({ card, canChange, onEdit, onRemove }: {
           <article key={r.id} className="w-full shrink-0 snap-center px-0.5">
             <div className="space-y-2 rounded-2xl border bg-background p-3 min-h-32">
               <div className="flex items-center gap-2">
-                <p className="flex-1 min-w-0 text-sm font-semibold break-words">{responseName(r, i)}{r.updatedAt ? <span className="font-normal text-muted-foreground"> · {fmt(r.updatedAt)}</span> : null}</p>
+                <p className="flex-1 min-w-0 text-sm font-semibold break-words">{responseName(r, i)}{r.bySc ? <span className="font-normal text-muted-foreground"> · inserido pelo SC</span> : null}{r.updatedAt ? <span className="font-normal text-muted-foreground"> · {fmt(r.updatedAt)}</span> : null}</p>
                 {canChange?.(r) ? <>
                   <button type="button" onClick={() => onEdit?.(r)} aria-label="Editar resposta" className="p-1.5 text-muted-foreground"><Pencil className="h-4 w-4" /></button>
                   <button type="button" onClick={() => onRemove?.(r)} aria-label="Apagar resposta" className="p-1.5 text-destructive"><Trash2 className="h-4 w-4" /></button>

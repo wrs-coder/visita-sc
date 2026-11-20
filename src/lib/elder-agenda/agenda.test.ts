@@ -235,6 +235,18 @@ describe("pauta: informações adicionais dos anciãos", () => {
     const cur = withResps(emptyAgenda(), [resp("r1", H1, "x")]);
     expect(card(mergeAgenda(cur, withResps(cur, []), "sc"), "eldersInfo").responses).toHaveLength(0);
   });
+  it("resposta lançada pelo SC sobrevive ao salvamento de um ancião e ele não a altera", () => {
+    const bySc = { ...resp("s1", "", "do ancião sem app"), bySc: true as const };
+    const cur = withResps(emptyAgenda(), [bySc]);
+    const inc = withResps(emptyAgenda(), [{ ...bySc, html: "mudado" }, resp("r2", H2, "minha")]);
+    const out = card(mergeAgenda(cur, inc, "elder", Date.now(), H2), "eldersInfo").responses;
+    expect(out.map((r) => r.html)).toEqual(["do ancião sem app", "minha"]);
+    expect(card(normalizeAgenda(JSON.parse(JSON.stringify(cur))), "eldersInfo").responses[0]?.bySc).toBe(true);
+  });
+  it("resposta sem a marca do SC continua válida", () => {
+    const cur = withResps(emptyAgenda(), [resp("r1", H1, "x")]);
+    expect(card(normalizeAgenda(JSON.parse(JSON.stringify(cur))), "eldersInfo").responses[0]?.bySc).toBeUndefined();
+  });
 });
 
 describe("pauta: checklist Sim / Não / Em parte", () => {
