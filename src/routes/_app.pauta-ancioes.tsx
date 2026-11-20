@@ -37,7 +37,7 @@ function Page() {
           <Button variant="outline" onClick={() => void reload()}>Tentar de novo</Button>
         </div>
       ) : data ? (
-        <ElderAgendaView key={data.visitId} data={data} save={save} />
+        <ElderAgendaView key={data.visitId} data={data} save={save} onRefresh={reload} />
       ) : null}
     </div>
   );

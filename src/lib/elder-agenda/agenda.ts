@@ -415,8 +415,32 @@ export function mergeResponses(cur: AgendaElderResponse[], inc: AgendaElderRespo
 /** Nome mostrado: o digitado ou "Ancião N" pela posição. */
 export const responseName = (r: AgendaElderResponse, i: number) => r.name.trim() || `Ancião ${i + 1}`;
 
-export function mergeAgenda(current: AgendaPayload, incoming: AgendaPayload, role: AgendaRole, now = Date.now(), authorHash: string | null = null): AgendaPayload {
-  if (role === "sc") return incoming;
+/**
+ * Gravação do SC: a versão dele vale, mas respostas de anciãos que chegaram depois que ele abriu a pauta
+ * (ids fora de `known`) são mantidas, para um salvamento com tela antiga nunca apagar o que outro aparelho mandou.
+ * Sem `known` (versões antigas do app) o comportamento é o de antes: a versão do SC substitui tudo.
+ */
+export function mergeScAgenda(current: AgendaPayload, incoming: AgendaPayload, known: ReadonlySet<string> | null): AgendaPayload {
+  if (!known) return incoming;
+  const curCards = new Map(current.blocks.flatMap((b) => b.cards).map((c) => [c.id, c]));
+  return { ...incoming, blocks: incoming.blocks.map((b) => ({ ...b, cards: b.cards.map((c) => {
+    const old = curCards.get(c.id);
+    if (c.type !== "eldersInfo" || !old || old.type !== "eldersInfo") return c;
+    const have = new Set(c.responses.map((r) => r.id));
+    const arrived = old.responses.filter((r) => !have.has(r.id) && !known.has(r.id));
+    return arrived.length ? { ...c, responses: [...c.responses, ...arrived].slice(0, MAX_RESPONSES) } : c;
+  }) })) };
+}
+/** Arquivos na nuvem que estavam na pauta e saíram (para apagar da pasta da visita). */
+export const removedCloudPaths = (before: AgendaPayload, after: AgendaPayload): string[] => {
+  const keep = new Set(after.blocks.flatMap((b) => b.cards.flatMap((c) => c.attachments.map((a) => a.cloudPath))).filter(Boolean));
+  return [...new Set(before.blocks.flatMap((b) => b.cards.flatMap((c) => c.attachments.map((a) => a.cloudPath))).filter((x) => x && !keep.has(x)))];
+};
+/** Ids das respostas que esta cópia da pauta conhece. */
+export const responseIds = (p: AgendaPayload): string[] => p.blocks.flatMap((b) => b.cards.flatMap((c) => (c.type === "eldersInfo" ? c.responses.map((r) => r.id) : [])));
+
+export function mergeAgenda(current: AgendaPayload, incoming: AgendaPayload, role: AgendaRole, now = Date.now(), authorHash: string | null = null, known: ReadonlySet<string> | null = null): AgendaPayload {
+  if (role === "sc") return mergeScAgenda(current, incoming, known);
   if (isLocked(current, now)) return current;
   const inc = new Map(incoming.blocks.flatMap((b) => b.cards).map((c) => [c.id, c]));
   const out: AgendaPayload = { ...current, blocks: current.blocks.map((b) => ({ ...b, cards: b.cards.map((c) => {

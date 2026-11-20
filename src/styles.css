@@ -272,6 +272,15 @@
     /* Onda 6.6 — halo suave para reforçar visibilidade em fundos escuros. */
     box-shadow: var(--shadow-focus);
   }
+  /* iPad/iPhone/Android: sem o retângulo azul do toque, e sem anel de foco
+     em botões tocados (o Safari marca foco em toques e em janelas abertas). */
+  html { -webkit-tap-highlight-color: transparent; }
+  @media (pointer: coarse) {
+    :focus-visible:not(input):not(textarea):not(select):not([contenteditable="true"]) {
+      outline: none;
+      box-shadow: none;
+    }
+  }
   /* Em dispositivos de toque, qualquer botão/link em barra de ações
      deve ter pelo menos 44×44 px de área tocável (WCAG 2.5.5). */
   @media (pointer: coarse) {

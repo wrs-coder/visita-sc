@@ -18,12 +18,12 @@ export const getElderAgenda = createServerFn({ method: "POST" })
 
 export const saveElderAgenda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ visitId: z.string().uuid(), payload: payloadSchema, authorSecret: secretSchema }).parse(input))
+  .inputValidator((input) => z.object({ visitId: z.string().uuid(), payload: payloadSchema, authorSecret: secretSchema, knownResponseIds: z.array(z.string().max(100)).max(1000).optional() }).parse(input))
   .handler(async ({ data, context }) => {
     const { roleForUser, saveAgenda } = await import("./elder-agenda/agenda.server");
     const role = await roleForUser(context.userId, data.visitId);
     if (!role) return { ok: false as const, error: "Sem acesso a esta pauta." };
-    const updatedAt = await saveAgenda(data.visitId, role, data.payload, data.authorSecret);
+    const updatedAt = await saveAgenda(data.visitId, role, data.payload, data.authorSecret, data.knownResponseIds);
     if (updatedAt === "locked") return { ok: false as const, error: "O prazo para preencher a pauta já terminou." };
     return updatedAt ? { ok: true as const, updatedAt } : { ok: false as const, error: "Visita não encontrada." };
   });

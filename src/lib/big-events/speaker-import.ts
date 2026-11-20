@@ -142,8 +142,8 @@ export function xlsxToTabLines(sharedXml: string, sheetXml: string): string[] {
 export type PdfItem = { page: number; x: number; y: number; w: number; h: number; s: string };
 
 async function pdfItems(buf: ArrayBuffer): Promise<PdfItem[]> {
-  const pdfjs = await import("pdfjs-dist");
-  const worker = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const worker = (await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")).default;
   pdfjs.GlobalWorkerOptions.workerSrc = worker;
   const doc = await pdfjs.getDocument({ data: new Uint8Array(buf) }).promise;
   const out: PdfItem[] = [];

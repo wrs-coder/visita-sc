@@ -80,7 +80,7 @@ const RAW_TOPICS: HelpTopic[] = [
     keywords: ["pauta", "anciaos", "reuniao", "modelo", "prazo", "s-303", "fontes de materia"],
     steps: [
       { before: "Abra pelo Início, aba “Anciãos”, ou pela pílula “Pauta” do Programa da visita." },
-      { before: "Toque em “Montar pauta” para criar tópicos e escolher os cartões de cada um, na ordem que quiser." },
+      { before: "No topo da pauta há três modos: “Montar” cria tópicos e cartões, “Preparar” é onde você escreve, cola links e anexa, e “Leitura” mostra a pauta pronta. Use “Atualizar pauta” para trazer o que os anciãos enviaram." },
       { before: "Em cada cartão, toque no selo para escolher quem edita (Todos ou C.Serviço) ou deixe oculto, só para você." },
       { before: "Defina o “Prazo para os anciãos preencherem” no cartão das orações." },
       { before: "Em “Fontes de matéria”, cada publicação ou vídeo tem seu nome e seu link." },

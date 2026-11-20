@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ACCESS_LABEL, CARD_TYPE_LABEL, agendaView, applyTemplate, autoHidden, canEditNow, emptyAgenda, emptyAuto, mergeAgenda, newBlock, newCard,
-  normalizeAgenda, numberedBlocks, parseTemplateFile, recInfoView, safeUrl, templateToFile, withoutPrivate, type AgendaCard, type AgendaPayload,
+  normalizeAgenda, numberedBlocks, parseTemplateFile, recInfoView, removedCloudPaths, safeUrl, templateToFile, withoutPrivate, type AgendaCard, type AgendaPayload,
 } from "./agenda";
 
 const card = (p: AgendaPayload, id: string) => p.blocks.flatMap((b) => b.cards).find((c) => c.id === id)!;
@@ -293,5 +293,27 @@ describe("dia e horário só da pauta", () => {
     const cur = normalizeAgenda({ ...emptyAgenda() });
     const out = mergeAgenda(cur, { ...cur, meetingAtOverride: "2026-11-24T21:00" }, "coordinator");
     expect(out.meetingAtOverride).toBeNull();
+  });
+});
+
+describe("pauta: salvamento do SC com tela antiga e anexos tirados", () => {
+  const resp = (id: string) => ({ id, authorKey: "a".repeat(64), name: "", checks: {}, answers: {}, html: id, updatedAt: "" });
+  const withResps = (p: AgendaPayload, ids: string[]) => withCard(p, "eldersInfo", { responses: ids.map(resp) });
+  it("resposta que chegou depois que o SC abriu a pauta não some ao salvar", () => {
+    const cur = withResps(emptyAgenda(), ["r1", "r2"]);
+    const inc = withResps(emptyAgenda(), ["r1"]);
+    const out = mergeAgenda(cur, inc, "sc", Date.now(), null, new Set(["r1"]));
+    expect(card(out, "eldersInfo").responses.map((r) => r.id)).toEqual(["r1", "r2"]);
+  });
+  it("resposta que o SC conhecia e apagou continua apagada", () => {
+    const cur = withResps(emptyAgenda(), ["r1", "r2"]);
+    const out = mergeAgenda(cur, withResps(emptyAgenda(), ["r1"]), "sc", Date.now(), null, new Set(["r1", "r2"]));
+    expect(card(out, "eldersInfo").responses.map((r) => r.id)).toEqual(["r1"]);
+  });
+  it("anexo tirado da pauta é listado para sair da nuvem", () => {
+    const a = (id: string) => ({ id, kind: "pdf" as const, title: id, url: "", cloudPath: `v/${id}.pdf`, size: 1 });
+    const before = withCard(emptyAgenda(), "eldersInfo", { attachments: [a("x"), a("y")] });
+    const after = withCard(emptyAgenda(), "eldersInfo", { attachments: [a("y")] });
+    expect(removedCloudPaths(before, after)).toEqual(["v/x.pdf"]);
   });
 });

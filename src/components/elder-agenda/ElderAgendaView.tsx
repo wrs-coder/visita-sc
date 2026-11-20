@@ -1,8 +1,9 @@
 // Tela da "Pauta – Reunião com Anciãos", montada em blocos.
 // SC: renomeia, reordena, oculta, apaga e adiciona blocos, escolhe quem edita cada um, define um prazo
 // e usa/salva modelos. Anciãos (com ou sem cadastro) preenchem o que foi liberado até o prazo.
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { Maximize2, RefreshCw } from "lucide-react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { BookOpenCheck, Hammer, Maximize2, RefreshCw } from "lucide-react";
+import { useFocusChromeWhile } from "@/lib/focus-chrome";
 import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, BookOpen, CalendarClock, ChevronDown, Eye, EyeOff, FileDown, FileText, HandHeart, Layers, Library, Link2, Loader2,
@@ -47,6 +48,7 @@ export interface AgendaData {
   /** Para ligar com as Notas privadas (só vem do servidor nas versões novas). */ congregationId?: string; startDate?: string;
   payload: AgendaPayload; auto: AgendaAuto; offline?: boolean;
   attachmentApi?: AgendaAttachmentApi;
+  /** Quando a pauta veio da nuvem pela última vez (ms). */ loadedAt?: number | null;
 }
 export type AgendaSaver = (payload: AgendaPayload) => Promise<{ ok: boolean; error?: string }>;
 
@@ -100,12 +102,28 @@ export const CARD_ICON: Record<AgendaCardType, typeof Lock> = {
   notes: FileText, links: PlayCircle, eldersInfo: Users, scReply: MessageSquareReply, recs: HandHeart, local: MapPin, private: Lock,
 };
 
-export function ElderAgendaView({ data, save }: { data: AgendaData; save: AgendaSaver }) {
+/** Modos do SC: Leitura (pauta pronta), Preparar (escrever, links, anexos) e Montar (estrutura). */
+export type AgendaMode = "read" | "prepare" | "build";
+/** Pauta já preparada abre em Leitura; vazia abre em Preparar. */
+export function initialMode(p: AgendaPayload): AgendaMode {
+  const filled = p.blocks.some((b) => b.cards.some((c) => !!c.html.replace(/<[^>]*>/g, "").trim() || c.items.some((it) => shownParts(it).length) || c.attachments.length || c.responses.length));
+  return filled ? "read" : "prepare";
+}
+
+export function ElderAgendaView({ data, save, onRefresh }: { data: AgendaData; save: AgendaSaver; onRefresh?: () => Promise<void> | void }) {
   const [p, setP] = useState<AgendaPayload>(data.payload);
-  const [dirty, setDirty] = useState(false);
+  const [dirty, setDirtyState] = useState(false);
+  const dirtyRef = useRef(false);
+  const setDirty = (v: boolean) => { dirtyRef.current = v; setDirtyState(v); };
+  // Nova versão vinda da nuvem (Atualizar / depois de salvar): entra na tela se não há nada por salvar.
+  useEffect(() => { if (!dirtyRef.current) setP(data.payload); }, [data.payload]);
+  const [mode, setMode] = useState<AgendaMode>(() => initialMode(data.payload));
+  const [refreshing, setRefreshing] = useState(false);
+  const [fieldEdit, setFieldEdit] = useState<{ title: string; value: string; apply: (html: string) => void } | null>(null);
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [building, setBuilding] = useState(false);
+  const building = data.role === "sc" && mode === "build";
+  const setBuilding = (v: boolean | ((x: boolean) => boolean)) => setMode((m) => ((typeof v === "function" ? v(m === "build") : v) ? "build" : "prepare"));
   const [tplOpen, setTplOpen] = useState(false);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [addTo, setAddTo] = useState<string | null>(null);
@@ -116,6 +134,10 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
   const setHeight = (k: string, px: number) => setHeights((cur) => { const next = { ...cur, [k]: px }; try { localStorage.setItem(H_KEY, JSON.stringify(next)); } catch { /* cheio */ } return next; });
   const isSc = data.role === "sc";
   const offline = !!data.offline;
+  /** Leitura do SC: tudo visível, sem caixas abertas; campos só do SC editam um por vez. */
+  const reading = isSc && mode === "read";
+  const preparing = isSc && mode === "prepare" && !offline;
+  useFocusChromeWhile(preparing);
   const openKey = "visita-sc:agenda-open";
   const [closed, setClosed] = useState<Record<string, boolean>>({});
   useEffect(() => {
@@ -127,8 +149,8 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
   const [myHash, setMyHash] = useState("");
   const toggle = (id: string) => setClosed((cur) => { const next = { ...cur, [id]: !cur[id] }; try { localStorage.setItem(openKey, JSON.stringify(next)); } catch { /* cheio */ } return next; });
   const locked = isLocked(p);
-  const canPerm = (perm: AgendaAccess) => !offline && (isSc || (!locked && canEditCard(data.role, { type: "notes", perm })));
-  const canCard = (c: AgendaCard) => !offline && (isSc || (!locked && canEditCard(data.role, c)));
+  const canPerm = (perm: AgendaAccess) => !offline && !reading && (isSc || (!locked && canEditCard(data.role, { type: "notes", perm })));
+  const canCard = (c: AgendaCard) => !offline && !reading && (isSc || (!locked && canEditCard(data.role, c)));
   const view = useMemo(() => agendaView(p, data.auto), [p, data.auto]);
   const numbered = useMemo(() => new Map(numberedBlocks(p.blocks, data.auto).map((n) => [n.block.id, n.n])), [p.blocks, data.auto]);
   const patch = (next: Partial<AgendaPayload>) => { setP((cur) => ({ ...cur, ...next })); setDirty(true); };
@@ -165,14 +187,56 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
     patchBlock(b.id, { cards: b.cards.filter((x) => x.id !== c.id) });
   };
 
-  const onSave = async () => {
+  const onSave = async (after?: AgendaMode): Promise<boolean> => {
     setBusy(true);
     try {
       const r = await save(p);
-      if (r.ok) { setDirty(false); toast.success("Pauta salva."); } else toast.error(r.error ?? "Não foi possível salvar.");
-    } catch { toast.error("Sem conexão. Tente salvar de novo."); }
+      if (r.ok) { setDirty(false); toast.success("Pauta salva."); if (after) setMode(after); return true; }
+      toast.error(r.error ?? "Não foi possível salvar."); return false;
+    } catch { toast.error("Sem conexão. Tente salvar de novo."); return false; }
     finally { setBusy(false); }
   };
+  /** Grava na hora uma versão já pronta (anexo tirado, campo do SC na Leitura). */
+  const persist = async (next: AgendaPayload, ok: string) => {
+    setP(next); setDirty(true);
+    try {
+      const r = await save(next);
+      if (r.ok) { setDirty(false); toast.success(ok); } else toast.error(r.error ?? "Não foi possível salvar.");
+    } catch { toast.error("Sem conexão. Toque em Salvar depois."); }
+  };
+  // Na Leitura, Designar/Não designar e outros toques rápidos gravam sozinhos.
+  useEffect(() => {
+    if (!reading || !dirty || busy) return;
+    const t = setTimeout(() => { void onSave(); }, 700);
+    return () => clearTimeout(t);
+  }, [reading, dirty, p]); // eslint-disable-line react-hooks/exhaustive-deps
+  const switchMode = async (m: AgendaMode) => {
+    if (m === mode) return;
+    if (dirty && mode !== "read") {
+      if (confirm("Salvar as alterações antes de trocar de modo?")) { if (!(await onSave())) return; }
+      else if (!confirm("Descartar as alterações não salvas?")) return;
+      else { setDirty(false); setP(data.payload); }
+    }
+    setMode(m);
+  };
+  const refresh = async () => {
+    if (!onRefresh) return;
+    if (dirty && !confirm("Há alterações não salvas. Descartar e atualizar a pauta?")) return;
+    setDirty(false); setRefreshing(true);
+    try { await onRefresh(); toast.success("Pauta atualizada."); } catch { toast.error("Sem conexão."); } finally { setRefreshing(false); }
+  };
+  /** Campo só do SC na Leitura: lápis abre uma folha só com ele. */
+  const scField = (title: string, value: string, apply: (html: string) => AgendaPayload, placeholder = "—") => (
+    <div className="flex items-start gap-2 min-w-0">
+      <div className="flex-1 min-w-0">{value ? <BibleRefText text={value} className="text-sm" /> : <p className="text-sm text-muted-foreground italic">{placeholder}</p>}</div>
+      {!offline ? (
+        <button type="button" onClick={() => setFieldEdit({ title, value, apply: (html) => void persist(apply(html), "Salvo.") })} aria-label={`Editar ${title}`}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-primary active:bg-primary/10 shrink-0"><Pencil className="h-4 w-4" /></button>
+      ) : null}
+    </div>
+  );
+  const withCard = (cur: AgendaPayload, id: string, next: Partial<AgendaCard>): AgendaPayload =>
+    ({ ...cur, blocks: cur.blocks.map((b) => ({ ...b, cards: b.cards.map((c) => (c.id === id ? { ...c, ...next } : c)) })) });
   /** Resposta do ancião: grava na hora, sem esperar o botão Salvar. */
   const commitResponses = async (cardId: string, responses: AgendaElderResponse[]) => {
     const next: AgendaPayload = { ...p, blocks: p.blocks.map((b) => ({ ...b, cards: b.cards.map((c) => (c.id === cardId ? { ...c, responses } : c)) })) };
@@ -304,7 +368,11 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
 
   const cardBody = (c: AgendaCard, n: number) => {
     const editable = canCard(c);
-    const set = (attachments: AgendaAttachment[]) => patchCard(c.id, { attachments });
+    const set = (attachments: AgendaAttachment[]) => {
+      // Tirar um anexo grava na hora: ele some para todos e o arquivo sai da nuvem.
+      if (isSc && attachments.length < c.attachments.length) void persist(withCard(p, c.id, { attachments }), "Anexo removido.");
+      else patchCard(c.id, { attachments });
+    };
     return (
       <>
         {c.showSubject ? (
@@ -335,7 +403,9 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
                     <div className="space-y-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-2.5">
                       <p className="flex items-center gap-1 text-[11px] font-semibold text-primary"><Lock className="h-3 w-3" />Só SC · fora do PDF</p>
                       <Label className="text-xs text-muted-foreground">Comentários do SC</Label>
-                      {richField(p.scRecs[r.id]?.comment ?? "", (html) => patch({ scRecs: { ...p.scRecs, [r.id]: { decision: p.scRecs[r.id]?.decision ?? null, comment: html } } }), !offline, "Seus comentários sobre o recomendado", `${c.id}.${r.id}.sc`)}
+                      {reading
+                        ? scField("Comentários do SC", p.scRecs[r.id]?.comment ?? "", (html) => ({ ...p, scRecs: { ...p.scRecs, [r.id]: { decision: p.scRecs[r.id]?.decision ?? null, comment: html } } }), "Toque no lápis para comentar")
+                        : richField(p.scRecs[r.id]?.comment ?? "", (html) => patch({ scRecs: { ...p.scRecs, [r.id]: { decision: p.scRecs[r.id]?.decision ?? null, comment: html } } }), !offline, "Seus comentários sobre o recomendado", `${c.id}.${r.id}.sc`)}
                       <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1" role="radiogroup" aria-label="Decisão">
                         {([["assign", "Designar"], ["decline", "Não designar"]] as const).map(([d, lbl]) => {
                           const on = p.scRecs[r.id]?.decision === d;
@@ -371,11 +441,13 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
         {c.type === "recs" || c.type === "eldersInfo" || (c.type === "links" && !editable && !c.html) ? null : (
           <div className="space-y-1">
             {c.type === "links" || c.type === "local" ? <Label className="text-xs text-muted-foreground">Anotações</Label> : null}
-            {richField(c.html, (html) => patchCard(c.id, { html }), editable, c.type === "private" ? "Só você vê esta nota" : "Escreva aqui", `${c.id}.html`)}
+            {reading && (c.type === "private" || c.type === "notes" || c.type === "scReply" || c.hidden)
+              ? scField(CARD_TYPE_LABEL[c.type], c.html, (html) => withCard(p, c.id, { html }), "Toque no lápis para escrever")
+              : richField(c.html, (html) => patchCard(c.id, { html }), editable, c.type === "private" ? "Só você vê esta nota" : "Escreva aqui", `${c.id}.html`)}
           </div>
         )}
         {ATTACHABLE.includes(c.type) ? (
-          <AgendaAttachments card={c} editable={isSc && !offline} api={data.attachmentApi} offline={offline} onChange={set} />
+          <AgendaAttachments card={c} editable={isSc && !offline && !reading} api={data.attachmentApi} offline={offline} onChange={set} />
         ) : null}
       </>
     );
@@ -460,19 +532,37 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
     </div>
   );
 
+  const responseTotal = p.blocks.reduce((n, b) => n + b.cards.reduce((m, c) => m + (c.type === "eldersInfo" ? c.responses.length : 0), 0), 0);
   const meetingMs = view.meetingAt ? Date.parse(view.meetingAt) : NaN;
   const deadlineMs = p.deadlineAt ? Date.parse(p.deadlineAt) : NaN;
   return (
     <div className="space-y-3 pb-24">
+      {preparing ? (
+        <div className="pt-safe sticky top-0 z-20 flex items-center gap-2 border-b bg-background/90 px-3 pb-2 backdrop-blur-xl">
+          <button type="button" onClick={() => void switchMode("read")} aria-label="Fechar e ir para a Leitura" className="flex h-10 w-10 items-center justify-center rounded-full text-primary active:bg-muted shrink-0"><X className="h-5 w-5" /></button>
+          <p className="flex-1 min-w-0 truncate text-center text-[15px] font-semibold">Preparar a pauta</p>
+          <Button size="sm" className="rounded-full shrink-0" onClick={() => void onSave("read")} disabled={busy}>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Salvar
+          </Button>
+        </div>
+      ) : null}
       {isSc && !offline ? (
         <Card>
           <CardContent className="pt-4 space-y-3">
-            <div className="flex gap-2">
-              <Button type="button" variant={building ? "default" : "outline"} className="flex-1" onClick={() => setBuilding((v) => !v)}>
-                <Pencil className="h-4 w-4" />{building ? "Concluir montagem" : "Montar pauta"}
-              </Button>
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setTplOpen(true)}><Layers className="h-4 w-4" />Modelos</Button>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <div className="grid grid-cols-3 gap-0.5 rounded-full bg-muted p-0.5 text-xs font-semibold" role="tablist" aria-label="Modo da pauta">
+                {([["read", "Leitura", BookOpenCheck], ["prepare", "Preparar", Pencil], ["build", "Montar", Hammer]] as const).map(([m, lbl, Icon]) => (
+                  <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => void switchMode(m)}
+                    className={`inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-2 py-1.5 transition-colors ${mode === m ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>
+                    <Icon className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{lbl}</span>
+                  </button>
+                ))}
+              </div>
+              <button type="button" onClick={() => setTplOpen(true)} aria-label="Modelos" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-primary shrink-0"><Layers className="h-4 w-4" /></button>
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              {mode === "read" ? "Pauta pronta. Use o lápis para escrever nos campos só seus." : mode === "prepare" ? "Escreva, cole links e anexe. Ao salvar, a pauta vai para a Leitura." : "Tópicos, cartões, ordem e quem vê cada parte."}
+            </p>
           </CardContent>
         </Card>
       ) : null}
@@ -488,6 +578,17 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
           </header>
 
           <Button type="button" variant="outline" className="w-full" onClick={() => setFull(true)}><Maximize2 className="h-4 w-4" />Tela cheia</Button>
+          {onRefresh ? (
+            <div className="flex items-center gap-2 pt-1">
+              <span className="flex-1 min-w-0 truncate text-[11px] text-muted-foreground">
+                {offline ? "Cópia do aparelho" : data.loadedAt ? `Atualizada às ${new Date(data.loadedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                {reading ? ` · ${responseTotal} resposta${responseTotal === 1 ? "" : "s"} dos anciãos` : ""}
+              </span>
+              <Button type="button" variant="ghost" size="sm" className="shrink-0 text-primary" onClick={() => void refresh()} disabled={refreshing}>
+                <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />Atualizar pauta
+              </Button>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -634,7 +735,7 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />} PDF
         </Button>
         {!offline ? (
-          <Button className="flex-1" onClick={onSave} disabled={busy || !dirty}>
+          <Button className="flex-1" onClick={() => void onSave(preparing ? "read" : undefined)} disabled={busy || (!dirty && !preparing)}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {dirty ? "Salvar" : "Salvo"}
           </Button>
         ) : null}
@@ -668,6 +769,22 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
           <ElderAgendaFullscreen data={data} payload={p} isSc={isSc} onClose={() => setFull(false)} />
         </Suspense>
       ) : null}
+      <Sheet open={!!fieldEdit} onOpenChange={(v) => { if (!v) setFieldEdit(null); }}>
+        <SheetContent side="bottom" className="rounded-t-3xl pb-8 md:mx-auto md:max-w-xl md:rounded-3xl md:bottom-6">
+          <SheetHeader><SheetTitle className="flex items-center gap-1.5"><Lock className="h-4 w-4 text-primary" />{fieldEdit?.title}</SheetTitle></SheetHeader>
+          {fieldEdit ? (
+            <div className="mt-3 space-y-3">
+              <Suspense fallback={<div className="h-24 rounded-lg bg-muted/40 animate-pulse" />}>
+                <RichNoteEditor value={fieldEdit.value} onChange={(html) => setFieldEdit((f) => (f ? { ...f, value: html } : f))} placeholder="Escreva aqui" minHeight="120px" maxHeight="45vh" />
+              </Suspense>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => setFieldEdit(null)}>Cancelar</Button>
+                <Button onClick={() => { fieldEdit.apply(fieldEdit.value); setFieldEdit(null); }}><Save className="h-4 w-4" />Salvar</Button>
+              </div>
+            </div>
+          ) : null}
+        </SheetContent>
+      </Sheet>
       <AttachmentViewerHost />
     </div>
   );

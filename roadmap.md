@@ -41,3 +41,10 @@
 - [x] Modelos de pauta sincronizados, exportar/importar, padrão para novas visitas
 - [x] Prazo para preencher + pauta guardada no aparelho para abrir sem internet
 - [x] PDF em 3 estilos (Ata formal, Cartões, Linha do tempo)
+
+## Pauta: modos, atualizar e iPad (20/11)
+- [x] Modos Leitura / Preparar / Montar; lápis para campos só do SC na Leitura
+- [x] Botão "Atualizar pauta"; salvar recarrega a versão da nuvem; respostas novas não somem
+- [x] Anexo tirado some na hora e sai da nuvem
+- [x] PDF no iPad (leitor compatível + plano B) e sem marcação azul ao tocar
+- [ ] Layout de tablet/iPad (menu lateral, grade no Início, pauta em duas colunas) — próxima onda

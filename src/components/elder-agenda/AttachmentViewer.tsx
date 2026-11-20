@@ -8,8 +8,8 @@ type PdfDoc = { numPages: number; getPage: (n: number) => Promise<PdfPage>; dest
 type PdfPage = { getViewport: (o: { scale: number }) => { width: number; height: number }; render: (o: { canvasContext: CanvasRenderingContext2D; viewport: unknown }) => { promise: Promise<void> } };
 
 async function loadPdf(blob: Blob): Promise<PdfDoc> {
-  const pdfjs = await import("pdfjs-dist");
-  const worker = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const worker = (await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")).default;
   pdfjs.GlobalWorkerOptions.workerSrc = worker;
   return (await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise) as unknown as PdfDoc;
 }
@@ -45,6 +45,23 @@ function PdfPageCanvas({ pdf, n, width, zoom }: { pdf: PdfDoc; n: number; width:
   return (
     <div ref={box} data-page={n} className="mx-auto" style={{ width: width * zoom, minHeight: width * zoom * ratio }}>
       <canvas ref={ref} className="block rounded-md bg-background shadow-sm" aria-label={`Página ${n}`} />
+    </div>
+  );
+}
+
+/** Aparelho sem suporte ao leitor: o próprio navegador mostra o PDF, ainda só na memória. */
+function PdfFallback({ blob, title }: { blob: Blob; title: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => { const u = URL.createObjectURL(blob); setUrl(u); return () => URL.revokeObjectURL(u); }, [blob]);
+  if (!url) return null;
+  return (
+    <div className="flex h-full flex-col gap-2 px-3">
+      <object data={url} type="application/pdf" aria-label={title} className="min-h-[70vh] w-full flex-1 rounded-md bg-background">
+        <div className="space-y-3 p-6 text-center">
+          <p className="text-sm text-muted-foreground">Este aparelho não conseguiu mostrar o PDF aqui.</p>
+          <a href={url} target="_blank" rel="noreferrer" className="inline-flex rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Abrir de outra forma</a>
+        </div>
+      </object>
     </div>
   );
 }
@@ -95,7 +112,7 @@ function ViewerBody({ doc }: { doc: ViewerDoc }) {
         {doc.kind === "photo" ? (
           photo ? <img src={photo} alt={doc.title} className="mx-auto rounded-md" style={{ width: width ? width * zoom : "100%", maxWidth: "none" }} /> : null
         ) : err ? (
-          <p className="p-6 text-center text-sm text-muted-foreground">Não foi possível mostrar este PDF.</p>
+          <PdfFallback blob={doc.blob} title={doc.title} />
         ) : !pdf || !width ? (
           <div className="flex h-full items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : (

@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { loadMergedVisitExtras } from "@/lib/visit-template-extras.server";
 import { resolveWeekdaySlot } from "@/lib/today-timeline";
 import {
-  RECOMMENDATION_PURPOSE, emptyAgenda, emptyAuto, isLocked, isScOnlyCard, mergeAgenda, normalizeAgenda, normalizeBlocks, withoutPrivate,
+  RECOMMENDATION_PURPOSE, emptyAgenda, removedCloudPaths, emptyAuto, isLocked, isScOnlyCard, mergeAgenda, normalizeAgenda, normalizeBlocks, withoutPrivate,
   type AgendaAuto, type AgendaPayload, type AgendaRole,
 } from "./agenda";
 
@@ -93,7 +93,7 @@ async function sha256Hex(text: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export async function saveAgenda(visitId: string, role: AgendaRole, incomingRaw: unknown, authorSecret?: string): Promise<string | null | "locked"> {
+export async function saveAgenda(visitId: string, role: AgendaRole, incomingRaw: unknown, authorSecret?: string, knownResponseIds?: string[]): Promise<string | null | "locked"> {
   const { data: v } = await supabaseAdmin.from("visits").select("congregation_id").eq("id", visitId).maybeSingle();
   if (!v) return null;
   const { data: cong } = await supabaseAdmin.from("congregations").select("superintendent_id").eq("id", v.congregation_id).maybeSingle();
@@ -105,12 +105,17 @@ export async function saveAgenda(visitId: string, role: AgendaRole, incomingRaw:
   // Anexo só pode apontar para a pasta desta visita.
   for (const b of incoming.blocks) for (const c of b.cards) c.attachments = c.attachments.map((a) => (a.cloudPath && !a.cloudPath.startsWith(`${visitId}/`) ? { ...a, cloudPath: "" } : a));
   const authorHash = authorSecret ? await sha256Hex(authorSecret) : null;
-  const merged = mergeAgenda(current, incoming, role, Date.now(), authorHash);
+  const merged = mergeAgenda(current, incoming, role, Date.now(), authorHash, knownResponseIds ? new Set(knownResponseIds) : null);
   const { data, error } = await supabaseAdmin.from("elder_meeting_agendas").upsert(
     { visit_id: visitId, superintendent_id: cong.superintendent_id, payload: merged as never, permissions: {} as never },
     { onConflict: "visit_id" },
   ).select("updated_at").single();
   if (error) throw new Error("Não foi possível salvar a pauta.");
+  // Anexo tirado da pauta: o arquivo sai também da nuvem (só o SC muda anexos).
+  if (role === "sc") {
+    const gone = removedCloudPaths(current, merged).filter((x) => x.startsWith(`${visitId}/`));
+    if (gone.length) { try { await supabaseAdmin.storage.from(AGENDA_BUCKET).remove(gone); } catch { /* a limpeza de 30 dias pega depois */ } }
+  }
   return data.updated_at;
 }
 
