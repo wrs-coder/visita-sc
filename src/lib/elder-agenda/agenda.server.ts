@@ -1,5 +1,7 @@
 // Leitura/gravação da pauta dos anciãos com o cliente de serviço. Só chamar depois de conferir quem pede.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { loadMergedVisitExtras } from "@/lib/visit-template-extras.server";
+import { resolveWeekdaySlot } from "@/lib/today-timeline";
 import {
   RECOMMENDATION_PURPOSE, emptyAgenda, emptyAuto, isLocked, isScOnlyCard, mergeAgenda, normalizeAgenda, normalizeBlocks, withoutPrivate,
   type AgendaAuto, type AgendaPayload, type AgendaRole,
@@ -32,13 +34,16 @@ export async function visitForInvite(code: string): Promise<string | null> {
   return visits?.[0]?.id ?? null;
 }
 
+/** A aba grava a hora escolhida como UTC; devolve a mesma hora "de parede", sem fuso. */
+const wallFromDb = (v: string | null) => { if (!v) return null; const t = Date.parse(v); return Number.isFinite(t) ? new Date(t).toISOString().slice(0, 16) : null; };
+
 const fmtRange = (a: string, b: string) => {
   const d = (s: string) => s.split("-").reverse().slice(0, 2).join("/");
   return `${d(a)} a ${d(b)}/${b.slice(0, 4)}`;
 };
 
 export async function loadAgenda(visitId: string, role: AgendaRole): Promise<AgendaDTO | null> {
-  const { data: v } = await supabaseAdmin.from("visits").select("id,title,start_date,end_date,congregation_id").eq("id", visitId).maybeSingle();
+  const { data: v } = await supabaseAdmin.from("visits").select("id,title,start_date,end_date,congregation_id,meeting_talk_template_id,field_meeting_template_id,template_id").eq("id", visitId).maybeSingle();
   if (!v) return null;
   const [{ data: cong }, { data: row }, { data: meet }, { data: recs }, { data: locs }] = await Promise.all([
     supabaseAdmin.from("congregations").select("name,superintendent_id").eq("id", v.congregation_id).maybeSingle(),
@@ -48,9 +53,17 @@ export async function loadAgenda(visitId: string, role: AgendaRole): Promise<Age
     supabaseAdmin.from("elder_local_matters").select("id,suggested_by,subject,sources,info").eq("visit_id", visitId).order("sort_order").order("created_at"),
   ]);
   const m = meet?.[0];
+  // Mesmo dia/horário da Agenda do Início: o definido pelo SC (modelo/ajuste da visita) vence o gravado na aba.
+  let slotAt: string | null = null;
+  try {
+    const ex = await loadMergedVisitExtras(supabaseAdmin, v, { includeElders: true });
+    const days: string[] = [];
+    for (let d = new Date(`${v.start_date}T00:00:00Z`); d <= new Date(`${v.end_date}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) days.push(d.toISOString().slice(0, 10));
+    slotAt = resolveWeekdaySlot(ex.elders?.weekday ?? null, ex.elders?.meeting_time ?? null, days)?.at ?? null;
+  } catch { slotAt = null; }
   const auto: AgendaAuto = {
     ...emptyAuto(),
-    meetingAt: m?.meeting_at ?? null, location: m?.location ?? null, theme: m?.theme ?? null,
+    meetingAt: slotAt ?? wallFromDb(m?.meeting_at ?? null), location: m?.location ?? null, theme: m?.theme ?? null,
     openingPrayer: m?.opening_prayer ?? null, closingPrayer: m?.closing_prayer ?? null,
     recommendations: (recs ?? []).map((r) => ({
       id: r.id,

@@ -1102,7 +1102,8 @@
     "toolbar": {
       "show": "Ferramentas",
       "hide": "Recolher ferramentas"
-    }
+    },
+    "congregation": "Congregação"
   },
   "report": {
     "loading": "A carregar relatório…",

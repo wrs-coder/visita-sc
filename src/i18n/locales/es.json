@@ -1089,7 +1089,8 @@
     "toolbar": {
       "show": "Herramientas",
       "hide": "Ocultar herramientas"
-    }
+    },
+    "congregation": "Congregación"
   },
   "report": {
     "loading": "Cargando informe…",

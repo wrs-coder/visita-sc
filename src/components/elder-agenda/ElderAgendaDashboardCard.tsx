@@ -29,7 +29,7 @@ export default function ElderAgendaDashboardCard({ visitId }: { visitId: string 
       ) : (
         <div className="space-y-2 text-sm min-w-0">
           {data.offline ? <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><WifiOff className="h-3.5 w-3.5" />Cópia guardada no aparelho</p> : null}
-          {data.auto.meetingAt ? <p className="text-muted-foreground break-words">{[formatMeetingWhen(data.auto.meetingAt), data.auto.location].filter(Boolean).join(" · ")}</p> : null}
+          {view.meetingAt ? <p className="text-muted-foreground break-words">{[formatMeetingWhen(view.meetingAt), data.auto.location].filter(Boolean).join(" · ")}</p> : null}
           <ul className="space-y-1.5">
             {list.map(({ block: b, n }) => {
               const cards = b.cards.filter((c) => c.type !== "private");

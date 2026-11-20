@@ -1112,7 +1112,8 @@
     "toolbar": {
       "show": "Tools",
       "hide": "Hide tools"
-    }
+    },
+    "congregation": "Congregation"
   },
   "report": {
     "loading": "Loading report…",

@@ -98,6 +98,7 @@ function CategoryIcon({ def, size = "md" }: { def: (typeof CATEGORY_DEFS)[number
 }
 
 const NOTAS_CONG_KEY = "notas_privadas_congregation_id";
+const NOTAS_CONG_PICKED_KEY = "notas_privadas_congregation_picked";
 
 function Page() {
   const { t, i18n } = useTranslation();
@@ -167,9 +168,10 @@ function Page() {
       });
   }, [role, user]);
 
-  // Sem seletor: as notas seguem a congregação ativa do app (Início / menu ☰).
+  // Abre na congregação ativa do app, até o usuário escolher outra na pílula do topo.
   useEffect(() => {
     if (search.congId) return;
+    if (localStorage.getItem(NOTAS_CONG_PICKED_KEY)) return;
     if (activeCong?.id && congs.some((c) => c.id === activeCong.id)) setCongId(activeCong.id);
   }, [activeCong?.id, congs, search.congId]);
 
@@ -503,7 +505,18 @@ function Page() {
       {/* Topo limpo (iOS / One UI): título grande + ícones de busca e ações. */}
       <div className="flex items-center gap-1">
         <h1 className="sr-only">{t("notes.title")}</h1>
-        <div className="min-w-0 flex-1" />
+        <div className="min-w-0 flex-1">
+          {congs.length > 1 ? (
+            <Select value={congId ?? ""} onValueChange={(v) => { localStorage.setItem(NOTAS_CONG_PICKED_KEY, "1"); setCongId(v); }}>
+              <SelectTrigger className="h-9 w-auto max-w-full rounded-full border-0 bg-muted px-3 text-sm font-medium" aria-label={t("notes.congregation", { defaultValue: "Congregação" })}>
+                <SelectValue placeholder={t("notes.congregation", { defaultValue: "Congregação" })} />
+              </SelectTrigger>
+              <SelectContent>
+                {congs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          ) : null}
+        </div>
         <Button
           variant={searchOpen ? "secondary" : "ghost"} size="icon" className={iconBtn}
           aria-label={t("notes.filters.search")} title={t("notes.filters.search")} aria-expanded={searchOpen}

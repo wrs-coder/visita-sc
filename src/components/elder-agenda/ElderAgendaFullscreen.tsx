@@ -59,7 +59,7 @@ export function ElderAgendaFullscreen({ data, payload, isSc, onClose }: { data: 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
         <div className="text-center space-y-1">
           {payload.headerVerses ? <BibleRefText text={payload.headerVerses} className="text-xs text-primary" /> : null}
-          <p className="text-sm text-muted-foreground">{[data.congregation, formatMeetingWhen(data.auto.meetingAt), data.auto.location].filter(Boolean).join(" · ")}</p>
+          <p className="text-sm text-muted-foreground">{[data.congregation, formatMeetingWhen(v.meetingAt), data.auto.location].filter(Boolean).join(" · ")}</p>
           <p className="text-sm">
             Oração inicial: <b>{v.prayerOpen || "—"}</b>
             {prayerRecShown(payload, data.auto) ? <> · Recomendação: <b>{payload.prayerRec || "—"}</b></> : null}

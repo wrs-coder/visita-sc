@@ -33,6 +33,7 @@ import { EditorResizeHandle } from "@/components/outlines/EditorResizeHandle";
 import { ElderInfoQuestionsEditor, ElderInfoResponses } from "./ElderInfoResponses";
 import { authorHash } from "./agenda-author";
 import type { AgendaElderResponse } from "@/lib/elder-agenda/agenda";
+import { wallClock } from "@/lib/elder-agenda/agenda";
 import { s303ForWeek, upsertDeclineNote } from "@/lib/elder-agenda/agenda-notes";
 
 const ElderAgendaFullscreen = lazy(() => import("./ElderAgendaFullscreen").then((m) => ({ default: m.ElderAgendaFullscreen })));
@@ -459,7 +460,7 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
     </div>
   );
 
-  const meetingMs = data.auto.meetingAt ? Date.parse(data.auto.meetingAt) : NaN;
+  const meetingMs = view.meetingAt ? Date.parse(view.meetingAt) : NaN;
   const deadlineMs = p.deadlineAt ? Date.parse(p.deadlineAt) : NaN;
   return (
     <div className="space-y-3 pb-24">
@@ -482,7 +483,7 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
             <h2 className="text-lg font-bold tracking-tight break-words">{p.headerTitle || "Pauta"}</h2>
             {p.headerVerses ? <BibleRefText text={p.headerVerses} className="text-[11px] text-primary break-words" /> : null}
             <p className="text-xs text-muted-foreground break-words">
-              {[data.congregation, formatMeetingWhen(data.auto.meetingAt), data.auto.location].filter(Boolean).join(" · ")}
+              {[data.congregation, formatMeetingWhen(view.meetingAt), data.auto.location].filter(Boolean).join(" · ")}
             </p>
           </header>
 
@@ -549,7 +550,25 @@ export function ElderAgendaView({ data, save }: { data: AgendaData; save: Agenda
             <span className="text-sm font-semibold">{view.totalMinutes} min</span>
           </div>
           {isSc && !offline ? (
-            <div className="border-t pt-2 mt-1">
+            <div className="border-t pt-2 mt-1 space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground flex items-center gap-1"><CalendarClock className="h-3.5 w-3.5" />Dia e horário</Label>
+              <div className="inline-flex rounded-full bg-muted p-0.5 text-xs font-medium" role="group">
+                <button type="button" aria-pressed={!p.meetingAtOverride} onClick={() => patch({ meetingAtOverride: null })}
+                  className={`rounded-full px-3 py-1 ${!p.meetingAtOverride ? "bg-background shadow-sm" : "text-muted-foreground"}`}>Da agenda</button>
+                <button type="button" aria-pressed={!!p.meetingAtOverride} onClick={() => patch({ meetingAtOverride: wallClock(data.auto.meetingAt ? toLocalInput(data.auto.meetingAt) : `${data.startDate ?? new Date().toISOString().slice(0, 10)}T19:00`) })}
+                  className={`rounded-full px-3 py-1 ${p.meetingAtOverride ? "bg-background shadow-sm" : "text-muted-foreground"}`}>Manual</button>
+              </div>
+              {p.meetingAtOverride ? (
+                <>
+                  <Input type="datetime-local" value={p.meetingAtOverride} className="h-9"
+                    onChange={(e) => { const v = wallClock(e.target.value); if (v) patch({ meetingAtOverride: v }); }} />
+                  <p className="text-[11px] text-muted-foreground">Só vale para esta pauta; a aba "Reunião anciãos e servos" não muda.</p>
+                </>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">{formatMeetingWhen(data.auto.meetingAt) || "A agenda ainda não tem dia e horário."}</p>
+              )}
+            </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground flex items-center gap-1"><CalendarClock className="h-3.5 w-3.5" />Prazo para os anciãos preencherem</Label>
               <div className="flex items-center gap-2">

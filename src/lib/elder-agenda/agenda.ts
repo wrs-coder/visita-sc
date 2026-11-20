@@ -54,6 +54,8 @@ export interface AgendaPayload {
   prayerOpen: string; prayerRec: string; prayerClose: string; minutesTaker: string; prayersPerm: AgendaAccess;
   /** Prazo (ISO) para anciãos preencherem; depois disso só o SC edita. */
   deadlineAt: string | null;
+  /** Dia/horário só da pauta ("AAAA-MM-DDTHH:MM", hora de parede); null = segue a agenda. */
+  meetingAtOverride?: string | null;
   blocks: AgendaBlock[];
   /** Interruptores opcionais do cabeçalho (inicial e final são fixas). */
   showPrayerRec: boolean; showMinutes: boolean;
@@ -321,8 +323,19 @@ function extras(r: Record<string, unknown>) {
     headerVerses: typeof r.headerVerses === "string" ? str(r.headerVerses, 600) : DEFAULT_AGENDA_VERSES,
     scRecs: scRecMap(r.scRecs),
     pdfStyle: agendaPdfStyleOf(r.pdfStyle),
+    meetingAtOverride: wallClock(r.meetingAtOverride),
   };
 }
+
+/** Aceita só "AAAA-MM-DDTHH:MM" (sem fuso), para 19:00 ser 19:00 em qualquer aparelho. */
+export function wallClock(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/.exec(v);
+  if (!m || Number(m[2]) > 23 || Number(m[3]) > 59) return null;
+  return `${m[1]}T${m[2]}:${m[3]}`;
+}
+/** Dia/horário mostrado na pauta: o manual (só da pauta) vence o da agenda. */
+export const effectiveMeetingAt = (p: Pick<AgendaPayload, "meetingAtOverride">, a: Pick<AgendaAuto, "meetingAt">) => p.meetingAtOverride || a.meetingAt || null;
 
 function deadline(v: unknown): string | null {
   if (typeof v !== "string" || !v) return null;
@@ -459,6 +472,7 @@ export function agendaView(p: AgendaPayload, a: AgendaAuto) {
   return {
     prayerOpen: p.prayerOpen || a.openingPrayer || "",
     prayerClose: p.prayerClose || a.closingPrayer || "",
+    meetingAt: effectiveMeetingAt(p, a),
     totalMinutes: p.blocks.filter((b) => isShown(b, a)).reduce((s, b) => s + b.minutes, 0),
   };
 }

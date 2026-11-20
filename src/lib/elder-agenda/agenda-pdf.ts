@@ -3,7 +3,7 @@
 // Os blocos saem na ordem e com a numeração escolhidas; links viram "Clique aqui" clicável.
 import { createJsPdfCompat, type JsPdfCompat } from "@/lib/pdf/pdf-engine";
 import {
-  CARD_TYPE_LABEL, DEFAULT_AGENDA_VERSES, agendaView, isScOnlyCard, prayerRecShown, htmlToPlain, shownParts, numberedBlocks, recInfoView, sharedAttachments, responseName, CHECK_ANSWER_LABEL,
+  CARD_TYPE_LABEL, effectiveMeetingAt, DEFAULT_AGENDA_VERSES, agendaView, isScOnlyCard, prayerRecShown, htmlToPlain, shownParts, numberedBlocks, recInfoView, sharedAttachments, responseName, CHECK_ANSWER_LABEL,
   type AgendaAuto, type AgendaCheckAnswer, type AgendaBlock, type AgendaCard, type AgendaLinkKind, type AgendaPayload,
 } from "./agenda";
 
@@ -81,7 +81,7 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
     y += 1.2;
   }
   pdf.setFont(false); pdf.setFontSize(9.5); color(INK);
-  const sub = [input.congregation, whenLine(a.meetingAt) || input.range, a.location].filter(Boolean).join("  ·  ");
+  const sub = [input.congregation, whenLine(effectiveMeetingAt(p, a)) || input.range, a.location].filter(Boolean).join("  ·  ");
   if (sub) { pdf.text(sub, W / 2, y, { align: "center" }); y += 4; }
   y += 2;
 
@@ -103,7 +103,7 @@ export async function renderAgendaPdf(input: AgendaPdfInput): Promise<Blob> {
   y += 19;
 
   // ---------- Blocos ----------
-  const start = a.meetingAt ? new Date(a.meetingAt) : null;
+  const start = effectiveMeetingAt(p, a) ? new Date(effectiveMeetingAt(p, a)!) : null;
   const list = numberedBlocks(p.blocks, a);
   const sheets: Array<{ n: number; title: string; card: AgendaCard }> = [];
   for (const { block: b, n, startMin } of list) {

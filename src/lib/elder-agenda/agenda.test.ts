@@ -274,3 +274,24 @@ describe("pauta: checklist Sim / Não / Em parte", () => {
     expect(mergeAgenda(cur, inc, "elder", Date.now(), H1).blocks[0].cards[0].responses[0].checks).toEqual({ k1: "partial" });
   });
 });
+
+describe("dia e horário só da pauta", () => {
+  it("o manual vence a agenda e é guardado como hora de parede", async () => {
+    const { normalizeAgenda, emptyAgenda, emptyAuto, effectiveMeetingAt } = await import("./agenda");
+    const p = normalizeAgenda({ ...emptyAgenda(), meetingAtOverride: "2026-11-24T20:00:00Z" });
+    expect(p.meetingAtOverride).toBe("2026-11-24T20:00");
+    expect(effectiveMeetingAt(p, { ...emptyAuto(), meetingAt: "2026-11-24T19:00:00" })).toBe("2026-11-24T20:00");
+  });
+  it("sem manual segue a agenda; pautas antigas ficam sem manual", async () => {
+    const { normalizeAgenda, emptyAgenda, emptyAuto, effectiveMeetingAt } = await import("./agenda");
+    const p = normalizeAgenda({ ...emptyAgenda() });
+    expect(p.meetingAtOverride).toBeNull();
+    expect(effectiveMeetingAt(p, { ...emptyAuto(), meetingAt: "2026-11-24T19:00:00" })).toBe("2026-11-24T19:00:00");
+  });
+  it("ancião não troca o horário da pauta", async () => {
+    const { normalizeAgenda, emptyAgenda, mergeAgenda } = await import("./agenda");
+    const cur = normalizeAgenda({ ...emptyAgenda() });
+    const out = mergeAgenda(cur, { ...cur, meetingAtOverride: "2026-11-24T21:00" }, "coordinator");
+    expect(out.meetingAtOverride).toBeNull();
+  });
+});
