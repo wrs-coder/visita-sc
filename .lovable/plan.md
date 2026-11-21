@@ -17,25 +17,35 @@ Depois (proposta):
 ```text
 ┌─────────────────────────────────┐
 │ ▓ barra de status do Android ▓  │
-│ ✕   Pauta da reunião        [≡] │ ← linha 1: fechar, título, tempo por tópico
-│ ┌─────────────────────────────┐ │
-│ │  00:12:40    ▶  ↺  ⚙       │ │ ← linha 2: cronômetro inteiro, centralizado
-│ └─────────────────────────────┘ │
+│ ✕        00:12:40   ▶  ↺  ⚙    │ ← uma linha: fechar + cronômetro (sem título)
 │ ┌─ Tempo por tópico (se ligado)┐│
 │ │ ◀  2. Saúde espiritual  ▶   ││
 │ │    faltam 03:20   ▶  ↺      ││
 │ │ ▸ Tempos dos tópicos        ││
 │ └─────────────────────────────┘ │
-│                                 │
 │   … conteúdo da pauta …         │
-│                                 │
 │ [ ◀ Anterior ]   [ Próximo ▶ ] │
 │ ▓ barra de navegação Android ▓  │
 └─────────────────────────────────┘
 ```
-- Cronômetro ganha linha própria com largura total: nada sai da tela.
-- Cronômetro e tempo por tópico continuam independentes (sem mudar a lógica).
-- Em tablet/iPad (tela larga) volta a ficar tudo numa linha, como hoje.
+Fonte do cronômetro muito grande (quebra automática):
+```text
+│ ✕     00:12:40                  │
+│            ▶   ↺   ⚙            │ ← botões descem para a linha de baixo
+```
+Ao tocar em ⚙ (configurações do cronômetro):
+```text
+┌─ Configurações do cronômetro ───┐
+│ Tamanho da fonte   [ − ] [ + ]  │
+│ …opções atuais…                 │
+│ Tempo por tópico        [ ◯━ ]  │ ← o antigo botão [≡] vira esta chave
+└─────────────────────────────────┘
+```
+- Título sai da tela cheia; o X e o cronômetro dividem a mesma linha.
+- Se a fonte aumentar e não couber, só os botões (▶ ↺ ⚙) quebram para baixo; nada sai da tela.
+- O botão [≡] some do topo e vira a chave "Tempo por tópico" dentro de ⚙. A escolha continua guardada no aparelho.
+- Fora da tela cheia, a chave também fica no ⚙ do cronômetro (sem botão solto).
+- Cronômetro e tempo por tópico continuam independentes.
 
 ## 2. Auditoria de botões fora da tela ou sob as barras do Android
 Vou abrir o app num celular simulado de 393×687 (o seu tamanho) e conferir, tela por tela, se algum botão:
@@ -52,7 +62,8 @@ No fim te entrego a lista: tela → o que estava errado → o que foi feito, com
 Atualizar o trecho da Ajuda sobre "Tempo por tópico" com a nova posição do cronômetro.
 
 ## Detalhes técnicos
-- `ElderAgendaFullscreen.tsx`: header em duas linhas no celular (`flex-wrap` / bloco próprio para `OutlineTimer variant="fullscreen"`), uma linha a partir de `md:`; `pt-safe` mantido.
+- `ElderAgendaFullscreen.tsx`: remover título; header `flex flex-wrap` com X `shrink-0` + `OutlineTimer` `min-w-0`, botões do timer em grupo que quebra quando a fonte cresce; `pt-safe` mantido.
+- `AgendaTopicToggle` removido do topo e do card da pauta; vira item (Switch) no painel de configurações do `OutlineTimer`, exibido só quando o timer é da pauta (`agenda-*`), usando o mesmo `useTopicRowPref`. Busca de consumidores do `OutlineTimer` para não afetar esboços.
 - Auditoria via Playwright em 393×687: script detecta elementos `button, a, [role=button]` com `getBoundingClientRect()` fora de `0..innerWidth` ou sobrepostos às faixas `env(safe-area-inset-*)` simuladas; capturas por tela.
 - Barras inferiores fixas/folhas: garantir `pb-safe` onde faltar.
 - Rodar testes existentes de elder-agenda e help-content; `bunx tsc --noEmit` limpo.
