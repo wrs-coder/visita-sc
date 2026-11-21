@@ -52,3 +52,9 @@
 - [x] Pauta: pílula flutuante de tempo por tópico; coluna lateral acompanha rolagem
 - [x] Esboços: boia do cronômetro fecha ao sair do Modo esboço; Início abre direto no Modo esboço; lista abre no Modo edição
 - [x] Quadro de anúncios: aviso falso de presidente faltando
+
+## Tela cheia da pauta (21/11)
+- [x] X e cronômetro na mesma linha, sem título; quebra se a fonte crescer
+- [x] Tempo por tópico dentro das configurações do cronômetro
+- [x] Ajuda atualizada
+- [x] Versão 6.0.1 (versionCode 50) sem "O que há de novo"

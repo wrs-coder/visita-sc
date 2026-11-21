@@ -9,7 +9,7 @@
  * localStorage + sincronizado entre superfícies via BroadcastChannel).
  * Tema visual configurável (semafórico ou alto contraste) via useTimerTheme.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Pause,
@@ -79,6 +79,8 @@ interface OutlineTimerProps {
   outlineId: string;
   variant: "toolbar" | "fullscreen";
   className?: string;
+  /** Opções extras no fim do painel de configurações (ex.: Tempo por tópico da pauta). */
+  extraSettings?: ReactNode;
 }
 
 const PRESETS_MIN = [5, 10, 15, 30, 45];
@@ -110,7 +112,7 @@ function alertColorClass(level: AlertLevel): string {
 
 const CONTROLS_KEY = "visita-sc:timer-controls-collapsed";
 
-export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProps) {
+export function OutlineTimer({ outlineId, variant, className, extraSettings }: OutlineTimerProps) {
   const { t } = useTranslation();
   const timer = useOutlineTimer(outlineId);
   const { themeId, preset, setThemeId } = useTimerTheme();
@@ -293,7 +295,7 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
       role="group"
       aria-label={t("personalOutlines.timer.label", { defaultValue: "Cronômetro do esboço" })}
     >
-      <div className="flex items-center justify-center gap-1 min-w-0 max-w-full">
+      <div className="flex flex-wrap items-center justify-center gap-1 min-w-0 max-w-full">
       <Popover open={targetOpen} onOpenChange={setTargetOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -419,6 +421,7 @@ export function OutlineTimer({ outlineId, variant, className }: OutlineTimerProp
               );
             })}
           </div>
+          {extraSettings ? <><Separator className="my-2" />{extraSettings}</> : null}
         </PopoverContent>
       </Popover>
 

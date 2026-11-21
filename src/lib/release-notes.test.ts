@@ -12,8 +12,8 @@ import pkg from "../../package.json";
 describe("release notes por versão", () => {
   it("app e novidades na 6.0.0", () => {
     expect(RELEASE_NOTES_VERSION).toBe("6.0.0");
-    expect(APP_VERSION).toBe("6.0.0");
-    expect(pkg.version).toBe("6.0.0");
+    expect(APP_VERSION).toBe("6.0.1");
+    expect(pkg.version).toBe("6.0.1");
   });
   it("a primeira entrada do histórico é a versão atual", () => {
     expect(RELEASE_HISTORY[0].version).toBe(RELEASE_NOTES_VERSION);
@@ -22,6 +22,14 @@ describe("release notes por versão", () => {
   it("versões não se repetem", () => {
     const v = RELEASE_HISTORY.map((r) => r.version);
     expect(new Set(v).size).toBe(v.length);
+  });
+  it("6.0.1 não abre 'O que há de novo' (sem novidades próprias)", () => {
+    expect(
+      shouldAutoOpenWhatsNew(
+        { installed: APP_VERSION, notesVersion: RELEASE_NOTES_VERSION, seen: null, hadPreviousUse: true },
+        WHATS_NEW_AUTO_SHOW,
+      ),
+    ).toBe(false);
   });
   it("novidades da 6.0.0: anciãos veem a parte que os afeta e abrem sozinhas", () => {
     expect(WHATS_NEW_AUTO_SHOW).toBe(true);
@@ -36,7 +44,7 @@ describe("release notes por versão", () => {
     expect(
       shouldAutoOpenWhatsNew(
         {
-          installed: APP_VERSION,
+          installed: RELEASE_NOTES_VERSION,
           notesVersion: RELEASE_NOTES_VERSION,
           seen: null,
           hadPreviousUse: true,

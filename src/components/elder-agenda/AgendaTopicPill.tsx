@@ -8,6 +8,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, ListOrdered, Pause, Play, Rotat
 import { useAgendaTopicClock } from "@/lib/elder-agenda/topic-clock";
 import type { NumberedBlock } from "@/lib/elder-agenda/agenda";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 const PREF_KEY = "agendaTopicRow.on";
 const LIST_KEY = "agendaTopicRow.listOpen";
@@ -24,6 +25,17 @@ export function useTopicRowPref(): [boolean, (v: boolean) => void] {
   }, []);
   const set = (v: boolean) => { try { localStorage.setItem(PREF_KEY, v ? "1" : "0"); } catch { /* */ } setOn(v); window.dispatchEvent(new Event(EVT)); };
   return [on, set];
+}
+
+/** Chave dentro das configurações do cronômetro que liga/desliga o tempo por tópico. */
+export function AgendaTopicSetting() {
+  const [on, set] = useTopicRowPref();
+  return (
+    <label className="flex items-center justify-between gap-2 px-1 py-1 text-sm cursor-pointer">
+      <span className="flex items-center gap-2 min-w-0"><ListOrdered className="h-4 w-4 shrink-0 text-muted-foreground" /><span className="truncate">Tempo por tópico</span></span>
+      <Switch checked={on} onCheckedChange={set} aria-label="Tempo por tópico" />
+    </label>
+  );
 }
 
 /** Botão redondo que liga/desliga a linha de tempo por tópico. */

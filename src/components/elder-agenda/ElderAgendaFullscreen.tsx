@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BibleRefText } from "@/components/bible/BibleRefText";
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
-import { AgendaTopicRow, AgendaTopicToggle } from "./AgendaTopicPill";
+import { AgendaTopicRow, AgendaTopicSetting } from "./AgendaTopicPill";
 import { useFocusChromeWhile } from "@/lib/focus-chrome";
 import {
   CARD_TYPE_LABEL, agendaView, htmlToPlain, itemUrls, shownParts, numberedBlocks, prayerRecShown, recInfoView,
@@ -52,11 +52,11 @@ export function ElderAgendaFullscreen({ data, payload, isSc, onClose }: { data: 
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background" role="dialog" aria-modal="true" aria-label="Pauta em tela cheia">
-      <header className="flex items-center gap-2 border-b px-3 py-2 pt-safe">
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fechar tela cheia"><X className="h-5 w-5" /></Button>
-        <span className="flex-1 min-w-0 truncate font-semibold">{payload.headerTitle || "Pauta"}</span>
-        <AgendaTopicToggle />
-        <OutlineTimer outlineId={`agenda-${data.visitId}`} variant="fullscreen" />
+      <header className="flex items-start gap-1 border-b px-2 py-1 pt-safe">
+        <Button variant="ghost" size="icon" className="shrink-0" onClick={onClose} aria-label="Fechar tela cheia"><X className="h-5 w-5" /></Button>
+        <div className="flex-1 min-w-0">
+          <OutlineTimer outlineId={`agenda-${data.visitId}`} variant="fullscreen" className="border-0 bg-transparent" extraSettings={<AgendaTopicSetting />} />
+        </div>
       </header>
       <AgendaTopicRow visitId={data.visitId} list={list} className="mx-3 mt-2" />
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">

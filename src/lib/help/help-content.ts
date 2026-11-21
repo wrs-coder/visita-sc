@@ -86,6 +86,7 @@ const RAW_TOPICS: HelpTopic[] = [
       { before: "Em “Fontes de matéria”, cada publicação ou vídeo tem seu nome e seu link." },
       { before: "Em “Modelos”, salve sua pauta para as próximas visitas; ela sincroniza com seus aparelhos." },
       { before: "Use “Tela cheia” na reunião e exporte o PDF em um dos três estilos." },
+      { before: "Na “Tela cheia”, o X de fechar e o cronômetro ficam na mesma linha do topo. Se você aumentar muito a fonte, os botões descem para a linha de baixo. Para ligar o “Tempo por tópico”, toque no ícone de relógio do cronômetro e use a chave no fim do painel." },
       { before: "Em “Informações adicionais dos anciãos”, cada item do checklist é respondido com Sim, Não ou Em parte." },
       { before: "Ao finalizar a visita, a pauta e os anexos enviados são apagados junto com os outros dados da visita." },
     ],
