@@ -35,7 +35,7 @@ function Page() {
     <OutlinesWorkspace
       search={search}
       onSearchConsumed={consumed}
-      onForeignNote={(n) => { void navigate({ to: "/estudo-pessoal", search: { tab: "notes", noteId: n.id } }); }}
+      onForeignNote={(n) => { void navigate({ to: "/estudo-pessoal", search: { tab: "notes", noteId: n.id, mode: search.mode } }); }}
     />
   );
 }

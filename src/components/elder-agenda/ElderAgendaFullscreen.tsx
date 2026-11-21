@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BibleRefText } from "@/components/bible/BibleRefText";
 import { OutlineTimer } from "@/components/notes/OutlineTimer";
-import { AgendaTopicPill } from "./AgendaTopicPill";
+import { AgendaTopicRow, AgendaTopicToggle } from "./AgendaTopicPill";
 import { useFocusChromeWhile } from "@/lib/focus-chrome";
 import {
   CARD_TYPE_LABEL, agendaView, htmlToPlain, itemUrls, shownParts, numberedBlocks, prayerRecShown, recInfoView,
@@ -55,9 +55,10 @@ export function ElderAgendaFullscreen({ data, payload, isSc, onClose }: { data: 
       <header className="flex items-center gap-2 border-b px-3 py-2 pt-safe">
         <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fechar tela cheia"><X className="h-5 w-5" /></Button>
         <span className="flex-1 min-w-0 truncate font-semibold">{payload.headerTitle || "Pauta"}</span>
+        <AgendaTopicToggle />
         <OutlineTimer outlineId={`agenda-${data.visitId}`} variant="fullscreen" />
       </header>
-      <AgendaTopicPill visitId={data.visitId} list={list} />
+      <AgendaTopicRow visitId={data.visitId} list={list} className="mx-3 mt-2" />
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
         <div className="text-center space-y-1">
           {payload.headerVerses ? <BibleRefText text={payload.headerVerses} className="text-xs text-primary" /> : null}

@@ -28,7 +28,7 @@ import { AGENDA_PDF_STYLES, type AgendaPdfStyle } from "@/lib/elder-agenda/agend
 import { readPdfStyle, writePdfStyle } from "@/lib/elder-agenda/agenda-cache";
 import { openAllLinks } from "./open-all-links";
 import { AgendaTemplatesDialog } from "./AgendaTemplatesDialog";
-import { AgendaTopicPill } from "./AgendaTopicPill";
+import { AgendaTopicRow, AgendaTopicToggle } from "./AgendaTopicPill";
 import { AttachmentViewerHost } from "./AttachmentViewer";
 import { AgendaAttachments, type AgendaAttachmentApi } from "./AgendaAttachments";
 import { EditorResizeHandle } from "@/components/outlines/EditorResizeHandle";
@@ -620,6 +620,14 @@ export function ElderAgendaView({ data, save, onRefresh, onPublish }: { data: Ag
             <p className="text-[11px] text-muted-foreground">
               {mode === "read" ? "Pauta pronta. Use o lápis para escrever nos campos só seus." : mode === "prepare" ? "Escreva, cole links e anexe. Ao salvar, a pauta vai para a Leitura." : "Tópicos, cartões, ordem e quem vê cada parte."}
             </p>
+            {onPublish && !preparing ? (
+        <div className="space-y-1 text-center">
+          <Button className="w-full" variant={data.unsent || dirty || !data.publishedAt ? "default" : "outline"} onClick={() => setPublishOpen(true)} disabled={offline || publishing}>
+            {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enviar pauta para os anciãos
+          </Button>
+          <p className="text-[11px] text-muted-foreground">{offline ? "Conecte-se para enviar." : data.publishedAt ? `Último envio: ${fmtSent(data.publishedAt)}` : "Ainda não enviada."}</p>
+        </div>
+      ) : null}
           </CardContent>
         </Card>
       ) : null}
@@ -634,7 +642,11 @@ export function ElderAgendaView({ data, save, onRefresh, onPublish }: { data: Ag
             </p>
           </header>
 
-          <Button type="button" variant="outline" className="w-full" onClick={() => setFull(true)}><Maximize2 className="h-4 w-4" />Tela cheia</Button>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" className="flex-1" onClick={() => setFull(true)}><Maximize2 className="h-4 w-4" />Tela cheia</Button>
+            {!preparing && !building ? <AgendaTopicToggle /> : null}
+          </div>
+          {!full && !preparing && !building ? <AgendaTopicRow visitId={data.visitId} list={numberedBlocks(p.blocks, data.auto)} onGoTopic={goTopic} /> : null}
           {onRefresh ? (
             <div className="flex items-center gap-2 pt-1">
               <span className="flex-1 min-w-0 truncate text-[11px] text-muted-foreground">
@@ -800,8 +812,7 @@ export function ElderAgendaView({ data, save, onRefresh, onPublish }: { data: Ag
           </Button>
         ) : null}
       </div>
-      {!full && !preparing && !building ? <AgendaTopicPill visitId={data.visitId} list={numberedBlocks(p.blocks, data.auto)} onGoTopic={goTopic} /> : null}
-      {isSc && onPublish && !preparing ? (
+      {isSc && onPublish && !preparing && offline ? (
         <div className="space-y-1 text-center">
           <Button className="w-full" variant={data.unsent || dirty || !data.publishedAt ? "default" : "outline"} onClick={() => setPublishOpen(true)} disabled={offline || publishing}>
             {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enviar pauta para os anciãos

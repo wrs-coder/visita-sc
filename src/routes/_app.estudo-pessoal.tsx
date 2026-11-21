@@ -15,9 +15,10 @@ type StudyTab = "bible" | "research" | "notes";
 const TAB_KEY = "studyPersonal.tab";
 
 export const Route = createFileRoute("/_app/estudo-pessoal")({
-  validateSearch: (s: Record<string, unknown>): { tab?: StudyTab; noteId?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { tab?: StudyTab; noteId?: string; mode?: "edit" | "outline" } => ({
     tab: s.tab === "bible" || s.tab === "research" || s.tab === "notes" ? s.tab : undefined,
     noteId: typeof s.noteId === "string" ? s.noteId : undefined,
+    mode: s.mode === "edit" || s.mode === "outline" ? s.mode : undefined,
   }),
   // Só confere no aparelho: a tela abre sem internet.
   beforeLoad: () => {
@@ -73,7 +74,7 @@ function StudyPage() {
       </div>
 
       {tab === "notes" ? (
-        <OutlinesWorkspace lockedType="talk_notes" search={{ noteId: search.noteId, mode: "edit" }}
+        <OutlinesWorkspace lockedType="talk_notes" search={{ noteId: search.noteId, mode: search.mode ?? "edit" }}
           onSearchConsumed={consumed} onFocusChange={setFocused} />
       ) : user ? (
         <GuestWorkspace key={tab} section="study" fixedStudyTab={tab} storageKey={wsUserKey(user.id)} />

@@ -222,11 +222,39 @@ export interface OutlinesWorkspaceProps {
   onFocusChange?: (focused: boolean) => void;
 }
 
-export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onForeignNote, onFocusChange }: OutlinesWorkspaceProps) {
+const OPEN_REQ_KEY = "outlines.openRequest";
+// O pedido de abrir uma nota (vindo do Início) é guardado por alguns segundos,
+// porque a tela pode recomeçar logo depois que o endereço é limpo.
+function readOpenRequest(search: OutlinesWorkspaceProps["search"]): OutlinesWorkspaceProps["search"] {
+  if (typeof window === "undefined") return search;
+  try {
+    if (search.noteId) {
+      sessionStorage.setItem(OPEN_REQ_KEY, JSON.stringify({ noteId: search.noteId, mode: search.mode, at: Date.now() }));
+      return search;
+    }
+    const raw = sessionStorage.getItem(OPEN_REQ_KEY);
+    if (!raw) return search;
+    const r = JSON.parse(raw) as { noteId?: string; mode?: "edit" | "outline"; at?: number };
+    if (r.noteId && Date.now() - (r.at ?? 0) < 8000) return { ...search, noteId: r.noteId, mode: r.mode };
+  } catch { /* */ }
+  return search;
+}
+
+
+export function OutlinesWorkspace({ lockedType, search: rawSearch, onSearchConsumed: rawConsumed, onForeignNote, onFocusChange }: OutlinesWorkspaceProps) {
   const { t, i18n } = useTranslation();
+  const [search, setSearchReq] = useState(() => readOpenRequest(rawSearch));
+  useEffect(() => { if (rawSearch.noteId) setSearchReq(readOpenRequest(rawSearch)); }, [rawSearch.noteId, rawSearch.mode]);
+  const onSearchConsumed = () => { setSearchReq({}); rawConsumed(); };
   const [activeType, setActiveType] = useState<NoteType | null>(
     lockedType ?? (search.noteId ? "field_consideration" : null),
   );
+  // Pedido de abrir uma nota chegando depois da montagem (navegação dentro do app):
+  // escolhe uma subaba para o carregamento achar a nota e trocar para a certa.
+  useEffect(() => {
+    if (search.noteId && !activeType) setActiveType(lockedType ?? "field_consideration");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.noteId]);
   const [folders, setFolders] = useState<NoteFolder[]>([]);
   const [notes, setNotes] = useState<FieldNote[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
